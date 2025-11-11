@@ -1,0 +1,207 @@
+---
+title: Hex.toBytes
+description: Convert hex string to Uint8Array
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.toBytes(hex: BrandedHex): Uint8Array`
+
+Converts hex string to raw byte array.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `Uint8Array` - Raw byte array
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Convert hex to bytes
+const hex = Hex("0x1234")
+const bytes = Hex.toBytes(hex)
+// Uint8Array([0x12, 0x34])
+
+// Instance method
+const bytes2 = hex.toBytes()
+// Uint8Array([0x12, 0x34])
+
+// Empty hex
+const empty = Hex.toBytes("0x")
+// Uint8Array([])
+
+// Multi-byte values
+const hash = Hex("0xabcdef1234567890")
+const hashBytes = Hex.toBytes(hash)
+// Uint8Array([0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90])
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBytes.js:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBytes.js#L24)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toBytes(hex: BrandedHex): Uint8Array`
+
+Converts hex string to raw byte array.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `Uint8Array` - Raw byte array
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Convert hex to bytes
+const hex = Hex.from("0x1234")
+const bytes = Hex.toBytes(hex)
+// Uint8Array([0x12, 0x34])
+
+// Empty hex
+const empty = Hex.toBytes("0x")
+// Uint8Array([])
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBytes.js:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBytes.js#L24)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.toBytes(hex: []const u8, allocator: Allocator): ![]u8`
+
+Convert hex string to byte array.
+
+**Parameters:**
+- `hex: []const u8` - Hex string with `0x` prefix
+- `allocator: Allocator` - Memory allocator for output
+
+**Returns:** `[]u8` - Allocated byte array (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hex = "0x1234";
+const bytes = try Hex.toBytes(hex, allocator);
+defer allocator.free(bytes);
+// bytes = [0x12, 0x34]
+```
+
+**Memory:** Caller must free returned byte array.
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Error Handling
+
+**Missing 0x Prefix:**
+```typescript
+try {
+  Hex.toBytes("1234")  // No 0x prefix
+} catch (e) {
+  // InvalidFormatError: Hex string must start with '0x'
+}
+```
+
+**Odd Length:**
+```typescript
+try {
+  Hex.toBytes("0x123")  // 3 hex digits (odd)
+} catch (e) {
+  // OddLengthError: Hex string must have even number of digits
+}
+```
+
+**Invalid Characters:**
+```typescript
+try {
+  Hex.toBytes("0x12zz")  // 'z' not valid hex
+} catch (e) {
+  // InvalidCharacterError: Invalid hex character
+}
+```
+
+## Output Format
+
+Each pair of hex digits becomes one byte:
+
+```typescript
+Hex.toBytes("0x00")     // Uint8Array([0])
+Hex.toBytes("0xff")     // Uint8Array([255])
+Hex.toBytes("0x1234")   // Uint8Array([18, 52])
+Hex.toBytes("0xabcd")   // Uint8Array([171, 205])
+```
+
+## Common Use Cases
+
+**Hash Digests:**
+```typescript
+const hashHex = "0x..." // keccak256 result as hex
+const hashBytes = Hex.toBytes(hashHex)
+// Use in signature verification
+```
+
+**Transaction Data:**
+```typescript
+const dataHex = transaction.data
+const dataBytes = Hex.toBytes(dataHex)
+// Parse or decode contract call
+```
+
+**Cryptographic Operations:**
+```typescript
+const privateKeyHex = "0x..."
+const privateKeyBytes = Hex.toBytes(privateKeyHex)
+// Use with secp256k1
+```
+
+**RLP Decoding:**
+```typescript
+const rlpHex = "0x..."
+const rlpBytes = Hex.toBytes(rlpHex)
+const decoded = RLP.decode(rlpBytes)
+```
+
+**Storage Values:**
+```typescript
+const storageHex = await provider.getStorageAt(address, slot)
+const storageBytes = Hex.toBytes(storageHex)
+// Interpret as bytes
+```
+
+## Performance
+
+Efficient character-by-character parsing with lookup table. Complexity: O(n) where n is hex string length.
+
+For repeated conversions, consider caching byte arrays if the hex values don't change.
+
+## See Also
+
+- [fromBytes](/primitives/hex/from-bytes) - Convert bytes to hex
+- [toNumber](/primitives/hex/to-number) - Convert to number
+- [toBigInt](/primitives/hex/to-bigint) - Convert to bigint
+- [toString](/primitives/hex/to-string) - Convert to UTF-8 string

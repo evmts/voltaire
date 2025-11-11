@@ -1,0 +1,232 @@
+---
+title: Hex.toBigInt
+description: Convert hex string to bigint
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.toBigInt(hex: BrandedHex): bigint`
+
+Converts hex string to bigint. Supports arbitrarily large values.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `bigint` - Numeric value as bigint
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Convert hex to bigint
+const hex = Hex("0xff")
+const bigint = Hex.toBigInt(hex)
+// 255n
+
+// Instance method
+const bigint2 = hex.toBigInt()
+// 255n
+
+// Various values
+Hex.toBigInt("0x0")       // 0n
+Hex.toBigInt("0x10")      // 16n
+Hex.toBigInt("0x100")     // 256n
+Hex.toBigInt("0x1234")    // 4660n
+
+// Large values (beyond MAX_SAFE_INTEGER)
+Hex.toBigInt("0xffffffffffffffff")
+// 18446744073709551615n (uint64 max)
+
+// uint256 values
+Hex.toBigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+// 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBigInt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBigInt.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toBigInt(hex: BrandedHex): bigint`
+
+Converts hex string to bigint. Supports arbitrarily large values.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `bigint` - Numeric value as bigint
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Convert hex to bigint
+const hex = Hex.from("0xff")
+const bigint = Hex.toBigInt(hex)
+// 255n
+
+// Large values
+Hex.toBigInt("0xffffffffffffffff")
+// 18446744073709551615n
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBigInt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBigInt.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.toU256(hex: []const u8): !u256`
+
+Convert hex string to 256-bit unsigned integer.
+
+**Parameters:**
+- `hex: []const u8` - Hex string with `0x` prefix
+
+**Returns:** `u256` - Numeric value
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex = "0xff";
+const num = try Hex.toU256(hex);  // 255
+
+// Large uint256 value
+const maxHex = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const maxU256 = try Hex.toU256(maxHex);
+// Maximum u256 value
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Arbitrary Precision
+
+Unlike `toNumber`, `toBigInt` supports values of any size:
+
+```typescript
+// Small values
+Hex.toBigInt("0x0")       // 0n
+Hex.toBigInt("0xff")      // 255n
+
+// Beyond Number.MAX_SAFE_INTEGER
+Hex.toBigInt("0x20000000000000")  // 9007199254740992n
+
+// uint64 range
+Hex.toBigInt("0xffffffffffffffff")
+// 18446744073709551615n
+
+// uint128 range
+Hex.toBigInt("0xffffffffffffffffffffffffffffffff")
+// 340282366920938463463374607431768211455n
+
+// uint256 range (max)
+Hex.toBigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+// 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+```
+
+## Common Use Cases
+
+**Token Balances (uint256):**
+```typescript
+const balanceHex = await contract.balanceOf(address)
+const balance = Hex.toBigInt(balanceHex)
+// 1500000000000000000n (1.5 ETH in wei)
+```
+
+**Contract Storage Values:**
+```typescript
+const storageHex = await provider.getStorageAt(address, slot)
+const value = Hex.toBigInt(storageHex)
+```
+
+**Large Numbers in Calculations:**
+```typescript
+const amountHex = "0xde0b6b3a7640000"  // 1 ETH in wei
+const amount = Hex.toBigInt(amountHex)
+// 1000000000000000000n
+
+const fee = amount * 25n / 10000n  // 0.25% fee
+```
+
+**Transaction Values:**
+```typescript
+const valueHex = transaction.value
+const value = Hex.toBigInt(valueHex)
+console.log(`${value / 10n**18n} ETH`)
+```
+
+**Block Timestamps:**
+```typescript
+const timestampHex = block.timestamp
+const timestamp = Hex.toBigInt(timestampHex)
+const date = new Date(Number(timestamp) * 1000)
+```
+
+**Gas Calculations:**
+```typescript
+const gasUsedHex = receipt.gasUsed
+const gasPriceHex = receipt.effectiveGasPrice
+const totalCost = Hex.toBigInt(gasUsedHex) * Hex.toBigInt(gasPriceHex)
+```
+
+## BigInt Arithmetic
+
+Full arithmetic operations available:
+
+```typescript
+const a = Hex.toBigInt("0x64")  // 100n
+const b = Hex.toBigInt("0x32")  // 50n
+
+// Arithmetic
+a + b      // 150n
+a - b      // 50n
+a * b      // 5000n
+a / b      // 2n
+a % b      // 0n
+a ** 2n    // 10000n
+
+// Comparison
+a > b      // true
+a === b    // false
+
+// Bitwise
+a & b      // 32n
+a | b      // 118n
+a ^ b      // 86n
+a << 1n    // 200n
+a >> 1n    // 50n
+```
+
+## Performance
+
+Direct `BigInt(hex)` conversion. Fast for all value sizes. No precision loss.
+
+## Converting Back to Number
+
+If you need a regular number and know the value is safe:
+
+```typescript
+const bigint = Hex.toBigInt("0x64")  // 100n
+
+// Convert to number
+const num = Number(bigint)  // 100
+
+// Check if safe first
+if (bigint <= Number.MAX_SAFE_INTEGER) {
+  const num = Number(bigint)  // Safe
+}
+```
+
+## See Also
+
+- [toNumber](/primitives/hex/to-number) - For smaller numbers (up to MAX_SAFE_INTEGER)
+- [fromBigInt](/primitives/hex/from-bigint) - Convert bigint to hex
+- [toBytes](/primitives/hex/to-bytes) - Convert to byte array

@@ -1,0 +1,603 @@
+---
+title: Fundamentals
+description: Learn EIP-4844 blobs, proto-danksharding, and KZG commitments
+---
+
+Blobs (Binary Large Objects) are temporary data availability storage introduced in EIP-4844. They enable L2 rollups to post data to Ethereum at significantly lower costs compared to calldata, accelerating Ethereum's scaling roadmap.
+
+## What Are Blobs?
+
+Blobs are fixed-size data containers (exactly 131,072 bytes = 128 KB) attached to transactions. Unlike calldata:
+
+- **Temporary** - Stored for ~18 days (~4096 epochs), then pruned
+- **Cheaper** - Use separate blob gas market with lower base fees
+- **Not executable** - EVM cannot directly access blob data
+- **Verified** - Use KZG commitments to prove data integrity
+
+### Key Properties
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+console.log(Blob.SIZE);                    // 131,072 bytes (128 KB)
+console.log(Blob.FIELD_ELEMENTS_PER_BLOB); // 4,096 field elements
+console.log(Blob.BYTES_PER_FIELD_ELEMENT); // 32 bytes per element
+console.log(Blob.MAX_PER_TRANSACTION);     // 6 blobs maximum
+```
+
+## Why Blobs Exist (EIP-4844)
+
+Before EIP-4844, L2 rollups posted transaction data as calldata:
+- **Expensive** - 16 gas per byte (~2M gas for 128 KB)
+- **Permanent** - Stored forever in blockchain state
+- **Inefficient** - Paying for permanent storage when temporary availability suffices
+
+EIP-4844 (proto-danksharding) introduces blobs:
+- **Cheaper** - Separate blob gas market (~0.5M gas for 128 KB)
+- **Temporary** - Pruned after ~18 days
+- **Sufficient** - L2s only need data available long enough for fraud/validity proofs
+
+## Blob Structure
+
+A blob contains 4,096 field elements, each 32 bytes, organized for BLS12-381 scalar field operations:
+
+```
+Blob (131,072 bytes)
+├─ Field Element 0  (32 bytes) [0:32]
+├─ Field Element 1  (32 bytes) [32:64]
+├─ Field Element 2  (32 bytes) [64:96]
+│  ...
+└─ Field Element 4095 (32 bytes) [131040:131072]
+```
+
+### Creating Blobs
+
+<Tabs>
+<Tab title="From Data (Standard)">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Encode arbitrary data with length prefix
+const data = new TextEncoder().encode("L2 batch transactions");
+const blob = Blob.fromData(data);
+
+console.log(`Original: ${data.length} bytes`);
+console.log(`Blob: ${blob.length} bytes`); // Always 131,072
+
+// Extract data
+const decoded = Blob.toData(blob);
+console.log(new TextDecoder().decode(decoded));
+// "L2 batch transactions"
+```
+
+Standard encoding format:
+- Bytes 0-7: Data length (8-byte little-endian uint64)
+- Bytes 8+: Actual data
+- Remaining: Zero padding
+
+</Tab>
+<Tab title="From Raw Bytes">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Pre-formatted blob data (exactly 131,072 bytes)
+const rawBlob = new Uint8Array(131072);
+// ... fill with your data format ...
+
+const blob = Blob.from(rawBlob);
+
+// Validates size
+try {
+  const invalid = Blob.from(new Uint8Array(1000)); // Too small
+} catch (e) {
+  console.error(e); // Error: Invalid blob size
+}
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const Blob = @import("primitives").Blob;
+
+// Encode data into blob
+const data = "L2 batch transactions";
+const blob = try Blob.fromData(allocator, data);
+defer blob.deinit(allocator);
+
+// Extract data
+const decoded = try blob.toData(allocator);
+defer allocator.free(decoded);
+
+std.debug.print("Decoded: {s}\n", .{decoded});
+```
+
+</Tab>
+</Tabs>
+
+## KZG Commitments
+
+KZG (Kate-Zaverucha-Goldberg) commitments prove blob data integrity without revealing contents. Each blob has:
+
+1. **Commitment** (48 bytes) - Cryptographic binding to blob data
+2. **Proof** (48 bytes) - Proves commitment matches blob
+3. **Versioned Hash** (32 bytes) - Transaction reference (version byte + SHA256 of commitment)
+
+### Computing Commitments
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+
+// Compute KZG commitment (requires trusted setup)
+const commitment = Blob.toCommitment(blob);
+console.log(`Commitment: ${commitment.length} bytes`); // 48 bytes
+
+// Generate proof
+const proof = Blob.toProof(blob);
+console.log(`Proof: ${proof.length} bytes`); // 48 bytes
+
+// Verify proof
+const isValid = Blob.verify(blob, commitment, proof);
+console.log(`Valid: ${isValid}`); // true
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const Blob = @import("primitives").Blob;
+
+const blob = try Blob.fromData(allocator, data);
+defer blob.deinit(allocator);
+
+// Compute KZG commitment
+const commitment = try blob.toCommitment(allocator);
+defer commitment.deinit(allocator);
+
+// Generate proof
+const proof = try blob.toProof(allocator);
+defer proof.deinit(allocator);
+
+// Verify proof
+const is_valid = try Blob.verify(blob, commitment, proof);
+std.debug.print("Valid: {}\n", .{is_valid});
+```
+
+</Tab>
+</Tabs>
+
+### Versioned Hashes
+
+Transactions reference blobs using versioned hashes, not raw commitments:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+
+// Compute versioned hash (used in transaction)
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+console.log(versionedHash[0]); // 0x01 (version byte)
+console.log(versionedHash.length); // 32 bytes
+
+// Validate versioned hash
+console.log(Blob.isValidVersion(versionedHash)); // true
+console.log(Blob.VersionedHash.getVersion(versionedHash)); // 1
+```
+
+Format: `0x01` (KZG version) + SHA256(commitment)[1:32]
+
+## Complete Example: L2 Data Posting
+
+L2 rollup posting batch data to Ethereum:
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Step 1: L2 creates transaction batch
+const batchData = new TextEncoder().encode(JSON.stringify({
+  transactions: [
+    { from: '0x...', to: '0x...', value: '1000' },
+    { from: '0x...', to: '0x...', value: '2000' },
+    // ... more transactions
+  ],
+  blockNumber: 12345,
+  timestamp: Date.now(),
+}));
+
+console.log(`Batch size: ${batchData.length} bytes`);
+
+// Step 2: Encode into blob
+const blob = Blob.fromData(batchData);
+console.log(`Blob size: ${blob.length} bytes`); // 131,072
+
+// Step 3: Generate KZG commitment and proof
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+
+// Step 4: Compute versioned hash for transaction
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+console.log(`Commitment: ${commitment.length} bytes`);
+console.log(`Proof: ${proof.length} bytes`);
+console.log(`Versioned hash: ${versionedHash.length} bytes`);
+
+// Step 5: Create EIP-4844 transaction
+const tx = {
+  type: '0x03', // EIP-4844 blob transaction
+  chainId: 1,
+  nonce: 42,
+  maxFeePerGas: 30_000_000_000n,       // 30 gwei
+  maxPriorityFeePerGas: 1_000_000_000n, // 1 gwei
+  maxFeePerBlobGas: 50_000_000n,       // 50 gwei blob gas
+  gas: 21000n,
+  to: '0xYourL2Contract',
+  value: 0n,
+  data: '0x', // Empty calldata
+  blobVersionedHashes: [versionedHash], // Reference to blob
+  // Blob sidecar (included in mempool, not on-chain):
+  blobs: [blob],
+  commitments: [commitment],
+  proofs: [proof],
+};
+
+// Step 6: Verify before sending
+const isValid = Blob.verify(blob, commitment, proof);
+if (!isValid) {
+  throw new Error('Invalid blob proof');
+}
+
+console.log('Transaction ready to send');
+console.log(`Versioned hashes: ${tx.blobVersionedHashes.length}`);
+```
+
+</Tab>
+<Tab title="Verification">
+
+```typescript
+// Step 7: Network validators verify
+const receivedBlob = tx.blobs[0];
+const receivedCommitment = tx.commitments[0];
+const receivedProof = tx.proofs[0];
+const receivedHash = tx.blobVersionedHashes[0];
+
+// Verify versioned hash matches commitment
+const computedHash = Blob.Commitment.toVersionedHash(receivedCommitment);
+const hashMatches = Blob.equals(computedHash, receivedHash);
+
+// Verify KZG proof
+const proofValid = Blob.verify(receivedBlob, receivedCommitment, receivedProof);
+
+if (!hashMatches || !proofValid) {
+  throw new Error('Blob verification failed');
+}
+
+console.log('Blob verified successfully');
+
+// Step 8: L2 can reconstruct data later (within ~18 days)
+const reconstructedData = Blob.toData(receivedBlob);
+const batch = JSON.parse(new TextDecoder().decode(reconstructedData));
+console.log(`Recovered batch #${batch.blockNumber}`);
+console.log(`Transactions: ${batch.transactions.length}`);
+```
+
+</Tab>
+</Tabs>
+
+## Handling Multiple Blobs
+
+Large data requires multiple blobs (max 6 per transaction):
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Large L2 batch (300 KB)
+const largeBatch = new Uint8Array(300_000);
+// ... fill with transaction data ...
+
+// Check how many blobs needed
+const blobCount = Blob.estimateBlobCount(largeBatch);
+console.log(`Requires ${blobCount} blobs`); // 3 blobs
+
+if (blobCount > Blob.MAX_PER_TRANSACTION) {
+  throw new Error(`Too many blobs: ${blobCount} (max ${Blob.MAX_PER_TRANSACTION})`);
+}
+
+// Split into blobs
+const blobs = Blob.splitData(largeBatch);
+console.log(`Created ${blobs.length} blobs`);
+
+// Generate commitments and proofs for each
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map(b => Blob.toProof(b));
+const versionedHashes = commitments.map(c => Blob.Commitment.toVersionedHash(c));
+
+// Batch verify (more efficient than individual verification)
+const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+console.log(`All valid: ${allValid}`);
+
+// Create transaction with multiple blobs
+const tx = {
+  type: '0x03',
+  blobVersionedHashes: versionedHashes, // Array of 3 hashes
+  maxFeePerBlobGas: 50_000_000n,
+  // ... other fields
+  blobs: blobs,
+  commitments: commitments,
+  proofs: proofs,
+};
+
+// Later: reconstruct original data
+const reconstructed = Blob.joinData(blobs);
+console.log(`Reconstructed ${reconstructed.length} bytes`);
+console.log(`Matches original: ${Blob.equals(reconstructed, largeBatch)}`);
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const Blob = @import("primitives").Blob;
+
+// Large data
+var large_batch: [300_000]u8 = undefined;
+// ... fill with data ...
+
+// Split into blobs
+const blobs = try Blob.splitData(allocator, &large_batch);
+defer {
+    for (blobs) |blob| blob.deinit(allocator);
+    allocator.free(blobs);
+}
+
+std.debug.print("Created {} blobs\n", .{blobs.len});
+
+// Generate commitments and proofs
+var commitments = try allocator.alloc(Blob.Commitment, blobs.len);
+defer allocator.free(commitments);
+
+var proofs = try allocator.alloc(Blob.Proof, blobs.len);
+defer allocator.free(proofs);
+
+for (blobs, 0..) |blob, i| {
+    commitments[i] = try blob.toCommitment(allocator);
+    proofs[i] = try blob.toProof(allocator);
+}
+
+// Batch verify
+const all_valid = try Blob.verifyBatch(blobs, commitments, proofs);
+std.debug.print("All valid: {}\n", .{all_valid});
+
+// Reconstruct
+const reconstructed = try Blob.joinData(allocator, blobs);
+defer allocator.free(reconstructed);
+```
+
+</Tab>
+</Tabs>
+
+## Blob Gas Market
+
+Blobs use a separate gas market from regular transactions:
+
+### Gas Pricing
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Gas per blob (fixed)
+console.log(Blob.GAS_PER_BLOB); // 131,072 (2^17)
+
+// Target per block (3 blobs)
+console.log(Blob.TARGET_GAS_PER_BLOCK); // 393,216
+
+// Calculate cost
+const blobBaseFee = 50_000_000n; // 50 gwei (example, varies by demand)
+const blobCount = 2;
+
+const blobGasCost = Blob.calculateGas(blobCount, blobBaseFee);
+console.log(`Cost: ${blobGasCost / 10n**9n} gwei`);
+
+// Compare with calldata
+const calldataBytes = Blob.SIZE * blobCount;
+const calldataGas = BigInt(calldataBytes) * 16n; // 16 gas per byte
+const calldataCost = calldataGas * 30_000_000_000n; // 30 gwei base fee
+
+const savings = ((1 - Number(blobGasCost) / Number(calldataCost)) * 100).toFixed(1);
+console.log(`Savings vs calldata: ${savings}%`);
+```
+
+### Fee Market Dynamics
+
+Blob base fee adjusts based on usage:
+- **Target**: 3 blobs per block (393,216 blob gas)
+- **Max**: 6 blobs per block (786,432 blob gas)
+- **Adjustment**: Exponential (similar to EIP-1559)
+
+```typescript
+// Fee increases if usage > target
+if (blobGasUsed > Blob.TARGET_GAS_PER_BLOCK) {
+  // Base fee increases
+}
+
+// Fee decreases if usage < target
+if (blobGasUsed < Blob.TARGET_GAS_PER_BLOCK) {
+  // Base fee decreases
+}
+```
+
+## Field Element Constraints
+
+Each 32-byte field element must be < BLS12-381 scalar field modulus:
+
+```
+Modulus: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+```
+
+Invalid field elements cause transaction rejection. Voltaire handles this automatically in `fromData()`:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Data encoding ensures field element validity
+const blob = Blob.fromData(data);
+
+// Manual blob creation requires validation
+const rawBlob = new Uint8Array(131072);
+// ... set bytes ...
+
+// Check validity
+if (!Blob.isValid(rawBlob)) {
+  throw new Error('Invalid field elements');
+}
+```
+
+## Data Availability Window
+
+Blobs are temporary (~18 days = 4096 epochs):
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const BLOB_RETENTION_EPOCHS = 4096;
+const SECONDS_PER_EPOCH = 384; // 32 slots * 12 seconds
+const RETENTION_SECONDS = BLOB_RETENTION_EPOCHS * SECONDS_PER_EPOCH;
+const RETENTION_DAYS = RETENTION_SECONDS / 86400;
+
+console.log(`Retention: ~${RETENTION_DAYS} days`); // ~18 days
+
+// L2s must:
+// 1. Download blob data within 18 days
+// 2. Store data locally for fraud/validity proofs
+// 3. Make data available to users (RPC nodes)
+```
+
+After pruning, only the versioned hash remains on-chain. L2s cannot reconstruct data from hash alone.
+
+## Security Considerations
+
+### Commitment Binding
+
+KZG commitments cryptographically bind blob data:
+
+```typescript
+// Cannot create two different blobs with same commitment
+const blob1 = Blob.fromData(data1);
+const commitment1 = Blob.toCommitment(blob1);
+
+const blob2 = Blob.fromData(data2); // Different data
+const commitment2 = Blob.toCommitment(blob2);
+
+// Commitments differ
+console.log(Blob.equals(commitment1, commitment2)); // false
+
+// Verification enforces binding
+console.log(Blob.verify(blob1, commitment1, proof1)); // true
+console.log(Blob.verify(blob1, commitment2, proof2)); // false (wrong commitment)
+```
+
+### Trusted Setup
+
+KZG requires trusted setup ceremony:
+- **Powers of Tau** - 4096 participants contributed randomness
+- **Security** - Safe if at least 1 participant honest
+- **Transparency** - All contributions public and verifiable
+
+See [KZG Ceremony](https://ceremony.ethereum.org/) for details.
+
+## Common Patterns
+
+### Single Blob Transaction
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const data = new TextEncoder().encode("Rollup batch");
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+const tx = {
+  type: '0x03',
+  blobVersionedHashes: [versionedHash],
+  maxFeePerBlobGas: 100_000_000n, // 100 gwei
+  blobs: [blob],
+  commitments: [commitment],
+  proofs: [proof],
+};
+```
+
+### Multi-Blob Transaction
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blobs = Blob.splitData(largeData);
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map(b => Blob.toProof(b));
+const versionedHashes = commitments.map(c => Blob.Commitment.toVersionedHash(c));
+
+const tx = {
+  type: '0x03',
+  blobVersionedHashes: versionedHashes,
+  maxFeePerBlobGas: 100_000_000n,
+  blobs: blobs,
+  commitments: commitments,
+  proofs: proofs,
+};
+```
+
+### Gas Estimation
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+async function estimateBlobCost(data, provider) {
+  const blobCount = Blob.estimateBlobCount(data);
+  const blobBaseFee = await provider.getBlobBaseFee();
+
+  const blobGasCost = Blob.calculateGas(blobCount, blobBaseFee);
+  const executionGas = 21000n; // Base transaction cost
+  const executionBaseFee = (await provider.getFeeData()).gasPrice;
+
+  const totalCost = blobGasCost + (executionGas * executionBaseFee);
+
+  return {
+    blobCount,
+    blobGasCost,
+    executionCost: executionGas * executionBaseFee,
+    totalCost,
+  };
+}
+```
+
+## Resources
+
+- **[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)** - Proto-danksharding specification
+- **[KZG Ceremony](https://ceremony.ethereum.org/)** - Trusted setup details
+- **[Danksharding Roadmap](https://ethereum.org/en/roadmap/danksharding/)** - Ethereum scaling plan
+- **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** - Reference KZG implementation
+- **[Blob Transaction Format](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4844.md#blob-transaction)** - EIP-4844 transaction structure
+
+## Next Steps
+
+- [Overview](/primitives/blob) - Type definition and API reference
+- [EIP-4844](/primitives/blob/eip4844) - Detailed specification coverage
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme deep dive
+- [Usage Patterns](/primitives/blob/usage-patterns) - Real-world examples

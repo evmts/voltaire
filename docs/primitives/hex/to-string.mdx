@@ -1,0 +1,228 @@
+---
+title: Hex.toString
+description: Decode hex bytes to UTF-8 string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.toString(hex: BrandedHex): string`
+
+Decodes hex bytes to UTF-8 string using `TextDecoder`.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex-encoded string bytes
+
+**Returns:** `string` - Decoded UTF-8 string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Decode hex to string
+const hex = Hex("0x68656c6c6f")
+const str = Hex.toString(hex)
+// "hello"
+
+// Instance method
+const str2 = hex.toString()
+// "hello"
+
+// Unicode characters
+Hex.toString("0xf09f94a5")        // "🔥"
+Hex.toString("0x636166c3a9")      // "café"
+Hex.toString("0xe38386e382b9e38388")  // "テスト"
+
+// Empty string
+Hex.toString("0x")  // ""
+
+// Newlines and special chars
+Hex.toString("0x610a62")  // "a\nb"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toString.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toString.js#L21)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toString(hex: BrandedHex): string`
+
+Decodes hex bytes to UTF-8 string using `TextDecoder`.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex-encoded string bytes
+
+**Returns:** `string` - Decoded UTF-8 string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Decode hex to string
+const hex = Hex.from("0x68656c6c6f")
+const str = Hex.toString(hex)
+// "hello"
+
+// Unicode characters
+Hex.toString("0xf09f94a5")  // "🔥"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toString.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toString.js#L21)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.toString(hex: []const u8, allocator: Allocator): ![]const u8`
+
+Decode hex bytes to UTF-8 string.
+
+**Parameters:**
+- `hex: []const u8` - Hex-encoded bytes
+- `allocator: Allocator` - Memory allocator for output
+
+**Returns:** `[]const u8` - Decoded string bytes (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hex = "0x68656c6c6f";
+const str = try Hex.toString(hex, allocator);
+defer allocator.free(str);
+// str = "hello"
+```
+
+**Memory:** Caller must free returned string.
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## UTF-8 Decoding
+
+Uses standard `TextDecoder` for UTF-8 decoding:
+
+**ASCII (1 byte per character):**
+```typescript
+Hex.toString("0x68656c6c6f")
+// "hello"
+// 0x68='h', 0x65='e', 0x6c='l', 0x6c='l', 0x6f='o'
+```
+
+**Latin-1 Extended (1-2 bytes):**
+```typescript
+Hex.toString("0x636166c3a9")
+// "café"
+// 0x63='c', 0x61='a', 0x66='f', 0xc3a9='é' (2 bytes)
+```
+
+**Emoji (2-4 bytes):**
+```typescript
+Hex.toString("0xf09f94a5")  // "🔥" (4 bytes)
+Hex.toString("0xf09f918d")  // "👍" (4 bytes)
+```
+
+**CJK Characters (3 bytes):**
+```typescript
+Hex.toString("0xe38386e382b9e38388")
+// "テスト"
+// 0xe38386='テ', 0xe382b9='ス', 0xe38388='ト'
+```
+
+## Common Use Cases
+
+**Decode Error Messages:**
+```typescript
+const errorHex = revert.data.slice(138)  // After error selector + offset
+const errorMsg = Hex.toString(errorHex)
+// "Insufficient balance"
+```
+
+**Read String Storage:**
+```typescript
+const storageHex = await provider.getStorageAt(contract, slot)
+const storedString = Hex.toString(storageHex)
+```
+
+**Decode Custom Data:**
+```typescript
+const metadataHex = "0x7b226e616d65223a224e4654227d"
+const metadata = Hex.toString(metadataHex)
+// '{"name":"NFT"}'
+const obj = JSON.parse(metadata)
+```
+
+**ENS Name Resolution:**
+```typescript
+const nameHex = ensResolver.name(node)
+const name = Hex.toString(nameHex)
+// "vitalik.eth"
+```
+
+**Transaction Input Decoding:**
+```typescript
+// Function with string parameter
+const inputHex = tx.input
+// Decode string argument from calldata
+const stringArg = Hex.toString(extractedHex)
+```
+
+## Round-Trip Conversion
+
+Convert string to hex and back:
+
+```typescript
+// String → Hex
+const original = "Hello, World! 🌍"
+const hex = Hex.fromString(original)
+// "0x48656c6c6f2c20576f726c642120f09f8c8d"
+
+// Hex → String
+const decoded = Hex.toString(hex)
+// "Hello, World! 🌍"
+
+console.assert(decoded === original)  // ✓
+```
+
+## Invalid UTF-8
+
+If hex contains invalid UTF-8 sequences, `TextDecoder` will handle it gracefully:
+
+```typescript
+// Invalid UTF-8 sequence
+const invalid = Hex("0xfffe")
+const str = Hex.toString(invalid)
+// May contain replacement characters (�)
+```
+
+## Performance
+
+Uses native `TextDecoder.decode()` which is highly optimized. Suitable for:
+- Short to medium length strings (< 1KB)
+- One-time decoding operations
+- Human-readable data
+
+## See Also
+
+- [fromString](/primitives/hex/from-string) - Encode UTF-8 string to hex
+- [toBytes](/primitives/hex/to-bytes) - Convert to raw bytes
+- [from](/primitives/hex/from) - Universal constructor

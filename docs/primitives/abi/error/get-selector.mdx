@@ -1,0 +1,108 @@
+---
+title: Error.getSelector
+description: Get 4-byte error selector for custom errors
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `error.getSelector(): Hex`
+
+Get the 4-byte error selector by hashing the error signature with keccak256 and taking the first 4 bytes.
+
+**Returns:** `Hex` - 4-byte error selector
+
+**Example:**
+
+```typescript
+import { AbiError } from '@tevm/voltaire'
+
+const insufficientBalance = new AbiError({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+const selector = insufficientBalance.getSelector()
+console.log(selector)  // "0x..." (4 bytes)
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/getSelector.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/getSelector.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getSelector(error: BrandedError): Hex`
+
+Get the 4-byte error selector.
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+
+**Returns:** `Hex` - 4-byte error selector
+
+**Example:**
+
+```typescript
+import * as AbiError from '@tevm/voltaire/Abi/error'
+
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const selector = AbiError.getSelector(insufficientBalance)
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/getSelector.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/getSelector.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Error selector calculation in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Matching Error Selectors
+
+```typescript
+import { AbiError } from '@tevm/voltaire'
+
+const insufficientBalance = new AbiError({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+try {
+  await contract.call()
+} catch (error) {
+  const errorSelector = error.data.slice(0, 10)
+  if (errorSelector === insufficientBalance.getSelector()) {
+    // Decode error parameters
+    const params = insufficientBalance.decodeParams(error.data)
+    console.log(`Balance: ${params[0]}, Required: ${params[1]}`)
+  }
+}
+```
+
+## See Also
+
+- [getSignature](/primitives/abi/error/get-signature) - Get error signature string
+- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [decodeParams](/primitives/abi/error/decode-params) - Decode error data

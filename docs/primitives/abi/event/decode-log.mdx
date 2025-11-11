@@ -1,0 +1,164 @@
+---
+title: Event.decodeLog
+description: Decode event log data and topics back to parameter values
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `event.decodeLog(data: Hex, topics: Hex[]): Record<string, unknown>`
+
+Decode event log data and topics back to parameter values.
+
+**Parameters:**
+- `data: Hex` - Log data (non-indexed parameters)
+- `topics: Hex[]` - Log topics (topic 0 = selector, topics 1-3 = indexed parameters)
+
+**Returns:** `Record<string, unknown>` - Object with all parameter values
+
+**Example:**
+
+```typescript
+import { Event } from '@tevm/voltaire'
+
+const transferEvent = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+})
+
+const logData = "0x00000000000000000000000000000000000000000000000000000000000003e8"
+const logTopics = [
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+  "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e",
+  "0x0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4"
+]
+
+const decoded = transferEvent.decodeLog(logData, logTopics)
+console.log(decoded)
+// {
+//   from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+//   to: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+//   value: 1000n
+// }
+```
+
+**Defined in:** [primitives/Abi/event/BrandedEvent/decodeLog.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent/decodeLog.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `decodeLog(event: BrandedEvent, data: Hex, topics: Hex[]): Record<string, unknown>`
+
+Decode event log data and topics back to parameter values.
+
+**Parameters:**
+- `event: BrandedEvent` - Event ABI item
+- `data: Hex` - Log data
+- `topics: Hex[]` - Log topics
+
+**Returns:** `Record<string, unknown>` - Decoded parameter values
+
+**Example:**
+
+```typescript
+import * as Event from '@tevm/voltaire/Abi/event'
+
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+}
+
+const decoded = Event.decodeLog(transferEvent, logData, logTopics)
+```
+
+**Defined in:** [primitives/Abi/event/BrandedEvent/decodeLog.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent/decodeLog.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Event log decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Parse Transfer Events
+
+```typescript
+import { Event } from '@tevm/voltaire'
+
+const transferEvent = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+// Get logs from blockchain
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: [transferEvent.getSelector()]
+})
+
+// Decode each log
+const transfers = logs.map(log =>
+  transferEvent.decodeLog(log.data, log.topics)
+)
+
+console.log(transfers)
+// [
+//   { from: "0x...", to: "0x...", value: 1000n },
+//   { from: "0x...", to: "0x...", value: 2000n }
+// ]
+```
+
+### Complex Event Types
+
+```typescript
+import { Event } from '@tevm/voltaire'
+
+const swapEvent = new Event({
+  type: "event",
+  name: "Swap",
+  inputs: [
+    { type: "address", name: "sender", indexed: true },
+    { type: "uint256", name: "amount0In" },
+    { type: "uint256", name: "amount1In" },
+    { type: "uint256", name: "amount0Out" },
+    { type: "uint256", name: "amount1Out" },
+    { type: "address", name: "to", indexed: true }
+  ]
+})
+
+const decoded = swapEvent.decodeLog(log.data, log.topics)
+console.log({
+  sender: decoded.sender,
+  amount0In: decoded.amount0In,
+  amount1In: decoded.amount1In,
+  amount0Out: decoded.amount0Out,
+  amount1Out: decoded.amount1Out,
+  to: decoded.to
+})
+```
+
+## See Also
+
+- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters
+- [getSelector](/primitives/abi/event/get-selector) - Get event selector
+- [parseLogs](/primitives/abi/parse-logs) - Parse multiple logs with ABI

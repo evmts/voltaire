@@ -1,21 +1,287 @@
 ---
-title: "utilities"
-description: "State utilities documentation"
+title: Utilities
+description: Utility functions for storage key operations
 ---
 
-# utilities
+Additional utility functions for working with storage keys.
 
-Documentation for State utilities.
+## hashCode()
 
-<Note>
-This page is under construction. See [State Overview](/primitives/state) for core functionality.
-</Note>
+Computes a hash code for a storage key, useful for hash-based data structures.
 
-## Overview
+### Signature
 
-State storage key operations for utilities.
+<Tabs>
+<Tab title="Namespace API">
 
-## See Also
+```typescript
+function hashCode(key: BrandedStorageKey): number
+```
 
-- [State Overview](/primitives/state)
-- [State Utilities](/primitives/state/utilities)
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn hashCode(key: StorageKey) u64
+```
+
+</Tab>
+</Tabs>
+
+### Parameters
+
+- **key** (`BrandedStorageKey`) - Storage key to hash
+
+### Returns
+
+`number` - 32-bit hash code (JavaScript) or `u64` (Zig)
+
+### Examples
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+const key1 = State.StorageKey(addr, 0n);
+const key2 = State.StorageKey(addr, 0n);
+const key3 = State.StorageKey(addr, 1n);
+
+// Same key produces same hash
+console.log(State.StorageKey.hashCode(key1) === State.StorageKey.hashCode(key2)); // true
+
+// Different keys (usually) produce different hashes
+console.log(State.StorageKey.hashCode(key1) === State.StorageKey.hashCode(key3)); // false
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+const Address = @import("address");
+
+const addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+const key1 = State.StorageKey{ .address = addr, .slot = 0 };
+const key2 = State.StorageKey{ .address = addr, .slot = 0 };
+const key3 = State.StorageKey{ .address = addr, .slot = 1 };
+
+// Same key produces same hash
+const hash1 = State.hashCode(key1);
+const hash2 = State.hashCode(key2);
+const hash3 = State.hashCode(key3);
+
+std.debug.print("Hash1 == Hash2: {}\n", .{hash1 == hash2}); // true
+std.debug.print("Hash1 == Hash3: {}\n", .{hash1 == hash3}); // false
+```
+
+</Tab>
+</Tabs>
+
+### Use Cases
+
+#### HashMap Keys
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Custom hash map implementation
+class StorageHashMap {
+  private buckets: Array<Array<{ key: BrandedStorageKey, value: bigint }>> = [];
+  private size = 1024; // Bucket count
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const hash = State.StorageKey.hashCode(key);
+    const bucketIndex = Math.abs(hash) % this.size;
+
+    if (!this.buckets[bucketIndex]) {
+      this.buckets[bucketIndex] = [];
+    }
+
+    const bucket = this.buckets[bucketIndex];
+    const existing = bucket.findIndex(entry =>
+      State.StorageKey.equals(entry.key, key)
+    );
+
+    if (existing >= 0) {
+      bucket[existing].value = value;
+    } else {
+      bucket.push({ key, value });
+    }
+  }
+
+  get(key: BrandedStorageKey): bigint | undefined {
+    const hash = State.StorageKey.hashCode(key);
+    const bucketIndex = Math.abs(hash) % this.size;
+    const bucket = this.buckets[bucketIndex];
+
+    if (!bucket) return undefined;
+
+    const entry = bucket.find(e => State.StorageKey.equals(e.key, key));
+    return entry?.value;
+  }
+}
+
+const map = new StorageHashMap();
+const key = State.StorageKey(contractAddr, 0n);
+
+map.set(key, 1000n);
+console.log(map.get(key)); // 1000n
+```
+
+#### Partitioning
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Partition storage keys into buckets for parallel processing
+function partitionKeys(
+  keys: BrandedStorageKey[],
+  partitionCount: number
+): BrandedStorageKey[][] {
+  const partitions: BrandedStorageKey[][] = Array.from(
+    { length: partitionCount },
+    () => []
+  );
+
+  for (const key of keys) {
+    const hash = State.StorageKey.hashCode(key);
+    const partitionIndex = Math.abs(hash) % partitionCount;
+    partitions[partitionIndex].push(key);
+  }
+
+  return partitions;
+}
+
+const keys = [
+  State.StorageKey(contractAddr, 0n),
+  State.StorageKey(contractAddr, 1n),
+  State.StorageKey(contractAddr, 2n),
+  State.StorageKey(contractAddr, 3n),
+  State.StorageKey(contractAddr, 4n)
+];
+
+// Split into 2 partitions
+const partitions = partitionKeys(keys, 2);
+console.log(`Partition 0: ${partitions[0].length} keys`);
+console.log(`Partition 1: ${partitions[1].length} keys`);
+
+// Process partitions in parallel
+await Promise.all(
+  partitions.map(async (partition, index) => {
+    console.log(`Processing partition ${index}...`);
+    for (const key of partition) {
+      await processStorageKey(key);
+    }
+  })
+);
+```
+
+#### Caching
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// LRU cache with hash-based bucketing
+class StorageLRUCache {
+  private cache = new Map<number, { key: BrandedStorageKey, value: bigint, timestamp: number }>();
+  private maxSize = 1000;
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const hash = State.StorageKey.hashCode(key);
+
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.maxSize) {
+      let oldestHash = -1;
+      let oldestTime = Infinity;
+
+      for (const [h, entry] of this.cache.entries()) {
+        if (entry.timestamp < oldestTime) {
+          oldestTime = entry.timestamp;
+          oldestHash = h;
+        }
+      }
+
+      this.cache.delete(oldestHash);
+    }
+
+    this.cache.set(hash, { key, value, timestamp: Date.now() });
+  }
+
+  get(key: BrandedStorageKey): bigint | undefined {
+    const hash = State.StorageKey.hashCode(key);
+    const entry = this.cache.get(hash);
+
+    if (entry && State.StorageKey.equals(entry.key, key)) {
+      // Update timestamp for LRU
+      entry.timestamp = Date.now();
+      return entry.value;
+    }
+
+    return undefined;
+  }
+}
+```
+
+#### Sharding
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Distribute storage keys across shards
+function getShardForKey(key: BrandedStorageKey, shardCount: number): number {
+  const hash = State.StorageKey.hashCode(key);
+  return Math.abs(hash) % shardCount;
+}
+
+// Example: Route requests to different database shards
+async function getStorageValue(
+  key: BrandedStorageKey,
+  shards: Database[]
+): Promise<bigint | undefined> {
+  const shardIndex = getShardForKey(key, shards.length);
+  const shard = shards[shardIndex];
+
+  const keyStr = State.StorageKey.toString(key);
+  return await shard.get(keyStr);
+}
+
+// Setup 4 shards
+const shards = [
+  new Database('shard0'),
+  new Database('shard1'),
+  new Database('shard2'),
+  new Database('shard3')
+];
+
+const key = State.StorageKey(contractAddr, 0n);
+const value = await getStorageValue(key, shards);
+console.log(`Shard ${getShardForKey(key, 4)}: ${value}`);
+```
+
+### Implementation Notes
+
+- Hash code is computed from both address and slot
+- Same key always produces same hash (deterministic)
+- Different keys may produce same hash (collisions possible)
+- Hash distribution is pseudo-random for good bucketing
+
+### Properties
+
+- **Deterministic**: Same input always produces same output
+- **Fast**: O(1) time complexity
+- **Collision-resistant**: Good distribution, but collisions possible
+- **32-bit**: JavaScript returns 32-bit signed integer
+- **64-bit**: Zig returns 64-bit unsigned integer
+
+## Related
+
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [equals()](/primitives/state/equals) - Equality comparison
+- [toString()](/primitives/state/to-string) - String serialization
+- [Fundamentals](/primitives/state/fundamentals) - Learn about storage keys

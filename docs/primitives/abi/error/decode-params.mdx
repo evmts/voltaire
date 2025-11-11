@@ -1,0 +1,128 @@
+---
+title: Error.decodeParams
+description: Decode custom error parameters from revert data
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `error.decodeParams(data: Hex): unknown[]`
+
+Decode error parameters from revert data. Automatically strips the 4-byte selector if present.
+
+**Parameters:**
+- `data: Hex` - Revert data with or without selector
+
+**Returns:** `unknown[]` - Array of decoded parameter values
+
+**Example:**
+
+```typescript
+import { AbiError } from '@tevm/voltaire'
+
+const insufficientBalance = new AbiError({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+try {
+  await contract.call()
+} catch (error) {
+  const [balance, required] = insufficientBalance.decodeParams(error.data)
+  console.log(`Balance: ${balance}, Required: ${required}`)
+}
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/decodeParams.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `decodeParams(error: BrandedError, data: Hex): unknown[]`
+
+Decode error parameters from revert data.
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+- `data: Hex` - Revert data
+
+**Returns:** `unknown[]` - Decoded parameter values
+
+**Example:**
+
+```typescript
+import * as AbiError from '@tevm/voltaire/Abi/error'
+
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const [balance, required] = AbiError.decodeParams(insufficientBalance, errorData)
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/decodeParams.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Error decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Handling Contract Errors
+
+```typescript
+import { AbiError } from '@tevm/voltaire'
+
+const errors = [
+  new AbiError({
+    type: "error",
+    name: "InsufficientBalance",
+    inputs: [
+      { type: "uint256", name: "balance" },
+      { type: "uint256", name: "required" }
+    ]
+  }),
+  new AbiError({
+    type: "error",
+    name: "Unauthorized",
+    inputs: [{ type: "address", name: "caller" }]
+  })
+]
+
+// Create error registry
+const errorRegistry = new Map(
+  errors.map(e => [e.getSelector(), e])
+)
+
+try {
+  await contract.call()
+} catch (error) {
+  const selector = error.data.slice(0, 10)
+  const abiError = errorRegistry.get(selector)
+
+  if (abiError) {
+    const params = abiError.decodeParams(error.data)
+    console.log(`Error: ${abiError.name}`, params)
+  }
+}
+```
+
+## See Also
+
+- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [getSelector](/primitives/abi/error/get-selector) - Get error selector

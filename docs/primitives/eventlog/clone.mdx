@@ -1,0 +1,176 @@
+---
+title: EventLog.clone
+description: Deep clone event log including topics and data
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.clone(): EventLog`
+
+Deep clone event log, creating independent copies of topics array and data.
+
+**Returns:** `EventLog` - Deep cloned log
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const original = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([1, 2, 3]),
+  blockNumber: 18000000n,
+});
+
+const cloned = original.clone();
+
+// Modifications to clone don't affect original
+cloned.data[0] = 99;
+console.log(original.data[0]); // 1 (unchanged)
+console.log(cloned.data[0]); // 99
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `clone(log: BrandedEventLog): BrandedEventLog`
+
+Deep clone event log, creating independent copies of topics array and data.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to clone
+
+**Returns:** `BrandedEventLog` - Deep cloned log
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const original = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([1, 2, 3]),
+  blockNumber: 18000000n,
+});
+
+const cloned = EventLog.clone(original);
+
+// Modifications to clone don't affect original
+cloned.data[0] = 99;
+console.log(original.data[0]); // 1 (unchanged)
+console.log(cloned.data[0]); // 99
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
+
+</Tab>
+</Tabs>
+
+## Clone Behavior
+
+`clone()` creates deep copies of mutable fields:
+
+- **Topics array** - New array with same topic references
+- **Data** - New Uint8Array with copied bytes
+- **Immutable fields** - Shared references (address, hashes, numbers)
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const original = EventLog.from({
+  address: contractAddress,
+  topics: [topic0, topic1],
+  data: new Uint8Array([1, 2, 3]),
+  blockNumber: 100n,
+});
+
+const cloned = original.clone();
+
+// Topics array is independent
+cloned.topics.push(newTopic); // Error: topics is readonly
+
+// Data is independent
+cloned.data[0] = 99;
+console.log(original.data[0]); // 1 (unchanged)
+
+// Immutable fields are shared
+console.log(original.address === cloned.address); // true (same reference)
+console.log(original.blockNumber === cloned.blockNumber); // true
+```
+
+## Usage Patterns
+
+### Cloning for Modification
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: contractAddress,
+  topics: [eventSignature],
+  data: eventData,
+  removed: false,
+});
+
+// Clone before modifying
+const modified = EventLog.clone(log);
+(modified as any).removed = true; // Modify clone
+
+console.log(log.removed); // false (original unchanged)
+console.log(modified.removed); // true
+```
+
+### Cloning Collection
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const logs = [log1, log2, log3];
+
+// Clone all logs
+const cloned = logs.map(log => log.clone());
+
+// Or using static method
+const cloned2 = logs.map(EventLog.clone);
+```
+
+### Preventing Mutation
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function processLog(log: EventLog) {
+  // Clone to prevent external mutations
+  const safeCopy = log.clone();
+
+  // Modify safely
+  // ... process safeCopy ...
+
+  return result;
+}
+
+const original = EventLog.from({ /* ... */ });
+const result = processLog(original);
+// original is unchanged
+```
+
+## Performance
+
+Clone creates new arrays and copies bytes:
+- **Topics array allocation** - Small overhead (typically 1-4 elements)
+- **Data copy** - Proportional to data size (typically 0-1024 bytes)
+- **Immutable fields** - Zero overhead (shared references)
+
+For read-only operations, cloning is unnecessary. Only clone when modifications are needed.
+
+## See Also
+
+- [from](/primitives/eventlog/from) - Create new log
+- [Fundamentals](/primitives/eventlog/fundamentals) - Event log structure

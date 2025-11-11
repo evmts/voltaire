@@ -1,0 +1,56 @@
+---
+title: isSwap()
+description: Check if opcode is SWAP1-SWAP16
+---
+
+## Opcode.isSwap()
+
+Check if opcode is SWAP1-SWAP16.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.isSwap(0x90)  // true (SWAP1)
+Opcode.isSwap(0x9F)  // true (SWAP16)
+Opcode.isSwap(0x80)  // false (DUP1)
+Opcode.isSwap(0xA0)  // false (LOG0)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { isSwap, SWAP1, SWAP16 } from '@tevm/voltaire/Opcode'
+
+isSwap(SWAP1)   // true
+isSwap(SWAP16)  // true
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const Opcode = @import("primitives").opcode;
+
+const is_swap1 = Opcode.isSwap(0x90);  // true
+const is_dup1 = Opcode.isSwap(0x80);   // false
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`boolean` - True if SWAP1-SWAP16 (0x90-0x9F)
+
+## SWAP Operations
+
+Exchange top with item at depth 1-16:
+- **SWAP1** (0x90): Swap top with 2nd
+- **SWAP2** (0x91): Swap top with 3rd
+- **SWAP16** (0x9F): Swap top with 17th
+
+## Related
+
+- [swapPosition()](/primitives/opcode/swap-position) - Get SWAP stack position

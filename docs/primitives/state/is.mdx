@@ -1,0 +1,301 @@
+---
+title: is()
+description: Type guard checking if value is StorageKey
+---
+
+Runtime type guard that checks if a value is a valid `BrandedStorageKey`.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function is(value: unknown): value is BrandedStorageKey
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn is(value: anytype) bool
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **value** (`unknown`) - Value to check
+
+## Returns
+
+`boolean` - `true` if value is `BrandedStorageKey`, `false` otherwise. TypeScript narrows type when `true`.
+
+## Examples
+
+### Basic Type Guard
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const key = State.StorageKey(contractAddr, 0n);
+
+if (State.StorageKey.is(key)) {
+  // TypeScript knows key is BrandedStorageKey
+  console.log(`Address: ${Address.toHex(key.address)}`);
+  console.log(`Slot: ${key.slot}`);
+}
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+
+const key = State.StorageKey{ .address = contract_addr, .slot = 0 };
+
+if (State.is(key)) {
+  std.debug.print("Valid storage key\n", .{});
+}
+```
+
+</Tab>
+</Tabs>
+
+### Runtime Validation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function processStorage(value: unknown): void {
+  if (!State.StorageKey.is(value)) {
+    throw new Error('Invalid storage key');
+  }
+
+  // TypeScript knows value is BrandedStorageKey here
+  const keyStr = State.StorageKey.toString(value);
+  console.log(`Processing storage key: ${keyStr}`);
+}
+
+// Valid input
+processStorage(State.StorageKey(contractAddr, 0n)); // OK
+
+// Invalid inputs
+processStorage({ address: "0x...", slot: 0n }); // Throws (not BrandedStorageKey)
+processStorage("string");                        // Throws
+processStorage(123);                             // Throws
+processStorage(null);                            // Throws
+```
+
+### API Input Validation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+class StorageManager {
+  async getValue(key: unknown): Promise<bigint | undefined> {
+    if (!State.StorageKey.is(key)) {
+      throw new TypeError('Expected BrandedStorageKey');
+    }
+
+    const keyStr = State.StorageKey.toString(key);
+    const value = await db.get(keyStr);
+    return value ? BigInt(value) : undefined;
+  }
+}
+
+const manager = new StorageManager();
+
+// Valid usage
+const key = State.StorageKey(contractAddr, 0n);
+const value = await manager.getValue(key); // OK
+
+// Invalid usage
+await manager.getValue({ address: contractAddr, slot: 0n }); // Throws TypeError
+```
+
+### Type Narrowing
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function logValue(value: unknown): void {
+  if (State.StorageKey.is(value)) {
+    // TypeScript infers: value is BrandedStorageKey
+    console.log(`Storage key: ${State.StorageKey.toString(value)}`);
+    console.log(`Slot: ${value.slot}`);
+    console.log(`Address: ${Address.toHex(value.address)}`);
+  } else if (typeof value === 'string') {
+    console.log(`String: ${value}`);
+  } else {
+    console.log(`Unknown type: ${typeof value}`);
+  }
+}
+
+logValue(State.StorageKey(contractAddr, 0n)); // "Storage key: ..."
+logValue("hello");                             // "String: hello"
+logValue(123);                                 // "Unknown type: number"
+```
+
+### Array Filtering
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Filter valid storage keys from mixed array
+function filterStorageKeys(values: unknown[]): BrandedStorageKey[] {
+  return values.filter(State.StorageKey.is);
+}
+
+const mixed = [
+  State.StorageKey(contractAddr, 0n),  // Valid
+  "string",                             // Invalid
+  State.StorageKey(contractAddr, 1n),  // Valid
+  123,                                  // Invalid
+  { address: contractAddr, slot: 2n }, // Invalid (plain object)
+  State.StorageKey(contractAddr, 2n)   // Valid
+];
+
+const storageKeys = filterStorageKeys(mixed);
+console.log(storageKeys.length); // 3
+```
+
+### Optional Parameters
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function getStorageValue(
+  key: BrandedStorageKey | string,
+  storage: Map<string, bigint>
+): bigint | undefined {
+  let keyStr: string;
+
+  if (State.StorageKey.is(key)) {
+    // key is BrandedStorageKey
+    keyStr = State.StorageKey.toString(key);
+  } else {
+    // key is string
+    keyStr = key;
+  }
+
+  return storage.get(keyStr);
+}
+
+// Usage with StorageKey
+const key = State.StorageKey(contractAddr, 0n);
+const value1 = getStorageValue(key, storage);
+
+// Usage with string
+const value2 = getStorageValue("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0", storage);
+```
+
+### Deserialization Validation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Parse and validate storage keys from JSON
+function parseStorageKeys(json: string): BrandedStorageKey[] {
+  const parsed = JSON.parse(json);
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('Expected array');
+  }
+
+  const keys: BrandedStorageKey[] = [];
+
+  for (const item of parsed) {
+    if (typeof item === 'string') {
+      // Parse from string format
+      const key = State.StorageKey.fromString(item);
+      keys.push(key);
+    } else if (State.StorageKey.is(item)) {
+      // Already a StorageKey (shouldn't happen from JSON.parse, but type-safe)
+      keys.push(item);
+    } else {
+      throw new Error('Invalid storage key format');
+    }
+  }
+
+  return keys;
+}
+
+const json = JSON.stringify([
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0",
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:1"
+]);
+
+const keys = parseStorageKeys(json);
+console.log(keys.length); // 2
+```
+
+### Error Messages
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function requireStorageKey(value: unknown): BrandedStorageKey {
+  if (!State.StorageKey.is(value)) {
+    throw new TypeError(
+      `Expected BrandedStorageKey, got ${typeof value}: ${JSON.stringify(value)}`
+    );
+  }
+  return value;
+}
+
+try {
+  requireStorageKey({ address: "0x...", slot: 0n });
+} catch (error) {
+  console.error(error.message);
+  // "Expected BrandedStorageKey, got object: {"address":"0x...","slot":"0"}"
+}
+```
+
+### Testing
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import { expect } from 'vitest';
+
+test('is() returns true for valid StorageKey', () => {
+  const key = State.StorageKey(contractAddr, 0n);
+  expect(State.StorageKey.is(key)).toBe(true);
+});
+
+test('is() returns false for plain object', () => {
+  const obj = { address: contractAddr, slot: 0n };
+  expect(State.StorageKey.is(obj)).toBe(false);
+});
+
+test('is() returns false for primitive types', () => {
+  expect(State.StorageKey.is("string")).toBe(false);
+  expect(State.StorageKey.is(123)).toBe(false);
+  expect(State.StorageKey.is(null)).toBe(false);
+  expect(State.StorageKey.is(undefined)).toBe(false);
+  expect(State.StorageKey.is(true)).toBe(false);
+});
+
+test('is() returns false for array', () => {
+  expect(State.StorageKey.is([contractAddr, 0n])).toBe(false);
+});
+```
+
+## Implementation Details
+
+Checks if value:
+1. Is an object (not null)
+2. Has `address` property that is `BrandedAddress`
+3. Has `slot` property that is `bigint`
+
+## Related
+
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [from()](/primitives/state/from) - Universal constructor
+- [equals()](/primitives/state/equals) - Compare storage keys
+- [Address.is()](/primitives/address/is) - Address type guard

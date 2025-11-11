@@ -1,0 +1,57 @@
+---
+title: dupPosition()
+description: Get stack position duplicated by DUP opcode
+---
+
+## Opcode.dupPosition()
+
+Get stack position duplicated by DUP opcode (1-16).
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.dupPosition(0x80)  // 1 (DUP1 duplicates top)
+Opcode.dupPosition(0x81)  // 2 (DUP2 duplicates 2nd)
+Opcode.dupPosition(0x8F)  // 16 (DUP16 duplicates 16th)
+Opcode.dupPosition(0x01)  // undefined (ADD, not DUP)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { dupPosition, DUP1, DUP16 } from '@tevm/voltaire/Opcode'
+
+dupPosition(DUP1)   // 1
+dupPosition(DUP16)  // 16
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const Opcode = @import("primitives").opcode;
+
+const pos1 = Opcode.dupPosition(0x80);   // 1 (DUP1)
+const pos16 = Opcode.dupPosition(0x8F);  // 16 (DUP16)
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`number | undefined` - Position (1-16) or undefined if not DUP
+
+## Stack Semantics
+
+```
+DUP1:  [..., a] → [..., a, a]           (duplicate top)
+DUP2:  [..., b, a] → [..., b, a, b]     (duplicate 2nd)
+DUP16: [..., p, ..., a] → [..., p, ..., a, p]  (duplicate 16th)
+```
+
+## Related
+
+- [isDup()](/primitives/opcode/is-dup) - Check if DUP opcode

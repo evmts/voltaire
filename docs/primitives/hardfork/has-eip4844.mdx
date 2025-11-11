@@ -1,0 +1,274 @@
+---
+title: Hardfork.hasEIP4844
+description: Check if blob transactions (proto-danksharding) are available
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.hasEIP4844(): boolean`
+
+Check if blob transactions (proto-danksharding) are available in this hardfork. Active since Cancun.
+
+**Returns:** `boolean` - True if EIP-4844 is supported
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, SHANGHAI, PRAGUE } from '@tevm/voltaire'
+
+const cancun = Hardfork.fromString("cancun")
+
+cancun.hasEIP4844()     // true - Cancun introduced blobs
+SHANGHAI.hasEIP4844()   // false - Shanghai pre-dates blobs
+PRAGUE.hasEIP4844()     // true - all post-Cancun hardforks
+```
+
+**Convenience alias:** `fork.supportsBlobs()` - Same functionality, different naming style
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP4844.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP4844.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `hasEIP4844(fork: BrandedHardfork): boolean`
+
+Check if blob transactions (proto-danksharding) are available in this hardfork. Active since Cancun.
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to check
+
+**Returns:** `boolean` - True if EIP-4844 is supported
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, SHANGHAI, PRAGUE } from '@tevm/voltaire'
+
+Hardfork.hasEIP4844(CANCUN)     // true
+Hardfork.hasEIP4844(SHANGHAI)   // false
+Hardfork.hasEIP4844(PRAGUE)     // true
+
+// Convenience alias
+Hardfork.supportsBlobs(CANCUN)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP4844.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP4844.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## EIP-4844 Features
+
+**Active Since:** Cancun (March 13, 2024)
+
+### Blob Transactions (Type 3)
+
+**Transaction Format:**
+- Type 3 transactions (blob-carrying)
+- Up to 6 blobs per transaction (~125KB each, total ~750KB)
+- Blobs stored in consensus layer (not execution layer)
+- Blobs pruned after ~18 days (4096 epochs)
+
+**Blob Properties:**
+- Size: 4096 field elements × 32 bytes = 131,072 bytes (~128KB)
+- Encoding: BLS12-381 field elements
+- KZG commitments for data availability proofs
+
+### New Opcodes
+
+**BLOBHASH (0x49):**
+- Pushes versioned hash of blob at given index
+- Input: blob index (0-5)
+- Returns: 32-byte versioned hash
+
+**BLOBBASEFEE (0x4A):**
+- Pushes current blob gas base fee
+- Returns: blob base fee per gas
+
+### Blob Gas Market
+
+**Separate Fee Market:**
+- Blob gas separate from execution gas
+- Target: 3 blobs per block (393,216 blob gas)
+- Maximum: 6 blobs per block (786,432 blob gas)
+- Base fee adjustment: EIP-1559-style mechanism
+
+**Pricing:**
+- Independent blob base fee (starts at 1 wei)
+- Exponential adjustment based on blob usage
+- Much cheaper than calldata (~10-100x reduction)
+
+## Usage Patterns
+
+### L2 Data Availability
+
+Select cheapest L2 data posting method:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function selectL2DataMethod(fork: BrandedHardfork): string {
+  if (fork.hasEIP4844()) {
+    return "blobs"  // ~$0.01-0.10 per blob
+  }
+
+  return "calldata"  // ~$1-10 per equivalent data
+}
+
+// L2 rollups save 10-100x on data costs with blobs
+```
+
+### Transaction Type Selection
+
+Choose appropriate transaction format:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function buildL2BatchSubmission(
+  fork: BrandedHardfork,
+  data: Uint8Array
+) {
+  if (fork.hasEIP4844() && data.length > 50_000) {
+    return {
+      type: 3,  // Blob transaction
+      blobs: chunkIntoBlobs(data),
+      maxFeePerBlobGas: estimateBlobFee()
+    }
+  }
+
+  return {
+    type: 2,  // EIP-1559
+    data: data  // Expensive calldata
+  }
+}
+```
+
+### Gas Estimation
+
+Calculate costs for blob vs calldata:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function estimateL2PostingCost(
+  fork: BrandedHardfork,
+  dataSize: number,
+  blobBaseFee: bigint,
+  gasPrice: bigint
+): bigint {
+  if (fork.hasEIP4844()) {
+    // Blob cost
+    const blobsNeeded = Math.ceil(dataSize / 131_072)
+    const blobGas = BigInt(blobsNeeded) * 131_072n
+    return blobGas * blobBaseFee
+  }
+
+  // Calldata cost (16 gas per non-zero byte)
+  const calldataGas = BigInt(dataSize) * 16n
+  return calldataGas * gasPrice
+}
+```
+
+### Opcode Availability
+
+Check blob-related opcodes:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getBlobOpcodes(fork: BrandedHardfork) {
+  if (fork.hasEIP4844()) {
+    return {
+      BLOBHASH: 0x49,
+      BLOBBASEFEE: 0x4A
+    }
+  }
+
+  return null  // Not available
+}
+```
+
+### Smart Contract Integration
+
+Access blob hashes in smart contracts:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function generateBlobHashLoader(fork: BrandedHardfork): Uint8Array {
+  if (!fork.hasEIP4844()) {
+    throw new Error("Blob transactions require Cancun or later")
+  }
+
+  // Generate bytecode: PUSH1 0, BLOBHASH
+  return new Uint8Array([0x60, 0x00, 0x49])
+}
+```
+
+## Network Configuration
+
+Validate blob transaction support:
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire'
+
+function validateBlobSupport(config: NetworkConfig) {
+  const fork = Hardfork.fromString(config.hardfork)
+
+  if (!fork.hasEIP4844()) {
+    throw new Error(
+      `Network ${config.name} does not support blob transactions. ` +
+      `Requires Cancun or later, got ${Hardfork.toString(fork)}`
+    )
+  }
+}
+```
+
+## EIP References
+
+**Primary:**
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Shard blob transactions
+
+**Related:**
+- [EIP-4788](https://eips.ethereum.org/EIPS/eip-4788) - Beacon block root in EVM
+- [EIP-7516](https://eips.ethereum.org/EIPS/eip-7516) - BLOBBASEFEE opcode
+
+**Cryptography:**
+- KZG polynomial commitments (BLS12-381 curve)
+- Point evaluation precompile at 0x0A
+
+## Impact
+
+**For L2 Rollups:**
+- 10-100x cost reduction for data availability
+- Enables higher throughput at lower cost
+- Standard data availability layer for Ethereum L2s
+
+**For Users:**
+- Lower L2 transaction fees
+- No direct impact on L1 transactions (separate fee market)
+
+**For Developers:**
+- Must handle Type 3 transactions
+- Blob data only available for ~18 days (temporary storage)
+- KZG commitments for data availability proofs
+- New opcodes: BLOBHASH, BLOBBASEFEE
+
+**For Validators:**
+- Increased block size (~125KB per blob, max 6 blobs)
+- Separate blob gas fee market
+- Blobs pruned from consensus layer after ~18 days
+
+## See Also
+
+- [hasEIP1153](/primitives/hardfork/has-eip1153) - Check transient storage availability (Cancun)
+- [hasEIP1559](/primitives/hardfork/has-eip1559) - Check EIP-1559 base fee availability (London)
+- [isAtLeast](/primitives/hardfork/is-at-least) - General version comparison

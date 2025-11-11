@@ -1,0 +1,98 @@
+---
+title: pushBytes()
+description: Get number of immediate bytes for PUSH opcode
+---
+
+## Opcode.pushBytes()
+
+Get number of immediate bytes for PUSH opcode.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.pushBytes(0x5F)  // 0 (PUSH0 - no immediate data)
+Opcode.pushBytes(0x60)  // 1 (PUSH1)
+Opcode.pushBytes(0x61)  // 2 (PUSH2)
+Opcode.pushBytes(0x7F)  // 32 (PUSH32)
+Opcode.pushBytes(0x01)  // undefined (ADD, not a PUSH)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { pushBytes, PUSH1, PUSH32 } from '@tevm/voltaire/Opcode'
+
+pushBytes(PUSH1)   // 1
+pushBytes(PUSH32)  // 32
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const Opcode = @import("primitives").opcode;
+
+const bytes1 = Opcode.pushBytes(0x60);   // 1 (PUSH1)
+const bytes32 = Opcode.pushBytes(0x7F);  // 32 (PUSH32)
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`number | undefined` - Byte count (0-32) or undefined if not PUSH
+
+## PUSH Byte Counts
+
+```typescript
+PUSH0:  0 bytes  (0x5F)
+PUSH1:  1 byte   (0x60)
+PUSH2:  2 bytes  (0x61)
+PUSH3:  3 bytes  (0x62)
+...
+PUSH31: 31 bytes (0x7E)
+PUSH32: 32 bytes (0x7F)
+```
+
+## Use Cases
+
+### Skip PUSH Data During Parsing
+
+```typescript
+function parseBytecode(bytecode: Uint8Array): void {
+  let i = 0
+  while (i < bytecode.length) {
+    const opcode = bytecode[i]
+    console.log(`Offset ${i}: ${Opcode.name(opcode)}`)
+
+    const pushSize = Opcode.pushBytes(opcode)
+    if (pushSize !== undefined) {
+      i += pushSize  // Skip immediate data
+    }
+    i++  // Next opcode
+  }
+}
+```
+
+### Validate PUSH Data
+
+```typescript
+function validatePushData(inst: Instruction): boolean {
+  const expected = Opcode.pushBytes(inst.opcode)
+  if (expected === undefined) return true  // Not a PUSH
+
+  if (expected === 0) {
+    return inst.immediate === undefined  // PUSH0 has no data
+  }
+
+  return inst.immediate?.length === expected
+}
+```
+
+## Related
+
+- [isPush()](/primitives/opcode/is-push) - Check if PUSH opcode
+- [pushOpcode()](/primitives/opcode/push-opcode) - Get PUSH opcode for length

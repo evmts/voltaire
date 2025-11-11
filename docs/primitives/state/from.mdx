@@ -1,0 +1,205 @@
+---
+title: from()
+description: Universal constructor from various inputs
+---
+
+Universal constructor for creating `BrandedStorageKey` from various input types.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function from(input: StorageKeyLike): BrandedStorageKey
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn from(input: StorageKeyLike) !StorageKey
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **input** (`StorageKeyLike`) - Input value to convert to storage key
+
+## Returns
+
+`BrandedStorageKey` - Storage key instance
+
+## Type Definition
+
+```typescript
+type StorageKeyLike =
+  | BrandedStorageKey
+  | {
+      address: BrandedAddress;
+      slot: bigint;
+    };
+```
+
+## Examples
+
+### From Object
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+// From plain object
+const key = State.from({
+  address: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  slot: 0n
+});
+
+console.log(key.address); // BrandedAddress
+console.log(key.slot);    // 0n
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+const Address = @import("address");
+
+// From struct
+const key = try State.from(.{
+  .address = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  .slot = 0,
+});
+```
+
+</Tab>
+</Tabs>
+
+### From Existing StorageKey
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const originalKey = State.StorageKey(contractAddr, 42n);
+
+// Identity operation (returns same structure)
+const key = State.from(originalKey);
+
+console.log(State.StorageKey.equals(originalKey, key)); // true
+```
+
+### Validation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+try {
+  // Invalid: missing slot
+  const key = State.from({
+    address: contractAddr
+    // TypeScript error: Property 'slot' is missing
+  });
+} catch (error) {
+  console.error('Invalid storage key input');
+}
+
+try {
+  // Invalid: slot must be bigint
+  const key = State.from({
+    address: contractAddr,
+    slot: 42 // TypeScript error: Type 'number' is not assignable to type 'bigint'
+  });
+} catch (error) {
+  console.error('Slot must be bigint');
+}
+```
+
+## Type Safety
+
+`from()` provides compile-time type checking:
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+// ✅ Valid inputs
+State.from({ address: contractAddr, slot: 0n });
+State.from(existingStorageKey);
+
+// ❌ Invalid inputs (compile-time errors)
+State.from({ address: "0x...", slot: 0n }); // address must be BrandedAddress
+State.from({ address: contractAddr });       // missing slot
+State.from({ address: contractAddr, slot: 0 }); // slot must be bigint
+State.from({ slot: 0n });                    // missing address
+State.from("string");                        // not StorageKeyLike
+State.from(123);                             // not StorageKeyLike
+```
+
+## Use Cases
+
+### Generic Storage Operations
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Function accepting various input types
+function getStorageValue(
+  keyInput: StorageKeyLike,
+  storage: Map<string, bigint>
+): bigint | undefined {
+  const key = State.from(keyInput);
+  const keyStr = State.StorageKey.toString(key);
+  return storage.get(keyStr);
+}
+
+// Works with object
+const value1 = getStorageValue({
+  address: contractAddr,
+  slot: 0n
+}, storage);
+
+// Works with StorageKey
+const storageKey = State.StorageKey(contractAddr, 0n);
+const value2 = getStorageValue(storageKey, storage);
+```
+
+### API Wrapper
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+class StateManager {
+  private storage = new Map<string, bigint>();
+
+  set(keyInput: StorageKeyLike, value: bigint): void {
+    const key = State.from(keyInput);
+    this.storage.set(State.StorageKey.toString(key), value);
+  }
+
+  get(keyInput: StorageKeyLike): bigint | undefined {
+    const key = State.from(keyInput);
+    return this.storage.get(State.StorageKey.toString(key));
+  }
+}
+
+const manager = new StateManager();
+
+// Set using object
+manager.set({ address: contractAddr, slot: 0n }, 1000n);
+
+// Get using StorageKey
+const key = State.StorageKey(contractAddr, 0n);
+const value = manager.get(key); // 1000n
+```
+
+## Related
+
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [is()](/primitives/state/is) - Type guard for runtime validation
+- [Overview](/primitives/state) - Type definition and API reference

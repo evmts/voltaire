@@ -1,0 +1,246 @@
+---
+title: isValid()
+description: Check if byte value is valid EVM opcode
+---
+
+## Opcode.isValid()
+
+Check if byte value is a valid EVM opcode.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.isValid(0x00)  // true (STOP)
+Opcode.isValid(0x01)  // true (ADD)
+Opcode.isValid(0x60)  // true (PUSH1)
+Opcode.isValid(0xFF)  // true (SELFDESTRUCT)
+
+// Invalid opcodes
+Opcode.isValid(0x0C)  // false (undefined between SIGNEXTEND and LT)
+Opcode.isValid(0x0D)  // false
+Opcode.isValid(0x0E)  // false
+Opcode.isValid(0x0F)  // false
+Opcode.isValid(0x21)  // false (undefined after KECCAK256)
+Opcode.isValid(0x4B)  // false (undefined after BLOBBASEFEE)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { isValid } from '@tevm/voltaire/Opcode'
+
+const valid = isValid(0x60)    // true (PUSH1)
+const invalid = isValid(0x0C)  // false
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() void {
+    const valid = Opcode.isValid(0x60);     // true (PUSH1)
+    const invalid = Opcode.isValid(0x0C);   // false
+
+    std.debug.print("0x60 valid: {}\n", .{valid});
+    std.debug.print("0x0C valid: {}\n", .{invalid});
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: number` - Byte value to check (0x00-0xFF)
+
+## Returns
+
+`boolean` - True if valid EVM opcode
+
+## Valid Opcode Ranges
+
+### Defined Opcodes
+
+```typescript
+// 0x00-0x0B: Arithmetic
+0x00 (STOP), 0x01-0x0B (ADD, MUL, SUB, ...)
+
+// 0x10-0x1D: Comparison & Bitwise
+0x10-0x1D (LT, GT, EQ, AND, OR, SHL, ...)
+
+// 0x20: Cryptographic
+0x20 (KECCAK256)
+
+// 0x30-0x3F: Environmental
+0x30-0x3F (ADDRESS, BALANCE, CALLER, ...)
+
+// 0x40-0x48: Block Info
+0x40-0x48 (BLOCKHASH, COINBASE, TIMESTAMP, ...)
+
+// 0x50-0x5F: Stack/Memory/Storage
+0x50-0x5F (POP, MLOAD, MSTORE, SLOAD, SSTORE, JUMP, ...)
+
+// 0x60-0x7F: PUSH1-PUSH32
+0x60-0x7F (all valid)
+
+// 0x80-0x8F: DUP1-DUP16
+0x80-0x8F (all valid)
+
+// 0x90-0x9F: SWAP1-SWAP16
+0x90-0x9F (all valid)
+
+// 0xA0-0xA4: LOG0-LOG4
+0xA0-0xA4
+
+// 0xF0-0xFF: System
+0xF0-0xF5, 0xFA, 0xFD-0xFF (CREATE, CALL, RETURN, REVERT, ...)
+```
+
+### Undefined Opcodes
+
+```typescript
+// Gaps in the opcode space (return false)
+0x0C-0x0F  // Between SIGNEXTEND and LT
+0x1E-0x1F  // Between SAR and KECCAK256
+0x21-0x2F  // After KECCAK256
+0x49-0x4F  // After BLOBBASEFEE
+0xA5-0xEF  // Between LOG4 and CREATE
+0xF6-0xF9  // Between CREATE2 and STATICCALL
+0xFB-0xFC  // Between STATICCALL and REVERT
+```
+
+## Use Cases
+
+### Validate Bytecode
+
+```typescript
+function validateBytecode(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  const errors: string[] = []
+
+  for (const inst of instructions) {
+    if (!Opcode.isValid(inst.opcode)) {
+      errors.push(
+        `Invalid opcode 0x${inst.opcode.toString(16)} at offset ${inst.offset}`
+      )
+    }
+  }
+
+  return errors
+}
+```
+
+### Find Invalid Opcodes
+
+```typescript
+function findInvalidOpcodes(bytecode: Uint8Array): number[] {
+  const instructions = Opcode.parse(bytecode)
+  const invalidOffsets: number[] = []
+
+  for (const inst of instructions) {
+    if (!Opcode.isValid(inst.opcode)) {
+      invalidOffsets.push(inst.offset)
+    }
+  }
+
+  return invalidOffsets
+}
+```
+
+### Safe Disassembly
+
+```typescript
+function safeDisassemble(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  const lines: string[] = []
+
+  for (const inst of instructions) {
+    if (Opcode.isValid(inst.opcode)) {
+      lines.push(Opcode.format(inst))
+    } else {
+      lines.push(
+        `${inst.offset.toString(16).padStart(4, '0')}: INVALID_0x${inst.opcode.toString(16)}`
+      )
+    }
+  }
+
+  return lines
+}
+```
+
+### Check Before Execution
+
+```typescript
+function executeOpcode(opcode: number): void {
+  if (!Opcode.isValid(opcode)) {
+    throw new Error(`Invalid opcode: 0x${opcode.toString(16)}`)
+  }
+
+  // Safe to execute
+  const name = Opcode.name(opcode)
+  console.log(`Executing ${name}`)
+}
+```
+
+### Filter Valid Opcodes
+
+```typescript
+function filterValidOpcodes(opcodes: number[]): number[] {
+  return opcodes.filter(op => Opcode.isValid(op))
+}
+
+const mixed = [0x01, 0x0C, 0x60, 0x21, 0xFF]
+const valid = filterValidOpcodes(mixed)  // [0x01, 0x60, 0xFF]
+```
+
+### Generate Opcode Table
+
+```typescript
+function generateOpcodeTable(): Map<number, string> {
+  const table = new Map<number, string>()
+
+  for (let i = 0; i <= 0xFF; i++) {
+    if (Opcode.isValid(i)) {
+      const name = Opcode.name(i)
+      if (name) {
+        table.set(i, name)
+      }
+    }
+  }
+
+  return table
+}
+```
+
+## Invalid Opcode Behavior
+
+When executing invalid opcodes on the EVM:
+
+```typescript
+// 0xFE is the designated INVALID opcode
+Opcode.name(0xFE)      // "INVALID"
+Opcode.isValid(0xFE)   // true (it's a valid "INVALID" opcode)
+
+// Undefined opcodes (e.g., 0x0C)
+Opcode.name(0x0C)      // undefined
+Opcode.isValid(0x0C)   // false
+
+// EVM behavior:
+// - Undefined opcodes: Treated as INVALID (consume all gas, revert)
+// - 0xFE (INVALID): Explicitly invalid (consume all gas, revert)
+```
+
+## Performance
+
+- **O(1)** lookup time
+- **Pre-computed** validity table
+- **Zero allocation**
+- Very fast
+
+## Related
+
+- [name()](/primitives/opcode/name) - Get opcode name
+- [info()](/primitives/opcode/info) - Get full metadata
+- [parse()](/primitives/opcode/parse) - Parse bytecode

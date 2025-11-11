@@ -1,0 +1,283 @@
+---
+title: name()
+description: Get EVM opcode mnemonic name
+---
+
+## Opcode.name()
+
+Get opcode mnemonic name.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.name(0x00)  // "STOP"
+Opcode.name(0x01)  // "ADD"
+Opcode.name(0x60)  // "PUSH1"
+Opcode.name(0x7F)  // "PUSH32"
+Opcode.name(0xFF)  // "SELFDESTRUCT"
+
+// Using constants
+Opcode.name(Opcode.SSTORE)  // "SSTORE"
+Opcode.name(Opcode.JUMP)    // "JUMP"
+Opcode.name(Opcode.CALL)    // "CALL"
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { name, ADD, PUSH1, SLOAD } from '@tevm/voltaire/Opcode'
+
+name(0x01)   // "ADD"
+name(PUSH1)  // "PUSH1"
+name(SLOAD)  // "SLOAD"
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() void {
+    const name_add = Opcode.name(0x01);
+    std.debug.print("{s}\n", .{name_add});  // "ADD"
+
+    const name_push1 = Opcode.name(0x60);
+    std.debug.print("{s}\n", .{name_push1});  // "PUSH1"
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode byte (0x00-0xFF)
+
+## Returns
+
+`string | undefined` - Mnemonic name or undefined if invalid
+
+## All Opcode Names
+
+### Arithmetic (0x00-0x0B)
+
+```typescript
+Opcode.name(0x00)  // "STOP"
+Opcode.name(0x01)  // "ADD"
+Opcode.name(0x02)  // "MUL"
+Opcode.name(0x03)  // "SUB"
+Opcode.name(0x04)  // "DIV"
+Opcode.name(0x05)  // "SDIV"
+Opcode.name(0x06)  // "MOD"
+Opcode.name(0x07)  // "SMOD"
+Opcode.name(0x08)  // "ADDMOD"
+Opcode.name(0x09)  // "MULMOD"
+Opcode.name(0x0A)  // "EXP"
+Opcode.name(0x0B)  // "SIGNEXTEND"
+```
+
+### Comparison (0x10-0x14)
+
+```typescript
+Opcode.name(0x10)  // "LT"
+Opcode.name(0x11)  // "GT"
+Opcode.name(0x12)  // "SLT"
+Opcode.name(0x13)  // "SGT"
+Opcode.name(0x14)  // "EQ"
+```
+
+### Bitwise (0x15-0x1D)
+
+```typescript
+Opcode.name(0x15)  // "ISZERO"
+Opcode.name(0x16)  // "AND"
+Opcode.name(0x17)  // "OR"
+Opcode.name(0x18)  // "XOR"
+Opcode.name(0x19)  // "NOT"
+Opcode.name(0x1A)  // "BYTE"
+Opcode.name(0x1B)  // "SHL"
+Opcode.name(0x1C)  // "SHR"
+Opcode.name(0x1D)  // "SAR"
+```
+
+### Cryptographic (0x20)
+
+```typescript
+Opcode.name(0x20)  // "KECCAK256"
+```
+
+### Environmental (0x30-0x3F)
+
+```typescript
+Opcode.name(0x30)  // "ADDRESS"
+Opcode.name(0x31)  // "BALANCE"
+Opcode.name(0x32)  // "ORIGIN"
+Opcode.name(0x33)  // "CALLER"
+Opcode.name(0x34)  // "CALLVALUE"
+Opcode.name(0x35)  // "CALLDATALOAD"
+Opcode.name(0x36)  // "CALLDATASIZE"
+Opcode.name(0x37)  // "CALLDATACOPY"
+Opcode.name(0x38)  // "CODESIZE"
+Opcode.name(0x39)  // "CODECOPY"
+Opcode.name(0x3A)  // "GASPRICE"
+Opcode.name(0x3B)  // "EXTCODESIZE"
+Opcode.name(0x3C)  // "EXTCODECOPY"
+Opcode.name(0x3D)  // "RETURNDATASIZE"
+Opcode.name(0x3E)  // "RETURNDATACOPY"
+Opcode.name(0x3F)  // "EXTCODEHASH"
+```
+
+### Stack/Memory/Storage (0x50-0x5F)
+
+```typescript
+Opcode.name(0x50)  // "POP"
+Opcode.name(0x51)  // "MLOAD"
+Opcode.name(0x52)  // "MSTORE"
+Opcode.name(0x53)  // "MSTORE8"
+Opcode.name(0x54)  // "SLOAD"
+Opcode.name(0x55)  // "SSTORE"
+Opcode.name(0x56)  // "JUMP"
+Opcode.name(0x57)  // "JUMPI"
+Opcode.name(0x58)  // "PC"
+Opcode.name(0x59)  // "MSIZE"
+Opcode.name(0x5A)  // "GAS"
+Opcode.name(0x5B)  // "JUMPDEST"
+Opcode.name(0x5F)  // "PUSH0"
+```
+
+### PUSH (0x60-0x7F)
+
+```typescript
+Opcode.name(0x60)  // "PUSH1"
+Opcode.name(0x61)  // "PUSH2"
+// ... PUSH3-PUSH31
+Opcode.name(0x7F)  // "PUSH32"
+```
+
+### DUP (0x80-0x8F)
+
+```typescript
+Opcode.name(0x80)  // "DUP1"
+Opcode.name(0x81)  // "DUP2"
+// ... DUP3-DUP15
+Opcode.name(0x8F)  // "DUP16"
+```
+
+### SWAP (0x90-0x9F)
+
+```typescript
+Opcode.name(0x90)  // "SWAP1"
+Opcode.name(0x91)  // "SWAP2"
+// ... SWAP3-SWAP15
+Opcode.name(0x9F)  // "SWAP16"
+```
+
+### LOG (0xA0-0xA4)
+
+```typescript
+Opcode.name(0xA0)  // "LOG0"
+Opcode.name(0xA1)  // "LOG1"
+Opcode.name(0xA2)  // "LOG2"
+Opcode.name(0xA3)  // "LOG3"
+Opcode.name(0xA4)  // "LOG4"
+```
+
+### System (0xF0-0xFF)
+
+```typescript
+Opcode.name(0xF0)  // "CREATE"
+Opcode.name(0xF1)  // "CALL"
+Opcode.name(0xF2)  // "CALLCODE"
+Opcode.name(0xF3)  // "RETURN"
+Opcode.name(0xF4)  // "DELEGATECALL"
+Opcode.name(0xF5)  // "CREATE2"
+Opcode.name(0xFA)  // "STATICCALL"
+Opcode.name(0xFD)  // "REVERT"
+Opcode.name(0xFE)  // "INVALID"
+Opcode.name(0xFF)  // "SELFDESTRUCT"
+```
+
+## Use Cases
+
+### Disassembly
+
+```typescript
+function simpleDisassemble(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  return instructions.map(inst => {
+    const name = Opcode.name(inst.opcode) ?? `UNKNOWN_${inst.opcode.toString(16)}`
+    return `${inst.offset}: ${name}`
+  })
+}
+```
+
+### Filter by Name
+
+```typescript
+function findOpcodesByName(
+  bytecode: Uint8Array,
+  targetName: string
+): number[] {
+  const instructions = Opcode.parse(bytecode)
+  const offsets: number[] = []
+
+  for (const inst of instructions) {
+    if (Opcode.name(inst.opcode) === targetName) {
+      offsets.push(inst.offset)
+    }
+  }
+
+  return offsets
+}
+
+// Find all SSTORE operations
+const sstoreLocations = findOpcodesByName(bytecode, 'SSTORE')
+```
+
+### Count Opcode Usage
+
+```typescript
+function countOpcodeUsage(bytecode: Uint8Array): Map<string, number> {
+  const instructions = Opcode.parse(bytecode)
+  const counts = new Map<string, number>()
+
+  for (const inst of instructions) {
+    const name = Opcode.name(inst.opcode)
+    if (name) {
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+  }
+
+  return counts
+}
+```
+
+### Reverse Lookup
+
+```typescript
+function findOpcodeByName(name: string): number | undefined {
+  for (let i = 0; i <= 0xFF; i++) {
+    if (Opcode.name(i) === name) {
+      return i
+    }
+  }
+  return undefined
+}
+
+const pushOpcode = findOpcodeByName('PUSH1')  // 0x60
+```
+
+## Performance
+
+- **O(1)** lookup time
+- **Pre-computed** string table
+- **Zero allocation** for query
+- Very fast
+
+## Related
+
+- [info()](/primitives/opcode/info) - Get full metadata
+- [isValid()](/primitives/opcode/is-valid) - Check if opcode exists
+- [format()](/primitives/opcode/format) - Format instruction with name
+- [disassemble()](/primitives/opcode/disassemble) - Disassemble with names

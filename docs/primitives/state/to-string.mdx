@@ -1,0 +1,258 @@
+---
+title: toString()
+description: Convert storage key to string format for map keys
+---
+
+Serializes `BrandedStorageKey` to string format for use as JavaScript Map keys or persistent storage.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function toString(key: BrandedStorageKey): string
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn toString(buffer: []u8, key: StorageKey) ![]const u8
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **key** (`BrandedStorageKey`) - Storage key to serialize
+
+## Returns
+
+`string` - String format: `"address:slot"` with lowercase hex address (no 0x prefix) and decimal slot
+
+## Format
+
+```
+<address>:<slot>
+```
+
+- **address**: Lowercase 40-character hex string (no 0x prefix)
+- **slot**: Decimal string representation of bigint slot number
+
+## Examples
+
+### Basic Usage
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const key = State.StorageKey(contractAddr, 0n);
+
+const keyStr = State.StorageKey.toString(key);
+console.log(keyStr);
+// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0"
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+const Address = @import("address");
+
+const contract_addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const key = State.StorageKey{ .address = contract_addr, .slot = 0 };
+
+var buffer: [128]u8 = undefined;
+const key_str = try State.toString(&buffer, key);
+std.debug.print("Key: {s}\n", .{key_str});
+```
+
+</Tab>
+</Tabs>
+
+### Various Slot Numbers
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Slot 0
+const key0 = State.StorageKey(addr, 0n);
+console.log(State.StorageKey.toString(key0));
+// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0"
+
+// Slot 42
+const key42 = State.StorageKey(addr, 42n);
+console.log(State.StorageKey.toString(key42));
+// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42"
+
+// Large slot (computed mapping slot)
+const largeSlot = 123456789012345678901234567890n;
+const keyLarge = State.StorageKey(addr, largeSlot);
+console.log(State.StorageKey.toString(keyLarge));
+// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:123456789012345678901234567890"
+```
+
+### Map Keys
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Use string keys in Map
+const storage = new Map<string, bigint>();
+
+const key1 = State.StorageKey(contractAddr, 0n);
+const key2 = State.StorageKey(contractAddr, 1n);
+
+// Serialize for map keys
+storage.set(State.StorageKey.toString(key1), 1000000000n);
+storage.set(State.StorageKey.toString(key2), 2000000000n);
+
+// Retrieve values
+const value1 = storage.get(State.StorageKey.toString(key1)); // 1000000000n
+const value2 = storage.get(State.StorageKey.toString(key2)); // 2000000000n
+```
+
+### Persistent Storage
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as fs from 'fs/promises';
+
+// Serialize storage to JSON
+async function saveStorage(
+  storage: Map<BrandedStorageKey, bigint>,
+  filePath: string
+): Promise<void> {
+  const entries = Array.from(storage.entries()).map(([key, value]) => ({
+    key: State.StorageKey.toString(key),
+    value: value.toString()
+  }));
+
+  await fs.writeFile(filePath, JSON.stringify(entries, null, 2));
+}
+
+// Example usage
+const storage = new Map<BrandedStorageKey, bigint>();
+storage.set(State.StorageKey(contractAddr, 0n), 1000n);
+storage.set(State.StorageKey(contractAddr, 1n), 2000n);
+
+await saveStorage(storage, './storage.json');
+
+// storage.json:
+// [
+//   {
+//     "key": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0",
+//     "value": "1000"
+//   },
+//   {
+//     "key": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:1",
+//     "value": "2000"
+//   }
+// ]
+```
+
+### Database Keys
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+class StorageDatabase {
+  async set(key: BrandedStorageKey, value: bigint): Promise<void> {
+    const keyStr = State.StorageKey.toString(key);
+    await db.put(`storage:${keyStr}`, value.toString());
+  }
+
+  async get(key: BrandedStorageKey): Promise<bigint | null> {
+    const keyStr = State.StorageKey.toString(key);
+    const value = await db.get(`storage:${keyStr}`);
+    return value ? BigInt(value) : null;
+  }
+
+  async delete(key: BrandedStorageKey): Promise<void> {
+    const keyStr = State.StorageKey.toString(key);
+    await db.delete(`storage:${keyStr}`);
+  }
+}
+```
+
+### Logging and Debugging
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function logStorageChange(
+  key: BrandedStorageKey,
+  oldValue: bigint,
+  newValue: bigint
+): void {
+  const keyStr = State.StorageKey.toString(key);
+  console.log(`Storage changed: ${keyStr}`);
+  console.log(`  Old: ${oldValue}`);
+  console.log(`  New: ${newValue}`);
+}
+
+const key = State.StorageKey(contractAddr, 0n);
+logStorageChange(key, 1000n, 2000n);
+// Storage changed: 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0
+//   Old: 1000
+//   New: 2000
+```
+
+## Round-Trip Conversion
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Serialize
+const originalKey = State.StorageKey(contractAddr, 42n);
+const keyStr = State.StorageKey.toString(originalKey);
+
+// Deserialize
+const parsedKey = State.StorageKey.fromString(keyStr);
+
+// Verify equality
+console.log(State.StorageKey.equals(originalKey, parsedKey)); // true
+```
+
+## Performance Considerations
+
+String serialization is fast but creates new string objects:
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Cache serialized keys if used frequently
+const keyCache = new Map<BrandedStorageKey, string>();
+
+function getCachedKeyString(key: BrandedStorageKey): string {
+  let cached = keyCache.get(key);
+  if (!cached) {
+    cached = State.StorageKey.toString(key);
+    keyCache.set(key, cached);
+  }
+  return cached;
+}
+
+// Use cached version
+const key = State.StorageKey(contractAddr, 0n);
+const keyStr1 = getCachedKeyString(key); // Serializes
+const keyStr2 = getCachedKeyString(key); // Returns cached
+console.log(keyStr1 === keyStr2); // true (same string object)
+```
+
+## Related
+
+- [fromString()](/primitives/state/from-string) - Parse from string format
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [equals()](/primitives/state/equals) - Compare storage keys
+- [Fundamentals](/primitives/state/fundamentals) - Learn about storage keys

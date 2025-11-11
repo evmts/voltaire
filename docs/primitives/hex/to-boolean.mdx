@@ -1,0 +1,218 @@
+---
+title: Hex.toBoolean
+description: Convert hex bytes to boolean value
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.toBoolean(hex: BrandedHex): boolean`
+
+Converts hex to boolean. Returns `true` if any byte is non-zero, `false` if all bytes are zero.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `boolean` - `true` if non-zero, `false` if zero
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Non-zero values = true
+Hex.toBoolean("0x01")   // true
+Hex.toBoolean("0xff")   // true
+Hex.toBoolean("0x0001") // true
+Hex.toBoolean("0x10")   // true
+
+// All zeros = false
+Hex.toBoolean("0x00")   // false
+Hex.toBoolean("0x0000") // false
+Hex.toBoolean("0x")     // false (empty)
+
+// Instance method
+const hex = Hex("0x01")
+const bool = hex.toBoolean()  // true
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBoolean.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBoolean.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toBoolean(hex: BrandedHex): boolean`
+
+Converts hex to boolean. Returns `true` if any byte is non-zero, `false` if all bytes are zero.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `boolean` - `true` if non-zero, `false` if zero
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Non-zero values = true
+Hex.toBoolean("0x01")   // true
+Hex.toBoolean("0xff")   // true
+
+// All zeros = false
+Hex.toBoolean("0x00")   // false
+Hex.toBoolean("0x")     // false
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toBoolean.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBoolean.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.toBoolean(hex: []const u8): bool`
+
+Convert hex to boolean.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+
+**Returns:** `bool` - `true` if non-zero, `false` if zero
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const bool1 = Hex.toBoolean("0x01");  // true
+const bool2 = Hex.toBoolean("0x00");  // false
+const bool3 = Hex.toBoolean("0xff");  // true
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Ethereum Boolean Convention
+
+Follows Ethereum ABI encoding where:
+- Any non-zero value = `true`
+- All zeros = `false`
+
+```typescript
+// All evaluate to true
+Hex.toBoolean("0x01")   // true (conventional)
+Hex.toBoolean("0xff")   // true
+Hex.toBoolean("0x0a")   // true
+Hex.toBoolean("0x1234") // true (any non-zero)
+
+// All evaluate to false
+Hex.toBoolean("0x00")   // false
+Hex.toBoolean("0x0000") // false
+Hex.toBoolean("0x")     // false (empty)
+```
+
+## Multi-Byte Behavior
+
+Checks **all bytes** - if any byte is non-zero, returns `true`:
+
+```typescript
+// Single byte
+Hex.toBoolean("0x00")     // false
+Hex.toBoolean("0x01")     // true
+
+// Multiple bytes
+Hex.toBoolean("0x0000")   // false (all zeros)
+Hex.toBoolean("0x0001")   // true (one non-zero)
+Hex.toBoolean("0x1000")   // true (one non-zero)
+Hex.toBoolean("0x0100")   // true (one non-zero)
+
+// 32-byte values (uint256)
+Hex.toBoolean("0x0000000000000000000000000000000000000000000000000000000000000000")  // false
+Hex.toBoolean("0x0000000000000000000000000000000000000000000000000000000000000001")  // true
+```
+
+## Common Use Cases
+
+**Contract Return Values:**
+```typescript
+// Function returns bool
+const resultHex = await contract.call(data)
+const success = Hex.toBoolean(resultHex)
+```
+
+**State Flags:**
+```typescript
+const isPausedHex = await contract.paused()
+const isPaused = Hex.toBoolean(isPausedHex)
+
+if (isPaused) {
+  console.log("Contract is paused")
+}
+```
+
+**Bitmap Checking:**
+```typescript
+const permissionHex = await contract.getPermission(user)
+const hasPermission = Hex.toBoolean(permissionHex)
+```
+
+**Conditional Logic:**
+```typescript
+const isApprovedHex = await contract.isApproved(token, spender)
+const isApproved = Hex.toBoolean(isApprovedHex)
+
+if (!isApproved) {
+  await contract.approve(spender, amount)
+}
+```
+
+**Transaction Status:**
+```typescript
+const receipt = await provider.getTransactionReceipt(hash)
+const success = Hex.toBoolean(receipt.status)
+// 0x1 = success, 0x0 = failed
+```
+
+## Round-Trip Conversion
+
+Convert boolean to hex and back:
+
+```typescript
+// Boolean → Hex
+const value = true
+const hex = Hex.fromBoolean(value)  // "0x01"
+
+// Hex → Boolean
+const decoded = Hex.toBoolean(hex)  // true
+
+console.assert(decoded === value)  // ✓
+```
+
+## ABI Encoding Context
+
+In Solidity ABI encoding, booleans are encoded as uint256:
+
+```typescript
+// Solidity: function setActive(bool isActive)
+const isActive = true
+
+// ABI encodes bool as uint256 (32 bytes)
+const encoded = Hex.fromBoolean(isActive).padLeft(32)
+// "0x0000000000000000000000000000000000000000000000000000000000000001"
+
+// Decode return value
+const returnData = "0x0000000000000000000000000000000000000000000000000000000000000001"
+const result = Hex.toBoolean(returnData)  // true
+```
+
+## Performance
+
+Efficient byte iteration with early return on first non-zero byte. Complexity: O(n) worst case, O(1) average case for truthy values.
+
+## See Also
+
+- [fromBoolean](/primitives/hex/from-boolean) - Convert boolean to hex
+- [toNumber](/primitives/hex/to-number) - Convert to number
+- [toBigInt](/primitives/hex/to-bigint) - Convert to bigint

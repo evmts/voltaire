@@ -1,0 +1,604 @@
+---
+title: Rlp.decode
+description: Universal decoder for parsing RLP-encoded bytes back to data structures
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.decode(bytes: Uint8Array, stream?: boolean): Decoded`
+
+Decodes RLP-encoded bytes into data structures with comprehensive validation.
+
+**Parameters:**
+- `bytes: Uint8Array` - RLP-encoded data to decode
+- `stream?: boolean` - If true, allows extra data after decoded value. If false (default), expects exact match
+
+**Returns:** `Decoded` - Object with `data` (decoded RLP structure) and `remainder` (leftover bytes)
+
+```typescript
+type Decoded = {
+  data: BrandedRlp
+  remainder: Uint8Array
+}
+
+type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] }
+```
+
+**Throws:**
+- `Error('InputTooShort')` - Unexpected end of input
+- `Error('InvalidRemainder')` - Extra data when stream=false
+- `Error('NonCanonicalSize')` - Non-minimal length encoding
+- `Error('LeadingZeros')` - Invalid number encoding
+- `Error('InvalidLength')` - Malformed length field
+- `Error('RecursionDepthExceeded')` - Nested too deeply (max 32)
+- `Error('UnexpectedInput')` - Invalid data format
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Decode single value
+const bytes = new Uint8Array([0x83, 1, 2, 3])
+const result = Rlp.decode(bytes)
+// => {
+//   data: { type: 'bytes', value: Uint8Array([1, 2, 3]) },
+//   remainder: Uint8Array([])
+// }
+
+// Decode list
+const listBytes = new Uint8Array([0xc4, 0x01, 0x02, 0x03])
+const result = Rlp.decode(listBytes)
+// => {
+//   data: {
+//     type: 'list',
+//     value: [
+//       { type: 'bytes', value: Uint8Array([1]) },
+//       { type: 'bytes', value: Uint8Array([2]) },
+//       { type: 'bytes', value: Uint8Array([3]) }
+//     ]
+//   },
+//   remainder: Uint8Array([])
+// }
+
+// Stream decoding (multiple values)
+const stream = new Uint8Array([0x01, 0x02, 0x03])
+const first = Rlp.decode(stream, true)
+// => {
+//   data: { type: 'bytes', value: Uint8Array([1]) },
+//   remainder: Uint8Array([2, 3])
+// }
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/decode.js:202](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L202)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `decode(bytes: Uint8Array, stream?: boolean): Decoded`
+
+Decodes RLP-encoded bytes into data structures with comprehensive validation.
+
+**Parameters:**
+- `bytes: Uint8Array` - RLP-encoded data to decode
+- `stream?: boolean` - If true, allows extra data after decoded value
+
+**Returns:** `Decoded` - Object with `data` and `remainder`
+
+**Example:**
+
+```typescript
+import { decode } from '@tevm/voltaire/BrandedRlp'
+
+const bytes = new Uint8Array([0x83, 1, 2, 3])
+const result = decode(bytes)
+// => {
+//   data: { type: 'bytes', value: Uint8Array([1, 2, 3]) },
+//   remainder: Uint8Array([])
+// }
+
+// Stream mode
+const stream = new Uint8Array([0x01, 0x02])
+const result = decode(stream, true)
+// => {
+//   data: { type: 'bytes', value: Uint8Array([1]) },
+//   remainder: Uint8Array([2])
+// }
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/decode.js:202](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L202)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.decode(allocator: Allocator, bytes: []const u8) !Decoded`
+
+Decode RLP-encoded bytes with validation.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for decoded data
+- `bytes: []const u8` - RLP-encoded bytes
+
+**Returns:** `Decoded` - Decoded data (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const encoded = [_]u8{ 0x83, 1, 2, 3 };
+const decoded = try rlp.decode(allocator, &encoded);
+defer decoded.deinit(allocator);
+
+// Access decoded data
+if (decoded.data == .bytes) {
+    std.debug.print("Bytes: {any}\n", .{decoded.data.bytes});
+}
+```
+
+**Memory:** Caller must call `deinit()` on returned value.
+
+**Defined in:** [primitives/rlp/decode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/decode.zig)
+
+</Tab>
+</Tabs>
+
+## Decoding Algorithm
+
+RLP decoder uses the first byte (prefix) to determine data type and length:
+
+### Prefix Ranges
+
+```typescript
+// Prefix byte determines encoding type:
+// 0x00-0x7f: Single byte (value itself)
+// 0x80-0xb7: Short string (0-55 bytes)
+// 0xb8-0xbf: Long string (56+ bytes)
+// 0xc0-0xf7: Short list (0-55 bytes total)
+// 0xf8-0xff: Long list (56+ bytes total)
+```
+
+### Single Byte (0x00-0x7f)
+
+Bytes with value < 0x80 encode as themselves:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const encoded = new Uint8Array([0x7f])
+const result = Rlp.decode(encoded)
+// => { data: { type: 'bytes', value: Uint8Array([0x7f]) }, remainder: Uint8Array([]) }
+
+const zero = new Uint8Array([0x00])
+const result = Rlp.decode(zero)
+// => { data: { type: 'bytes', value: Uint8Array([0x00]) }, remainder: Uint8Array([]) }
+```
+
+### Short String (0x80-0xb7)
+
+Length encoded in prefix: `length = prefix - 0x80`
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty string
+const empty = new Uint8Array([0x80])
+const result = Rlp.decode(empty)
+// => { data: { type: 'bytes', value: Uint8Array([]) }, remainder: Uint8Array([]) }
+
+// 3-byte string
+const bytes = new Uint8Array([0x83, 1, 2, 3])
+const result = Rlp.decode(bytes)
+// 0x83 - 0x80 = 3 bytes
+// => { data: { type: 'bytes', value: Uint8Array([1, 2, 3]) }, remainder: Uint8Array([]) }
+```
+
+### Long String (0xb8-0xbf)
+
+Length-of-length encoding: `lengthOfLength = prefix - 0xb7`
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// 56-byte string (minimum long form)
+const min = new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)])
+const result = Rlp.decode(min)
+// 0xb8 - 0xb7 = 1 (length needs 1 byte)
+// Next byte: 56 = actual length
+
+// 256-byte string (length needs 2 bytes)
+const large = new Uint8Array([0xb9, 0x01, 0x00, ...Array(256).fill(0x42)])
+const result = Rlp.decode(large)
+// 0xb9 - 0xb7 = 2 (length needs 2 bytes)
+// Next 2 bytes: [0x01, 0x00] = 256
+```
+
+### Short List (0xc0-0xf7)
+
+Total payload length in prefix: `length = prefix - 0xc0`
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty list
+const empty = new Uint8Array([0xc0])
+const result = Rlp.decode(empty)
+// => { data: { type: 'list', value: [] }, remainder: Uint8Array([]) }
+
+// List with 2 single bytes
+const list = new Uint8Array([0xc2, 0x01, 0x02])
+const result = Rlp.decode(list)
+// 0xc2 - 0xc0 = 2 bytes total payload
+// => {
+//   data: {
+//     type: 'list',
+//     value: [
+//       { type: 'bytes', value: Uint8Array([1]) },
+//       { type: 'bytes', value: Uint8Array([2]) }
+//     ]
+//   },
+//   remainder: Uint8Array([])
+// }
+```
+
+### Long List (0xf8-0xff)
+
+Length-of-length encoding: `lengthOfLength = prefix - 0xf7`
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// List with 60 bytes total payload
+const items = Array(30).fill([0x01, 0x02]).flat()
+const long = new Uint8Array([0xf8, 60, ...items])
+const result = Rlp.decode(long)
+// 0xf8 - 0xf7 = 1 (length needs 1 byte)
+// Next byte: 60 = payload length
+
+// List with 256 bytes total payload
+const large = new Uint8Array([0xf9, 0x01, 0x00, ...Array(256).fill(0x01)])
+const result = Rlp.decode(large)
+// 0xf9 - 0xf7 = 2 (length needs 2 bytes)
+// Next 2 bytes: [0x01, 0x00] = 256
+```
+
+## Usage Patterns
+
+### Extract Transaction Data
+
+Decode transaction bytes and extract fields:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Legacy transaction RLP
+const txBytes = new Uint8Array([...])  // RLP-encoded transaction
+const result = Rlp.decode(txBytes)
+
+if (result.data.type === 'list') {
+  const [nonce, gasPrice, gas, to, value, data, v, r, s] = result.data.value
+
+  // Each field is a bytes data structure
+  if (nonce.type === 'bytes') {
+    console.log('Nonce:', nonce.value)
+  }
+  if (to.type === 'bytes') {
+    console.log('To:', to.value)
+  }
+}
+```
+
+### Stream Decoding
+
+Decode multiple RLP values from a stream:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function* decodeStream(bytes: Uint8Array) {
+  let remainder = bytes
+
+  while (remainder.length > 0) {
+    const result = Rlp.decode(remainder, true)
+    yield result.data
+    remainder = result.remainder
+  }
+}
+
+// Use stream decoder
+const stream = new Uint8Array([0x01, 0x02, 0x03, 0x04])
+for (const data of decodeStream(stream)) {
+  console.log('Decoded:', data)
+}
+// Outputs each byte as separate data structure
+```
+
+### Validate and Extract
+
+Decode with validation and type checking:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function decodeTransaction(bytes: Uint8Array) {
+  const result = Rlp.decode(bytes)
+
+  // Must be a list
+  if (result.data.type !== 'list') {
+    throw new Error('Transaction must be RLP list')
+  }
+
+  // Must have 9 fields (legacy tx)
+  if (result.data.value.length !== 9) {
+    throw new Error('Invalid transaction field count')
+  }
+
+  // Must consume all bytes
+  if (result.remainder.length > 0) {
+    throw new Error('Extra data after transaction')
+  }
+
+  return result.data
+}
+```
+
+### Recursive Flattening
+
+Flatten nested lists to extract all byte values:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const nested = new Uint8Array([...])  // Deeply nested RLP
+const result = Rlp.decode(nested)
+
+// Flatten recursively extracts all bytes
+const allBytes = Rlp.flatten(result.data)
+// => Array of { type: 'bytes', value: Uint8Array }
+
+for (const item of allBytes) {
+  console.log('Bytes:', item.value)
+}
+```
+
+## Canonical Validation
+
+RLP decoder enforces canonical encoding rules to prevent malleability:
+
+### Non-canonical Single Byte
+
+Single bytes < 0x80 must not have a length prefix:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Invalid: single byte 0x7f with prefix
+const invalid = new Uint8Array([0x81, 0x7f])
+try {
+  Rlp.decode(invalid)
+} catch (error) {
+  // Error: NonCanonicalSize
+  // Single byte < 0x80 should not be prefixed
+}
+
+// Valid: 0x7f encodes as itself
+const valid = new Uint8Array([0x7f])
+const result = Rlp.decode(valid)  // OK
+```
+
+### Non-canonical Short Form
+
+Strings < 56 bytes must use short form:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Invalid: 3-byte string using long form
+const invalid = new Uint8Array([0xb8, 0x03, 1, 2, 3])
+try {
+  Rlp.decode(invalid)
+} catch (error) {
+  // Error: NonCanonicalSize
+  // String < 56 bytes should use short form
+}
+
+// Valid: 3-byte string in short form
+const valid = new Uint8Array([0x83, 1, 2, 3])
+const result = Rlp.decode(valid)  // OK
+```
+
+### Leading Zeros
+
+Length encodings must not have leading zeros:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Invalid: length with leading zero
+const invalid = new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)])
+try {
+  Rlp.decode(invalid)
+} catch (error) {
+  // Error: LeadingZeros
+  // Length encoding has leading zeros
+}
+
+// Valid: minimal length encoding
+const valid = new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)])
+const result = Rlp.decode(valid)  // OK
+```
+
+### Length Mismatches
+
+Declared length must match actual data:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Invalid: declared 5 bytes but only 3 provided
+const invalid = new Uint8Array([0x85, 1, 2, 3])
+try {
+  Rlp.decode(invalid)
+} catch (error) {
+  // Error: InputTooShort
+  // Expected 6 bytes, got 4
+}
+
+// Invalid: list length mismatch
+const invalid = new Uint8Array([0xc5, 0x01, 0x02])  // Says 5 bytes but only 2
+try {
+  Rlp.decode(invalid)
+} catch (error) {
+  // Error: InputTooShort
+}
+```
+
+## Error Handling
+
+Comprehensive error handling for malformed input:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty input
+try {
+  Rlp.decode(new Uint8Array([]))
+} catch (error) {
+  console.error('InputTooShort: Cannot decode empty input')
+}
+
+// Extra data (non-stream mode)
+try {
+  const bytes = new Uint8Array([0x01, 0x02])
+  Rlp.decode(bytes, false)
+} catch (error) {
+  console.error('InvalidRemainder: Extra data after decoded value: 1 bytes')
+}
+
+// Recursion depth exceeded
+try {
+  // Create deeply nested structure (> 32 levels)
+  let nested = new Uint8Array([0xc0])  // Empty list
+  for (let i = 0; i < 40; i++) {
+    nested = new Uint8Array([0xc1, ...nested])  // Wrap in list
+  }
+  Rlp.decode(nested)
+} catch (error) {
+  console.error('RecursionDepthExceeded: Maximum recursion depth 32 exceeded')
+}
+
+// Incomplete data
+try {
+  const incomplete = new Uint8Array([0x83, 1, 2])  // Says 3 bytes, only has 2
+  Rlp.decode(incomplete)
+} catch (error) {
+  console.error('InputTooShort: Expected 4 bytes, got 3')
+}
+```
+
+### Error Types Reference
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `InputTooShort` | Not enough bytes for declared length | Provide complete data |
+| `InvalidRemainder` | Extra bytes after value (non-stream) | Use stream=true or trim input |
+| `NonCanonicalSize` | Non-minimal length encoding | Use canonical encoding |
+| `LeadingZeros` | Length has leading zero bytes | Remove leading zeros from length |
+| `InvalidLength` | List payload length mismatch | Fix list item encodings |
+| `RecursionDepthExceeded` | Nested > 32 levels deep | Reduce nesting depth |
+| `UnexpectedInput` | Invalid prefix or format | Check input is valid RLP |
+
+## Performance
+
+### Depth Limiting
+
+Maximum recursion depth is 32 to prevent stack overflow:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// This is fine (depth = 3)
+const shallow = [[[new Uint8Array([1])]]]
+const encoded = Rlp.encode(shallow)
+const decoded = Rlp.decode(encoded)  // OK
+
+// This will fail (depth > 32)
+const deep = Array(40).fill(null).reduce(
+  (acc) => [acc],
+  new Uint8Array([1])
+)
+const encoded = Rlp.encode(deep)
+try {
+  Rlp.decode(encoded)
+} catch (error) {
+  // RecursionDepthExceeded
+}
+```
+
+### Stream Mode Efficiency
+
+Use stream mode to avoid re-parsing when decoding multiple values:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Inefficient: decode + re-decode remainder
+const data = new Uint8Array([0x01, 0x02, 0x03])
+const first = Rlp.decode(data.slice(0, 1))
+const second = Rlp.decode(data.slice(1, 2))
+const third = Rlp.decode(data.slice(2, 3))
+
+// Efficient: stream mode
+let remainder = data
+const values = []
+while (remainder.length > 0) {
+  const result = Rlp.decode(remainder, true)
+  values.push(result.data)
+  remainder = result.remainder
+}
+```
+
+### Round-trip Encoding
+
+Decode and re-encode produces identical bytes (for canonical input):
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Original data
+const original = new Uint8Array([0x83, 1, 2, 3])
+
+// Decode
+const decoded = Rlp.decode(original)
+
+// Re-encode
+const reencoded = Rlp.encode(decoded.data)
+
+// Should match original (if canonical)
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false
+  return a.every((byte, i) => byte === b[i])
+}
+
+console.log(bytesEqual(original, reencoded))  // true
+```
+
+<Tip>
+Validation ensures malformed RLP can't cause issues downstream. The performance cost is negligible compared to security benefits.
+</Tip>
+
+## See Also
+
+- [encode](/primitives/rlp/encode) - Encode data to RLP format
+- [decodeArray](/primitives/rlp/decode-array) - Decode with schema
+- [decodeObject](/primitives/rlp/decode-object) - Decode to object
+- [validate](/primitives/rlp/validate) - Validate RLP structure
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification

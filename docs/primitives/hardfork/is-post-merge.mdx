@@ -1,0 +1,286 @@
+---
+title: Hardfork.isPostMerge
+description: Check if hardfork is post-Merge (Proof of Stake consensus)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.isPostMerge(): boolean`
+
+Check if hardfork is post-Merge (uses Proof of Stake consensus). Active since Merge.
+
+**Returns:** `boolean` - True if hardfork uses Proof of Stake
+
+**Example:**
+
+```typescript
+import { Hardfork, MERGE, LONDON, SHANGHAI, CANCUN } from '@tevm/voltaire'
+
+const merge = Hardfork.fromString("merge")
+
+merge.isPostMerge()     // true - Merge transitioned to PoS
+LONDON.isPostMerge()    // false - London used PoW
+SHANGHAI.isPostMerge()  // true - all post-Merge hardforks
+CANCUN.isPostMerge()    // true
+```
+
+**Convenience alias:** `fork.isPoS()` - Same functionality, shorter name
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isPostMerge.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isPostMerge.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isPostMerge(fork: BrandedHardfork): boolean`
+
+Check if hardfork is post-Merge (uses Proof of Stake consensus). Active since Merge.
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to check
+
+**Returns:** `boolean` - True if hardfork uses Proof of Stake
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { MERGE, LONDON, SHANGHAI } from '@tevm/voltaire'
+
+Hardfork.isPostMerge(MERGE)     // true
+Hardfork.isPostMerge(LONDON)    // false
+Hardfork.isPostMerge(SHANGHAI)  // true
+
+// Convenience alias
+Hardfork.isPoS(MERGE)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isPostMerge.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isPostMerge.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## The Merge
+
+**Active Since:** Merge (September 15, 2022)
+
+**Aliases:** "paris" (consensus layer name)
+
+### Consensus Change
+
+**Before Merge (Proof of Work):**
+- Miners compete to solve computational puzzles
+- Block rewards: 2 ETH + transaction fees
+- DIFFICULTY opcode returns mining difficulty
+
+**After Merge (Proof of Stake):**
+- Validators stake 32 ETH to propose blocks
+- Block rewards: Transaction tips only (base fee burned)
+- DIFFICULTY opcode returns beacon chain randomness (PREVRANDAO)
+
+## Changes Introduced
+
+### PREVRANDAO Opcode
+
+**Opcode:** `0x44` (replaces DIFFICULTY)
+
+**Before Merge:**
+- Returns current block's mining difficulty
+- Used for difficulty-based calculations
+
+**After Merge:**
+- Returns beacon chain randomness (PREVRANDAO)
+- Mix hash from beacon chain for randomness
+- **Breaking change:** Contracts using DIFFICULTY for mining calculations will break
+
+### Block Production
+
+**Before Merge:**
+- Miners propose blocks via PoW
+- Block time: ~13 seconds (variable)
+- Uncle blocks possible
+
+**After Merge:**
+- Validators propose blocks via PoS
+- Block time: 12 seconds (fixed)
+- No uncle blocks
+
+### Economics
+
+**Before Merge:**
+- Block reward: 2 ETH per block
+- Transaction fees to miners
+- Issuance: ~4.3% annual
+
+**After Merge:**
+- Block reward: 0 ETH (only tips)
+- Base fee burned (EIP-1559)
+- Issuance: ~0.5% annual (90% reduction)
+
+## Usage Patterns
+
+### Consensus Detection
+
+Determine consensus mechanism:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getConsensusInfo(fork: BrandedHardfork) {
+  if (fork.isPostMerge()) {
+    return {
+      consensus: "Proof of Stake",
+      blockProducer: "validator",
+      blockReward: "0 ETH (tips only)",
+      difficultyOpcode: "PREVRANDAO",
+      blockTime: "12s (fixed)"
+    }
+  }
+
+  return {
+    consensus: "Proof of Work",
+    blockProducer: "miner",
+    blockReward: "2 ETH + fees",
+    difficultyOpcode: "DIFFICULTY",
+    blockTime: "~13s (variable)"
+  }
+}
+```
+
+### Mining Configuration
+
+Validate mining configuration:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function validateMiningConfig(fork: BrandedHardfork, config: MiningConfig) {
+  if (fork.isPostMerge() && config.mining) {
+    throw new Error(
+      "Mining not supported after Merge. " +
+      "Ethereum uses Proof of Stake consensus."
+    )
+  }
+}
+```
+
+### Opcode Handling
+
+Handle DIFFICULTY/PREVRANDAO opcode:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function handleDifficultyOpcode(fork: BrandedHardfork, value: bigint) {
+  if (fork.isPostMerge()) {
+    console.log("PREVRANDAO (beacon randomness):", value)
+  } else {
+    console.log("DIFFICULTY (mining difficulty):", value)
+  }
+}
+```
+
+### Block Validation
+
+Validate block structure:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function validateBlock(fork: BrandedHardfork, block: Block) {
+  if (fork.isPostMerge()) {
+    // PoS validation
+    if (block.difficulty !== 0n) {
+      throw new Error("PoS blocks must have difficulty = 0")
+    }
+    if (block.nonce !== 0n) {
+      throw new Error("PoS blocks must have nonce = 0")
+    }
+    if (!block.mixHash) {
+      throw new Error("PoS blocks require mixHash (PREVRANDAO)")
+    }
+  } else {
+    // PoW validation
+    if (block.difficulty === 0n) {
+      throw new Error("PoW blocks must have non-zero difficulty")
+    }
+  }
+}
+```
+
+### Network Configuration
+
+Check consensus mechanism:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getNetworkType(fork: BrandedHardfork): string {
+  return fork.isPostMerge() ? "mainnet-pos" : "mainnet-pow"
+}
+```
+
+## EIP References
+
+**Primary:**
+- [EIP-3675](https://eips.ethereum.org/EIPS/eip-3675) - Upgrade consensus to Proof of Stake
+- [EIP-4399](https://eips.ethereum.org/EIPS/eip-4399) - Supplant DIFFICULTY opcode with PREVRANDAO
+
+## Impact
+
+**For Validators:**
+- Must stake 32 ETH to participate
+- Earn tips + MEV (no base fee)
+- Can be slashed for misbehavior
+
+**For Developers:**
+- DIFFICULTY opcode behavior changed
+- Contracts using DIFFICULTY for mining logic will break
+- Block time now consistent (12s)
+- No more uncle blocks
+
+**For Network:**
+- 90% reduction in ETH issuance
+- Consistent 12-second block times
+- Finality from Casper FFG (2 epochs = ~13 minutes)
+- 99.95% energy reduction
+
+**For Economics:**
+- Deflationary when base fee > issuance
+- More predictable issuance schedule
+- Staking yield replaces mining rewards
+
+## Breaking Changes
+
+### DIFFICULTY Opcode
+
+Contracts using `block.difficulty` must update:
+
+```solidity
+// Before Merge (PoW)
+uint256 randomSeed = block.difficulty;  // Mining difficulty
+
+// After Merge (PoS)
+uint256 randomSeed = block.prevrandao;  // Beacon randomness
+// Note: block.difficulty still works but returns prevrandao
+```
+
+### Mining
+
+All mining-related functionality removed:
+
+- No block rewards for miners
+- No mining difficulty adjustments
+- No uncle blocks
+- Mining software incompatible with PoS
+
+## See Also
+
+- [hasEIP1559](/primitives/hardfork/has-eip1559) - Check EIP-1559 base fee availability (London)
+- [hasEIP4844](/primitives/hardfork/has-eip4844) - Check blob transactions availability (Cancun)
+- [isAtLeast](/primitives/hardfork/is-at-least) - General version comparison

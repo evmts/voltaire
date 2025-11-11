@@ -1,0 +1,275 @@
+---
+title: Hardfork.hasEIP1153
+description: Check if transient storage opcodes (TLOAD/TSTORE) are available
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.hasEIP1153(): boolean`
+
+Check if transient storage opcodes (TLOAD/TSTORE) are available in this hardfork. Active since Cancun.
+
+**Returns:** `boolean` - True if EIP-1153 is supported
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, SHANGHAI } from '@tevm/voltaire'
+
+const cancun = Hardfork.fromString("cancun")
+
+cancun.hasEIP1153()     // true - Cancun introduced transient storage
+SHANGHAI.hasEIP1153()   // false - Shanghai pre-dates transient storage
+```
+
+**Convenience alias:** `fork.supportsTransientStorage()` - Same functionality, different naming style
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1153.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1153.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `hasEIP1153(fork: BrandedHardfork): boolean`
+
+Check if transient storage opcodes (TLOAD/TSTORE) are available in this hardfork. Active since Cancun.
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to check
+
+**Returns:** `boolean` - True if EIP-1153 is supported
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, SHANGHAI } from '@tevm/voltaire'
+
+Hardfork.hasEIP1153(CANCUN)     // true
+Hardfork.hasEIP1153(SHANGHAI)   // false
+
+// Convenience alias
+Hardfork.supportsTransientStorage(CANCUN)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1153.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1153.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## EIP-1153 Features
+
+**Active Since:** Cancun (March 13, 2024)
+
+### Transient Storage Opcodes
+
+**TLOAD (0x5C):**
+- Load from transient storage
+- Gas cost: 100 gas (warm)
+
+**TSTORE (0x5D):**
+- Store to transient storage
+- Gas cost: 100 gas
+
+### Storage Lifecycle
+
+**Transaction-Scoped:**
+- Storage cleared at end of transaction
+- Not persisted to state
+- Survives across internal calls within same transaction
+
+**Namespace:**
+- Same key space as regular storage
+- Separate from permanent storage
+- Per-contract transient storage
+
+## Usage Patterns
+
+### Reentrancy Locks
+
+Implement cheap reentrancy guards:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getReentrancyLockImplementation(fork: BrandedHardfork) {
+  if (fork.hasEIP1153()) {
+    // Solidity pseudocode:
+    // uint256 locked;  // transient storage
+    // modifier nonReentrant() {
+    //   assembly { if tload(0) { revert(0, 0) } }
+    //   assembly { tstore(0, 1) }
+    //   _;
+    //   assembly { tstore(0, 0) }
+    // }
+    return {
+      type: "transient",
+      gas: 200  // 100 TSTORE + 100 TLOAD
+    }
+  }
+
+  return {
+    type: "storage",
+    gas: 20_200  // SSTORE + SLOAD (cold)
+  }
+}
+
+// Transient storage saves ~20k gas per lock
+```
+
+### Intermediate Calculations
+
+Store temporary values:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function useTransientCache(fork: BrandedHardfork): boolean {
+  // Use transient storage for intermediate calculations
+  // that don't need to persist
+  return fork.hasEIP1153()
+}
+```
+
+### Cross-Contract Communication
+
+Pass data between contracts in same transaction:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function supportsTransientMessaging(fork: BrandedHardfork): boolean {
+  // Enable contract-to-contract data passing
+  // without permanent storage
+  return fork.hasEIP1153()
+}
+```
+
+### Flash Accounting
+
+Track temporary balances:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getFlashLoanImplementation(fork: BrandedHardfork) {
+  if (fork.hasEIP1153()) {
+    return "transient"  // Track loan state in transient storage
+  }
+
+  return "storage"  // Must use expensive SSTORE/SLOAD
+}
+```
+
+## Gas Costs
+
+### Transient Storage (EIP-1153)
+
+| Operation | Gas Cost |
+|-----------|----------|
+| TLOAD | 100 gas |
+| TSTORE | 100 gas |
+
+### Regular Storage (Comparison)
+
+| Operation | Gas Cost |
+|-----------|----------|
+| SLOAD (warm) | 100 gas |
+| SLOAD (cold) | 2,100 gas |
+| SSTORE (warm, no change) | 100 gas |
+| SSTORE (cold, zero → non-zero) | 20,000 gas |
+| SSTORE (cold, non-zero → zero) | 2,900 gas (with refund) |
+
+### Savings Example
+
+Reentrancy lock pattern:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function estimateReentrancyLockGas(fork: BrandedHardfork): number {
+  if (fork.hasEIP1153()) {
+    // TLOAD + TSTORE + TSTORE
+    return 100 + 100 + 100  // 300 gas
+  }
+
+  // SLOAD (cold) + SSTORE (cold) + SSTORE (cold)
+  return 2_100 + 20_000 + 2_900  // 25,000 gas
+}
+
+// Savings: ~24,700 gas per reentrancy lock
+```
+
+## Network Configuration
+
+Check transient storage support:
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire'
+
+function validateTransientStorage(config: NetworkConfig) {
+  const fork = Hardfork.fromString(config.hardfork)
+
+  if (fork.hasEIP1153()) {
+    console.log("Transient storage available - use for reentrancy locks")
+  } else {
+    console.log("Transient storage not available - using permanent storage")
+  }
+}
+```
+
+## Compiler Integration
+
+Enable transient storage in compiler:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getSoliditySettings(fork: BrandedHardfork) {
+  return {
+    evmVersion: fork.hasEIP1153() ? "cancun" : "shanghai",
+    viaIR: true  // Required for transient storage optimization
+  }
+}
+```
+
+## EIP References
+
+**Primary:**
+- [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153) - Transient storage opcodes
+
+## Impact
+
+**For Developers:**
+- Dramatically cheaper temporary storage (~100x cheaper)
+- Ideal for reentrancy locks, flash loans, temporary state
+- Must clear at transaction end (automatic)
+
+**For Smart Contracts:**
+- Typical savings: 15,000-25,000 gas per reentrancy lock
+- Enables new patterns (cheap cross-contract communication)
+- No persistence - not suitable for state that must survive transaction
+
+**For Security:**
+- Reentrancy locks become affordable
+- Reduces incentive to skip security checks for gas savings
+- Clearer separation of temporary vs permanent state
+
+## Common Use Cases
+
+1. **Reentrancy Guards:** Save ~24k gas per lock
+2. **Flash Accounting:** Track temporary balances (flash loans)
+3. **Cross-Contract Coordination:** Pass data between contracts
+4. **Intermediate Calculations:** Cache expensive computations within transaction
+5. **Access Control:** Temporary permissions that expire at transaction end
+
+## See Also
+
+- [hasEIP4844](/primitives/hardfork/has-eip4844) - Check blob transactions availability (Cancun)
+- [hasEIP1559](/primitives/hardfork/has-eip1559) - Check EIP-1559 base fee availability (London)
+- [isAtLeast](/primitives/hardfork/is-at-least) - General version comparison

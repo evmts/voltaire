@@ -1,0 +1,263 @@
+---
+title: EventLog.matchesAddress
+description: Check if log matches address filter
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.matchesAddress(address: BrandedAddress | BrandedAddress[]): boolean`
+
+Check if log's address matches filter. Accepts single address or array (OR logic).
+
+**Parameters:**
+- `address: BrandedAddress | BrandedAddress[]` - Single address or array of addresses to match
+
+**Returns:** `boolean` - True if log address matches any filter address
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+});
+
+// Single address
+const matches1 = log.matchesAddress(
+  Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2')
+);
+console.log(matches1); // true
+
+// Multiple addresses (OR logic)
+const matches2 = log.matchesAddress([
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'), // Match!
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+]);
+console.log(matches2); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesAddress.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `matchesAddress(log: BrandedEventLog, address: BrandedAddress | BrandedAddress[]): boolean`
+
+Check if log's address matches filter. Accepts single address or array (OR logic).
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `address: BrandedAddress | BrandedAddress[]` - Single address or array of addresses to match
+
+**Returns:** `boolean` - True if log address matches any filter address
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+});
+
+// Single address
+const matches1 = EventLog.matchesAddress(log,
+  Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2')
+);
+console.log(matches1); // true
+
+// Multiple addresses (OR logic)
+const matches2 = EventLog.matchesAddress(log, [
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'), // Match!
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+]);
+console.log(matches2); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesAddress.js)
+
+</Tab>
+</Tabs>
+
+## Filter Semantics
+
+### Single Address
+
+Checks exact address equality using constant-time comparison:
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const usdcAddress = Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
+
+// Filter logs from USDC contract
+const usdcLogs = allLogs.filter(log => log.matchesAddress(usdcAddress));
+
+console.log(`Found ${usdcLogs.length} USDC logs`);
+```
+
+### Multiple Addresses (OR Logic)
+
+Matches if log address equals ANY of the filter addresses:
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const stablecoins = [
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address.fromHex('0xdAC17F958D2ee523a2206206994597C13D831ec7'), // USDT
+];
+
+// Filter logs from any stablecoin
+const stablecoinLogs = allLogs.filter(log =>
+  log.matchesAddress(stablecoins)
+);
+
+console.log(`Found ${stablecoinLogs.length} stablecoin logs`);
+```
+
+## Usage Patterns
+
+### Filtering Single Contract
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const wethAddress = Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
+
+// Get all WETH logs
+const wethLogs = allLogs.filter(log => log.matchesAddress(wethAddress));
+
+// Process WETH events
+for (const log of wethLogs) {
+  const sig = log.getTopic0();
+  // ... decode event
+}
+```
+
+### Multi-Contract Monitoring
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+// Monitor multiple DEX contracts
+const dexContracts = [
+  Address.fromHex('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'), // Uniswap V2
+  Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564'), // Uniswap V3
+  Address.fromHex('0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F'), // Sushiswap
+];
+
+const dexLogs = allLogs.filter(log => log.matchesAddress(dexContracts));
+
+console.log(`Found ${dexLogs.length} DEX logs across ${dexContracts.length} contracts`);
+```
+
+### Token Portfolio Tracking
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+// User's token portfolio
+const portfolio = [
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+  Address.fromHex('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
+];
+
+// Get all events from portfolio tokens
+const portfolioLogs = allLogs.filter(log => log.matchesAddress(portfolio));
+
+// Group by contract
+const byContract = new Map();
+for (const log of portfolioLogs) {
+  const addr = Address.toHex(log.address);
+  if (!byContract.has(addr)) {
+    byContract.set(addr, []);
+  }
+  byContract.get(addr).push(log);
+}
+
+console.log('Events per token:', byContract.size);
+```
+
+### Excluding Specific Contracts
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const excludedContract = Address.fromHex('0x...');
+
+// Filter OUT logs from specific contract
+const filtered = allLogs.filter(log => !log.matchesAddress(excludedContract));
+```
+
+### Combining with Topic Filters
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const tokens = [usdcAddress, daiAddress, wethAddress];
+
+// Transfer events from any of these tokens
+const transfers = allLogs.filter(log =>
+  log.matchesAddress(tokens) &&
+  log.matchesTopics([TRANSFER_SIG])
+);
+
+console.log(`Found ${transfers.length} transfers`);
+```
+
+## Performance
+
+Uses constant-time address comparison to prevent timing attacks:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Comparison time doesn't leak whether addresses match
+const matches = log.matchesAddress(targetAddress);
+
+// Safe for filtering sensitive addresses
+const sensitiveAddresses = [userWallet, exchangeAddress];
+const sensitiveL ogs = allLogs.filter(log =>
+  log.matchesAddress(sensitiveAddresses)
+);
+```
+
+### Batch Filtering
+
+For large log arrays, use `filterLogs` for optimized batch filtering:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Efficient: Uses optimized internal filtering
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdc, dai, weth],
+});
+
+// Less efficient: Filters in JavaScript loop
+const filtered2 = allLogs.filter(log =>
+  log.matchesAddress([usdc, dai, weth])
+);
+```
+
+## See Also
+
+- [matchesTopics](/primitives/eventlog/matchestopics) - Filter by topics
+- [matchesFilter](/primitives/eventlog/matchesfilter) - Complete filter matching
+- [filterLogs](/primitives/eventlog/filterlogs) - Batch filtering with optimization
+- [Address](/primitives/address) - Address primitive documentation

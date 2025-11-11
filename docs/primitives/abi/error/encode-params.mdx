@@ -1,0 +1,83 @@
+---
+title: Error.encodeParams
+description: Encode custom error parameters for contract reverts
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `error.encodeParams(args: unknown[]): Hex`
+
+Encode error parameters into revert data (selector + encoded parameters).
+
+**Parameters:**
+- `args: unknown[]` - Array of parameter values
+
+**Returns:** `Hex` - Complete error data with selector
+
+**Example:**
+
+```typescript
+import { AbiError } from '@tevm/voltaire'
+
+const insufficientBalance = new AbiError({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+const errorData = insufficientBalance.encodeParams([100n, 1000n])
+// Use in revert or for testing
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/encodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/encodeParams.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `encodeParams(error: BrandedError, args: unknown[]): Hex`
+
+Encode error parameters into revert data.
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+- `args: unknown[]` - Parameter values
+
+**Returns:** `Hex` - Complete error data
+
+**Example:**
+
+```typescript
+import * as AbiError from '@tevm/voltaire/Abi/error'
+
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const errorData = AbiError.encodeParams(insufficientBalance, [100n, 1000n])
+```
+
+**Defined in:** [primitives/Abi/error/BrandedError/encodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError/encodeParams.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Error encoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [decodeParams](/primitives/abi/error/decode-params) - Decode error data
+- [getSelector](/primitives/abi/error/get-selector) - Get error selector

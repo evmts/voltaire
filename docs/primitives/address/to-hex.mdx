@@ -1,0 +1,234 @@
+---
+title: Address.toHex
+description: Convert address to lowercase hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.toHex(): BrandedHex`
+
+Converts address to lowercase hex string with `0x` prefix. Always returns lowercase regardless of how address was created.
+
+**Returns:** `BrandedHex` - Lowercase hex string (42 characters including `0x` prefix)
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.from(69n)
+console.log(addr.toHex())
+// "0x0000000000000000000000000000000000000045"
+
+// Always lowercase, even if created from mixed-case
+const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+console.log(addr2.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toHex.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toHex.js#L13)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toHex(address: BrandedAddress): BrandedHex`
+
+Converts address to lowercase hex string with `0x` prefix.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to convert
+
+**Returns:** `BrandedHex` - Lowercase hex string
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.from(69n)
+const hex = Address.toHex(addr)
+console.log(hex)
+// "0x0000000000000000000000000000000000000045"
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toHex.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toHex.js#L13)
+
+</Tab>
+<Tab title="Zig">
+
+## `address.toHex(allocator: Allocator): ![]u8`
+
+Convert address to hex string. Caller owns returned memory.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for hex string
+
+**Returns:** `[]u8` - Hex string with `0x` prefix (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+const hex = try addr.toHex(allocator);
+defer allocator.free(hex);
+
+std.debug.print("{s}\n", .{hex});
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/address.zig:115](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L115)
+
+</Tab>
+</Tabs>
+
+## Format
+
+**Output format:** `0x` + 40 lowercase hexadecimal characters
+
+**Total length:** 42 characters
+
+**Example outputs:**
+- `0x0000000000000000000000000000000000000000` (zero address)
+- `0x742d35cc6634c0532925a3b844bc9e7595f51e3e`
+- `0xffffffffffffffffffffffffffffffffffffffff` (max address)
+
+## Case Sensitivity
+
+`toHex()` always returns lowercase, regardless of input format:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Mixed case input (EIP-55 checksummed)
+const checksummed = Address.fromHex("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+console.log(checksummed.toHex())
+// "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed" (lowercase)
+
+// Uppercase input
+const uppercase = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+console.log(uppercase.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e" (lowercase)
+```
+
+For checksummed output, use `toChecksummed()` instead.
+
+## Use Cases
+
+### Display and Logging
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromPrivateKey(privateKey)
+console.log(`Address: ${addr.toHex()}`)
+```
+
+### Storage and Serialization
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Account {
+  address: string
+  balance: bigint
+}
+
+const account: Account = {
+  address: addr.toHex(),
+  balance: 1000000n
+}
+
+// Serialize to JSON
+const json = JSON.stringify(account)
+```
+
+### Comparison and Hashing
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Normalize for comparison
+const normalized1 = addr1.toHex()
+const normalized2 = addr2.toHex()
+
+if (normalized1 === normalized2) {
+  console.log("Addresses match")
+}
+
+// Use as Map/Set keys
+const balances = new Map<string, bigint>()
+balances.set(addr.toHex(), 1000n)
+```
+
+### Database Queries
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function getBalance(address: Address) {
+  const hex = address.toHex()
+  return db.query('SELECT balance FROM accounts WHERE address = ?', [hex])
+}
+```
+
+## Performance
+
+**Zero allocation** - Creates new string but no intermediate buffers.
+
+**Time complexity:** O(n) where n = 20 bytes (constant time).
+
+**String concatenation:** Efficient for this fixed size (40 hex chars).
+
+For repeated conversions, consider caching the result:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class AddressWrapper {
+  private _hexCache?: string
+
+  constructor(private address: Address) {}
+
+  toHex(): string {
+    if (!this._hexCache) {
+      this._hexCache = this.address.toHex()
+    }
+    return this._hexCache
+  }
+}
+```
+
+## Comparison with Other Formats
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Lowercase (toHex)
+console.log(addr.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Checksummed (toChecksummed)
+console.log(addr.toChecksummed())
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Shortened (toShortHex)
+console.log(addr.toShortHex())
+// "0x742d35...1e3e"
+```
+
+## See Also
+
+- [toChecksummed](/primitives/address/to-checksummed) - Convert to EIP-55 checksummed hex
+- [toShortHex](/primitives/address/to-short-hex) - Convert to abbreviated display format
+- [fromHex](/primitives/address/from-hex) - Parse from hex string
+- [Hex](/primitives/hex) - Hex string utilities

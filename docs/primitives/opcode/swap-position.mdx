@@ -1,0 +1,57 @@
+---
+title: swapPosition()
+description: Get stack position swapped by SWAP opcode
+---
+
+## Opcode.swapPosition()
+
+Get stack position swapped by SWAP opcode (1-16).
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.swapPosition(0x90)  // 1 (SWAP1 swaps with 2nd)
+Opcode.swapPosition(0x91)  // 2 (SWAP2 swaps with 3rd)
+Opcode.swapPosition(0x9F)  // 16 (SWAP16 swaps with 17th)
+Opcode.swapPosition(0x01)  // undefined (ADD, not SWAP)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { swapPosition, SWAP1, SWAP16 } from '@tevm/voltaire/Opcode'
+
+swapPosition(SWAP1)   // 1
+swapPosition(SWAP16)  // 16
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const Opcode = @import("primitives").opcode;
+
+const pos1 = Opcode.swapPosition(0x90);   // 1 (SWAP1)
+const pos16 = Opcode.swapPosition(0x9F);  // 16 (SWAP16)
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`number | undefined` - Position (1-16) or undefined if not SWAP
+
+## Stack Semantics
+
+```
+SWAP1:  [..., b, a] → [..., a, b]              (swap top 2)
+SWAP2:  [..., c, b, a] → [..., a, b, c]        (swap top with 3rd)
+SWAP16: [..., q, ..., a] → [..., a, ..., q]    (swap top with 17th)
+```
+
+## Related
+
+- [isSwap()](/primitives/opcode/is-swap) - Check if SWAP opcode

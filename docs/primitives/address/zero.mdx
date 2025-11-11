@@ -1,0 +1,254 @@
+---
+title: Address.zero
+description: Create zero address (0x0000...0000)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.zero(): Address`
+
+Returns the zero address (`0x0000000000000000000000000000000000000000`). This is a singleton constant address with all bytes set to zero.
+
+**Returns:** `Address` - Zero address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const zero = Address.zero()
+console.log(zero.toHex())
+// "0x0000000000000000000000000000000000000000"
+
+// Check if address is zero
+console.log(zero.isZero()) // true
+
+// Compare with other addresses
+const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+console.log(addr.equals(zero)) // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/zero.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/zero.js#L13)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `zero(): BrandedAddress`
+
+Returns the zero address as a branded Uint8Array.
+
+**Returns:** `BrandedAddress` - Zero address (20 bytes of zeros)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const zero = Address.zero()
+
+// All bytes are zero
+console.log(zero[0])  // 0
+console.log(zero[19]) // 0
+
+// Verify it's zero
+console.log(Address.isZero(zero)) // true
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/zero.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/zero.js#L13)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.zero()`
+
+Returns zero address as a constant. In Zig, this is a compile-time constant.
+
+**Returns:** `Address` - Zero address
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const zero = Address.zero();
+
+// Verify all bytes are zero
+for (zero.bytes) |byte| {
+    try std.testing.expectEqual(@as(u8, 0), byte);
+}
+
+// Compare with other addresses
+const other = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+try std.testing.expect(!std.mem.eql(u8, &zero.bytes, &other.bytes));
+```
+
+**Defined in:** [primitives/Address/address.zig:25](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L25)
+
+</Tab>
+</Tabs>
+
+## Common Use Cases
+
+### Default Values
+
+Use as a default or placeholder address:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Config {
+  owner: Address
+  admin: Address
+}
+
+const defaultConfig: Config = {
+  owner: Address.zero(),
+  admin: Address.zero()
+}
+```
+
+### Burn Address
+
+The zero address is commonly used as a burn address (destroying tokens):
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const BURN_ADDRESS = Address.zero()
+
+function burnTokens(amount: bigint) {
+  // Transfer tokens to zero address (irreversibly destroys them)
+  transfer(BURN_ADDRESS, amount)
+}
+```
+
+### Validation
+
+Check if address is unset or invalid:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function validateRecipient(recipient: Address) {
+  if (recipient.equals(Address.zero())) {
+    throw new Error('Cannot send to zero address')
+  }
+}
+```
+
+### Contract Creation
+
+Zero address indicates contract creation in transaction `to` field:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Transaction {
+  from: Address
+  to: Address | null
+  data: Uint8Array
+}
+
+// Deploy contract (to = zero address or null)
+const deployTx: Transaction = {
+  from: deployer,
+  to: Address.zero(), // or null
+  data: contractBytecode
+}
+```
+
+## Special Properties
+
+**Uniqueness:** Only one valid representation exists.
+
+**Singleton:** Multiple calls to `zero()` return equivalent addresses:
+```typescript
+const zero1 = Address.zero()
+const zero2 = Address.zero()
+console.log(zero1.equals(zero2)) // true
+```
+
+**Memory:** Each call allocates a new Uint8Array. For repeated use, store the reference:
+```typescript
+// Less efficient (multiple allocations)
+for (let i = 0; i < 1000; i++) {
+  if (addr.equals(Address.zero())) {
+    // ...
+  }
+}
+
+// More efficient (single allocation)
+const ZERO = Address.zero()
+for (let i = 0; i < 1000; i++) {
+  if (addr.equals(ZERO)) {
+    // ...
+  }
+}
+```
+
+## Equivalent Constructions
+
+All of these produce the zero address:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const zero1 = Address.zero()
+const zero2 = Address.from(0n)
+const zero3 = Address.from(0)
+const zero4 = Address.fromHex("0x0000000000000000000000000000000000000000")
+const zero5 = Address.fromBytes(new Uint8Array(20))
+
+// All are equal
+console.log(zero1.equals(zero2)) // true
+console.log(zero1.equals(zero3)) // true
+console.log(zero1.equals(zero4)) // true
+console.log(zero1.equals(zero5)) // true
+```
+
+**Recommendation:** Use `Address.zero()` for clarity and intent.
+
+## Checking for Zero
+
+Use `isZero()` method to check if an address is zero:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000000")
+
+if (addr.isZero()) {
+  console.log("Address is zero")
+}
+
+// Equivalent but less clear
+if (addr.equals(Address.zero())) {
+  console.log("Address is zero")
+}
+```
+
+## Ethereum Context
+
+**Transaction to field:** Zero address in transaction `to` field indicates contract creation.
+
+**Event logs:** Zero address in log topics often represents minting (from) or burning (to).
+
+**Token standards:** ERC-20/ERC-721 use zero address to represent minting/burning:
+```solidity
+// Minting: from = 0x0
+emit Transfer(address(0), recipient, amount)
+
+// Burning: to = 0x0
+emit Transfer(sender, address(0), amount)
+```
+
+**Not a valid EOA:** Zero address cannot sign transactions (no private key exists).
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [isZero](/primitives/address/comparisons#iszerо) - Check if address is zero
+- [equals](/primitives/address/equals) - Compare addresses
+- [ERC-20 Token Standard](https://eips.ethereum.org/EIPS/eip-20) - Uses zero address for minting/burning

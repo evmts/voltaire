@@ -1,0 +1,262 @@
+---
+title: EventLog.from
+description: Create event log from parameters
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `EventLog.from(params: EventLogParams): EventLog`
+
+Create event log instance from parameters. Primary constructor for EventLog.
+
+**Parameters:**
+- `params.address: BrandedAddress` - Contract address that emitted the log
+- `params.topics: readonly BrandedHash[]` - Topic hashes (topic0 = signature, topic1-3 = indexed params)
+- `params.data: Uint8Array` - Non-indexed event data
+- `params.blockNumber?: bigint` - Block number where log was emitted
+- `params.blockHash?: BrandedHash` - Block hash
+- `params.transactionHash?: BrandedHash` - Transaction hash that generated the log
+- `params.transactionIndex?: number` - Transaction index in block
+- `params.logIndex?: number` - Log index in block
+- `params.removed?: boolean` - Whether log was removed due to chain reorganization
+
+**Returns:** `EventLog` - Event log instance with prototype methods
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+// Create Transfer event log
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
+    Hash.fromHex('0x000000000000000000000000fedcba0987654321fedcba0987654321fedcba09'),
+  ],
+  data: Hex.toBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'),
+  blockNumber: 18000000n,
+  transactionHash: Hash.fromHex('0xabc123...'),
+  logIndex: 5,
+});
+
+// Access fields
+console.log(Address.toHex(log.address));
+console.log(log.topics.length); // 3
+console.log(log.blockNumber); // 18000000n
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/from.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `from(params: EventLogParams): BrandedEventLog`
+
+Create event log instance from parameters. Primary constructor for EventLog.
+
+**Parameters:**
+- `params.address: BrandedAddress` - Contract address that emitted the log
+- `params.topics: readonly BrandedHash[]` - Topic hashes (topic0 = signature, topic1-3 = indexed params)
+- `params.data: Uint8Array` - Non-indexed event data
+- `params.blockNumber?: bigint` - Block number where log was emitted
+- `params.blockHash?: BrandedHash` - Block hash
+- `params.transactionHash?: BrandedHash` - Transaction hash that generated the log
+- `params.transactionIndex?: number` - Transaction index in block
+- `params.logIndex?: number` - Log index in block
+- `params.removed?: boolean` - Whether log was removed due to chain reorganization
+
+**Returns:** `BrandedEventLog` - Branded event log object
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+import * as Hex from '@tevm/voltaire/Hex';
+
+// Create Transfer event log
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
+    Hash.fromHex('0x000000000000000000000000fedcba0987654321fedcba0987654321fedcba09'),
+  ],
+  data: Hex.toBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'),
+  blockNumber: 18000000n,
+  transactionHash: Hash.fromHex('0xabc123...'),
+  logIndex: 5,
+});
+
+// Access fields
+console.log(Address.toHex(log.address));
+console.log(log.topics.length); // 3
+console.log(log.blockNumber); // 18000000n
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/from.js)
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### From RPC Response
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+// Transform eth_getLogs response
+const rpcLog = {
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2',
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12',
+  ],
+  data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000',
+  blockNumber: '0x112a880',
+  blockHash: '0xabc...',
+  transactionHash: '0xdef...',
+  transactionIndex: '0xa',
+  logIndex: '0x5',
+  removed: false,
+};
+
+const log = EventLog.from({
+  address: Address.fromHex(rpcLog.address),
+  topics: rpcLog.topics.map(Hash.fromHex),
+  data: Hex.toBytes(rpcLog.data),
+  blockNumber: BigInt(rpcLog.blockNumber),
+  blockHash: Hash.fromHex(rpcLog.blockHash),
+  transactionHash: Hash.fromHex(rpcLog.transactionHash),
+  transactionIndex: Number(rpcLog.transactionIndex),
+  logIndex: Number(rpcLog.logIndex),
+  removed: rpcLog.removed,
+});
+```
+
+### Minimal Log (Testing)
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Minimal log with required fields only
+const testLog = EventLog.from({
+  address: Address.zero(),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+});
+
+console.log(testLog.blockNumber); // undefined
+console.log(testLog.removed); // undefined (defaults to false)
+```
+
+### Complete Log with Metadata
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad...'), // Transfer signature
+    Hash.fromHex('0x000...from'),  // from address
+    Hash.fromHex('0x000...to'),    // to address
+  ],
+  data: Hex.toBytes('0x0000...0001'), // value
+  blockNumber: 18000000n,
+  blockHash: Hash.fromHex('0xabc...'),
+  transactionHash: Hash.fromHex('0xdef...'),
+  transactionIndex: 10,
+  logIndex: 5,
+  removed: false,
+});
+```
+
+### Anonymous Event
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Anonymous event with 4 indexed parameters (no signature in topic0)
+const anonymousLog = EventLog.from({
+  address: contractAddress,
+  topics: [
+    Hash.fromHex('0x000...param1'),
+    Hash.fromHex('0x000...param2'),
+    Hash.fromHex('0x000...param3'),
+    Hash.fromHex('0x000...param4'),
+  ],
+  data: new Uint8Array([]),
+});
+
+// getTopic0 returns first indexed parameter (not signature)
+const firstParam = anonymousLog.getTopic0();
+```
+
+## Type Details
+
+### EventLogParams
+
+```typescript
+interface EventLogParams {
+  address: BrandedAddress;
+  topics: readonly (BrandedHash | null | undefined)[];
+  data: BrandedHex;
+  blockNumber?: bigint;
+  blockHash?: BrandedHash;
+  transactionHash?: BrandedHash;
+  transactionIndex?: number;
+  logIndex?: number;
+  removed?: boolean;
+}
+```
+
+### Field Requirements
+
+**Required:**
+- `address` - Must be valid 20-byte address
+- `topics` - Array of 32-byte hashes (can be empty)
+- `data` - Event data as Uint8Array (can be empty)
+
+**Optional:**
+- `blockNumber` - Present for mined logs, undefined for pending
+- `blockHash` - Present for mined logs, undefined for pending
+- `transactionHash` - Present for mined logs, undefined for pending
+- `transactionIndex` - Transaction position in block
+- `logIndex` - Log position in block (used for sorting)
+- `removed` - Chain reorganization flag (defaults to false)
+
+### Topics Array
+
+Maximum 4 topics:
+- **Non-anonymous events**: topic0 = signature, topic1-3 = indexed params (max 3)
+- **Anonymous events**: topic0-3 = indexed params (max 4)
+
+```typescript
+// Non-anonymous: Transfer(address indexed from, address indexed to, uint256 value)
+const topics = [
+  eventSignature,  // topic0
+  fromAddress,     // topic1
+  toAddress,       // topic2
+  // topic3 unused
+];
+
+// Anonymous: event AnonymousTransfer(address indexed from, address indexed to, uint256 indexed tokenId, uint256 indexed price) anonymous
+const anonymousTopics = [
+  fromAddress,     // topic0 (NOT signature)
+  toAddress,       // topic1
+  tokenIdHash,     // topic2
+  priceHash,       // topic3
+];
+```
+
+## See Also
+
+- [create](/primitives/eventlog/create) - Explicit constructor (alias for from)
+- [clone](/primitives/eventlog/clone) - Deep clone existing log
+- [Fundamentals](/primitives/eventlog/fundamentals) - Event log structure and topics

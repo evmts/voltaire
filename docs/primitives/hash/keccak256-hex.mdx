@@ -1,0 +1,310 @@
+---
+title: Hash.keccak256Hex
+description: Compute Keccak-256 hash of hex-encoded data
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.keccak256Hex(hex: string): Hash`
+
+Computes Keccak-256 hash of hex-encoded data. Decodes hex to bytes then hashes.
+
+**Parameters:**
+- `hex: string` - Hex string to hash (with or without `0x` prefix)
+
+**Returns:** `Hash` - 32-byte Keccak-256 hash
+
+**Throws:**
+- `Error` - If hex string has odd length
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// Hash hex data
+const hash = Hash.keccak256Hex("0x1234")
+const hash2 = Hash.keccak256Hex("1234") // 0x prefix optional
+
+// Hash ABI-encoded data
+const abiEncoded = "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e"
+const hash3 = Hash.keccak256Hex(abiEncoded)
+
+// Equivalent to converting hex to bytes first
+const bytes = Hex.toBytes("0x1234")
+const hash4 = Hash.keccak256(bytes)
+// hash equals hash4
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `keccak256Hex(hex: string): BrandedHash`
+
+Computes Keccak-256 hash of hex-encoded data. Decodes hex to bytes then hashes.
+
+**Parameters:**
+- `hex: string` - Hex string to hash (with or without `0x` prefix)
+
+**Returns:** `BrandedHash` - 32-byte Keccak-256 hash
+
+**Throws:**
+- `Error` - If hex string has odd length
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// Hash hex data
+const hash = Hash.keccak256Hex("0x1234")
+
+// Hash ABI-encoded data
+const abiEncoded = "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e"
+const hash2 = Hash.keccak256Hex(abiEncoded)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual Hex Decoding + Hash
+
+Zig requires manual hex decoding:
+
+**Example:**
+
+```zig
+const std = @import("std");
+const keccak = @import("crypto").keccak256;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Decode hex string
+const hex = "1234";
+const bytes = try std.fmt.allocPrint(allocator, "{}", .{hex});
+defer allocator.free(bytes);
+
+var decoded = try allocator.alloc(u8, hex.len / 2);
+defer allocator.free(decoded);
+_ = try std.fmt.hexToBytes(decoded, hex);
+
+// Hash
+const hash = keccak(decoded);
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Decodes hex to bytes then computes Keccak-256:
+
+```typescript
+const normalized = hex.startsWith("0x") ? hex.slice(2) : hex
+const bytes = Hex.toBytes(normalized)
+return keccak256(bytes)
+```
+
+## Usage Examples
+
+### Hashing ABI-Encoded Data
+
+```typescript
+// Hash ABI-encoded function call
+const abiEncoded = "0xa9059cbb" + // transfer(address,uint256) selector
+  "000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e" + // address
+  "0000000000000000000000000000000000000000000000000de0b6b3a7640000" // uint256
+
+const hash = Hash.keccak256Hex(abiEncoded)
+```
+
+### Hashing Transaction Input
+
+```typescript
+interface Transaction {
+  to: string
+  data: string
+  value: bigint
+  nonce: bigint
+}
+
+function hashTransactionInput(tx: Transaction): Hash {
+  // Hash the data field (hex-encoded calldata)
+  return Hash.keccak256Hex(tx.data)
+}
+```
+
+### Hashing Hex Strings from API
+
+```typescript
+interface ApiResponse {
+  data: string // Hex string
+  signature: string // Hex string
+}
+
+async function verifyApiResponse(response: ApiResponse) {
+  const dataHash = Hash.keccak256Hex(response.data)
+  const signatureHash = Hash.keccak256Hex(response.signature)
+
+  return { dataHash, signatureHash }
+}
+```
+
+### Hashing Contract Bytecode
+
+```typescript
+// Hash deployed contract bytecode
+async function hashContractCode(address: string, provider: Provider) {
+  const code = await provider.getCode(address)
+  return Hash.keccak256Hex(code)
+}
+```
+
+### Hashing Storage Values
+
+```typescript
+// Hash storage slot value (hex string)
+function hashStorageValue(value: string): Hash {
+  // Storage values are 32-byte hex strings
+  return Hash.keccak256Hex(value)
+}
+
+const storageValue = "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"
+const hash = hashStorageValue(storageValue)
+```
+
+### Hashing Public Keys
+
+```typescript
+// Hash uncompressed public key (hex)
+function hashPublicKey(publicKey: string): Hash {
+  // Remove 0x04 prefix for uncompressed key
+  const cleanKey = publicKey.startsWith("0x04")
+    ? publicKey.slice(4)
+    : publicKey.slice(2)
+
+  return Hash.keccak256Hex(cleanKey)
+}
+
+const publicKey = "0x04" + "..." // 130 hex chars (0x04 + 64 bytes)
+const hash = hashPublicKey(publicKey)
+```
+
+### Comparing with Byte Hash
+
+```typescript
+// keccak256Hex and keccak256 produce same result
+const hexData = "0x1234"
+const byteData = Hex.toBytes(hexData)
+
+const hashFromHex = Hash.keccak256Hex(hexData)
+const hashFromBytes = Hash.keccak256(byteData)
+
+console.log(hashFromHex.equals(hashFromBytes)) // true
+```
+
+### Hashing Long Hex Strings
+
+```typescript
+// Hash large hex-encoded data
+async function hashLargeHexFile(url: string): Promise<Hash> {
+  const response = await fetch(url)
+  const hexData = await response.text()
+
+  // Remove 0x prefix if present
+  const cleanHex = hexData.startsWith("0x") ? hexData.slice(2) : hexData
+
+  return Hash.keccak256Hex(cleanHex)
+}
+```
+
+## Hex Format
+
+### Prefix Optional
+
+The `0x` prefix is optional:
+
+```typescript
+// Both produce same hash
+const hash1 = Hash.keccak256Hex("0x1234")
+const hash2 = Hash.keccak256Hex("1234")
+
+console.log(hash1.equals(hash2)) // true
+```
+
+### Even Length Required
+
+Hex strings must have even length (2 chars per byte):
+
+```typescript
+// Valid (even length)
+Hash.keccak256Hex("0x1234") // 4 chars
+Hash.keccak256Hex("0x123456") // 6 chars
+
+// Invalid (odd length)
+Hash.keccak256Hex("0x123") // Error: odd length
+Hash.keccak256Hex("12345") // Error: odd length
+```
+
+### Case Insensitive
+
+Hex characters are case insensitive:
+
+```typescript
+// All produce same hash
+const hash1 = Hash.keccak256Hex("0x1234abcd")
+const hash2 = Hash.keccak256Hex("0x1234ABCD")
+const hash3 = Hash.keccak256Hex("0x1234AbCd")
+
+console.log(hash1.equals(hash2)) // true
+console.log(hash2.equals(hash3)) // true
+```
+
+## Performance
+
+**Hex decoding overhead:** `keccak256Hex` includes hex decoding overhead. For performance-critical code with pre-decoded bytes, use `keccak256` instead.
+
+**Comparison:**
+```typescript
+const hexData = "0x1234"
+const byteData = Hex.toBytes(hexData)
+
+// Slower (includes hex decoding)
+const hash1 = Hash.keccak256Hex(hexData) // ~60ns
+
+// Faster (no hex decoding)
+const hash2 = Hash.keccak256(byteData) // ~10ns
+```
+
+**When to use each:**
+- Use `keccak256Hex` when working with hex strings (API responses, transaction data)
+- Use `keccak256` when working with binary data (buffers, typed arrays)
+- Convert once if hashing same data multiple times
+
+```typescript
+// Good: convert once
+const bytes = Hex.toBytes(hexData)
+for (let i = 0; i < 1000; i++) {
+  Hash.keccak256(bytes)
+}
+
+// Bad: convert every time
+for (let i = 0; i < 1000; i++) {
+  Hash.keccak256Hex(hexData)
+}
+```
+
+## See Also
+
+- [keccak256](/primitives/hash/keccak256) - Hash raw bytes (no hex decoding)
+- [keccak256String](/primitives/hash/keccak256-string) - Hash UTF-8 string
+- [fromHex](/primitives/hash/from-hex) - Create Hash from hex (no hashing)
+- [Hex](/primitives/hex) - Working with hex strings
+- [Abi](/primitives/abi) - ABI encoding/decoding

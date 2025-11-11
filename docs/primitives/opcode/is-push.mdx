@@ -1,0 +1,89 @@
+---
+title: isPush()
+description: Check if opcode is PUSH0-PUSH32
+---
+
+## Opcode.isPush()
+
+Check if opcode is PUSH0-PUSH32.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+Opcode.isPush(0x5F)  // true (PUSH0)
+Opcode.isPush(0x60)  // true (PUSH1)
+Opcode.isPush(0x7F)  // true (PUSH32)
+Opcode.isPush(0x01)  // false (ADD)
+Opcode.isPush(0x80)  // false (DUP1)
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { isPush, PUSH1, ADD } from '@tevm/voltaire/Opcode'
+
+isPush(PUSH1)  // true
+isPush(ADD)    // false
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const Opcode = @import("primitives").opcode;
+
+const is_push1 = Opcode.isPush(0x60);  // true
+const is_add = Opcode.isPush(0x01);    // false
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`boolean` - True if PUSH0-PUSH32 (0x5F-0x7F)
+
+## PUSH Opcodes
+
+- **PUSH0** (0x5F): Push 0 onto stack (no immediate data)
+- **PUSH1** (0x60): Push 1 byte
+- **PUSH2-PUSH31** (0x61-0x7E): Push 2-31 bytes
+- **PUSH32** (0x7F): Push 32 bytes
+
+## Use Cases
+
+### Extract Constants
+
+```typescript
+function extractPushValues(bytecode: Uint8Array): bigint[] {
+  const instructions = Opcode.parse(bytecode)
+  const values: bigint[] = []
+
+  for (const inst of instructions) {
+    if (Opcode.isPush(inst.opcode) && inst.immediate) {
+      const hex = '0x' + Array.from(inst.immediate)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      values.push(BigInt(hex))
+    }
+  }
+
+  return values
+}
+```
+
+### Count PUSH Operations
+
+```typescript
+function countPushOps(bytecode: Uint8Array): number {
+  const instructions = Opcode.parse(bytecode)
+  return instructions.filter(inst => Opcode.isPush(inst.opcode)).length
+}
+```
+
+## Related
+
+- [pushBytes()](/primitives/opcode/push-bytes) - Get PUSH data length
+- [pushOpcode()](/primitives/opcode/push-opcode) - Get PUSH opcode for length

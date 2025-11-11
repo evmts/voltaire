@@ -1,0 +1,211 @@
+---
+title: Blob.toCommitment
+description: Compute 48-byte KZG commitment for blob
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## Signature
+
+```typescript
+blob.toCommitment(): Commitment
+```
+
+Compute KZG commitment for blob. Commitment cryptographically binds to blob data and is used for verification without revealing contents.
+
+### Returns
+
+`Commitment` - 48-byte KZG commitment
+
+### Throws
+
+- If blob size is invalid (not exactly 131,072 bytes)
+- If KZG library not available
+
+### Example
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const data = new TextEncoder().encode("Rollup batch");
+const blob = Blob.fromData(data);
+
+// Compute commitment
+const commitment = blob.toCommitment();
+
+console.log(commitment.length); // 48 bytes
+console.log(commitment instanceof Uint8Array); // true
+
+// Use in transaction
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+```
+
+### Example: Transaction Preparation
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => b.toCommitment());
+const proofs = blobs.map(b => b.toProof());
+
+// Verify all commitments match
+const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+
+if (allValid) {
+  const versionedHashes = commitments.map(c =>
+    Blob.Commitment.toVersionedHash(c)
+  );
+
+  // Include in EIP-4844 transaction
+  const tx = {
+    type: '0x03',
+    blobVersionedHashes: versionedHashes,
+    // ... other fields
+  };
+}
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/toCommitment.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/toCommitment.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## Signature
+
+```typescript
+toCommitment(blob: BrandedBlob): Commitment
+```
+
+Compute KZG commitment for blob. Commitment cryptographically binds to blob data and is used for verification without revealing contents.
+
+### Parameters
+
+- **blob** `BrandedBlob` - Blob to compute commitment for
+
+### Returns
+
+`Commitment` - 48-byte KZG commitment
+
+### Throws
+
+- If blob size is invalid (not exactly 131,072 bytes)
+- If KZG library not available
+
+### Example
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+
+const data = new TextEncoder().encode("Rollup batch");
+const blob = Blob.fromData(data);
+
+// Compute commitment
+const commitment = Blob.toCommitment(blob);
+
+console.log(commitment.length); // 48 bytes
+
+// Use in transaction
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/toCommitment.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/toCommitment.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Signature
+
+```zig
+pub fn toCommitment(self: Blob, allocator: std.mem.Allocator) !Commitment
+```
+
+Compute KZG commitment for blob.
+
+### Parameters
+
+- **allocator** `std.mem.Allocator` - Memory allocator
+
+### Returns
+
+`Commitment` - Allocated 48-byte commitment (caller owns memory)
+
+### Errors
+
+- `error.InvalidBlobSize` - Blob size incorrect
+- `error.KzgNotAvailable` - KZG library not loaded
+
+### Example
+
+```zig
+const Blob = @import("primitives").Blob;
+
+const blob = try Blob.fromData(allocator, "Rollup batch");
+defer blob.deinit(allocator);
+
+const commitment = try blob.toCommitment(allocator);
+defer commitment.deinit(allocator);
+
+std.debug.print("Commitment: {} bytes\n", .{commitment.len});
+```
+
+</Tab>
+</Tabs>
+
+## KZG Commitment Scheme
+
+KZG commitments use polynomial commitment scheme over BLS12-381 curve:
+
+1. **Blob as Polynomial** - 4096 field elements become polynomial coefficients
+2. **Commitment** - Evaluate polynomial at secret point (from trusted setup)
+3. **Binding** - Computationally infeasible to find different blob with same commitment
+
+### Security Properties
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Different data = different commitments
+const blob1 = Blob.fromData(data1);
+const blob2 = Blob.fromData(data2);
+
+const commitment1 = blob1.toCommitment();
+const commitment2 = blob2.toCommitment();
+
+// Commitments differ (binding property)
+console.log(Blob.equals(commitment1, commitment2)); // false
+
+// Cannot forge commitment for different data
+const proof1 = blob1.toProof();
+console.log(Blob.verify(blob1, commitment1, proof1)); // true
+console.log(Blob.verify(blob2, commitment1, proof1)); // false (wrong blob)
+```
+
+## Commitment Utilities
+
+### Blob.Commitment Namespace
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const commitment = blob.toCommitment();
+
+// Validate commitment size
+console.log(Blob.Commitment.isValid(commitment)); // true
+
+// Convert to versioned hash
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+console.log(versionedHash[0]); // 0x01 (version byte)
+```
+
+## See Also
+
+- [toProof](./toProof) - Generate KZG proof
+- [verify](./verify) - Verify commitment and proof
+- [toVersionedHash](./toVersionedHash) - Compute versioned hash
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme details

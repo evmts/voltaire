@@ -1,0 +1,215 @@
+---
+title: Hex.toNumber
+description: Convert hex string to number
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.toNumber(hex: BrandedHex): number`
+
+Converts hex string to JavaScript number. Throws if value exceeds `Number.MAX_SAFE_INTEGER`.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `number` - Numeric value
+
+**Throws:**
+- `RangeError` - Value exceeds MAX_SAFE_INTEGER (2^53 - 1)
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Convert hex to number
+const hex = Hex("0xff")
+const num = Hex.toNumber(hex)
+// 255
+
+// Instance method
+const num2 = hex.toNumber()
+// 255
+
+// Various values
+Hex.toNumber("0x0")       // 0
+Hex.toNumber("0x10")      // 16
+Hex.toNumber("0x100")     // 256
+Hex.toNumber("0x1234")    // 4660
+
+// Maximum safe integer
+Hex.toNumber("0x1fffffffffffff")  // 9007199254740991 (MAX_SAFE_INTEGER)
+
+// Too large - throws
+try {
+  Hex.toNumber("0x20000000000000")  // Exceeds MAX_SAFE_INTEGER
+} catch (e) {
+  // RangeError: Hex value exceeds MAX_SAFE_INTEGER
+}
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toNumber.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toNumber.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toNumber(hex: BrandedHex): number`
+
+Converts hex string to JavaScript number. Throws if value exceeds `Number.MAX_SAFE_INTEGER`.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string with `0x` prefix
+
+**Returns:** `number` - Numeric value
+
+**Throws:**
+- `RangeError` - Value exceeds MAX_SAFE_INTEGER (2^53 - 1)
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Convert hex to number
+const hex = Hex.from("0xff")
+const num = Hex.toNumber(hex)
+// 255
+
+// Various values
+Hex.toNumber("0x0")       // 0
+Hex.toNumber("0x10")      // 16
+Hex.toNumber("0x100")     // 256
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/toNumber.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toNumber.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.toU64(hex: []const u8): !u64`
+
+Convert hex string to 64-bit unsigned integer.
+
+**Parameters:**
+- `hex: []const u8` - Hex string with `0x` prefix
+
+**Returns:** `u64` - Numeric value
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex = "0xff";
+const num = try Hex.toU64(hex);  // 255
+
+const hex2 = "0x1234";
+const num2 = try Hex.toU64(hex2);  // 4660
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Number Range
+
+Valid output range: `0` to `Number.MAX_SAFE_INTEGER` (2^53 - 1 = 9,007,199,254,740,991)
+
+```typescript
+// Valid conversions
+Hex.toNumber("0x0")                    // 0
+Hex.toNumber("0x1fffffffffffff")       // 9007199254740991 (MAX_SAFE_INTEGER)
+
+// Too large - use toBigInt instead
+Hex.toNumber("0xffffffffffffffff")     // RangeError
+```
+
+For larger values, use `toBigInt`:
+
+```typescript
+const large = "0xffffffffffffffff"
+const bigint = Hex.toBigInt(large)  // 18446744073709551615n
+```
+
+## Common Use Cases
+
+**Block Numbers:**
+```typescript
+const blockHex = "0x112a880"  // 18000000
+const blockNum = Hex.toNumber(blockHex)
+```
+
+**Gas Values:**
+```typescript
+const gasLimitHex = "0x5208"  // 21000
+const gasLimit = Hex.toNumber(gasLimitHex)
+
+const gasPriceHex = "0x4a817c800"  // 20 gwei
+const gasPrice = Hex.toNumber(gasPriceHex)
+```
+
+**Transaction Nonces:**
+```typescript
+const nonceHex = "0x2a"  // 42
+const nonce = Hex.toNumber(nonceHex)
+```
+
+**Array Indices:**
+```typescript
+const indexHex = "0x5"
+const index = Hex.toNumber(indexHex)
+const item = array[index]
+```
+
+**Chain IDs:**
+```typescript
+const chainIdHex = "0x1"  // Ethereum mainnet
+const chainId = Hex.toNumber(chainIdHex)
+```
+
+**Timestamps:**
+```typescript
+const timestampHex = "0x63c1a2b0"
+const timestamp = Hex.toNumber(timestampHex)
+const date = new Date(timestamp * 1000)
+```
+
+## Performance
+
+Direct `Number.parseInt(hex.slice(2), 16)` with safety check. Very fast for valid input.
+
+## Safe Integer Check
+
+The function ensures JavaScript number precision:
+
+```typescript
+// Safe - exact representation
+Hex.toNumber("0x1fffffffffffff")  // ✓ 9007199254740991
+
+// Unsafe - would lose precision
+Hex.toNumber("0x20000000000000")  // ✗ RangeError
+```
+
+JavaScript numbers use IEEE 754 double precision, which can exactly represent integers up to 2^53 - 1. Beyond this, precision is lost.
+
+## Error Handling
+
+```typescript
+try {
+  const num = Hex.toNumber(largeHex)
+} catch (e) {
+  if (e instanceof RangeError) {
+    // Use toBigInt instead
+    const bigint = Hex.toBigInt(largeHex)
+  }
+}
+```
+
+## See Also
+
+- [toBigInt](/primitives/hex/to-bigint) - For large numbers beyond MAX_SAFE_INTEGER
+- [fromNumber](/primitives/hex/from-number) - Convert number to hex
+- [toBytes](/primitives/hex/to-bytes) - Convert to byte array

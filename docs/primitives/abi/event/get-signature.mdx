@@ -1,0 +1,139 @@
+---
+title: Event.getSignature
+description: Get canonical event signature string for hashing
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `event.getSignature(): string`
+
+Get the canonical event signature string in the format `EventName(type1,type2,...)`.
+
+**Returns:** `string` - Canonical event signature (no spaces, no parameter names, no indexed markers)
+
+**Example:**
+
+```typescript
+import { Event } from '@tevm/voltaire'
+
+const transferEvent = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+})
+
+const signature = transferEvent.getSignature()
+console.log(signature)  // "Transfer(address,address,uint256)"
+```
+
+**Defined in:** [primitives/Abi/event/BrandedEvent/getSignature.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent/getSignature.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getSignature(event: BrandedEvent): string`
+
+Get the canonical event signature string.
+
+**Parameters:**
+- `event: BrandedEvent` - Event ABI item
+
+**Returns:** `string` - Canonical event signature
+
+**Example:**
+
+```typescript
+import * as Event from '@tevm/voltaire/Abi/event'
+
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+}
+
+const signature = Event.getSignature(transferEvent)
+// "Transfer(address,address,uint256)"
+```
+
+**Defined in:** [primitives/Abi/event/BrandedEvent/getSignature.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent/getSignature.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Event signature generation in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Computing Event Selector
+
+```typescript
+import { Event } from '@tevm/voltaire'
+import { Keccak256 } from '@tevm/voltaire'
+
+const transferEvent = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+// Get signature
+const signature = transferEvent.getSignature()
+// "Transfer(address,address,uint256)"
+
+// Hash to get selector (topic 0)
+const selector = Keccak256.hash(signature)
+console.log(selector)
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+```
+
+### Signature Ignores Parameter Names
+
+```typescript
+import { Event } from '@tevm/voltaire'
+
+const event1 = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+const event2 = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "sender", indexed: true },
+    { type: "address", name: "recipient", indexed: true },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Same signature despite different names
+console.log(event1.getSignature() === event2.getSignature())  // true
+```
+
+## See Also
+
+- [getSelector](/primitives/abi/event/get-selector) - Get event selector hash
+- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters

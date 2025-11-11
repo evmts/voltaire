@@ -1,0 +1,221 @@
+---
+title: EventLog.getTopic0
+description: Get event signature hash (topic0)
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.getTopic0(): BrandedHash | undefined`
+
+Get topic0 (event signature hash) from log. Returns undefined if topics array is empty.
+
+**Returns:** `BrandedHash | undefined` - Topic0 hash, or undefined if no topics
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
+  ],
+  data: new Uint8Array([]),
+});
+
+const topic0 = log.getTopic0();
+console.log(Hash.toHex(topic0));
+// '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/getTopic0.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getTopic0.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getTopic0(log: BrandedEventLog): BrandedHash | undefined`
+
+Get topic0 (event signature hash) from log. Returns undefined if topics array is empty.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log instance
+
+**Returns:** `BrandedHash | undefined` - Topic0 hash, or undefined if no topics
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
+  ],
+  data: new Uint8Array([]),
+});
+
+const topic0 = EventLog.getTopic0(log);
+console.log(Hash.toHex(topic0));
+// '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/getTopic0.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getTopic0.js)
+
+</Tab>
+</Tabs>
+
+## Topic0 Semantics
+
+**Non-anonymous events:** Topic0 is the keccak256 hash of the event signature:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Transfer(address,address,uint256)
+const transferSig = Hash.fromBytes(
+  keccak256(new TextEncoder().encode('Transfer(address,address,uint256)'))
+);
+
+console.log(Hash.toHex(transferSig));
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+**Anonymous events:** Topic0 is the first indexed parameter (NOT the signature):
+
+```solidity
+event AnonymousTransfer(
+  address indexed from,
+  address indexed to,
+  uint256 indexed tokenId
+) anonymous;
+```
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const anonymousLog = EventLog.from({
+  address: contractAddress,
+  topics: [
+    fromHash,    // topic0 = first indexed param (from)
+    toHash,      // topic1 = second indexed param (to)
+    tokenIdHash, // topic2 = third indexed param (tokenId)
+  ],
+  data: new Uint8Array([]),
+});
+
+const topic0 = anonymousLog.getTopic0();
+// Returns fromHash, NOT event signature
+```
+
+## Usage Patterns
+
+### Identifying Event Type
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+
+function identifyEvent(log: EventLog): string {
+  const sig = log.getTopic0();
+  if (!sig) return 'unknown';
+
+  if (Hash.equals(sig, TRANSFER_SIG)) return 'Transfer';
+  if (Hash.equals(sig, APPROVAL_SIG)) return 'Approval';
+  return 'unknown';
+}
+
+const eventType = identifyEvent(log);
+console.log(`Event type: ${eventType}`);
+```
+
+### Filtering by Signature
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+// Find all Transfer events
+const transferLogs = allLogs.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, TRANSFER_SIG);
+});
+
+console.log(`Found ${transferLogs.length} Transfer events`);
+```
+
+### Validating Event Structure
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+function validateTransferLog(log: EventLog): boolean {
+  const sig = log.getTopic0();
+  if (!sig) {
+    console.error('Log missing signature');
+    return false;
+  }
+
+  if (!Hash.equals(sig, TRANSFER_SIG)) {
+    console.error('Not a Transfer event');
+    return false;
+  }
+
+  if (log.getIndexedTopics().length !== 2) {
+    console.error('Expected 2 indexed parameters');
+    return false;
+  }
+
+  return true;
+}
+```
+
+### Computing Event Signature
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+function eventSignature(declaration: string): Hash {
+  const bytes = new TextEncoder().encode(declaration);
+  return Hash.fromBytes(keccak256(bytes));
+}
+
+// ERC-20 events
+const TRANSFER = eventSignature('Transfer(address,address,uint256)');
+const APPROVAL = eventSignature('Approval(address,address,uint256)');
+
+console.log('Transfer:', Hash.toHex(TRANSFER));
+console.log('Approval:', Hash.toHex(APPROVAL));
+```
+
+## Empty Topics Array
+
+If topics array is empty, `getTopic0()` returns `undefined`:
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const emptyLog = EventLog.from({
+  address: Address.zero(),
+  topics: [],
+  data: new Uint8Array([]),
+});
+
+const topic0 = emptyLog.getTopic0();
+console.log(topic0); // undefined
+```
+
+## See Also
+
+- [getSignature](/primitives/eventlog/getsignature) - Alias for getTopic0
+- [getIndexedTopics](/primitives/eventlog/getindexedtopics) - Get topic1-topic3
+- [Fundamentals](/primitives/eventlog/fundamentals) - Event signature hashing

@@ -1,0 +1,301 @@
+---
+title: equals()
+description: Compare two storage keys for equality
+---
+
+Compares two `BrandedStorageKey` instances for structural equality.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function equals(a: BrandedStorageKey, b: BrandedStorageKey): boolean
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn equals(a: StorageKey, b: StorageKey) bool
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **a** (`BrandedStorageKey`) - First storage key
+- **b** (`BrandedStorageKey`) - Second storage key
+
+## Returns
+
+`boolean` - `true` if address and slot are equal, `false` otherwise
+
+## Examples
+
+### Basic Comparison
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+const key1 = State.StorageKey(addr, 0n);
+const key2 = State.StorageKey(addr, 0n);
+const key3 = State.StorageKey(addr, 1n);
+
+console.log(State.StorageKey.equals(key1, key2)); // true (same address and slot)
+console.log(State.StorageKey.equals(key1, key3)); // false (different slots)
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+const Address = @import("address");
+
+const addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+const key1 = State.StorageKey{ .address = addr, .slot = 0 };
+const key2 = State.StorageKey{ .address = addr, .slot = 0 };
+const key3 = State.StorageKey{ .address = addr, .slot = 1 };
+
+const equal12 = State.equals(key1, key2); // true
+const equal13 = State.equals(key1, key3); // false
+```
+
+</Tab>
+</Tabs>
+
+### Different Addresses
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const addr1 = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
+const addr2 = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F"); // DAI
+
+const key1 = State.StorageKey(addr1, 0n);
+const key2 = State.StorageKey(addr2, 0n);
+
+console.log(State.StorageKey.equals(key1, key2)); // false (different addresses)
+```
+
+### Round-Trip Equality
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const originalKey = State.StorageKey(contractAddr, 42n);
+
+// Serialize and deserialize
+const keyStr = State.StorageKey.toString(originalKey);
+const parsedKey = State.StorageKey.fromString(keyStr);
+
+// Verify equality
+console.log(State.StorageKey.equals(originalKey, parsedKey)); // true
+```
+
+### Deduplication
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Remove duplicate storage keys
+function deduplicate(keys: BrandedStorageKey[]): BrandedStorageKey[] {
+  const unique: BrandedStorageKey[] = [];
+
+  for (const key of keys) {
+    const isDuplicate = unique.some(existing =>
+      State.StorageKey.equals(existing, key)
+    );
+
+    if (!isDuplicate) {
+      unique.push(key);
+    }
+  }
+
+  return unique;
+}
+
+const keys = [
+  State.StorageKey(contractAddr, 0n),
+  State.StorageKey(contractAddr, 1n),
+  State.StorageKey(contractAddr, 0n), // Duplicate
+  State.StorageKey(contractAddr, 2n),
+  State.StorageKey(contractAddr, 1n)  // Duplicate
+];
+
+const uniqueKeys = deduplicate(keys);
+console.log(uniqueKeys.length); // 3 (0, 1, 2)
+```
+
+### Storage Validation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Verify storage key matches expected
+function validateStorageKey(
+  actual: BrandedStorageKey,
+  expected: { address: string, slot: bigint }
+): boolean {
+  const expectedKey = State.StorageKey(
+    Address.from(expected.address),
+    expected.slot
+  );
+
+  return State.StorageKey.equals(actual, expectedKey);
+}
+
+const key = State.StorageKey(contractAddr, 0n);
+const isValid = validateStorageKey(key, {
+  address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  slot: 0n
+}); // true
+```
+
+### Cache Lookup
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Cache storage values by key
+class StorageCache {
+  private cache: Array<{ key: BrandedStorageKey, value: bigint }> = [];
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const existing = this.cache.findIndex(entry =>
+      State.StorageKey.equals(entry.key, key)
+    );
+
+    if (existing >= 0) {
+      this.cache[existing].value = value;
+    } else {
+      this.cache.push({ key, value });
+    }
+  }
+
+  get(key: BrandedStorageKey): bigint | undefined {
+    const entry = this.cache.find(entry =>
+      State.StorageKey.equals(entry.key, key)
+    );
+    return entry?.value;
+  }
+
+  has(key: BrandedStorageKey): boolean {
+    return this.cache.some(entry =>
+      State.StorageKey.equals(entry.key, key)
+    );
+  }
+}
+
+const cache = new StorageCache();
+const key = State.StorageKey(contractAddr, 0n);
+
+cache.set(key, 1000n);
+console.log(cache.get(key)); // 1000n
+console.log(cache.has(key)); // true
+```
+
+### Set Operations
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Check if key exists in set
+function hasKey(keys: BrandedStorageKey[], target: BrandedStorageKey): boolean {
+  return keys.some(key => State.StorageKey.equals(key, target));
+}
+
+// Find intersection of two key sets
+function intersection(
+  a: BrandedStorageKey[],
+  b: BrandedStorageKey[]
+): BrandedStorageKey[] {
+  return a.filter(keyA => hasKey(b, keyA));
+}
+
+// Find difference (keys in a but not in b)
+function difference(
+  a: BrandedStorageKey[],
+  b: BrandedStorageKey[]
+): BrandedStorageKey[] {
+  return a.filter(keyA => !hasKey(b, keyA));
+}
+
+const setA = [
+  State.StorageKey(contractAddr, 0n),
+  State.StorageKey(contractAddr, 1n),
+  State.StorageKey(contractAddr, 2n)
+];
+
+const setB = [
+  State.StorageKey(contractAddr, 1n),
+  State.StorageKey(contractAddr, 2n),
+  State.StorageKey(contractAddr, 3n)
+];
+
+const common = intersection(setA, setB);
+console.log(common.length); // 2 (slots 1 and 2)
+
+const onlyInA = difference(setA, setB);
+console.log(onlyInA.length); // 1 (slot 0)
+```
+
+### Testing
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import { expect } from 'vitest';
+
+test('storage key equality', () => {
+  const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+  const key1 = State.StorageKey(addr, 0n);
+  const key2 = State.StorageKey(addr, 0n);
+
+  expect(State.StorageKey.equals(key1, key2)).toBe(true);
+});
+
+test('storage key inequality - different slots', () => {
+  const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+  const key1 = State.StorageKey(addr, 0n);
+  const key2 = State.StorageKey(addr, 1n);
+
+  expect(State.StorageKey.equals(key1, key2)).toBe(false);
+});
+
+test('storage key inequality - different addresses', () => {
+  const addr1 = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+  const addr2 = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F");
+
+  const key1 = State.StorageKey(addr1, 0n);
+  const key2 = State.StorageKey(addr2, 0n);
+
+  expect(State.StorageKey.equals(key1, key2)).toBe(false);
+});
+```
+
+## Implementation Details
+
+Equality checks both:
+1. Address equality (using `Address.equals()`)
+2. Slot equality (direct bigint comparison)
+
+Both must match for keys to be equal.
+
+## Related
+
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [is()](/primitives/state/is) - Type guard
+- [toString()](/primitives/state/to-string) - Serialization
+- [Address.equals()](/primitives/address/equals) - Address comparison

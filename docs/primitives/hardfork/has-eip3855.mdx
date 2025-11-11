@@ -1,0 +1,238 @@
+---
+title: Hardfork.hasEIP3855
+description: Check if PUSH0 opcode is available
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.hasEIP3855(): boolean`
+
+Check if PUSH0 opcode is available in this hardfork. Active since Shanghai.
+
+**Returns:** `boolean` - True if PUSH0 is supported
+
+**Example:**
+
+```typescript
+import { Hardfork, SHANGHAI, MERGE, CANCUN } from '@tevm/voltaire'
+
+const shanghai = Hardfork.fromString("shanghai")
+
+shanghai.hasEIP3855()  // true - Shanghai introduced PUSH0
+MERGE.hasEIP3855()     // false - Merge pre-dates PUSH0
+CANCUN.hasEIP3855()    // true - all post-Shanghai hardforks
+```
+
+**Convenience alias:** `fork.supportsPUSH0()` - Same functionality, different naming style
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP3855.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP3855.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `hasEIP3855(fork: BrandedHardfork): boolean`
+
+Check if PUSH0 opcode is available in this hardfork. Active since Shanghai.
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to check
+
+**Returns:** `boolean` - True if PUSH0 is supported
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { SHANGHAI, MERGE, CANCUN } from '@tevm/voltaire'
+
+Hardfork.hasEIP3855(SHANGHAI)  // true
+Hardfork.hasEIP3855(MERGE)     // false
+Hardfork.hasEIP3855(CANCUN)    // true
+
+// Convenience alias
+Hardfork.supportsPUSH0(SHANGHAI)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP3855.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP3855.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## EIP-3855 Features
+
+**Active Since:** Shanghai (April 12, 2023)
+
+### PUSH0 Opcode
+
+**Opcode:** `0x5F`
+
+**Function:** Pushes constant `0` onto the stack
+
+**Gas Cost:** 2 gas
+
+### Benefits
+
+**Gas Savings:**
+- `PUSH0`: 2 gas
+- `PUSH1 0x00`: 3 gas
+- Saves 1 gas per zero push (33% reduction)
+
+**Bytecode Size:**
+- `PUSH0`: 1 byte
+- `PUSH1 0x00`: 2 bytes
+- Reduces contract size by 1 byte per occurrence
+
+**Common Use Cases:**
+- Function return values initialization
+- Array/mapping default values
+- Stack manipulation
+- Placeholder values
+
+## Usage Patterns
+
+### Opcode Selection
+
+Select optimal zero-push implementation:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getPushZeroOpcode(fork: BrandedHardfork) {
+  if (fork.hasEIP3855()) {
+    return {
+      opcode: 0x5F,        // PUSH0
+      gas: 2,
+      bytes: [0x5F]
+    }
+  }
+
+  return {
+    opcode: 0x60,          // PUSH1
+    gas: 3,
+    bytes: [0x60, 0x00]
+  }
+}
+```
+
+### Compiler Optimization
+
+Enable PUSH0 in compiler:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getCompilerTarget(fork: BrandedHardfork) {
+  return {
+    hardfork: Hardfork.toString(fork),
+    usePUSH0: fork.hasEIP3855()
+  }
+}
+```
+
+### Bytecode Generation
+
+Generate optimal bytecode:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function emitPushZero(fork: BrandedHardfork): Uint8Array {
+  if (fork.hasEIP3855()) {
+    return new Uint8Array([0x5F])  // PUSH0
+  }
+
+  return new Uint8Array([0x60, 0x00])  // PUSH1 0x00
+}
+```
+
+### Gas Estimation
+
+Calculate gas costs:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function estimatePushZeroGas(
+  fork: BrandedHardfork,
+  occurrences: number
+): number {
+  if (fork.hasEIP3855()) {
+    return 2 * occurrences  // PUSH0: 2 gas each
+  }
+
+  return 3 * occurrences  // PUSH1 0x00: 3 gas each
+}
+
+// Typical contract might save 100-500 gas
+const savings = estimatePushZeroGas(MERGE, 100) - estimatePushZeroGas(SHANGHAI, 100)
+console.log(`Gas savings: ${savings}`)  // 100 gas
+```
+
+## Network Configuration
+
+Validate PUSH0 support:
+
+```typescript
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+
+function validatePUSH0Support(config: NetworkConfig) {
+  const fork = Hardfork.fromString(config.hardfork)
+
+  if (fork.hasEIP3855()) {
+    console.log("PUSH0 optimization available")
+  } else {
+    console.log("PUSH0 not available, using PUSH1 0x00")
+  }
+}
+```
+
+## Compiler Integration
+
+Solidity compiler support:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getSoliditySettings(fork: BrandedHardfork) {
+  return {
+    evmVersion: fork.hasEIP3855() ? "shanghai" : "paris",
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
+  }
+}
+```
+
+## EIP References
+
+**Primary:**
+- [EIP-3855](https://eips.ethereum.org/EIPS/eip-3855) - PUSH0 instruction
+
+## Impact
+
+**For Developers:**
+- Smaller contract sizes (reduces deployment costs)
+- Lower execution costs (1 gas saved per zero push)
+- Must target Shanghai or later for PUSH0 optimization
+
+**For Compilers:**
+- Can optimize `PUSH1 0x00` → `PUSH0` when targeting Shanghai+
+- Reduces bytecode size without semantic changes
+
+**For Contracts:**
+- Typical savings: 50-500 gas per transaction
+- Reduced deployment costs: 100-1000 gas per contract
+- Zero runtime overhead
+
+## See Also
+
+- [hasEIP1559](/primitives/hardfork/has-eip1559) - Check EIP-1559 base fee availability (London)
+- [hasEIP4844](/primitives/hardfork/has-eip4844) - Check blob transactions availability (Cancun)
+- [isAtLeast](/primitives/hardfork/is-at-least) - General version comparison

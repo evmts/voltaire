@@ -1,0 +1,297 @@
+---
+title: Address.equals
+description: Compare two addresses for equality
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.equals(other: BrandedAddress): boolean`
+
+Byte-by-byte equality comparison. Returns true if all 20 bytes are identical.
+
+**Parameters:**
+- `other: BrandedAddress` - Address to compare with
+
+**Returns:** `boolean` - `true` if addresses are equal
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(69n)
+const addr2 = Address.from(69n)
+const addr3 = Address.fromHex("0x0000000000000000000000000000000000000045")
+
+console.log(addr1.equals(addr2)) // true
+console.log(addr1.equals(addr3)) // true (69 = 0x45)
+
+const different = Address.from(42n)
+console.log(addr1.equals(different)) // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `equals(a: BrandedAddress, b: BrandedAddress): boolean`
+
+Byte-by-byte equality comparison between two addresses.
+
+**Parameters:**
+- `a: BrandedAddress` - First address
+- `b: BrandedAddress` - Second address
+
+**Returns:** `boolean` - `true` if addresses are equal
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.from(69n)
+const addr2 = Address.from(69n)
+
+console.log(Address.equals(addr1, addr2)) // true
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.mem.eql(u8, addr1.bytes, addr2.bytes): bool`
+
+Compare addresses by directly comparing underlying byte arrays.
+
+**Parameters:**
+- `addr1.bytes: [20]u8` - First address bytes
+- `addr2.bytes: [20]u8` - Second address bytes
+
+**Returns:** `bool` - `true` if equal
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+const addr2 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+const addr3 = Address.fromHex("0x0000000000000000000000000000000000000001") catch unreachable;
+
+try std.testing.expect(std.mem.eql(u8, &addr1.bytes, &addr2.bytes));
+try std.testing.expect(!std.mem.eql(u8, &addr1.bytes, &addr3.bytes));
+```
+
+**Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+</Tabs>
+
+## Comparison Semantics
+
+**Value equality:** Compares byte contents, not object identity.
+
+**Case insensitive:** Addresses created from different case formats are equal:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const lowercase = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const uppercase = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+const checksummed = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+console.log(lowercase.equals(uppercase))     // true
+console.log(lowercase.equals(checksummed))   // true
+console.log(uppercase.equals(checksummed))   // true
+```
+
+**Format independent:** Different construction methods producing same address are equal:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const fromHex = Address.fromHex("0x0000000000000000000000000000000000000045")
+const fromNumber = Address.from(69n)
+const fromBytes = Address.fromBytes(new Uint8Array([0, 0, ..., 0x45]))
+
+console.log(fromHex.equals(fromNumber))  // true (69 = 0x45)
+console.log(fromHex.equals(fromBytes))   // true
+```
+
+## Use Cases
+
+### Validation
+
+Check if address matches expected value:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const OWNER = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+function requireOwner(caller: Address) {
+  if (!caller.equals(OWNER)) {
+    throw new Error('Caller is not owner')
+  }
+}
+```
+
+### Filtering
+
+Filter transactions by address:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Transaction {
+  from: Address
+  to: Address
+  value: bigint
+}
+
+function getTransactionsFrom(txs: Transaction[], address: Address) {
+  return txs.filter(tx => tx.from.equals(address))
+}
+
+function getTransactionsTo(txs: Transaction[], address: Address) {
+  return txs.filter(tx => tx.to.equals(address))
+}
+```
+
+### Deduplication
+
+Remove duplicate addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function deduplicateAddresses(addresses: Address[]): Address[] {
+  const unique: Address[] = []
+
+  for (const addr of addresses) {
+    if (!unique.some(u => u.equals(addr))) {
+      unique.push(addr)
+    }
+  }
+
+  return unique
+}
+
+// More efficient with Set (requires hex conversion)
+function deduplicateAddressesOptimized(addresses: Address[]): Address[] {
+  const seen = new Set<string>()
+  const unique: Address[] = []
+
+  for (const addr of addresses) {
+    const hex = addr.toHex()
+    if (!seen.has(hex)) {
+      seen.add(hex)
+      unique.push(addr)
+    }
+  }
+
+  return unique
+}
+```
+
+### Lookups
+
+Check membership in address list:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const WHITELIST = [
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address.fromHex("0x1234567890123456789012345678901234567890"),
+  // ...
+]
+
+function isWhitelisted(address: Address): boolean {
+  return WHITELIST.some(addr => addr.equals(address))
+}
+```
+
+## Performance Considerations
+
+**Direct comparison:** `equals()` converts to hex and uses string comparison internally.
+
+**For repeated comparisons**, convert to hex once and use string comparison:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Less efficient (converts to hex each time)
+for (const addr of addresses) {
+  if (addr.equals(target)) {
+    // ...
+  }
+}
+
+// More efficient (converts once)
+const targetHex = target.toHex()
+for (const addr of addresses) {
+  if (addr.toHex() === targetHex) {
+    // ...
+  }
+}
+
+// Most efficient (use Map/Set)
+const addressSet = new Set(addresses.map(a => a.toHex()))
+if (addressSet.has(target.toHex())) {
+  // ...
+}
+```
+
+## Alternative Comparisons
+
+**String comparison:**
+```typescript
+addr1.toHex() === addr2.toHex()
+```
+
+**Bigint comparison:**
+```typescript
+addr1.toU256() === addr2.toU256()
+```
+
+**Byte comparison:**
+```typescript
+// Manual byte-by-byte
+addr1.every((byte, i) => byte === addr2[i])
+```
+
+**Recommendation:** Use `equals()` for clarity. It handles the comparison efficiently.
+
+## Relation to Other Comparisons
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+const addr3 = Address.from(10n)
+
+// Equality
+console.log(addr1.equals(addr2))  // false
+console.log(addr1.equals(addr3))  // true
+
+// Ordering
+console.log(addr1.compare(addr2)) // -1 (less than)
+console.log(addr1.compare(addr3)) // 0  (equal)
+
+// Shorthand comparisons
+console.log(addr1.lessThan(addr2))    // true
+console.log(addr1.greaterThan(addr2)) // false
+```
+
+## See Also
+
+- [compare](/primitives/address/compare) - Ordering comparison
+- [isZero](/primitives/address/comparisons#iszerо) - Check if address is zero
+- [lessThan](/primitives/address/comparisons#lessthan) - Less than comparison
+- [greaterThan](/primitives/address/comparisons#greaterthan) - Greater than comparison

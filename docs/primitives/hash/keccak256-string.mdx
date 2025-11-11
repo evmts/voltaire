@@ -1,0 +1,335 @@
+---
+title: Hash.keccak256String
+description: Compute Keccak-256 hash of UTF-8 encoded string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.keccak256String(str: string): Hash`
+
+Computes Keccak-256 hash of UTF-8 encoded string. Commonly used for event signatures and function selectors.
+
+**Parameters:**
+- `str: string` - String to hash (UTF-8 encoded)
+
+**Returns:** `Hash` - 32-byte Keccak-256 hash
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// Hash string
+const hash = Hash.keccak256String("hello")
+
+// Event signature
+const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+console.log(transferSig.toHex())
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+// Function selector (first 4 bytes)
+const selector = Hash.keccak256String("transfer(address,uint256)")
+const functionSelector = selector.slice(0, 4)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `keccak256String(str: string): BrandedHash`
+
+Computes Keccak-256 hash of UTF-8 encoded string. Commonly used for event signatures and function selectors.
+
+**Parameters:**
+- `str: string` - String to hash (UTF-8 encoded)
+
+**Returns:** `BrandedHash` - 32-byte Keccak-256 hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// Hash string
+const hash = Hash.keccak256String("hello")
+
+// Event signature
+const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual UTF-8 Encoding + Hash
+
+Zig requires manual UTF-8 encoding:
+
+**Example:**
+
+```zig
+const std = @import("std");
+const keccak = @import("crypto").keccak256;
+
+const str = "hello";
+const hash = keccak(str); // str is already UTF-8 bytes
+
+// For runtime strings
+fn hashString(s: []const u8) [32]u8 {
+    return keccak(s);
+}
+
+const result = hashString("Transfer(address,address,uint256)");
+```
+
+**Note:** Zig string literals are UTF-8 encoded `[]const u8` slices.
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Encodes string as UTF-8 bytes using `TextEncoder`, then computes Keccak-256:
+
+```typescript
+const encoder = new TextEncoder()
+const bytes = encoder.encode(str)
+return keccak256(bytes)
+```
+
+## Event Signatures
+
+Event signatures are computed by hashing the canonical event string:
+
+```typescript
+// ERC-20 Transfer event
+const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+// ERC-20 Approval event
+const approvalSig = Hash.keccak256String("Approval(address,address,uint256)")
+// "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+
+// ERC-721 Transfer event
+const erc721TransferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+// Same as ERC-20!
+```
+
+### Using Event Signatures
+
+```typescript
+interface Log {
+  topics: string[]
+  data: string
+}
+
+function isTransferEvent(log: Log): boolean {
+  const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+  const topic0 = Hash.fromHex(log.topics[0])
+  return topic0.equals(transferSig)
+}
+
+function filterTransferEvents(logs: Log[]): Log[] {
+  const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+  return logs.filter(log => {
+    const topic0 = Hash.fromHex(log.topics[0])
+    return topic0.equals(transferSig)
+  })
+}
+```
+
+## Function Selectors
+
+Function selectors are the first 4 bytes of the function signature hash:
+
+```typescript
+function getFunctionSelector(signature: string): Uint8Array {
+  const hash = Hash.keccak256String(signature)
+  return hash.slice(0, 4)
+}
+
+// ERC-20 functions
+const transferSelector = getFunctionSelector("transfer(address,uint256)")
+// 0xa9059cbb
+
+const approveSelector = getFunctionSelector("approve(address,uint256)")
+// 0x095ea7b3
+
+const transferFromSelector = getFunctionSelector("transferFrom(address,address,uint256)")
+// 0x23b872dd
+```
+
+### Using Function Selectors
+
+```typescript
+function decodeFunction(data: Uint8Array) {
+  const selector = data.slice(0, 4)
+
+  const transferSelector = getFunctionSelector("transfer(address,uint256)")
+  const approveSelector = getFunctionSelector("approve(address,uint256)")
+
+  if (selector.every((b, i) => b === transferSelector[i])) {
+    return { name: "transfer", params: data.slice(4) }
+  } else if (selector.every((b, i) => b === approveSelector[i])) {
+    return { name: "approve", params: data.slice(4) }
+  }
+
+  return { name: "unknown", params: data.slice(4) }
+}
+```
+
+## Common Ethereum Signatures
+
+### ERC-20 Events
+
+```typescript
+const ERC20_EVENTS = {
+  Transfer: Hash.keccak256String("Transfer(address,address,uint256)"),
+  Approval: Hash.keccak256String("Approval(address,address,uint256)")
+}
+```
+
+### ERC-20 Functions
+
+```typescript
+const ERC20_SELECTORS = {
+  transfer: Hash.keccak256String("transfer(address,uint256)").slice(0, 4),
+  approve: Hash.keccak256String("approve(address,uint256)").slice(0, 4),
+  transferFrom: Hash.keccak256String("transferFrom(address,address,uint256)").slice(0, 4),
+  balanceOf: Hash.keccak256String("balanceOf(address)").slice(0, 4),
+  allowance: Hash.keccak256String("allowance(address,address)").slice(0, 4)
+}
+```
+
+### Uniswap V2 Events
+
+```typescript
+const UNISWAP_V2_EVENTS = {
+  Swap: Hash.keccak256String("Swap(address,uint256,uint256,uint256,uint256,address)"),
+  Mint: Hash.keccak256String("Mint(address,uint256,uint256)"),
+  Burn: Hash.keccak256String("Burn(address,uint256,uint256,address)")
+}
+```
+
+## Usage Examples
+
+### Building Event Filter
+
+```typescript
+function createEventFilter(eventSignature: string) {
+  const topic0 = Hash.keccak256String(eventSignature)
+  return {
+    topics: [topic0.toHex()]
+  }
+}
+
+const transferFilter = createEventFilter("Transfer(address,address,uint256)")
+// { topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"] }
+```
+
+### Encoding Function Call
+
+```typescript
+function encodeFunctionCall(signature: string, params: Uint8Array): Uint8Array {
+  const selector = Hash.keccak256String(signature).slice(0, 4)
+  return new Uint8Array([...selector, ...params])
+}
+
+// Encode transfer(address,uint256) call
+const params = new Uint8Array(64) // ABI-encoded parameters
+const calldata = encodeFunctionCall("transfer(address,uint256)", params)
+```
+
+### Hashing Message
+
+```typescript
+// EIP-191 personal sign
+function hashPersonalMessage(message: string): Hash {
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`
+  const prefixBytes = new TextEncoder().encode(prefix)
+  const messageBytes = new TextEncoder().encode(message)
+  const combined = new Uint8Array([...prefixBytes, ...messageBytes])
+  return Hash.keccak256(combined)
+}
+
+const messageHash = hashPersonalMessage("Hello, Ethereum!")
+```
+
+### Computing Contract Address
+
+```typescript
+// CREATE opcode: keccak256(rlp([sender, nonce]))
+function computeContractAddress(sender: Address, nonce: bigint): Address {
+  const rlpEncoded = Rlp.encode([sender, nonce])
+  const hash = Hash.keccak256(rlpEncoded)
+  return Address.fromBytes(hash.slice(12)) // Last 20 bytes
+}
+```
+
+## Canonical Format
+
+Event and function signatures must be in canonical format:
+
+**Rules:**
+- No spaces
+- No parameter names
+- Base types only (no aliases)
+- Tuples use `(type1,type2,...)` syntax
+
+```typescript
+// ✅ Correct
+Hash.keccak256String("transfer(address,uint256)")
+Hash.keccak256String("Transfer(address,address,uint256)")
+
+// ❌ Wrong (spaces)
+Hash.keccak256String("transfer(address, uint256)")
+
+// ❌ Wrong (parameter names)
+Hash.keccak256String("transfer(address to, uint256 amount)")
+
+// ❌ Wrong (type alias)
+Hash.keccak256String("transfer(address,uint)") // Should be uint256
+```
+
+### Complex Types
+
+```typescript
+// Tuple parameters
+Hash.keccak256String("swap((address,uint256),address)")
+
+// Array parameters
+Hash.keccak256String("batchTransfer(address[],uint256[])")
+
+// Nested tuples
+Hash.keccak256String("execute((address,uint256)[],(address,bytes))")
+```
+
+## Performance
+
+**String encoding:** `TextEncoder.encode()` is fast but adds overhead compared to `keccak256` on bytes.
+
+**Caching:** For frequently used signatures, compute once and cache:
+
+```typescript
+const CACHED_SIGNATURES = {
+  transfer: Hash.keccak256String("Transfer(address,address,uint256)"),
+  approval: Hash.keccak256String("Approval(address,address,uint256)")
+}
+
+// Use cached value
+function isTransferEvent(log: Log): boolean {
+  const topic0 = Hash.fromHex(log.topics[0])
+  return topic0.equals(CACHED_SIGNATURES.transfer)
+}
+```
+
+## See Also
+
+- [keccak256](/primitives/hash/keccak256) - Hash raw bytes
+- [keccak256Hex](/primitives/hash/keccak256-hex) - Hash hex-encoded data
+- [slice](/primitives/hash/slice) - Extract function selector (first 4 bytes)
+- [Abi](/primitives/abi) - ABI encoding/decoding
+- [EventLog](/primitives/eventlog) - Working with event logs

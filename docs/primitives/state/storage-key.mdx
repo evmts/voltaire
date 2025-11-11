@@ -1,0 +1,150 @@
+---
+title: StorageKey()
+description: Factory function creating storage key from address and slot
+---
+
+Factory function for creating `BrandedStorageKey` instances from contract address and storage slot.
+
+## Signature
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+function StorageKey(
+  address: BrandedAddress,
+  slot: bigint
+): BrandedStorageKey
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub const StorageKey = struct {
+    address: Address,
+    slot: u256,
+};
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **address** (`BrandedAddress`) - 20-byte contract address owning the storage slot
+- **slot** (`bigint`) - 256-bit storage slot number within the contract's storage space
+
+## Returns
+
+`BrandedStorageKey` - Composite key uniquely identifying the storage location
+
+## Examples
+
+### Basic Usage
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Create storage key for slot 0 (total supply)
+const key = State.StorageKey(contractAddr, 0n);
+
+console.log(key.address); // BrandedAddress
+console.log(key.slot);    // 0n
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+const Address = @import("address");
+
+const contract_addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Create storage key
+const key = State.StorageKey{
+  .address = contract_addr,
+  .slot = 0,
+};
+```
+
+</Tab>
+</Tabs>
+
+### Multiple Slots
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Storage layout
+const totalSupplyKey = State.StorageKey(usdcAddress, 0n);  // Slot 0
+const balancesBaseKey = State.StorageKey(usdcAddress, 1n); // Slot 1
+const allowancesKey = State.StorageKey(usdcAddress, 2n);   // Slot 2
+const ownerKey = State.StorageKey(usdcAddress, 3n);        // Slot 3
+const pausedKey = State.StorageKey(usdcAddress, 4n);       // Slot 4
+```
+
+### Storage Map Usage
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Track storage across multiple contracts
+const storage = new Map<string, bigint>();
+
+// Store values using storage keys
+const key1 = State.StorageKey(contractAddr, 0n);
+const key2 = State.StorageKey(contractAddr, 1n);
+
+storage.set(State.StorageKey.toString(key1), 1000000000n);
+storage.set(State.StorageKey.toString(key2), 2000000000n);
+
+// Retrieve values
+const value1 = storage.get(State.StorageKey.toString(key1)); // 1000000000n
+const value2 = storage.get(State.StorageKey.toString(key2)); // 2000000000n
+```
+
+### Computed Mapping Slots
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+import { Keccak256 } from '@tevm/crypto';
+
+// Compute storage slot for mapping: balances[userAddress]
+function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
+  const encoded = new Uint8Array(64);
+  encoded.set(new Uint8Array(32 - key.length).fill(0), 0);
+  encoded.set(key, 32 - key.length);
+  encoded.set(encodeBigInt(baseSlot, 32), 32);
+
+  const hash = Keccak256.hash(encoded);
+  return BigInt('0x' + Buffer.from(hash).toString('hex'));
+}
+
+const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// balances mapping at slot 1
+const userBalanceSlot = computeMappingSlot(userAddress, 1n);
+const userBalanceKey = State.StorageKey(tokenAddress, userBalanceSlot);
+
+console.log(`User balance at slot: ${userBalanceSlot}`);
+```
+
+## Related
+
+- [from()](/primitives/state/from) - Universal constructor from various inputs
+- [toString()](/primitives/state/to-string) - Convert to string format
+- [fromString()](/primitives/state/from-string) - Parse from string format
+- [Fundamentals](/primitives/state/fundamentals) - Learn about storage slots and state

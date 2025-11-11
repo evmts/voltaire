@@ -1,0 +1,100 @@
+---
+title: EventLog.create
+description: Explicit constructor for creating event logs
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `EventLog.create(params: EventLogParams): EventLog`
+
+Explicit constructor for event log. Alias for `EventLog.from()`.
+
+**Parameters:**
+- `params.address: BrandedAddress` - Contract address that emitted the log
+- `params.topics: readonly BrandedHash[]` - Topic hashes
+- `params.data: Uint8Array` - Non-indexed event data
+- `params.blockNumber?: bigint` - Block number
+- `params.blockHash?: BrandedHash` - Block hash
+- `params.transactionHash?: BrandedHash` - Transaction hash
+- `params.transactionIndex?: number` - Transaction index
+- `params.logIndex?: number` - Log index
+- `params.removed?: boolean` - Removed flag
+
+**Returns:** `EventLog` - Event log instance with prototype methods
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.create({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([0, 0, 0, 1]),
+  blockNumber: 18000000n,
+});
+
+console.log(log.blockNumber); // 18000000n
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/create.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/create.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `create(params: EventLogParams): BrandedEventLog`
+
+Explicit constructor for event log. Alias for `from()`.
+
+**Parameters:**
+- `params.address: BrandedAddress` - Contract address that emitted the log
+- `params.topics: readonly BrandedHash[]` - Topic hashes
+- `params.data: Uint8Array` - Non-indexed event data
+- `params.blockNumber?: bigint` - Block number
+- `params.blockHash?: BrandedHash` - Block hash
+- `params.transactionHash?: BrandedHash` - Transaction hash
+- `params.transactionIndex?: number` - Transaction index
+- `params.logIndex?: number` - Log index
+- `params.removed?: boolean` - Removed flag
+
+**Returns:** `BrandedEventLog` - Branded event log object
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.create({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([0, 0, 0, 1]),
+  blockNumber: 18000000n,
+});
+
+console.log(log.blockNumber); // 18000000n
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/create.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/create.js)
+
+</Tab>
+</Tabs>
+
+## Usage Notes
+
+`create()` is functionally identical to `from()`. Use whichever name is clearer in context:
+
+```typescript
+// Both equivalent
+const log1 = EventLog.from(params);
+const log2 = EventLog.create(params);
+```
+
+Most code uses `from()` as the primary constructor. Use `create()` when explicit construction intent improves readability.
+
+## See Also
+
+- [from](/primitives/eventlog/from) - Primary constructor
+- [clone](/primitives/eventlog/clone) - Deep clone existing log

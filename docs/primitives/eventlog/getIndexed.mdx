@@ -1,0 +1,85 @@
+---
+title: EventLog.getIndexed
+description: Alias for getIndexedTopics
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.getIndexed(): readonly BrandedHash[]`
+
+Get indexed parameters. Alias for `getIndexedTopics()`.
+
+**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad...'), // signature
+    Hash.fromHex('0x000...from'),  // indexed param 1
+    Hash.fromHex('0x000...to'),    // indexed param 2
+  ],
+  data: new Uint8Array([]),
+});
+
+const indexed = log.getIndexed();
+console.log(indexed.length); // 2
+```
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getIndexed(log: BrandedEventLog): readonly BrandedHash[]`
+
+Get indexed parameters. Alias for `getIndexedTopics()`.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log instance
+
+**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad...'), // signature
+    Hash.fromHex('0x000...from'),  // indexed param 1
+    Hash.fromHex('0x000...to'),    // indexed param 2
+  ],
+  data: new Uint8Array([]),
+});
+
+const indexed = EventLog.getIndexed(log);
+console.log(indexed.length); // 2
+```
+
+</Tab>
+</Tabs>
+
+## Usage Notes
+
+`getIndexed()` is functionally identical to `getIndexedTopics()`:
+
+```typescript
+// Both equivalent
+const indexed1 = log.getIndexedTopics();
+const indexed2 = log.getIndexed();
+```
+
+Use whichever name is clearer in context. `getIndexed()` is shorter; `getIndexedTopics()` is more explicit.
+
+## See Also
+
+- [getIndexedTopics](/primitives/eventlog/getindexedtopics) - Primary method with full documentation
+- [getTopic0](/primitives/eventlog/gettopic0) - Get event signature

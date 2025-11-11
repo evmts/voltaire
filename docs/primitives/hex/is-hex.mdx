@@ -1,0 +1,233 @@
+---
+title: Hex.isHex
+description: Type guard to check if string is valid hex format
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.isHex(value: string): boolean`
+
+Type guard that checks if a string is valid hex format. Returns `true` if the string starts with `0x` and contains only valid hex characters.
+
+**Parameters:**
+- `value: string` - String to validate
+
+**Returns:** `boolean` - `true` if valid hex, `false` otherwise
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Valid hex strings
+Hex.isHex("0x1234")     // true
+Hex.isHex("0xabcdef")   // true
+Hex.isHex("0x")         // true (empty is valid)
+Hex.isHex("0xABCDEF")   // true (uppercase valid)
+
+// Invalid hex strings
+Hex.isHex("1234")       // false (missing 0x prefix)
+Hex.isHex("0xZZZZ")     // false (invalid characters)
+Hex.isHex("0xGG")       // false (G not valid hex)
+Hex.isHex("hello")      // false (not hex)
+Hex.isHex("")           // false (empty string)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/isHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isHex(value: string): boolean`
+
+Type guard that checks if a string is valid hex format. Returns `true` if the string starts with `0x` and contains only valid hex characters.
+
+**Parameters:**
+- `value: string` - String to validate
+
+**Returns:** `boolean` - `true` if valid hex, `false` otherwise
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Valid hex strings
+Hex.isHex("0x1234")     // true
+Hex.isHex("0xabcdef")   // true
+Hex.isHex("0x")         // true
+
+// Invalid hex strings
+Hex.isHex("1234")       // false
+Hex.isHex("0xZZZZ")     // false
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/isHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.isHex(value: []const u8): bool`
+
+Check if string is valid hex format.
+
+**Parameters:**
+- `value: []const u8` - String to validate
+
+**Returns:** `bool` - `true` if valid hex, `false` otherwise
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const valid = Hex.isHex("0x1234");  // true
+const invalid1 = Hex.isHex("1234");  // false
+const invalid2 = Hex.isHex("0xZZZZ");  // false
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Validation Rules
+
+Must meet ALL conditions:
+1. Starts with `0x` prefix
+2. Contains only valid hex characters: `0-9`, `a-f`, `A-F`
+3. Can be empty after prefix (`0x` is valid)
+
+```typescript
+// ✓ Valid
+Hex.isHex("0x")         // Empty hex
+Hex.isHex("0x0")        // Single digit
+Hex.isHex("0x1234")     // Multiple digits
+Hex.isHex("0xabcdef")   // Lowercase
+Hex.isHex("0xABCDEF")   // Uppercase
+Hex.isHex("0xAbCdEf")   // Mixed case
+
+// ✗ Invalid
+Hex.isHex("")           // Empty string
+Hex.isHex("0X1234")     // Uppercase X
+Hex.isHex("1234")       // Missing 0x
+Hex.isHex("0x 1234")    // Contains space
+Hex.isHex("0xGHIJ")     // Invalid characters
+```
+
+## Type Guard Usage
+
+Use in conditional logic for type narrowing:
+
+```typescript
+function processInput(input: string) {
+  if (Hex.isHex(input)) {
+    // TypeScript knows input is valid hex format
+    const bytes = Hex.toBytes(input)
+    // Process bytes...
+  } else {
+    console.error("Invalid hex format")
+  }
+}
+```
+
+## Common Use Cases
+
+**Input Validation:**
+```typescript
+function setHash(input: string) {
+  if (!Hex.isHex(input)) {
+    throw new Error("Hash must be valid hex")
+  }
+  this.hash = input
+}
+```
+
+**User Input Sanitization:**
+```typescript
+const userInput = req.body.data
+
+if (Hex.isHex(userInput)) {
+  // Safe to process as hex
+  await processHexData(userInput)
+} else {
+  return res.status(400).json({ error: "Invalid hex format" })
+}
+```
+
+**Filter Arrays:**
+```typescript
+const inputs = ["0x1234", "invalid", "0xabcd", "xyz"]
+const validHex = inputs.filter(Hex.isHex)
+// ["0x1234", "0xabcd"]
+```
+
+**Conditional Conversion:**
+```typescript
+function toBytes(input: string | Uint8Array): Uint8Array {
+  if (typeof input === 'string') {
+    if (!Hex.isHex(input)) {
+      throw new Error("String must be valid hex")
+    }
+    return Hex.toBytes(input)
+  }
+  return input
+}
+```
+
+**RPC Response Validation:**
+```typescript
+const response = await provider.call({ data: calldata })
+
+if (!Hex.isHex(response)) {
+  throw new Error("Invalid RPC response format")
+}
+
+const result = Hex.toBytes(response)
+```
+
+## Performance
+
+Fast character-by-character validation with early return. Complexity: O(n) where n is string length.
+
+No exceptions thrown - safe for validation loops.
+
+## vs validate()
+
+**`isHex()` - Non-throwing:**
+```typescript
+if (Hex.isHex(input)) {
+  // Valid
+} else {
+  // Invalid - handle gracefully
+}
+```
+
+**`validate()` - Throwing:**
+```typescript
+try {
+  Hex.validate(input)  // Throws on invalid
+  // Valid - continue
+} catch (e) {
+  // Handle error
+}
+```
+
+Use `isHex()` for:
+- Conditional logic
+- User input validation
+- Filtering arrays
+- Type guards
+
+Use `validate()` for:
+- Asserting invariants
+- Fail-fast validation
+- Error reporting
+
+## See Also
+
+- [validate](/primitives/hex/validate) - Validate and throw on invalid format
+- [isSized](/primitives/hex/is-sized) - Check if hex has specific byte size
+- [assertSize](/primitives/hex/assert-size) - Assert hex has specific byte size

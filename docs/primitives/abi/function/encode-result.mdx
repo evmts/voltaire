@@ -1,0 +1,173 @@
+---
+title: Function.encodeResult
+description: Encode function return values into ABI format
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.encodeResult(values: unknown[]): Hex`
+
+Encode function return values into ABI-encoded hex format.
+
+**Parameters:**
+- `values: unknown[]` - Array of return values matching function outputs
+
+**Returns:** `Hex` - ABI-encoded return data
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+const returnData = balanceOfFn.encodeResult([1000n])
+console.log(returnData)
+// "0x00000000000000000000000000000000000000000000000000000000000003e8"
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/encodeResult.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/encodeResult.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `encodeResult(fn: BrandedFunction, values: unknown[]): Hex`
+
+Encode function return values into ABI-encoded hex format.
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+- `values: unknown[]` - Array of return values
+
+**Returns:** `Hex` - ABI-encoded return data
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+}
+
+const returnData = Function.encodeResult(balanceOfFn, [1000n])
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/encodeResult.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/encodeResult.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI encoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Single Return Value
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const totalSupplyFn = new Function({
+  type: "function",
+  name: "totalSupply",
+  inputs: [],
+  outputs: [{ type: "uint256", name: "supply" }]
+})
+
+const encoded = totalSupplyFn.encodeResult([1000000n])
+```
+
+### Multiple Return Values
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getReservesFn = new Function({
+  type: "function",
+  name: "getReserves",
+  outputs: [
+    { type: "uint112", name: "reserve0" },
+    { type: "uint112", name: "reserve1" },
+    { type: "uint32", name: "blockTimestampLast" }
+  ]
+})
+
+const encoded = getReservesFn.encodeResult([1000n, 2000n, 1234567n])
+```
+
+### Boolean Return
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool", name: "success" }]
+})
+
+const encoded = transferFn.encodeResult([true])
+```
+
+### Dynamic Return Types
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getNameFn = new Function({
+  type: "function",
+  name: "name",
+  outputs: [{ type: "string", name: "name" }]
+})
+
+const encoded = getNameFn.encodeResult(["MyToken"])
+```
+
+### Testing Contract Behavior
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+// Create mock return data
+const mockBalance = 1000n
+const mockReturnData = balanceOfFn.encodeResult([mockBalance])
+
+// Use in tests
+async function testBalanceOf() {
+  // Mock provider returns our encoded data
+  mockProvider.setReturnData(mockReturnData)
+
+  const balance = await contract.balanceOf(address)
+  expect(balance).toBe(mockBalance)
+}
+```
+
+## See Also
+
+- [decodeResult](/primitives/abi/function/decode-result) - Decode function return values
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function calldata

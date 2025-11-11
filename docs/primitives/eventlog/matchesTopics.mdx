@@ -1,0 +1,386 @@
+---
+title: EventLog.matchesTopics
+description: Check if log matches topic filter with null wildcards and OR logic
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.matchesTopics(topics: readonly (BrandedHash | BrandedHash[] | null)[]): boolean`
+
+Check if log topics match filter. `null` entries match any topic, arrays match any of the hashes (OR logic).
+
+**Parameters:**
+- `topics: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter array
+  - `null` - Matches any topic at that position
+  - `BrandedHash` - Matches that specific hash
+  - `BrandedHash[]` - Matches any hash in array (OR logic)
+
+**Returns:** `boolean` - True if all non-null filter topics match
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    TRANSFER_SIG,
+    Hash.fromHex('0x000...from'),
+    userHash,
+  ],
+  data: new Uint8Array([]),
+});
+
+// Match signature, any from, specific to
+const matches1 = log.matchesTopics([
+  TRANSFER_SIG,  // topic0 must match
+  null,          // topic1 matches any
+  userHash,      // topic2 must match
+]);
+console.log(matches1); // true
+
+// Match signature and any of multiple addresses
+const matches2 = log.matchesTopics([
+  TRANSFER_SIG,
+  null,
+  [userHash, anotherHash, thirdHash], // topic2 matches any of these
+]);
+console.log(matches2); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `matchesTopics(log: BrandedEventLog, topics: readonly (BrandedHash | BrandedHash[] | null)[]): boolean`
+
+Check if log topics match filter. `null` entries match any topic, arrays match any of the hashes (OR logic).
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `topics: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter array
+
+**Returns:** `boolean` - True if all non-null filter topics match
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [TRANSFER_SIG, Hash.fromHex('0x000...from'), userHash],
+  data: new Uint8Array([]),
+});
+
+// Match signature, any from, specific to
+const matches = EventLog.matchesTopics(log, [
+  TRANSFER_SIG,
+  null,
+  userHash,
+]);
+console.log(matches); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
+
+</Tab>
+</Tabs>
+
+## Filter Semantics
+
+### Null Wildcard
+
+`null` at any position matches any topic value:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+// Match Transfer events with any from/to addresses
+const matches = log.matchesTopics([
+  TRANSFER_SIG,  // topic0 must be Transfer signature
+  null,          // topic1 can be any address
+  null,          // topic2 can be any address
+]);
+```
+
+### Single Hash Match
+
+Specific hash must match exactly at that position:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
+
+// Match Transfer events TO specific user
+const matches = log.matchesTopics([
+  TRANSFER_SIG,  // Exact signature
+  null,          // from: any
+  userHash,      // to: specific user
+]);
+```
+
+### Array of Hashes (OR Logic)
+
+Matches if log topic equals ANY hash in the array:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+
+// Match Transfer OR Approval events
+const matches = log.matchesTopics([
+  [TRANSFER_SIG, APPROVAL_SIG],  // topic0 can be either
+]);
+```
+
+### Empty Filter Array
+
+Empty filter matches all logs:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Matches all logs
+const matches = log.matchesTopics([]);
+console.log(matches); // true
+```
+
+## Usage Patterns
+
+### ERC-20 Transfer Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userAddress = Address.fromHex('0xa1b2c3d4...');
+const userHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+);
+
+// All transfers FROM user
+const outgoing = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG, userHash, null])
+);
+
+// All transfers TO user
+const incoming = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG, null, userHash])
+);
+
+// All transfers involving user (from OR to)
+const userTransfers = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG, userHash, null]) ||
+  log.matchesTopics([TRANSFER_SIG, null, userHash])
+);
+
+console.log(`Outgoing: ${outgoing.length}`);
+console.log(`Incoming: ${incoming.length}`);
+console.log(`Total: ${userTransfers.length}`);
+```
+
+### Multiple Event Types
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
+
+// Match any of these event types
+const relevantLogs = allLogs.filter(log =>
+  log.matchesTopics([[TRANSFER_SIG, APPROVAL_SIG, SWAP_SIG]])
+);
+
+console.log(`Found ${relevantLogs.length} relevant events`);
+```
+
+### Intra-Group Transfers
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+// Addresses in the group
+const groupHashes = [
+  Hash.fromHex('0x000...addr1'),
+  Hash.fromHex('0x000...addr2'),
+  Hash.fromHex('0x000...addr3'),
+];
+
+// Transfers between any group members
+const intraGroupTransfers = allLogs.filter(log =>
+  log.matchesTopics([
+    TRANSFER_SIG,
+    groupHashes,  // from: any group member
+    groupHashes,  // to: any group member
+  ])
+);
+
+console.log(`Intra-group transfers: ${intraGroupTransfers.length}`);
+```
+
+### DEX Swap Monitoring
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+// Uniswap V2 Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)
+const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
+const routerHash = Hash.fromHex('0x000...router');
+
+// Swaps initiated by router
+const routerSwaps = allLogs.filter(log =>
+  log.matchesTopics([SWAP_SIG, routerHash])
+);
+```
+
+### NFT Transfer Tracking
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+// Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const zeroHash = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000000');
+
+// NFT mints (from zero address)
+const mints = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG, zeroHash, null])
+);
+
+// NFT burns (to zero address)
+const burns = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG, null, zeroHash])
+);
+
+console.log(`Mints: ${mints.length}`);
+console.log(`Burns: ${burns.length}`);
+```
+
+### Anonymous Event Handling
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Anonymous events: topic0 is first indexed param, not signature
+const anonymousLog = EventLog.from({
+  address: contractAddress,
+  topics: [param1Hash, param2Hash, param3Hash],
+  data: new Uint8Array([]),
+});
+
+// Match by first indexed parameter (NOT signature)
+const matches = anonymousLog.matchesTopics([
+  param1Hash,  // topic0 is first param
+  null,        // topic1 is second param (any)
+  param3Hash,  // topic2 is third param
+]);
+```
+
+## Advanced Patterns
+
+### Complex Boolean Logic
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const user1Hash = Hash.fromHex('0x000...user1');
+const user2Hash = Hash.fromHex('0x000...user2');
+const user3Hash = Hash.fromHex('0x000...user3');
+
+// (from:user1 AND to:user2) OR (from:user2 AND to:user3)
+const complexFilter = allLogs.filter(log =>
+  (log.matchesTopics([TRANSFER_SIG, user1Hash, user2Hash]) ||
+   log.matchesTopics([TRANSFER_SIG, user2Hash, user3Hash]))
+);
+```
+
+### Partial Filter (Fewer Topics)
+
+Filter can have fewer topics than log:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: contractAddress,
+  topics: [topic0, topic1, topic2, topic3], // 4 topics
+  data: new Uint8Array([]),
+});
+
+// Match only first 2 topics
+const matches = log.matchesTopics([topic0, topic1]);
+console.log(matches); // true (remaining topics ignored)
+```
+
+### Empty Topics Check
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: contractAddress,
+  topics: [], // No topics
+  data: new Uint8Array([]),
+});
+
+// Filter with topics fails
+const matches1 = log.matchesTopics([Hash.fromHex('0x...')]);
+console.log(matches1); // false
+
+// Empty filter matches
+const matches2 = log.matchesTopics([]);
+console.log(matches2); // true
+```
+
+## Performance
+
+Uses constant-time hash comparison for security:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Comparison time doesn't leak which topics match
+const matches = log.matchesTopics([sig, null, userHash]);
+```
+
+For large datasets, use `filterLogs` for optimized batch filtering:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Efficient batch filtering
+const filtered = EventLog.filterLogs(allLogs, {
+  topics: [TRANSFER_SIG, null, userHash],
+});
+```
+
+## See Also
+
+- [matchesAddress](/primitives/eventlog/matchesaddress) - Filter by address
+- [matchesFilter](/primitives/eventlog/matchesfilter) - Complete filter matching
+- [filterLogs](/primitives/eventlog/filterlogs) - Batch filtering
+- [Fundamentals](/primitives/eventlog/fundamentals) - Topic structure and indexing

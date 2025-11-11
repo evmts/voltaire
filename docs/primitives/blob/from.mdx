@@ -1,0 +1,141 @@
+---
+title: Blob.from
+description: Universal constructor from any input (auto-encodes if needed)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## Signature
+
+```typescript
+Blob.from(value: Uint8Array): Blob
+```
+
+Create blob from Uint8Array. If exactly 131,072 bytes, treats as raw blob. Otherwise, encodes using `fromData()` format (length prefix + data + padding).
+
+### Parameters
+
+- **value** `Uint8Array` - Either raw blob (131,072 bytes) or data to encode
+
+### Returns
+
+`Blob` - Blob instance (always exactly 131,072 bytes)
+
+### Throws
+
+- If encoded data exceeds maximum size (~131,064 bytes)
+
+### Example
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Raw blob (exactly 131,072 bytes)
+const rawBlob = new Uint8Array(131072);
+const blob1 = Blob.from(rawBlob);
+
+// Data to encode (auto-detects and encodes)
+const data = new TextEncoder().encode("Hello");
+const blob2 = Blob.from(data); // Encoded with length prefix
+
+console.log(blob1.length); // 131072
+console.log(blob2.length); // 131072
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/from.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/from.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## Signature
+
+```typescript
+from(value: Uint8Array): BrandedBlob
+```
+
+Create blob from Uint8Array. If exactly 131,072 bytes, treats as raw blob. Otherwise, encodes using `fromData()` format (length prefix + data + padding).
+
+### Parameters
+
+- **value** `Uint8Array` - Either raw blob (131,072 bytes) or data to encode
+
+### Returns
+
+`BrandedBlob` - Blob (always exactly 131,072 bytes)
+
+### Throws
+
+- If encoded data exceeds maximum size (~131,064 bytes)
+
+### Example
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+
+// Raw blob (exactly 131,072 bytes)
+const rawBlob = new Uint8Array(131072);
+const blob1 = Blob.from(rawBlob);
+
+// Data to encode (auto-detects and encodes)
+const data = new TextEncoder().encode("Hello");
+const blob2 = Blob.from(data); // Encoded with length prefix
+
+console.log(blob1.length); // 131072
+console.log(blob2.length); // 131072
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/from.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/from.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Signature
+
+```zig
+pub fn from(allocator: std.mem.Allocator, value: []const u8) !Blob
+```
+
+Create blob from bytes. Auto-detects raw blob vs data to encode.
+
+### Parameters
+
+- **allocator** `std.mem.Allocator` - Memory allocator
+- **value** `[]const u8` - Either raw blob or data to encode
+
+### Returns
+
+`Blob` - Allocated blob (caller owns memory)
+
+### Errors
+
+- `error.DataTooLarge` - Data exceeds maximum size
+
+### Example
+
+```zig
+const Blob = @import("primitives").Blob;
+
+// Raw blob
+var raw_blob: [131072]u8 = undefined;
+const blob1 = try Blob.from(allocator, &raw_blob);
+defer blob1.deinit(allocator);
+
+// Data to encode
+const data = "Hello";
+const blob2 = try Blob.from(allocator, data);
+defer blob2.deinit(allocator);
+```
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [fromData](./fromData) - Explicit data encoding with length prefix
+- [isValid](./isValid) - Validate blob size
+- [toData](./toData) - Extract encoded data

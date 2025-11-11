@@ -1,0 +1,219 @@
+---
+title: Hardfork.hasEIP1559
+description: Check if EIP-1559 base fee mechanism is available
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.hasEIP1559(): boolean`
+
+Check if EIP-1559 base fee mechanism is available in this hardfork. Active since London.
+
+**Returns:** `boolean` - True if EIP-1559 is supported
+
+**Example:**
+
+```typescript
+import { Hardfork, LONDON, BERLIN, CANCUN } from '@tevm/voltaire'
+
+const london = Hardfork.fromString("london")
+const berlin = Hardfork.fromString("berlin")
+
+london.hasEIP1559()   // true - London introduced EIP-1559
+berlin.hasEIP1559()   // false - Berlin pre-dates EIP-1559
+CANCUN.hasEIP1559()   // true - all post-London hardforks
+```
+
+**Convenience alias:** `fork.supportsEIP1559()` - Same functionality, different naming style
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1559.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1559.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `hasEIP1559(fork: BrandedHardfork): boolean`
+
+Check if EIP-1559 base fee mechanism is available in this hardfork. Active since London.
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to check
+
+**Returns:** `boolean` - True if EIP-1559 is supported
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { LONDON, BERLIN, CANCUN } from '@tevm/voltaire'
+
+Hardfork.hasEIP1559(LONDON)   // true
+Hardfork.hasEIP1559(BERLIN)   // false
+Hardfork.hasEIP1559(CANCUN)   // true
+
+// Convenience alias
+Hardfork.supportsEIP1559(LONDON)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1559.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1559.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## EIP-1559 Features
+
+**Active Since:** London (August 5, 2021)
+
+### Changes Introduced
+
+**Base Fee Mechanism:**
+- Base fee per gas (burned, not paid to miners)
+- Dynamic base fee adjustment based on block fullness
+- Target block utilization: 50% (15M gas out of 30M limit)
+- Base fee increases/decreases by max 12.5% per block
+
+**Transaction Format:**
+- Type 2 transactions (EIP-1559 format)
+- `maxFeePerGas` - Maximum total fee willing to pay
+- `maxPriorityFeePerGas` - Tip for block producer
+- Effective gas price = `min(maxFeePerGas, baseFee + maxPriorityFeePerGas)`
+
+**New Opcode:**
+- `BASEFEE` (0x48) - Pushes current block's base fee onto stack
+
+## Usage Patterns
+
+### Transaction Type Selection
+
+Choose appropriate transaction format:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function buildTransaction(fork: BrandedHardfork, params: TxParams) {
+  if (fork.hasEIP1559()) {
+    return {
+      type: 2,  // EIP-1559
+      maxFeePerGas: params.maxFee,
+      maxPriorityFeePerGas: params.tip
+    }
+  }
+
+  return {
+    type: 0,  // Legacy
+    gasPrice: params.gasPrice
+  }
+}
+```
+
+### Gas Price Calculation
+
+Calculate effective gas price:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function calculateGasPrice(
+  fork: BrandedHardfork,
+  baseFee: bigint,
+  maxPriorityFee: bigint
+): bigint {
+  if (fork.hasEIP1559()) {
+    return baseFee + maxPriorityFee
+  }
+
+  // Pre-EIP-1559: fixed gas price
+  return baseFee
+}
+```
+
+### Fee Market Configuration
+
+Configure fee market parameters:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getFeeMarketConfig(fork: BrandedHardfork) {
+  if (fork.hasEIP1559()) {
+    return {
+      baseFeeChangeDenominator: 8,      // 12.5% max change
+      elasticityMultiplier: 2,          // 2x target gas limit
+      baseFeeMaxChangeDenominator: 8
+    }
+  }
+
+  return null  // No dynamic base fee
+}
+```
+
+### Opcode Availability
+
+Check BASEFEE opcode support:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getBaseFeeOpcode(fork: BrandedHardfork): number | null {
+  if (fork.hasEIP1559()) {
+    return 0x48  // BASEFEE opcode
+  }
+
+  return null  // Not available
+}
+```
+
+## Network Configuration
+
+Validate network supports EIP-1559:
+
+```typescript
+import { Hardfork, LONDON } from '@tevm/voltaire'
+
+function validateEIP1559Support(config: NetworkConfig) {
+  const fork = Hardfork.fromString(config.hardfork)
+
+  if (!fork.hasEIP1559()) {
+    throw new Error(
+      `Network ${config.name} does not support EIP-1559. ` +
+      `Requires London or later, got ${Hardfork.toString(fork)}`
+    )
+  }
+}
+```
+
+## EIP References
+
+**Primary:**
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee market change for ETH 1.0 chain
+
+**Related:**
+- [EIP-3198](https://eips.ethereum.org/EIPS/eip-3198) - BASEFEE opcode
+- [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) - Typed transaction envelope (required for Type 2)
+
+## Impact
+
+**For Users:**
+- More predictable transaction fees
+- No overpaying during low-congestion periods
+- Base fee burned (deflationary pressure on ETH)
+
+**For Developers:**
+- Must handle two transaction formats (Type 0 legacy, Type 2 EIP-1559)
+- Fee estimation more complex (base fee + priority fee)
+- BASEFEE opcode available for smart contracts
+
+**For Validators:**
+- Only receive priority fee (tip), not base fee
+- Incentivized to include transactions with higher tips
+
+## See Also
+
+- [hasEIP3855](/primitives/hardfork/has-eip3855) - Check PUSH0 opcode availability (Shanghai)
+- [hasEIP4844](/primitives/hardfork/has-eip4844) - Check blob transactions availability (Cancun)
+- [isAtLeast](/primitives/hardfork/is-at-least) - General version comparison

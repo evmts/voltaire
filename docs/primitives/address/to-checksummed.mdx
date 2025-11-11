@@ -1,0 +1,282 @@
+---
+title: Address.toChecksummed
+description: Convert address to EIP-55 checksummed hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.toChecksummed(): BrandedChecksummedHex`
+
+Converts address to EIP-55 checksummed hex string. Uses keccak256 hash to determine character casing for integrity verification.
+
+**Returns:** `BrandedChecksummedHex` - Mixed-case hex string with checksum encoding
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+console.log(addr.toChecksummed())
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Verify checksum is valid
+const checksummed = addr.toChecksummed()
+console.log(Address.isValidChecksum(checksummed)) // true
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toChecksummed.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toChecksummed(address: BrandedAddress): BrandedChecksummedHex`
+
+Converts address to EIP-55 checksummed hex string.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to convert
+
+**Returns:** `BrandedChecksummedHex` - Checksummed hex string
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = Address.toChecksummed(addr)
+console.log(checksummed)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toChecksummed.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `address.toChecksummed(allocator: Allocator): ![]u8`
+
+Convert address to EIP-55 checksummed hex string. Caller owns returned memory.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for hex string
+
+**Returns:** `[]u8` - Checksummed hex string (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") catch unreachable;
+const checksummed = try addr.toChecksummed(allocator);
+defer allocator.free(checksummed);
+
+std.debug.print("{s}\n", .{checksummed});
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/address.zig:145](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L145)
+
+</Tab>
+</Tabs>
+
+## EIP-55 Checksum Algorithm
+
+The checksum encodes integrity verification in the case of hexadecimal characters:
+
+1. Convert address to lowercase hex (without `0x` prefix)
+2. Compute keccak256 hash of lowercase hex string
+3. For each hex character:
+   - If character is a letter (a-f):
+     - If corresponding hash nibble >= 8: uppercase
+     - Otherwise: lowercase
+   - If character is a digit (0-9): unchanged
+
+**Pseudocode:**
+```
+lowercase = address.toHex().slice(2)  // Remove 0x
+hash = keccak256(lowercase)
+result = "0x"
+for i in 0..39:
+  char = lowercase[i]
+  if char is letter:
+    if hash[i/2] nibble >= 8:
+      result += char.toUpperCase()
+    else:
+      result += char.toLowerCase()
+  else:
+    result += char
+```
+
+## Example Walkthrough
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Input address (lowercase)
+const addr = Address.fromHex("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+
+// Checksummed output
+console.log(addr.toChecksummed())
+// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+//     ^  ^     ^  ^ ^^     ^  ^             ^
+
+// Letters capitalized based on keccak256 hash
+```
+
+## Use Cases
+
+### User Display
+
+Display addresses with integrity verification:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function displayAddress(address: Address) {
+  const checksummed = address.toChecksummed()
+  return (
+    <div>
+      <span className="address">{checksummed}</span>
+      <button onClick={() => copyToClipboard(checksummed)}>Copy</button>
+    </div>
+  )
+}
+```
+
+### Validation
+
+Users can manually verify addresses by comparing checksums:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const expected = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+const addr = Address.fromHex(expected)
+
+// Verify checksum matches
+if (addr.toChecksummed() === expected) {
+  console.log("Checksum valid - address not corrupted")
+} else {
+  console.error("Checksum invalid - possible typo or corruption")
+}
+```
+
+### QR Codes
+
+Use checksummed addresses in QR codes for better error detection:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import QRCode from 'qrcode'
+
+async function generateAddressQR(address: Address) {
+  const checksummed = address.toChecksummed()
+  const qr = await QRCode.toDataURL(checksummed)
+  return qr
+}
+```
+
+### Wallet Integrations
+
+Wallets expect checksummed addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function requestPayment(recipient: Address, amount: bigint) {
+  const checksummed = recipient.toChecksummed()
+
+  // Use in wallet connect or web3 provider
+  await ethereum.request({
+    method: 'eth_sendTransaction',
+    params: [{
+      to: checksummed,
+      value: `0x${amount.toString(16)}`
+    }]
+  })
+}
+```
+
+## Cryptographic Dependencies
+
+**Uses keccak256 internally** - When using tree-shakeable imports, including this method adds keccak256 to bundle (~5-10 KB).
+
+For minimal bundle size, use `toHex()` instead if checksums aren't required.
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time)
+
+**Overhead:** One keccak256 hash computation
+
+For repeated conversions, consider caching:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class CachedAddress {
+  private _checksumCache?: string
+
+  constructor(private address: Address) {}
+
+  toChecksummed(): string {
+    if (!this._checksumCache) {
+      this._checksumCache = this.address.toChecksummed()
+    }
+    return this._checksumCache
+  }
+}
+```
+
+## Validation
+
+Validate checksum before using an address:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function parseChecksummedAddress(input: string): Address {
+  if (!Address.isValidChecksum(input)) {
+    throw new Error('Invalid address checksum')
+  }
+
+  return Address.fromHex(input)
+}
+```
+
+## Comparison with Other Formats
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+
+// Lowercase (toHex)
+console.log(addr.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Checksummed (toChecksummed)
+console.log(addr.toChecksummed())
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Both represent the same address
+console.log(Address.fromHex(addr.toHex()).equals(Address.fromHex(addr.toChecksummed())))
+// true
+```
+
+## See Also
+
+- [toHex](/primitives/address/to-hex) - Convert to lowercase hex
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [fromHex](/primitives/address/from-hex) - Parse from hex string
+- [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55)
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function

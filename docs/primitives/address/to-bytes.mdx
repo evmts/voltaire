@@ -1,0 +1,288 @@
+---
+title: Address.toBytes
+description: Convert address to Uint8Array
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.toBytes(): Uint8Array`
+
+Converts address to Uint8Array. Returns a copy of the underlying bytes.
+
+**Returns:** `Uint8Array` - 20-byte array
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytes = addr.toBytes()
+
+console.log(bytes)          // Uint8Array(20) [116, 45, 53, 204, ...]
+console.log(bytes.length)   // 20
+console.log(bytes[0])       // 0x74 (116)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toBytes.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toBytes.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toBytes(address: BrandedAddress): Uint8Array`
+
+Converts address to Uint8Array. Returns a copy of the underlying bytes.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to convert
+
+**Returns:** `Uint8Array` - 20-byte array
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytes = Address.toBytes(addr)
+
+console.log(bytes.length) // 20
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toBytes.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toBytes.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## `address.bytes: [20]u8`
+
+In Zig, addresses contain a public bytes field. Access directly, no conversion needed.
+
+**Returns:** `[20]u8` - Fixed 20-byte array
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+
+// Direct access to bytes
+std.debug.print("First byte: 0x{x:0>2}\n", .{addr.bytes[0]});  // 0x74
+std.debug.print("Last byte: 0x{x:0>2}\n", .{addr.bytes[19]});  // 0x3e
+
+// Use as slice
+const slice: []const u8 = &addr.bytes;
+```
+
+**Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
+
+</Tab>
+</Tabs>
+
+## Memory Behavior
+
+**TypeScript/JavaScript:**
+- Returns a copy of the underlying bytes
+- Safe to modify returned array without affecting original
+- No aliasing between address and returned bytes
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytes = addr.toBytes()
+
+// Modifying bytes doesn't affect address
+bytes[0] = 0xFF
+console.log(addr.toHex()) // Still "0x742d35cc..."
+```
+
+**Zig:**
+- Direct access to fixed-size array
+- Copying requires explicit `@memcpy`
+- Stack-allocated by default
+
+## Use Cases
+
+### Binary Protocols
+
+Serialize addresses for binary protocols:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function serializeTransaction(from: Address, to: Address, value: bigint) {
+  const buffer = new Uint8Array(20 + 20 + 8)
+
+  // Copy address bytes
+  buffer.set(from.toBytes(), 0)
+  buffer.set(to.toBytes(), 20)
+
+  // Add value (8 bytes)
+  const view = new DataView(buffer.buffer)
+  view.setBigUint64(40, value)
+
+  return buffer
+}
+```
+
+### Hash Computation
+
+Include address in hash calculations:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+function hashAddressPair(addr1: Address, addr2: Address) {
+  const bytes = new Uint8Array(40)
+  bytes.set(addr1.toBytes(), 0)
+  bytes.set(addr2.toBytes(), 20)
+
+  return keccak256(bytes)
+}
+```
+
+### Database Storage
+
+Store addresses as binary blobs:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function saveAddress(db: Database, addr: Address) {
+  const bytes = addr.toBytes()
+  await db.execute(
+    'INSERT INTO addresses (address_bytes) VALUES (?)',
+    [Buffer.from(bytes)]
+  )
+}
+
+async function loadAddress(db: Database, id: number): Promise<Address> {
+  const row = await db.query('SELECT address_bytes FROM addresses WHERE id = ?', [id])
+  const bytes = new Uint8Array(row.address_bytes)
+  return Address.fromBytes(bytes)
+}
+```
+
+### Network Transmission
+
+Send addresses over WebSocket or other binary protocols:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function sendAddress(ws: WebSocket, addr: Address) {
+  const bytes = addr.toBytes()
+  ws.send(bytes)
+}
+
+ws.onmessage = (event) => {
+  const bytes = new Uint8Array(event.data)
+  const addr = Address.fromBytes(bytes)
+  console.log('Received:', addr.toHex())
+}
+```
+
+### ABI Encoding
+
+Convert to bytes for ABI encoding:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function encodeAddress(addr: Address): Uint8Array {
+  // ABI encodes addresses as 32 bytes (left-padded)
+  const encoded = new Uint8Array(32)
+  encoded.set(addr.toBytes(), 12) // Last 20 bytes
+  return encoded
+}
+```
+
+## Direct Access
+
+Since `BrandedAddress` is a Uint8Array, you can access bytes directly:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// BrandedAddress is a Uint8Array
+console.log(addr[0])        // 0x74 (116)
+console.log(addr[19])       // 0x3e (62)
+console.log(addr.length)    // 20
+
+// Iterate over bytes
+for (const byte of addr) {
+  console.log(byte.toString(16).padStart(2, '0'))
+}
+
+// Use array methods
+const doubled = Array.from(addr).map(b => b * 2)
+```
+
+**When to use `toBytes()`:**
+- Need a mutable copy
+- Want to emphasize byte conversion
+- Passing to APIs expecting Uint8Array (not branded type)
+
+**When to access directly:**
+- Reading bytes without modification
+- Iterating over bytes
+- Using array methods
+
+## Performance
+
+**Memory:** Creates new Uint8Array (20 byte allocation)
+
+**Time complexity:** O(n) where n = 20 (constant time)
+
+**Copy overhead:** Minimal for 20 bytes
+
+For performance-critical code, access bytes directly instead:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Less efficient (allocates new array)
+const bytes = addr.toBytes()
+hash.update(bytes)
+
+// More efficient (no allocation)
+hash.update(addr) // addr is already Uint8Array
+```
+
+## Comparison with Other Conversions
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Bytes (20 bytes)
+const bytes = addr.toBytes()
+console.log(bytes.length) // 20
+
+// Hex string (42 chars including 0x)
+const hex = addr.toHex()
+console.log(hex.length) // 42
+
+// Bigint (numeric representation)
+const n = addr.toU256()
+console.log(typeof n) // "bigint"
+
+// ABI encoded (32 bytes, left-padded)
+const abiEncoded = addr.toAbiEncoded()
+console.log(abiEncoded.length) // 32
+```
+
+## See Also
+
+- [fromBytes](/primitives/address/from-bytes) - Create from Uint8Array
+- [toHex](/primitives/address/to-hex) - Convert to hex string
+- [toAbiEncoded](/primitives/address/conversions#toabiencoded) - Convert to 32-byte ABI encoding
+- [BrandedAddress](/primitives/address/branded-address) - Type-safe Uint8Array wrapper

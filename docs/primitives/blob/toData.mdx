@@ -1,0 +1,185 @@
+---
+title: Blob.toData
+description: Extract original data from blob (reads length prefix)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## Signature
+
+```typescript
+blob.toData(): Uint8Array
+```
+
+Extract data from blob encoded with `fromData()` format. Reads 8-byte length prefix and returns the original data without padding.
+
+### Returns
+
+`Uint8Array` - Original data (without length prefix or padding)
+
+### Throws
+
+- If blob size is invalid (not exactly 131,072 bytes)
+- If length prefix is invalid (exceeds maximum)
+
+### Example
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Create blob from data
+const original = new TextEncoder().encode("Hello, EIP-4844!");
+const blob = Blob.fromData(original);
+
+// Extract data
+const extracted = blob.toData();
+const text = new TextDecoder().decode(extracted);
+
+console.log(text); // "Hello, EIP-4844!"
+console.log(extracted.length); // 16 (original data length)
+console.log(blob.length); // 131,072 (blob size)
+```
+
+### Example with Binary Data
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Encode binary data
+const binaryData = new Uint8Array([0x01, 0x02, 0x03, 0xff]);
+const blob = Blob.fromData(binaryData);
+
+// Extract
+const extracted = blob.toData();
+console.log([...extracted]); // [1, 2, 3, 255]
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/toData.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/toData.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## Signature
+
+```typescript
+toData(blob: BrandedBlob): Uint8Array
+```
+
+Extract data from blob encoded with `fromData()` format. Reads 8-byte length prefix and returns the original data without padding.
+
+### Parameters
+
+- **blob** `BrandedBlob` - Blob to extract data from
+
+### Returns
+
+`Uint8Array` - Original data (without length prefix or padding)
+
+### Throws
+
+- If blob size is invalid (not exactly 131,072 bytes)
+- If length prefix is invalid (exceeds maximum)
+
+### Example
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+
+// Create blob from data
+const original = new TextEncoder().encode("Hello, EIP-4844!");
+const blob = Blob.fromData(original);
+
+// Extract data
+const extracted = Blob.toData(blob);
+const text = new TextDecoder().decode(extracted);
+
+console.log(text); // "Hello, EIP-4844!"
+console.log(extracted.length); // 16 (original data length)
+console.log(blob.length); // 131,072 (blob size)
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/toData.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/toData.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Signature
+
+```zig
+pub fn toData(self: Blob, allocator: std.mem.Allocator) ![]u8
+```
+
+Extract data from blob.
+
+### Parameters
+
+- **allocator** `std.mem.Allocator` - Memory allocator
+
+### Returns
+
+`[]u8` - Allocated data (caller owns memory)
+
+### Errors
+
+- `error.InvalidBlobSize` - Blob size incorrect
+- `error.InvalidLengthPrefix` - Length prefix invalid
+
+### Example
+
+```zig
+const Blob = @import("primitives").Blob;
+
+const blob = try Blob.fromData(allocator, "Hello, EIP-4844!");
+defer blob.deinit(allocator);
+
+const extracted = try blob.toData(allocator);
+defer allocator.free(extracted);
+
+std.debug.print("Data: {s}\n", .{extracted});
+```
+
+</Tab>
+</Tabs>
+
+## Encoding Format
+
+Blobs created with `fromData()` use this format:
+
+```
+┌─────────────────┬──────────────┬─────────────┐
+│  Length (8 B)   │  Data (N B)  │  Padding    │
+├─────────────────┼──────────────┼─────────────┤
+│ Little-endian   │ Original     │ Zero bytes  │
+│ uint64          │ data         │             │
+└─────────────────┴──────────────┴─────────────┘
+  Bytes 0-7         Bytes 8-N      Bytes N+1-131071
+
+Total: 131,072 bytes (Blob.SIZE)
+```
+
+### Example: Manual Decoding
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(new TextEncoder().encode("test"));
+
+// Manual extraction (equivalent to toData())
+const view = new DataView(blob.buffer, blob.byteOffset);
+const length = Number(view.getBigUint64(0, true)); // Little-endian
+const data = blob.slice(8, 8 + length);
+
+console.log(length); // 4
+console.log(new TextDecoder().decode(data)); // "test"
+```
+
+## See Also
+
+- [fromData](./fromData) - Encode data into blob
+- [from](./from) - Universal constructor
+- [joinData](./joinData) - Join data from multiple blobs

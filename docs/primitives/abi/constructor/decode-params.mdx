@@ -1,0 +1,86 @@
+---
+title: Constructor.decodeParams
+description: Decode constructor parameters from deployment data
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `constructor.decodeParams(data: Hex): unknown[]`
+
+Decode constructor parameters from deployment transaction data.
+
+**Parameters:**
+- `data: Hex` - Constructor parameters (without bytecode prefix)
+
+**Returns:** `unknown[]` - Array of decoded parameter values
+
+**Example:**
+
+```typescript
+import { Constructor } from '@tevm/voltaire'
+
+const constructorDef = new Constructor({
+  type: "constructor",
+  inputs: [
+    { type: "string", name: "name" },
+    { type: "string", name: "symbol" },
+    { type: "uint8", name: "decimals" }
+  ]
+})
+
+// Extract constructor params from deployment tx
+const tx = await provider.getTransaction(deploymentTxHash)
+const paramsData = "0x" + tx.data.slice(contractBytecode.length)
+
+const [name, symbol, decimals] = constructorDef.decodeParams(paramsData)
+console.log({ name, symbol, decimals })
+```
+
+**Defined in:** [primitives/Abi/constructor/BrandedConstructor/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/constructor/BrandedConstructor/decodeParams.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `decodeParams(constructor: BrandedConstructor, data: Hex): unknown[]`
+
+Decode constructor parameters.
+
+**Parameters:**
+- `constructor: BrandedConstructor` - Constructor ABI item
+- `data: Hex` - Constructor parameters
+
+**Returns:** `unknown[]` - Decoded parameter values
+
+**Example:**
+
+```typescript
+import * as Constructor from '@tevm/voltaire/Abi/constructor'
+
+const constructorDef = {
+  type: "constructor",
+  inputs: [
+    { type: "string", name: "name" },
+    { type: "string", name: "symbol" },
+    { type: "uint8", name: "decimals" }
+  ]
+}
+
+const [name, symbol, decimals] = Constructor.decodeParams(constructorDef, paramsData)
+```
+
+**Defined in:** [primitives/Abi/constructor/BrandedConstructor/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/constructor/BrandedConstructor/decodeParams.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Constructor decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [encodeParams](/primitives/abi/constructor/encode-params) - Encode constructor parameters

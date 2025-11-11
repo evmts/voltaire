@@ -1,0 +1,283 @@
+---
+title: Hex.validate
+description: Validate hex format and throw on invalid input
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.validate(value: string): BrandedHex`
+
+Validates hex string format and throws descriptive errors on invalid input. Returns the validated hex string.
+
+**Parameters:**
+- `value: string` - String to validate as hex
+
+**Returns:** `BrandedHex` - Validated hex string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `InvalidCharacterError` - Contains invalid hex characters
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Valid hex strings
+const hex1 = Hex.validate("0x1234")     // "0x1234"
+const hex2 = Hex.validate("0xabcdef")   // "0xabcdef"
+const hex3 = Hex.validate("0x")         // "0x" (empty valid)
+
+// Invalid - throws errors
+try {
+  Hex.validate("1234")  // Missing 0x prefix
+} catch (e) {
+  // InvalidFormatError
+}
+
+try {
+  Hex.validate("0xZZZZ")  // Invalid characters
+} catch (e) {
+  // InvalidCharacterError
+}
+
+try {
+  Hex.validate("hello")  // Not hex
+} catch (e) {
+  // InvalidFormatError
+}
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/validate.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `validate(value: string): BrandedHex`
+
+Validates hex string format and throws descriptive errors on invalid input. Returns the validated hex string.
+
+**Parameters:**
+- `value: string` - String to validate as hex
+
+**Returns:** `BrandedHex` - Validated hex string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `InvalidCharacterError` - Contains invalid hex characters
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Valid hex strings
+const hex1 = Hex.validate("0x1234")     // "0x1234"
+const hex2 = Hex.validate("0xabcdef")   // "0xabcdef"
+
+// Invalid - throws errors
+try {
+  Hex.validate("1234")  // Missing 0x prefix
+} catch (e) {
+  // InvalidFormatError
+}
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/validate.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.validate(value: []const u8): ![]const u8`
+
+Validate hex string format.
+
+**Parameters:**
+- `value: []const u8` - String to validate
+
+**Returns:** `[]const u8` - Validated hex string
+
+**Errors:**
+- `error.InvalidFormat` - Missing `0x` prefix
+- `error.InvalidCharacter` - Invalid hex characters
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+// Valid
+const hex1 = try Hex.validate("0x1234");  // "0x1234"
+
+// Invalid - returns error
+const hex2 = Hex.validate("1234");  // error.InvalidFormat
+const hex3 = Hex.validate("0xZZZZ");  // error.InvalidCharacter
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Validation Rules
+
+Must meet ALL conditions:
+1. Starts with `0x` prefix
+2. Contains only valid hex characters: `0-9`, `a-f`, `A-F`
+3. Can be empty after prefix (`0x` is valid)
+
+```typescript
+// ✓ Valid
+Hex.validate("0x")         // Empty hex
+Hex.validate("0x0")        // Single digit
+Hex.validate("0x1234")     // Multiple digits
+Hex.validate("0xabcdef")   // Lowercase
+Hex.validate("0xABCDEF")   // Uppercase
+Hex.validate("0xAbCdEf")   // Mixed case
+
+// ✗ Invalid - throws
+Hex.validate("")           // InvalidFormatError
+Hex.validate("0X1234")     // InvalidFormatError (uppercase X)
+Hex.validate("1234")       // InvalidFormatError (missing 0x)
+Hex.validate("0x 1234")    // InvalidCharacterError (space)
+Hex.validate("0xGHIJ")     // InvalidCharacterError
+```
+
+## Error Types
+
+**InvalidFormatError:**
+```typescript
+try {
+  Hex.validate("1234")  // Missing 0x
+} catch (e) {
+  console.error(e.message)
+  // "Hex string must start with '0x'"
+}
+
+try {
+  Hex.validate("")  // Empty string
+} catch (e) {
+  console.error(e.message)
+  // "Hex string must start with '0x'"
+}
+```
+
+**InvalidCharacterError:**
+```typescript
+try {
+  Hex.validate("0xZZZZ")
+} catch (e) {
+  console.error(e.message)
+  // "Invalid hex character at position X"
+}
+
+try {
+  Hex.validate("0x12 34")  // Space
+} catch (e) {
+  console.error(e.message)
+  // "Invalid hex character"
+}
+```
+
+## Common Use Cases
+
+**Invariant Checking:**
+```typescript
+function processHash(hash: string) {
+  Hex.validate(hash)  // Throws if invalid
+
+  // Guaranteed valid hex past this point
+  const bytes = Hex.toBytes(hash)
+  return keccak256(bytes)
+}
+```
+
+**API Input Validation:**
+```typescript
+app.post('/transaction', (req, res) => {
+  try {
+    const data = Hex.validate(req.body.data)
+    const to = Hex.validate(req.body.to)
+
+    // Process transaction...
+  } catch (e) {
+    return res.status(400).json({ error: e.message })
+  }
+})
+```
+
+**Constructor Validation:**
+```typescript
+class Transaction {
+  constructor(data: string) {
+    this.data = Hex.validate(data)  // Ensure valid in constructor
+  }
+}
+```
+
+**Fail-Fast Parsing:**
+```typescript
+function parseCalldata(input: string) {
+  Hex.validate(input)  // Fail immediately if invalid
+
+  const selector = input.slice(0, 10)
+  const params = input.slice(10)
+  // Continue parsing...
+}
+```
+
+**Configuration Validation:**
+```typescript
+const config = {
+  privateKey: Hex.validate(process.env.PRIVATE_KEY),
+  contractAddress: Hex.validate(process.env.CONTRACT_ADDRESS)
+}
+```
+
+## vs isHex()
+
+**`validate()` - Throwing:**
+```typescript
+try {
+  Hex.validate(input)  // Throws descriptive error
+  // Valid - continue
+} catch (e) {
+  console.error(e.message)  // Specific error message
+}
+```
+
+**`isHex()` - Non-throwing:**
+```typescript
+if (Hex.isHex(input)) {
+  // Valid
+} else {
+  // Invalid - no error details
+}
+```
+
+Use `validate()` for:
+- Fail-fast validation
+- Detailed error reporting
+- API endpoints
+- Constructor validation
+- Invariant checking
+
+Use `isHex()` for:
+- Conditional logic
+- Type guards
+- Silent validation
+- Filter operations
+
+## Performance
+
+Character-by-character validation with early return on error. Complexity: O(n) where n is string length.
+
+Throws exceptions on invalid input - suitable for error boundaries.
+
+## See Also
+
+- [isHex](/primitives/hex/is-hex) - Non-throwing type guard
+- [isSized](/primitives/hex/is-sized) - Check specific byte size
+- [assertSize](/primitives/hex/assert-size) - Assert specific byte size

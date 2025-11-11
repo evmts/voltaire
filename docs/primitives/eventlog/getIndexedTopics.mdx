@@ -1,0 +1,235 @@
+---
+title: EventLog.getIndexedTopics
+description: Get indexed parameters (topic1-topic3)
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.getIndexedTopics(): readonly BrandedHash[]`
+
+Get indexed parameters (topic1-topic3), excluding topic0 event signature.
+
+**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad...'), // event signature
+    Hash.fromHex('0x000...from'),  // from address
+    Hash.fromHex('0x000...to'),    // to address
+  ],
+  data: new Uint8Array([0, 0, 0, 1]), // value (not indexed)
+});
+
+const indexed = log.getIndexedTopics();
+console.log(indexed.length); // 2
+console.log(Hash.toHex(indexed[0])); // from address
+console.log(Hash.toHex(indexed[1])); // to address
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getIndexedTopics(log: BrandedEventLog): readonly BrandedHash[]`
+
+Get indexed parameters (topic1-topic3), excluding topic0 event signature.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log instance
+
+**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [
+    Hash.fromHex('0xddf252ad...'), // event signature
+    Hash.fromHex('0x000...from'),  // from address
+    Hash.fromHex('0x000...to'),    // to address
+  ],
+  data: new Uint8Array([0, 0, 0, 1]), // value (not indexed)
+});
+
+const indexed = EventLog.getIndexedTopics(log);
+console.log(indexed.length); // 2
+console.log(Hash.toHex(indexed[0])); // from address
+console.log(Hash.toHex(indexed[1])); // to address
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
+
+</Tab>
+</Tabs>
+
+## Indexed Parameter Limits
+
+Solidity events can have maximum 3 indexed parameters (topic1-topic3):
+
+```solidity
+// Maximum indexed parameters
+event MaxIndexed(
+  address indexed param1,
+  address indexed param2,
+  uint256 indexed param3,
+  uint256 param4  // Not indexed (in data)
+) /* anonymous */;
+```
+
+Anonymous events can have 4 indexed parameters (topic0-topic3):
+
+```solidity
+event AnonymousEvent(
+  address indexed param1,
+  address indexed param2,
+  uint256 indexed param3,
+  uint256 indexed param4
+) anonymous;
+```
+
+## Usage Patterns
+
+### Extracting Transfer Parameters
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+function decodeTransfer(log: EventLog) {
+  const sig = log.getTopic0();
+  if (!sig || !Hash.equals(sig, TRANSFER_SIG)) {
+    throw new Error('Not a Transfer event');
+  }
+
+  const [fromHash, toHash] = log.getIndexedTopics();
+
+  // Extract addresses from topic hashes (last 20 bytes)
+  const from = Address.fromBytes(fromHash.slice(12));
+  const to = Address.fromBytes(toHash.slice(12));
+
+  // Decode value from data
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+
+  return { from, to, value };
+}
+
+const transfer = decodeTransfer(transferLog);
+console.log('From:', Address.toHex(transfer.from));
+console.log('To:', Address.toHex(transfer.to));
+console.log('Value:', transfer.value);
+```
+
+### Validating Parameter Count
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function validateEventStructure(log: EventLog, expectedCount: number): boolean {
+  const indexed = log.getIndexedTopics();
+
+  if (indexed.length !== expectedCount) {
+    console.error(
+      `Expected ${expectedCount} indexed params, got ${indexed.length}`
+    );
+    return false;
+  }
+
+  return true;
+}
+
+// Transfer has 2 indexed parameters (from, to)
+validateEventStructure(transferLog, 2); // true
+
+// Approval has 2 indexed parameters (owner, spender)
+validateEventStructure(approvalLog, 2); // true
+```
+
+### Destructuring Parameters
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Approval(address indexed owner, address indexed spender, uint256 value)
+const log = EventLog.from({ /* ... */ });
+
+const [ownerHash, spenderHash] = log.getIndexedTopics();
+
+console.log('Owner:', Hash.toHex(ownerHash));
+console.log('Spender:', Hash.toHex(spenderHash));
+```
+
+### Empty Indexed Topics
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Event with no indexed parameters
+const log = EventLog.from({
+  address: contractAddress,
+  topics: [Hash.fromHex('0xeventSig...')], // Only signature
+  data: eventData,
+});
+
+const indexed = log.getIndexedTopics();
+console.log(indexed.length); // 0 (empty array)
+```
+
+### Anonymous Event Handling
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Anonymous events: topic0 is first indexed param, NOT signature
+const anonymousLog = EventLog.from({
+  address: contractAddress,
+  topics: [param1Hash, param2Hash, param3Hash], // All indexed params
+  data: new Uint8Array([]),
+});
+
+// getIndexedTopics returns topic1-topic3 (NOT all params)
+const indexed = anonymousLog.getIndexedTopics();
+console.log(indexed.length); // 2 (param2 and param3)
+
+// To get ALL indexed params from anonymous event:
+const allParams = [anonymousLog.getTopic0(), ...indexed].filter(Boolean);
+console.log(allParams.length); // 3
+```
+
+## Extracting Addresses from Topics
+
+Addresses in topics are left-padded to 32 bytes. Extract the address by taking the last 20 bytes:
+
+```typescript
+import { Address, Hash } from '@tevm/voltaire';
+
+const topicHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12');
+
+// Extract address (last 20 bytes)
+const address = Address.fromBytes(topicHash.slice(12));
+
+console.log(Address.toHex(address));
+// '0xa1b2c3d4e5f67890abcdef1234567890abcdef12'
+```
+
+## See Also
+
+- [getIndexed](/primitives/eventlog/getindexed) - Alias for getIndexedTopics
+- [getTopic0](/primitives/eventlog/gettopic0) - Get event signature
+- [Fundamentals](/primitives/eventlog/fundamentals) - Topics and indexed parameters

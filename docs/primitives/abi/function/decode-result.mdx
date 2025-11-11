@@ -1,0 +1,257 @@
+---
+title: Function.decodeResult
+description: Decode function return values from ABI-encoded data
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.decodeResult(data: Hex): unknown[]`
+
+Decode function return values from ABI-encoded return data.
+
+**Parameters:**
+- `data: Hex` - ABI-encoded return data from contract call
+
+**Returns:** `unknown[]` - Array of decoded return values
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+const returnData = "0x00000000000000000000000000000000000000000000000000000000000003e8"
+
+const [balance] = balanceOfFn.decodeResult(returnData)
+console.log(balance)  // 1000n
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/decodeResult.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/decodeResult.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `decodeResult(fn: BrandedFunction, data: Hex): unknown[]`
+
+Decode function return values from ABI-encoded return data.
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+- `data: Hex` - ABI-encoded return data
+
+**Returns:** `unknown[]` - Array of decoded return values
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+}
+
+const returnData = "0x00000000000000000000000000000000000000000000000000000000000003e8"
+
+const [balance] = Function.decodeResult(balanceOfFn, returnData)
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/decodeResult.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/decodeResult.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Single Return Value
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const totalSupplyFn = new Function({
+  type: "function",
+  name: "totalSupply",
+  inputs: [],
+  outputs: [{ type: "uint256", name: "supply" }]
+})
+
+// Call contract and decode
+const result = await provider.call({
+  to: tokenAddress,
+  data: totalSupplyFn.encodeParams([])
+})
+
+const [totalSupply] = totalSupplyFn.decodeResult(result)
+console.log(totalSupply)  // 1000000n
+```
+
+### Multiple Return Values
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getReservesFn = new Function({
+  type: "function",
+  name: "getReserves",
+  outputs: [
+    { type: "uint112", name: "reserve0" },
+    { type: "uint112", name: "reserve1" },
+    { type: "uint32", name: "blockTimestampLast" }
+  ]
+})
+
+const result = await provider.call({
+  to: pairAddress,
+  data: getReservesFn.encodeParams([])
+})
+
+const [reserve0, reserve1, timestamp] = getReservesFn.decodeResult(result)
+console.log({ reserve0, reserve1, timestamp })
+```
+
+### Boolean Return
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool", name: "success" }]
+})
+
+const result = await provider.call({
+  to: tokenAddress,
+  data: transferFn.encodeParams([recipient, amount])
+})
+
+const [success] = transferFn.decodeResult(result)
+console.log(success)  // true or false
+```
+
+### Dynamic Return Types
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getNameFn = new Function({
+  type: "function",
+  name: "name",
+  outputs: [{ type: "string", name: "name" }]
+})
+
+const result = await provider.call({
+  to: tokenAddress,
+  data: getNameFn.encodeParams([])
+})
+
+const [name] = getNameFn.decodeResult(result)
+console.log(name)  // "MyToken"
+```
+
+### Array Returns
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getHoldersFn = new Function({
+  type: "function",
+  name: "getHolders",
+  outputs: [{ type: "address[]", name: "holders" }]
+})
+
+const result = await provider.call({
+  to: tokenAddress,
+  data: getHoldersFn.encodeParams([])
+})
+
+const [holders] = getHoldersFn.decodeResult(result)
+console.log(holders)  // ["0x...", "0x...", ...]
+```
+
+### Struct/Tuple Returns
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const getOrderFn = new Function({
+  type: "function",
+  name: "getOrder",
+  inputs: [{ type: "uint256", name: "orderId" }],
+  outputs: [
+    {
+      type: "tuple",
+      name: "order",
+      components: [
+        { type: "address", name: "maker" },
+        { type: "uint256", name: "amount" },
+        { type: "uint256", name: "price" }
+      ]
+    }
+  ]
+})
+
+const result = await provider.call({
+  to: exchangeAddress,
+  data: getOrderFn.encodeParams([1n])
+})
+
+const [order] = getOrderFn.decodeResult(result)
+console.log(order.maker)   // "0x..."
+console.log(order.amount)  // 1000n
+console.log(order.price)   // 5n
+```
+
+## Error Handling
+
+```typescript
+import { Function } from '@tevm/voltaire'
+import { AbiDecodingError } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+try {
+  const result = await provider.call({
+    to: tokenAddress,
+    data: balanceOfFn.encodeParams([address])
+  })
+
+  const [balance] = balanceOfFn.decodeResult(result)
+  console.log(balance)
+} catch (error) {
+  if (error instanceof AbiDecodingError) {
+    console.error("Failed to decode return data:", error.message)
+  }
+}
+```
+
+## See Also
+
+- [encodeResult](/primitives/abi/function/encode-result) - Encode function return values
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function calldata
+- [decodeParams](/primitives/abi/function/decode-params) - Decode function parameters

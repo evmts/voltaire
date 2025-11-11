@@ -1,0 +1,295 @@
+---
+title: fromString()
+description: Parse storage key from string format
+---
+
+Deserializes string format to `BrandedStorageKey`. Inverse of `toString()`.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function fromString(str: string): BrandedStorageKey
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn fromString(str: []const u8) !StorageKey
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **str** (`string`) - String format: `"address:slot"` with hex address and decimal slot
+
+## Returns
+
+`BrandedStorageKey` - Parsed storage key with address and slot
+
+## Format
+
+```
+<address>:<slot>
+```
+
+- **address**: 40-character hex string (with or without 0x prefix)
+- **slot**: Decimal string representation of slot number
+
+## Examples
+
+### Basic Usage
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const keyStr = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0";
+const key = State.StorageKey.fromString(keyStr);
+
+console.log(Address.toHex(key.address)); // "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+console.log(key.slot);                    // 0n
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+
+const key_str = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0";
+const key = try State.fromString(key_str);
+
+std.debug.print("Address: 0x{x}\n", .{key.address});
+std.debug.print("Slot: {}\n", .{key.slot});
+```
+
+</Tab>
+</Tabs>
+
+### Various Formats
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// With 0x prefix
+const key1 = State.StorageKey.fromString(
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42"
+);
+console.log(key1.slot); // 42n
+
+// Without 0x prefix
+const key2 = State.StorageKey.fromString(
+  "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42"
+);
+console.log(key2.slot); // 42n
+
+// Large slot number
+const key3 = State.StorageKey.fromString(
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:123456789012345678901234567890"
+);
+console.log(key3.slot); // 123456789012345678901234567890n
+```
+
+### Round-Trip Conversion
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Original key
+const originalKey = State.StorageKey(contractAddr, 42n);
+
+// Serialize to string
+const keyStr = State.StorageKey.toString(originalKey);
+console.log(keyStr); // "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42"
+
+// Parse back
+const parsedKey = State.StorageKey.fromString(keyStr);
+
+// Verify equality
+console.log(State.StorageKey.equals(originalKey, parsedKey)); // true
+console.log(parsedKey.slot === 42n); // true
+```
+
+### Load from JSON
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as fs from 'fs/promises';
+
+// Load storage from JSON
+async function loadStorage(filePath: string): Promise<Map<BrandedStorageKey, bigint>> {
+  const data = await fs.readFile(filePath, 'utf-8');
+  const entries = JSON.parse(data);
+
+  const storage = new Map<BrandedStorageKey, bigint>();
+  for (const entry of entries) {
+    const key = State.StorageKey.fromString(entry.key);
+    const value = BigInt(entry.value);
+    storage.set(key, value);
+  }
+
+  return storage;
+}
+
+// storage.json:
+// [
+//   { "key": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0", "value": "1000" },
+//   { "key": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:1", "value": "2000" }
+// ]
+
+const storage = await loadStorage('./storage.json');
+console.log(storage.size); // 2
+```
+
+### Database Retrieval
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+class StorageDatabase {
+  async get(keyStr: string): Promise<bigint | null> {
+    const key = State.StorageKey.fromString(keyStr);
+    const value = await db.get(`storage:${keyStr}`);
+    return value ? BigInt(value) : null;
+  }
+
+  async list(): Promise<Map<BrandedStorageKey, bigint>> {
+    const entries = await db.getAll('storage:*');
+    const storage = new Map<BrandedStorageKey, bigint>();
+
+    for (const [keyStr, valueStr] of entries) {
+      const key = State.StorageKey.fromString(keyStr.replace('storage:', ''));
+      storage.set(key, BigInt(valueStr));
+    }
+
+    return storage;
+  }
+}
+```
+
+### URL Query Parameters
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Parse storage key from URL
+function getStorageFromUrl(url: URL): BrandedStorageKey {
+  const keyStr = url.searchParams.get('storageKey');
+  if (!keyStr) throw new Error('Missing storageKey parameter');
+
+  return State.StorageKey.fromString(keyStr);
+}
+
+// Example URL: /api/storage?storageKey=0xa0b86991...06eb48:0
+const url = new URL('http://example.com/api/storage?storageKey=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0');
+const key = getStorageFromUrl(url);
+console.log(key.slot); // 0n
+```
+
+### Error Handling
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+try {
+  // Invalid format: missing colon
+  const key1 = State.StorageKey.fromString("0xa0b869...06eb48");
+} catch (error) {
+  console.error('Invalid format: missing colon separator');
+}
+
+try {
+  // Invalid format: invalid address
+  const key2 = State.StorageKey.fromString("invalid:0");
+} catch (error) {
+  console.error('Invalid address format');
+}
+
+try {
+  // Invalid format: invalid slot
+  const key3 = State.StorageKey.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:invalid");
+} catch (error) {
+  console.error('Invalid slot number');
+}
+
+try {
+  // Invalid format: negative slot
+  const key4 = State.StorageKey.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:-1");
+} catch (error) {
+  console.error('Slot must be non-negative');
+}
+```
+
+### Batch Parsing
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Parse multiple storage keys
+function parseStorageKeys(keyStrings: string[]): BrandedStorageKey[] {
+  return keyStrings.map(keyStr => State.StorageKey.fromString(keyStr));
+}
+
+const keyStrings = [
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0",
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:1",
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:2"
+];
+
+const keys = parseStorageKeys(keyStrings);
+console.log(keys.length); // 3
+console.log(keys[0].slot); // 0n
+console.log(keys[1].slot); // 1n
+console.log(keys[2].slot); // 2n
+```
+
+### API Response Parsing
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Parse storage keys from API response
+interface StorageResponse {
+  keys: string[];
+  values: string[];
+}
+
+async function fetchStorage(
+  contractAddr: string
+): Promise<Map<BrandedStorageKey, bigint>> {
+  const response = await fetch(`/api/storage/${contractAddr}`);
+  const data: StorageResponse = await response.json();
+
+  const storage = new Map<BrandedStorageKey, bigint>();
+  for (let i = 0; i < data.keys.length; i++) {
+    const key = State.StorageKey.fromString(data.keys[i]);
+    const value = BigInt(data.values[i]);
+    storage.set(key, value);
+  }
+
+  return storage;
+}
+```
+
+## Validation
+
+The function validates:
+- Address format (40 hex characters)
+- Slot format (valid decimal string)
+- Presence of colon separator
+- Non-negative slot number
+
+## Related
+
+- [toString()](/primitives/state/to-string) - Convert to string format
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [from()](/primitives/state/from) - Universal constructor
+- [Fundamentals](/primitives/state/fundamentals) - Learn about storage keys
