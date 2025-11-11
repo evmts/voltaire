@@ -37,7 +37,7 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 
 ## Get Started
 
-📚 **[Installation Guide](https://voltaire.tevm.sh/getting-started/)** | **[Quick Start Tutorial](https://voltaire.tevm.sh/quick-start/)** | **[API Documentation](https://voltaire.tevm.sh/)**
+📚 **[Installation Guide](https://voltaire.tevm.sh/getting-started/)** | **[API Documentation](https://voltaire.tevm.sh/)**
 
 ## Complete API Reference
 
@@ -61,7 +61,6 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 | **[Blob](https://voltaire.tevm.sh/primitives/blob/)**                         | EIP-4844 blob                  | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob transactions                                                                                                                                                                         |
 | **[BloomFilter](https://voltaire.tevm.sh/primitives/bloomfilter/)**           | Bloom filter                   | Log bloom filters                                                                                                                                                                                                                             |
 | **[Bytecode](https://voltaire.tevm.sh/primitives/bytecode/)**                 | Contract bytecode              | EVM bytecode manipulation, deployment                                                                                                                                                                                                         |
-| **[Bytes](https://voltaire.tevm.sh/primitives/bytes/)**                       | Fixed-size byte arrays         | Typed byte sequences, conversion utilities                                                                                                                                                                                                    |
 | **[Chain](https://voltaire.tevm.sh/primitives/chain/)**                       | Chain configuration            | Network configuration, chain parameters                                                                                                                                                                                                       |
 | **[ChainId](https://voltaire.tevm.sh/primitives/chain/)**                     | Network identifier             | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.)                                                                                                                                                                                       |
 | **[Denomination](https://voltaire.tevm.sh/primitives/denomination/)**         | Ether denominations            | Wei, gwei, ether conversions                                                                                                                                                                                                                  |
@@ -72,18 +71,12 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 | **[Hardfork](https://voltaire.tevm.sh/primitives/hardfork/)**                 | Network hardfork               | Hardfork detection, feature flags                                                                                                                                                                                                             |
 | **[Hash](https://voltaire.tevm.sh/primitives/hash/)**                         | 32-byte hash type              | Constant-time operations, random generation, formatting                                                                                                                                                                                       |
 | **[Hex](https://voltaire.tevm.sh/primitives/hex/)**                           | Hexadecimal encoding           | Sized types, manipulation, conversion, validation                                                                                                                                                                                             |
-| **[Nonce](https://voltaire.tevm.sh/primitives/nonce/)**                       | Transaction nonce              | Increment, conversion, transaction ordering                                                                                                                                                                                                   |
 | **[Opcode](https://voltaire.tevm.sh/primitives/opcode/)**                     | EVM opcodes                    | [EVM.codes](https://www.evm.codes/) opcode reference                                                                                                                                                                                          |
-| **[PrivateKey](https://voltaire.tevm.sh/primitives/privatekey/)**             | 32-byte private key            | Key derivation, signing, address generation                                                                                                                                                                                                   |
-| **[PublicKey](https://voltaire.tevm.sh/primitives/publickey/)**               | 64-byte public key             | Uncompressed format, verification, address derivation                                                                                                                                                                                         |
 | **[RLP](https://voltaire.tevm.sh/primitives/rlp/)**                           | Recursive Length Prefix        | Encoding/decoding for [Ethereum data structures](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)                                                                                                                   |
 | **[Signature](https://voltaire.tevm.sh/primitives/signature/)**               | ECDSA signatures               | [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1), [P-256](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf), [Ed25519](https://ed25519.cr.yp.to/), canonical normalization, recovery                                              |
 | **[SIWE](https://voltaire.tevm.sh/primitives/siwe/)**                         | Sign-In with Ethereum          | [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) authentication                                                                                                                                                                            |
 | **[State](https://voltaire.tevm.sh/primitives/state/)**                       | State management               | Account state, storage slots                                                                                                                                                                                                                  |
-| **[StorageKey](https://voltaire.tevm.sh/primitives/storagekey/)**             | Storage slot identifier        | Account storage addressing                                                                                                                                                                                                                    |
 | **[Transaction](https://voltaire.tevm.sh/primitives/transaction/)**           | All transaction types          | [Legacy](https://ethereum.org/en/developers/docs/transactions/), [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559), [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844), [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702), serialization |
-| **[Trie](https://voltaire.tevm.sh/primitives/trie/)**                         | Merkle Patricia Trie           | State trie, storage trie implementations                                                                                                                                                                                                      |
-| **[TypedData](https://voltaire.tevm.sh/primitives/typeddata/)**               | EIP-712 typed data             | Domain separation, type hashing, structured data signing                                                                                                                                                                                      |
 | **[Uint](https://voltaire.tevm.sh/primitives/uint/)**                         | 256-bit unsigned integer       | Wrapping arithmetic, bitwise operations, comparisons                                                                                                                                                                                          |
 
 ---
@@ -131,19 +124,12 @@ Voltaire provides low-level tree-shakable EVM utilities, types, and all 19 preco
 - **[ripemd160](https://voltaire.tevm.sh/precompiles/ripemd160/)** (0x03) - RIPEMD-160 hash function
 - **[identity](https://voltaire.tevm.sh/precompiles/identity/)** (0x04) - Identity function (datacopy)
 - **[modexp](https://voltaire.tevm.sh/precompiles/modexp/)** (0x05) - Modular exponentiation ([EIP-198](https://eips.ethereum.org/EIPS/eip-198))
-- **[BN254 add/mul/pairing](https://voltaire.tevm.sh/precompiles/bn254/)** (0x06-0x08) - zkSNARK verification ([EIP-196](https://eips.ethereum.org/EIPS/eip-196), [EIP-197](https://eips.ethereum.org/EIPS/eip-197))
+- **[BN254 add](https://voltaire.tevm.sh/precompiles/bn254-add/)** (0x06), **[mul](https://voltaire.tevm.sh/precompiles/bn254-mul/)** (0x07), **[pairing](https://voltaire.tevm.sh/precompiles/bn254-pairing/)** (0x08) - zkSNARK verification ([EIP-196](https://eips.ethereum.org/EIPS/eip-196), [EIP-197](https://eips.ethereum.org/EIPS/eip-197))
 - **[blake2f](https://voltaire.tevm.sh/precompiles/blake2f/)** (0x09) - Blake2 compression function ([EIP-152](https://eips.ethereum.org/EIPS/eip-152))
 - **[KZG point evaluation](https://voltaire.tevm.sh/precompiles/point-evaluation/)** (0x0A) - EIP-4844 blob verification ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844))
 - **[BLS12-381 operations](https://voltaire.tevm.sh/precompiles/bls12-381/)** (0x0B-0x13) - BLS signature verification (Prague+, [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537))
 
-**EVM Components:**
-- **[Frame](https://voltaire.tevm.sh/evm/frame/)** - Call stack and execution context
-- **[Host](https://voltaire.tevm.sh/evm/host/)** - State access interface
-- **[Memory](https://voltaire.tevm.sh/evm/memory/)** - EVM memory management
-- **[Stack](https://voltaire.tevm.sh/evm/stack/)** - Value stack operations
-- **[Storage](https://voltaire.tevm.sh/evm/storage/)** - Contract storage management
-
-📚 **[EVM Documentation](https://voltaire.tevm.sh/evm/)** | **[Precompiles Guide](https://voltaire.tevm.sh/precompiles/)** | **[EVM.codes](https://www.evm.codes/)**
+📚 **[Precompiles Guide](https://voltaire.tevm.sh/precompiles/)** | **[EVM.codes](https://www.evm.codes/)**
 
 ---
 
@@ -310,7 +296,7 @@ All implementations optimized for production use:
 - **Minimal bundle**: Tree-shakeable, only pay for what you use
 - **WASM modes**: ReleaseSmall (size-optimized) and ReleaseFast (performance-optimized) builds available
 
-📚 **[WASM Guide](https://voltaire.tevm.sh/wasm/)** | **[Benchmarks](./BENCHMARKING.md)**
+📚 **[Benchmarks](./BENCHMARKING.md)**
 
 ---
 
@@ -368,7 +354,7 @@ Voltaire has minimal runtime dependencies:
 - **[keccak-asm](https://github.com/RustCrypto/hashes)** - Assembly-optimized Keccak implementation (native builds)
 - **[tiny-keccak](https://github.com/debris/tiny-keccak)** - Pure Rust Keccak implementation (WASM builds)
 
-All dependencies are actively maintained and security-audited where applicable. See [External Dependencies](https://voltaire.tevm.sh/external-dependencies/) for detailed information.
+All dependencies are actively maintained and security-audited where applicable.
 
 ---
 
