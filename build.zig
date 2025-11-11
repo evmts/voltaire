@@ -131,8 +131,10 @@ pub fn build(b: *std.Build) void {
     bun_build.setName("bun-build");
     bun_build.step.dependOn(&bun_typecheck.step);
 
-    // Add typecheck + build to default install step
-    b.getInstallStep().dependOn(&bun_build.step);
+    // Create a step for full build with TypeScript (separate from default install)
+    const build_with_ts_step = b.step("build-with-ts", "Build Zig + TypeScript distribution");
+    build_with_ts_step.dependOn(b.getInstallStep());
+    build_with_ts_step.dependOn(&bun_build.step);
 
     // Example: Keccak-256 hashing demonstration
     const keccak256_example_mod = b.createModule(.{
