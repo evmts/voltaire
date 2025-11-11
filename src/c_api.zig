@@ -2429,6 +2429,184 @@ export fn hdwallet_free(
 // so no explicit malloc/free exports are needed. JavaScript will allocate buffers
 // in the linear memory and pass pointers to these functions.
 
+// ============================================================================
+// Bytecode Advanced Analysis API
+// ============================================================================
+
+/// Get next PC after current instruction
+/// Returns next PC position or -1 if at end of bytecode
+export fn primitives_bytecode_get_next_pc(
+    code: [*]const u8,
+    code_len: usize,
+    current_pc: u32,
+) i64 {
+    const bytecode = code[0..code_len];
+
+    if (current_pc >= bytecode.len) {
+        return -1; // At end or beyond
+    }
+
+    const opcode = bytecode[current_pc];
+
+    // PUSH1-PUSH32: skip immediate data
+    if (opcode >= 0x60 and opcode <= 0x7f) {
+        const push_size = opcode - 0x5f;
+        const next_pc: u32 = current_pc + 1 + push_size;
+        if (next_pc <= bytecode.len) {
+            return next_pc;
+        }
+        return -1;
+    }
+
+    // Single-byte instruction
+    const next_pc: u32 = current_pc + 1;
+    if (next_pc <= bytecode.len) {
+        return next_pc;
+    }
+    return -1;
+}
+
+/// Instruction data structure (for serialization)
+const InstructionData = packed struct {
+    pc: u32,
+    opcode: u8,
+    // For PUSH instructions: the immediate value length
+    push_size: u8,
+    _padding: u16 = 0,
+};
+
+/// Scan bytecode and collect all instructions in a range
+/// Returns number of instructions found or negative error code
+export fn primitives_bytecode_scan(
+    code: [*]const u8,
+    code_len: usize,
+    start_pc: u32,
+    end_pc: u32,
+    out_instructions: [*]u8,
+    out_len: *usize,
+) c_int {
+    const bytecode = code[0..code_len];
+
+    if (start_pc > end_pc or start_pc >= bytecode.len) {
+        out_len.* = 0;
+        return 0;
+    }
+
+    var pc: u32 = start_pc;
+    var count: usize = 0;
+    const max_instructions = out_len.* / @sizeOf(InstructionData);
+
+    while (pc < end_pc and pc < bytecode.len and count < max_instructions) {
+        const opcode = bytecode[pc];
+        const instruction = InstructionData{
+            .pc = pc,
+            .opcode = opcode,
+            .push_size = if (opcode >= 0x60 and opcode <= 0x7f) opcode - 0x5f else 0,
+        };
+
+        // Write instruction to output buffer
+        const offset = count * @sizeOf(InstructionData);
+        const dest = out_instructions[offset .. offset + @sizeOf(InstructionData)];
+        @memcpy(dest, std.mem.asBytes(&instruction));
+
+        count += 1;
+
+        // Move to next instruction
+        if (opcode >= 0x60 and opcode <= 0x7f) {
+            const push_size = opcode - 0x5f;
+            pc += 1 + push_size;
+        } else {
+            pc += 1;
+        }
+    }
+
+    out_len.* = count * @sizeOf(InstructionData);
+    return @intCast(count);
+}
+
+/// Fusion pattern detection (simple: detect PUSH followed by operations)
+const FusionPattern = packed struct {
+    pc: u32,
+    pattern_type: u8, // 1 = PUSH+<op>, 2 = DUP+<op>, etc.
+    first_opcode: u8,
+    second_opcode: u8,
+};
+
+/// Detect instruction fusion patterns (optimizable instruction sequences)
+/// Returns number of fusion patterns found
+export fn primitives_bytecode_detect_fusions(
+    code: [*]const u8,
+    code_len: usize,
+    out_fusions: [*]u8,
+    out_len: *usize,
+) c_int {
+    const bytecode = code[0..code_len];
+
+    var pc: u32 = 0;
+    var count: usize = 0;
+    const max_fusions = out_len.* / @sizeOf(FusionPattern);
+
+    while (pc + 1 < bytecode.len and count < max_fusions) {
+        const opcode = bytecode[pc];
+
+        // Skip PUSH immediates
+        if (opcode >= 0x60 and opcode <= 0x7f) {
+            const push_size = opcode - 0x5f;
+            const next_pc = pc + 1 + push_size;
+
+            if (next_pc < bytecode.len) {
+                const next_opcode = bytecode[next_pc];
+
+                // Detect PUSH+<binary op> fusion patterns
+                // Common patterns: PUSH+ADD, PUSH+SUB, PUSH+MUL, etc.
+                if ((next_opcode >= 0x01 and next_opcode <= 0x0c) or // arithmetic
+                    (next_opcode >= 0x10 and next_opcode <= 0x1a))
+                {
+                    // comparison/bitwise
+                    const fusion = FusionPattern{
+                        .pc = pc,
+                        .pattern_type = 1, // PUSH+OP
+                        .first_opcode = opcode,
+                        .second_opcode = next_opcode,
+                    };
+
+                    const offset = count * @sizeOf(FusionPattern);
+                    const dest = out_fusions[offset .. offset + @sizeOf(FusionPattern)];
+                    @memcpy(dest, std.mem.asBytes(&fusion));
+                    count += 1;
+                }
+            }
+
+            pc = next_pc;
+        } else if (opcode >= 0x80 and opcode <= 0x8f) {
+            // DUP1-DUP16: check for DUP+<op> fusions
+            if (pc + 1 < bytecode.len) {
+                const next_opcode = bytecode[pc + 1];
+
+                if ((next_opcode >= 0x01 and next_opcode <= 0x0c) or (next_opcode >= 0x10 and next_opcode <= 0x1a)) {
+                    const fusion = FusionPattern{
+                        .pc = pc,
+                        .pattern_type = 2, // DUP+OP
+                        .first_opcode = opcode,
+                        .second_opcode = next_opcode,
+                    };
+
+                    const offset = count * @sizeOf(FusionPattern);
+                    const dest = out_fusions[offset .. offset + @sizeOf(FusionPattern)];
+                    @memcpy(dest, std.mem.asBytes(&fusion));
+                    count += 1;
+                }
+            }
+            pc += 1;
+        } else {
+            pc += 1;
+        }
+    }
+
+    out_len.* = count * @sizeOf(FusionPattern);
+    return @intCast(count);
+}
+
 // WASM reactor pattern - main() is required for executable builds but not called
 // JavaScript will invoke exported functions directly
 // Only define main() for WASM targets (not for native C library builds)

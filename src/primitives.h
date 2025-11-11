@@ -684,6 +684,28 @@ int hdwallet_free(size_t hdkey_handle);
 // WASM Memory Management
 // ============================================================================
 
+// ============================================================================
+// Bytecode Advanced Analysis API
+// ============================================================================
+
+/**
+ * Get next PC after current instruction
+ * Returns next PC position or -1 if at end of bytecode
+ */
+i64 primitives_bytecode_get_next_pc(const uint8_t * code, size_t code_len, uint32_t current_pc);
+
+/**
+ * Scan bytecode and collect all instructions in a range
+ * Returns number of instructions found or negative error code
+ */
+int primitives_bytecode_scan(const uint8_t * code, size_t code_len, uint32_t start_pc, uint32_t end_pc, uint8_t * out_instructions, size_t * out_len);
+
+/**
+ * Detect instruction fusion patterns (optimizable instruction sequences)
+ * Returns number of fusion patterns found
+ */
+int primitives_bytecode_detect_fusions(const uint8_t * code, size_t code_len, uint8_t * out_fusions, size_t * out_len);
+
 
 #ifdef __cplusplus
 }

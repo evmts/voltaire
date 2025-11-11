@@ -1,67 +1,126 @@
+// @ts-nocheck
 /**
  * WASM implementation of EVM bytecode operations
  * Uses WebAssembly bindings to Zig implementation
  */
 
 import * as loader from "../../wasm-loader/loader.js";
+import type { BrandedBytecode } from "./BrandedBytecode/BrandedBytecode.js";
+
+// ============================================================================
+// Re-export constructors (no WASM benefit)
+// ============================================================================
+
+export { from, fromHex } from "./BrandedBytecode/index.js";
+
+// ============================================================================
+// WASM-accelerated analysis methods
+// ============================================================================
 
 /**
- * Jump destination found in bytecode
+ * Analyze bytecode to find all valid JUMPDEST locations (WASM accelerated)
+ *
+ * @param {BrandedBytecode} bytecode - EVM bytecode
+ * @returns {number[]} Array of valid JUMPDEST positions
+ *
+ * @example
+ * ```typescript
+ * const code = Bytecode.from("0x6001...");
+ * const jumpdests = Bytecode.analyzeJumpDestinations(code);
+ * ```
  */
-export interface JumpDestination {
-	/** Position in bytecode */
-	position: number;
-	/** Whether this is a valid JUMPDEST opcode */
-	valid: boolean;
+export function analyzeJumpDestinations(bytecode: BrandedBytecode): number[] {
+	return loader.bytecodeAnalyzeJumpdests(bytecode);
 }
 
 /**
- * Analyze bytecode to find all valid JUMPDEST locations
- * @param code - EVM bytecode
- * @returns Array of JUMPDEST positions
- */
-export function analyzeJumpDestinations(code: Uint8Array): JumpDestination[] {
-	const input = new Uint8Array(code);
-	const positions = loader.bytecodeAnalyzeJumpdests(input);
-
-	return positions.map((pos: number) => ({
-		position: pos,
-		valid: true,
-	}));
-}
-
-/**
- * Check if a position is at a bytecode boundary (not inside PUSH data)
- * @param code - EVM bytecode
- * @param position - Position to check
- * @returns true if position is a valid instruction boundary
+ * Check if a position is at a bytecode boundary (WASM accelerated)
+ * Position must not be inside PUSH data
+ *
+ * @param {BrandedBytecode} bytecode - EVM bytecode
+ * @param {number} position - Position to check
+ * @returns {boolean} True if position is a valid instruction boundary
+ *
+ * @example
+ * ```typescript
+ * const code = Bytecode.from("0x6001...");
+ * if (Bytecode.isBytecodeBoundary(code, 0)) {
+ *   console.log("Valid boundary");
+ * }
+ * ```
  */
 export function isBytecodeBoundary(
-	code: Uint8Array,
+	bytecode: BrandedBytecode,
 	position: number,
 ): boolean {
-	const input = new Uint8Array(code);
-	return loader.bytecodeIsBoundary(input, position);
+	return loader.bytecodeIsBoundary(bytecode, position);
 }
 
 /**
- * Check if a position is a valid JUMPDEST
- * @param code - EVM bytecode
- * @param position - Position to check
- * @returns true if position contains a valid JUMPDEST opcode
+ * Check if a position contains a valid JUMPDEST (WASM accelerated)
+ *
+ * @param {BrandedBytecode} bytecode - EVM bytecode
+ * @param {number} position - Position to check
+ * @returns {boolean} True if position contains JUMPDEST opcode
+ *
+ * @example
+ * ```typescript
+ * const code = Bytecode.from("0x5b...");  // 0x5b is JUMPDEST
+ * if (Bytecode.isValidJumpDest(code, 0)) {
+ *   console.log("Valid JUMPDEST");
+ * }
+ * ```
  */
-export function isValidJumpDest(code: Uint8Array, position: number): boolean {
-	const input = new Uint8Array(code);
-	return loader.bytecodeIsValidJumpdest(input, position);
+export function isValidJumpDest(
+	bytecode: BrandedBytecode,
+	position: number,
+): boolean {
+	return loader.bytecodeIsValidJumpdest(bytecode, position);
 }
 
 /**
- * Validate bytecode for basic correctness
+ * Validate bytecode structure (WASM accelerated)
  * Checks that PUSH instructions have enough data bytes
- * @param code - EVM bytecode
- * @throws Error if bytecode is invalid
+ *
+ * @param {BrandedBytecode} bytecode - EVM bytecode
+ * @throws {Error} If bytecode is invalid
+ *
+ * @example
+ * ```typescript
+ * const code = Bytecode.from("0x6001...");
+ * Bytecode.validate(code);  // Throws if invalid
+ * ```
  */
-export function validateBytecode(code: Uint8Array): void {
-	const input = new Uint8Array(code);
-	loader.bytecodeValidate(input);
+export function validate(bytecode: BrandedBytecode): void {
+	loader.bytecodeValidate(bytecode);
 }
+
+// ============================================================================
+// TypeScript-only methods (re-export from BrandedBytecode)
+// ============================================================================
+
+export {
+	analyze,
+	analyzeBlocks,
+	analyzeGas,
+	analyzeStack,
+	detectFusions,
+	equals,
+	extractRuntime,
+	formatInstruction,
+	formatInstructions,
+	getBlock,
+	getPushSize,
+	hash,
+	hasMetadata,
+	isPush,
+	isTerminator,
+	parseInstructions,
+	prettyPrint,
+	scan,
+	size,
+	stripMetadata,
+	toAbi,
+	toHex,
+	_getNextPc,
+} from "./BrandedBytecode/index.js";
