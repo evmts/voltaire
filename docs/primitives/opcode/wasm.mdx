@@ -12,9 +12,9 @@ Performance analysis and recommendations for EVM opcode operations.
 
 **WASM is NOT implemented for Opcode primitives** (and not needed for performance).
 
-<Aside type="note" title="Pure TypeScript is Optimal">
-Opcode operations are already optimal in TypeScript. WASM would provide **zero benefit** and make most operations **10-100x SLOWER** due to call overhead.
-</Aside>
+<Note>
+Pure TypeScript is Optimal: Opcode operations are already optimal in TypeScript. WASM would provide **zero benefit** and make most operations **10-100x SLOWER** due to call overhead.
+</Note>
 
 ## Why No WASM?
 
@@ -286,9 +286,9 @@ Pure TypeScript implementation is optimal for all opcode operations:
 - Small bytecode parsing (&lt;1KB)
 - Individual opcode checks
 
-<Aside type="tip" title="Optimization Strategy">
-Focus on parsing once and reusing the instruction array rather than attempting WASM optimization. This provides 10-100x better speedup than WASM ever could.
-</Aside>
+<Tip>
+Optimization Strategy: Focus on parsing once and reusing the instruction array rather than attempting WASM optimization. This provides 10-100x better speedup than WASM ever could.
+</Tip>
 
 ## See Also
 

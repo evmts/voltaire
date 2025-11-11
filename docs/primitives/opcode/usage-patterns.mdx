@@ -445,9 +445,9 @@ function extractMetadata(bytecode: Uint8Array): {
 }
 ```
 
-<Aside type="tip" title="Bytecode Analysis Performance">
-For large contracts (&gt;10KB), consider parsing once and caching the instruction array. Reparsing on every analysis is wasteful.
-</Aside>
+<Tip>
+Bytecode Analysis Performance: For large contracts (>10KB), consider parsing once and caching the instruction array. Reparsing on every analysis is wasteful.
+</Tip>
 
 ## Control Flow Analysis
 
