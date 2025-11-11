@@ -104,11 +104,9 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 
 **Hash Functions:** [SHA256](https://voltaire.tevm.sh/crypto/sha256/) ([FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)), [RIPEMD160](https://voltaire.tevm.sh/crypto/ripemd160/) ([RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)), [Blake2](https://voltaire.tevm.sh/crypto/blake2/) ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693))
 
-**Elliptic Curves:** [Ed25519](https://voltaire.tevm.sh/crypto/ed25519/) ([RFC 8032](https://datatracker.ietf.org/doc/html/rfc8032)), [X25519](https://voltaire.tevm.sh/crypto/x25519/) ([RFC 7748](https://datatracker.ietf.org/doc/html/rfc7748)), [P256](https://voltaire.tevm.sh/crypto/p256/) ([FIPS 186-5](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf)), [BLS12-381](https://voltaire.tevm.sh/crypto/bls12-381/)
+**Elliptic Curves:** [Ed25519](https://voltaire.tevm.sh/crypto/ed25519/) ([RFC 8032](https://datatracker.ietf.org/doc/html/rfc8032)), [X25519](https://voltaire.tevm.sh/crypto/x25519/) ([RFC 7748](https://datatracker.ietf.org/doc/html/rfc7748)), [P256](https://voltaire.tevm.sh/crypto/p256/) ([FIPS 186-5](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf))
 
-**Encryption:** [AES-GCM](https://voltaire.tevm.sh/crypto/aesgcm/) ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf)), [ChaCha20-Poly1305](https://voltaire.tevm.sh/crypto/chacha20poly1305/) ([RFC 8439](https://datatracker.ietf.org/doc/html/rfc8439))
-
-**Signers:** [PrivateKeySigner](https://voltaire.tevm.sh/crypto/privatekeysigner/) - Key-based transaction signing with HD wallet support
+**Encryption:** [AES-GCM](https://voltaire.tevm.sh/crypto/aesgcm/) ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf))
 
 **Security Notice:**
 
@@ -125,7 +123,7 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 
 ### EVM & Precompiles
 
-Voltaire includes a complete EVM implementation with all 19 precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)):
+Voltaire provides low-level tree-shakable EVM utilities, types, and all 19 precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)). For complete spec-compliant EVM implementations, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
 
 **Precompiles:**
 - **[ecrecover](https://voltaire.tevm.sh/precompiles/ecrecover/)** (0x01) - ECDSA public key recovery

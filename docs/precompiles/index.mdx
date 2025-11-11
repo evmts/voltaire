@@ -7,7 +7,7 @@ description: "Complete reference for all Ethereum precompiled contracts with imp
 
 Precompiled contracts are special Ethereum addresses (0x01-0x13+) that execute optimized native code instead of EVM bytecode. They provide gas-efficient implementations of computationally expensive operations like cryptographic primitives, hashing, and elliptic curve operations.
 
-Voltaire implements all standard precompiles in both TypeScript and Zig, with WASM compilation support for portable high-performance execution.
+Voltaire provides low-level tree-shakable implementations of all standard precompiles in both TypeScript and Zig, with WASM compilation support for portable high-performance execution. For complete spec-compliant EVM implementations that use these precompiles, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
 
 ## Complete Precompile Reference
 
