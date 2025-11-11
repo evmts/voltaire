@@ -1,0 +1,353 @@
+---
+title: Address.calculateCreate2Address
+description: Calculate CREATE2 contract address from deployer, salt, and init code
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.calculateCreate2Address(salt: bigint | Uint8Array, initCode: Uint8Array): Address`
+
+Calculate CREATE2 contract address using sender address, salt, and initialization code. Enables deterministic contract deployment with custom salt.
+
+**Formula:** `keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]`
+
+**Parameters:**
+- `salt: bigint | Uint8Array` - 32-byte salt value
+  - If `bigint`: Converted to 32-byte big-endian representation
+  - If `Uint8Array`: Must be exactly 32 bytes
+- `initCode: Uint8Array` - Contract initialization code (constructor + bytecode)
+
+**Returns:** `Address` - Calculated contract address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as Hex from '@tevm/voltaire/Hex'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Salt as bigint
+const salt1 = 42n
+const initCode = Hex.toBytes("0x608060405234801561001057600080fd5b50...")
+const contract1 = deployer.calculateCreate2Address(salt1, initCode)
+
+// Salt as Uint8Array
+const salt2 = new Uint8Array(32)
+salt2[31] = 1
+const contract2 = deployer.calculateCreate2Address(salt2, initCode)
+
+// Different salts = different addresses
+console.log(contract1.equals(contract2)) // false
+```
+
+**Throws:**
+- `Error` - If Uint8Array salt is not exactly 32 bytes
+- `InvalidValueError` - If bigint salt is negative
+
+**Defined in:** [primitives/Address/BrandedAddress/calculateCreate2Address.js:25](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js#L25)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `calculateCreate2Address(address: BrandedAddress, salt: bigint | Uint8Array, initCode: Uint8Array): BrandedAddress`
+
+Calculate CREATE2 contract address.
+
+**Parameters:**
+- `address: BrandedAddress` - Deployer address
+- `salt: bigint | Uint8Array` - 32-byte salt
+- `initCode: Uint8Array` - Initialization code
+
+**Returns:** `BrandedAddress` - Calculated contract address
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import * as Hex from '@tevm/voltaire/Hex'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const salt = 42n
+const initCode = Hex.toBytes("0x6080...")
+const contract = Address.calculateCreate2Address(deployer, salt, initCode)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/calculateCreate2Address.js:25](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js#L25)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.calculateCreate2Address(sender: Address, salt: [32]u8, init_code: []const u8): !Address`
+
+Calculate CREATE2 contract address.
+
+**Parameters:**
+- `sender: Address` - Deployer address
+- `salt: [32]u8` - 32-byte salt
+- `init_code: []const u8` - Initialization code bytes
+
+**Returns:** `Address` - Calculated contract address
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+
+var salt: [32]u8 = [_]u8{0} ** 32;
+salt[31] = 42;
+
+const init_code = // ... bytecode
+
+const contract = try Address.calculateCreate2Address(deployer, salt, init_code);
+std.debug.print("Contract: {}\n", .{contract});
+```
+
+**Defined in:** [primitives/Address/address.zig:225](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L225)
+
+</Tab>
+</Tabs>
+
+## Algorithm
+
+1. **Hash init code:** `initCodeHash = keccak256(initCode)`
+2. **Concatenate data:** `data = 0xff ++ sender (20 bytes) ++ salt (32 bytes) ++ initCodeHash (32 bytes)`
+3. **Hash and extract:** `address = keccak256(data)[12:32]`
+
+**Pseudocode:**
+```
+init_code_hash = keccak256(init_code)
+data = [0xff] + sender_address + salt + init_code_hash
+hash = keccak256(data)
+contract_address = hash[12:32]
+```
+
+**Total data size:** 1 + 20 + 32 + 32 = 85 bytes
+
+## Salt Formats
+
+**Bigint salt:** Converted to 32-byte big-endian:
+```typescript
+const salt = 42n
+// Becomes: [0, 0, ..., 0, 42] (32 bytes)
+```
+
+**Uint8Array salt:** Must be exactly 32 bytes:
+```typescript
+const salt = new Uint8Array(32)
+salt[0] = 0x12
+salt[31] = 0x34
+```
+
+**Hex salt:** Convert from hex string:
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+const salt = Hex.toBytes("0x0000000000000000000000000000000000000000000000000000000000000001")
+```
+
+## Complete Example
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Deployer (could be factory contract)
+const factory = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Contract bytecode (initialization code)
+const initCode = Hex.toBytes(
+  "0x608060405234801561001057600080fd5b5060405161012..." // Full bytecode
+)
+
+// Deploy with different salts
+function predictAddress(salt: bigint): Address {
+  return factory.calculateCreate2Address(salt, initCode)
+}
+
+// Predict addresses
+const addr1 = predictAddress(0n)
+const addr2 = predictAddress(1n)
+const addr3 = predictAddress(42n)
+
+console.log('Salt 0:', addr1.toHex())
+console.log('Salt 1:', addr2.toHex())
+console.log('Salt 42:', addr3.toHex())
+
+// Deploy to predicted address
+async function deployWithSalt(salt: bigint) {
+  const predicted = predictAddress(salt)
+
+  // Deploy using CREATE2
+  const tx = await factory.create2Deploy(salt, initCode)
+  await tx.wait()
+
+  console.log(`Deployed to ${tx.contractAddress}`)
+  console.log(`Predicted: ${predicted.toHex()}`)
+  console.log(`Match: ${tx.contractAddress === predicted.toHex()}`)
+}
+```
+
+## Use Cases
+
+### Deterministic Deployments
+
+Deploy to same address across different chains:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const factory = Address.fromHex("0x...")
+const salt = 42n
+const initCode = // ... bytecode
+
+// Same address on all chains with same factory, salt, and code
+const predictedAddress = factory.calculateCreate2Address(salt, initCode)
+
+// Deploy on mainnet
+await deployOnChain('mainnet', factory, salt, initCode)
+
+// Deploy on testnet (same address)
+await deployOnChain('goerli', factory, salt, initCode)
+```
+
+### Counterfactual Addresses
+
+Interact with contract before deployment:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Predict address
+const contractAddress = factory.calculateCreate2Address(salt, initCode)
+
+// Send funds before deployment
+await sendEth(contractAddress, amount)
+
+// Deploy later
+await factory.create2Deploy(salt, initCode)
+
+// Contract now has funds
+```
+
+### Vanity Addresses
+
+Generate addresses with specific patterns:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function findVanitySalt(
+  factory: Address,
+  initCode: Uint8Array,
+  prefix: string
+): bigint {
+  for (let salt = 0n; salt < 1000000n; salt++) {
+    const addr = factory.calculateCreate2Address(salt, initCode)
+    if (addr.toHex().startsWith(prefix)) {
+      return salt
+    }
+  }
+  throw new Error('Salt not found')
+}
+
+// Find salt that produces address starting with "0x0000"
+const salt = findVanitySalt(factory, initCode, "0x0000")
+const vanityAddress = factory.calculateCreate2Address(salt, initCode)
+```
+
+### Upgradeable Proxies
+
+Deploy proxies to deterministic addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class ProxyFactory {
+  constructor(
+    private factory: Address,
+    private proxyBytecode: Uint8Array
+  ) {}
+
+  predictProxy(owner: Address, salt: bigint): Address {
+    // Include owner in salt for uniqueness
+    const fullSalt = this.encodeSalt(owner, salt)
+    return this.factory.calculateCreate2Address(fullSalt, this.proxyBytecode)
+  }
+
+  private encodeSalt(owner: Address, salt: bigint): Uint8Array {
+    const saltBytes = new Uint8Array(32)
+    // First 20 bytes: owner
+    saltBytes.set(owner, 0)
+    // Last 12 bytes: salt
+    for (let i = 0; i < 12; i++) {
+      saltBytes[31 - i] = Number((salt >> BigInt(i * 8)) & 0xffn)
+    }
+    return saltBytes
+  }
+}
+```
+
+## EIP-1014
+
+CREATE2 was introduced in [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) to enable:
+- **Deterministic addresses** independent of nonce
+- **Counterfactual interactions** (interact before deployment)
+- **State channels** with guaranteed addresses
+- **Cross-chain consistency** (same address on different chains)
+
+## CREATE vs CREATE2
+
+| Feature | CREATE | CREATE2 |
+|---------|--------|---------|
+| **Formula** | `keccak256(rlp([addr, nonce]))[12:]` | `keccak256(0xff ++ addr ++ salt ++ keccak256(code))[12:]` |
+| **Parameters** | Deployer, nonce | Deployer, salt, init code |
+| **Determinism** | Sequential (nonce-based) | Arbitrary (salt-based) |
+| **Redeployment** | Different address | Same address if inputs identical |
+| **Cross-chain** | Different addresses | Same address possible |
+
+## Performance
+
+**Cryptographic operations:**
+- Two keccak256 hashes (init code + final data)
+- No RLP encoding required
+
+**Bundle size impact:** Adds keccak256 (~5-10 KB)
+
+## Error Handling
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const initCode = new Uint8Array([0x60, 0x80])
+
+// Valid salts
+const addr1 = deployer.calculateCreate2Address(42n, initCode) // ✓
+const addr2 = deployer.calculateCreate2Address(new Uint8Array(32), initCode) // ✓
+
+// Invalid: negative salt
+try {
+  deployer.calculateCreate2Address(-1n, initCode)
+} catch (e) {
+  console.error(e) // InvalidValueError: Salt cannot be negative
+}
+
+// Invalid: wrong salt length
+try {
+  deployer.calculateCreate2Address(new Uint8Array(16), initCode)
+} catch (e) {
+  console.error(e) // Error: Salt must be 32 bytes
+}
+```
+
+## See Also
+
+- [calculateCreateAddress](/primitives/address/calculate-create-address) - CREATE address derivation
+- [fromHex](/primitives/address/from-hex) - Parse address from hex
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function
+- [EIP-1014: CREATE2](https://eips.ethereum.org/EIPS/eip-1014) - CREATE2 specification
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 7 (Contract creation)

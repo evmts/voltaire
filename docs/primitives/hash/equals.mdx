@@ -1,0 +1,355 @@
+---
+title: Hash.equals
+description: Constant-time equality comparison to prevent timing attacks
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.equals(other: BrandedHash): boolean`
+
+Constant-time equality comparison to prevent timing attacks. Always compares all bytes.
+
+**Parameters:**
+- `other: BrandedHash` - Hash to compare
+
+**Returns:** `boolean` - True if hashes are equal, false otherwise
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("hello")
+const hash3 = Hash.keccak256String("world")
+
+hash1.equals(hash2) // true
+hash1.equals(hash3) // false
+
+// Compare with hex string by converting first
+const hexHash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+hash1.equals(hexHash) // true
+```
+
+**Static form:**
+```typescript
+Hash.equals(hash1, hash2) // boolean
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/equals.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `equals(hash: BrandedHash, other: BrandedHash): boolean`
+
+Constant-time equality comparison to prevent timing attacks. Always compares all bytes.
+
+**Parameters:**
+- `hash: BrandedHash` - First hash
+- `other: BrandedHash` - Second hash
+
+**Returns:** `boolean` - True if hashes are equal
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("hello")
+
+Hash.equals(hash1, hash2) // true
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/equals.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.mem.eql(u8, &a, &b)`
+
+Zig uses `std.mem.eql` for byte comparison:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+const hash1: [32]u8 = .{0x1c, 0x8a, /* ... */};
+const hash2: [32]u8 = .{0x1c, 0x8a, /* ... */};
+
+const equal = std.mem.eql(u8, &hash1, &hash2);
+
+// For constant-time comparison
+fn constantTimeEquals(a: [32]u8, b: [32]u8) bool {
+    var result: u8 = 0;
+    for (a, b) |x, y| {
+        result |= x ^ y;
+    }
+    return result == 0;
+}
+```
+
+</Tab>
+</Tabs>
+
+## Constant-Time Implementation
+
+Uses constant-time comparison to prevent timing attacks:
+
+```typescript
+let result = 0
+for (let i = 0; i < hash.length; i++) {
+  result |= hash[i] ^ other[i]
+}
+return result === 0
+```
+
+**Why constant-time:**
+- Variable-time comparison can leak information through timing
+- Attacker can determine hash equality byte-by-byte
+- Constant-time comparison always takes same time regardless of where hashes differ
+
+<Warning title="Security Critical">
+Always use `equals()` for security-critical hash comparisons. Never use `===` or string comparison for cryptographic hashes.
+</Warning>
+
+## Usage Examples
+
+### Verifying Computed Hashes
+
+```typescript
+const expectedHash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const computedHash = Hash.keccak256String("hello")
+
+if (computedHash.equals(expectedHash)) {
+  console.log("Hash matches!")
+} else {
+  console.log("Hash mismatch!")
+}
+```
+
+### Event Log Filtering
+
+```typescript
+const transferSignature = Hash.keccak256String("Transfer(address,address,uint256)")
+
+function isTransferEvent(log: Log): boolean {
+  const topic0 = Hash.fromHex(log.topics[0])
+  return topic0.equals(transferSignature)
+}
+
+function filterTransferEvents(logs: Log[]): Log[] {
+  return logs.filter(isTransferEvent)
+}
+```
+
+### Transaction Verification
+
+```typescript
+async function verifyTransaction(txHash: string, expectedData: Uint8Array) {
+  const tx = await provider.getTransaction(txHash)
+  const computedHash = Hash.keccak256(expectedData)
+  const actualHash = Hash.fromHex(tx.hash)
+
+  if (!actualHash.equals(computedHash)) {
+    throw new Error("Transaction data mismatch")
+  }
+}
+```
+
+### Merkle Proof Verification
+
+```typescript
+function verifyMerkleProof(
+  leaf: Hash,
+  proof: Hash[],
+  root: Hash
+): boolean {
+  let computedHash = leaf
+
+  for (const proofElement of proof) {
+    if (computedHash.equals(proofElement)) {
+      // Skip duplicates
+      continue
+    }
+
+    // Combine hashes in order
+    const combined = new Uint8Array([
+      ...computedHash,
+      ...proofElement
+    ])
+    computedHash = Hash.keccak256(combined)
+  }
+
+  return computedHash.equals(root)
+}
+```
+
+### Deduplication
+
+```typescript
+const hashes = [
+  Hash.keccak256String("hello"),
+  Hash.keccak256String("world"),
+  Hash.keccak256String("hello"), // duplicate
+]
+
+const unique = hashes.filter((hash, i, arr) =>
+  arr.findIndex(h => h.equals(hash)) === i
+)
+console.log(unique.length) // 2
+```
+
+### Finding Matching Hash
+
+```typescript
+const target = Hash.keccak256String("hello")
+const hashes = [
+  Hash.keccak256String("world"),
+  Hash.keccak256String("hello"),
+  Hash.keccak256String("test"),
+]
+
+const found = hashes.find(hash => hash.equals(target))
+if (found) {
+  console.log("Found matching hash!")
+}
+```
+
+### Cache Lookup
+
+```typescript
+class HashCache {
+  private cache = new Map<string, any>()
+
+  set(hash: Hash, value: any): void {
+    this.cache.set(hash.toHex(), value)
+  }
+
+  get(hash: Hash): any | undefined {
+    return this.cache.get(hash.toHex())
+  }
+
+  has(hash: Hash): boolean {
+    return this.cache.has(hash.toHex())
+  }
+}
+```
+
+### Signature Verification
+
+```typescript
+function verifySignedMessage(
+  message: string,
+  signature: Signature,
+  expectedHash: Hash
+): boolean {
+  const messageHash = hashPersonalMessage(message)
+  return messageHash.equals(expectedHash)
+}
+```
+
+## Timing Attack Prevention
+
+### Why Timing Attacks Matter
+
+```typescript
+// ❌ VULNERABLE to timing attacks
+function vulnerableEquals(hash1: Hash, hash2: Hash): boolean {
+  for (let i = 0; i < hash1.length; i++) {
+    if (hash1[i] !== hash2[i]) {
+      return false // Early return leaks timing
+    }
+  }
+  return true
+}
+
+// ✅ SAFE from timing attacks
+function safeEquals(hash1: Hash, hash2: Hash): boolean {
+  let result = 0
+  for (let i = 0; i < hash1.length; i++) {
+    result |= hash1[i] ^ hash2[i] // Always compares all bytes
+  }
+  return result === 0
+}
+```
+
+### Attack Scenario
+
+```typescript
+// Attacker can determine hash byte-by-byte through timing
+const target = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Attacker tries different values
+const guess1 = Hash.fromHex("0x1c0000000000000000000000000000000000000000000000000000000000000000")
+const time1 = measureTime(() => vulnerableEquals(target, guess1)) // Fast (fails at byte 1)
+
+const guess2 = Hash.fromHex("0x1c8a00000000000000000000000000000000000000000000000000000000000000")
+const time2 = measureTime(() => vulnerableEquals(target, guess2)) // Slower (fails at byte 2)
+
+// Attacker learns hash byte-by-byte through timing differences
+```
+
+### Constant-Time Guarantee
+
+```typescript
+const target = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// All comparisons take same time
+const guess1 = Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
+const time1 = measureTime(() => target.equals(guess1)) // ~50ns
+
+const guess2 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const time2 = measureTime(() => target.equals(guess2)) // ~50ns
+
+// No timing difference regardless of how many bytes match
+```
+
+## Performance
+
+**Constant-time overhead:** Always compares all 32 bytes, even if first byte differs. Small overhead (~5-10ns) compared to early-return comparison.
+
+**Benchmark:**
+```typescript
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("world")
+
+// Constant-time equals (all bytes)
+console.time('equals')
+for (let i = 0; i < 100000; i++) {
+  hash1.equals(hash2)
+}
+console.timeEnd('equals') // ~5ms = ~50ns each
+```
+
+## Comparison Methods
+
+| Method | Use Case | Timing |
+|--------|----------|--------|
+| `equals()` | Cryptographic hash comparison | Constant-time |
+| `===` | Reference equality | Fast, but unsafe for hashes |
+| String comparison | String equality | Variable-time, unsafe |
+
+```typescript
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("hello")
+
+// ✅ Correct: constant-time
+hash1.equals(hash2)
+
+// ❌ Wrong: reference comparison
+hash1 === hash2 // false (different objects)
+
+// ❌ Wrong: variable-time
+hash1.toHex() === hash2.toHex() // true, but unsafe for secrets
+```
+
+## See Also
+
+- [isZero](/primitives/hash/is-zero) - Check if hash is all zeros (uses constant-time)
+- [keccak256](/primitives/hash/keccak256) - Compute hash to compare
+- [Signature.verify](/primitives/signature/verify) - Uses constant-time comparison
+- [Timing Attacks](https://en.wikipedia.org/wiki/Timing_attack) - Security context

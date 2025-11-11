@@ -1,0 +1,209 @@
+---
+title: Hex.concat
+description: Concatenate multiple hex strings into one
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.concat(...hexes: BrandedHex[]): BrandedHex`
+
+Concatenates multiple hex strings into a single hex string by combining their byte representations.
+
+**Parameters:**
+- `...hexes: BrandedHex[]` - Variable number of hex strings to concatenate
+
+**Returns:** `BrandedHex` - Combined hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Concatenate hex strings
+Hex.concat("0x12", "0x34", "0x56")
+// "0x123456"
+
+// Combine multiple values
+const a = Hex("0xaa")
+const b = Hex("0xbb")
+const c = Hex("0xcc")
+Hex.concat(a, b, c)
+// "0xaabbcc"
+
+// Build transaction data
+const selector = "0xa9059cbb"  // transfer(address,uint256)
+const address = "0x" + "00".repeat(12) + "742d35Cc6634C0532925a3b844Bc9e7595f12345"
+const amount = Hex.fromBigInt(1000n, 32)
+const calldata = Hex.concat(selector, address, amount)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/concat.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `concat(...hexes: BrandedHex[]): BrandedHex`
+
+Concatenates multiple hex strings into a single hex string by combining their byte representations.
+
+**Parameters:**
+- `...hexes: BrandedHex[]` - Variable number of hex strings to concatenate
+
+**Returns:** `BrandedHex` - Combined hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Concatenate hex strings
+Hex.concat("0x12", "0x34", "0x56")
+// "0x123456"
+
+// Combine multiple values
+const result = Hex.concat("0xaa", "0xbb", "0xcc")
+// "0xaabbcc"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/concat.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.concat(allocator: Allocator, hexes: []const []const u8): ![]const u8`
+
+Concatenate multiple hex strings.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator
+- `hexes: []const []const u8` - Array of hex strings
+
+**Returns:** `[]const u8` - Concatenated hex string (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hexes = [_][]const u8{ "0x12", "0x34", "0x56" };
+const result = try Hex.concat(allocator, &hexes);
+defer allocator.free(result);
+// result = "0x123456"
+```
+
+**Memory:** Caller must free returned string.
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Behavior
+
+Converts each hex string to bytes, concatenates the byte arrays, then converts back to hex:
+
+```typescript
+// Step by step
+const hex1 = "0x12"    // [0x12]
+const hex2 = "0x3456"  // [0x34, 0x56]
+const hex3 = "0x78"    // [0x78]
+
+// Concatenate bytes: [0x12, 0x34, 0x56, 0x78]
+const result = Hex.concat(hex1, hex2, hex3)
+// "0x12345678"
+```
+
+## Common Use Cases
+
+**Build Contract Calldata:**
+```typescript
+// Function: transfer(address recipient, uint256 amount)
+const selector = "0xa9059cbb"  // keccak256("transfer(address,uint256)").slice(0, 4)
+
+// Pad address to 32 bytes (ABI encoding)
+const recipient = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+const paddedRecipient = Hex.pad(recipient, 32)
+
+// Amount as uint256
+const amount = Hex.fromBigInt(1000000000000000000n, 32)  // 1 ETH in wei
+
+// Build calldata
+const calldata = Hex.concat(selector, paddedRecipient, amount)
+```
+
+**Combine Transaction Components:**
+```typescript
+const chainId = Hex.fromNumber(1, 32)
+const nonce = Hex.fromNumber(42, 32)
+const gasPrice = Hex.fromBigInt(20000000000n, 32)
+const gasLimit = Hex.fromNumber(21000, 32)
+const to = Hex.pad("0x742d35Cc6634C0532925a3b844Bc9e7595f12345", 32)
+const value = Hex.fromBigInt(1000000000000000000n, 32)
+const data = "0x"
+
+// Concatenate for signing
+const rawTx = Hex.concat(chainId, nonce, gasPrice, gasLimit, to, value, data)
+```
+
+**Build Storage Keys:**
+```typescript
+// Mapping storage key: keccak256(key . slot)
+const mappingKey = Hex.pad("0x742d35Cc6634C0532925a3b844Bc9e7595f12345", 32)
+const slot = Hex.fromNumber(5, 32)
+const storageKey = keccak256(Hex.concat(mappingKey, slot))
+```
+
+**Combine Signatures:**
+```typescript
+const r = signature.r  // 32 bytes
+const s = signature.s  // 32 bytes
+const v = Hex.fromNumber(signature.v, 1)  // 1 byte
+
+const fullSignature = Hex.concat(r, s, v)  // 65 bytes total
+```
+
+**Merkle Proof Concatenation:**
+```typescript
+function verifyProof(leaf: string, proof: string[]): string {
+  let current = leaf
+  for (const sibling of proof) {
+    // Combine and hash
+    const combined = Hex.concat(current, sibling)
+    current = keccak256(combined)
+  }
+  return current
+}
+```
+
+## Empty Strings
+
+Empty hex strings contribute nothing:
+
+```typescript
+Hex.concat("0x12", "0x", "0x34")
+// "0x1234"
+
+Hex.concat("0x")
+// "0x"
+
+Hex.concat("0x", "0x", "0x")
+// "0x"
+```
+
+## Performance
+
+Allocates single output array of combined size. Complexity: O(n) where n is total byte count across all inputs.
+
+For performance-critical code with many concatenations, consider pre-allocating buffers.
+
+## See Also
+
+- [slice](/primitives/hex/slice) - Extract portion of hex
+- [pad](/primitives/hex/pad) - Pad hex to size
+- [fromBytes](/primitives/hex/from-bytes) - Create from bytes
