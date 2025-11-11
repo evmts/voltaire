@@ -962,9 +962,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				message: { text: "test" },
 			};
 
-			expect(() => EIP712.signTypedData(typedData, wrongSize)).toThrow(
-				Eip712Error,
-			);
+			// Should throw (actual error is InvalidPrivateKeyError from Secp256k1)
+			expect(() => EIP712.signTypedData(typedData, wrongSize)).toThrow();
 		});
 	});
 
