@@ -1,6 +1,7 @@
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import { fromPublicKey } from "../Address/BrandedAddress/fromPublicKey.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedRlp } from "../Rlp/BrandedRlp/BrandedRlp.js";
 
@@ -44,13 +45,20 @@ export function encodeAddress(address: BrandedAddress | null): Uint8Array {
 /**
  * Decode address from RLP bytes (null for empty, Address otherwise)
  * @internal
+ * @throws {InvalidLengthError} If address length is not 0 or 20 bytes
  */
 export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
 	if (bytes.length === 0) {
 		return null;
 	}
 	if (bytes.length !== 20) {
-		throw new Error(`Invalid address length: ${bytes.length}`);
+		throw new InvalidLengthError(`Invalid address length: ${bytes.length}`, {
+			code: "INVALID_ADDRESS_LENGTH",
+			value: bytes,
+			expected: "20 bytes",
+			context: { actualLength: bytes.length },
+			docsPath: "/primitives/transaction/utils#error-handling",
+		});
 	}
 	return bytes as BrandedAddress;
 }
@@ -109,30 +117,54 @@ export function encodeAccessList(
 /**
  * Decode access list from RLP
  * @internal
+ * @throws {InvalidFormatError} If access list format is invalid
+ * @throws {InvalidLengthError} If address or storage key length is invalid
  */
 export function decodeAccessList(
 	data: BrandedRlp[],
 ): { address: BrandedAddress; storageKeys: BrandedHash[] }[] {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 2) {
-			throw new Error("Invalid access list item");
+			throw new InvalidFormatError("Invalid access list item", {
+				code: "INVALID_ACCESS_LIST_ITEM",
+				value: item,
+				expected: "List with 2 elements [address, storageKeys]",
+				docsPath: "/primitives/transaction/utils#error-handling",
+			});
 		}
 
 		const addressData = item.value[0];
 		const keysData = item.value[1];
 
 		if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
-			throw new Error("Invalid access list address");
+			throw new InvalidLengthError("Invalid access list address", {
+				code: "INVALID_ACCESS_LIST_ADDRESS",
+				value: addressData,
+				expected: "20 bytes",
+				context: { actualLength: addressData?.value?.length },
+				docsPath: "/primitives/transaction/utils#error-handling",
+			});
 		}
 
 		if (keysData?.type !== "list") {
-			throw new Error("Invalid access list storage keys");
+			throw new InvalidFormatError("Invalid access list storage keys", {
+				code: "INVALID_ACCESS_LIST_KEYS",
+				value: keysData,
+				expected: "List of storage keys",
+				docsPath: "/primitives/transaction/utils#error-handling",
+			});
 		}
 
 		const address = addressData.value as BrandedAddress;
 		const storageKeys = keysData.value.map((keyData: BrandedRlp) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
-				throw new Error("Invalid storage key");
+				throw new InvalidLengthError("Invalid storage key", {
+					code: "INVALID_STORAGE_KEY",
+					value: keyData,
+					expected: "32 bytes",
+					context: { actualLength: keyData.value?.length },
+					docsPath: "/primitives/transaction/utils#error-handling",
+				});
 			}
 			return keyData.value as BrandedHash;
 		});
@@ -168,6 +200,7 @@ export function encodeAuthorizationList(
 /**
  * Decode authorization list from RLP (EIP-7702)
  * @internal
+ * @throws {InvalidFormatError} If authorization list format is invalid
  */
 export function decodeAuthorizationList(data: BrandedRlp[]): {
 	chainId: bigint;
@@ -179,7 +212,12 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 }[] {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 6) {
-			throw new Error("Invalid authorization item");
+			throw new InvalidFormatError("Invalid authorization item", {
+				code: "INVALID_AUTHORIZATION_ITEM",
+				value: item,
+				expected: "List with 6 elements [chainId, address, nonce, yParity, r, s]",
+				docsPath: "/primitives/transaction/utils#error-handling",
+			});
 		}
 
 		const [chainIdData, addressData, nonceData, yParityData, rData, sData] =
@@ -203,7 +241,13 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 			sData.type !== "bytes" ||
 			sData.value.length !== 32
 		) {
-			throw new Error("Invalid authorization data");
+			throw new InvalidFormatError("Invalid authorization data", {
+				code: "INVALID_AUTHORIZATION_DATA",
+				value: item,
+				expected:
+					"Valid authorization data with correct field types and lengths",
+				docsPath: "/primitives/transaction/utils#error-handling",
+			});
 		}
 
 		return {

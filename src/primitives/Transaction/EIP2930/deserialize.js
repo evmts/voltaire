@@ -1,3 +1,4 @@
+import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
@@ -9,7 +10,7 @@ import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction bytes
  * @returns {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} Deserialized transaction
- * @throws {Error} If data is invalid or malformed
+ * @throws {DecodingError} If data is invalid or malformed
  * @example
  * ```javascript
  * import { deserialize } from './primitives/Transaction/EIP2930/deserialize.js';
@@ -18,20 +19,36 @@ import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
  */
 export function deserialize(data) {
 	if (data.length === 0 || data[0] !== Type.EIP2930) {
-		throw new Error("Invalid EIP-2930 transaction: missing or wrong type byte");
+		throw new DecodingError(
+			"Invalid EIP-2930 transaction: missing or wrong type byte",
+			{
+				code: "INVALID_EIP2930_TYPE_BYTE",
+				context: { typeByte: data[0] },
+				docsPath: "/primitives/transaction/eip2930/deserialize#error-handling",
+			},
+		);
 	}
 
 	const rlpData = data.slice(1);
 	const decoded = decode(rlpData);
 
 	if (decoded.data.type !== "list") {
-		throw new Error("Invalid EIP-2930 transaction: expected list");
+		throw new DecodingError("Invalid EIP-2930 transaction: expected list", {
+			code: "INVALID_EIP2930_FORMAT",
+			context: { type: decoded.data.type },
+			docsPath: "/primitives/transaction/eip2930/deserialize#error-handling",
+		});
 	}
 
 	const fields = decoded.data.value;
 	if (fields.length !== 11) {
-		throw new Error(
+		throw new DecodingError(
 			`Invalid EIP-2930 transaction: expected 11 fields, got ${fields.length}`,
+			{
+				code: "INVALID_EIP2930_FIELD_COUNT",
+				context: { expected: 11, actual: fields.length },
+				docsPath: "/primitives/transaction/eip2930/deserialize#error-handling",
+			},
 		);
 	}
 

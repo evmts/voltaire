@@ -1,3 +1,4 @@
+import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAddress, decodeBigint } from "../utils.js";
@@ -9,7 +10,7 @@ import { decodeAddress, decodeBigint } from "../utils.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction data
  * @returns {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} Deserialized legacy transaction
- * @throws {Error} If data is invalid or not a valid legacy transaction
+ * @throws {DecodingError} If data is invalid or not a valid legacy transaction
  * @example
  * ```javascript
  * import { deserialize } from './primitives/Transaction/Legacy/deserialize.js';
@@ -19,20 +20,36 @@ import { decodeAddress, decodeBigint } from "../utils.js";
 export function deserialize(data) {
 	const decoded = decode(data);
 	if (decoded.data.type !== "list") {
-		throw new Error("Invalid legacy transaction: expected list");
+		throw new DecodingError("Invalid legacy transaction: expected list", {
+			code: "INVALID_LEGACY_TRANSACTION_FORMAT",
+			context: { type: decoded.data.type },
+			docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
+		});
 	}
 
 	const fields = decoded.data.value;
 	if (fields.length !== 9) {
-		throw new Error(
+		throw new DecodingError(
 			`Invalid legacy transaction: expected 9 fields, got ${fields.length}`,
+			{
+				code: "INVALID_LEGACY_TRANSACTION_FIELD_COUNT",
+				context: { expected: 9, actual: fields.length },
+				docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
+			},
 		);
 	}
 
 	// Validate all fields are bytes
 	for (let i = 0; i < fields.length; i++) {
 		if (fields[i]?.type !== "bytes") {
-			throw new Error(`Invalid legacy transaction: field ${i} must be bytes`);
+			throw new DecodingError(
+				`Invalid legacy transaction: field ${i} must be bytes`,
+				{
+					code: "INVALID_LEGACY_TRANSACTION_FIELD_TYPE",
+					context: { fieldIndex: i, type: fields[i]?.type },
+					docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
+				},
+			);
 		}
 	}
 

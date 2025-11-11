@@ -1,3 +1,4 @@
+import { TransactionError } from "../errors/index.js";
 import type { Any } from "./types.js";
 
 /**
@@ -6,7 +7,7 @@ import type { Any } from "./types.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @returns void
- * @throws {Error} If transaction is not signed
+ * @throws {TransactionError} If transaction is not signed
  * @example
  * ```javascript
  * import { assertSigned } from './primitives/Transaction/assertSigned.js';
@@ -18,6 +19,10 @@ export function assertSigned(this: Any): void {
 	const isZeroS = this.s.every((b) => b === 0);
 
 	if (isZeroR || isZeroS) {
-		throw new Error("Transaction is not signed");
+		throw new TransactionError("Transaction is not signed", {
+			code: "TRANSACTION_NOT_SIGNED",
+			context: { hasR: !isZeroR, hasS: !isZeroS },
+			docsPath: "/primitives/transaction/assert-signed#error-handling",
+		});
 	}
 }

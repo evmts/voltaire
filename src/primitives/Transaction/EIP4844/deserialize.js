@@ -1,3 +1,4 @@
+import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
@@ -9,7 +10,7 @@ import { decodeAccessList, decodeBigint } from "../utils.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction with type prefix
  * @returns {import('../types.js').EIP4844} Deserialized transaction
- * @throws {Error} If data is invalid or malformed
+ * @throws {DecodingError} If data is invalid or malformed
  * @example
  * ```javascript
  * import { deserialize } from './primitives/Transaction/EIP4844/deserialize.js';
@@ -18,20 +19,36 @@ import { decodeAccessList, decodeBigint } from "../utils.js";
  */
 export function deserialize(data) {
 	if (data.length === 0 || data[0] !== Type.EIP4844) {
-		throw new Error("Invalid EIP-4844 transaction: missing or wrong type byte");
+		throw new DecodingError(
+			"Invalid EIP-4844 transaction: missing or wrong type byte",
+			{
+				code: "INVALID_EIP4844_TYPE_BYTE",
+				context: { typeByte: data[0] },
+				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+			},
+		);
 	}
 
 	const rlpData = data.slice(1);
 	const decoded = decode(rlpData);
 
 	if (decoded.data.type !== "list") {
-		throw new Error("Invalid EIP-4844 transaction: expected list");
+		throw new DecodingError("Invalid EIP-4844 transaction: expected list", {
+			code: "INVALID_EIP4844_FORMAT",
+			context: { type: decoded.data.type },
+			docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+		});
 	}
 
 	const fields = decoded.data.value;
 	if (fields.length !== 14) {
-		throw new Error(
+		throw new DecodingError(
 			`Invalid EIP-4844 transaction: expected 14 fields, got ${fields.length}`,
+			{
+				code: "INVALID_EIP4844_FIELD_COUNT",
+				context: { expected: 14, actual: fields.length },
+				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+			},
 		);
 	}
 
@@ -54,8 +71,13 @@ export function deserialize(data) {
 		fields[5]
 	).value;
 	if (toBytes.length !== 20) {
-		throw new Error(
+		throw new DecodingError(
 			"EIP-4844 transaction to address must be 20 bytes (cannot be null)",
+			{
+				code: "INVALID_EIP4844_TO_ADDRESS",
+				context: { length: toBytes.length },
+				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+			},
 		);
 	}
 	const to = /** @type {import('../../Address/index.js').BrandedAddress} */ (
@@ -74,12 +96,20 @@ export function deserialize(data) {
 
 	const blobHashesData = /** @type {any} */ (fields[10]);
 	if (blobHashesData.type !== "list") {
-		throw new Error("Invalid blob versioned hashes");
+		throw new DecodingError("Invalid blob versioned hashes", {
+			code: "INVALID_BLOB_HASHES_FORMAT",
+			context: { type: blobHashesData.type },
+			docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+		});
 	}
 	const blobVersionedHashes = blobHashesData.value.map(
 		(/** @type {any} */ hashData) => {
 			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
-				throw new Error("Invalid blob versioned hash");
+				throw new DecodingError("Invalid blob versioned hash", {
+					code: "INVALID_BLOB_HASH",
+					context: { type: hashData.type, length: hashData.value?.length },
+					docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+				});
 			}
 			return /** @type {import('../../Hash/index.js').BrandedHash} */ (
 				hashData.value
