@@ -42,7 +42,7 @@
 	"navigation": [
 		{
 			"group": "Getting Started",
-			"pages": ["index", "introduction", "getting-started"]
+			"pages": ["index", "introduction", "getting-started", "mcp"]
 		},
 		{
 			"group": "Concepts",

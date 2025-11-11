@@ -1,0 +1,149 @@
+---
+title: Model Context Protocol (MCP)
+description: Connect AI assistants to Voltaire documentation and tools via MCP
+icon: plug
+---
+
+The Voltaire MCP server exposes Voltaire tools and APIs via the [Model Context Protocol](https://modelcontextprotocol.io). Register it with Claude, Codex, or Cursor to access Voltaire features from your IDE or CLI assistant.
+
+**Endpoint:** `https://voltaire.tevm.app/mcp`
+
+## Adding the MCP Server
+
+<Tabs>
+<Tab title="Claude CLI">
+
+Claude provides a simple one-line command to register MCP servers.
+
+```bash
+claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
+```
+
+**Parameters:**
+- `--transport http` - Use HTTP-based MCP
+- `tevm` - Logical name for the server
+- `https://voltaire.tevm.app/mcp` - Voltaire MCP endpoint
+
+**Verify installation:**
+
+```bash
+claude mcp list
+```
+
+Expected output:
+
+```
+tevm  (http)  https://voltaire.tevm.app/mcp
+```
+
+</Tab>
+<Tab title="Codex">
+
+Codex uses a TOML config file at `~/.codex/config.toml`.
+
+**Create or edit the config:**
+
+```bash
+mkdir -p ~/.codex
+nano ~/.codex/config.toml
+```
+
+**Add the MCP server:**
+
+```toml
+[mcp_servers.tevm]
+url = "https://voltaire.tevm.app/mcp"
+
+[features]
+rmcp_client = true
+```
+
+The `rmcp_client` feature enables HTTP/remote MCP support in newer Codex builds.
+
+**Restart Codex** or reload the VS Code Codex extension.
+
+**Verify installation:**
+
+```bash
+codex mcp list
+```
+
+</Tab>
+<Tab title="Cursor">
+
+Cursor doesn't have a CLI for adding MCP servers. Configure manually by editing the MCP configuration file.
+
+### Project-specific Config
+
+Create `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "tevm": {
+      "url": "https://voltaire.tevm.app/mcp"
+    }
+  }
+}
+```
+
+### Global Config
+
+Edit or create `~/.cursor/mcp.json` for all projects:
+
+```json
+{
+  "mcpServers": {
+    "tevm": {
+      "url": "https://voltaire.tevm.app/mcp"
+    }
+  }
+}
+```
+
+**Restart Cursor.** The Voltaire MCP tools should appear in the "MCP Tools" or "Connected Services" panel.
+
+**Verify installation:**
+
+Open **Developer → MCP Tools** section and look for `tevm` or `Voltaire MCP`.
+
+</Tab>
+</Tabs>
+
+## What's Available
+
+Once connected, AI assistants can:
+- Query Voltaire documentation in real-time
+- Access API references and examples
+- Get code snippets for primitives and crypto functions
+- Search across all 316 documentation pages
+
+## Troubleshooting
+
+<Accordion title="Server not appearing in MCP list">
+- Verify the endpoint URL is correct: `https://voltaire.tevm.app/mcp`
+- Check your internet connection
+- Restart the AI assistant or IDE
+- For Cursor, ensure the JSON syntax is valid
+</Accordion>
+
+<Accordion title="Tools not working">
+- Ensure you're using the latest version of Claude/Codex/Cursor
+- Check that HTTP transport is enabled
+- Try removing and re-adding the server
+</Accordion>
+
+<Accordion title="Connection timeout">
+- The MCP server may be temporarily unavailable
+- Check [status.voltaire.tevm.app](https://status.voltaire.tevm.app) (if available)
+- Try again in a few minutes
+</Accordion>
+
+## Technical Details
+
+**Transport:** HTTP
+**Protocol Version:** MCP 1.0
+**Authentication:** None (public endpoint)
+**Rate Limiting:** Fair use policy applies
+
+The MCP server provides read-only access to documentation and does not execute code or access your local filesystem.
