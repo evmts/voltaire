@@ -1,6 +1,9 @@
 /**
- * WebAssembly module loader for Ethereum primitives
- * Handles WASM instantiation, memory management, and exports wrapping
+ * WebAssembly module loader for Ethereum primitives.
+ * Handles WASM instantiation, memory management, and exports wrapping.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  */
 
 import type { WasiImports, WasmExports } from "./types.js";
@@ -31,10 +34,19 @@ const ErrorMessages: Record<ErrorCode, string> = {
 };
 
 /**
- * Load and instantiate the WASM module
- * @param wasmPath - Path to WASM file or ArrayBuffer
+ * Load and instantiate the WASM module.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param wasmPath - Path to WASM file, URL, or ArrayBuffer
  * @param forceReload - Force reload even if already loaded (for benchmarking different modes)
  * @returns Promise that resolves when WASM is loaded
+ * @throws {Error} If WASM module does not export memory or instantiation fails
+ * @example
+ * ```javascript
+ * import { loadWasm } from './wasm-loader/loader.js';
+ * await loadWasm('./wasm/primitives.wasm');
+ * ```
  */
 export async function loadWasm(
 	wasmPath: string | URL | ArrayBuffer,
@@ -232,8 +244,18 @@ export async function loadWasm(
 }
 
 /**
- * Get the WASM exports (for direct access if needed)
+ * Get the WASM exports for direct access if needed.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @returns WASM exports
+ * @throws {Error} If WASM module not loaded
+ * @example
+ * ```javascript
+ * import { loadWasm, getExports } from './wasm-loader/loader.js';
+ * await loadWasm('./wasm/primitives.wasm');
+ * const exports = getExports();
+ * ```
  */
 export function getExports(): WasmExports {
 	if (!wasmExports) {
@@ -279,8 +301,17 @@ function malloc(size: number): number {
 }
 
 /**
- * Reset memory allocator (call after operations to free memory)
+ * Reset memory allocator to free allocated memory.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @returns void
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { resetMemory } from './wasm-loader/loader.js';
+ * resetMemory();
+ * ```
  */
 export function resetMemory(): void {
 	memoryOffset = 64 * 1024;
@@ -386,9 +417,18 @@ function checkResult(code: number): void {
 // ============================================================================
 
 /**
- * Create address from hex string
+ * Create address from hex string.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 20-byte address
+ * @throws {Error} If hex string is invalid or wrong length
+ * @example
+ * ```javascript
+ * import { addressFromHex } from './wasm-loader/loader.js';
+ * const address = addressFromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * ```
  */
 export function addressFromHex(hex: string): Uint8Array {
 	const savedOffset = memoryOffset;
@@ -406,9 +446,18 @@ export function addressFromHex(hex: string): Uint8Array {
 }
 
 /**
- * Convert address to hex string
+ * Convert address to hex string.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Hex string with 0x prefix
+ * @throws {Error} If address is invalid length
+ * @example
+ * ```javascript
+ * import { addressToHex } from './wasm-loader/loader.js';
+ * const hex = addressToHex(new Uint8Array(20));
+ * ```
  */
 export function addressToHex(address: Uint8Array): string {
 	const savedOffset = memoryOffset;
@@ -427,9 +476,18 @@ export function addressToHex(address: Uint8Array): string {
 }
 
 /**
- * Convert address to checksummed hex (EIP-55)
+ * Convert address to checksummed hex (EIP-55).
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Checksummed hex string
+ * @throws {Error} If address is invalid length
+ * @example
+ * ```javascript
+ * import { addressToChecksumHex } from './wasm-loader/loader.js';
+ * const checksummed = addressToChecksumHex(address);
+ * ```
  */
 export function addressToChecksumHex(address: Uint8Array): string {
 	const savedOffset = memoryOffset;
@@ -448,9 +506,18 @@ export function addressToChecksumHex(address: Uint8Array): string {
 }
 
 /**
- * Check if address is zero address
+ * Check if address is zero address.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns True if zero address
+ * @throws {Error} If address is invalid length
+ * @example
+ * ```javascript
+ * import { addressIsZero } from './wasm-loader/loader.js';
+ * const isZero = addressIsZero(address);
+ * ```
  */
 export function addressIsZero(address: Uint8Array): boolean {
 	const savedOffset = memoryOffset;
@@ -465,10 +532,19 @@ export function addressIsZero(address: Uint8Array): boolean {
 }
 
 /**
- * Compare two addresses for equality
+ * Compare two addresses for equality.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param a - First address
  * @param b - Second address
  * @returns True if equal
+ * @throws {Error} If addresses are invalid length
+ * @example
+ * ```javascript
+ * import { addressEquals } from './wasm-loader/loader.js';
+ * const equal = addressEquals(addr1, addr2);
+ * ```
  */
 export function addressEquals(a: Uint8Array, b: Uint8Array): boolean {
 	const savedOffset = memoryOffset;
@@ -486,9 +562,18 @@ export function addressEquals(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 /**
- * Validate EIP-55 checksum
+ * Validate EIP-55 checksum.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param hex - Hex string to validate
  * @returns True if checksum is valid
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { addressValidateChecksum } from './wasm-loader/loader.js';
+ * const isValid = addressValidateChecksum('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * ```
  */
 export function addressValidateChecksum(hex: string): boolean {
 	const savedOffset = memoryOffset;
@@ -502,10 +587,19 @@ export function addressValidateChecksum(hex: string): boolean {
 }
 
 /**
- * Calculate CREATE contract address
+ * Calculate CREATE contract address.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param sender - Sender address (20 bytes)
  * @param nonce - Nonce
  * @returns Contract address (20 bytes)
+ * @throws {Error} If calculation fails or inputs are invalid
+ * @example
+ * ```javascript
+ * import { calculateCreateAddress } from './wasm-loader/loader.js';
+ * const address = calculateCreateAddress(senderAddress, 5);
+ * ```
  */
 export function calculateCreateAddress(
 	sender: Uint8Array,
@@ -531,11 +625,20 @@ export function calculateCreateAddress(
 }
 
 /**
- * Calculate CREATE2 contract address
+ * Calculate CREATE2 contract address.
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for documentation
+ * @since 0.0.0
  * @param sender - Sender address (20 bytes)
  * @param salt - Salt (32 bytes)
  * @param initCode - Init code
  * @returns Contract address (20 bytes)
+ * @throws {Error} If calculation fails or inputs are invalid
+ * @example
+ * ```javascript
+ * import { calculateCreate2Address } from './wasm-loader/loader.js';
+ * const address = calculateCreate2Address(sender, salt, initCode);
+ * ```
  */
 export function calculateCreate2Address(
 	sender: Uint8Array,
@@ -572,9 +675,18 @@ export function calculateCreate2Address(
 // ============================================================================
 
 /**
- * Compute Keccak-256 hash
+ * Compute Keccak-256 hash.
+ *
+ * @see https://voltaire.tevm.sh/primitives/hash for documentation
+ * @since 0.0.0
  * @param data - Input data
  * @returns 32-byte hash
+ * @throws {Error} If hashing fails
+ * @example
+ * ```javascript
+ * import { keccak256 } from './wasm-loader/loader.js';
+ * const hash = keccak256(new Uint8Array([1, 2, 3]));
+ * ```
  */
 export function keccak256(data: Uint8Array): Uint8Array {
 	const savedOffset = memoryOffset;
@@ -684,9 +796,18 @@ export function eip191HashMessage(message: Uint8Array): Uint8Array {
 // ============================================================================
 
 /**
- * Compute SHA-256 hash
+ * Compute SHA-256 hash.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @param data - Input data
  * @returns 32-byte hash
+ * @throws {Error} If hashing fails
+ * @example
+ * ```javascript
+ * import { sha256 } from './wasm-loader/loader.js';
+ * const hash = sha256(new Uint8Array([1, 2, 3]));
+ * ```
  */
 export function sha256(data: Uint8Array): Uint8Array {
 	const savedOffset = memoryOffset;
