@@ -13,14 +13,14 @@
  */
 
 import {
-	readFileSync,
-	writeFileSync,
-	mkdirSync,
 	existsSync,
+	mkdirSync,
+	readFileSync,
 	readdirSync,
 	statSync,
-} from "fs";
-import { join, dirname } from "path";
+	writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 
 function convertStarlightToMintlify(content: string): string {
 	let result = content;
@@ -148,7 +148,6 @@ function migrateDirectory(sourceDir: string, destDir: string): number {
 		} else if (entry.endsWith(".mdx") || entry.endsWith(".md")) {
 			migrateFile(sourcePath, destPath);
 			fileCount++;
-			console.log(`Converted: ${entry}`);
 		}
 	}
 
@@ -177,13 +176,8 @@ for (const primitive of primitives) {
 	const destDir = join(baseDestDir, primitive);
 
 	if (existsSync(sourceDir)) {
-		console.log(`\nMigrating ${primitive}...`);
 		const count = migrateDirectory(sourceDir, destDir);
 		totalFiles += count;
-		console.log(`${primitive}: ${count} files`);
 	} else {
-		console.log(`Warning: ${sourceDir} not found`);
 	}
 }
-
-console.log(`\n✓ Total files converted: ${totalFiles}`);

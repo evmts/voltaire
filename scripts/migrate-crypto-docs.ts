@@ -9,8 +9,8 @@
  * - Preserves frontmatter and content
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname, join, relative } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 
 const SOURCE_DIR = "/Users/williamcory/voltaire/src/content/docs/crypto";
 const DEST_DIR = "/Users/williamcory/voltaire/docs/crypto";
@@ -161,17 +161,17 @@ function convertStarlightToMintlify(content: string): string {
 			asideTag.includes("danger")
 		) {
 			return "</Warning>";
-		} else if (asideTag.includes("Tip") || asideTag.includes("tip")) {
-			return "</Tip>";
-		} else {
-			return "</Note>";
 		}
+		if (asideTag.includes("Tip") || asideTag.includes("tip")) {
+			return "</Tip>";
+		}
+		return "</Note>";
 	});
 
 	// Clean up multiple blank lines
 	content = content.replace(/\n\n\n+/g, "\n\n");
 
-	return content.trim() + "\n";
+	return `${content.trim()}\n`;
 }
 
 function migrateFile(relativePath: string): void {
@@ -192,12 +192,7 @@ function migrateFile(relativePath: string): void {
 
 	// Write destination
 	writeFileSync(destPath, converted);
-
-	console.log(`✓ ${relativePath}`);
 }
-
-// Main
-console.log(`Migrating ${FILES.length} crypto documentation files...\n`);
 
 let successful = 0;
 let failed = 0;
@@ -212,11 +207,5 @@ for (const file of FILES) {
 	}
 }
 
-console.log(`\nMigration complete:`);
-console.log(`  Successful: ${successful}`);
-console.log(`  Failed: ${failed}`);
-console.log(`  Total: ${FILES.length}`);
-
 // Count directories
 const dirs = new Set(FILES.map((f) => dirname(f)).filter((d) => d !== "."));
-console.log(`  Directories: ${dirs.size}`);
