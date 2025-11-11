@@ -9,11 +9,14 @@ import {
 /**
  * G2 generator point
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @returns {import('../BrandedG2Point.js').BrandedG2Point} Generator point
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const g = generator();
+ * ```javascript
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * const g = G2.generator();
  * ```
  */
 export function generator() {

@@ -6,15 +6,20 @@ import { isOnCurve } from "./isOnCurve.js";
 /**
  * Create G2 point from affine coordinates with validation
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../Fp2.js').Fp2} x - X coordinate (Fp2 element)
  * @param {import('../Fp2.js').Fp2} y - Y coordinate (Fp2 element)
  * @returns {import('../BrandedG2Point.js').BrandedG2Point} G2 point
  * @throws {Bn254InvalidPointError} If point not on curve
  * @throws {Bn254SubgroupCheckError} If point not in subgroup
- *
  * @example
- * ```typescript
- * const point = fromAffine({c0: 1n, c1: 2n}, {c0: 3n, c1: 4n});
+ * ```javascript
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * import * as Fp2 from './crypto/bn254/Fp2/index.js';
+ * const x = Fp2.create(1n, 2n);
+ * const y = Fp2.create(3n, 4n);
+ * const point = G2.fromAffine(x, y);
  * ```
  */
 export function fromAffine(x, y) {

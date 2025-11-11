@@ -4,13 +4,20 @@ import { isZero } from "./isZero.js";
 /**
  * Check if two G2 points are equal
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG2Point.js').BrandedG2Point} point - First point
  * @param {import('../BrandedG2Point.js').BrandedG2Point} other - Second point
  * @returns {boolean} True if equal
- *
+ * @throws {never}
  * @example
- * ```typescript
- * if (equal(p1, p2)) { }
+ * ```javascript
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * const p1 = G2.generator();
+ * const p2 = G2.generator();
+ * if (G2.equal(p1, p2)) {
+ *   console.log('Points are equal');
+ * }
  * ```
  */
 export function equal(point, other) {

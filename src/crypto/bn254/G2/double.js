@@ -5,12 +5,16 @@ import { isZero } from "./isZero.js";
 /**
  * Double a G2 point
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG2Point.js').BrandedG2Point} point - Point to double
  * @returns {import('../BrandedG2Point.js').BrandedG2Point} Doubled point
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const doubled = double(point);
+ * ```javascript
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * const point = G2.generator();
+ * const doubled = G2.double(point);
  * ```
  */
 export function double(point) {
