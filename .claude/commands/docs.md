@@ -855,14 +855,17 @@ The `docs.json` file (or `mint.json`, legacy name) configures site-wide settings
 }
 ```
 
-### Navigation Structure
+### Navigation Structure (docs.json 2025 Format)
+
+**Modern Recursive Navigation**:
+In docs.json, tabs, groups, and pages are unified in a single recursive structure. This is more flexible than the legacy mint.json format which separated these concerns.
 
 **Pages** - Simple array of file paths (without .mdx extension):
 ```json
 "pages": ["settings", "pages", "navigation"]
 ```
 
-**Groups** - Collapsible sections:
+**Groups** - Collapsible sections (recursive):
 ```json
 {
   "group": "API Reference",
@@ -872,7 +875,7 @@ The `docs.json` file (or `mint.json`, legacy name) configures site-wide settings
 }
 ```
 
-**Nested groups**:
+**Nested groups** (docs.json allows deep nesting):
 ```json
 {
   "group": "Primitives",
@@ -880,35 +883,23 @@ The `docs.json` file (or `mint.json`, legacy name) configures site-wide settings
     "primitives/overview",
     {
       "group": "Address",
-      "pages": ["primitives/address/overview", "primitives/address/methods"]
+      "pages": [
+        "primitives/address/overview",
+        {
+          "group": "Methods",
+          "pages": ["primitives/address/from", "primitives/address/tohex"]
+        }
+      ]
     }
   ]
 }
 ```
 
-**Tabs** (top-level horizontal sections):
-```json
-"tabs": [
-  { "name": "Documentation", "url": "docs" },
-  { "name": "API Reference", "url": "api" }
-]
-```
-
-**Anchors** (persistent sidebar links):
-```json
-"anchors": [
-  {
-    "name": "GitHub",
-    "icon": "github",
-    "url": "https://github.com/evmts/voltaire"
-  },
-  {
-    "name": "API Reference",
-    "icon": "code",
-    "url": "api"
-  }
-]
-```
+**Key differences from mint.json**:
+- No separation between tabs, groups, and pages
+- Tabs can contain files from different folders
+- More flexible hierarchy
+- Validated against JSON schema
 
 ### Additional Settings
 
@@ -1291,11 +1282,12 @@ Any performance considerations or gotchas.
 
 ### Tone & Voice
 
-**Brief & Direct**:
+**Brief & Direct** (2025 Best Practice):
 - 1-2 sentence explanations by default
 - Expand only when complexity requires it
-- Front-load most important information
+- Front-load most important information (AI readers scan top content first)
 - No filler words or unnecessary preamble
+- Each page has specific purpose: tutorial, how-to, explanation, or reference
 
 **Technical & Precise**:
 - Assume Ethereum knowledge (don't explain basic concepts)
@@ -1411,13 +1403,15 @@ const runtime = code.stripMetadata().extractRuntime();
 ```
 ```
 
-**Scannable Structure**:
-- Use headings liberally (H2, H3)
+**Scannable Structure** (Critical for AI and human readers):
+- Use headings liberally (H2, H3) - AI readers use these for navigation
 - Break content into short paragraphs (2-4 sentences max)
 - Use lists for multiple items
 - Use tables for comparisons
 - Use cards for navigation
 - Use code blocks prominently
+- Include semantic structure (types, params, returns) - helps LLMs understand
+- Reduce repetition with snippets (single source of truth)
 
 **Cross-Referenced**:
 - Link to related docs liberally
@@ -1860,12 +1854,18 @@ Mintlify is AI-native with several built-in AI capabilities:
 # Install Mintlify CLI
 npm i -g mintlify
 
-# Development server
+# Development server (hot reload)
 mintlify dev                  # Run from docs/ directory
 bun run docs:dev              # Or via package.json script
 
 # Preview on localhost:3000
+# Hot reload automatically updates on file changes
 ```
+
+**VSCode Extension**:
+- Install Mintlify MDX extension for IntelliSense
+- Auto-completion for components, props, icons
+- Snippets for common patterns
 
 ### Production Deployment
 
@@ -2032,21 +2032,31 @@ The user will specify documentation changes. You should:
 3. **Follow patterns** - Match style and structure of existing docs
 4. **Update comprehensively** - Don't just update one file - update all related files
 5. **Verify links** - Ensure all internal links work (absolute paths, no trailing slashes)
-6. **Update navigation** - Update `mint.json` if adding new pages
+6. **Update navigation** - Update `docs.json` (or `mint.json`) if adding new pages
 7. **Test locally** - Run `bun run docs:dev` to preview changes
+8. **Check AI optimization** - Ensure content is scannable by both humans and LLMs
 
-**Remember**:
-- Brief, technical, evidence-based writing (Vue.js/Stripe/Ethereum style)
-- Use visual hierarchy - headings, lists, cards, tabs
-- Code examples for both Class and Namespace APIs (use Tabs/Tab)
-- Link to source code with line numbers
-- Document TypeScript AND Zig APIs when both exist
-- Update navigation (CardGroup) on main overview pages
-- No fluff, no congratulations, just facts
-- Progressive disclosure - simple to complex
-- Make content scannable
-- All documentation lives in `docs/` (centralized, not colocated)
-- Use Mintlify components (Note, Tip, Warning, Danger, Tabs, Card, etc.)
-- HTML tags must be on same line
+**Remember - 2025 Standards**:
+- **Brief, technical, evidence-based** writing (Vue.js/Stripe/Ethereum style)
+- **AI-optimized**: Clear headings, semantic structure, complete examples
+- **Visual hierarchy**: headings, lists, cards, tabs
+- **Code examples**: Both Class and Namespace APIs in `<Tabs>` + `<Tab>`
+- **Link to source** with line numbers
+- **Document all languages**: TypeScript AND Zig APIs when both exist
+- **Update navigation**: CardGroup on main overview pages
+- **No fluff**: No congratulations, just facts
+- **Progressive disclosure**: Simple → complex
+- **Scannable content**: Short paragraphs, lists, code blocks
+- **Centralized docs**: All in `docs/`, not colocated
+- **Components**: Note, Tip, Warning, Danger, Tabs, Card, Accordion, Snippet, etc.
+- **Snippets**: Use for repeated content (single source of truth)
+- **HTML tags**: Must be on same line (Mintlify requirement)
+
+**2025-Specific Considerations**:
+- Optimize for LLM readers (clear structure, complete examples)
+- Use snippets to reduce repetition
+- Assign page types (tutorial, how-to, explanation, reference)
+- Include contextual menu options for AI tools
+- Front-load important information
 
 **Execute the user's docs update request now.**

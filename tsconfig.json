@@ -8,12 +8,14 @@
 		"noPropertyAccessFromIndexSignature": false,
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
-		"strict": false
+		"exactOptionalPropertyTypes": false
 	},
 	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.json"],
 	"exclude": [
 		"node_modules",
 		"node_modules/**/*",
+		"**/*.test.ts",
+		"**/*.bench.ts",
 		".astro/**/*",
 		"src/content.config.ts",
 		"src/content/docs/primitives/abi",
