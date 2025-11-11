@@ -16,6 +16,11 @@ export function getV(signature) {
 	if (signature.algorithm !== "secp256k1") {
 		throw new InvalidAlgorithmError(
 			`getV only supported for secp256k1 signatures, got ${signature.algorithm}`,
+			{
+				value: signature.algorithm,
+				expected: "secp256k1",
+				docsPath: "/primitives/signature/get-v#error-handling",
+			},
 		);
 	}
 

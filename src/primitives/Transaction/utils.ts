@@ -215,7 +215,8 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 			throw new InvalidFormatError("Invalid authorization item", {
 				code: "INVALID_AUTHORIZATION_ITEM",
 				value: item,
-				expected: "List with 6 elements [chainId, address, nonce, yParity, r, s]",
+				expected:
+					"List with 6 elements [chainId, address, nonce, yParity, r, s]",
 				docsPath: "/primitives/transaction/utils#error-handling",
 			});
 		}

@@ -340,9 +340,7 @@ Resources:
 		const text = `example.com wants you to sign in with your Ethereum account:
 invalid-address`;
 
-		expect(() => Siwe.parse(text)).toThrow(
-			"Invalid SIWE message: missing address in SIWE message",
-		);
+		expect(() => Siwe.parse(text)).toThrow("Missing required field: address");
 	});
 
 	it("throws on missing required fields", () => {
@@ -351,9 +349,7 @@ invalid-address`;
 
 URI: https://example.com`;
 
-		expect(() => Siwe.parse(text)).toThrow(
-			"Invalid SIWE message: missing required fields",
-		);
+		expect(() => Siwe.parse(text)).toThrow("Missing required field: Version");
 	});
 
 	it("throws on invalid chain ID", () => {
@@ -367,7 +363,7 @@ Nonce: 32891756
 Issued At: 2021-09-30T16:25:24Z`;
 
 		expect(() => Siwe.parse(text)).toThrow(
-			"Invalid SIWE message: Chain ID must be a number",
+			"Invalid Chain ID: must be a number",
 		);
 	});
 

@@ -1,3 +1,9 @@
+import {
+	CryptoError,
+	InvalidPublicKeyError as BaseInvalidPublicKeyError,
+	InvalidPrivateKeyError,
+} from "../../primitives/errors/CryptoError.js";
+
 /**
  * Base error for X25519 operations
  *
@@ -7,15 +13,25 @@
  * @example
  * ```javascript
  * import { X25519Error } from './crypto/X25519/index.js';
- * throw new X25519Error('Invalid operation');
+ * throw new X25519Error('Invalid operation', {
+ *   code: 'X25519_ERROR',
+ *   context: { operation: 'scalarmult' },
+ *   docsPath: '/crypto/x25519#error-handling'
+ * });
  * ```
  */
-export class X25519Error extends Error {
+export class X25519Error extends CryptoError {
 	/**
 	 * @param {string} message
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message) {
-		super(message);
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "X25519_ERROR",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "X25519Error";
 	}
 }
@@ -29,15 +45,25 @@ export class X25519Error extends Error {
  * @example
  * ```javascript
  * import { InvalidSecretKeyError } from './crypto/X25519/index.js';
- * throw new InvalidSecretKeyError('Invalid secret key');
+ * throw new InvalidSecretKeyError('Invalid secret key', {
+ *   code: 'X25519_INVALID_SECRET_KEY_LENGTH',
+ *   context: { length: 16, expected: 32 },
+ *   docsPath: '/crypto/x25519/scalarmult#error-handling'
+ * });
  * ```
  */
-export class InvalidSecretKeyError extends X25519Error {
+export class InvalidSecretKeyError extends InvalidPrivateKeyError {
 	/**
 	 * @param {string} message
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message) {
-		super(message);
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "X25519_INVALID_SECRET_KEY",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "InvalidSecretKeyError";
 	}
 }
@@ -51,15 +77,25 @@ export class InvalidSecretKeyError extends X25519Error {
  * @example
  * ```javascript
  * import { InvalidPublicKeyError } from './crypto/X25519/index.js';
- * throw new InvalidPublicKeyError('Invalid public key');
+ * throw new InvalidPublicKeyError('Invalid public key', {
+ *   code: 'X25519_INVALID_PUBLIC_KEY_LENGTH',
+ *   context: { length: 16, expected: 32 },
+ *   docsPath: '/crypto/x25519/scalarmult#error-handling'
+ * });
  * ```
  */
-export class InvalidPublicKeyError extends X25519Error {
+export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
 	/**
 	 * @param {string} message
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message) {
-		super(message);
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "X25519_INVALID_PUBLIC_KEY",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "InvalidPublicKeyError";
 	}
 }

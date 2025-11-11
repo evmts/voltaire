@@ -20,11 +20,21 @@ export function merge(filter1, filter2) {
 	if (filter1.m !== filter2.m || filter1.k !== filter2.k) {
 		throw new InvalidBloomFilterParameterError(
 			"Cannot merge filters with different parameters",
+			{
+				value: { m1: filter1.m, k1: filter1.k, m2: filter2.m, k2: filter2.k },
+				expected: "matching m and k values",
+				docsPath: "/primitives/bloom-filter/merge#error-handling",
+			},
 		);
 	}
 	if (filter1.length !== filter2.length) {
 		throw new InvalidBloomFilterParameterError(
 			"Cannot merge filters with different sizes",
+			{
+				value: { len1: filter1.length, len2: filter2.length },
+				expected: "matching filter sizes",
+				docsPath: "/primitives/bloom-filter/merge#error-handling",
+			},
 		);
 	}
 
@@ -35,6 +45,11 @@ export function merge(filter1, filter2) {
 		if (byte1 === undefined || byte2 === undefined) {
 			throw new InvalidBloomFilterParameterError(
 				`Invalid bloom filter data at index ${i}`,
+				{
+					value: i,
+					expected: "valid byte data",
+					docsPath: "/primitives/bloom-filter/merge#error-handling",
+				},
 			);
 		}
 		result[i] = byte1 | byte2;

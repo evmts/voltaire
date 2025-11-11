@@ -1,9 +1,5 @@
 import type { BrandedHex } from "./BrandedHex.js";
-import {
-	InvalidCharacterError,
-	InvalidFormatError,
-	OddLengthError,
-} from "./errors.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -16,9 +12,8 @@ import { hexCharToValue } from "./utils.js";
  * @param start - Start byte index
  * @param end - End byte index (optional)
  * @returns Sliced hex string
- * @throws {InvalidFormatError} If missing 0x prefix
- * @throws {OddLengthError} If hex has odd number of digits
- * @throws {InvalidCharacterError} If contains invalid hex characters
+ * @throws {InvalidFormatError} If missing 0x prefix or contains invalid hex characters
+ * @throws {InvalidLengthError} If hex has odd number of digits
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';
@@ -31,14 +26,41 @@ export function slice(
 	start: number,
 	end?: number,
 ): BrandedHex {
-	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	if (!hex.startsWith("0x"))
+		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
+			code: "HEX_MISSING_PREFIX",
+			value: hex,
+			expected: "0x-prefixed hex string",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const hexDigits = hex.slice(2);
-	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+	if (hexDigits.length % 2 !== 0)
+		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
+			code: "HEX_ODD_LENGTH",
+			value: hex,
+			expected: "even number of hex digits",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {
 		const high = hexCharToValue(hexDigits[i]);
 		const low = hexCharToValue(hexDigits[i + 1]);
-		if (high === null || low === null) throw new InvalidCharacterError();
+		if (high === null || low === null)
+			throw new InvalidFormatError(
+				`Invalid hex character at position ${i + 2}: '${hexDigits[i]}${hexDigits[i + 1]}'`,
+				{
+					code: "HEX_INVALID_CHARACTER",
+					value: hex,
+					expected: "valid hex characters (0-9, a-f, A-F)",
+					context: {
+						position: i + 2,
+						character: hexDigits[i] + hexDigits[i + 1],
+					},
+					docsPath: "/primitives/hex#error-handling",
+				},
+			);
 		bytes[i / 2] = high * 16 + low;
 	}
 	return fromBytes(bytes.slice(start, end));

@@ -39,7 +39,7 @@ import { getSelector } from "./getSelector.js";
 export function decodeParams(fn, data) {
 	if (data.length < 4) {
 		throw new FunctionDecodingError("Data too short for function selector", {
-			context: { dataLength: data.length, functionName: fn.name }
+			context: { dataLength: data.length, functionName: fn.name },
 		});
 	}
 	const selector = data.slice(0, 4);
@@ -51,7 +51,7 @@ export function decodeParams(fn, data) {
 			throw new FunctionInvalidSelectorError(undefined, {
 				value: selector,
 				expected: expectedSelector,
-				context: { selector, expectedSelector, functionName: fn.name }
+				context: { selector, expectedSelector, functionName: fn.name },
 			});
 		}
 	}

@@ -35,9 +35,9 @@ export function getFunctionBySelector(abi, selector) {
 			`Invalid selector length: expected 4 bytes, got ${selectorBytes.length}`,
 			{
 				value: selectorBytes.length,
-				expected: '4 bytes',
-				context: { selector, selectorLength: selectorBytes.length }
-			}
+				expected: "4 bytes",
+				context: { selector, selectorLength: selectorBytes.length },
+			},
 		);
 	}
 
@@ -60,9 +60,9 @@ export function getFunctionBySelector(abi, selector) {
 			`Function with selector ${Hex.fromBytes(selectorBytes)} not found in ABI`,
 			{
 				value: Hex.fromBytes(selectorBytes),
-				expected: 'valid function selector in ABI',
-				context: { selector: Hex.fromBytes(selectorBytes), abi }
-			}
+				expected: "valid function selector in ABI",
+				context: { selector: Hex.fromBytes(selectorBytes), abi },
+			},
 		);
 	}
 

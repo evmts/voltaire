@@ -150,3 +150,11 @@ test "precompile - out of gas" {
     const result = sha256.execute(allocator, &input, 10);
     try testing.expectError(error.OutOfGas, result);
 }
+
+// Include fuzz tests
+test {
+    _ = @import("ecrecover.fuzz.zig");
+    _ = @import("modexp.fuzz.zig");
+    _ = @import("ripemd160.fuzz.zig");
+    _ = @import("sha256.fuzz.zig");
+}

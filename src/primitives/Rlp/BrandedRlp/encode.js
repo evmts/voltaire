@@ -1,5 +1,5 @@
 import * as OxRlp from "ox/Rlp";
-import { Error } from "./errors.js";
+import { RlpEncodingError } from "./RlpError.js";
 import { isData } from "./isData.js";
 
 /**
@@ -26,7 +26,7 @@ function dataToEncodable(data) {
  * @since 0.0.0
  * @param {Encodable} data - Data to encode (Uint8Array, RlpData, or array)
  * @returns {Uint8Array} RLP-encoded bytes
- * @throws {Error} If data type is invalid or encoding fails
+ * @throws {RlpEncodingError} If data type is invalid or encoding fails
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -56,5 +56,8 @@ export function encode(data) {
 		return OxRlp.from(data, { as: "Bytes" });
 	}
 
-	throw new Error("UnexpectedInput", "Invalid encodable data type");
+	throw new RlpEncodingError("Invalid encodable data type", {
+		code: "RLP_INVALID_TYPE",
+		context: { type: typeof data },
+	});
 }

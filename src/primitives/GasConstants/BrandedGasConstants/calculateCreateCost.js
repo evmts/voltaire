@@ -4,6 +4,7 @@ import {
 	InitcodeWord,
 	MaxInitcodeSize,
 } from "./constants.js";
+import { InvalidRangeError } from "../../errors/ValidationError.js";
 
 /**
  * Calculate contract creation gas cost
@@ -11,6 +12,7 @@ import {
  * @param {bigint} initcodeSize - Size of initcode in bytes
  * @param {bigint} deployedSize - Size of deployed bytecode in bytes
  * @returns {{ base: bigint; dynamic: bigint; total: bigint }} Gas cost breakdown
+ * @throws {InvalidRangeError} If initcode size exceeds maximum
  *
  * @example
  * ```typescript
@@ -20,8 +22,14 @@ import {
  */
 export function calculateCreateCost(initcodeSize, deployedSize) {
 	if (initcodeSize > MaxInitcodeSize) {
-		throw new Error(
+		throw new InvalidRangeError(
 			`Initcode size ${initcodeSize} exceeds maximum ${MaxInitcodeSize}`,
+			{
+				value: initcodeSize,
+				expected: `<= ${MaxInitcodeSize}`,
+				code: "GAS_INITCODE_SIZE_EXCEEDED",
+				docsPath: "/primitives/gas-constants/calculate-create-cost#error-handling",
+			},
 		);
 	}
 

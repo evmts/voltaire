@@ -4,7 +4,7 @@ import {
 	InvalidCharacterError,
 	InvalidFormatError,
 	OddLengthError,
-} from "./errors.js";
+} from "../../errors/index.js";
 import { fromString } from "./fromString.js";
 import { toString } from "./toString.js";
 

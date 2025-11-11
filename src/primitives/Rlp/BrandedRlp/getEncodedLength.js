@@ -1,4 +1,4 @@
-import { Error } from "./errors.js";
+import { RlpEncodingError } from "./RlpError.js";
 import { isData } from "./isData.js";
 import { encodeLengthValue } from "./utils.js";
 
@@ -9,7 +9,7 @@ import { encodeLengthValue } from "./utils.js";
  * @since 0.0.0
  * @param {Uint8Array | import('./BrandedRlp.js').BrandedRlp | any[]} data - Data to measure
  * @returns {number} Length in bytes after RLP encoding
- * @throws {Error} If data type is invalid
+ * @throws {RlpEncodingError} If data type is invalid
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -52,5 +52,8 @@ export function getEncodedLength(data) {
 		return 1 + lengthBytes.length + totalLength;
 	}
 
-	throw new Error("UnexpectedInput", "Invalid encodable data type");
+	throw new RlpEncodingError("Invalid encodable data type", {
+		code: "RLP_INVALID_TYPE",
+		context: { type: typeof data },
+	});
 }

@@ -1,4 +1,8 @@
 import type { BrandedPublicKey } from "./BrandedPublicKey.js";
+import {
+	InvalidFormatError,
+	InvalidLengthError,
+} from "../../errors/ValidationError.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
 
@@ -7,7 +11,8 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
  *
  * @param hex - Hex string (64 bytes uncompressed)
  * @returns Public key
- * @throws If hex is not 64 bytes
+ * @throws {InvalidFormatError} If hex string format is invalid
+ * @throws {InvalidLengthError} If hex is not 64 bytes
  *
  * @example
  * ```typescript
@@ -17,11 +22,22 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
 export function from(hex: string): BrandedPublicKey {
 	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!HEX_REGEX.test(hexStr)) {
-		throw new Error("Invalid hex string");
+		throw new InvalidFormatError("Invalid hex string", {
+			value: hex,
+			expected: "Valid hex string",
+			code: "PUBLIC_KEY_INVALID_HEX",
+			docsPath: "/primitives/public-key/from#error-handling",
+		});
 	}
 	if (hexStr.length !== 128) {
-		throw new Error(
+		throw new InvalidLengthError(
 			`Public key must be 64 bytes (128 hex chars), got ${hexStr.length}`,
+			{
+				value: hexStr.length,
+				expected: "128 hex characters (64 bytes)",
+				code: "PUBLIC_KEY_INVALID_LENGTH",
+				docsPath: "/primitives/public-key/from#error-handling",
+			},
 		);
 	}
 	const bytes = new Uint8Array(64);

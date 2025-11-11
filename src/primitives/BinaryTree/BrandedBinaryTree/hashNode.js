@@ -7,6 +7,7 @@ import { hashStem } from "./hashStem.js";
  *
  * @param {import('./BrandedBinaryTree.js').Node} node - Any node type
  * @returns {Uint8Array} Hash (32 bytes)
+ * @throws {Error} If node type is unknown
  *
  * @example
  * ```typescript

@@ -1,4 +1,5 @@
 import { HARDFORK_ORDER } from "./constants.js";
+import { InvalidFormatError } from "../../errors/ValidationError.js";
 
 /**
  * Get range of hardforks between two versions (inclusive)
@@ -6,6 +7,7 @@ import { HARDFORK_ORDER } from "./constants.js";
  * @param {import('./BrandedHardfork.js').BrandedHardfork} start - Start hardfork
  * @param {import('./BrandedHardfork.js').BrandedHardfork} end - End hardfork
  * @returns {import('./BrandedHardfork.js').BrandedHardfork[]} Array of hardfork IDs in range
+ * @throws {InvalidFormatError} If start or end hardfork is invalid
  *
  * @example
  * ```typescript
@@ -20,7 +22,12 @@ export function range(start, end) {
 	const endIdx = HARDFORK_ORDER.indexOf(end);
 
 	if (startIdx === -1 || endIdx === -1) {
-		throw new Error("Invalid hardfork in range");
+		throw new InvalidFormatError("Invalid hardfork in range", {
+			value: startIdx === -1 ? start : end,
+			expected: "Valid hardfork ID",
+			code: "HARDFORK_INVALID_RANGE",
+			docsPath: "/primitives/hardfork/range#error-handling",
+		});
 	}
 
 	const [minIdx, maxIdx] =

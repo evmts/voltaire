@@ -64,7 +64,10 @@ export function from(value) {
 	if (typeof value === "number" || typeof value === "bigint") {
 		return fromNumber(value);
 	}
-	throw new InvalidValueError();
+	throw new InvalidValueError("Unsupported address value type", {
+		value,
+		expected: "string, number, bigint, or Uint8Array",
+	});
 }
 
 /**
@@ -88,10 +91,16 @@ export function fromHex(hex) {
 		return /** @type {BrandedAddress} */ (bytes);
 	} catch (e) {
 		if (e.message.includes("Invalid hex")) {
-			throw new InvalidHexStringError();
+			throw new InvalidHexStringError("Invalid hex string", {
+				value: hex,
+				cause: e,
+			});
 		}
 		if (e.message.includes("Invalid length")) {
-			throw new InvalidHexFormatError();
+			throw new InvalidHexFormatError("Invalid hex format for address", {
+				value: hex,
+				cause: e,
+			});
 		}
 		throw e;
 	}
@@ -114,7 +123,10 @@ export function fromHex(hex) {
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new InvalidAddressLengthError();
+		throw new InvalidAddressLengthError("Invalid address length", {
+			value: bytes,
+			context: { actualLength: bytes.length },
+		});
 	}
 	return /** @type {BrandedAddress} */ (new Uint8Array(bytes));
 }
@@ -200,7 +212,11 @@ export function fromPublicKey(x, y) {
  */
 export function fromAbiEncoded(value) {
 	if (value.length !== 32) {
-		throw new InvalidAddressLengthError();
+		throw new InvalidAddressLengthError("Invalid ABI-encoded address length", {
+			value,
+			expected: "32 bytes",
+			context: { actualLength: value.length },
+		});
 	}
 	return /** @type {BrandedAddress} */ (value.slice(12));
 }

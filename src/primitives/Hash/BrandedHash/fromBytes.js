@@ -1,3 +1,4 @@
+import { InvalidLengthError } from "../../errors/ValidationError.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -7,7 +8,7 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
  * @returns {import('./BrandedHash.js').BrandedHash} Hash bytes
- * @throws {Error} If bytes is wrong length
+ * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript
  * import * as Hash from './primitives/Hash/index.js';
@@ -16,7 +17,13 @@ import { SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new Error(`Hash must be ${SIZE} bytes, got ${bytes.length}`);
+		throw new InvalidLengthError(`Hash must be ${SIZE} bytes, got ${bytes.length}`, {
+			code: "HASH_INVALID_LENGTH",
+			value: bytes,
+			expected: `${SIZE} bytes`,
+			context: { actualLength: bytes.length },
+			docsPath: "/primitives/hash",
+		});
 	}
 	return /** @type {import('./BrandedHash.ts').BrandedHash} */ (
 		new Uint8Array(bytes)

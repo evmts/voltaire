@@ -23,6 +23,11 @@ export function keypairFromSeed(seed) {
 	if (seed.length !== SEED_SIZE) {
 		throw new InvalidSeedError(
 			`Seed must be ${SEED_SIZE} bytes, got ${seed.length}`,
+			{
+				code: "ED25519_INVALID_SEED_LENGTH",
+				context: { length: seed.length, expected: SEED_SIZE },
+				docsPath: "/crypto/ed25519/keypair-from-seed#error-handling",
+			},
 		);
 	}
 
@@ -33,6 +38,11 @@ export function keypairFromSeed(seed) {
 			publicKey,
 		};
 	} catch (error) {
-		throw new Ed25519Error(`Keypair generation failed: ${error}`);
+		throw new Ed25519Error(`Keypair generation failed: ${error}`, {
+			code: "ED25519_KEYPAIR_GENERATION_FAILED",
+			context: { seedLength: seed.length },
+			docsPath: "/crypto/ed25519/keypair-from-seed#error-handling",
+			cause: /** @type {Error} */ (error),
+		});
 	}
 }

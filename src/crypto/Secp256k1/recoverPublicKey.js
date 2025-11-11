@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { SIGNATURE_COMPONENT_SIZE } from "./constants.js";
-import { InvalidSignatureError } from "./errors.js";
+import { InvalidSignatureError } from "../../primitives/errors/index.js";
 
 /**
  * Concatenate multiple Uint8Arrays
@@ -44,12 +44,28 @@ export function recoverPublicKey(signature, messageHash) {
 	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
 		throw new InvalidSignatureError(
 			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
+			{
+				code: "INVALID_SIGNATURE_R_LENGTH",
+				context: {
+					actualLength: signature.r.length,
+					expectedLength: SIGNATURE_COMPONENT_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			},
 		);
 	}
 
 	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
 		throw new InvalidSignatureError(
 			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
+			{
+				code: "INVALID_SIGNATURE_S_LENGTH",
+				context: {
+					actualLength: signature.s.length,
+					expectedLength: SIGNATURE_COMPONENT_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			},
 		);
 	}
 
@@ -62,6 +78,11 @@ export function recoverPublicKey(signature, messageHash) {
 	} else {
 		throw new InvalidSignatureError(
 			`Invalid v value: ${signature.v} (expected 0, 1, 27, or 28)`,
+			{
+				code: "INVALID_SIGNATURE_V",
+				context: { v: signature.v, expected: [0, 1, 27, 28] },
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			},
 		);
 	}
 
@@ -76,12 +97,21 @@ export function recoverPublicKey(signature, messageHash) {
 		const uncompressed = recovered.toBytes(false); // 65 bytes with 0x04 prefix
 
 		if (uncompressed[0] !== 0x04) {
-			throw new InvalidSignatureError("Invalid recovered public key format");
+			throw new InvalidSignatureError("Invalid recovered public key format", {
+				code: "INVALID_RECOVERED_KEY_FORMAT",
+				context: { prefix: uncompressed[0], expected: 0x04 },
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			});
 		}
 
 		// Return 64 bytes without the 0x04 prefix
 		return uncompressed.slice(1);
 	} catch (error) {
-		throw new InvalidSignatureError(`Public key recovery failed: ${error}`);
+		throw new InvalidSignatureError(`Public key recovery failed: ${error}`, {
+			code: "PUBLIC_KEY_RECOVERY_FAILED",
+			context: { signature, messageHash },
+			docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			cause: error,
+		});
 	}
 }

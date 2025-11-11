@@ -43,9 +43,9 @@ export function encodeFunction(abi, functionName, args) {
 			`Function "${functionName}" not found in ABI`,
 			{
 				value: functionName,
-				expected: 'valid function name in ABI',
-				context: { functionName, abi }
-			}
+				expected: "valid function name in ABI",
+				context: { functionName, abi },
+			},
 		);
 	}
 

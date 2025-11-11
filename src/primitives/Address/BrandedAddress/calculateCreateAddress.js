@@ -48,7 +48,9 @@ function encodeNonce(num) {
  */
 export function calculateCreateAddress(address, nonce) {
 	if (nonce < 0n) {
-		throw new InvalidValueError("Nonce cannot be negative");
+		throw new InvalidValueError("Nonce cannot be negative", {
+			value: nonce,
+		});
 	}
 
 	// RLP encode [address, nonce]

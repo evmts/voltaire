@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
-import { InvalidPrivateKeyError } from "./errors.js";
+import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
 
 /**
  * Derive public key from private key
@@ -26,6 +26,14 @@ export function derivePublicKey(privateKey) {
 	if (privateKey.length !== PRIVATE_KEY_SIZE) {
 		throw new InvalidPrivateKeyError(
 			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
+			{
+				code: "INVALID_PRIVATE_KEY_LENGTH",
+				context: {
+					actualLength: privateKey.length,
+					expectedLength: PRIVATE_KEY_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
+			},
 		);
 	}
 
@@ -34,12 +42,21 @@ export function derivePublicKey(privateKey) {
 		const uncompressed = secp256k1.getPublicKey(privateKey, false);
 
 		if (uncompressed[0] !== 0x04) {
-			throw new InvalidPrivateKeyError("Invalid public key format");
+			throw new InvalidPrivateKeyError("Invalid public key format", {
+				code: "INVALID_PUBLIC_KEY_FORMAT",
+				context: { prefix: uncompressed[0], expected: 0x04 },
+				docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
+			});
 		}
 
 		// Return 64 bytes without the 0x04 prefix
 		return uncompressed.slice(1);
 	} catch (error) {
-		throw new InvalidPrivateKeyError(`Key derivation failed: ${error}`);
+		throw new InvalidPrivateKeyError(`Key derivation failed: ${error}`, {
+			code: "KEY_DERIVATION_FAILED",
+			context: { privateKeyLength: privateKey.length },
+			docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
+			cause: error,
+		});
 	}
 }

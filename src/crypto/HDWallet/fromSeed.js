@@ -21,7 +21,11 @@ import { HDWalletError, InvalidSeedError } from "./errors.js";
  */
 export function fromSeed(seed) {
 	if (seed.length < 16 || seed.length > 64) {
-		throw new InvalidSeedError("Seed must be between 16 and 64 bytes");
+		throw new InvalidSeedError("Seed must be between 16 and 64 bytes", {
+			code: "INVALID_SEED_LENGTH",
+			context: { seedLength: seed.length, min: 16, max: 64 },
+			docsPath: "/crypto/hdwallet/from-seed#error-handling",
+		});
 	}
 
 	try {
@@ -29,6 +33,11 @@ export function fromSeed(seed) {
 			HDKey.fromMasterSeed(seed)
 		);
 	} catch (error) {
-		throw new HDWalletError(`Failed to create HD key from seed: ${error}`);
+		throw new HDWalletError(`Failed to create HD key from seed: ${error}`, {
+			code: "HD_KEY_DERIVATION_FAILED",
+			context: { seedLength: seed.length },
+			docsPath: "/crypto/hdwallet/from-seed#error-handling",
+			cause: error instanceof Error ? error : undefined,
+		});
 	}
 }

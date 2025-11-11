@@ -1,3 +1,5 @@
+import { UintEmptyInputError } from "./errors.js";
+
 /**
  * Find maximum of multiple Uint256 values
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {...import('./BrandedUint.ts').BrandedUint} values - Values to compare
  * @returns {import('./BrandedUint.ts').BrandedUint} Maximum value
- * @throws {Error} If no values provided
+ * @throws {UintEmptyInputError} If no values provided
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -14,7 +16,7 @@
  */
 export function max(...values) {
 	if (values.length === 0) {
-		throw new Error("max requires at least one value");
+		throw new UintEmptyInputError("max requires at least one value");
 	}
 	let result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
 		values[0]

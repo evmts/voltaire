@@ -58,6 +58,11 @@ export function encodeValue(type, value, types) {
 		} else {
 			throw new Eip712EncodingError(
 				`Cannot encode value of type ${typeof value} as ${type}`,
+				{
+					code: "EIP712_INVALID_VALUE_TYPE",
+					context: { type, valueType: typeof value, value },
+					docsPath: "/crypto/eip712/encode-value#error-handling",
+				},
 			);
 		}
 		// Big-endian encoding
@@ -73,7 +78,11 @@ export function encodeValue(type, value, types) {
 	if (type === "address") {
 		const addr = /** @type {Uint8Array} */ (value);
 		if (addr.length !== 20) {
-			throw new Eip712EncodingError("Address must be 20 bytes");
+			throw new Eip712EncodingError("Address must be 20 bytes", {
+				code: "EIP712_INVALID_ADDRESS_LENGTH",
+				context: { type, length: addr.length, expected: 20 },
+				docsPath: "/crypto/eip712/encode-value#error-handling",
+			});
 		}
 		result.set(addr, 12); // Right-aligned in 32 bytes
 		return result;
@@ -109,6 +118,11 @@ export function encodeValue(type, value, types) {
 			if (bytes.length !== size) {
 				throw new Eip712EncodingError(
 					`${type} must be ${size} bytes, got ${bytes.length}`,
+					{
+						code: "EIP712_INVALID_BYTES_LENGTH",
+						context: { type, length: bytes.length, expected: size },
+						docsPath: "/crypto/eip712/encode-value#error-handling",
+					},
 				);
 			}
 			result.set(bytes, 0); // Left-aligned
@@ -123,5 +137,9 @@ export function encodeValue(type, value, types) {
 		return hash;
 	}
 
-	throw new Eip712EncodingError(`Unsupported type: ${type}`);
+	throw new Eip712EncodingError(`Unsupported type: ${type}`, {
+		code: "EIP712_UNSUPPORTED_TYPE",
+		context: { type, availableTypes: Object.keys(types) },
+		docsPath: "/crypto/eip712/encode-value#error-handling",
+	});
 }

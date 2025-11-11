@@ -1,5 +1,11 @@
 import * as OxSiwe from "ox/Siwe";
 import * as Address from "../../Address/BrandedAddress/index.js";
+import {
+	InvalidSiweMessageError,
+	MissingFieldError,
+	InvalidFieldError,
+	SiweParseError,
+} from "./errors.js";
 
 /**
  * Parse a SIWE message from a formatted string
@@ -8,7 +14,10 @@ import * as Address from "../../Address/BrandedAddress/index.js";
  * @since 0.0.0
  * @param {string} text - Formatted SIWE message string
  * @returns {import('./BrandedMessage.js').BrandedMessage} Parsed Message object
- * @throws {Error} If message format is invalid or missing required fields
+ * @throws {InvalidSiweMessageError} if message format is invalid
+ * @throws {MissingFieldError} if required field is missing
+ * @throws {InvalidFieldError} if field value is invalid
+ * @throws {SiweParseError} if parsing fails
  * @example
  * ```javascript
  * import * as Siwe from './primitives/Siwe/index.js';
@@ -34,7 +43,9 @@ export function parse(text) {
 			!lines[0] ||
 			!lines[0].match(/^.+ wants you to sign in with your Ethereum account:$/)
 		) {
-			throw new Error("missing domain header");
+			throw new InvalidSiweMessageError("missing domain header", {
+				value: text,
+			});
 		}
 
 		// Normalize address to lowercase to avoid checksum validation issues
@@ -71,7 +82,7 @@ export function parse(text) {
 
 		// Validate address field is present
 		if (!oxMessage.address) {
-			throw new Error("missing address in SIWE message");
+			throw new MissingFieldError("address");
 		}
 
 		// Convert address from hex to BrandedAddress
@@ -84,19 +95,19 @@ export function parse(text) {
 
 		// Validate required fields are actually present in the text
 		if (!text.includes("URI:")) {
-			throw new Error("missing required fields");
+			throw new MissingFieldError("URI");
 		}
 		if (!text.includes("Version:")) {
-			throw new Error("missing required fields");
+			throw new MissingFieldError("Version");
 		}
 		if (!text.includes("Chain ID:")) {
-			throw new Error("missing required fields");
+			throw new MissingFieldError("Chain ID");
 		}
 		if (!text.includes("Nonce:")) {
-			throw new Error("missing required fields");
+			throw new MissingFieldError("Nonce");
 		}
 		if (!text.includes("Issued At:")) {
-			throw new Error("missing required fields");
+			throw new MissingFieldError("Issued At");
 		}
 
 		// Validate chain ID is a number
@@ -104,7 +115,9 @@ export function parse(text) {
 		if (chainIdMatch?.[1]) {
 			const chainIdValue = chainIdMatch[1].trim();
 			if (!/^\d+$/.test(chainIdValue)) {
-				throw new Error("Chain ID must be a number");
+				throw new InvalidFieldError("Chain ID", "must be a number", {
+					value: chainIdValue,
+				});
 			}
 		}
 
@@ -142,18 +155,33 @@ export function parse(text) {
 
 		return message;
 	} catch (error) {
+		// Re-throw our own errors directly
+		if (
+			error instanceof InvalidSiweMessageError ||
+			error instanceof MissingFieldError ||
+			error instanceof InvalidFieldError
+		) {
+			throw error;
+		}
+
 		// Map error messages to expected Voltaire format
 		const errMsg = error instanceof Error ? error.message : String(error);
 
 		// Map ox error messages to Voltaire-expected messages
 		if (errMsg.includes("Unsupported address value type")) {
-			throw new Error("Invalid SIWE message: missing or invalid address");
+			throw new MissingFieldError("address", { cause: error });
 		}
 		if (errMsg.includes("Invalid message field") && errMsg.includes("domain")) {
-			throw new Error("Invalid SIWE message: missing domain header");
+			throw new InvalidSiweMessageError("missing domain header", {
+				value: text,
+				cause: error,
+			});
 		}
 
-		// Re-throw with clearer message
-		throw new Error(`Invalid SIWE message: ${errMsg}`);
+		// Generic parse error with cause chain
+		throw new SiweParseError(errMsg, {
+			value: text,
+			cause: error,
+		});
 	}
 }

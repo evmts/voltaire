@@ -30,8 +30,8 @@ export function encodePacked(types, values) {
 			{
 				value: values.length,
 				expected: `${types.length} values`,
-				context: { types, values }
-			}
+				context: { types, values },
+			},
 		);
 	}
 
@@ -95,8 +95,13 @@ function encodePackedValue(type, value) {
 			throw new AbiEncodingError(
 				`Invalid ${type} length: expected ${length}, got ${array.length}`,
 				{
-					context: { type, expectedLength: length, actualLength: array.length, value: array }
-				}
+					context: {
+						type,
+						expectedLength: length,
+						actualLength: array.length,
+						value: array,
+					},
+				},
 			);
 		}
 		const parts = [];
@@ -149,8 +154,8 @@ function encodePackedValue(type, value) {
 				throw new AbiEncodingError(
 					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
 					{
-						context: { type, expectedSize: size, actualSize: bytes.length }
-					}
+						context: { type, expectedSize: size, actualSize: bytes.length },
+					},
 				);
 			}
 			return bytes;
@@ -210,6 +215,6 @@ function encodePackedValue(type, value) {
 	}
 
 	throw new AbiEncodingError(`Unsupported packed type: ${type}`, {
-		context: { type, value }
+		context: { type, value },
 	});
 }

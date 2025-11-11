@@ -11,6 +11,7 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * @param {Uint8Array | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: import('./BrandedSignature.js').SignatureAlgorithm } | { signature: Uint8Array; algorithm: 'ed25519' }} value - Signature data
  * @returns {import('./BrandedSignature.js').BrandedSignature} Signature
  * @throws {InvalidSignatureFormatError} If value format is unsupported or invalid
+ * @throws {InvalidSignatureLengthError} If signature length is invalid
  *
  * @example
  * ```typescript
@@ -45,6 +46,11 @@ export function from(value) {
 		}
 		throw new InvalidSignatureFormatError(
 			`Invalid signature length: ${value.length} bytes`,
+			{
+				value: value.length,
+				expected: `${ECDSA_SIZE} or ${ED25519_SIZE} bytes`,
+				docsPath: "/primitives/signature/from#error-handling",
+			},
 		);
 	}
 
@@ -59,6 +65,11 @@ export function from(value) {
 		}
 		throw new InvalidSignatureFormatError(
 			`Invalid algorithm for ECDSA signature: ${algorithm}`,
+			{
+				value: algorithm,
+				expected: "secp256k1 or p256",
+				docsPath: "/primitives/signature/from#error-handling",
+			},
 		);
 	}
 
@@ -72,5 +83,9 @@ export function from(value) {
 		return fromEd25519(value.signature);
 	}
 
-	throw new InvalidSignatureFormatError("Unsupported signature value type");
+	throw new InvalidSignatureFormatError("Unsupported signature value type", {
+		value: typeof value,
+		expected: "Uint8Array or signature object",
+		docsPath: "/primitives/signature/from#error-handling",
+	});
 }

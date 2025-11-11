@@ -40,21 +40,59 @@ export function verifyKzgProof(commitment, z, y, proof) {
 	) {
 		throw new KzgError(
 			`Commitment must be ${BYTES_PER_COMMITMENT} bytes, got ${commitment instanceof Uint8Array ? commitment.length : "not Uint8Array"}`,
+			{
+				code: "KZG_INVALID_COMMITMENT",
+				context: {
+					commitmentType:
+						commitment instanceof Uint8Array ? "Uint8Array" : typeof commitment,
+					commitmentLength:
+						commitment instanceof Uint8Array ? commitment.length : undefined,
+					expected: BYTES_PER_COMMITMENT,
+				},
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
 		);
 	}
 	if (!(z instanceof Uint8Array) || z.length !== BYTES_PER_FIELD_ELEMENT) {
 		throw new KzgError(
 			`Evaluation point must be ${BYTES_PER_FIELD_ELEMENT} bytes, got ${z instanceof Uint8Array ? z.length : "not Uint8Array"}`,
+			{
+				code: "KZG_INVALID_EVALUATION_POINT",
+				context: {
+					zType: z instanceof Uint8Array ? "Uint8Array" : typeof z,
+					zLength: z instanceof Uint8Array ? z.length : undefined,
+					expected: BYTES_PER_FIELD_ELEMENT,
+				},
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
 		);
 	}
 	if (!(y instanceof Uint8Array) || y.length !== BYTES_PER_FIELD_ELEMENT) {
 		throw new KzgError(
 			`Evaluation result must be ${BYTES_PER_FIELD_ELEMENT} bytes, got ${y instanceof Uint8Array ? y.length : "not Uint8Array"}`,
+			{
+				code: "KZG_INVALID_EVALUATION_RESULT",
+				context: {
+					yType: y instanceof Uint8Array ? "Uint8Array" : typeof y,
+					yLength: y instanceof Uint8Array ? y.length : undefined,
+					expected: BYTES_PER_FIELD_ELEMENT,
+				},
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
 		);
 	}
 	if (!(proof instanceof Uint8Array) || proof.length !== BYTES_PER_PROOF) {
 		throw new KzgError(
 			`Proof must be ${BYTES_PER_PROOF} bytes, got ${proof instanceof Uint8Array ? proof.length : "not Uint8Array"}`,
+			{
+				code: "KZG_INVALID_PROOF",
+				context: {
+					proofType: proof instanceof Uint8Array ? "Uint8Array" : typeof proof,
+					proofLength: proof instanceof Uint8Array ? proof.length : undefined,
+					expected: BYTES_PER_PROOF,
+				},
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
 		);
 	}
 	try {
@@ -67,6 +105,11 @@ export function verifyKzgProof(commitment, z, y, proof) {
 		}
 		throw new KzgError(
 			`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_VERIFICATION_FAILED",
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
 	}
 }

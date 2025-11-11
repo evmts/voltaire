@@ -20,12 +20,21 @@ export function combine(...filters) {
 	if (filters.length === 0) {
 		throw new InvalidBloomFilterParameterError(
 			"combine requires at least one filter",
+			{
+				value: 0,
+				expected: "at least 1 filter",
+				docsPath: "/primitives/bloom-filter/combine#error-handling",
+			},
 		);
 	}
 
 	const first = filters[0];
 	if (!first) {
-		throw new InvalidBloomFilterParameterError("Invalid filter");
+		throw new InvalidBloomFilterParameterError("Invalid filter", {
+			value: first,
+			expected: "valid BloomFilter",
+			docsPath: "/primitives/bloom-filter/combine#error-handling",
+		});
 	}
 
 	// Validate all filters have same parameters
@@ -34,16 +43,31 @@ export function combine(...filters) {
 		if (!filter) {
 			throw new InvalidBloomFilterParameterError(
 				`Invalid filter at index ${i}`,
+				{
+					value: i,
+					expected: "valid BloomFilter",
+					docsPath: "/primitives/bloom-filter/combine#error-handling",
+				},
 			);
 		}
 		if (filter.m !== first.m || filter.k !== first.k) {
 			throw new InvalidBloomFilterParameterError(
 				"Cannot combine filters with different parameters",
+				{
+					value: { m: filter.m, k: filter.k, index: i },
+					expected: `m=${first.m}, k=${first.k}`,
+					docsPath: "/primitives/bloom-filter/combine#error-handling",
+				},
 			);
 		}
 		if (filter.length !== first.length) {
 			throw new InvalidBloomFilterParameterError(
 				"Cannot combine filters with different sizes",
+				{
+					value: { length: filter.length, index: i },
+					expected: `${first.length} bytes`,
+					docsPath: "/primitives/bloom-filter/combine#error-handling",
+				},
 			);
 		}
 	}
@@ -56,6 +80,11 @@ export function combine(...filters) {
 			if (byte === undefined) {
 				throw new InvalidBloomFilterParameterError(
 					`Invalid bloom filter data at index ${i}`,
+					{
+						value: i,
+						expected: "valid byte data",
+						docsPath: "/primitives/bloom-filter/combine#error-handling",
+					},
 				);
 			}
 			combined |= byte;

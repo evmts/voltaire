@@ -27,7 +27,9 @@ export function calculateCreate2Address(address, salt, initCode) {
 	let saltBytes;
 	if (typeof salt === "bigint") {
 		if (salt < 0n) {
-			throw new InvalidValueError("Salt cannot be negative");
+			throw new InvalidValueError("Salt cannot be negative", {
+				value: salt,
+			});
 		}
 		saltBytes = new Uint8Array(32);
 		let s = salt;
@@ -37,11 +39,18 @@ export function calculateCreate2Address(address, salt, initCode) {
 		}
 	} else if (salt instanceof Uint8Array) {
 		if (salt.length !== 32) {
-			throw new Error("Salt must be 32 bytes");
+			throw new InvalidValueError("Salt must be 32 bytes", {
+				value: salt,
+				expected: "32 bytes",
+				context: { actualLength: salt.length },
+			});
 		}
 		saltBytes = salt;
 	} else {
-		throw new Error("Salt must be bigint or Uint8Array");
+		throw new InvalidValueError("Salt must be bigint or Uint8Array", {
+			value: salt,
+			expected: "bigint or Uint8Array",
+		});
 	}
 
 	// Hash init code

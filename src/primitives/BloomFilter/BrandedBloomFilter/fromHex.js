@@ -22,6 +22,12 @@ export function fromHex(hex, m, k) {
 	if (cleanHex.length !== expectedHexLen) {
 		throw new InvalidBloomFilterLengthError(
 			`Expected ${expectedHexLen} hex chars, got ${cleanHex.length}`,
+			{
+				value: cleanHex.length,
+				expected: `${expectedHexLen} hex chars`,
+				context: { m, k },
+				docsPath: "/primitives/bloom-filter/from-hex#error-handling",
+			},
 		);
 	}
 

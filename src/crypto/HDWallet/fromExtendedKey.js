@@ -23,6 +23,11 @@ export function fromExtendedKey(xprv) {
 			HDKey.fromExtendedKey(xprv)
 		);
 	} catch (error) {
-		throw new HDWalletError(`Invalid extended key: ${error}`);
+		throw new HDWalletError(`Invalid extended key: ${error}`, {
+			code: "INVALID_EXTENDED_KEY",
+			context: { xprv },
+			docsPath: "/crypto/hdwallet/from-extended-key#error-handling",
+			cause: error instanceof Error ? error : undefined,
+		});
 	}
 }

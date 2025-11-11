@@ -32,6 +32,12 @@ export function blobToKzgCommitment(blob) {
 	} catch (error) {
 		throw new KzgError(
 			`Failed to compute commitment: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_COMMITMENT_FAILED",
+				context: { blobLength: blob.length },
+				docsPath: "/crypto/kzg/blob-to-kzg-commitment#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
 	}
 }

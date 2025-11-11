@@ -34,6 +34,11 @@ export function fromCompact(bytes, algorithm) {
 		if (bytes.length !== ED25519_SIZE) {
 			throw new InvalidSignatureLengthError(
 				`Ed25519 signature must be ${ED25519_SIZE} bytes, got ${bytes.length}`,
+				{
+					value: bytes.length,
+					expected: `${ED25519_SIZE} bytes`,
+					docsPath: "/primitives/signature/from-compact#error-handling",
+				},
 			);
 		}
 		return fromEd25519(bytes);
@@ -61,5 +66,14 @@ export function fromCompact(bytes, algorithm) {
 
 	throw new InvalidSignatureLengthError(
 		`Invalid signature length for ${algorithm}: ${bytes.length} bytes`,
+		{
+			value: bytes.length,
+			expected:
+				algorithm === "secp256k1"
+					? `${ECDSA_SIZE} or ${ECDSA_WITH_V_SIZE} bytes`
+					: `${ECDSA_SIZE} bytes`,
+			context: { algorithm },
+			docsPath: "/primitives/signature/from-compact#error-handling",
+		},
 	);
 }

@@ -1,9 +1,4 @@
-import {
-	InvalidCharacterError,
-	InvalidFormatError,
-	InvalidLengthError,
-	OddLengthError,
-} from "./errors.js";
+import { InvalidFormatError, InvalidLengthError } from "../../errors/index.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -15,10 +10,8 @@ import { hexCharToValue } from "./utils.js";
  * @param {string} hex - First hex string
  * @param {string} other - Hex string to XOR with
  * @returns {string} XOR result
- * @throws {InvalidLengthError} If lengths don't match
- * @throws {InvalidFormatError} If missing 0x prefix
- * @throws {OddLengthError} If hex has odd number of digits
- * @throws {InvalidCharacterError} If contains invalid hex characters
+ * @throws {InvalidFormatError} If missing 0x prefix or contains invalid hex characters
+ * @throws {InvalidLengthError} If hex has odd number of digits or lengths don't match
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
@@ -28,31 +21,91 @@ import { hexCharToValue } from "./utils.js";
  */
 export function xor(hex, other) {
 	// Convert hex to bytes
-	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	if (!hex.startsWith("0x"))
+		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
+			code: "HEX_MISSING_PREFIX",
+			value: hex,
+			expected: "0x-prefixed hex string",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const hexDigitsA = hex.slice(2);
-	if (hexDigitsA.length % 2 !== 0) throw new OddLengthError();
+	if (hexDigitsA.length % 2 !== 0)
+		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
+			code: "HEX_ODD_LENGTH",
+			value: hex,
+			expected: "even number of hex digits",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const bytesA = new Uint8Array(hexDigitsA.length / 2);
 	for (let i = 0; i < hexDigitsA.length; i += 2) {
 		const high = hexCharToValue(hexDigitsA[i]);
 		const low = hexCharToValue(hexDigitsA[i + 1]);
-		if (high === null || low === null) throw new InvalidCharacterError();
+		if (high === null || low === null)
+			throw new InvalidFormatError(
+				`Invalid hex character at position ${i + 2}: '${hexDigitsA[i]}${hexDigitsA[i + 1]}'`,
+				{
+					code: "HEX_INVALID_CHARACTER",
+					value: hex,
+					expected: "valid hex characters (0-9, a-f, A-F)",
+					context: {
+						position: i + 2,
+						character: hexDigitsA[i] + hexDigitsA[i + 1],
+					},
+					docsPath: "/primitives/hex#error-handling",
+				},
+			);
 		bytesA[i / 2] = high * 16 + low;
 	}
 
 	// Convert other to bytes
-	if (!other.startsWith("0x")) throw new InvalidFormatError();
+	if (!other.startsWith("0x"))
+		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
+			code: "HEX_MISSING_PREFIX",
+			value: other,
+			expected: "0x-prefixed hex string",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const hexDigitsB = other.slice(2);
-	if (hexDigitsB.length % 2 !== 0) throw new OddLengthError();
+	if (hexDigitsB.length % 2 !== 0)
+		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
+			code: "HEX_ODD_LENGTH",
+			value: other,
+			expected: "even number of hex digits",
+			docsPath: "/primitives/hex#error-handling",
+		});
+
 	const bytesB = new Uint8Array(hexDigitsB.length / 2);
 	for (let i = 0; i < hexDigitsB.length; i += 2) {
 		const high = hexCharToValue(hexDigitsB[i]);
 		const low = hexCharToValue(hexDigitsB[i + 1]);
-		if (high === null || low === null) throw new InvalidCharacterError();
+		if (high === null || low === null)
+			throw new InvalidFormatError(
+				`Invalid hex character at position ${i + 2}: '${hexDigitsB[i]}${hexDigitsB[i + 1]}'`,
+				{
+					code: "HEX_INVALID_CHARACTER",
+					value: other,
+					expected: "valid hex characters (0-9, a-f, A-F)",
+					context: {
+						position: i + 2,
+						character: hexDigitsB[i] + hexDigitsB[i + 1],
+					},
+					docsPath: "/primitives/hex#error-handling",
+				},
+			);
 		bytesB[i / 2] = high * 16 + low;
 	}
 
 	if (bytesA.length !== bytesB.length) {
-		throw new InvalidLengthError("Hex strings must have same length for XOR");
+		throw new InvalidLengthError("Hex strings must have same length for XOR", {
+			code: "HEX_LENGTH_MISMATCH",
+			value: hex,
+			expected: `${bytesB.length} bytes`,
+			context: { hexLength: bytesA.length, otherLength: bytesB.length },
+			docsPath: "/primitives/hex#error-handling",
+		});
 	}
 	const result = new Uint8Array(bytesA.length);
 	for (let i = 0; i < bytesA.length; i++) {

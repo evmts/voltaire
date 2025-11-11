@@ -1,4 +1,5 @@
 import * as OxSiwe from "ox/Siwe";
+import { InvalidNonceLengthError } from "./errors.js";
 
 /**
  * Generate a cryptographically secure random nonce for SIWE messages
@@ -7,7 +8,7 @@ import * as OxSiwe from "ox/Siwe";
  * @since 0.0.0
  * @param {number} [length=11] - Length of nonce (minimum 8)
  * @returns {string} Random alphanumeric nonce string
- * @throws {Error} If length is less than 8
+ * @throws {InvalidNonceLengthError} if length is less than 8
  * @example
  * ```javascript
  * import * as Siwe from './primitives/Siwe/index.js';
@@ -20,7 +21,7 @@ import * as OxSiwe from "ox/Siwe";
  */
 export function generateNonce(length = 11) {
 	if (length < 8) {
-		throw new Error("Nonce length must be at least 8 characters");
+		throw new InvalidNonceLengthError(length);
 	}
 
 	// Generate ox nonce (96 chars) and truncate to desired length

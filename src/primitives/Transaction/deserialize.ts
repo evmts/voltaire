@@ -35,10 +35,13 @@ export function deserialize(data: Uint8Array): Any {
 		case Type.EIP7702:
 			return EIP7702.deserialize(data);
 		default:
-			throw new InvalidTransactionTypeError(`Unknown transaction type: ${type}`, {
-				code: "UNKNOWN_TRANSACTION_TYPE",
-				context: { type },
-				docsPath: "/primitives/transaction/deserialize#error-handling",
-			});
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: ${type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type },
+					docsPath: "/primitives/transaction/deserialize#error-handling",
+				},
+			);
 	}
 }

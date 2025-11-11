@@ -19,11 +19,23 @@ export function fromSecp256k1(r, s, v) {
 	if (r.length !== COMPONENT_SIZE) {
 		throw new InvalidSignatureLengthError(
 			`r must be ${COMPONENT_SIZE} bytes, got ${r.length}`,
+			{
+				value: r.length,
+				expected: `${COMPONENT_SIZE} bytes`,
+				context: { component: "r" },
+				docsPath: "/primitives/signature/from-secp256k1#error-handling",
+			},
 		);
 	}
 	if (s.length !== COMPONENT_SIZE) {
 		throw new InvalidSignatureLengthError(
 			`s must be ${COMPONENT_SIZE} bytes, got ${s.length}`,
+			{
+				value: s.length,
+				expected: `${COMPONENT_SIZE} bytes`,
+				context: { component: "s" },
+				docsPath: "/primitives/signature/from-secp256k1#error-handling",
+			},
 		);
 	}
 

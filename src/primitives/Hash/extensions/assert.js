@@ -1,3 +1,4 @@
+import { InvalidFormatError } from "../../errors/ValidationError.js";
 import { isHash } from "./isHash.js";
 
 /**
@@ -8,7 +9,7 @@ import { isHash } from "./isHash.js";
  * @param {unknown} value - Value to assert
  * @param {string} [message] - Optional error message
  * @returns {asserts value is import('./BrandedHash.ts').BrandedHash}
- * @throws {Error} If value is not a Hash
+ * @throws {InvalidFormatError} If value is not a Hash
  * @example
  * ```javascript
  * import * as Hash from './primitives/Hash/index.js';
@@ -17,6 +18,11 @@ import { isHash } from "./isHash.js";
  */
 export function assert(value, message) {
 	if (!isHash(value)) {
-		throw new Error(message ?? "Value is not a Hash");
+		throw new InvalidFormatError(message ?? "Value is not a Hash", {
+			code: "HASH_INVALID_TYPE",
+			value,
+			expected: "32-byte Uint8Array",
+			docsPath: "/primitives/hash",
+		});
 	}
 }

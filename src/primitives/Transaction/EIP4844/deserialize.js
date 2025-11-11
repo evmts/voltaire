@@ -108,7 +108,8 @@ export function deserialize(data) {
 				throw new DecodingError("Invalid blob versioned hash", {
 					code: "INVALID_BLOB_HASH",
 					context: { type: hashData.type, length: hashData.value?.length },
-					docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+					docsPath:
+						"/primitives/transaction/eip4844/deserialize#error-handling",
 				});
 			}
 			return /** @type {import('../../Hash/index.js').BrandedHash} */ (

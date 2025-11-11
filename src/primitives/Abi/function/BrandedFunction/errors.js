@@ -1,4 +1,8 @@
-import { AbiEncodingError, AbiDecodingError, AbiInvalidSelectorError } from '../../Errors.js';
+import {
+	AbiEncodingError,
+	AbiDecodingError,
+	AbiInvalidSelectorError,
+} from "../../Errors.js";
 
 /**
  * Error thrown when encoding function data fails
@@ -14,12 +18,12 @@ export class FunctionEncodingError extends AbiEncodingError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || 'FUNCTION_ENCODING_ERROR',
+			code: options?.code || "FUNCTION_ENCODING_ERROR",
 			context: options?.context,
-			docsPath: options?.docsPath || '/primitives/abi/function',
+			docsPath: options?.docsPath || "/primitives/abi/function",
 			cause: options?.cause,
 		});
-		this.name = 'FunctionEncodingError';
+		this.name = "FunctionEncodingError";
 	}
 }
 
@@ -37,12 +41,12 @@ export class FunctionDecodingError extends AbiDecodingError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || 'FUNCTION_DECODING_ERROR',
+			code: options?.code || "FUNCTION_DECODING_ERROR",
 			context: options?.context,
-			docsPath: options?.docsPath || '/primitives/abi/function',
+			docsPath: options?.docsPath || "/primitives/abi/function",
 			cause: options?.cause,
 		});
-		this.name = 'FunctionDecodingError';
+		this.name = "FunctionDecodingError";
 	}
 }
 
@@ -60,15 +64,15 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Original error
 	 */
-	constructor(message = 'Function selector mismatch', options) {
+	constructor(message = "Function selector mismatch", options) {
 		super(message, {
-			code: options?.code || 'FUNCTION_INVALID_SELECTOR',
-			value: options?.value || 'unknown',
-			expected: options?.expected || 'valid function selector',
+			code: options?.code || "FUNCTION_INVALID_SELECTOR",
+			value: options?.value || "unknown",
+			expected: options?.expected || "valid function selector",
 			context: options?.context,
-			docsPath: options?.docsPath || '/primitives/abi/function',
+			docsPath: options?.docsPath || "/primitives/abi/function",
 			cause: options?.cause,
 		});
-		this.name = 'FunctionInvalidSelectorError';
+		this.name = "FunctionInvalidSelectorError";
 	}
 }

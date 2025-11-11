@@ -17,6 +17,11 @@ export function create(m, k) {
 	if (m <= 0 || k <= 0) {
 		throw new InvalidBloomFilterParameterError(
 			"Bloom filter parameters must be positive",
+			{
+				value: { m, k },
+				expected: "m > 0 and k > 0",
+				docsPath: "/primitives/bloom-filter/create#error-handling",
+			},
 		);
 	}
 	const bytes = Math.ceil(m / 8);

@@ -22,7 +22,11 @@ import { hashTypedData } from "./hashTypedData.js";
  */
 export function signTypedData(typedData, privateKey) {
 	if (privateKey.length !== 32) {
-		throw new Eip712Error("Private key must be 32 bytes");
+		throw new Eip712Error("Private key must be 32 bytes", {
+			code: "EIP712_INVALID_PRIVATE_KEY_LENGTH",
+			context: { length: privateKey.length, expected: 32 },
+			docsPath: "/crypto/eip712/sign-typed-data#error-handling",
+		});
 	}
 
 	const hash = hashTypedData(typedData);
@@ -41,7 +45,11 @@ export function signTypedData(typedData, privateKey) {
 	// Convert recovery byte to Ethereum v (27 or 28)
 	const recoveryByte = sigBytes[64];
 	if (recoveryByte === undefined) {
-		throw new Eip712Error("Invalid signature: missing recovery byte");
+		throw new Eip712Error("Invalid signature: missing recovery byte", {
+			code: "EIP712_MISSING_RECOVERY_BYTE",
+			context: { signatureLength: sigBytes.length },
+			docsPath: "/crypto/eip712/sign-typed-data#error-handling",
+		});
 	}
 	const v = 27 + (recoveryByte & 1);
 

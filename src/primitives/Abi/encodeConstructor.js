@@ -30,9 +30,9 @@ export function encodeConstructor(abi, args) {
 
 	if (!item || item.type !== "constructor") {
 		throw new AbiItemNotFoundError("Constructor not found in ABI", {
-			value: 'constructor',
-			expected: 'valid constructor item in ABI',
-			context: { abi }
+			value: "constructor",
+			expected: "valid constructor item in ABI",
+			context: { abi },
 		});
 	}
 

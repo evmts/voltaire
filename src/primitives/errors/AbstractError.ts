@@ -115,7 +115,10 @@ export abstract class AbstractError extends Error {
 			context: this.context,
 			docsPath: this.docsPath,
 			stack: this.stack,
-			cause: this.cause instanceof AbstractError ? this.cause.toJSON() : this.cause?.message,
+			cause:
+				this.cause instanceof AbstractError
+					? this.cause.toJSON()
+					: this.cause?.message,
 		};
 	}
 }

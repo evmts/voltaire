@@ -41,7 +41,11 @@ export function recoverAddress(signature, typedData) {
 	// Convert point to uncompressed format (remove 0x04 prefix)
 	const uncompressedWithPrefix = point.toBytes(false);
 	if (uncompressedWithPrefix[0] !== 0x04) {
-		throw new Eip712Error("Invalid recovered public key format");
+		throw new Eip712Error("Invalid recovered public key format", {
+			code: "EIP712_INVALID_PUBLIC_KEY_FORMAT",
+			context: { prefix: uncompressedWithPrefix[0], expected: 0x04 },
+			docsPath: "/crypto/eip712/recover-address#error-handling",
+		});
 	}
 	const uncompressedPubKey = uncompressedWithPrefix.slice(1);
 

@@ -1,4 +1,4 @@
-import { Error } from "./errors.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 /**
  * Convert JSON representation back to RLP Data
@@ -7,7 +7,7 @@ import { Error } from "./errors.js";
  * @since 0.0.0
  * @param {unknown} json - JSON object from toJSON
  * @returns {import('./BrandedRlp.js').BrandedRlp} RLP data structure
- * @throws {Error} If JSON format is invalid or type is unrecognized
+ * @throws {RlpDecodingError} If JSON format is invalid or type is unrecognized
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -23,12 +23,18 @@ export function fromJSON(json) {
 		!("type" in json) ||
 		!("value" in json)
 	) {
-		throw new Error("UnexpectedInput", "Invalid JSON format");
+		throw new RlpDecodingError("Invalid JSON format", {
+			code: "RLP_INVALID_JSON",
+			context: { json },
+		});
 	}
 
 	if (json.type === "bytes") {
 		if (!Array.isArray(json.value)) {
-			throw new Error("UnexpectedInput", "Bytes value must be array");
+			throw new RlpDecodingError("Bytes value must be array", {
+				code: "RLP_INVALID_JSON",
+				context: { type: "bytes", valueType: typeof json.value },
+			});
 		}
 		return {
 			type: "bytes",
@@ -38,7 +44,10 @@ export function fromJSON(json) {
 
 	if (json.type === "list") {
 		if (!Array.isArray(json.value)) {
-			throw new Error("UnexpectedInput", "List value must be array");
+			throw new RlpDecodingError("List value must be array", {
+				code: "RLP_INVALID_JSON",
+				context: { type: "list", valueType: typeof json.value },
+			});
 		}
 		return {
 			type: "list",
@@ -46,5 +55,8 @@ export function fromJSON(json) {
 		};
 	}
 
-	throw new Error("UnexpectedInput", `Invalid type: ${json.type}`);
+	throw new RlpDecodingError(`Invalid type: ${json.type}`, {
+		code: "RLP_INVALID_JSON",
+		context: { type: json.type },
+	});
 }

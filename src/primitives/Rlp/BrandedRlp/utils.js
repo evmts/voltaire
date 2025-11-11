@@ -1,4 +1,4 @@
-import { Error } from "./errors.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 /**
  * Encodes a length value as big-endian bytes (no leading zeros)
@@ -44,7 +44,9 @@ export function decodeLengthValue(bytes) {
 
 	// Check for leading zeros
 	if (bytes[0] === 0) {
-		throw new Error("LeadingZeros", "Length encoding has leading zeros");
+		throw new RlpDecodingError("Length encoding has leading zeros", {
+			code: "RLP_LEADING_ZEROS",
+		});
 	}
 
 	// Decode big-endian

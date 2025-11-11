@@ -1,3 +1,4 @@
+import { InvalidFormatError, InvalidLengthError } from "../../errors/ValidationError.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -7,7 +8,8 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {string} hex - Hex string with optional 0x prefix
  * @returns {import('./BrandedHash.ts').BrandedHash} Hash bytes
- * @throws {Error} If hex is invalid or wrong length
+ * @throws {InvalidLengthError} If hex is wrong length
+ * @throws {InvalidFormatError} If hex contains invalid characters
  * @example
  * ```javascript
  * import * as Hash from './primitives/Hash/index.js';
@@ -18,12 +20,24 @@ import { SIZE } from "./constants.js";
 export function fromHex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (normalized.length !== SIZE * 2) {
-		throw new Error(
+		throw new InvalidLengthError(
 			`Hash hex must be ${SIZE * 2} characters, got ${normalized.length}`,
+			{
+				code: "HASH_INVALID_HEX_LENGTH",
+				value: hex,
+				expected: `${SIZE * 2} characters`,
+				context: { actualLength: normalized.length },
+				docsPath: "/primitives/hash",
+			},
 		);
 	}
 	if (!/^[0-9a-fA-F]+$/.test(normalized)) {
-		throw new Error("Invalid hex string");
+		throw new InvalidFormatError("Invalid hex string", {
+			code: "HASH_INVALID_HEX_FORMAT",
+			value: hex,
+			expected: "hexadecimal string",
+			docsPath: "/primitives/hash",
+		});
 	}
 	const bytes = new Uint8Array(SIZE);
 	for (let i = 0; i < SIZE; i++) {

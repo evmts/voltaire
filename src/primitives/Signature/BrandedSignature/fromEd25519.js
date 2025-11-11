@@ -17,6 +17,11 @@ export function fromEd25519(signature) {
 	if (signature.length !== ED25519_SIZE) {
 		throw new InvalidSignatureLengthError(
 			`Ed25519 signature must be ${ED25519_SIZE} bytes, got ${signature.length}`,
+			{
+				value: signature.length,
+				expected: `${ED25519_SIZE} bytes`,
+				docsPath: "/primitives/signature/from-ed25519#error-handling",
+			},
 		);
 	}
 

@@ -38,7 +38,10 @@ export function generateRandomBlob(seed) {
 				crypto.getRandomValues(blob.subarray(offset, end));
 			}
 		} else {
-			throw new KzgError("crypto.getRandomValues not available");
+			throw new KzgError("crypto.getRandomValues not available", {
+				code: "KZG_NO_CRYPTO_API",
+				docsPath: "/crypto/kzg/generate-random-blob#error-handling",
+			});
 		}
 	}
 	// Ensure each field element is valid by clearing top byte

@@ -15,7 +15,13 @@ import { InvalidAddressLengthError } from "./errors.js";
  * ```
  */
 export function addressToKey(addr) {
-	if (addr.length !== 20) throw new InvalidAddressLengthError();
+	if (addr.length !== 20) {
+		throw new InvalidAddressLengthError("Address must be 20 bytes", {
+			value: addr.length,
+			expected: "20 bytes",
+			docsPath: "/primitives/binary-tree/address-to-key#error-handling",
+		});
+	}
 	const k = new Uint8Array(32);
 	k.set(addr, 12);
 	return k;

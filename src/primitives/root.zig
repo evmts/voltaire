@@ -166,3 +166,7 @@ pub const EMPTY_TRIE_ROOT = State.EMPTY_TRIE_ROOT;
 // Expose crypto package for primitives submodules that need hashing
 // Enables imports via `@import("root").crypto` within this package
 pub const crypto = @import("crypto");
+
+// Fuzz tests are standalone and run with: zig build test --fuzz
+// They use std.testing.fuzzInput which only exists in fuzz mode
+// Files: Address/address.fuzz.zig, Abi/Abi.fuzz.zig, Hex/hex.fuzz.zig, etc.

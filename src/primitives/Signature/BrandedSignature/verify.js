@@ -22,5 +22,10 @@ export function verify(signature, _message, _publicKey) {
 	// For now, throw an error indicating the feature needs crypto integration
 	throw new InvalidAlgorithmError(
 		`Signature verification for ${signature.algorithm} requires integration with crypto primitives. Use crypto-specific verification functions instead.`,
+		{
+			value: signature.algorithm,
+			expected: "crypto integration",
+			docsPath: "/primitives/signature/verify#error-handling",
+		},
 	);
 }

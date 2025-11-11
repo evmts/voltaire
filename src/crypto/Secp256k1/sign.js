@@ -1,7 +1,10 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
-import { InvalidPrivateKeyError, Secp256k1Error } from "./errors.js";
+import {
+	InvalidPrivateKeyError,
+	CryptoError,
+} from "../../primitives/errors/index.js";
 
 /**
  * Sign a message hash with a private key
@@ -15,7 +18,7 @@ import { InvalidPrivateKeyError, Secp256k1Error } from "./errors.js";
  * @param {Uint8Array} privateKey - 32-byte private key
  * @returns {import('./BrandedSignature.js').BrandedSignature} ECDSA signature with r, s, v components
  * @throws {InvalidPrivateKeyError} If private key is invalid
- * @throws {Secp256k1Error} If signing fails
+ * @throws {CryptoError} If signing fails
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
@@ -29,13 +32,24 @@ export function sign(messageHash, privateKey) {
 	if (privateKey.length !== PRIVATE_KEY_SIZE) {
 		throw new InvalidPrivateKeyError(
 			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
+			{
+				code: "INVALID_PRIVATE_KEY_LENGTH",
+				context: {
+					actualLength: privateKey.length,
+					expectedLength: PRIVATE_KEY_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/sign#error-handling",
+			},
 		);
 	}
 
 	// Validate private key is not zero
 	const isZero = privateKey.every((byte) => byte === 0);
 	if (isZero) {
-		throw new InvalidPrivateKeyError("Private key cannot be zero");
+		throw new InvalidPrivateKeyError("Private key cannot be zero", {
+			code: "PRIVATE_KEY_ZERO",
+			docsPath: "/crypto/secp256k1/sign#error-handling",
+		});
 	}
 
 	try {
@@ -74,6 +88,11 @@ export function sign(messageHash, privateKey) {
 
 		return { r, s, v };
 	} catch (error) {
-		throw new Secp256k1Error(`Signing failed: ${error}`);
+		throw new CryptoError(`Signing failed: ${error}`, {
+			code: "SECP256K1_SIGN_FAILED",
+			context: { messageHash, privateKeyLength: privateKey.length },
+			docsPath: "/crypto/secp256k1/sign#error-handling",
+			cause: error,
+		});
 	}
 }

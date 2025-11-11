@@ -18,11 +18,15 @@ const HEX_REGEX = /^[0-9a-fA-F]{40}$/;
  */
 export function fromHex(hex) {
 	if (!hex.startsWith("0x") || hex.length !== HEX_SIZE) {
-		throw new InvalidHexFormatError();
+		throw new InvalidHexFormatError("Invalid hex format for address", {
+			value: hex,
+		});
 	}
 	const hexPart = hex.slice(2);
 	if (!HEX_REGEX.test(hexPart)) {
-		throw new InvalidHexStringError();
+		throw new InvalidHexStringError("Invalid hex string", {
+			value: hex,
+		});
 	}
 	const bytes = new Uint8Array(SIZE);
 	for (let i = 0; i < SIZE; i++) {

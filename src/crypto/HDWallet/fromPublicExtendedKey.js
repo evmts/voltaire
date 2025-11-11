@@ -24,6 +24,11 @@ export function fromPublicExtendedKey(xpub) {
 			HDKey.fromExtendedKey(xpub)
 		);
 	} catch (error) {
-		throw new HDWalletError(`Invalid extended public key: ${error}`);
+		throw new HDWalletError(`Invalid extended public key: ${error}`, {
+			code: "INVALID_EXTENDED_PUBLIC_KEY",
+			context: { xpub },
+			docsPath: "/crypto/hdwallet/from-public-extended-key#error-handling",
+			cause: error instanceof Error ? error : undefined,
+		});
 	}
 }

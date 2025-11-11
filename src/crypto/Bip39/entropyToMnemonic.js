@@ -24,6 +24,11 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 	if (!validLengths.includes(entropy.length)) {
 		throw new InvalidEntropyError(
 			`Entropy must be 16, 20, 24, 28, or 32 bytes, got ${entropy.length}`,
+			{
+				code: "BIP39_INVALID_ENTROPY_SIZE",
+				context: { length: entropy.length, expected: "16, 20, 24, 28, or 32" },
+				docsPath: "/crypto/bip39/entropy-to-mnemonic#error-handling",
+			},
 		);
 	}
 
@@ -32,6 +37,11 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 			_entropyToMnemonic(entropy, wl)
 		);
 	} catch (error) {
-		throw new Bip39Error(`Entropy to mnemonic conversion failed: ${error}`);
+		throw new Bip39Error(`Entropy to mnemonic conversion failed: ${error}`, {
+			code: "BIP39_CONVERSION_FAILED",
+			context: { entropyLength: entropy.length },
+			docsPath: "/crypto/bip39/entropy-to-mnemonic#error-handling",
+			cause: /** @type {Error} */ (error),
+		});
 	}
 }

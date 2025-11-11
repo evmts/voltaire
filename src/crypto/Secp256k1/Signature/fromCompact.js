@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { InvalidSignatureError } from "../errors.js";
+import { InvalidSignatureError } from "../../../primitives/errors/index.js";
 
 /**
  * Create signature from compact format (64 bytes: r || s)
@@ -21,6 +21,11 @@ export function fromCompact(compact, v) {
 	if (compact.length !== 64) {
 		throw new InvalidSignatureError(
 			`Compact signature must be 64 bytes, got ${compact.length}`,
+			{
+				code: "INVALID_COMPACT_SIGNATURE_LENGTH",
+				context: { actualLength: compact.length, expectedLength: 64 },
+				docsPath: "/crypto/secp256k1/signature#error-handling",
+			},
 		);
 	}
 

@@ -4,6 +4,11 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
+import {
+	UintNegativeError,
+	UintOverflowError,
+	UintInvalidLengthError,
+} from "./BrandedUint/errors.js";
 
 /**
  * Convert hex string to U256 (32-byte big-endian)
@@ -18,10 +23,15 @@ export function u256FromHex(hex: string): Uint8Array {
  * Convert U256 to hex string
  * @param value - 32-byte U256 value (big-endian)
  * @returns Hex string with 0x prefix
+ * @throws {UintInvalidLengthError} If value is not 32 bytes
  */
 export function u256ToHex(value: Uint8Array): string {
 	if (value.length !== 32) {
-		throw new Error("U256 value must be 32 bytes");
+		throw new UintInvalidLengthError("U256 value must be 32 bytes", {
+			value,
+			expected: "32 bytes",
+			context: { actualLength: value.length },
+		});
 	}
 	return loader.u256ToHex(value);
 }
@@ -30,13 +40,20 @@ export function u256ToHex(value: Uint8Array): string {
  * Convert bigint to U256 bytes
  * @param value - BigInt value
  * @returns 32-byte U256 value
+ * @throws {UintNegativeError} If value is negative
+ * @throws {UintOverflowError} If value exceeds maximum
  */
 export function u256FromBigInt(value: bigint): Uint8Array {
 	if (value < 0n) {
-		throw new Error("U256 cannot be negative");
+		throw new UintNegativeError("U256 cannot be negative", {
+			value,
+		});
 	}
 	if (value >= 2n ** 256n) {
-		throw new Error("Value exceeds U256 maximum");
+		throw new UintOverflowError("Value exceeds U256 maximum", {
+			value,
+			context: { max: 2n ** 256n - 1n },
+		});
 	}
 
 	// Convert bigint to hex and pad to 64 chars (32 bytes)
@@ -48,10 +65,15 @@ export function u256FromBigInt(value: bigint): Uint8Array {
  * Convert U256 bytes to bigint
  * @param value - 32-byte U256 value
  * @returns BigInt value
+ * @throws {UintInvalidLengthError} If value is not 32 bytes
  */
 export function u256ToBigInt(value: Uint8Array): bigint {
 	if (value.length !== 32) {
-		throw new Error("U256 value must be 32 bytes");
+		throw new UintInvalidLengthError("U256 value must be 32 bytes", {
+			value,
+			expected: "32 bytes",
+			context: { actualLength: value.length },
+		});
 	}
 
 	// Convert bytes to hex string and parse as bigint

@@ -22,7 +22,7 @@ import { getSelector } from "./getSelector.js";
 export function decodeParams(error, data) {
 	if (data.length < 4) {
 		throw new AbiDecodingError("Data too short for error selector", {
-			context: { dataLength: data.length, errorName: error.name }
+			context: { dataLength: data.length, errorName: error.name },
 		});
 	}
 	const selector = data.slice(0, 4);
@@ -34,7 +34,7 @@ export function decodeParams(error, data) {
 			throw new AbiInvalidSelectorError("Error selector mismatch", {
 				value: selector,
 				expected: expectedSelector,
-				context: { selector, expectedSelector, errorName: error.name }
+				context: { selector, expectedSelector, errorName: error.name },
 			});
 		}
 	}

@@ -19,7 +19,10 @@ import { HDWalletError } from "./errors.js";
  */
 export function toExtendedPrivateKey(key) {
 	if (!key.privateKey) {
-		throw new HDWalletError("Key does not have a private key");
+		throw new HDWalletError("Key does not have a private key", {
+			code: "MISSING_PRIVATE_KEY",
+			docsPath: "/crypto/hdwallet/to-extended-private-key#error-handling",
+		});
 	}
 	return key.privateExtendedKey;
 }

@@ -22,6 +22,11 @@ export function fromPrivateKey(privateKey) {
 	if (privateKey.length !== PRIVATE_KEY_SIZE) {
 		throw new InvalidAddressLengthError(
 			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
+			{
+				value: privateKey,
+				expected: `${PRIVATE_KEY_SIZE} bytes`,
+				context: { actualLength: privateKey.length },
+			},
 		);
 	}
 
@@ -31,7 +36,10 @@ export function fromPrivateKey(privateKey) {
 		pubkey = derivePublicKey(privateKey);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		throw new InvalidValueError(`Invalid private key: ${message}`);
+		throw new InvalidValueError(`Invalid private key: ${message}`, {
+			value: privateKey,
+			cause: error instanceof Error ? error : undefined,
+		});
 	}
 
 	// Extract x and y coordinates (32 bytes each, big-endian)

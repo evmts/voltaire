@@ -18,6 +18,11 @@ export function toDER(signature) {
 	if (signature.algorithm !== "secp256k1" && signature.algorithm !== "p256") {
 		throw new InvalidAlgorithmError(
 			`DER encoding only supported for ECDSA signatures, got ${signature.algorithm}`,
+			{
+				value: signature.algorithm,
+				expected: "secp256k1 or p256",
+				docsPath: "/primitives/signature/to-der#error-handling",
+			},
 		);
 	}
 

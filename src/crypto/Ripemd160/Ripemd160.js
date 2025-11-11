@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { CryptoError } from "../../primitives/errors/CryptoError.js";
 import { SIZE } from "./constants.js";
 import { hash } from "./hash.js";
 import { hashString } from "./hashString.js";
@@ -15,7 +16,7 @@ export { hashString };
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @throws {Error} When called as constructor
+ * @throws {CryptoError} When called as constructor
  * @example
  * ```javascript
  * import { Ripemd160 } from './crypto/Ripemd160/index.js';
@@ -30,8 +31,12 @@ export { hashString };
  * ```
  */
 export function Ripemd160() {
-	throw new Error(
+	throw new CryptoError(
 		"Ripemd160 is not a constructor. Use Ripemd160.hash() or Ripemd160.hashString() instead.",
+		{
+			code: "RIPEMD160_NOT_A_CONSTRUCTOR",
+			docsPath: "/crypto/ripemd160#error-handling",
+		},
 	);
 }
 

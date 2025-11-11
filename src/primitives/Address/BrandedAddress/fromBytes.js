@@ -16,7 +16,10 @@ import { InvalidAddressLengthError } from "./errors.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new InvalidAddressLengthError();
+		throw new InvalidAddressLengthError("Invalid address length", {
+			value: bytes,
+			context: { actualLength: bytes.length },
+		});
 	}
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
 		new Uint8Array(bytes)

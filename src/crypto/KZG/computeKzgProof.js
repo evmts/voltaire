@@ -33,6 +33,15 @@ export function computeKzgProof(blob, z) {
 	if (!(z instanceof Uint8Array) || z.length !== BYTES_PER_FIELD_ELEMENT) {
 		throw new KzgError(
 			`Evaluation point must be ${BYTES_PER_FIELD_ELEMENT} bytes, got ${z instanceof Uint8Array ? z.length : "not Uint8Array"}`,
+			{
+				code: "KZG_INVALID_EVALUATION_POINT",
+				context: {
+					zType: z instanceof Uint8Array ? "Uint8Array" : typeof z,
+					zLength: z instanceof Uint8Array ? z.length : undefined,
+					expected: BYTES_PER_FIELD_ELEMENT,
+				},
+				docsPath: "/crypto/kzg/compute-kzg-proof#error-handling",
+			},
 		);
 	}
 	try {
@@ -44,6 +53,12 @@ export function computeKzgProof(blob, z) {
 	} catch (error) {
 		throw new KzgError(
 			`Failed to compute proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_PROOF_COMPUTATION_FAILED",
+				context: { blobLength: blob.length, zLength: z.length },
+				docsPath: "/crypto/kzg/compute-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
 	}
 }

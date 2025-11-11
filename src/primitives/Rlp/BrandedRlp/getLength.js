@@ -1,4 +1,4 @@
-import { Error } from "./errors.js";
+import { RlpDecodingError } from "./RlpError.js";
 import { decodeLengthValue } from "./utils.js";
 
 /**
@@ -8,7 +8,7 @@ import { decodeLengthValue } from "./utils.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP-encoded data
  * @returns {number} Total length in bytes
- * @throws {Error} If data is empty, too short, or has invalid prefix
+ * @throws {RlpDecodingError} If data is empty, too short, or has invalid prefix
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -19,12 +19,16 @@ import { decodeLengthValue } from "./utils.js";
  */
 export function getLength(data) {
 	if (data.length === 0) {
-		throw new Error("InputTooShort", "Cannot get length of empty data");
+		throw new RlpDecodingError("Cannot get length of empty data", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	const prefix = data[0];
 	if (prefix === undefined) {
-		throw new Error("InputTooShort", "Cannot get length of empty data");
+		throw new RlpDecodingError("Cannot get length of empty data", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	// Single byte [0x00, 0x7f]
@@ -42,7 +46,10 @@ export function getLength(data) {
 	if (prefix <= 0xbf) {
 		const lengthOfLength = prefix - 0xb7;
 		if (data.length < 1 + lengthOfLength) {
-			throw new Error("InputTooShort", "Insufficient data for length prefix");
+			throw new RlpDecodingError("Insufficient data for length prefix", {
+				code: "RLP_INPUT_TOO_SHORT",
+				context: { expected: 1 + lengthOfLength, actual: data.length },
+			});
 		}
 		const length = decodeLengthValue(data.slice(1, 1 + lengthOfLength));
 		return 1 + lengthOfLength + length;
@@ -58,14 +65,17 @@ export function getLength(data) {
 	if (prefix <= 0xff) {
 		const lengthOfLength = prefix - 0xf7;
 		if (data.length < 1 + lengthOfLength) {
-			throw new Error("InputTooShort", "Insufficient data for length prefix");
+			throw new RlpDecodingError("Insufficient data for length prefix", {
+				code: "RLP_INPUT_TOO_SHORT",
+				context: { expected: 1 + lengthOfLength, actual: data.length },
+			});
 		}
 		const length = decodeLengthValue(data.slice(1, 1 + lengthOfLength));
 		return 1 + lengthOfLength + length;
 	}
 
-	throw new Error(
-		"UnexpectedInput",
-		`Invalid RLP prefix: 0x${prefix.toString(16)}`,
-	);
+	throw new RlpDecodingError(`Invalid RLP prefix: 0x${prefix.toString(16)}`, {
+		code: "RLP_INVALID_PREFIX",
+		context: { prefix },
+	});
 }

@@ -1,5 +1,5 @@
 import type { BrandedHex, Sized } from "./BrandedHex.js";
-import { InvalidLengthError } from "./errors.js";
+import { InvalidLengthError } from "../errors/index.js";
 
 /**
  * Assert hex has specific size
@@ -21,9 +21,17 @@ export function assertSize<TSize extends number>(
 	hex: BrandedHex,
 	targetSize: TSize,
 ): Sized<TSize> {
-	if ((hex.length - 2) / 2 !== targetSize) {
+	const actualSize = (hex.length - 2) / 2;
+	if (actualSize !== targetSize) {
 		throw new InvalidLengthError(
-			`Expected ${targetSize} bytes, got ${(hex.length - 2) / 2}`,
+			`Expected ${targetSize} bytes, got ${actualSize}`,
+			{
+				code: "HEX_SIZE_MISMATCH",
+				value: hex,
+				expected: `${targetSize} bytes`,
+				context: { actualSize, targetSize },
+				docsPath: "/primitives/hex#error-handling",
+			},
 		);
 	}
 	return hex as Sized<TSize>;

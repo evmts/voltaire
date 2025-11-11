@@ -37,5 +37,8 @@ export function from(value) {
 	if (value instanceof Uint8Array) {
 		return fromBytes(value);
 	}
-	throw new InvalidValueError("Unsupported address value type");
+	throw new InvalidValueError("Unsupported address value type", {
+		value,
+		expected: "number, bigint, string, or Uint8Array",
+	});
 }

@@ -1,5 +1,4 @@
 // @ts-nocheck
-export * from "./errors.js";
 export * from "./BrandedHex.js";
 
 import { assertSize } from "./assertSize.js";

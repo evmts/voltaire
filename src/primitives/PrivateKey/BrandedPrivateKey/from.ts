@@ -1,4 +1,8 @@
 import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
+import {
+	InvalidFormatError,
+	InvalidLengthError,
+} from "../../errors/ValidationError.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
 
@@ -7,7 +11,8 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
  *
  * @param hex - Hex string (32 bytes)
  * @returns Private key
- * @throws If hex is not 32 bytes
+ * @throws {InvalidFormatError} If hex string format is invalid
+ * @throws {InvalidLengthError} If hex is not 32 bytes
  *
  * @example
  * ```typescript
@@ -17,11 +22,22 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
 export function from(hex: string): BrandedPrivateKey {
 	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!HEX_REGEX.test(hexStr)) {
-		throw new Error("Invalid hex string");
+		throw new InvalidFormatError("Invalid hex string", {
+			value: hex,
+			expected: "Valid hex string",
+			code: "PRIVATE_KEY_INVALID_HEX",
+			docsPath: "/primitives/private-key/from#error-handling",
+		});
 	}
 	if (hexStr.length !== 64) {
-		throw new Error(
+		throw new InvalidLengthError(
 			`Private key must be 32 bytes (64 hex chars), got ${hexStr.length}`,
+			{
+				value: hexStr.length,
+				expected: "64 hex characters (32 bytes)",
+				code: "PRIVATE_KEY_INVALID_LENGTH",
+				docsPath: "/primitives/private-key/from#error-handling",
+			},
 		);
 	}
 	const bytes = new Uint8Array(32);

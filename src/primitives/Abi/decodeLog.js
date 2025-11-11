@@ -50,9 +50,9 @@ export function decodeLog(abi, log) {
 			"No topics in log (anonymous events not yet supported)",
 			{
 				value: topicBytes.length,
-				expected: 'at least one topic',
-				context: { log }
-			}
+				expected: "at least one topic",
+				context: { log },
+			},
 		);
 	}
 
@@ -60,8 +60,8 @@ export function decodeLog(abi, log) {
 	if (!topic0) {
 		throw new AbiItemNotFoundError("Missing topic0", {
 			value: topic0,
-			expected: 'valid topic0',
-			context: { topics: topicBytes }
+			expected: "valid topic0",
+			context: { topics: topicBytes },
 		});
 	}
 
@@ -84,9 +84,9 @@ export function decodeLog(abi, log) {
 			`Event with selector ${Hex.fromBytes(topic0)} not found in ABI`,
 			{
 				value: Hex.fromBytes(topic0),
-				expected: 'valid event selector in ABI',
-				context: { selector: Hex.fromBytes(topic0), abi }
-			}
+				expected: "valid event selector in ABI",
+				context: { selector: Hex.fromBytes(topic0), abi },
+			},
 		);
 	}
 

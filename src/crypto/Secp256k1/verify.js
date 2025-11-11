@@ -1,7 +1,10 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
-import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
+import {
+	InvalidPublicKeyError,
+	InvalidSignatureError,
+} from "../../primitives/errors/index.js";
 
 /**
  * Concatenate multiple Uint8Arrays
@@ -40,18 +43,42 @@ export function verify(signature, messageHash, publicKey) {
 	if (publicKey.length !== PUBLIC_KEY_SIZE) {
 		throw new InvalidPublicKeyError(
 			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
+			{
+				code: "INVALID_PUBLIC_KEY_LENGTH",
+				context: {
+					actualLength: publicKey.length,
+					expectedLength: PUBLIC_KEY_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
 		);
 	}
 
 	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
 		throw new InvalidSignatureError(
 			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
+			{
+				code: "INVALID_SIGNATURE_R_LENGTH",
+				context: {
+					actualLength: signature.r.length,
+					expectedLength: SIGNATURE_COMPONENT_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
 		);
 	}
 
 	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
 		throw new InvalidSignatureError(
 			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
+			{
+				code: "INVALID_SIGNATURE_S_LENGTH",
+				context: {
+					actualLength: signature.s.length,
+					expectedLength: SIGNATURE_COMPONENT_SIZE,
+				},
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
 		);
 	}
 

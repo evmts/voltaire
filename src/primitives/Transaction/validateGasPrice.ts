@@ -28,12 +28,15 @@ export function validateGasPrice(
 			});
 		}
 		if (this.maxPriorityFeePerGas < 0n) {
-			throw new InvalidRangeError("Max priority fee per gas cannot be negative", {
-				code: "INVALID_MAX_PRIORITY_FEE_PER_GAS",
-				value: this.maxPriorityFeePerGas,
-				expected: "Non-negative max priority fee per gas",
-				docsPath: "/primitives/transaction/validate-gas-price#error-handling",
-			});
+			throw new InvalidRangeError(
+				"Max priority fee per gas cannot be negative",
+				{
+					code: "INVALID_MAX_PRIORITY_FEE_PER_GAS",
+					value: this.maxPriorityFeePerGas,
+					expected: "Non-negative max priority fee per gas",
+					docsPath: "/primitives/transaction/validate-gas-price#error-handling",
+				},
+			);
 		}
 		if (this.maxPriorityFeePerGas > this.maxFeePerGas) {
 			throw new InvalidRangeError(

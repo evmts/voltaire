@@ -28,9 +28,9 @@ export function decode(functionName, data) {
 			`Function "${functionName}" not found in ABI`,
 			{
 				value: functionName,
-				expected: 'valid function name in ABI',
-				context: { functionName, abi: this }
-			}
+				expected: "valid function name in ABI",
+				context: { functionName, abi: this },
+			},
 		);
 	}
 

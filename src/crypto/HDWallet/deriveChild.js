@@ -28,6 +28,12 @@ export function deriveChild(key, index) {
 	} catch (error) {
 		throw new HDWalletError(
 			`Failed to derive child at index ${index}: ${error}`,
+			{
+				code: "DERIVE_CHILD_FAILED",
+				context: { index },
+				docsPath: "/crypto/hdwallet/derive-child#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
 	}
 }

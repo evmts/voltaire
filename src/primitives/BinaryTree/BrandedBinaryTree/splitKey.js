@@ -17,7 +17,13 @@ import { InvalidKeyLengthError } from "./errors.js";
  * ```
  */
 export function splitKey(k) {
-	if (k.length !== 32) throw new InvalidKeyLengthError();
+	if (k.length !== 32) {
+		throw new InvalidKeyLengthError("Key must be 32 bytes", {
+			value: k.length,
+			expected: "32 bytes",
+			docsPath: "/primitives/binary-tree/split-key#error-handling",
+		});
+	}
 	return {
 		stem: k.slice(0, 31),
 		idx: k[31] ?? 0,

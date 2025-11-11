@@ -1,3 +1,4 @@
+import { InvalidFormatError } from "../../errors/ValidationError.js";
 import { keccak256 } from "./keccak256.js";
 
 /**
@@ -7,7 +8,7 @@ import { keccak256 } from "./keccak256.js";
  * @since 0.0.0
  * @param {string} hex - Hex string to hash (with or without 0x prefix)
  * @returns {import('./BrandedHash.js').BrandedHash} 32-byte hash
- * @throws {Error} If hex string has odd length
+ * @throws {InvalidFormatError} If hex string has odd length
  * @example
  * ```javascript
  * import * as Hash from './primitives/Hash/index.js';
@@ -17,7 +18,13 @@ import { keccak256 } from "./keccak256.js";
 export function keccak256Hex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (normalized.length % 2 !== 0) {
-		throw new Error("Hex string must have even length");
+		throw new InvalidFormatError("Hex string must have even length", {
+			code: "HASH_ODD_HEX_LENGTH",
+			value: hex,
+			expected: "even-length hex string",
+			context: { length: normalized.length },
+			docsPath: "/primitives/hash",
+		});
 	}
 	const bytes = new Uint8Array(normalized.length / 2);
 	for (let i = 0; i < bytes.length; i++) {

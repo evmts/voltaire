@@ -1,4 +1,6 @@
 import { SIZE } from "./constants.js";
+import { InvalidLengthError } from "../../errors/ValidationError.js";
+import { PrimitiveError } from "../../errors/PrimitiveError.js";
 
 /**
  * Compute KZG commitment for blob
@@ -7,7 +9,8 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
  * @returns {import('../BrandedBlob.js').Commitment} 48-byte KZG commitment
- * @throws {Error} If blob size is invalid or c-kzg-4844 library not available
+ * @throws {InvalidLengthError} If blob size is invalid
+ * @throws {PrimitiveError} If c-kzg-4844 library is not available
  * @example
  * ```javascript
  * import * as Blob from './primitives/Blob/index.js';
@@ -21,9 +24,17 @@ import { SIZE } from "./constants.js";
  */
 export function toCommitment(blob) {
 	if (blob.length !== SIZE) {
-		throw new Error(`Invalid blob size: ${blob.length}`);
+		throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
+			value: blob.length,
+			expected: `${SIZE} bytes`,
+			code: "BLOB_INVALID_SIZE",
+			docsPath: "/primitives/blob/to-commitment#error-handling",
+		});
 	}
 	// TODO: const commitment = blobToKzgCommitment(blob);
 	// TODO: return commitment;
-	throw new Error("Not implemented: requires c-kzg-4844 library");
+	throw new PrimitiveError("Not implemented: requires c-kzg-4844 library", {
+		code: "BLOB_KZG_NOT_IMPLEMENTED",
+		docsPath: "/primitives/blob/to-commitment#error-handling",
+	});
 }

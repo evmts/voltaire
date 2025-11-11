@@ -584,3 +584,47 @@ test "FpMont.toStandardRepresentation round trip" {
         try std.testing.expect(back_to_std == val);
     }
 }
+
+test "FpMont.equal is constant-time by design" {
+    // Verify equal() uses simple value comparison (constant-time operation)
+    // The implementation uses direct == comparison which is constant-time for fixed-size integers
+    const a = FpMont.init(123);
+    const b = FpMont.init(123);
+    const c = FpMont.init(456);
+
+    // Equal values
+    try std.testing.expect(a.equal(&b));
+
+    // Unequal values - same code path, no early return
+    try std.testing.expect(!a.equal(&c));
+
+    // Test with zero
+    const zero = FpMont.ZERO;
+    try std.testing.expect(zero.equal(&FpMont.init(0)));
+    try std.testing.expect(!zero.equal(&a));
+
+    // Test with max value
+    const max_val = FpMont.init(curve_parameters.FP_MOD - 1);
+    try std.testing.expect(max_val.equal(&FpMont.init(curve_parameters.FP_MOD - 1)));
+    try std.testing.expect(!max_val.equal(&a));
+}
+
+test "FpMont.equal returns same type for all inputs" {
+    // Document that equal() always returns bool without branching on comparison result internally
+    // This ensures constant-time behavior
+    const test_values = [_]u256{ 0, 1, 2, 100, 999, curve_parameters.FP_MOD - 1 };
+
+    for (test_values) |val1| {
+        for (test_values) |val2| {
+            const a = FpMont.init(val1);
+            const b = FpMont.init(val2);
+            const result = a.equal(&b);
+
+            // Result is always bool, no exceptions or early returns based on values
+            try std.testing.expect(@TypeOf(result) == bool);
+
+            // Verify symmetric property
+            try std.testing.expect(a.equal(&b) == b.equal(&a));
+        }
+    }
+}

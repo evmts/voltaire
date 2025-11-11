@@ -21,6 +21,11 @@ export function fromDER(der, algorithm, v) {
 	if (algorithm !== "secp256k1" && algorithm !== "p256") {
 		throw new InvalidDERError(
 			`DER decoding only supported for ECDSA signatures, got ${algorithm}`,
+			{
+				value: algorithm,
+				expected: "secp256k1 or p256",
+				docsPath: "/primitives/signature/from-der#error-handling",
+			},
 		);
 	}
 
@@ -30,23 +35,37 @@ export function fromDER(der, algorithm, v) {
 	// Check SEQUENCE tag
 	const seqTag = der[pos++];
 	if (seqTag !== 0x30) {
-		throw new InvalidDERError("Expected SEQUENCE tag (0x30)");
+		throw new InvalidDERError("Expected SEQUENCE tag (0x30)", {
+			value: `0x${seqTag?.toString(16)}`,
+			expected: "0x30",
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 
 	// Get SEQUENCE length
 	const seqLength = der[pos++];
 	if (seqLength === undefined || pos + seqLength !== der.length) {
-		throw new InvalidDERError("Invalid SEQUENCE length");
+		throw new InvalidDERError("Invalid SEQUENCE length", {
+			value: seqLength,
+			expected: `${der.length - pos} bytes`,
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 
 	// Parse r
 	const rTag = der[pos++];
 	if (rTag !== 0x02) {
-		throw new InvalidDERError("Expected INTEGER tag (0x02) for r");
+		throw new InvalidDERError("Expected INTEGER tag (0x02) for r", {
+			value: `0x${rTag?.toString(16)}`,
+			expected: "0x02",
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 	const rLength = der[pos++];
 	if (rLength === undefined) {
-		throw new InvalidDERError("Missing r length");
+		throw new InvalidDERError("Missing r length", {
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 	const rBytes = der.slice(pos, pos + rLength);
 	pos += rLength;
@@ -54,17 +73,27 @@ export function fromDER(der, algorithm, v) {
 	// Parse s
 	const sTag = der[pos++];
 	if (sTag !== 0x02) {
-		throw new InvalidDERError("Expected INTEGER tag (0x02) for s");
+		throw new InvalidDERError("Expected INTEGER tag (0x02) for s", {
+			value: `0x${sTag?.toString(16)}`,
+			expected: "0x02",
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 	const sLength = der[pos++];
 	if (sLength === undefined) {
-		throw new InvalidDERError("Missing s length");
+		throw new InvalidDERError("Missing s length", {
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 	const sBytes = der.slice(pos, pos + sLength);
 	pos += sLength;
 
 	if (pos !== der.length) {
-		throw new InvalidDERError("Unexpected data after signature");
+		throw new InvalidDERError("Unexpected data after signature", {
+			value: `${der.length - pos} extra bytes`,
+			expected: "no trailing data",
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
 	}
 
 	// Pad r and s to 32 bytes

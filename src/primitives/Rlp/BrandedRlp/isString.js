@@ -1,4 +1,4 @@
-import { Error } from "./errors.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 /**
  * Checks if RLP-encoded data represents a string (byte array)
@@ -7,7 +7,7 @@ import { Error } from "./errors.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP-encoded data
  * @returns {boolean} True if data encodes a string
- * @throws {Error} If data is empty
+ * @throws {RlpDecodingError} If data is empty
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -22,12 +22,16 @@ import { Error } from "./errors.js";
  */
 export function isString(data) {
 	if (data.length === 0) {
-		throw new Error("InputTooShort", "Cannot check empty data");
+		throw new RlpDecodingError("Cannot check empty data", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	const prefix = data[0];
 	if (prefix === undefined) {
-		throw new Error("InputTooShort", "Cannot check empty data");
+		throw new RlpDecodingError("Cannot check empty data", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	// String prefixes are [0x00, 0xbf]

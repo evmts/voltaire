@@ -1,8 +1,11 @@
+import { InvalidFormatError } from "../../errors/ValidationError.js";
+
 /**
  * Parse hex string to bytecode
  *
  * @param {string} hex - Hex string (with or without 0x prefix)
  * @returns {import('./BrandedBytecode.js').BrandedBytecode} Bytecode
+ * @throws {InvalidFormatError} If hex string has odd length
  *
  * @example
  * ```typescript
@@ -13,7 +16,12 @@
 export function fromHex(hex) {
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (cleaned.length % 2 !== 0) {
-		throw new Error("Invalid hex string: odd length");
+		throw new InvalidFormatError("Invalid hex string: odd length", {
+			value: hex,
+			expected: "Even-length hex string",
+			code: "BYTECODE_ODD_LENGTH",
+			docsPath: "/primitives/bytecode/from-hex#error-handling",
+		});
 	}
 	const bytes = new Uint8Array(cleaned.length / 2);
 	for (let i = 0; i < bytes.length; i++) {

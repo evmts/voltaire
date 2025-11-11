@@ -24,8 +24,8 @@ export function decodeData(data) {
 	if (data.length < 4) {
 		throw new AbiInvalidSelectorError("Data too short to contain selector", {
 			value: data.length,
-			expected: 'at least 4 bytes',
-			context: { dataLength: data.length }
+			expected: "at least 4 bytes",
+			context: { dataLength: data.length },
 		});
 	}
 
@@ -47,9 +47,9 @@ export function decodeData(data) {
 			`Function with selector ${Hex.fromBytes(selector)} not found in ABI`,
 			{
 				value: Hex.fromBytes(selector),
-				expected: 'valid function selector in ABI',
-				context: { selector: Hex.fromBytes(selector), abi: this }
-			}
+				expected: "valid function selector in ABI",
+				context: { selector: Hex.fromBytes(selector), abi: this },
+			},
 		);
 	}
 

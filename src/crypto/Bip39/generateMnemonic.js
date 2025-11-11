@@ -26,6 +26,11 @@ export function generateMnemonic(strength = 256, wl = wordlist) {
 			_generateMnemonic(wl, strength)
 		);
 	} catch (error) {
-		throw new Bip39Error(`Mnemonic generation failed: ${error}`);
+		throw new Bip39Error(`Mnemonic generation failed: ${error}`, {
+			code: "BIP39_GENERATION_FAILED",
+			context: { strength },
+			docsPath: "/crypto/bip39/generate-mnemonic#error-handling",
+			cause: /** @type {Error} */ (error),
+		});
 	}
 }

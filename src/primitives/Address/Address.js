@@ -249,6 +249,11 @@ Address.of = (...items) => {
 	if (result.length !== BrandedAddress.SIZE) {
 		throw new InvalidAddressLengthError(
 			`Address must be ${BrandedAddress.SIZE} bytes, got ${result.length}`,
+			{
+				value: result,
+				expected: `${BrandedAddress.SIZE} bytes`,
+				context: { actualLength: result.length },
+			},
 		);
 	}
 	Object.setPrototypeOf(result, Address.prototype);

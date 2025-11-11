@@ -10,6 +10,8 @@ import { splitKey } from "./splitKey.js";
  * @param {Uint8Array} k - 32-byte key
  * @param {Uint8Array} v - Value to insert
  * @returns {import('./BrandedBinaryTree.js').BinaryTree} Updated tree
+ * @throws {InvalidKeyLengthError} If key is not 32 bytes
+ * @throws {InvalidTreeStateError} If tree is in invalid state
  *
  * @example
  * ```typescript
@@ -70,7 +72,11 @@ function insertNode(node, stem, idx, v, depth) {
 			return { type: "internal", left: node.left, right: hashNode(newRight) };
 		}
 		case "leaf":
-			throw new InvalidTreeStateError();
+			throw new InvalidTreeStateError("Cannot insert into leaf node", {
+				value: "leaf",
+				expected: "empty, stem, or internal",
+				docsPath: "/primitives/binary-tree/insert#error-handling",
+			});
 	}
 }
 

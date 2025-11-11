@@ -20,7 +20,7 @@ describe("BinaryTree", () => {
 		test("throws on invalid address length", () => {
 			const addr = new Uint8Array(19);
 			expect(() => BinaryTree.addressToKey(addr)).toThrow(
-				"Invalid address length",
+				"Address must be 20 bytes",
 			);
 		});
 	});
@@ -41,7 +41,7 @@ describe("BinaryTree", () => {
 
 		test("throws on invalid key length", () => {
 			const k = new Uint8Array(31);
-			expect(() => BinaryTree.splitKey(k)).toThrow("Invalid key length");
+			expect(() => BinaryTree.splitKey(k)).toThrow("Key must be 32 bytes");
 		});
 	});
 

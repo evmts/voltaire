@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedHex } from "./BrandedHex.js";
 import {
-	InvalidCharacterError as InvalidHexCharacterError,
 	InvalidFormatError as InvalidHexFormatError,
 	InvalidLengthError as InvalidHexLengthError,
-	OddLengthError as OddLengthHexError,
-} from "./errors.js";
+	InvalidRangeError,
+} from "../../errors/index.js";
 import {
 	concat,
 	equals,
@@ -231,7 +230,7 @@ describe("Hex", () => {
 
 		it("throws on unsafe integer", () => {
 			const hex = "0xffffffffffffffff" as BrandedHex;
-			expect(() => toNumber(hex)).toThrow(RangeError);
+			expect(() => toNumber(hex)).toThrow(InvalidRangeError);
 		});
 	});
 

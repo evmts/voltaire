@@ -1,4 +1,4 @@
-import { InvalidLengthError } from "./errors.js";
+import { InvalidLengthError } from "../../errors/index.js";
 
 /**
  * Assert hex has specific size
@@ -17,9 +17,17 @@ import { InvalidLengthError } from "./errors.js";
  * ```
  */
 export function assertSize(hex, targetSize) {
-	if ((hex.length - 2) / 2 !== targetSize) {
+	const actualSize = (hex.length - 2) / 2;
+	if (actualSize !== targetSize) {
 		throw new InvalidLengthError(
-			`Expected ${targetSize} bytes, got ${(hex.length - 2) / 2}`,
+			`Expected ${targetSize} bytes, got ${actualSize}`,
+			{
+				code: "HEX_SIZE_MISMATCH",
+				value: hex,
+				expected: `${targetSize} bytes`,
+				context: { actualSize, targetSize },
+				docsPath: "/primitives/hex#error-handling",
+			},
 		);
 	}
 	return hex;

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { InvalidSignatureError } from "../errors.js";
+import { InvalidSignatureError } from "../../../primitives/errors/index.js";
 
 /**
  * Create signature from bytes with v appended (65 bytes: r || s || v)
@@ -20,6 +20,11 @@ export function fromBytes(bytes) {
 	if (bytes.length !== 65) {
 		throw new InvalidSignatureError(
 			`Signature must be 65 bytes, got ${bytes.length}`,
+			{
+				code: "INVALID_SIGNATURE_LENGTH",
+				context: { actualLength: bytes.length, expectedLength: 65 },
+				docsPath: "/crypto/secp256k1/signature#error-handling",
+			},
 		);
 	}
 

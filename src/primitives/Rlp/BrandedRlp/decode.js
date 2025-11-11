@@ -1,6 +1,6 @@
 import * as OxRlp from "ox/Rlp";
 import { MAX_DEPTH } from "./constants.js";
-import { Error } from "./errors.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 /**
  * @typedef {{
@@ -17,12 +17,16 @@ import { Error } from "./errors.js";
  */
 function getRlpItemLength(bytes) {
 	if (bytes.length === 0) {
-		throw new Error("InputTooShort", "Cannot decode empty input");
+		throw new RlpDecodingError("Cannot decode empty input", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	const prefix = bytes[0];
 	if (prefix === undefined) {
-		throw new Error("InputTooShort", "Cannot decode empty input");
+		throw new RlpDecodingError("Cannot decode empty input", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	// Single byte [0x00, 0x7f]
@@ -38,17 +42,23 @@ function getRlpItemLength(bytes) {
 		if (length === 1 && bytes.length > 1) {
 			const nextByte = bytes[1];
 			if (nextByte !== undefined && nextByte < 0x80) {
-				throw new Error(
-					"NonCanonicalSize",
+				throw new RlpDecodingError(
 					"Single byte < 0x80 should not be prefixed",
+					{
+						code: "RLP_NON_CANONICAL_SIZE",
+						context: { prefix, nextByte },
+					},
 				);
 			}
 		}
 
 		if (bytes.length < 1 + length) {
-			throw new Error(
-				"InputTooShort",
+			throw new RlpDecodingError(
 				`Expected ${1 + length} bytes, got ${bytes.length}`,
+				{
+					code: "RLP_INPUT_TOO_SHORT",
+					context: { expected: 1 + length, actual: bytes.length },
+				},
 			);
 		}
 		return 1 + length;
@@ -58,38 +68,52 @@ function getRlpItemLength(bytes) {
 	if (prefix <= 0xbf) {
 		const lengthOfLength = prefix - 0xb7;
 		if (bytes.length < 1 + lengthOfLength) {
-			throw new Error(
-				"InputTooShort",
+			throw new RlpDecodingError(
 				`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
+				{
+					code: "RLP_INPUT_TOO_SHORT",
+					context: { expected: 1 + lengthOfLength, actual: bytes.length },
+				},
 			);
 		}
 
 		// Check for leading zeros
 		if (bytes[1] === 0) {
-			throw new Error("LeadingZeros", "Length encoding has leading zeros");
+			throw new RlpDecodingError("Length encoding has leading zeros", {
+				code: "RLP_LEADING_ZEROS",
+				context: { prefix },
+			});
 		}
 
 		let length = 0;
 		for (let i = 0; i < lengthOfLength; i++) {
 			const byte = bytes[1 + i];
 			if (byte === undefined) {
-				throw new Error("InputTooShort", "Unexpected end of input");
+				throw new RlpDecodingError("Unexpected end of input", {
+					code: "RLP_INPUT_TOO_SHORT",
+				});
 			}
 			length = length * 256 + byte;
 		}
 
 		// Check for non-canonical encoding: < 56 bytes should use short form
 		if (length < 56) {
-			throw new Error(
-				"NonCanonicalSize",
-				"String < 56 bytes should use short form",
-			);
+			throw new RlpDecodingError("String < 56 bytes should use short form", {
+				code: "RLP_NON_CANONICAL_SIZE",
+				context: { length, prefix },
+			});
 		}
 
 		if (bytes.length < 1 + lengthOfLength + length) {
-			throw new Error(
-				"InputTooShort",
+			throw new RlpDecodingError(
 				`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
+				{
+					code: "RLP_INPUT_TOO_SHORT",
+					context: {
+						expected: 1 + lengthOfLength + length,
+						actual: bytes.length,
+					},
+				},
 			);
 		}
 		return 1 + lengthOfLength + length;
@@ -99,9 +123,12 @@ function getRlpItemLength(bytes) {
 	if (prefix <= 0xf7) {
 		const length = prefix - 0xc0;
 		if (bytes.length < 1 + length) {
-			throw new Error(
-				"InputTooShort",
+			throw new RlpDecodingError(
 				`Expected ${1 + length} bytes, got ${bytes.length}`,
+				{
+					code: "RLP_INPUT_TOO_SHORT",
+					context: { expected: 1 + length, actual: bytes.length },
+				},
 			);
 		}
 		return 1 + length;
@@ -110,38 +137,49 @@ function getRlpItemLength(bytes) {
 	// Long list [0xf8, 0xff]
 	const lengthOfLength = prefix - 0xf7;
 	if (bytes.length < 1 + lengthOfLength) {
-		throw new Error(
-			"InputTooShort",
+		throw new RlpDecodingError(
 			`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
+			{
+				code: "RLP_INPUT_TOO_SHORT",
+				context: { expected: 1 + lengthOfLength, actual: bytes.length },
+			},
 		);
 	}
 
 	// Check for leading zeros
 	if (bytes[1] === 0) {
-		throw new Error("LeadingZeros", "Length encoding has leading zeros");
+		throw new RlpDecodingError("Length encoding has leading zeros", {
+			code: "RLP_LEADING_ZEROS",
+			context: { prefix },
+		});
 	}
 
 	let length = 0;
 	for (let i = 0; i < lengthOfLength; i++) {
 		const byte = bytes[1 + i];
 		if (byte === undefined) {
-			throw new Error("InputTooShort", "Unexpected end of input");
+			throw new RlpDecodingError("Unexpected end of input", {
+				code: "RLP_INPUT_TOO_SHORT",
+			});
 		}
 		length = length * 256 + byte;
 	}
 
 	// Check for non-canonical encoding: < 56 bytes should use short form
 	if (length < 56) {
-		throw new Error(
-			"NonCanonicalSize",
-			"List < 56 bytes should use short form",
-		);
+		throw new RlpDecodingError("List < 56 bytes should use short form", {
+			code: "RLP_NON_CANONICAL_SIZE",
+			context: { length, prefix },
+		});
 	}
 
 	if (bytes.length < 1 + lengthOfLength + length) {
-		throw new Error(
-			"InputTooShort",
+		throw new RlpDecodingError(
 			`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
+			{
+				code: "RLP_INPUT_TOO_SHORT",
+				context: { expected: 1 + lengthOfLength + length, actual: bytes.length },
+			},
 		);
 	}
 	return 1 + lengthOfLength + length;
@@ -157,9 +195,12 @@ function getRlpItemLength(bytes) {
 function toData(value, depth = 0) {
 	// Check recursion depth
 	if (depth >= MAX_DEPTH) {
-		throw new Error(
-			"RecursionDepthExceeded",
+		throw new RlpDecodingError(
 			`Maximum recursion depth ${MAX_DEPTH} exceeded`,
+			{
+				code: "RLP_RECURSION_DEPTH_EXCEEDED",
+				context: { depth, maxDepth: MAX_DEPTH },
+			},
 		);
 	}
 
@@ -172,7 +213,10 @@ function toData(value, depth = 0) {
 			value: value.map((item) => toData(item, depth + 1)),
 		};
 	}
-	throw new Error("UnexpectedInput", "Invalid decoded value type");
+	throw new RlpDecodingError("Invalid decoded value type", {
+		code: "RLP_UNEXPECTED_INPUT",
+		context: { type: typeof value },
+	});
 }
 
 /**
@@ -183,7 +227,7 @@ function toData(value, depth = 0) {
  * @param {Uint8Array} bytes - RLP-encoded data
  * @param {boolean} [stream=false] - If true, allows extra data after decoded value. If false, expects exact match
  * @returns {Decoded} Decoded RLP data with remainder
- * @throws {Error} If input is too short, invalid, or has unexpected remainder (when stream=false)
+ * @throws {RlpDecodingError} If input is too short, invalid, or has unexpected remainder (when stream=false)
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -204,7 +248,9 @@ function toData(value, depth = 0) {
  */
 export function decode(bytes, stream = false) {
 	if (bytes.length === 0) {
-		throw new Error("InputTooShort", "Cannot decode empty input");
+		throw new RlpDecodingError("Cannot decode empty input", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
 	}
 
 	try {
@@ -214,9 +260,12 @@ export function decode(bytes, stream = false) {
 		const remainder = bytes.slice(itemLength);
 
 		if (!stream && remainder.length > 0) {
-			throw new Error(
-				"InvalidRemainder",
+			throw new RlpDecodingError(
 				`Extra data after decoded value: ${remainder.length} bytes`,
+				{
+					code: "RLP_INVALID_REMAINDER",
+					context: { remainderLength: remainder.length },
+				},
 			);
 		}
 
@@ -228,17 +277,30 @@ export function decode(bytes, stream = false) {
 			remainder,
 		};
 	} catch (err) {
+		// Re-throw RlpDecodingError as-is
+		if (err instanceof RlpDecodingError) {
+			throw err;
+		}
 		// Map ox/Rlp errors to Voltaire error format
-		if (err instanceof globalThis.Error && !(err instanceof Error)) {
+		if (err instanceof globalThis.Error) {
 			const msg = err.message;
 			if (msg.includes("empty") || msg.includes("too short")) {
-				throw new Error("InputTooShort", msg);
+				throw new RlpDecodingError(msg, {
+					code: "RLP_INPUT_TOO_SHORT",
+					cause: err,
+				});
 			}
 			if (msg.includes("canonical") || msg.includes("invalid")) {
-				throw new Error("NonCanonicalSize", msg);
+				throw new RlpDecodingError(msg, {
+					code: "RLP_NON_CANONICAL_SIZE",
+					cause: err,
+				});
 			}
 			// Re-throw as generic error
-			throw new Error("UnexpectedInput", msg);
+			throw new RlpDecodingError(msg, {
+				code: "RLP_UNEXPECTED_INPUT",
+				cause: err,
+			});
 		}
 		throw err;
 	}

@@ -18,7 +18,9 @@ export function fromNumber(value) {
 	const bigintValue = typeof value === "number" ? BigInt(value) : value;
 
 	if (bigintValue < 0n) {
-		throw new InvalidValueError("Address value cannot be negative");
+		throw new InvalidValueError("Address value cannot be negative", {
+			value: bigintValue,
+		});
 	}
 
 	const bytes = new Uint8Array(SIZE);

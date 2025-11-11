@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { BrandedHex } from "./BrandedHex.js";
 import { fromNumber } from "./fromNumber.js";
 import { toNumber } from "./toNumber.js";
+import { InvalidRangeError } from "../../errors/index.js";
 
 describe("toNumber", () => {
 	it("converts zero", () => {
@@ -55,10 +56,10 @@ describe("toNumber", () => {
 
 	it("throws on values exceeding MAX_SAFE_INTEGER", () => {
 		expect(() => toNumber("0xffffffffffffffff" as BrandedHex)).toThrow(
-			RangeError,
+			InvalidRangeError,
 		);
 		expect(() => toNumber("0x10000000000000000" as BrandedHex)).toThrow(
-			RangeError,
+			InvalidRangeError,
 		);
 	});
 
@@ -73,6 +74,6 @@ describe("toNumber", () => {
 	});
 
 	it("throws on empty hex (NaN is not safe integer)", () => {
-		expect(() => toNumber("0x" as BrandedHex)).toThrow(RangeError);
+		expect(() => toNumber("0x" as BrandedHex)).toThrow(InvalidRangeError);
 	});
 });

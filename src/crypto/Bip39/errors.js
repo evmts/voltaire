@@ -1,3 +1,6 @@
+import { CryptoError } from "../../primitives/errors/CryptoError.js";
+import { InvalidFormatError } from "../../primitives/errors/ValidationError.js";
+
 /**
  * Base error for BIP-39 operations
  *
@@ -7,12 +10,26 @@
  * @example
  * ```javascript
  * import { Bip39Error } from './crypto/Bip39/index.js';
- * throw new Bip39Error('BIP-39 operation failed');
+ * throw new Bip39Error('BIP-39 operation failed', {
+ *   code: 'BIP39_ERROR',
+ *   context: { operation: 'generate' },
+ *   docsPath: '/crypto/bip39#error-handling',
+ *   cause: originalError
+ * });
  * ```
  */
-export class Bip39Error extends Error {
-	constructor(message = "BIP-39 error") {
-		super(message);
+export class Bip39Error extends CryptoError {
+	/**
+	 * @param {string} [message]
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 */
+	constructor(message = "BIP-39 error", options) {
+		super(message, {
+			code: options?.code || "BIP39_ERROR",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "Bip39Error";
 	}
 }
@@ -26,12 +43,27 @@ export class Bip39Error extends Error {
  * @example
  * ```javascript
  * import { InvalidMnemonicError } from './crypto/Bip39/index.js';
- * throw new InvalidMnemonicError('Invalid BIP-39 mnemonic phrase');
+ * throw new InvalidMnemonicError('Invalid BIP-39 mnemonic phrase', {
+ *   code: 'BIP39_INVALID_MNEMONIC',
+ *   context: { wordCount: 11 },
+ *   docsPath: '/crypto/bip39/validate-mnemonic#error-handling'
+ * });
  * ```
  */
-export class InvalidMnemonicError extends Bip39Error {
-	constructor(message = "Invalid BIP-39 mnemonic phrase") {
-		super(message);
+export class InvalidMnemonicError extends InvalidFormatError {
+	/**
+	 * @param {string} [message]
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 */
+	constructor(message = "Invalid BIP-39 mnemonic phrase", options) {
+		super(message, {
+			code: options?.code || "BIP39_INVALID_MNEMONIC",
+			value: options?.context?.mnemonic || "",
+			expected: "Valid BIP-39 mnemonic (12, 15, 18, 21, or 24 words)",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "InvalidMnemonicError";
 	}
 }
@@ -45,12 +77,25 @@ export class InvalidMnemonicError extends Bip39Error {
  * @example
  * ```javascript
  * import { InvalidEntropyError } from './crypto/Bip39/index.js';
- * throw new InvalidEntropyError('Invalid entropy size');
+ * throw new InvalidEntropyError('Invalid entropy size', {
+ *   code: 'BIP39_INVALID_ENTROPY_SIZE',
+ *   context: { size: 15, expected: '16, 20, 24, 28, or 32 bytes' },
+ *   docsPath: '/crypto/bip39/entropy-to-mnemonic#error-handling'
+ * });
  * ```
  */
 export class InvalidEntropyError extends Bip39Error {
-	constructor(message = "Invalid entropy") {
-		super(message);
+	/**
+	 * @param {string} [message]
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 */
+	constructor(message = "Invalid entropy", options) {
+		super(message, {
+			code: options?.code || "BIP39_INVALID_ENTROPY",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "InvalidEntropyError";
 	}
 }

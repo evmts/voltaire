@@ -12,7 +12,7 @@ import { encode } from "./encode.js";
 import { encodeBytes } from "./encodeBytes.js";
 import { encodeList } from "./encodeList.js";
 import { equals } from "./equals.js";
-import { Error as RlpError } from "./errors.js";
+import { RlpEncodingError, RlpDecodingError } from "./RlpError.js";
 import { flatten } from "./flatten.js";
 import { fromJSON } from "./fromJSON.js";
 import { getEncodedLength } from "./getEncodedLength.js";
@@ -35,7 +35,8 @@ const Rlp = {
 	equals,
 	toJSON,
 	fromJSON,
-	Error: RlpError,
+	EncodingError: RlpEncodingError,
+	DecodingError: RlpDecodingError,
 	MAX_DEPTH,
 } as const;
 
@@ -930,17 +931,22 @@ describe("Rlp real-world use cases", () => {
 // ============================================================================
 
 describe("Rlp.Error types", () => {
-	it("creates error with correct type", () => {
-		const err = new Rlp.Error("InputTooShort", "Test message");
-		expect(err.type).toBe("InputTooShort");
-		expect(err.message).toBe("Test message");
-		expect(err.name).toBe("RlpError");
+	it("creates encoding error with correct properties", () => {
+		const err = new Rlp.EncodingError("Test message", {
+			code: "RLP_INVALID_TYPE",
+		});
+		expect(err.message).toContain("Test message");
+		expect(err.code).toBe("RLP_INVALID_TYPE");
+		expect(err.name).toBe("RlpEncodingError");
 	});
 
-	it("creates error without message", () => {
-		const err = new Rlp.Error("InvalidLength");
-		expect(err.type).toBe("InvalidLength");
-		expect(err.message).toBe("InvalidLength");
+	it("creates decoding error with correct properties", () => {
+		const err = new Rlp.DecodingError("Test message", {
+			code: "RLP_INPUT_TOO_SHORT",
+		});
+		expect(err.message).toContain("Test message");
+		expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
+		expect(err.name).toBe("RlpDecodingError");
 	});
 
 	it("throws correct error types", () => {
@@ -948,9 +954,10 @@ describe("Rlp.Error types", () => {
 			Rlp.decode(new Uint8Array([]));
 			expect.fail("Should have thrown");
 		} catch (err) {
-			expect(err).toBeInstanceOf(Rlp.Error);
-			if (err instanceof RlpError) {
-				expect((err as RlpError).type).toBe("InputTooShort");
+			expect(err).toBeInstanceOf(Rlp.DecodingError);
+			if (err instanceof RlpDecodingError) {
+				expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
+				expect(err.message).toContain("Cannot decode empty input");
 			}
 		}
 	});

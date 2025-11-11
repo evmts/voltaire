@@ -19,6 +19,11 @@ export function getWordCount(entropyBits) {
 	if (entropyBits % 32 !== 0 || entropyBits < 128 || entropyBits > 256) {
 		throw new InvalidEntropyError(
 			"Entropy must be 128, 160, 192, 224, or 256 bits",
+			{
+				code: "BIP39_INVALID_ENTROPY_BITS",
+				context: { bits: entropyBits, expected: "128, 160, 192, 224, or 256" },
+				docsPath: "/crypto/bip39/get-word-count#error-handling",
+			},
 		);
 	}
 	return (entropyBits / 32) * 3;

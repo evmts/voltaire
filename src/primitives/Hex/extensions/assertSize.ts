@@ -1,5 +1,6 @@
 import type { Hex } from "ox";
 import * as OxHex from "ox/Hex";
+import { InvalidLengthError } from "../../errors/index.js";
 
 /**
  * Assert that hex value has a specific size, throws if not
@@ -9,7 +10,7 @@ import * as OxHex from "ox/Hex";
  * @since 0.0.0
  * @param value - Hex value to check
  * @param size - Expected size in bytes
- * @throws {Error} If hex value doesn't have the specified size
+ * @throws {InvalidLengthError} If hex value doesn't have the specified size
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';
@@ -20,8 +21,15 @@ import * as OxHex from "ox/Hex";
 export function assertSize(value: Hex.Hex, size: number): void {
 	const actualSize = OxHex.size(value);
 	if (actualSize !== size) {
-		throw new Error(
-			`Invalid hex size: expected ${size} bytes, got ${actualSize} bytes`,
+		throw new InvalidLengthError(
+			`Expected ${size} bytes, got ${actualSize} bytes`,
+			{
+				code: "HEX_SIZE_MISMATCH",
+				value,
+				expected: `${size} bytes`,
+				context: { actualSize, targetSize: size },
+				docsPath: "/primitives/hex#error-handling",
+			},
 		);
 	}
 }

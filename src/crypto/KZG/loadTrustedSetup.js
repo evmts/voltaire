@@ -49,6 +49,12 @@ export function loadTrustedSetup(filePath) {
 		}
 		throw new KzgError(
 			`Failed to load trusted setup: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_TRUSTED_SETUP_LOAD_FAILED",
+				context: { filePath: filePath || "embedded" },
+				docsPath: "/crypto/kzg/load-trusted-setup#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
 	}
 }

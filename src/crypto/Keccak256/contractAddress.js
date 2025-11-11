@@ -1,3 +1,4 @@
+import { InvalidLengthError } from "../../primitives/errors/ValidationError.js";
 import { hash } from "./hash.js";
 
 /**
@@ -28,7 +29,7 @@ function nonceToBytes(nonce) {
  * @param {Uint8Array} sender - Deployer address (20 bytes)
  * @param {bigint} nonce - Transaction nonce
  * @returns {Uint8Array} Contract address (20 bytes)
- * @throws {Error} If sender is not 20 bytes
+ * @throws {InvalidLengthError} If sender is not 20 bytes
  * @example
  * ```javascript
  * import * as Keccak256 from './crypto/Keccak256/index.js';
@@ -38,7 +39,13 @@ function nonceToBytes(nonce) {
  */
 export function contractAddress(sender, nonce) {
 	if (sender.length !== 20) {
-		throw new Error("Sender must be 20 bytes");
+		throw new InvalidLengthError("Sender must be 20 bytes", {
+			code: "KECCAK256_INVALID_SENDER_LENGTH",
+			value: sender,
+			expected: "20 bytes",
+			context: { length: sender.length, nonce },
+			docsPath: "/crypto/keccak256/contract-address#error-handling",
+		});
 	}
 	// Simplified version - full RLP encoding needed for production
 	// This is just the hash portion
