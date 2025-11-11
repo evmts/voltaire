@@ -16,11 +16,11 @@ pub const method = "engine_getPayloadV6";
 /// Parameters for `engine_getPayloadV6`
 pub const Params = struct {
     /// 8 hex encoded bytes
-    payload id: types.Quantity,
+    payload_id: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.payload id);
+        try jws.write(self.payload_id);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .payload id = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .payload_id = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

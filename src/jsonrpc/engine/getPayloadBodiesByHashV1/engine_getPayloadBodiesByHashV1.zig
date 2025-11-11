@@ -15,11 +15,11 @@ pub const method = "engine_getPayloadBodiesByHashV1";
 
 /// Parameters for `engine_getPayloadBodiesByHashV1`
 pub const Params = struct {
-    array of block hashes: types.Quantity,
+    array_of_block_hashes: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.array of block hashes);
+        try jws.write(self.array_of_block_hashes);
         try jws.endArray();
     }
 
@@ -28,7 +28,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .array of block hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .array_of_block_hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

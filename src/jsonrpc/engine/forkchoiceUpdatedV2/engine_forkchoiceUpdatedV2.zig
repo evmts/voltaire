@@ -17,14 +17,14 @@ pub const method = "engine_forkchoiceUpdatedV2";
 /// Parameters for `engine_forkchoiceUpdatedV2`
 pub const Params = struct {
     /// Forkchoice state object V1
-    forkchoice state: types.Quantity,
+    forkchoice_state: types.Quantity,
     /// Payload attributes object V2
-    payload attributes: types.Quantity,
+    payload_attributes: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.forkchoice state);
-        try jws.write(self.payload attributes);
+        try jws.write(self.forkchoice_state);
+        try jws.write(self.payload_attributes);
         try jws.endArray();
     }
 
@@ -33,8 +33,8 @@ pub const Params = struct {
         if (source.array.items.len != 2) return error.InvalidParamCount;
 
         return Params{
-            .forkchoice state = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .payload attributes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .forkchoice_state = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .payload_attributes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
         };
     }
 };

@@ -19,18 +19,18 @@ pub const method = "engine_newPayloadV5";
 /// Parameters for `engine_newPayloadV5`
 pub const Params = struct {
     /// Execution payload object V4
-    execution payload: types.Quantity,
-    expected blob versioned hashes: types.Quantity,
+    execution_payload: types.Quantity,
+    expected_blob_versioned_hashes: types.Quantity,
     /// 32 byte hex value
-    parent beacon block root: types.Hash,
-    execution requests: types.Quantity,
+    parent_beacon_block_root: types.Hash,
+    execution_requests: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.execution payload);
-        try jws.write(self.expected blob versioned hashes);
-        try jws.write(self.parent beacon block root);
-        try jws.write(self.execution requests);
+        try jws.write(self.execution_payload);
+        try jws.write(self.expected_blob_versioned_hashes);
+        try jws.write(self.parent_beacon_block_root);
+        try jws.write(self.execution_requests);
         try jws.endArray();
     }
 
@@ -39,10 +39,10 @@ pub const Params = struct {
         if (source.array.items.len != 4) return error.InvalidParamCount;
 
         return Params{
-            .execution payload = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .expected blob versioned hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
-            .parent beacon block root = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[2], options),
-            .execution requests = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[3], options),
+            .execution_payload = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .expected_blob_versioned_hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .parent_beacon_block_root = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[2], options),
+            .execution_requests = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[3], options),
         };
     }
 };

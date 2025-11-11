@@ -15,11 +15,11 @@ pub const method = "engine_getBlobsV2";
 
 /// Parameters for `engine_getBlobsV2`
 pub const Params = struct {
-    blob versioned hashes: types.Quantity,
+    blob_versioned_hashes: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.blob versioned hashes);
+        try jws.write(self.blob_versioned_hashes);
         try jws.endArray();
     }
 
@@ -28,7 +28,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .blob versioned hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .blob_versioned_hashes = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

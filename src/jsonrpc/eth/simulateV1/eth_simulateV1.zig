@@ -14,12 +14,12 @@ pub const Params = struct {
     /// Arguments for eth_simulate
     payload: types.Quantity,
     /// Block number, tag, or block hash
-    block tag: types.BlockSpec,
+    block_tag: types.BlockSpec,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
         try jws.write(self.payload);
-        try jws.write(self.block tag);
+        try jws.write(self.block_tag);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
 
         return Params{
             .payload = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .block tag = try std.json.innerParseFromValue(types.BlockSpec, allocator, source.array.items[1], options),
+            .block_tag = try std.json.innerParseFromValue(types.BlockSpec, allocator, source.array.items[1], options),
         };
     }
 };

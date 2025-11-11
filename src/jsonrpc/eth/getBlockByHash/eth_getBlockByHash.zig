@@ -17,14 +17,14 @@ pub const method = "eth_getBlockByHash";
 /// Parameters for `eth_getBlockByHash`
 pub const Params = struct {
     /// 32 byte hex value
-    block hash: types.Hash,
+    block_hash: types.Hash,
     /// hydrated
-    hydrated transactions: types.Quantity,
+    hydrated_transactions: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.block hash);
-        try jws.write(self.hydrated transactions);
+        try jws.write(self.block_hash);
+        try jws.write(self.hydrated_transactions);
         try jws.endArray();
     }
 
@@ -33,8 +33,8 @@ pub const Params = struct {
         if (source.array.items.len != 2) return error.InvalidParamCount;
 
         return Params{
-            .block hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
-            .hydrated transactions = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .block_hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
+            .hydrated_transactions = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
         };
     }
 };

@@ -16,11 +16,11 @@ pub const method = "eth_uninstallFilter";
 /// Parameters for `eth_uninstallFilter`
 pub const Params = struct {
     /// hex encoded unsigned integer
-    filter identifier: types.Quantity,
+    filter_identifier: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.filter identifier);
+        try jws.write(self.filter_identifier);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .filter identifier = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .filter_identifier = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

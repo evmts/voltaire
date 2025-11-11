@@ -15,11 +15,11 @@ pub const method = "engine_exchangeCapabilities";
 
 /// Parameters for `engine_exchangeCapabilities`
 pub const Params = struct {
-    consensus client methods: types.Quantity,
+    consensus_client_methods: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.consensus client methods);
+        try jws.write(self.consensus_client_methods);
         try jws.endArray();
     }
 
@@ -28,7 +28,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .consensus client methods = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .consensus_client_methods = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

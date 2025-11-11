@@ -15,11 +15,11 @@ pub const method = "engine_newPayloadV2";
 
 /// Parameters for `engine_newPayloadV2`
 pub const Params = struct {
-    execution payload: types.Quantity,
+    execution_payload: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.execution payload);
+        try jws.write(self.execution_payload);
         try jws.endArray();
     }
 
@@ -28,7 +28,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .execution payload = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .execution_payload = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

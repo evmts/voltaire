@@ -16,11 +16,11 @@ pub const method = "eth_getBlockTransactionCountByHash";
 /// Parameters for `eth_getBlockTransactionCountByHash`
 pub const Params = struct {
     /// 32 byte hex value
-    block hash: types.Hash,
+    block_hash: types.Hash,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.block hash);
+        try jws.write(self.block_hash);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .block hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
+            .block_hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
         };
     }
 };

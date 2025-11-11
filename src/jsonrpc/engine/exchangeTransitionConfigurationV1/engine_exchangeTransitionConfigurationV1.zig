@@ -16,11 +16,11 @@ pub const method = "engine_exchangeTransitionConfigurationV1";
 /// Parameters for `engine_exchangeTransitionConfigurationV1`
 pub const Params = struct {
     /// Transition configuration object
-    consensus client configuration: types.Quantity,
+    consensus_client_configuration: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.consensus client configuration);
+        try jws.write(self.consensus_client_configuration);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .consensus client configuration = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .consensus_client_configuration = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
         };
     }
 };

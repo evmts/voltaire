@@ -19,12 +19,12 @@ pub const Params = struct {
     /// Block number or tag
     block: types.Quantity,
     /// hex encoded unsigned integer
-    transaction index: types.Quantity,
+    transaction_index: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
         try jws.write(self.block);
-        try jws.write(self.transaction index);
+        try jws.write(self.transaction_index);
         try jws.endArray();
     }
 
@@ -34,7 +34,7 @@ pub const Params = struct {
 
         return Params{
             .block = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .transaction index = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .transaction_index = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
         };
     }
 };

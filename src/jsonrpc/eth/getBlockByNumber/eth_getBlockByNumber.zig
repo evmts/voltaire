@@ -19,12 +19,12 @@ pub const Params = struct {
     /// Block number or tag
     block: types.Quantity,
     /// hydrated
-    hydrated transactions: types.Quantity,
+    hydrated_transactions: types.Quantity,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
         try jws.write(self.block);
-        try jws.write(self.hydrated transactions);
+        try jws.write(self.hydrated_transactions);
         try jws.endArray();
     }
 
@@ -34,7 +34,7 @@ pub const Params = struct {
 
         return Params{
             .block = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .hydrated transactions = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .hydrated_transactions = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
         };
     }
 };

@@ -16,11 +16,11 @@ pub const method = "eth_getTransactionReceipt";
 /// Parameters for `eth_getTransactionReceipt`
 pub const Params = struct {
     /// 32 byte hex value
-    transaction hash: types.Hash,
+    transaction_hash: types.Hash,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
-        try jws.write(self.transaction hash);
+        try jws.write(self.transaction_hash);
         try jws.endArray();
     }
 
@@ -29,7 +29,7 @@ pub const Params = struct {
         if (source.array.items.len != 1) return error.InvalidParamCount;
 
         return Params{
-            .transaction hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
+            .transaction_hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
         };
     }
 };

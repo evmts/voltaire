@@ -20,14 +20,14 @@ pub const Params = struct {
     /// hex encoded address
     address: types.Address,
     /// 32 hex encoded bytes
-    storage slot: types.Quantity,
+    storage_slot: types.Quantity,
     /// Block number, tag, or block hash
     block: types.BlockSpec,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
         try jws.write(self.address);
-        try jws.write(self.storage slot);
+        try jws.write(self.storage_slot);
         try jws.write(self.block);
         try jws.endArray();
     }
@@ -38,7 +38,7 @@ pub const Params = struct {
 
         return Params{
             .address = try std.json.innerParseFromValue(types.Address, allocator, source.array.items[0], options),
-            .storage slot = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .storage_slot = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
             .block = try std.json.innerParseFromValue(types.BlockSpec, allocator, source.array.items[2], options),
         };
     }
