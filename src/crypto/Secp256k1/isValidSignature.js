@@ -23,15 +23,16 @@ function bytes32ToBigInt(bytes) {
  * Checks that r and s are within valid range [1, n-1] where n is the
  * curve order. Also enforces low-s values to prevent malleability.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature to validate
  * @returns {boolean} true if signature is valid, false otherwise
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
+ * const signature = { r: new Uint8Array(32), s: new Uint8Array(32), v: 27 };
  * const valid = Secp256k1.isValidSignature(signature);
- * if (!valid) {
- *   console.log('Invalid signature parameters');
- * }
  * ```
  */
 export function isValidSignature(signature) {

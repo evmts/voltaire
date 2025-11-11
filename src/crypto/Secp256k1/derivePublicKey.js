@@ -9,13 +9,15 @@ import { InvalidPrivateKeyError } from "./errors.js";
  * Computes the public key point from a private key using scalar
  * multiplication on the secp256k1 curve.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} privateKey - 32-byte private key
  * @returns {Uint8Array} 64-byte uncompressed public key
  * @throws {InvalidPrivateKeyError} If private key is invalid
- *
  * @example
- * ```typescript
- * const privateKey = new Uint8Array(32); // Your key
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
+ * const privateKey = new Uint8Array(32);
  * const publicKey = Secp256k1.derivePublicKey(privateKey);
  * console.log(publicKey.length); // 64
  * ```

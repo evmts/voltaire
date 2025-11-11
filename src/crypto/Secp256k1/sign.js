@@ -9,18 +9,20 @@ import { InvalidPrivateKeyError, Secp256k1Error } from "./errors.js";
  * Uses deterministic ECDSA (RFC 6979) for signature generation.
  * Returns signature with Ethereum-compatible v value (27 or 28).
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash to sign
  * @param {Uint8Array} privateKey - 32-byte private key
  * @returns {import('./BrandedSignature.js').BrandedSignature} ECDSA signature with r, s, v components
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {Secp256k1Error} If signing fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
+ * import * as Hash from './primitives/Hash/index.js';
  * const messageHash = Hash.keccak256String('Hello!');
- * const privateKey = new Uint8Array(32); // Your key
+ * const privateKey = new Uint8Array(32);
  * const signature = Secp256k1.sign(messageHash, privateKey);
- * console.log(signature.v); // 27 or 28
  * ```
  */
 export function sign(messageHash, privateKey) {

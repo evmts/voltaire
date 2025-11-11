@@ -22,19 +22,18 @@ function concat(...arrays) {
 /**
  * Verify an ECDSA signature
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
  * @param {Uint8Array} publicKey - 64-byte uncompressed public key
  * @returns {boolean} true if signature is valid, false otherwise
  * @throws {InvalidPublicKeyError} If public key is invalid
  * @throws {InvalidSignatureError} If signature format is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
  * const valid = Secp256k1.verify(signature, messageHash, publicKey);
- * if (valid) {
- *   console.log('Signature is valid!');
- * }
  * ```
  */
 export function verify(signature, messageHash, publicKey) {

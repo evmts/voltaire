@@ -26,15 +26,18 @@ function concat(...arrays) {
  * the signature. This is what enables Ethereum's address recovery from
  * transaction signatures.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
  * @returns {Uint8Array} 64-byte uncompressed public key
  * @throws {InvalidSignatureError} If signature or recovery fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
+ * import * as Hash from './primitives/Hash/index.js';
+ * const messageHash = Hash.keccak256String('Hello');
  * const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
- * // recovered is 64 bytes: x || y coordinates
  * ```
  */
 export function recoverPublicKey(signature, messageHash) {

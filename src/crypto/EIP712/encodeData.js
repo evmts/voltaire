@@ -6,15 +6,20 @@ import {
 import { hashType } from "./hashType.js";
 
 /**
- * Encode struct data
+ * Encode struct data according to EIP-712.
  *
- * @param {string} primaryType - Type name
- * @param {import('./BrandedEIP712.js').Message} data - Message data
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions
- * @returns {Uint8Array} Encoded data
- *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {string} primaryType - Type name to encode
+ * @param {import('./BrandedEIP712.js').Message} data - Message data to encode
+ * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions mapping
+ * @returns {Uint8Array} Encoded data bytes (type hash concatenated with encoded values)
+ * @throws {Eip712TypeNotFoundError} If primaryType is not found in types
+ * @throws {Eip712InvalidMessageError} If required field is missing from data
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EIP712 from './crypto/EIP712/index.js';
+ * const types = { Person: [{ name: 'name', type: 'string' }, { name: 'wallet', type: 'address' }] };
  * const encoded = EIP712.encodeData('Person', { name: 'Alice', wallet: '0x...' }, types);
  * ```
  */
