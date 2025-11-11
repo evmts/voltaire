@@ -370,7 +370,7 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 		expect(result.success).toBe(false);
 	});
 
-	test("single identity point with zero scalar", () => {
+	test("single identity point with non-zero scalar", () => {
 		const input = new Uint8Array(160);
 		const result = bls12G1Msm(input, 20000n);
 		expect(result.success).toBe(true);
@@ -706,7 +706,7 @@ describe("BLS12-381 G2 MSM (0x10)", () => {
 		expect(result.success).toBe(false);
 	});
 
-	test("single identity point with zero scalar", () => {
+	test("single identity point with non-zero scalar", () => {
 		const input = new Uint8Array(288);
 		const result = bls12G2Msm(input, 50000n);
 		expect(result.success).toBe(true);
