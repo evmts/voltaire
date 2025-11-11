@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
+import type * as Address from "../Address/index.js";
 import * as Abi from "./index.js";
 
 // ============================================================================

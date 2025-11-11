@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
+import type * as Address from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import { AbiDecodingError } from "./Errors.js";
 import * as Abi from "./index.js";
@@ -481,7 +481,9 @@ describe("Abi round-trip encoding/decoding", () => {
 		const original = "0x123456789abcdef0";
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [original]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(original.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			original.toLowerCase(),
+		);
 	});
 
 	it("round-trips array", () => {
