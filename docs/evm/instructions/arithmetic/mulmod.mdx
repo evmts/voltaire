@@ -1,0 +1,480 @@
+---
+title: "MULMOD (0x09)"
+description: "Modular multiplication for 256-bit unsigned integers with arbitrary modulus"
+---
+
+## Overview
+
+**Opcode:** `0x09`
+**Introduced:** Frontier (EVM genesis)
+
+MULMOD performs modular multiplication `(a * b) % N` where all operands are 256-bit unsigned integers. Unlike standard MUL followed by MOD, MULMOD computes the result using wider arithmetic to prevent intermediate overflow, making it critical for cryptographic operations.
+
+Division by zero (N = 0) returns 0 rather than throwing an exception.
+
+## Specification
+
+**Stack Input:**
+```
+a (top)
+b
+N (modulus)
+```
+
+**Stack Output:**
+```
+(a * b) % N
+```
+
+**Gas Cost:** 8 (GasMidStep)
+
+**Operation:**
+```
+if N == 0:
+  result = 0
+else:
+  result = (a * b) % N
+```
+
+## Behavior
+
+MULMOD pops three values from the stack (a, b, N), computes `(a * b) mod N`, and pushes the result back:
+
+- **Normal case:** Result is `(a * b) % N`
+- **N = 0:** Returns 0 (EVM convention)
+- **No intermediate overflow:** Uses 512-bit arithmetic internally
+
+The key advantage over `MUL` then `MOD` is that MULMOD avoids intermediate overflow when `a * b >= 2^256`.
+
+## Examples
+
+### Basic Modular Multiplication
+
+```typescript
+import { mulmod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// (5 * 10) % 3 = 50 % 3 = 2
+const frame = createFrame({ stack: [5n, 10n, 3n] });
+const err = mulmod(frame);
+
+console.log(frame.stack); // [2n]
+console.log(frame.gasRemaining); // Original - 8
+```
+
+### Overflow-Safe Multiplication
+
+```typescript
+// MAX * MAX would overflow in MUL, but MULMOD handles it
+const MAX_U256 = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX_U256, MAX_U256, 7n] });
+const err = mulmod(frame);
+
+// (MAX * MAX) % 7
+const expected = ((MAX_U256 * MAX_U256) % 7n);
+console.log(frame.stack); // [expected]
+```
+
+### Zero Modulus
+
+```typescript
+// Division by zero returns 0
+const frame = createFrame({ stack: [5n, 10n, 0n] });
+const err = mulmod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Multiply by Zero
+
+```typescript
+// 0 * anything = 0
+const frame = createFrame({ stack: [0n, 42n, 17n] });
+const err = mulmod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Large Modulus Operation
+
+```typescript
+// Very large multiplication
+const a = (1n << 200n) - 1n;
+const b = (1n << 200n) - 1n;
+const n = (1n << 100n) + 7n;
+
+const frame = createFrame({ stack: [a, b, n] });
+const err = mulmod(frame);
+
+const expected = (a * b) % n;
+console.log(frame.stack); // [expected]
+```
+
+## Gas Cost
+
+**Cost:** 8 gas (GasMidStep)
+
+MULMOD shares the same gas cost as ADDMOD due to similar computational complexity:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- MUL: 5 gas
+- DIV/MOD: 5 gas
+- **ADDMOD/MULMOD: 8 gas**
+- EXP: 10 + 50 per byte
+
+MULMOD is more efficient than separate MUL + MOD when dealing with values that would overflow during multiplication.
+
+## Edge Cases
+
+### Maximum Values
+
+```typescript
+const MAX = (1n << 256n) - 1n;
+
+// MAX * MAX mod large prime
+const frame = createFrame({ stack: [MAX, MAX, 1000000007n] });
+mulmod(frame);
+
+const expected = (MAX * MAX) % 1000000007n;
+console.log(frame.stack); // [expected]
+```
+
+### Modulus of 1
+
+```typescript
+// Any number mod 1 is 0
+const frame = createFrame({ stack: [999n, 888n, 1n] });
+mulmod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Result Equals Modulus Minus One
+
+```typescript
+// (3 * 3) % 10 = 9
+const frame = createFrame({ stack: [3n, 3n, 10n] });
+mulmod(frame);
+
+console.log(frame.stack); // [9n]
+```
+
+### Stack Underflow
+
+```typescript
+// Not enough stack items
+const frame = createFrame({ stack: [5n, 10n] });
+const err = mulmod(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [5n, 10n, 3n], gasRemaining: 7n });
+const err = mulmod(frame);
+
+console.log(err); // { type: "OutOfGas" }
+console.log(frame.gasRemaining); // 0n
+```
+
+## Common Usage
+
+### Elliptic Curve Point Multiplication
+
+```solidity
+// secp256k1 field multiplication
+assembly {
+    let p := 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+
+    // Multiply two field elements
+    let x1 := mload(0x00)
+    let x2 := mload(0x20)
+    let product := mulmod(x1, x2, p)
+}
+```
+
+### Montgomery Reduction
+
+```solidity
+// Montgomery form multiplication
+function montgomeryMul(uint256 a, uint256 b, uint256 N, uint256 R)
+    pure returns (uint256)
+{
+    assembly {
+        let T := mulmod(a, b, N)
+        let m := mulmod(T, R, N)
+        let t := addmod(mulmod(m, N, N), T, N)
+        mstore(0x00, mulmod(t, R, N))
+        return(0x00, 0x20)
+    }
+}
+```
+
+### Modular Exponentiation Building Block
+
+```solidity
+// Square-and-multiply algorithm
+function modExp(uint256 base, uint256 exp, uint256 mod)
+    pure returns (uint256 result)
+{
+    result = 1;
+    assembly {
+        for {} gt(exp, 0) {} {
+            if and(exp, 1) {
+                result := mulmod(result, base, mod)
+            }
+            base := mulmod(base, base, mod)
+            exp := shr(1, exp)
+        }
+    }
+}
+```
+
+### RSA/Fermat Operations
+
+```solidity
+// Modular square for primality testing
+function fermatTest(uint256 a, uint256 p) pure returns (bool) {
+    // Check if a^(p-1) ≡ 1 (mod p)
+    uint256 exp = p - 1;
+    uint256 result = 1;
+
+    assembly {
+        for {} gt(exp, 0) {} {
+            if and(exp, 1) {
+                result := mulmod(result, a, p)
+            }
+            a := mulmod(a, a, p)
+            exp := shr(1, exp)
+        }
+    }
+
+    return result == 1;
+}
+```
+
+### Polynomial Evaluation
+
+```solidity
+// Evaluate polynomial at point x mod p
+function polyEval(uint256[] memory coeffs, uint256 x, uint256 p)
+    pure returns (uint256 result)
+{
+    assembly {
+        let len := mload(coeffs)
+        result := 0
+
+        for { let i := 0 } lt(i, len) { i := add(i, 1) } {
+            let coeff := mload(add(coeffs, mul(add(i, 1), 0x20)))
+            result := addmod(mulmod(result, x, p), coeff, p)
+        }
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * MULMOD opcode (0x09) - Multiplication modulo N
+ */
+export function mulmod(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasMidStep = 8)
+  frame.gasRemaining -= 8n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands: a, b, N
+  if (frame.stack.length < 3) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();
+  const b = frame.stack.pop();
+  const n = frame.stack.pop();
+
+  // Compute result
+  let result: bigint;
+  if (n === 0n) {
+    result = 0n;
+  } else {
+    // BigInt handles arbitrary precision - no overflow
+    result = (a * b) % n;
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// MULMOD opcode (0x09) - Multiplication modulo n
+pub fn mulmod(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasMidStep);
+    const a = try frame.popStack();
+    const b = try frame.popStack();
+    const n = try frame.popStack();
+
+    const result = if (n == 0) 0 else blk: {
+        // Use u512 to avoid overflow
+        const a_wide = @as(u512, a);
+        const b_wide = @as(u512, b);
+        const n_wide = @as(u512, n);
+        break :blk @as(u256, @truncate((a_wide * b_wide) % n_wide));
+    };
+
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { mulmod } from './0x09_MULMOD.js';
+
+describe('MULMOD (0x09)', () => {
+  it('computes (a * b) % N', () => {
+    const frame = createFrame([5n, 10n, 3n]);
+    expect(mulmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([2n]); // 50 % 3 = 2
+  });
+
+  it('returns 0 when N is 0', () => {
+    const frame = createFrame([5n, 10n, 0n]);
+    expect(mulmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles large values without overflow', () => {
+    const MAX = (1n << 256n) - 1n;
+    const frame = createFrame([MAX, MAX, 7n]);
+    expect(mulmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([(MAX * MAX) % 7n]);
+  });
+
+  it('multiplies by zero', () => {
+    const frame = createFrame([0n, 42n, 17n]);
+    expect(mulmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame([5n, 10n]);
+    expect(mulmod(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame([5n, 10n, 3n], 7n);
+    expect(mulmod(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic modular multiplication (50 % 3 = 2)
+- Zero modulus (returns 0)
+- Modulus of 1 (always returns 0)
+- Multiply by zero (always returns 0)
+- Large values (MAX * MAX)
+- Overflow-safe computation
+- Very large intermediate products
+- Stack underflow (< 3 items)
+- Out of gas (< 8 gas)
+
+## Security
+
+### Cryptographic Operations
+
+MULMOD is fundamental for implementing secure cryptographic primitives:
+
+**secp256k1 Scalar Multiplication:**
+```solidity
+uint256 constant CURVE_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
+function scalarMul(uint256 k, uint256 x) pure returns (uint256) {
+    return mulmod(k, x, CURVE_ORDER);
+}
+```
+
+**BN254 Pairing Operations:**
+```solidity
+// BN254 field operations
+uint256 constant BN254_P = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+
+function bn254FieldMul(uint256 a, uint256 b) pure returns (uint256) {
+    return mulmod(a, b, BN254_P);
+}
+```
+
+### Side-Channel Resistance
+
+MULMOD completes in constant time regardless of operand values, preventing timing attacks in cryptographic implementations. This is critical for:
+
+- Private key operations
+- Signature generation
+- Zero-knowledge proof systems
+
+### Overflow Safety
+
+Unlike `MUL` then `MOD`, MULMOD prevents intermediate overflow:
+
+**Vulnerable pattern:**
+```solidity
+// Can overflow if a * b >= 2^256
+uint256 product = a * b;
+uint256 result = product % N;  // Wrong result if overflow occurred
+```
+
+**Safe pattern:**
+```solidity
+// Always correct
+uint256 result = mulmod(a, b, N);
+```
+
+### Constant-Time Guarantees
+
+EVM implementations must ensure MULMOD executes in constant time to prevent leaking sensitive information through timing channels:
+
+```solidity
+// Safe for private key operations
+function blindSignature(uint256 message, uint256 blindFactor, uint256 n)
+    pure returns (uint256)
+{
+    return mulmod(message, blindFactor, n);
+}
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - MULMOD](https://www.evm.codes/#09)
+- [EIP-196](https://eips.ethereum.org/EIPS/eip-196) - alt_bn128 curve operations
+- [EIP-197](https://eips.ethereum.org/EIPS/eip-197) - Precompiled contracts for optimal ate pairing check
+- [Montgomery Arithmetic](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication) - Efficient modular multiplication
+
+## Related Instructions
+
+- [MUL](/evm/instructions/arithmetic/mul) - Basic multiplication with wrapping
+- [ADDMOD](/evm/instructions/arithmetic/addmod) - Modular addition
+- [MOD](/evm/instructions/arithmetic/mod) - Unsigned modulo operation
+- [EXP](/evm/instructions/arithmetic/exp) - Exponentiation (uses MULMOD internally)
