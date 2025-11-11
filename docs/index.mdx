@@ -45,23 +45,20 @@ mode: custom
 
 <div style={{ padding: '6rem 2rem', maxWidth: '1280px', margin: '0 auto' }}>
   <h2 style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-    Quick Example
+    AI Agent Integration
   </h2>
   <p style={{ textAlign: 'center', color: '#999', marginBottom: '3rem', fontSize: '1.2rem' }}>
-    Get started with Voltaire primitives
+    Use Voltaire with Claude and other AI agents via the MCP server
   </p>
 
-```typescript
-import { Address } from "@tevm/voltaire";
+<Tip>
+**Model Context Protocol Support** - Connect AI assistants directly to Voltaire documentation:
 
-// Create address from bigint
-const address = Address.from(0x742d35cc6634c0532925a3b844bc9e7595f51e3en);
-
-// Checksum it (EIP-55)
-const checksummed = Address.toChecksummed(address);
-
-console.log(checksummed);
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```bash
+claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
+
+This enables AI assistants to query Voltaire documentation and examples in real-time.
+</Tip>
 
 </div>
