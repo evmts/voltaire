@@ -1,0 +1,359 @@
+---
+title: "Control Flow Instructions"
+description: "EVM opcodes for program flow control, jumps, and execution termination"
+---
+
+## Overview
+
+Control flow instructions manage program execution flow in the EVM. These opcodes enable conditional logic, loops, function calls, and execution termination with or without state changes.
+
+Unlike traditional architectures with unrestricted jumps, the EVM enforces strict jump validation through JUMPDEST markers to prevent arbitrary code execution and maintain security guarantees.
+
+## Instructions
+
+### Execution Control
+
+- **[STOP (0x00)](/evm/instructions/control-flow/stop)** - Halt execution successfully with no output
+- **[RETURN (0xf3)](/evm/instructions/control-flow/return)** - Halt execution and return output data
+- **[REVERT (0xfd)](/evm/instructions/control-flow/revert)** - Halt execution, revert state changes, return error data (Byzantium+)
+
+### Jump Operations
+
+- **[JUMP (0x56)](/evm/instructions/control-flow/jump)** - Unconditional jump to destination
+- **[JUMPI (0x57)](/evm/instructions/control-flow/jumpi)** - Conditional jump based on stack value
+- **[JUMPDEST (0x5b)](/evm/instructions/control-flow/jumpdest)** - Valid jump destination marker
+
+### Program Counter
+
+- **[PC (0x58)](/evm/instructions/control-flow/pc)** - Get current program counter value
+
+## Jump Validation
+
+The EVM enforces strict jump validation to prevent arbitrary code execution:
+
+**Valid Jump Requirements:**
+1. Destination must be a JUMPDEST opcode (0x5b)
+2. JUMPDEST must not be inside PUSH data
+3. Destination must be within bytecode bounds
+
+**Security Model:**
+```
+JUMP/JUMPI → Destination → Must be JUMPDEST
+```
+
+Invalid jumps trigger `InvalidJump` error and halt execution.
+
+## State Changes
+
+### Successful Termination
+
+**STOP and RETURN:**
+- Preserve all state changes
+- Mark execution as stopped
+- Return output data (RETURN only)
+- Consume remaining gas
+
+### Failed Termination
+
+**REVERT (Byzantium+):**
+- Revert all state changes in current call
+- Mark execution as reverted
+- Return error data to caller
+- Refund remaining gas
+
+**Pre-Byzantium:**
+- Only INVALID (0xfe) for reverting state
+- No error data returned
+- All gas consumed
+
+## Common Patterns
+
+### Function Call Pattern
+
+```solidity
+assembly {
+    // Function selector check
+    let selector := shr(224, calldataload(0))
+
+    // Jump table
+    switch selector
+    case 0x12345678 { jump(func1) }
+    case 0x87654321 { jump(func2) }
+    default { revert(0, 0) }
+
+    func1:
+        jumpdest
+        // Function implementation
+        return(0, 32)
+
+    func2:
+        jumpdest
+        // Function implementation
+        return(0, 64)
+}
+```
+
+### Loop Pattern
+
+```solidity
+assembly {
+    let i := 0
+    let n := 10
+
+    loop:
+        jumpdest
+
+        // Loop body
+        // ...
+
+        // Increment and check
+        i := add(i, 1)
+        let continue := lt(i, n)
+        jumpi(loop, continue)
+}
+```
+
+### Conditional Return
+
+```solidity
+assembly {
+    // Check condition
+    let condition := iszero(sload(0))
+
+    // Early return if true
+    if condition {
+        return(0, 0)
+    }
+
+    // Continue execution
+    // ...
+}
+```
+
+## Gas Costs
+
+| Opcode | Gas Cost | Notes |
+|--------|----------|-------|
+| STOP | 0 | Free (execution halted) |
+| JUMP | 8 | GasMidStep |
+| JUMPI | 10 | GasSlowStep |
+| PC | 2 | GasQuickStep |
+| JUMPDEST | 1 | JumpdestGas |
+| RETURN | Memory expansion | Dynamic based on output size |
+| REVERT | Memory expansion | Dynamic based on error data size |
+
+**Memory Expansion:**
+- RETURN/REVERT charge gas for memory expansion
+- Cost depends on output offset + length
+- Formula: `words^2 / 512 + 3 * words`
+
+## Security Considerations
+
+### Jump Validation
+
+**CRITICAL:** JUMP and JUMPI must target JUMPDEST:
+
+```solidity
+// SAFE: Jump to JUMPDEST
+PUSH1 0x0a
+JUMP
+...
+JUMPDEST  // 0x0a - valid destination
+```
+
+```solidity
+// UNSAFE: Jump to arbitrary instruction
+PUSH1 0x0b
+JUMP
+...
+ADD  // 0x0b - NOT a JUMPDEST → InvalidJump
+```
+
+### Dynamic Jumps
+
+**Dangerous Pattern:**
+```solidity
+// User-controlled jump destination
+assembly {
+    let dest := calldataload(4)
+    jump(dest)  // DANGER: Arbitrary code execution
+}
+```
+
+**Safe Pattern:**
+```solidity
+// Whitelist valid destinations
+assembly {
+    let dest := calldataload(4)
+
+    // Validate against known destinations
+    let isValid := or(
+        eq(dest, func1_dest),
+        eq(dest, func2_dest)
+    )
+
+    if iszero(isValid) {
+        revert(0, 0)
+    }
+
+    jump(dest)
+}
+```
+
+### REVERT vs INVALID
+
+**REVERT (0xfd) - Byzantium+:**
+- Refunds remaining gas
+- Returns error data
+- Graceful failure
+- Use for: input validation, business logic checks
+
+**INVALID (0xfe):**
+- Consumes all gas
+- No error data
+- Hard failure
+- Use for: should-never-happen conditions
+
+### Reentrancy
+
+Control flow opcodes don't directly cause reentrancy, but improper state management around RETURN can:
+
+```solidity
+// VULNERABLE
+function withdraw() external {
+    uint256 balance = balances[msg.sender];
+
+    // External call before state update
+    (bool success, ) = msg.sender.call{value: balance}("");
+    require(success);
+
+    // State updated AFTER external call
+    balances[msg.sender] = 0;  // TOO LATE - reentrancy possible
+}
+```
+
+```solidity
+// SAFE: Checks-Effects-Interactions
+function withdraw() external {
+    uint256 balance = balances[msg.sender];
+
+    // Update state BEFORE external call
+    balances[msg.sender] = 0;
+
+    // External call after state update
+    (bool success, ) = msg.sender.call{value: balance}("");
+    require(success);
+}
+```
+
+## Compiler Behavior
+
+### Solidity Function Dispatch
+
+Solidity generates jump tables for function dispatch:
+
+```solidity
+contract Example {
+    function foo() external returns (uint256) { return 42; }
+    function bar() external returns (uint256) { return 123; }
+}
+```
+
+Compiled bytecode (simplified):
+```
+// Function selector dispatch
+CALLDATALOAD 0
+SHR 224
+DUP1
+PUSH4 0x12345678  // foo() selector
+EQ
+PUSH2 0x0050      // foo() destination
+JUMPI
+
+DUP1
+PUSH4 0x87654321  // bar() selector
+EQ
+PUSH2 0x0080      // bar() destination
+JUMPI
+
+REVERT  // No matching function
+
+// foo() implementation
+JUMPDEST  // 0x0050
+PUSH1 42
+...
+RETURN
+
+// bar() implementation
+JUMPDEST  // 0x0080
+PUSH1 123
+...
+RETURN
+```
+
+### Loop Optimization
+
+Modern Solidity optimizes loops with JUMPI:
+
+```solidity
+for (uint i = 0; i < n; i++) {
+    // body
+}
+```
+
+Compiled to:
+```
+PUSH1 0
+DUP1
+loop_condition:
+    JUMPDEST
+    DUP2
+    DUP2
+    LT
+    PUSH2 loop_body
+    JUMPI
+
+    // Exit loop
+    POP
+    POP
+    JUMP exit
+
+loop_body:
+    JUMPDEST
+    // Loop body bytecode
+
+    // Increment
+    PUSH1 1
+    ADD
+    PUSH2 loop_condition
+    JUMP
+
+exit:
+    JUMPDEST
+```
+
+## Hardfork Changes
+
+| Hardfork | Changes |
+|----------|---------|
+| Frontier | STOP, JUMP, JUMPI, PC, JUMPDEST, RETURN |
+| Byzantium | Added REVERT (EIP-140) - graceful reversion with gas refund |
+
+**Pre-Byzantium Reversion:**
+- Only INVALID (0xfe) available
+- Consumes all gas
+- No error data
+- Poor UX for failed transactions
+
+**Post-Byzantium:**
+- REVERT preferred over INVALID
+- Refunds unused gas
+- Returns error data via RETURN data
+- Better UX and gas efficiency
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.3 (Jump Operations), 9.4.4 (Halting)
+- [EIP-140: REVERT instruction](https://eips.ethereum.org/EIPS/eip-140)
+- [EVM Codes - Control Flow](https://www.evm.codes/#?fork=cancun)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)

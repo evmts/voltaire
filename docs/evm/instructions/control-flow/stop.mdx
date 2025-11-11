@@ -1,0 +1,460 @@
+---
+title: "STOP (0x00)"
+description: "Halt execution successfully with no output data"
+---
+
+## Overview
+
+**Opcode:** `0x00`
+**Introduced:** Frontier (EVM genesis)
+
+STOP halts execution successfully without returning any output data. All state changes are preserved, remaining gas is consumed, and execution terminates with a success status.
+
+This is the simplest termination opcode - equivalent to falling off the end of bytecode or explicitly signaling completion without a return value.
+
+## Specification
+
+**Stack Input:** None
+
+**Stack Output:** None
+
+**Gas Cost:** 0 (execution halted before gas consumption)
+
+**Operation:**
+```
+frame.stopped = true
+return success
+```
+
+## Behavior
+
+STOP immediately terminates execution:
+
+1. Sets execution state to stopped
+2. Preserves all state changes (storage, logs, balance transfers)
+3. Returns no output data (empty return buffer)
+4. Remaining gas is NOT refunded (consumed by transaction)
+5. Control returns to caller with success status
+
+**Key Characteristics:**
+- No stack items consumed or produced
+- No memory access
+- No output data
+- Cannot be reverted (final state)
+
+## Examples
+
+### Basic Stop
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x00_STOP } from '@tevm/voltaire/evm/control';
+
+// Stop execution
+const frame = createFrame({
+  stack: [42n, 123n],  // Stack unchanged
+  gasRemaining: 1000n
+});
+
+const err = handler_0x00_STOP(frame);
+
+console.log(err);              // null (success)
+console.log(frame.stopped);    // true
+console.log(frame.output);     // undefined (no output)
+console.log(frame.stack);      // [42n, 123n] (unchanged)
+console.log(frame.gasRemaining); // 1000n (no gas consumed)
+```
+
+### Constructor Pattern
+
+```solidity
+// Contract constructor that stops after initialization
+constructor() {
+    // Initialize state
+    owner = msg.sender;
+
+    // Constructor bytecode ends with STOP
+    assembly {
+        stop()  // Halt constructor execution
+    }
+}
+```
+
+Compiled bytecode (simplified):
+```
+// Constructor code
+CALLER
+PUSH1 0x00
+SSTORE
+
+// STOP - end constructor
+STOP
+```
+
+### Function Without Return
+
+```solidity
+// Function that doesn't return a value
+function setOwner(address newOwner) external {
+    owner = newOwner;
+    // Implicit STOP at end (or explicit)
+    assembly {
+        stop()
+    }
+}
+```
+
+### Explicit Termination
+
+```solidity
+assembly {
+    // Perform operations
+    sstore(0, 42)
+
+    // Explicitly stop without returning
+    stop()
+
+    // Code after STOP is unreachable
+    invalid()  // Never executed
+}
+```
+
+## Gas Cost
+
+**Cost:** 0 gas
+
+STOP is technically free because execution halts immediately. However, the transaction still consumes:
+- Base transaction gas (21000)
+- Gas for executed opcodes before STOP
+- Remaining gas is NOT refunded
+
+**Gas Consumption Example:**
+```typescript
+const frame = createFrame({ gasRemaining: 5000n });
+
+// Execute some operations (consume gas)
+frame.gasRemaining -= 100n;  // Some operation cost
+
+// STOP - remaining gas is lost
+handler_0x00_STOP(frame);
+
+// frame.gasRemaining = 4900n (not refunded to transaction)
+```
+
+**Comparison:**
+- STOP: 0 gas (halts execution)
+- RETURN: Memory expansion cost
+- REVERT: Memory expansion cost + refunds remaining gas
+
+## Edge Cases
+
+### Empty Stack
+
+```typescript
+// STOP works with empty stack (no stack interaction)
+const frame = createFrame({ stack: [] });
+const err = handler_0x00_STOP(frame);
+
+console.log(err);           // null (success)
+console.log(frame.stopped); // true
+```
+
+### Already Stopped
+
+```typescript
+// STOP on already-stopped frame (no-op in practice)
+const frame = createFrame({ stopped: true });
+const err = handler_0x00_STOP(frame);
+
+console.log(frame.stopped); // true
+// In real EVM, execution wouldn't reach this point
+```
+
+### With Output Buffer
+
+```typescript
+// STOP ignores any existing output
+const frame = createFrame({ output: new Uint8Array([1, 2, 3]) });
+handler_0x00_STOP(frame);
+
+// Output unchanged but ignored by caller
+console.log(frame.output); // Uint8Array([1, 2, 3])
+// Caller receives empty return data
+```
+
+## Common Usage
+
+### Constructor Termination
+
+Every contract constructor ends with STOP (implicit or explicit):
+
+```solidity
+contract Example {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+        // Implicit STOP here
+    }
+}
+```
+
+Bytecode pattern:
+```
+<initialization code>
+STOP  // End constructor
+<runtime code>
+```
+
+### Fallback Without Return
+
+```solidity
+// Fallback function that accepts ETH but doesn't return
+fallback() external payable {
+    // Log receipt
+    emit Received(msg.sender, msg.value);
+    // Implicit STOP (no return statement)
+}
+```
+
+### State Update Only
+
+```solidity
+// Function that only updates state
+function incrementCounter() external {
+    counter++;
+    // Implicit STOP
+}
+```
+
+Compiles to:
+```
+PUSH1 0x00
+SLOAD
+PUSH1 0x01
+ADD
+PUSH1 0x00
+SSTORE
+STOP
+```
+
+### Unreachable Code Guard
+
+```solidity
+assembly {
+    // Switch statement
+    switch value
+    case 0 { /* ... */ }
+    case 1 { /* ... */ }
+    default {
+        // This should never execute
+        invalid()  // Or stop() for graceful fail
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * STOP opcode (0x00) - Halt execution
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0x00_STOP(frame: BrandedFrame): EvmError | null {
+  frame.stopped = true;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// STOP opcode (0x00) - Halts execution
+pub fn stop(frame: *FrameType) FrameType.EvmError!void {
+    frame.stopped = true;
+    return;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0x00_STOP } from './0x00_STOP.js';
+import { createFrame } from '../Frame/index.js';
+
+describe('STOP (0x00)', () => {
+  it('halts execution', () => {
+    const frame = createFrame({});
+    const err = handler_0x00_STOP(frame);
+
+    expect(err).toBeNull();
+    expect(frame.stopped).toBe(true);
+  });
+
+  it('does not consume gas', () => {
+    const frame = createFrame({ gasRemaining: 1000n });
+    handler_0x00_STOP(frame);
+
+    expect(frame.gasRemaining).toBe(1000n);
+  });
+
+  it('does not modify stack', () => {
+    const frame = createFrame({ stack: [42n, 123n] });
+    handler_0x00_STOP(frame);
+
+    expect(frame.stack).toEqual([42n, 123n]);
+  });
+
+  it('works with empty stack', () => {
+    const frame = createFrame({ stack: [] });
+    const err = handler_0x00_STOP(frame);
+
+    expect(err).toBeNull();
+    expect(frame.stopped).toBe(true);
+  });
+
+  it('does not produce output', () => {
+    const frame = createFrame({});
+    handler_0x00_STOP(frame);
+
+    expect(frame.output).toBeUndefined();
+  });
+});
+```
+
+## Security
+
+### State Finality
+
+STOP makes all state changes final - they cannot be reverted:
+
+```solidity
+// VULNERABLE: No revert on invalid state
+function unsafeUpdate(uint256 value) external {
+    require(value > 0, "Value must be positive");
+
+    balance = value;  // State changed
+
+    // STOP makes this final - no further validation
+    assembly { stop() }
+}
+```
+
+**Better approach:**
+```solidity
+// SAFE: All validation before state changes
+function safeUpdate(uint256 value) external {
+    require(value > 0, "Value must be positive");
+    require(value < MAX_VALUE, "Value too large");
+
+    balance = value;  // State changed after all checks
+}
+```
+
+### Gas Griefing
+
+STOP doesn't refund remaining gas - can be used in gas griefing:
+
+```solidity
+// VULNERABLE: Gas griefing attack
+function griefGas() external {
+    // Caller provides lots of gas
+    // Execute minimal code
+    assembly {
+        stop()  // Remaining gas consumed, not refunded
+    }
+    // Caller loses unused gas
+}
+```
+
+**Not a vulnerability in practice:**
+- Gas stipend for external calls (2300) prevents this
+- Caller controls gas limit
+- Only affects caller, not contract state
+
+### STOP vs RETURN
+
+**STOP:**
+- No output data
+- Simpler (no memory access)
+- Slightly cheaper (no memory expansion)
+- Use for: void functions, constructors, state-only operations
+
+**RETURN:**
+- Returns output data
+- Requires memory operations
+- Dynamic gas cost
+- Use for: view functions, getter methods, function return values
+
+## Compiler Behavior
+
+### Solidity Implicit STOP
+
+Solidity adds STOP at the end of constructor code:
+
+```solidity
+contract Example {
+    uint256 public value;
+
+    constructor(uint256 _value) {
+        value = _value;
+        // Implicit STOP here (separates constructor from runtime)
+    }
+}
+```
+
+Bytecode structure:
+```
+<constructor code>
+CODECOPY  // Copy runtime code to memory
+RETURN    // Return runtime code for deployment
+
+// Deployed bytecode
+<runtime code>
+```
+
+### Function Without Return
+
+```solidity
+function voidFunction() external {
+    // Do something
+}
+```
+
+Compiles to:
+```
+<function body>
+STOP  // Implicit at end
+```
+
+### Unreachable Code Elimination
+
+Compilers eliminate code after STOP:
+
+```solidity
+assembly {
+    stop()
+    sstore(0, 1)  // ELIMINATED: unreachable
+}
+```
+
+Optimized bytecode:
+```
+STOP
+// Code after STOP removed
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.4 (STOP instruction)
+- [EVM Codes - STOP](https://www.evm.codes/#00)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)
