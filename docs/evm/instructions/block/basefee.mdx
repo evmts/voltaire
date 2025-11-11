@@ -1,0 +1,494 @@
+---
+title: "BASEFEE (0x48)"
+description: "Get the base fee per gas from EIP-1559 fee market"
+---
+
+## Overview
+
+**Opcode:** `0x48`
+**Introduced:** London (EIP-3198, part of EIP-1559)
+
+BASEFEE retrieves the base fee per gas for the current block. This is a core component of EIP-1559's fee market mechanism, representing the minimum gas price that must be paid for transaction inclusion.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+base_fee_per_gas (wei as u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.basefee)
+```
+
+**Hardfork:** Available from London onwards (EIP-1559)
+
+## Behavior
+
+BASEFEE pushes the base fee per gas onto the stack as a 256-bit unsigned integer in wei:
+
+```
+Base Fee:   20 gwei
+In wei:     20,000,000,000
+As u256:    0x4a817c800
+```
+
+The base fee adjusts dynamically based on block utilization:
+- **Block full:** Base fee increases by 12.5%
+- **Block empty:** Base fee decreases by 12.5%
+- **Block 50% full:** Base fee stays constant
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { basefee } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  hardfork: 'LONDON',
+  blockContext: {
+    block_base_fee: 20_000_000_000n // 20 gwei
+  }
+});
+
+const err = basefee(frame);
+console.log(frame.stack); // [20000000000n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Pre-London Error
+
+```typescript
+// Before London hardfork
+const preLondonFrame = createFrame({
+  hardfork: 'BERLIN',
+  blockContext: { block_base_fee: 20_000_000_000n }
+});
+
+const err = basefee(preLondonFrame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Fee Calculations
+
+```typescript
+// Calculate minimum transaction cost
+basefee(frame);
+const baseFee = frame.stack[0];
+const gasUsed = 21_000n; // Simple transfer
+
+const minimumCost = baseFee * gasUsed;
+console.log(`Minimum cost: ${minimumCost} wei`);
+// 20 gwei * 21,000 = 0.00042 ETH
+```
+
+### Priority Fee Calculation
+
+```typescript
+// Total fee = base fee + priority fee
+const maxFeePerGas = 30_000_000_000n; // 30 gwei
+
+basefee(frame);
+const baseFee = frame.stack[0]; // 20 gwei
+
+const maxPriorityFee = maxFeePerGas - baseFee;
+console.log(`Max priority fee: ${maxPriorityFee} wei`);
+// 10 gwei available for priority
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+BASEFEE is one of the cheapest operations, enabling efficient fee market interaction.
+
+**Comparison:**
+- `BASEFEE`: 2 gas
+- `GASPRICE` (0x3A): 2 gas
+- `GASLIMIT`: 2 gas
+- `TIMESTAMP`: 2 gas
+
+## Common Usage
+
+### Dynamic Fee Adjustment
+
+```solidity
+contract DynamicPricer {
+    function getRecommendedPriorityFee() external view returns (uint256) {
+        uint256 baseFee = block.basefee;
+
+        // Recommend priority fee based on base fee
+        if (baseFee < 20 gwei) {
+            return 1 gwei; // Low congestion
+        } else if (baseFee < 50 gwei) {
+            return 2 gwei; // Medium congestion
+        } else {
+            return 5 gwei; // High congestion
+        }
+    }
+}
+```
+
+### Fee Threshold Guards
+
+```solidity
+contract FeeGuard {
+    uint256 public constant MAX_BASE_FEE = 100 gwei;
+
+    modifier maxBaseFee() {
+        require(block.basefee <= MAX_BASE_FEE, "Base fee too high");
+        _;
+    }
+
+    function expensiveOperation() external maxBaseFee {
+        // Only execute if base fee is reasonable
+    }
+}
+```
+
+### Congestion Detection
+
+```solidity
+contract CongestionMonitor {
+    enum Congestion { Low, Medium, High, Extreme }
+
+    function currentCongestion() public view returns (Congestion) {
+        uint256 baseFee = block.basefee;
+
+        if (baseFee < 20 gwei) return Congestion.Low;
+        if (baseFee < 50 gwei) return Congestion.Medium;
+        if (baseFee < 100 gwei) return Congestion.High;
+        return Congestion.Extreme;
+    }
+
+    function shouldDefer() public view returns (bool) {
+        // Defer non-urgent operations during high congestion
+        return block.basefee > 100 gwei;
+    }
+}
+```
+
+### Gas Refund Calculations
+
+```solidity
+contract GasRefunder {
+    function refundExcess() external payable {
+        uint256 baseFee = block.basefee;
+        uint256 gasUsed = 21000; // Estimate
+
+        uint256 cost = baseFee * gasUsed;
+
+        if (msg.value > cost) {
+            uint256 refund = msg.value - cost;
+            payable(msg.sender).transfer(refund);
+        }
+    }
+}
+```
+
+### Fee Market Analytics
+
+```solidity
+contract FeeAnalytics {
+    struct FeeSnapshot {
+        uint256 blockNumber;
+        uint256 baseFee;
+        uint256 timestamp;
+    }
+
+    FeeSnapshot[] public history;
+
+    function recordBaseFee() external {
+        history.push(FeeSnapshot({
+            blockNumber: block.number,
+            baseFee: block.basefee,
+            timestamp: block.timestamp
+        }));
+    }
+
+    function averageBaseFee(uint256 blocks) external view returns (uint256) {
+        require(history.length >= blocks, "Insufficient data");
+
+        uint256 sum = 0;
+        uint256 start = history.length - blocks;
+
+        for (uint i = start; i < history.length; i++) {
+            sum += history[i].baseFee;
+        }
+
+        return sum / blocks;
+    }
+}
+```
+
+## Security Considerations
+
+### Base Fee Manipulation
+
+Validators cannot directly manipulate base fee (algorithmic adjustment):
+
+```solidity
+contract BaseFeeReliant {
+    // SAFE: Base fee follows EIP-1559 algorithm
+    function checkFee() external view returns (bool) {
+        // Base fee adjusted by protocol, not validator discretion
+        return block.basefee <= 100 gwei;
+    }
+}
+```
+
+### Fee Volatility
+
+Base fee can change significantly between blocks:
+
+```solidity
+contract VolatilityAware {
+    uint256 public recordedBaseFee;
+
+    function recordFee() external {
+        recordedBaseFee = block.basefee;
+    }
+
+    // PROBLEMATIC: Assumes stable fees
+    function executeLater() external {
+        // Base fee could be very different now!
+        require(block.basefee <= recordedBaseFee * 2, "Fees increased too much");
+    }
+}
+```
+
+### Transaction Priority
+
+Base fee doesn't guarantee inclusion priority:
+
+```solidity
+contract PriorityAware {
+    // Base fee: Minimum to be included
+    // Priority fee: Determines ordering within block
+
+    function estimateTotalFee() external view returns (uint256) {
+        uint256 baseFee = block.basefee;
+        uint256 priorityFee = 2 gwei; // User's choice
+
+        return baseFee + priorityFee;
+    }
+}
+```
+
+### Pre-London Compatibility
+
+Contracts must handle pre-London networks:
+
+```solidity
+contract BackwardCompatible {
+    function getBaseFee() public view returns (uint256) {
+        // BASEFEE opcode (0x48) only exists post-London
+        uint256 baseFee;
+        assembly {
+            baseFee := basefee()
+        }
+
+        // Pre-London returns 0 or reverts
+        // Post-London returns actual base fee
+        return baseFee;
+    }
+}
+```
+
+## EIP-1559 Fee Mechanism
+
+### Fee Components
+
+```solidity
+contract FeeComponents {
+    // Total fee per gas = base fee + priority fee
+    // maxFeePerGas: Maximum user willing to pay
+    // maxPriorityFeePerGas: Maximum tip to validator
+
+    function effectivePriorityFee(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) public view returns (uint256) {
+        uint256 baseFee = block.basefee;
+
+        // Priority fee is capped by: min(maxPriorityFee, maxFee - baseFee)
+        uint256 maxAllowedPriority = maxFeePerGas - baseFee;
+        return min(maxPriorityFeePerGas, maxAllowedPriority);
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+}
+```
+
+### Base Fee Adjustment Algorithm
+
+```
+Target gas = 15M (50% of 30M limit)
+Actual gas used = X
+
+If X > 15M:  baseFee increases by (X - 15M) / 15M * baseFee / 8
+If X < 15M:  baseFee decreases by (15M - X) / 15M * baseFee / 8
+If X = 15M:  baseFee stays same
+
+Maximum change per block: ±12.5%
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// BASEFEE opcode (0x48) - Get base fee per gas (EIP-3198, London+)
+pub fn basefee(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // EIP-3198: BASEFEE was introduced in London hardfork
+    if (evm.hardfork.isBefore(.LONDON)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(evm.block_context.block_base_fee);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * BASEFEE opcode (0x48) - Get base fee per gas
+ * Available: London+ (EIP-1559)
+ */
+export function basefee(frame: BrandedFrame): EvmError | null {
+  // Check hardfork availability
+  if (frame.evm.hardfork.isBefore('LONDON')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push base fee to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(frame.evm.blockContext.block_base_fee);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-London Execution
+
+```typescript
+// Before London: InvalidOpcode
+const frame = createFrame({
+  hardfork: 'BERLIN',
+  blockContext: { block_base_fee: 20_000_000_000n }
+});
+
+const err = basefee(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Zero Base Fee
+
+```typescript
+// Theoretical minimum (genesis or test networks)
+const frame = createFrame({
+  hardfork: 'LONDON',
+  blockContext: { block_base_fee: 0n }
+});
+
+basefee(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Extreme Network Congestion
+
+```typescript
+// Very high base fee during congestion
+const frame = createFrame({
+  hardfork: 'LONDON',
+  blockContext: { block_base_fee: 500_000_000_000n } // 500 gwei
+});
+
+basefee(frame);
+console.log(frame.stack); // [500000000000n]
+```
+
+### Initial London Block
+
+```typescript
+// First block with EIP-1559 (initial base fee = 1 gwei)
+const frame = createFrame({
+  hardfork: 'LONDON',
+  blockContext: { block_base_fee: 1_000_000_000n } // 1 gwei
+});
+
+basefee(frame);
+console.log(frame.stack); // [1000000000n]
+```
+
+## Historical Context
+
+### Pre-London (Legacy)
+
+```solidity
+// Pre-London: Only gas price (auction mechanism)
+// Miners choose transactions by gas price alone
+// First-price auction: Pay your bid
+```
+
+### Post-London (EIP-1559)
+
+```solidity
+// Post-London: Base fee + priority fee
+// Base fee: Burned (removed from circulation)
+// Priority fee: To validator (incentive for inclusion)
+// Improved UX: Predictable fees, automatic adjustment
+```
+
+## Benchmarks
+
+**Performance:**
+- Hardfork check: O(1)
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[GASPRICE (0x3A)](/evm/instructions/context/gasprice)** - Get effective gas price
+- **[GAS (0x5A)](/evm/instructions/context/gas)** - Get remaining gas
+- **[GASLIMIT (0x45)](/evm/instructions/block/gaslimit)** - Get block gas limit
+
+## References
+
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee market change
+- [EIP-3198](https://eips.ethereum.org/EIPS/eip-3198) - BASEFEE opcode
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - BASEFEE](https://www.evm.codes/#48)
+- [EIP-1559 Calculator](https://www.blocknative.com/gas-estimator)

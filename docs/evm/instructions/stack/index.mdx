@@ -1,0 +1,392 @@
+---
+title: "Stack Instructions"
+description: "EVM opcodes for stack manipulation - POP, PUSH, DUP, and SWAP operations"
+---
+
+## Overview
+
+Stack instructions (0x50-0x9f) provide fundamental operations for manipulating the EVM's 256-bit word stack. These 86 opcodes form the core of EVM computation, enabling value manipulation, duplication, and reordering necessary for all contract execution.
+
+## Stack Architecture
+
+The EVM stack has strict constraints:
+
+- **Maximum depth**: 1024 items
+- **Word size**: 256 bits (32 bytes) per item
+- **Access limit**: Only top 16 items accessible via DUP/SWAP
+- **Growth**: Downward (item 0 is deepest, item n-1 is top)
+- **Errors**: StackOverflow (>1024), StackUnderflow (<required depth)
+
+## Instruction Categories
+
+### Stack Removal (0x50)
+
+**POP (0x50)** - Remove top stack item
+
+- Gas: 2
+- Stack: `[value] => []`
+- Use: Discard unneeded values
+
+### Push Operations (0x5f-0x7f)
+
+Push immediate values from bytecode onto stack:
+
+| Opcode | Name | Bytes | Gas | Since |
+|--------|------|-------|-----|-------|
+| 0x5f | PUSH0 | 0 | 2 | Shanghai (EIP-3855) |
+| 0x60 | PUSH1 | 1 | 3 | Frontier |
+| 0x61 | PUSH2 | 2 | 3 | Frontier |
+| 0x62 | PUSH3 | 3 | 3 | Frontier |
+| 0x63 | PUSH4 | 4 | 3 | Frontier |
+| 0x64 | PUSH5 | 5 | 3 | Frontier |
+| 0x65 | PUSH6 | 6 | 3 | Frontier |
+| 0x66 | PUSH7 | 7 | 3 | Frontier |
+| 0x67 | PUSH8 | 8 | 3 | Frontier |
+| 0x68 | PUSH9 | 9 | 3 | Frontier |
+| 0x69 | PUSH10 | 10 | 3 | Frontier |
+| 0x6a | PUSH11 | 11 | 3 | Frontier |
+| 0x6b | PUSH12 | 12 | 3 | Frontier |
+| 0x6c | PUSH13 | 13 | 3 | Frontier |
+| 0x6d | PUSH14 | 14 | 3 | Frontier |
+| 0x6e | PUSH15 | 15 | 3 | Frontier |
+| 0x6f | PUSH16 | 16 | 3 | Frontier |
+| 0x70 | PUSH17 | 17 | 3 | Frontier |
+| 0x71 | PUSH18 | 18 | 3 | Frontier |
+| 0x72 | PUSH19 | 19 | 3 | Frontier |
+| 0x73 | PUSH20 | 20 | 3 | Frontier |
+| 0x74 | PUSH21 | 21 | 3 | Frontier |
+| 0x75 | PUSH22 | 22 | 3 | Frontier |
+| 0x76 | PUSH23 | 23 | 3 | Frontier |
+| 0x77 | PUSH24 | 24 | 3 | Frontier |
+| 0x78 | PUSH25 | 25 | 3 | Frontier |
+| 0x79 | PUSH26 | 26 | 3 | Frontier |
+| 0x7a | PUSH27 | 27 | 3 | Frontier |
+| 0x7b | PUSH28 | 28 | 3 | Frontier |
+| 0x7c | PUSH29 | 29 | 3 | Frontier |
+| 0x7d | PUSH30 | 30 | 3 | Frontier |
+| 0x7e | PUSH31 | 31 | 3 | Frontier |
+| 0x7f | PUSH32 | 32 | 3 | Frontier |
+
+**Characteristics:**
+- PUSH0: Pushes constant 0 (no bytecode reading)
+- PUSH1-32: Read N bytes immediately following opcode
+- Big-endian byte order
+- Zero-padded to 256 bits
+- PC advances by 1 + N bytes
+
+### Duplicate Operations (0x80-0x8f)
+
+Duplicate stack items at specific depths:
+
+| Opcode | Name | Duplicates | Gas | Stack Effect |
+|--------|------|------------|-----|--------------|
+| 0x80 | DUP1 | 1st (top) | 3 | `[a] => [a, a]` |
+| 0x81 | DUP2 | 2nd | 3 | `[a, b] => [a, b, b]` |
+| 0x82 | DUP3 | 3rd | 3 | `[a, b, c] => [a, b, c, c]` |
+| 0x83 | DUP4 | 4th | 3 | `[a, b, c, d] => [a, b, c, d, d]` |
+| 0x84 | DUP5 | 5th | 3 | `[a, b, c, d, e] => [a, b, c, d, e, e]` |
+| 0x85 | DUP6 | 6th | 3 | Stack depth ≥ 6 |
+| 0x86 | DUP7 | 7th | 3 | Stack depth ≥ 7 |
+| 0x87 | DUP8 | 8th | 3 | Stack depth ≥ 8 |
+| 0x88 | DUP9 | 9th | 3 | Stack depth ≥ 9 |
+| 0x89 | DUP10 | 10th | 3 | Stack depth ≥ 10 |
+| 0x8a | DUP11 | 11th | 3 | Stack depth ≥ 11 |
+| 0x8b | DUP12 | 12th | 3 | Stack depth ≥ 12 |
+| 0x8c | DUP13 | 13th | 3 | Stack depth ≥ 13 |
+| 0x8d | DUP14 | 14th | 3 | Stack depth ≥ 14 |
+| 0x8e | DUP15 | 15th | 3 | Stack depth ≥ 15 |
+| 0x8f | DUP16 | 16th | 3 | Stack depth ≥ 16 |
+
+**Characteristics:**
+- DUP1: Most common, duplicates top
+- DUPn: Requires stack depth ≥ n
+- Result pushed to top
+- Original value unchanged
+- StackUnderflow if depth insufficient
+
+### Swap Operations (0x90-0x9f)
+
+Exchange top stack item with items at specific depths:
+
+| Opcode | Name | Swaps With | Gas | Stack Effect |
+|--------|------|------------|-----|--------------|
+| 0x90 | SWAP1 | 2nd | 3 | `[a, b] => [b, a]` |
+| 0x91 | SWAP2 | 3rd | 3 | `[a, b, c] => [c, b, a]` |
+| 0x92 | SWAP3 | 4th | 3 | `[a, b, c, d] => [d, b, c, a]` |
+| 0x93 | SWAP4 | 5th | 3 | `[a, b, c, d, e] => [e, b, c, d, a]` |
+| 0x94 | SWAP5 | 6th | 3 | Stack depth ≥ 6 |
+| 0x95 | SWAP6 | 7th | 3 | Stack depth ≥ 7 |
+| 0x96 | SWAP7 | 8th | 3 | Stack depth ≥ 8 |
+| 0x97 | SWAP8 | 9th | 3 | Stack depth ≥ 9 |
+| 0x98 | SWAP9 | 10th | 3 | Stack depth ≥ 10 |
+| 0x99 | SWAP10 | 11th | 3 | Stack depth ≥ 11 |
+| 0x9a | SWAP11 | 12th | 3 | Stack depth ≥ 12 |
+| 0x9b | SWAP12 | 13th | 3 | Stack depth ≥ 13 |
+| 0x9c | SWAP13 | 14th | 3 | Stack depth ≥ 14 |
+| 0x9d | SWAP14 | 15th | 3 | Stack depth ≥ 15 |
+| 0x9e | SWAP15 | 16th | 3 | Stack depth ≥ 16 |
+| 0x9f | SWAP16 | 17th | 3 | Stack depth ≥ 17 |
+
+**Characteristics:**
+- SWAP1: Most common, exchanges top two
+- SWAPn: Requires stack depth ≥ n+1
+- Only top and nth item change positions
+- Middle items unchanged
+- StackUnderflow if depth insufficient
+
+## Gas Costs
+
+All stack operations are extremely cheap:
+
+| Operation | Gas | Constant |
+|-----------|-----|----------|
+| POP | 2 | GasQuickStep |
+| PUSH0 | 2 | GasQuickStep |
+| PUSH1-32 | 3 | GasFastestStep |
+| DUP1-16 | 3 | GasFastestStep |
+| SWAP1-16 | 3 | GasFastestStep |
+
+**Why so cheap?**
+- Pure stack operations (no memory/storage access)
+- No external state reads
+- Constant-time execution
+- Critical for EVM performance
+
+## Common Patterns
+
+### Function Selector Matching
+
+```solidity
+// Compiler generates PUSH4 for function selectors
+function transfer(address to, uint256 amount) public {
+    // PUSH4 0xa9059cbb  (transfer selector)
+    // CALLDATALOAD
+    // EQ
+    // JUMPI
+}
+```
+
+### Address Literals
+
+```solidity
+// PUSH20 for address constants
+address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+```
+
+### Stack Reordering
+
+```solidity
+assembly {
+    // Stack: [a, b, c]
+    swap1    // [a, c, b]
+    dup2     // [a, c, b, c]
+    swap2    // [c, c, b, a]
+}
+```
+
+### Efficient Constants
+
+```solidity
+assembly {
+    // Before Shanghai: PUSH1 0x00 (3 gas)
+    // After Shanghai: PUSH0 (2 gas)
+    push0    // Most efficient way to get 0
+}
+```
+
+## Stack Depth Management
+
+### Safe Patterns
+
+```solidity
+function deepStack() public pure {
+    uint256 a = 1;  // Stack: 1
+    uint256 b = 2;  // Stack: 2
+    uint256 c = 3;  // Stack: 3
+    // ... up to ~1000 locals possible
+
+    // Compiler manages stack depth automatically
+    return a + b + c;
+}
+```
+
+### Unsafe Patterns
+
+```solidity
+// Stack too deep error
+function tooManyLocals() public pure returns (uint256) {
+    uint256 v1 = 1;   // Stack slot 1
+    uint256 v2 = 2;   // Stack slot 2
+    // ...
+    uint256 v17 = 17; // ERROR: Stack too deep!
+    // Can only access top 16 items with DUP/SWAP
+    return v1 + v17;
+}
+```
+
+### Workarounds
+
+```solidity
+// Use memory for deep variables
+function workaround() public pure returns (uint256) {
+    uint256 v1 = 1;
+    uint256 v2 = 2;
+    // ... v14, v15, v16
+
+    // Move to memory before hitting limit
+    uint256[10] memory extra;
+    extra[0] = 17;
+    extra[1] = 18;
+
+    return v1 + extra[0];
+}
+```
+
+## Security Considerations
+
+### Stack Underflow
+
+```solidity
+assembly {
+    // DANGEROUS: No validation
+    pop  // Reverts if stack empty
+}
+```
+
+**Protection:**
+```solidity
+assembly {
+    // Check stack depth first
+    if iszero(lt(mload(0x40), 32)) {
+        pop
+    }
+}
+```
+
+### Stack Overflow
+
+```solidity
+function recursive(uint256 n) public pure returns (uint256) {
+    if (n == 0) return 1;
+    // Each recursion adds stack frames
+    // Can hit 1024 limit
+    return n * recursive(n - 1);
+}
+```
+
+**Protection:**
+```solidity
+function iterative(uint256 n) public pure returns (uint256) {
+    uint256 result = 1;
+    for (uint256 i = 1; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+```
+
+### PUSH0 Availability
+
+```solidity
+// Pre-Shanghai hardfork
+assembly {
+    push0  // InvalidOpcode error!
+}
+```
+
+**Protection:**
+```solidity
+// Check hardfork or use PUSH1 0
+assembly {
+    push1 0x00  // Works on all hardforks
+}
+```
+
+## Optimization Techniques
+
+### Minimize Stack Operations
+
+```solidity
+// Inefficient: Extra DUP/SWAP
+function inefficient(uint256 a, uint256 b) pure returns (uint256) {
+    assembly {
+        dup1
+        dup3
+        add
+        swap1
+        pop
+    }
+}
+
+// Efficient: Direct operations
+function efficient(uint256 a, uint256 b) pure returns (uint256) {
+    assembly {
+        add(a, b)
+    }
+}
+```
+
+### Use PUSH0 (Shanghai+)
+
+```solidity
+// Before Shanghai: PUSH1 0x00 (3 gas)
+assembly { push1 0x00 }
+
+// After Shanghai: PUSH0 (2 gas)
+assembly { push0 }
+```
+
+### Reuse Stack Values
+
+```solidity
+// Bad: Push same value twice
+assembly {
+    push1 0x20
+    mstore
+    push1 0x20  // Wasteful
+    add
+}
+
+// Good: DUP existing value
+assembly {
+    push1 0x20
+    dup1
+    mstore
+    add
+}
+```
+
+## Implementation Reference
+
+Stack instruction handlers implemented in:
+- **TypeScript**: `/src/evm/stack/handlers/`
+- **Zig**: `/src/evm/stack/handlers_stack.zig`
+
+Each instruction follows standard handler pattern:
+1. Consume gas
+2. Validate stack constraints
+3. Perform operation (pop/push/duplicate/swap)
+4. Increment program counter
+5. Return error or null
+
+## All Stack Instructions
+
+Complete opcode reference:
+
+```
+0x50: POP
+0x5f: PUSH0
+0x60-0x7f: PUSH1-PUSH32 (33 opcodes)
+0x80-0x8f: DUP1-DUP16 (16 opcodes)
+0x90-0x9f: SWAP1-SWAP16 (16 opcodes)
+
+Total: 66 opcodes
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Stack)
+- [EVM Codes - Stack Operations](https://www.evm.codes/#50?fork=cancun)
+- [EIP-3855](https://eips.ethereum.org/EIPS/eip-3855) - PUSH0 instruction
+- [Solidity Stack Layout](https://docs.soliditylang.org/en/latest/internals/layout_in_memory.html)
+- [Stack Too Deep Solutions](https://soliditylang.org/blog/2021/03/02/stack-too-deep/)
