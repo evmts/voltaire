@@ -325,7 +325,7 @@ All implementations optimized for production use:
 
 ## Language Support Wishlist
 
-Voltaire currently supports TypeScript/JavaScript and Zig. We plan to add idiomatic, type-safe wrappers for additional languages:
+Voltaire currently supports TypeScript/JavaScript and Zig. We are looking for help adding idiomatic, type-safe wrappers for additional languages:
 
 - **[Go](https://go.dev/)** - Native Go bindings via cgo
 - **[Python](https://www.python.org/)** - Python bindings via ctypes/cffi
@@ -334,8 +334,6 @@ Voltaire currently supports TypeScript/JavaScript and Zig. We plan to add idioma
 - **[Kotlin](https://kotlinlang.org/)** - Kotlin bindings for Android/JVM development
 
 **Note:** These languages can already use Voltaire today via the C-FFI interface (see `src/c_api.zig` and generated `src/primitives.h` header), but we aim to provide ergonomic, type-safe, idiomatic wrappers for each language.
-
-Contributions welcome!
 
 ---
 
