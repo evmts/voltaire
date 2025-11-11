@@ -2,13 +2,16 @@ import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
- * Verify transaction signature
+ * Verify transaction signature.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP4844.js').BrandedTransactionEIP4844} tx - EIP-4844 transaction
  * @returns {boolean} True if signature is valid
- *
+ * @throws {never} Never throws - returns false on error
  * @example
- * ```typescript
+ * ```javascript
+ * import { verifySignature } from './primitives/Transaction/EIP4844/verifySignature.js';
  * const isValid = verifySignature(tx);
  * ```
  */

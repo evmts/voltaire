@@ -3,13 +3,16 @@ import { Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
 
 /**
- * Deserialize RLP encoded EIP-4844 transaction
+ * Deserialize RLP encoded EIP-4844 transaction.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction with type prefix
  * @returns {import('../types.js').EIP4844} Deserialized transaction
- *
+ * @throws {Error} If data is invalid or malformed
  * @example
- * ```typescript
+ * ```javascript
+ * import { deserialize } from './primitives/Transaction/EIP4844/deserialize.js';
  * const tx = deserialize(encodedData);
  * ```
  */

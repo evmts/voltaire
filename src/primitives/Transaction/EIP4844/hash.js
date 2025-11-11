@@ -2,13 +2,16 @@ import { Keccak256 } from "../../../crypto/Keccak256/index.js";
 import { serialize } from "./serialize.js";
 
 /**
- * Compute transaction hash
+ * Compute transaction hash.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP4844.js').BrandedTransactionEIP4844} tx - EIP-4844 transaction
  * @returns {import('../../Hash/index.js').BrandedHash} Transaction hash
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import { hash } from './primitives/Transaction/EIP4844/hash.js';
  * const txHash = hash(tx);
  * ```
  */

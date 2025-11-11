@@ -4,13 +4,16 @@ import { Type } from "../types.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
- * Get signing hash for EIP-4844 transaction
+ * Get signing hash for EIP-4844 transaction.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP4844.js').BrandedTransactionEIP4844} tx - EIP-4844 transaction
  * @returns {import('../../Hash/index.js').BrandedHash} Signing hash
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import { getSigningHash } from './primitives/Transaction/EIP4844/getSigningHash.js';
  * const sigHash = getSigningHash(tx);
  * ```
  */

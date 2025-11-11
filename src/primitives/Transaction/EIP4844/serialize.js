@@ -3,13 +3,16 @@ import { Type } from "../types.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
- * Serialize EIP-4844 transaction to RLP encoded bytes
+ * Serialize EIP-4844 transaction to RLP encoded bytes.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP4844.js').BrandedTransactionEIP4844} tx - EIP-4844 transaction
  * @returns {Uint8Array} RLP encoded transaction with type prefix
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import { serialize } from './primitives/Transaction/EIP4844/serialize.js';
  * const encoded = serialize(tx);
  * ```
  */

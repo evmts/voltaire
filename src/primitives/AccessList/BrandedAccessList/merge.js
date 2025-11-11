@@ -5,11 +5,14 @@ import { deduplicate } from "./deduplicate.js";
  *
  * Combines multiple access lists and deduplicates.
  *
+ * @see https://voltaire.tevm.sh/primitives/accesslist
+ * @since 0.0.0
  * @param {...import('../BrandedAccessList.js').BrandedAccessList} accessLists - Access lists to merge
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} Merged and deduplicated access list
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as AccessList from './primitives/AccessList/index.js';
  * const merged = AccessList.merge(list1, list2, list3);
  * ```
  */

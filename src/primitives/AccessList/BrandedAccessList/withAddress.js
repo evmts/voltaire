@@ -5,15 +5,17 @@ import { includesAddress } from "./includesAddress.js";
  *
  * Creates new entry if address doesn't exist, otherwise returns original list.
  *
+ * @see https://voltaire.tevm.sh/primitives/accesslist
+ * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to add to
  * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to add
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} New access list with address added
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const list = AccessList([]);
- * const newList = AccessList.withAddress(list, address); // Static call
- * const newList2 = list.withAddress(address); // Instance call
+ * ```javascript
+ * import * as AccessList from './primitives/AccessList/index.js';
+ * const list = AccessList.create();
+ * const newList = AccessList.withAddress(list, address);
  * ```
  */
 export function withAddress(list, address) {

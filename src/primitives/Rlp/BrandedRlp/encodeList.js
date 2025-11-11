@@ -3,11 +3,14 @@ import * as OxRlp from "ox/Rlp";
 /**
  * Encodes a list of RLP-encodable items
  *
+ * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ * @since 0.0.0
  * @param {Array<Uint8Array | import('./BrandedRlp.js').BrandedRlp | any[]>} items - Array of items to encode
  * @returns {Uint8Array} RLP-encoded list
- *
+ * @throws {Error} If encoding fails
  * @example
  * ```javascript
+ * import * as Rlp from './primitives/Rlp/index.js';
  * // Empty list
  * const empty = [];
  * const encoded = Rlp.encodeList(empty);
@@ -22,12 +25,6 @@ import * as OxRlp from "ox/Rlp";
  * const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
  * const encoded = Rlp.encodeList(nested);
  * ```
- *
- * Rules:
- * - Each item is first RLP-encoded
- * - Calculate total length of all encoded items
- * - If total < 56: [0xc0 + total_length, ...encoded_items]
- * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
 export function encodeList(items) {
 	return OxRlp.from(/** @type {any} */ (items), { as: "Bytes" });

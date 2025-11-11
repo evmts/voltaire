@@ -33,16 +33,18 @@ function hashEquals(a, b) {
  *
  * Adds address if it doesn't exist, then adds storage key if not already present.
  *
+ * @see https://voltaire.tevm.sh/primitives/accesslist
+ * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to add to
  * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to add key for
  * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} storageKey - Storage key to add
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} New access list with storage key added
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const list = AccessList([]);
- * const newList = AccessList.withStorageKey(list, address, key); // Static call
- * const newList2 = list.withStorageKey(address, key); // Instance call
+ * ```javascript
+ * import * as AccessList from './primitives/AccessList/index.js';
+ * const list = AccessList.create();
+ * const newList = AccessList.withStorageKey(list, address, storageKey);
  * ```
  */
 export function withStorageKey(list, address, storageKey) {

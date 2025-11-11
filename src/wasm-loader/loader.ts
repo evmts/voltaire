@@ -1875,9 +1875,18 @@ export function signatureSerialize(
 // ============================================================================
 
 /**
- * Compute function selector from signature
+ * Compute function selector from signature.
+ *
+ * @see https://voltaire.tevm.sh/primitives/abi for documentation
+ * @since 0.0.0
  * @param signature - Function signature string (e.g., "transfer(address,uint256)")
  * @returns 4-byte selector
+ * @throws {Error} If signature is invalid
+ * @example
+ * ```javascript
+ * import { abiComputeSelector } from './wasm-loader/loader.js';
+ * const selector = abiComputeSelector('transfer(address,uint256)');
+ * ```
  */
 export function abiComputeSelector(signature: string): Uint8Array {
 	const savedOffset = memoryOffset;
@@ -2305,7 +2314,15 @@ export function authorizationGasCost(
 // ============================================================================
 
 /**
- * Blob size constant (131072 bytes = 128 KB)
+ * Blob size constant (131072 bytes = 128 KB).
+ *
+ * @see https://voltaire.tevm.sh/primitives/blob for documentation
+ * @since 0.0.0
+ * @example
+ * ```javascript
+ * import { BLOB_SIZE } from './wasm-loader/loader.js';
+ * console.log(`Blob size: ${BLOB_SIZE} bytes`);
+ * ```
  */
 export const BLOB_SIZE = 131072;
 
