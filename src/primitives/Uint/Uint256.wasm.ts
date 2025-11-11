@@ -5,9 +5,9 @@
 
 import * as loader from "../../wasm-loader/loader.js";
 import {
+	UintInvalidLengthError,
 	UintNegativeError,
 	UintOverflowError,
-	UintInvalidLengthError,
 } from "./BrandedUint/errors.js";
 
 /**

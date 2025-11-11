@@ -1,7 +1,7 @@
 import {
+	DecodingError,
 	InvalidFormatError,
 	InvalidLengthError,
-	DecodingError,
 } from "../../errors/index.js";
 
 /**

@@ -1,5 +1,5 @@
-import { HARDFORK_ORDER } from "./constants.js";
 import { InvalidFormatError } from "../../errors/ValidationError.js";
+import { HARDFORK_ORDER } from "./constants.js";
 
 /**
  * Get range of hardforks between two versions (inclusive)

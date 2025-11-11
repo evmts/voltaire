@@ -1,5 +1,5 @@
-import { compare } from "./compare.js";
 import { ValidationError } from "../../errors/ValidationError.js";
+import { compare } from "./compare.js";
 
 /**
  * Get maximum hardfork from array

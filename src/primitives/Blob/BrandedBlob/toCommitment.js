@@ -1,6 +1,6 @@
-import { SIZE } from "./constants.js";
-import { InvalidLengthError } from "../../errors/ValidationError.js";
 import { PrimitiveError } from "../../errors/PrimitiveError.js";
+import { InvalidLengthError } from "../../errors/ValidationError.js";
+import { SIZE } from "./constants.js";
 
 /**
  * Compute KZG commitment for blob

@@ -1,6 +1,6 @@
 import {
-	AbiEncodingError,
 	AbiDecodingError,
+	AbiEncodingError,
 	AbiInvalidSelectorError,
 } from "../../Errors.js";
 
@@ -64,7 +64,7 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Original error
 	 */
-	constructor(message = "Function selector mismatch", options) {
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "FUNCTION_INVALID_SELECTOR",
 			value: options?.value || "unknown",

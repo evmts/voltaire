@@ -1,5 +1,5 @@
-import type { BrandedHex } from "./BrandedHex.js";
 import { InvalidFormatError } from "../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { hexCharToValue } from "./utils.js";
 
 /**

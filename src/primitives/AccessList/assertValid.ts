@@ -1,8 +1,8 @@
-import type { BrandedAccessList } from "./BrandedAccessList.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/ValidationError.js";
+import type { BrandedAccessList } from "./BrandedAccessList.js";
 import { isItem } from "./isItem.js";
 
 /**

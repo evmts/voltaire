@@ -1,5 +1,5 @@
-import type { BrandedHex } from "./BrandedHex.js";
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -39,18 +39,20 @@ export function trim(hex: BrandedHex): BrandedHex {
 
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {
-		const high = hexCharToValue(hexDigits[i]);
-		const low = hexCharToValue(hexDigits[i + 1]);
+		const charHigh = hexDigits[i];
+		const charLow = hexDigits[i + 1];
+		const high = hexCharToValue(charHigh);
+		const low = hexCharToValue(charLow);
 		if (high === null || low === null)
 			throw new InvalidFormatError(
-				`Invalid hex character at position ${i + 2}: '${hexDigits[i]}${hexDigits[i + 1]}'`,
+				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
 					code: "HEX_INVALID_CHARACTER",
 					value: hex,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {
 						position: i + 2,
-						character: hexDigits[i] + hexDigits[i + 1],
+						character: (charHigh ?? "") + (charLow ?? ""),
 					},
 					docsPath: "/primitives/hex#error-handling",
 				},

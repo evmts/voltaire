@@ -1,5 +1,5 @@
-import type { BrandedHex, Sized } from "./BrandedHex.js";
 import { InvalidLengthError } from "../errors/index.js";
+import type { BrandedHex, Sized } from "./BrandedHex.js";
 
 /**
  * Assert hex has specific size

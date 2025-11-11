@@ -1,6 +1,6 @@
+import { InvalidRangeError } from "../../errors/ValidationError.js";
 // @ts-nocheck
 import * as constants from "./constants.js";
-import { InvalidRangeError } from "../../errors/ValidationError.js";
 
 /**
  * Get PUSH opcode for given byte count

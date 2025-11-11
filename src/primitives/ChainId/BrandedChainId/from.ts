@@ -1,5 +1,5 @@
-import type { BrandedChainId } from "./BrandedChainId.js";
 import { InvalidFormatError } from "../../errors/ValidationError.js";
+import type { BrandedChainId } from "./BrandedChainId.js";
 
 /**
  * Create ChainId from number

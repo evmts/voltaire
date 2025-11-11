@@ -1,10 +1,10 @@
 import { SECP256K1_HALF_N, SECP256K1_N } from "./constants.js";
 import {
-	InvalidChainIdError,
 	InvalidAddressError,
-	InvalidYParityError,
+	InvalidChainIdError,
 	InvalidSignatureComponentError,
 	InvalidSignatureRangeError,
+	InvalidYParityError,
 	MalleableSignatureError,
 } from "./errors.js";
 

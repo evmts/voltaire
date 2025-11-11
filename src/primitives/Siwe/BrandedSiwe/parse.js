@@ -1,9 +1,9 @@
 import * as OxSiwe from "ox/Siwe";
 import * as Address from "../../Address/BrandedAddress/index.js";
 import {
+	InvalidFieldError,
 	InvalidSiweMessageError,
 	MissingFieldError,
-	InvalidFieldError,
 	SiweParseError,
 } from "./errors.js";
 
@@ -166,22 +166,23 @@ export function parse(text) {
 
 		// Map error messages to expected Voltaire format
 		const errMsg = error instanceof Error ? error.message : String(error);
+		const cause = error instanceof Error ? error : undefined;
 
 		// Map ox error messages to Voltaire-expected messages
 		if (errMsg.includes("Unsupported address value type")) {
-			throw new MissingFieldError("address", { cause: error });
+			throw new MissingFieldError("address", { cause });
 		}
 		if (errMsg.includes("Invalid message field") && errMsg.includes("domain")) {
 			throw new InvalidSiweMessageError("missing domain header", {
 				value: text,
-				cause: error,
+				cause,
 			});
 		}
 
 		// Generic parse error with cause chain
 		throw new SiweParseError(errMsg, {
 			value: text,
-			cause: error,
+			cause,
 		});
 	}
 }

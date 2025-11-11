@@ -1,5 +1,5 @@
-import type { BrandedHex } from "./BrandedHex.js";
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -41,18 +41,20 @@ export function xor(hex: BrandedHex, other: BrandedHex): BrandedHex {
 
 	const bytesA = new Uint8Array(hexDigitsA.length / 2);
 	for (let i = 0; i < hexDigitsA.length; i += 2) {
-		const high = hexCharToValue(hexDigitsA[i]);
-		const low = hexCharToValue(hexDigitsA[i + 1]);
+		const charHigh = hexDigitsA[i];
+		const charLow = hexDigitsA[i + 1];
+		const high = hexCharToValue(charHigh);
+		const low = hexCharToValue(charLow);
 		if (high === null || low === null)
 			throw new InvalidFormatError(
-				`Invalid hex character at position ${i + 2}: '${hexDigitsA[i]}${hexDigitsA[i + 1]}'`,
+				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
 					code: "HEX_INVALID_CHARACTER",
 					value: hex,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {
 						position: i + 2,
-						character: hexDigitsA[i] + hexDigitsA[i + 1],
+						character: (charHigh ?? "") + (charLow ?? ""),
 					},
 					docsPath: "/primitives/hex#error-handling",
 				},
@@ -80,18 +82,20 @@ export function xor(hex: BrandedHex, other: BrandedHex): BrandedHex {
 
 	const bytesB = new Uint8Array(hexDigitsB.length / 2);
 	for (let i = 0; i < hexDigitsB.length; i += 2) {
-		const high = hexCharToValue(hexDigitsB[i]);
-		const low = hexCharToValue(hexDigitsB[i + 1]);
+		const charHigh = hexDigitsB[i];
+		const charLow = hexDigitsB[i + 1];
+		const high = hexCharToValue(charHigh);
+		const low = hexCharToValue(charLow);
 		if (high === null || low === null)
 			throw new InvalidFormatError(
-				`Invalid hex character at position ${i + 2}: '${hexDigitsB[i]}${hexDigitsB[i + 1]}'`,
+				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
 					code: "HEX_INVALID_CHARACTER",
 					value: other,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {
 						position: i + 2,
-						character: hexDigitsB[i] + hexDigitsB[i + 1],
+						character: (charHigh ?? "") + (charLow ?? ""),
 					},
 					docsPath: "/primitives/hex#error-handling",
 				},

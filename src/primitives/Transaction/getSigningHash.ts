@@ -1,5 +1,5 @@
-import { InvalidTransactionTypeError } from "../errors/index.js";
 import type { BrandedHash } from "../Hash/index.js";
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/getSigningHash.js";
 import * as EIP2930 from "./EIP2930/getSigningHash.js";
 import * as EIP4844 from "./EIP4844/getSigningHash.js";

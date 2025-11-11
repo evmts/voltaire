@@ -1,10 +1,10 @@
+import { InvalidRangeError } from "../../errors/ValidationError.js";
 import {
 	Create,
 	CreateData,
 	InitcodeWord,
 	MaxInitcodeSize,
 } from "./constants.js";
-import { InvalidRangeError } from "../../errors/ValidationError.js";
 
 /**
  * Calculate contract creation gas cost

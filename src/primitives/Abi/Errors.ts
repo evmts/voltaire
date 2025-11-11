@@ -1,6 +1,6 @@
 import {
-	EncodingError,
 	DecodingError,
+	EncodingError,
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/index.js";

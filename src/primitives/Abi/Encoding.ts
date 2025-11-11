@@ -45,9 +45,15 @@ function padRight(data: Uint8Array): Uint8Array {
 	return result;
 }
 
-function isDynamicType(type: Parameter["type"]): boolean {
+function isDynamicType(
+	type: Parameter["type"],
+	components?: readonly Parameter[],
+): boolean {
 	if (type === "string" || type === "bytes") return true;
 	if (type.endsWith("[]")) return true;
+	if (type === "tuple" && components) {
+		return components.some((c) => isDynamicType(c.type, c.components));
+	}
 	if (type.includes("[") && type.endsWith("]")) {
 		const match = type.match(/^(.+)\[(\d+)\]$/);
 		if (match?.[1]) {
@@ -61,7 +67,16 @@ function isDynamicType(type: Parameter["type"]): boolean {
 function encodeValue(
 	type: Parameter["type"],
 	value: unknown,
+	components?: readonly Parameter[],
 ): { encoded: Uint8Array; isDynamic: boolean } {
+	// Handle tuples FIRST
+	if (type === "tuple" && components) {
+		const tuple = value as unknown[];
+		const encoded = encodeParameters(components as any, tuple as any);
+		const isDynamic = isDynamicType(type, components);
+		return { encoded, isDynamic };
+	}
+
 	// Check for arrays FIRST before other types
 	// Dynamic arrays: uint256[], address[], etc.
 	if (type.endsWith("[]")) {
@@ -69,7 +84,10 @@ function encodeValue(
 		const array = value as unknown[];
 		const length = encodeUint256(BigInt(array.length));
 
-		const elementParams = array.map(() => ({ type: elementType }));
+		const elementParams = array.map(() => ({
+			type: elementType,
+			components,
+		}));
 		const encodedElements = encodeParameters(
 			elementParams as any,
 			array as any,
@@ -95,9 +113,12 @@ function encodeValue(
 			);
 		}
 
-		const elementParams = array.map(() => ({ type: elementType }));
+		const elementParams = array.map(() => ({
+			type: elementType,
+			components,
+		}));
 		const encoded = encodeParameters(elementParams as any, array as any);
-		const isDynamic = isDynamicType(elementType);
+		const isDynamic = isDynamicType(elementType, components);
 		return { encoded, isDynamic };
 	}
 
@@ -190,13 +211,35 @@ function decodeValue(
 	type: Parameter["type"],
 	data: Uint8Array,
 	offset: number,
+	components?: readonly Parameter[],
 ): { value: unknown; newOffset: number } {
+	// Handle tuples
+	if (type === "tuple" && components) {
+		const isDynamic = isDynamicType(type, components);
+		if (isDynamic) {
+			const dataOffset = Number(decodeUint256(data, offset));
+			const value = decodeParameters(components as any, data.slice(dataOffset));
+			return { value, newOffset: offset + 32 };
+		}
+		// Static tuple - decode inline
+		const value = decodeParameters(components as any, data.slice(offset));
+		// Calculate static size by summing component sizes
+		let staticSize = 0;
+		for (const comp of components) {
+			staticSize += 32; // Each component takes at least 32 bytes in static part
+		}
+		return { value, newOffset: offset + staticSize };
+	}
+
 	if (type.endsWith("[]")) {
 		const elementType = type.slice(0, -2) as Parameter["type"];
 		const dataOffset = Number(decodeUint256(data, offset));
 		const length = Number(decodeUint256(data, dataOffset));
 
-		const elementParams = Array(length).fill({ type: elementType });
+		const elementParams = Array(length).fill({
+			type: elementType,
+			components,
+		});
 		const value = decodeParameters(
 			elementParams as any,
 			data.slice(dataOffset + 32),
@@ -209,8 +252,11 @@ function decodeValue(
 		const elementType = fixedArrayMatch[1] as Parameter["type"];
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
 
-		const elementParams = Array(arraySize).fill({ type: elementType });
-		if (isDynamicType(elementType)) {
+		const elementParams = Array(arraySize).fill({
+			type: elementType,
+			components,
+		});
+		if (isDynamicType(elementType, components)) {
 			const dataOffset = Number(decodeUint256(data, offset));
 			const value = decodeParameters(
 				elementParams as any,
@@ -326,7 +372,7 @@ export function encodeParameters<const TParams extends readonly Parameter[]>(
 		const param = params[i];
 		if (!param) continue;
 		const value = values[i];
-		encodings.push(encodeValue(param.type, value));
+		encodings.push(encodeValue(param.type, value, param.components));
 	}
 
 	let dynamicOffset = params.length * 32;
@@ -367,7 +413,12 @@ export function decodeParameters<const TParams extends readonly Parameter[]>(
 	let offset = 0;
 
 	for (const param of params) {
-		const { value, newOffset } = decodeValue(param.type, data, offset);
+		const { value, newOffset } = decodeValue(
+			param.type,
+			data,
+			offset,
+			param.components,
+		);
 		result.push(value);
 		offset = newOffset;
 	}

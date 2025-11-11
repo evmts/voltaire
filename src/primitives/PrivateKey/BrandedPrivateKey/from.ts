@@ -1,8 +1,8 @@
-import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../../errors/ValidationError.js";
+import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
 

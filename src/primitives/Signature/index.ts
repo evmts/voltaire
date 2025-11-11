@@ -6,7 +6,6 @@ export type {
 
 export {
 	// Errors
-	SignatureError,
 	InvalidSignatureLengthError,
 	InvalidSignatureFormatError,
 	InvalidAlgorithmError,
