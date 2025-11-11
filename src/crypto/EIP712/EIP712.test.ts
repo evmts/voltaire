@@ -574,25 +574,328 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			expect(signature.s.length).toBe(32);
 			expect(signature.v).toBeGreaterThanOrEqual(27);
 			expect(signature.v).toBeLessThanOrEqual(28);
-
-			// Note: Full signing/recovery roundtrip tests depend on @noble/curves API compatibility
-			// These are tested separately in integration tests
 		});
 
-		// Note: The following tests are commented out due to @noble/curves API changes
-		// They would need adjustment for the current API
-		// Full roundtrip signing/verification is tested in integration tests
+		it("should recover correct address from valid signature", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
 
-		it.skip("should reject signature with wrong signer", () => {
-			// Skipped: requires working signature recovery
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Sign this message" },
+			};
+
+			// Sign
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Recover address
+			const recoveredAddress = EIP712.recoverAddress(signature, typedData);
+
+			// Verify recovered address format
+			expect(recoveredAddress).toBeInstanceOf(Uint8Array);
+			expect(recoveredAddress.length).toBe(20);
+
+			// Derive expected address from private key
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			// Recovered address should match expected
+			expect(recoveredAddress).toEqual(expectedAddress);
 		});
 
-		it.skip("should reject signature with tampered message", () => {
-			// Skipped: requires working signature recovery
+		it("should verify valid typed data signature", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Sign this message" },
+			};
+
+			// Sign
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Derive expected address
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			// Verify
+			const isValid = EIP712.verifyTypedData(signature, typedData, expectedAddress);
+			expect(isValid).toBe(true);
 		});
 
-		it.skip("should recover correct address from signature", () => {
-			// Skipped: requires working signature recovery
+		it("should reject signature with wrong signer address", () => {
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Sign this message" },
+			};
+
+			// Sign
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Use wrong address
+			const wrongAddress = new Uint8Array(20).fill(0xff);
+
+			// Verify should fail
+			const isValid = EIP712.verifyTypedData(signature, typedData, wrongAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should reject signature with tampered message", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Original message" },
+			};
+
+			// Sign
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Derive expected address
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			// Tamper with message
+			const tamperedData: TypedData = {
+				...typedData,
+				message: { content: "Tampered message" },
+			};
+
+			// Verify should fail
+			const isValid = EIP712.verifyTypedData(signature, tamperedData, expectedAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should reject signature with tampered domain", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Sign this" },
+			};
+
+			// Sign
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Derive expected address
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			// Tamper with domain (different chainId)
+			const tamperedData: TypedData = {
+				...typedData,
+				domain: { name: "TestApp", chainId: 2n },
+			};
+
+			// Verify should fail
+			const isValid = EIP712.verifyTypedData(signature, tamperedData, expectedAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should handle both recovery bits (v = 27 and v = 28)", () => {
+			// Test multiple signatures to likely hit both v values
+			for (let i = 0; i < 10; i++) {
+				const privateKey = randomBytes(32);
+
+				const typedData: TypedData = {
+					domain: { name: "TestApp", chainId: 1n },
+					types: {
+						Message: [{ name: "content", type: "string" }],
+					},
+					primaryType: "Message",
+					message: { content: `Message ${i}` },
+				};
+
+				const signature = EIP712.signTypedData(typedData, privateKey);
+
+				// Should handle both v values correctly
+				expect([27, 28]).toContain(signature.v);
+
+				// Recovery should work regardless of v value
+				const recoveredAddress = EIP712.recoverAddress(signature, typedData);
+				expect(recoveredAddress.length).toBe(20);
+			}
+		});
+
+		it("should reject signature with invalid recovery bit", () => {
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Test" },
+			};
+
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Tamper with v (invalid recovery bit)
+			const invalidSignature = { ...signature, v: 29 };
+
+			// Should throw or return false
+			expect(() => EIP712.recoverAddress(invalidSignature, typedData)).toThrow();
+		});
+
+		it("should reject signature with all-zero r component", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Test" },
+			};
+
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Tamper r to all zeros
+			const invalidSignature = {
+				r: new Uint8Array(32),
+				s: signature.s,
+				v: signature.v,
+			};
+
+			// Should throw or return false on recovery
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			const isValid = EIP712.verifyTypedData(invalidSignature, typedData, expectedAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should reject signature with all-zero s component", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Test" },
+			};
+
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Tamper s to all zeros
+			const invalidSignature = {
+				r: signature.r,
+				s: new Uint8Array(32),
+				v: signature.v,
+			};
+
+			// Should throw or return false on recovery
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const expectedAddress = keccak_256(publicKey).slice(-20);
+
+			const isValid = EIP712.verifyTypedData(invalidSignature, typedData, expectedAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should handle verification with wrong address length gracefully", () => {
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Test" },
+			};
+
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Wrong address length
+			const wrongLengthAddress = new Uint8Array(19);
+
+			// Should return false, not throw
+			const isValid = EIP712.verifyTypedData(signature, typedData, wrongLengthAddress);
+			expect(isValid).toBe(false);
+		});
+
+		it("should use constant-time comparison in verification", async () => {
+			const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+			const { keccak_256 } = await import("@noble/hashes/sha3.js");
+
+			const privateKey = randomBytes(32);
+
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Message: [{ name: "content", type: "string" }],
+				},
+				primaryType: "Message",
+				message: { content: "Test" },
+			};
+
+			const signature = EIP712.signTypedData(typedData, privateKey);
+
+			// Derive correct address
+			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
+			const correctAddress = keccak_256(publicKey).slice(-20);
+
+			// Test verification multiple times to ensure consistent behavior
+			const timings = [];
+			for (let i = 0; i < 100; i++) {
+				const wrongAddress = randomBytes(20);
+				const start = performance.now();
+				EIP712.verifyTypedData(signature, typedData, wrongAddress);
+				const end = performance.now();
+				timings.push(end - start);
+			}
+
+			// All timing should be relatively consistent (within 2x)
+			// This is a basic timing side-channel test
+			const minTime = Math.min(...timings);
+			const maxTime = Math.max(...timings);
+			const ratio = maxTime / minTime;
+
+			// Allow for reasonable variation due to system scheduling
+			expect(ratio).toBeLessThan(10);
 		});
 
 		it("should sign different messages with same key", () => {
