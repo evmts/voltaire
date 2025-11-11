@@ -9,14 +9,14 @@ Voltaire takes a **data-first approach** to Ethereum primitives. Core types are 
 
 ## Philosophy
 
-**Data comes first.** We represent Ethereum primitives using the most idiomatic data type for each language that closely matches what the data actually is:
+**Data comes first.** We default to the most simple JavaScript structure with runtime validation for all types. Ethereum primitives are represented using the most idiomatic data type for each language that closely matches what the data actually is:
 
 - **Addresses** → 20-byte `Uint8Array`
 - **Hashes** → 32-byte `Uint8Array`
 - **Bytecode** → Variable-length `Uint8Array`
 - **Hex strings** → Tagged `string`
 
-These branded types provide TypeScript safety with minimal runtime overhead. Methods operate on these types rather than encapsulating them in classes.
+These [branded types](/concepts/branded-types) provide TypeScript safety with minimal runtime overhead. Methods operate on these types rather than encapsulating them in classes.
 
 ## Three API Styles
 

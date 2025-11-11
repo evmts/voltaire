@@ -5,23 +5,23 @@ description: Type-level tags for nominal typing in TypeScript
 
 # Branded Types
 
-Type-level tags that make structurally identical types distinguishable to TypeScript's type checker.
+Branded types provide runtime validated types without the need for a library like Zod. They use type-level tags that make structurally identical types distinguishable to TypeScript's type checker.
 
 ## The Problem
 
 TypeScript uses structural typing - types with same structure are interchangeable:
 
 ```typescript
-type UserId = number
-type ProductId = number
+type BrandedAddress = Uint8Array
+type BrandedBytecode = Uint8Array
 
-function getUser(id: UserId) { /* ... */ }
+function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
 
-const productId: ProductId = 123
-getUser(productId) // ✓ TypeScript allows this (both are numbers)
+const bytecode: BrandedBytecode = new Uint8Array([0x60, 0x01])
+verifySignature(bytecode, new Uint8Array(32)) // ✓ TypeScript allows this (both are Uint8Array)
 ```
 
-This compiles but is logically wrong - product ID shouldn't be accepted as user ID.
+This compiles but is logically wrong - bytecode shouldn't be accepted as an address.
 
 ## The Solution
 
@@ -30,16 +30,16 @@ Add compile-time-only brand field using symbol:
 ```typescript
 declare const brand: unique symbol
 
-type UserId = number & { [brand]: "UserId" }
-type ProductId = number & { [brand]: "ProductId" }
+type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
+type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" }
 
-function getUser(id: UserId) { /* ... */ }
+function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
 
-const productId: ProductId = 123 as ProductId
-getUser(productId) // ✗ Error: Type 'ProductId' is not assignable to type 'UserId'
+const bytecode: BrandedBytecode = new Uint8Array([0x60, 0x01]) as BrandedBytecode
+verifySignature(bytecode, new Uint8Array(32)) // ✗ Error: Type 'BrandedBytecode' is not assignable to type 'BrandedAddress'
 ```
 
-Brand exists only in type system - erased at runtime. Values are still plain numbers.
+Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
 
 ## Generic Brand Type
 
@@ -52,9 +52,9 @@ type Brand<T, Tag> = T & { readonly [brand]: Tag }
 Usage:
 
 ```typescript
-type UserId = Brand<number, "UserId">
-type ProductId = Brand<number, "ProductId">
-type Email = Brand<string, "Email">
+type BrandedAddress = Brand<Uint8Array, "Address">
+type BrandedBytecode = Brand<Uint8Array, "Bytecode">
+type BrandedHex = Brand<string, "Hex">
 ```
 
 ## Why Symbols?
@@ -66,9 +66,11 @@ Using `unique symbol` ensures:
 
 ```typescript
 // Without symbol (DON'T DO THIS)
-type UserId = number & { __brand: "UserId" }
+type BrandedAddress = Uint8Array & { __brand: "Address" }
 
-const user = { id: 1, __brand: "UserId" } // runtime __brand field conflicts!
+// If Uint8Array somehow had __brand property, this would conflict!
+const addr = new Uint8Array(20)
+addr.__brand = "Address" // runtime __brand field conflicts!
 ```
 
 ## Voltaire's Approach

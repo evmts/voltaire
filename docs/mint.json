@@ -5,7 +5,7 @@
 	"logo": {
 		"light": "/logo.svg",
 		"dark": "/logo.svg",
-		"href": "https://voltaire.dev"
+		"href": "https://voltaire.tevm.sh"
 	},
 	"favicon": "/favicon.svg",
 	"colors": {

@@ -413,13 +413,13 @@ const v = 37; // EIP-155 encoded (yParity = 0)
 const compact = eip155ToCompact(r, s, v, 1);
 ```
 
-### Backwards Compatibility
+### Supporting Multiple Formats
 
 ```typescript
-// Support both formats
+// Support both 64-byte and 65-byte formats
 function parseSignature(bytes: Uint8Array): BrandedSignature {
   if (bytes.length === 64) {
-    // Try EIP-2098 compact
+    // EIP-2098 compact
     return EIP2098.fromCompact(bytes);
   } else if (bytes.length === 65) {
     // Standard compact with v
