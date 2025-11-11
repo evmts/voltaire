@@ -1,5 +1,8 @@
 /**
  * EVM Precompile implementations
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
@@ -14,6 +17,18 @@ import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/Bra
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
 
+/**
+ * EVM precompile contract addresses
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { PrecompileAddress } from './precompiles.js';
+ * console.log(PrecompileAddress.ECRECOVER); // "0x0000000000000000000000000000000000000001"
+ * ```
+ */
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
 	SHA256 = "0x0000000000000000000000000000000000000002",
@@ -36,6 +51,21 @@ export enum PrecompileAddress {
 	BLS12_MAP_FP2_TO_G2 = "0x0000000000000000000000000000000000000013",
 }
 
+/**
+ * Result of precompile execution
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { execute, PrecompileAddress } from './precompiles.js';
+ * const result = execute(PrecompileAddress.ECRECOVER, input, 100000n, hardfork);
+ * if (result.success) {
+ *   console.log('Output:', result.output);
+ * }
+ * ```
+ */
 export interface PrecompileResult {
 	success: boolean;
 	output: Uint8Array;
@@ -194,6 +224,20 @@ function serializeG2(
 
 /**
  * Check if an address is a precompile for a given hardfork
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param address - Ethereum address to check
+ * @param hardfork - EVM hardfork to check against
+ * @returns True if address is a precompile in the given hardfork
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { isPrecompile, PrecompileAddress } from './precompiles.js';
+ * import * as Hardfork from '../primitives/Hardfork/index.js';
+ * const isPre = isPrecompile(PrecompileAddress.ECRECOVER, Hardfork.LONDON);
+ * console.log(isPre); // true
+ * ```
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile checks require branching per hardfork
 export function isPrecompile(
@@ -266,11 +310,22 @@ export function isPrecompile(
 
 /**
  * Execute a precompile
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @param address - Precompile address
  * @param input - Input data
  * @param gasLimit - Gas limit for execution
- * @param hardfork - Current hardfork
+ * @param _hardfork - Current hardfork
  * @returns Precompile execution result
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { execute, PrecompileAddress } from './precompiles.js';
+ * import * as Hardfork from '../primitives/Hardfork/index.js';
+ * const input = new Uint8Array(128);
+ * const result = execute(PrecompileAddress.ECRECOVER, input, 100000n, Hardfork.LONDON);
+ * ```
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile execution requires branching per type
 export function execute(
@@ -352,6 +407,22 @@ export function execute(
 /**
  * ECRECOVER precompile (0x01)
  * Recover signer address from signature
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (hash, v, r, s)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with recovered address
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { ecrecover } from './precompiles.js';
+ * const input = new Uint8Array(128); // hash(32) + v(32) + r(32) + s(32)
+ * const result = ecrecover(input, 100000n);
+ * if (result.success) {
+ *   console.log('Recovered address:', result.output);
+ * }
+ * ```
  */
 export function ecrecover(
 	_input: Uint8Array,
@@ -391,6 +462,20 @@ export function ecrecover(
 
 /**
  * SHA256 precompile (0x02)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data to hash
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with SHA256 hash
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { sha256 } from './precompiles.js';
+ * const input = new TextEncoder().encode('hello');
+ * const result = sha256(input, 100000n);
+ * console.log('SHA256:', result.output);
+ * ```
  */
 export function sha256(input: Uint8Array, gasLimit: bigint): PrecompileResult {
 	const words = BigInt(Math.ceil(input.length / 32));
@@ -409,6 +494,20 @@ export function sha256(input: Uint8Array, gasLimit: bigint): PrecompileResult {
 
 /**
  * RIPEMD160 precompile (0x03)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data to hash
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with RIPEMD160 hash
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { ripemd160 } from './precompiles.js';
+ * const input = new TextEncoder().encode('hello');
+ * const result = ripemd160(input, 100000n);
+ * console.log('RIPEMD160:', result.output);
+ * ```
  */
 export function ripemd160(
 	input: Uint8Array,
@@ -434,6 +533,20 @@ export function ripemd160(
 /**
  * IDENTITY precompile (0x04)
  * Returns input data unchanged
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data to return
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with unchanged input
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { identity } from './precompiles.js';
+ * const input = new Uint8Array([1, 2, 3, 4]);
+ * const result = identity(input, 100000n);
+ * console.log('Identity output:', result.output); // [1, 2, 3, 4]
+ * ```
  */
 export function identity(
 	input: Uint8Array,
@@ -454,6 +567,20 @@ export function identity(
 /**
  * MODEXP precompile (0x05)
  * Modular exponentiation
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (baseLen, expLen, modLen, base, exp, mod)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with modular exponentiation result
+ * @throws {Error} If input length is invalid
+ * @example
+ * ```javascript
+ * import { modexp } from './precompiles.js';
+ * const input = new Uint8Array(96); // baseLen(32) + expLen(32) + modLen(32) + data
+ * const result = modexp(input, 100000n);
+ * console.log('ModExp result:', result.output);
+ * ```
  */
 export function modexp(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
 	if (_input.length < 96) {
@@ -543,6 +670,20 @@ export function modexp(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
 /**
  * BN254_ADD precompile (0x06)
  * BN254 elliptic curve addition
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (G1 point A || G1 point B)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with sum of two G1 points
+ * @throws {Error} If input is invalid or points are malformed
+ * @example
+ * ```javascript
+ * import { bn254Add } from './precompiles.js';
+ * const input = new Uint8Array(128); // Two G1 points (64 bytes each)
+ * const result = bn254Add(input, 100000n);
+ * console.log('BN254 Add:', result.output);
+ * ```
  */
 export function bn254Add(
 	_input: Uint8Array,
@@ -581,6 +722,20 @@ export function bn254Add(
 /**
  * BN254_MUL precompile (0x07)
  * BN254 elliptic curve multiplication
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (G1 point || scalar)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with G1 point multiplied by scalar
+ * @throws {Error} If input is invalid or point is malformed
+ * @example
+ * ```javascript
+ * import { bn254Mul } from './precompiles.js';
+ * const input = new Uint8Array(96); // G1 point (64 bytes) + scalar (32 bytes)
+ * const result = bn254Mul(input, 100000n);
+ * console.log('BN254 Mul:', result.output);
+ * ```
  */
 export function bn254Mul(
 	_input: Uint8Array,
@@ -619,6 +774,20 @@ export function bn254Mul(
 /**
  * BN254_PAIRING precompile (0x08)
  * BN254 pairing check
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (G1-G2 pairs, 192 bytes per pair)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with pairing check result (1 if valid, 0 if invalid)
+ * @throws {Error} If input length is invalid or points are malformed
+ * @example
+ * ```javascript
+ * import { bn254Pairing } from './precompiles.js';
+ * const input = new Uint8Array(192); // One G1-G2 pair
+ * const result = bn254Pairing(input, 100000n);
+ * console.log('Pairing valid:', result.output[31] === 1);
+ * ```
  */
 export function bn254Pairing(
 	input: Uint8Array,
@@ -673,6 +842,20 @@ export function bn254Pairing(
 /**
  * BLAKE2F precompile (0x09)
  * Blake2 compression function
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (213 bytes: rounds + state + message + flags)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with Blake2F compression result
+ * @throws {Error} If input length is not 213 bytes
+ * @example
+ * ```javascript
+ * import { blake2f } from './precompiles.js';
+ * const input = new Uint8Array(213); // rounds(4) + h(64) + m(128) + t(16) + f(1)
+ * const result = blake2f(input, 100000n);
+ * console.log('Blake2F:', result.output);
+ * ```
  */
 export function blake2f(
 	_input: Uint8Array,
@@ -702,6 +885,20 @@ export function blake2f(
 /**
  * POINT_EVALUATION precompile (0x0a)
  * KZG point evaluation (EIP-4844)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param _input - Input data (commitment + z + y + proof)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with KZG proof verification result
+ * @throws {Error} If input length is invalid or proof verification fails
+ * @example
+ * ```javascript
+ * import { pointEvaluation } from './precompiles.js';
+ * const input = new Uint8Array(160); // commitment(48) + z(32) + y(32) + proof(48)
+ * const result = pointEvaluation(input, 100000n);
+ * console.log('KZG verification:', result.success);
+ * ```
  */
 export function pointEvaluation(
 	_input: Uint8Array,
@@ -758,6 +955,20 @@ export function pointEvaluation(
 
 /**
  * BLS12_G1_ADD precompile (0x0b)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (two G1 points, 128 bytes each)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with sum of two BLS12-381 G1 points
+ * @throws {Error} If input length is not 256 bytes or points are malformed
+ * @example
+ * ```javascript
+ * import { bls12G1Add } from './precompiles.js';
+ * const input = new Uint8Array(256); // Two G1 points (128 bytes each)
+ * const result = bls12G1Add(input, 100000n);
+ * console.log('BLS12 G1 Add:', result.output);
+ * ```
  */
 export function bls12G1Add(
 	input: Uint8Array,
