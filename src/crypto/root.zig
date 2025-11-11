@@ -28,10 +28,8 @@
 // Core cryptographic modules
 pub const Crypto = @import("crypto.zig");
 pub const secp256k1 = @import("secp256k1.zig");
-// Note: P256 and Ed25519 use @noble/curves TypeScript implementation via WASM loader
-// Zig implementations need updating for 0.15.1 API changes
-// pub const p256 = @import("p256.zig");
-// pub const ed25519 = @import("ed25519.zig");
+pub const p256 = @import("p256.zig");
+pub const ed25519 = @import("ed25519.zig");
 pub const x25519 = @import("x25519.zig");
 pub const aes_gcm = @import("aes_gcm.zig");
 const modexp_module = @import("modexp.zig");
