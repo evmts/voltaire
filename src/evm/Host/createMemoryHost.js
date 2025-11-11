@@ -15,6 +15,9 @@ export function createMemoryHost() {
 	/** @type {Map<string, Map<string, bigint>>} */
 	const storage = new Map();
 
+	/** @type {Map<string, Map<string, bigint>>} */
+	const transientStorage = new Map();
+
 	/** @type {Map<string, bigint>} */
 	const nonces = new Map();
 
@@ -73,6 +76,23 @@ export function createMemoryHost() {
 		setNonce: (address, nonce) => {
 			const key = Buffer.from(address).toString("hex");
 			nonces.set(key, nonce);
+		},
+
+		getTransientStorage: (address, slot) => {
+			const addrKey = Buffer.from(address).toString("hex");
+			const addrStorage = transientStorage.get(addrKey);
+			if (!addrStorage) return 0n;
+			return addrStorage.get(slot.toString(16)) ?? 0n;
+		},
+
+		setTransientStorage: (address, slot, value) => {
+			const addrKey = Buffer.from(address).toString("hex");
+			let addrStorage = transientStorage.get(addrKey);
+			if (!addrStorage) {
+				addrStorage = new Map();
+				transientStorage.set(addrKey, addrStorage);
+			}
+			addrStorage.set(slot.toString(16), value);
 		},
 	});
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sload } from "./0x54_SLOAD.js";
-import { _from as frameFrom } from "../../Frame/from.js";
-import { _createMemoryHost as createMemoryHost } from "../../Host/createMemoryHost.js";
+import { from as frameFrom } from "../../Frame/index.js";
+import { createMemoryHost } from "../../Host/createMemoryHost.js";
 import { from as addressFrom } from "../../../primitives/Address/BrandedAddress/from.js";
 
 describe("SLOAD (0x54)", () => {
@@ -27,8 +27,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("loads zero for empty storage slot", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		const frame = frameFrom({
 			stack: [0x42n], // key
@@ -44,8 +44,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("returns StackUnderflow when stack is empty", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		const frame = frameFrom({
 			stack: [],
@@ -60,8 +60,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("returns OutOfGas when insufficient gas", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		const frame = frameFrom({
 			stack: [0x42n],
@@ -77,8 +77,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("returns StackOverflow when stack is full", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		// Create stack with 1024 items (max)
 		const fullStack = new Array(1024).fill(0n);
@@ -96,8 +96,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("loads max uint256 value", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		const maxUint256 = (1n << 256n) - 1n;
 		host.setStorage(addr, 0x42n, maxUint256);
@@ -116,8 +116,8 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("loads from different storage keys", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		// Set multiple storage slots
 		host.setStorage(addr, 0x0n, 0x111n);
@@ -135,7 +135,7 @@ describe("SLOAD (0x54)", () => {
 		expect(frame.stack).toEqual([0x111n]);
 
 		// Load from slot 1
-		frame = Frame.from({
+		frame = frameFrom({
 			stack: [0x1n],
 			gasRemaining: 10000n,
 			address: addr,
@@ -145,7 +145,7 @@ describe("SLOAD (0x54)", () => {
 		expect(frame.stack).toEqual([0x222n]);
 
 		// Load from max slot
-		frame = Frame.from({
+		frame = frameFrom({
 			stack: [0xffffffffffffffffffffffffffffffffffffffffn],
 			gasRemaining: 10000n,
 			address: addr,

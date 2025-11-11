@@ -1,6 +1,6 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import * as Address from "../../primitives/Address/index.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
 
 /**
  * CALLER opcode (0x33) - Get caller address
@@ -15,7 +15,7 @@ export function caller(frame) {
 	const gasErr = consumeGas(frame, 2n);
 	if (gasErr) return gasErr;
 
-	const callerU256 = Address._toU256(frame.caller);
+	const callerU256 = toU256(frame.caller);
 	const pushErr = pushStack(frame, callerU256);
 	if (pushErr) return pushErr;
 

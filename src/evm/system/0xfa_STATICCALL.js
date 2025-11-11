@@ -1,14 +1,19 @@
 /**
- * CALLCODE opcode (0xf2) - Message call into this account with another account's code
+ * STATICCALL opcode (0xfa) - Static message call (no state modifications allowed)
  *
- * Stack: [gas, address, value, inOffset, inLength, outOffset, outLength] => [success]
- * Gas: Similar to CALL but executes code in current context
+ * Stack: [gas, address, inOffset, inLength, outOffset, outLength] => [success]
+ * Gas: Similar to CALL but no value parameter
+ * Note: Introduced in EIP-214 (Byzantium)
+ * Note: Sets isStatic flag, preventing any state modifications in called context
  *
  * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
  */
-export function callcode(frame) {
-	// Pop all 7 arguments (same as CALL)
+export function staticcall(frame) {
+	// TODO: Check hardfork - STATICCALL requires Byzantium or later
+	// if (hardfork < BYZANTIUM) return { type: "InvalidOpcode" };
+
+	// Pop 6 arguments (no value - value is always 0)
 	const resultGas = popStack(frame);
 	if (resultGas.error) return resultGas.error;
 	const gas = resultGas.value;
@@ -16,10 +21,6 @@ export function callcode(frame) {
 	const resultAddress = popStack(frame);
 	if (resultAddress.error) return resultAddress.error;
 	const address = resultAddress.value;
-
-	const resultValue = popStack(frame);
-	if (resultValue.error) return resultValue.error;
-	const value = resultValue.value;
 
 	const resultInOffset = popStack(frame);
 	if (resultInOffset.error) return resultInOffset.error;
@@ -41,11 +42,8 @@ export function callcode(frame) {
 	// EIP-150 (Tangerine Whistle): 700 gas
 	let gasCost = 700n;
 
-	// Value transfer cost (transfers from current account to itself)
-	if (value > 0n) {
-		gasCost += 9000n; // CallValueTransfer
-		// No CallNewAccount cost since calling self
-	}
+	// No value transfer cost (value is always 0)
+	// No CallNewAccount cost (no value transfer)
 
 	// TODO: EIP-2929 cold account access cost
 	// const accessCost = isWarm(address) ? 100n : 2600n;
@@ -91,16 +89,10 @@ export function callcode(frame) {
 			? remainingGasBeforeCharge - gasCost
 			: 0n;
 	const maxGas = gasAfterCharge - gasAfterCharge / 64n;
-	const availableGasWithoutStipend = gasLimit < maxGas ? gasLimit : maxGas;
-
-	// Add stipend for value transfers
-	const availableGas =
-		value > 0n
-			? availableGasWithoutStipend + 2300n
-			: availableGasWithoutStipend;
+	const availableGas = gasLimit < maxGas ? gasLimit : maxGas;
 
 	// Charge total cost
-	const totalCost = gasCost + availableGasWithoutStipend;
+	const totalCost = gasCost + availableGas;
 	const gasErr = consumeGas(frame, totalCost);
 	if (gasErr) return gasErr;
 
@@ -111,10 +103,10 @@ export function callcode(frame) {
 	}
 
 	// TODO: Actual nested call execution
-	// CALLCODE executes target's code in current context:
-	// - msg.sender stays the same
-	// - Uses current account's storage and balance
-	// - Only borrows code from target address
+	// STATICCALL executes with isStatic = true:
+	// - No state modifications allowed (SSTORE, LOG*, CREATE, SELFDESTRUCT, value transfers)
+	// - Any state modification opcodes should fail with WriteProtection error
+	// - Otherwise behaves like CALL with value = 0
 
 	frame.returnData = new Uint8Array(0);
 

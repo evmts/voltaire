@@ -1,8 +1,8 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import * as Address from "../../primitives/Address/index.js";
-import * as Keccak from "../../crypto/Keccak/index.js";
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
+import { Keccak256 } from "../../crypto/Keccak256/Keccak256.js";
 
 /**
  * EXTCODEHASH opcode (0x3f) - Get hash of an account's code
@@ -24,7 +24,7 @@ export function extcodehash(frame, host) {
 	if (addrResult.error) return addrResult.error;
 	const addrU256 = addrResult.value;
 
-	const addr = Address._fromU256(addrU256);
+	const addr = fromNumber(addrU256);
 
 	// Gas cost: simplified to 700 (Istanbul)
 	// TODO: Add hardfork-aware gas pricing
@@ -40,7 +40,7 @@ export function extcodehash(frame, host) {
 		if (pushErr) return pushErr;
 	} else {
 		// Compute keccak256 hash of the code
-		const hash = Keccak._hash256(code);
+		const hash = Keccak256.hash(code);
 
 		// Convert hash bytes to u256 (big-endian)
 		let hashU256 = 0n;

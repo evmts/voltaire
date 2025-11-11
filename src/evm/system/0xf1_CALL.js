@@ -8,34 +8,37 @@
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
  */
 export function call(frame) {
-	// Pop all 7 arguments
-	const resultGas = popStack(frame);
-	if (resultGas.error) return resultGas.error;
-	const gas = resultGas.value;
+	// Pop all 7 arguments (stack order: bottom to top)
+	// Stack layout: [..., gas, address, value, inOffset, inLength, outOffset, outLength]
+	// Pop order (top to bottom): outLength, outOffset, inLength, inOffset, value, address, gas
 
-	const resultAddress = popStack(frame);
-	if (resultAddress.error) return resultAddress.error;
-	const address = resultAddress.value;
-
-	const resultValue = popStack(frame);
-	if (resultValue.error) return resultValue.error;
-	const value = resultValue.value;
-
-	const resultInOffset = popStack(frame);
-	if (resultInOffset.error) return resultInOffset.error;
-	const inOffset = resultInOffset.value;
-
-	const resultInLength = popStack(frame);
-	if (resultInLength.error) return resultInLength.error;
-	const inLength = resultInLength.value;
+	const resultOutLength = popStack(frame);
+	if (resultOutLength.error) return resultOutLength.error;
+	const outLength = resultOutLength.value;
 
 	const resultOutOffset = popStack(frame);
 	if (resultOutOffset.error) return resultOutOffset.error;
 	const outOffset = resultOutOffset.value;
 
-	const resultOutLength = popStack(frame);
-	if (resultOutLength.error) return resultOutLength.error;
-	const outLength = resultOutLength.value;
+	const resultInLength = popStack(frame);
+	if (resultInLength.error) return resultInLength.error;
+	const inLength = resultInLength.value;
+
+	const resultInOffset = popStack(frame);
+	if (resultInOffset.error) return resultInOffset.error;
+	const inOffset = resultInOffset.value;
+
+	const resultValue = popStack(frame);
+	if (resultValue.error) return resultValue.error;
+	const value = resultValue.value;
+
+	const resultAddress = popStack(frame);
+	if (resultAddress.error) return resultAddress.error;
+	const address = resultAddress.value;
+
+	const resultGas = popStack(frame);
+	if (resultGas.error) return resultGas.error;
+	const gas = resultGas.value;
 
 	// EIP-214: CALL with non-zero value cannot be executed in static call context
 	if (frame.isStatic && value > 0n) {
@@ -64,10 +67,12 @@ export function call(frame) {
 	// gasCost += accessCost;
 
 	// Calculate memory expansion cost for both input and output regions
-	if (inLength > BigInt(Number.MAX_SAFE_INTEGER) ||
+	if (
+		inLength > BigInt(Number.MAX_SAFE_INTEGER) ||
 		outLength > BigInt(Number.MAX_SAFE_INTEGER) ||
 		inOffset > BigInt(Number.MAX_SAFE_INTEGER) ||
-		outOffset > BigInt(Number.MAX_SAFE_INTEGER)) {
+		outOffset > BigInt(Number.MAX_SAFE_INTEGER)
+	) {
 		return { type: "OutOfBounds" };
 	}
 
@@ -93,17 +98,23 @@ export function call(frame) {
 
 	// Calculate available gas for call
 	// EIP-150: all but 1/64th of remaining gas
-	const gasLimit = gas > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : gas;
+	const gasLimit =
+		gas > BigInt(Number.MAX_SAFE_INTEGER)
+			? BigInt(Number.MAX_SAFE_INTEGER)
+			: gas;
 	const remainingGasBeforeCharge = frame.gasRemaining;
-	const gasAfterCharge = remainingGasBeforeCharge >= gasCost ?
-		remainingGasBeforeCharge - gasCost : 0n;
+	const gasAfterCharge =
+		remainingGasBeforeCharge >= gasCost
+			? remainingGasBeforeCharge - gasCost
+			: 0n;
 	const maxGas = gasAfterCharge - gasAfterCharge / 64n;
 	const availableGasWithoutStipend = gasLimit < maxGas ? gasLimit : maxGas;
 
 	// Add gas stipend for value transfers (2300 gas, free)
-	const availableGas = value > 0n ?
-		availableGasWithoutStipend + 2300n :
-		availableGasWithoutStipend;
+	const availableGas =
+		value > 0n
+			? availableGasWithoutStipend + 2300n
+			: availableGasWithoutStipend;
 
 	// Charge total cost (base + forwarded gas)
 	const totalCost = gasCost + availableGasWithoutStipend;
@@ -219,12 +230,14 @@ function memoryExpansionCost(frame, endBytes) {
 
 	// Calculate cost for new size
 	const newWords = wordCount(endBytes);
-	const newCost = BigInt(newWords * 3) + BigInt((newWords * newWords) / 512);
+	const newCost =
+		BigInt(newWords * 3) + BigInt(Math.floor((newWords * newWords) / 512));
 
 	// Calculate cost for current size
 	const currentWords = wordCount(currentSize);
 	const currentCost =
-		BigInt(currentWords * 3) + BigInt((currentWords * currentWords) / 512);
+		BigInt(currentWords * 3) +
+		BigInt(Math.floor((currentWords * currentWords) / 512));
 
 	return newCost - currentCost;
 }

@@ -4,7 +4,10 @@ import { consumeGas } from "../Frame/consumeGas.js";
 import { readMemory } from "../Frame/readMemory.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { hash } from "../../crypto/keccak256/hash.js";
-import { Keccak256Base, Keccak256Word } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import {
+	Keccak256Base,
+	Keccak256Word,
+} from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * SHA3 opcode (0x20) - Compute Keccak-256 hash
@@ -68,7 +71,8 @@ export function sha3(frame) {
 	// Handle empty data case
 	if (len === 0) {
 		// Keccak-256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
-		const emptyHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470n;
+		const emptyHash =
+			0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470n;
 		const pushErr = pushStack(frame, emptyHash);
 		if (pushErr) return pushErr;
 

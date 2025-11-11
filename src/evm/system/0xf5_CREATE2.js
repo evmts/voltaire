@@ -1,14 +1,19 @@
 /**
- * CREATE opcode (0xf0) - Create a new contract
+ * CREATE2 opcode (0xf5) - Create a new contract with deterministic address
  *
- * Stack: [value, offset, length] => [address]
- * Gas: 32000 + memory expansion + init code hash cost
+ * Stack: [value, offset, length, salt] => [address]
+ * Gas: 32000 + memory expansion + init code hash cost + keccak256 cost
+ * Address: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
+ * Note: Introduced in EIP-1014 (Constantinople)
  *
  * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
  */
-export function create(frame) {
-	// EIP-214: CREATE cannot be executed in static call context
+export function create2(frame) {
+	// TODO: Check hardfork - CREATE2 requires Constantinople or later
+	// if (hardfork < CONSTANTINOPLE) return { type: "InvalidOpcode" };
+
+	// EIP-214: CREATE2 cannot be executed in static call context
 	if (frame.isStatic) {
 		return { type: "WriteProtection" };
 	}
@@ -26,7 +31,10 @@ export function create(frame) {
 	if (resultLength.error) return resultLength.error;
 	const length = resultLength.value;
 
-	// Check value doesn't exceed max safe integer for gas calculations
+	const resultSalt = popStack(frame);
+	if (resultSalt.error) return resultSalt.error;
+	const salt = resultSalt.value;
+
 	if (length > BigInt(Number.MAX_SAFE_INTEGER)) {
 		return { type: "OutOfBounds" };
 	}
@@ -36,8 +44,9 @@ export function create(frame) {
 	// Calculate gas cost
 	// Base: 32000 gas
 	// + init code word cost (EIP-3860: 2 gas per word)
-	const wordCount = Math.ceil(len / 32);
-	let gasCost = 32000n + BigInt(wordCount * 2);
+	// + keccak256 cost for CREATE2 address calculation (6 gas per word)
+	const wordCnt = Math.ceil(len / 32);
+	let gasCost = 32000n + BigInt(wordCnt * 2) + BigInt(wordCnt * 6);
 
 	// Memory expansion cost
 	if (len > 0) {
@@ -49,7 +58,6 @@ export function create(frame) {
 		const memCost = memoryExpansionCost(frame, endBytes);
 		gasCost += memCost;
 
-		// Update memory size
 		const newSize = wordAlignedSize(endBytes);
 		if (newSize > frame.memorySize) {
 			frame.memorySize = newSize;
@@ -66,17 +74,15 @@ export function create(frame) {
 	}
 
 	// Calculate available gas for nested execution
-	// EIP-150 (Tangerine Whistle): all but 1/64th
 	const remainingGas = frame.gasRemaining;
 	const maxGas = remainingGas - remainingGas / 64n;
 
-	// TODO: Actual nested call execution
-	// For now, push 0 (failure) to stack
-	// In a full implementation:
-	// 1. Increment nonce
-	// 2. Calculate new contract address: keccak256(rlp([sender, nonce]))
-	// 3. Check call depth (max 1024)
-	// 4. Check balance sufficient for value transfer
+	// TODO: Actual nested call execution with deterministic address
+	// For CREATE2, address is: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
+	// 1. Hash initCode with keccak256
+	// 2. Concatenate: 0xff (1 byte) ++ sender (20 bytes) ++ salt (32 bytes) ++ initCodeHash (32 bytes)
+	// 3. Hash the concatenation to get address (take last 20 bytes)
+	// 4. Check if account already exists at address (fail if it does)
 	// 5. Execute init code in new context
 	// 6. Store returned code if successful
 
@@ -166,16 +172,13 @@ function memoryExpansionCost(frame, endBytes) {
 
 	if (endBytes <= currentSize) return 0n;
 
-	// Cap memory size to prevent overflow (16MB max)
 	const maxMemory = 0x1000000;
 	if (endBytes > maxMemory) return BigInt(Number.MAX_SAFE_INTEGER);
 
-	// Calculate cost for new size
 	const newWords = wordCount(endBytes);
 	const newCost =
 		BigInt(newWords * 3) + BigInt(Math.floor((newWords * newWords) / 512));
 
-	// Calculate cost for current size
 	const currentWords = wordCount(currentSize);
 	const currentCost =
 		BigInt(currentWords * 3) +

@@ -6,9 +6,7 @@ import { Address } from "../../primitives/Address/index.js";
 /**
  * Create a minimal frame for testing
  */
-function createTestFrame(
-	overrides?: Partial<BrandedFrame>,
-): BrandedFrame {
+function createTestFrame(overrides?: Partial<BrandedFrame>): BrandedFrame {
 	const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 	return {
 		__tag: "Frame",
@@ -53,7 +51,8 @@ describe("MLOAD (0x51)", () => {
 
 		// Expected value: bytes 1-32 as big-endian 256-bit number
 		// 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
-		const expected = 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20n;
+		const expected =
+			0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20n;
 		expect(frame.stack[0]).toBe(expected);
 
 		// PC should increment
@@ -110,7 +109,8 @@ describe("MLOAD (0x51)", () => {
 
 		expect(frame.stack.length).toBe(1);
 		// First 16 bytes are 0x11, last 16 bytes are 0x00
-		const expected = 0x11111111111111111111111111111111_00000000000000000000000000000000n;
+		const expected =
+			0x11111111111111111111111111111111_00000000000000000000000000000000n;
 		expect(frame.stack[0]).toBe(expected);
 	});
 
@@ -192,7 +192,7 @@ describe("MLOAD (0x51)", () => {
 	});
 
 	it("handles large but valid offset", () => {
-		const frame = createTestFrame();
+		const frame = createTestFrame({ gasRemaining: 100000000n });
 
 		const largeOffset = 1000000n;
 		frame.stack.push(largeOffset);
@@ -246,7 +246,7 @@ describe("MLOAD (0x51)", () => {
 	});
 
 	it("handles maximum memory expansion gas cost", () => {
-		const frame = createTestFrame({ gasRemaining: 1000000n });
+		const frame = createTestFrame({ gasRemaining: 100000000n });
 
 		// Very large offset requiring significant memory expansion
 		frame.stack.push(1000000n);
@@ -255,7 +255,7 @@ describe("MLOAD (0x51)", () => {
 
 		// Should succeed but consume significant gas
 		expect(result).toBeNull();
-		expect(frame.gasRemaining).toBeLessThan(500000n);
+		expect(frame.gasRemaining).toBeLessThan(99000000n);
 	});
 
 	it("reads correct endianness (big-endian)", () => {

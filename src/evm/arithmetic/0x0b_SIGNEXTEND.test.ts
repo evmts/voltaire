@@ -27,7 +27,8 @@ function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 
 describe("SIGNEXTEND (0x0b)", () => {
 	it("extends positive 1-byte value (byte 0)", () => {
-		const frame = createFrame([0n, 0x7fn]);
+		// Stack: [value, byte_index] (bottom to top) -> pops byte_index, value
+		const frame = createFrame([0x7fn, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -36,28 +37,31 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("extends negative 1-byte value (byte 0)", () => {
-		const frame = createFrame([0n, 0xffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0xffn, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
-		const expected = ((1n << 256n) - 1n); // All 1s = -1 in two's complement
+		const expected = (1n << 256n) - 1n; // All 1s = -1 in two's complement
 		expect(frame.stack).toEqual([expected]);
 		expect(frame.pc).toBe(1);
 	});
 
 	it("extends negative 1-byte value 0x80 (byte 0)", () => {
-		const frame = createFrame([0n, 0x80n]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x80n, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
 		// 0x80 has sign bit set, should be sign-extended to all 1s except lower bits
-		const expected = ((1n << 256n) - 1n) & ~0x7fn | 0x80n;
+		const expected = (((1n << 256n) - 1n) & ~0x7fn) | 0x80n;
 		expect(frame.stack).toEqual([expected]);
 		expect(frame.pc).toBe(1);
 	});
 
 	it("extends positive 2-byte value (byte 1)", () => {
-		const frame = createFrame([1n, 0x7fffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x7fffn, 1n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -66,28 +70,31 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("extends negative 2-byte value (byte 1)", () => {
-		const frame = createFrame([1n, 0x8000n]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x8000n, 1n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
 		// Sign bit at position 15 is set, extend with 1s
-		const expected = ((1n << 256n) - 1n) & ~0x7fffn | 0x8000n;
+		const expected = (((1n << 256n) - 1n) & ~0x7fffn) | 0x8000n;
 		expect(frame.stack).toEqual([expected]);
 		expect(frame.pc).toBe(1);
 	});
 
 	it("extends negative 2-byte value 0xFFFF (byte 1)", () => {
-		const frame = createFrame([1n, 0xffffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0xffffn, 1n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
-		const expected = ((1n << 256n) - 1n); // All 1s
+		const expected = (1n << 256n) - 1n; // All 1s
 		expect(frame.stack).toEqual([expected]);
 		expect(frame.pc).toBe(1);
 	});
 
 	it("extends value with byte index 0 and value 0x12", () => {
-		const frame = createFrame([0n, 0x12n]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x12n, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -97,7 +104,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 
 	it("handles byte index 31 (no extension needed)", () => {
 		const MAX_U256 = (1n << 256n) - 1n;
-		const frame = createFrame([31n, MAX_U256]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([MAX_U256, 31n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -106,7 +114,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("handles byte index > 31 (no extension needed)", () => {
-		const frame = createFrame([32n, 0xffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0xffn, 32n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -117,7 +126,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	it("handles byte index 30", () => {
 		// Byte 30 means sign bit at position 30*8+7 = 247
 		const value = 1n << 247n; // Sign bit set
-		const frame = createFrame([30n, value]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([value, 30n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -129,7 +139,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("clears upper bits when sign bit is 0", () => {
-		const frame = createFrame([0n, 0x123n]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x123n, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -148,7 +159,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 
 	it("handles byte index 15 (16-byte value)", () => {
 		const value = (1n << 127n) | 0xffffn; // Sign bit set at position 127
-		const frame = createFrame([15n, value]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([value, 15n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -161,7 +173,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 
 	it("handles positive value at byte boundary", () => {
 		// Value with sign bit clear at byte 3
-		const frame = createFrame([3n, 0x7fffffffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x7fffffffn, 3n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -171,7 +184,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 
 	it("handles negative value at byte boundary", () => {
 		// Value with sign bit set at byte 3
-		const frame = createFrame([3n, 0x80000000n]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x80000000n, 3n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -191,7 +205,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("returns OutOfGas when insufficient gas", () => {
-		const frame = createFrame([0n, 0x7fn], 4n);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x7fn, 0n], 4n);
 		const err = signextend(frame);
 
 		expect(err).toEqual({ type: "OutOfGas" });
@@ -200,7 +215,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("consumes correct gas amount (5)", () => {
-		const frame = createFrame([0n, 0x7fn], 100n);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0x7fn, 0n], 100n);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -208,7 +224,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("handles large byte index value", () => {
-		const frame = createFrame([1000n, 0xffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0xffn, 1000n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();
@@ -217,7 +234,8 @@ describe("SIGNEXTEND (0x0b)", () => {
 	});
 
 	it("verifies result is always 256-bit", () => {
-		const frame = createFrame([0n, 0xffn]);
+		// Stack: [value, byte_index] (bottom to top)
+		const frame = createFrame([0xffn, 0n]);
 		const err = signextend(frame);
 
 		expect(err).toBeNull();

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { handler_0x42_TIMESTAMP } from "./0x42_TIMESTAMP.js";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
-import * as Address from "../../primitives/Address/index.js";
+import { Address } from "../../primitives/Address/index.js";
 
 describe("TIMESTAMP (0x42)", () => {
 	it("pushes block timestamp to stack", () => {
@@ -13,8 +13,8 @@ describe("TIMESTAMP (0x42)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x42]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -45,8 +45,8 @@ describe("TIMESTAMP (0x42)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x42]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -77,8 +77,8 @@ describe("TIMESTAMP (0x42)", () => {
 			pc: 0,
 			gasRemaining: 1n,
 			bytecode: new Uint8Array([0x42]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -107,8 +107,8 @@ describe("TIMESTAMP (0x42)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x42]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),

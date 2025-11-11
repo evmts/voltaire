@@ -27,12 +27,14 @@ export function memoryExpansionCost(frame, endBytes) {
 
 	// Calculate cost for new size
 	const newWords = wordCount(endBytes);
-	const newCost = BigInt(newWords * 3) + BigInt((newWords * newWords) / 512);
+	const newCost =
+		BigInt(newWords * 3) + BigInt(Math.floor((newWords * newWords) / 512));
 
 	// Calculate cost for current size
 	const currentWords = wordCount(currentSize);
 	const currentCost =
-		BigInt(currentWords * 3) + BigInt((currentWords * currentWords) / 512);
+		BigInt(currentWords * 3) +
+		BigInt(Math.floor((currentWords * currentWords) / 512));
 
 	return newCost - currentCost;
 }

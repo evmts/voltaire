@@ -6,9 +6,7 @@ import { Address } from "../../primitives/Address/index.js";
 /**
  * Create a minimal frame for testing
  */
-function createTestFrame(
-	overrides?: Partial<BrandedFrame>,
-): BrandedFrame {
+function createTestFrame(overrides?: Partial<BrandedFrame>): BrandedFrame {
 	const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 	return {
 		__tag: "Frame",
@@ -257,7 +255,7 @@ describe("MSTORE8 (0x53)", () => {
 	});
 
 	it("handles large but valid offset", () => {
-		const frame = createTestFrame();
+		const frame = createTestFrame({ gasRemaining: 100000000n });
 
 		const largeOffset = 1000000n;
 		frame.stack.push(0x88n);

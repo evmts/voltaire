@@ -27,7 +27,8 @@ function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 
 describe("EXP (0x0a)", () => {
 	it("computes base^exponent", () => {
-		const frame = createFrame([2n, 3n]);
+		// Stack: [exponent, base] (bottom to top) -> pops base, exponent
+		const frame = createFrame([3n, 2n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -36,7 +37,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles exponent of 0", () => {
-		const frame = createFrame([999n, 0n]);
+		// Stack: [exponent=0, base] (bottom to top)
+		const frame = createFrame([0n, 999n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -45,7 +47,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles base of 0", () => {
-		const frame = createFrame([0n, 5n]);
+		// Stack: [exponent, base=0] (bottom to top)
+		const frame = createFrame([5n, 0n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -63,7 +66,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles exponent of 1", () => {
-		const frame = createFrame([42n, 1n]);
+		// Stack: [exponent=1, base] (bottom to top)
+		const frame = createFrame([1n, 42n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -72,7 +76,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles overflow wrapping", () => {
-		const frame = createFrame([2n, 256n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([256n, 2n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -82,7 +87,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles large exponent", () => {
-		const frame = createFrame([2n, 255n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([255n, 2n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -93,7 +99,8 @@ describe("EXP (0x0a)", () => {
 
 	it("handles overflow with large base", () => {
 		const MAX_U256 = (1n << 256n) - 1n;
-		const frame = createFrame([MAX_U256, 2n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([2n, MAX_U256]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -104,7 +111,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("computes 10^18", () => {
-		const frame = createFrame([10n, 18n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([18n, 10n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -113,7 +121,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("handles base > 2", () => {
-		const frame = createFrame([5n, 10n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([10n, 5n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -130,7 +139,7 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("returns OutOfGas when insufficient gas", () => {
-		const frame = createFrame([2n, 3n], 9n);
+		const frame = createFrame([3n, 2n], 9n);
 		const err = exp(frame);
 
 		expect(err).toEqual({ type: "OutOfGas" });
@@ -139,7 +148,8 @@ describe("EXP (0x0a)", () => {
 	});
 
 	it("consumes base gas (10) when exponent is 0", () => {
-		const frame = createFrame([999n, 0n], 100n);
+		// Stack: [exponent=0, base] (bottom to top)
+		const frame = createFrame([0n, 999n], 100n);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -148,7 +158,8 @@ describe("EXP (0x0a)", () => {
 
 	it("consumes dynamic gas based on exponent byte length (1 byte)", () => {
 		// Exponent = 255 (0xFF) = 1 byte
-		const frame = createFrame([2n, 255n], 1000n);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([255n, 2n], 1000n);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -158,7 +169,8 @@ describe("EXP (0x0a)", () => {
 
 	it("consumes dynamic gas based on exponent byte length (2 bytes)", () => {
 		// Exponent = 256 (0x0100) = 2 bytes
-		const frame = createFrame([2n, 256n], 1000n);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([256n, 2n], 1000n);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -169,7 +181,8 @@ describe("EXP (0x0a)", () => {
 	it("consumes dynamic gas based on exponent byte length (32 bytes)", () => {
 		// Exponent = MAX_U256
 		const MAX_U256 = (1n << 256n) - 1n;
-		const frame = createFrame([2n, MAX_U256], 10000n);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([MAX_U256, 2n], 10000n);
 		const err = exp(frame);
 
 		expect(err).toBeNull();
@@ -179,28 +192,30 @@ describe("EXP (0x0a)", () => {
 
 	it("correctly calculates byte length for boundary values", () => {
 		// Test 0x80 (128) = 1 byte
-		const frame1 = createFrame([2n, 128n], 1000n);
+		// Stack: [exponent, base] (bottom to top)
+		const frame1 = createFrame([128n, 2n], 1000n);
 		exp(frame1);
 		expect(frame1.gasRemaining).toBe(940n); // 10 + 50*1
 
 		// Test 0x100 (256) = 2 bytes
-		const frame2 = createFrame([2n, 256n], 1000n);
+		const frame2 = createFrame([256n, 2n], 1000n);
 		exp(frame2);
 		expect(frame2.gasRemaining).toBe(890n); // 10 + 50*2
 
 		// Test 0xFFFF = 2 bytes
-		const frame3 = createFrame([2n, 65535n], 1000n);
+		const frame3 = createFrame([65535n, 2n], 1000n);
 		exp(frame3);
 		expect(frame3.gasRemaining).toBe(890n); // 10 + 50*2
 
 		// Test 0x010000 = 3 bytes
-		const frame4 = createFrame([2n, 65536n], 1000n);
+		const frame4 = createFrame([65536n, 2n], 1000n);
 		exp(frame4);
 		expect(frame4.gasRemaining).toBe(840n); // 10 + 50*3
 	});
 
 	it("verifies exponentiation by squaring correctness", () => {
-		const frame = createFrame([3n, 13n]);
+		// Stack: [exponent, base] (bottom to top)
+		const frame = createFrame([13n, 3n]);
 		const err = exp(frame);
 
 		expect(err).toBeNull();

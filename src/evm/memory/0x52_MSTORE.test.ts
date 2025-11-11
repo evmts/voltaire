@@ -6,9 +6,7 @@ import { Address } from "../../primitives/Address/index.js";
 /**
  * Create a minimal frame for testing
  */
-function createTestFrame(
-	overrides?: Partial<BrandedFrame>,
-): BrandedFrame {
+function createTestFrame(overrides?: Partial<BrandedFrame>): BrandedFrame {
 	const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 	return {
 		__tag: "Frame",
@@ -37,7 +35,8 @@ describe("MSTORE (0x52)", () => {
 	it("stores 32 bytes to memory at offset 0", () => {
 		const frame = createTestFrame();
 
-		const value = 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20n;
+		const value =
+			0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20n;
 		frame.stack.push(value); // value
 		frame.stack.push(0n); // offset
 
@@ -103,12 +102,16 @@ describe("MSTORE (0x52)", () => {
 		const frame = createTestFrame();
 
 		// First write
-		frame.stack.push(0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan);
+		frame.stack.push(
+			0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan,
+		);
 		frame.stack.push(0n);
 		mstore(frame);
 
 		// Second write at same offset
-		frame.stack.push(0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn);
+		frame.stack.push(
+			0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn,
+		);
 		frame.stack.push(0n);
 
 		const result = mstore(frame);
@@ -211,7 +214,7 @@ describe("MSTORE (0x52)", () => {
 	});
 
 	it("handles large but valid offset", () => {
-		const frame = createTestFrame();
+		const frame = createTestFrame({ gasRemaining: 100000000n });
 
 		const largeOffset = 1000000n;
 		frame.stack.push(0x42n);
@@ -255,7 +258,9 @@ describe("MSTORE (0x52)", () => {
 		const frame = createTestFrame();
 
 		// Write at offset 16 (overlaps with first word)
-		frame.stack.push(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn);
+		frame.stack.push(
+			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
+		);
 		frame.stack.push(16n);
 
 		const result = mstore(frame);

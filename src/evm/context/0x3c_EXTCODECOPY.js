@@ -2,7 +2,7 @@ import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { writeMemory } from "../Frame/writeMemory.js";
-import * as Address from "../../primitives/Address/index.js";
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
 
 /**
  * Add two u32 values with overflow checking
@@ -62,7 +62,7 @@ export function extcodecopy(frame, host) {
 		return { type: "OutOfBounds" };
 	}
 
-	const addr = Address._fromU256(addrU256);
+	const addr = fromNumber(addrU256);
 	const dest = Number(destOffset);
 	const off = Number(offset);
 	const len = Number(size);

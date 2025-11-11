@@ -1,6 +1,6 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import * as Address from "../../primitives/Address/index.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
 
 /**
  * ORIGIN opcode (0x32) - Get execution origination address
@@ -16,7 +16,7 @@ export function origin(frame, origin) {
 	const gasErr = consumeGas(frame, 2n);
 	if (gasErr) return gasErr;
 
-	const originU256 = Address._toU256(origin);
+	const originU256 = toU256(origin);
 	const pushErr = pushStack(frame, originU256);
 	if (pushErr) return pushErr;
 

@@ -1,7 +1,7 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import * as Address from "../../primitives/Address/index.js";
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
 
 /**
  * BALANCE opcode (0x31) - Get balance of an account
@@ -18,7 +18,7 @@ export function balance(frame, host) {
 	if (addrResult.error) return addrResult.error;
 	const addrU256 = addrResult.value;
 
-	const addr = Address._fromU256(addrU256);
+	const addr = fromNumber(addrU256);
 
 	// Gas cost: simplified to 700 (Istanbul+)
 	// TODO: Add hardfork-aware gas pricing

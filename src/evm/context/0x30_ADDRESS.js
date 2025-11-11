@@ -1,6 +1,6 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import * as Address from "../../primitives/Address/index.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
 
 /**
  * ADDRESS opcode (0x30) - Get address of currently executing account
@@ -15,7 +15,7 @@ export function address(frame) {
 	const gasErr = consumeGas(frame, 2n);
 	if (gasErr) return gasErr;
 
-	const addrU256 = Address._toU256(frame.address);
+	const addrU256 = toU256(frame.address);
 	const pushErr = pushStack(frame, addrU256);
 	if (pushErr) return pushErr;
 

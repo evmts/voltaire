@@ -48,6 +48,13 @@ export type BrandedFrame = {
 	blockBaseFee?: bigint;
 	chainId?: bigint;
 	blobBaseFee?: bigint;
+
+	// Logs (emitted by LOG0-LOG4 opcodes)
+	logs?: Array<{
+		address: Address;
+		topics: bigint[];
+		data: Uint8Array;
+	}>;
 };
 
 /**

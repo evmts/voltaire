@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { handler_0x43_NUMBER } from "./0x43_NUMBER.js";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
-import * as Address from "../../primitives/Address/index.js";
+import { Address } from "../../primitives/Address/index.js";
 
 describe("NUMBER (0x43)", () => {
 	it("pushes block number to stack", () => {
@@ -13,8 +13,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -45,8 +45,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -75,8 +75,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -105,8 +105,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -135,8 +135,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),
@@ -165,8 +165,8 @@ describe("NUMBER (0x43)", () => {
 			pc: 0,
 			gasRemaining: 1000n,
 			bytecode: new Uint8Array([0x43]),
-			caller: Address.from("0x0000000000000000000000000000000000000001"),
-			address: Address.from("0x0000000000000000000000000000000000000002"),
+			caller: Address("0x0000000000000000000000000000000000000001"),
+			address: Address("0x0000000000000000000000000000000000000002"),
 			value: 0n,
 			calldata: new Uint8Array(),
 			output: new Uint8Array(),

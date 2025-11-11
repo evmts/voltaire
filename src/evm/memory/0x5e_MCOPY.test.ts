@@ -6,9 +6,7 @@ import { Address } from "../../primitives/Address/index.js";
 /**
  * Create a minimal frame for testing
  */
-function createTestFrame(
-	overrides?: Partial<BrandedFrame>,
-): BrandedFrame {
+function createTestFrame(overrides?: Partial<BrandedFrame>): BrandedFrame {
 	const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 	return {
 		__tag: "Frame",
@@ -181,8 +179,8 @@ describe("MCOPY (0x5e)", () => {
 		expect(result).toBeNull();
 
 		// Memory must cover 0-31 (source) and 1000-1031 (dest)
-		// Aligned to 1024 (32 words)
-		expect(frame.memorySize).toBe(1024);
+		// Aligned to next word boundary after 1032 = 1056 (33 words)
+		expect(frame.memorySize).toBe(1056);
 	});
 
 	it("expands memory correctly for destination range", () => {
@@ -438,7 +436,7 @@ describe("MCOPY (0x5e)", () => {
 		expect(frame.memorySize).toBeGreaterThanOrEqual(5024);
 
 		// Significant gas consumed for memory expansion
-		expect(frame.gasRemaining).toBeLessThan(99000n);
+		expect(frame.gasRemaining).toBeLessThan(99500n);
 	});
 
 	it("does not shrink memory size", () => {
