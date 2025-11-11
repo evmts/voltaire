@@ -8,15 +8,17 @@ import {
 } from "../utils.js";
 
 /**
- * Serialize EIP-7702 transaction to RLP encoded bytes
+ * Serialize EIP-7702 transaction to RLP encoded bytes.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702} tx - Transaction to serialize
  * @returns {Uint8Array} RLP encoded transaction with type prefix
- *
+ * @throws {never} Never throws
  * @example
  * ```javascript
- * const serialized = TransactionEIP7702.serialize(tx);
- * // Uint8Array with 0x04 prefix followed by RLP encoded data
+ * import { serialize } from './primitives/Transaction/EIP7702/serialize.js';
+ * const serialized = serialize(tx);
  * ```
  */
 export function serialize(tx) {
