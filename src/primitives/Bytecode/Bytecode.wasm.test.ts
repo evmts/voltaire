@@ -1,8 +1,8 @@
-import { describe, expect, it, beforeAll } from "vitest";
-import * as BytecodeWasm from "./Bytecode.wasm.js";
+import { beforeAll, describe, expect, it } from "vitest";
+import { loadWasm } from "../../wasm-loader/loader.js";
 import * as BytecodeTS from "./BrandedBytecode/index.js";
 import type { BrandedBytecode } from "./BrandedBytecode/index.js";
-import { loadWasm } from "../../wasm-loader/loader.js";
+import * as BytecodeWasm from "./Bytecode.wasm.js";
 
 // Load WASM before running tests
 beforeAll(async () => {
@@ -51,9 +51,11 @@ describe("Bytecode.wasm WASM-accelerated methods", () => {
 		it("matches TypeScript implementation (as array)", () => {
 			const code = bc(
 				new Uint8Array([
-					0x60, 0x01, // PUSH1 0x01
+					0x60,
+					0x01, // PUSH1 0x01
 					0x5b, // JUMPDEST
-					0x60, 0x02, // PUSH1 0x02
+					0x60,
+					0x02, // PUSH1 0x02
 					0x5b, // JUMPDEST
 					0x00, // STOP
 				]),
@@ -87,8 +89,10 @@ describe("Bytecode.wasm WASM-accelerated methods", () => {
 		it("validates instruction boundaries correctly", () => {
 			const code = bc(
 				new Uint8Array([
-					0x60, 0x01, // PUSH1 0x01
-					0x60, 0x02, // PUSH1 0x02
+					0x60,
+					0x01, // PUSH1 0x01
+					0x60,
+					0x02, // PUSH1 0x02
 				]),
 			);
 
@@ -130,7 +134,8 @@ describe("Bytecode.wasm WASM-accelerated methods", () => {
 			const code = bc(
 				new Uint8Array([
 					0x5b, // JUMPDEST at 0
-					0x60, 0x01, // PUSH1 0x01
+					0x60,
+					0x01, // PUSH1 0x01
 					0x5b, // JUMPDEST at 3
 					0x01, // ADD at 4
 				]),
@@ -270,10 +275,13 @@ describe("Bytecode.wasm WASM-accelerated methods", () => {
 		it("WASM and TypeScript methods produce consistent results", () => {
 			const code = bc(
 				new Uint8Array([
-					0x60, 0x10, // PUSH1 0x10
-					0x60, 0x00, // PUSH1 0x00
+					0x60,
+					0x10, // PUSH1 0x10
+					0x60,
+					0x00, // PUSH1 0x00
 					0x5b, // JUMPDEST
-					0x60, 0x01, // PUSH1 0x01
+					0x60,
+					0x01, // PUSH1 0x01
 					0x01, // ADD
 					0x5b, // JUMPDEST
 					0x00, // STOP

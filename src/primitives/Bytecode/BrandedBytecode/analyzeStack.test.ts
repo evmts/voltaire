@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as Bytecode from "./index.js";
 import * as Opcode from "../../Opcode/BrandedOpcode/index.js";
+import * as Bytecode from "./index.js";
 
 describe("analyzeStack", () => {
 	describe("valid bytecode", () => {

@@ -1,8 +1,8 @@
-// @ts-nocheck
-import { parseInstructions } from "./parseInstructions.js";
+import { getName } from "../../Opcode/BrandedOpcode/getName.js";
 import { getStackInput } from "../../Opcode/BrandedOpcode/getStackInput.js";
 import { getStackOutput } from "../../Opcode/BrandedOpcode/getStackOutput.js";
-import { getName } from "../../Opcode/BrandedOpcode/getName.js";
+// @ts-nocheck
+import { parseInstructions } from "./parseInstructions.js";
 
 /**
  * Analyze stack behavior of bytecode
@@ -39,7 +39,7 @@ export function analyzeStack(bytecode, options = {}) {
 
 	// Simple single-path analysis
 	let depth = initialDepth;
-	let currentBlock = {
+	const currentBlock = {
 		blockIndex: 0,
 		startPc: 0,
 		endPc: 0,

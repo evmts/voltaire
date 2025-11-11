@@ -4,8 +4,8 @@
  */
 
 import { bench, run } from "mitata";
-import * as Bytecode from "./index.js";
 import type { BrandedBytecode } from "./BrandedBytecode.js";
+import * as Bytecode from "./index.js";
 
 // ============================================================================
 // Test Data Generation
@@ -50,7 +50,9 @@ const mediumBytecode = generateBytecode(1024) as BrandedBytecode;
 const largeBytecode = generateBytecode(10240) as BrandedBytecode;
 
 // Simple patterns for baseline
-const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]) as BrandedBytecode;
+const simplePush = new Uint8Array([
+	0x60, 0x01, 0x60, 0x02, 0x01,
+]) as BrandedBytecode;
 
 // Convert to branded bytecode
 const smallCode = Bytecode.from(smallBytecode) as BrandedBytecode;

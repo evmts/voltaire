@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./BrandedEvent/BrandedEvent.js";
-export * from "./Event.js";
+export { Event } from "./Event.js";
 
 export { getSignature } from "./BrandedEvent/getSignature.js";
 export { getSelector } from "./BrandedEvent/getSelector.js";

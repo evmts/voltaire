@@ -65,7 +65,7 @@ describe("encodePacked - uint types", () => {
 			["uint8", "uint16", "uint32"],
 			[0x12n, 0x3456n, 0x789abcden],
 		);
-		expect(result).toMatch(/0x12[34]{4}789abcde/i);
+		expect(result).toMatch(/0x123456789abcde/i);
 	});
 });
 

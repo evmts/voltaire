@@ -14,7 +14,7 @@ describe("TransactionEIP2930.serialize", () => {
 			nonce: 0n,
 			gasPrice: 20000000000n,
 			gasLimit: 21000n,
-			to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEB0"),
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 			value: 1000000000000000000n,
 			data: new Uint8Array(),
 			accessList: [],
@@ -37,7 +37,7 @@ describe("TransactionEIP2930.serialize", () => {
 			nonce: 0n,
 			gasPrice: 20000000000n,
 			gasLimit: 50000n,
-			to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEB0"),
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 			value: 0n,
 			data: new Uint8Array(),
 			accessList: [

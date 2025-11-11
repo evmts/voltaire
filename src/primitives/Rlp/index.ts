@@ -1,5 +1,5 @@
-import * as BrandedRlpNs from "./BrandedRlp/index.js";
 import type { BrandedRlp } from "./BrandedRlp/BrandedRlp.js";
+import * as BrandedRlpNs from "./BrandedRlp/index.js";
 
 // Re-export BrandedRlp type and errors
 export * from "./BrandedRlp/errors.js";

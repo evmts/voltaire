@@ -99,7 +99,7 @@ describe("Bytecode.scan", () => {
 			type: "push",
 			size: 33,
 		});
-		expect(instructions[0]?.value).toBe(BigInt("0x" + "ff".repeat(32)));
+		expect(instructions[0]?.value).toBe(BigInt(`0x${"ff".repeat(32)}`));
 	});
 
 	it("correctly skips PUSH data bytes", () => {

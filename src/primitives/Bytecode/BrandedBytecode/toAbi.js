@@ -27,11 +27,9 @@ export function toAbi(bytecode) {
 
 		// PUSH4 (0x63) followed by 4 bytes - potential function selector
 		if (opcode === 0x63 && i + 4 < bytecode.length) {
-			const selector =
-				"0x" +
-				Array.from(bytecode.slice(i + 1, i + 5))
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const selector = `0x${Array.from(bytecode.slice(i + 1, i + 5))
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 			selectors.add(selector);
 			i += 4; // Skip the 4 selector bytes
 			continue;
@@ -39,11 +37,9 @@ export function toAbi(bytecode) {
 
 		// PUSH32 (0x7f) followed by 32 bytes - potential event hash
 		if (opcode === 0x7f && i + 32 < bytecode.length) {
-			const hash =
-				"0x" +
-				Array.from(bytecode.slice(i + 1, i + 33))
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const hash = `0x${Array.from(bytecode.slice(i + 1, i + 33))
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 			// Event hashes are used with LOG opcodes (0xa0-0xa4)
 			// Look ahead for LOG instruction (up to 100 bytes)
 			for (let j = i + 33; j < Math.min(i + 133, bytecode.length); j++) {
@@ -53,7 +49,6 @@ export function toAbi(bytecode) {
 				}
 			}
 			i += 32; // Skip the 32 hash bytes
-			continue;
 		}
 	}
 

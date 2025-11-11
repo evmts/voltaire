@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { getBlock } from "./getBlock.js";
-import { from } from "./from.js";
 import type { BasicBlock } from "./BrandedBytecode.js";
+import { from } from "./from.js";
+import { getBlock } from "./getBlock.js";
 
 describe("getBlock", () => {
 	it("returns block when PC at block start", () => {

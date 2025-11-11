@@ -247,7 +247,7 @@ describe("Abi.decodeParameters - fixed bytes types", () => {
 	it("decodes bytes1", () => {
 		const encoded = Abi.encodeParameters([{ type: "bytes1" }], ["0x42"]);
 		const decoded = Abi.decodeParameters([{ type: "bytes1" }], encoded);
-		expect(decoded[0]).toMatch(/0x42/i);
+		expect(String(decoded[0]).toLowerCase()).toMatch(/0x42/i);
 	});
 
 	it("decodes bytes4", () => {
@@ -293,7 +293,7 @@ describe("Abi.decodeParameters - dynamic bytes", () => {
 	it("decodes empty bytes", () => {
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], ["0x"]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(decoded[0]).toMatch(/0x/i);
+		expect(String(decoded[0]).toLowerCase()).toMatch(/0x/i);
 	});
 
 	it("decodes bytes with data", () => {

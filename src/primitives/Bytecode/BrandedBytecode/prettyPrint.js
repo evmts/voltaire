@@ -51,11 +51,11 @@ export function prettyPrint(bytecode, options = {}) {
 
 	// Header
 	if (!compact) {
-		lines.push(c.cyan + "┌─────────────────────────────────────┐" + c.reset);
-		lines.push(c.cyan + "│   EVM Bytecode Disassembly          │" + c.reset);
+		lines.push(`${c.cyan}┌─────────────────────────────────────┐${c.reset}`);
+		lines.push(`${c.cyan}│   EVM Bytecode Disassembly          │${c.reset}`);
 		const sizeText = `Size: ${bytecode.length} bytes`;
-		lines.push(c.cyan + `│   ${sizeText.padEnd(33)} │` + c.reset);
-		lines.push(c.cyan + "└─────────────────────────────────────┘" + c.reset);
+		lines.push(`${c.cyan}│   ${sizeText.padEnd(33)} │${c.reset}`);
+		lines.push(`${c.cyan}└─────────────────────────────────────┘${c.reset}`);
 		lines.push("");
 	}
 
@@ -94,7 +94,7 @@ export function prettyPrint(bytecode, options = {}) {
 			const block = blocks[currentBlockIndex];
 			if (block && inst.pc === block.startPc && inst.pc !== 0) {
 				lines.push("");
-				lines.push(c.gray + `; Block ${currentBlockIndex}` + c.reset);
+				lines.push(`${c.gray}; Block ${currentBlockIndex}${c.reset}`);
 			}
 			if (block && inst.pc >= block.endPc) {
 				currentBlockIndex++;
@@ -103,7 +103,7 @@ export function prettyPrint(bytecode, options = {}) {
 
 		// Line number
 		if (lineNumbers) {
-			parts.push(inst.pc.toString().padStart(3, "0") + ":");
+			parts.push(`${inst.pc.toString().padStart(3, "0")}:`);
 		}
 
 		// Opcode name
@@ -120,9 +120,9 @@ export function prettyPrint(bytecode, options = {}) {
 			let hexValue = inst.value.toString(16);
 			// Pad to even length for proper hex display
 			if (hexValue.length % 2 !== 0) {
-				hexValue = "0" + hexValue;
+				hexValue = `0${hexValue}`;
 			}
-			const value = "0x" + hexValue;
+			const value = `0x${hexValue}`;
 			parts.push(c.green + value.padEnd(14) + c.reset);
 		} else {
 			parts.push(" ".repeat(14));
@@ -150,7 +150,7 @@ export function prettyPrint(bytecode, options = {}) {
 	// Summary
 	if (showSummary && !compact) {
 		lines.push("");
-		lines.push(c.cyan + "Summary:" + c.reset);
+		lines.push(`${c.cyan}Summary:${c.reset}`);
 		if (showGas) {
 			lines.push(`  Total Gas: ${totalGas}`);
 		}

@@ -15,6 +15,12 @@ import { formatWithArgs } from "./formatWithArgs.js";
 import { getItem } from "./getItem.js";
 import { parseLogs } from "./parseLogs.js";
 
+// Import sub-namespaces
+import * as FunctionNs from "../function/index.js";
+import * as EventNs from "../event/index.js";
+import * as ErrorNs from "../error/index.js";
+import * as ConstructorNs from "../constructor/index.js";
+
 // Export individual functions
 export {
 	decode,
@@ -58,5 +64,8 @@ export const BrandedAbi = {
 	decode,
 	decodeData,
 	parseLogs,
-	// Sub-namespaces are imported above
+	Function: FunctionNs,
+	Event: EventNs,
+	Error: ErrorNs,
+	Constructor: ConstructorNs,
 };

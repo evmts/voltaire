@@ -5,10 +5,10 @@
  */
 
 import { bench, run } from "mitata";
+import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { from } from "./from.js";
 import { getBlock } from "./getBlock.js";
 import { _getNextPc } from "./index.js";
-import type { BrandedBytecode } from "./BrandedBytecode.js";
 
 // ============================================================================
 // Test Data Generation

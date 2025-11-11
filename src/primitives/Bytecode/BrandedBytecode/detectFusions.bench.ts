@@ -8,11 +8,13 @@
 
 import { bench, run } from "mitata";
 import { loadWasm } from "../../../wasm-loader/loader.js";
-import * as Bytecode from "./index.js";
 import * as BytecodeWasm from "../Bytecode.wasm.js";
+import * as Bytecode from "./index.js";
 
 // Load WASM before running benchmarks
-await loadWasm(new URL("../../../wasm-loader/primitives.wasm", import.meta.url));
+await loadWasm(
+	new URL("../../../wasm-loader/primitives.wasm", import.meta.url),
+);
 
 // ============================================================================
 // Test Data Generation
@@ -153,8 +155,12 @@ const swapPopPattern = new Uint8Array([0x90, 0x50]); // SWAP1, POP
 
 // Multiple fusions pattern
 const multiplePattern = new Uint8Array([
-	0x60, 0x05, 0x01, // PUSH1 0x05, ADD
-	0x60, 0x10, 0x56, // PUSH1 0x10, JUMP
+	0x60,
+	0x05,
+	0x01, // PUSH1 0x05, ADD
+	0x60,
+	0x10,
+	0x56, // PUSH1 0x10, JUMP
 ]);
 
 // ============================================================================

@@ -8,13 +8,13 @@ import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 import { analyzeStack } from "./analyzeStack.js";
 import { detectFusions } from "./detectFusions.js";
 import { equals } from "./equals.js";
-import { getNextPc as _getNextPc } from "./getNextPc.js";
-import { getBlock } from "./getBlock.js";
 import { extractRuntime } from "./extractRuntime.js";
 import { formatInstruction } from "./formatInstruction.js";
 import { formatInstructions } from "./formatInstructions.js";
 import { from } from "./from.js";
 import { fromHex } from "./fromHex.js";
+import { getBlock } from "./getBlock.js";
+import { getNextPc as _getNextPc } from "./getNextPc.js";
 import { getPushSize } from "./getPushSize.js";
 import { hasMetadata } from "./hasMetadata.js";
 import { hash } from "./hash.js";
@@ -26,8 +26,8 @@ import { prettyPrint } from "./prettyPrint.js";
 import { scan } from "./scan.js";
 import { size } from "./size.js";
 import { stripMetadata } from "./stripMetadata.js";
-import { toHex } from "./toHex.js";
 import { toAbi } from "./toAbi.js";
+import { toHex } from "./toHex.js";
 import { validate } from "./validate.js";
 
 // Export individual functions

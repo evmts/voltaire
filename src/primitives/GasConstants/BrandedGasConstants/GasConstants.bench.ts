@@ -330,15 +330,15 @@ results.push(
 );
 
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sorted
-	.slice(0, 5)
-	.forEach((r, i) =>,
-	);
+sorted.slice(0, 5).forEach((r, i) => {
+	// Top performers
+});
 sorted
 	.slice(-5)
 	.reverse()
-	.forEach((r, i) =>,
-	);
+	.forEach((r, i) => {
+		// Bottom performers
+	});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

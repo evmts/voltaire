@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { from } from "./from.js";
+import { describe, expect, it } from "vitest";
 import { detectFusions } from "./detectFusions.js";
+import { from } from "./from.js";
 
 describe("detectFusions", () => {
 	describe("PUSH_JUMP (0x102)", () => {

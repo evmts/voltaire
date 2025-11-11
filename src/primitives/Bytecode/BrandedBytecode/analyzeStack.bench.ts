@@ -48,7 +48,9 @@ function generateBytecode(size: number): Uint8Array {
 const emptyBytecode = Bytecode.from(new Uint8Array([]));
 
 // PUSH1 0x01 PUSH1 0x02 ADD
-const simplePush = Bytecode.from(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]));
+const simplePush = Bytecode.from(
+	new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]),
+);
 
 // PUSH1 PUSH1 PUSH1 PUSH1 PUSH1 (5 items on stack)
 const multiPush = Bytecode.from(
@@ -58,10 +60,13 @@ const multiPush = Bytecode.from(
 // PUSH1 2 PUSH1 0 JUMPI PUSH1 1 JUMPDEST
 const withJumpi = Bytecode.from(
 	new Uint8Array([
-		0x60, 0x07, // PUSH1 7 (jump target)
-		0x60, 0x00, // PUSH1 0 (condition)
+		0x60,
+		0x07, // PUSH1 7 (jump target)
+		0x60,
+		0x00, // PUSH1 0 (condition)
 		0x57, // JUMPI
-		0x60, 0x01, // PUSH1 1
+		0x60,
+		0x01, // PUSH1 1
 		0x5b, // JUMPDEST
 	]),
 );

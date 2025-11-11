@@ -126,18 +126,26 @@ function generateExpensiveBytecode(size: number): BrandedBytecode {
 
 // Simple bytecode patterns
 const simpleBytecode = new Uint8Array([
-	0x60, 0x01, 0x60, 0x02, 0x01, // PUSH1 1, PUSH1 2, ADD
+	0x60,
+	0x01,
+	0x60,
+	0x02,
+	0x01, // PUSH1 1, PUSH1 2, ADD
 ]) as BrandedBytecode;
 
 const erc20Pattern = new Uint8Array([
-	0x60, 0x00, // PUSH1 0
-	0x60, 0x01, // PUSH1 1
+	0x60,
+	0x00, // PUSH1 0
+	0x60,
+	0x01, // PUSH1 1
 	0x54, // SLOAD
-	0x60, 0x02, // PUSH1 2
+	0x60,
+	0x02, // PUSH1 2
 	0x81, // DUP2
 	0x10, // LT
 	0x15, // ISZERO
-	0x60, 0x0e, // PUSH1 14
+	0x60,
+	0x0e, // PUSH1 14
 	0x57, // JUMPI
 	0x5b, // JUMPDEST
 ]) as BrandedBytecode;

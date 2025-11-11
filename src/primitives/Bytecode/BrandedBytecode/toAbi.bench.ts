@@ -56,9 +56,7 @@ function generateBytecodeWithSelectors(
 		const hashStart = 0xddf252ad00000000 + i;
 		for (let j = 0; j < 32; j++) {
 			bytecode.push(
-				Math.floor(
-					Math.random() * 256 * Math.cos(hashStart + i + j / 10),
-				),
+				Math.floor(Math.random() * 256 * Math.cos(hashStart + i + j / 10)),
 			);
 		}
 
