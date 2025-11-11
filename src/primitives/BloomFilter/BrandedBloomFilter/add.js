@@ -3,12 +3,15 @@ import { hash } from "./hash.js";
 /**
  * Add an item to the bloom filter
  *
+ * @see https://voltaire.tevm.sh/primitives/bloomfilter for BloomFilter documentation
+ * @since 0.0.0
  * @param {import('./BrandedBloomFilter.js').BrandedBloomFilter} filter - Bloom filter
  * @param {Uint8Array} item - Item to add
  * @returns {void}
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as BloomFilter from './primitives/BloomFilter/index.js';
  * const filter = BloomFilter.create(2048, 3);
  * const item = new TextEncoder().encode("foo");
  * BloomFilter.add(filter, item);

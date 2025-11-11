@@ -4,16 +4,18 @@ import { NAME_TO_HARDFORK } from "./constants.js";
  * Parse hardfork from string name (case-insensitive)
  * Supports both standard names and common variations
  *
+ * @see https://voltaire.tevm.sh/primitives/hardfork for Hardfork documentation
+ * @since 0.0.0
  * @param {string} name - Hardfork name (e.g., "Cancun", ">=Berlin")
  * @returns {import('./BrandedHardfork.js').BrandedHardfork | undefined} Hardfork or undefined if invalid
- *
+ * @throws {never}
  * @example
- * ```typescript
- * import { fromString } from './hardfork.js';
+ * ```javascript
+ * import * as Hardfork from './primitives/Hardfork/index.js';
  *
- * const fork = fromString("cancun"); // CANCUN
- * const fork2 = fromString("Paris"); // MERGE
- * const invalid = fromString("unknown"); // undefined
+ * const fork = Hardfork.fromString("cancun"); // CANCUN
+ * const fork2 = Hardfork.fromString("Paris"); // MERGE
+ * const invalid = Hardfork.fromString("unknown"); // undefined
  * ```
  */
 export function fromString(name) {
