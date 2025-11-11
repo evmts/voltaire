@@ -7,7 +7,8 @@
 		"types": ["bun-types"],
 		"noPropertyAccessFromIndexSignature": false,
 		"noUnusedLocals": false,
-		"noUnusedParameters": false
+		"noUnusedParameters": false,
+		"strict": false
 	},
 	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.json"],
 	"exclude": [

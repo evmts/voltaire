@@ -25,6 +25,10 @@
 			"*.dylib",
 			"lib",
 			"scripts/dist-address-wasm",
+			"scripts/dist-wasm",
+			"scripts/dist-noble",
+			"scripts/migrate-crypto-docs.ts",
+			"scripts/inspect-ox-api.ts",
 			"docs/.astro",
 			"worktrees"
 		]
