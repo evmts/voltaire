@@ -456,6 +456,36 @@ pub fn build(b: *std.Build) void {
     const generate_header_step = b.step("generate-header", "Generate primitives.h from c_api.zig");
     generate_header_step.dependOn(&run_generate_header.step);
 
+    // Generate JSON-RPC types from OpenRPC spec
+    const generate_jsonrpc = b.addExecutable(.{
+        .name = "generate_jsonrpc",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tools/jsonrpc/generate.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const run_generate_jsonrpc = b.addRunArtifact(generate_jsonrpc);
+
+    const generate_jsonrpc_step = b.step("generate-jsonrpc", "Generate JSON-RPC types from OpenRPC spec");
+    generate_jsonrpc_step.dependOn(&run_generate_jsonrpc.step);
+
+    // Clean generated JSON-RPC files
+    const clean_jsonrpc = b.addExecutable(.{
+        .name = "clean_jsonrpc",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tools/jsonrpc/clean.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const run_clean_jsonrpc = b.addRunArtifact(clean_jsonrpc);
+
+    const clean_jsonrpc_step = b.step("clean-jsonrpc", "Clean generated JSON-RPC files (preserves types/)");
+    clean_jsonrpc_step.dependOn(&run_clean_jsonrpc.step);
+
     // C API library - skip for WASM targets
     const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
     if (!is_wasm) {
