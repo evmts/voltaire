@@ -228,8 +228,10 @@ describe("Bytecode Fuzz: Metadata section parsing", () => {
 		const validLengths = [0x20, 0x25, 0x30, 0x33, 0x40];
 		for (const len of validLengths) {
 			const mainCode = randomBytes(50);
+			// len includes the 2-byte length marker, so metadata is (len - 2) bytes + 2 byte marker
+			// stripMetadata removes (len + 2) bytes total
 			const code = bc(
-				new Uint8Array([...mainCode, ...randomBytes(len - 2), 0x00, len]),
+				new Uint8Array([...mainCode, ...randomBytes(len), 0x00, len]),
 			);
 			expect(Bytecode.hasMetadata(code)).toBe(true);
 			const stripped = Bytecode.stripMetadata(code);
