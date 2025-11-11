@@ -1,0 +1,334 @@
+---
+title: Transaction.detectType
+description: Detect transaction type from serialized bytes
+---
+
+# detectType
+
+Detect transaction type from serialized bytes.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function detectType(data: Uint8Array): Transaction.Type
+```
+
+**Parameters:**
+- `data: Uint8Array` - Serialized transaction bytes
+
+**Returns:** `Transaction.Type` - Transaction type (0x00-0x04)
+
+**Throws:**
+- `Error("Empty transaction data")` - If data is empty
+- `Error("Unknown transaction type")` - If type byte is invalid
+
+**Example:**
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+// EIP-1559 transaction (type 0x02)
+const eip1559Data = new Uint8Array([0x02, 0xf8, 0x6c, ...])
+const type1 = detectType(eip1559Data)
+console.log(type1 === Type.EIP1559) // true
+console.log(type1) // 2
+
+// Legacy transaction (starts with 0xc0-0xff, RLP list marker)
+const legacyData = new Uint8Array([0xf8, 0x6c, ...])
+const type2 = detectType(legacyData)
+console.log(type2 === Type.Legacy) // true
+console.log(type2) // 0
+
+// EIP-4844 blob transaction (type 0x03)
+const blobData = new Uint8Array([0x03, 0xf9, ...])
+const type3 = detectType(blobData)
+console.log(type3 === Type.EIP4844) // true
+console.log(type3) // 3
+
+// EIP-7702 authorization transaction (type 0x04)
+const authData = new Uint8Array([0x04, 0xf8, ...])
+const type4 = detectType(authData)
+console.log(type4 === Type.EIP7702) // true
+console.log(type4) // 4
+```
+
+**Source:** [detectType.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/detectType.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction operations.
+
+</Tab>
+</Tabs>
+
+## Type Detection Logic
+
+### Typed Transactions (EIP-2718)
+
+Typed transactions start with a type byte (0x00-0x04):
+
+```
+[type_byte, ...rlp_payload]
+ ^^^^^^^^^^
+ First byte indicates type
+```
+
+| First Byte | Type |
+|------------|------|
+| `0x01` | EIP-2930 (Access List) |
+| `0x02` | EIP-1559 (Dynamic Fee) |
+| `0x03` | EIP-4844 (Blob) |
+| `0x04` | EIP-7702 (Authorization) |
+| `0xc0-0xff` | Legacy (RLP list marker) |
+
+### Legacy Transactions
+
+Legacy transactions start with RLP list marker (0xc0-0xff):
+
+```
+[rlp_list_marker, ...rlp_content]
+ ^^^^^^^^^^^^^^^^
+ RLP list encoding (≥ 0xc0)
+```
+
+RLP list markers:
+- `0xc0-0xf7`: Short list (0-55 bytes)
+- `0xf8-0xff`: Long list (>55 bytes)
+
+## Usage Patterns
+
+### Router Pattern
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function routeTransaction(data: Uint8Array) {
+  const type = detectType(data)
+
+  switch (type) {
+    case Type.Legacy:
+      return processLegacy(data)
+    case Type.EIP2930:
+      return processEIP2930(data)
+    case Type.EIP1559:
+      return processEIP1559(data)
+    case Type.EIP4844:
+      return processEIP4844(data)
+    case Type.EIP7702:
+      return processEIP7702(data)
+    default:
+      throw new Error(`Unsupported type: ${type}`)
+  }
+}
+```
+
+### Conditional Deserialization
+
+```typescript
+import { detectType, deserialize, Type } from '@tevm/voltaire/Transaction'
+
+function parseTransaction(data: Uint8Array) {
+  const type = detectType(data)
+
+  // Can optimize deserialization based on type
+  if (type === Type.Legacy) {
+    return deserializeLegacy(data)
+  } else {
+    return deserialize(data)
+  }
+}
+```
+
+### Transaction Classification
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function classifyTransactions(
+  transactions: Uint8Array[]
+): Map<Transaction.Type, number> {
+  const counts = new Map<Transaction.Type, number>()
+
+  for (const data of transactions) {
+    const type = detectType(data)
+    counts.set(type, (counts.get(type) || 0) + 1)
+  }
+
+  return counts
+}
+
+// Usage
+const txData = [/* serialized transactions */]
+const counts = classifyTransactions(txData)
+
+console.log(`Legacy: ${counts.get(Type.Legacy) || 0}`)
+console.log(`EIP-1559: ${counts.get(Type.EIP1559) || 0}`)
+console.log(`EIP-4844: ${counts.get(Type.EIP4844) || 0}`)
+```
+
+### Block Analysis
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+interface BlockStats {
+  totalTransactions: number
+  byType: Record<string, number>
+}
+
+function analyzeBlock(transactions: Uint8Array[]): BlockStats {
+  const byType: Record<string, number> = {}
+
+  for (const data of transactions) {
+    const type = detectType(data)
+    const typeName = getTypeName(type)
+    byType[typeName] = (byType[typeName] || 0) + 1
+  }
+
+  return {
+    totalTransactions: transactions.length,
+    byType
+  }
+}
+
+function getTypeName(type: Transaction.Type): string {
+  switch (type) {
+    case Type.Legacy: return 'Legacy'
+    case Type.EIP2930: return 'EIP-2930'
+    case Type.EIP1559: return 'EIP-1559'
+    case Type.EIP4844: return 'EIP-4844'
+    case Type.EIP7702: return 'EIP-7702'
+    default: return `Unknown (${type})`
+  }
+}
+```
+
+### Network Statistics
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+class NetworkMonitor {
+  private stats = new Map<Transaction.Type, number>()
+
+  processTransaction(data: Uint8Array) {
+    const type = detectType(data)
+    this.stats.set(type, (this.stats.get(type) || 0) + 1)
+  }
+
+  getStats() {
+    return {
+      legacy: this.stats.get(Type.Legacy) || 0,
+      eip2930: this.stats.get(Type.EIP2930) || 0,
+      eip1559: this.stats.get(Type.EIP1559) || 0,
+      eip4844: this.stats.get(Type.EIP4844) || 0,
+      eip7702: this.stats.get(Type.EIP7702) || 0,
+      total: Array.from(this.stats.values()).reduce((a, b) => a + b, 0)
+    }
+  }
+}
+```
+
+### Pre-validation
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function validateTransactionType(
+  data: Uint8Array,
+  allowedTypes: Transaction.Type[]
+): boolean {
+  try {
+    const type = detectType(data)
+    return allowedTypes.includes(type)
+  } catch {
+    return false
+  }
+}
+
+// Usage: Only allow EIP-1559 and EIP-4844
+const allowed = [Type.EIP1559, Type.EIP4844]
+if (!validateTransactionType(txData, allowed)) {
+  throw new Error('Transaction type not supported')
+}
+```
+
+### Efficient Filtering
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function filterByType(
+  transactions: Uint8Array[],
+  targetType: Transaction.Type
+): Uint8Array[] {
+  return transactions.filter(data => {
+    try {
+      return detectType(data) === targetType
+    } catch {
+      return false
+    }
+  })
+}
+
+// Get only EIP-4844 blob transactions
+const blobTxs = filterByType(allTransactions, Type.EIP4844)
+```
+
+## Error Handling
+
+```typescript
+import { detectType } from '@tevm/voltaire/Transaction'
+
+function safeDetectType(data: Uint8Array): Transaction.Type | null {
+  try {
+    return detectType(data)
+  } catch (error) {
+    console.error('Type detection failed:', error)
+    return null
+  }
+}
+
+// Usage
+const type = safeDetectType(txData)
+if (type === null) {
+  console.log('Invalid or unknown transaction type')
+}
+```
+
+## Type Guard Pattern
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function isLegacyTransaction(data: Uint8Array): boolean {
+  return detectType(data) === Type.Legacy
+}
+
+function isEIP1559Transaction(data: Uint8Array): boolean {
+  return detectType(data) === Type.EIP1559
+}
+
+function isBlobTransaction(data: Uint8Array): boolean {
+  return detectType(data) === Type.EIP4844
+}
+```
+
+## See Also
+
+- [serialize](/primitives/transaction/serialization) - Serialize transactions to bytes
+- [deserialize](/primitives/transaction/serialization) - Deserialize bytes to transactions
+- [Transaction Types](/primitives/transaction/types) - Complete type definitions
+- [format](/primitives/transaction/format) - Format transaction for display
+
+## References
+
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [RLP Encoding](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)
+- [Transaction Types](/primitives/transaction) - Overview of all transaction types

@@ -40,34 +40,34 @@ const txFee = FeeMarket.calculateTxFee({
 const blobBaseFee = FeeMarket.calculateBlobBaseFee(262_144n);
 ```
 
-## Core Features
+## API Methods
 
-### State Management
-- [State](./types.mdx#state) - Complete block fee market state
-- [nextState](./calculations.mdx#nextstate) - Calculate next block state
-- [validateState](./utilities.mdx#validatestate) - Validate state parameters
-
-### EIP-1559 (Base Fees)
-- [calculateBaseFee](./eip1559.mdx#calculatebasefee) - Next block base fee
-- [getGasTarget](./eip1559.mdx#getgastarget) - Block gas target
-- [isAboveGasTarget](./eip1559.mdx#isabovegastarget) - Check utilization
-
-### EIP-4844 (Blob Fees)
-- [calculateBlobBaseFee](./eip4844.mdx#calculateblobbasefee) - Blob base fee
-- [calculateExcessBlobGas](./eip4844.mdx#calculateexcessblobgas) - Excess blob gas
-- [getBlobBaseFee](./eip4844.mdx#getblobbasefee) - Current blob fee from state
-
-### Transaction Fees
-- [calculateTxFee](./calculations.mdx#calculatetxfee) - EIP-1559 transaction fee
-- [calculateBlobTxFee](./calculations.mdx#calculateblobtxfee) - Blob transaction fee
-- [canIncludeTx](./calculations.mdx#canincludetx) - Check if tx meets minimum fees
-
-### Projections
-- [projectBaseFees](./calculations.mdx#projectbasefees) - Project future base fees
-
-### Validation
-- [validateTxFeeParams](./utilities.mdx#validatetxfeeparams) - Validate tx parameters
-- [validateState](./utilities.mdx#validatestate) - Validate block state
+<CardGroup>
+<Card title="State Management" icon="database">
+Complete block fee market state and next state calculations
+[View state management →](./types)
+</Card>
+<Card title="EIP-1559 (Base Fees)" icon="fire">
+Calculate base fees, gas targets, and utilization checks
+[View EIP-1559 →](./eip1559)
+</Card>
+<Card title="EIP-4844 (Blob Fees)" icon="cube">
+Calculate blob base fees and excess blob gas
+[View EIP-4844 →](./eip4844)
+</Card>
+<Card title="Transaction Fees" icon="money-bill">
+Calculate EIP-1559 and blob transaction fees
+[View transaction fees →](./calculations)
+</Card>
+<Card title="Projections" icon="chart-line">
+Project future base fees across multiple blocks
+[View projections →](./calculations)
+</Card>
+<Card title="Validation" icon="check">
+Validate transaction fee parameters and block state
+[View validation →](./utilities)
+</Card>
+</CardGroup>
 
 ## Constants
 

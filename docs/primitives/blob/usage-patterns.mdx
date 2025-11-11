@@ -1,0 +1,537 @@
+---
+title: Usage Patterns
+description: Real-world blob transaction examples and patterns
+---
+
+This page demonstrates common patterns for working with blob transactions in production environments.
+
+## L2 Rollup Data Posting
+
+### Basic L2 Batch
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class L2Rollup {
+  async postBatch(transactions: Transaction[]) {
+    // 1. Serialize batch data
+    const batchData = this.serializeBatch(transactions);
+
+    // 2. Create blob
+    const blob = Blob.fromData(batchData);
+
+    // 3. Generate KZG commitment and proof
+    const commitment = Blob.toCommitment(blob);
+    const proof = Blob.toProof(blob);
+    const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+    // 4. Create blob transaction
+    const tx = await this.createBlobTransaction({
+      blobVersionedHashes: [versionedHash],
+      blobs: [blob],
+      commitments: [commitment],
+      proofs: [proof],
+    });
+
+    // 5. Send transaction
+    const receipt = await this.sendTransaction(tx);
+
+    // 6. Store blob data locally (for ~18 day retention)
+    await this.storeBlob(receipt.blockNumber, blob);
+
+    return receipt;
+  }
+
+  private serializeBatch(transactions: Transaction[]): Uint8Array {
+    return new TextEncoder().encode(JSON.stringify(transactions));
+  }
+
+  private async storeBlob(blockNumber: number, blob: Blob) {
+    const data = Blob.toData(blob);
+    await this.db.put(`blob:${blockNumber}`, data);
+  }
+}
+```
+
+### Multi-Blob Batch
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class L2Rollup {
+  async postLargeBatch(transactions: Transaction[]) {
+    const batchData = this.serializeBatch(transactions);
+
+    // Check blob count
+    const blobCount = Blob.estimateBlobCount(batchData);
+    if (blobCount > Blob.MAX_PER_TRANSACTION) {
+      throw new Error(`Batch too large: ${blobCount} blobs`);
+    }
+
+    // Split into blobs
+    const blobs = Blob.splitData(batchData);
+
+    // Generate commitments, proofs, hashes
+    const commitments = blobs.map(b => Blob.toCommitment(b));
+    const proofs = blobs.map(b => Blob.toProof(b));
+    const versionedHashes = commitments.map(c =>
+      Blob.Commitment.toVersionedHash(c)
+    );
+
+    // Batch verify before sending
+    if (!Blob.verifyBatch(blobs, commitments, proofs)) {
+      throw new Error('Proof verification failed');
+    }
+
+    // Create transaction
+    const tx = await this.createBlobTransaction({
+      blobVersionedHashes: versionedHashes,
+      blobs: blobs,
+      commitments: commitments,
+      proofs: proofs,
+    });
+
+    return await this.sendTransaction(tx);
+  }
+}
+```
+
+## Cost Optimization
+
+### Dynamic Blob vs Calldata
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class CostOptimizer {
+  async selectDataAvailability(
+    data: Uint8Array,
+    provider: any
+  ): Promise<'blob' | 'calldata'> {
+    // Get current gas prices
+    const blobBaseFee = await provider.getBlobBaseFee();
+    const executionBaseFee = (await provider.getFeeData()).gasPrice;
+
+    // Calculate blob cost
+    const blobCount = Blob.estimateBlobCount(data);
+    const blobGas = Blob.calculateGas(blobCount);
+    const blobCost = BigInt(blobGas) * blobBaseFee;
+
+    // Calculate calldata cost
+    const calldataGas = BigInt(data.length) * 16n; // 16 gas per byte
+    const calldataCost = calldataGas * executionBaseFee;
+
+    // Choose cheaper option
+    if (blobCost < calldataCost) {
+      console.log(`Using blobs (${((1 - Number(blobCost) / Number(calldataCost)) * 100).toFixed(1)}% cheaper)`);
+      return 'blob';
+    } else {
+      console.log('Using calldata (blobs more expensive)');
+      return 'calldata';
+    }
+  }
+
+  async postData(data: Uint8Array, provider: any) {
+    const method = await this.selectDataAvailability(data, provider);
+
+    if (method === 'blob') {
+      return await this.postAsBlob(data);
+    } else {
+      return await this.postAsCalldata(data);
+    }
+  }
+}
+```
+
+### Gas Price Monitoring
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class GasMonitor {
+  private readonly TARGET_COST_GWEI = 10_000_000n; // 0.01 ETH
+
+  async waitForFavorableGas(
+    data: Uint8Array,
+    provider: any,
+    maxWaitMs: number = 300_000 // 5 minutes
+  ): Promise<void> {
+    const startTime = Date.now();
+    const blobCount = Blob.estimateBlobCount(data);
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const blobBaseFee = await provider.getBlobBaseFee();
+      const cost = Blob.calculateGas(blobCount, blobBaseFee);
+
+      if (cost / 10n**9n <= this.TARGET_COST_GWEI) {
+        console.log(`Favorable gas: ${cost / 10n**9n} gwei`);
+        return;
+      }
+
+      console.log(`Waiting... current cost: ${cost / 10n**9n} gwei`);
+      await new Promise(resolve => setTimeout(resolve, 12_000)); // Wait 1 block
+    }
+
+    throw new Error('Timeout waiting for favorable gas');
+  }
+}
+```
+
+## Data Recovery
+
+### L2 Node Sync
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class L2Sync {
+  async syncFromBeacon(
+    startBlock: number,
+    endBlock: number,
+    beaconRPC: string
+  ) {
+    console.log(`Syncing blocks ${startBlock}-${endBlock}`);
+
+    for (let block = startBlock; block <= endBlock; block++) {
+      try {
+        // Fetch blob sidecars from beacon chain
+        const blobs = await this.fetchBlobSidecars(block, beaconRPC);
+
+        if (blobs.length === 0) {
+          console.log(`Block ${block}: no blobs`);
+          continue;
+        }
+
+        // Reconstruct data
+        const data = Blob.joinData(blobs);
+
+        // Process L2 batch
+        await this.processBatch(block, data);
+
+        console.log(`Block ${block}: processed ${blobs.length} blobs`);
+      } catch (e) {
+        console.error(`Block ${block}: failed to sync`, e);
+        throw e;
+      }
+    }
+  }
+
+  private async fetchBlobSidecars(
+    block: number,
+    beaconRPC: string
+  ): Promise<Blob[]> {
+    const response = await fetch(
+      `${beaconRPC}/eth/v1/beacon/blob_sidecars/${block}`
+    );
+    const json = await response.json();
+
+    return json.data.map((sidecar: any) =>
+      Blob.from(new Uint8Array(Buffer.from(sidecar.blob, 'hex')))
+    );
+  }
+}
+```
+
+### Historical Data Access
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class HistoricalDataProvider {
+  private db: Database;
+  private beaconRPC: string;
+  private readonly RETENTION_DAYS = 18;
+
+  async getData(blockNumber: number): Promise<Uint8Array> {
+    // Try local database first
+    const cached = await this.db.get(`blob:${blockNumber}`);
+    if (cached) {
+      return cached;
+    }
+
+    // Check if within retention period
+    const blockAge = await this.getBlockAge(blockNumber);
+    if (blockAge > this.RETENTION_DAYS) {
+      throw new Error(
+        `Block ${blockNumber} beyond retention period (${blockAge} days old)`
+      );
+    }
+
+    // Fetch from beacon chain
+    console.log(`Fetching block ${blockNumber} from beacon chain`);
+    const blobs = await this.fetchFromBeacon(blockNumber);
+    const data = Blob.joinData(blobs);
+
+    // Cache locally
+    await this.db.put(`blob:${blockNumber}`, data);
+
+    return data;
+  }
+
+  private async getBlockAge(blockNumber: number): Promise<number> {
+    const currentBlock = await this.getCurrentBlock();
+    const blocksDiff = currentBlock - blockNumber;
+    const daysDiff = (blocksDiff * 12) / 86400; // 12 sec per block
+    return daysDiff;
+  }
+}
+```
+
+## Batch Submission Strategies
+
+### Adaptive Batching
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class AdaptiveBatcher {
+  private pending: Transaction[] = [];
+  private readonly MAX_WAIT_MS = 60_000; // 1 minute
+  private readonly MIN_BATCH_SIZE = 50_000; // 50 KB
+
+  async addTransaction(tx: Transaction) {
+    this.pending.push(tx);
+
+    const batchSize = this.estimateBatchSize(this.pending);
+
+    // Submit if batch is large enough
+    if (batchSize >= this.MIN_BATCH_SIZE) {
+      await this.submitBatch();
+    }
+  }
+
+  async submitBatch() {
+    if (this.pending.length === 0) return;
+
+    const batchData = this.serializeBatch(this.pending);
+    const blobCount = Blob.estimateBlobCount(batchData);
+
+    console.log(
+      `Submitting batch: ${this.pending.length} txs, ${blobCount} blobs`
+    );
+
+    // Create and send blob transaction
+    const blobs = Blob.splitData(batchData);
+    // ... (generate commitments, proofs, send)
+
+    this.pending = [];
+  }
+
+  private estimateBatchSize(txs: Transaction[]): number {
+    return new TextEncoder().encode(JSON.stringify(txs)).length;
+  }
+}
+```
+
+### Multi-Transaction Splitting
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class BatchSplitter {
+  async splitIntoBatches(
+    transactions: Transaction[]
+  ): Promise<Transaction[][]> {
+    const batches: Transaction[][] = [];
+    let currentBatch: Transaction[] = [];
+    let currentSize = 0;
+
+    for (const tx of transactions) {
+      const txSize = this.estimateSize(tx);
+      const newSize = currentSize + txSize;
+
+      // Check if adding tx would exceed max blobs
+      const blobCount = Blob.estimateBlobCount(newSize);
+
+      if (blobCount > Blob.MAX_PER_TRANSACTION) {
+        // Start new batch
+        batches.push(currentBatch);
+        currentBatch = [tx];
+        currentSize = txSize;
+      } else {
+        // Add to current batch
+        currentBatch.push(tx);
+        currentSize = newSize;
+      }
+    }
+
+    if (currentBatch.length > 0) {
+      batches.push(currentBatch);
+    }
+
+    return batches;
+  }
+
+  private estimateSize(tx: Transaction): number {
+    return new TextEncoder().encode(JSON.stringify(tx)).length;
+  }
+}
+```
+
+## Error Handling
+
+### Retry Logic
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class ResilientSubmitter {
+  async submitWithRetry(
+    blobs: Blob[],
+    maxRetries: number = 3
+  ): Promise<TransactionReceipt> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Generate fresh commitments/proofs
+        const commitments = blobs.map(b => Blob.toCommitment(b));
+        const proofs = blobs.map(b => Blob.toProof(b));
+
+        // Verify before sending
+        if (!Blob.verifyBatch(blobs, commitments, proofs)) {
+          throw new Error('Proof verification failed');
+        }
+
+        const versionedHashes = commitments.map(c =>
+          Blob.Commitment.toVersionedHash(c)
+        );
+
+        // Create and send transaction
+        const tx = await this.createBlobTransaction({
+          blobVersionedHashes: versionedHashes,
+          blobs: blobs,
+          commitments: commitments,
+          proofs: proofs,
+        });
+
+        const receipt = await this.sendTransaction(tx);
+        console.log(`Submitted successfully: ${receipt.transactionHash}`);
+
+        return receipt;
+      } catch (e) {
+        lastError = e as Error;
+        console.error(`Attempt ${attempt + 1} failed:`, e);
+
+        if (attempt < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s
+        }
+      }
+    }
+
+    throw new Error(`Failed after ${maxRetries} attempts: ${lastError?.message}`);
+  }
+}
+```
+
+### Validation Guards
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class BlobValidator {
+  validateBeforeSending(
+    blobs: Blob[],
+    commitments: Commitment[],
+    proofs: Proof[],
+    versionedHashes: VersionedHash[]
+  ): void {
+    // Check blob count
+    if (blobs.length === 0) {
+      throw new Error('No blobs provided');
+    }
+
+    if (blobs.length > Blob.MAX_PER_TRANSACTION) {
+      throw new Error(
+        `Too many blobs: ${blobs.length} (max ${Blob.MAX_PER_TRANSACTION})`
+      );
+    }
+
+    // Check array lengths match
+    if (
+      blobs.length !== commitments.length ||
+      blobs.length !== proofs.length ||
+      blobs.length !== versionedHashes.length
+    ) {
+      throw new Error('Array length mismatch');
+    }
+
+    // Validate each blob
+    for (let i = 0; i < blobs.length; i++) {
+      if (!Blob.isValid(blobs[i])) {
+        throw new Error(`Invalid blob at index ${i}`);
+      }
+
+      if (!Blob.Commitment.isValid(commitments[i])) {
+        throw new Error(`Invalid commitment at index ${i}`);
+      }
+
+      if (!Blob.Proof.isValid(proofs[i])) {
+        throw new Error(`Invalid proof at index ${i}`);
+      }
+
+      if (!Blob.isValidVersion(versionedHashes[i])) {
+        throw new Error(`Invalid versioned hash at index ${i}`);
+      }
+    }
+
+    // Batch verify proofs
+    if (!Blob.verifyBatch(blobs, commitments, proofs)) {
+      throw new Error('Proof verification failed');
+    }
+
+    // Verify versioned hashes
+    for (let i = 0; i < blobs.length; i++) {
+      const computed = Blob.Commitment.toVersionedHash(commitments[i]);
+      if (!Blob.equals(computed, versionedHashes[i])) {
+        throw new Error(`Versioned hash mismatch at index ${i}`);
+      }
+    }
+  }
+}
+```
+
+## Monitoring
+
+### Cost Tracking
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class CostTracker {
+  private totalBlobCost = 0n;
+  private totalCalldataCost = 0n;
+
+  async recordBlobTransaction(
+    blobCount: number,
+    blobBaseFee: bigint
+  ): Promise<void> {
+    const cost = Blob.calculateGas(blobCount, blobBaseFee);
+    this.totalBlobCost += cost;
+
+    console.log(`Blob tx cost: ${cost / 10n**9n} gwei`);
+    console.log(`Total blob cost: ${this.totalBlobCost / 10n**18n} ETH`);
+
+    // Calculate equivalent calldata cost
+    const dataBytes = Blob.SIZE * blobCount;
+    const calldataGas = BigInt(dataBytes) * 16n;
+    const calldataCost = calldataGas * 30_000_000_000n; // Assume 30 gwei
+    this.totalCalldataCost += calldataCost;
+
+    const savings = ((1 - Number(this.totalBlobCost) / Number(this.totalCalldataCost)) * 100).toFixed(1);
+    console.log(`Total savings vs calldata: ${savings}%`);
+  }
+}
+```
+
+## Resources
+
+- **[L2 Best Practices](https://ethereum.org/en/developers/docs/scaling/)** - L2 scaling strategies
+- **[Blob Explorer](https://blobscan.com/)** - Explore blob transactions
+- **[EIP-4844 FAQ](https://eip4844.com/)** - Common questions
+
+## See Also
+
+- [Fundamentals](/primitives/blob/fundamentals) - Blob basics
+- [EIP-4844](/primitives/blob/eip4844) - Specification details
+- [calculateGas](./calculateGas) - Gas cost calculation

@@ -1,0 +1,136 @@
+---
+title: Hash.clone
+description: Create independent copy of hash with separate memory
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.clone(): Hash`
+
+Creates independent copy of hash with separate memory. Modifications to copy won't affect original.
+
+**Returns:** `Hash` - New hash with same value
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash = Hash.keccak256String("hello")
+const copy = hash.clone()
+
+// Modifying copy doesn't affect original
+copy[0] = 0xff
+console.log(hash[0]) // Original unchanged (0x1c)
+console.log(copy[0]) // Modified (0xff)
+```
+
+**Static form:**
+```typescript
+Hash.clone(hash) // Hash
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/clone.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/clone.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `clone(hash: BrandedHash): BrandedHash`
+
+Creates independent copy of hash with separate memory.
+
+**Parameters:**
+- `hash: BrandedHash` - Hash to clone
+
+**Returns:** `BrandedHash` - New hash with same value
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String("hello")
+const copy = Hash.clone(hash)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/clone.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/clone.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## Array Copy
+
+```zig
+const std = @import("std");
+
+const hash: [32]u8 = .{0x1c, 0x8a, /* ... */};
+var copy: [32]u8 = undefined;
+@memcpy(&copy, &hash);
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Creates new Uint8Array copy:
+
+```typescript
+function clone(hash: BrandedHash): BrandedHash {
+  return new Uint8Array(hash) as BrandedHash
+}
+```
+
+## Usage Examples
+
+### Safe Mutation
+
+```typescript
+function modifyHash(hash: Hash, index: number, value: number): Hash {
+  const modified = hash.clone()
+  modified[index] = value
+  return modified
+}
+
+const original = Hash.random()
+const modified = modifyHash(original, 0, 0xff)
+console.log(original[0] !== modified[0]) // true
+```
+
+### Test Data
+
+```typescript
+const baseHash = Hash.keccak256String("test")
+
+// Create variations
+const hash1 = baseHash.clone()
+const hash2 = baseHash.clone()
+
+hash1[0] = 0x00
+hash2[0] = 0xff
+
+// Original unchanged
+console.log(baseHash[0]) // 0x1c
+```
+
+### State Snapshots
+
+```typescript
+class HashHistory {
+  private history: Hash[] = []
+
+  saveSnapshot(hash: Hash): void {
+    this.history.push(hash.clone())
+  }
+
+  getSnapshot(index: number): Hash | undefined {
+    return this.history[index]?.clone()
+  }
+}
+```
+
+## See Also
+
+- [toBytes](/primitives/hash/to-bytes) - Same functionality
+- [fromBytes](/primitives/hash/from-bytes) - Create from bytes

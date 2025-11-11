@@ -9,6 +9,9 @@ Core operations for manipulating and querying Binary State Tree.
 
 ## Insert
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `BinaryTree.insert(tree, key, value)`
 
 Insert value at 32-byte key. Returns new tree with value inserted. Immutable operation.
@@ -47,63 +50,62 @@ console.log(tree.root.type) // Still 'stem'
 **Throws:**
 - `InvalidTreeStateError` - If tree structure is invalid (leaf node encountered)
 
-<Tabs>
-<Tab title="Basic Usage">
-```typescript
-import { BinaryTree } from '@tevm/voltaire'
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/insert.js:22-26](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/insert.js#L22-L26)
 
-let tree = BinaryTree.init()
-
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
-value[0] = 0xFF
-
-// Insert returns new tree
-const newTree = BinaryTree.insert(tree, key, value)
-
-// Original unchanged
-console.log(tree.root.type) // 'empty'
-console.log(newTree.root.type) // 'stem'
-```
 </Tab>
-<Tab title="Multiple Inserts">
-```typescript
-import { BinaryTree } from '@tevm/voltaire'
+<Tab title="Zig">
 
-let tree = BinaryTree.init()
+### `BinaryTree.insert(self: *BinaryTree, key: [32]u8, value: [32]u8) !void`
 
-// Insert multiple values with same stem
-for (let i = 0; i < 10; i++) {
-  const key = new Uint8Array(32)
-  key[31] = i  // Different subindices
+Insert value at 32-byte key. Mutates tree in place.
 
-  const value = new Uint8Array(32)
-  value[0] = i
+**Parameters:**
+- `self: *BinaryTree` - Pointer to binary tree
+- `key: [32]u8` - 32-byte key (31-byte stem + 1-byte subindex)
+- `value: [32]u8` - 32-byte value to insert
 
-  tree = BinaryTree.insert(tree, key, value)
-}
+**Returns:** `!void` - Errors on allocation failure or invalid tree state
 
-console.log(tree.root.type) // 'stem'
-if (tree.root.type === 'stem') {
-  console.log(tree.root.values.filter(v => v !== null).length) // 10
-}
+**Example:**
+
+```zig
+const std = @import("std");
+const BinaryTree = @import("primitives").BinaryTree;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+var tree = BinaryTree.init(allocator);
+defer tree.deinit();
+
+// Insert first value
+var key1: [32]u8 = undefined;
+@memset(&key1, 0);
+key1[31] = 5; // Subindex 5
+
+var value1: [32]u8 = undefined;
+@memset(&value1, 0);
+value1[0] = 0x42;
+
+try tree.insert(key1, value1);
+
+// Insert second value (same stem)
+var key2: [32]u8 = undefined;
+@memset(&key2, 0);
+key2[31] = 10; // Subindex 10
+
+var value2: [32]u8 = undefined;
+@memset(&value2, 0);
+value2[0] = 0x99;
+
+try tree.insert(key2, value2);
 ```
-</Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { init, insert } from '@tevm/voltaire/BrandedBinaryTree'
 
-let tree = init()
+**Defined in:** [primitives/BinaryTree/binary_tree.zig:142](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig#L142)
 
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
-
-tree = insert(tree, key, value)
-```
 </Tab>
 </Tabs>
-
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/insert.js:22-26](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/insert.js#L22-L26)
 
 ## Insert Behavior
 

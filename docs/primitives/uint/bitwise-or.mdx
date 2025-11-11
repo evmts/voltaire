@@ -1,0 +1,67 @@
+---
+title: Uint.bitwiseOr
+description: Bitwise OR operation on Uint256 values
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.bitwiseOr(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+Bitwise OR operation.
+
+**Parameters:**
+- `a: BrandedUint` - First value
+- `b: BrandedUint` - Second value
+
+**Returns:** `BrandedUint` - Bitwise OR result
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0b1100n)
+const b = Uint.from(0b1010n)
+Uint.bitwiseOr(a, b)  // 0b1110 (14)
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/bitwiseOr.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseOr.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `bitwiseOr(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const result = Uint.bitwiseOr(Uint.from(12n), Uint.from(10n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/bitwiseOr.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseOr.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.bitwiseOr(a: Uint, b: Uint): Uint`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const result = Uint.bitwiseOr(Uint.init(12), Uint.init(10));
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [bitwiseAnd](/primitives/uint/bitwise-and) - Bitwise AND
+- [Bitwise operations](/primitives/uint/bitwise) - Full bitwise reference

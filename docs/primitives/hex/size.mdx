@@ -1,0 +1,254 @@
+---
+title: Hex.size
+description: Get byte length of hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.size(hex: BrandedHex): number`
+
+Returns the byte length of a hex string. Calculated as `(hex.length - 2) / 2`.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to measure
+
+**Returns:** `number` - Size in bytes
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Get byte size
+Hex.size("0x12")         // 1 byte
+Hex.size("0x1234")       // 2 bytes
+Hex.size("0x123456")     // 3 bytes
+
+// Empty hex
+Hex.size("0x")           // 0 bytes
+
+// Common Ethereum sizes
+const hash = "0x" + "00".repeat(32)
+Hex.size(hash)           // 32 bytes
+
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+Hex.size(address)        // 20 bytes
+
+// Calculate size before operations
+const hex = Hex.fromBigInt(255n)
+const byteSize = Hex.size(hex)  // 1
+const padded = Hex.pad(hex, 32)
+Hex.size(padded)        // 32
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/size.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `size(hex: BrandedHex): number`
+
+Returns the byte length of a hex string.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to measure
+
+**Returns:** `number` - Size in bytes
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.size("0x12")         // 1
+Hex.size("0x1234")       // 2
+Hex.size("0x123456")     // 3
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/size.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.size(hex: []const u8): usize`
+
+Get byte size of hex string.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+
+**Returns:** `usize` - Size in bytes
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex = "0x1234";
+const byteSize = Hex.size(hex);  // 2
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Calculation
+
+Formula: `(hex.length - 2) / 2`
+
+```typescript
+// "0x" prefix = 2 characters
+// Each byte = 2 hex characters
+
+"0x12"       // length=4, size=(4-2)/2=1
+"0x1234"     // length=6, size=(6-2)/2=2
+"0x123456"   // length=8, size=(8-2)/2=3
+```
+
+## Common Ethereum Sizes
+
+**uint8 (1 byte):**
+```typescript
+Hex.size("0xff")  // 1
+```
+
+**uint16 (2 bytes):**
+```typescript
+Hex.size("0xffff")  // 2
+```
+
+**uint32 (4 bytes):**
+```typescript
+const selector = "0xa9059cbb"
+Hex.size(selector)  // 4
+```
+
+**uint64 (8 bytes):**
+```typescript
+Hex.size("0xffffffffffffffff")  // 8
+```
+
+**Address (20 bytes / uint160):**
+```typescript
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+Hex.size(address)  // 20
+```
+
+**Hash (32 bytes / uint256):**
+```typescript
+const hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+Hex.size(hash)  // 32
+```
+
+**Signature (65 bytes):**
+```typescript
+const sig = "0x" + "00".repeat(65)
+Hex.size(sig)  // 65 (r=32, s=32, v=1)
+```
+
+## Common Use Cases
+
+**Validate Expected Size:**
+```typescript
+function setHash(hex: string) {
+  if (Hex.size(hex) !== 32) {
+    throw new Error("Hash must be 32 bytes")
+  }
+  this.hash = hex
+}
+```
+
+**Determine Padding Needed:**
+```typescript
+const hex = Hex.fromNumber(255)
+const currentSize = Hex.size(hex)  // 1
+const targetSize = 32
+
+if (currentSize < targetSize) {
+  const padded = Hex.pad(hex, targetSize)
+}
+```
+
+**Calculate Buffer Size:**
+```typescript
+const calldata = buildCalldata()
+const bufferSize = Hex.size(calldata)
+const buffer = new Uint8Array(bufferSize)
+```
+
+**Size-Based Branching:**
+```typescript
+function processHex(hex: string) {
+  const size = Hex.size(hex)
+
+  if (size === 20) {
+    // Handle as address
+    return processAddress(hex)
+  } else if (size === 32) {
+    // Handle as hash
+    return processHash(hex)
+  } else {
+    throw new Error(`Unexpected size: ${size}`)
+  }
+}
+```
+
+**Track Data Growth:**
+```typescript
+const parts: string[] = []
+let totalSize = 0
+
+for (const part of data) {
+  const hex = Hex.fromBytes(part)
+  totalSize += Hex.size(hex)
+  parts.push(hex)
+
+  if (totalSize > MAX_SIZE) {
+    break  // Stop if too large
+  }
+}
+```
+
+## vs isSized()
+
+**`size()` - Get size:**
+```typescript
+const byteSize = Hex.size(hex)
+console.log(`Hex is ${byteSize} bytes`)
+```
+
+**`isSized()` - Check size:**
+```typescript
+if (Hex.isSized(hex, 32)) {
+  console.log("Hex is 32 bytes")
+}
+```
+
+**`assertSize()` - Assert size:**
+```typescript
+Hex.assertSize(hex, 32)  // Throws if not 32 bytes
+```
+
+## Performance
+
+Simple arithmetic: `(length - 2) / 2`. Constant time O(1).
+
+No string parsing or validation - just length calculation.
+
+## Empty Hex
+
+Empty hex has size 0:
+
+```typescript
+Hex.size("0x")  // 0
+```
+
+## See Also
+
+- [isSized](/primitives/hex/is-sized) - Check if hex has specific size
+- [assertSize](/primitives/hex/assert-size) - Assert specific size
+- [pad](/primitives/hex/pad) - Pad to target size
+- [slice](/primitives/hex/slice) - Extract portion by size

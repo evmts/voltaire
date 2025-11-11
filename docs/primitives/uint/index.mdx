@@ -98,66 +98,36 @@ const hex = toHex(sum)
 
 ## API Methods
 
-### Constructors
-
-- [`constructor(value)`](/primitives/uint/constructors) - Create from bigint/number/string
-- [`from(value)`](/primitives/uint/constructors) - Universal constructor
-- [`fromHex(hex)`](/primitives/uint/constructors) - Parse hex string
-- [`fromBigInt(value)`](/primitives/uint/constructors) - From bigint
-- [`fromNumber(value)`](/primitives/uint/constructors) - From number
-- [`fromBytes(bytes)`](/primitives/uint/constructors) - From Uint8Array (32 bytes, big-endian)
-- [`fromAbiEncoded(bytes)`](/primitives/uint/constructors) - From ABI-encoded bytes
-- [`tryFrom(value)`](/primitives/uint/constructors) - Safe constructor (returns undefined on error)
-
-### Conversions
-
-- [`toHex(padded?)`](/primitives/uint/conversions) - Convert to hex string
-- [`toBigInt()`](/primitives/uint/conversions) - Convert to bigint
-- [`toNumber()`](/primitives/uint/conversions) - Convert to number (throws if > MAX_SAFE_INTEGER)
-- [`toBytes()`](/primitives/uint/conversions) - Convert to Uint8Array (32 bytes, big-endian)
-- [`toAbiEncoded()`](/primitives/uint/conversions) - Convert to ABI-encoded bytes
-- [`toString(radix?)`](/primitives/uint/conversions) - Convert to string (base 2-36)
-
-### Arithmetic
-
-- [`plus(other)`](/primitives/uint/arithmetic) - Addition with wrapping
-- [`minus(other)`](/primitives/uint/arithmetic) - Subtraction with wrapping
-- [`times(other)`](/primitives/uint/arithmetic) - Multiplication with wrapping
-- [`dividedBy(other)`](/primitives/uint/arithmetic) - Division (throws on divide by zero)
-- [`modulo(other)`](/primitives/uint/arithmetic) - Modulo
-- [`toPower(exponent)`](/primitives/uint/arithmetic) - Exponentiation with wrapping
-
-### Bitwise
-
-- [`bitwiseAnd(other)`](/primitives/uint/bitwise) - Bitwise AND
-- [`bitwiseOr(other)`](/primitives/uint/bitwise) - Bitwise OR
-- [`bitwiseXor(other)`](/primitives/uint/bitwise) - Bitwise XOR
-- [`bitwiseNot()`](/primitives/uint/bitwise) - Bitwise NOT
-- [`shiftLeft(bits)`](/primitives/uint/bitwise) - Left shift with wrapping
-- [`shiftRight(bits)`](/primitives/uint/bitwise) - Right shift
-
-### Comparisons
-
-- [`equals(other)`](/primitives/uint/comparisons) - Equality check
-- [`notEquals(other)`](/primitives/uint/comparisons) - Inequality check
-- [`lessThan(other)`](/primitives/uint/comparisons) - Less than
-- [`lessThanOrEqual(other)`](/primitives/uint/comparisons) - Less than or equal
-- [`greaterThan(other)`](/primitives/uint/comparisons) - Greater than
-- [`greaterThanOrEqual(other)`](/primitives/uint/comparisons) - Greater than or equal
-
-### Validation
-
-- [`isValid(value)`](/primitives/uint/validation) - Check if value is valid uint256
-- [`validate(value)`](/primitives/uint/validation) - Validate value (throws on error)
-
-### Utilities
-
-- [`isZero()`](/primitives/uint/utilities) - Check if value is zero
-- [`minimum(other)`](/primitives/uint/utilities) - Return smaller of two values
-- [`maximum(other)`](/primitives/uint/utilities) - Return larger of two values
-- [`bitLength()`](/primitives/uint/utilities) - Number of bits needed to represent value
-- [`leadingZeros()`](/primitives/uint/utilities) - Count leading zero bits
-- [`popCount()`](/primitives/uint/utilities) - Count number of 1 bits
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create from bigint, number, string, hex, bytes, and ABI-encoded data
+[View constructors →](/primitives/uint/constructors)
+</Card>
+<Card title="Conversions" icon="arrow-right-arrow-left">
+Convert to hex, bigint, number, bytes, ABI-encoded, and strings
+[View conversions →](/primitives/uint/conversions)
+</Card>
+<Card title="Arithmetic" icon="calculator">
+Addition, subtraction, multiplication, division, modulo, and power operations
+[View arithmetic →](/primitives/uint/arithmetic)
+</Card>
+<Card title="Bitwise" icon="binary">
+AND, OR, XOR, NOT, left shift, and right shift operations
+[View bitwise →](/primitives/uint/bitwise)
+</Card>
+<Card title="Comparisons" icon="code-compare">
+Equality, less than, greater than, and ordering comparisons
+[View comparisons →](/primitives/uint/comparisons)
+</Card>
+<Card title="Validation" icon="check">
+Validate uint256 values and check ranges
+[View validation →](/primitives/uint/validation)
+</Card>
+<Card title="Utilities" icon="wrench">
+Zero check, min/max, bit length, leading zeros, and pop count
+[View utilities →](/primitives/uint/utilities)
+</Card>
+</CardGroup>
 
 ## Types
 

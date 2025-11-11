@@ -1,0 +1,274 @@
+---
+title: Hash.merkleRoot
+description: Calculate Merkle root of hash array using Keccak-256
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.merkleRoot(hashes: BrandedHash[]): Hash`
+
+Calculates Merkle root of hash array using Keccak-256 for parent node hashing.
+
+**Parameters:**
+- `hashes: BrandedHash[]` - Array of hashes (leaf nodes)
+
+**Returns:** `Hash` - Merkle root hash (or ZERO for empty array)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// Create leaf hashes
+const leaves = [
+  Hash.keccak256String("tx1"),
+  Hash.keccak256String("tx2"),
+  Hash.keccak256String("tx3"),
+  Hash.keccak256String("tx4")
+]
+
+// Calculate Merkle root
+const root = Hash.merkleRoot(leaves)
+
+// Empty array returns ZERO
+const emptyRoot = Hash.merkleRoot([])
+console.log(emptyRoot.equals(Hash.ZERO)) // true
+
+// Single hash returns itself
+const singleRoot = Hash.merkleRoot([leaves[0]])
+console.log(singleRoot.equals(leaves[0])) // true
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/merkleRoot.js:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/merkleRoot.js#L24)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `merkleRoot(hashes: BrandedHash[]): BrandedHash`
+
+Calculates Merkle root of hash array using Keccak-256 for parent node hashing.
+
+**Parameters:**
+- `hashes: BrandedHash[]` - Array of hashes (leaf nodes)
+
+**Returns:** `BrandedHash` - Merkle root hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const leaves = [
+  Hash.keccak256String("tx1"),
+  Hash.keccak256String("tx2"),
+  Hash.keccak256String("tx3")
+]
+
+const root = Hash.merkleRoot(leaves)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/merkleRoot.js:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/merkleRoot.js#L24)
+
+</Tab>
+<Tab title="Zig">
+
+## Merkle Root Implementation
+
+```zig
+const std = @import("std");
+const keccak = @import("crypto").keccak256;
+
+fn merkleRoot(allocator: std.mem.Allocator, hashes: [][32]u8) ![32]u8 {
+    if (hashes.len == 0) return .{0} ** 32;
+    if (hashes.len == 1) return hashes[0];
+
+    var current = try allocator.dupe([32]u8, hashes);
+    defer allocator.free(current);
+
+    while (current.len > 1) {
+        var next = std.ArrayList([32]u8).init(allocator);
+        defer next.deinit();
+
+        var i: usize = 0;
+        while (i < current.len) : (i += 2) {
+            if (i + 1 < current.len) {
+                var combined: [64]u8 = undefined;
+                @memcpy(combined[0..32], &current[i]);
+                @memcpy(combined[32..64], &current[i + 1]);
+                try next.append(keccak(&combined));
+            } else {
+                try next.append(current[i]);
+            }
+        }
+
+        allocator.free(current);
+        current = try next.toOwnedSlice();
+    }
+
+    return current[0];
+}
+```
+
+</Tab>
+</Tabs>
+
+## Algorithm
+
+Builds Merkle tree bottom-up:
+
+1. Start with leaf hashes
+2. Pair adjacent hashes and hash them together
+3. If odd number of hashes, promote last hash to next level
+4. Repeat until single root hash remains
+
+```
+Level 3:           ROOT
+                 /      \
+Level 2:      H(A+B)   H(C+D)
+             /    \    /    \
+Level 1:    A     B   C     D  <- Leaf hashes
+```
+
+## Usage Examples
+
+### Transaction Merkle Root
+
+```typescript
+interface Block {
+  transactions: Transaction[]
+  transactionsRoot: Hash
+}
+
+function calculateTransactionsRoot(txs: Transaction[]): Hash {
+  const txHashes = txs.map(tx => tx.hash)
+  return Hash.merkleRoot(txHashes)
+}
+
+function validateBlock(block: Block): boolean {
+  const computedRoot = calculateTransactionsRoot(block.transactions)
+  return computedRoot.equals(block.transactionsRoot)
+}
+```
+
+### Merkle Proof Verification
+
+```typescript
+function verifyMerkleProof(
+  leaf: Hash,
+  proof: Hash[],
+  root: Hash
+): boolean {
+  let computedHash = leaf
+
+  for (const proofElement of proof) {
+    const combined = new Uint8Array([...computedHash, ...proofElement])
+    computedHash = Hash.keccak256(combined)
+  }
+
+  return computedHash.equals(root)
+}
+
+// Generate proof
+function generateMerkleProof(
+  leaves: Hash[],
+  index: number
+): Hash[] {
+  const proof: Hash[] = []
+  let currentIndex = index
+
+  let currentLevel = leaves
+  while (currentLevel.length > 1) {
+    const siblingIndex = currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1
+
+    if (siblingIndex < currentLevel.length) {
+      proof.push(currentLevel[siblingIndex])
+    }
+
+    const nextLevel: Hash[] = []
+    for (let i = 0; i < currentLevel.length; i += 2) {
+      if (i + 1 < currentLevel.length) {
+        nextLevel.push(Hash.concat(currentLevel[i], currentLevel[i + 1]))
+      } else {
+        nextLevel.push(currentLevel[i])
+      }
+    }
+
+    currentLevel = nextLevel
+    currentIndex = Math.floor(currentIndex / 2)
+  }
+
+  return proof
+}
+```
+
+### Incremental Updates
+
+```typescript
+class MerkleTree {
+  private leaves: Hash[]
+
+  constructor(leaves: Hash[]) {
+    this.leaves = [...leaves]
+  }
+
+  getRoot(): Hash {
+    return Hash.merkleRoot(this.leaves)
+  }
+
+  addLeaf(leaf: Hash): void {
+    this.leaves.push(leaf)
+  }
+
+  getLeaves(): Hash[] {
+    return [...this.leaves]
+  }
+}
+```
+
+## Edge Cases
+
+### Empty Array
+
+```typescript
+Hash.merkleRoot([]).equals(Hash.ZERO) // true
+```
+
+### Single Hash
+
+```typescript
+const single = Hash.keccak256String("test")
+Hash.merkleRoot([single]).equals(single) // true
+```
+
+### Odd Number of Hashes
+
+```typescript
+const leaves = [
+  Hash.keccak256String("tx1"),
+  Hash.keccak256String("tx2"),
+  Hash.keccak256String("tx3") // Odd number
+]
+
+// Last hash promoted to next level
+const root = Hash.merkleRoot(leaves)
+```
+
+## Performance
+
+Complexity: O(n) where n is number of leaves
+
+```typescript
+console.time('merkleRoot-1000')
+const leaves = Array.from({ length: 1000 }, (_, i) =>
+  Hash.keccak256String(`tx${i}`)
+)
+Hash.merkleRoot(leaves)
+console.timeEnd('merkleRoot-1000') // ~20-30ms
+```
+
+## See Also
+
+- [concat](/primitives/hash/concat) - Combine two hashes
+- [keccak256](/primitives/hash/keccak256) - Hash individual items
+- [BinaryTree](/primitives/binarytree) - Verkle tree implementation

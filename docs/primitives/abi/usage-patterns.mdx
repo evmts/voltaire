@@ -1,0 +1,424 @@
+---
+title: "Usage Patterns"
+description: "Common patterns and best practices for ABI encoding and decoding"
+---
+
+# Usage Patterns
+
+Practical patterns for working with ABI encoding and decoding in production code.
+
+## Contract Interaction
+
+### Function Call Encoding
+
+```typescript
+import { Function, Abi } from '@tevm/voltaire';
+
+// Define function
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+};
+
+// Encode function call
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+]);
+
+// Get selector
+const selector = Function.getSelector(transferFn);  // 4 bytes
+
+// Full calldata = selector + encoded params
+const fullCalldata = new Uint8Array([...selector, ...calldata]);
+
+// Send transaction
+await provider.sendTransaction({
+  to: contractAddress,
+  data: fullCalldata
+});
+```
+
+### Return Value Decoding
+
+```typescript
+// Execute call and decode result
+const returnData = await provider.call({
+  to: contractAddress,
+  data: fullCalldata
+});
+
+// Decode return value
+const [success] = Function.decodeResult(transferFn, returnData);
+console.log(`Transfer ${success ? 'succeeded' : 'failed'}`);
+```
+
+### Multi-call Pattern
+
+```typescript
+interface Call {
+  target: string;
+  callData: Uint8Array;
+  decoder: (data: Uint8Array) => any;
+}
+
+// Prepare multiple calls
+const calls: Call[] = [
+  {
+    target: token1,
+    callData: Function.encodeParams(balanceOfFn, [userAddress]),
+    decoder: (data) => Function.decodeResult(balanceOfFn, data)
+  },
+  {
+    target: token2,
+    callData: Function.encodeParams(balanceOfFn, [userAddress]),
+    decoder: (data) => Function.decodeResult(balanceOfFn, data)
+  }
+];
+
+// Execute multicall
+const results = await Promise.all(
+  calls.map(call =>
+    provider.call({ to: call.target, data: call.callData })
+  )
+);
+
+// Decode results
+const balances = results.map((data, i) => calls[i].decoder(data));
+```
+
+## Event Processing
+
+### Log Parsing
+
+```typescript
+import { Event } from '@tevm/voltaire';
+
+// Define Transfer event
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+};
+
+// Get logs from provider
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  fromBlock: startBlock,
+  toBlock: endBlock,
+  topics: [Event.getSelector(transferEvent)]
+});
+
+// Parse all logs
+const transfers = logs.map(log =>
+  Event.decodeLog(transferEvent, log.data, log.topics)
+);
+
+// Process transfers
+transfers.forEach(({ from, to, value }) => {
+  console.log(`${from} → ${to}: ${value}`);
+});
+```
+
+### Event Filtering
+
+```typescript
+// Filter by specific sender
+const senderTopic = Event.encodeIndexed(
+  { type: "address" },
+  senderAddress
+);
+
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: [
+    Event.getSelector(transferEvent),
+    senderTopic  // Filter by 'from' address
+  ]
+});
+```
+
+### Multi-event Parsing
+
+```typescript
+const eventDefinitions = {
+  Transfer: transferEvent,
+  Approval: approvalEvent,
+  Mint: mintEvent
+};
+
+// Get topic0 → event mapping
+const topicMap = new Map(
+  Object.entries(eventDefinitions).map(([name, def]) => [
+    Event.getSelector(def).toString(),
+    { name, definition: def }
+  ])
+);
+
+// Parse mixed event logs
+const parsed = logs.map(log => {
+  const topic0 = log.topics[0];
+  const event = topicMap.get(topic0.toString());
+
+  if (!event) return null;
+
+  return {
+    name: event.name,
+    args: Event.decodeLog(event.definition, log.data, log.topics)
+  };
+}).filter(Boolean);
+```
+
+## Error Handling
+
+### Custom Error Decoding
+
+```typescript
+import { AbiError } from '@tevm/voltaire';
+
+// Define custom errors
+const errors = {
+  InsufficientBalance: {
+    type: "error",
+    name: "InsufficientBalance",
+    inputs: [
+      { type: "uint256", name: "balance" },
+      { type: "uint256", name: "required" }
+    ]
+  },
+  InvalidRecipient: {
+    type: "error",
+    name: "InvalidRecipient",
+    inputs: [{ type: "address", name: "recipient" }]
+  }
+};
+
+// Try transaction, catch revert
+try {
+  await contract.transfer(recipient, amount);
+} catch (err: any) {
+  const revertData = err.data;
+
+  // Try to decode with each error definition
+  for (const [name, errorDef] of Object.entries(errors)) {
+    const selector = AbiError.getSelector(errorDef);
+
+    if (revertData.startsWith(selector)) {
+      const args = AbiError.decodeParams(errorDef, revertData.slice(4));
+      console.error(`${name}:`, args);
+      break;
+    }
+  }
+}
+```
+
+### Error Encoding
+
+```typescript
+// Encode custom error for testing
+const errorData = AbiError.encodeParams(
+  errors.InsufficientBalance,
+  [100n, 1000n]
+);
+
+// Simulate revert in tests
+const fullError = new Uint8Array([
+  ...AbiError.getSelector(errors.InsufficientBalance),
+  ...errorData
+]);
+```
+
+## Type-safe ABI Loading
+
+### From JSON
+
+```typescript
+import { Abi } from '@tevm/voltaire';
+
+// Load ABI from contract artifact
+const artifact = require('./artifacts/Token.json');
+const abi = Abi.from(artifact.abi);
+
+// Get specific items
+const transferFn = abi.getFunction("transfer");
+const transferEvent = abi.getEvent("Transfer");
+const balanceError = abi.getError("InsufficientBalance");
+```
+
+### Dynamic ABI Construction
+
+```typescript
+// Build ABI programmatically
+const items = [
+  {
+    type: "function",
+    name: "transfer",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" }
+    ],
+    outputs: [{ type: "bool" }]
+  },
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { type: "address", name: "from", indexed: true },
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "value" }
+    ]
+  }
+];
+
+const abi = Abi.from(items);
+```
+
+## Complex Type Handling
+
+### Struct Encoding
+
+```typescript
+// Define struct as tuple
+const positionType = {
+  type: "tuple",
+  components: [
+    { type: "uint256", name: "amount" },
+    { type: "uint256", name: "shares" },
+    { type: "uint256", name: "timestamp" }
+  ]
+};
+
+// Encode struct
+const encoded = Abi.encode([positionType], [[1000n, 500n, 1234567890n]]);
+```
+
+### Array Handling
+
+```typescript
+// Dynamic array
+const dynamicArrayType = { type: "uint256[]" };
+const values = [1n, 2n, 3n, 4n, 5n];
+const encoded = Abi.encode([dynamicArrayType], [values]);
+
+// Fixed array
+const fixedArrayType = { type: "uint256[5]" };
+const encoded = Abi.encode([fixedArrayType], [values]);
+
+// Multi-dimensional
+const matrixType = { type: "uint256[][]" };
+const matrix = [[1n, 2n], [3n, 4n]];
+const encoded = Abi.encode([matrixType], [matrix]);
+```
+
+### String and Bytes
+
+```typescript
+// String
+const stringType = { type: "string" };
+const encoded = Abi.encode([stringType], ["Hello, Ethereum!"]);
+
+// Dynamic bytes
+const bytesType = { type: "bytes" };
+const data = new Uint8Array([1, 2, 3, 4]);
+const encoded = Abi.encode([bytesType], [data]);
+
+// Fixed bytes
+const bytes32Type = { type: "bytes32" };
+const hash = new Uint8Array(32);
+const encoded = Abi.encode([bytes32Type], [hash]);
+```
+
+## Optimization Patterns
+
+### Selector Caching
+
+```typescript
+// Cache selectors for frequent use
+const selectorCache = new Map<string, Uint8Array>();
+
+function getCachedSelector(fn: Function): Uint8Array {
+  const key = `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
+
+  if (!selectorCache.has(key)) {
+    selectorCache.set(key, Function.getSelector(fn));
+  }
+
+  return selectorCache.get(key)!;
+}
+```
+
+### Reusable Encoders
+
+```typescript
+class ContractInterface {
+  constructor(private abi: Abi) {}
+
+  // Pre-bind common functions
+  private transfer = this.abi.getFunction("transfer");
+  private balanceOf = this.abi.getFunction("balanceOf");
+
+  encodeTransfer(to: string, amount: bigint): Uint8Array {
+    return Function.encodeParams(this.transfer, [to, amount]);
+  }
+
+  encodeBalanceOf(account: string): Uint8Array {
+    return Function.encodeParams(this.balanceOf, [account]);
+  }
+
+  decodeBalance(data: Uint8Array): bigint {
+    const [balance] = Function.decodeResult(this.balanceOf, data);
+    return balance;
+  }
+}
+```
+
+## Testing Patterns
+
+### Mock Contract Responses
+
+```typescript
+// Encode expected return values
+function mockBalanceOf(balance: bigint): Uint8Array {
+  return Abi.encode([{ type: "uint256" }], [balance]);
+}
+
+// Use in tests
+test("handles zero balance", async () => {
+  mock.returns(mockBalanceOf(0n));
+  const balance = await contract.balanceOf(user);
+  expect(balance).toBe(0n);
+});
+```
+
+### Event Testing
+
+```typescript
+// Encode expected event
+function mockTransferEvent(from: string, to: string, value: bigint) {
+  return {
+    topics: [
+      Event.getSelector(transferEvent),
+      Event.encodeIndexed({ type: "address" }, from),
+      Event.encodeIndexed({ type: "address" }, to)
+    ],
+    data: Abi.encode([{ type: "uint256" }], [value])
+  };
+}
+```
+
+## Related
+
+- [Decode](/primitives/abi/decode) - ABI decoding
+- [Encode](/primitives/abi/encode) - ABI encoding
+- [Parse Logs](/primitives/abi/parse-logs) - Event log parsing
+- [Fundamentals](/primitives/abi/fundamentals) - ABI basics

@@ -1,0 +1,68 @@
+---
+title: Uint.bitwiseNot
+description: Bitwise NOT operation on Uint256 value
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.bitwiseNot(value: BrandedUint): BrandedUint`
+
+Bitwise NOT (complement) operation - flips all bits.
+
+**Parameters:**
+- `value: BrandedUint` - Value to invert
+
+**Returns:** `BrandedUint` - Bitwise NOT result
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0xfn)
+Uint.bitwiseNot(a)  // 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0
+
+Uint.bitwiseNot(Uint.ZERO)  // MAX
+Uint.bitwiseNot(Uint.MAX)   // ZERO
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/bitwiseNot.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseNot.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `bitwiseNot(value: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const result = Uint.bitwiseNot(Uint.from(15n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/bitwiseNot.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseNot.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.bitwiseNot(value: Uint): Uint`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const result = Uint.bitwiseNot(Uint.init(15));
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [bitwiseAnd](/primitives/uint/bitwise-and) - Bitwise AND
+- [Bitwise operations](/primitives/uint/bitwise) - Full bitwise reference

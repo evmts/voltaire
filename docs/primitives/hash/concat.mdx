@@ -1,0 +1,141 @@
+---
+title: Hash.concat
+description: Concatenate multiple hashes and hash the result
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.concat(...hashes: BrandedHash[]): Hash`
+
+Concatenates multiple hashes and hashes the result. Useful for combining hashes in Merkle trees.
+
+**Parameters:**
+- `...hashes: BrandedHash[]` - Hashes to concatenate
+
+**Returns:** `Hash` - Hash of concatenated hashes
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const h1 = Hash.keccak256String("hello")
+const h2 = Hash.keccak256String("world")
+
+// Concatenate and hash
+const combined = Hash.concat(h1, h2)
+
+// Multiple hashes
+const h3 = Hash.keccak256String("test")
+const combined3 = Hash.concat(h1, h2, h3)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/concat.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/concat.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `concat(...hashes: BrandedHash[]): BrandedHash`
+
+Concatenates multiple hashes and hashes the result.
+
+**Parameters:**
+- `...hashes: BrandedHash[]` - Hashes to concatenate
+
+**Returns:** `BrandedHash` - Hash of concatenated hashes
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const h1 = Hash.keccak256String("hello")
+const h2 = Hash.keccak256String("world")
+const combined = Hash.concat(h1, h2)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/concat.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/concat.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual Concatenation
+
+```zig
+const std = @import("std");
+const keccak = @import("crypto").keccak256;
+
+fn concatHashes(allocator: std.mem.Allocator, hashes: []const [32]u8) ![32]u8 {
+    const total_len = hashes.len * 32;
+    const combined = try allocator.alloc(u8, total_len);
+    defer allocator.free(combined);
+
+    for (hashes, 0..) |hash, i| {
+        @memcpy(combined[i * 32 .. (i + 1) * 32], &hash);
+    }
+
+    return keccak(combined);
+}
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Concatenates bytes and hashes result:
+
+```typescript
+function concat(...hashes: BrandedHash[]): BrandedHash {
+  const totalLength = hashes.reduce((sum, hash) => sum + hash.length, 0)
+  const combined = new Uint8Array(totalLength)
+
+  let offset = 0
+  for (const hash of hashes) {
+    combined.set(hash, offset)
+    offset += hash.length
+  }
+
+  return keccak256(combined)
+}
+```
+
+## Usage Examples
+
+### Merkle Tree Parent Nodes
+
+```typescript
+function hashPair(left: Hash, right: Hash): Hash {
+  return Hash.concat(left, right)
+}
+
+// Build Merkle tree level
+function buildLevel(leaves: Hash[]): Hash[] {
+  const parents: Hash[] = []
+
+  for (let i = 0; i < leaves.length; i += 2) {
+    if (i + 1 < leaves.length) {
+      parents.push(Hash.concat(leaves[i], leaves[i + 1]))
+    } else {
+      parents.push(leaves[i])
+    }
+  }
+
+  return parents
+}
+```
+
+### Commitment Schemes
+
+```typescript
+// Commit to multiple values
+function createMultiCommitment(values: Hash[], salt: Hash): Hash {
+  return Hash.concat(...values, salt)
+}
+```
+
+## See Also
+
+- [merkleRoot](/primitives/hash/merkle-root) - Compute Merkle root
+- [keccak256](/primitives/hash/keccak256) - Hash arbitrary data

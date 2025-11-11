@@ -1,0 +1,79 @@
+---
+title: Uint.minus
+description: Subtract Uint256 values with wrapping underflow
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.minus(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+Subtract Uint256 values. Wraps on underflow (mod 2^256).
+
+**Parameters:**
+- `a: BrandedUint` - Minuend
+- `b: BrandedUint` - Subtrahend
+
+**Returns:** `BrandedUint` - Difference (mod 2^256)
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(100n)
+const b = Uint.from(50n)
+Uint.minus(a, b)  // 50
+
+// Underflow wraps
+Uint.minus(Uint.ZERO, Uint.ONE)  // MAX
+Uint.minus(Uint.from(10n), Uint.from(20n))  // MAX - 9
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/minus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/minus.ts#L19)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `minus(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const diff = Uint.minus(Uint.from(100n), Uint.from(50n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/minus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/minus.ts#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.sub(a: Uint, b: Uint): Uint`
+
+Wrapping subtraction.
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const a = Uint.init(100);
+const b = Uint.init(50);
+const diff = Uint.sub(a, b);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+<Warning title="Wrapping Behavior">
+Subtraction wraps on underflow: (a - b + 2^256) mod 2^256
+</Warning>
+
+## See Also
+
+- [plus](/primitives/uint/plus) - Addition
+- [Arithmetic operations](/primitives/uint/arithmetic) - Full arithmetic reference

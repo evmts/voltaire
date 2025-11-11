@@ -144,6 +144,37 @@ const isValid = Transaction.verifySignature(tx)
 </Tab>
 </Tabs>
 
+## Quick Reference
+
+### Core Operations
+
+| Method | Description |
+|--------|-------------|
+| [`serialize(tx)`](/primitives/transaction/serialization) | RLP encode to bytes |
+| [`deserialize(data)`](/primitives/transaction/serialization) | RLP decode from bytes |
+| [`detectType(data)`](/primitives/transaction/detect-type) | Detect type from serialized bytes |
+| [`hash(tx)`](/primitives/transaction/hashing) | Compute transaction hash |
+| [`getSigningHash(tx)`](/primitives/transaction/hashing) | Get hash to sign |
+
+### Signature Operations
+
+| Method | Description |
+|--------|-------------|
+| [`getSender(tx)`](/primitives/transaction/signing) | Recover sender address |
+| [`verifySignature(tx)`](/primitives/transaction/signing) | Validate signature |
+| [`isSigned(tx)`](/primitives/transaction/signing) | Check if signed |
+| [`assertSigned(tx)`](/primitives/transaction/signing) | Assert signed (throws) |
+
+### Utilities
+
+| Method | Description |
+|--------|-------------|
+| [`getChainId(tx)`](/primitives/transaction/get-chain-id) | Extract chain ID |
+| [`getGasPrice(tx, baseFee?)`](/primitives/transaction/get-gas-price) | Get effective gas price |
+| [`hasAccessList(tx)`](/primitives/transaction/has-access-list) | Check for access list |
+| [`getAccessList(tx)`](/primitives/transaction/get-access-list) | Get access list |
+| [`format(tx)`](/primitives/transaction/format) | Format for display |
+
 ## Transaction Types
 
 | Type | Name | Description |
@@ -260,36 +291,46 @@ Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Tr
 
 ## API Methods
 
-| Method | Description |
-|--------|-------------|
-| [`serialize()`](/primitives/transaction/serialize) | RLP encode transaction to bytes |
-| [`deserialize()`](/primitives/transaction/deserialize) | RLP decode bytes to transaction |
-| [`detectType()`](/primitives/transaction/detectType) | Detect transaction type from bytes |
-| [`hash()`](/primitives/transaction/hash) | Compute transaction hash |
-| [`getSigningHash()`](/primitives/transaction/getSigningHash) | Compute signing hash (what gets signed) |
-| [`getSender()`](/primitives/transaction/getSender) | Recover sender address from signature |
-| [`verifySignature()`](/primitives/transaction/verifySignature) | Validate signature is correct |
-| [`isSigned()`](/primitives/transaction/isSigned) | Check if transaction has signature |
-| [`assertSigned()`](/primitives/transaction/assertSigned) | Assert transaction is signed (throws) |
-| [`getChainId()`](/primitives/transaction/getChainId) | Extract chain ID from transaction |
-| [`getGasPrice()`](/primitives/transaction/getGasPrice) | Get effective gas price |
-| [`hasAccessList()`](/primitives/transaction/hasAccessList) | Check if transaction has access list |
-| [`getAccessList()`](/primitives/transaction/getAccessList) | Get access list from transaction |
-| [`format()`](/primitives/transaction/format) | Format transaction for display |
+<CardGroup>
+<Card title="Serialization" icon="file-code">
+RLP encoding and decoding for all transaction types
+[View serialization →](/primitives/transaction/serialize)
+</Card>
+<Card title="Hashing" icon="hashtag">
+Compute transaction hashes and signing hashes
+[View hashing →](/primitives/transaction/hash)
+</Card>
+<Card title="Signatures" icon="signature">
+Recover sender, verify signatures, and check signing status
+[View signatures →](/primitives/transaction/getSender)
+</Card>
+<Card title="Gas Pricing" icon="gas-pump">
+Calculate effective gas price and blob gas costs
+[View gas pricing →](/primitives/transaction/getGasPrice)
+</Card>
+<Card title="Access Lists" icon="list">
+Check and retrieve access list data
+[View access lists →](/primitives/transaction/hasAccessList)
+</Card>
+<Card title="Type Detection" icon="magnifying-glass">
+Detect transaction type from bytes
+[View type detection →](/primitives/transaction/detectType)
+</Card>
+<Card title="Utilities" icon="wrench">
+Format, extract chain ID, and helper functions
+[View utilities →](/primitives/transaction/format)
+</Card>
+</CardGroup>
 
-## Type-Specific Methods
+### Core Methods
 
-### EIP-1559
-
-| Method | Description |
-|--------|-------------|
-| [`getEffectiveGasPrice()`](/primitives/transaction/eip1559#getEffectiveGasPrice) | Calculate effective gas price given base fee |
-
-### EIP-4844
-
-| Method | Description |
-|--------|-------------|
-| [`getBlobGasCost()`](/primitives/transaction/eip4844#getBlobGasCost) | Calculate total blob gas cost |
+- **Serialization**: `serialize`, `deserialize`, `detectType`
+- **Hashing**: `hash`, `getSigningHash`
+- **Signatures**: `getSender`, `verifySignature`, `isSigned`, `assertSigned`
+- **Gas**: `getGasPrice`, `getEffectiveGasPrice`, `getBlobGasCost`
+- **Access Lists**: `hasAccessList`, `getAccessList`
+- **Chain**: `getChainId`
+- **Display**: `format`
 
 ## Usage Patterns
 

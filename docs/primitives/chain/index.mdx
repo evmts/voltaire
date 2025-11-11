@@ -147,43 +147,34 @@ const chain = Chain.from(quai9)
 
 See [@tevm/chains documentation](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) for complete list.
 
-## API Documentation
+## API Methods
 
-### Fundamentals
-
-Learn chain IDs, replay attack prevention, and network identification.
-
-    [View fundamentals →](/primitives/chain/fundamentals)
-
-### Constructors
-
-Creating Chain instances from chain objects and chain IDs.
-
-    [View constructors →](/primitives/chain/constructors)
-
-### Chain Lookup
-
-Looking up chains by ID using fromId() and byId record.
-
-    [View chain lookup →](/primitives/chain/chain-lookup)
-
-### Metadata
-
-Accessing chain properties: name, chainId, RPC, explorers, currency.
-
-    [View metadata →](/primitives/chain/metadata)
-
-### BrandedChain
-
-Tree-shakeable functional API for minimal bundle size.
-
-    [View BrandedChain →](/primitives/chain/branded-chain)
-
-### Network Comparison
-
-Compare gas fees, costs, and characteristics across mainnet, L2s, and testnets.
-
-    [View Network Comparison →](/primitives/chain/network-comparison)
+<CardGroup>
+<Card title="Fundamentals" icon="book">
+Learn chain IDs, replay attack prevention, and network identification
+[View fundamentals →](/primitives/chain/fundamentals)
+</Card>
+<Card title="Constructors" icon="rocket">
+Create Chain instances from chain objects and chain IDs
+[View constructors →](/primitives/chain/constructors)
+</Card>
+<Card title="Chain Lookup" icon="magnifying-glass">
+Look up chains by ID using fromId() and byId record
+[View chain lookup →](/primitives/chain/chain-lookup)
+</Card>
+<Card title="Metadata" icon="info-circle">
+Access chain properties: name, chainId, RPC, explorers, currency
+[View metadata →](/primitives/chain/metadata)
+</Card>
+<Card title="BrandedChain" icon="tag">
+Tree-shakeable functional API for minimal bundle size
+[View BrandedChain →](/primitives/chain/branded-chain)
+</Card>
+<Card title="Network Comparison" icon="chart-bar">
+Compare gas fees, costs, and characteristics across networks
+[View Network Comparison →](/primitives/chain/network-comparison)
+</Card>
+</CardGroup>
 
 <Tip title="Chain objects are plain JavaScript objects">
 Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.

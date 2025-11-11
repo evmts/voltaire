@@ -1,0 +1,423 @@
+---
+title: WASM Support
+description: WASM acceleration and limitations for blob operations
+---
+
+Voltaire provides WASM builds for blob operations with some limitations. This page covers WASM support, performance, and workarounds.
+
+## Current Status
+
+### Supported Operations
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// ✅ Data encoding/decoding
+const blob = Blob.fromData(data);
+const decoded = Blob.toData(blob);
+
+// ✅ Splitting and joining
+const blobs = Blob.splitData(largeData);
+const reconstructed = Blob.joinData(blobs);
+
+// ✅ Validation
+const isValid = Blob.isValid(blob);
+const isValidVersion = Blob.isValidVersion(versionedHash);
+
+// ✅ Gas estimation
+const blobCount = Blob.estimateBlobCount(data);
+const gas = Blob.calculateGas(blobCount);
+```
+
+### Unsupported Operations
+
+KZG operations require c-kzg-4844 native library (not available in WASM):
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// ❌ KZG commitment (requires native library)
+try {
+  const commitment = Blob.toCommitment(blob);
+} catch (e) {
+  console.error(e); // "Not implemented: requires c-kzg-4844 library"
+}
+
+// ❌ KZG proof generation
+try {
+  const proof = Blob.toProof(blob);
+} catch (e) {
+  console.error(e); // "Not implemented: requires c-kzg-4844 library"
+}
+
+// ❌ KZG verification
+try {
+  const isValid = Blob.verify(blob, commitment, proof);
+} catch (e) {
+  console.error(e); // "Not implemented: requires c-kzg-4844 library"
+}
+```
+
+## Use Cases
+
+### Browser-Based L2 Clients
+
+Use WASM for data encoding/decoding, compute KZG operations server-side:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class BrowserL2Client {
+  async prepareBlob(data: Uint8Array): Promise<PreparedBlob> {
+    // ✅ WASM: Encode data
+    const blob = Blob.fromData(data);
+
+    // ✅ WASM: Validate
+    if (!Blob.isValid(blob)) {
+      throw new Error('Invalid blob');
+    }
+
+    // ❌ WASM: Cannot compute commitment
+    // Send to backend for KZG operations
+    const { commitment, proof, versionedHash } =
+      await this.computeKZGOnServer(blob);
+
+    return { blob, commitment, proof, versionedHash };
+  }
+
+  private async computeKZGOnServer(blob: Blob) {
+    const response = await fetch('/api/compute-kzg', {
+      method: 'POST',
+      body: blob,
+    });
+
+    return await response.json();
+  }
+}
+```
+
+### Backend KZG Service
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+import express from 'express';
+
+const app = express();
+
+// Native environment - KZG available
+app.post('/api/compute-kzg', async (req, res) => {
+  try {
+    const blob = Blob.from(req.body);
+
+    // ✅ Native: Compute KZG operations
+    const commitment = Blob.toCommitment(blob);
+    const proof = Blob.toProof(blob);
+    const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+    res.json({ commitment, proof, versionedHash });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+app.listen(3000);
+```
+
+## Build Configuration
+
+### WASM Builds
+
+Voltaire provides optimized WASM builds:
+
+```bash
+# ReleaseSmall (production - size optimized)
+zig build build-ts-wasm
+
+# ReleaseFast (benchmarking - performance optimized)
+zig build build-ts-wasm-fast
+```
+
+### Output Files
+
+```
+wasm/primitives.wasm       # ReleaseSmall (default)
+wasm/primitives-fast.wasm  # ReleaseFast
+```
+
+### Import in Browser
+
+```typescript
+// Automatic WASM loading
+import { Blob } from '@tevm/voltaire';
+
+// WASM is loaded automatically when needed
+const blob = Blob.fromData(data);
+```
+
+## Performance
+
+### Data Operations
+
+WASM performs well for data encoding/decoding:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Benchmark: fromData (WASM)
+console.time('fromData');
+const blob = Blob.fromData(new Uint8Array(100_000));
+console.timeEnd('fromData'); // ~1ms
+
+// Benchmark: toData (WASM)
+console.time('toData');
+const data = Blob.toData(blob);
+console.timeEnd('toData'); // ~0.5ms
+
+// Benchmark: splitData (WASM)
+console.time('splitData');
+const blobs = Blob.splitData(new Uint8Array(300_000));
+console.timeEnd('splitData'); // ~3ms
+```
+
+### KZG Operations
+
+For KZG operations, use native builds or backend services:
+
+```typescript
+// Native performance (c-kzg-4844)
+console.time('commitment');
+const commitment = Blob.toCommitment(blob);
+console.timeEnd('commitment'); // ~10ms
+
+console.time('proof');
+const proof = Blob.toProof(blob);
+console.timeEnd('proof'); // ~10ms
+
+console.time('verify');
+const isValid = Blob.verify(blob, commitment, proof);
+console.timeEnd('verify'); // ~5ms
+```
+
+## Workarounds
+
+### Hybrid Approach
+
+Use WASM for data operations, native for KZG:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class HybridBlobProcessor {
+  async process(data: Uint8Array): Promise<BlobTransaction> {
+    // ✅ WASM: Data encoding
+    const blob = Blob.fromData(data);
+
+    // ✅ WASM: Estimate costs
+    const blobCount = Blob.estimateBlobCount(data);
+    const estimatedGas = Blob.calculateGas(blobCount);
+
+    console.log(`Estimated gas: ${estimatedGas}`);
+
+    // ❌ WASM: Send to native backend for KZG
+    const kzgData = await this.computeKZGNative(blob);
+
+    return {
+      blob,
+      ...kzgData,
+    };
+  }
+
+  private async computeKZGNative(blob: Blob) {
+    // Call native KZG service
+    if (typeof window === 'undefined') {
+      // Node.js - use native library
+      return {
+        commitment: Blob.toCommitment(blob),
+        proof: Blob.toProof(blob),
+        versionedHash: Blob.toVersionedHash(blob),
+      };
+    } else {
+      // Browser - call backend
+      const response = await fetch('/api/kzg', {
+        method: 'POST',
+        body: blob,
+      });
+      return await response.json();
+    }
+  }
+}
+```
+
+### Pre-computed Commitments
+
+For known data, pre-compute commitments:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Generate commitments ahead of time (native)
+const precomputed = new Map<string, KZGData>();
+
+function precomputeCommitments(testData: Uint8Array[]) {
+  for (const data of testData) {
+    const blob = Blob.fromData(data);
+    const commitment = Blob.toCommitment(blob);
+    const proof = Blob.toProof(blob);
+    const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+    const key = Buffer.from(data).toString('hex');
+    precomputed.set(key, { commitment, proof, versionedHash });
+  }
+}
+
+// Use in WASM environment
+function getKZGData(data: Uint8Array): KZGData {
+  const key = Buffer.from(data).toString('hex');
+  const cached = precomputed.get(key);
+
+  if (!cached) {
+    throw new Error('KZG data not precomputed');
+  }
+
+  return cached;
+}
+```
+
+## Testing
+
+### WASM-Specific Tests
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+import { describe, it, expect } from 'vitest';
+
+describe('Blob WASM', () => {
+  it('should encode and decode data', () => {
+    const data = new Uint8Array([1, 2, 3, 4, 5]);
+    const blob = Blob.fromData(data);
+    const decoded = Blob.toData(blob);
+
+    expect(decoded).toEqual(data);
+  });
+
+  it('should split and join data', () => {
+    const data = new Uint8Array(300_000);
+    const blobs = Blob.splitData(data);
+    const reconstructed = Blob.joinData(blobs);
+
+    expect(reconstructed.length).toBe(data.length);
+  });
+
+  it('should estimate blob count', () => {
+    const data = new Uint8Array(300_000);
+    const count = Blob.estimateBlobCount(data);
+
+    expect(count).toBe(3);
+  });
+
+  it('should throw on KZG operations', () => {
+    const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+
+    expect(() => Blob.toCommitment(blob)).toThrow(
+      'Not implemented: requires c-kzg-4844 library'
+    );
+  });
+});
+```
+
+### Run WASM Tests
+
+```bash
+# Build WASM
+zig build build-ts-wasm
+
+# Run WASM-specific tests
+bun run test:wasm
+```
+
+## Future Support
+
+### Potential Improvements
+
+1. **WASM KZG Library**
+   - Port c-kzg-4844 to WASM
+   - Maintain compatibility with trusted setup
+
+2. **Progressive Enhancement**
+   - Detect native KZG availability
+   - Fall back to WASM-only operations
+
+3. **Worker Threads**
+   - Offload KZG operations to workers
+   - Parallel commitment computation
+
+### Tracking Issue
+
+Follow progress on WASM KZG support:
+- [GitHub Issue](https://github.com/tevm/voltaire/issues/XXX)
+
+## Limitations
+
+### Memory Constraints
+
+WASM has stricter memory limits:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Large data may fail in WASM
+try {
+  const largeData = new Uint8Array(1_000_000_000); // 1 GB
+  Blob.splitData(largeData);
+} catch (e) {
+  console.error('WASM memory exceeded');
+}
+
+// Recommendation: Process in chunks
+function processInChunks(data: Uint8Array, chunkSize: number) {
+  const chunks: Blob[][] = [];
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+    const blobs = Blob.splitData(chunk);
+    chunks.push(blobs);
+  }
+
+  return chunks;
+}
+```
+
+### No Trusted Setup Access
+
+WASM builds cannot load trusted setup:
+
+```typescript
+// ❌ Not available in WASM
+import { loadTrustedSetup } from 'c-kzg';
+
+// Use backend service instead
+async function loadTrustedSetupRemote() {
+  const response = await fetch('/api/trusted-setup');
+  return await response.json();
+}
+```
+
+## Best Practices
+
+1. **Use Native for KZG** - Always compute commitments/proofs in native environment
+2. **WASM for Data** - Use WASM builds for encoding/decoding/validation
+3. **Backend Services** - Provide KZG API for browser clients
+4. **Pre-compute When Possible** - Generate commitments ahead of time
+5. **Test Both Environments** - Run tests in both native and WASM
+
+## Resources
+
+- **[Zig WASM](https://ziglang.org/documentation/master/#WebAssembly)** - Zig WASM compilation
+- **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** - Native KZG library
+- **[WASI](https://wasi.dev/)** - WebAssembly System Interface
+
+## See Also
+
+- [Fundamentals](/primitives/blob/fundamentals) - Blob basics
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme
+- [Usage Patterns](/primitives/blob/usage-patterns) - Real-world examples

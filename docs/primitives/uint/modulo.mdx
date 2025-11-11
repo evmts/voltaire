@@ -1,0 +1,78 @@
+---
+title: Uint.modulo
+description: Get remainder of Uint256 division
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.modulo(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+Get remainder of division.
+
+**Parameters:**
+- `a: BrandedUint` - Dividend
+- `b: BrandedUint` - Modulus
+
+**Returns:** `BrandedUint` - Remainder
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(17n)
+const b = Uint.from(5n)
+Uint.modulo(a, b)  // 2 (17 = 3*5 + 2)
+
+// Even/odd check
+Uint.modulo(Uint.from(100n), Uint.from(2n))  // 0
+Uint.modulo(Uint.from(101n), Uint.from(2n))  // 1
+
+// Modulo by zero throws
+Uint.modulo(a, Uint.ZERO)  // Error
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/modulo.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/modulo.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `modulo(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const remainder = Uint.modulo(Uint.from(17n), Uint.from(5n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/modulo.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/modulo.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.mod(a: Uint, b: Uint): !Uint`
+
+Modulo operation.
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const a = Uint.init(17);
+const b = Uint.init(5);
+const remainder = try Uint.mod(a, b);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [dividedBy](/primitives/uint/divided-by) - Division
+- [Arithmetic operations](/primitives/uint/arithmetic) - Full arithmetic reference

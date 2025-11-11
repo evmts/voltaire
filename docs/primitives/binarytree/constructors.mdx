@@ -9,6 +9,9 @@ Methods for creating BinaryTree instances.
 
 ## Factory Constructor
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `BinaryTree()`
 
 Factory function creates empty binary tree with empty root node.
@@ -39,6 +42,49 @@ console.log(tree2.root.type) // 'stem' (no longer empty)
 ```
 
 Defined in: [primitives/BinaryTree/index.js:30-32](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/index.js#L30-L32)
+
+</Tab>
+<Tab title="Zig">
+
+### `BinaryTree.init(allocator: Allocator) BinaryTree`
+
+Initialize empty binary tree with empty root node.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for tree operations
+
+**Returns:** `BinaryTree` - Empty tree with `.empty` root
+
+**Example:**
+
+```zig
+const std = @import("std");
+const BinaryTree = @import("primitives").BinaryTree;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Create empty tree
+var tree = BinaryTree.init(allocator);
+defer tree.deinit();
+
+// Insert values to build tree
+var key: [32]u8 = undefined;
+@memset(&key, 0);
+key[31] = 5;
+
+var value: [32]u8 = undefined;
+@memset(&value, 0);
+value[0] = 0x42;
+
+try tree.insert(key, value);
+```
+
+**Defined in:** [primitives/BinaryTree/binary_tree.zig:129](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig#L129)
+
+</Tab>
+</Tabs>
 
 ## Static Constructor
 

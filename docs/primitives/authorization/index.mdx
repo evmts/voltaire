@@ -189,37 +189,37 @@ Production-ready implementations:
 - **Gasless Transaction Service** - End-to-end gasless UX
 - **Production Deployment Checklist** - Validation & testing
 
-## API Overview
+## API Methods
 
-### Type Guards
-- `isItem(value)` - Check if value is Authorization.Item
-- `isUnsigned(value)` - Check if value is Authorization.Unsigned
-
-### [Validation](./validation)
-- `validate.call(auth)` - Validate authorization structure
-
-### [Signing & Hashing](./signing)
-- `hash.call(unsigned)` - Calculate signing hash
-- `sign.call(unsigned, privateKey)` - Create signed authorization
-- `verify.call(auth)` - Recover authority address
-
-### [Gas Calculations](./gas-calculations)
-- `calculateGasCost.call(authList, emptyAccounts)` - Total gas cost
-- `getGasCost.call(auth, isEmpty)` - Single authorization cost
-
-### [Processing](./processing)
-- `process.call(auth)` - Process single authorization
-- `processAll.call(authList)` - Process authorization list
-
-### [Utilities](./utilities)
-- `format.call(auth)` - Format to string
-- `equals.call(auth1, auth2)` - Check equality
-
-### [WASM](./wasm)
-- `validateWasm(auth)` - WASM validation
-- `signingHashWasm(chainId, address, nonce)` - WASM signing hash
-- `authorityWasm(auth)` - WASM authority recovery
-- `gasCostWasm(authCount, emptyAccounts)` - WASM gas calculation
+<CardGroup>
+<Card title="Type Guards" icon="shield-check">
+Check if value is Authorization.Item or Authorization.Unsigned
+</Card>
+<Card title="Validation" icon="check">
+Validate authorization structure and signature components
+[View validation →](./validation)
+</Card>
+<Card title="Signing & Hashing" icon="signature">
+Calculate signing hash, create signed authorization, and recover authority
+[View signing →](./signing)
+</Card>
+<Card title="Gas Calculations" icon="gas-pump">
+Calculate gas costs for single authorizations and lists
+[View gas calculations →](./gas-calculations)
+</Card>
+<Card title="Processing" icon="gear">
+Process single authorization or authorization lists
+[View processing →](./processing)
+</Card>
+<Card title="Utilities" icon="wrench">
+Format to string, check equality, and helper functions
+[View utilities →](./utilities)
+</Card>
+<Card title="WASM" icon="rocket">
+WASM-accelerated validation, hashing, and gas calculation
+[View WASM →](./wasm)
+</Card>
+</CardGroup>
 
 ## Constants
 

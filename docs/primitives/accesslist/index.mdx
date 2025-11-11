@@ -77,57 +77,43 @@ AccessList.isEmpty(list)                      // Is empty?
 </Tabs>
 
 
-## Core API
+## API Methods
 
-### Constructors
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create empty lists or from items and RLP bytes
+[View constructors →](/primitives/accesslist/constructors)
+</Card>
+<Card title="Type Guards" icon="shield-check">
+Check if value is AccessList or Item, and validate structure
+[View type guards →](/primitives/accesslist/validation)
+</Card>
+<Card title="Queries" icon="magnifying-glass">
+Check addresses, storage keys, and count items
+[View queries →](/primitives/accesslist/queries)
+</Card>
+<Card title="Manipulation" icon="pen-to-square">
+Add addresses, storage keys, merge lists, and deduplicate
+[View manipulation →](/primitives/accesslist/manipulation)
+</Card>
+<Card title="Gas Analysis" icon="gas-pump">
+Calculate gas costs and potential savings
+[View gas analysis →](/primitives/accesslist/gas)
+</Card>
+<Card title="Conversions" icon="arrow-right-arrow-left">
+Convert to RLP bytes for transaction encoding
+[View conversions →](/primitives/accesslist/conversions)
+</Card>
+</CardGroup>
 
-```typescript
-AccessList.create()                     // Empty list
-AccessList.from(items | bytes)          // From items or RLP
-AccessList.fromBytes(bytes)             // From RLP bytes
-```
+### Methods Reference
 
-### Type Guards
-
-```typescript
-AccessList.is(value)                    // Check if AccessList
-AccessList.isItem(value)                // Check if Item
-AccessList.assertValid(list)            // Validate (throws)
-```
-
-### Queries
-
-```typescript
-AccessList.includesAddress(list, addr)           // Has address?
-AccessList.includesStorageKey(list, addr, key)   // Has key?
-AccessList.keysFor(list, addr)                   // Get keys
-AccessList.addressCount(list)                    // Count addresses
-AccessList.storageKeyCount(list)                 // Count keys
-AccessList.isEmpty(list)                         // Is empty?
-```
-
-### Manipulation
-
-```typescript
-AccessList.withAddress(list, addr)               // Add address
-AccessList.withStorageKey(list, addr, key)       // Add key
-AccessList.merge(...lists)                       // Combine lists
-AccessList.deduplicate(list)                     // Remove duplicates
-```
-
-### Gas Analysis
-
-```typescript
-AccessList.gasCost(list)                // Total cost
-AccessList.gasSavings(list)             // Potential savings
-AccessList.hasSavings(list)             // Cost < savings?
-```
-
-### Conversions
-
-```typescript
-AccessList.toBytes(list)                // To RLP bytes
-```
+- **Constructors**: `create`, `from`, `fromBytes`
+- **Type Guards**: `is`, `isItem`, `assertValid`
+- **Queries**: `includesAddress`, `includesStorageKey`, `keysFor`, `addressCount`, `storageKeyCount`, `isEmpty`
+- **Manipulation**: `withAddress`, `withStorageKey`, `merge`, `deduplicate`
+- **Gas**: `gasCost`, `gasSavings`, `hasSavings`
+- **Conversions**: `toBytes`
 
 ## Usage Example
 

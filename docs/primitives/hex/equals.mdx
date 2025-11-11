@@ -1,0 +1,226 @@
+---
+title: Hex.equals
+description: Compare two hex strings for equality
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.equals(a: BrandedHex, b: BrandedHex): boolean`
+
+Compares two hex strings for equality. Case-insensitive comparison.
+
+**Parameters:**
+- `a: BrandedHex` - First hex string
+- `b: BrandedHex` - Second hex string
+
+**Returns:** `boolean` - `true` if equal, `false` otherwise
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Equal values
+Hex.equals("0x1234", "0x1234")     // true
+Hex.equals("0xabcd", "0xABCD")     // true (case-insensitive)
+Hex.equals("0x0", "0x00")          // false (different byte length)
+
+// Different values
+Hex.equals("0x1234", "0x5678")     // false
+
+// Empty hex
+Hex.equals("0x", "0x")             // true
+
+// Compare results
+const hash1 = keccak256(data1)
+const hash2 = keccak256(data2)
+if (Hex.equals(hash1, hash2)) {
+  console.log("Hashes match")
+}
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `equals(a: BrandedHex, b: BrandedHex): boolean`
+
+Compares two hex strings for equality.
+
+**Parameters:**
+- `a: BrandedHex` - First hex string
+- `b: BrandedHex` - Second hex string
+
+**Returns:** `boolean` - `true` if equal, `false` otherwise
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.equals("0x1234", "0x1234")     // true
+Hex.equals("0xabcd", "0xABCD")     // true
+Hex.equals("0x1234", "0x5678")     // false
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.equals(a: []const u8, b: []const u8): bool`
+
+Compare two hex strings for equality.
+
+**Parameters:**
+- `a: []const u8` - First hex string
+- `b: []const u8` - Second hex string
+
+**Returns:** `bool` - `true` if equal
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const equal = Hex.equals("0x1234", "0x1234");  // true
+const notEqual = Hex.equals("0x1234", "0x5678");  // false
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Case-Insensitive
+
+Comparison ignores case differences:
+
+```typescript
+Hex.equals("0xabcd", "0xABCD")     // true
+Hex.equals("0xAbCd", "0xaBcD")     // true
+Hex.equals("0xff", "0xFF")         // true
+```
+
+## Exact Length Match
+
+Must have same byte length (after trimming):
+
+```typescript
+// Different lengths - false
+Hex.equals("0x0", "0x00")          // false (1 char vs 2 chars)
+Hex.equals("0x12", "0x1234")       // false (2 vs 4 chars)
+
+// Normalize first if needed
+const a = "0x0"
+const b = "0x00"
+Hex.equals(Hex.trim(a), Hex.trim(b))  // Compare after trimming
+```
+
+## Common Use Cases
+
+**Verify Transaction Hash:**
+```typescript
+const expectedHash = "0x1234..."
+const actualHash = await provider.getTransactionReceipt(txHash)
+
+if (Hex.equals(actualHash, expectedHash)) {
+  console.log("Transaction confirmed")
+}
+```
+
+**Compare Addresses:**
+```typescript
+function isOwner(address: string): boolean {
+  const ownerAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+  return Hex.equals(address.toLowerCase(), ownerAddress.toLowerCase())
+}
+```
+
+**Verify Signatures:**
+```typescript
+const expectedSigner = "0x..."
+const recovered = recoverSigner(message, signature)
+
+if (Hex.equals(recovered, expectedSigner)) {
+  console.log("Signature valid")
+}
+```
+
+**Check Storage Values:**
+```typescript
+const currentValue = await provider.getStorageAt(address, slot)
+const expectedValue = "0x0000000000000000000000000000000000000000000000000000000000000001"
+
+if (Hex.equals(currentValue, expectedValue)) {
+  console.log("Storage value correct")
+}
+```
+
+**Filter Unique Values:**
+```typescript
+function uniqueHashes(hashes: string[]): string[] {
+  const unique: string[] = []
+  for (const hash of hashes) {
+    if (!unique.some(h => Hex.equals(h, hash))) {
+      unique.push(hash)
+    }
+  }
+  return unique
+}
+```
+
+**Assert Equality in Tests:**
+```typescript
+test("keccak256 produces expected hash", () => {
+  const data = Hex.fromString("hello")
+  const hash = keccak256(data)
+  const expected = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+  assert(Hex.equals(hash, expected), "Hash mismatch")
+})
+```
+
+## vs JavaScript `===`
+
+**`Hex.equals()` - Case-insensitive:**
+```typescript
+Hex.equals("0xabcd", "0xABCD")  // true
+```
+
+**`===` - Case-sensitive:**
+```typescript
+"0xabcd" === "0xABCD"           // false
+```
+
+Use `Hex.equals()` for:
+- Comparing addresses (may have mixed case)
+- Comparing hashes
+- Any hex comparison where case shouldn't matter
+
+Use `===` for:
+- Exact string comparison
+- When case matters
+
+## Empty Strings
+
+Empty hex strings are equal:
+
+```typescript
+Hex.equals("0x", "0x")  // true
+```
+
+## Performance
+
+Optimized string comparison. For long hex strings (32+ bytes), may use byte-by-byte comparison.
+
+Complexity: O(n) where n is string length, with early return on length mismatch.
+
+## See Also
+
+- [toBytes](/primitives/hex/to-bytes) - Convert for byte-level comparison
+- [trim](/primitives/hex/trim) - Normalize before comparison
+- [size](/primitives/hex/size) - Check length before comparing

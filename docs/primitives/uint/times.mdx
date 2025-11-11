@@ -1,0 +1,79 @@
+---
+title: Uint.times
+description: Multiply Uint256 values with wrapping overflow
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.times(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+Multiply Uint256 values. Wraps on overflow (mod 2^256).
+
+**Parameters:**
+- `a: BrandedUint` - First value
+- `b: BrandedUint` - Second value
+
+**Returns:** `BrandedUint` - Product (mod 2^256)
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(10n)
+const b = Uint.from(5n)
+Uint.times(a, b)  // 50
+
+// Overflow wraps
+const large = Uint.from(2n ** 200n)
+Uint.times(large, large)  // Wraps (result mod 2^256)
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/times.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/times.ts#L19)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `times(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const product = Uint.times(Uint.from(10n), Uint.from(5n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/times.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/times.ts#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.mul(a: Uint, b: Uint): Uint`
+
+Wrapping multiplication.
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const a = Uint.init(10);
+const b = Uint.init(5);
+const product = Uint.mul(a, b);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+<Warning title="Wrapping Behavior">
+Multiplication wraps on overflow: (a * b) mod 2^256
+</Warning>
+
+## See Also
+
+- [dividedBy](/primitives/uint/divided-by) - Division
+- [Arithmetic operations](/primitives/uint/arithmetic) - Full arithmetic reference

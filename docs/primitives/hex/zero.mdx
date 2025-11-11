@@ -1,0 +1,253 @@
+---
+title: Hex.zero
+description: Create zero-filled hex of specific byte size
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.zero(size: number): BrandedHex`
+
+Creates zero-filled hex string of specified byte size.
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex` - Zero-filled hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Create zero-filled hex
+Hex.zero(1)   // "0x00"
+Hex.zero(2)   // "0x0000"
+Hex.zero(4)   // "0x00000000"
+Hex.zero(32)  // "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+// Empty hex
+Hex.zero(0)   // "0x"
+
+// Common use cases
+const zeroAddress = Hex.zero(20)       // 0x0000...0000 (20 bytes)
+const zeroHash = Hex.zero(32)          // 0x0000...0000 (32 bytes)
+const emptyBytes32 = Hex.zero(32)      // Empty bytes32 value
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/zero.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `zero(size: number): BrandedHex`
+
+Creates zero-filled hex string of specified byte size.
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex` - Zero-filled hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.zero(1)   // "0x00"
+Hex.zero(2)   // "0x0000"
+Hex.zero(32)  // "0x00...00"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/zero.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.js#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.zero(size: usize, allocator: Allocator): ![]const u8`
+
+Create zero-filled hex.
+
+**Parameters:**
+- `size: usize` - Size in bytes
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Zero-filled hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const zeros = try Hex.zero(32, allocator);
+defer allocator.free(zeros);
+// zeros = "0x0000...0000" (32 bytes)
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Common Ethereum Sizes
+
+**uint8 (1 byte):**
+```typescript
+Hex.zero(1)  // "0x00"
+```
+
+**uint16 (2 bytes):**
+```typescript
+Hex.zero(2)  // "0x0000"
+```
+
+**uint32 (4 bytes):**
+```typescript
+Hex.zero(4)  // "0x00000000"
+```
+
+**uint64 (8 bytes):**
+```typescript
+Hex.zero(8)  // "0x0000000000000000"
+```
+
+**Address (20 bytes / uint160):**
+```typescript
+const zeroAddress = Hex.zero(20)
+// "0x0000000000000000000000000000000000000000"
+```
+
+**Hash/uint256 (32 bytes):**
+```typescript
+const zeroHash = Hex.zero(32)
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+```
+
+## Common Use Cases
+
+**Zero Address:**
+```typescript
+const ZERO_ADDRESS = Hex.zero(20)
+// "0x0000000000000000000000000000000000000000"
+
+function isZeroAddress(address: string): boolean {
+  return Hex.equals(address, ZERO_ADDRESS)
+}
+```
+
+**Empty Hash:**
+```typescript
+const EMPTY_HASH = Hex.zero(32)
+
+function isEmptyHash(hash: string): boolean {
+  return Hex.equals(hash, EMPTY_HASH)
+}
+```
+
+**Initialize Storage:**
+```typescript
+// Initialize empty bytes32 array
+const emptySlots = Array.from({ length: 10 }, () => Hex.zero(32))
+```
+
+**Default Values:**
+```typescript
+class Transaction {
+  to: string = Hex.zero(20)        // Default to zero address
+  value: string = Hex.zero(32)     // Default to zero value
+  data: string = Hex.zero(0)       // Default to empty data
+}
+```
+
+**Padding Base:**
+```typescript
+// Start with zeros, then set specific bytes
+const buffer = Hex.zero(32)
+// Modify as needed
+```
+
+**XOR Initialization:**
+```typescript
+// XOR accumulator starts at zero
+const checksum = values.reduce(
+  (acc, val) => Hex.xor(acc, val),
+  Hex.zero(32)  // Identity element for XOR
+)
+```
+
+**Test Fixtures:**
+```typescript
+test("handles zero values", () => {
+  const zeroBalance = Hex.zero(32)
+  const result = processBalance(zeroBalance)
+  assert(result === 0n)
+})
+```
+
+**Clear Sensitive Data:**
+```typescript
+// Overwrite with zeros for security
+let privateKey = "0x..."
+// ... use privateKey ...
+privateKey = Hex.zero(32)  // Clear
+```
+
+## Empty Hex
+
+Zero-size returns empty hex:
+
+```typescript
+Hex.zero(0)  // "0x"
+```
+
+## vs fromNumber(0)
+
+**`zero(size)` - Fixed size:**
+```typescript
+Hex.zero(32)
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+```
+
+**`fromNumber(0)` - Minimal representation:**
+```typescript
+Hex.fromNumber(0)
+// "0x0"
+```
+
+**`fromNumber(0, size)` - Equivalent:**
+```typescript
+Hex.fromNumber(0, 32)
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+// Same as Hex.zero(32)
+```
+
+## Performance
+
+Allocates new zero-filled `Uint8Array` then converts to hex. Very fast.
+
+Complexity: O(n) where n is size, but highly optimized by platform.
+
+For repeated use of same-size zeros, consider caching:
+
+```typescript
+// Cache common zero values
+const ZERO_32 = Hex.zero(32)
+const ZERO_20 = Hex.zero(20)
+
+// Reuse cached values
+function isZeroHash(hash: string): boolean {
+  return Hex.equals(hash, ZERO_32)
+}
+```
+
+## See Also
+
+- [random](/primitives/hex/random) - Generate random hex
+- [fromNumber](/primitives/hex/from-number) - Create from number
+- [pad](/primitives/hex/pad) - Pad with zeros
+- [equals](/primitives/hex/equals) - Compare with zero

@@ -1,0 +1,264 @@
+---
+title: Hex.clone
+description: Create a copy of a hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.clone(hex: BrandedHex): BrandedHex`
+
+Creates a copy of a hex string. Since hex strings are immutable in JavaScript, this returns a new string reference.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to clone
+
+**Returns:** `BrandedHex` - Copy of the hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+const original = Hex("0x1234")
+const copy = Hex.clone(original)
+
+// Both have same value
+Hex.equals(original, copy)  // true
+
+// But different string references
+original === copy  // false (new string instance)
+
+// Modifications don't affect original
+let mutable = Hex("0x1234")
+const backup = Hex.clone(mutable)
+mutable = Hex.concat(mutable, "0x56")
+// backup still "0x1234", mutable is "0x123456"
+```
+
+**Note:** In JavaScript, strings are immutable. `clone()` creates a new string reference, which can be useful for:
+- Creating backup copies before modifications
+- Ensuring separate references in data structures
+- Defensive copying in APIs
+
+**Defined in:** [primitives/Hex/BrandedHex/clone.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/clone.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `clone(hex: BrandedHex): BrandedHex`
+
+Creates a copy of a hex string.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to clone
+
+**Returns:** `BrandedHex` - Copy of the hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+const original = Hex.from("0x1234")
+const copy = Hex.clone(original)
+
+Hex.equals(original, copy)  // true
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/clone.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/clone.js#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.clone(hex: []const u8, allocator: Allocator): ![]const u8`
+
+Create a copy of hex string.
+
+**Parameters:**
+- `hex: []const u8` - Hex string to clone
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Copy of hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const original = "0x1234";
+const copy = try Hex.clone(original, allocator);
+defer allocator.free(copy);
+
+// copy is independent allocation
+```
+
+**Memory:** In Zig, clone allocates new memory. Caller must free both original and copy.
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## String Immutability
+
+JavaScript strings are immutable - operations create new strings:
+
+```typescript
+const original = "0x1234"
+
+// These all create new strings
+const upper = original.toUpperCase()    // "0X1234"
+const sliced = original.slice(2)        // "1234"
+const concat = original + "56"          // "0x123456"
+
+// original unchanged
+console.log(original)  // "0x1234"
+```
+
+`clone()` creates a new string reference, useful for:
+- Defensive copying
+- Separate references in collections
+- Backup before modification chains
+
+## Common Use Cases
+
+**Backup Before Modifications:**
+```typescript
+const original = Hex("0x1234")
+const backup = Hex.clone(original)
+
+// Chain modifications
+let modified = Hex.pad(original, 32)
+modified = Hex.xor(modified, someKey)
+modified = Hex.trim(modified)
+
+// Can still access original via backup
+if (needsRollback) {
+  value = backup
+}
+```
+
+**Defensive Copying in APIs:**
+```typescript
+class Transaction {
+  private _data: BrandedHex
+
+  constructor(data: BrandedHex) {
+    // Clone to prevent external modifications
+    this._data = Hex.clone(data)
+  }
+
+  getData(): BrandedHex {
+    // Clone before returning to prevent modifications
+    return Hex.clone(this._data)
+  }
+}
+```
+
+**Separate References in Collections:**
+```typescript
+const value = Hex("0x1234")
+
+// Add multiple independent references
+const collection = [
+  Hex.clone(value),
+  Hex.clone(value),
+  Hex.clone(value)
+]
+
+// Each is separate reference
+collection[0] === collection[1]  // false
+```
+
+**Snapshot State:**
+```typescript
+class StateManager {
+  private state: BrandedHex
+  private snapshots: BrandedHex[] = []
+
+  saveSnapshot() {
+    this.snapshots.push(Hex.clone(this.state))
+  }
+
+  restore() {
+    this.state = this.snapshots.pop() || Hex.zero(32)
+  }
+}
+```
+
+**Test Isolation:**
+```typescript
+test("modifications don't affect original", () => {
+  const original = Hex("0x1234")
+  const copy = Hex.clone(original)
+
+  // Modify copy
+  const modified = Hex.pad(copy, 32)
+
+  // Original unchanged
+  assert(Hex.size(original) === 2)
+  assert(Hex.size(modified) === 32)
+})
+```
+
+## vs Direct Assignment
+
+**Direct assignment - same reference:**
+```typescript
+const a = Hex("0x1234")
+const b = a  // Same reference
+
+a === b  // true
+```
+
+**Clone - different reference:**
+```typescript
+const a = Hex("0x1234")
+const b = Hex.clone(a)  // New reference
+
+a === b  // false
+Hex.equals(a, b)  // true (same value)
+```
+
+## When to Use
+
+**Use `clone()` when:**
+- Creating backup before modifications
+- Implementing defensive copying
+- Need separate references in data structures
+- Building immutable data patterns
+
+**Don't need `clone()` when:**
+- Just reading values (strings are immutable)
+- Simple assignments
+- Passing to functions (no modification expected)
+
+## Performance
+
+Very fast - uses JavaScript's `String.prototype.slice()` with no arguments, which creates a new string reference.
+
+Complexity: O(1) for creating reference, though string copy may be O(n) internally depending on engine optimization.
+
+## Implementation Note
+
+TypeScript/JavaScript implementation uses `.slice()`:
+
+```typescript
+export function clone(hex: BrandedHex): BrandedHex {
+  return hex.slice() as BrandedHex
+}
+```
+
+This creates a new string reference while preserving the value.
+
+## See Also
+
+- [equals](/primitives/hex/equals) - Compare hex strings
+- [from](/primitives/hex/from) - Create hex from input
+- [toBytes](/primitives/hex/to-bytes) - Convert to bytes (also creates new data)

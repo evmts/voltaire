@@ -66,31 +66,31 @@ const matches = EventLog.matchesAddress(log, tokenAddress);
 
 ## API Methods
 
-### Constructors
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create event logs from parameters and clone existing logs
+[View constructors →](./from)
+</Card>
+<Card title="Accessors" icon="eye">
+Get event signatures and indexed topic parameters
+[View accessors →](./getTopic0)
+</Card>
+<Card title="Filtering" icon="filter">
+Match addresses, topics, and complete filters
+[View filtering →](./matchesAddress)
+</Card>
+<Card title="Utilities" icon="wrench">
+Check reorg status and sort logs chronologically
+[View utilities →](./isRemoved)
+</Card>
+</CardGroup>
 
-- [`from(params)`](./from) - Create event log from parameters
-- [`create(params)`](./create) - Explicit constructor
-- [`clone(log)`](./clone) - Deep clone including topics and data
+### Methods Reference
 
-### Accessors
-
-- [`getTopic0(log)`](./getTopic0) - Get event signature hash (topic0)
-- [`getSignature(log)`](./getSignature) - Alias for getTopic0
-- [`getIndexedTopics(log)`](./getIndexedTopics) - Get indexed parameters (topic1-topic3)
-- [`getIndexed(log)`](./getIndexed) - Alias for getIndexedTopics
-
-### Filtering
-
-- [`matchesAddress(log, address)`](./matchesAddress) - Check if log matches address filter
-- [`matchesTopics(log, topics)`](./matchesTopics) - Check if log matches topic filter
-- [`matchesFilter(log, filter)`](./matchesFilter) - Check if log matches complete filter
-- [`filterLogs(logs, filter)`](./filterLogs) - Filter array of logs
-
-### Utilities
-
-- [`isRemoved(log)`](./isRemoved) - Check if log removed due to reorg
-- [`wasRemoved(log)`](./wasRemoved) - Alias for isRemoved
-- [`sortLogs(logs)`](./sortLogs) - Sort by block number and log index
+- **Constructors**: `from`, `create`, `clone`
+- **Accessors**: `getTopic0`, `getSignature`, `getIndexedTopics`, `getIndexed`
+- **Filtering**: `matchesAddress`, `matchesTopics`, `matchesFilter`, `filterLogs`
+- **Utilities**: `isRemoved`, `wasRemoved`, `sortLogs`
 
 ## Types
 

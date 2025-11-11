@@ -1,0 +1,246 @@
+---
+title: Hex.random
+description: Generate cryptographically secure random hex
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.random(size: number): BrandedHex`
+
+Generates cryptographically secure random hex of specified byte size using `crypto.getRandomValues()`.
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex` - Random hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Generate random hex
+Hex.random(1)   // "0xXX" (1 random byte)
+Hex.random(4)   // "0xXXXXXXXX" (4 random bytes)
+Hex.random(32)  // "0xXXXX...XXXX" (32 random bytes)
+
+// Empty random
+Hex.random(0)   // "0x"
+
+// Common use cases
+const privateKey = Hex.random(32)        // 32 bytes
+const salt = Hex.random(32)              // CREATE2 salt
+const nonce = Hex.random(8)              // 8-byte nonce
+const sessionId = Hex.random(16)         // 16-byte session ID
+```
+
+**Security:** Uses `crypto.getRandomValues()` which provides cryptographically strong random values suitable for security-sensitive operations.
+
+**Defined in:** [primitives/Hex/BrandedHex/random.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `random(size: number): BrandedHex`
+
+Generates cryptographically secure random hex of specified byte size.
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex` - Random hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.random(1)   // "0xXX"
+Hex.random(4)   // "0xXXXXXXXX"
+Hex.random(32)  // "0xXXXX...XXXX"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/random.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.random(size: usize, allocator: Allocator): ![]const u8`
+
+Generate cryptographically secure random hex.
+
+**Parameters:**
+- `size: usize` - Size in bytes
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Random hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Generate 32 random bytes
+const random = try Hex.random(32, allocator);
+defer allocator.free(random);
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Cryptographic Security
+
+Uses `crypto.getRandomValues()` (Web Crypto API) which provides:
+- Cryptographically strong random values
+- Suitable for security-sensitive operations
+- Non-deterministic output
+- Platform-specific secure RNG
+
+```typescript
+// Each call produces different output
+Hex.random(4)  // "0x7a3f2c89"
+Hex.random(4)  // "0x12e4a5b3"
+Hex.random(4)  // "0xc9f8d741"
+```
+
+## Common Use Cases
+
+**Private Keys (32 bytes):**
+```typescript
+const privateKey = Hex.random(32)
+// Use with secp256k1 to derive public key and address
+```
+
+**CREATE2 Salt (32 bytes):**
+```typescript
+const salt = Hex.random(32)
+const address = calculateCreate2Address(deployer, salt, bytecodeHash)
+```
+
+**Transaction Nonces:**
+```typescript
+const nonce = Hex.random(8)  // 8-byte random nonce
+```
+
+**Session IDs:**
+```typescript
+const sessionId = Hex.random(16)  // 128-bit session ID
+```
+
+**Challenge Values:**
+```typescript
+const challenge = Hex.random(32)
+// Send to client for signature
+```
+
+**Test Data:**
+```typescript
+test("handles random data", () => {
+  const randomData = Hex.random(100)
+  const result = processData(randomData)
+  assert(result !== null)
+})
+```
+
+**Mock Addresses:**
+```typescript
+const mockAddress = Hex.random(20)  // 20-byte random address
+```
+
+**Random Signatures (testing):**
+```typescript
+const mockSignature = Hex.random(65)  // r(32) + s(32) + v(1)
+```
+
+## Common Sizes
+
+**1 byte (uint8):**
+```typescript
+Hex.random(1)  // "0xXX"
+```
+
+**4 bytes (uint32):**
+```typescript
+Hex.random(4)  // "0xXXXXXXXX"
+```
+
+**8 bytes (uint64):**
+```typescript
+Hex.random(8)  // "0xXXXXXXXXXXXXXXXX"
+```
+
+**16 bytes (128-bit):**
+```typescript
+Hex.random(16)  // UUID-like identifier
+```
+
+**20 bytes (address):**
+```typescript
+Hex.random(20)  // Address-sized random value
+```
+
+**32 bytes (uint256/hash):**
+```typescript
+Hex.random(32)  // Most common: keys, salts, hashes
+```
+
+**65 bytes (signature):**
+```typescript
+Hex.random(65)  // Signature-sized random value
+```
+
+## Empty Random
+
+Zero-size returns empty hex:
+
+```typescript
+Hex.random(0)  // "0x"
+```
+
+## Security Considerations
+
+**DO use for:**
+- Private keys
+- Salts
+- Nonces
+- Session IDs
+- Challenge values
+- Any security-sensitive randomness
+
+**DO NOT use for:**
+- Deterministic algorithms (use hash-based PRNGs)
+- Reproducible tests (use seeded PRNGs)
+- Blockchain consensus (use block hash + nonce)
+
+**DO NOT use `Math.random()`** for security purposes:
+```typescript
+// ❌ INSECURE
+const insecure = Math.floor(Math.random() * 256).toString(16)
+
+// ✓ SECURE
+const secure = Hex.random(1)
+```
+
+## Performance
+
+Very fast - delegates to platform's secure random number generator. Suitable for generating multiple random values without performance concerns.
+
+```typescript
+// Generate 100 random 32-byte values
+const randoms = Array.from({ length: 100 }, () => Hex.random(32))
+// Fast enough for most use cases
+```
+
+## See Also
+
+- [zero](/primitives/hex/zero) - Create zero-filled hex
+- [fromBytes](/primitives/hex/from-bytes) - Create from bytes
+- [clone](/primitives/hex/clone) - Copy hex value
