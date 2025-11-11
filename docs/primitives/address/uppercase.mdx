@@ -83,8 +83,8 @@ const upper = Address.Uppercase.from(addr)
 </Tab>
 <Tab title="Tree-shakeable">
 ```typescript
-import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
-import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
+import type { BrandedAddress } from '@tevm/voltaire/Address'
 
 const addr: BrandedAddress = /* ... */
 const upper = UppercaseAddress.from(addr)
@@ -345,8 +345,8 @@ console.log(Address.Uppercase.from(numeric))
 Import only `UppercaseAddress` to reduce bundle size:
 
 ```typescript
-import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
-import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
+import type { BrandedAddress } from '@tevm/voltaire/Address'
 
 const addr: BrandedAddress = /* ... */
 const upper = UppercaseAddress.from(addr)
