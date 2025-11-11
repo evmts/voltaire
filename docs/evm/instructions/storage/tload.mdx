@@ -1,0 +1,845 @@
+---
+title: "TLOAD (0x5c)"
+description: "Load word from transient storage (EIP-1153, Cancun, fixed 100 gas)"
+---
+
+## Overview
+
+**Opcode:** `0x5c`
+**Introduced:** Cancun (EIP-1153)
+
+TLOAD reads from transient storage—a per-transaction key-value store that is automatically cleared when the transaction ends. Unlike persistent storage (SLOAD), transient storage:
+
+- Costs only 100 gas (fixed, no cold/warm metering)
+- Is not persisted to blockchain state
+- Cannot be accessed by external calls
+- Clears automatically at end of transaction
+
+Primary use cases:
+- Reentrancy guards (check/set flags with minimal gas)
+- Inter-contract communication within same transaction
+- Temporary state without expensive storage costs
+
+## Specification
+
+**Stack Input:**
+```
+key (256-bit storage slot address)
+```
+
+**Stack Output:**
+```
+value (256-bit value, or 0 if uninitialized)
+```
+
+**Gas Cost:** 100 (fixed, EIP-1153)
+
+**Hardfork:** Cancun+ (unavailable on earlier hardforks)
+
+**Operation:**
+```
+key = pop()
+value = transientStorage[msg.sender][key]  // 0 if never written
+push(value)
+gasRemaining -= 100
+```
+
+## Behavior
+
+TLOAD retrieves the current value from transient storage:
+
+1. **Pop key** from stack (256-bit unsigned integer)
+2. **Query host** for transient storage value at contract address + key
+3. **Return value** from host (0 if never written or cleared by transaction end)
+4. **Push result** to stack
+5. **Consume 100 gas** (fixed cost, no gas refunds)
+6. **Increment PC**
+
+### Transient Storage Scope
+
+Transient storage is scoped to:
+- **Per contract:** Each contract has separate transient storage
+- **Per transaction:** Automatically cleared when transaction completes
+- **Not persisted:** Does not affect blockchain state
+- **Not callable:** Cannot be read via `eth_getStorageAt` or `eth_call`
+
+### Uninitialized Values
+
+Transient storage slots never written return 0:
+
+```javascript
+TLOAD(key)  // Returns 0 if key was never written
+```
+
+### Transaction Boundary
+
+Transient storage is cleared at the end of each transaction:
+
+```javascript
+// Transaction 1
+TSTORE(key, 0x1234)
+TLOAD(key)  // 0x1234
+
+// Transaction 2 (new transaction)
+TLOAD(key)  // 0 (cleared from TX1)
+```
+
+## Examples
+
+### Basic Transient Read
+
+```typescript
+import { tload } from '@voltaire/evm/storage';
+import { createFrame } from '@voltaire/evm/Frame';
+import { createMemoryHost } from '@voltaire/evm/Host';
+
+const host = createMemoryHost();
+const frame = createFrame({
+  stack: [0x42n],  // Key to read
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+
+// Pre-populate transient storage (e.g., from TSTORE)
+host.setTransientStorage(contractAddr, 0x42n, 0x1337n);
+
+// Execute TLOAD
+const error = tload(frame, host);
+
+console.log(frame.stack);        // [0x1337n]
+console.log(frame.gasRemaining); // 2900n (3000 - 100)
+console.log(error);              // null
+```
+
+### Reentrancy Guard Pattern
+
+```typescript
+// Reentrancy guard using transient storage
+const guardKey = 0x01n;
+
+// Check guard is unlocked
+const readFrame = createFrame({
+  stack: [guardKey],
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+tload(readFrame, host);
+
+if (readFrame.stack[0] !== 0n) {
+  return { type: "ReentrancyDetected" };
+}
+
+// Lock before call
+const lockFrame = createFrame({
+  stack: [guardKey, 0x1n],
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+tstore(lockFrame, host);
+
+// ... perform call ...
+
+// Unlock after call
+const unlockFrame = createFrame({
+  stack: [guardKey, 0n],
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+tstore(unlockFrame, host);
+```
+
+### Multiple Values
+
+```typescript
+// Store multiple values in transient storage
+const keys = {
+  FLAG: 0x01n,
+  COUNTER: 0x02n,
+  BALANCE: 0x03n,
+};
+
+// Read all values
+const values = {};
+for (const [name, key] of Object.entries(keys)) {
+  const frame = createFrame({
+    stack: [key],
+    gasRemaining: 1000n,
+    address: contractAddr,
+  });
+  tload(frame, host);
+  values[name] = frame.stack[0];
+}
+
+console.log(values);
+// {
+//   FLAG: 0x0n,
+//   COUNTER: 0x42n,
+//   BALANCE: 0xDEADBEEFn
+// }
+```
+
+### Transaction Boundary
+
+```typescript
+// Within transaction: Persist across calls
+const host = createMemoryHost();
+const addr = contractAddr;
+
+// Set value
+let frame = createFrame({
+  stack: [0x42n, 0x1337n],
+  gasRemaining: 3000n,
+  address: addr,
+});
+tstore(frame, host);
+
+// Read value (same transaction, same call)
+frame = createFrame({
+  stack: [0x42n],
+  gasRemaining: 3000n,
+  address: addr,
+});
+tload(frame, host);
+console.log(frame.stack);  // [0x1337n]
+
+// At transaction end: Automatically cleared
+// endTransaction(host, addr);
+//
+// Next transaction:
+// frame = createFrame({
+//   stack: [0x42n],
+//   gasRemaining: 3000n,
+//   address: addr,
+// });
+// tload(frame, host);
+// console.log(frame.stack);  // [0n] - cleared!
+```
+
+### Inter-Call Communication
+
+```solidity
+// Contract A stores data for contract B to read
+contract A {
+  function callB(address b) public {
+    // Store context for B
+    assembly {
+      tstore(0x01, caller())  // Store caller
+      tstore(0x02, 42)        // Store arbitrary data
+    }
+
+    // Call B (B can read transient storage)
+    IContractB(b).doSomething();
+
+    // Transient storage still available after call
+    // (until transaction ends)
+  }
+}
+
+contract B {
+  function doSomething() public {
+    // Read context from A
+    address caller;
+    uint256 data;
+    assembly {
+      caller := tload(0x01)
+      data := tload(0x02)
+    }
+
+    // Use caller and data
+    require(data == 42);
+  }
+}
+```
+
+### Insufficient Gas
+
+```typescript
+const frame = createFrame({
+  stack: [0x42n],
+  gasRemaining: 50n,  // < 100
+  address: contractAddr,
+});
+
+const error = tload(frame, host);
+console.log(error);  // { type: "OutOfGas" }
+console.log(frame.pc);  // 0 (unchanged, not executed)
+```
+
+## Gas Cost
+
+**Fixed Cost:** 100 gas (always)
+
+| Operation | Cost | Notes |
+|-----------|------|-------|
+| TLOAD | 100 | Fixed, no refunds |
+| SLOAD warm | 100 | Same cost but persists |
+| SLOAD cold | 2100 | 21x more expensive |
+| MLOAD | 3 | 33x cheaper but only in memory |
+
+**Comparison:**
+
+```
+TLOAD: 100 gas (transient, shared across calls)
+MSTORE/MLOAD: 3 gas (local to call, memory-only)
+SLOAD warm: 100 gas (persistent, per-transaction)
+SLOAD cold: 2100 gas (persistent, expensive)
+```
+
+TLOAD bridges the gap—costs same as warm SLOAD but doesn't persist or refund.
+
+## Edge Cases
+
+### Uninitialized Slot
+
+```typescript
+const frame = createFrame({
+  stack: [0xDEADBEEFn],  // Key never written
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+
+tload(frame, host);
+console.log(frame.stack);  // [0n]
+```
+
+### Max Uint256 Key
+
+```typescript
+const MAX_KEY = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [MAX_KEY],
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+
+tload(frame, host);
+console.log(frame.stack);  // [0n] or stored value
+```
+
+### Hardfork Unavailable
+
+```typescript
+// TLOAD not available before Cancun
+// If hardfork < CANCUN:
+const frame = createFrame({
+  stack: [0x42n],
+  gasRemaining: 3000n,
+  address: contractAddr,
+  hardfork: "Shanghai",  // < Cancun
+});
+
+const error = tload(frame, host);
+console.log(error);  // { type: "InvalidOpcode" }
+```
+
+### Stack Boundaries
+
+```typescript
+// Stack overflow when full
+const fullStack = new Array(1024).fill(0n);
+const frame = createFrame({
+  stack: fullStack,
+  gasRemaining: 3000n,
+  address: contractAddr,
+});
+
+const error = tload(frame, host);
+console.log(error);  // { type: "StackOverflow" }
+```
+
+## Common Usage
+
+### Reentrancy Guard
+
+```solidity
+// EIP-1153 reentrancy guard (cheaper than storage)
+contract Safe {
+  uint256 private constant LOCKED = 1;
+
+  function _nonReentrant() internal {
+    assembly {
+      // Check: guard must be unlocked (0)
+      if tload(0) { revert(0, 0) }
+      // Lock: set guard to LOCKED
+      tstore(0, LOCKED)
+    }
+  }
+
+  function _nonReentrantEnd() internal {
+    assembly {
+      // Unlock: clear guard
+      tstore(0, 0)
+    }
+  }
+
+  function safeTransfer(address to, uint256 amount) public {
+    _nonReentrant();
+
+    uint256 balance = balances[msg.sender];
+    require(balance >= amount);
+
+    balances[msg.sender] = balance - amount;
+
+    // Reentrancy window: attacker re-enters, guard prevents nested call
+    (bool ok, ) = to.call{value: amount}("");
+
+    _nonReentrantEnd();
+    require(ok);
+  }
+}
+```
+
+**Gas savings:** Using transient storage (200 gas total: 100 read + 100 write) vs persistent storage (20000+ gas).
+
+### Callback Data Passing
+
+```solidity
+// Multicall pattern using transient storage
+contract Multicall {
+  function multicall(
+    address[] calldata targets,
+    bytes[] calldata data
+  ) public {
+    for (uint i = 0; i < targets.length; i++) {
+      // Store callback context
+      assembly {
+        tstore(0x01, i)
+        tstore(0x02, caller())
+      }
+
+      // Target can read context with TLOAD
+      (bool ok, ) = targets[i].call(data[i]);
+      require(ok);
+    }
+    // Context cleared at tx end
+  }
+}
+
+contract Target {
+  function execute(bytes calldata data) external {
+    // Read callback context
+    uint256 index;
+    address caller;
+    assembly {
+      index := tload(0x01)
+      caller := tload(0x02)
+    }
+
+    // Use index and caller for context-aware logic
+  }
+}
+```
+
+### Temporary Counters
+
+```solidity
+contract Counter {
+  uint256 public globalCount;
+
+  function batchIncrement(uint256 count) public {
+    // Use transient counter for temp state (100 gas per operation)
+    assembly {
+      tstore(0x01, 0)  // temp counter = 0
+    }
+
+    for (uint i = 0; i < count; i++) {
+      // Increment temp counter
+      assembly {
+        let c := tload(0x01)
+        tstore(0x01, add(c, 1))
+      }
+    }
+
+    // Write final count to storage once (20000 or 5000 gas)
+    assembly {
+      globalCount := tload(0x01)
+    }
+  }
+}
+```
+
+### Delegation Pattern
+
+```solidity
+// Store delegation context for called contracts
+contract Delegator {
+  function delegatedCall(
+    address target,
+    bytes calldata data,
+    bytes calldata context
+  ) public {
+    // Store context for target
+    assembly {
+      tstore(0x01, context)
+    }
+
+    // Target executes knowing context
+    (bool ok, bytes memory result) = target.call(data);
+    require(ok);
+
+    // Context automatically cleared by transaction end
+  }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import * as Frame from "../../Frame/index.js";
+import { TLoad } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+
+/**
+ * TLOAD (0x5c) - Load word from transient storage
+ *
+ * Stack:
+ *   in: key
+ *   out: value
+ *
+ * Gas: 100 (fixed)
+ *
+ * EIP-1153: Transient storage opcodes (Cancun hardfork)
+ */
+export function tload(frame, host) {
+  // TODO: Hardfork check - TLOAD requires Cancun+
+  // if (hardfork < CANCUN) return { type: "InvalidOpcode" };
+
+  const gasError = Frame.consumeGas(frame, TLoad);
+  if (gasError) return gasError;
+
+  // Pop key from stack
+  const keyResult = Frame.popStack(frame);
+  if (keyResult.error) return keyResult.error;
+  const key = keyResult.value;
+
+  // Load from transient storage
+  const value = host.getTransientStorage(frame.address, key) ?? 0n;
+
+  // Push value onto stack
+  const pushError = Frame.pushStack(frame, value);
+  if (pushError) return pushError;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const Frame = @import("../../Frame/root.zig");
+const Gas = @import("../../../primitives/GasConstants/root.zig");
+
+/// TLOAD (0x5c) - Load word from transient storage
+pub fn tload(frame: *Frame, host: *Host) Frame.EvmError!void {
+    // TODO: Hardfork check - TLOAD requires Cancun+
+    // if (hardfork < CANCUN) return Frame.EvmError.InvalidOpcode;
+
+    try frame.consumeGas(Gas.TLoad);
+
+    // Pop key from stack
+    const key = try frame.popStack();
+
+    // Load from transient storage (returns 0 if uninitialized)
+    const value = host.getTransientStorage(frame.address, key) orelse 0;
+
+    // Push value onto stack
+    try frame.pushStack(value);
+
+    // Increment PC
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { tload } from './0x5c_TLOAD.js';
+import { tstore } from './0x5d_TSTORE.js';
+import { createFrame } from '../../Frame/index.js';
+import { createMemoryHost } from '../../Host/createMemoryHost.js';
+import { from as addressFrom } from '../../../primitives/Address/index.js';
+
+describe('TLOAD (0x5c)', () => {
+  it('loads value from transient storage', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+
+    // Pre-populate transient storage
+    host.setTransientStorage(addr, 0x42n, 0x1337n);
+
+    const frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr,
+    });
+
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.stack).toEqual([0x1337n]);
+    expect(frame.pc).toBe(1);
+    expect(frame.gasRemaining).toBe(900n);  // 1000 - 100
+  });
+
+  it('loads zero for uninitialized slot', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+
+    const frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr,
+    });
+
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('isolates transient storage by address', () => {
+    const host = createMemoryHost();
+    const addr1 = addressFrom("0x1111111111111111111111111111111111111111");
+    const addr2 = addressFrom("0x2222222222222222222222222222222222222222");
+
+    host.setTransientStorage(addr1, 0x42n, 0xAAAAn);
+    host.setTransientStorage(addr2, 0x42n, 0xBBBBn);
+
+    let frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr1,
+    });
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.stack).toEqual([0xAAAAn]);
+
+    frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr2,
+    });
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.stack).toEqual([0xBBBBn]);
+  });
+
+  it('consumes fixed 100 gas', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+    host.setTransientStorage(addr, 0x42n, 0x1337n);
+
+    const frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 5000n,
+      address: addr,
+    });
+
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.gasRemaining).toBe(4900n);  // 5000 - 100 (always)
+  });
+
+  it('returns StackUnderflow on empty stack', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [],
+      gasRemaining: 1000n,
+      address: addressFrom("0x1111111111111111111111111111111111111111"),
+    });
+
+    expect(tload(frame, host)).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 50n,
+      address: addressFrom("0x1111111111111111111111111111111111111111"),
+    });
+
+    expect(tload(frame, host)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('returns StackOverflow when stack full', () => {
+    const host = createMemoryHost();
+    const fullStack = new Array(1024).fill(0n);
+
+    const frame = createFrame({
+      stack: fullStack,
+      gasRemaining: 1000n,
+      address: addressFrom("0x1111111111111111111111111111111111111111"),
+    });
+
+    expect(tload(frame, host)).toEqual({ type: "StackOverflow" });
+  });
+
+  it('loads max uint256 value', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+    const MAX = (1n << 256n) - 1n;
+
+    host.setTransientStorage(addr, 0x42n, MAX);
+
+    const frame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr,
+    });
+
+    expect(tload(frame, host)).toBeNull();
+    expect(frame.stack).toEqual([MAX]);
+  });
+
+  it('persists within transaction, clears on boundary', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+
+    // Write value
+    const writeFrame = createFrame({
+      stack: [0x42n, 0x1337n],
+      gasRemaining: 1000n,
+      address: addr,
+      isStatic: false,
+    });
+    tstore(writeFrame, host);
+
+    // Read value (same transaction)
+    const readFrame = createFrame({
+      stack: [0x42n],
+      gasRemaining: 1000n,
+      address: addr,
+    });
+    expect(tload(readFrame, host)).toBeNull();
+    expect(readFrame.stack).toEqual([0x1337n]);
+
+    // After transaction boundary (cleared automatically)
+    // host.endTransaction();
+    // const newReadFrame = createFrame({
+    //   stack: [0x42n],
+    //   gasRemaining: 1000n,
+    //   address: addr,
+    // });
+    // expect(tload(newReadFrame, host)).toBeNull();
+    // expect(newReadFrame.stack).toEqual([0n]);
+  });
+});
+```
+
+## Security
+
+### Safe in All Contexts
+
+TLOAD is read-only and safe in static calls, constant functions, and any execution context:
+
+```solidity
+function read(uint256 key) public view returns (uint256) {
+  uint256 value;
+  assembly {
+    value := tload(key)  // Always safe, read-only
+  }
+  return value;
+}
+```
+
+### Reentrancy Guard Effectiveness
+
+Transient storage reentrancy guards are effective because:
+
+1. **State is local to transaction:** Attacker cannot bypass guard across transactions
+2. **Atomic updates:** Lock + operation + unlock are atomic per call frame
+3. **Automatic cleanup:** Guard cleared even if transaction reverts partway
+
+```solidity
+contract Safe {
+  function guarded() public {
+    assembly {
+      if tload(0) { revert(0, 0) }  // Check guard
+      tstore(0, 1)                  // Lock
+    }
+
+    // Call external contract
+    (bool ok, ) = msg.sender.call("");
+    require(ok);
+
+    // Even if call fails here, guard is locked
+    // Attacker cannot re-enter
+
+    assembly {
+      tstore(0, 0)  // Unlock
+    }
+  }
+}
+```
+
+### Isolation Between Contracts
+
+Transient storage is isolated per contract address:
+
+```solidity
+// Contract A cannot read/write Contract B's transient storage
+contract A {
+  function tryRead() public {
+    uint256 value;
+    assembly {
+      value := tload(0x42)  // Reads A's transient storage
+    }
+    // Cannot access B's TSTORE values
+  }
+}
+```
+
+### No Persistence Risk
+
+Unlike persistent storage, transient storage cannot leave dangling state:
+
+```solidity
+// No risk of incomplete state
+function operation() public {
+  assembly {
+    tstore(0x01, 1)  // Temporary state
+  }
+
+  // Even if transaction reverts here:
+  // TLOAD(0x01) returns 0 in next transaction
+  // No leftover state to clean up
+}
+```
+
+## Benchmarks
+
+**Cost comparison:**
+
+| Operation | Cost | Use Case |
+|-----------|------|----------|
+| TLOAD | 100 gas | Transaction-scoped reads |
+| TSTORE | 100 gas | Transaction-scoped writes |
+| SLOAD warm | 100 gas | Persistent reads (persistent) |
+| SLOAD cold | 2100 gas | First access (expensive) |
+| MLOAD | 3 gas | Memory (local scope) |
+| MSTORE | 3 gas | Memory (local scope) |
+
+**Practical gas savings (reentrancy guard):**
+
+```
+Storage-based guard:
+- Check: SLOAD cold (2100) → warm (100)
+- Set: SSTORE (20000 or 5000)
+- Clear: SSTORE (5000 + 4800 refund)
+- Total: ~22100 gas
+
+Transient-based guard (EIP-1153):
+- Check: TLOAD (100)
+- Set: TSTORE (100)
+- Clear: TSTORE (100)
+- Total: 300 gas (73x cheaper!)
+```
+
+## References
+
+- [EIP-1153: Transient storage opcodes](https://eips.ethereum.org/EIPS/eip-1153)
+- [EVM Codes - TLOAD (0x5c)](https://www.evm.codes/#5c)
+- [Cancun Upgrade](https://ethereum.org/en/history/cancun/)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
