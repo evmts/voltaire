@@ -1,117 +1,292 @@
 ---
-title: "State"
-description: "EVM storage key representation for contract state tracking"
+title: Overview
+description: EVM storage key representation for contract state tracking
 ---
 
-# State
-
-Composite key primitive for uniquely identifying storage locations in the Ethereum Virtual Machine.
-
 <Tip>
-  **New to Ethereum state?** Start with [Fundamentals](/primitives/state/fundamentals) to learn about account state, Merkle Patricia Tries, and state verification.
+New to EVM state? Start with [Fundamentals](/primitives/state/fundamentals) for guided examples and Merkle Patricia Trie concepts.
 </Tip>
 
-## Overview
+## Type Definition
+
+Composite key primitive uniquely identifying storage locations in the Ethereum Virtual Machine by combining contract address with storage slot.
+
+```typescript
+export type BrandedStorageKey = {
+  readonly address: BrandedAddress;
+  readonly slot: bigint;
+};
+```
 
 StorageKey combines a 20-byte contract address with a 256-bit storage slot number, enabling efficient tracking of contract state across multiple contracts in a single VM instance.
 
-## Quick Start
+## Quick Reference
 
 <Tabs>
-<Tab title="Basic Usage">
+<Tab title="Class API">
+
 ```typescript
-import * as State from '@tevm/primitives/State'
-import * as Address from '@tevm/primitives/Address'
+import { State } from '@tevm/voltaire';
 
-// Create storage key
-const key = State.StorageKey(
-  Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  0n  // First storage slot
-)
-
-// Use in storage maps
-const storage = new Map<string, bigint>()
-storage.set(State.StorageKey.toString(key), 1000n)
-
-// Retrieve value
-const value = storage.get(State.StorageKey.toString(key))  // 1000n
+const key = State.StorageKey(contractAddress, 0n);
+const keyStr = key.toString();
+const parsed = State.StorageKey.fromString(keyStr);
 ```
+
 </Tab>
-<Tab title="String Serialization">
+<Tab title="Namespace API">
+
 ```typescript
-import * as State from '@tevm/primitives/State'
+import * as State from '@tevm/voltaire/State';
 
-const key = State.StorageKey(contractAddress, 42n)
-
-// Convert to string for map keys
-const keyStr = State.StorageKey.toString(key)
-// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e:42"
-
-// Parse from string
-const parsed = State.StorageKey.fromString(keyStr)
-// { address: BrandedAddress(...), slot: 42n }
-
-// Round-trip conversion
-State.StorageKey.equals(key, parsed)  // true
+const key = State.StorageKey(contractAddress, 0n);
+const keyStr = State.StorageKey.toString(key);
+const parsed = State.StorageKey.fromString(keyStr);
 ```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const State = @import("state");
+
+const key = State.StorageKey{
+  .address = contract_address,
+  .slot = 0,
+};
+```
+
 </Tab>
 </Tabs>
 
-## API
+## API Methods
 
-### StorageKey(address, slot)
-```typescript
-StorageKey(address: Address, slot: bigint): BrandedStorageKey
-```
+### Constructors
 
-Create storage key from address and slot.
+<CardGroup cols={2}>
+  <Card title="StorageKey()" href="/primitives/state/storage-key">
+    Factory function creating storage key from address and slot
+  </Card>
+  <Card title="from()" href="/primitives/state/from">
+    Universal constructor from various inputs
+  </Card>
+</CardGroup>
 
-### StorageKey.from(input)
-```typescript
-from(input: StorageKeyInput): BrandedStorageKey
-```
+### Serialization
 
-Universal constructor from various inputs.
+<CardGroup cols={2}>
+  <Card title="toString()" href="/primitives/state/to-string">
+    Convert to string format for map keys
+  </Card>
+  <Card title="fromString()" href="/primitives/state/from-string">
+    Parse from string format
+  </Card>
+</CardGroup>
 
-### StorageKey.toString(key)
-```typescript
-toString(key: BrandedStorageKey): string
-```
+### Comparison & Type Guards
 
-Convert to string format for map keys.
+<CardGroup cols={2}>
+  <Card title="equals()" href="/primitives/state/equals">
+    Compare two storage keys for equality
+  </Card>
+  <Card title="is()" href="/primitives/state/is">
+    Type guard checking if value is StorageKey
+  </Card>
+</CardGroup>
 
-### StorageKey.fromString(str)
-```typescript
-fromString(str: string): BrandedStorageKey
-```
+### Utilities
 
-Parse from string format.
-
-### StorageKey.equals(a, b)
-```typescript
-equals(a: BrandedStorageKey, b: BrandedStorageKey): boolean
-```
-
-Compare two storage keys for equality.
-
-### StorageKey.is(value)
-```typescript
-is(value: unknown): value is BrandedStorageKey
-```
-
-Type guard for storage keys.
+<CardGroup cols={1}>
+  <Card title="hashCode()" href="/primitives/state/utilities">
+    Compute hash code for storage key
+  </Card>
+</CardGroup>
 
 ## Types
 
+<Tabs>
+<Tab title="BrandedStorageKey">
+
 ```typescript
-type BrandedStorageKey = {
-  address: BrandedAddress;
-  slot: bigint;
+export type BrandedStorageKey = {
+  readonly address: BrandedAddress;
+  readonly slot: bigint;
+};
+```
+
+Main type combining contract address with storage slot. Design rationale:
+- Each contract has 2^256 storage slots
+- Each slot stores 256-bit value
+- Slots initially zero, consume gas on first write
+
+</Tab>
+<Tab title="StorageKeyLike">
+
+```typescript
+type StorageKeyLike =
+  | BrandedStorageKey
+  | {
+      address: BrandedAddress;
+      slot: bigint;
+    };
+```
+
+Union type accepting any input coercible to storage key. Accepted by `StorageKey.from()`.
+
+See [from](/primitives/state/from) for details.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Basic Storage Operations
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+
+// Create storage key
+const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const key = State.StorageKey(contractAddr, 0n);
+
+// Use in storage maps
+const storage = new Map<string, bigint>();
+storage.set(State.StorageKey.toString(key), 1000000000n);
+
+// Retrieve value
+const value = storage.get(State.StorageKey.toString(key)); // 1000000000n
+```
+
+### String Serialization
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+const key = State.StorageKey(contractAddress, 42n);
+
+// Convert to string for map keys
+const keyStr = State.StorageKey.toString(key);
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e:42"
+
+// Parse from string
+const parsed = State.StorageKey.fromString(keyStr);
+// { address: BrandedAddress(...), slot: 42n }
+
+// Round-trip conversion
+State.StorageKey.equals(key, parsed); // true
+```
+
+### Storage Slot Computation
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
+import { Keccak256 } from '@tevm/crypto';
+
+// USDC contract
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Storage slot 0: total supply
+const totalSupplyKey = State.StorageKey(usdcAddress, 0n);
+
+// Mapping storage: balanceOf[userAddress]
+// Slot = keccak256(abi.encode(userAddress, balanceSlot))
+const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const balanceSlot = 1n;
+
+// Compute mapping slot (Solidity storage layout)
+const mappingSlotBytes = new Uint8Array(64);
+mappingSlotBytes.set(userAddress, 0);          // First 32 bytes (padded address)
+mappingSlotBytes.set(encodeBigInt(balanceSlot, 32), 32); // Last 32 bytes
+
+const computedSlot = BigInt('0x' + Buffer.from(
+  Keccak256.hash(mappingSlotBytes)
+).toString('hex'));
+
+const userBalanceKey = State.StorageKey(usdcAddress, computedSlot);
+```
+
+### Multi-Contract State
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+// Track state across multiple contracts
+const stateDb = new Map<string, bigint>();
+
+// USDC total supply
+const usdcKey = State.StorageKey(usdcAddress, 0n);
+stateDb.set(State.StorageKey.toString(usdcKey), 1000000000n);
+
+// DAI total supply
+const daiKey = State.StorageKey(daiAddress, 0n);
+stateDb.set(State.StorageKey.toString(daiKey), 5000000000n);
+
+// Query by contract
+for (const [keyStr, value] of stateDb.entries()) {
+  const key = State.StorageKey.fromString(keyStr);
+  if (Address.equals(key.address, usdcAddress)) {
+    console.log(`USDC slot ${key.slot}: ${value}`);
+  }
 }
 ```
 
-## See Also
+### Type Guards
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+
+function processStorage(key: unknown) {
+  if (State.StorageKey.is(key)) {
+    // TypeScript knows key is BrandedStorageKey
+    console.log(`Address: ${Address.toHex(key.address)}`);
+    console.log(`Slot: ${key.slot}`);
+  }
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { StorageKey, toString, fromString } from '@tevm/voltaire/State';
+
+const key = StorageKey(contractAddress, 0n);
+const keyStr = toString(key);
+const parsed = fromString(keyStr);
+
+// Only these 3 functions included in bundle
+```
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/state/fundamentals) - Learn EVM state structure and Merkle Patricia Tries
+- [Merkle Trees](/primitives/state/merkle-trees) - Trie operations and state roots
+- [Usage Patterns](/primitives/state/usage-patterns) - Real-world examples
+
+### API Methods
+
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [toString()](/primitives/state/to-string) - String serialization
+- [fromString()](/primitives/state/from-string) - String parsing
+- [equals()](/primitives/state/equals) - Equality comparison
+- [is()](/primitives/state/is) - Type guard
+
+### Related Primitives
 
 - [Address](/primitives/address) - Contract address type
-- [State Utilities](/primitives/state/utilities) - Helper functions
-- [Storage Examples](/primitives/state/storage-examples) - Real-world usage
+- [Uint](/primitives/uint) - 256-bit unsigned integers for slot values
+- [Hash](/primitives/hash) - Keccak256 hashing for state roots
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal state specification (Section 4.1, Appendix D)
+- [ethereum.org State Docs](https://ethereum.org/en/developers/docs/accounts/) - Account and state overview
+- [Patricia Merkle Trie Spec](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/) - Trie structure details
+- [evm.codes SLOAD/SSTORE](https://www.evm.codes/#54) - Storage access opcodes
+- [Solidity Storage Layout](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html) - Storage slot computation

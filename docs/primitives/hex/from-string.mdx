@@ -1,0 +1,193 @@
+---
+title: Hex.fromString
+description: Encode UTF-8 string to hex bytes
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.fromString(value: string): BrandedHex`
+
+Encodes UTF-8 string to hex bytes using `TextEncoder`.
+
+**Parameters:**
+- `value: string` - UTF-8 string to encode
+
+**Returns:** `BrandedHex` - Hex-encoded bytes with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// ASCII strings
+Hex.fromString("hello")       // "0x68656c6c6f"
+Hex.fromString("test")        // "0x74657374"
+Hex.fromString("")            // "0x"
+
+// Unicode characters
+Hex.fromString("🔥")          // "0xf09f94a5"
+Hex.fromString("café")        // "0x636166c3a9"
+Hex.fromString("テスト")      // "0xe38386e382b9e38388"
+
+// Special characters
+Hex.fromString("\n")          // "0x0a"
+Hex.fromString("a\nb")        // "0x610a62"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromString.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromString(value: string): BrandedHex`
+
+Encodes UTF-8 string to hex bytes using `TextEncoder`.
+
+**Parameters:**
+- `value: string` - UTF-8 string to encode
+
+**Returns:** `BrandedHex` - Hex-encoded bytes with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// ASCII strings
+Hex.fromString("hello")       // "0x68656c6c6f"
+Hex.fromString("test")        // "0x74657374"
+Hex.fromString("")            // "0x"
+
+// Unicode characters
+Hex.fromString("🔥")          // "0xf09f94a5"
+Hex.fromString("café")        // "0x636166c3a9"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromString.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.fromString(str: []const u8): []const u8`
+
+Encode UTF-8 string bytes to hex representation.
+
+**Parameters:**
+- `str: []const u8` - UTF-8 string bytes
+
+**Returns:** `[]const u8` - Hex string with `0x` prefix
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const str = "hello";
+const hex = Hex.fromString(str);  // "0x68656c6c6f"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## UTF-8 Encoding
+
+Uses standard `TextEncoder` for UTF-8 encoding:
+
+**ASCII (1 byte per character):**
+```typescript
+Hex.fromString("hello")
+// "0x68656c6c6f"
+// h=0x68, e=0x65, l=0x6c, l=0x6c, o=0x6f
+```
+
+**Latin-1 Extended (1-2 bytes):**
+```typescript
+Hex.fromString("café")
+// "0x636166c3a9"
+// c=0x63, a=0x61, f=0x66, é=0xc3a9 (2 bytes)
+```
+
+**Emoji (2-4 bytes):**
+```typescript
+Hex.fromString("🔥")
+// "0xf09f94a5" (4 bytes)
+
+Hex.fromString("👍")
+// "0xf09f918d" (4 bytes)
+```
+
+**CJK Characters (3 bytes):**
+```typescript
+Hex.fromString("テスト")
+// "0xe38386e382b9e38388"
+// テ=0xe38386, ス=0xe382b9, ト=0xe38388
+```
+
+## Common Use Cases
+
+**Human-Readable Messages:**
+```typescript
+const message = "Transfer 1 ETH to Alice"
+const hex = Hex.fromString(message)
+// Include in transaction data
+```
+
+**Error Messages:**
+```typescript
+const error = "Insufficient balance"
+const errorData = Hex.fromString(error)
+```
+
+**Contract Function Signatures:**
+```typescript
+// Function signature: "transfer(address,uint256)"
+const sig = Hex.fromString("transfer(address,uint256)")
+// Then hash with keccak256 for selector
+```
+
+**Custom Data Encoding:**
+```typescript
+const metadata = JSON.stringify({ name: "NFT", id: 1 })
+const encoded = Hex.fromString(metadata)
+```
+
+**ENS Labels:**
+```typescript
+const label = "myname"
+const labelBytes = Hex.fromString(label)
+// Hash for ENS registration
+```
+
+## Round-Trip Conversion
+
+Convert string to hex and back:
+
+```typescript
+// String → Hex
+const original = "Hello, World! 🌍"
+const hex = Hex.fromString(original)
+// "0x48656c6c6f2c20576f726c642120f09f8c8d"
+
+// Hex → String
+const decoded = Hex.toString(hex)
+// "Hello, World! 🌍"
+```
+
+## Performance
+
+Uses native `TextEncoder.encode()` which is highly optimized. Suitable for:
+- Short to medium length strings (< 1KB)
+- One-time encoding operations
+- Human-readable data
+
+For very large strings or repeated operations, consider batching or caching.
+
+## See Also
+
+- [toString](/primitives/hex/to-string) - Decode hex to UTF-8 string
+- [fromBytes](/primitives/hex/from-bytes) - Create from raw bytes
+- [from](/primitives/hex/from) - Universal constructor

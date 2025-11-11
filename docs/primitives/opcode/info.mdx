@@ -1,0 +1,303 @@
+---
+title: info()
+description: Get complete opcode metadata including gas cost, stack effects, and name
+---
+
+## Opcode.info()
+
+Get complete opcode metadata (gas cost, stack I/O, name).
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const info = Opcode.info(Opcode.ADD)
+// {
+//   gasCost: 3,
+//   stackInputs: 2,
+//   stackOutputs: 1,
+//   name: "ADD"
+// }
+
+const pushInfo = Opcode.info(Opcode.PUSH1)
+// {
+//   gasCost: 3,
+//   stackInputs: 0,
+//   stackOutputs: 1,
+//   name: "PUSH1"
+// }
+
+const sstoreInfo = Opcode.info(Opcode.SSTORE)
+// {
+//   gasCost: 100,        // Base cost, actual varies
+//   stackInputs: 2,      // slot, value
+//   stackOutputs: 0,
+//   name: "SSTORE"
+// }
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { info, ADD, SLOAD } from '@tevm/voltaire/Opcode'
+
+const addInfo = info(ADD)
+console.log(addInfo.name)         // "ADD"
+console.log(addInfo.gasCost)      // 3
+console.log(addInfo.stackInputs)  // 2
+console.log(addInfo.stackOutputs) // 1
+
+const sloadInfo = info(SLOAD)
+console.log(sloadInfo.gasCost)    // 100 (base, can be 2100 for cold)
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() !void {
+    const add_info = Opcode.info(0x01);  // ADD
+    std.debug.print("Name: {s}\n", .{add_info.name});
+    std.debug.print("Gas: {}\n", .{add_info.gasCost});
+    std.debug.print("Stack In: {}\n", .{add_info.stackInputs});
+    std.debug.print("Stack Out: {}\n", .{add_info.stackOutputs});
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to query
+
+## Returns
+
+`Info | undefined` - Metadata or undefined if invalid opcode
+
+```typescript
+type Info = {
+  gasCost: number       // Base gas cost (may be dynamic at runtime)
+  stackInputs: number   // Items consumed from stack
+  stackOutputs: number  // Items produced to stack
+  name: string          // Opcode mnemonic
+}
+```
+
+## Gas Costs
+
+Base gas costs returned by `info()`. Many opcodes have **dynamic costs** at runtime:
+
+### Fixed Cost Opcodes
+
+```typescript
+Opcode.info(Opcode.ADD).gasCost       // 3
+Opcode.info(Opcode.MUL).gasCost       // 5
+Opcode.info(Opcode.LT).gasCost        // 3
+Opcode.info(Opcode.PUSH1).gasCost     // 3
+Opcode.info(Opcode.DUP1).gasCost      // 3
+Opcode.info(Opcode.SWAP1).gasCost     // 3
+```
+
+### Dynamic Cost Opcodes
+
+```typescript
+// SLOAD: 100 (warm) or 2100 (cold, first access)
+Opcode.info(Opcode.SLOAD).gasCost     // 100 (base only)
+
+// SSTORE: 100-22000 depending on storage state transitions
+Opcode.info(Opcode.SSTORE).gasCost    // 100 (base only)
+
+// KECCAK256: 30 + 6 per word
+Opcode.info(Opcode.KECCAK256).gasCost // 30 (base only)
+
+// CALL: 100 + warm/cold + value transfer costs
+Opcode.info(Opcode.CALL).gasCost      // 100 (base only)
+
+// CREATE: 32000 + code execution costs
+Opcode.info(Opcode.CREATE).gasCost    // 32000 (base only)
+```
+
+<Note>
+For accurate gas estimation, you need runtime state (warm/cold access, storage transitions, memory expansion, etc.). The `gasCost` field returns only the static base cost.
+</Note>
+
+## Stack Effects
+
+### Binary Operations
+
+```typescript
+// Most arithmetic/logic: 2 in, 1 out
+const add = Opcode.info(Opcode.ADD)
+// stackInputs: 2 (a, b)
+// stackOutputs: 1 (a + b)
+
+const mul = Opcode.info(Opcode.MUL)
+// stackInputs: 2 (a, b)
+// stackOutputs: 1 (a * b)
+```
+
+### Memory/Storage
+
+```typescript
+const mstore = Opcode.info(Opcode.MSTORE)
+// stackInputs: 2 (offset, value)
+// stackOutputs: 0
+
+const mload = Opcode.info(Opcode.MLOAD)
+// stackInputs: 1 (offset)
+// stackOutputs: 1 (value)
+
+const sstore = Opcode.info(Opcode.SSTORE)
+// stackInputs: 2 (slot, value)
+// stackOutputs: 0
+
+const sload = Opcode.info(Opcode.SLOAD)
+// stackInputs: 1 (slot)
+// stackOutputs: 1 (value)
+```
+
+### Stack Manipulation
+
+```typescript
+const push1 = Opcode.info(Opcode.PUSH1)
+// stackInputs: 0
+// stackOutputs: 1
+
+const dup1 = Opcode.info(Opcode.DUP1)
+// stackInputs: 1 (top)
+// stackOutputs: 2 (top, top)
+
+const swap1 = Opcode.info(Opcode.SWAP1)
+// stackInputs: 2 (a, b)
+// stackOutputs: 2 (b, a)
+
+const pop = Opcode.info(Opcode.POP)
+// stackInputs: 1
+// stackOutputs: 0
+```
+
+## Use Cases
+
+### Calculate Gas for Bytecode
+
+```typescript
+function estimateStaticGas(bytecode: Uint8Array): bigint {
+  const instructions = Opcode.parse(bytecode)
+  let total = 0n
+
+  for (const inst of instructions) {
+    const info = Opcode.info(inst.opcode)
+    if (info) {
+      total += BigInt(info.gasCost)
+    }
+  }
+
+  return total
+}
+```
+
+### Validate Stack Depth
+
+```typescript
+function validateStackDepth(bytecode: Uint8Array): boolean {
+  const instructions = Opcode.parse(bytecode)
+  let depth = 0
+
+  for (const inst of instructions) {
+    const info = Opcode.info(inst.opcode)
+    if (!info) return false
+
+    depth -= info.stackInputs
+    if (depth < 0) {
+      console.error(`Stack underflow at ${inst.offset}`)
+      return false
+    }
+
+    depth += info.stackOutputs
+    if (depth > 1024) {
+      console.error(`Stack overflow at ${inst.offset}`)
+      return false
+    }
+  }
+
+  return true
+}
+```
+
+### Generate Opcode Statistics
+
+```typescript
+interface OpcodeStats {
+  totalInstructions: number
+  uniqueOpcodes: number
+  totalGas: bigint
+  stackDepth: { max: number, final: number }
+}
+
+function analyzeContract(bytecode: Uint8Array): OpcodeStats {
+  const instructions = Opcode.parse(bytecode)
+  const unique = new Set<number>()
+  let totalGas = 0n
+  let depth = 0
+  let maxDepth = 0
+
+  for (const inst of instructions) {
+    unique.add(inst.opcode)
+
+    const info = Opcode.info(inst.opcode)
+    if (info) {
+      totalGas += BigInt(info.gasCost)
+      depth += info.stackOutputs - info.stackInputs
+      maxDepth = Math.max(maxDepth, depth)
+    }
+  }
+
+  return {
+    totalInstructions: instructions.length,
+    uniqueOpcodes: unique.size,
+    totalGas,
+    stackDepth: { max: maxDepth, final: depth }
+  }
+}
+```
+
+### Find Expensive Operations
+
+```typescript
+function findExpensiveOps(
+  bytecode: Uint8Array,
+  threshold: number = 100
+): Array<{ offset: number, name: string, cost: number }> {
+  const instructions = Opcode.parse(bytecode)
+  const expensive: Array<{ offset: number, name: string, cost: number }> = []
+
+  for (const inst of instructions) {
+    const info = Opcode.info(inst.opcode)
+    if (info && info.gasCost >= threshold) {
+      expensive.push({
+        offset: inst.offset,
+        name: info.name,
+        cost: info.gasCost
+      })
+    }
+  }
+
+  return expensive.sort((a, b) => b.cost - a.cost)
+}
+```
+
+## Performance
+
+- **O(1)** lookup time
+- **Pre-computed** metadata table
+- **Zero allocation** for query
+- Extremely fast
+
+## Related
+
+- [name()](/primitives/opcode/name) - Get opcode name only
+- [getGasCost()](/primitives/opcode/utilities) - Get gas cost only
+- [getStackEffect()](/primitives/opcode/utilities) - Get net stack change
+- [GasConstants](/primitives/gasconstants) - Gas cost specifications

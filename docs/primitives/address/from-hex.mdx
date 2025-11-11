@@ -1,0 +1,183 @@
+---
+title: Address.fromHex
+description: Create address from hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.fromHex(hex: string): Address`
+
+Creates address from hex string. Requires `0x` prefix and exactly 40 hex characters (42 total including prefix).
+
+**Parameters:**
+- `hex: string` - Hex string with `0x` prefix
+
+**Returns:** `Address` - Address instance
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Works with any casing
+const addr2 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr3 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+
+// EIP-55 checksummed addresses work
+const addr4 = Address.fromHex("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+```
+
+**Throws:**
+- `InvalidHexFormatError` - Missing `0x` prefix or incorrect length
+- `InvalidHexStringError` - Invalid hex characters (not 0-9, a-f, A-F)
+
+**Defined in:** [primitives/Address/BrandedAddress/fromHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromHex.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromHex(hex: string): BrandedAddress`
+
+Creates address from hex string. Requires `0x` prefix and exactly 40 hex characters.
+
+**Parameters:**
+- `hex: string` - Hex string with `0x` prefix
+
+**Returns:** `BrandedAddress` - Branded Uint8Array (20 bytes)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Access raw bytes
+console.log(addr.length) // 20
+console.log(addr[0])     // 0x74
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/fromHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromHex.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.fromHex(hex: []const u8): !Address`
+
+Parse hex string to address. Accepts hex with or without `0x` prefix.
+
+**Parameters:**
+- `hex: []const u8` - Hex string bytes
+
+**Returns:** `Address` - Parsed address
+
+**Errors:**
+- `InvalidHexFormat` - Wrong length or format
+- `InvalidHexCharacter` - Invalid hex character
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+// With 0x prefix
+const addr1 = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Without 0x prefix
+const addr2 = try Address.fromHex("742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Case insensitive
+const addr3 = try Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E");
+```
+
+**Defined in:** [primitives/Address/address.zig:42](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L42)
+
+</Tab>
+</Tabs>
+
+## Format Requirements
+
+**Length:**
+- With `0x` prefix: exactly 42 characters
+- Without `0x` prefix: exactly 40 characters
+
+**Characters:**
+- Valid: `0-9`, `a-f`, `A-F`
+- Invalid: `g-z`, `G-Z`, whitespace, special characters
+
+**Case sensitivity:**
+- Parsing is case-insensitive
+- Both lowercase and uppercase hex are accepted
+- Mixed-case (EIP-55 checksummed) addresses are valid
+
+## Error Handling
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Missing 0x prefix
+try {
+  Address.fromHex("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+} catch (e) {
+  console.error(e) // InvalidHexFormatError
+}
+
+// Wrong length
+try {
+  Address.fromHex("0x742d35")
+} catch (e) {
+  console.error(e) // InvalidHexFormatError
+}
+
+// Invalid characters
+try {
+  Address.fromHex("0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+} catch (e) {
+  console.error(e) // InvalidHexStringError
+}
+```
+
+## Validation Before Parsing
+
+Use `Address.isValid()` to check before parsing:
+
+```typescript
+const input = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+if (Address.isValid(input)) {
+  const addr = Address.fromHex(input)
+  console.log(addr.toHex())
+} else {
+  console.error("Invalid address format")
+}
+```
+
+## EIP-55 Checksums
+
+`fromHex()` accepts checksummed addresses but does not validate checksums. Use `isValidChecksum()` to validate before parsing:
+
+```typescript
+const checksummed = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+
+if (Address.isValidChecksum(checksummed)) {
+  const addr = Address.fromHex(checksummed)
+  console.log("Checksum valid")
+} else {
+  console.warn("Invalid checksum, but parsing anyway")
+  const addr = Address.fromHex(checksummed)
+}
+```
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [fromBytes](/primitives/address/from-bytes) - Create from Uint8Array
+- [toHex](/primitives/address/to-hex) - Convert to hex string
+- [toChecksummed](/primitives/address/to-checksummed) - Convert to EIP-55 checksummed hex
+- [isValid](/primitives/address/is-valid) - Validate address format
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55)

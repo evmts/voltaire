@@ -1,0 +1,167 @@
+---
+title: Hex.fromNumber
+description: Convert number to hex string with optional padding
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.fromNumber(value: number, size?: number): BrandedHex`
+
+Converts number to hex string with optional byte-size padding.
+
+**Parameters:**
+- `value: number` - Number to convert (0 to Number.MAX_SAFE_INTEGER)
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Basic conversion
+Hex.fromNumber(255)      // "0xff"
+Hex.fromNumber(0x1234)   // "0x1234"
+Hex.fromNumber(0)        // "0x0"
+
+// With size padding
+Hex.fromNumber(255, 2)   // "0x00ff"
+Hex.fromNumber(255, 32)  // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+
+// Large numbers
+Hex.fromNumber(Number.MAX_SAFE_INTEGER)  // "0x1fffffffffffff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromNumber.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromNumber.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromNumber(value: number, size?: number): BrandedHex`
+
+Converts number to hex string with optional byte-size padding.
+
+**Parameters:**
+- `value: number` - Number to convert (0 to Number.MAX_SAFE_INTEGER)
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Basic conversion
+Hex.fromNumber(255)      // "0xff"
+Hex.fromNumber(0x1234)   // "0x1234"
+Hex.fromNumber(0)        // "0x0"
+
+// With size padding
+Hex.fromNumber(255, 2)   // "0x00ff"
+Hex.fromNumber(255, 32)  // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromNumber.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromNumber.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.fromNumber(value: u64): []const u8`
+
+Convert unsigned integer to hex string.
+
+**Parameters:**
+- `value: u64` - Unsigned integer to convert
+
+**Returns:** `[]const u8` - Hex string with `0x` prefix
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex1 = Hex.fromNumber(255);  // "0xff"
+const hex2 = Hex.fromNumber(0x1234);  // "0x1234"
+const hex3 = Hex.fromNumber(0);  // "0x0"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Number Range
+
+Valid input range: `0` to `Number.MAX_SAFE_INTEGER` (2^53 - 1)
+
+```typescript
+// Valid
+Hex.fromNumber(0)                      // "0x0"
+Hex.fromNumber(Number.MAX_SAFE_INTEGER)  // "0x1fffffffffffff"
+
+// For larger values, use fromBigInt
+const large = 2n ** 256n - 1n
+Hex.fromBigInt(large, 32)  // Max uint256
+```
+
+## Size Padding
+
+The `size` parameter specifies the **byte length** of the output:
+
+```typescript
+// No padding (minimal representation)
+Hex.fromNumber(255)      // "0xff" (1 byte)
+
+// 2-byte padding
+Hex.fromNumber(255, 2)   // "0x00ff"
+
+// 4-byte padding (uint32)
+Hex.fromNumber(255, 4)   // "0x000000ff"
+
+// 32-byte padding (uint256)
+Hex.fromNumber(255, 32)  // "0x00...ff" (64 hex chars)
+```
+
+## Common Use Cases
+
+**Transaction Values:**
+```typescript
+const gasPrice = 20_000_000_000  // 20 gwei
+const hex = Hex.fromNumber(gasPrice)  // "0x4a817c800"
+```
+
+**Block Numbers:**
+```typescript
+const blockNumber = 18_000_000
+const hex = Hex.fromNumber(blockNumber)  // "0x112a880"
+```
+
+**Fixed-Size Fields:**
+```typescript
+// Chain ID (uint256)
+const chainId = 1  // Ethereum mainnet
+const hex = Hex.fromNumber(chainId, 32)  // 32-byte padded
+```
+
+**Array Indices:**
+```typescript
+const index = 42
+const hex = Hex.fromNumber(index, 32)  // For storage slot calculation
+```
+
+## Performance
+
+Direct `toString(16)` conversion with optional `padStart`. Very fast for small numbers.
+
+For values requiring padding, consider pre-allocating buffers in performance-critical code.
+
+## See Also
+
+- [fromBigInt](/primitives/hex/from-bigint) - For large numbers beyond MAX_SAFE_INTEGER
+- [toNumber](/primitives/hex/to-number) - Convert hex to number
+- [pad](/primitives/hex/pad) - Pad existing hex string
+- [from](/primitives/hex/from) - Universal constructor

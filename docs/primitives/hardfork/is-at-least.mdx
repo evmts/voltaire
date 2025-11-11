@@ -1,0 +1,155 @@
+---
+title: Hardfork.isAtLeast
+description: Check if hardfork is at least a target version (greater than or equal)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.isAtLeast(target: BrandedHardfork): boolean`
+
+Check if current hardfork is at least the target version (>=). Uses chronological ordering based on hardfork deployment dates.
+
+**Parameters:**
+- `target: BrandedHardfork` - Minimum required hardfork version
+
+**Returns:** `boolean` - True if current >= target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, LONDON, SHANGHAI } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+
+fork.isAtLeast(LONDON)    // true - Cancun >= London
+fork.isAtLeast(SHANGHAI)  // true - Cancun >= Shanghai
+fork.isAtLeast(CANCUN)    // true - Cancun >= Cancun (equal)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isAtLeast.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAtLeast.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isAtLeast(current: BrandedHardfork, target: BrandedHardfork): boolean`
+
+Check if current hardfork is at least the target version (>=). Uses chronological ordering based on hardfork deployment dates.
+
+**Parameters:**
+- `current: BrandedHardfork` - Current hardfork version
+- `target: BrandedHardfork` - Minimum required hardfork version
+
+**Returns:** `boolean` - True if current >= target chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, LONDON, SHANGHAI } from '@tevm/voltaire'
+
+Hardfork.isAtLeast(CANCUN, LONDON)    // true - Cancun >= London
+Hardfork.isAtLeast(CANCUN, SHANGHAI)  // true - Cancun >= Shanghai
+Hardfork.isAtLeast(LONDON, CANCUN)    // false - London < Cancun
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isAtLeast.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAtLeast.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Chronological Ordering
+
+Hardforks are ordered chronologically by deployment date:
+
+```
+FRONTIER (0) < HOMESTEAD (1) < DAO (2) < ... < CANCUN (16) < PRAGUE (17)
+```
+
+Comparison uses array index lookup, making it O(1) constant time.
+
+## Usage Patterns
+
+### Feature Gating
+
+Check minimum version requirements:
+
+```typescript
+import { Hardfork, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString(config.hardfork)
+
+if (!fork.isAtLeast(LONDON)) {
+  throw new Error("EIP-1559 requires London or later")
+}
+
+// Safe to use EIP-1559 features
+```
+
+### Network Configuration
+
+Validate network compatibility:
+
+```typescript
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+
+function validateNetworkConfig(clientFork: BrandedHardfork, networkFork: BrandedHardfork) {
+  if (!clientFork.isAtLeast(networkFork)) {
+    throw new Error(
+      `Client must support at least ${Hardfork.toString(networkFork)}, ` +
+      `but only supports ${Hardfork.toString(clientFork)}`
+    )
+  }
+}
+
+validateNetworkConfig(SHANGHAI, LONDON)  // OK
+validateNetworkConfig(LONDON, SHANGHAI)  // Throws error
+```
+
+### Transaction Type Selection
+
+Select appropriate transaction format:
+
+```typescript
+import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
+
+function selectTxType(fork: BrandedHardfork): number {
+  if (fork.isAtLeast(CANCUN)) {
+    return 3  // Blob transaction
+  }
+  if (fork.isAtLeast(LONDON)) {
+    return 2  // EIP-1559
+  }
+  return 0  // Legacy
+}
+```
+
+## EIP References
+
+Common minimum version checks:
+
+| Feature | Minimum Version | EIP |
+|---------|----------------|-----|
+| EIP-1559 base fee | London | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) |
+| PUSH0 opcode | Shanghai | [EIP-3855](https://eips.ethereum.org/EIPS/eip-3855) |
+| Blob transactions | Cancun | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) |
+| Transient storage | Cancun | [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153) |
+| Proof of Stake | Merge | [EIP-3675](https://eips.ethereum.org/EIPS/eip-3675) |
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isBefore](/primitives/hardfork/is-before) - Check if strictly less than
+- [isAfter](/primitives/hardfork/is-after) - Check if strictly greater than
+- [compare](/primitives/hardfork/compare) - Three-way comparison
+- [gte](/primitives/hardfork/gte) - Alias for isAtLeast

@@ -312,6 +312,8 @@ bun run test:wasm             # WASM-specific tests
 - **biome** - Format/lint
 - **mitata** - JS benchmarks
 - **@noble/curves, @noble/hashes** - Reference crypto
+- **whatsabi** - ABI detection and contract analysis
+- **ox** - Ethereum utilities
 
 ### Install
 

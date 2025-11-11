@@ -1,0 +1,473 @@
+---
+title: Fundamentals
+description: Learn Ethereum event log structure, topics, indexed parameters, and bloom filters
+---
+
+Ethereum event logs are structured outputs emitted by smart contracts during execution. They enable efficient off-chain indexing and querying of on-chain activity without scanning all transaction data.
+
+## Structure
+
+An event log contains:
+- **Address** - Contract that emitted the log (20 bytes)
+- **Topics** - Up to 4 indexed parameters (32 bytes each)
+- **Data** - Non-indexed parameters (variable length)
+- **Metadata** - Block number, transaction hash, log index
+
+## Topics and Indexed Parameters
+
+Topics enable efficient log filtering via bloom filters. The first topic (topic0) is the event signature hash:
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+```
+
+This compiles to:
+- **topic0** - `keccak256("Transfer(address,address,uint256)")`
+- **topic1** - `from` address (padded to 32 bytes)
+- **topic2** - `to` address (padded to 32 bytes)
+- **data** - `value` (not indexed, in log data field)
+
+### Creating and Parsing Event Logs
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+// ERC-20 Transfer event signature
+const TRANSFER_SIG = Hash.fromHex(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+// Addresses as topic hashes (left-padded to 32 bytes)
+const fromAddress = Address.fromHex('0xa1b2c3d4e5f67890abcdef1234567890abcdef12');
+const toAddress = Address.fromHex('0xfedcba0987654321fedcba0987654321fedcba09');
+
+// Create topic hashes (addresses are right-aligned in 32-byte topics)
+const fromHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...fromAddress])
+);
+const toHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...toAddress])
+);
+
+// Create log
+const log = EventLog({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [TRANSFER_SIG, fromHash, toHash],
+  data: Hex.toBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'), // 1 ether
+  blockNumber: 18000000n,
+  transactionHash: Hash.fromHex('0xabc123...'),
+  logIndex: 5,
+});
+
+// Access signature
+const signature = log.getTopic0();
+console.log(Hash.toHex(signature)); // 0xddf252ad...
+
+// Access indexed parameters
+const [from, to] = log.getIndexedTopics();
+console.log('From:', Hash.toHex(from));
+console.log('To:', Hash.toHex(to));
+
+// Decode value from data
+const value = new DataView(log.data.buffer).getBigUint64(24, false);
+console.log('Value:', value); // 1000000000000000000n
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const std = @import("std");
+const EventLog = @import("primitives").EventLog;
+const Address = @import("primitives").Address;
+const Hash = @import("primitives").Hash;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // ERC-20 Transfer event signature
+    const transfer_sig = try Hash.fromHex(allocator, "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+    defer transfer_sig.deinit(allocator);
+
+    // Create log (simplified - actual implementation varies)
+    var log = EventLog{
+        .address = try Address.fromHex(allocator, "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+        .topics = &[_]Hash{transfer_sig, from_hash, to_hash},
+        .data = try Hex.toBytes(allocator, "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+        .block_number = 18000000,
+        .log_index = 5,
+    };
+
+    // Access signature
+    const signature = log.getTopic0();
+    std.debug.print("Signature: {s}\n", .{try Hash.toHex(allocator, signature)});
+
+    // Access indexed parameters
+    const indexed = log.getIndexedTopics();
+    std.debug.print("From: {s}\n", .{try Hash.toHex(allocator, indexed[0])});
+    std.debug.print("To: {s}\n", .{try Hash.toHex(allocator, indexed[1])});
+}
+```
+
+</Tab>
+</Tabs>
+
+## Event Signature Hashing
+
+Event signatures are computed by hashing the canonical event declaration:
+
+```typescript
+import { Hash, Hex } from '@tevm/voltaire';
+
+// Compute event signature
+function eventSignature(declaration: string): Hash {
+  const bytes = new TextEncoder().encode(declaration);
+  return Hash.fromBytes(keccak256(bytes));
+}
+
+// ERC-20 events
+const TRANSFER = eventSignature('Transfer(address,address,uint256)');
+const APPROVAL = eventSignature('Approval(address,address,uint256)');
+
+// ERC-721 events
+const NFT_TRANSFER = eventSignature('Transfer(address,address,uint256)');
+// Note: Same signature as ERC-20 Transfer (different semantics, same structure)
+
+console.log(Hash.toHex(TRANSFER));
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+<Warning>
+Event signatures must use canonical types: `uint256` (not `uint`), `address` (20 bytes), no spaces. Incorrect signatures will not match emitted events.
+</Warning>
+
+## Filtering Event Logs
+
+### Address Filtering
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+const usdcAddress = Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
+const daiAddress = Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F');
+
+// Single address filter
+const usdcLogs = allLogs.filter(log => log.matchesAddress(usdcAddress));
+
+// Multiple addresses (OR logic)
+const stablecoinLogs = allLogs.filter(log =>
+  log.matchesAddress([usdcAddress, daiAddress])
+);
+
+// Using filterLogs
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdcAddress, daiAddress],
+});
+```
+
+### Topic Filtering
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
+
+// Match specific signature
+const transfers = allLogs.filter(log =>
+  log.matchesTopics([TRANSFER_SIG])
+);
+
+// Match signature + indexed parameter
+const transfersToUser = allLogs.filter(log =>
+  log.matchesTopics([
+    TRANSFER_SIG,      // topic0: event signature
+    null,              // topic1: any from address
+    userHash,          // topic2: specific to address
+  ])
+);
+
+// Multiple options per topic (OR logic)
+const transfersBetweenUsers = allLogs.filter(log =>
+  log.matchesTopics([
+    TRANSFER_SIG,
+    [user1Hash, user2Hash, user3Hash], // from: any of these
+    [user1Hash, user2Hash, user3Hash], // to: any of these
+  ])
+);
+```
+
+### Complete Filter
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdcAddress, daiAddress, wethAddress],
+  topics: [
+    TRANSFER_SIG,      // Event signature
+    null,              // from: any
+    userAddressHash,   // to: user
+  ],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Sort chronologically
+const sorted = EventLog.sortLogs(filtered);
+```
+
+## Bloom Filters in Block Headers
+
+Block headers contain a 2048-bit bloom filter enabling efficient log queries without scanning all transactions.
+
+### How Bloom Filters Work
+
+1. For each log, hash the address and each topic
+2. Set 3 bits in the bloom filter per hash
+3. To query: check if all required bits are set
+4. False positives possible, false negatives impossible
+
+```typescript
+import { BloomFilter, Address, Hash } from '@tevm/voltaire';
+
+// Create block bloom filter
+const bloom = BloomFilter.create();
+
+// Add log components
+bloom.add(Address.toBytes(contractAddress));
+bloom.add(topic0);
+bloom.add(topic1);
+
+// Query bloom filter (fast, but may have false positives)
+if (bloom.contains(Address.toBytes(targetAddress))) {
+  // Block MAY contain logs from this address
+  // Must check actual logs to confirm
+}
+
+// Export to header format
+const bloomBytes = bloom.toBytes(); // 256 bytes (2048 bits)
+```
+
+See [BloomFilter documentation](/primitives/bloomfilter) for details.
+
+## ABI Decoding Integration
+
+Event data requires ABI decoding for non-indexed parameters:
+
+```typescript
+import { EventLog, Abi, Address, Hash } from '@tevm/voltaire';
+
+// Event ABI
+const transferAbi = {
+  name: 'Transfer',
+  type: 'event',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false },
+  ],
+};
+
+// Decode event
+function decodeTransfer(log: EventLog) {
+  const [fromHash, toHash] = log.getIndexedTopics();
+
+  // Extract addresses from topic hashes (last 20 bytes)
+  const from = Address.fromBytes(fromHash.slice(12));
+  const to = Address.fromBytes(toHash.slice(12));
+
+  // Decode value from data
+  const decoded = Abi.decodeParameters(
+    [{ type: 'uint256' }],
+    log.data
+  );
+  const value = decoded[0] as bigint;
+
+  return { from, to, value };
+}
+
+const transfer = decodeTransfer(transferLog);
+console.log(`Transfer: ${transfer.value}`);
+console.log(`From: ${Address.toHex(transfer.from)}`);
+console.log(`To: ${Address.toHex(transfer.to)}`);
+```
+
+## Anonymous Events
+
+Anonymous events omit the signature hash (topic0), allowing 4 indexed parameters instead of 3:
+
+```solidity
+event AnonymousTransfer(
+  address indexed from,
+  address indexed to,
+  uint256 indexed tokenId,
+  uint256 indexed price
+) anonymous;
+```
+
+This produces:
+- **topic0** - `from` (first indexed parameter, NOT signature)
+- **topic1** - `to`
+- **topic2** - `tokenId`
+- **topic3** - `price`
+- **data** - Empty (all parameters indexed)
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const anonymousLog = EventLog({
+  address: contractAddress,
+  topics: [fromHash, toHash, tokenIdHash, priceHash], // 4 indexed params
+  data: new Uint8Array([]), // No non-indexed data
+});
+
+// getTopic0 returns first indexed parameter (NOT signature)
+const firstIndexed = anonymousLog.getTopic0();
+
+// getIndexedTopics returns remaining 3 parameters
+const remaining = anonymousLog.getIndexedTopics(); // [to, tokenId, price]
+```
+
+## Complete Example: ERC-20 Transfer Tracking
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+// Event signature
+const TRANSFER_SIG = Hash.fromHex(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+// Track user balance changes
+const userAddress = Address.fromHex('0xa1b2c3d4e5f67890abcdef1234567890abcdef12');
+const userHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+);
+
+// Filter incoming transfers
+const incoming = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [
+    TRANSFER_SIG,
+    null,       // from: any
+    userHash,   // to: user
+  ],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Filter outgoing transfers
+const outgoing = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [
+    TRANSFER_SIG,
+    userHash,   // from: user
+    null,       // to: any
+  ],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Calculate net change
+let netChange = 0n;
+
+for (const log of incoming) {
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+  netChange += value;
+}
+
+for (const log of outgoing) {
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+  netChange -= value;
+}
+
+console.log(`Net change: ${netChange}`);
+console.log(`Incoming: ${incoming.length} transfers`);
+console.log(`Outgoing: ${outgoing.length} transfers`);
+```
+
+## Chain Reorganizations
+
+Logs can be marked as `removed: true` when chain reorganizations invalidate their blocks:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Filter active logs only
+const activeLogs = allLogs.filter(log => !log.isRemoved());
+
+// Detect and handle reorgs
+function handleReorg(newLogs: EventLog[]) {
+  const removed = newLogs.filter(log => log.wasRemoved());
+
+  if (removed.length > 0) {
+    console.log(`Reorg detected: ${removed.length} logs invalidated`);
+
+    // Reprocess affected blocks
+    const affectedBlocks = new Set(
+      removed.map(log => log.blockNumber).filter(n => n !== undefined)
+    );
+
+    for (const blockNum of affectedBlocks) {
+      console.log(`  Block ${blockNum} invalidated`);
+      // Re-fetch and reprocess block
+    }
+  }
+}
+```
+
+## Performance Considerations
+
+### Bloom Filter False Positives
+
+Bloom filters enable fast queries but produce false positives (10-20% typical):
+
+```typescript
+// Block bloom indicates potential match
+if (blockHeader.logsBloom.contains(targetAddress)) {
+  // Fetch block logs and verify
+  const blockLogs = await provider.getLogs({
+    blockHash: blockHeader.hash,
+    address: targetAddress,
+  });
+
+  // Actual logs may be empty (false positive)
+  console.log(`Block has ${blockLogs.length} actual logs`);
+}
+```
+
+### Efficient Filtering
+
+```typescript
+// Inefficient: Filter in JavaScript
+const filtered = allLogs.filter(log =>
+  log.matchesAddress(targetAddress) &&
+  log.matchesTopics([TRANSFER_SIG, null, userHash])
+);
+
+// Efficient: Use filterLogs (optimized internally)
+const filtered = EventLog.filterLogs(allLogs, {
+  address: targetAddress,
+  topics: [TRANSFER_SIG, null, userHash],
+});
+```
+
+## Resources
+
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 4.3 (Transaction Receipt) and 4.3.1 (Log Objects)
+- **[Solidity Events](https://docs.soliditylang.org/en/latest/contracts.html#events)** - Event declaration and emission
+- **[eth_getLogs](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs)** - JSON-RPC method for querying logs
+- **[EIP-234](https://eips.ethereum.org/EIPS/eip-234)** - Bloom filter specification
+
+## Next Steps
+
+- [Overview](/primitives/eventlog) - Type definition and API reference
+- [matchesTopics](/primitives/eventlog/matchestopics) - Topic filtering logic
+- [filterLogs](/primitives/eventlog/filterlogs) - Batch log filtering
+- [BloomFilter](/primitives/bloomfilter) - Bloom filter implementation

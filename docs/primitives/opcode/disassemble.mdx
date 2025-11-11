@@ -1,0 +1,240 @@
+---
+title: disassemble()
+description: Disassemble EVM bytecode to human-readable assembly format
+---
+
+## Opcode.disassemble()
+
+Disassemble bytecode into array of formatted assembly strings.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x80,    // PUSH1 0x80
+  0x60, 0x40,    // PUSH1 0x40
+  0x52,          // MSTORE
+  0x00           // STOP
+])
+
+const assembly = Opcode.disassemble(bytecode)
+// [
+//   "0000: PUSH1 0x80",
+//   "0002: PUSH1 0x40",
+//   "0004: MSTORE",
+//   "0005: STOP"
+// ]
+
+console.log(assembly.join('\n'))
+// 0000: PUSH1 0x80
+// 0002: PUSH1 0x40
+// 0004: MSTORE
+// 0005: STOP
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { disassemble } from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x01,  // PUSH1 1
+  0x60, 0x02,  // PUSH1 2
+  0x01,        // ADD
+])
+
+const lines = disassemble(bytecode)
+// ["0000: PUSH1 0x01", "0002: PUSH1 0x02", "0004: ADD"]
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const bytecode = [_]u8{
+        0x60, 0x01,  // PUSH1 1
+        0x60, 0x02,  // PUSH1 2
+        0x01,        // ADD
+    };
+
+    var lines = try Opcode.disassemble(allocator, &bytecode);
+    defer {
+        for (lines.items) |line| allocator.free(line);
+        lines.deinit(allocator);
+    }
+
+    for (lines.items) |line| {
+        std.debug.print("{s}\n", .{line});
+    }
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `bytecode: Uint8Array` - Raw bytecode to disassemble
+
+## Returns
+
+`string[]` - Array of formatted instruction strings
+
+Each line format: `"<offset>: <mnemonic> [immediate]"`
+
+## Output Format
+
+- **Offset**: 4-digit hex with leading zeros (e.g., `0000`, `002A`)
+- **Mnemonic**: Opcode name (e.g., `PUSH1`, `ADD`, `SSTORE`)
+- **Immediate**: Hex value for PUSH operations (e.g., `0x80`, `0x0102`)
+
+## Use Cases
+
+### Print Contract Disassembly
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+function printDisassembly(bytecode: Uint8Array): void {
+  const lines = Opcode.disassemble(bytecode)
+
+  console.log('=== Disassembly ===')
+  for (const line of lines) {
+    console.log(line)
+  }
+  console.log(`\nTotal instructions: ${lines.length}`)
+}
+```
+
+### Annotated Disassembly with Gas
+
+```typescript
+function disassembleWithGas(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  const lines: string[] = []
+
+  for (const inst of instructions) {
+    const formatted = Opcode.format(inst)
+    const info = Opcode.info(inst.opcode)
+    lines.push(`${formatted}  // gas: ${info?.gasCost ?? 'unknown'}`)
+  }
+
+  return lines
+}
+
+// Example output:
+// 0000: PUSH1 0x80  // gas: 3
+// 0002: PUSH1 0x40  // gas: 3
+// 0004: MSTORE  // gas: 3
+```
+
+### Side-by-Side Comparison
+
+```typescript
+function compareDisassembly(
+  bytecode1: Uint8Array,
+  bytecode2: Uint8Array
+): string[] {
+  const lines1 = Opcode.disassemble(bytecode1)
+  const lines2 = Opcode.disassemble(bytecode2)
+  const maxLen = Math.max(lines1.length, lines2.length)
+  const output: string[] = []
+
+  output.push('Original'.padEnd(40) + ' | ' + 'Optimized')
+  output.push('-'.repeat(80))
+
+  for (let i = 0; i < maxLen; i++) {
+    const left = (lines1[i] ?? '').padEnd(40)
+    const right = lines2[i] ?? ''
+    output.push(`${left} | ${right}`)
+  }
+
+  return output
+}
+```
+
+### Find Pattern Locations
+
+```typescript
+function findPattern(
+  bytecode: Uint8Array,
+  pattern: string
+): number[] {
+  const lines = Opcode.disassemble(bytecode)
+  const matches: number[] = []
+
+  lines.forEach((line, index) => {
+    if (line.includes(pattern)) {
+      matches.push(index)
+    }
+  })
+
+  return matches
+}
+
+// Find all SSTORE operations
+const sstoreLocations = findPattern(bytecode, 'SSTORE')
+```
+
+### Export to File
+
+```typescript
+import * as fs from 'fs'
+
+function exportDisassembly(
+  bytecode: Uint8Array,
+  filename: string
+): void {
+  const lines = Opcode.disassemble(bytecode)
+  const content = lines.join('\n')
+  fs.writeFileSync(filename, content, 'utf-8')
+}
+
+exportDisassembly(contractBytecode, 'contract.asm')
+```
+
+### Highlight Instructions
+
+```typescript
+function highlightJumps(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  const jumpDests = Opcode.jumpDests(bytecode)
+  const lines: string[] = []
+
+  for (const inst of instructions) {
+    let line = Opcode.format(inst)
+
+    if (Opcode.isJump(inst.opcode)) {
+      line += '  <-- JUMP'
+    }
+    if (jumpDests.has(inst.offset)) {
+      line += '  <-- JUMPDEST'
+    }
+
+    lines.push(line)
+  }
+
+  return lines
+}
+```
+
+## Performance
+
+- **O(n)** time where n is number of instructions
+- **String allocation** for each instruction line
+- **Single pass** through parsed instructions
+- Uses `parse()` internally, so includes parsing overhead
+
+## Related
+
+- [parse()](/primitives/opcode/parse) - Parse bytecode to instructions
+- [format()](/primitives/opcode/format) - Format single instruction
+- [name()](/primitives/opcode/name) - Get opcode name
+- [Bytecode](/primitives/bytecode) - Bytecode type

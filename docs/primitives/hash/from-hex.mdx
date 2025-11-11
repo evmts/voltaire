@@ -1,0 +1,246 @@
+---
+title: Hash.fromHex
+description: Create Hash from hex string (with or without 0x prefix)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.fromHex(hex: string): Hash`
+
+Creates hash from hex string. Requires exactly 64 hex characters (66 total with `0x` prefix).
+
+**Parameters:**
+- `hex: string` - Hex string with optional `0x` prefix (must be 64 hex chars)
+
+**Returns:** `Hash` - Hash instance with prototype methods
+
+**Throws:**
+- `Error` - Missing hex characters or wrong length (must be 64 hex chars)
+- `Error` - Invalid hex characters (non-hex chars in string)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// With 0x prefix (66 chars total)
+const hash1 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Without 0x prefix (64 chars)
+const hash2 = Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Case insensitive
+const hash3 = Hash.fromHex("0x1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8")
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/fromHex.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/fromHex.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromHex(hex: string): BrandedHash`
+
+Creates hash from hex string. Requires exactly 64 hex characters (66 total with `0x` prefix).
+
+**Parameters:**
+- `hex: string` - Hex string with optional `0x` prefix
+
+**Returns:** `BrandedHash` - Branded Uint8Array (32 bytes)
+
+**Throws:**
+- `Error` - Invalid hex format or wrong length
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// With 0x prefix
+const hash1 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Without 0x prefix
+const hash2 = Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/fromHex.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/fromHex.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual Hex Parsing
+
+Zig uses `std.fmt.hexToBytes` for hex string parsing:
+
+**Parameters:**
+- `dest: []u8` - Output buffer (must be 32 bytes)
+- `hex: []const u8` - Hex string (64 chars, no `0x` prefix)
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+var hash: [32]u8 = undefined;
+const hex = "1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8";
+_ = try std.fmt.hexToBytes(&hash, hex);
+
+// With 0x prefix (strip it first)
+const hex_with_prefix = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8";
+const clean_hex = if (std.mem.startsWith(u8, hex_with_prefix, "0x"))
+    hex_with_prefix[2..]
+else
+    hex_with_prefix;
+_ = try std.fmt.hexToBytes(&hash, clean_hex);
+```
+
+**Memory:** No allocation - writes directly to provided buffer.
+
+</Tab>
+</Tabs>
+
+## Hex Format Requirements
+
+Hash hex strings must follow specific format requirements:
+
+### Length
+
+- **Without prefix:** Exactly 64 hex characters
+- **With prefix:** Exactly 66 characters (`0x` + 64 hex chars)
+
+```typescript
+// Valid (64 hex chars)
+Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Valid (0x + 64 hex chars)
+Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Invalid (too short)
+Hash.fromHex("0x1c8aff") // Error: wrong length
+
+// Invalid (too long)
+Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac800") // Error
+```
+
+### Characters
+
+Only valid hex characters allowed: `0-9`, `a-f`, `A-F`
+
+```typescript
+// Valid (lowercase)
+Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// Valid (uppercase)
+Hash.fromHex("0x1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8")
+
+// Valid (mixed case)
+Hash.fromHex("0x1C8aFf950685c2ED4bc3174F3472287b56d9517B9c948127319a09A7a36deAC8")
+
+// Invalid (contains 'g')
+Hash.fromHex("0x1c8agg950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // Error
+```
+
+### Prefix Optional
+
+The `0x` prefix is optional but recommended for clarity:
+
+```typescript
+// Both produce identical hashes
+const hash1 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+console.log(hash1.equals(hash2)) // true
+```
+
+## Usage Examples
+
+### Parsing User Input
+
+```typescript
+function parseHashInput(input: string): Hash {
+  // Validate before parsing
+  if (!Hash.isValidHex(input)) {
+    throw new Error("Invalid hash format")
+  }
+  return Hash.fromHex(input)
+}
+```
+
+### Loading from API
+
+```typescript
+interface ApiResponse {
+  txHash: string
+  blockHash: string
+}
+
+async function fetchTransaction(id: string) {
+  const response: ApiResponse = await fetch(`/api/tx/${id}`).then(r => r.json())
+
+  return {
+    txHash: Hash.fromHex(response.txHash),
+    blockHash: Hash.fromHex(response.blockHash)
+  }
+}
+```
+
+### Event Log Topics
+
+```typescript
+interface Log {
+  topics: string[]
+  data: string
+}
+
+function parseLog(log: Log) {
+  return {
+    topics: log.topics.map(topic => Hash.fromHex(topic)),
+    data: log.data
+  }
+}
+```
+
+### Transaction Receipts
+
+```typescript
+async function getReceipt(txHash: string) {
+  const receipt = await provider.getTransactionReceipt(txHash)
+
+  return {
+    transactionHash: Hash.fromHex(receipt.transactionHash),
+    blockHash: Hash.fromHex(receipt.blockHash),
+    from: Address.fromHex(receipt.from),
+    to: Address.fromHex(receipt.to)
+  }
+}
+```
+
+## Performance
+
+**Parsing overhead:** Hex parsing requires decoding each pair of hex characters to bytes. For performance-critical code with pre-parsed bytes, use `fromBytes` instead.
+
+**Validation:** `fromHex` validates length and hex characters. Use `isValidHex` to validate before parsing if validation errors are expected.
+
+```typescript
+// Fast path: avoid double validation
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input) // No validation error
+} else {
+  // Handle invalid input
+}
+
+// Slow path: validation happens twice
+try {
+  const hash = Hash.fromHex(input)
+} catch (e) {
+  // Handle error
+}
+```
+
+## See Also
+
+- [from](/primitives/hash/from) - Universal constructor (accepts hex or bytes)
+- [fromBytes](/primitives/hash/from-bytes) - Create from Uint8Array directly
+- [isValidHex](/primitives/hash/is-valid-hex) - Validate hex format before parsing
+- [toHex](/primitives/hash/to-hex) - Convert Hash back to hex string
+- [Hex](/primitives/hex) - Working with hex strings

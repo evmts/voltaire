@@ -1,0 +1,171 @@
+---
+title: Address.from
+description: Universal constructor for creating addresses from various input types
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.from(value: AddressLike): Address`
+
+Universal constructor that dispatches based on input type. Accepts numbers, bigints, hex strings, or Uint8Array.
+
+**Parameters:**
+- `value: AddressLike` - Number, bigint, hex string (with or without `0x` prefix), or Uint8Array
+
+**Returns:** `Address` - Address instance with prototype methods
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// From bigint
+const addr1 = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+
+// From number
+const addr2 = Address.from(69)
+
+// From hex string
+const addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr4 = Address.from("742d35Cc6634C0532925a3b844Bc9e7595f51e3e") // Works without prefix
+
+// From Uint8Array
+const bytes = new Uint8Array(20)
+const addr5 = Address.from(bytes)
+```
+
+**Throws:**
+- `InvalidValueError` - Unsupported value type or negative number
+- `InvalidHexFormatError` - Invalid hex string format
+- `InvalidAddressLengthError` - Uint8Array is not 20 bytes
+
+**Defined in:** [primitives/Address/BrandedAddress/from.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/from.js#L23)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `from(value: AddressLike): BrandedAddress`
+
+Universal constructor that dispatches based on input type. Accepts numbers, bigints, hex strings, or Uint8Array.
+
+**Parameters:**
+- `value: AddressLike` - Number, bigint, hex string (with or without `0x` prefix), or Uint8Array
+
+**Returns:** `BrandedAddress` - Branded Uint8Array (20 bytes)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// From bigint
+const addr1 = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+
+// From number
+const addr2 = Address.from(69)
+
+// From hex string
+const addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// From Uint8Array
+const bytes = new Uint8Array(20)
+const addr4 = Address.from(bytes)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/from.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/from.js#L23)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.init(bytes: [20]u8): Address`
+
+Initialize address from 20-byte array. In Zig, addresses are simple fixed-size arrays.
+
+**Parameters:**
+- `bytes: [20]u8` - Fixed 20-byte array
+
+**Returns:** `Address` - Address struct containing bytes
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+// From bytes
+var bytes = [_]u8{0} ** 20;
+bytes[19] = 0x45; // Set last byte to 0x45
+const addr = Address.init(bytes);
+
+// From hex literal (parsed at compile time)
+const addr2 = Address.init([_]u8{
+    0x74, 0x2d, 0x35, 0xCc, 0x66, 0x34, 0xC0, 0x53,
+    0x29, 0x25, 0xa3, 0xb8, 0x44, 0xBc, 0x9e, 0x75,
+    0x95, 0xf5, 0x1e, 0x3e
+});
+```
+
+**Defined in:** [primitives/Address/address.zig:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L15)
+
+</Tab>
+</Tabs>
+
+## AddressLike Type
+
+`AddressLike` is a union type accepting any input that can be coerced to an address:
+
+```typescript
+type AddressLike =
+  | number
+  | bigint
+  | string
+  | Uint8Array
+  | BrandedAddress
+  | Address
+```
+
+### Accepted Types
+
+**Number** - Converted to 20-byte representation:
+```typescript
+const addr = Address.from(69)
+// 0x0000000000000000000000000000000000000045
+```
+
+**Bigint** - Takes lower 160 bits:
+```typescript
+const addr = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+```
+
+**String** - Hex string with or without `0x` prefix:
+```typescript
+const addr1 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address.from("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+```
+
+**Uint8Array** - Must be exactly 20 bytes:
+```typescript
+const bytes = new Uint8Array(20)
+const addr = Address.from(bytes)
+```
+
+<Warning title="String Interpretation">
+For hex strings, always include `0x` prefix to avoid ambiguity. Strings without `0x` are parsed as hex but may cause confusion.
+</Warning>
+
+## Performance
+
+**Zero-copy** for `Uint8Array` and `BrandedAddress` (no allocation).
+
+**Conversion required** for numbers, bigints, and strings (allocates new Uint8Array).
+
+For performance-critical code, prefer passing `Uint8Array` or `BrandedAddress` directly.
+
+## See Also
+
+- [fromHex](/primitives/address/from-hex) - Parse hex string directly
+- [fromBytes](/primitives/address/from-bytes) - Create from Uint8Array directly
+- [fromNumber](/primitives/address/from-number) - Create from number/bigint directly
+- [fromPrivateKey](/primitives/address/from-private-key) - Derive from private key
+- [fromPublicKey](/primitives/address/from-public-key) - Derive from public key

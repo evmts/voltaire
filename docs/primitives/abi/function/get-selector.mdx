@@ -1,0 +1,279 @@
+---
+title: Function.getSelector
+description: Get 4-byte function selector from function ABI item
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.getSelector(): Hex`
+
+Get the 4-byte function selector by hashing the function signature with keccak256 and taking the first 4 bytes.
+
+**Returns:** `Hex` - 4-byte function selector with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+})
+
+const selector = transferFn.getSelector()
+console.log(selector)  // "0xa9059cbb"
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/getSelector.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/getSelector.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getSelector(fn: BrandedFunction): Hex`
+
+Get the 4-byte function selector by hashing the function signature with keccak256 and taking the first 4 bytes.
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+
+**Returns:** `Hex` - 4-byte function selector with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const selector = Function.getSelector(transferFn)
+console.log(selector)  // "0xa9059cbb"
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { getSelector } from '@tevm/voltaire/Abi/function'
+
+const selector = getSelector(transferFn)
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/getSelector.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/getSelector.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Function selector calculation in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## How Function Selectors Work
+
+The function selector is the first 4 bytes of the keccak256 hash of the canonical function signature:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire'
+import * as Function from '@tevm/voltaire/Abi/function'
+
+// Get canonical signature
+const signature = Function.getSignature(transferFn)
+// "transfer(address,uint256)"
+
+// Hash with keccak256
+const hash = Keccak256.hash(signature)
+// "0xa9059cbb2ab09eb13591db4583a4daa828198961f519e24c10cbf0c16b83d8f6"
+
+// Take first 4 bytes
+const selector = hash.slice(0, 10)  // "0x" + 8 hex chars = 4 bytes
+// "0xa9059cbb"
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256" }]
+})
+
+const selector = balanceOfFn.getSelector()
+console.log(selector)  // "0x70a08231"
+```
+
+### Matching Selectors
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const fn1 = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const fn2 = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "recipient" },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+// Same signature = same selector (parameter names don't matter)
+console.log(fn1.getSelector() === fn2.getSelector())  // true
+```
+
+### Detecting Function from Calldata
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const approveFn = new Function({
+  type: "function",
+  name: "approve",
+  inputs: [
+    { type: "address", name: "spender" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Extract selector from calldata
+const calldata = "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+const calldataSelector = calldata.slice(0, 10)  // "0xa9059cbb"
+
+// Check which function was called
+if (calldataSelector === transferFn.getSelector()) {
+  console.log("Transfer function called")
+}
+```
+
+### Building Function Registry
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const functions = [
+  new Function({
+    type: "function",
+    name: "transfer",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" }
+    ]
+  }),
+  new Function({
+    type: "function",
+    name: "approve",
+    inputs: [
+      { type: "address", name: "spender" },
+      { type: "uint256", name: "amount" }
+    ]
+  }),
+  new Function({
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ type: "address", name: "owner" }]
+  })
+]
+
+// Create selector → function mapping
+const registry = new Map(
+  functions.map(fn => [fn.getSelector(), fn])
+)
+
+// Look up function by selector
+const selector = "0xa9059cbb"
+const fn = registry.get(selector)
+console.log(fn?.name)  // "transfer"
+```
+
+## Error Handling
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+try {
+  const fn = new Function({
+    type: "function",
+    name: "",  // Invalid: empty name
+    inputs: []
+  })
+  fn.getSelector()
+} catch (error) {
+  console.error("Invalid function definition")
+}
+```
+
+## Selector Collisions
+
+While rare, 4-byte selectors can theoretically collide. The EVM uses only the selector to route calls, so two functions with different names but identical selectors would conflict:
+
+```typescript
+// These would have different selectors (collision unlikely but possible)
+const fn1 = new Function({
+  type: "function",
+  name: "transferFrom",
+  inputs: [
+    { type: "address", name: "from" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const fn2 = new Function({
+  type: "function",
+  name: "safeTransferFrom",
+  inputs: [
+    { type: "address", name: "from" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+console.log(fn1.getSelector())  // "0x23b872dd"
+console.log(fn2.getSelector())  // "0x42842e0e" (different)
+```
+
+## See Also
+
+- [getSignature](/primitives/abi/function/get-signature) - Get canonical function signature string
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function calldata
+- [decodeParams](/primitives/abi/function/decode-params) - Decode function parameters

@@ -426,6 +426,8 @@ Voltaire has minimal runtime dependencies:
 - **[@adraffy/ens-normalize](https://github.com/adraffy/ens-normalize.js)** - ENSIP-15 compliant ENS name normalization and beautification
 - **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
 - **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
+- **[whatsabi](https://github.com/shazow/whatsabi)** - ABI detection and contract analysis
+- **[ox](https://github.com/wevm/ox)** - Ethereum utilities
 
 ### Zig Dependencies
 

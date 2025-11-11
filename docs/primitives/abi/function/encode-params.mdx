@@ -1,0 +1,376 @@
+---
+title: Function.encodeParams
+description: Encode function parameters into ABI calldata with selector
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.encodeParams(args: unknown[]): Hex`
+
+Encode function parameters into complete calldata (selector + encoded parameters).
+
+**Parameters:**
+- `args: unknown[]` - Array of parameter values matching function inputs
+
+**Returns:** `Hex` - Complete calldata with 4-byte selector and encoded parameters
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const calldata = transferFn.encodeParams([
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+console.log(calldata)
+// "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/encodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/encodeParams.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `encodeParams(fn: BrandedFunction, args: unknown[]): Hex`
+
+Encode function parameters into complete calldata (selector + encoded parameters).
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+- `args: unknown[]` - Array of parameter values
+
+**Returns:** `Hex` - Complete calldata with 4-byte selector and encoded parameters
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+}
+
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { encodeParams } from '@tevm/voltaire/Abi/function'
+
+const calldata = encodeParams(transferFn, ["0x...", 1000n])
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/encodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/encodeParams.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI encoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Calldata Structure
+
+Encoded calldata format:
+```
+[4 bytes: function selector][32-byte aligned parameter encoding]
+```
+
+Example for `transfer(address,uint256)`:
+```
+0xa9059cbb  ← Selector (4 bytes)
+000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e  ← address (32 bytes)
+00000000000000000000000000000000000000000000000000000000000003e8  ← uint256 (32 bytes)
+```
+
+## Usage Examples
+
+### Basic Function Call
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }]
+})
+
+const calldata = balanceOfFn.encodeParams([
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+])
+
+// Use in transaction
+const tx = {
+  to: tokenAddress,
+  data: calldata,
+  value: 0n
+}
+```
+
+### Multiple Parameters
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFromFn = new Function({
+  type: "function",
+  name: "transferFrom",
+  inputs: [
+    { type: "address", name: "from" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const calldata = transferFromFn.encodeParams([
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+  1000n
+])
+```
+
+### Dynamic Types (String)
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const setNameFn = new Function({
+  type: "function",
+  name: "setName",
+  inputs: [{ type: "string", name: "name" }]
+})
+
+const calldata = setNameFn.encodeParams(["Alice"])
+// Encodes: selector + offset + length + padded string data
+```
+
+### Arrays
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const batchTransferFn = new Function({
+  type: "function",
+  name: "batchTransfer",
+  inputs: [
+    { type: "address[]", name: "recipients" },
+    { type: "uint256[]", name: "amounts" }
+  ]
+})
+
+const calldata = batchTransferFn.encodeParams([
+  [
+    "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+    "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"
+  ],
+  [1000n, 2000n]
+])
+```
+
+### Tuples (Structs)
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const createOrderFn = new Function({
+  type: "function",
+  name: "createOrder",
+  inputs: [
+    {
+      type: "tuple",
+      name: "order",
+      components: [
+        { type: "address", name: "maker" },
+        { type: "uint256", name: "amount" },
+        { type: "uint256", name: "price" }
+      ]
+    }
+  ]
+})
+
+const calldata = createOrderFn.encodeParams([
+  {
+    maker: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+    amount: 1000n,
+    price: 5n
+  }
+])
+```
+
+### No Parameters
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const totalSupplyFn = new Function({
+  type: "function",
+  name: "totalSupply",
+  inputs: []
+})
+
+const calldata = totalSupplyFn.encodeParams([])
+// Returns only selector: "0x18160ddd"
+```
+
+## Type-Safe Encoding
+
+TypeScript infers parameter types from function definition:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+} as const)
+
+// TypeScript knows args must be [address, bigint]
+const calldata = transferFn.encodeParams([
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Error: wrong type
+// transferFn.encodeParams(["0x...", "1000"])  // Type error
+```
+
+## Address Formats
+
+Multiple address input formats accepted:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const setOwnerFn = new Function({
+  type: "function",
+  name: "setOwner",
+  inputs: [{ type: "address", name: "owner" }]
+})
+
+// All valid
+setOwnerFn.encodeParams(["0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"])
+setOwnerFn.encodeParams(["0x742d35cc6634c0532925a3b844bc9e7595f51e3e"])  // lowercase
+setOwnerFn.encodeParams([new Uint8Array(20)])  // raw bytes
+```
+
+## BigInt for Integers
+
+Use `bigint` for all integer types:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Correct: use bigint
+transferFn.encodeParams(["0x...", 1000n])
+
+// Also works: number converts to bigint
+transferFn.encodeParams(["0x...", 1000])
+
+// Large numbers require bigint
+transferFn.encodeParams(["0x...", 1000000000000000000n])
+```
+
+## Error Handling
+
+```typescript
+import { Function } from '@tevm/voltaire'
+import { AbiEncodingError, AbiParameterMismatchError } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+try {
+  // Wrong parameter count
+  transferFn.encodeParams(["0x..."])
+} catch (error) {
+  if (error instanceof AbiParameterMismatchError) {
+    console.error("Wrong number of parameters")
+  }
+}
+
+try {
+  // Invalid value
+  transferFn.encodeParams(["invalid", 1000n])
+} catch (error) {
+  if (error instanceof AbiEncodingError) {
+    console.error("Invalid parameter value:", error.message)
+  }
+}
+```
+
+## Advanced: Encoding Without Selector
+
+To encode only parameters without selector, use parameter encoding directly:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+import { encodeParameters } from '@tevm/voltaire/Abi'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// With selector (encodeParams)
+const calldata = transferFn.encodeParams(["0x...", 1000n])
+// "0xa9059cbb00000..."
+
+// Without selector (encodeParameters)
+const paramsOnly = encodeParameters(transferFn.inputs, ["0x...", 1000n])
+// "0x00000..."
+```
+
+## See Also
+
+- [decodeParams](/primitives/abi/function/decode-params) - Decode function parameters
+- [getSelector](/primitives/abi/function/get-selector) - Get function selector
+- [encodeResult](/primitives/abi/function/encode-result) - Encode return values
+- [Encoding](/primitives/abi/encoding) - Low-level encoding details

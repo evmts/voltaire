@@ -1,0 +1,135 @@
+---
+title: Hardfork.gt
+description: Check if hardfork is strictly greater than target (alias for isAfter)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.gt(target: BrandedHardfork): boolean`
+
+Check if current hardfork is strictly greater than target version (>). Alias for `isAfter`.
+
+**Parameters:**
+- `target: BrandedHardfork` - Version to compare against
+
+**Returns:** `boolean` - True if current > target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+
+fork.gt(LONDON)   // true - Cancun > London
+fork.gt(CANCUN)   // false - Cancun === Cancun (not strictly greater)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/gt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gt.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `gt(a: BrandedHardfork, b: BrandedHardfork): boolean`
+
+Check if first hardfork is strictly greater than second version (>). Alias for `isAfter`.
+
+**Parameters:**
+- `a: BrandedHardfork` - First hardfork
+- `b: BrandedHardfork` - Second hardfork
+
+**Returns:** `boolean` - True if a > b chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, LONDON } from '@tevm/voltaire'
+
+Hardfork.gt(CANCUN, LONDON)  // true
+Hardfork.gt(LONDON, CANCUN)  // false
+Hardfork.gt(CANCUN, CANCUN)  // false
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/gt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gt.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Operator-Style API
+
+`gt` mimics the `>` operator for clearer code:
+
+```typescript
+import { CANCUN, LONDON } from '@tevm/voltaire'
+
+// Operator-style (reads like > operator)
+if (CANCUN.gt(LONDON)) {
+  // ...
+}
+
+// Equivalent semantic form
+if (CANCUN.isAfter(LONDON)) {
+  // ...
+}
+```
+
+## Usage Patterns
+
+### Version Detection
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString(config.hardfork)
+
+if (fork.gt(CANCUN)) {
+  console.warn("Running unknown post-Cancun hardfork")
+}
+```
+
+### Network Configuration
+
+```typescript
+import { Hardfork, PRAGUE } from '@tevm/voltaire'
+
+function isExperimental(fork: BrandedHardfork): boolean {
+  return fork.gt(PRAGUE)
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16) < PRAGUE (17)
+```
+
+## Strict Inequality
+
+Returns false when versions are equal:
+
+```typescript
+import { CANCUN } from '@tevm/voltaire'
+
+CANCUN.gt(CANCUN)  // false - not strictly greater
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAfter](/primitives/hardfork/is-after) - Semantic equivalent
+- [gte](/primitives/hardfork/gte) - Greater than or equal
+- [lt](/primitives/hardfork/lt) - Strictly less than

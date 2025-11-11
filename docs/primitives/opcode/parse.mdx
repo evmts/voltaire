@@ -1,0 +1,225 @@
+---
+title: parse()
+description: Parse EVM bytecode into array of instructions with offsets and immediates
+---
+
+## Opcode.parse()
+
+Parse bytecode into array of instructions with offsets and immediates.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x80,           // PUSH1 0x80
+  0x60, 0x40,           // PUSH1 0x40
+  0x52,                 // MSTORE
+  0x60, 0x04,           // PUSH1 0x04
+  0x36,                 // CALLDATASIZE
+  0x10,                 // LT
+  0x61, 0x00, 0x49,     // PUSH2 0x0049
+  0x57,                 // JUMPI
+])
+
+const instructions = Opcode.parse(bytecode)
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x80]) },
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x40]) },
+//   { offset: 4, opcode: 0x52 },
+//   { offset: 5, opcode: 0x60, immediate: Uint8Array([0x04]) },
+//   { offset: 7, opcode: 0x36 },
+//   { offset: 8, opcode: 0x10 },
+//   { offset: 9, opcode: 0x61, immediate: Uint8Array([0x00, 0x49]) },
+//   { offset: 12, opcode: 0x57 }
+// ]
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { parse } from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x80,           // PUSH1 0x80
+  0x60, 0x40,           // PUSH1 0x40
+  0x52,                 // MSTORE
+])
+
+const instructions = parse(bytecode)
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x80]) },
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x40]) },
+//   { offset: 4, opcode: 0x52 }
+// ]
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const bytecode = [_]u8{
+        0x60, 0x80,  // PUSH1 0x80
+        0x60, 0x40,  // PUSH1 0x40
+        0x52,        // MSTORE
+    };
+
+    var instructions = try Opcode.parse(allocator, &bytecode);
+    defer instructions.deinit(allocator);
+
+    for (instructions.items) |inst| {
+        std.debug.print("Offset: {}, Opcode: 0x{x}\n", .{ inst.offset, inst.opcode });
+    }
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `bytecode: Uint8Array` - Raw contract bytecode to parse
+
+## Returns
+
+`Instruction[]` - Array of parsed instructions
+
+```typescript
+type Instruction = {
+  offset: number           // Program counter offset
+  opcode: BrandedOpcode    // Opcode byte
+  immediate?: Uint8Array   // Immediate data for PUSH instructions
+}
+```
+
+## Behavior
+
+- **Automatic PUSH skipping**: Correctly skips PUSH immediate bytes (1-32 bytes depending on PUSH opcode)
+- **Incomplete data handling**: If bytecode ends mid-PUSH, returns instruction with partial immediate data
+- **No validation**: Does not validate if opcodes are valid - use `isValid()` to check
+- **Zero-copy**: Returns views into original bytecode for immediate data (efficient)
+
+## Use Cases
+
+### Disassemble Bytecode
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+function disassemble(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  const lines: string[] = []
+
+  for (const inst of instructions) {
+    const name = Opcode.name(inst.opcode)
+    let line = `${inst.offset.toString(16).padStart(4, '0')}: ${name}`
+
+    if (inst.immediate) {
+      const hex = Array.from(inst.immediate)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      line += ` 0x${hex}`
+    }
+
+    lines.push(line)
+  }
+
+  return lines
+}
+```
+
+### Count Instruction Types
+
+```typescript
+function countInstructionTypes(bytecode: Uint8Array) {
+  const instructions = Opcode.parse(bytecode)
+
+  const counts = {
+    push: 0,
+    dup: 0,
+    swap: 0,
+    jump: 0,
+    storage: 0,
+    other: 0
+  }
+
+  for (const inst of instructions) {
+    if (Opcode.isPush(inst.opcode)) counts.push++
+    else if (Opcode.isDup(inst.opcode)) counts.dup++
+    else if (Opcode.isSwap(inst.opcode)) counts.swap++
+    else if (Opcode.isJump(inst.opcode)) counts.jump++
+    else if (inst.opcode === Opcode.SLOAD || inst.opcode === Opcode.SSTORE) counts.storage++
+    else counts.other++
+  }
+
+  return counts
+}
+```
+
+### Extract All Constants
+
+```typescript
+function extractConstants(bytecode: Uint8Array): bigint[] {
+  const instructions = Opcode.parse(bytecode)
+  const constants: bigint[] = []
+
+  for (const inst of instructions) {
+    if (Opcode.isPush(inst.opcode) && inst.immediate) {
+      const hex = '0x' + Array.from(inst.immediate)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      constants.push(BigInt(hex))
+    }
+  }
+
+  return constants
+}
+```
+
+### Track Stack Depth
+
+```typescript
+function trackStackDepth(bytecode: Uint8Array): { max: number, trace: number[] } {
+  const instructions = Opcode.parse(bytecode)
+  let depth = 0
+  let max = 0
+  const trace: number[] = []
+
+  for (const inst of instructions) {
+    const effect = Opcode.getStackEffect(inst.opcode) ?? 0
+    depth += effect
+
+    if (depth < 0) {
+      throw new Error(`Stack underflow at offset ${inst.offset}`)
+    }
+    if (depth > 1024) {
+      throw new Error(`Stack overflow at offset ${inst.offset}`)
+    }
+
+    max = Math.max(max, depth)
+    trace.push(depth)
+  }
+
+  return { max, trace }
+}
+```
+
+## Performance
+
+- **O(n)** time complexity where n is bytecode length
+- **Zero allocation** for non-PUSH opcodes (just offset tracking)
+- **Single pass** through bytecode
+- **No recursion** - simple linear scan
+
+## Related
+
+- [disassemble()](/primitives/opcode/disassemble) - Convert to human-readable strings
+- [jumpDests()](/primitives/opcode/jump-dests) - Find all JUMPDEST positions
+- [isValid()](/primitives/opcode/is-valid) - Validate opcode bytes
+- [Bytecode](/primitives/bytecode) - Bytecode type

@@ -1,0 +1,156 @@
+---
+title: Hardfork.isAfter
+description: Check if hardfork is after a target version (strictly greater than)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.isAfter(target: BrandedHardfork): boolean`
+
+Check if current hardfork is after the target version (strictly greater than). Returns false if versions are equal.
+
+**Parameters:**
+- `target: BrandedHardfork` - Version to compare against
+
+**Returns:** `boolean` - True if current > target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, SHANGHAI, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+
+fork.isAfter(SHANGHAI)  // true - Cancun > Shanghai
+fork.isAfter(LONDON)    // true - Cancun > London
+fork.isAfter(CANCUN)    // false - Cancun === Cancun (not strictly after)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isAfter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAfter.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isAfter(current: BrandedHardfork, target: BrandedHardfork): boolean`
+
+Check if current hardfork is after the target version (strictly greater than). Returns false if versions are equal.
+
+**Parameters:**
+- `current: BrandedHardfork` - Current hardfork version
+- `target: BrandedHardfork` - Version to compare against
+
+**Returns:** `boolean` - True if current > target chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, SHANGHAI } from '@tevm/voltaire'
+
+Hardfork.isAfter(CANCUN, SHANGHAI)    // true - Cancun > Shanghai
+Hardfork.isAfter(SHANGHAI, CANCUN)    // false - Shanghai < Cancun
+Hardfork.isAfter(CANCUN, CANCUN)      // false - Equal (not strictly after)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isAfter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAfter.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Version Detection
+
+Check for newer versions:
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString(config.hardfork)
+
+if (fork.isAfter(CANCUN)) {
+  console.log("Running post-Cancun hardfork with unknown features")
+  console.log("Consider upgrading documentation")
+}
+```
+
+### Feature Availability
+
+Check for features beyond a certain version:
+
+```typescript
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+
+function hasNewFeatures(fork: BrandedHardfork): boolean {
+  // Check if this is a newer hardfork with additional features
+  return fork.isAfter(SHANGHAI)
+}
+```
+
+### Network Configuration
+
+Validate forward compatibility:
+
+```typescript
+import { Hardfork, PRAGUE } from '@tevm/voltaire'
+
+function validateTestnetConfig(fork: BrandedHardfork) {
+  if (fork.isAfter(PRAGUE)) {
+    console.warn(
+      `Hardfork ${Hardfork.toString(fork)} is newer than Prague. ` +
+      `Some features may not be fully tested.`
+    )
+  }
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16) < PRAGUE (17)
+```
+
+## Strict Inequality
+
+**Important:** `isAfter` returns false when versions are equal:
+
+```typescript
+import { CANCUN } from '@tevm/voltaire'
+
+CANCUN.isAfter(CANCUN)  // false - not strictly after itself
+```
+
+For "greater than or equal", use [isAtLeast](/primitives/hardfork/is-at-least) or [gte](/primitives/hardfork/gte):
+
+```typescript
+import { CANCUN, LONDON } from '@tevm/voltaire'
+
+// Greater than or equal
+CANCUN.isAtLeast(CANCUN)     // true
+CANCUN.gte(CANCUN)           // true
+
+// Strictly greater than
+CANCUN.isAfter(CANCUN)       // false
+CANCUN.isAfter(LONDON)       // true
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAtLeast](/primitives/hardfork/is-at-least) - Check if greater than or equal
+- [isBefore](/primitives/hardfork/is-before) - Check if strictly less than
+- [gt](/primitives/hardfork/gt) - Alias for isAfter (greater than)
+- [gte](/primitives/hardfork/gte) - Greater than or equal

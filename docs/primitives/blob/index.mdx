@@ -1,0 +1,386 @@
+---
+title: Blob
+description: EIP-4844 blob data with KZG commitments and proofs
+---
+
+<Tip>
+New to blobs? Start with [Fundamentals](/primitives/blob/fundamentals) for guided examples and EIP-4844 concepts.
+</Tip>
+
+## Type Definition
+
+[Branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing EIP-4844 blob data (exactly 131,072 bytes = 128 KB).
+
+```typescript
+export type BrandedBlob = Uint8Array & { readonly __blob: unique symbol };
+```
+
+Blobs enable proto-danksharding (EIP-4844), providing temporary data availability for L2 rollups at significantly lower gas costs compared to calldata.
+
+### Related Types
+
+```typescript
+// KZG commitment (48 bytes)
+export type Commitment = Uint8Array & { readonly __commitment: unique symbol };
+
+// KZG proof (48 bytes)
+export type Proof = Uint8Array & { readonly __proof: unique symbol };
+
+// Versioned hash (32 bytes) - commitment hash with version prefix
+export type VersionedHash = Uint8Array & { readonly __versionedHash: unique symbol };
+```
+
+## Constants
+
+```typescript
+Blob.SIZE                      // 131072 bytes (128 KB)
+Blob.FIELD_ELEMENTS_PER_BLOB   // 4096 field elements
+Blob.BYTES_PER_FIELD_ELEMENT   // 32 bytes per element
+Blob.MAX_PER_TRANSACTION       // 6 blobs maximum
+Blob.COMMITMENT_VERSION_KZG    // 0x01 version byte
+Blob.GAS_PER_BLOB             // 131072 (2^17)
+Blob.TARGET_GAS_PER_BLOCK     // 393216 (3 blobs)
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Create from raw data
+const data = new TextEncoder().encode("L2 transaction batch");
+const blob = Blob.fromData(data);
+
+// Validate structure
+if (!Blob.isValid(blob)) {
+  throw new Error("Invalid blob");
+}
+
+// Extract data
+const decoded = blob.toData();
+const text = new TextDecoder().decode(decoded);
+
+// KZG operations (requires trusted setup)
+const commitment = blob.toCommitment();
+const proof = blob.toProof();
+const versionedHash = blob.toVersionedHash();
+const isValid = blob.verify();
+
+// Gas estimation
+const blobCount = Blob.estimateBlobCount(largeData);
+const gas = Blob.calculateGas(blobCount, blobBaseFee);
+```
+
+</Tab>
+<Tab title="Namespace API">
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+
+// Create from raw data
+const data = new TextEncoder().encode("L2 transaction batch");
+const blob = Blob.fromData(data);
+
+// Validate structure
+if (!Blob.isValid(blob)) {
+  throw new Error("Invalid blob");
+}
+
+// Extract data
+const decoded = Blob.toData(blob);
+const text = new TextDecoder().decode(decoded);
+
+// KZG operations (requires trusted setup)
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+const versionedHash = Blob.toVersionedHash(blob);
+const isValid = Blob.verify(blob, commitment, proof);
+
+// Gas estimation
+const blobCount = Blob.estimateBlobCount(largeData);
+const gas = Blob.calculateGas(blobCount, blobBaseFee);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+<CardGroup cols={2}>
+<Card title="from" href="./from">
+Universal constructor from any input (auto-encodes if needed)
+</Card>
+<Card title="fromData" href="./fromData">
+Encode arbitrary data into blob format with length prefix
+</Card>
+</CardGroup>
+
+### Data Encoding/Decoding
+
+<CardGroup cols={2}>
+<Card title="toData" href="./toData">
+Extract original data from blob (reads length prefix)
+</Card>
+<Card title="splitData" href="./splitData">
+Split large data into multiple blobs
+</Card>
+<Card title="joinData" href="./joinData">
+Join data from multiple blobs
+</Card>
+</CardGroup>
+
+### KZG Cryptography
+
+<CardGroup cols={2}>
+<Card title="toCommitment" href="./toCommitment">
+Compute 48-byte KZG commitment for blob
+</Card>
+<Card title="toProof" href="./toProof">
+Generate 48-byte KZG proof
+</Card>
+<Card title="toVersionedHash" href="./toVersionedHash">
+Compute versioned hash (0x01 + SHA256 of commitment)
+</Card>
+<Card title="verify" href="./verify">
+Verify KZG proof for blob and commitment
+</Card>
+<Card title="verifyBatch" href="./verifyBatch">
+Batch verify multiple blob proofs
+</Card>
+</CardGroup>
+
+### Validation
+
+<CardGroup cols={2}>
+<Card title="isValid" href="./isValid">
+Check if data is valid blob (exactly 131,072 bytes)
+</Card>
+<Card title="isValidVersion" href="./isValidVersion">
+Validate versioned hash format and version byte
+</Card>
+</CardGroup>
+
+### Gas Estimation
+
+<CardGroup cols={2}>
+<Card title="calculateGas" href="./calculateGas">
+Calculate blob gas cost given blob count and base fee
+</Card>
+<Card title="estimateBlobCount" href="./estimateBlobCount">
+Estimate number of blobs needed for data
+</Card>
+</CardGroup>
+
+### Nested Namespaces
+
+<CardGroup cols={3}>
+<Card title="Blob.Commitment" href="./commitment">
+Commitment validation and conversion
+</Card>
+<Card title="Blob.Proof" href="./proof">
+Proof validation utilities
+</Card>
+<Card title="Blob.VersionedHash" href="./versioned-hash">
+Versioned hash utilities and version extraction
+</Card>
+</CardGroup>
+
+## Types
+
+<Tabs>
+<Tab title="BrandedBlob">
+
+```typescript
+export type BrandedBlob = Uint8Array & {
+  readonly __blob: unique symbol;
+};
+```
+
+Main blob type. Exactly 131,072 bytes (128 KB) containing 4,096 field elements of 32 bytes each.
+
+</Tab>
+<Tab title="Commitment">
+
+```typescript
+export type Commitment = Uint8Array & {
+  readonly __commitment: unique symbol;
+};
+```
+
+48-byte KZG commitment. Used to verify blob data integrity without revealing contents.
+
+</Tab>
+<Tab title="Proof">
+
+```typescript
+export type Proof = Uint8Array & {
+  readonly __proof: unique symbol;
+};
+```
+
+48-byte KZG proof. Cryptographic proof that blob matches commitment.
+
+</Tab>
+<Tab title="VersionedHash">
+
+```typescript
+export type VersionedHash = Uint8Array & {
+  readonly __versionedHash: unique symbol;
+};
+```
+
+32-byte versioned hash. Format: `0x01` (version byte) + SHA256(commitment)[1:32].
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Creating Blobs from Data
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Small data - single blob
+const data = new TextEncoder().encode("Rollup batch #1234");
+const blob = Blob.fromData(data);
+
+console.log(`Data size: ${data.length} bytes`);
+console.log(`Blob size: ${blob.length} bytes`); // Always 131,072
+
+// Extract original data
+const decoded = Blob.toData(blob);
+console.log(new TextDecoder().decode(decoded)); // "Rollup batch #1234"
+```
+
+### Handling Large Data
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Large data spanning multiple blobs
+const largeData = new Uint8Array(300_000); // 300 KB
+
+// Estimate blobs needed
+const blobCount = Blob.estimateBlobCount(largeData);
+console.log(`Requires ${blobCount} blobs`); // 3 blobs
+
+// Split into blobs
+const blobs = Blob.splitData(largeData);
+console.log(`Created ${blobs.length} blobs`);
+
+// Later: join data back
+const reconstructed = Blob.joinData(blobs);
+console.log(`Reconstructed ${reconstructed.length} bytes`);
+```
+
+### Versioned Hashes for Transactions
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Create blob and get versioned hash
+const blob = Blob.fromData(data);
+const versionedHash = Blob.toVersionedHash(blob);
+
+// Use in EIP-4844 transaction
+const tx = {
+  type: '0x03', // EIP-4844 type
+  blobVersionedHashes: [versionedHash],
+  maxFeePerBlobGas: 1000000n,
+  // ... other fields
+};
+
+// Validate versioned hash
+console.log(Blob.isValidVersion(versionedHash)); // true
+console.log(Blob.VersionedHash.getVersion(versionedHash)); // 1
+```
+
+### Gas Cost Estimation
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Calculate gas cost for blob transaction
+const blobBaseFee = 50000000n; // 50 gwei (example)
+const blobCount = 2;
+
+const blobGas = Blob.calculateGas(blobCount, blobBaseFee);
+console.log(`Blob gas cost: ${blobGas} wei`);
+
+// Compare with calldata cost
+const calldataBytes = 131072 * 2; // 2 blobs worth
+const calldataGas = calldataBytes * 16n; // 16 gas per byte
+console.log(`Calldata gas cost: ${calldataGas} wei`);
+console.log(`Savings: ${((1 - Number(blobGas) / Number(calldataGas)) * 100).toFixed(1)}%`);
+```
+
+### Batch Verification
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Multiple blobs with commitments and proofs
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map(b => Blob.toProof(b));
+
+// Verify all at once (more efficient)
+const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+
+if (!allValid) {
+  // Fall back to individual verification to find invalid blob
+  for (let i = 0; i < blobs.length; i++) {
+    const valid = Blob.verify(blobs[i], commitments[i], proofs[i]);
+    if (!valid) {
+      console.error(`Blob ${i} failed verification`);
+    }
+  }
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromData, toData, estimateBlobCount } from '@tevm/voltaire/BrandedBlob';
+
+const blob = fromData(data);
+const decoded = toData(blob);
+const count = estimateBlobCount(largeData);
+
+// Only these 3 functions included in bundle
+```
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/blob/fundamentals) - EIP-4844 blob structure and proto-danksharding
+- [EIP-4844](/primitives/blob/eip4844) - Detailed EIP-4844 specification coverage
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme explanation
+
+### Advanced Features
+
+- [Usage Patterns](/primitives/blob/usage-patterns) - Real-world blob transaction examples
+- [WASM](/primitives/blob/wasm) - WASM acceleration for KZG operations
+
+### Related Primitives
+
+- [Transaction](/primitives/transaction) - EIP-4844 transaction type (0x03)
+- [Hash](/primitives/hash) - SHA256 and keccak256 hashing for commitments
+- [Hex](/primitives/hex) - Hex encoding for versioned hashes
+
+## Specification
+
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844) - Proto-danksharding specification
+- [KZG Ceremony](https://ceremony.ethereum.org/) - Trusted setup for KZG commitments
+- [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) - Reference KZG implementation
+- [Blob Transaction Format](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4844.md#blob-transaction) - Transaction structure

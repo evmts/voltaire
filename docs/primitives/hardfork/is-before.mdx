@@ -1,0 +1,166 @@
+---
+title: Hardfork.isBefore
+description: Check if hardfork is before a target version (strictly less than)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.isBefore(target: BrandedHardfork): boolean`
+
+Check if current hardfork is before the target version (strictly less than). Returns false if versions are equal.
+
+**Parameters:**
+- `target: BrandedHardfork` - Version to compare against
+
+**Returns:** `boolean` - True if current < target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("berlin")
+
+fork.isBefore(LONDON)   // true - Berlin < London
+fork.isBefore(CANCUN)   // true - Berlin < Cancun
+fork.isBefore(BERLIN)   // false - Berlin === Berlin (not strictly before)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isBefore.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isBefore.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isBefore(current: BrandedHardfork, target: BrandedHardfork): boolean`
+
+Check if current hardfork is before the target version (strictly less than). Returns false if versions are equal.
+
+**Parameters:**
+- `current: BrandedHardfork` - Current hardfork version
+- `target: BrandedHardfork` - Version to compare against
+
+**Returns:** `boolean` - True if current < target chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { BERLIN, LONDON } from '@tevm/voltaire'
+
+Hardfork.isBefore(BERLIN, LONDON)  // true - Berlin < London
+Hardfork.isBefore(LONDON, BERLIN)  // false - London > Berlin
+Hardfork.isBefore(BERLIN, BERLIN)  // false - Equal (not strictly before)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/isBefore.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isBefore.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Feature Exclusion
+
+Exclude features not yet available:
+
+```typescript
+import { Hardfork, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString(config.hardfork)
+
+if (fork.isBefore(LONDON)) {
+  // Use legacy transaction format (no EIP-1559)
+  return {
+    type: 0,
+    gasPrice: calculateGasPrice()
+  }
+}
+
+// Use EIP-1559 format
+return {
+  type: 2,
+  maxFeePerGas,
+  maxPriorityFeePerGas
+}
+```
+
+### Network Configuration
+
+Check for pre-feature versions:
+
+```typescript
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+
+function checkPUSH0Support(fork: BrandedHardfork) {
+  if (fork.isBefore(SHANGHAI)) {
+    console.warn("PUSH0 opcode not available before Shanghai")
+    return false
+  }
+  return true
+}
+```
+
+### Validation
+
+Validate against breaking changes:
+
+```typescript
+import { Hardfork, MERGE } from '@tevm/voltaire'
+
+function validateMiningConfig(fork: BrandedHardfork, config: MiningConfig) {
+  if (!fork.isBefore(MERGE) && config.mining) {
+    throw new Error("Mining not supported after Merge (Proof of Stake)")
+  }
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+BERLIN (10) < LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16)
+```
+
+## Strict Inequality
+
+**Important:** `isBefore` returns false when versions are equal:
+
+```typescript
+import { LONDON } from '@tevm/voltaire'
+
+LONDON.isBefore(LONDON)  // false - not strictly before itself
+```
+
+For "less than or equal", use [lte](/primitives/hardfork/lte) or negate [isAfter](/primitives/hardfork/is-after):
+
+```typescript
+import { LONDON, CANCUN } from '@tevm/voltaire'
+
+// Less than or equal
+LONDON.lte(LONDON)           // true
+!LONDON.isAfter(LONDON)      // true
+
+// Strictly less than
+LONDON.isBefore(LONDON)      // false
+LONDON.isBefore(CANCUN)      // true
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAtLeast](/primitives/hardfork/is-at-least) - Check if greater than or equal
+- [isAfter](/primitives/hardfork/is-after) - Check if strictly greater than
+- [lt](/primitives/hardfork/lt) - Alias for isBefore (less than)
+- [lte](/primitives/hardfork/lte) - Less than or equal

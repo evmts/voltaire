@@ -1,0 +1,136 @@
+---
+title: Hex.from
+description: Universal constructor for creating hex from strings or bytes
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.from(value: string | Uint8Array): BrandedHex`
+
+Universal constructor that dispatches based on input type. Accepts hex strings (with or without `0x` prefix) or Uint8Array.
+
+**Parameters:**
+- `value: string | Uint8Array` - Hex string or byte array to convert
+
+**Returns:** `BrandedHex` - Branded hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// From hex string with prefix
+const hex1 = Hex.from("0x1234")
+
+// From hex string without prefix
+const hex2 = Hex.from("1234")
+
+// From Uint8Array
+const bytes = new Uint8Array([0x12, 0x34])
+const hex3 = Hex.from(bytes)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/from.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `from(value: string | Uint8Array): BrandedHex`
+
+Universal constructor that dispatches based on input type. Accepts hex strings (with or without `0x` prefix) or Uint8Array.
+
+**Parameters:**
+- `value: string | Uint8Array` - Hex string or byte array to convert
+
+**Returns:** `BrandedHex` - Branded hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// From hex string with prefix
+const hex1 = Hex.from("0x1234")
+
+// From hex string without prefix
+const hex2 = Hex.from("1234")
+
+// From Uint8Array
+const bytes = new Uint8Array([0x12, 0x34])
+const hex3 = Hex.from(bytes)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/from.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.init(bytes: []const u8): Hex`
+
+Initialize hex from byte slice. Returns hex string representation with `0x` prefix.
+
+**Parameters:**
+- `bytes: []const u8` - Raw byte slice
+
+**Returns:** `Hex` - Hex string with `0x` prefix
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const bytes = [_]u8{ 0x12, 0x34 };
+const hex = Hex.init(&bytes);
+// hex = "0x1234"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Input Types
+
+`Hex.from` accepts multiple input formats:
+
+**Hex String with Prefix:**
+```typescript
+const hex = Hex.from("0x1234")  // "0x1234"
+```
+
+**Hex String without Prefix:**
+```typescript
+const hex = Hex.from("1234")  // "0x1234"
+```
+
+**Uint8Array:**
+```typescript
+const bytes = new Uint8Array([0x12, 0x34])
+const hex = Hex.from(bytes)  // "0x1234"
+```
+
+**Empty Values:**
+```typescript
+const empty1 = Hex.from("0x")  // "0x"
+const empty2 = Hex.from(new Uint8Array())  // "0x"
+```
+
+## Performance
+
+**Zero-copy** for `Uint8Array` inputs - converts directly to hex string representation.
+
+**String normalization** adds `0x` prefix if missing, validates format.
+
+For performance-critical code, use specialized constructors:
+- `Hex.fromBytes` for byte arrays
+- Pre-validate input format to avoid repeated checks
+
+## See Also
+
+- [fromBytes](/primitives/hex/from-bytes) - Create from Uint8Array
+- [fromNumber](/primitives/hex/from-number) - Create from number
+- [fromBigInt](/primitives/hex/from-bigint) - Create from bigint
+- [fromString](/primitives/hex/from-string) - Create from UTF-8 string
+- [fromBoolean](/primitives/hex/from-boolean) - Create from boolean

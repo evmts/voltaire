@@ -1,0 +1,181 @@
+---
+title: Hex.fromBoolean
+description: Convert boolean to single-byte hex value
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.fromBoolean(value: boolean): BrandedHex`
+
+Converts boolean to single-byte hex representation. Returns `0x01` for true, `0x00` for false.
+
+**Parameters:**
+- `value: boolean` - Boolean value to convert
+
+**Returns:** `BrandedHex` - Single-byte hex (`0x01` or `0x00`)
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Convert boolean to hex
+Hex.fromBoolean(true)   // "0x01"
+Hex.fromBoolean(false)  // "0x00"
+
+// Use in contract calls
+const isActive = true
+const data = Hex.fromBoolean(isActive)
+// Pass to contract: setStatus(data)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBoolean.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromBoolean(value: boolean): BrandedHex`
+
+Converts boolean to single-byte hex representation. Returns `0x01` for true, `0x00` for false.
+
+**Parameters:**
+- `value: boolean` - Boolean value to convert
+
+**Returns:** `BrandedHex` - Single-byte hex (`0x01` or `0x00`)
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Convert boolean to hex
+Hex.fromBoolean(true)   // "0x01"
+Hex.fromBoolean(false)  // "0x00"
+
+// Use in arrays
+const flags = [true, false, true].map(Hex.fromBoolean)
+// ["0x01", "0x00", "0x01"]
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBoolean.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.fromBoolean(value: bool): []const u8`
+
+Convert boolean to hex string representation.
+
+**Parameters:**
+- `value: bool` - Boolean value
+
+**Returns:** `[]const u8` - Single-byte hex (`0x01` or `0x00`)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex1 = Hex.fromBoolean(true);   // "0x01"
+const hex2 = Hex.fromBoolean(false);  // "0x00"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Output Format
+
+Always returns a single byte (2 hex characters):
+
+```typescript
+Hex.fromBoolean(true)   // "0x01" (not "0x1")
+Hex.fromBoolean(false)  // "0x00" (not "0x0")
+```
+
+## Ethereum Boolean Convention
+
+Follows Ethereum ABI encoding where:
+- `true` = any non-zero value (this function uses `0x01`)
+- `false` = `0x00` (zero)
+
+```typescript
+// These all decode to true
+Hex.toBoolean("0x01")  // true
+Hex.toBoolean("0xff")  // true
+Hex.toBoolean("0x0a")  // true
+
+// Only zero decodes to false
+Hex.toBoolean("0x00")  // false
+```
+
+## Common Use Cases
+
+**Contract Function Arguments:**
+```typescript
+// Function: setActive(bool isActive)
+const isActive = true
+const calldata = concat([
+  functionSelector,
+  Hex.fromBoolean(isActive).padLeft(32)  // ABI encodes bool as uint256
+])
+```
+
+**State Flags:**
+```typescript
+const isPaused = false
+const isUpgraded = true
+
+const flags = {
+  paused: Hex.fromBoolean(isPaused),
+  upgraded: Hex.fromBoolean(isUpgraded)
+}
+```
+
+**Bitmap Construction:**
+```typescript
+// Create bitmap from boolean array
+const permissions = [true, false, true, true, false]
+const bitmap = permissions.map(Hex.fromBoolean).join('')
+// Combine into single byte if needed
+```
+
+**Conditional Values:**
+```typescript
+const hasPermission = checkPermission(user)
+const statusByte = Hex.fromBoolean(hasPermission)
+// Include in transaction data
+```
+
+**Testing/Assertions:**
+```typescript
+const result = executeTransaction()
+const success = Hex.fromBoolean(result.success)
+assert(success === "0x01", "Transaction failed")
+```
+
+## Round-Trip Conversion
+
+Convert boolean to hex and back:
+
+```typescript
+// Boolean → Hex
+const value = true
+const hex = Hex.fromBoolean(value)  // "0x01"
+
+// Hex → Boolean
+const decoded = Hex.toBoolean(hex)  // true
+```
+
+## Performance
+
+Extremely fast - simple conditional returning pre-defined constant strings. No allocation overhead.
+
+## See Also
+
+- [toBoolean](/primitives/hex/to-boolean) - Convert hex to boolean
+- [fromNumber](/primitives/hex/from-number) - Create from number
+- [pad](/primitives/hex/pad) - Pad to larger size (for ABI encoding)

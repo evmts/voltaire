@@ -1,0 +1,337 @@
+---
+title: Overview
+description: Ethereum event log parsing, filtering, and analysis
+---
+
+<Tip>
+New to event logs? Start with [Fundamentals](/primitives/eventlog/fundamentals) for guided examples on topics, bloom filters, and ABI decoding.
+</Tip>
+
+## Type Definition
+
+[Branded](/concepts/branded-types) type representing an Ethereum event log with contract address, indexed topics, and event data.
+
+```typescript
+export type BrandedEventLog = {
+  address: BrandedAddress;
+  topics: readonly BrandedHash[];
+  data: Uint8Array;
+  blockNumber?: bigint;
+  transactionHash?: BrandedHash;
+  transactionIndex?: number;
+  blockHash?: BrandedHash;
+  logIndex?: number;
+  removed?: boolean;
+} & { readonly __tag: "EventLog" };
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const log = EventLog({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([0, 0, 0, 1]),
+});
+
+const signature = log.getTopic0();
+const indexed = log.getIndexedTopics();
+const matches = log.matchesAddress(tokenAddress);
+```
+
+</Tab>
+<Tab title="Namespace API">
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([0, 0, 0, 1]),
+});
+
+const signature = EventLog.getTopic0(log);
+const indexed = EventLog.getIndexedTopics(log);
+const matches = EventLog.matchesAddress(log, tokenAddress);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(params)`](./from) - Create event log from parameters
+- [`create(params)`](./create) - Explicit constructor
+- [`clone(log)`](./clone) - Deep clone including topics and data
+
+### Accessors
+
+- [`getTopic0(log)`](./getTopic0) - Get event signature hash (topic0)
+- [`getSignature(log)`](./getSignature) - Alias for getTopic0
+- [`getIndexedTopics(log)`](./getIndexedTopics) - Get indexed parameters (topic1-topic3)
+- [`getIndexed(log)`](./getIndexed) - Alias for getIndexedTopics
+
+### Filtering
+
+- [`matchesAddress(log, address)`](./matchesAddress) - Check if log matches address filter
+- [`matchesTopics(log, topics)`](./matchesTopics) - Check if log matches topic filter
+- [`matchesFilter(log, filter)`](./matchesFilter) - Check if log matches complete filter
+- [`filterLogs(logs, filter)`](./filterLogs) - Filter array of logs
+
+### Utilities
+
+- [`isRemoved(log)`](./isRemoved) - Check if log removed due to reorg
+- [`wasRemoved(log)`](./wasRemoved) - Alias for isRemoved
+- [`sortLogs(logs)`](./sortLogs) - Sort by block number and log index
+
+## Types
+
+<Tabs>
+<Tab title="BrandedEventLog">
+
+```typescript
+export type BrandedEventLog = {
+  /** Contract address that emitted the log */
+  address: BrandedAddress;
+  /** Event topics (topic0 = signature, topic1-3 = indexed params) */
+  topics: readonly BrandedHash[];
+  /** Non-indexed event data */
+  data: Uint8Array;
+  /** Block number where log was emitted */
+  blockNumber?: bigint;
+  /** Transaction hash that generated the log */
+  transactionHash?: BrandedHash;
+  /** Transaction index in block */
+  transactionIndex?: number;
+  /** Block hash */
+  blockHash?: BrandedHash;
+  /** Log index in block */
+  logIndex?: number;
+  /** Log removed due to chain reorganization */
+  removed?: boolean;
+} & { readonly __tag: "EventLog" };
+```
+
+Main branded type with all log metadata.
+
+</Tab>
+<Tab title="Filter">
+
+```typescript
+export type Filter = {
+  /** Single address or array of addresses (OR logic) */
+  address?: BrandedAddress | BrandedAddress[];
+  /** Topic filters (null = match any, array = OR logic) */
+  topics?: readonly (BrandedHash | BrandedHash[] | null)[];
+  /** Starting block number (inclusive) */
+  fromBlock?: bigint;
+  /** Ending block number (inclusive) */
+  toBlock?: bigint;
+  /** Specific block hash */
+  blockHash?: BrandedHash;
+};
+```
+
+Filter criteria for log queries.
+
+</Tab>
+<Tab title="EventLogParams">
+
+```typescript
+interface EventLogParams {
+  address: BrandedAddress;
+  topics: readonly (BrandedHash | null | undefined)[];
+  data: BrandedHex;
+  blockNumber?: bigint;
+  blockHash?: BrandedHash;
+  transactionHash?: BrandedHash;
+  transactionIndex?: number;
+  logIndex?: number;
+  removed?: boolean;
+}
+```
+
+Constructor parameters.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### ERC-20 Transfer Event Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_SIG = Hash.fromHex(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+// Filter transfers to specific user
+const userAddress = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
+const userAddressHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+);
+
+const transfersToUser = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [
+    TRANSFER_SIG,      // Event signature
+    null,              // from: any address
+    userAddressHash,   // to: user
+  ],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Sort chronologically
+const sorted = EventLog.sortLogs(transfersToUser);
+
+// Decode values
+for (const log of sorted) {
+  const [fromHash, toHash] = log.getIndexedTopics();
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+
+  console.log(`Transfer: ${value} tokens`);
+  console.log(`Block: ${log.blockNumber}`);
+}
+```
+
+### Multi-Contract Log Parsing
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+
+// Monitor multiple ERC-20 tokens
+const tokens = [
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+];
+
+// Get all Transfer and Approval events
+const relevantLogs = EventLog.filterLogs(allLogs, {
+  address: tokens,
+  topics: [[TRANSFER_SIG, APPROVAL_SIG]], // OR: either event type
+});
+
+// Process by event type
+const transfers = relevantLogs.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, TRANSFER_SIG);
+});
+
+const approvals = relevantLogs.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, APPROVAL_SIG);
+});
+
+console.log(`Found ${transfers.length} transfers, ${approvals.length} approvals`);
+```
+
+### Chain Reorganization Handling
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Filter active (non-removed) logs
+const activeLogs = allLogs.filter(log => !log.isRemoved());
+
+// Detect reorg events
+const removedLogs = allLogs.filter(log => log.wasRemoved());
+if (removedLogs.length > 0) {
+  console.log(`Chain reorg detected: ${removedLogs.length} logs invalidated`);
+
+  for (const log of removedLogs) {
+    console.log(`  Block ${log.blockNumber}, Index ${log.logIndex}`);
+  }
+}
+
+// Sort remaining logs chronologically
+const sorted = EventLog.sortLogs(activeLogs);
+```
+
+### Block Range Analysis
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Group logs by block
+const byBlock = new Map<bigint, typeof allLogs>();
+
+const sorted = EventLog.sortLogs(allLogs);
+for (const log of sorted) {
+  const blockNum = log.blockNumber ?? 0n;
+  if (!byBlock.has(blockNum)) {
+    byBlock.set(blockNum, []);
+  }
+  byBlock.get(blockNum)!.push(log);
+}
+
+// Analyze each block
+for (const [blockNumber, blockLogs] of byBlock) {
+  console.log(`\nBlock ${blockNumber}: ${blockLogs.length} logs`);
+
+  // Count by contract
+  const byContract = new Map<string, number>();
+  for (const log of blockLogs) {
+    const addr = Address.toHex(log.address);
+    byContract.set(addr, (byContract.get(addr) || 0) + 1);
+  }
+
+  console.log('  Events per contract:', byContract);
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { from, matchesAddress, filterLogs } from '@tevm/voltaire/BrandedEventLog';
+
+const log = from({
+  address: contractAddress,
+  topics: [eventSignature],
+  data: eventData,
+});
+
+const matches = matchesAddress(log, tokenAddress);
+const filtered = filterLogs(allLogs, { address: tokenAddress });
+
+// Only these 3 functions included in bundle
+```
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/eventlog/fundamentals) - Learn event structure, topics, and bloom filters
+
+### Related Primitives
+
+- [Abi](/primitives/abi) - ABI encoding/decoding for event data
+- [Transaction](/primitives/transaction) - Transaction logs and receipts
+- [BloomFilter](/primitives/bloomfilter) - Bloom filter for efficient log filtering
+- [Address](/primitives/address) - Ethereum address handling
+- [Hash](/primitives/hash) - Keccak256 hashing for event signatures
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 4.3 (The Transaction Receipt)
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Log format specification
+- [Solidity Events](https://docs.soliditylang.org/en/latest/contracts.html#events) - Event declaration and emission
+- [eth_getLogs RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs) - JSON-RPC log retrieval

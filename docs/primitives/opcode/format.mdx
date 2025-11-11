@@ -1,0 +1,239 @@
+---
+title: format()
+description: Format single instruction as human-readable string
+---
+
+## Opcode.format()
+
+Format single instruction as human-readable assembly string.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const instruction = {
+  offset: 0,
+  opcode: Opcode.PUSH1,
+  immediate: new Uint8Array([0x80])
+}
+
+const formatted = Opcode.format(instruction)
+// "0000: PUSH1 0x80"
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import { format, PUSH1 } from '@tevm/voltaire/Opcode'
+
+const instruction = {
+  offset: 42,
+  opcode: PUSH1,
+  immediate: new Uint8Array([0xFF])
+}
+
+const line = format(instruction)
+// "002A: PUSH1 0xff"
+```
+</Tab>
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = primitives.opcode;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const instruction = Opcode.Instruction{
+        .offset = 0,
+        .opcode = 0x60,  // PUSH1
+        .immediate = &[_]u8{0x80},
+    };
+
+    const formatted = try Opcode.format(allocator, instruction);
+    defer allocator.free(formatted);
+
+    std.debug.print("{s}\n", .{formatted});
+}
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+- `instruction: Instruction` - Parsed instruction to format
+
+```typescript
+type Instruction = {
+  offset: number           // Program counter offset
+  opcode: BrandedOpcode    // Opcode byte
+  immediate?: Uint8Array   // Immediate data for PUSH
+}
+```
+
+## Returns
+
+`string` - Formatted instruction string
+
+Format: `"<offset>: <mnemonic> [immediate]"`
+
+## Output Format
+
+- **Offset**: 4-digit hex with leading zeros (e.g., `0000`, `002A`, `00FF`)
+- **Mnemonic**: Uppercase opcode name (e.g., `PUSH1`, `ADD`, `SSTORE`)
+- **Immediate**: Lowercase hex with `0x` prefix for PUSH operations
+
+## Examples
+
+### Format Different Opcodes
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Simple opcode (no immediate)
+const add = Opcode.format({
+  offset: 0,
+  opcode: Opcode.ADD
+})
+// "0000: ADD"
+
+// PUSH1
+const push1 = Opcode.format({
+  offset: 2,
+  opcode: Opcode.PUSH1,
+  immediate: new Uint8Array([0x42])
+})
+// "0002: PUSH1 0x42"
+
+// PUSH32 (32 bytes)
+const push32 = Opcode.format({
+  offset: 100,
+  opcode: Opcode.PUSH32,
+  immediate: new Uint8Array(32).fill(0xFF)
+})
+// "0064: PUSH32 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+### Custom Formatting
+
+```typescript
+function formatWithComment(inst: Instruction, comment: string): string {
+  const base = Opcode.format(inst)
+  return `${base}  // ${comment}`
+}
+
+const formatted = formatWithComment(
+  { offset: 0, opcode: Opcode.SSTORE },
+  'Store counter'
+)
+// "0000: SSTORE  // Store counter"
+```
+
+### Colorized Output
+
+```typescript
+function formatWithColor(inst: Instruction): string {
+  const base = Opcode.format(inst)
+  const name = Opcode.name(inst.opcode)
+
+  // ANSI color codes
+  if (Opcode.isPush(inst.opcode)) {
+    return `\x1b[32m${base}\x1b[0m`  // Green for PUSH
+  } else if (Opcode.isJump(inst.opcode)) {
+    return `\x1b[33m${base}\x1b[0m`  // Yellow for JUMP
+  } else if (name === 'SSTORE' || name === 'SLOAD') {
+    return `\x1b[31m${base}\x1b[0m`  // Red for storage
+  }
+  return base
+}
+```
+
+### Format with Stack Effect
+
+```typescript
+function formatWithStack(inst: Instruction): string {
+  const base = Opcode.format(inst)
+  const effect = Opcode.getStackEffect(inst.opcode) ?? 0
+  const arrow = effect > 0 ? '↑' : effect < 0 ? '↓' : '→'
+  return `${base.padEnd(30)} ${arrow}${Math.abs(effect)}`
+}
+
+// Example output:
+// "0000: PUSH1 0x01            ↑1"
+// "0002: PUSH1 0x02            ↑1"
+// "0004: ADD                   ↓1"
+```
+
+### Batch Format
+
+```typescript
+function formatInstructions(bytecode: Uint8Array): string[] {
+  const instructions = Opcode.parse(bytecode)
+  return instructions.map(inst => Opcode.format(inst))
+}
+
+// Or use disassemble() directly
+const lines = Opcode.disassemble(bytecode)
+```
+
+## Use Cases
+
+### Debug Output
+
+```typescript
+function debugInstruction(inst: Instruction): void {
+  const formatted = Opcode.format(inst)
+  const info = Opcode.info(inst.opcode)
+
+  console.log('Instruction:', formatted)
+  console.log('  Gas:', info?.gasCost)
+  console.log('  Stack In:', info?.stackInputs)
+  console.log('  Stack Out:', info?.stackOutputs)
+}
+```
+
+### Build Control Flow Graph
+
+```typescript
+interface BasicBlock {
+  start: number
+  instructions: string[]
+}
+
+function buildBlocks(bytecode: Uint8Array): BasicBlock[] {
+  const instructions = Opcode.parse(bytecode)
+  const blocks: BasicBlock[] = []
+  let current: BasicBlock = { start: 0, instructions: [] }
+
+  for (const inst of instructions) {
+    current.instructions.push(Opcode.format(inst))
+
+    if (Opcode.isJump(inst.opcode) || Opcode.isTerminating(inst.opcode)) {
+      blocks.push(current)
+      current = { start: inst.offset + 1, instructions: [] }
+    }
+  }
+
+  if (current.instructions.length > 0) {
+    blocks.push(current)
+  }
+
+  return blocks
+}
+```
+
+## Performance
+
+- **O(1)** time complexity
+- **String allocation** for output
+- **Hex conversion** for offset and immediate data
+- Very fast - just string formatting
+
+## Related
+
+- [disassemble()](/primitives/opcode/disassemble) - Format all instructions
+- [parse()](/primitives/opcode/parse) - Parse bytecode to instructions
+- [name()](/primitives/opcode/name) - Get opcode name only

@@ -1,0 +1,147 @@
+---
+title: Hex.fromBytes
+description: Convert Uint8Array to hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.fromBytes(bytes: Uint8Array): BrandedHex`
+
+Converts raw byte array to hex string with `0x` prefix.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array to convert
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Convert bytes to hex
+const bytes = new Uint8Array([0x12, 0x34, 0xAB, 0xCD])
+const hex = Hex.fromBytes(bytes)
+// "0x1234abcd"
+
+// Empty bytes
+const empty = Hex.fromBytes(new Uint8Array())
+// "0x"
+
+// Single byte
+const single = Hex.fromBytes(new Uint8Array([0xFF]))
+// "0xff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBytes.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBytes.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromBytes(bytes: Uint8Array): BrandedHex`
+
+Converts raw byte array to hex string with `0x` prefix.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array to convert
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Convert bytes to hex
+const bytes = new Uint8Array([0x12, 0x34, 0xAB, 0xCD])
+const hex = Hex.fromBytes(bytes)
+// "0x1234abcd"
+
+// Empty bytes
+const empty = Hex.fromBytes(new Uint8Array())
+// "0x"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBytes.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBytes.js)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.fromBytes(bytes: []const u8): []const u8`
+
+Convert byte slice to hex string representation.
+
+**Parameters:**
+- `bytes: []const u8` - Byte slice to convert
+
+**Returns:** `[]const u8` - Hex string with `0x` prefix
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const bytes = [_]u8{ 0x12, 0x34, 0xAB, 0xCD };
+const hex = Hex.fromBytes(&bytes);
+// "0x1234abcd"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Output Format
+
+All output uses lowercase hex digits:
+
+```typescript
+const bytes = new Uint8Array([0xAB, 0xCD, 0xEF])
+const hex = Hex.fromBytes(bytes)
+// "0xabcdef" (lowercase)
+```
+
+## Performance
+
+Efficient byte-to-hex conversion using lookup tables. Suitable for:
+- Hash digests (32 bytes)
+- Addresses (20 bytes)
+- Transaction data
+- Cryptographic outputs
+
+**Complexity:** O(n) where n is byte array length
+
+## Common Use Cases
+
+**Convert Hash to Hex:**
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256'
+
+const data = new Uint8Array([1, 2, 3])
+const hash = Keccak256.hash(data)
+const hex = Hex.fromBytes(hash)
+```
+
+**Display Binary Data:**
+```typescript
+const signature = new Uint8Array(65)  // 65-byte signature
+crypto.getRandomValues(signature)
+const hexSig = Hex.fromBytes(signature)
+console.log(hexSig)  // "0x..."
+```
+
+**Serialize for RPC:**
+```typescript
+const rlpEncoded = RLP.encode(transaction)
+const hexData = Hex.fromBytes(rlpEncoded)
+// Send hexData to JSON-RPC
+```
+
+## See Also
+
+- [from](/primitives/hex/from) - Universal constructor
+- [toBytes](/primitives/hex/to-bytes) - Convert hex to bytes
+- [fromNumber](/primitives/hex/from-number) - Create from number
+- [fromBigInt](/primitives/hex/from-bigint) - Create from bigint

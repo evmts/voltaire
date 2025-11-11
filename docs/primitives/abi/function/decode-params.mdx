@@ -1,0 +1,376 @@
+---
+title: Function.decodeParams
+description: Decode function parameters from calldata
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.decodeParams(data: Hex): unknown[]`
+
+Decode function parameters from calldata. Automatically strips the 4-byte selector if present.
+
+**Parameters:**
+- `data: Hex` - Calldata with or without selector
+
+**Returns:** `unknown[]` - Array of decoded parameter values
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const calldata = "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+
+const [to, amount] = transferFn.decodeParams(calldata)
+console.log(to)      // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+console.log(amount)  // 1000n
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/decodeParams.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `decodeParams(fn: BrandedFunction, data: Hex): unknown[]`
+
+Decode function parameters from calldata. Automatically strips the 4-byte selector if present.
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+- `data: Hex` - Calldata with or without selector
+
+**Returns:** `unknown[]` - Array of decoded parameter values
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+}
+
+const calldata = "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+
+const [to, amount] = Function.decodeParams(transferFn, calldata)
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { decodeParams } from '@tevm/voltaire/Abi/function'
+
+const params = decodeParams(transferFn, calldata)
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/decodeParams.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/decodeParams.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Basic Decoding
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }]
+})
+
+const calldata = "0x70a08231000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+const [owner] = balanceOfFn.decodeParams(calldata)
+console.log(owner)  // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### Multiple Parameters
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFromFn = new Function({
+  type: "function",
+  name: "transferFrom",
+  inputs: [
+    { type: "address", name: "from" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const calldata = "0x23b872dd..."
+
+const [from, to, amount] = transferFromFn.decodeParams(calldata)
+console.log({ from, to, amount })
+// {
+//   from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+//   to: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+//   amount: 1000n
+// }
+```
+
+### Destructuring with Names
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const calldata = "0xa9059cbb..."
+
+// Destructure directly
+const [to, amount] = transferFn.decodeParams(calldata)
+
+// Or use named destructuring
+const params = transferFn.decodeParams(calldata)
+const to = params[0]
+const amount = params[1]
+```
+
+### Dynamic Types (Strings)
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const setNameFn = new Function({
+  type: "function",
+  name: "setName",
+  inputs: [{ type: "string", name: "name" }]
+})
+
+const calldata = "0x..."  // Encoded with offset + length + data
+
+const [name] = setNameFn.decodeParams(calldata)
+console.log(name)  // "Alice"
+```
+
+### Arrays
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const batchTransferFn = new Function({
+  type: "function",
+  name: "batchTransfer",
+  inputs: [
+    { type: "address[]", name: "recipients" },
+    { type: "uint256[]", name: "amounts" }
+  ]
+})
+
+const calldata = "0x..."
+
+const [recipients, amounts] = batchTransferFn.decodeParams(calldata)
+console.log(recipients)  // ["0x...", "0x..."]
+console.log(amounts)     // [1000n, 2000n]
+```
+
+### Tuples (Structs)
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const createOrderFn = new Function({
+  type: "function",
+  name: "createOrder",
+  inputs: [
+    {
+      type: "tuple",
+      name: "order",
+      components: [
+        { type: "address", name: "maker" },
+        { type: "uint256", name: "amount" },
+        { type: "uint256", name: "price" }
+      ]
+    }
+  ]
+})
+
+const calldata = "0x..."
+
+const [order] = createOrderFn.decodeParams(calldata)
+console.log(order)
+// {
+//   maker: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+//   amount: 1000n,
+//   price: 5n
+// }
+```
+
+### Decoding Transaction Calldata
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Get transaction from blockchain
+const tx = await provider.getTransaction(txHash)
+
+// Check if it's a transfer call
+const selector = tx.data.slice(0, 10)
+if (selector === transferFn.getSelector()) {
+  const [to, amount] = transferFn.decodeParams(tx.data)
+  console.log(`Transfer ${amount} to ${to}`)
+}
+```
+
+### With or Without Selector
+
+The decoder automatically handles both formats:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// With selector (full calldata)
+const withSelector = "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+const params1 = transferFn.decodeParams(withSelector)
+
+// Without selector (parameters only)
+const withoutSelector = "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+const params2 = transferFn.decodeParams(withoutSelector)
+
+// Both return same result
+console.log(params1)  // ["0x742d...", 1000n]
+console.log(params2)  // ["0x742d...", 1000n]
+```
+
+## Type-Safe Decoding
+
+TypeScript infers return types from function definition:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }]
+} as const)
+
+const params = balanceOfFn.decodeParams(calldata)
+//    ^-- Type: [string] (address inferred)
+
+const [owner] = params
+//    ^-- Type: string
+```
+
+## Error Handling
+
+```typescript
+import { Function } from '@tevm/voltaire'
+import { AbiDecodingError } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+try {
+  // Invalid calldata (too short)
+  transferFn.decodeParams("0xa9059cbb")
+} catch (error) {
+  if (error instanceof AbiDecodingError) {
+    console.error("Failed to decode:", error.message)
+  }
+}
+
+try {
+  // Wrong selector
+  transferFn.decodeParams("0xdeadbeef00000...")
+} catch (error) {
+  if (error instanceof AbiDecodingError) {
+    console.error("Selector mismatch or invalid data")
+  }
+}
+```
+
+## Parsing Contract Logs
+
+Decode function calls from event logs or traces:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Parse trace data
+const traces = await provider.getTrace(txHash)
+
+for (const trace of traces) {
+  if (trace.type === 'call') {
+    const selector = trace.input.slice(0, 10)
+    if (selector === transferFn.getSelector()) {
+      const [to, amount] = transferFn.decodeParams(trace.input)
+      console.log(`Transfer: ${amount} to ${to}`)
+    }
+  }
+}
+```
+
+## See Also
+
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function parameters
+- [decodeResult](/primitives/abi/function/decode-result) - Decode function return values
+- [getSelector](/primitives/abi/function/get-selector) - Get function selector
+- [Decoding](/primitives/abi/decoding) - Low-level decoding details

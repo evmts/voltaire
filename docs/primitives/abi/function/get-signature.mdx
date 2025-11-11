@@ -1,0 +1,343 @@
+---
+title: Function.getSignature
+description: Get canonical function signature string for hashing and identification
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `function.getSignature(): string`
+
+Get the canonical function signature string in the format `functionName(type1,type2,...)`.
+
+**Returns:** `string` - Canonical function signature (no spaces, no parameter names)
+
+**Example:**
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+})
+
+const signature = transferFn.getSignature()
+console.log(signature)  // "transfer(address,uint256)"
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/getSignature.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/getSignature.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `getSignature(fn: BrandedFunction): string`
+
+Get the canonical function signature string in the format `functionName(type1,type2,...)`.
+
+**Parameters:**
+- `fn: BrandedFunction` - Function ABI item
+
+**Returns:** `string` - Canonical function signature (no spaces, no parameter names)
+
+**Example:**
+
+```typescript
+import * as Function from '@tevm/voltaire/Abi/function'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const signature = Function.getSignature(transferFn)
+console.log(signature)  // "transfer(address,uint256)"
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { getSignature } from '@tevm/voltaire/Abi/function'
+
+const signature = getSignature(transferFn)
+```
+
+**Defined in:** [primitives/Abi/function/BrandedFunction/getSignature.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction/getSignature.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Function signature generation in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Signature Format Rules
+
+The canonical signature follows strict formatting rules:
+
+1. **Function name** - Exact name from ABI
+2. **Opening parenthesis** - No space after name
+3. **Parameter types** - Only types, no names
+4. **Comma-separated** - No spaces around commas
+5. **Closing parenthesis** - No trailing content
+
+```typescript
+// Correct canonical signature
+"transfer(address,uint256)"
+
+// WRONG - includes parameter names
+"transfer(address to, uint256 amount)"
+
+// WRONG - has spaces
+"transfer(address, uint256)"
+
+// WRONG - includes return type
+"transfer(address,uint256) returns (bool)"
+```
+
+## Usage Examples
+
+### Basic Signature
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+console.log(balanceOfFn.getSignature())  // "balanceOf(address)"
+```
+
+### No Parameters
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const totalSupplyFn = new Function({
+  type: "function",
+  name: "totalSupply",
+  inputs: [],
+  outputs: [{ type: "uint256" }]
+})
+
+console.log(totalSupplyFn.getSignature())  // "totalSupply()"
+```
+
+### Complex Parameter Types
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const swapFn = new Function({
+  type: "function",
+  name: "swap",
+  inputs: [
+    { type: "uint256[]", name: "amounts" },
+    { type: "address[]", name: "path" },
+    {
+      type: "tuple",
+      name: "params",
+      components: [
+        { type: "uint256", name: "deadline" },
+        { type: "address", name: "to" }
+      ]
+    }
+  ]
+})
+
+console.log(swapFn.getSignature())
+// "swap(uint256[],address[],(uint256,address))"
+```
+
+### Tuple Arrays
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const batchTransferFn = new Function({
+  type: "function",
+  name: "batchTransfer",
+  inputs: [
+    {
+      type: "tuple[]",
+      name: "transfers",
+      components: [
+        { type: "address", name: "to" },
+        { type: "uint256", name: "amount" }
+      ]
+    }
+  ]
+})
+
+console.log(batchTransferFn.getSignature())
+// "batchTransfer((address,uint256)[])"
+```
+
+### Computing Selector from Signature
+
+```typescript
+import { Function } from '@tevm/voltaire'
+import { Keccak256 } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Get signature
+const signature = transferFn.getSignature()
+// "transfer(address,uint256)"
+
+// Hash to get selector
+const hash = Keccak256.hash(signature)
+const selector = hash.slice(0, 10)
+console.log(selector)  // "0xa9059cbb"
+
+// Or use getSelector() directly
+console.log(transferFn.getSelector())  // "0xa9059cbb"
+```
+
+## Type-Safe Signatures
+
+TypeScript can infer the exact signature type:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+} as const)
+
+const signature = transferFn.getSignature()
+//    ^-- Type: "transfer(address,uint256)"
+```
+
+## Signature Comparison
+
+Signatures are used to identify function uniqueness:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const fn1 = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+const fn2 = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "recipient" },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+// Same signature despite different parameter names
+console.log(fn1.getSignature() === fn2.getSignature())  // true
+console.log(fn1.getSignature())  // "transfer(address,uint256)"
+```
+
+## Human-Readable Format
+
+For display purposes, you may want a human-readable format:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool", name: "success" }]
+})
+
+// Canonical signature (for hashing)
+const canonical = transferFn.getSignature()
+console.log(canonical)  // "transfer(address,uint256)"
+
+// Human-readable format (manual construction)
+const readable = `function ${transferFn.name}(${transferFn.inputs.map(p => `${p.type} ${p.name}`).join(', ')}) returns (${transferFn.outputs.map(p => p.type).join(', ')})`
+console.log(readable)
+// "function transfer(address to, uint256 amount) returns (bool)"
+```
+
+## Fixed vs Dynamic Arrays
+
+Array notation in signatures:
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+const fn = new Function({
+  type: "function",
+  name: "process",
+  inputs: [
+    { type: "uint256[]", name: "dynamic" },      // Dynamic array
+    { type: "uint256[3]", name: "fixed" },       // Fixed array
+    { type: "bytes", name: "dynamicBytes" },     // Dynamic bytes
+    { type: "bytes32", name: "fixedBytes" }      // Fixed bytes
+  ]
+})
+
+console.log(fn.getSignature())
+// "process(uint256[],uint256[3],bytes,bytes32)"
+```
+
+## Error Handling
+
+```typescript
+import { Function } from '@tevm/voltaire'
+
+try {
+  const fn = new Function({
+    type: "function",
+    name: "",  // Invalid: empty name
+    inputs: []
+  })
+  fn.getSignature()
+} catch (error) {
+  console.error("Invalid function definition")
+}
+```
+
+## See Also
+
+- [getSelector](/primitives/abi/function/get-selector) - Get 4-byte selector from signature
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function calldata
+- [format](/primitives/abi/format) - Format ABI item to signature with parameter names

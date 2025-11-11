@@ -1,0 +1,206 @@
+---
+title: Hardfork.compare
+description: Three-way comparison of hardforks returning -1, 0, or 1
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.compare(other: BrandedHardfork): -1 | 0 | 1`
+
+Three-way comparison returning -1 (less than), 0 (equal), or 1 (greater than). Uses chronological deployment order.
+
+**Parameters:**
+- `other: BrandedHardfork` - Hardfork to compare against
+
+**Returns:** `-1 | 0 | 1`
+- `-1` if current < other (current is before chronologically)
+- `0` if current === other (same hardfork)
+- `1` if current > other (current is after chronologically)
+
+**Example:**
+
+```typescript
+import { Hardfork, BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("london")
+
+fork.compare(BERLIN)   // 1 (London > Berlin)
+fork.compare(LONDON)   // 0 (London === London)
+fork.compare(CANCUN)   // -1 (London < Cancun)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/compare.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/compare.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `compare(a: BrandedHardfork, b: BrandedHardfork): -1 | 0 | 1`
+
+Three-way comparison returning -1 (less than), 0 (equal), or 1 (greater than). Uses chronological deployment order.
+
+**Parameters:**
+- `a: BrandedHardfork` - First hardfork
+- `b: BrandedHardfork` - Second hardfork
+
+**Returns:** `-1 | 0 | 1`
+- `-1` if a < b (a is before b chronologically)
+- `0` if a === b (same hardfork)
+- `1` if a > b (a is after b chronologically)
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
+
+Hardfork.compare(BERLIN, LONDON)   // -1 (Berlin < London)
+Hardfork.compare(LONDON, LONDON)   // 0 (equal)
+Hardfork.compare(CANCUN, LONDON)   // 1 (Cancun > London)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/compare.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/compare.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Return Values
+
+```typescript
+-1  // a < b (a is before b chronologically)
+ 0  // a === b (same hardfork)
+ 1  // a > b (a is after b chronologically)
+```
+
+## Usage Patterns
+
+### Sorting
+
+Sort hardforks chronologically:
+
+```typescript
+import { Hardfork, CANCUN, BERLIN, SHANGHAI, LONDON, MERGE } from '@tevm/voltaire'
+
+const forks = [CANCUN, BERLIN, SHANGHAI, LONDON, MERGE]
+
+// Sort chronologically (oldest first)
+forks.sort(Hardfork.compare)
+// [BERLIN, LONDON, MERGE, SHANGHAI, CANCUN]
+
+// Sort reverse chronological (newest first)
+forks.sort((a, b) => -Hardfork.compare(a, b))
+// [CANCUN, SHANGHAI, MERGE, LONDON, BERLIN]
+```
+
+### Network Configuration
+
+Sort supported versions:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getSortedSupportedVersions(config: NetworkConfig): BrandedHardfork[] {
+  return config.supportedHardforks
+    .slice()
+    .sort(Hardfork.compare)
+}
+```
+
+### Binary Search
+
+Use in binary search algorithms:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function binarySearchHardfork(
+  sorted: BrandedHardfork[],
+  target: BrandedHardfork
+): number {
+  let left = 0
+  let right = sorted.length - 1
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const cmp = Hardfork.compare(sorted[mid], target)
+
+    if (cmp === 0) return mid
+    if (cmp < 0) left = mid + 1
+    else right = mid - 1
+  }
+
+  return -1
+}
+```
+
+### Range Checks
+
+Implement range validation:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function isInRange(
+  fork: BrandedHardfork,
+  min: BrandedHardfork,
+  max: BrandedHardfork
+): boolean {
+  return Hardfork.compare(fork, min) >= 0 &&
+         Hardfork.compare(fork, max) <= 0
+}
+
+// Check if fork is between Berlin and Shanghai (inclusive)
+isInRange(LONDON, BERLIN, SHANGHAI)  // true
+```
+
+## Chronological Ordering
+
+Uses deployment date order:
+
+```
+FRONTIER (0) < HOMESTEAD (1) < ... < CANCUN (16) < PRAGUE (17)
+```
+
+Comparison algorithm:
+
+```javascript
+function compare(a, b) {
+  const indexA = HARDFORK_ORDER.indexOf(a)
+  const indexB = HARDFORK_ORDER.indexOf(b)
+
+  if (indexA < indexB) return -1
+  if (indexA > indexB) return 1
+  return 0
+}
+```
+
+## Alias Handling
+
+Correctly handles aliases:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const merge = Hardfork.fromString("merge")
+const paris = Hardfork.fromString("paris")
+
+Hardfork.compare(merge, paris)  // 0 (same hardfork)
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAtLeast](/primitives/hardfork/is-at-least) - Check if >= target
+- [isBefore](/primitives/hardfork/is-before) - Check if < target
+- [isAfter](/primitives/hardfork/is-after) - Check if > target
+- [isEqual](/primitives/hardfork/is-equal) - Check equality

@@ -1,0 +1,126 @@
+---
+title: Hardfork.gte
+description: Check if hardfork is greater than or equal to target (alias for isAtLeast)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.gte(target: BrandedHardfork): boolean`
+
+Check if current hardfork is greater than or equal to target version (>=). Alias for `isAtLeast`.
+
+**Parameters:**
+- `target: BrandedHardfork` - Minimum required hardfork version
+
+**Returns:** `boolean` - True if current >= target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+
+fork.gte(LONDON)   // true - Cancun >= London
+fork.gte(CANCUN)   // true - Cancun >= Cancun (equal)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/gte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gte.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `gte(a: BrandedHardfork, b: BrandedHardfork): boolean`
+
+Check if first hardfork is greater than or equal to second version (>=). Alias for `isAtLeast`.
+
+**Parameters:**
+- `a: BrandedHardfork` - First hardfork
+- `b: BrandedHardfork` - Second hardfork
+
+**Returns:** `boolean` - True if a >= b chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, LONDON } from '@tevm/voltaire'
+
+Hardfork.gte(CANCUN, LONDON)  // true
+Hardfork.gte(LONDON, CANCUN)  // false
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/gte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gte.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Operator-Style API
+
+`gte` mimics the `>=` operator for clearer code:
+
+```typescript
+import { CANCUN, LONDON } from '@tevm/voltaire'
+
+// Operator-style (reads like >= operator)
+if (CANCUN.gte(LONDON)) {
+  // ...
+}
+
+// Equivalent semantic form
+if (CANCUN.isAtLeast(LONDON)) {
+  // ...
+}
+```
+
+## Usage Patterns
+
+### Feature Gating
+
+```typescript
+import { Hardfork, LONDON } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString(config.hardfork)
+
+if (fork.gte(LONDON)) {
+  // EIP-1559 available
+}
+```
+
+### Network Configuration
+
+```typescript
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+
+function validateVersion(fork: BrandedHardfork) {
+  if (!fork.gte(SHANGHAI)) {
+    throw new Error("Requires Shanghai or later")
+  }
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+FRONTIER (0) < HOMESTEAD (1) < ... < CANCUN (16) < PRAGUE (17)
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAtLeast](/primitives/hardfork/is-at-least) - Semantic equivalent
+- [gt](/primitives/hardfork/gt) - Strictly greater than
+- [lte](/primitives/hardfork/lte) - Less than or equal

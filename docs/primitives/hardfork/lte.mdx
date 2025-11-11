@@ -1,0 +1,152 @@
+---
+title: Hardfork.lte
+description: Check if hardfork is less than or equal to target
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.lte(target: BrandedHardfork): boolean`
+
+Check if current hardfork is less than or equal to target version (<=).
+
+**Parameters:**
+- `target: BrandedHardfork` - Maximum allowed hardfork version
+
+**Returns:** `boolean` - True if current <= target chronologically
+
+**Example:**
+
+```typescript
+import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("london")
+
+fork.lte(CANCUN)   // true - London <= Cancun
+fork.lte(LONDON)   // true - London <= London (equal)
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/lte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/lte.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `lte(a: BrandedHardfork, b: BrandedHardfork): boolean`
+
+Check if first hardfork is less than or equal to second version (<=).
+
+**Parameters:**
+- `a: BrandedHardfork` - First hardfork
+- `b: BrandedHardfork` - Second hardfork
+
+**Returns:** `boolean` - True if a <= b chronologically
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { LONDON, CANCUN } from '@tevm/voltaire'
+
+Hardfork.lte(LONDON, CANCUN)  // true
+Hardfork.lte(CANCUN, LONDON)  // false
+Hardfork.lte(LONDON, LONDON)  // true
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/lte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/lte.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Operator-Style API
+
+`lte` mimics the `<=` operator for clearer code:
+
+```typescript
+import { LONDON, CANCUN } from '@tevm/voltaire'
+
+// Operator-style (reads like <= operator)
+if (LONDON.lte(CANCUN)) {
+  // ...
+}
+
+// Equivalent using isBefore + isEqual
+if (LONDON.isBefore(CANCUN) || LONDON.isEqual(CANCUN)) {
+  // ...
+}
+```
+
+## Usage Patterns
+
+### Maximum Version Checks
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire'
+
+function validateMaxVersion(fork: BrandedHardfork) {
+  if (!fork.lte(CANCUN)) {
+    throw new Error(`Unsupported hardfork beyond Cancun: ${Hardfork.toString(fork)}`)
+  }
+}
+```
+
+### Range Validation
+
+```typescript
+import { Hardfork, BERLIN, SHANGHAI } from '@tevm/voltaire'
+
+function isInSupportedRange(fork: BrandedHardfork): boolean {
+  return fork.gte(BERLIN) && fork.lte(SHANGHAI)
+}
+
+// Check if fork is between Berlin and Shanghai (inclusive)
+isInSupportedRange(LONDON)  // true
+```
+
+### Network Configuration
+
+```typescript
+import { Hardfork, PRAGUE } from '@tevm/voltaire'
+
+function checkTestnetSupport(fork: BrandedHardfork) {
+  if (fork.lte(PRAGUE)) {
+    return "Fully supported"
+  }
+  return "Experimental - use with caution"
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+BERLIN (10) < LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16)
+```
+
+## Comparison with isBefore
+
+Unlike `isBefore`, `lte` returns true for equal versions:
+
+```typescript
+import { LONDON } from '@tevm/voltaire'
+
+LONDON.lte(LONDON)       // true - equal counts
+LONDON.isBefore(LONDON)  // false - strictly less than
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [gte](/primitives/hardfork/gte) - Greater than or equal
+- [lt](/primitives/hardfork/lt) - Strictly less than (alias for isBefore)
+- [isBefore](/primitives/hardfork/is-before) - Strictly less than

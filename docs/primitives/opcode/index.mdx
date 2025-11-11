@@ -19,7 +19,7 @@ Opcode provides comprehensive utilities for working with EVM opcodes (0x00-0xFF)
 ## Quick Start
 
 <Tabs>
-<TabItem label="Namespace API (Tree-shakeable)">
+<Tab title="Namespace API (Tree-shakeable)">
 ```typescript
 import * as Opcode from '@tevm/voltaire/Opcode'
 
@@ -47,8 +47,8 @@ const assembly = Opcode.disassemble(bytecode)
 const jumpDests = Opcode.jumpDests(bytecode)
 const isValidJump = Opcode.isValidJumpDest(bytecode, 0x0042)
 ```
-</TabItem>
-<TabItem label="Functional API">
+</Tab>
+<Tab title="Functional API">
 ```typescript
 import {
   isValid,
@@ -88,8 +88,8 @@ const assembly = disassemble(bytecode)
 const dests = jumpDests(bytecode)
 const isValidJump = isValidJumpDest(bytecode, 0x0042)
 ```
-</TabItem>
-<TabItem label="Bytecode Parsing">
+</Tab>
+<Tab title="Bytecode Parsing">
 ```typescript
 import * as Opcode from '@tevm/voltaire/Opcode'
 
@@ -113,8 +113,8 @@ const instructions = Opcode.parse(bytecode)
 //   { offset: 8, opcode: 0x10 },
 // ]
 ```
-</TabItem>
-<TabItem label="Disassembly">
+</Tab>
+<Tab title="Disassembly">
 ```typescript
 import * as Opcode from '@tevm/voltaire/Opcode'
 
@@ -140,7 +140,7 @@ const formatted = Opcode.format({
 })
 // "0000: PUSH1 0x80"
 ```
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Type Definition
@@ -576,84 +576,32 @@ Each parser, categorization check, and disassembly function is independently exp
 - **CALL, CALLCODE, DELEGATECALL, STATICCALL** (0xF1-0xF4, 0xFA)
 - **SELFDESTRUCT** (0xFF)
 
-<Aside type="caution" title="PUSH Data Skipping">
-When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These bytes must be skipped during parsing - they are data, not opcodes. The `parse()` and `jumpDests()` functions handle this correctly.
-</Aside>
+<Warning>
+PUSH Data Skipping: When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These bytes must be skipped during parsing - they are data, not opcodes. The `parse()` and `jumpDests()` functions handle this correctly.
+</Warning>
 
 ## API Documentation
 
-<CardGrid>
-  <Card title="Reference Guide" icon="open-book">
-    Complete opcode reference with execution traces, stack diagrams, and examples.
-
-    [View reference guide →](/primitives/opcode/reference-guide)
-  </Card>
-
-  <Card title="Constructors" icon="rocket">
-    Opcode constants, bytecode parsing, and jump destination analysis.
-
-    [View constructors →](/primitives/opcode/constructors)
-  </Card>
-
-  <Card title="Validation" icon="warning">
-    Opcode validation, category checks, and jump destination verification.
-
-    [View validation →](/primitives/opcode/validation)
-  </Card>
-
-  <Card title="Utilities" icon="puzzle">
-    Metadata, stack effects, gas costs, and disassembly utilities.
-
-    [View utilities →](/primitives/opcode/utilities)
-  </Card>
-
-  <Card title="Usage Patterns" icon="document">
-    Real-world bytecode analysis, gas estimation, and pattern detection.
-
-    [View usage patterns →](/primitives/opcode/usage-patterns)
-  </Card>
-
-  <Card title="WASM Implementation" icon="seti:config">
-    Performance analysis - why WASM is not implemented (pure TS is faster).
-
-    [View WASM →](/primitives/opcode/wasm)
-  </Card>
-</CardGrid>
+- [Reference Guide](/primitives/opcode/reference-guide) - Complete opcode reference with execution traces, stack diagrams, and examples
+- [Constructors](/primitives/opcode/constructors) - Opcode constants, bytecode parsing, and jump destination analysis
+- [Validation](/primitives/opcode/validation) - Opcode validation, category checks, and jump destination verification
+- [Utilities](/primitives/opcode/utilities) - Metadata, stack effects, gas costs, and disassembly utilities
+- [Usage Patterns](/primitives/opcode/usage-patterns) - Real-world bytecode analysis, gas estimation, and pattern detection
+- [WASM Implementation](/primitives/opcode/wasm) - Performance analysis - why WASM is not implemented (pure TS is faster)
 
 ## Related Types
 
-<CardGrid stagger>
-  <Card title="Bytecode" icon="document">
-    Contract bytecode representation and manipulation.
-
-    [View Bytecode →](/primitives/bytecode)
-  </Card>
-
-  <Card title="Transaction" icon="rocket">
-    Transactions that deploy and execute bytecode.
-
-    [View Transaction →](/primitives/transaction)
-  </Card>
-
-  <Card title="State" icon="puzzle">
-    EVM state operations accessed by opcodes.
-
-    [View State →](/primitives/state)
-  </Card>
-
-  <Card title="GasConstants" icon="seti:config">
-    Gas costs for EVM operations.
-
-    [View GasConstants →](/primitives/gasconstants)
-  </Card>
-</CardGrid>
+- [Bytecode](/primitives/bytecode) - Contract bytecode representation and manipulation
+- [Transaction](/primitives/transaction) - Transactions that deploy and execute bytecode
+- [State](/primitives/state) - EVM state operations accessed by opcodes
+- [GasConstants](/primitives/gasconstants) - Gas costs for EVM operations
 
 ## Opcode Reference Tables
 
 ### Complete Opcode Listing
 
 <Tabs>
-<TabItem label="Arithmetic">
+<Tab title="Arithmetic">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -669,9 +617,9 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0x0A | EXP | 10* | 2 | 1 | a ** b (dynamic gas) |
 | 0x0B | SIGNEXTEND | 5 | 2 | 1 | Sign extend byte |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Comparison & Bitwise">
+<Tab title="Comparison & Bitwise">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -690,17 +638,17 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0x1C | SHR | 3 | 2 | 1 | Shift right (EIP-145) |
 | 0x1D | SAR | 3 | 2 | 1 | Arithmetic shift (EIP-145) |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Cryptographic">
+<Tab title="Cryptographic">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
 | 0x20 | KECCAK256 | 30* | 2 | 1 | Keccak-256 hash |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Environmental">
+<Tab title="Environmental">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -721,9 +669,9 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0x3E | RETURNDATACOPY | 3* | 3 | 0 | Copy returndata |
 | 0x3F | EXTCODEHASH | 100* | 1 | 1 | Code hash (EIP-1052) |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Block Info">
+<Tab title="Block Info">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -736,9 +684,9 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0x46 | CHAINID | 2 | 0 | 1 | Chain ID (EIP-1344) |
 | 0x48 | BASEFEE | 2 | 0 | 1 | Base fee (EIP-3198) |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Stack & Memory">
+<Tab title="Stack & Memory">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -755,27 +703,27 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0x5A | GAS | 2 | 0 | 1 | Remaining gas |
 | 0x5B | JUMPDEST | 1 | 0 | 0 | Jump destination |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Push & Dup">
+<Tab title="Push & Dup">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
 | 0x60-0x7F | PUSH1-32 | 3 | 0 | 1 | Push 1-32 bytes |
 | 0x80-0x8F | DUP1-16 | 3 | 1+ | 2+ | Duplicate stack item |
 
-</TabItem>
+</Tab>
 
-<TabItem label="Swap & Log">
+<Tab title="Swap & Log">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
 | 0x90-0x9F | SWAP1-16 | 3 | 2+ | 2+ | Exchange stack items |
 | 0xA0-0xA4 | LOG0-4 | 375+* | 2-6 | 0 | Emit event |
 
-</TabItem>
+</Tab>
 
-<TabItem label="System">
+<Tab title="System">
 
 | Hex | Name | Gas | Stack In | Stack Out | Notes |
 |-----|------|-----|----------|-----------|-------|
@@ -790,7 +738,7 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 | 0xFE | INVALID | - | - | - | Invalid opcode |
 | 0xFF | SELFDESTRUCT | 5000* | 1 | 0 | Destroy contract |
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **Legend:**

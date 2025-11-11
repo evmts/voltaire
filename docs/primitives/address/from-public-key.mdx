@@ -1,0 +1,210 @@
+---
+title: Address.fromPublicKey
+description: Derive address from secp256k1 public key
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.fromPublicKey(x: bigint, y: bigint): Address`
+
+Derives Ethereum address from secp256k1 public key coordinates. Concatenates x and y (32 bytes each), hashes with keccak256, and takes last 20 bytes.
+
+**Formula:** `keccak256(x || y)[12:32]`
+
+**Parameters:**
+- `x: bigint` - X coordinate of public key (256 bits)
+- `y: bigint` - Y coordinate of public key (256 bits)
+
+**Returns:** `Address` - Derived address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// secp256k1 public key coordinates
+const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
+const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
+
+const addr = Address.fromPublicKey(x, y)
+console.log(addr.toHex())
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/fromPublicKey.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromPublicKey(x: bigint, y: bigint): BrandedAddress`
+
+Derives Ethereum address from secp256k1 public key coordinates.
+
+**Parameters:**
+- `x: bigint` - X coordinate of public key (256 bits)
+- `y: bigint` - Y coordinate of public key (256 bits)
+
+**Returns:** `BrandedAddress` - Derived address (20 bytes)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
+const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
+
+const addr = Address.fromPublicKey(x, y)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/fromPublicKey.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.fromPublicKey(x: [32]u8, y: [32]u8): !Address`
+
+Derive address from secp256k1 public key coordinates.
+
+**Parameters:**
+- `x: [32]u8` - X coordinate (32 bytes, big-endian)
+- `y: [32]u8` - Y coordinate (32 bytes, big-endian)
+
+**Returns:** `Address` - Derived address
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+const Keccak256 = @import("crypto").Keccak256;
+
+// Public key coordinates (32 bytes each)
+const x: [32]u8 = // ... x coordinate
+const y: [32]u8 = // ... y coordinate
+
+// Concatenate and hash
+var pubkey: [64]u8 = undefined;
+@memcpy(pubkey[0..32], &x);
+@memcpy(pubkey[32..64], &y);
+
+var hasher = Keccak256.init(.{});
+hasher.update(&pubkey);
+var hash: [32]u8 = undefined;
+hasher.final(&hash);
+
+// Take last 20 bytes
+var addr_bytes: [20]u8 = undefined;
+@memcpy(&addr_bytes, hash[12..]);
+const addr = Address{ .bytes = addr_bytes };
+```
+
+**Defined in:** [primitives/Address/address.zig:65](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L65)
+
+</Tab>
+</Tabs>
+
+## Algorithm
+
+The address derivation follows Ethereum's standard process:
+
+1. **Concatenate coordinates** - Combine x and y into 64-byte uncompressed public key
+2. **Hash with keccak256** - Compute keccak256 hash (32 bytes output)
+3. **Extract address** - Take last 20 bytes of hash
+
+**Pseudocode:**
+```
+pubkey = x (32 bytes) || y (32 bytes)  // 64 bytes total
+hash = keccak256(pubkey)               // 32 bytes
+address = hash[12:32]                  // Last 20 bytes
+```
+
+## Public Key Format
+
+Ethereum uses uncompressed secp256k1 public keys:
+- **Curve:** secp256k1 (same as Bitcoin)
+- **Coordinates:** x and y, each 256 bits (32 bytes)
+- **Total size:** 64 bytes (no 0x04 prefix in Ethereum)
+
+The x and y coordinates must be valid points on the secp256k1 curve.
+
+## Complete Example
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1'
+
+// Start with private key
+const privateKey = new Uint8Array(32)
+// ... fill with secure random bytes
+
+// Derive public key from private key
+const publicKey = Secp256k1.derivePublicKey(privateKey) // 64 bytes
+
+// Extract coordinates (big-endian)
+let x = 0n
+let y = 0n
+for (let i = 0; i < 32; i++) {
+  x = (x << 8n) | BigInt(publicKey[i])
+  y = (y << 8n) | BigInt(publicKey[i + 32])
+}
+
+// Derive address
+const addr = Address.fromPublicKey(x, y)
+console.log(addr.toHex())
+```
+
+## Use Cases
+
+### Verifying Signatures
+
+After recovering a public key from an ECDSA signature:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1'
+
+const signature = // ... ECDSA signature
+const message = // ... signed message
+
+// Recover public key from signature
+const recovered = Secp256k1.recoverPublicKey(signature, message)
+
+// Extract coordinates
+const x = // ... extract from recovered
+const y = // ... extract from recovered
+
+// Derive address
+const signer = Address.fromPublicKey(x, y)
+```
+
+### Deterministic Address Generation
+
+Generate addresses from known public keys:
+
+```typescript
+const knownPublicKeys = [
+  { x: 0x123n, y: 0x456n },
+  { x: 0x789n, y: 0xabcn },
+]
+
+const addresses = knownPublicKeys.map(pk =>
+  Address.fromPublicKey(pk.x, pk.y)
+)
+```
+
+## Performance
+
+**Cryptographic dependency:** Uses keccak256 hash function internally.
+
+**Bundle size impact:** When using tree-shakeable imports, including this method adds keccak256 to bundle (~5-10 KB).
+
+**Alternative:** For performance-critical code, consider using `fromPrivateKey()` directly if you have the private key, as it combines key derivation and address generation.
+
+## See Also
+
+- [fromPrivateKey](/primitives/address/from-private-key) - Derive from private key
+- [from](/primitives/address/from) - Universal constructor
+- [Secp256k1](/crypto/secp256k1) - secp256k1 cryptography
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 4.2 (Address derivation)

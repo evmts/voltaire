@@ -1,0 +1,196 @@
+---
+title: Address.fromBytes
+description: Create address from raw byte array
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.fromBytes(bytes: Uint8Array): Address`
+
+Creates address from raw 20-byte array. Copies the input bytes to ensure immutability.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array (must be exactly 20 bytes)
+
+**Returns:** `Address` - Address instance
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// From existing Uint8Array
+const bytes = new Uint8Array(20)
+bytes[19] = 0x45 // Set last byte
+const addr = Address.fromBytes(bytes)
+
+// From array buffer
+const buffer = new ArrayBuffer(20)
+const view = new Uint8Array(buffer)
+const addr2 = Address.fromBytes(view)
+
+// From typed array slice
+const data = new Uint8Array(32)
+const addr3 = Address.fromBytes(data.slice(12, 32)) // Last 20 bytes
+```
+
+**Throws:**
+- `InvalidAddressLengthError` - If bytes length is not exactly 20
+
+**Defined in:** [primitives/Address/BrandedAddress/fromBytes.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromBytes(bytes: Uint8Array): BrandedAddress`
+
+Creates address from raw 20-byte array. Returns a branded Uint8Array for type safety.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array (must be exactly 20 bytes)
+
+**Returns:** `BrandedAddress` - Branded Uint8Array (20 bytes)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const bytes = new Uint8Array(20)
+const addr = Address.fromBytes(bytes)
+
+// Type-safe operations
+const hex = Address.toHex(addr)
+const checksummed = Address.toChecksummed(addr)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/fromBytes.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address{ .bytes = bytes }`
+
+In Zig, addresses are structs containing a fixed 20-byte array. Create directly via struct initialization.
+
+**Parameters:**
+- `bytes: [20]u8` - Fixed 20-byte array
+
+**Returns:** `Address` - Address struct
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+// From byte array
+var bytes = [_]u8{0} ** 20;
+bytes[19] = 0x45;
+const addr = Address{ .bytes = bytes };
+
+// From slice (copy to fixed array)
+const slice: []const u8 = // ... 20 bytes
+var fixed_bytes: [20]u8 = undefined;
+@memcpy(&fixed_bytes, slice);
+const addr2 = Address{ .bytes = fixed_bytes };
+```
+
+**Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
+
+</Tab>
+</Tabs>
+
+## Length Validation
+
+The input must be exactly 20 bytes. Any other length throws an error:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Valid: 20 bytes
+const addr = Address.fromBytes(new Uint8Array(20)) // ✓
+
+// Invalid: too short
+try {
+  Address.fromBytes(new Uint8Array(19))
+} catch (e) {
+  console.error(e) // InvalidAddressLengthError
+}
+
+// Invalid: too long
+try {
+  Address.fromBytes(new Uint8Array(21))
+} catch (e) {
+  console.error(e) // InvalidAddressLengthError
+}
+```
+
+## Memory Behavior
+
+**TypeScript/JavaScript:**
+- Creates a new Uint8Array (copies input)
+- Safe to modify original bytes after creation
+- No aliasing between input and result
+
+```typescript
+const original = new Uint8Array(20)
+const addr = Address.fromBytes(original)
+
+// Modifying original doesn't affect address
+original[0] = 0xFF
+console.log(addr[0]) // Still 0x00
+```
+
+**Zig:**
+- Copies to fixed-size array
+- Stack-allocated by default
+- No heap allocation required
+
+## Common Use Cases
+
+### Extracting from ABI Encoded Data
+
+```typescript
+// ABI-encoded addresses are left-padded to 32 bytes
+const abiEncoded = new Uint8Array(32)
+// Last 20 bytes are the address
+const addr = Address.fromBytes(abiEncoded.slice(12, 32))
+```
+
+### Reading from Buffer
+
+```typescript
+// Parse address from binary data stream
+const buffer = new Uint8Array(100)
+const offset = 40
+
+const addr = Address.fromBytes(buffer.slice(offset, offset + 20))
+```
+
+### Converting from Hash
+
+```typescript
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+// Take last 20 bytes of keccak256 hash
+const hash = keccak256(data) // 32 bytes
+const addr = Address.fromBytes(hash.slice(12, 32))
+```
+
+## Performance
+
+**Zero allocation overhead** - directly wraps the bytes into branded type.
+
+For repeated conversions, `fromBytes()` is the fastest constructor:
+- No hex parsing required
+- No numeric conversion
+- Direct memory operation
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [fromHex](/primitives/address/from-hex) - Parse from hex string
+- [toBytes](/primitives/address/to-bytes) - Convert to Uint8Array
+- [fromAbiEncoded](/primitives/address/constructors#fromabiencoded) - Extract from 32-byte ABI encoding

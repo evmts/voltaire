@@ -1,0 +1,164 @@
+---
+title: Hash.from
+description: Universal constructor for creating Hash from hex strings or Uint8Array
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.from(value: HashLike): Hash`
+
+Universal constructor that dispatches based on input type. Accepts hex strings or Uint8Array.
+
+**Parameters:**
+- `value: HashLike` - Hex string (with or without `0x` prefix) or Uint8Array (32 bytes)
+
+**Returns:** `Hash` - Hash instance with prototype methods
+
+**Throws:**
+- `Error` - Invalid hex format or wrong length (must be 64 hex chars)
+- `Error` - Invalid bytes length (must be 32 bytes)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// From hex string
+const hash1 = Hash.from("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash.from("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// From Uint8Array
+const bytes = new Uint8Array(32)
+const hash3 = Hash.from(bytes)
+
+// From existing Hash (passed through)
+const hash4 = Hash.from(hash1)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/from.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/from.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `from(value: HashLike): BrandedHash`
+
+Universal constructor that dispatches based on input type. Accepts hex strings or Uint8Array.
+
+**Parameters:**
+- `value: HashLike` - Hex string (with or without `0x` prefix) or Uint8Array (32 bytes)
+
+**Returns:** `BrandedHash` - Branded Uint8Array (32 bytes)
+
+**Throws:**
+- `Error` - Invalid hex format or wrong length
+- `Error` - Invalid bytes length
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// From hex string
+const hash1 = Hash.from("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+
+// From Uint8Array
+const bytes = new Uint8Array(32)
+const hash2 = Hash.from(bytes)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/from.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/from.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+Zig implementation uses raw `[32]u8` arrays. No direct equivalent to universal constructor.
+
+**Creating hashes in Zig:**
+
+```zig
+const std = @import("std");
+const Hash = @import("primitives").Hash;
+
+// From hex string (manual parsing)
+const hex_str = "1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8";
+var hash: [32]u8 = undefined;
+_ = try std.fmt.hexToBytes(&hash, hex_str);
+
+// From bytes directly
+const bytes: [32]u8 = .{0} ** 32;
+const hash2 = bytes;
+```
+
+Zig uses `[32]u8` fixed-size arrays for hashes. Type safety enforced at compile time.
+
+</Tab>
+</Tabs>
+
+## HashLike Type
+
+`HashLike` is a union type accepting any input that can be coerced to a hash:
+
+```typescript
+type HashLike =
+  | Uint8Array
+  | BrandedHash
+  | Hash
+  | Hex
+  | string
+```
+
+### Accepted Types
+
+**Uint8Array** - Raw byte arrays (must be 32 bytes):
+```typescript
+const bytes = new Uint8Array(32)
+const hash = Hash.from(bytes)
+```
+
+**BrandedHash** - Branded hash (passed through):
+```typescript
+const branded = Hash.fromHex("0x1c8aff...")
+const hash = Hash.from(branded)  // No conversion
+```
+
+**Hex String** - With or without `0x` prefix (must be 64 hex chars):
+```typescript
+const hash1 = Hash.from("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash.from("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+```
+
+<Warning title="String Interpretation">
+Strings without `0x` prefix must be exactly 64 hex characters. Use `0x` prefix for clarity.
+</Warning>
+
+### Usage in Function Signatures
+
+Use `HashLike` for flexible function parameters:
+
+```typescript
+function verifyHash(input: HashLike): boolean {
+  const hash = Hash.from(input)
+  return hash.isZero()
+}
+
+// All valid calls
+verifyHash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+verifyHash(new Uint8Array(32))
+verifyHash(Hash.fromHex("0x1c8aff..."))
+```
+
+### Performance
+
+**No conversion overhead** for `Uint8Array`, `BrandedHash`, and `Hash` (zero-copy).
+
+**Conversion required** for strings (parses hex and allocates new Uint8Array).
+
+For performance-critical code, prefer passing `Uint8Array` or `BrandedHash` directly.
+
+## See Also
+
+- [fromHex](/primitives/hash/from-hex) - Parse hex string directly
+- [fromBytes](/primitives/hash/from-bytes) - Create from Uint8Array directly
+- [keccak256](/primitives/hash/keccak256) - Hash bytes to create Hash
+- [keccak256String](/primitives/hash/keccak256-string) - Hash string to create Hash

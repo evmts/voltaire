@@ -1,0 +1,198 @@
+---
+title: Hex.fromBigInt
+description: Convert bigint to hex string with optional padding
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.fromBigInt(value: bigint, size?: number): BrandedHex`
+
+Converts bigint to hex string with optional byte-size padding. Supports arbitrarily large values.
+
+**Parameters:**
+- `value: bigint` - BigInt to convert (any non-negative value)
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Basic conversion
+Hex.fromBigInt(255n)      // "0xff"
+Hex.fromBigInt(0n)        // "0x0"
+
+// With size padding
+Hex.fromBigInt(255n, 32)  // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+
+// Large values (uint256)
+const maxU256 = (1n << 256n) - 1n
+Hex.fromBigInt(maxU256, 32)
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// Ethereum address as uint160
+const addr = 0x742d35Cc6634C0532925a3b844Bc9e7595f0n
+Hex.fromBigInt(addr, 20)
+// "0x000000000000742d35cc6634c0532925a3b844bc9e7595f0"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBigInt.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromBigInt(value: bigint, size?: number): BrandedHex`
+
+Converts bigint to hex string with optional byte-size padding. Supports arbitrarily large values.
+
+**Parameters:**
+- `value: bigint` - BigInt to convert (any non-negative value)
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Basic conversion
+Hex.fromBigInt(255n)      // "0xff"
+Hex.fromBigInt(0n)        // "0x0"
+
+// With size padding
+Hex.fromBigInt(255n, 32)  // "0x00...ff" (32 bytes)
+
+// Large values (uint256)
+const maxU256 = (1n << 256n) - 1n
+Hex.fromBigInt(maxU256, 32)
+// "0xffff...ffff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/fromBigInt.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.fromU256(value: u256): []const u8`
+
+Convert 256-bit unsigned integer to hex string.
+
+**Parameters:**
+- `value: u256` - 256-bit unsigned integer
+
+**Returns:** `[]const u8` - Hex string with `0x` prefix
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const value: u256 = 255;
+const hex = Hex.fromU256(value);  // "0xff"
+
+// Maximum uint256
+const max: u256 = std.math.maxInt(u256);
+const hexMax = Hex.fromU256(max);
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## BigInt Range
+
+Supports arbitrarily large values, no upper limit:
+
+```typescript
+// Small values
+Hex.fromBigInt(0n)         // "0x0"
+Hex.fromBigInt(255n)       // "0xff"
+
+// uint64 range
+Hex.fromBigInt(2n ** 64n - 1n)  // "0xffffffffffffffff"
+
+// uint256 range
+Hex.fromBigInt(2n ** 256n - 1n, 32)
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// Beyond uint256
+Hex.fromBigInt(2n ** 512n - 1n, 64)  // 512-bit value
+```
+
+## Size Padding
+
+The `size` parameter specifies the **byte length** of the output:
+
+```typescript
+// No padding (minimal representation)
+Hex.fromBigInt(255n)      // "0xff" (1 byte)
+
+// Common Ethereum sizes
+Hex.fromBigInt(255n, 1)   // "0xff" (uint8)
+Hex.fromBigInt(255n, 2)   // "0x00ff" (uint16)
+Hex.fromBigInt(255n, 4)   // "0x000000ff" (uint32)
+Hex.fromBigInt(255n, 8)   // "0x00000000000000ff" (uint64)
+Hex.fromBigInt(255n, 32)  // "0x00...ff" (uint256)
+```
+
+## Common Use Cases
+
+**Token Balances (uint256):**
+```typescript
+const balance = 1000000000000000000n  // 1 ETH in wei
+const hex = Hex.fromBigInt(balance, 32)
+```
+
+**Transaction Values:**
+```typescript
+const value = 1500000000000000000n  // 1.5 ETH
+const hex = Hex.fromBigInt(value)  // Minimal representation
+```
+
+**Contract Storage:**
+```typescript
+// Storage slot key (uint256)
+const slot = 5n
+const hexSlot = Hex.fromBigInt(slot, 32)
+
+// Storage value (uint256)
+const storedValue = 0xabcdefn
+const hexValue = Hex.fromBigInt(storedValue, 32)
+```
+
+**Large Numbers in Calculations:**
+```typescript
+// Calculate 2^256 - 1 (max uint256)
+const maxUint256 = (1n << 256n) - 1n
+const hex = Hex.fromBigInt(maxUint256, 32)
+
+// Large multiplication result
+const result = 123456789n * 987654321n
+const hexResult = Hex.fromBigInt(result)
+```
+
+**Address as uint160:**
+```typescript
+const addrBigInt = 0x742d35Cc6634C0532925a3b844Bc9e7595f12345n
+const hex = Hex.fromBigInt(addrBigInt, 20)
+```
+
+## Performance
+
+Direct `toString(16)` conversion on bigint with optional `padStart`. Efficient for all value sizes.
+
+For repeated conversions of known-size values, pre-specify the size parameter to avoid dynamic allocation.
+
+## See Also
+
+- [fromNumber](/primitives/hex/from-number) - For smaller numbers (up to MAX_SAFE_INTEGER)
+- [toBigInt](/primitives/hex/to-bigint) - Convert hex to bigint
+- [pad](/primitives/hex/pad) - Pad existing hex string
+- [from](/primitives/hex/from) - Universal constructor
