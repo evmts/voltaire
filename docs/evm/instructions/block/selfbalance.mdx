@@ -1,0 +1,488 @@
+---
+title: "SELFBALANCE (0x47)"
+description: "Get the balance of the currently executing contract"
+---
+
+## Overview
+
+**Opcode:** `0x47`
+**Introduced:** Istanbul (EIP-1884)
+
+SELFBALANCE retrieves the balance of the currently executing contract in wei. This is a gas-efficient alternative to `ADDRESS` followed by `BALANCE` for querying the executing contract's own balance.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+balance (wei as u256)
+```
+
+**Gas Cost:** 5 (GasFastStep)
+
+**Operation:**
+```
+stack.push(balance(address(this)))
+```
+
+**Hardfork:** Available from Istanbul onwards
+
+## Behavior
+
+SELFBALANCE pushes the current contract's balance onto the stack as a 256-bit unsigned integer in wei:
+
+```
+Balance: 1.5 ETH
+In wei:  1500000000000000000
+As u256: 0x14d1120d7b160000
+```
+
+This is significantly cheaper than the equivalent sequence:
+- `ADDRESS` (2 gas) + `BALANCE` (cold: 2600 gas, warm: 100 gas) = 2602+ gas
+- `SELFBALANCE`: 5 gas
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { selfbalance } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const contractAddress = new Uint8Array(20).fill(0xaa);
+
+const frame = createFrame({
+  stack: [],
+  hardfork: 'ISTANBUL',
+  address: contractAddress,
+  evm: {
+    get_balance: (addr) => {
+      if (addr.every((b, i) => b === contractAddress[i])) {
+        return 1_500_000_000_000_000_000n; // 1.5 ETH
+      }
+      return 0n;
+    }
+  }
+});
+
+const err = selfbalance(frame);
+console.log(frame.stack); // [1500000000000000000n]
+console.log(frame.gasRemaining); // Original - 5
+```
+
+### Pre-Istanbul Error
+
+```typescript
+// Before Istanbul hardfork
+const preIstanbulFrame = createFrame({
+  hardfork: 'PETERSBURG',
+  address: contractAddress
+});
+
+const err = selfbalance(preIstanbulFrame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Balance Checks
+
+```typescript
+// Check if contract has sufficient balance
+selfbalance(frame);
+const balance = frame.stack[0];
+const required = 1_000_000_000_000_000_000n; // 1 ETH
+
+const hasFunds = balance >= required;
+console.log(`Sufficient funds: ${hasFunds}`);
+```
+
+## Gas Cost
+
+**Cost:** 5 gas (GasFastStep)
+
+SELFBALANCE is dramatically cheaper than the alternative:
+
+**Comparison:**
+- `SELFBALANCE`: 5 gas
+- `ADDRESS` + `BALANCE` (cold): 2 + 2600 = 2602 gas (520x more expensive!)
+- `ADDRESS` + `BALANCE` (warm): 2 + 100 = 102 gas (20x more expensive)
+
+This makes SELFBALANCE one of the most cost-effective operations introduced in Istanbul.
+
+## Common Usage
+
+### Minimum Balance Guard
+
+```solidity
+contract MinBalanceGuard {
+    uint256 public constant MIN_BALANCE = 0.1 ether;
+
+    modifier requireMinBalance() {
+        require(address(this).balance >= MIN_BALANCE, "Insufficient balance");
+        _;
+    }
+
+    function protectedOperation() external requireMinBalance {
+        // Execute only if contract has minimum balance
+    }
+}
+```
+
+### Balance Tracking
+
+```solidity
+contract BalanceTracker {
+    event BalanceChanged(uint256 oldBalance, uint256 newBalance);
+
+    uint256 public lastKnownBalance;
+
+    function updateBalance() external {
+        uint256 current = address(this).balance;
+
+        if (current != lastKnownBalance) {
+            emit BalanceChanged(lastKnownBalance, current);
+            lastKnownBalance = current;
+        }
+    }
+}
+```
+
+### Payment Verification
+
+```solidity
+contract PaymentVerifier {
+    uint256 public balanceBeforePayment;
+
+    function expectPayment(uint256 amount) external {
+        balanceBeforePayment = address(this).balance;
+        // ... trigger payment flow
+    }
+
+    function verifyPayment(uint256 expectedAmount) external view returns (bool) {
+        uint256 received = address(this).balance - balanceBeforePayment;
+        return received >= expectedAmount;
+    }
+}
+```
+
+### Withdrawal Logic
+
+```solidity
+contract SafeWithdrawal {
+    function withdraw(uint256 amount) external {
+        require(amount <= address(this).balance, "Insufficient balance");
+        payable(msg.sender).transfer(amount);
+    }
+
+    function withdrawAll() external {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance");
+        payable(msg.sender).transfer(balance);
+    }
+
+    function availableBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+}
+```
+
+### Fee Collection
+
+```solidity
+contract FeeCollector {
+    uint256 public collectedFees;
+
+    function collectFee() external payable {
+        collectedFees += msg.value;
+    }
+
+    function verifyCollection() external view returns (bool) {
+        // Verify balance matches expected fees
+        return address(this).balance >= collectedFees;
+    }
+
+    function withdrawFees() external {
+        uint256 amount = address(this).balance;
+        payable(owner).transfer(amount);
+    }
+}
+```
+
+### Auction Reserve Check
+
+```solidity
+contract Auction {
+    uint256 public reservePrice;
+
+    function finalize() external {
+        require(address(this).balance >= reservePrice, "Reserve not met");
+        // Transfer to seller
+        payable(seller).transfer(address(this).balance);
+    }
+}
+```
+
+## Security Considerations
+
+### Reentrancy and Balance Changes
+
+Balance can change during execution:
+
+```solidity
+contract ReentrancyAware {
+    // VULNERABLE: Balance check before external call
+    function vulnerable() external {
+        uint256 balance = address(this).balance;
+        // External call could send ETH back (reentrancy)
+        externalContract.call{value: balance}("");
+        // balance value is now stale!
+    }
+
+    // SAFE: Check balance after operations
+    function safe() external {
+        externalContract.call("");
+        uint256 finalBalance = address(this).balance;
+        // Use current balance
+    }
+}
+```
+
+### SELFDESTRUCT Interaction
+
+Contracts can receive ETH from SELFDESTRUCT without receive function:
+
+```solidity
+contract SelfdestructRecipient {
+    function checkBalance() external view returns (uint256) {
+        // Balance could be > 0 even without receive/fallback
+        // if another contract selfdestructed to this address
+        return address(this).balance;
+    }
+}
+```
+
+### Balance vs State Accounting
+
+Don't rely solely on balance for accounting:
+
+```solidity
+contract BadAccounting {
+    // VULNERABLE: No internal accounting
+    function withdraw() external {
+        uint256 share = address(this).balance / totalShares;
+        // Balance could include unexpected ETH from SELFDESTRUCT
+        payable(msg.sender).transfer(share);
+    }
+}
+
+contract GoodAccounting {
+    mapping(address => uint256) public balances;
+
+    // SAFE: Track deposits explicitly
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+### Gas Cost Changes
+
+Pre-Istanbul, querying self balance was expensive:
+
+```solidity
+contract GasAware {
+    // Pre-Istanbul: 2602+ gas
+    // Post-Istanbul: 5 gas
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// SELFBALANCE opcode (0x47) - Get balance of currently executing account
+/// (EIP-1884, Istanbul+)
+pub fn selfbalance(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // EIP-1884: SELFBALANCE was introduced in Istanbul hardfork
+    if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasFastStep);
+
+    const balance = evm.get_balance(frame.address);
+    try frame.pushStack(balance);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * SELFBALANCE opcode (0x47) - Get balance of executing contract
+ * Available: Istanbul+
+ */
+export function selfbalance(frame: BrandedFrame): EvmError | null {
+  // Check hardfork availability
+  if (frame.evm.hardfork.isBefore('ISTANBUL')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasFastStep = 5)
+  frame.gasRemaining -= 5n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Get balance of current contract
+  const balance = frame.evm.get_balance(frame.address);
+
+  // Push to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(balance);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-Istanbul Execution
+
+```typescript
+// Before Istanbul: InvalidOpcode
+const frame = createFrame({
+  hardfork: 'CONSTANTINOPLE',
+  address: contractAddress
+});
+
+const err = selfbalance(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Zero Balance
+
+```typescript
+// Contract with no ETH
+const frame = createFrame({
+  hardfork: 'ISTANBUL',
+  address: contractAddress,
+  evm: {
+    get_balance: () => 0n
+  }
+});
+
+selfbalance(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Maximum Balance
+
+```typescript
+// Theoretical maximum balance
+const frame = createFrame({
+  hardfork: 'ISTANBUL',
+  address: contractAddress,
+  evm: {
+    get_balance: () => (1n << 256n) - 1n
+  }
+});
+
+selfbalance(frame);
+console.log(frame.stack); // [max u256]
+```
+
+### During ETH Transfer
+
+```typescript
+// Balance mid-execution (after receive)
+const frame = createFrame({
+  hardfork: 'ISTANBUL',
+  address: contractAddress,
+  evm: {
+    get_balance: () => 1_000_000_000_000_000_000n + 500_000_000_000_000_000n
+    // Original 1 ETH + 0.5 ETH just received
+  }
+});
+
+selfbalance(frame);
+console.log(frame.stack); // [1500000000000000000n]
+```
+
+## Practical Patterns
+
+### Balance-Based State Machine
+
+```solidity
+contract BalanceStateMachine {
+    enum State { Empty, Funded, Operating, Closing }
+
+    function currentState() public view returns (State) {
+        uint256 balance = address(this).balance;
+
+        if (balance == 0) return State.Empty;
+        if (balance < 1 ether) return State.Funded;
+        if (balance < 10 ether) return State.Operating;
+        return State.Closing;
+    }
+}
+```
+
+### Efficient Balance Queries
+
+```solidity
+contract EfficientQueries {
+    // 5 gas
+    function selfBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    // 2602+ gas (pre-warm)
+    function otherBalance(address addr) external view returns (uint256) {
+        return addr.balance;
+    }
+}
+```
+
+## Benchmarks
+
+**Performance:**
+- Balance lookup: O(1) from state
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 5 gas per query
+- ~200,000 queries per million gas
+- 520x cheaper than `ADDRESS` + `BALANCE` (cold)
+
+## Related Instructions
+
+- **[ADDRESS (0x30)](/evm/instructions/context/address)** - Get contract address
+- **[BALANCE (0x31)](/evm/instructions/context/balance)** - Get balance of any address
+- **[CALLVALUE (0x34)](/evm/instructions/context/callvalue)** - Get ETH sent with call
+
+## References
+
+- [EIP-1884](https://eips.ethereum.org/EIPS/eip-1884) - Repricing and SELFBALANCE
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - SELFBALANCE](https://www.evm.codes/#47)
+- [Solidity Docs - address.balance](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#address-related)
