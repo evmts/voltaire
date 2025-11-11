@@ -71,7 +71,7 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
     console.log("Signer address:", Address.toChecksummed(signerAddress));
 
     // Verify the signature
-    const isValid = Secp256k1.verify(messageHash, signature, publicKey);
+    const isValid = Secp256k1.verify(signature, messageHash, publicKey);
     console.log("Signature valid:", isValid);
     ```
   </Tab>
@@ -95,7 +95,7 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
 
     document.body.innerHTML += `
       <p>Signer: ${Address.toChecksummed(signerAddress)}</p>
-      <p>Valid: ${Secp256k1.verify(messageHash, signature, publicKey)}</p>
+      <p>Valid: ${Secp256k1.verify(signature, messageHash, publicKey)}</p>
     `;
     ```
   </Tab>
