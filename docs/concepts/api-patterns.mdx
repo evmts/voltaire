@@ -1,0 +1,250 @@
+---
+title: API Patterns
+description: Understanding Class API vs Namespace API patterns in Voltaire
+---
+
+Voltaire primitives provide two complementary API styles: **Class API** for familiar OOP patterns and **Namespace API** for functional programming and tree-shaking optimization.
+
+## Dual API Architecture
+
+Most primitives expose both APIs simultaneously:
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+// Factory returns instance with prototype methods
+const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// Call methods directly on instance
+addr.toChecksummed();  // "0x742d35Cc..."
+addr.isZero();         // false
+addr.equals(addr2);    // boolean
+```
+
+**Characteristics**:
+- Familiar object-oriented syntax
+- Instance methods via prototype chain
+- Methods called with dot notation
+- Internally delegates to Namespace API
+
+</Tab>
+<Tab title="Namespace API">
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// Same factory, no prototype
+const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// Pass instance as first parameter
+Address.toChecksummed(addr);  // "0x742d35Cc..."
+Address.isZero(addr);         // false
+Address.equals(addr, addr2);  // boolean
+```
+
+**Characteristics**:
+- Functional programming style
+- Tree-shakeable (only import what you use)
+- Data-first parameter order
+- Better for bundle size optimization
+
+</Tab>
+</Tabs>
+
+## Implementation Details
+
+Primitives use `Object.setPrototypeOf()` to add methods:
+
+```typescript
+// Factory function creates instance
+export function Address(value) {
+  const result = BrandedAddress.from(value);
+  Object.setPrototypeOf(result, Address.prototype);
+  return result;
+}
+
+// Instance method delegates to functional API
+Address.prototype.toChecksummed = function() {
+  return BrandedAddress.toChecksummed(this);
+};
+
+// Namespace API is the underlying implementation
+Address.toChecksummed = BrandedAddress.toChecksummed;
+```
+
+This architecture provides:
+- Zero runtime overhead (prototype chain only)
+- Single source of truth (Namespace API)
+- Type safety through branded types
+- Flexibility to choose API style
+
+## When to Use Each API
+
+### Use Class API When
+
+1. **OOP familiarity matters** - Team prefers method chaining
+2. **Integration with OOP code** - Matches existing patterns
+3. **Rapid prototyping** - Method discovery via IDE autocomplete
+4. **Method chaining** - Building complex operations
+
+```typescript
+// Method chaining with Class API
+const contract = addr
+  .calculateCreateAddress(0n)
+  .toChecksummed();
+```
+
+### Use Namespace API When
+
+1. **Bundle size critical** - Tree-shaking reduces imports
+2. **Functional style preferred** - Pure functions, no side effects
+3. **Composition patterns** - Building pipelines
+4. **Testing** - Easier to mock individual functions
+
+```typescript
+// Functional composition with Namespace API
+import { fromHex, toChecksummed, calculateCreateAddress } from '@tevm/voltaire/Address';
+
+const pipeline = (hex, nonce) =>
+  toChecksummed(
+    calculateCreateAddress(
+      fromHex(hex),
+      nonce
+    )
+  );
+```
+
+## Primitives with Dual APIs
+
+The following primitives support both Class and Namespace APIs:
+
+### Full Dual API
+- [Address](/primitives/address)
+- [AccessList](/primitives/accesslist)
+- [Blob](/primitives/blob)
+- [EventLog](/primitives/eventlog)
+- [Hash](/primitives/hash)
+- [Hex](/primitives/hex)
+- [Signature](/primitives/signature)
+- [Uint](/primitives/uint)
+- [Bytecode](/primitives/bytecode)
+- [Base64](/primitives/base64)
+- [BloomFilter](/primitives/bloomfilter)
+- [BinaryTree](/primitives/binarytree)
+- [State](/primitives/state)
+- [Rlp](/primitives/rlp)
+- [Abi](/primitives/abi)
+- [Chain](/primitives/chain)
+
+### Namespace API Only
+Some primitives provide only Namespace API:
+- [Authorization](/primitives/authorization)
+- [FeeMarket](/primitives/feemarket)
+- [GasConstants](/primitives/gasconstants)
+- [Hardfork](/primitives/hardfork)
+- [Opcode](/primitives/opcode)
+- [Siwe](/primitives/siwe)
+
+These are utility namespaces without instance state, so Class API would provide no benefit.
+
+## Tree-Shaking Example
+
+Namespace API enables precise imports:
+
+```typescript
+// Import only what you need (tree-shakeable)
+import { fromHex, toChecksummed, isZero } from '@tevm/voltaire/Address';
+
+const addr = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const checksummed = toChecksummed(addr);
+const zero = isZero(addr);
+
+// Bundle includes ONLY: fromHex, toChecksummed, isZero
+// Excluded: calculateCreateAddress, equals, compare, etc.
+```
+
+vs
+
+```typescript
+// Class API imports entire prototype
+import { Address } from '@tevm/voltaire';
+
+const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const checksummed = addr.toChecksummed();
+const zero = addr.isZero();
+
+// Bundle includes ALL Address prototype methods
+```
+
+For a typical Address usage, Namespace API can save 2-5 KB in production bundles.
+
+## Type Safety
+
+Both APIs use the same [branded types](/concepts/branded-types):
+
+```typescript
+type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+```
+
+TypeScript enforces correctness at compile time with zero runtime overhead:
+
+```typescript
+// Both APIs have same type safety
+const addr1 = Address.fromHex('0x...');  // BrandedAddress
+const addr2 = fromHex('0x...');          // BrandedAddress
+
+// Type errors caught at compile time
+const hash: BrandedHash = addr1;  // ❌ Type error
+Address.toHex(hash);               // ❌ Type error
+addr1.toHex();                     // ✅ Works
+toHex(addr1);                      // ✅ Works
+```
+
+## Migration Between APIs
+
+Switch between APIs without changing logic:
+
+```typescript
+// From Class API...
+import { Address } from '@tevm/voltaire';
+const result = addr.toChecksummed();
+
+// ...to Namespace API
+import * as Address from '@tevm/voltaire/Address';
+const result = Address.toChecksummed(addr);
+```
+
+Or use both simultaneously:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import * as AddrNS from '@tevm/voltaire/Address';
+
+// Create with Class API
+const addr = Address.fromHex('0x...');
+
+// Use Namespace API for specific operations
+const checksummed = AddrNS.toChecksummed(addr);
+
+// Back to Class API
+addr.isZero();
+```
+
+## Performance Considerations
+
+Both APIs have identical performance:
+
+- **Class API**: Prototype lookup adds ~0.5ns per method call (negligible)
+- **Namespace API**: Direct function call, no prototype overhead
+- **Memory**: Class API uses ~100 bytes more per primitive type (prototype chain)
+
+For typical applications, performance differences are unmeasurable. Choose based on code style and bundle size requirements.
+
+## Related
+
+- [Branded Types](/concepts/branded-types) - Type safety implementation
+- [Data-First Design](/concepts/data-first) - Data structure patterns
+- [Getting Started](/getting-started) - Installation and setup
