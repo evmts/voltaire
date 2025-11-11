@@ -16,6 +16,8 @@
 		"node_modules/**/*",
 		"**/*.test.ts",
 		"**/*.bench.ts",
+		"src/primitives/Bytecode/BrandedBytecode/*.js",
+		"src/primitives/Abi/encodePacked.js",
 		".astro/**/*",
 		"src/content.config.ts",
 		"src/content/docs/primitives/abi",
