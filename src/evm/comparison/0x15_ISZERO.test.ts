@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handle as ISZERO } from "./0x15_ISZERO.js";
 
-
 /**
  * Create a minimal test frame
  */

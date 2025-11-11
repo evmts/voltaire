@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handle as GT } from "./0x11_GT.js";
 
-
 /**
  * Create a minimal test frame
  */

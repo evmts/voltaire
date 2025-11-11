@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handle as EQ } from "./0x14_EQ.js";
 
-
 /**
  * Create a minimal test frame
  */

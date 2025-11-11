@@ -2,7 +2,11 @@ import { describe, expect, test } from "vitest";
 import { serializeG1, serializeG2 } from "../../crypto/bn254/BN254.js";
 import * as G1 from "../../crypto/bn254/G1/index.js";
 import * as G2 from "../../crypto/bn254/G2/index.js";
-import { FP_MOD, FR_MOD, G1_GENERATOR_X } from "../../crypto/bn254/constants.js";
+import {
+	FP_MOD,
+	FR_MOD,
+	G1_GENERATOR_X,
+} from "../../crypto/bn254/constants.js";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
 import {
 	PrecompileAddress,

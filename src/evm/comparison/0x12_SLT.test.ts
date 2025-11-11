@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handle as SLT } from "./0x12_SLT.js";
 
-
 /**
  * Create a minimal test frame
  */
