@@ -1,15 +1,19 @@
 import { InvalidPathError } from "./errors.js";
 
 /**
- * Derive child key from parent using BIP-32 path
+ * Derive child key using BIP-32 derivation path.
  *
+ * Supports hierarchical paths with hardened (') and normal derivation.
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Parent extended key
- * @param {string} path - Derivation path (e.g., "m/44'/60'/0'/0/0")
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Derived extended key
- * @throws {InvalidPathError} If derivation path is invalid
- *
+ * @param {string} path - BIP-32 derivation path (e.g., "m/44'/60'/0'/0/0")
+ * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Derived child extended key
+ * @throws {InvalidPathError} If path format is invalid or derivation fails
  * @example
- * ```typescript
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
  * const root = HDWallet.fromSeed(seed);
  * const child = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
  * ```

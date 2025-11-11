@@ -5,14 +5,16 @@ import { Bn254InvalidPointError } from "../errors.js";
 /**
  * Create G1 point from affine coordinates with validation
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {bigint} x - X coordinate
  * @param {bigint} y - Y coordinate
  * @returns {import('../BrandedG1Point.js').BrandedG1Point} G1 point
  * @throws {Bn254InvalidPointError} If point not on curve
- *
  * @example
- * ```typescript
- * const point = fromAffine(1n, 2n);
+ * ```javascript
+ * import * as G1 from './crypto/bn254/G1/index.js';
+ * const point = G1.fromAffine(1n, 2n);
  * ```
  */
 export function fromAffine(x, y) {

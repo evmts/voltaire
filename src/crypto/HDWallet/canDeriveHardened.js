@@ -1,13 +1,18 @@
 /**
- * Check if key can derive hardened children
+ * Check if extended key can derive hardened children.
  *
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key
- * @returns {boolean} True if key has private key, false if public-only
+ * Only keys with private key material can derive hardened paths.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key to check
+ * @returns {boolean} True if key has private key and can derive hardened children, false if public-only
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
  * if (HDWallet.canDeriveHardened(key)) {
- *   const hardened = key.deriveChild(HDWallet.HARDENED_OFFSET);
+ *   const hardened = HDWallet.deriveChild(key, HDWallet.HARDENED_OFFSET);
  * }
  * ```
  */

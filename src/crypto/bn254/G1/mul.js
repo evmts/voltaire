@@ -7,13 +7,17 @@ import { isZero } from "./isZero.js";
 /**
  * Scalar multiplication of G1 point
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG1Point.js').BrandedG1Point} point - Point to multiply
  * @param {bigint} scalar - Scalar multiplier
  * @returns {import('../BrandedG1Point.js').BrandedG1Point} Result
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const result = mul(point, 5n);
+ * ```javascript
+ * import * as G1 from './crypto/bn254/G1/index.js';
+ * const point = G1.generator();
+ * const result = G1.mul(point, 5n);
  * ```
  */
 export function mul(point, scalar) {

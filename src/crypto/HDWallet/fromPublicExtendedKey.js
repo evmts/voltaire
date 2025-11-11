@@ -2,17 +2,20 @@ import { HDKey } from "@scure/bip32";
 import { HDWalletError } from "./errors.js";
 
 /**
- * Create HD key from extended public key (xpub)
+ * Create HD key from extended public key string.
  *
- * Note: Cannot derive hardened children from public keys
+ * Cannot derive hardened children from public-only keys.
  *
- * @param {string} xpub - Base58-encoded extended public key
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key (public only)
- * @throws {HDWalletError} If extended public key is invalid
- *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {string} xpub - Base58-encoded extended public key (xpub...)
+ * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key with public key only (no private key)
+ * @throws {HDWalletError} If extended public key format is invalid or decoding fails
  * @example
- * ```typescript
- * const pubKey = HDWallet.fromPublicExtendedKey("xpub...");
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
+ * const pubKey = HDWallet.fromPublicExtendedKey("xpub661MyMwAqRbcF...");
+ * // Can only derive normal (non-hardened) children
  * ```
  */
 export function fromPublicExtendedKey(xpub) {

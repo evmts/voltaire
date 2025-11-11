@@ -6,13 +6,18 @@ import { isZero } from "./isZero.js";
 /**
  * Add two G1 points
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG1Point.js').BrandedG1Point} point - First point
  * @param {import('../BrandedG1Point.js').BrandedG1Point} other - Second point
  * @returns {import('../BrandedG1Point.js').BrandedG1Point} Sum
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const sum = add(p1, p2);
+ * ```javascript
+ * import * as G1 from './crypto/bn254/G1/index.js';
+ * const p1 = G1.generator();
+ * const p2 = G1.double(p1);
+ * const sum = G1.add(p1, p2);
  * ```
  */
 export function add(point, other) {

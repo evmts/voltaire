@@ -33,9 +33,12 @@ export {
  * Fast, simple, and designed for ECDH key agreement.
  * Used in modern protocols like TLS 1.3, WireGuard, Signal, and SSH.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @throws {never}
  * @example
- * ```typescript
- * import { X25519 } from './X25519.js';
+ * ```javascript
+ * import { X25519 } from './crypto/X25519/index.js';
  *
  * // Generate two keypairs
  * const seed1 = crypto.getRandomValues(new Uint8Array(32));

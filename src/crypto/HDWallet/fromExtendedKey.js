@@ -2,15 +2,19 @@ import { HDKey } from "@scure/bip32";
 import { HDWalletError } from "./errors.js";
 
 /**
- * Create HD key from extended private key (xprv)
+ * Create HD key from extended private key string.
  *
- * @param {string} xprv - Base58-encoded extended private key
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key
- * @throws {HDWalletError} If extended key is invalid
+ * Deserializes base58-encoded xprv key.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {string} xprv - Base58-encoded extended private key (xprv...)
+ * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key with private key material
+ * @throws {HDWalletError} If extended key format is invalid or decoding fails
  * @example
- * ```typescript
- * const key = HDWallet.fromExtendedKey("xprv...");
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
+ * const key = HDWallet.fromExtendedKey("xprv9s21ZrQH143K3...");
  * ```
  */
 export function fromExtendedKey(xprv) {

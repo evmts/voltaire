@@ -5,12 +5,16 @@ import { isZero } from "./isZero.js";
 /**
  * Convert G1 point to affine coordinates
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG1Point.js').BrandedG1Point} point - Point in projective coordinates
  * @returns {import('../BrandedG1Point.js').BrandedG1Point} Point in affine coordinates
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const affine = toAffine(point);
+ * ```javascript
+ * import * as G1 from './crypto/bn254/G1/index.js';
+ * const point = G1.generator();
+ * const affine = G1.toAffine(point);
  * ```
  */
 export function toAffine(point) {
