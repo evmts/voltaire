@@ -1,0 +1,579 @@
+---
+title: "EXP (0x0a)"
+description: "Exponential operation for 256-bit unsigned integers with dynamic gas costs"
+---
+
+## Overview
+
+**Opcode:** `0x0a`
+**Introduced:** Frontier (EVM genesis)
+**Gas Update:** EIP-160 (Spurious Dragon, 2016)
+
+EXP computes `base^exponent` where both operands are 256-bit unsigned integers. The result wraps modulo 2^256 on overflow. Unlike other arithmetic operations, EXP has dynamic gas costs based on the byte length of the exponent.
+
+This operation uses exponentiation by squaring for efficient computation, critical for cryptographic operations and mathematical calculations.
+
+## Specification
+
+**Stack Input:**
+```
+base (top)
+exponent
+```
+
+**Stack Output:**
+```
+base^exponent mod 2^256
+```
+
+**Gas Cost:** 10 + (50 × byte_length(exponent))
+
+**Operation:**
+```
+result = (base^exponent) & ((1 << 256) - 1)
+```
+
+## Behavior
+
+EXP pops two values from the stack (base, exponent), computes `base^exponent`, and pushes the result back:
+
+- **Normal case:** Result is `base^exponent mod 2^256`
+- **Exponent = 0:** Result is 1 (even when base = 0)
+- **Base = 0:** Result is 0 (except when exponent = 0)
+- **Overflow wrapping:** Result wraps modulo 2^256
+
+The implementation uses fast exponentiation by squaring (square-and-multiply algorithm) for O(log n) complexity.
+
+## Examples
+
+### Basic Exponentiation
+
+```typescript
+import { exp } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 2^3 = 8
+const frame = createFrame({ stack: [2n, 3n] });
+const err = exp(frame);
+
+console.log(frame.stack); // [8n]
+console.log(frame.pc); // 1
+```
+
+### Zero Exponent
+
+```typescript
+// Any number^0 = 1 (including 0^0 in EVM)
+const frame = createFrame({ stack: [999n, 0n] });
+const err = exp(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+### Zero Base
+
+```typescript
+// 0^5 = 0
+const frame = createFrame({ stack: [0n, 5n] });
+const err = exp(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Large Exponent with Overflow
+
+```typescript
+// 2^256 wraps to 0
+const frame = createFrame({ stack: [2n, 256n] });
+const err = exp(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Power of 10 (Wei/Ether)
+
+```typescript
+// 10^18 = 1 ether in wei
+const frame = createFrame({ stack: [10n, 18n] });
+const err = exp(frame);
+
+console.log(frame.stack); // [1000000000000000000n]
+```
+
+## Gas Cost
+
+**Base Cost:** 10 gas (GasSlowStep)
+**Dynamic Cost:** 50 gas per byte of exponent (EIP-160)
+
+**Formula:** `gas = 10 + (50 × byte_length(exponent))`
+
+### Byte Length Calculation
+
+The byte length is the number of bytes needed to represent the exponent:
+
+```typescript
+// Exponent byte length examples
+0: 0 bytes → 10 gas
+1-255: 1 byte → 60 gas
+256-65535: 2 bytes → 110 gas
+65536-16777215: 3 bytes → 160 gas
+MAX_U256: 32 bytes → 1610 gas
+```
+
+### Gas Examples
+
+```typescript
+// exp(2, 0) - 0 bytes
+// Gas: 10 + (50 × 0) = 10
+
+// exp(2, 255) - 1 byte (0xFF)
+// Gas: 10 + (50 × 1) = 60
+
+// exp(2, 256) - 2 bytes (0x0100)
+// Gas: 10 + (50 × 2) = 110
+
+// exp(2, MAX_U256) - 32 bytes
+// Gas: 10 + (50 × 32) = 1610
+```
+
+### Comparison
+
+```typescript
+// Operation costs:
+ADD/SUB: 3 gas (constant)
+MUL/DIV: 5 gas (constant)
+ADDMOD/MULMOD: 8 gas (constant)
+EXP: 10-1610 gas (dynamic)
+```
+
+## Edge Cases
+
+### EVM 0^0 Convention
+
+```typescript
+// EVM defines 0^0 = 1 (mathematical convention varies)
+const frame = createFrame({ stack: [0n, 0n] });
+exp(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+### Power of 2 Overflow
+
+```typescript
+// 2^255 = largest power of 2 in u256
+const frame1 = createFrame({ stack: [2n, 255n] });
+exp(frame1);
+console.log(frame1.stack); // [1n << 255n]
+
+// 2^256 wraps to 0
+const frame2 = createFrame({ stack: [2n, 256n] });
+exp(frame2);
+console.log(frame2.stack); // [0n]
+```
+
+### Large Base Overflow
+
+```typescript
+const MAX_U256 = (1n << 256n) - 1n;
+
+// MAX_U256^2 wraps around
+const frame = createFrame({ stack: [MAX_U256, 2n] });
+exp(frame);
+
+const expected = (MAX_U256 * MAX_U256) & ((1n << 256n) - 1n);
+console.log(frame.stack); // [expected]
+```
+
+### Identity Exponent
+
+```typescript
+// n^1 = n
+const frame = createFrame({ stack: [42n, 1n] });
+exp(frame);
+
+console.log(frame.stack); // [42n]
+```
+
+### Stack Underflow
+
+```typescript
+// Not enough stack items
+const frame = createFrame({ stack: [5n] });
+const err = exp(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas for large exponent
+const frame = createFrame({ stack: [2n, 256n], gasRemaining: 50n });
+const err = exp(frame);
+
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Wei to Ether Conversion
+
+```solidity
+// 1 ether = 10^18 wei
+uint256 constant ETHER = 1e18;
+
+assembly {
+    // Equivalent to: 10 ** 18
+    let oneEther := exp(10, 18)
+}
+```
+
+### Power-of-Two Operations
+
+```solidity
+// Compute 2^n efficiently
+function pow2(uint256 n) pure returns (uint256) {
+    assembly {
+        mstore(0x00, exp(2, n))
+        return(0x00, 0x20)
+    }
+}
+```
+
+### Modular Exponentiation
+
+```solidity
+// Combine with MULMOD for secure crypto
+function modExp(uint256 base, uint256 exp, uint256 mod)
+    pure returns (uint256 result)
+{
+    result = 1;
+    assembly {
+        for {} gt(exp, 0) {} {
+            if and(exp, 1) {
+                result := mulmod(result, base, mod)
+            }
+            base := mulmod(base, base, mod)
+            exp := shr(1, exp)
+        }
+    }
+}
+```
+
+### Fixed-Point Math
+
+```solidity
+// Scale calculations with powers of 10
+uint256 constant PRECISION = 1e18;
+
+function multiply(uint256 a, uint256 b) pure returns (uint256) {
+    return (a * b) / PRECISION;
+}
+
+assembly {
+    let precision := exp(10, 18)
+    let result := div(mul(a, b), precision)
+}
+```
+
+### Bit Mask Generation
+
+```solidity
+// Generate masks with 2^n - 1
+function bitMask(uint256 bits) pure returns (uint256) {
+    assembly {
+        mstore(0x00, sub(exp(2, bits), 1))
+        return(0x00, 0x20)
+    }
+}
+
+// Example: bitMask(8) = 0xFF
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * EXP opcode (0x0a) - Exponential operation
+ */
+export function exp(frame: BrandedFrame): EvmError | null {
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const base = frame.stack.pop();
+  const exponent = frame.stack.pop();
+
+  // Calculate dynamic gas cost based on exponent byte length
+  // Per EIP-160: GAS_EXP_BYTE * byte_length(exponent)
+  let byteLen = 0n;
+  if (exponent !== 0n) {
+    let tempExp = exponent;
+    while (tempExp > 0n) {
+      byteLen += 1n;
+      tempExp >>= 8n;
+    }
+  }
+
+  const EXP_BYTE_COST = 50n;
+  const dynamicGas = EXP_BYTE_COST * byteLen;
+  const totalGas = 10n + dynamicGas;
+
+  // Consume gas
+  frame.gasRemaining -= totalGas;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Compute result using exponentiation by squaring
+  let result = 1n;
+  let b = base;
+  let e = exponent;
+
+  while (e > 0n) {
+    if ((e & 1n) === 1n) {
+      result = (result * b) & ((1n << 256n) - 1n);
+    }
+    b = (b * b) & ((1n << 256n) - 1n);
+    e >>= 1n;
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// EXP opcode (0x0a) - Exponential operation
+pub fn exp(frame: *FrameType) FrameType.EvmError!void {
+    const base = try frame.popStack();
+    const exponent = try frame.popStack();
+
+    // Calculate dynamic gas cost based on exponent byte length
+    const byte_len = blk: {
+        if (exponent == 0) break :blk 0;
+        var temp_exp = exponent;
+        var len: u64 = 0;
+        while (temp_exp > 0) : (temp_exp >>= 8) {
+            len += 1;
+        }
+        break :blk len;
+    };
+
+    // EIP-160: GAS_EXPONENTIATION_PER_BYTE = 50
+    const EXP_BYTE_COST: u64 = 50;
+    const dynamic_gas = EXP_BYTE_COST * byte_len;
+    try frame.consumeGas(GasConstants.GasSlowStep + dynamic_gas);
+
+    // Compute result using exponentiation by squaring
+    var result: u256 = 1;
+    var b = base;
+    var e = exponent;
+
+    while (e > 0) {
+        if (e & 1 == 1) {
+            result = result *% b;  // Wrapping multiplication
+        }
+        b = b *% b;
+        e >>= 1;
+    }
+
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { exp } from './0x0a_EXP.js';
+
+describe('EXP (0x0a)', () => {
+  it('computes base^exponent', () => {
+    const frame = createFrame([2n, 3n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([8n]); // 2^3 = 8
+  });
+
+  it('handles exponent of 0', () => {
+    const frame = createFrame([999n, 0n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]); // Any^0 = 1
+  });
+
+  it('handles base of 0', () => {
+    const frame = createFrame([0n, 5n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]); // 0^5 = 0
+  });
+
+  it('handles 0^0 case', () => {
+    const frame = createFrame([0n, 0n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]); // EVM: 0^0 = 1
+  });
+
+  it('handles overflow wrapping', () => {
+    const frame = createFrame([2n, 256n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]); // 2^256 wraps to 0
+  });
+
+  it('computes 10^18', () => {
+    const frame = createFrame([10n, 18n]);
+    expect(exp(frame)).toBeNull();
+    expect(frame.stack).toEqual([1000000000000000000n]);
+  });
+
+  it('consumes base gas when exponent is 0', () => {
+    const frame = createFrame([999n, 0n], 100n);
+    expect(exp(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(90n); // 100 - 10
+  });
+
+  it('consumes dynamic gas for 1-byte exponent', () => {
+    const frame = createFrame([2n, 255n], 1000n);
+    expect(exp(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(940n); // 1000 - 60
+  });
+
+  it('consumes dynamic gas for 2-byte exponent', () => {
+    const frame = createFrame([2n, 256n], 1000n);
+    expect(exp(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(890n); // 1000 - 110
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame([5n]);
+    expect(exp(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame([2n, 256n], 50n);
+    expect(exp(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic exponentiation (2^3 = 8)
+- Zero exponent (any^0 = 1)
+- Zero base (0^n = 0)
+- 0^0 special case (returns 1)
+- Overflow wrapping (2^256 = 0)
+- Large exponents (10^18, 2^255)
+- Gas calculation for different byte lengths
+- Exponentiation by squaring correctness
+- Stack underflow (< 2 items)
+- Out of gas (insufficient for byte length)
+
+## Security
+
+### Gas Attacks
+
+Before EIP-160, EXP had constant gas cost, enabling DoS attacks:
+
+**Pre-EIP-160 vulnerability:**
+```solidity
+// Constant cost allowed cheap expensive operations
+function attack() {
+    uint256 x = 2 ** (2**256 - 1);  // Very expensive, constant gas
+}
+```
+
+**Post-EIP-160 fix:**
+- Gas cost proportional to exponent byte length
+- Prevents DoS by making large exponents expensive
+
+### Overflow Behavior
+
+EXP wraps on overflow without reverting:
+
+```solidity
+// Silent overflow - be careful
+uint256 result = 2 ** 256;  // result = 0, no revert
+
+// Safe pattern with bounds checking
+function safePow(uint256 base, uint256 exp, uint256 max)
+    pure returns (uint256)
+{
+    uint256 result = base ** exp;
+    require(result <= max, "overflow");
+    return result;
+}
+```
+
+### Constant-Time Considerations
+
+EXP implementation must avoid timing leaks in cryptographic contexts:
+
+```solidity
+// Timing-safe modular exponentiation
+function modExpSafe(uint256 base, uint256 exp, uint256 mod)
+    pure returns (uint256)
+{
+    // Use constant-time square-and-multiply
+    // Never branch on secret exponent bits
+}
+```
+
+## Algorithm: Exponentiation by Squaring
+
+EXP uses the efficient square-and-multiply algorithm:
+
+```
+Input: base, exponent
+Output: base^exponent mod 2^256
+
+result = 1
+while exponent > 0:
+    if exponent & 1:
+        result = (result * base) mod 2^256
+    base = (base * base) mod 2^256
+    exponent = exponent >> 1
+return result
+```
+
+**Complexity:** O(log n) multiplications where n is exponent value
+
+**Example: 3^13**
+```
+Binary of 13: 1101
+- bit 0 (1): result = 1 * 3 = 3
+- bit 1 (0): skip
+- bit 2 (1): result = 3 * 9 = 27
+- bit 3 (1): result = 27 * 729 = 19683 (wrong)
+
+Correct:
+13 = 1101₂ = 8 + 4 + 1
+3^13 = 3^8 × 3^4 × 3^1 = 6561 × 81 × 3 = 1594323
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1, Appendix H (EIP-160)
+- [EVM Codes - EXP](https://www.evm.codes/#0a)
+- [EIP-160](https://eips.ethereum.org/EIPS/eip-160) - EXP cost increase
+- [Exponentiation by Squaring](https://en.wikipedia.org/wiki/Exponentiation_by_squaring) - Algorithm explanation
+
+## Related Instructions
+
+- [MUL](/evm/instructions/arithmetic/mul) - Basic multiplication
+- [MULMOD](/evm/instructions/arithmetic/mulmod) - Modular multiplication (used in modExp)
+- [EXP Precompile](https://eips.ethereum.org/EIPS/eip-198) - BigInt modular exponentiation (0x05)
