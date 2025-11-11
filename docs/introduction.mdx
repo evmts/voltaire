@@ -27,19 +27,7 @@ Voltaire is a low-level Ethereum library focusing on primitives and cryptography
 
 ## Quick Example
 
-```typescript
-import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
-
-// Hash and sign a message
-const message = "Sign-In with Ethereum";
-const messageHash = Keccak256.hash(message);
-const signature = Secp256k1.sign(messageHash, privateKey);
-
-// Recover signer's address from signature
-const recovered = Secp256k1.recoverAddress(messageHash, signature);
-console.log(Address.toChecksummed(recovered));
-// 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
-```
+<iframe src="https://stackblitz.com/edit/evmts-quick-start-pnnh3w?embed=1&file=README.md" style={{ width: '100%', height: '500px', border: '0', borderRadius: '4px', overflow: 'hidden' }} title="Voltaire Quick Start"></iframe>
 
 <Tip>
 **AI Agent Integration** - Use Voltaire with Claude and other AI agents via the [MCP server](https://voltaire.tevm.app/mcp):

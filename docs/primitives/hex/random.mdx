@@ -21,9 +21,9 @@ Generates cryptographically secure random hex of specified byte size using `cryp
 import { Hex } from '@tevm/voltaire'
 
 // Generate random hex
-Hex.random(1)   // "0xXX" (1 random byte)
-Hex.random(4)   // "0xXXXXXXXX" (4 random bytes)
-Hex.random(32)  // "0xXXXX...XXXX" (32 random bytes)
+Hex.random(1)   // "0x7f" (1 random byte)
+Hex.random(4)   // "0x7f3a9c2d" (4 random bytes)
+Hex.random(32)  // "0x7f3a9c2d...4b8e6f1a" (32 random bytes)
 
 // Empty random
 Hex.random(0)   // "0x"
@@ -56,9 +56,9 @@ Generates cryptographically secure random hex of specified byte size.
 ```typescript
 import * as Hex from '@tevm/voltaire/Hex'
 
-Hex.random(1)   // "0xXX"
-Hex.random(4)   // "0xXXXXXXXX"
-Hex.random(32)  // "0xXXXX...XXXX"
+Hex.random(1)   // "0x7f"
+Hex.random(4)   // "0x7f3a9c2d"
+Hex.random(32)  // "0x7f3a9c2d...4b8e6f1a"
 ```
 
 **Defined in:** [primitives/Hex/BrandedHex/random.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js)
@@ -164,17 +164,17 @@ const mockSignature = Hex.random(65)  // r(32) + s(32) + v(1)
 
 **1 byte (uint8):**
 ```typescript
-Hex.random(1)  // "0xXX"
+Hex.random(1)  // "0x7f"
 ```
 
 **4 bytes (uint32):**
 ```typescript
-Hex.random(4)  // "0xXXXXXXXX"
+Hex.random(4)  // "0x7f3a9c2d"
 ```
 
 **8 bytes (uint64):**
 ```typescript
-Hex.random(8)  // "0xXXXXXXXXXXXXXXXX"
+Hex.random(8)  // "0x7f3a9c2d4b8e6f1a"
 ```
 
 **16 bytes (128-bit):**
