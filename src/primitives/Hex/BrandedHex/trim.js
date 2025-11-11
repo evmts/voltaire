@@ -9,14 +9,18 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Trim leading zeros from hex
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string to trim
  * @returns {string} Trimmed hex string
- *
+ * @throws {InvalidFormatError} If missing 0x prefix
+ * @throws {OddLengthError} If hex has odd number of digits
+ * @throws {InvalidCharacterError} If contains invalid hex characters
  * @example
- * ```typescript
- * const hex = Hex('0x00001234');
- * const trimmed1 = Hex.trim(hex); // '0x1234'
- * const trimmed2 = hex.trim(); // '0x1234'
+ * ```javascript
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x00001234');
+ * const trimmed = Hex.trim(hex); // '0x1234'
  * ```
  */
 export function trim(hex) {

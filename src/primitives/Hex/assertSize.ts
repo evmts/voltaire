@@ -4,16 +4,17 @@ import { InvalidLengthError } from "./errors.js";
 /**
  * Assert hex has specific size
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param hex - Hex string to check
  * @param targetSize - Expected byte size
  * @returns Sized hex string
  * @throws {InvalidLengthError} If size doesn't match
- *
  * @example
  * ```typescript
- * const hex = Hex('0x1234');
- * const sized1 = Hex.assertSize(hex, 2); // Sized<2>
- * const sized2 = hex.assertSize(2); // Sized<2>
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x1234');
+ * const sized = Hex.assertSize(hex, 2); // Sized<2>
  * ```
  */
 export function assertSize<TSize extends number>(

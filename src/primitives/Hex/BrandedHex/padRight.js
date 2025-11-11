@@ -4,15 +4,17 @@ import { fromBytes } from "./fromBytes.js";
 /**
  * Pad hex to right (suffix with zeros)
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string to pad
  * @param {number} targetSize - Target size in bytes
  * @returns {string} Right-padded hex string
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const hex = Hex('0x1234');
- * const padded1 = Hex.padRight(hex, 4); // '0x12340000'
- * const padded2 = hex.padRight(4); // '0x12340000'
+ * ```javascript
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x1234');
+ * const padded = Hex.padRight(hex, 4); // '0x12340000'
  * ```
  */
 export function padRight(hex, targetSize) {

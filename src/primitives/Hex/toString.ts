@@ -9,14 +9,18 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Convert hex to string
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param hex - Hex string to convert
  * @returns Decoded string
- *
+ * @throws {InvalidFormatError} If missing 0x prefix
+ * @throws {OddLengthError} If hex has odd number of digits
+ * @throws {InvalidCharacterError} If contains invalid hex characters
  * @example
  * ```typescript
- * const hex = Hex('0x68656c6c6f');
- * const str1 = Hex.toString(hex); // 'hello'
- * const str2 = hex.toString(); // 'hello'
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x68656c6c6f');
+ * const str = Hex.toString(hex); // 'hello'
  * ```
  */
 export function toString(hex: BrandedHex): string {

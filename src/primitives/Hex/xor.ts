@@ -11,16 +11,20 @@ import { hexCharToValue } from "./utils.js";
 /**
  * XOR with another hex string of same length
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param hex - First hex string
  * @param other - Hex string to XOR with
  * @returns XOR result
  * @throws {InvalidLengthError} If lengths don't match
- *
+ * @throws {InvalidFormatError} If missing 0x prefix
+ * @throws {OddLengthError} If hex has odd number of digits
+ * @throws {InvalidCharacterError} If contains invalid hex characters
  * @example
  * ```typescript
- * const hex = Hex('0x12');
- * const result1 = Hex.xor(hex, '0x34' as BrandedHex); // '0x26'
- * const result2 = hex.xor('0x34' as BrandedHex); // '0x26'
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x12');
+ * const result = Hex.xor(hex, Hex.from('0x34')); // '0x26'
  * ```
  */
 export function xor(hex: BrandedHex, other: BrandedHex): BrandedHex {

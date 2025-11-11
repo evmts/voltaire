@@ -8,17 +8,18 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Convert hex to bytes
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param {import('./BrandedHex.js').BrandedHex} hex - Hex string to convert
  * @returns {Uint8Array} Byte array
  * @throws {InvalidFormatError} If missing 0x prefix
  * @throws {OddLengthError} If hex has odd number of digits
  * @throws {InvalidCharacterError} If contains invalid hex characters
- *
  * @example
- * ```typescript
- * const hex = Hex('0x1234');
+ * ```javascript
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x1234');
  * const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
- * const bytes2 = hex.toBytes(); // Same result
  * ```
  */
 export function toBytes(hex) {

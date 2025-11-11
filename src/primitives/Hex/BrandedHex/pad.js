@@ -4,15 +4,17 @@ import { fromBytes } from "./fromBytes.js";
 /**
  * Pad hex to target size (left-padded with zeros)
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string to pad
  * @param {number} targetSize - Target size in bytes
  * @returns {string} Padded hex string
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const hex = Hex('0x1234');
- * const padded1 = Hex.pad(hex, 4); // '0x00001234'
- * const padded2 = hex.pad(4); // '0x00001234'
+ * ```javascript
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x1234');
+ * const padded = Hex.pad(hex, 4); // '0x00001234'
  * ```
  */
 export function pad(hex, targetSize) {

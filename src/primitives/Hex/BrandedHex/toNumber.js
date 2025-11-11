@@ -1,15 +1,16 @@
 /**
  * Convert hex to number
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param {import('./BrandedHex.js').BrandedHex} hex - Hex string to convert
  * @returns {number} Number value
  * @throws {RangeError} If hex represents value larger than MAX_SAFE_INTEGER
- *
  * @example
- * ```typescript
- * const hex = Hex('0xff');
- * const num1 = Hex.toNumber(hex); // 255
- * const num2 = hex.toNumber(); // 255
+ * ```javascript
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0xff');
+ * const num = Hex.toNumber(hex); // 255
  * ```
  */
 export function toNumber(hex) {

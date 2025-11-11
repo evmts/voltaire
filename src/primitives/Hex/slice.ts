@@ -10,16 +10,20 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Slice hex string
  *
+ * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
+ * @since 0.0.0
  * @param hex - Hex string to slice
  * @param start - Start byte index
  * @param end - End byte index (optional)
  * @returns Sliced hex string
- *
+ * @throws {InvalidFormatError} If missing 0x prefix
+ * @throws {OddLengthError} If hex has odd number of digits
+ * @throws {InvalidCharacterError} If contains invalid hex characters
  * @example
  * ```typescript
- * const hex = Hex('0x123456');
- * const sliced1 = Hex.slice(hex, 1); // '0x3456'
- * const sliced2 = hex.slice(1); // '0x3456'
+ * import * as Hex from './primitives/Hex/index.js';
+ * const hex = Hex.from('0x123456');
+ * const sliced = Hex.slice(hex, 1); // '0x3456'
  * ```
  */
 export function slice(
