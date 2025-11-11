@@ -130,7 +130,7 @@ function encodeValue(
 	}
 
 	if (type === "bytes") {
-		const bytes = value as Uint8Array;
+		const bytes = typeof value === "string" ? Hex.toBytes(value as any) : (value as Uint8Array);
 		const length = encodeUint256(BigInt(bytes.length));
 		const data = padRight(bytes);
 		const result = new Uint8Array(length.length + data.length);

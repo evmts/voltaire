@@ -9,24 +9,48 @@ describe("BrandedAbi", () => {
 			name: "transfer",
 			stateMutability: "nonpayable" as const,
 			inputs: [
-				{ type: "address" as const, name: "to" },
-				{ type: "uint256" as const, name: "amount" },
+				{ type: "address" as const, name: "to", __tag: "AbiParameter" as const },
+				{
+					type: "uint256" as const,
+					name: "amount",
+					__tag: "AbiParameter" as const,
+				},
 			],
-			outputs: [{ type: "bool" as const }],
+			outputs: [{ type: "bool" as const, __tag: "AbiParameter" as const }],
 		},
 		{
 			type: "event" as const,
 			name: "Transfer",
 			inputs: [
-				{ type: "address" as const, name: "from", indexed: true },
-				{ type: "address" as const, name: "to", indexed: true },
-				{ type: "uint256" as const, name: "value" },
+				{
+					type: "address" as const,
+					name: "from",
+					indexed: true,
+					__tag: "AbiParameter" as const,
+				},
+				{
+					type: "address" as const,
+					name: "to",
+					indexed: true,
+					__tag: "AbiParameter" as const,
+				},
+				{
+					type: "uint256" as const,
+					name: "value",
+					__tag: "AbiParameter" as const,
+				},
 			],
 		},
 		{
 			type: "error" as const,
 			name: "InsufficientBalance",
-			inputs: [{ type: "uint256" as const, name: "available" }],
+			inputs: [
+				{
+					type: "uint256" as const,
+					name: "available",
+					__tag: "AbiParameter" as const,
+				},
+			],
 		},
 	] as const satisfies readonly Item[];
 
