@@ -458,18 +458,39 @@
 		"@types/bun": "latest",
 		"@types/node": "^22.10.2",
 		"@vitest/coverage-v8": "^4.0.3",
+		"abitype": "^1.1.1",
+		"astro": "^5.15.3",
+		"astro-live-code": "^0.0.6",
+		"astro-mcp": "^0.4.2",
 		"bindings": "^1.5.0",
+		"effect": "^3.12.6",
 		"ethers": "^6.13.4",
 		"glob": "^11.0.0",
 		"mintlify": "^4.2.188",
 		"mitata": "^1.0.34",
+		"ox": "^0.9.14",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
 		"size-limit": "^11.2.0",
 		"tsup": "^8.5.0",
 		"typescript": "^5.7.2",
 		"viem": "^2.21.54",
 		"vitest": "4.0.3"
 	},
+	"peerDependencies": {
+		"abitype": "^1.1.1",
+		"ox": "^0.9.14"
+	},
+	"peerDependenciesMeta": {
+		"abitype": {
+			"optional": true
+		},
+		"ox": {
+			"optional": true
+		}
+	},
 	"optionalDependencies": {
+		"effect": "^3.12.6",
 		"ffi-napi": "^4.0.3",
 		"ref-napi": "^3.0.3"
 	},
@@ -479,8 +500,6 @@
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.23.0",
 		"@tevm/chains": "^0.0.1",
-		"abitype": "^1.1.1",
-		"c-kzg": "^4.1.0",
-		"ox": "^0.9.14"
+		"c-kzg": "^4.1.0"
 	}
 }
