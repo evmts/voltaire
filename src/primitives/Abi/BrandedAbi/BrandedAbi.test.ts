@@ -9,7 +9,11 @@ describe("BrandedAbi", () => {
 			name: "transfer",
 			stateMutability: "nonpayable" as const,
 			inputs: [
-				{ type: "address" as const, name: "to", __tag: "AbiParameter" as const },
+				{
+					type: "address" as const,
+					name: "to",
+					__tag: "AbiParameter" as const,
+				},
 				{
 					type: "uint256" as const,
 					name: "amount",

@@ -5,7 +5,9 @@
 		"outDir": "types",
 		"skipLibCheck": true,
 		"types": ["bun-types"],
-		"noPropertyAccessFromIndexSignature": false
+		"noPropertyAccessFromIndexSignature": false,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false
 	},
 	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.json"],
 	"exclude": [
