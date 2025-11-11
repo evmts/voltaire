@@ -5,12 +5,16 @@ import { Bip39Error, InvalidEntropyError } from "./errors.js";
 /**
  * Generate mnemonic from custom entropy
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedEntropy.js').Entropy} entropy - Entropy bytes (16, 20, 24, 28, or 32 bytes)
  * @param {string[]} [wl] - Optional wordlist (defaults to English)
  * @returns {import('./BrandedMnemonic.js').Mnemonic} Mnemonic phrase
- *
+ * @throws {InvalidEntropyError} If entropy size is invalid
+ * @throws {Bip39Error} If conversion fails
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Bip39 from './crypto/Bip39/index.js';
  * const entropy = crypto.getRandomValues(new Uint8Array(32));
  * const mnemonic = Bip39.entropyToMnemonic(entropy);
  * ```
