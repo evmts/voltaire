@@ -47,11 +47,44 @@ type ConvertToAbiParameter<T extends Parameter> = {
 		? { readonly components: ConvertComponents<T["components"]> }
 		: {});
 
+// Resolve basic parameter type (no tuples)
+type ResolveBasicParameterType<T extends Parameter> = T["type"] extends "address"
+	? BrandedAddress
+	: T["type"] extends "address[]"
+		? BrandedAddress[]
+		: T["type"] extends `address[${string}]`
+			? readonly BrandedAddress[]
+			: AbiParameterToPrimitiveTypeWithUint8Array<ConvertToAbiParameter<T>>;
+
+// Build a fixed-size tuple type
+type BuildFixedTuple<T, N extends number, Acc extends readonly T[] = []> =
+	Acc["length"] extends N ? Acc : BuildFixedTuple<T, N, readonly [T, ...Acc]>;
+
+// Helper to recursively resolve a single component
+type ResolveComponent<T extends Parameter> = T["type"] extends "tuple"
+	? T extends { components: infer C extends readonly Parameter[] }
+		? TupleComponentsToObject<C>
+		: never
+	: T["type"] extends `tuple[${infer Size}]`
+		? T extends { components: infer C extends readonly Parameter[] }
+			? Size extends `${infer N extends number}`
+				? BuildFixedTuple<TupleComponentsToObject<C>, N>
+				: readonly TupleComponentsToObject<C>[]
+			: never
+		: T["type"] extends "tuple[]"
+			? T extends { components: infer C extends readonly Parameter[] }
+				? TupleComponentsToObject<C>[]
+				: never
+			: ResolveBasicParameterType<T>;
+
 // Custom tuple-to-object converter that handles components recursively
+// Uses union distribution to map each component to its field
 type TupleComponentsToObject<TComponents extends readonly Parameter[]> = {
-	[K in TComponents[number] as K["name"] extends string
-		? K["name"]
-		: never]: K extends Parameter ? ResolveSingleParameter<K> : never;
+	[K in TComponents[number] as K extends Parameter<any, infer N, any>
+		? N extends string
+			? N
+			: never
+		: never]: K extends Parameter ? ResolveComponent<K> : never;
 };
 
 // Resolve a single parameter type, handling tuples specially
@@ -61,31 +94,15 @@ type ResolveSingleParameter<T extends Parameter> = T["type"] extends "tuple"
 		: never
 	: T["type"] extends `tuple[${infer Size}]`
 		? T extends { components: infer C extends readonly Parameter[] }
-			? Size extends `${number}`
-				? readonly TupleComponentsToObject<C>[]
-				: TupleComponentsToObject<C>[]
+			? Size extends `${infer N extends number}`
+				? BuildFixedTuple<TupleComponentsToObject<C>, N>
+				: readonly TupleComponentsToObject<C>[]
 			: never
 		: T["type"] extends "tuple[]"
 			? T extends { components: infer C extends readonly Parameter[] }
 				? TupleComponentsToObject<C>[]
 				: never
-			: T["type"] extends "address"
-				? BrandedAddress
-				: T["type"] extends "address[]"
-					? BrandedAddress[]
-					: T["type"] extends `address[${string}]`
-						? readonly BrandedAddress[]
-						: T["type"] extends `${string}[]`
-							? T extends ConvertToAbiParameter<T>
-								? AbiParameterToPrimitiveTypeWithUint8Array<
-										ConvertToAbiParameter<T>
-									>
-								: never
-							: T extends ConvertToAbiParameter<T>
-								? AbiParameterToPrimitiveTypeWithUint8Array<
-										ConvertToAbiParameter<T>
-									>
-								: never;
+			: ResolveBasicParameterType<T>;
 
 export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 	[K in keyof TParams]: TParams[K] extends Parameter
