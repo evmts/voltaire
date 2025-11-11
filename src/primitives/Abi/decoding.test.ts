@@ -302,21 +302,27 @@ describe("Abi.decodeParameters - dynamic bytes", () => {
 	it("decodes empty bytes", () => {
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], ["0x"]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toMatch(/0x/i);
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toMatch(
+			/0x/i,
+		);
 	});
 
 	it("decodes bytes with data", () => {
 		const value = "0x123456789abcdef0";
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(value.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			value.toLowerCase(),
+		);
 	});
 
 	it("decodes long bytes", () => {
 		const value = `0x${"ab".repeat(100)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(value.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			value.toLowerCase(),
+		);
 	});
 });
 
