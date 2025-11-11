@@ -1,0 +1,139 @@
+---
+title: "RETURNDATASIZE (0x3d)"
+description: "Get size of return data from previous call"
+---
+
+## Overview
+
+**Opcode:** `0x3d`
+**Introduced:** Byzantium (EIP-211)
+
+RETURNDATASIZE returns the size in bytes of the return data from the most recent external call.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+size (uint256, in bytes)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+## Behavior
+
+Returns the length of the return data buffer populated by the last CALL, STATICCALL, DELEGATECALL, or CALLCODE.
+
+Key characteristics:
+- Introduced in Byzantium hardfork
+- Updated after each external call
+- 0 if no call made yet or call failed
+- Persists until next call
+
+## Examples
+
+### Basic Usage
+
+```solidity
+function checkReturnSize(address target) public returns (uint256 size) {
+    target.call("");
+    assembly {
+        size := returndatasize()
+    }
+}
+```
+
+### Efficient Return Data Handling
+
+```solidity
+function efficientCall(address target) public returns (bytes memory) {
+    (bool success,) = target.call("");
+    require(success);
+
+    bytes memory data;
+    assembly {
+        let size := returndatasize()
+        data := mload(0x40)
+        mstore(data, size)
+        returndatacopy(add(data, 0x20), 0, size)
+        mstore(0x40, add(add(data, 0x20), size))
+    }
+    return data;
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+## Common Usage
+
+### Proxy Pattern
+
+```solidity
+fallback() external payable {
+    address impl = implementation;
+    assembly {
+        calldatacopy(0, 0, calldatasize())
+        let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+
+        let size := returndatasize()
+        returndatacopy(0, 0, size)
+
+        switch result
+        case 0 { revert(0, size) }
+        default { return(0, size) }
+    }
+}
+```
+
+### Dynamic Return Handling
+
+```solidity
+function dynamicCall(address target, bytes memory data) public returns (bytes memory) {
+    (bool success,) = target.call(data);
+
+    assembly {
+        let size := returndatasize()
+        let result := mload(0x40)
+        mstore(result, size)
+        returndatacopy(add(result, 0x20), 0, size)
+
+        switch success
+        case 0 { revert(add(result, 0x20), size) }
+        default { return(add(result, 0x20), size) }
+    }
+}
+```
+
+## Security
+
+Safe opcode - just returns buffer size.
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function returndatasize(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, BigInt(frame.returnData.length));
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [EIP-211](https://eips.ethereum.org/EIPS/eip-211) - RETURNDATASIZE and RETURNDATACOPY
+- [EVM Codes - RETURNDATASIZE](https://www.evm.codes/#3d)

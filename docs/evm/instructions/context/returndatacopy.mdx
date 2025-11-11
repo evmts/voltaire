@@ -1,0 +1,207 @@
+---
+title: "RETURNDATACOPY (0x3e)"
+description: "Copy return data from previous call to memory"
+---
+
+## Overview
+
+**Opcode:** `0x3e`
+**Introduced:** Byzantium (EIP-211)
+
+RETURNDATACOPY copies return data from the most recent external call into memory.
+
+## Specification
+
+**Stack Input:**
+```
+destOffset (memory offset)
+offset (returndata offset)
+length (bytes to copy)
+```
+
+**Stack Output:**
+```
+[]
+```
+
+**Gas Cost:** 3 + memory expansion + (length / 32) * 3
+
+## Behavior
+
+Copies `length` bytes from return data at `offset` to memory at `destOffset`. Reverts if offset + length exceeds return data size.
+
+Key difference from other copy opcodes:
+- **Does NOT zero-pad** - reverts on out-of-bounds access
+- Strict bounds checking prevents reading beyond return data
+
+## Examples
+
+### Basic Usage
+
+```solidity
+function copyReturnData() public {
+    address target = 0x...;
+    target.call("");
+
+    assembly {
+        let size := returndatasize()
+        returndatacopy(0, 0, size)
+        return(0, size)
+    }
+}
+```
+
+### Proxy Forwarding
+
+```solidity
+fallback() external payable {
+    address impl = implementation;
+    assembly {
+        calldatacopy(0, 0, calldatasize())
+
+        let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+
+        returndatacopy(0, 0, returndatasize())
+
+        switch result
+        case 0 { revert(0, returndatasize()) }
+        default { return(0, returndatasize()) }
+    }
+}
+```
+
+### Error Bubbling
+
+```solidity
+function bubbleRevert(address target, bytes memory data) public {
+    (bool success,) = target.call(data);
+
+    if (!success) {
+        assembly {
+            let size := returndatasize()
+            returndatacopy(0, 0, size)
+            revert(0, size)
+        }
+    }
+}
+```
+
+## Gas Cost
+
+**Base:** 3 gas
+**Memory expansion:** Variable
+**Copy cost:** 3 gas per 32-byte word
+
+## Common Usage
+
+### Efficient Proxy
+
+```solidity
+function delegate(address impl, bytes memory data) public returns (bytes memory) {
+    assembly {
+        let result := delegatecall(gas(), impl, add(data, 0x20), mload(data), 0, 0)
+
+        let size := returndatasize()
+        let output := mload(0x40)
+        mstore(output, size)
+        returndatacopy(add(output, 0x20), 0, size)
+        mstore(0x40, add(add(output, 0x20), size))
+
+        switch result
+        case 0 { revert(add(output, 0x20), size) }
+        default { return(add(output, 0x20), size) }
+    }
+}
+```
+
+## Security
+
+### Out-of-Bounds Reverts
+
+Unlike CALLDATACOPY/CODECOPY, RETURNDATACOPY reverts on out-of-bounds:
+
+```solidity
+function outOfBounds() public {
+    address(0).call(""); // Returns empty
+
+    assembly {
+        // This REVERTS because returndatasize() = 0
+        returndatacopy(0, 0, 32) // OutOfBounds!
+    }
+}
+```
+
+### Safe Pattern
+
+```solidity
+function safeReturnCopy(uint256 offset, uint256 length) public {
+    require(offset + length <= returndatasize(), "Out of bounds");
+
+    assembly {
+        returndatacopy(0, offset, length)
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function returndatacopy(frame: BrandedFrame): EvmError | null {
+  const destOffsetResult = popStack(frame);
+  if (destOffsetResult.error) return destOffsetResult.error;
+
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+
+  const lengthResult = popStack(frame);
+  if (lengthResult.error) return lengthResult.error;
+
+  const offset = Number(offsetResult.value);
+  const length = Number(lengthResult.value);
+
+  // Strict bounds check - REVERTS if out of bounds
+  if (offset > frame.returnData.length ||
+      length > frame.returnData.length - offset) {
+    return { type: "OutOfBounds" };
+  }
+
+  // Copy returndata to memory
+  // See full implementation in codebase
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Empty Return Data
+
+```solidity
+address(0).call("");
+assembly {
+    returndatacopy(0, 0, 0) // OK: copying 0 bytes
+    returndatacopy(0, 0, 1) // REVERTS: out of bounds
+}
+```
+
+### Partial Copy
+
+```solidity
+// returndata = 64 bytes
+assembly {
+    returndatacopy(0, 0, 32)   // OK: first 32 bytes
+    returndatacopy(0, 32, 32)  // OK: second 32 bytes
+    returndatacopy(0, 64, 1)   // REVERTS: beyond bounds
+}
+```
+
+## References
+
+- [EIP-211](https://eips.ethereum.org/EIPS/eip-211) - RETURNDATASIZE and RETURNDATACOPY opcodes
+- [EVM Codes - RETURNDATACOPY](https://www.evm.codes/#3e)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Byzantium changes

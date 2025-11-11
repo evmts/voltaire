@@ -1,0 +1,555 @@
+---
+title: "CALLCODE (0xf2)"
+description: "Execute code in current context - DEPRECATED, use DELEGATECALL instead"
+---
+
+## Overview
+
+**Opcode:** `0xf2`
+**Introduced:** Frontier (EVM genesis)
+**Status:** DEPRECATED - Use DELEGATECALL (0xf4) instead
+
+CALLCODE executes code from another account in the caller's storage context. Unlike CALL, storage modifications affect the caller. This opcode has confusing semantics and was superseded by DELEGATECALL in Homestead.
+
+**WARNING:** CALLCODE is deprecated and should not be used in new contracts. Use DELEGATECALL for library calls and code reuse patterns.
+
+## Specification
+
+**Stack Input:**
+```
+gas       (max gas to forward)
+address   (target account code to execute)
+value     (wei to send to caller's own address)
+inOffset  (calldata memory offset)
+inLength  (calldata size)
+outOffset (returndata memory offset)
+outLength (returndata size)
+```
+
+**Stack Output:**
+```
+success   (1 if call succeeded, 0 if failed)
+```
+
+**Gas Cost:** 700 + value_transfer + cold_access + memory_expansion
+
+**Operation:**
+```
+calldata = memory[inOffset:inOffset+inLength]
+success = execute_code_in_caller_context(address.code, value, calldata, gas * 63/64)
+memory[outOffset:outOffset+outLength] = returndata[0:min(outLength, returndata.length)]
+push(success)
+```
+
+## Behavior
+
+CALLCODE executes foreign code with confusing context semantics:
+
+1. **Pop 7 stack arguments** (same as CALL)
+2. **Calculate gas cost:**
+   - Base: 700 gas (Tangerine Whistle+)
+   - Value transfer: +9,000 gas if value > 0
+   - Cold access: +2,600 gas for first access (Berlin+)
+   - Memory expansion for input and output regions
+3. **Read calldata** from memory
+4. **Forward gas:** Up to 63/64 of remaining gas (EIP-150)
+5. **Execute target's code in caller's context:**
+   - msg.sender = caller (NOT preserved from parent!)
+   - msg.value = specified value
+   - Storage = caller's storage (modifications affect caller!)
+   - Code = target's code
+   - address(this) = caller's address
+6. **Value handling:** ETH sent to caller's own address (weird!)
+7. **Copy returndata** to memory
+8. **Push success flag**
+
+**Key differences from CALL:**
+- Storage operations affect caller, not target
+- msg.sender is caller (not preserved from parent)
+- Value sent to caller's own address
+
+**Key differences from DELEGATECALL:**
+- msg.sender is caller (DELEGATECALL preserves original sender)
+- msg.value is specified value (DELEGATECALL preserves original value)
+- Value handling is confusing
+
+## Examples
+
+### Basic CALLCODE (Don't Do This!)
+
+```typescript
+import { CALLCODE } from '@tevm/voltaire/evm/system';
+
+// DON'T USE - deprecated opcode
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+});
+
+// Stack: [gas=100000, address, value=0, inOffset=0, inLength=0, outOffset=0, outLength=0]
+frame.stack.push(0n);                               // outLength
+frame.stack.push(0n);                               // outOffset
+frame.stack.push(0n);                               // inLength
+frame.stack.push(0n);                               // inOffset
+frame.stack.push(0n);                               // value
+frame.stack.push(BigInt("0x742d35Cc..."));          // address (code source)
+frame.stack.push(100000n);                          // gas
+
+// USE DELEGATECALL INSTEAD!
+```
+
+### Why CALLCODE is Confusing
+
+```solidity
+contract Library {
+    uint256 public value;
+
+    function setValue(uint256 _value) external {
+        value = _value;  // Modifies storage at slot 0
+    }
+}
+
+contract Caller {
+    uint256 public myValue;  // Storage slot 0
+
+    function useCallCode(address library) external {
+        // CALLCODE execution context:
+        // - msg.sender = address(this) (NOT tx.origin!)
+        // - msg.value = sent value
+        // - storage = Caller's storage
+        // - code = Library's code
+
+        assembly {
+            let success := callcode(
+                gas(),
+                library,
+                0,        // Value sent to self (weird!)
+                0,        // calldata
+                0,
+                0,        // returndata
+                0
+            )
+        }
+
+        // Library's setValue modified Caller.myValue!
+        // But msg.sender in Library was Caller, not original caller
+    }
+}
+```
+
+### Correct Pattern: Use DELEGATECALL
+
+```solidity
+contract Library {
+    uint256 public value;
+
+    function setValue(uint256 _value) external {
+        value = _value;
+    }
+}
+
+contract Caller {
+    uint256 public myValue;
+
+    // ✅ CORRECT: Use DELEGATECALL
+    function useDelegateCall(address library) external {
+        // DELEGATECALL execution context:
+        // - msg.sender = original caller (preserved!)
+        // - msg.value = original value (preserved!)
+        // - storage = Caller's storage
+        // - code = Library's code
+
+        (bool success, ) = library.delegatecall(
+            abi.encodeWithSignature("setValue(uint256)", 42)
+        );
+        require(success);
+
+        // Clear semantics: Library code runs as if part of Caller
+    }
+}
+```
+
+### Migration Example
+
+```solidity
+// ❌ OLD: Using CALLCODE (deprecated)
+contract OldPattern {
+    function callLibrary(address lib, bytes memory data) external {
+        assembly {
+            let success := callcode(
+                gas(),
+                lib,
+                0,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
+            if iszero(success) { revert(0, 0) }
+        }
+    }
+}
+
+// ✅ NEW: Using DELEGATECALL
+contract NewPattern {
+    function callLibrary(address lib, bytes memory data) external {
+        (bool success, ) = lib.delegatecall(data);
+        require(success, "Delegatecall failed");
+    }
+}
+```
+
+## Gas Cost
+
+**Total cost:** 700 + value_transfer + cold_access + memory_expansion + forwarded_gas
+
+### Base Cost: 700 gas (Tangerine Whistle+)
+
+**Pre-Tangerine Whistle:** 40 gas
+
+### Value Transfer: +9,000 gas
+
+Charged when `value > 0` (even though value sent to self):
+```
+if (value > 0) {
+  cost += 9000  // CallValueTransferGas
+}
+```
+
+**Note:** No new account cost - value sent to caller's own address.
+
+### Cold Access: +2,600 gas (Berlin+)
+
+**EIP-2929 (Berlin+):** First access to target address:
+```
+if (firstAccess(address)) {
+  cost += 2600  // ColdAccountAccess
+} else {
+  cost += 100   // WarmStorageRead
+}
+```
+
+### Memory Expansion
+
+Same as CALL - charges for both input and output regions.
+
+### Gas Forwarding
+
+Same as CALL - 63/64 rule applies (EIP-150).
+
+## Common Usage
+
+**None - this opcode is deprecated.**
+
+Historical uses included:
+- Library pattern (replaced by DELEGATECALL)
+- Code reuse (replaced by DELEGATECALL)
+- Upgradeable contracts (replaced by DELEGATECALL + proxy patterns)
+
+## Security
+
+### Deprecated - Do Not Use
+
+The primary security issue with CALLCODE is that it should not be used at all. Use DELEGATECALL instead.
+
+### Confusing msg.sender Semantics
+
+CALLCODE sets `msg.sender` to the caller, not the original transaction sender:
+
+```solidity
+// VULNERABLE: Unexpected msg.sender
+contract VulnerableAuth {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function updateOwner(address newOwner) external {
+        // Assumes msg.sender is the transaction sender
+        require(msg.sender == owner);
+        owner = newOwner;
+    }
+}
+
+contract Attacker {
+    function exploit(address vulnerable, address lib) external {
+        // Call library code via CALLCODE
+        assembly {
+            // In library code, msg.sender will be Attacker contract
+            // NOT the original transaction sender!
+            callcode(gas(), lib, 0, 0, 0, 0, 0)
+        }
+    }
+}
+```
+
+### Storage Collision
+
+Same storage collision risks as DELEGATECALL:
+
+```solidity
+contract Library {
+    address public implementation;  // Slot 0
+
+    function upgrade(address newImpl) external {
+        implementation = newImpl;
+    }
+}
+
+contract Caller {
+    address public owner;  // Slot 0 - COLLISION!
+
+    function callLibrary(address lib) external {
+        assembly {
+            callcode(gas(), lib, 0, 0, 0, 0, 0)
+        }
+        // Library modified Caller.owner instead of implementation!
+    }
+}
+```
+
+### Value Transfer Confusion
+
+Value sent to caller's own address creates confusing semantics:
+
+```solidity
+contract ConfusingValue {
+    function sendToSelf() external payable {
+        assembly {
+            // This sends msg.value to self - pointless!
+            callcode(gas(), target, callvalue(), 0, 0, 0, 0)
+        }
+    }
+}
+```
+
+## Why DELEGATECALL is Better
+
+| Aspect | CALLCODE | DELEGATECALL |
+|--------|----------|--------------|
+| msg.sender | Caller (confusing) | Preserved (clear) |
+| msg.value | Specified value | Preserved (clear) |
+| Value transfer | To self (weird) | No value transfer |
+| Use case | NONE (deprecated) | Library calls, proxies |
+| Introduced | Frontier | Homestead (EIP-7) |
+| Status | Deprecated | Standard |
+
+**DELEGATECALL advantages:**
+- Preserves full execution context (msg.sender, msg.value)
+- Clear semantics for library pattern
+- No confusing value-to-self transfers
+- Industry standard for proxies and libraries
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * CALLCODE opcode (0xf2) - DEPRECATED
+ * Execute code in current context
+ */
+export function callcode(frame: BrandedFrame): EvmError | null {
+  // Pop 7 arguments (same as CALL)
+  const gas = popStack(frame);
+  const address = popStack(frame);
+  const value = popStack(frame);
+  const inOffset = popStack(frame);
+  const inLength = popStack(frame);
+  const outOffset = popStack(frame);
+  const outLength = popStack(frame);
+
+  // Calculate gas cost
+  let gasCost = 700n;  // Base (Tangerine Whistle+)
+
+  // Value transfer (even though to self)
+  if (value > 0n) {
+    gasCost += 9000n;
+    // No new account cost - value sent to self
+  }
+
+  // Cold access cost (Berlin+)
+  const accessCost = getAccessCost(address);
+  gasCost += accessCost;
+
+  // Memory expansion
+  const inEnd = inLength > 0 ? inOffset + inLength : 0;
+  const outEnd = outLength > 0 ? outOffset + outLength : 0;
+  const maxEnd = Math.max(inEnd, outEnd);
+
+  if (maxEnd > 0) {
+    gasCost += memoryExpansionCost(frame, maxEnd);
+    updateMemorySize(frame, maxEnd);
+  }
+
+  // Calculate forwarded gas (63/64 rule)
+  const afterCharge = frame.gasRemaining - gasCost;
+  const maxForward = afterCharge - afterCharge / 64n;
+  const forwardedGas = min(gas, maxForward);
+
+  // Charge total cost
+  consumeGas(frame, gasCost + forwardedGas);
+
+  // Read calldata
+  const calldata = readMemory(frame, inOffset, inLength);
+
+  // Execute in caller context with target's code
+  const result = executeCallCode({
+    codeAddress: address,      // Code to execute
+    storageAddress: frame.address,  // Storage to modify
+    sender: frame.address,     // msg.sender = caller
+    value: value,              // msg.value = specified
+    data: calldata,
+    gas: forwardedGas
+  });
+
+  // Refund unused gas
+  frame.gasRemaining += result.gasLeft;
+
+  // Copy returndata
+  const copySize = min(outLength, result.returnData.length);
+  writeMemory(frame, outOffset, result.returnData.slice(0, copySize));
+
+  // Set return_data buffer
+  frame.returnData = result.returnData;
+
+  // Push success flag
+  pushStack(frame, result.success ? 1n : 0n);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CALLCODE opcode (0xf2) - DEPRECATED
+/// Execute code in current context
+pub fn callcode(frame: *FrameType) FrameType.EvmError!void {
+    // Pop 7 arguments (same as CALL)
+    const gas = try frame.popStack();
+    const address_u256 = try frame.popStack();
+    const value_arg = try frame.popStack();
+    const in_offset = try frame.popStack();
+    const in_length = try frame.popStack();
+    const out_offset = try frame.popStack();
+    const out_length = try frame.popStack();
+
+    // Convert address
+    var addr_bytes: [20]u8 = undefined;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+    }
+    const code_address = Address{ .bytes = addr_bytes };
+
+    const evm = frame.getEvm();
+
+    // Gas cost calculation
+    var gas_cost: u64 = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE))
+        40
+    else
+        GasConstants.CallGas;
+
+    // Value transfer cost (no new account cost)
+    if (value_arg > 0) {
+        gas_cost += GasConstants.CallValueTransferGas;
+    }
+
+    // Access cost (Berlin+)
+    const access_cost = try evm.accessAddress(code_address);
+    gas_cost += access_cost;
+
+    // Memory expansion
+    const in_end = if (in_length > 0)
+        @as(u64, @intCast(in_offset)) + @as(u64, @intCast(in_length))
+    else
+        0;
+    const out_end = if (out_length > 0)
+        @as(u64, @intCast(out_offset)) + @as(u64, @intCast(out_length))
+    else
+        0;
+    const max_end = @max(in_end, out_end);
+
+    if (max_end > 0) {
+        const mem_cost = frame.memoryExpansionCost(max_end);
+        gas_cost += mem_cost;
+
+        const aligned_size = wordAlignedSize(max_end);
+        if (aligned_size > frame.memory_size) {
+            frame.memory_size = aligned_size;
+        }
+    }
+
+    // Calculate forwarded gas
+    const gas_limit = if (gas > std.math.maxInt(u64))
+        std.math.maxInt(u64)
+    else
+        @as(u64, @intCast(gas));
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const gas_after_charge = if (remaining_gas >= gas_cost)
+        remaining_gas - gas_cost
+    else
+        0;
+    const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        gas_after_charge - (gas_after_charge / 64)
+    else
+        gas_after_charge;
+    const available_gas = @min(gas_limit, max_gas);
+
+    // Charge total cost
+    try frame.consumeGas(gas_cost + available_gas);
+
+    // Read calldata
+    const calldata = try frame.allocator.alloc(u8, @intCast(in_length));
+    if (in_length > 0) {
+        const in_off = @as(u32, @intCast(in_offset));
+        var j: u32 = 0;
+        while (j < in_length) : (j += 1) {
+            calldata[j] = frame.readMemory(in_off + j);
+        }
+    }
+
+    // Execute callcode (target's code, caller's storage)
+    const result = try evm.inner_callcode(
+        code_address,
+        frame.address,  // Storage context
+        value_arg,
+        calldata,
+        available_gas
+    );
+
+    // Refund unused gas
+    frame.gas_remaining += @intCast(result.gas_left);
+
+    // Copy returndata
+    if (out_length > 0 and result.output.len > 0) {
+        const copy_size = @min(out_length, result.output.len);
+        const out_off = @as(u32, @intCast(out_offset));
+        var k: u32 = 0;
+        while (k < copy_size) : (k += 1) {
+            frame.writeMemory(out_off + k, result.output[k]);
+        }
+    }
+
+    // Set return_data
+    frame.return_data = result.output;
+
+    // Push success flag
+    const success: u256 = if (result.success) 1 else 0;
+    try frame.pushStack(success);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.4 (CALLCODE)
+- **[EIP-7](https://eips.ethereum.org/EIPS/eip-7)** - DELEGATECALL (replacement)
+- **[evm.codes - CALLCODE](https://www.evm.codes/#f2)** - Interactive reference
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Deprecation notice

@@ -1,0 +1,185 @@
+---
+title: "GASPRICE (0x3a)"
+description: "Get transaction gas price in wei"
+---
+
+## Overview
+
+**Opcode:** `0x3a`
+**Introduced:** Frontier (EVM genesis)
+
+GASPRICE pushes the gas price of the current transaction onto the stack, measured in wei per gas unit.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+gasPrice (uint256, wei per gas)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(transaction.gasPrice)
+```
+
+## Behavior
+
+Returns the gas price specified in the transaction. For EIP-1559 transactions, this is the effective gas price (baseFee + priorityFee).
+
+Key characteristics:
+- Same value throughout transaction
+- In wei per gas unit
+- For EIP-1559: min(baseFee + maxPriorityFeePerGas, maxFeePerGas)
+- For legacy: transaction's gasPrice field
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { gasprice } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({ stack: [] });
+const txGasPrice = 20_000_000_000n; // 20 gwei
+
+const err = gasprice(frame, txGasPrice);
+
+console.log(frame.stack[0]); // 20000000000n
+```
+
+### Gas Refunds
+
+```solidity
+contract GasRefunder {
+    function expensiveOperation() public {
+        uint256 startGas = gasleft();
+
+        // ... expensive operations ...
+
+        uint256 gasUsed = startGas - gasleft();
+        uint256 refund = gasUsed * tx.gasprice;
+
+        payable(msg.sender).transfer(refund);
+    }
+}
+```
+
+### Gas Price Oracle
+
+```solidity
+contract GasPriceTracker {
+    uint256[] public recentPrices;
+
+    function record() public {
+        recentPrices.push(tx.gasprice);
+    }
+
+    function averagePrice() public view returns (uint256) {
+        uint256 sum = 0;
+        for (uint i = 0; i < recentPrices.length; i++) {
+            sum += recentPrices[i];
+        }
+        return sum / recentPrices.length;
+    }
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+## Common Usage
+
+### Transaction Cost Calculation
+
+```solidity
+function estimateCost(uint256 gasEstimate) public view returns (uint256) {
+    return gasEstimate * tx.gasprice;
+}
+```
+
+### Minimum Gas Price
+
+```solidity
+modifier minGasPrice(uint256 min) {
+    require(tx.gasprice >= min, "Gas price too low");
+    _;
+}
+
+function urgentOperation() public minGasPrice(50 gwei) {
+    // Only execute if gas price >= 50 gwei
+}
+```
+
+## Security
+
+### EIP-1559 Considerations
+
+Post-EIP-1559, tx.gasprice is effective gas price, not maxFeePerGas:
+
+```solidity
+// Block baseFee = 30 gwei
+// maxPriorityFeePerGas = 2 gwei
+// maxFeePerGas = 100 gwei
+// tx.gasprice = 32 gwei (30 + 2)
+```
+
+### Gas Price Manipulation
+
+Don't use tx.gasprice for critical logic - miners can manipulate it.
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+
+/**
+ * GASPRICE opcode (0x3a) - Get transaction gas price
+ *
+ * Stack: [] => [gasPrice]
+ * Gas: 2 (GasQuickStep)
+ */
+export function gasprice(
+  frame: BrandedFrame,
+  gasPrice: bigint
+): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, gasPrice);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// GASPRICE opcode (0x3a) - Get transaction gas price
+pub fn gasprice(frame: *FrameType, gas_price: u256) FrameType.EvmError!void {
+    try frame.consumeGas(2);
+    try frame.pushStack(gas_price);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - GASPRICE](https://www.evm.codes/#3a)
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee market change

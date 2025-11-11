@@ -1,0 +1,476 @@
+---
+title: "SELFDESTRUCT (0xff)"
+description: "Transfer remaining balance and mark contract for deletion (being deprecated)"
+---
+
+## Overview
+
+**Opcode:** 0xff
+**Gas:** 5,000 (warm) / 30,000 (cold)
+**Hardfork:** Frontier
+**Stack Input:** address (recipient of remaining balance)
+**Stack Output:** (none)
+**Status:** Being deprecated (EIP-6049)
+
+SELFDESTRUCT transfers all remaining Ether to a target address and marks the contract for deletion at the end of the transaction.
+
+## Specification
+
+```
+Stack: [address] → []
+Gas: 5,000 + Ccold (if cold access) + Cnew (if creating account)
+```
+
+### Operation
+
+1. Pop recipient address from stack
+2. Transfer contract's entire balance to recipient
+3. Mark contract for deletion
+4. Halt execution (like STOP)
+5. Contract code removed at end of transaction (post-EIP-6780: only in same transaction as creation)
+
+## Deprecation Status (EIP-6049)
+
+**SELFDESTRUCT is being deprecated** due to security and complexity issues:
+
+### EIP-6780 (Cancun) - Behavior Change
+
+Post-Cancun, SELFDESTRUCT only deletes code if called in same transaction as CREATE/CREATE2:
+
+```solidity
+// Same transaction - code deleted
+contract Factory {
+  function createAndDestroy() external {
+    Victim v = new Victim();
+    v.destroy();  // Code deleted
+  }
+}
+
+// Different transaction - code NOT deleted, only sends balance
+contract Existing {
+  function destroy() external {
+    selfdestruct(payable(msg.sender));  // Balance sent, code remains!
+  }
+}
+```
+
+### Future (EIP-4758) - Full Removal
+
+Planned removal in future hardfork. Use alternatives:
+- Send balance with CALL
+- Disable contract with storage flags
+- Upgrade via proxy pattern
+
+## Gas Cost
+
+```typescript
+const baseCost = 5000n;
+
+// Cold access (Berlin+)
+const coldCost = isColdAccess(recipient) ? 25000n : 0n;
+
+// New account (if recipient doesn't exist and balance > 0)
+const newAccountCost = (balance > 0 && !accountExists(recipient)) ? 25000n : 0n;
+
+const totalCost = baseCost + coldCost + newAccountCost;
+```
+
+### Range: 5,000 - 55,000 gas
+
+## Examples
+
+### Basic Self-Destruct
+
+```solidity
+contract Mortal {
+  address public owner;
+
+  constructor() {
+    owner = msg.sender;
+  }
+
+  function destroy() external {
+    require(msg.sender == owner, "Not owner");
+    selfdestruct(payable(owner));  // Send balance to owner
+  }
+}
+```
+
+### Assembly
+
+```solidity
+assembly {
+  // SELFDESTRUCT(address)
+  selfdestruct(recipient)
+}
+```
+
+### Factory Pattern (Works in Cancun)
+
+```solidity
+contract Factory {
+  function createEphemeral() external returns (bytes32 hash) {
+    // Create contract
+    Ephemeral e = new Ephemeral();
+
+    // Use it
+    e.doSomething();
+
+    // Destroy in same transaction - code deleted
+    e.destroy();
+
+    return keccak256(address(e).code);  // Returns 0 after destruction
+  }
+}
+
+contract Ephemeral {
+  function doSomething() external {
+    // Temporary logic
+  }
+
+  function destroy() external {
+    selfdestruct(payable(msg.sender));
+  }
+}
+```
+
+## Behavior Changes Across Hardforks
+
+| Hardfork | Change |
+|----------|--------|
+| Frontier | Introduced - deletes code, refunds 24,000 gas |
+| Tangerine Whistle (EIP-150) | Gas cost: 0 → 5,000 |
+| Spurious Dragon (EIP-161) | Don't create empty accounts |
+| Berlin (EIP-2929) | +25,000 gas for cold access |
+| London (EIP-3529) | Removed 24,000 gas refund |
+| Cancun (EIP-6780) | **Only deletes code in same transaction as creation** |
+| Future (EIP-4758) | Full removal planned |
+
+## Edge Cases
+
+### Balance Transfer
+
+```solidity
+// Sends all remaining Ether
+contract HasBalance {
+  receive() external payable {}
+
+  function destroy() external {
+    // All ETH (including in same transaction) sent to recipient
+    selfdestruct(payable(msg.sender));
+  }
+}
+```
+
+### Multiple Calls in Same Transaction (Pre-Cancun)
+
+```solidity
+// Pre-Cancun: First SELFDESTRUCT marks for deletion, subsequent calls still work
+contract MultiDestruct {
+  function destroyTwice() external {
+    address recipient = msg.sender;
+
+    selfdestruct(payable(recipient));  // Marks for deletion
+    // Code continues executing!
+    selfdestruct(payable(recipient));  // Works again (balance already 0)
+  }
+}
+```
+
+### Receiving Contract Rejection
+
+If recipient is contract with failing receive/fallback:
+
+```solidity
+contract RejectingRecipient {
+  receive() external payable {
+    revert("I don't want ETH");
+  }
+}
+
+// SELFDESTRUCT ignores recipient's rejection - forcibly sends ETH
+```
+
+## Security
+
+### Funds Recovery
+
+**Problem:** Users send ETH to contract after destruction
+
+**Pre-Cancun:**
+```solidity
+// Contract destroyed
+victim.destroy();
+
+// ETH sent here is LOST FOREVER (no code to retrieve)
+payable(address(victim)).transfer(1 ether);
+```
+
+**Post-Cancun (EIP-6780):** Code remains if destroyed in different transaction, funds not lost.
+
+### Metamorphic Contracts (Pre-Cancun)
+
+**Attack:** Deploy malicious contract, destroy, redeploy different code at same address
+
+```solidity
+// 1. Deploy benign contract at address A
+CREATE2(salt, bytecode1) → address A
+
+// 2. Get users to trust address A
+// 3. Destroy contract
+selfdestruct(owner)
+
+// 4. Deploy malicious contract at SAME address A
+CREATE2(salt, bytecode2) → address A (same!)
+
+// 5. Malicious code now at trusted address
+```
+
+**Mitigation:** EIP-6780 prevents code deletion after creation transaction, making this impossible.
+
+### Reentrancy via Forced ETH Send
+
+```solidity
+contract Vulnerable {
+  mapping(address => uint256) public balances;
+
+  function withdraw() external {
+    uint256 amount = balances[msg.sender];
+
+    // Attacker selfdestructs, forcibly sending ETH here
+    // This triggers receive(), which can reenter before state update
+
+    balances[msg.sender] = 0;  // Too late!
+  }
+
+  receive() external payable {
+    // Attacker reenters withdraw() with balance still set
+  }
+}
+```
+
+**Mitigation:** Checks-effects-interactions pattern.
+
+## Alternatives (Recommended)
+
+### 1. Transfer Balance via CALL
+
+```solidity
+contract Modern {
+  function close() external {
+    require(msg.sender == owner);
+
+    // Send balance
+    (bool success, ) = owner.call{value: address(this).balance}("");
+    require(success);
+
+    // Mark disabled in storage
+    disabled = true;
+  }
+
+  modifier notDisabled() {
+    require(!disabled, "Contract disabled");
+    _;
+  }
+}
+```
+
+### 2. Proxy Pattern
+
+```solidity
+// Upgradeable proxy - "destroy" by upgrading to empty implementation
+contract Proxy {
+  address public implementation;
+
+  function upgrade(address newImpl) external {
+    implementation = newImpl;  // Set to 0x0 to "destroy"
+  }
+
+  fallback() external payable {
+    address impl = implementation;
+    assembly {
+      calldatacopy(0, 0, calldatasize())
+      let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+      returndatacopy(0, 0, returndatasize())
+      switch result
+      case 0 { revert(0, returndatasize()) }
+      default { return(0, returndatasize()) }
+    }
+  }
+}
+```
+
+### 3. Circuit Breaker
+
+```solidity
+contract Pausable {
+  bool public paused;
+
+  modifier whenNotPaused() {
+    require(!paused, "Paused");
+    _;
+  }
+
+  function pause() external onlyOwner {
+    paused = true;
+  }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SELFDESTRUCT opcode (0xff)
+ */
+export function selfdestruct(frame: BrandedFrame): EvmError | null {
+  // Pop recipient address
+  if (frame.stack.length < 1) return { type: "StackUnderflow" };
+  const recipient = frame.stack.pop()!;
+
+  // Calculate gas cost
+  const baseCost = 5000n;
+  const isCold = !frame.accessedAddresses.has(recipient);
+  const coldCost = isCold ? 25000n : 0n;
+
+  const balance = frame.balance;
+  const recipientExists = frame.host.accountExists(recipient);
+  const newAccountCost = (balance > 0n && !recipientExists) ? 25000n : 0n;
+
+  const totalCost = baseCost + coldCost + newAccountCost;
+
+  // Consume gas
+  frame.gasRemaining -= totalCost;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Transfer balance
+  frame.host.transfer(frame.address, recipient, balance);
+
+  // Post-Cancun (EIP-6780): Only delete if created in same transaction
+  if (frame.hardfork >= Hardfork.CANCUN) {
+    if (frame.createdInTransaction) {
+      frame.host.markForDeletion(frame.address);
+    }
+  } else {
+    // Pre-Cancun: Always mark for deletion
+    frame.host.markForDeletion(frame.address);
+  }
+
+  // Halt execution
+  frame.stopped = true;
+
+  return null;
+}
+```
+</Tab>
+<Tab title="Zig">
+```zig
+/// SELFDESTRUCT opcode (0xff)
+pub fn selfdestruct(frame: *FrameType) FrameType.EvmError!void {
+    // Pop recipient
+    const recipient = try frame.popStack();
+
+    // Calculate gas cost
+    const base_cost: u64 = 5000;
+    const is_cold = !frame.isWarmAddress(recipient);
+    const cold_cost: u64 = if (is_cold) 25000 else 0;
+
+    const balance = frame.balance;
+    const recipient_exists = try frame.host.accountExists(recipient);
+    const new_account_cost: u64 = if (balance > 0 and !recipient_exists) 25000 else 0;
+
+    try frame.consumeGas(base_cost + cold_cost + new_account_cost);
+
+    // Transfer balance
+    try frame.host.transfer(frame.address, recipient, balance);
+
+    // EIP-6780 (Cancun): Only delete if created in same transaction
+    if (frame.hardfork >= primitives.Hardfork.Cancun) {
+        if (frame.created_in_transaction) {
+            try frame.host.markForDeletion(frame.address);
+        }
+    } else {
+        // Pre-Cancun: Always mark for deletion
+        try frame.host.markForDeletion(frame.address);
+    }
+
+    // Halt execution
+    frame.stopped = true;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+```typescript
+describe('SELFDESTRUCT opcode', () => {
+  it('should transfer balance and mark for deletion (pre-Cancun)', () => {
+    const frame = createFrame({
+      stack: [recipientAddress],
+      balance: 1000n,
+      hardfork: Hardfork.LONDON
+    });
+
+    selfdestruct(frame);
+
+    expect(frame.stopped).toBe(true);
+    expect(host.getBalance(recipientAddress)).toBe(1000n);
+    expect(host.isMarkedForDeletion(frame.address)).toBe(true);
+  });
+
+  it('should NOT delete code if created in different transaction (Cancun)', () => {
+    const frame = createFrame({
+      stack: [recipientAddress],
+      hardfork: Hardfork.CANCUN,
+      createdInTransaction: false
+    });
+
+    selfdestruct(frame);
+
+    expect(frame.stopped).toBe(true);
+    expect(host.isMarkedForDeletion(frame.address)).toBe(false);  // Not deleted!
+  });
+
+  it('should charge cold access cost', () => {
+    const frame = createFrame({
+      stack: [coldAddress],
+      accessedAddresses: new Set()
+    });
+
+    const gasBefore = frame.gasRemaining;
+    selfdestruct(frame);
+    const gasUsed = gasBefore - frame.gasRemaining;
+
+    expect(gasUsed).toBe(30000n);  // 5000 + 25000 cold
+  });
+});
+```
+
+## Benchmarks
+
+| Scenario | Gas Cost |
+|----------|----------|
+| Warm recipient, exists | 5,000 |
+| Cold recipient, exists | 30,000 |
+| Cold recipient, new account | 55,000 |
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.4
+- [evm.codes - SELFDESTRUCT](https://www.evm.codes/#ff)
+- [EIP-6049](https://eips.ethereum.org/EIPS/eip-6049) - Deprecation notice
+- [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780) - SELFDESTRUCT behavior change (Cancun)
+- [EIP-4758](https://eips.ethereum.org/EIPS/eip-4758) - Proposed removal
+- [EIP-3529](https://eips.ethereum.org/EIPS/eip-3529) - Reduced refunds (London)
+
+## Related Documentation
+
+- [CREATE](/evm/instructions/system/create) - Contract creation
+- [CREATE2](/evm/instructions/system/create2) - Deterministic creation
+- [CALL](/evm/instructions/system/call) - External calls (alternative for balance transfer)

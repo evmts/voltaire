@@ -1,0 +1,822 @@
+---
+title: "CALL (0xf1)"
+description: "External message call with value transfer and full state modification access"
+---
+
+## Overview
+
+**Opcode:** `0xf1`
+**Introduced:** Frontier (EVM genesis)
+
+CALL executes code from another account with specified gas, value, and calldata. The callee runs in its own context with `msg.sender` set to the caller and `msg.value` to the transferred amount. This is the primary mechanism for inter-contract communication.
+
+## Specification
+
+**Stack Input:**
+```
+gas       (max gas to forward)
+address   (target account to call)
+value     (wei to send)
+inOffset  (calldata memory offset)
+inLength  (calldata size)
+outOffset (returndata memory offset)
+outLength (returndata size)
+```
+
+**Stack Output:**
+```
+success   (1 if call succeeded, 0 if failed)
+```
+
+**Gas Cost:** 700 + value_transfer + new_account + cold_access + memory_expansion
+
+**Operation:**
+```
+calldata = memory[inOffset:inOffset+inLength]
+success = external_call(address, value, calldata, gas * 63/64)
+memory[outOffset:outOffset+outLength] = returndata[0:min(outLength, returndata.length)]
+push(success)
+```
+
+## Behavior
+
+CALL performs a nested execution in the target account's context:
+
+1. **Pop 7 stack arguments** in order: gas, address, value, inOffset, inLength, outOffset, outLength
+2. **Validate static context:** Cannot transfer value in static call (EIP-214)
+3. **Calculate gas cost:**
+   - Base: 700 gas (Tangerine Whistle+)
+   - Value transfer: +9,000 gas if value > 0
+   - New account: +25,000 gas if recipient doesn't exist and value > 0
+   - Cold access: +2,600 gas for first access (Berlin+)
+   - Memory expansion for both input and output regions
+4. **Read calldata** from memory at inOffset:inLength
+5. **Forward gas:** Up to 63/64 of remaining gas after charging (EIP-150)
+6. **Execute in callee context:**
+   - msg.sender = caller address
+   - msg.value = transferred value
+   - Storage = callee's storage
+   - Code = callee's code
+7. **Transfer value:** Move ETH from caller to callee (if value > 0)
+8. **Copy returndata** to memory at outOffset (up to min(outLength, returndata.length))
+9. **Set return_data** buffer to full returndata
+10. **Push success flag** (1 if succeeded, 0 if reverted/failed)
+11. **Refund unused gas** from child execution
+
+**Key rules:**
+- Callee stipend: +2,300 gas (free) if value > 0 for receive/fallback execution
+- Cannot be called with value in static context (EIP-214)
+- Success flag pushed even if call reverts (caller continues execution)
+- Returndata accessible via RETURNDATASIZE/RETURNDATACOPY
+- Call depth limited to 1,024 (pre-Tangerine Whistle enforcement)
+
+## Examples
+
+### Basic External Call
+
+```typescript
+import { CALL } from '@tevm/voltaire/evm/system';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { Address } from '@tevm/voltaire/primitives';
+
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+});
+
+// Calldata: function selector for "transfer(address,uint256)"
+const calldata = new Uint8Array([
+  0xa9, 0x05, 0x9c, 0xbb,  // keccak256("transfer(address,uint256)")[:4]
+  // ... ABI-encoded parameters
+]);
+
+// Write calldata to memory
+for (let i = 0; i < calldata.length; i++) {
+  frame.memory.set(i, calldata[i]);
+}
+
+// Stack: [gas=100000, address, value=0, inOffset=0, inLength=68, outOffset=0, outLength=32]
+frame.stack.push(32n);                              // outLength
+frame.stack.push(0n);                               // outOffset
+frame.stack.push(68n);                              // inLength
+frame.stack.push(0n);                               // inOffset
+frame.stack.push(0n);                               // value
+frame.stack.push(BigInt("0x742d35Cc..."));          // address
+frame.stack.push(100000n);                          // gas
+
+const err = CALL(frame);
+
+console.log(err);                    // null (success)
+console.log(frame.stack[0]);         // 1n (call succeeded) or 0n (call failed)
+console.log(frame.return_data);      // Returndata from callee
+```
+
+### Value Transfer Call
+
+```typescript
+import { Address } from '@tevm/voltaire/primitives';
+
+// Send 1 ETH to address with empty calldata
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+});
+
+// Stack: [gas=50000, address, value=1 ETH, inOffset=0, inLength=0, outOffset=0, outLength=0]
+frame.stack.push(0n);                               // outLength
+frame.stack.push(0n);                               // outOffset
+frame.stack.push(0n);                               // inLength
+frame.stack.push(0n);                               // inOffset
+frame.stack.push(1_000_000_000_000_000_000n);      // value (1 ETH)
+frame.stack.push(BigInt("0x742d35Cc..."));          // recipient
+frame.stack.push(50000n);                           // gas
+
+const err = CALL(frame);
+
+// Check success
+if (frame.stack[0] === 1n) {
+  console.log("Transfer succeeded");
+} else {
+  console.log("Transfer failed:", frame.return_data);
+}
+```
+
+### Safe External Call Pattern
+
+```solidity
+contract Caller {
+    event CallResult(bool success, bytes returnData);
+
+    // Safe external call with error handling
+    function safeCall(
+        address target,
+        uint256 value,
+        bytes memory data
+    ) external returns (bool success, bytes memory returnData) {
+        // Limit gas to prevent griefing (retain 1/64 for post-call logic)
+        uint256 gasToForward = gasleft() * 63 / 64;
+
+        assembly {
+            // CALL(gas, address, value, inOffset, inLength, outOffset, outLength)
+            success := call(
+                gasToForward,
+                target,
+                value,
+                add(data, 0x20),     // Skip length prefix
+                mload(data),         // Data length
+                0,                   // Don't copy to memory yet
+                0
+            )
+
+            // Copy returndata
+            let size := returndatasize()
+            returnData := mload(0x40)  // Free memory pointer
+            mstore(returnData, size)   // Store length
+            returndatacopy(add(returnData, 0x20), 0, size)
+            mstore(0x40, add(add(returnData, 0x20), size))  // Update free pointer
+        }
+
+        emit CallResult(success, returnData);
+        return (success, returnData);
+    }
+
+    // Revert if call fails
+    function strictCall(address target, bytes memory data) external payable {
+        (bool success, bytes memory returnData) = target.call{value: msg.value}(data);
+
+        if (!success) {
+            // Bubble up revert reason
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+    }
+}
+```
+
+### Token Transfer Example
+
+```solidity
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract TokenCaller {
+    // Call ERC20.transfer using CALL opcode
+    function transferTokens(
+        address token,
+        address recipient,
+        uint256 amount
+    ) external returns (bool) {
+        // ABI encode: transfer(address,uint256)
+        bytes memory callData = abi.encodeWithSelector(
+            IERC20.transfer.selector,
+            recipient,
+            amount
+        );
+
+        bool success;
+        bytes memory returnData;
+
+        assembly {
+            // CALL with no value transfer
+            success := call(
+                gas(),                    // Forward all gas
+                token,                    // Target contract
+                0,                        // No ETH sent
+                add(callData, 0x20),     // Calldata location
+                mload(callData),          // Calldata length
+                0,                        // Return data location
+                0                         // Return data length
+            )
+
+            // Copy return data
+            let size := returndatasize()
+            returnData := mload(0x40)
+            mstore(returnData, size)
+            returndatacopy(add(returnData, 0x20), 0, size)
+            mstore(0x40, add(add(returnData, 0x20), size))
+        }
+
+        // Decode return value (bool)
+        require(success && returnData.length >= 32, "Transfer failed");
+        return abi.decode(returnData, (bool));
+    }
+}
+```
+
+## Gas Cost
+
+**Total cost:** 700 + value_transfer + new_account + cold_access + memory_expansion + forwarded_gas
+
+### Base Cost: 700 gas (Tangerine Whistle+)
+
+**Pre-Tangerine Whistle:** 40 gas
+
+### Value Transfer: +9,000 gas
+
+Charged when `value > 0`:
+```
+if (value > 0) {
+  cost += 9000  // CallValueTransferGas
+}
+```
+
+**Stipend:** Callee receives additional +2,300 gas (free to caller) for receive/fallback execution.
+
+### New Account: +25,000 gas
+
+Charged when sending value to non-existent account:
+```
+if (value > 0 && !accountExists(address)) {
+  cost += 25000  // CallNewAccountGas
+}
+```
+
+**Account exists if:** balance > 0 OR code.length > 0 OR nonce > 0
+
+### Cold Access: +2,600 gas (Berlin+)
+
+**EIP-2929 (Berlin+):** First access to address in transaction:
+```
+if (firstAccess(address)) {
+  cost += 2600  // ColdAccountAccess
+} else {
+  cost += 100   // WarmStorageRead
+}
+```
+
+**Pre-Berlin:** No access list costs.
+
+### Memory Expansion
+
+Dynamic cost for both input and output regions:
+```typescript
+const inEnd = inOffset + inLength;
+const outEnd = outOffset + outLength;
+const maxEnd = Math.max(inEnd, outEnd);
+
+const words = Math.ceil(maxEnd / 32);
+const expansionCost = words ** 2 / 512 + 3 * words;
+```
+
+### Gas Forwarding (EIP-150)
+
+**Tangerine Whistle+:** Caller retains 1/64th, forwards up to 63/64:
+```
+remaining_after_charge = gas_remaining - base_cost
+max_forwarded = remaining_after_charge - (remaining_after_charge / 64)
+actual_forwarded = min(gas_parameter, max_forwarded)
+```
+
+**Pre-Tangerine Whistle:** Forward all remaining gas.
+
+### Example Calculation
+
+```typescript
+// Call external contract with value, cold access, memory expansion
+const gasRemaining = 100000n;
+const value = 1_000_000_000_000_000_000n;  // 1 ETH
+const inLength = 68;  // Function call with parameters
+const outLength = 32;  // Return value
+
+// Base cost
+let cost = 700n;  // Tangerine Whistle+
+
+// Value transfer
+cost += 9000n;  // CallValueTransferGas
+
+// New account (assume account doesn't exist)
+cost += 25000n;  // CallNewAccountGas
+
+// Cold access (Berlin+, first access)
+cost += 2600n;  // ColdAccountAccess
+
+// Memory expansion (assume clean memory)
+const maxEnd = Math.max(68, 32);  // 68 bytes
+const words = Math.ceil(68 / 32);  // 3 words
+const memCost = Math.floor(words ** 2 / 512) + 3 * words;  // 9 gas
+cost += BigInt(memCost);
+
+// Total charged: 37,309 gas
+
+// Gas forwarding (63/64 rule)
+const afterCharge = gasRemaining - cost;  // 62,691 gas
+const maxForward = afterCharge - afterCharge / 64n;  // 61,711 gas
+// Forward min(gas_param, max_forward)
+
+// Total consumed: 37,309 + gas_actually_used_by_callee
+```
+
+## Common Usage
+
+### Reentrancy Guard
+
+```solidity
+contract ReentrancyGuard {
+    uint256 private locked = 1;
+
+    modifier nonReentrant() {
+        require(locked == 1, "Reentrancy");
+        locked = 2;
+        _;
+        locked = 1;
+    }
+
+    // Safe withdrawal with reentrancy protection
+    function withdraw(uint256 amount) external nonReentrant {
+        require(balances[msg.sender] >= amount);
+
+        // Update state BEFORE external call
+        balances[msg.sender] -= amount;
+
+        // External call (potential reentrancy point)
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+}
+```
+
+### Multicall Pattern
+
+```solidity
+contract Multicall {
+    struct Call {
+        address target;
+        bytes callData;
+    }
+
+    struct Result {
+        bool success;
+        bytes returnData;
+    }
+
+    // Execute multiple calls in single transaction
+    function aggregate(Call[] memory calls) external returns (Result[] memory results) {
+        results = new Result[](calls.length);
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory returnData) = calls[i].target.call(calls[i].callData);
+            results[i] = Result(success, returnData);
+        }
+    }
+
+    // Execute multiple calls, revert if any fails
+    function tryAggregate(Call[] memory calls) external returns (bytes[] memory returnData) {
+        returnData = new bytes[](calls.length);
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory data) = calls[i].target.call(calls[i].callData);
+            require(success, "Call failed");
+            returnData[i] = data;
+        }
+    }
+}
+```
+
+### Router Pattern
+
+```solidity
+contract Router {
+    // Route call to appropriate handler based on selector
+    function route(address target, bytes memory data) external payable returns (bytes memory) {
+        require(data.length >= 4, "Invalid calldata");
+
+        // Extract function selector
+        bytes4 selector;
+        assembly {
+            selector := mload(add(data, 32))
+        }
+
+        // Validate selector against whitelist
+        require(isAllowed(selector), "Selector not allowed");
+
+        // Forward call
+        (bool success, bytes memory returnData) = target.call{value: msg.value}(data);
+
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+
+        return returnData;
+    }
+
+    function isAllowed(bytes4 selector) internal pure returns (bool) {
+        // Whitelist logic
+        return true;
+    }
+}
+```
+
+## Security
+
+### Reentrancy Attacks
+
+CALL's primary security risk - external code can re-enter caller:
+
+```solidity
+// VULNERABLE: DAO hack pattern
+contract Vulnerable {
+    mapping(address => uint256) public balances;
+
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0);
+
+        // VULNERABILITY: External call before state update
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success);
+
+        balances[msg.sender] = 0;  // Too late! Already re-entered
+    }
+}
+
+contract Attacker {
+    Vulnerable victim;
+    uint256 public attackCount;
+
+    receive() external payable {
+        // Re-enter during CALL
+        if (attackCount < 10) {
+            attackCount++;
+            victim.withdraw();  // Drain funds
+        }
+    }
+}
+```
+
+**Mitigation: Checks-Effects-Interactions pattern:**
+
+```solidity
+// SAFE: State updates before external calls
+function withdraw() external {
+    uint256 amount = balances[msg.sender];
+    require(amount > 0);
+
+    // Update state FIRST
+    balances[msg.sender] = 0;
+
+    // External call LAST
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success);
+}
+```
+
+### Return Value Check
+
+Must check success flag - call can fail silently:
+
+```solidity
+// VULNERABLE: Ignoring return value
+function unsafeTransfer(address to, uint256 amount) external {
+    // Assumes success, but call might fail!
+    to.call{value: amount}("");
+}
+
+// SAFE: Check return value
+function safeTransfer(address to, uint256 amount) external {
+    (bool success, ) = to.call{value: amount}("");
+    require(success, "Transfer failed");
+}
+```
+
+### Gas Griefing
+
+Callee controls gas consumption:
+
+```solidity
+// VULNERABLE: Unbounded gas consumption
+function dangerousCall(address target, bytes memory data) external {
+    // Forwards 63/64 of all remaining gas!
+    target.call(data);  // Callee can consume all gas
+}
+
+// BETTER: Limit forwarded gas
+function limitedCall(address target, bytes memory data) external {
+    // Limit gas to specific amount
+    target.call{gas: 100000}(data);
+}
+```
+
+### Returndata Bomb
+
+Large returndata can cause OOG when copying:
+
+```solidity
+// VULNERABLE: Unbounded returndata copy
+function unsafeCopy(address target) external returns (bytes memory) {
+    (bool success, bytes memory data) = target.call("");
+    return data;  // Might copy gigabytes!
+}
+
+// SAFE: Limit returndata size
+function safeCopy(address target) external returns (bytes memory) {
+    (bool success, ) = target.call("");
+    require(success);
+
+    // Manual copy with size limit
+    uint256 size = min(returndatasize(), 1024);
+    bytes memory data = new bytes(size);
+    assembly {
+        returndatacopy(add(data, 32), 0, size)
+    }
+    return data;
+}
+```
+
+### Value Transfer Validation
+
+Ensure sufficient balance before value transfer:
+
+```solidity
+// VULNERABLE: No balance check
+function unsafeSend(address to, uint256 amount) external {
+    to.call{value: amount}("");  // Reverts if insufficient balance
+}
+
+// SAFE: Explicit balance validation
+function safeSend(address to, uint256 amount) external {
+    require(address(this).balance >= amount, "Insufficient balance");
+    (bool success, ) = to.call{value: amount}("");
+    require(success, "Transfer failed");
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * CALL opcode (0xf1) - Message call into an account
+ */
+export function call(frame: BrandedFrame): EvmError | null {
+  // Pop 7 arguments
+  const gas = popStack(frame);
+  const address = popStack(frame);
+  const value = popStack(frame);
+  const inOffset = popStack(frame);
+  const inLength = popStack(frame);
+  const outOffset = popStack(frame);
+  const outLength = popStack(frame);
+
+  // EIP-214: Cannot transfer value in static context
+  if (frame.isStatic && value > 0n) {
+    return { type: "WriteProtection" };
+  }
+
+  // Calculate gas cost
+  let gasCost = 700n;  // Base (Tangerine Whistle+)
+
+  // Value transfer
+  if (value > 0n) {
+    gasCost += 9000n;  // CallValueTransferGas
+
+    // Check if account exists
+    const exists = accountExists(address);
+    if (!exists) {
+      gasCost += 25000n;  // CallNewAccountGas
+    }
+  }
+
+  // Cold access cost (Berlin+)
+  const accessCost = getAccessCost(address);
+  gasCost += accessCost;
+
+  // Memory expansion
+  const inEnd = inLength > 0 ? inOffset + inLength : 0;
+  const outEnd = outLength > 0 ? outOffset + outLength : 0;
+  const maxEnd = Math.max(inEnd, outEnd);
+
+  if (maxEnd > 0) {
+    gasCost += memoryExpansionCost(frame, maxEnd);
+    updateMemorySize(frame, maxEnd);
+  }
+
+  // Calculate forwarded gas (63/64 rule)
+  const afterCharge = frame.gasRemaining - gasCost;
+  const maxForward = afterCharge - afterCharge / 64n;
+  const forwardedGas = min(gas, maxForward);
+
+  // Charge total cost
+  consumeGas(frame, gasCost + forwardedGas);
+
+  // Read calldata
+  const calldata = readMemory(frame, inOffset, inLength);
+
+  // Execute call
+  const result = executeCall({
+    target: address,
+    value: value,
+    data: calldata,
+    gas: forwardedGas
+  });
+
+  // Refund unused gas
+  frame.gasRemaining += result.gasLeft;
+
+  // Copy returndata to memory
+  const copySize = min(outLength, result.returnData.length);
+  writeMemory(frame, outOffset, result.returnData.slice(0, copySize));
+
+  // Set return_data buffer
+  frame.returnData = result.returnData;
+
+  // Push success flag
+  pushStack(frame, result.success ? 1n : 0n);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CALL opcode (0xf1) - Message call into an account
+pub fn call(frame: *FrameType) FrameType.EvmError!void {
+    // Pop all 7 arguments
+    const gas = try frame.popStack();
+    const address_u256 = try frame.popStack();
+    const value_arg = try frame.popStack();
+    const in_offset = try frame.popStack();
+    const in_length = try frame.popStack();
+    const out_offset = try frame.popStack();
+    const out_length = try frame.popStack();
+
+    // EIP-214: CALL with non-zero value cannot be executed in static call context
+    if (frame.is_static and value_arg > 0) return error.StaticCallViolation;
+
+    // Convert address
+    var addr_bytes: [20]u8 = undefined;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+    }
+    const call_address = Address{ .bytes = addr_bytes };
+
+    const evm = frame.getEvm();
+
+    // Gas cost calculation
+    var gas_cost: u64 = 0;
+
+    // Base cost (EIP-150)
+    if (evm.hardfork.isBefore(.BERLIN)) {
+        gas_cost = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE))
+            40
+        else
+            GasConstants.CallGas;
+    }
+
+    // Value transfer cost
+    if (value_arg > 0) {
+        gas_cost += GasConstants.CallValueTransferGas;
+
+        // Check if account exists
+        const is_precompile = precompiles.isPrecompile(call_address, evm.hardfork);
+        const target_exists = is_precompile or evm.accountExists(call_address);
+
+        if (!target_exists) {
+            gas_cost += GasConstants.CallNewAccountGas;
+        }
+    }
+
+    // EIP-2929: Access cost
+    const access_cost = try evm.accessAddress(call_address);
+    gas_cost += access_cost;
+
+    // Memory expansion cost
+    const in_end = if (in_length > 0)
+        @as(u64, @intCast(in_offset)) + @as(u64, @intCast(in_length))
+    else
+        0;
+    const out_end = if (out_length > 0)
+        @as(u64, @intCast(out_offset)) + @as(u64, @intCast(out_length))
+    else
+        0;
+    const max_end = @max(in_end, out_end);
+
+    if (max_end > 0) {
+        const mem_cost = frame.memoryExpansionCost(max_end);
+        gas_cost += mem_cost;
+
+        const aligned_size = wordAlignedSize(max_end);
+        if (aligned_size > frame.memory_size) {
+            frame.memory_size = aligned_size;
+        }
+    }
+
+    // Calculate forwarded gas (EIP-150: 63/64 rule)
+    const gas_limit = if (gas > std.math.maxInt(u64))
+        std.math.maxInt(u64)
+    else
+        @as(u64, @intCast(gas));
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const gas_after_charge = if (remaining_gas >= gas_cost)
+        remaining_gas - gas_cost
+    else
+        0;
+    const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        gas_after_charge - (gas_after_charge / 64)
+    else
+        gas_after_charge;
+    const available_gas = @min(gas_limit, max_gas);
+
+    // Charge total cost
+    const total_cost = gas_cost + available_gas;
+    try frame.consumeGas(total_cost);
+
+    // Read calldata from memory
+    const calldata = try frame.allocator.alloc(u8, @intCast(in_length));
+    if (in_length > 0) {
+        const in_off = @as(u32, @intCast(in_offset));
+        var j: u32 = 0;
+        while (j < in_length) : (j += 1) {
+            calldata[j] = frame.readMemory(in_off + j);
+        }
+    }
+
+    // Execute call
+    const result = try evm.inner_call(
+        call_address,
+        value_arg,
+        calldata,
+        available_gas
+    );
+
+    // Refund unused gas
+    frame.gas_remaining += @intCast(result.gas_left);
+
+    // Copy returndata to memory
+    if (out_length > 0 and result.output.len > 0) {
+        const copy_size = @min(out_length, result.output.len);
+        const out_off = @as(u32, @intCast(out_offset));
+        var k: u32 = 0;
+        while (k < copy_size) : (k += 1) {
+            frame.writeMemory(out_off + k, result.output[k]);
+        }
+    }
+
+    // Set return_data
+    frame.return_data = result.output;
+
+    // Push success flag
+    const success: u256 = if (result.success) 1 else 0;
+    try frame.pushStack(success);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.4 (Message Call)
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-214](https://eips.ethereum.org/EIPS/eip-214)** - STATICCALL and static context
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Access list gas costs
+- **[evm.codes - CALL](https://www.evm.codes/#f1)** - Interactive reference
+- **[Consensys Best Practices](https://consensys.github.io/smart-contract-best-practices/)** - Reentrancy patterns

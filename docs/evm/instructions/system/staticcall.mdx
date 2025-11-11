@@ -1,0 +1,801 @@
+---
+title: "STATICCALL (0xfa)"
+description: "Read-only message call with state modification protection - foundation for view/pure functions"
+---
+
+## Overview
+
+**Opcode:** `0xfa`
+**Introduced:** Byzantium (EIP-214)
+
+STATICCALL executes code from another account with state modification restrictions enforced. Any attempt to modify state (SSTORE, CREATE, CALL with value, SELFDESTRUCT, LOG, etc.) reverts the entire call. This enables secure read-only operations and implements Solidity's view and pure function semantics.
+
+## Specification
+
+**Stack Input:**
+```
+gas       (max gas to forward)
+address   (target account to call)
+inOffset  (calldata memory offset)
+inLength  (calldata size)
+outOffset (returndata memory offset)
+outLength (returndata size)
+```
+
+**Stack Output:**
+```
+success   (1 if call succeeded, 0 if failed/reverted)
+```
+
+**Gas Cost:** 700 + cold_access + memory_expansion
+
+**Operation:**
+```
+calldata = memory[inOffset:inOffset+inLength]
+success = static_call(address, calldata, gas * 63/64)  // Sets is_static flag
+memory[outOffset:outOffset+outLength] = returndata[0:min(outLength, returndata.length)]
+push(success)
+```
+
+## Behavior
+
+STATICCALL performs a read-only external call with state protection:
+
+1. **Pop 6 stack arguments** (no value parameter)
+2. **Calculate gas cost:**
+   - Base: 700 gas (Tangerine Whistle+)
+   - Cold access: +2,600 gas for first access (Berlin+)
+   - Memory expansion for input and output regions
+3. **Read calldata** from memory
+4. **Forward gas:** Up to 63/64 of remaining gas (EIP-150)
+5. **Execute in callee context with static flag:**
+   - msg.sender = caller address
+   - msg.value = 0 (always zero!)
+   - Storage = callee's storage (READ-ONLY)
+   - Code = callee's code
+   - is_static = true (inherited by child calls)
+6. **Enforce read-only restrictions:**
+   - SSTORE reverts (storage modification)
+   - CREATE/CREATE2 revert (contract creation)
+   - CALL with value > 0 reverts (ETH transfer)
+   - SELFDESTRUCT reverts (account deletion)
+   - LOG0-LOG4 revert (event emission)
+7. **Copy returndata** to memory
+8. **Set return_data** buffer
+9. **Push success flag**
+10. **Refund unused gas**
+
+**Key characteristics:**
+- No value transfer (msg.value always 0)
+- State modifications forbidden (enforced recursively)
+- Safe for untrusted code execution
+- Foundation for view/pure functions
+
+## Examples
+
+### Basic Static Call
+
+```typescript
+import { STATICCALL } from '@tevm/voltaire/evm/system';
+import { Address } from '@tevm/voltaire/primitives';
+
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+});
+
+// Call view function: balanceOf(address)
+const calldata = new Uint8Array([
+  0x70, 0xa0, 0x82, 0x31,  // balanceOf(address) selector
+  // ... ABI-encoded address parameter
+]);
+
+// Write calldata to memory
+for (let i = 0; i < calldata.length; i++) {
+  frame.memory.set(i, calldata[i]);
+}
+
+// Stack: [gas=100000, address, inOffset=0, inLength=36, outOffset=0, outLength=32]
+frame.stack.push(32n);                              // outLength
+frame.stack.push(0n);                               // outOffset
+frame.stack.push(36n);                              // inLength
+frame.stack.push(0n);                               // inOffset
+frame.stack.push(BigInt("0x742d35Cc..."));          // target address
+frame.stack.push(100000n);                          // gas
+
+const err = STATICCALL(frame);
+
+console.log(frame.stack[0]);     // 1n if success, 0n if failed
+console.log(frame.return_data);  // Balance (uint256)
+
+// In callee:
+// - msg.value = 0 (always)
+// - Any SSTORE, CREATE, LOG, etc. will revert
+// - is_static flag set (inherited by nested calls)
+```
+
+### View Function Call
+
+```solidity
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
+}
+
+contract Reader {
+    // Safe read-only call to ERC20
+    function getBalance(
+        address token,
+        address account
+    ) external view returns (uint256) {
+        // Solidity automatically uses STATICCALL for view functions
+        return IERC20(token).balanceOf(account);
+    }
+
+    // Manual static call with assembly
+    function getBalanceAssembly(
+        address token,
+        address account
+    ) external view returns (uint256) {
+        bytes memory callData = abi.encodeWithSelector(
+            IERC20.balanceOf.selector,
+            account
+        );
+
+        uint256 balance;
+        bool success;
+
+        assembly {
+            // STATICCALL(gas, address, inOffset, inLength, outOffset, outLength)
+            success := staticcall(
+                gas(),
+                token,
+                add(callData, 0x20),
+                mload(callData),
+                0,
+                32
+            )
+
+            if success {
+                balance := mload(0)
+            }
+        }
+
+        require(success, "Static call failed");
+        return balance;
+    }
+}
+```
+
+### Multi-token Reader
+
+```solidity
+contract TokenReader {
+    struct TokenInfo {
+        uint256 totalSupply;
+        uint256 userBalance;
+        string name;
+        string symbol;
+        uint8 decimals;
+    }
+
+    // Read multiple token properties in one call
+    function getTokenInfo(
+        address token,
+        address user
+    ) external view returns (TokenInfo memory info) {
+        // All calls are STATICCALL (view context)
+        info.totalSupply = IERC20(token).totalSupply();
+        info.userBalance = IERC20(token).balanceOf(user);
+        info.name = IERC20Metadata(token).name();
+        info.symbol = IERC20Metadata(token).symbol();
+        info.decimals = IERC20Metadata(token).decimals();
+    }
+
+    // Batch read multiple tokens
+    function batchGetBalances(
+        address[] calldata tokens,
+        address user
+    ) external view returns (uint256[] memory balances) {
+        balances = new uint256[](tokens.length);
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            balances[i] = IERC20(tokens[i]).balanceOf(user);
+        }
+    }
+}
+```
+
+### Safe Untrusted Call
+
+```solidity
+contract SafeReader {
+    // Call untrusted contract safely (no state changes possible)
+    function safeQuery(
+        address untrusted,
+        bytes memory data
+    ) external view returns (bool success, bytes memory result) {
+        assembly {
+            // Allocate memory for return data
+            let ptr := mload(0x40)
+
+            // STATICCALL to untrusted contract
+            success := staticcall(
+                gas(),
+                untrusted,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
+
+            // Copy return data
+            let size := returndatasize()
+            result := ptr
+            mstore(result, size)
+            returndatacopy(add(result, 0x20), 0, size)
+            mstore(0x40, add(add(result, 0x20), size))
+        }
+
+        // Even if untrusted contract is malicious:
+        // - Cannot modify state
+        // - Cannot transfer ETH
+        // - Cannot emit events
+        // Worst case: returns wrong data or reverts
+    }
+}
+```
+
+### Price Oracle Reader
+
+```solidity
+interface IPriceOracle {
+    function getPrice(address token) external view returns (uint256);
+}
+
+contract PriceAggregator {
+    address[] public oracles;
+
+    // Get median price from multiple oracles (all static calls)
+    function getMedianPrice(address token) external view returns (uint256) {
+        require(oracles.length > 0, "No oracles");
+
+        uint256[] memory prices = new uint256[](oracles.length);
+        uint256 validPrices = 0;
+
+        for (uint256 i = 0; i < oracles.length; i++) {
+            try IPriceOracle(oracles[i]).getPrice(token) returns (uint256 price) {
+                prices[validPrices] = price;
+                validPrices++;
+            } catch {
+                // Oracle failed, skip
+            }
+        }
+
+        require(validPrices > 0, "No valid prices");
+
+        // Sort and return median
+        return _median(prices, validPrices);
+    }
+
+    function _median(uint256[] memory prices, uint256 length) internal pure returns (uint256) {
+        // Sort and return median
+        // Implementation omitted for brevity
+    }
+}
+```
+
+## Gas Cost
+
+**Total cost:** 700 + cold_access + memory_expansion + forwarded_gas
+
+### Base Cost: 700 gas (Tangerine Whistle+)
+
+**Pre-Tangerine Whistle:** STATICCALL didn't exist (introduced Byzantium).
+
+### No Value Transfer Cost
+
+STATICCALL never transfers value:
+```
+// No CallValueTransferGas (msg.value always 0)
+// No CallNewAccountGas
+```
+
+### Cold Access: +2,600 gas (Berlin+)
+
+**EIP-2929 (Berlin+):** First access to target address:
+```
+if (firstAccess(address)) {
+  cost += 2600  // ColdAccountAccess
+} else {
+  cost += 100   // WarmStorageRead
+}
+```
+
+**Pre-Berlin:** No access list costs.
+
+### Memory Expansion
+
+Same as CALL - charges for both input and output regions:
+```typescript
+const inEnd = inOffset + inLength;
+const outEnd = outOffset + outLength;
+const maxEnd = Math.max(inEnd, outEnd);
+
+const words = Math.ceil(maxEnd / 32);
+const expansionCost = words ** 2 / 512 + 3 * words;
+```
+
+### Gas Forwarding (EIP-150)
+
+**63/64 rule applies:**
+```
+remaining_after_charge = gas_remaining - base_cost
+max_forwarded = remaining_after_charge - (remaining_after_charge / 64)
+actual_forwarded = min(gas_parameter, max_forwarded)
+```
+
+### Example Calculation
+
+```typescript
+// STATICCALL to read function, cold access
+const gasRemaining = 100000n;
+const inLength = 36;   // balanceOf(address)
+const outLength = 32;  // uint256 return
+
+// Base cost
+let cost = 700n;  // Byzantium+
+
+// No value transfer cost
+
+// Cold access (Berlin+, first access)
+cost += 2600n;  // ColdAccountAccess
+
+// Memory expansion (clean memory)
+const maxEnd = Math.max(36, 32);  // 36 bytes
+const words = Math.ceil(36 / 32);  // 2 words
+const memCost = Math.floor(words ** 2 / 512) + 3 * words;  // 6 gas
+cost += BigInt(memCost);
+
+// Total charged: 3,306 gas
+
+// Gas forwarding
+const afterCharge = gasRemaining - cost;  // 96,694 gas
+const maxForward = afterCharge - afterCharge / 64n;  // 95,184 gas
+
+// Total consumed: 3,306 + gas_used_by_callee
+```
+
+## Common Usage
+
+### Safe Contract Query
+
+```solidity
+contract QueryHelper {
+    // Query arbitrary contract safely
+    function query(
+        address target,
+        bytes memory data
+    ) external view returns (bytes memory) {
+        (bool success, bytes memory result) = target.staticcall(data);
+        require(success, "Query failed");
+        return result;
+    }
+
+    // Query with try/catch
+    function tryQuery(
+        address target,
+        bytes memory data
+    ) external view returns (bool success, bytes memory result) {
+        (success, result) = target.staticcall(data);
+    }
+}
+```
+
+### View Function Multicall
+
+```solidity
+contract Multicall {
+    struct Call {
+        address target;
+        bytes callData;
+    }
+
+    // Execute multiple view calls in one transaction
+    function aggregate(
+        Call[] memory calls
+    ) external view returns (bytes[] memory results) {
+        results = new bytes[](calls.length);
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = calls[i].target.staticcall(
+                calls[i].callData
+            );
+            require(success, "Call failed");
+            results[i] = result;
+        }
+    }
+
+    // Aggregate with failure tolerance
+    function tryAggregate(
+        Call[] memory calls
+    ) external view returns (bool[] memory successes, bytes[] memory results) {
+        successes = new bool[](calls.length);
+        results = new bytes[](calls.length);
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            (successes[i], results[i]) = calls[i].target.staticcall(
+                calls[i].callData
+            );
+        }
+    }
+}
+```
+
+### Contract Existence Check
+
+```solidity
+contract ExistenceChecker {
+    // Check if contract exists and has code
+    function exists(address target) external view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(target)
+        }
+        return size > 0;
+    }
+
+    // Check if contract implements interface (ERC165)
+    function supportsInterface(
+        address target,
+        bytes4 interfaceId
+    ) external view returns (bool) {
+        bytes memory data = abi.encodeWithSelector(
+            IERC165.supportsInterface.selector,
+            interfaceId
+        );
+
+        (bool success, bytes memory result) = target.staticcall(data);
+
+        return success && result.length == 32 && abi.decode(result, (bool));
+    }
+}
+```
+
+## Security
+
+### State Modification Prevention
+
+STATICCALL enforces read-only semantics:
+
+```solidity
+contract Malicious {
+    uint256 public value;
+
+    function maliciousView() external view returns (uint256) {
+        // This compiles but REVERTS at runtime when called via STATICCALL
+        value = 42;  // SSTORE in static context!
+        return value;
+    }
+}
+
+contract Caller {
+    function callView(address target) external view returns (uint256) {
+        // Calls Malicious.maliciousView() via STATICCALL
+        // Reverts because maliciousView() attempts SSTORE
+        return Malicious(target).maliciousView();
+    }
+}
+```
+
+**Protected operations (revert in static context):**
+- SSTORE (storage write)
+- CREATE/CREATE2 (contract creation)
+- CALL with value > 0 (ETH transfer)
+- SELFDESTRUCT (account deletion)
+- LOG0-LOG4 (event emission)
+
+### Read-Only Guarantee
+
+STATICCALL guarantees no state changes:
+
+```solidity
+// SAFE: State cannot be modified via static call
+contract SafeReader {
+    function readUntrusted(address target) external view returns (bytes memory) {
+        (bool success, bytes memory data) = target.staticcall("");
+
+        // Even if target is malicious:
+        // - Cannot modify storage
+        // - Cannot create contracts
+        // - Cannot transfer ETH
+        // - Cannot emit events
+        // Worst case: returns bad data or reverts
+
+        require(success, "Call failed");
+        return data;
+    }
+}
+```
+
+### Gas Limit Attacks
+
+Callee still controls gas consumption:
+
+```solidity
+// VULNERABLE: Unbounded gas consumption
+function dangerousQuery(address target, bytes memory data) external view returns (bytes memory) {
+    // Forwards 63/64 of all remaining gas
+    (bool success, bytes memory result) = target.staticcall(data);
+    require(success);
+    return result;  // Callee could consume all gas
+}
+
+// BETTER: Limit forwarded gas
+function limitedQuery(address target, bytes memory data) external view returns (bytes memory) {
+    (bool success, bytes memory result) = target.staticcall{gas: 100000}(data);
+    require(success);
+    return result;
+}
+```
+
+### Returndata Bomb
+
+Large returndata can cause OOG when copying:
+
+```solidity
+// VULNERABLE: Unbounded returndata
+function unsafeQuery(address target) external view returns (bytes memory) {
+    (, bytes memory data) = target.staticcall("");
+    return data;  // Might copy gigabytes!
+}
+
+// SAFE: Limit returndata size
+function safeQuery(address target) external view returns (bytes memory) {
+    (bool success, ) = target.staticcall("");
+    require(success);
+
+    // Manual copy with size limit
+    uint256 size = min(returndatasize(), 1024);
+    bytes memory data = new bytes(size);
+    assembly {
+        returndatacopy(add(data, 32), 0, size)
+    }
+    return data;
+}
+```
+
+### Reentrancy (Still Possible!)
+
+Read-only reentrancy is possible:
+
+```solidity
+// VULNERABLE: Read-only reentrancy
+contract Vault {
+    mapping(address => uint256) public balances;
+
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+
+        // VULNERABILITY: External call before state update
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success);
+
+        balances[msg.sender] = 0;  // Too late!
+    }
+
+    function getBalance(address user) external view returns (uint256) {
+        return balances[user];  // Can be called during reentrancy!
+    }
+}
+
+contract Attacker {
+    Vault vault;
+    Oracle oracle;
+
+    receive() external payable {
+        // During withdraw, balance not yet updated
+        uint256 balance = vault.getBalance(address(this));  // STATICCALL
+        // Oracle sees inflated balance!
+        oracle.updatePrice(balance);
+    }
+}
+```
+
+**Mitigation: Checks-Effects-Interactions pattern.**
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * STATICCALL opcode (0xfa)
+ * Read-only message call with state protection
+ */
+export function staticcall(frame: BrandedFrame): EvmError | null {
+  // Pop 6 arguments (no value)
+  const gas = popStack(frame);
+  const address = popStack(frame);
+  const inOffset = popStack(frame);
+  const inLength = popStack(frame);
+  const outOffset = popStack(frame);
+  const outLength = popStack(frame);
+
+  // Calculate gas cost
+  let gasCost = 700n;  // Base
+
+  // No value transfer cost
+
+  // Cold access cost (Berlin+)
+  const accessCost = getAccessCost(address);
+  gasCost += accessCost;
+
+  // Memory expansion
+  const inEnd = inLength > 0 ? inOffset + inLength : 0;
+  const outEnd = outLength > 0 ? outOffset + outLength : 0;
+  const maxEnd = Math.max(inEnd, outEnd);
+
+  if (maxEnd > 0) {
+    gasCost += memoryExpansionCost(frame, maxEnd);
+    updateMemorySize(frame, maxEnd);
+  }
+
+  // Calculate forwarded gas (63/64 rule)
+  const afterCharge = frame.gasRemaining - gasCost;
+  const maxForward = afterCharge - afterCharge / 64n;
+  const forwardedGas = min(gas, maxForward);
+
+  // Charge total cost
+  consumeGas(frame, gasCost + forwardedGas);
+
+  // Read calldata
+  const calldata = readMemory(frame, inOffset, inLength);
+
+  // Execute static call (set is_static flag!)
+  const result = executeStaticCall({
+    target: address,
+    data: calldata,
+    gas: forwardedGas,
+    isStatic: true  // Enforces read-only
+  });
+
+  // Refund unused gas
+  frame.gasRemaining += result.gasLeft;
+
+  // Copy returndata
+  const copySize = min(outLength, result.returnData.length);
+  writeMemory(frame, outOffset, result.returnData.slice(0, copySize));
+
+  // Set return_data buffer
+  frame.returnData = result.returnData;
+
+  // Push success flag
+  pushStack(frame, result.success ? 1n : 0n);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// STATICCALL opcode (0xfa)
+/// Read-only message call with state protection
+pub fn staticcall(frame: *FrameType) FrameType.EvmError!void {
+    // Pop 6 arguments (no value)
+    const gas = try frame.popStack();
+    const address_u256 = try frame.popStack();
+    const in_offset = try frame.popStack();
+    const in_length = try frame.popStack();
+    const out_offset = try frame.popStack();
+    const out_length = try frame.popStack();
+
+    // Convert address
+    var addr_bytes: [20]u8 = undefined;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+    }
+    const call_address = Address{ .bytes = addr_bytes };
+
+    const evm = frame.getEvm();
+
+    // Gas cost calculation
+    var gas_cost: u64 = GasConstants.CallGas;  // 700
+
+    // No value transfer cost
+
+    // Access cost (Berlin+)
+    const access_cost = try evm.accessAddress(call_address);
+    gas_cost += access_cost;
+
+    // Memory expansion
+    const in_end = if (in_length > 0)
+        @as(u64, @intCast(in_offset)) + @as(u64, @intCast(in_length))
+    else
+        0;
+    const out_end = if (out_length > 0)
+        @as(u64, @intCast(out_offset)) + @as(u64, @intCast(out_length))
+    else
+        0;
+    const max_end = @max(in_end, out_end);
+
+    if (max_end > 0) {
+        const mem_cost = frame.memoryExpansionCost(max_end);
+        gas_cost += mem_cost;
+
+        const aligned_size = wordAlignedSize(max_end);
+        if (aligned_size > frame.memory_size) {
+            frame.memory_size = aligned_size;
+        }
+    }
+
+    // Calculate forwarded gas (63/64 rule)
+    const gas_limit = if (gas > std.math.maxInt(u64))
+        std.math.maxInt(u64)
+    else
+        @as(u64, @intCast(gas));
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const gas_after_charge = if (remaining_gas >= gas_cost)
+        remaining_gas - gas_cost
+    else
+        0;
+    const max_gas = gas_after_charge - (gas_after_charge / 64);
+    const available_gas = @min(gas_limit, max_gas);
+
+    // Charge total cost
+    try frame.consumeGas(gas_cost + available_gas);
+
+    // Read calldata
+    const calldata = try frame.allocator.alloc(u8, @intCast(in_length));
+    if (in_length > 0) {
+        const in_off = @as(u32, @intCast(in_offset));
+        var j: u32 = 0;
+        while (j < in_length) : (j += 1) {
+            calldata[j] = frame.readMemory(in_off + j);
+        }
+    }
+
+    // Execute static call (is_static = true)
+    const result = try evm.inner_staticcall(
+        call_address,
+        calldata,
+        available_gas
+    );
+
+    // Refund unused gas
+    frame.gas_remaining += @intCast(result.gas_left);
+
+    // Copy returndata
+    if (out_length > 0 and result.output.len > 0) {
+        const copy_size = @min(out_length, result.output.len);
+        const out_off = @as(u32, @intCast(out_offset));
+        var k: u32 = 0;
+        while (k < copy_size) : (k += 1) {
+            frame.writeMemory(out_off + k, result.output[k]);
+        }
+    }
+
+    // Set return_data
+    frame.return_data = result.output;
+
+    // Push success flag
+    const success: u256 = if (result.success) 1 else 0;
+    try frame.pushStack(success);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.4 (STATICCALL)
+- **[EIP-214](https://eips.ethereum.org/EIPS/eip-214)** - STATICCALL opcode and static mode
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Access list gas costs
+- **[evm.codes - STATICCALL](https://www.evm.codes/#fa)** - Interactive reference
+- **[Solidity Docs](https://docs.soliditylang.org/)** - View and pure functions

@@ -1,0 +1,811 @@
+---
+title: "CREATE2 (0xf5)"
+description: "Create contract at deterministic address using salt - enables counterfactual deployment"
+---
+
+## Overview
+
+**Opcode:** `0xf5`
+**Introduced:** Constantinople (EIP-1014)
+
+CREATE2 deploys a new contract with a deterministic address computed from creator, salt, and init code hash. Unlike CREATE (which uses nonce), the address is predictable before deployment, enabling counterfactual instantiation and state channels.
+
+## Specification
+
+**Stack Input:**
+```
+value   (wei to send)
+offset  (memory offset of init code)
+length  (size of init code)
+salt    (32-byte salt for address computation)
+```
+
+**Stack Output:**
+```
+address  (deployed contract address, or 0 if failed)
+```
+
+**Gas Cost:** 32,000 + init_code_cost + keccak256_cost + memory_expansion + deployment_cost
+
+**Operation:**
+```
+initCodeHash = keccak256(memory[offset:offset+length])
+address = keccak256(0xff ++ sender ++ salt ++ initCodeHash)[12:]
+success = deploy(address, init_code, value, gas * 63/64)
+push(success ? address : 0)
+```
+
+## Behavior
+
+CREATE2 performs deterministic contract deployment:
+
+1. **Pop 4 stack arguments:** value, offset, length, salt
+2. **Validate static context:** Cannot be called in static mode (EIP-214)
+3. **Charge gas:**
+   - Base: 32,000 gas
+   - Init code: 2 gas/word (EIP-3860)
+   - Keccak256: 6 gas/word (for init code hash)
+   - Memory expansion
+4. **Read init code** from memory
+5. **Compute deterministic address:**
+   ```
+   initCodeHash = keccak256(initCode)
+   preimage = 0xff ++ sender (20 bytes) ++ salt (32 bytes) ++ initCodeHash (32 bytes)
+   address = keccak256(preimage)[12:]  // Last 20 bytes
+   ```
+6. **Check collision:** Fail if account exists at computed address
+7. **Forward gas:** Up to 63/64 of remaining gas (EIP-150)
+8. **Execute init code** in new context
+9. **Store runtime code** if successful (charged 200 gas/byte)
+10. **Push address** to stack (0 if failed)
+
+**Key differences from CREATE:**
+- Address depends on salt and code hash, not nonce
+- Additional 6 gas/word for keccak256 hashing
+- Address predictable before deployment
+- Enables counterfactual patterns
+
+## Examples
+
+### Basic CREATE2 Deployment
+
+```typescript
+import { CREATE2 } from '@tevm/voltaire/evm/system';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { Address } from '@tevm/voltaire/primitives';
+
+// Init code: returns single byte 0x42
+const initCode = new Uint8Array([
+  0x60, 0x42,        // PUSH1 0x42
+  0x60, 0x00,        // PUSH1 0x00
+  0x52,              // MSTORE
+  0x60, 0x01,        // PUSH1 0x01 (length)
+  0x60, 0x1f,        // PUSH1 0x1f (offset)
+  0xf3               // RETURN
+]);
+
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+});
+
+// Write init code to memory
+for (let i = 0; i < initCode.length; i++) {
+  frame.memory.set(i, initCode[i]);
+}
+
+// Compute address before deployment
+const salt = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+const predictedAddress = predictCreate2Address(
+  frame.address,
+  salt,
+  initCode
+);
+
+console.log("Will deploy to:", predictedAddress);
+
+// Stack: [value=0, offset=0, length=9, salt]
+frame.stack.push(salt);          // salt
+frame.stack.push(9n);            // length
+frame.stack.push(0n);            // offset
+frame.stack.push(0n);            // value
+
+const err = CREATE2(frame);
+
+console.log(frame.stack[0]);     // Deployed address (matches prediction!)
+```
+
+### Address Prediction
+
+```typescript
+import { Address, Hash } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+function predictCreate2Address(
+  creator: Address,
+  salt: bigint,
+  initCode: Uint8Array
+): Address {
+  // 1. Hash init code
+  const initCodeHash = keccak256(initCode);
+
+  // 2. Build preimage: 0xff ++ creator ++ salt ++ initCodeHash
+  const preimage = new Uint8Array(1 + 20 + 32 + 32);
+  preimage[0] = 0xff;
+  preimage.set(creator, 1);
+
+  // Convert salt to bytes (big-endian)
+  for (let i = 0; i < 32; i++) {
+    preimage[21 + i] = Number((salt >> BigInt(8 * (31 - i))) & 0xffn);
+  }
+
+  preimage.set(initCodeHash, 53);
+
+  // 3. Hash and extract address
+  const hash = keccak256(preimage);
+  return Address.fromBytes(hash.slice(12));
+}
+
+// Example usage
+const creator = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const salt = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+const initCode = new Uint8Array([/* bytecode */]);
+
+const predicted = predictCreate2Address(creator, salt, initCode);
+console.log("Contract will deploy to:", Address.toHex(predicted));
+```
+
+### Factory Pattern with CREATE2
+
+```solidity
+contract Create2Factory {
+    event Deployed(address indexed addr, bytes32 indexed salt);
+
+    // Deploy contract with deterministic address
+    function deploy(bytes memory bytecode, bytes32 salt) external returns (address) {
+        address addr;
+
+        assembly {
+            // CREATE2(value, offset, length, salt)
+            addr := create2(
+                0,                          // No ETH sent
+                add(bytecode, 0x20),       // Skip length prefix
+                mload(bytecode),            // Init code length
+                salt                        // Salt
+            )
+
+            if iszero(addr) {
+                revert(0, 0)
+            }
+        }
+
+        emit Deployed(addr, salt);
+        return addr;
+    }
+
+    // Predict deployment address
+    function computeAddress(
+        bytes memory bytecode,
+        bytes32 salt
+    ) public view returns (address) {
+        bytes32 bytecodeHash = keccak256(bytecode);
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                salt,
+                bytecodeHash
+            )
+        );
+
+        return address(uint160(uint256(hash)));
+    }
+
+    // Check if contract deployed at address
+    function isDeployed(address addr) public view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
+    }
+}
+```
+
+### Minimal Proxy Factory (EIP-1167)
+
+```solidity
+contract CloneFactory {
+    // Minimal proxy bytecode with CREATE2
+    function cloneDeterministic(
+        address implementation,
+        bytes32 salt
+    ) external returns (address instance) {
+        bytes20 targetBytes = bytes20(implementation);
+
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+            mstore(add(ptr, 0x14), targetBytes)
+            mstore(add(ptr, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+
+            instance := create2(0, ptr, 0x37, salt)
+        }
+
+        require(instance != address(0), "Clone failed");
+    }
+
+    // Predict clone address
+    function predictCloneAddress(
+        address implementation,
+        bytes32 salt
+    ) external view returns (address) {
+        bytes20 targetBytes = bytes20(implementation);
+
+        bytes memory bytecode = abi.encodePacked(
+            hex"3d602d80600a3d3981f3363d3d373d3d3d363d73",
+            targetBytes,
+            hex"5af43d82803e903d91602b57fd5bf3"
+        );
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                salt,
+                keccak256(bytecode)
+            )
+        );
+
+        return address(uint160(uint256(hash)));
+    }
+}
+```
+
+### Counterfactual Instantiation
+
+```solidity
+// State channel pattern
+contract StateChannel {
+    mapping(bytes32 => bool) public deployed;
+
+    // Deploy channel only when needed (counterfactual)
+    function finalizeChannel(
+        bytes memory channelCode,
+        bytes32 salt,
+        bytes memory finalState
+    ) external {
+        bytes32 channelId = keccak256(abi.encodePacked(channelCode, salt));
+        require(!deployed[channelId], "Already deployed");
+
+        // Predict address
+        address predictedAddr = computeAddress(channelCode, salt);
+
+        // Verify off-chain state was for this address
+        require(verifyState(predictedAddr, finalState), "Invalid state");
+
+        // Deploy actual contract
+        address addr;
+        assembly {
+            addr := create2(0, add(channelCode, 0x20), mload(channelCode), salt)
+        }
+        require(addr == predictedAddr, "Address mismatch");
+
+        deployed[channelId] = true;
+    }
+
+    // Channel can operate off-chain at predicted address
+    // Only deploys on-chain when dispute or finalization needed
+}
+```
+
+## Gas Cost
+
+**Total cost:** 32,000 + init_code_cost + keccak256_cost + memory_expansion + deployment_cost
+
+### Base Cost: 32,000 gas
+
+Fixed cost for CREATE2 operation (same as CREATE).
+
+### Init Code Cost (EIP-3860)
+
+**Shanghai+:** 2 gas per word for init code:
+```
+init_code_cost = 2 * ceil(init_code_length / 32)
+```
+
+**Pre-Shanghai:** No init code cost.
+
+### Keccak256 Cost
+
+**CREATE2-specific:** 6 gas per word for hashing init code:
+```
+keccak256_cost = 6 * ceil(init_code_length / 32)
+```
+
+This is the primary cost difference vs CREATE.
+
+### Memory Expansion
+
+Dynamic cost for reading init code from memory:
+```
+words_needed = ceil((offset + length) / 32)
+expansion_cost = (words_needed)² / 512 + 3 * (words_needed - current_words)
+```
+
+### Deployment Cost
+
+**Runtime code storage:** 200 gas per byte of deployed code:
+```
+deployment_cost = 200 * runtime_code_length
+```
+
+### Gas Forwarding (EIP-150)
+
+Same as CREATE - 63/64 rule applies.
+
+### Example Calculation
+
+```typescript
+// Deploy with 100-byte init code, returns 50-byte runtime code
+const initCodeLength = 100;
+const runtimeCodeLength = 50;
+
+// Base cost
+const baseCost = 32000;
+
+// Init code cost (Shanghai+): 2 gas/word
+const initCodeWords = Math.ceil(initCodeLength / 32);  // 4 words
+const initCodeCost = 2 * initCodeWords;  // 8 gas
+
+// Keccak256 cost (CREATE2-specific): 6 gas/word
+const keccak256Cost = 6 * initCodeWords;  // 24 gas
+
+// Memory expansion (assume clean memory)
+const memWords = Math.ceil(initCodeLength / 32);  // 4 words
+const memCost = Math.floor(memWords ** 2 / 512) + 3 * memWords;  // 12 gas
+
+// Deployment cost: 200 gas/byte
+const deploymentCost = 200 * runtimeCodeLength;  // 10,000 gas
+
+// Total charged to caller
+const totalCost = baseCost + initCodeCost + keccak256Cost + memCost;  // 32,044 gas
+
+// Gas forwarded to init code (assume 100,000 remaining)
+const remainingAfterCharge = 100000 - totalCost;  // 67,956 gas
+const forwardedGas = remainingAfterCharge - Math.floor(remainingAfterCharge / 64);  // 66,895 gas
+
+// Total consumed
+const totalConsumed = totalCost + forwardedGas + deploymentCost;  // 108,939 gas
+```
+
+## Common Usage
+
+### Upgradeable Factory
+
+```solidity
+contract UpgradeableFactory {
+    address public implementation;
+
+    function deployProxy(bytes32 salt) external returns (address) {
+        bytes memory bytecode = getProxyBytecode(implementation);
+
+        address proxy;
+        assembly {
+            proxy := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        require(proxy != address(0), "Deploy failed");
+
+        return proxy;
+    }
+
+    function upgrade(address newImpl) external {
+        implementation = newImpl;
+        // Future deployments use new implementation
+    }
+}
+```
+
+### Registry Pattern
+
+```solidity
+contract Registry {
+    mapping(address => bool) public registered;
+
+    function register(bytes memory code, bytes32 salt) external {
+        // Predict address
+        address predicted = computeAddress(code, salt);
+        require(!registered[predicted], "Already registered");
+
+        // Deploy
+        address deployed;
+        assembly {
+            deployed := create2(0, add(code, 32), mload(code), salt)
+        }
+        require(deployed == predicted, "Mismatch");
+
+        registered[deployed] = true;
+    }
+}
+```
+
+### Multi-signature Wallet Factory
+
+```solidity
+contract WalletFactory {
+    function createWallet(
+        address[] memory owners,
+        uint256 threshold,
+        bytes32 salt
+    ) external returns (address wallet) {
+        // Deterministic address based on configuration
+        bytes memory bytecode = abi.encodePacked(
+            type(MultiSigWallet).creationCode,
+            abi.encode(owners, threshold)
+        );
+
+        assembly {
+            wallet := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+
+        require(wallet != address(0), "Deploy failed");
+    }
+
+    function computeWalletAddress(
+        address[] memory owners,
+        uint256 threshold,
+        bytes32 salt
+    ) external view returns (address) {
+        bytes memory bytecode = abi.encodePacked(
+            type(MultiSigWallet).creationCode,
+            abi.encode(owners, threshold)
+        );
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                salt,
+                keccak256(bytecode)
+            )
+        );
+
+        return address(uint160(uint256(hash)));
+    }
+}
+```
+
+## Security
+
+### Address Collision Attacks
+
+CREATE2 enables deliberate address collisions through init code manipulation:
+
+```solidity
+// VULNERABLE: Pre-Cancun collision attack
+contract VulnerableFactory {
+    function deploy(bytes memory code, bytes32 salt) external {
+        address addr;
+        assembly {
+            addr := create2(0, add(code, 32), mload(code), salt)
+        }
+        // Deployed contract A
+    }
+}
+
+// Attack (pre-EIP-6780):
+// 1. Deploy Contract A with init_code_1, salt
+// 2. Selfdestruct Contract A
+// 3. Deploy Contract B with init_code_2, SAME salt
+// Result: Different code at same address!
+
+// Post-Cancun (EIP-6780): SELFDESTRUCT doesn't delete in same tx
+// Attack mitigated: Cannot redeploy at same address
+```
+
+**Mitigation (EIP-6780):** SELFDESTRUCT only deletes if created in same transaction.
+
+### Init Code Hash Importance
+
+Address depends on init code hash - different code = different address:
+
+```solidity
+// These deploy to DIFFERENT addresses even with same salt
+bytes memory code1 = type(Contract).creationCode;
+bytes memory code2 = abi.encodePacked(
+    type(Contract).creationCode,
+    abi.encode(123)  // Constructor argument
+);
+
+// Different init code hash = different address
+address addr1 = create2(0, add(code1, 32), mload(code1), salt);
+address addr2 = create2(0, add(code2, 32), mload(code2), salt);
+// addr1 != addr2
+```
+
+### Salt Reuse
+
+Same salt with same code fails:
+
+```solidity
+// VULNERABLE: Deployment fails if salt reused
+function deploy(bytes memory code, bytes32 salt) external {
+    address addr;
+    assembly {
+        addr := create2(0, add(code, 32), mload(code), salt)
+    }
+    // Reverts if contract already exists at computed address
+}
+
+// SAFE: Include unique data in salt
+function deployUnique(bytes memory code, uint256 nonce) external {
+    bytes32 salt = keccak256(abi.encodePacked(msg.sender, nonce));
+    // Address unique per user + nonce
+}
+```
+
+### Metamorphic Contracts
+
+Contracts that change code after deployment:
+
+```solidity
+// DANGEROUS: Metamorphic pattern (pre-Cancun)
+contract Metamorphic {
+    function morph() external {
+        // Change implementation
+        selfdestruct(payable(address(this)));
+        // Then redeploy different code at same address via CREATE2
+    }
+}
+
+// Post-Cancun: EIP-6780 prevents this
+// SELFDESTRUCT doesn't delete code unless created in same tx
+```
+
+### Frontrunning
+
+Deterministic addresses enable frontrunning:
+
+```solidity
+// VULNERABLE: Public salt + code = frontrunnabale
+function deploy(bytes memory code, bytes32 salt) external {
+    // Attacker sees tx in mempool
+    // Frontruns with higher gas price
+    // Deploys at target address first!
+    address addr;
+    assembly {
+        addr := create2(0, add(code, 32), mload(code), salt)
+    }
+}
+
+// MITIGATION: Include msg.sender in salt
+bytes32 salt = keccak256(abi.encodePacked(msg.sender, userProvidedSalt));
+// Address unique per deployer
+```
+
+### Constructor Reentrancy
+
+Same reentrancy risks as CREATE:
+
+```solidity
+contract Vulnerable {
+    mapping(address => bool) public trusted;
+
+    function deployAndTrust(bytes memory code, bytes32 salt) external {
+        address deployed;
+        assembly {
+            deployed := create2(0, add(code, 32), mload(code), salt)
+        }
+
+        // VULNERABLE: Constructor could re-enter here
+        trusted[deployed] = true;
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * CREATE2 opcode (0xf5)
+ * Create contract at deterministic address
+ */
+export function create2(frame: BrandedFrame): EvmError | null {
+  // EIP-214: Cannot be called in static context
+  if (frame.isStatic) {
+    return { type: "WriteProtection" };
+  }
+
+  // Pop 4 arguments
+  const value = popStack(frame);
+  const offset = popStack(frame);
+  const length = popStack(frame);
+  const salt = popStack(frame);
+
+  // Calculate gas cost
+  const words = Math.ceil(Number(length) / 32);
+  let gasCost = 32000n;  // Base
+  gasCost += BigInt(words * 2);   // Init code (EIP-3860)
+  gasCost += BigInt(words * 6);   // Keccak256 for address
+
+  // Memory expansion
+  if (length > 0) {
+    const end = Number(offset) + Number(length);
+    gasCost += memoryExpansionCost(frame, end);
+    updateMemorySize(frame, end);
+  }
+
+  // Charge gas
+  consumeGas(frame, gasCost);
+
+  // Read init code
+  const initCode = readMemory(frame, offset, length);
+
+  // Compute deterministic address
+  const initCodeHash = keccak256(initCode);
+  const preimage = new Uint8Array(1 + 20 + 32 + 32);
+  preimage[0] = 0xff;
+  preimage.set(frame.address, 1);
+  preimage.set(saltToBytes(salt), 21);
+  preimage.set(initCodeHash, 53);
+
+  const addressHash = keccak256(preimage);
+  const address = addressHash.slice(12);
+
+  // Check collision
+  if (accountExists(address)) {
+    pushStack(frame, 0n);  // Failure
+    frame.returnData = new Uint8Array(0);
+    return null;
+  }
+
+  // Calculate forwarded gas (63/64 rule)
+  const afterCharge = frame.gasRemaining;
+  const maxForward = afterCharge - afterCharge / 64n;
+
+  // Execute deployment
+  const result = executeCreate({
+    address: address,
+    initCode: initCode,
+    value: value,
+    gas: maxForward
+  });
+
+  // Refund unused gas
+  frame.gasRemaining += result.gasLeft;
+
+  // Set return_data
+  frame.returnData = result.success ? new Uint8Array(0) : result.output;
+
+  // Push address (0 if failed)
+  pushStack(frame, result.success ? addressToBigInt(address) : 0n);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CREATE2 opcode (0xf5)
+/// Create contract at deterministic address
+pub fn create2(frame: *FrameType) FrameType.EvmError!void {
+    // EIP-214: Cannot be called in static context
+    if (frame.is_static) return error.StaticCallViolation;
+
+    frame.return_data = &[_]u8{};
+
+    const value = try frame.popStack();
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+    const salt = try frame.popStack();
+
+    const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+    // Calculate gas cost
+    const words = (len + 31) / 32;
+    var gas_cost: u64 = 32000;  // Base
+    gas_cost += @as(u64, words) * 2;   // Init code (EIP-3860)
+    gas_cost += @as(u64, words) * 6;   // Keccak256
+
+    // Memory expansion
+    if (length > 0) {
+        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+        const end_bytes = @as(u64, off) + @as(u64, len);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        gas_cost += mem_cost;
+
+        const aligned = wordAlignedSize(end_bytes);
+        if (aligned > frame.memory_size) frame.memory_size = aligned;
+    }
+
+    try frame.consumeGas(gas_cost);
+
+    // Read init code
+    var init_code: []const u8 = &.{};
+    if (length > 0) {
+        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+        const code = try frame.allocator.alloc(u8, len);
+        var j: u32 = 0;
+        while (j < len) : (j += 1) {
+            code[j] = frame.readMemory(off + j);
+        }
+        init_code = code;
+    }
+
+    // Compute deterministic address
+    const init_code_hash = crypto.keccak256(init_code);
+    var preimage: [85]u8 = undefined;
+    preimage[0] = 0xff;
+    @memcpy(preimage[1..21], &frame.address.bytes);
+
+    // Convert salt to bytes
+    var i: usize = 0;
+    while (i < 32) : (i += 1) {
+        preimage[21 + i] = @truncate(salt >> @intCast((31 - i) * 8));
+    }
+
+    @memcpy(preimage[53..85], &init_code_hash);
+
+    const address_hash = crypto.keccak256(&preimage);
+    var addr_bytes: [20]u8 = undefined;
+    @memcpy(&addr_bytes, address_hash[12..32]);
+    const address = Address{ .bytes = addr_bytes };
+
+    const evm = frame.getEvm();
+
+    // Calculate forwarded gas
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        remaining_gas - (remaining_gas / 64)
+    else
+        remaining_gas;
+
+    // Perform CREATE2
+    const result = try evm.inner_create(value, init_code, max_gas, salt);
+
+    // Update gas
+    const gas_used = max_gas - result.gas_left;
+    const gas_used_i64 = std.math.cast(i64, gas_used) orelse {
+        frame.gas_remaining = 0;
+        return error.OutOfGas;
+    };
+    frame.gas_remaining -= gas_used_i64;
+
+    // Set return_data
+    if (result.success) {
+        frame.return_data = &[_]u8{};
+    } else {
+        frame.return_data = result.output;
+    }
+
+    // Push address (0 if failed)
+    const addr_u256 = if (result.success) blk: {
+        var val: u256 = 0;
+        for (result.address.bytes) |b| {
+            val = (val << 8) | b;
+        }
+        break :blk val;
+    } else 0;
+    try frame.pushStack(addr_u256);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 7 (Contract Creation)
+- **[EIP-1014](https://eips.ethereum.org/EIPS/eip-1014)** - CREATE2 opcode
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-170](https://eips.ethereum.org/EIPS/eip-170)** - Contract code size limit
+- **[EIP-1167](https://eips.ethereum.org/EIPS/eip-1167)** - Minimal proxy contract
+- **[EIP-3860](https://eips.ethereum.org/EIPS/eip-3860)** - Init code size limit
+- **[EIP-6780](https://eips.ethereum.org/EIPS/eip-6780)** - SELFDESTRUCT behavior (collision mitigation)
+- **[evm.codes - CREATE2](https://www.evm.codes/#f5)** - Interactive reference

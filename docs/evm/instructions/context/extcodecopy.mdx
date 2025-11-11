@@ -1,0 +1,114 @@
+---
+title: "EXTCODECOPY (0x3c)"
+description: "Copy external account's code to memory"
+---
+
+## Overview
+
+**Opcode:** `0x3c`
+**Introduced:** Frontier (EVM genesis)
+
+EXTCODECOPY copies bytecode from an external account into memory.
+
+## Specification
+
+**Stack Input:**
+```
+address (uint160 as uint256)
+destOffset (memory offset)
+offset (code offset)
+length (bytes to copy)
+```
+
+**Stack Output:**
+```
+[]
+```
+
+**Gas Cost:** 700 (access) + 3 + memory expansion + (length / 32) * 3
+
+## Behavior
+
+Copies `length` bytes from external account's code at `offset` to memory at `destOffset`. Zero-pads if code bounds exceeded.
+
+## Examples
+
+### Copy Contract Code
+
+```solidity
+function getExternalCode(address account) public view returns (bytes memory code) {
+    assembly {
+        let size := extcodesize(account)
+        code := mload(0x40)
+        mstore(code, size)
+        extcodecopy(account, add(code, 0x20), 0, size)
+        mstore(0x40, add(add(code, 0x20), size))
+    }
+}
+```
+
+### Verify Implementation
+
+```solidity
+function verifyCode(address account, bytes32 expectedHash) public view returns (bool) {
+    bytes memory code;
+    assembly {
+        let size := extcodesize(account)
+        code := mload(0x40)
+        extcodecopy(account, add(code, 0x20), 0, size)
+    }
+    return keccak256(code) == expectedHash;
+}
+```
+
+## Gas Cost
+
+**Base:** 700 gas (Tangerine Whistle+)
+**Memory expansion:** Variable
+**Copy cost:** 3 gas per word
+
+**Berlin+:** 2600 (cold) / 100 (warm) + memory + copy
+
+## Common Usage
+
+### Clone Factory
+
+```solidity
+function clone(address implementation) internal returns (address instance) {
+    bytes memory code;
+    assembly {
+        let size := extcodesize(implementation)
+        code := mload(0x40)
+        extcodecopy(implementation, add(code, 0x20), 0, size)
+    }
+    // Deploy cloned code
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function extcodecopy(
+  frame: BrandedFrame,
+  host: BrandedHost
+): EvmError | null {
+  // Pop address, destOffset, offset, size
+  // Calculate gas costs
+  // Copy external code to memory
+  // See full implementation in codebase
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - EXTCODECOPY](https://www.evm.codes/#3c)
+- [EIP-150](https://eips.ethereum.org/EIPS/eip-150)
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)

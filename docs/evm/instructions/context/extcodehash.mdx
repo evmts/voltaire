@@ -1,0 +1,390 @@
+---
+title: "EXTCODEHASH (0x3f)"
+description: "Get keccak256 hash of external account's code"
+---
+
+## Overview
+
+**Opcode:** `0x3f`
+**Introduced:** Constantinople (EIP-1052)
+
+EXTCODEHASH returns the keccak256 hash of an account's bytecode, or 0 for empty accounts.
+
+## Specification
+
+**Stack Input:**
+```
+address (uint160 as uint256)
+```
+
+**Stack Output:**
+```
+hash (bytes32 as uint256)
+```
+
+**Gas Cost:** Variable (hardfork-dependent)
+- Constantinople: 400 gas
+- Istanbul (EIP-1884): 700 gas
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+## Behavior
+
+Returns keccak256(account.code) for contracts, or 0 for:
+- EOAs (externally owned accounts)
+- Non-existent accounts
+- Empty code (code.length == 0)
+
+More efficient than EXTCODESIZE + EXTCODECOPY + KECCAK256 for code verification.
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { extcodehash } from '@tevm/voltaire/evm/context';
+
+const contractAddr = Address.from('0x...');
+const frame = createFrame({ stack: [BigInt(contractAddr)] });
+
+const err = extcodehash(frame, host);
+
+console.log(frame.stack[0]); // keccak256(code) as u256
+```
+
+### Implementation Verification
+
+```solidity
+contract ProxyWithVerification {
+    address public implementation;
+    bytes32 public implementationHash;
+
+    function setImplementation(address impl) public {
+        bytes32 hash;
+        assembly {
+            hash := extcodehash(impl)
+        }
+        require(hash != 0, "Must be contract");
+
+        implementation = impl;
+        implementationHash = hash;
+    }
+
+    function verifyImplementation() public view returns (bool) {
+        bytes32 currentHash;
+        assembly {
+            currentHash := extcodehash(implementation)
+        }
+        return currentHash == implementationHash;
+    }
+}
+```
+
+### Factory Pattern
+
+```solidity
+contract Factory {
+    mapping(bytes32 => address[]) public deployments;
+
+    function deploy(bytes memory code) public returns (address instance) {
+        assembly {
+            instance := create(0, add(code, 0x20), mload(code))
+        }
+
+        bytes32 codeHash;
+        assembly {
+            codeHash := extcodehash(instance)
+        }
+
+        deployments[codeHash].push(instance);
+    }
+
+    function findDeployments(address target) public view returns (address[] memory) {
+        bytes32 hash;
+        assembly {
+            hash := extcodehash(target)
+        }
+        return deployments[hash];
+    }
+}
+```
+
+## Gas Cost
+
+**Historical evolution:**
+
+| Hardfork | Cold | Warm |
+|----------|------|------|
+| Constantinople | 400 | - |
+| Istanbul | 700 | - |
+| Berlin | 2600 | 100 |
+
+**Comparison to alternatives:**
+```solidity
+// EXTCODEHASH: 700 gas (Istanbul)
+bytes32 hash;
+assembly { hash := extcodehash(account) }
+
+// EXTCODESIZE + EXTCODECOPY + KECCAK256: ~1400+ gas
+uint256 size;
+assembly { size := extcodesize(account) }
+bytes memory code = new bytes(size);
+assembly { extcodecopy(account, add(code, 0x20), 0, size) }
+bytes32 hash = keccak256(code);
+```
+
+## Common Usage
+
+### Contract Identity Check
+
+```solidity
+function isSameCode(address a, address b) public view returns (bool) {
+    bytes32 hashA;
+    bytes32 hashB;
+    assembly {
+        hashA := extcodehash(a)
+        hashB := extcodehash(b)
+    }
+    return hashA == hashB && hashA != 0;
+}
+```
+
+### Minimal Proxy Detection
+
+```solidity
+function isMinimalProxy(address account) public view returns (bool) {
+    // Minimal proxy (EIP-1167) has specific bytecode pattern
+    bytes32 expectedHash = keccak256(minimalProxyBytecode);
+
+    bytes32 actualHash;
+    assembly {
+        actualHash := extcodehash(account)
+    }
+
+    return actualHash == expectedHash;
+}
+```
+
+### Upgrade Validation
+
+```solidity
+contract UpgradeableProxy {
+    bytes32[] public validImplementations;
+
+    function upgrade(address newImpl) public {
+        bytes32 hash;
+        assembly {
+            hash := extcodehash(newImpl)
+        }
+
+        require(isValidImplementation(hash), "Invalid implementation");
+
+        implementation = newImpl;
+    }
+
+    function isValidImplementation(bytes32 hash) internal view returns (bool) {
+        for (uint i = 0; i < validImplementations.length; i++) {
+            if (validImplementations[i] == hash) return true;
+        }
+        return false;
+    }
+}
+```
+
+## Security
+
+### Empty Account Returns 0
+
+```solidity
+function checkAccount(address account) public view returns (bool) {
+    bytes32 hash;
+    assembly {
+        hash := extcodehash(account)
+    }
+
+    if (hash == 0) {
+        // Could be EOA, non-existent, or empty code
+        // Need additional checks to distinguish
+    }
+}
+```
+
+### Constructor Bypass
+
+Like EXTCODESIZE, returns 0 during contract construction:
+
+```solidity
+contract Detector {
+    function check() public view returns (bytes32) {
+        bytes32 hash;
+        assembly {
+            hash := extcodehash(caller())
+        }
+        return hash; // 0 if called from constructor
+    }
+}
+
+contract Attacker {
+    constructor(Detector d) {
+        d.check(); // Returns 0!
+    }
+}
+```
+
+### Code Immutability Check
+
+```solidity
+contract ImmutableChecker {
+    mapping(address => bytes32) public initialHashes;
+
+    function register() public {
+        bytes32 hash;
+        assembly {
+            hash := extcodehash(caller())
+        }
+        initialHashes[msg.sender] = hash;
+    }
+
+    function verify(address account) public view returns (bool unchanged) {
+        bytes32 currentHash;
+        assembly {
+            currentHash := extcodehash(account)
+        }
+        return currentHash == initialHashes[account];
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
+import { Keccak256 } from "../../crypto/Keccak256/Keccak256.js";
+
+/**
+ * EXTCODEHASH opcode (0x3f) - Get hash of account's code
+ *
+ * Stack: [address] => [hash]
+ * Gas: 700 (Istanbul+) / 2600/100 (Berlin+ cold/warm)
+ */
+export function extcodehash(
+  frame: BrandedFrame,
+  host: BrandedHost
+): EvmError | null {
+  const addrResult = popStack(frame);
+  if (addrResult.error) return addrResult.error;
+
+  const addr = fromNumber(addrResult.value);
+
+  const gasErr = consumeGas(frame, 700n); // Simplified
+  if (gasErr) return gasErr;
+
+  const code = host.getCode(addr);
+
+  if (code.length === 0) {
+    // Empty account returns 0
+    const pushErr = pushStack(frame, 0n);
+    if (pushErr) return pushErr;
+  } else {
+    // Compute keccak256 hash
+    const hash = Keccak256.hash(code);
+
+    // Convert hash to u256 (big-endian)
+    let hashU256 = 0n;
+    for (let i = 0; i < hash.length; i++) {
+      hashU256 = (hashU256 << 8n) | BigInt(hash[i]);
+    }
+
+    const pushErr = pushStack(frame, hashU256);
+    if (pushErr) return pushErr;
+  }
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// EXTCODEHASH opcode (0x3f) - Get hash of account's code
+pub fn extcodehash(frame: *FrameType, host: *Host) FrameType.EvmError!void {
+    const addr_u256 = try frame.popStack();
+
+    // Convert to address
+    var addr: [20]u8 = undefined;
+    var temp = addr_u256;
+    var i: usize = 20;
+    while (i > 0) : (i -= 1) {
+        addr[i - 1] = @truncate(temp & 0xFF);
+        temp >>= 8;
+    }
+
+    try frame.consumeGas(700);
+
+    const code = try host.getCode(&addr);
+
+    if (code.len == 0) {
+        try frame.pushStack(0);
+    } else {
+        const hash = try keccak256(code);
+
+        var hash_u256: u256 = 0;
+        for (hash) |byte| {
+            hash_u256 = (hash_u256 << 8) | byte;
+        }
+
+        try frame.pushStack(hash_u256);
+    }
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### EOA Hash
+
+```typescript
+// EOA has no code
+const eoaAddr = Address.from('0xUserEOA...');
+const frame = createFrame({ stack: [BigInt(eoaAddr)] });
+
+extcodehash(frame, host);
+console.log(frame.stack[0]); // 0n
+```
+
+### Non-Existent Account
+
+```typescript
+// Random address
+const randomAddr = Address.from('0x9999999999999999999999999999999999999999');
+const frame = createFrame({ stack: [BigInt(randomAddr)] });
+
+extcodehash(frame, host);
+console.log(frame.stack[0]); // 0n
+```
+
+### Empty Code Contract
+
+Some contracts may have zero-length code (rare):
+
+```typescript
+const emptyCodeAddr = Address.from('0x...');
+extcodehash(frame, { getCode: () => new Uint8Array(0) });
+console.log(frame.stack[0]); // 0n
+```
+
+## References
+
+- [EIP-1052](https://eips.ethereum.org/EIPS/eip-1052) - EXTCODEHASH opcode
+- [EVM Codes - EXTCODEHASH](https://www.evm.codes/#3f)
+- [EIP-1884](https://eips.ethereum.org/EIPS/eip-1884) - Repricing (Istanbul)
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists (Berlin)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix H

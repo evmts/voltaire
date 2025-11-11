@@ -1,0 +1,171 @@
+---
+title: "EXTCODESIZE (0x3b)"
+description: "Get size of external account's code"
+---
+
+## Overview
+
+**Opcode:** `0x3b`
+**Introduced:** Frontier (EVM genesis)
+
+EXTCODESIZE returns the size in bytes of the code stored at a given address.
+
+## Specification
+
+**Stack Input:**
+```
+address (uint160 as uint256)
+```
+
+**Stack Output:**
+```
+codeSize (uint256, in bytes)
+```
+
+**Gas Cost:** Variable (hardfork-dependent)
+- Frontier: 20 gas
+- Tangerine Whistle (EIP-150): 700 gas
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+## Behavior
+
+Returns the bytecode length of the account at the given address. Returns 0 for:
+- EOAs (externally owned accounts)
+- Non-existent accounts
+- Contracts during construction (before constructor completes)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { extcodesize } from '@tevm/voltaire/evm/context';
+
+const contractAddr = Address.from('0x...');
+const frame = createFrame({ stack: [BigInt(contractAddr)] });
+
+const err = extcodesize(frame, host);
+
+console.log(frame.stack[0]); // Code size in bytes
+```
+
+### Contract Detection
+
+```solidity
+function isContract(address account) public view returns (bool) {
+    uint256 size;
+    assembly {
+        size := extcodesize(account)
+    }
+    return size > 0;
+}
+```
+
+### Constructor Bypass
+
+```solidity
+// INSUFFICIENT: Can be bypassed during construction
+modifier onlyEOA() {
+    uint256 size;
+    assembly { size := extcodesize(caller()) }
+    require(size == 0, "Contracts not allowed");
+    _;
+}
+
+// Attack: Call from constructor where extcodesize returns 0
+```
+
+## Gas Cost
+
+**Historical evolution:**
+
+| Hardfork | Cold | Warm |
+|----------|------|------|
+| Frontier | 20 | - |
+| Tangerine Whistle | 700 | - |
+| Berlin | 2600 | 100 |
+
+## Common Usage
+
+### Proxy Implementation Check
+
+```solidity
+function verifyImplementation(address impl) internal view {
+    uint256 size;
+    assembly { size := extcodesize(impl) }
+    require(size > 0, "Implementation must be contract");
+}
+```
+
+## Security
+
+### Constructor Bypass
+
+During construction, EXTCODESIZE returns 0:
+
+```solidity
+contract Vulnerable {
+    modifier noContracts() {
+        uint256 size;
+        assembly { size := extcodesize(caller()) }
+        require(size == 0);
+        _;
+    }
+
+    function restricted() public noContracts {
+        // Attacker can call from constructor!
+    }
+}
+
+contract Attacker {
+    constructor(Vulnerable v) {
+        v.restricted(); // extcodesize(this) == 0 in constructor!
+    }
+}
+```
+
+### Better Pattern
+
+Use tx.origin check or whitelist:
+
+```solidity
+modifier onlyEOA() {
+    require(msg.sender == tx.origin, "Only EOA");
+    _;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function extcodesize(
+  frame: BrandedFrame,
+  host: BrandedHost
+): EvmError | null {
+  const addrResult = popStack(frame);
+  if (addrResult.error) return addrResult.error;
+
+  const addr = fromNumber(addrResult.value);
+
+  const gasErr = consumeGas(frame, 700n); // Simplified
+  if (gasErr) return gasErr;
+
+  const code = host.getCode(addr);
+  const pushErr = pushStack(frame, BigInt(code.length));
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - EXTCODESIZE](https://www.evm.codes/#3b)
+- [EIP-150](https://eips.ethereum.org/EIPS/eip-150) - Gas cost changes
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists

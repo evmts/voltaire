@@ -1,0 +1,748 @@
+---
+title: "DELEGATECALL (0xf4)"
+description: "Execute code preserving msg.sender and msg.value - foundation for libraries and proxies"
+---
+
+## Overview
+
+**Opcode:** `0xf4`
+**Introduced:** Homestead (EIP-7)
+
+DELEGATECALL executes code from another account while preserving the complete execution context (msg.sender, msg.value, storage). This enables library patterns and upgradeable proxy contracts by allowing code reuse without changing the caller's state context.
+
+## Specification
+
+**Stack Input:**
+```
+gas       (max gas to forward)
+address   (target account code to execute)
+inOffset  (calldata memory offset)
+inLength  (calldata size)
+outOffset (returndata memory offset)
+outLength (returndata size)
+```
+
+**Stack Output:**
+```
+success   (1 if call succeeded, 0 if failed)
+```
+
+**Gas Cost:** 700 + cold_access + memory_expansion
+
+**Operation:**
+```
+calldata = memory[inOffset:inOffset+inLength]
+success = execute_preserving_context(address.code, calldata, gas * 63/64)
+memory[outOffset:outOffset+outLength] = returndata[0:min(outLength, returndata.length)]
+push(success)
+```
+
+## Behavior
+
+DELEGATECALL executes foreign code as if it were part of the caller:
+
+1. **Pop 6 stack arguments** (no value parameter)
+2. **Calculate gas cost:**
+   - Base: 700 gas (Tangerine Whistle+)
+   - Cold access: +2,600 gas for first access (Berlin+)
+   - Memory expansion for input and output regions
+3. **Read calldata** from memory
+4. **Forward gas:** Up to 63/64 of remaining gas (EIP-150)
+5. **Execute target's code preserving context:**
+   - msg.sender = preserved from caller (NOT changed!)
+   - msg.value = preserved from caller (NOT changed!)
+   - Storage = caller's storage (modifications affect caller!)
+   - Code = target's code
+   - address(this) = caller's address
+6. **Copy returndata** to memory
+7. **Set return_data** buffer to full returndata
+8. **Push success flag**
+9. **Refund unused gas** from child execution
+
+**Key characteristics:**
+- Complete context preservation (msg.sender, msg.value unchanged)
+- Storage operations affect caller
+- No value transfer (preserves existing msg.value)
+- Foundation for library and proxy patterns
+
+## Examples
+
+### Library Pattern
+
+```typescript
+import { DELEGATECALL } from '@tevm/voltaire/evm/system';
+import { Address } from '@tevm/voltaire/primitives';
+
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+  caller: Address.from("0x5678..."),
+  value: 1_000_000_000_000_000_000n  // 1 ETH from original call
+});
+
+// Call library function
+const libraryAddress = Address.from("0xLibrary...");
+const calldata = new Uint8Array([/* function selector + params */]);
+
+// Write calldata to memory
+for (let i = 0; i < calldata.length; i++) {
+  frame.memory.set(i, calldata[i]);
+}
+
+// Stack: [gas=100000, address, inOffset=0, inLength, outOffset=0, outLength=32]
+frame.stack.push(32n);                              // outLength
+frame.stack.push(0n);                               // outOffset
+frame.stack.push(BigInt(calldata.length));          // inLength
+frame.stack.push(0n);                               // inOffset
+frame.stack.push(BigInt(libraryAddress));           // library address
+frame.stack.push(100000n);                          // gas
+
+const err = DELEGATECALL(frame);
+
+// In library code:
+// - msg.sender = 0x5678... (preserved!)
+// - msg.value = 1 ETH (preserved!)
+// - storage modifications affect 0x1234...
+// - address(this) = 0x1234...
+
+console.log(frame.stack[0]);  // 1n if success
+```
+
+### Proxy Pattern
+
+```solidity
+contract Proxy {
+    address public implementation;
+
+    constructor(address _implementation) {
+        implementation = _implementation;
+    }
+
+    // Fallback forwards all calls to implementation
+    fallback() external payable {
+        address impl = implementation;
+
+        assembly {
+            // Copy calldata
+            calldatacopy(0, 0, calldatasize())
+
+            // DELEGATECALL to implementation
+            let result := delegatecall(
+                gas(),
+                impl,
+                0,
+                calldatasize(),
+                0,
+                0
+            )
+
+            // Copy returndata
+            returndatacopy(0, 0, returndatasize())
+
+            // Return or revert based on result
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+
+    // Upgrade implementation (admin only)
+    function upgrade(address newImpl) external {
+        require(msg.sender == admin, "Not admin");
+        implementation = newImpl;
+    }
+}
+
+contract Implementation {
+    // Storage layout MUST match Proxy!
+    address public implementation;  // Slot 0
+    address public admin;           // Slot 1
+    uint256 public value;           // Slot 2
+
+    function setValue(uint256 _value) external {
+        // Executes in Proxy's context
+        // msg.sender = original caller (preserved!)
+        // storage modifications affect Proxy storage
+        value = _value;
+    }
+
+    function getValue() external view returns (uint256) {
+        // Reads from Proxy's storage
+        return value;
+    }
+}
+```
+
+### Library Contract
+
+```solidity
+// Library with reusable logic
+library SafeMath {
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "Overflow");
+        return c;
+    }
+
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) return 0;
+        uint256 c = a * b;
+        require(c / a == b, "Overflow");
+        return c;
+    }
+}
+
+// Using library via DELEGATECALL
+contract Calculator {
+    using SafeMath for uint256;
+
+    function calculate(uint256 a, uint256 b) external pure returns (uint256) {
+        // Compiler generates DELEGATECALL to SafeMath
+        return a.add(b).mul(2);
+    }
+}
+```
+
+### Upgradeable Storage Pattern
+
+```solidity
+// Eternal storage pattern
+contract EternalStorage {
+    mapping(bytes32 => uint256) uintStorage;
+    mapping(bytes32 => address) addressStorage;
+
+    function getUint(bytes32 key) external view returns (uint256) {
+        return uintStorage[key];
+    }
+
+    function setUint(bytes32 key, uint256 value) external {
+        uintStorage[key] = value;
+    }
+}
+
+contract LogicV1 {
+    EternalStorage public store;
+
+    function setValue(uint256 value) external {
+        // Store via delegatecall-safe pattern
+        store.setUint(keccak256("myValue"), value);
+    }
+
+    function getValue() external view returns (uint256) {
+        return store.getUint(keccak256("myValue"));
+    }
+}
+
+contract LogicV2 {
+    EternalStorage public store;
+
+    // Upgraded logic with new features
+    function setValue(uint256 value) external {
+        require(value > 0, "Must be positive");
+        store.setUint(keccak256("myValue"), value * 2);
+    }
+
+    function getValue() external view returns (uint256) {
+        return store.getUint(keccak256("myValue"));
+    }
+}
+```
+
+## Gas Cost
+
+**Total cost:** 700 + cold_access + memory_expansion + forwarded_gas
+
+### Base Cost: 700 gas (Tangerine Whistle+)
+
+**Pre-Tangerine Whistle:** 40 gas
+
+### No Value Transfer Cost
+
+DELEGATECALL never transfers value - preserves msg.value:
+```
+// No CallValueTransferGas
+// No CallNewAccountGas
+```
+
+### Cold Access: +2,600 gas (Berlin+)
+
+**EIP-2929 (Berlin+):** First access to target address:
+```
+if (firstAccess(address)) {
+  cost += 2600  // ColdAccountAccess
+} else {
+  cost += 100   // WarmStorageRead
+}
+```
+
+### Memory Expansion
+
+Same as CALL - charges for both input and output regions:
+```typescript
+const inEnd = inOffset + inLength;
+const outEnd = outOffset + outLength;
+const maxEnd = Math.max(inEnd, outEnd);
+
+const words = Math.ceil(maxEnd / 32);
+const expansionCost = words ** 2 / 512 + 3 * words;
+```
+
+### Gas Forwarding (EIP-150)
+
+**Tangerine Whistle+:** 63/64 rule:
+```
+remaining_after_charge = gas_remaining - base_cost
+max_forwarded = remaining_after_charge - (remaining_after_charge / 64)
+actual_forwarded = min(gas_parameter, max_forwarded)
+```
+
+### Example Calculation
+
+```typescript
+// DELEGATECALL to library with cold access
+const gasRemaining = 100000n;
+const inLength = 68;   // Function call
+const outLength = 32;  // Return value
+
+// Base cost
+let cost = 700n;  // Tangerine Whistle+
+
+// No value transfer cost
+
+// Cold access (Berlin+, first access)
+cost += 2600n;  // ColdAccountAccess
+
+// Memory expansion (clean memory)
+const maxEnd = Math.max(68, 32);  // 68 bytes
+const words = Math.ceil(68 / 32);  // 3 words
+const memCost = Math.floor(words ** 2 / 512) + 3 * words;  // 9 gas
+cost += BigInt(memCost);
+
+// Total charged: 3,309 gas
+
+// Gas forwarding
+const afterCharge = gasRemaining - cost;  // 96,691 gas
+const maxForward = afterCharge - afterCharge / 64n;  // 95,181 gas
+
+// Total consumed: 3,309 + gas_used_by_library
+```
+
+## Common Usage
+
+### Minimal Proxy (EIP-1167)
+
+```solidity
+// Clone factory using minimal proxy pattern
+contract CloneFactory {
+    // Minimal proxy bytecode (55 bytes)
+    function clone(address implementation) external returns (address instance) {
+        bytes20 targetBytes = bytes20(implementation);
+
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+            mstore(add(ptr, 0x14), targetBytes)
+            mstore(add(ptr, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+            instance := create(0, ptr, 0x37)
+        }
+
+        require(instance != address(0), "Clone failed");
+    }
+}
+
+// The minimal proxy forwards all calls via DELEGATECALL:
+// PUSH1 0x00 CALLDATASIZE PUSH1 0x00 CALLDATACOPY
+// PUSH1 0x00 CALLDATASIZE PUSH1 0x00 PUSH20 <impl> GAS DELEGATECALL
+// RETURNDATASIZE PUSH1 0x00 PUSH1 0x00 RETURNDATACOPY
+// RETURNDATASIZE PUSH1 0x00 RETURN/REVERT
+```
+
+### Diamond Pattern (EIP-2535)
+
+```solidity
+contract Diamond {
+    mapping(bytes4 => address) public facets;
+
+    fallback() external payable {
+        address facet = facets[msg.sig];
+        require(facet != address(0), "Function does not exist");
+
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+
+    function addFacet(bytes4 selector, address facet) external {
+        facets[selector] = facet;
+    }
+}
+```
+
+### Library Call Helper
+
+```solidity
+contract LibraryUser {
+    // Safe library call with error handling
+    function callLibrary(
+        address library,
+        bytes memory data
+    ) internal returns (bool success, bytes memory returnData) {
+        assembly {
+            success := delegatecall(
+                gas(),
+                library,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
+
+            let size := returndatasize()
+            returnData := mload(0x40)
+            mstore(returnData, size)
+            returndatacopy(add(returnData, 0x20), 0, size)
+            mstore(0x40, add(add(returnData, 0x20), size))
+        }
+    }
+}
+```
+
+## Security
+
+### Storage Collision
+
+Storage layout MUST match between caller and callee:
+
+```solidity
+// VULNERABLE: Storage layout mismatch
+contract Proxy {
+    address public implementation;  // Slot 0
+    address public admin;           // Slot 1
+}
+
+contract MaliciousImpl {
+    address public owner;    // Slot 0 - COLLIDES with implementation!
+    uint256 public value;    // Slot 1 - COLLIDES with admin!
+
+    function exploit() external {
+        // Overwrites Proxy.implementation!
+        owner = msg.sender;
+    }
+}
+```
+
+**Mitigation: Use consistent storage layout:**
+
+```solidity
+// SAFE: Matching storage layout
+contract Proxy {
+    address public implementation;  // Slot 0
+    address public admin;           // Slot 1
+}
+
+contract Implementation {
+    address public implementation;  // Slot 0 - MATCHES
+    address public admin;           // Slot 1 - MATCHES
+    uint256 public value;           // Slot 2 - New state
+}
+```
+
+### Uninitialized Proxy
+
+Proxy storage must be initialized before use:
+
+```solidity
+// VULNERABLE: Uninitialized proxy
+contract Proxy {
+    address public implementation;
+
+    fallback() external payable {
+        // implementation is address(0)!
+        address impl = implementation;
+        assembly {
+            delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+        }
+    }
+}
+
+// SAFE: Initialize in constructor
+contract SafeProxy {
+    address public implementation;
+
+    constructor(address _impl) {
+        require(_impl != address(0), "Invalid implementation");
+        implementation = _impl;
+    }
+}
+```
+
+### Selfdestruct in Implementation
+
+SELFDESTRUCT in library can destroy proxy:
+
+```solidity
+// VULNERABLE: Library can selfdestruct
+contract MaliciousLibrary {
+    function destroy() external {
+        selfdestruct(payable(msg.sender));
+        // Destroys PROXY, not library!
+    }
+}
+
+// MITIGATION: Never SELFDESTRUCT in delegatecalled code
+// Or use EIP-6780 (Cancun+) which limits SELFDESTRUCT
+```
+
+### Function Selector Collision
+
+Different functions with same selector can cause unexpected behavior:
+
+```solidity
+// VULNERABLE: Selector collision
+contract Implementation {
+    // collides_uint256(uint256) and burn(uint256) have same selector!
+    function collides_uint256(uint256) external { }
+    function burn(uint256) external { }
+}
+
+// MITIGATION: Check for collisions, use namespaced selectors
+```
+
+### Delegate to Untrusted Contract
+
+Only DELEGATECALL to trusted, audited code:
+
+```solidity
+// VULNERABLE: User-controlled delegatecall
+contract Vulnerable {
+    function proxyCall(address target, bytes memory data) external {
+        // User controls target - CAN EXECUTE ARBITRARY CODE!
+        target.delegatecall(data);
+    }
+}
+
+// SAFE: Whitelist allowed targets
+contract Safe {
+    mapping(address => bool) public allowed;
+
+    function proxyCall(address target, bytes memory data) external {
+        require(allowed[target], "Target not allowed");
+        target.delegatecall(data);
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * DELEGATECALL opcode (0xf4)
+ * Execute code preserving msg.sender and msg.value
+ */
+export function delegatecall(frame: BrandedFrame): EvmError | null {
+  // Pop 6 arguments (no value)
+  const gas = popStack(frame);
+  const address = popStack(frame);
+  const inOffset = popStack(frame);
+  const inLength = popStack(frame);
+  const outOffset = popStack(frame);
+  const outLength = popStack(frame);
+
+  // Calculate gas cost
+  let gasCost = 700n;  // Base (Tangerine Whistle+)
+
+  // No value transfer cost
+
+  // Cold access cost (Berlin+)
+  const accessCost = getAccessCost(address);
+  gasCost += accessCost;
+
+  // Memory expansion
+  const inEnd = inLength > 0 ? inOffset + inLength : 0;
+  const outEnd = outLength > 0 ? outOffset + outLength : 0;
+  const maxEnd = Math.max(inEnd, outEnd);
+
+  if (maxEnd > 0) {
+    gasCost += memoryExpansionCost(frame, maxEnd);
+    updateMemorySize(frame, maxEnd);
+  }
+
+  // Calculate forwarded gas (63/64 rule)
+  const afterCharge = frame.gasRemaining - gasCost;
+  const maxForward = afterCharge - afterCharge / 64n;
+  const forwardedGas = min(gas, maxForward);
+
+  // Charge total cost
+  consumeGas(frame, gasCost + forwardedGas);
+
+  // Read calldata
+  const calldata = readMemory(frame, inOffset, inLength);
+
+  // Execute delegatecall (preserve context!)
+  const result = executeDelegateCall({
+    codeAddress: address,           // Code to execute
+    storageAddress: frame.address,  // Storage to modify
+    sender: frame.caller,           // msg.sender PRESERVED
+    value: frame.value,             // msg.value PRESERVED
+    data: calldata,
+    gas: forwardedGas
+  });
+
+  // Refund unused gas
+  frame.gasRemaining += result.gasLeft;
+
+  // Copy returndata
+  const copySize = min(outLength, result.returnData.length);
+  writeMemory(frame, outOffset, result.returnData.slice(0, copySize));
+
+  // Set return_data buffer
+  frame.returnData = result.returnData;
+
+  // Push success flag
+  pushStack(frame, result.success ? 1n : 0n);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// DELEGATECALL opcode (0xf4)
+/// Execute code preserving msg.sender and msg.value
+pub fn delegatecall(frame: *FrameType) FrameType.EvmError!void {
+    // Pop 6 arguments (no value)
+    const gas = try frame.popStack();
+    const address_u256 = try frame.popStack();
+    const in_offset = try frame.popStack();
+    const in_length = try frame.popStack();
+    const out_offset = try frame.popStack();
+    const out_length = try frame.popStack();
+
+    // Convert address
+    var addr_bytes: [20]u8 = undefined;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+    }
+    const code_address = Address{ .bytes = addr_bytes };
+
+    const evm = frame.getEvm();
+
+    // Gas cost calculation
+    var gas_cost: u64 = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE))
+        40
+    else
+        GasConstants.CallGas;
+
+    // No value transfer cost
+
+    // Access cost (Berlin+)
+    const access_cost = try evm.accessAddress(code_address);
+    gas_cost += access_cost;
+
+    // Memory expansion
+    const in_end = if (in_length > 0)
+        @as(u64, @intCast(in_offset)) + @as(u64, @intCast(in_length))
+    else
+        0;
+    const out_end = if (out_length > 0)
+        @as(u64, @intCast(out_offset)) + @as(u64, @intCast(out_length))
+    else
+        0;
+    const max_end = @max(in_end, out_end);
+
+    if (max_end > 0) {
+        const mem_cost = frame.memoryExpansionCost(max_end);
+        gas_cost += mem_cost;
+
+        const aligned_size = wordAlignedSize(max_end);
+        if (aligned_size > frame.memory_size) {
+            frame.memory_size = aligned_size;
+        }
+    }
+
+    // Calculate forwarded gas (63/64 rule)
+    const gas_limit = if (gas > std.math.maxInt(u64))
+        std.math.maxInt(u64)
+    else
+        @as(u64, @intCast(gas));
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const gas_after_charge = if (remaining_gas >= gas_cost)
+        remaining_gas - gas_cost
+    else
+        0;
+    const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        gas_after_charge - (gas_after_charge / 64)
+    else
+        gas_after_charge;
+    const available_gas = @min(gas_limit, max_gas);
+
+    // Charge total cost
+    try frame.consumeGas(gas_cost + available_gas);
+
+    // Read calldata
+    const calldata = try frame.allocator.alloc(u8, @intCast(in_length));
+    if (in_length > 0) {
+        const in_off = @as(u32, @intCast(in_offset));
+        var j: u32 = 0;
+        while (j < in_length) : (j += 1) {
+            calldata[j] = frame.readMemory(in_off + j);
+        }
+    }
+
+    // Execute delegatecall (preserve context!)
+    const result = try evm.inner_delegatecall(
+        code_address,
+        frame.address,  // Storage context
+        frame.caller,   // msg.sender PRESERVED
+        frame.value,    // msg.value PRESERVED
+        calldata,
+        available_gas
+    );
+
+    // Refund unused gas
+    frame.gas_remaining += @intCast(result.gas_left);
+
+    // Copy returndata
+    if (out_length > 0 and result.output.len > 0) {
+        const copy_size = @min(out_length, result.output.len);
+        const out_off = @as(u32, @intCast(out_offset));
+        var k: u32 = 0;
+        while (k < copy_size) : (k += 1) {
+            frame.writeMemory(out_off + k, result.output[k]);
+        }
+    }
+
+    // Set return_data
+    frame.return_data = result.output;
+
+    // Push success flag
+    const success: u256 = if (result.success) 1 else 0;
+    try frame.pushStack(success);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.4 (DELEGATECALL)
+- **[EIP-7](https://eips.ethereum.org/EIPS/eip-7)** - DELEGATECALL opcode
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-1167](https://eips.ethereum.org/EIPS/eip-1167)** - Minimal proxy contract
+- **[EIP-2535](https://eips.ethereum.org/EIPS/eip-2535)** - Diamond standard
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Access list gas costs
+- **[evm.codes - DELEGATECALL](https://www.evm.codes/#f4)** - Interactive reference
+- **[OpenZeppelin Proxy Docs](https://docs.openzeppelin.com/contracts/4.x/api/proxy)** - Proxy patterns
