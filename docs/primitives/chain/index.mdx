@@ -149,32 +149,17 @@ See [@tevm/chains documentation](https://github.com/evmts/tevm-monorepo/tree/mai
 
 ## API Methods
 
-<CardGroup>
-<Card title="Fundamentals" icon="book">
-Learn chain IDs, replay attack prevention, and network identification
-[View fundamentals →](/primitives/chain/fundamentals)
-</Card>
-<Card title="Constructors" icon="rocket">
-Create Chain instances from chain objects and chain IDs
-[View constructors →](/primitives/chain/constructors)
-</Card>
-<Card title="Chain Lookup" icon="magnifying-glass">
-Look up chains by ID using fromId() and byId record
-[View chain lookup →](/primitives/chain/chain-lookup)
-</Card>
-<Card title="Metadata" icon="info-circle">
-Access chain properties: name, chainId, RPC, explorers, currency
-[View metadata →](/primitives/chain/metadata)
-</Card>
-<Card title="BrandedChain" icon="tag">
-Tree-shakeable functional API for minimal bundle size
-[View BrandedChain →](/primitives/chain/branded-chain)
-</Card>
-<Card title="Network Comparison" icon="chart-bar">
-Compare gas fees, costs, and characteristics across networks
-[View Network Comparison →](/primitives/chain/network-comparison)
-</Card>
-</CardGroup>
+### Core Operations
+
+- [fundamentals](fundamentals) - Learn chain IDs, replay attack prevention, and network identification
+- [constructors](constructors) - Create Chain instances from chain objects and chain IDs
+- [chain-lookup](chain-lookup) - Look up chains by ID using fromId() and byId record
+- [metadata](metadata) - Access chain properties: name, chainId, RPC, explorers, currency
+
+### Advanced Features
+
+- [branded-chain](branded-chain) - Tree-shakeable functional API for minimal bundle size
+- [network-comparison](network-comparison) - Compare gas fees, costs, and characteristics across networks
 
 <Tip title="Chain objects are plain JavaScript objects">
 Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.

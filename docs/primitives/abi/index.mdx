@@ -290,73 +290,28 @@ export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
 
 ## API Documentation
 
-<Columns>
-  <Card title="Fundamentals" icon="open-book">
-    Learn ABI encoding structure, function selectors, and data layout.
+### Core Concepts
 
-    [View fundamentals →](/primitives/abi/fundamentals)
-  </Card>
+- [Fundamentals](fundamentals) - Learn ABI encoding structure, function selectors, and data layout
+- [Types](types) - Complete ABI type system: Abi, Parameter, AbiType, Item types, and type utilities
 
-  <Card title="Types" icon="seti:config">
-    Complete ABI type system: Abi, Parameter, AbiType, Item types, and type utilities.
+### Item Types
 
-    [View types →](/primitives/abi/types)
-  </Card>
+- [Function](function) - Function encoding/decoding, selectors, signatures, and result handling
+- [Event](event) - Event log encoding/decoding, topic generation, and event filtering
+- [Error](error) - Custom error encoding/decoding with type-safe parameter handling
+- [Constructor](constructor) - Constructor parameter encoding for contract deployment
 
-  <Card title="Function" icon="rocket">
-    Function encoding/decoding, selectors, signatures, and result handling.
+### Encoding & Decoding
 
-    [View functions →](/primitives/abi/function)
-  </Card>
+- [Encoding](encoding) - Low-level ABI encoding patterns and algorithms
+- [Decoding](decoding) - Low-level ABI decoding patterns and algorithms
 
-  <Card title="Event" icon="bell">
-    Event log encoding/decoding, topic generation, and event filtering.
+### Advanced
 
-    [View events →](/primitives/abi/event)
-  </Card>
-
-  <Card title="Error" icon="warning">
-    Custom error encoding/decoding with type-safe parameter handling.
-
-    [View errors →](/primitives/abi/error)
-  </Card>
-
-  <Card title="Constructor" icon="puzzle">
-    Constructor parameter encoding for contract deployment.
-
-    [View constructors →](/primitives/abi/constructor)
-  </Card>
-
-  <Card title="Encoding" icon="document">
-    Low-level ABI encoding patterns and algorithms.
-
-    [View encoding →](/primitives/abi/encoding)
-  </Card>
-
-  <Card title="Decoding" icon="open-book">
-    Low-level ABI decoding patterns and algorithms.
-
-    [View decoding →](/primitives/abi/decoding)
-  </Card>
-
-  <Card title="BrandedAbi" icon="seti:config">
-    Tree-shakeable functional API with data-first patterns.
-
-    [View BrandedAbi →](/primitives/abi/branded-abi)
-  </Card>
-
-  <Card title="WASM" icon="rocket">
-    WebAssembly-accelerated encoding/decoding implementation.
-
-    [View WASM →](/primitives/abi/wasm)
-  </Card>
-
-  <Card title="Usage Patterns" icon="list-format">
-    Common patterns: contract calls, log parsing, type inference.
-
-    [View patterns →](/primitives/abi/usage-patterns)
-  </Card>
-</Columns>
+- [BrandedAbi](branded-abi) - Tree-shakeable functional API with data-first patterns
+- [WASM](wasm) - WebAssembly-accelerated encoding/decoding implementation
+- [Usage Patterns](usage-patterns) - Common patterns: contract calls, log parsing, type inference
 
 ## ABI JSON Format
 
@@ -452,31 +407,10 @@ Each namespace provides focused functionality with tree-shakeable exports.
 
 ## Related Types
 
-<Columns>
-  <Card title="Hash" icon="seti:text">
-    Keccak256 hashing used for selectors and signatures.
-
-    [View Hash →](/primitives/hash)
-  </Card>
-
-  <Card title="Address" icon="document">
-    20-byte Ethereum addresses used in ABI encoding.
-
-    [View Address →](/primitives/address)
-  </Card>
-
-  <Card title="Uint" icon="open-book">
-    Unsigned integer types used in ABI encoding.
-
-    [View Uint →](/primitives/uint)
-  </Card>
-
-  <Card title="Bytes" icon="document">
-    Fixed and dynamic byte arrays in ABI encoding.
-
-    [View Bytes →](/primitives/bytes)
-  </Card>
-</Columns>
+- [Hash](/primitives/hash) - Keccak256 hashing used for selectors and signatures
+- [Address](/primitives/address) - 20-byte Ethereum addresses used in ABI encoding
+- [Uint](/primitives/uint) - Unsigned integer types used in ABI encoding
+- [Bytes](/primitives/bytes) - Fixed and dynamic byte arrays in ABI encoding
 
 ## Specification References
 

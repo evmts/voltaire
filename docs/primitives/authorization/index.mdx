@@ -191,35 +191,39 @@ Production-ready implementations:
 
 ## API Methods
 
-<CardGroup>
-<Card title="Type Guards" icon="shield-check">
-Check if value is Authorization.Item or Authorization.Unsigned
-</Card>
-<Card title="Validation" icon="check">
-Validate authorization structure and signature components
-[View validation →](./validation)
-</Card>
-<Card title="Signing & Hashing" icon="signature">
-Calculate signing hash, create signed authorization, and recover authority
-[View signing →](./signing)
-</Card>
-<Card title="Gas Calculations" icon="gas-pump">
-Calculate gas costs for single authorizations and lists
-[View gas calculations →](./gas-calculations)
-</Card>
-<Card title="Processing" icon="gear">
-Process single authorization or authorization lists
-[View processing →](./processing)
-</Card>
-<Card title="Utilities" icon="wrench">
-Format to string, check equality, and helper functions
-[View utilities →](./utilities)
-</Card>
-<Card title="WASM" icon="rocket">
-WASM-accelerated validation, hashing, and gas calculation
-[View WASM →](./wasm)
-</Card>
-</CardGroup>
+### Type Guards
+
+- Check if value is Authorization.Item or Authorization.Unsigned
+
+### Validation
+
+- [validate](./validation) - Validate authorization structure and signature components
+
+### Signing & Hashing
+
+- [hash](./signing#hash) - Calculate signing hash
+- [sign](./signing#sign) - Create signed authorization
+- [verify](./signing#verify) - Recover authority from signature
+
+### Gas Calculations
+
+- [getGasCost](./gas-calculations#getGasCost) - Calculate gas cost for single authorization
+- [calculateGasCost](./gas-calculations#calculateGasCost) - Calculate gas costs for authorization lists
+
+### Processing
+
+- [process](./processing#process) - Process single authorization
+- [processAll](./processing#processAll) - Process authorization lists
+
+### Utilities
+
+- [format](./utilities#format) - Format authorization to string
+- [equals](./utilities#equals) - Compare authorization equality
+- Helper functions for authorization manipulation
+
+### WASM
+
+- [WASM-accelerated operations](./wasm) - Validation, hashing, and gas calculation
 
 ## Constants
 

@@ -58,46 +58,51 @@ Rlp.validate(encoded);
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create RLP data structures from bytes or nested arrays
-[View constructors →](./from)
-</Card>
-<Card title="Encoding" icon="file-code">
-Encode bytes, lists, arrays, objects, and variadic arguments
-[View encoding →](./encode)
-</Card>
-<Card title="Decoding" icon="file-export">
-Decode RLP bytes to data structures, arrays, and objects
-[View decoding →](./decode)
-</Card>
-<Card title="Validation" icon="check">
-Validate RLP encoding structure and format
-[View validation →](./validate)
-</Card>
-<Card title="Utilities" icon="wrench">
-Calculate lengths, flatten, compare, and convert to raw arrays
-[View utilities →](./getEncodedLength)
-</Card>
-<Card title="Type Guards" icon="shield-check">
-Check if values are RLP data, bytes, lists, or strings
-[View type guards →](./isData)
-</Card>
-<Card title="Serialization" icon="arrows-rotate">
-Convert to/from JSON-serializable format
-[View serialization →](./toJSON)
-</Card>
-</CardGroup>
+### Constructors
 
-### Methods Reference
+- [from](./from) - Create RLP data structures from bytes or nested arrays
 
-- **Constructors**: `from`
-- **Encoding**: `encode`, `encodeBytes`, `encodeList`, `encodeArray`, `encodeObject`, `encodeVariadic`, `encodeBatch`
-- **Decoding**: `decode`, `decodeArray`, `decodeObject`, `decodeBatch`
-- **Validation**: `validate`
-- **Utilities**: `getEncodedLength`, `getLength`, `flatten`, `equals`, `toRaw`
-- **Type Guards**: `isData`, `isBytesData`, `isListData`, `isList`, `isString`
-- **Serialization**: `toJSON`, `fromJSON`
+### Encoding
+
+- [encode](./encode) - Encode bytes, lists, and nested structures
+- [encodeBytes](./encode-bytes) - Encode raw bytes to RLP format
+- [encodeList](./encode-list) - Encode array of items to RLP list
+- [encodeArray](./encode-array) - Encode array with variadic arguments
+- [encodeObject](./encode) - Encode object to RLP structure
+- [encodeVariadic](./encode) - Encode multiple arguments
+- [encodeBatch](./encode) - Batch encode multiple items
+
+### Decoding
+
+- [decode](./decode) - Decode RLP bytes to data structures
+- [decodeArray](./decode-array) - Decode RLP list to array
+- [decodeObject](./decode) - Decode RLP to object
+- [decodeBatch](./decode) - Batch decode multiple RLP items
+
+### Validation
+
+- [validate](./validate) - Validate RLP encoding structure and format
+
+### Utilities
+
+- [getEncodedLength](./get-encoded-length) - Calculate encoded length without encoding
+- [getLength](./get-encoded-length) - Get length of RLP item
+- [flatten](./flatten) - Flatten nested RLP structure
+- [equals](./equals) - Compare RLP data equality
+- [toRaw](./utilities) - Convert to raw array
+
+### Type Guards
+
+- [isData](./utilities) - Check if value is RLP data
+- [isBytesData](./utilities) - Check if value is bytes data
+- [isListData](./utilities) - Check if value is list data
+- [isList](./utilities) - Check if value is RLP list
+- [isString](./utilities) - Check if value is RLP string
+
+### Serialization
+
+- [toJSON](./serialization) - Convert to JSON-serializable format
+- [fromJSON](./serialization) - Convert from JSON format
 
 ## Types
 

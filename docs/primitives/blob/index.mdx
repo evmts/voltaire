@@ -111,84 +111,38 @@ const gas = Blob.calculateGas(blobCount, blobBaseFee);
 
 ### Constructors
 
-<CardGroup cols={2}>
-<Card title="from" href="./from">
-Universal constructor from any input (auto-encodes if needed)
-</Card>
-<Card title="fromData" href="./fromData">
-Encode arbitrary data into blob format with length prefix
-</Card>
-</CardGroup>
+- [`from`](./from) - Universal constructor from any input (auto-encodes if needed)
+- [`fromData`](./fromData) - Encode arbitrary data into blob format with length prefix
 
 ### Data Encoding/Decoding
 
-<CardGroup cols={2}>
-<Card title="toData" href="./toData">
-Extract original data from blob (reads length prefix)
-</Card>
-<Card title="splitData" href="./splitData">
-Split large data into multiple blobs
-</Card>
-<Card title="joinData" href="./joinData">
-Join data from multiple blobs
-</Card>
-</CardGroup>
+- [`toData`](./toData) - Extract original data from blob (reads length prefix)
+- [`splitData`](./splitData) - Split large data into multiple blobs
+- [`joinData`](./joinData) - Join data from multiple blobs
 
 ### KZG Cryptography
 
-<CardGroup cols={2}>
-<Card title="toCommitment" href="./toCommitment">
-Compute 48-byte KZG commitment for blob
-</Card>
-<Card title="toProof" href="./toProof">
-Generate 48-byte KZG proof
-</Card>
-<Card title="toVersionedHash" href="./toVersionedHash">
-Compute versioned hash (0x01 + SHA256 of commitment)
-</Card>
-<Card title="verify" href="./verify">
-Verify KZG proof for blob and commitment
-</Card>
-<Card title="verifyBatch" href="./verifyBatch">
-Batch verify multiple blob proofs
-</Card>
-</CardGroup>
+- [`toCommitment`](./toCommitment) - Compute 48-byte KZG commitment for blob
+- [`toProof`](./toProof) - Generate 48-byte KZG proof
+- [`toVersionedHash`](./toVersionedHash) - Compute versioned hash (0x01 + SHA256 of commitment)
+- [`verify`](./verify) - Verify KZG proof for blob and commitment
+- [`verifyBatch`](./verifyBatch) - Batch verify multiple blob proofs
 
 ### Validation
 
-<CardGroup cols={2}>
-<Card title="isValid" href="./isValid">
-Check if data is valid blob (exactly 131,072 bytes)
-</Card>
-<Card title="isValidVersion" href="./isValidVersion">
-Validate versioned hash format and version byte
-</Card>
-</CardGroup>
+- [`isValid`](./isValid) - Check if data is valid blob (exactly 131,072 bytes)
+- [`isValidVersion`](./isValidVersion) - Validate versioned hash format and version byte
 
 ### Gas Estimation
 
-<CardGroup cols={2}>
-<Card title="calculateGas" href="./calculateGas">
-Calculate blob gas cost given blob count and base fee
-</Card>
-<Card title="estimateBlobCount" href="./estimateBlobCount">
-Estimate number of blobs needed for data
-</Card>
-</CardGroup>
+- [`calculateGas`](./calculateGas) - Calculate blob gas cost given blob count and base fee
+- [`estimateBlobCount`](./estimateBlobCount) - Estimate number of blobs needed for data
 
 ### Nested Namespaces
 
-<CardGroup cols={3}>
-<Card title="Blob.Commitment" href="./commitment">
-Commitment validation and conversion
-</Card>
-<Card title="Blob.Proof" href="./proof">
-Proof validation utilities
-</Card>
-<Card title="Blob.VersionedHash" href="./versioned-hash">
-Versioned hash utilities and version extraction
-</Card>
-</CardGroup>
+- [Blob.Commitment](./commitment) - Commitment validation and conversion
+- [Blob.Proof](./proof) - Proof validation utilities
+- [Blob.VersionedHash](./versioned-hash) - Versioned hash utilities and version extraction
 
 ## Types
 

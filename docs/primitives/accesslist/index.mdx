@@ -79,41 +79,43 @@ AccessList.isEmpty(list)                      // Is empty?
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create empty lists or from items and RLP bytes
-[View constructors →](/primitives/accesslist/constructors)
-</Card>
-<Card title="Type Guards" icon="shield-check">
-Check if value is AccessList or Item, and validate structure
-[View type guards →](/primitives/accesslist/validation)
-</Card>
-<Card title="Queries" icon="magnifying-glass">
-Check addresses, storage keys, and count items
-[View queries →](/primitives/accesslist/queries)
-</Card>
-<Card title="Manipulation" icon="pen-to-square">
-Add addresses, storage keys, merge lists, and deduplicate
-[View manipulation →](/primitives/accesslist/manipulation)
-</Card>
-<Card title="Gas Analysis" icon="gas-pump">
-Calculate gas costs and potential savings
-[View gas analysis →](/primitives/accesslist/gas)
-</Card>
-<Card title="Conversions" icon="arrow-right-arrow-left">
-Convert to RLP bytes for transaction encoding
-[View conversions →](/primitives/accesslist/conversions)
-</Card>
-</CardGroup>
+### Constructors
 
-### Methods Reference
+- [create](/primitives/accesslist/constructors#create) - Create empty access list
+- [from](/primitives/accesslist/constructors#from) - Create from items
+- [fromBytes](/primitives/accesslist/constructors#fromBytes) - Create from RLP bytes
 
-- **Constructors**: `create`, `from`, `fromBytes`
-- **Type Guards**: `is`, `isItem`, `assertValid`
-- **Queries**: `includesAddress`, `includesStorageKey`, `keysFor`, `addressCount`, `storageKeyCount`, `isEmpty`
-- **Manipulation**: `withAddress`, `withStorageKey`, `merge`, `deduplicate`
-- **Gas**: `gasCost`, `gasSavings`, `hasSavings`
-- **Conversions**: `toBytes`
+### Type Guards
+
+- [is](/primitives/accesslist/validation#is) - Check if value is AccessList
+- [isItem](/primitives/accesslist/validation#isItem) - Check if value is Item
+- [assertValid](/primitives/accesslist/validation#assertValid) - Validate structure
+
+### Queries
+
+- [includesAddress](/primitives/accesslist/queries#includesAddress) - Check if address is in list
+- [includesStorageKey](/primitives/accesslist/queries#includesStorageKey) - Check if storage key is in list
+- [keysFor](/primitives/accesslist/queries#keysFor) - Get storage keys for address
+- [addressCount](/primitives/accesslist/queries#addressCount) - Count unique addresses
+- [storageKeyCount](/primitives/accesslist/queries#storageKeyCount) - Count storage keys for address
+- [isEmpty](/primitives/accesslist/queries#isEmpty) - Check if list is empty
+
+### Manipulation
+
+- [withAddress](/primitives/accesslist/manipulation#withAddress) - Add address to list
+- [withStorageKey](/primitives/accesslist/manipulation#withStorageKey) - Add storage key to address
+- [merge](/primitives/accesslist/manipulation#merge) - Combine two lists
+- [deduplicate](/primitives/accesslist/manipulation#deduplicate) - Remove duplicate entries
+
+### Gas Analysis
+
+- [gasCost](/primitives/accesslist/gas-optimization#gasCost) - Calculate total gas cost
+- [gasSavings](/primitives/accesslist/gas-optimization#gasSavings) - Calculate potential savings
+- [hasSavings](/primitives/accesslist/gas-optimization#hasSavings) - Check if savings exceed cost
+
+### Conversions
+
+- [toBytes](/primitives/accesslist/conversions#toBytes) - Convert to RLP bytes for transaction encoding
 
 ## Usage Example
 
