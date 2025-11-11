@@ -8,16 +8,19 @@ import { InvalidPrivateKeyError, P256Error } from "./errors.js";
  *
  * Uses deterministic ECDSA (RFC 6979) for signature generation.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash to sign
  * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - 32-byte private key
  * @returns {import('./BrandedP256Signature.js').BrandedP256Signature} ECDSA signature with r, s components
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {P256Error} If signing fails
- *
  * @example
- * ```typescript
- * const messageHash = Hash.keccak256String('Hello!');
- * const privateKey = new Uint8Array(32); // Your key
+ * ```javascript
+ * import * as P256 from './crypto/P256/index.js';
+ * import * as Keccak256 from './crypto/Keccak256/index.js';
+ * const messageHash = Keccak256.hashString('Hello!');
+ * const privateKey = new Uint8Array(32);
  * const signature = P256.sign(messageHash, privateKey);
  * ```
  */

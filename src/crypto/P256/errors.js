@@ -1,5 +1,8 @@
 /**
  * Base error for P256 operations
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class P256Error extends Error {
 	/**
@@ -13,6 +16,9 @@ export class P256Error extends Error {
 
 /**
  * Error for invalid signatures
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class InvalidSignatureError extends P256Error {
 	/**
@@ -26,6 +32,9 @@ export class InvalidSignatureError extends P256Error {
 
 /**
  * Error for invalid public keys
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class InvalidPublicKeyError extends P256Error {
 	/**
@@ -39,6 +48,9 @@ export class InvalidPublicKeyError extends P256Error {
 
 /**
  * Error for invalid private keys
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class InvalidPrivateKeyError extends P256Error {
 	/**

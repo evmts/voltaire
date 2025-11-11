@@ -6,12 +6,14 @@ import { InvalidPrivateKeyError } from "./errors.js";
 /**
  * Derive public key from private key
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - 32-byte private key
  * @returns {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} 64-byte uncompressed public key (x || y coordinates)
  * @throws {InvalidPrivateKeyError} If private key is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as P256 from './crypto/P256/index.js';
  * const privateKey = new Uint8Array(32);
  * const publicKey = P256.derivePublicKey(privateKey);
  * ```

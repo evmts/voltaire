@@ -6,15 +6,17 @@ import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
 /**
  * Verify an ECDSA signature
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedP256Signature.js').BrandedP256Signature} signature - ECDSA signature to verify
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
  * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - 64-byte uncompressed public key
  * @returns {boolean} True if signature is valid, false otherwise
  * @throws {InvalidPublicKeyError} If public key format is invalid
  * @throws {InvalidSignatureError} If signature format is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as P256 from './crypto/P256/index.js';
  * const valid = P256.verify(signature, messageHash, publicKey);
  * if (valid) console.log('Signature is valid!');
  * ```

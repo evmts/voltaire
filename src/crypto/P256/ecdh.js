@@ -13,14 +13,17 @@ import {
  * Computes shared secret from your private key and their public key.
  * Returns the x-coordinate of the shared point.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - Your 32-byte private key
  * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - Their 64-byte uncompressed public key
  * @returns {Uint8Array} 32-byte shared secret
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {InvalidPublicKeyError} If public key is invalid
- *
+ * @throws {P256Error} If ECDH computation fails
  * @example
- * ```typescript
+ * ```javascript
+ * import * as P256 from './crypto/P256/index.js';
  * const myPrivateKey = new Uint8Array(32);
  * const theirPublicKey = P256.derivePublicKey(theirPrivateKey);
  * const sharedSecret = P256.ecdh(myPrivateKey, theirPublicKey);
