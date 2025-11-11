@@ -1,4 +1,4 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
 import { Eip712Error } from "./errors.js";
 import { hashTypedData } from "./hashTypedData.js";
 
@@ -21,53 +21,8 @@ import { hashTypedData } from "./hashTypedData.js";
  * ```
  */
 export function signTypedData(typedData, privateKey) {
-	if (privateKey.length !== 32) {
-		throw new Eip712Error("Private key must be 32 bytes", {
-			code: "EIP712_INVALID_PRIVATE_KEY_LENGTH",
-			context: { length: privateKey.length, expected: 32 },
-			docsPath: "/crypto/eip712/sign-typed-data#error-handling",
-		});
-	}
-
 	const hash = hashTypedData(typedData);
 
-	// Sign the hash - returns 64 bytes (r + s)
-	const sigBytes = secp256k1.sign(hash, privateKey);
-	const r = sigBytes.slice(0, 32);
-	const s = sigBytes.slice(32, 64);
-
-	// Create signature object for recovery
-	const sigObj = secp256k1.Signature.fromBytes(sigBytes);
-
-	// Get expected public key
-	const expectedPubKey = secp256k1.getPublicKey(privateKey, false);
-
-	// Try both recovery bits to find which one recovers the correct public key
-	let recoveryBit = 0;
-	for (let bit = 0; bit < 2; bit++) {
-		try {
-			const recovered = sigObj.addRecoveryBit(bit).recoverPublicKey(hash);
-			const recoveredBytes = recovered.toBytes(false);
-
-			// Compare with expected public key
-			let match = true;
-			for (let i = 0; i < recoveredBytes.length; i++) {
-				if (recoveredBytes[i] !== expectedPubKey[i]) {
-					match = false;
-					break;
-				}
-			}
-
-			if (match) {
-				recoveryBit = bit;
-				break;
-			}
-		} catch {
-			// Try next recovery bit
-		}
-	}
-
-	const v = 27 + recoveryBit;
-
-	return { r, s, v };
+	// Use Secp256k1.sign which handles recovery bit calculation
+	return secp256k1Sign(hash, privateKey);
 }
