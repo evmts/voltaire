@@ -3,14 +3,17 @@ import { getChainId } from "./getChainId.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
- * Get sender address from signature
+ * Get sender address from signature.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
  * @returns {import('../../Address/index.js').BrandedAddress} Sender address recovered from signature
- *
+ * @throws {Error} If signature recovery fails
  * @example
- * ```typescript
- * const sender = TransactionLegacy.getSender.call(tx);
+ * ```javascript
+ * import { getSender } from './primitives/Transaction/Legacy/getSender.js';
+ * const sender = getSender.call(tx);
  * ```
  */
 export function getSender() {

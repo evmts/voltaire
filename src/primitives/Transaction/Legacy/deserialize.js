@@ -3,15 +3,17 @@ import { Type } from "../types.js";
 import { decodeAddress, decodeBigint } from "../utils.js";
 
 /**
- * Deserialize RLP encoded legacy transaction
+ * Deserialize RLP encoded legacy transaction.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction data
  * @returns {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} Deserialized legacy transaction
  * @throws {Error} If data is invalid or not a valid legacy transaction
- *
  * @example
- * ```typescript
- * const tx = TransactionLegacy.deserialize(rlpBytes);
+ * ```javascript
+ * import { deserialize } from './primitives/Transaction/Legacy/deserialize.js';
+ * const tx = deserialize(rlpBytes);
  * ```
  */
 export function deserialize(data) {

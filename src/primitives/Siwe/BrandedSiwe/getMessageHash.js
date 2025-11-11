@@ -4,12 +4,15 @@ import { format } from "./format.js";
 /**
  * Get the EIP-191 personal sign message hash
  *
+ * @see https://voltaire.tevm.sh/primitives/siwe for SIWE documentation
+ * @since 0.0.0
  * @param {import('./BrandedMessage.js').BrandedMessage} message - Message to hash
  * @returns {Uint8Array} Message hash ready for signing with EIP-191 prefix
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const hash = getMessageHash(message);
+ * ```javascript
+ * import * as Siwe from './primitives/Siwe/index.js';
+ * const hash = Siwe.getMessageHash(message);
  * // Returns hash with "\x19Ethereum Signed Message:\n" prefix
  * ```
  */

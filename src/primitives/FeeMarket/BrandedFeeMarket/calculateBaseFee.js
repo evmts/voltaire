@@ -11,24 +11,19 @@ import * as Eip1559 from "../eip1559Constants.js";
  * - If gasUsed == gasTarget: baseFee stays same
  * - Always: baseFee >= MIN_BASE_FEE (7 wei)
  *
+ * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+ * @since 0.0.0
  * @param {bigint} parentGasUsed - Gas used in parent block
  * @param {bigint} parentGasLimit - Gas limit of parent block
  * @param {bigint} parentBaseFee - Base fee of parent block (wei)
  * @returns {bigint} Next block's base fee (wei)
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as FeeMarket from './primitives/FeeMarket/index.js';
  * // Block at target (50% full): base fee unchanged
- * const baseFee1 = calculateBaseFee(15_000_000n, 30_000_000n, 1_000_000_000n);
+ * const baseFee1 = FeeMarket.calculateBaseFee(15_000_000n, 30_000_000n, 1_000_000_000n);
  * // baseFee1 === 1_000_000_000n
- *
- * // Full block: base fee increases
- * const baseFee2 = calculateBaseFee(30_000_000n, 30_000_000n, 1_000_000_000n);
- * // baseFee2 === 1_125_000_000n (12.5% increase)
- *
- * // Empty block: base fee decreases
- * const baseFee3 = calculateBaseFee(0n, 30_000_000n, 1_000_000_000n);
- * // baseFee3 === 1_000_000_000n (unchanged at 0)
  * ```
  */
 export function calculateBaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {

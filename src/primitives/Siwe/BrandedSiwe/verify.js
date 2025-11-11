@@ -6,13 +6,16 @@ import { validate } from "./validate.js";
 /**
  * Verify a SIWE message signature
  *
+ * @see https://voltaire.tevm.sh/primitives/siwe for SIWE documentation
+ * @since 0.0.0
  * @param {import('./BrandedMessage.js').BrandedMessage} message - The SIWE message that was signed
  * @param {import('./BrandedMessage.js').Signature} signature - The signature to verify (65 bytes: r, s, v)
  * @returns {boolean} true if signature is valid and matches message address
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const valid = verify(message, signature);
+ * ```javascript
+ * import * as Siwe from './primitives/Siwe/index.js';
+ * const valid = Siwe.verify(message, signature);
  * if (valid) {
  *   // Signature is valid, user is authenticated
  * }

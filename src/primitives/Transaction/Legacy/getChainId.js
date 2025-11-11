@@ -1,14 +1,15 @@
 /**
- * Extract chain ID from v value (EIP-155)
+ * Extract chain ID from v value (EIP-155).
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
  * @returns {bigint | null} Chain ID if EIP-155, null if pre-EIP-155
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
- * const chainId = TransactionLegacy.getChainId.call(tx);
- * // EIP-155: chainId = (v - 35) / 2 (if v >= 35)
- * // Pre-EIP-155: null
+ * ```javascript
+ * import { getChainId } from './primitives/Transaction/Legacy/getChainId.js';
+ * const chainId = getChainId.call(tx);
  * ```
  */
 export function getChainId() {

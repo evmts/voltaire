@@ -4,6 +4,8 @@ import * as Address from "../../Address/BrandedAddress/index.js";
 /**
  * Create a new SIWE message with default values
  *
+ * @see https://voltaire.tevm.sh/primitives/siwe for SIWE documentation
+ * @since 0.0.0
  * @template {string} TDomain
  * @template {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} TAddress
  * @template {string} TUri
@@ -21,10 +23,12 @@ import * as Address from "../../Address/BrandedAddress/index.js";
  * @param {string} [params.nonce] - Custom nonce (auto-generated if not provided)
  * @param {string} [params.issuedAt] - Custom issued at (current time if not provided)
  * @returns {import('./BrandedMessage.js').BrandedMessage<TDomain, TAddress, TUri, "1", TChainId>} New SIWE message with defaults
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const message = create({
+ * ```javascript
+ * import * as Siwe from './primitives/Siwe/index.js';
+ * import * as Address from './primitives/Address/index.js';
+ * const message = Siwe.create({
  *   domain: "example.com",
  *   address: Address.fromHex("0x..."),
  *   uri: "https://example.com",

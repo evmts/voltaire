@@ -7,21 +7,22 @@ import { calculateTxFee } from "./calculateTxFee.js";
  *
  * Combines regular gas fee with blob gas fee.
  *
+ * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+ * @since 0.0.0
  * @param {import('../BlobTxFeeParams.js').BlobTxFeeParams} params - Blob transaction fee parameters
  * @returns {import('../BlobTxFee.js').BlobTxFee} Calculated fee breakdown including blob fees
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const fee = calculateBlobTxFee({
+ * ```javascript
+ * import * as FeeMarket from './primitives/FeeMarket/index.js';
+ * const fee = FeeMarket.calculateBlobTxFee({
  *   maxFeePerGas: 2_000_000_000n,
  *   maxPriorityFeePerGas: 1_000_000_000n,
  *   baseFee: 800_000_000n,
- *   maxFeePerBlobGas: 10_000_000n, // 10 wei per blob gas
- *   blobBaseFee: 5_000_000n, // 5 wei per blob gas
+ *   maxFeePerBlobGas: 10_000_000n,
+ *   blobBaseFee: 5_000_000n,
  *   blobCount: 3n
  * });
- * // fee.blobGasPrice === 5_000_000n
- * // fee.totalBlobFee === 1_966_080_000_000n (3 blobs * 131072 gas/blob * 5 wei)
  * ```
  */
 export function calculateBlobTxFee(params) {

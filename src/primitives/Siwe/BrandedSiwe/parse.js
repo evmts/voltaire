@@ -4,12 +4,14 @@ import * as Address from "../../Address/BrandedAddress/index.js";
 /**
  * Parse a SIWE message from a formatted string
  *
+ * @see https://voltaire.tevm.sh/primitives/siwe for SIWE documentation
+ * @since 0.0.0
  * @param {string} text - Formatted SIWE message string
  * @returns {import('./BrandedMessage.js').BrandedMessage} Parsed Message object
- * @throws {Error} If message format is invalid
- *
+ * @throws {Error} If message format is invalid or missing required fields
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Siwe from './primitives/Siwe/index.js';
  * const text = `example.com wants you to sign in with your Ethereum account:
  * 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
  *
@@ -21,7 +23,7 @@ import * as Address from "../../Address/BrandedAddress/index.js";
  * Nonce: 32891756
  * Issued At: 2021-09-30T16:25:24Z`;
  *
- * const message = parse(text);
+ * const message = Siwe.parse(text);
  * ```
  */
 export function parse(text) {

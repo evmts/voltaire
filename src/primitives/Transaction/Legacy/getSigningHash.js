@@ -4,14 +4,17 @@ import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
 
 /**
- * Get signing hash (hash of unsigned transaction for signature generation)
+ * Get signing hash (hash of unsigned transaction for signature generation).
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
  * @returns {import('../../Hash/index.js').BrandedHash} Hash to be signed
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
- * const signingHash = TransactionLegacy.getSigningHash.call(tx);
+ * ```javascript
+ * import { getSigningHash } from './primitives/Transaction/Legacy/getSigningHash.js';
+ * const signingHash = getSigningHash.call(tx);
  * ```
  */
 export function getSigningHash() {
