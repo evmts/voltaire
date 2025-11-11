@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Address } from "../Address/index.js";
+import * as Hex from "../Hex/index.js";
 import * as Abi from "./index.js";
 import type { Event as AbiEvent } from "./types.js";
 
@@ -519,7 +520,7 @@ describe("Abi.Event.decodeLog", () => {
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.id).toBe(id);
-		expect(String(decoded.data).toLowerCase()).toBe(data_value.toLowerCase());
+		expect(Hex.fromBytes(decoded.data as Uint8Array).toLowerCase()).toBe(data_value.toLowerCase());
 	});
 });
 

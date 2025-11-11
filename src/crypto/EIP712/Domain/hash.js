@@ -34,6 +34,7 @@ export function hash(domain) {
 	// Filter domain to only included fields
 	/** @type {Record<string, any>} */
 	const filteredDomain = {};
+	/** @type {string[]} */
 	const domainKeys = [];
 	for (const key of Object.keys(domain)) {
 		const value = /** @type {Record<string, any>} */ (domain)[key];

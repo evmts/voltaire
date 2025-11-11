@@ -481,7 +481,7 @@ describe("Abi round-trip encoding/decoding", () => {
 		const original = "0x123456789abcdef0";
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [original]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
-		expect(String(decoded[0]).toLowerCase()).toBe(original.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(original.toLowerCase());
 	});
 
 	it("round-trips array", () => {
