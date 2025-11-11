@@ -147,7 +147,7 @@ describe("Bytecode Fuzz: Invalid jump destinations", () => {
 			const code = bc(randomBytes(200));
 			const result = Bytecode.analyzeJumpDestinations(code);
 			expect(result).toBeDefined();
-			expect(Array.isArray(result.validDestinations)).toBe(true);
+			expect(result instanceof Set).toBe(true);
 		}
 	});
 });
@@ -184,9 +184,9 @@ describe("Bytecode Fuzz: Random JUMPDEST locations", () => {
 			parts.push(0x5b, 0x00); // JUMPDEST, STOP
 			const code = bc(new Uint8Array(parts));
 			const dests = Bytecode.analyzeJumpDestinations(code);
-			expect(dests.validDestinations).toContain(0); // First JUMPDEST
-			expect(dests.validDestinations).not.toContain(3); // JUMPDEST in PUSH data
-			expect(dests.validDestinations).toContain(4); // Last JUMPDEST
+			expect(dests.has(0)).toBe(true); // First JUMPDEST
+			expect(dests.has(3)).toBe(false); // JUMPDEST in PUSH data
+			expect(dests.has(4)).toBe(true); // Last JUMPDEST
 		}
 	});
 });
