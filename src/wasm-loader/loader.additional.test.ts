@@ -769,7 +769,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			expect(decoded).toEqual(abiData);
 
 			const abiDecoded = abiDecodeParameters(decoded, ["uint256", "address"]);
-			expect(abiDecoded[0]).toBe("42");
+			// Returns hex format
+			expect(abiDecoded[0]).toBe("0x2a");
 		});
 
 		it("authorization hash matches keccak256 pattern", () => {
