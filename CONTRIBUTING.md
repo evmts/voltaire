@@ -62,6 +62,15 @@ If your contribution is large, please open a discussion to chat about the change
 3. **Check existing issues** - Your change may already be discussed
 4. **Run tests** - Ensure everything works before making changes
 
+## Prerequisites
+
+Install the following dependencies:
+
+- **Zig 0.15.1** - https://ziglang.org/download/
+- **Rust** (latest stable) - https://rustup.rs/
+- **Node.js** (LTS) - https://nodejs.org/
+- **Bun** (latest) - https://bun.sh/
+
 ## Development Workflow
 
 ### 1. Setup
@@ -70,6 +79,7 @@ If your contribution is large, please open a discussion to chat about the change
 git clone <repository-url>
 cd voltaire
 git submodule update --init --recursive
+bun install
 zig build
 zig build test
 ```
@@ -85,16 +95,23 @@ zig build test
 ### 3. Test Thoroughly
 
 ```bash
-# Run Zig tests
+# Run all Zig tests
 zig build test
 
-# Verify Zig build succeeds
-zig build
+# Run specific test filter
+zig build -Dtest-filter=address
 
-# If modifying TypeScript code, test that too
-cd src
-bun test
-cd ..
+# Run all TypeScript tests
+bun run test
+
+# Run TypeScript tests with coverage
+bun run test:coverage
+
+# Run all tests (Zig + TypeScript + Go)
+zig build test-all
+
+# Quick validation
+zig build check  # Format + lint + typecheck
 ```
 
 **CRITICAL**: ALL tests must pass before submitting (both Zig and TypeScript if applicable).
@@ -286,11 +303,120 @@ test('keccak256 works', () => {
 });
 ```
 
+## Common Commands
+
+### Building
+
+```bash
+zig build                    # Full build (Zig + TS typecheck + C libs)
+zig build build-ts-native    # Native FFI (.dylib/.so) - ReleaseFast
+zig build build-ts-wasm      # WASM - ReleaseSmall (size-optimized)
+zig build build-ts-full      # Complete TypeScript build (TS + native + WASM)
+zig build crypto-wasm        # Individual crypto WASM modules (tree-shaking)
+```
+
+### Testing
+
+```bash
+zig build test               # All Zig tests
+zig build test-ts            # All TypeScript tests
+zig build test-all           # All tests (Zig + TypeScript + Go)
+zig build test-integration   # Integration tests
+zig build test-security      # Security tests
+```
+
+### Quality
+
+```bash
+zig build format             # Format Zig + TypeScript
+zig build format-check       # Check formatting
+zig build lint               # Lint TypeScript (auto-fix)
+zig build lint-check         # Check linting
+zig build check              # Quick validation (format + lint + typecheck)
+zig build ci                 # Complete CI pipeline
+```
+
+### Benchmarks
+
+```bash
+zig build bench              # zbench Zig benchmarks
+bun run bench                # TS comparison benchmarks + generate BENCHMARKING.md
+```
+
+### Examples
+
+```bash
+zig build example-keccak256
+zig build example-abi
+zig build example-secp256k1
+zig build example-address
+zig build example-eip712
+zig build example-transaction
+```
+
+### Documentation
+
+```bash
+bun run docs:dev             # Astro dev (localhost:4321)
+bun run docs:build           # Build docs site
+bun run docs:preview         # Preview built docs
+```
+
+### Cleaning
+
+```bash
+zig build clean              # Clean artifacts (keep node_modules)
+zig build clean-all          # Deep clean + node_modules
+```
+
+## Fuzz Testing
+
+Fuzz tests use Zig's built-in fuzzer (requires Linux). **On macOS, use Docker.**
+
+### Running Fuzz Tests
+
+#### macOS (Docker Required)
+
+```bash
+# Run fuzzing for 5 minutes
+docker run --rm -it -v $(pwd):/workspace -w /workspace \
+  ziglang/zig:0.15.1 \
+  zig build test --fuzz=300s
+
+# With web UI
+docker run --rm -it -v $(pwd):/workspace -w /workspace \
+  -p 6971:6971 \
+  ziglang/zig:0.15.1 \
+  zig build test --fuzz --port=6971
+```
+
+Visit http://localhost:6971 for live coverage visualization.
+
+#### Linux (Native)
+
+```bash
+zig build test --fuzz=300s       # Run for 5 minutes
+zig build test --fuzz            # Run indefinitely
+```
+
+### Fuzz Test Organization
+
+Fuzz tests are colocated with implementations using `.fuzz.zig` extension:
+
+```
+src/primitives/Address/address.fuzz.zig
+src/crypto/hash.fuzz.zig
+src/precompiles/ecrecover.fuzz.zig
+```
+
+See `.claude/commands/fuzz.md` for comprehensive fuzzing documentation.
+
 ## Areas Looking for Contributors
 
 We especially welcome contributions in:
 
 - **Test Coverage** - More comprehensive unit tests (both Zig and TypeScript)
+- **Fuzz Testing** - Additional fuzz test coverage
 - **Documentation** - Improving code documentation
 - **Performance** - Optimization opportunities (with benchmarks)
 - **Bug Fixes** - Addressing any issues
