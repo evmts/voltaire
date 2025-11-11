@@ -1,0 +1,357 @@
+---
+title: "EVM Instructions"
+description: "Complete reference for all 166 Ethereum Virtual Machine opcode handlers"
+---
+
+## Overview
+
+EVM instructions are the atomic operations that smart contract bytecode compiles to. Voltaire implements all 166 opcodes from the Ethereum Yellow Paper, organized into 11 functional categories.
+
+Each instruction operates on a 256-bit word stack with precise gas costs and well-defined semantics. All implementations are zero-copy, tree-shakeable, and tested against official Ethereum test vectors.
+
+## Complete Instruction Reference
+
+### Arithmetic Operations (0x01-0x0b)
+
+11 opcodes for integer arithmetic with 256-bit overflow semantics:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x01 | [ADD](/evm/instructions/arithmetic/add) | 3 | a, b → a+b | Addition with mod 2^256 |
+| 0x02 | [MUL](/evm/instructions/arithmetic/mul) | 5 | a, b → a*b | Multiplication with mod 2^256 |
+| 0x03 | [SUB](/evm/instructions/arithmetic/sub) | 3 | a, b → a-b | Subtraction with mod 2^256 |
+| 0x04 | [DIV](/evm/instructions/arithmetic/div) | 5 | a, b → a/b | Unsigned division (0 if b=0) |
+| 0x05 | [SDIV](/evm/instructions/arithmetic/sdiv) | 5 | a, b → a/b | Signed division |
+| 0x06 | [MOD](/evm/instructions/arithmetic/mod) | 5 | a, b → a%b | Unsigned modulo |
+| 0x07 | [SMOD](/evm/instructions/arithmetic/smod) | 5 | a, b → a%b | Signed modulo |
+| 0x08 | [ADDMOD](/evm/instructions/arithmetic/addmod) | 8 | a, b, N → (a+b)%N | Addition modulo N |
+| 0x09 | [MULMOD](/evm/instructions/arithmetic/mulmod) | 8 | a, b, N → (a*b)%N | Multiplication modulo N |
+| 0x0a | [EXP](/evm/instructions/arithmetic/exp) | 10+50/byte | a, b → a^b | Exponentiation |
+| 0x0b | [SIGNEXTEND](/evm/instructions/arithmetic/signextend) | 5 | b, x → y | Sign extension |
+
+### Comparison & Logic (0x10-0x15)
+
+6 opcodes for comparison operations returning 0 or 1:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x10 | [LT](/evm/instructions/comparison/lt) | 3 | a, b → a<b | Unsigned less than |
+| 0x11 | [GT](/evm/instructions/comparison/gt) | 3 | a, b → a>b | Unsigned greater than |
+| 0x12 | [SLT](/evm/instructions/comparison/slt) | 3 | a, b → a<b | Signed less than |
+| 0x13 | [SGT](/evm/instructions/comparison/sgt) | 3 | a, b → a>b | Signed greater than |
+| 0x14 | [EQ](/evm/instructions/comparison/eq) | 3 | a, b → a==b | Equality |
+| 0x15 | [ISZERO](/evm/instructions/comparison/iszero) | 3 | a → a==0 | Is zero |
+
+### Bitwise Operations (0x16-0x1d)
+
+8 opcodes for bit manipulation:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x16 | [AND](/evm/instructions/bitwise/and) | 3 | a, b → a&b | Bitwise AND |
+| 0x17 | [OR](/evm/instructions/bitwise/or) | 3 | a, b → a\|b | Bitwise OR |
+| 0x18 | [XOR](/evm/instructions/bitwise/xor) | 3 | a, b → a^b | Bitwise XOR |
+| 0x19 | [NOT](/evm/instructions/bitwise/not) | 3 | a → ~a | Bitwise NOT |
+| 0x1a | [BYTE](/evm/instructions/bitwise/byte) | 3 | i, x → x[i] | Byte at index |
+| 0x1b | [SHL](/evm/instructions/bitwise/shl) | 3 | shift, val → val<<shift | Shift left |
+| 0x1c | [SHR](/evm/instructions/bitwise/shr) | 3 | shift, val → val>>shift | Logical shift right |
+| 0x1d | [SAR](/evm/instructions/bitwise/sar) | 3 | shift, val → val>>shift | Arithmetic shift right |
+
+### Keccak (0x20)
+
+1 opcode for cryptographic hashing:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x20 | [SHA3](/evm/instructions/keccak/sha3) | 30+6/word | offset, len → hash | Keccak256 hash |
+
+### Execution Context (0x30-0x3f)
+
+16 opcodes for accessing transaction and account context:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x30 | [ADDRESS](/evm/instructions/context/address) | 2 | → addr | Current contract address |
+| 0x31 | [BALANCE](/evm/instructions/context/balance) | 100/2600 | addr → balance | Account balance |
+| 0x32 | [ORIGIN](/evm/instructions/context/origin) | 2 | → addr | Transaction origin |
+| 0x33 | [CALLER](/evm/instructions/context/caller) | 2 | → addr | Message sender |
+| 0x34 | [CALLVALUE](/evm/instructions/context/callvalue) | 2 | → value | Wei sent with call |
+| 0x35 | [CALLDATALOAD](/evm/instructions/context/calldataload) | 3 | offset → data | Load 32 bytes from calldata |
+| 0x36 | [CALLDATASIZE](/evm/instructions/context/calldatasize) | 2 | → size | Size of calldata |
+| 0x37 | [CALLDATACOPY](/evm/instructions/context/calldatacopy) | 3+3/word | destOffset, offset, len → | Copy calldata to memory |
+| 0x38 | [CODESIZE](/evm/instructions/context/codesize) | 2 | → size | Size of contract code |
+| 0x39 | [CODECOPY](/evm/instructions/context/codecopy) | 3+3/word | destOffset, offset, len → | Copy code to memory |
+| 0x3a | [GASPRICE](/evm/instructions/context/gasprice) | 2 | → price | Transaction gas price |
+| 0x3b | [EXTCODESIZE](/evm/instructions/context/extcodesize) | 100/2600 | addr → size | External contract code size |
+| 0x3c | [EXTCODECOPY](/evm/instructions/context/extcodecopy) | 100/2600+3/word | addr, destOffset, offset, len → | Copy external code |
+| 0x3d | [RETURNDATASIZE](/evm/instructions/context/returndatasize) | 2 | → size | Size of return data |
+| 0x3e | [RETURNDATACOPY](/evm/instructions/context/returndatacopy) | 3+3/word | destOffset, offset, len → | Copy return data to memory |
+| 0x3f | [EXTCODEHASH](/evm/instructions/context/extcodehash) | 100/2600 | addr → hash | External contract codehash |
+
+### Block Information (0x40-0x4a)
+
+11 opcodes for accessing block context:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x40 | [BLOCKHASH](/evm/instructions/block/blockhash) | 20 | blockNum → hash | Block hash of recent block |
+| 0x41 | [COINBASE](/evm/instructions/block/coinbase) | 2 | → addr | Block miner address |
+| 0x42 | [TIMESTAMP](/evm/instructions/block/timestamp) | 2 | → timestamp | Block timestamp |
+| 0x43 | [NUMBER](/evm/instructions/block/number) | 2 | → blockNum | Block number |
+| 0x44 | [DIFFICULTY](/evm/instructions/block/difficulty) | 2 | → difficulty | Block difficulty (prevrandao post-merge) |
+| 0x45 | [GASLIMIT](/evm/instructions/block/gaslimit) | 2 | → limit | Block gas limit |
+| 0x46 | [CHAINID](/evm/instructions/block/chainid) | 2 | → chainId | Chain ID |
+| 0x47 | [SELFBALANCE](/evm/instructions/block/selfbalance) | 5 | → balance | Current contract balance |
+| 0x48 | [BASEFEE](/evm/instructions/block/basefee) | 2 | → baseFee | Block base fee (EIP-1559) |
+| 0x49 | [BLOBHASH](/evm/instructions/block/blobhash) | 3 | index → hash | Blob versioned hash (EIP-4844) |
+| 0x4a | [BLOBBASEFEE](/evm/instructions/block/blobbasefee) | 2 | → baseFee | Blob base fee (EIP-4844) |
+
+### Stack Operations (0x50, 0x5f-0x9f)
+
+86 opcodes for stack manipulation:
+
+**POP (0x50):** Remove top item (2 gas)
+
+**PUSH0-PUSH32 (0x5f-0x7f):** Push N-byte value onto stack (3 gas)
+- 0x5f: PUSH0 (Cancun+)
+- 0x60-0x7f: PUSH1 through PUSH32
+
+**DUP1-DUP16 (0x80-0x8f):** Duplicate Nth stack item (3 gas)
+- 0x80: DUP1 (duplicate 1st item)
+- 0x8f: DUP16 (duplicate 16th item)
+
+**SWAP1-SWAP16 (0x90-0x9f):** Swap top with Nth item (3 gas)
+- 0x90: SWAP1 (swap with 2nd item)
+- 0x9f: SWAP16 (swap with 17th item)
+
+See [Stack Operations](/evm/instructions/stack) for complete reference.
+
+### Memory Operations (0x51-0x53, 0x5e)
+
+4 opcodes for volatile memory access:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x51 | [MLOAD](/evm/instructions/memory/mload) | 3+expansion | offset → value | Load 32 bytes from memory |
+| 0x52 | [MSTORE](/evm/instructions/memory/mstore) | 3+expansion | offset, value → | Store 32 bytes to memory |
+| 0x53 | [MSTORE8](/evm/instructions/memory/mstore8) | 3+expansion | offset, value → | Store 1 byte to memory |
+| 0x5e | [MCOPY](/evm/instructions/memory/mcopy) | 3+3/word+expansion | destOffset, offset, len → | Copy memory (Cancun+) |
+
+### Storage Operations (0x54-0x55, 0x5c-0x5d)
+
+4 opcodes for persistent and transient storage:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x54 | [SLOAD](/evm/instructions/storage/sload) | 100/2100 | key → value | Load from persistent storage |
+| 0x55 | [SSTORE](/evm/instructions/storage/sstore) | 100-20000 | key, value → | Store to persistent storage |
+| 0x5c | [TLOAD](/evm/instructions/storage/tload) | 100 | key → value | Load from transient storage (Cancun+) |
+| 0x5d | [TSTORE](/evm/instructions/storage/tstore) | 100 | key, value → | Store to transient storage (Cancun+) |
+
+### Control Flow (0x00, 0x56-0x58, 0x5b, 0xf3, 0xfd)
+
+7 opcodes for program flow control:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0x00 | [STOP](/evm/instructions/control-flow/stop) | 0 | → | Halt execution |
+| 0x56 | [JUMP](/evm/instructions/control-flow/jump) | 8 | dest → | Jump to destination |
+| 0x57 | [JUMPI](/evm/instructions/control-flow/jumpi) | 10 | dest, cond → | Conditional jump |
+| 0x58 | [PC](/evm/instructions/control-flow/pc) | 2 | → counter | Program counter |
+| 0x5b | [JUMPDEST](/evm/instructions/control-flow/jumpdest) | 1 | → | Jump destination marker |
+| 0xf3 | [RETURN](/evm/instructions/control-flow/return) | 0 | offset, len → | Halt and return data |
+| 0xfd | [REVERT](/evm/instructions/control-flow/revert) | 0 | offset, len → | Halt and revert state |
+
+### Logging (0xa0-0xa4)
+
+5 opcodes for event emission:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0xa0 | [LOG0](/evm/instructions/log/log0) | 375+375/topic+8/byte | offset, len → | Log with 0 topics |
+| 0xa1 | [LOG1](/evm/instructions/log/log1) | 375+375/topic+8/byte | offset, len, topic1 → | Log with 1 topic |
+| 0xa2 | [LOG2](/evm/instructions/log/log2) | 375+375/topic+8/byte | offset, len, topic1, topic2 → | Log with 2 topics |
+| 0xa3 | [LOG3](/evm/instructions/log/log3) | 375+375/topic+8/byte | offset, len, topic1, topic2, topic3 → | Log with 3 topics |
+| 0xa4 | [LOG4](/evm/instructions/log/log4) | 375+375/topic+8/byte | offset, len, topic1-4 → | Log with 4 topics |
+
+### System Operations (0xf0-0xf2, 0xf4-0xf5, 0xfa, 0xff)
+
+7 opcodes for contract interaction:
+
+| Opcode | Name | Gas | Stack Effect | Description |
+|--------|------|-----|--------------|-------------|
+| 0xf0 | [CREATE](/evm/instructions/system/create) | 32000 | value, offset, len → addr | Create contract |
+| 0xf1 | [CALL](/evm/instructions/system/call) | 100-9000 | gas, addr, value, argsOffset, argsLen, retOffset, retLen → success | Call contract |
+| 0xf2 | [CALLCODE](/evm/instructions/system/callcode) | 100-9000 | gas, addr, value, argsOffset, argsLen, retOffset, retLen → success | Call with current context (deprecated) |
+| 0xf4 | [DELEGATECALL](/evm/instructions/system/delegatecall) | 100-9000 | gas, addr, argsOffset, argsLen, retOffset, retLen → success | Call preserving sender/value |
+| 0xf5 | [CREATE2](/evm/instructions/system/create2) | 32000 | value, offset, len, salt → addr | Create with deterministic address |
+| 0xfa | [STATICCALL](/evm/instructions/system/staticcall) | 100-9000 | gas, addr, argsOffset, argsLen, retOffset, retLen → success | Call without state changes |
+| 0xff | [SELFDESTRUCT](/evm/instructions/system/selfdestruct) | 5000-30000 | addr → | Destroy contract |
+
+## Gas Cost Details
+
+### Base Costs
+
+All opcodes have minimum gas costs defined in the Yellow Paper:
+- **0 gas:** STOP, RETURN (base), REVERT (base)
+- **2 gas:** Most context/block info reads
+- **3 gas:** Arithmetic, comparison, bitwise, stack ops
+- **5 gas:** MUL, DIV, MOD family
+- **8 gas:** ADDMOD, MULMOD, JUMP
+
+### Dynamic Costs
+
+Several instructions have variable costs:
+- **Memory expansion:** 3 gas/word + quadratic growth
+- **SSTORE:** 100-20,000 based on storage slot state
+- **EXP:** 50 gas per byte of exponent
+- **LOG:** 375 base + 375/topic + 8/byte
+- **CALL/CREATE:** 100 base + value transfer + memory + gas forwarding
+
+### Access Lists (EIP-2929)
+
+Post-Berlin, storage and account access costs vary:
+- **Cold access:** First access in transaction (2,600 gas for accounts, 2,100 for storage)
+- **Warm access:** Subsequent accesses (100 gas)
+- **Precompiles:** Always warm
+
+## Stack Machine Model
+
+### Stack Properties
+
+- **Depth:** 1024 elements maximum
+- **Word size:** 256 bits (32 bytes)
+- **Access:** Only top 16 elements accessible (via DUP/SWAP)
+- **Overflow:** Pushing to full stack causes exception
+- **Underflow:** Pop from empty stack causes exception
+
+### Stack Notation
+
+`a, b → c` means:
+1. Pop `b` from top
+2. Pop `a` from new top
+3. Push `c` to stack
+
+Example: `ADD` pops two values, pushes their sum.
+
+## Memory Model
+
+### Memory Properties
+
+- **Size:** Grows dynamically, starts at 0
+- **Expansion:** Quadratic cost prevents abuse
+- **Volatility:** Cleared after transaction
+- **Alignment:** Byte-addressable, no alignment requirements
+- **Zero-initialized:** Unwritten memory reads as 0
+
+### Memory Gas
+
+`memory_cost = memory_size_word * 3 + memory_size_word^2 / 512`
+
+Expansion cost is incremental from previous maximum size.
+
+## Storage Model
+
+### Persistent Storage (SLOAD/SSTORE)
+
+- **Key-value:** 256-bit keys and values
+- **Initial zero:** All slots start at 0
+- **Permanence:** Survives transactions
+- **Gas complexity:** SSTORE pricing based on:
+  - Cold vs. warm access (EIP-2929)
+  - Original value vs. current value (EIP-2200)
+  - Zero vs. nonzero transitions
+
+### Transient Storage (TLOAD/TSTORE) - Cancun+
+
+- **Ephemeral:** Cleared after transaction
+- **Fixed cost:** 100 gas per operation
+- **Use case:** Reentrancy guards, temporary state
+- **No refunds:** Unlike persistent storage
+
+## Hardfork Changes
+
+### London (EIP-1559)
+
+- **BASEFEE (0x48):** Access to block base fee
+
+### Shanghai
+
+- **PUSH0 (0x5f):** Push constant zero (cheaper than PUSH1)
+
+### Cancun (Dencun)
+
+- **MCOPY (0x5e):** Efficient memory copying
+- **TLOAD (0x5c):** Transient storage read
+- **TSTORE (0x5d):** Transient storage write
+- **BLOBHASH (0x49):** Access to blob versioned hashes
+- **BLOBBASEFEE (0x4a):** Blob gas pricing
+
+### Prague (upcoming)
+
+- **BLS precompiles:** 0x0B-0x13 (see [Precompiles](/evm/precompiles))
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import * as Instructions from '@tevm/voltaire/evm/instructions';
+
+// Stack operations
+const stack = new Stack();
+Instructions.Arithmetic.add(stack);  // Performs ADD
+Instructions.Stack.push(stack, 42n); // Push value
+const result = Instructions.Stack.pop(stack);
+
+// Memory operations
+const memory = new Memory();
+Instructions.Memory.mstore(memory, 0n, value);
+const loaded = Instructions.Memory.mload(memory, 0n);
+```
+
+### Zig
+
+```zig
+const std = @import("std");
+const instructions = @import("evm").instructions;
+
+pub fn execute(opcode: u8, ctx: *ExecutionContext) !void {
+    switch (opcode) {
+        0x01 => try instructions.arithmetic.add(ctx.stack),
+        0x02 => try instructions.arithmetic.mul(ctx.stack),
+        // ... handle all 166 opcodes
+        else => return error.InvalidOpcode,
+    }
+}
+```
+
+## Testing
+
+All instructions tested with:
+- Official Ethereum test vectors
+- Edge cases (overflow, underflow, zero, max)
+- Gas cost validation for all hardforks
+- Stack depth limits
+- Memory expansion costs
+
+```bash
+# Run instruction tests
+zig build test -Dtest-filter=instructions
+bun run test -- instructions
+```
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification
+- **[evm.codes](https://www.evm.codes/)** - Interactive opcode reference
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Gas cost increases for state access
+- **[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)** - Base fee and BASEFEE opcode
+- **[EIP-1153](https://eips.ethereum.org/EIPS/eip-1153)** - Transient storage (Cancun)
+
+## Related Documentation
+
+- [EVM Overview](/evm) - Complete EVM architecture
+- [Precompiles](/evm/precompiles) - Precompiled contracts
+- [Bytecode](/primitives/bytecode) - Bytecode analysis and parsing
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions

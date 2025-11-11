@@ -1,0 +1,333 @@
+---
+title: "Arithmetic Operations"
+description: "EVM arithmetic opcodes (0x01-0x0b) with 256-bit integer operations and overflow semantics"
+---
+
+## Overview
+
+Arithmetic operations provide integer math on 256-bit (32-byte) unsigned values. All operations use modular arithmetic (mod 2^256) with wrapping overflow/underflow semantics, matching the behavior of hardware integer registers.
+
+11 opcodes enable:
+- **Basic arithmetic:** ADD, MUL, SUB, DIV, MOD
+- **Signed operations:** SDIV, SMOD
+- **Modular arithmetic:** ADDMOD, MULMOD
+- **Exponentiation:** EXP
+- **Type extension:** SIGNEXTEND
+
+## Opcodes
+
+| Opcode | Name | Gas | Stack In → Out | Description |
+|--------|------|-----|----------------|-------------|
+| 0x01 | [ADD](/evm/instructions/arithmetic/add) | 3 | a, b → a+b | Addition with wrapping |
+| 0x02 | [MUL](/evm/instructions/arithmetic/mul) | 5 | a, b → a\*b | Multiplication with wrapping |
+| 0x03 | [SUB](/evm/instructions/arithmetic/sub) | 3 | a, b → a-b | Subtraction with wrapping |
+| 0x04 | [DIV](/evm/instructions/arithmetic/div) | 5 | a, b → a/b | Unsigned division (0 if b=0) |
+| 0x05 | [SDIV](/evm/instructions/arithmetic/sdiv) | 5 | a, b → a/b | Signed division (two's complement) |
+| 0x06 | [MOD](/evm/instructions/arithmetic/mod) | 5 | a, b → a%b | Unsigned modulo (0 if b=0) |
+| 0x07 | [SMOD](/evm/instructions/arithmetic/smod) | 5 | a, b → a%b | Signed modulo (two's complement) |
+| 0x08 | [ADDMOD](/evm/instructions/arithmetic/addmod) | 8 | a, b, N → (a+b)%N | Addition modulo N (arbitrary precision) |
+| 0x09 | [MULMOD](/evm/instructions/arithmetic/mulmod) | 8 | a, b, N → (a\*b)%N | Multiplication modulo N (arbitrary precision) |
+| 0x0a | [EXP](/evm/instructions/arithmetic/exp) | 10+50/byte | a, exp → a^exp | Exponentiation |
+| 0x0b | [SIGNEXTEND](/evm/instructions/arithmetic/signextend) | 5 | b, x → y | Extend sign from byte b |
+
+## Overflow Semantics
+
+### Wrapping Operations
+
+ADD, MUL, SUB use wrapping arithmetic:
+
+```typescript
+// ADD: (2^256 - 1) + 1 = 0
+const max = (1n << 256n) - 1n;
+const result = (max + 1n) & ((1n << 256n) - 1n);  // 0
+
+// SUB: 0 - 1 = 2^256 - 1
+const result = (0n - 1n) & ((1n << 256n) - 1n);  // 2^256 - 1
+```
+
+No exceptions thrown - values wrap around modulo 2^256.
+
+### Division by Zero
+
+DIV and MOD return 0 when dividing by zero (not an exception):
+
+```typescript
+// DIV: 5 / 0 = 0
+// MOD: 5 % 0 = 0
+```
+
+This prevents DOS attacks via division by zero exceptions.
+
+## Signed Arithmetic
+
+### Two's Complement Representation
+
+SDIV and SMOD interpret 256-bit values as signed integers:
+- Range: -2^255 to 2^255 - 1
+- Negative flag: Bit 255 (most significant bit)
+- Encoding: Two's complement
+
+```typescript
+// Positive: 5 = 0x0000...0005
+// Negative: -5 = 0xFFFF...FFFB (2^256 - 5)
+```
+
+### Edge Case: MIN_INT / -1
+
+Special handling for minimum signed integer divided by -1:
+
+```typescript
+const MIN_INT = 1n << 255n;  // -2^255
+// MIN_INT / -1 would overflow to 2^255 (not representable)
+// SDIV returns MIN_INT instead
+```
+
+## Modular Arithmetic
+
+### ADDMOD and MULMOD
+
+Perform operations in arbitrary precision before taking modulo:
+
+```typescript
+// Regular: (a + b) mod N
+const wrong = ((a + b) & ((1n << 256n) - 1n)) % N;  // Wraps first!
+
+// ADDMOD: ((a + b) mod N) with arbitrary precision
+const correct = (a + b) % N;  // No intermediate wrapping
+```
+
+Critical for cryptographic operations where intermediate overflow would produce incorrect results.
+
+### Modulo by Zero
+
+Returns 0 when N = 0 (matches DIV/MOD behavior).
+
+## Exponentiation
+
+### Dynamic Gas Cost
+
+EXP charges 10 gas base + 50 gas per byte of exponent:
+
+```typescript
+// Exponent bytes = number of bytes in big-endian representation
+const expBytes = Math.ceil(Math.log2(Number(exponent)) / 8);
+const gasCost = 10 + 50 * expBytes;
+```
+
+Small exponents (0-255): 10-60 gas
+Large exponents (2^256-1): 10 + 50*32 = 1610 gas
+
+### Algorithm
+
+Uses square-and-multiply for efficiency, but still constrained by gas limits.
+
+## Sign Extension
+
+### SIGNEXTEND Operation
+
+Extends the sign bit from a specified byte position:
+
+```typescript
+// SIGNEXTEND(0, 0xFF) extends bit 7 of byte 0
+// Input:  0x00000000000000FF (255)
+// Output: 0xFFFFFFFFFFFFFFFF (-1 as signed)
+
+// SIGNEXTEND(1, 0x7FFF) extends bit 15 of byte 1
+// Input:  0x0000000000007FFF (32767)
+// Output: 0x0000000000007FFF (positive, bit 15 = 0)
+```
+
+Used to convert smaller signed integers (int8, int16, etc.) to 256-bit signed representation.
+
+## Gas Costs
+
+| Category | Gas | Opcodes |
+|----------|-----|---------|
+| Very Low (Fastest Step) | 3 | ADD, SUB |
+| Low (Fast Step) | 5 | MUL, DIV, SDIV, MOD, SMOD, SIGNEXTEND |
+| Mid Step | 8 | ADDMOD, MULMOD |
+| EXP Step | 10 + 50/byte | EXP |
+
+## Common Patterns
+
+### Safe Math (Pre-Solidity 0.8.0)
+
+Before built-in overflow checking:
+
+```solidity
+function safeAdd(uint256 a, uint256 b) returns (uint256) {
+    uint256 c = a + b;
+    require(c >= a, "Overflow");  // Check for wrap
+    return c;
+}
+```
+
+Solidity 0.8.0+ has built-in overflow checks (adds REVERT on overflow).
+
+### Efficient Modular Exponentiation
+
+For large modular exponentiation, use MODEXP precompile (0x05) instead of combining EXP + MOD:
+
+```solidity
+// Gas-expensive: EXP + MOD
+uint256 result = (base ** exp) % modulus;  // Intermediate overflow!
+
+// Gas-efficient: MODEXP precompile
+(bool success, bytes memory result) = address(0x05).staticcall(...);
+```
+
+### Division with Rounding
+
+EVM division truncates toward zero:
+
+```typescript
+// 5 / 2 = 2 (truncated)
+
+// Rounding up: (a + b - 1) / b
+const roundUp = (a + b - 1n) / b;
+
+// Rounding to nearest: (a + b/2) / b
+const roundNearest = (a + b / 2n) / b;
+```
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import * as Arithmetic from '@tevm/voltaire/evm/instructions/arithmetic';
+
+// Execute arithmetic operations
+Arithmetic.add(frame);      // 0x01
+Arithmetic.mul(frame);      // 0x02
+Arithmetic.addmod(frame);   // 0x08
+```
+
+### Zig
+
+```zig
+const evm = @import("evm");
+const ArithmeticHandlers = evm.instructions.arithmetic.Handlers(FrameType);
+
+// Execute operations
+try ArithmeticHandlers.add(frame);
+try ArithmeticHandlers.mul(frame);
+try ArithmeticHandlers.addmod(frame);
+```
+
+## Edge Cases
+
+### Maximum Values
+
+```typescript
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+// ADD overflow
+add(MAX_UINT256, 1)  // = 0
+
+// MUL overflow
+mul(MAX_UINT256, 2)  // = 2^256 - 2 (wraps)
+
+// DIV by zero
+div(100, 0)  // = 0
+
+// SDIV edge case
+const MIN_INT = 1n << 255n;
+sdiv(MIN_INT, MAX_UINT256)  // = MIN_INT (not overflow)
+```
+
+### Zero Inputs
+
+```typescript
+add(0, 0)      // = 0
+mul(0, MAX)    // = 0
+div(0, 100)    // = 0
+mod(0, 100)    // = 0
+exp(0, 0)      // = 1 (mathematical convention)
+exp(0, 1)      // = 0
+```
+
+## Testing
+
+All arithmetic operations tested with:
+- Overflow/underflow wrapping
+- Division by zero handling
+- Signed edge cases (MIN_INT, -1)
+- Modular arithmetic precision
+- Exponent gas costs
+- Sign extension boundaries
+
+```bash
+# Run arithmetic tests
+zig build test -Dtest-filter=arithmetic
+bun run test -- arithmetic
+```
+
+## Security Considerations
+
+### Overflow Attacks
+
+Pre-Solidity 0.8.0, unchecked arithmetic enabled overflow attacks:
+
+```solidity
+// Vulnerable: balance can wrap to huge value
+function withdraw(uint256 amount) {
+    balances[msg.sender] -= amount;  // Can underflow!
+    msg.sender.transfer(amount);
+}
+```
+
+Modern Solidity includes automatic overflow checks (costs ~20 extra gas per operation).
+
+### Division by Zero
+
+Always returns 0 (not exception), can cause logic errors:
+
+```solidity
+// Bad: Returns 0 when totalSupply = 0
+function pricePerShare() returns (uint256) {
+    return totalValue / totalSupply;  // 0 if totalSupply = 0
+}
+
+// Good: Explicit check
+require(totalSupply > 0, "No shares");
+```
+
+### Modular Arithmetic Precision
+
+Use ADDMOD/MULMOD for cryptographic operations to avoid intermediate overflow:
+
+```solidity
+// Wrong: Intermediate wrapping
+uint256 result = (a * b) % n;  // Wraps at 2^256 first
+
+// Correct: No intermediate wrapping
+uint256 result = mulmod(a, b, n);
+```
+
+## Benchmarks
+
+Relative performance (gas costs reflect computational complexity):
+
+| Operation | Gas | Relative Speed |
+|-----------|-----|----------------|
+| ADD/SUB | 3 | Fastest |
+| MUL/DIV/MOD | 5 | Fast |
+| ADDMOD/MULMOD | 8 | Medium |
+| EXP | 10-1610 | Variable (exponent-dependent) |
+
+See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed benchmarks.
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.1 (Arithmetic Operations)
+- **[evm.codes](https://www.evm.codes/)** - Interactive reference
+- **[EIP-145](https://eips.ethereum.org/EIPS/eip-145)** - Bitwise shifts (SHL/SHR/SAR)
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Type system and overflow semantics
+
+## Related Documentation
+
+- [Comparison Operations](/evm/instructions/comparison) - LT, GT, EQ, ISZERO
+- [Bitwise Operations](/evm/instructions/bitwise) - AND, OR, XOR, shifts
+- [MODEXP Precompile](/evm/precompiles/modexp) - Efficient modular exponentiation
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions

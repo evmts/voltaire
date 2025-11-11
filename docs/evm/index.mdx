@@ -1,0 +1,270 @@
+---
+title: "Ethereum Virtual Machine (EVM)"
+description: "Complete reference for EVM instruction handlers and precompiled contracts implemented in TypeScript and Zig"
+---
+
+## Overview
+
+The Ethereum Virtual Machine is a stack-based virtual machine that executes smart contract bytecode. Voltaire provides low-level implementations of all EVM opcodes and precompiled contracts in both TypeScript and Zig, enabling high-performance execution for EVM-compatible chains.
+
+This section documents 166 instruction handlers across 11 categories plus 21 precompiled contracts, all implemented with:
+- Zero-copy operations
+- Tree-shakeable exports
+- WASM compilation support
+- Comprehensive test coverage
+
+For complete spec-compliant EVM implementations that use these primitives, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
+
+## EVM Components
+
+### [Instructions](/evm/instructions)
+
+**166 opcode handlers** organized by function:
+- **Arithmetic** (11): ADD, MUL, SUB, DIV, SDIV, MOD, SMOD, ADDMOD, MULMOD, EXP, SIGNEXTEND
+- **Comparison** (6): LT, GT, SLT, SGT, EQ, ISZERO
+- **Bitwise** (8): AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR
+- **Keccak** (1): SHA3
+- **Context** (16): ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, etc.
+- **Block** (11): BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, etc.
+- **Stack** (86): POP, PUSH0-32, DUP1-16, SWAP1-16
+- **Memory** (4): MLOAD, MSTORE, MSTORE8, MCOPY
+- **Storage** (4): SLOAD, SSTORE, TLOAD, TSTORE
+- **Control Flow** (7): STOP, JUMP, JUMPI, PC, JUMPDEST, RETURN, REVERT
+- **Log** (5): LOG0-4
+- **System** (7): CREATE, CALL, CALLCODE, DELEGATECALL, CREATE2, STATICCALL, SELFDESTRUCT
+
+### [Precompiles](/evm/precompiles)
+
+**21 precompiled contracts** at addresses 0x01-0x13:
+- **Cryptography** (1): ECRECOVER
+- **Hashing** (3): SHA256, RIPEMD160, BLAKE2F
+- **Data** (1): IDENTITY
+- **Mathematics** (1): MODEXP
+- **zkSNARKs** (3): BN254_ADD, BN254_MUL, BN254_PAIRING
+- **Blob Data** (1): POINT_EVALUATION (EIP-4844)
+- **BLS12-381** (9): G1/G2 operations for Ethereum 2.0 consensus
+
+## Architecture
+
+### Zig Implementation
+
+```zig
+const std = @import("std");
+const evm = @import("evm");
+
+pub fn executeInstruction(opcode: u8, stack: *Stack, memory: *Memory) !void {
+    switch (opcode) {
+        0x01 => try evm.instructions.arithmetic.add(stack),
+        0x02 => try evm.instructions.arithmetic.mul(stack),
+        0x10 => try evm.instructions.comparison.lt(stack),
+        // ... 160+ more opcodes
+        else => return error.InvalidOpcode,
+    }
+}
+```
+
+### TypeScript Implementation
+
+```typescript
+import * as EVM from '@tevm/voltaire/evm';
+
+// Execute instruction
+const result = EVM.Instructions.Arithmetic.add(stack);
+
+// Execute precompile
+const precompileResult = EVM.Precompiles.execute(
+  PrecompileAddress.ECRECOVER,
+  input,
+  gasLimit,
+  Hardfork.CANCUN
+);
+```
+
+## Opcode Categories
+
+### Computational Operations
+
+Stack manipulation and arithmetic form the foundation of EVM computation:
+- **Stack:** 1024 elements max, 256-bit words
+- **Arithmetic:** Big-integer operations with overflow semantics
+- **Bitwise:** Bit manipulation for flags, masks, compression
+
+### State Access
+
+Instructions for reading/modifying blockchain state:
+- **Storage:** Persistent (SLOAD/SSTORE) and transient (TLOAD/TSTORE)
+- **Memory:** Volatile scratch space within transaction
+- **Context:** Access to msg.sender, msg.value, block data
+
+### Control Flow
+
+Program counter manipulation and execution flow:
+- **Jumps:** JUMP, JUMPI require JUMPDEST validation
+- **Termination:** STOP, RETURN, REVERT for execution halting
+- **PC:** Program counter inspection for dynamic code
+
+### External Interactions
+
+Cross-contract calls and logging:
+- **Calls:** CALL, STATICCALL, DELEGATECALL with gas forwarding
+- **Creation:** CREATE, CREATE2 for contract deployment
+- **Logs:** LOG0-4 for event emission
+- **Destruction:** SELFDESTRUCT for contract removal
+
+## Gas Metering
+
+All operations have precise gas costs defined in the Yellow Paper:
+
+| Category | Cost Range | Examples |
+|----------|------------|----------|
+| Zero | 0 | STOP, RETURN (base) |
+| Base | 2 | ADDRESS, ORIGIN, CALLER |
+| Very Low | 3 | ADD, SUB, NOT, LT, GT |
+| Low | 5 | MUL, DIV, MOD, BYTE |
+| Mid | 8 | ADDMOD, MULMOD |
+| High | 10 | JUMPI, balance check |
+| Ext | 20-700 | BALANCE, SLOAD, LOG |
+| Memory | 3/word + expansion | MLOAD, MSTORE, CREATE |
+| Storage | 100-20000 | SLOAD, SSTORE (complex) |
+
+### Dynamic Gas
+
+Some operations have variable costs:
+- **Memory expansion:** Quadratic growth prevents DoS
+- **Storage changes:** SSTORE pricing based on cold/warm, zero/nonzero transitions
+- **Call gas:** 63/64 rule for subcall forwarding
+- **Precompiles:** Dynamic based on input size (MODEXP, MSM)
+
+## Hardfork Evolution
+
+EVM instructions and precompiles introduced over time:
+
+| Hardfork | Instructions | Precompiles | Notable Additions |
+|----------|--------------|-------------|-------------------|
+| Frontier | 140 | 0x01-0x04 | Core opcodes, ECRECOVER, SHA256 |
+| Homestead | 140 | 0x01-0x04 | DELEGATECALL behavior change |
+| Byzantium | 143 | 0x01-0x08 | RETURNDATASIZE, STATICCALL, MODEXP, BN254 |
+| Istanbul | 144 | 0x01-0x09 | CHAINID, SELFBALANCE, BLAKE2F |
+| Berlin | 144 | 0x01-0x09 | Access list gas changes |
+| London | 145 | 0x01-0x09 | BASEFEE |
+| Shanghai | 147 | 0x01-0x09 | PUSH0, transient storage (TLOAD/TSTORE) |
+| Cancun | 148 | 0x01-0x0A | MCOPY, BLOBHASH, BLOBBASEFEE, POINT_EVALUATION |
+| Prague | 148 | 0x01-0x13 | BLS12-381 precompiles (9 new) |
+
+## Implementation Status
+
+### Zig: Complete
+
+All 166 instructions and 21 precompiles fully implemented with:
+- Native C library integration (blst, c-kzg-4844, arkworks)
+- Comprehensive test coverage
+- WASM compilation support
+
+### TypeScript: Functional
+
+- **Instructions:** All 166 handlers implemented in pure TypeScript
+- **Precompiles:** Production-ready for most, stubs for BLS12-381 (use WASM)
+
+For security-critical operations, always use Zig/WASM implementations.
+
+## Testing
+
+### Test Coverage
+
+Every instruction and precompile includes:
+- EIP specification test vectors
+- Official Ethereum test suite cases
+- Edge cases (zero, max, overflow, underflow)
+- Gas cost validation
+- Cross-implementation parity checks
+
+### Running Tests
+
+```bash
+# Zig tests
+zig build test -Dtest-filter=evm
+zig build test -Dtest-filter=instructions
+zig build test -Dtest-filter=precompiles
+
+# TypeScript tests
+bun run test -- evm
+bun run test -- instructions
+bun run test:coverage
+```
+
+## Building
+
+```bash
+# Full build (instructions + precompiles)
+zig build
+
+# Test all EVM components
+zig build test
+
+# WASM builds
+zig build build-ts-wasm       # ReleaseSmall (production)
+zig build build-ts-wasm-fast  # ReleaseFast (benchmarks)
+```
+
+## Benchmarks
+
+```bash
+# Zig benchmarks (zbench)
+zig build bench -Dfilter=evm
+
+# TypeScript benchmarks (mitata)
+bun run bench
+
+# Generate comparison report
+bun run scripts/run-benchmarks.ts
+```
+
+See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for performance data.
+
+## Security
+
+### Validation
+
+All implementations validate:
+- Stack depth (1024 max)
+- Memory bounds
+- Gas sufficiency
+- Input lengths
+- Opcode validity for hardfork
+
+### Constant-Time Operations
+
+Cryptographic operations use constant-time algorithms to prevent timing attacks on sensitive data.
+
+### DoS Protection
+
+Gas metering prevents computational DoS:
+- Memory expansion costs grow quadratically
+- Storage operations priced to prevent abuse
+- Call depth limited to 1024
+- Precompile gas checked before execution
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - EVM formal specification
+- **[evm.codes](https://www.evm.codes/)** - Interactive opcode reference
+- **[EIPs](https://eips.ethereum.org/)** - Ethereum Improvement Proposals
+- **[Execution Specs](https://github.com/ethereum/execution-specs)** - Python reference implementation
+
+## Related Documentation
+
+- [Instructions](/evm/instructions) - Complete opcode reference
+- [Precompiles](/evm/precompiles) - Precompiled contracts
+- [Bytecode](/primitives/bytecode) - Bytecode parsing and analysis
+- [Transaction](/primitives/transaction) - Transaction execution
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions
+
+## Contributing
+
+EVM implementations require:
+- Exact adherence to Yellow Paper and EIPs
+- Comprehensive test vectors
+- Gas cost validation for all hardforks
+- Cross-language parity (TypeScript ↔ Zig)
+
+See [CONTRIBUTING.md](https://github.com/evmts/voltaire/blob/main/CONTRIBUTING.md)

@@ -1,0 +1,446 @@
+---
+title: "SUB (0x03)"
+description: "Subtraction with wrapping underflow for 256-bit unsigned integers"
+---
+
+## Overview
+
+**Opcode:** `0x03`
+**Introduced:** Frontier (EVM genesis)
+
+SUB performs subtraction on two 256-bit unsigned integers with wrapping underflow semantics. When the result is negative (first operand < second operand), it wraps around modulo 2^256 to produce a large positive value.
+
+This operation is essential for decrements, difference calculations, and implementing signed arithmetic in smart contracts.
+
+## Specification
+
+**Stack Input:**
+```
+a (top)
+b
+```
+
+**Stack Output:**
+```
+(a - b) mod 2^256
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+result = (a - b) & ((1 << 256) - 1)
+```
+
+## Behavior
+
+SUB pops two values from the stack (`a` first, then `b`), computes `a - b`, and pushes the result. Underflow wraps around without exceptions:
+
+- If `a >= b`: Result is the mathematical difference
+- If `a < b`: Result wraps to `2^256 - (b - a)`
+
+No exceptions are thrown for underflow. The result always fits in 256 bits.
+
+## Examples
+
+### Basic Subtraction
+
+```typescript
+import { sub } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 10 - 5 = 5
+const frame = createFrame({ stack: [10n, 5n] });
+const err = sub(frame);
+
+console.log(frame.stack); // [5n]
+console.log(frame.gasRemaining); // Original - 3
+```
+
+### Underflow Wrapping
+
+```typescript
+// 0 - 1 wraps to maximum value
+const frame = createFrame({ stack: [0n, 1n] });
+const err = sub(frame);
+
+const MAX = (1n << 256n) - 1n;
+console.log(frame.stack); // [MAX]
+```
+
+### Large Underflow
+
+```typescript
+// 5 - 10 wraps around
+const frame = createFrame({ stack: [5n, 10n] });
+const err = sub(frame);
+
+// Result: 2^256 - 5 = MAX - 4
+const MAX = (1n << 256n) - 1n;
+console.log(frame.stack); // [MAX - 4n]
+```
+
+### Identity Element
+
+```typescript
+// Subtracting zero
+const frame = createFrame({ stack: [42n, 0n] });
+const err = sub(frame);
+
+console.log(frame.stack); // [42n]
+```
+
+### Self-Subtraction
+
+```typescript
+// x - x = 0
+const frame = createFrame({ stack: [42n, 42n] });
+const err = sub(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+SUB shares the lowest gas tier with ADD, making it one of the cheapest operations:
+
+**Comparison:**
+- **ADD/SUB:** 3 gas
+- MUL/DIV/MOD: 5 gas
+- ADDMOD/MULMOD: 8 gas
+- EXP: 10 + 50 per byte
+
+SUB and ADD have identical gas costs due to similar computational complexity in hardware.
+
+## Edge Cases
+
+### Maximum Underflow
+
+```typescript
+// Smallest underflow: 0 - MAX
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [0n, MAX] });
+sub(frame);
+
+console.log(frame.stack); // [1n]
+// Because: (0 - MAX) mod 2^256 = 1
+```
+
+### Zero Subtraction
+
+```typescript
+// 0 - 0 = 0
+const frame = createFrame({ stack: [0n, 0n] });
+sub(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Operand Order Matters
+
+```typescript
+// SUB is NOT commutative: a - b ≠ b - a
+const frame1 = createFrame({ stack: [10n, 5n] });
+sub(frame1);  // 10 - 5 = 5
+
+const frame2 = createFrame({ stack: [5n, 10n] });
+sub(frame2);  // 5 - 10 = wraps
+
+console.log(frame1.stack[0] === frame2.stack[0]); // false
+```
+
+### Stack Underflow
+
+```typescript
+// Not enough stack items
+const frame = createFrame({ stack: [5n] });
+const err = sub(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+## Common Usage
+
+### Balance Updates
+
+```solidity
+// Decrease balance
+function withdraw(uint256 amount) public {
+    require(balances[msg.sender] >= amount, "insufficient balance");
+    balances[msg.sender] -= amount;  // SUB opcode
+    payable(msg.sender).transfer(amount);
+}
+```
+
+### Loop Counters (Decrement)
+
+```solidity
+// Countdown loop
+for (uint i = n; i > 0; i--) {
+    // Compiler generates: SUB i, 1
+}
+```
+
+### Difference Calculations
+
+```solidity
+// Time elapsed
+function elapsed(uint256 startTime) view returns (uint256) {
+    return block.timestamp - startTime;
+}
+
+// Price difference
+function priceGap(uint256 buyPrice, uint256 sellPrice)
+    pure returns (uint256) {
+    require(sellPrice >= buyPrice, "invalid prices");
+    return sellPrice - buyPrice;
+}
+```
+
+### Range Checks
+
+```solidity
+// Check if value is in range [min, max]
+function inRange(uint256 value, uint256 min, uint256 max)
+    pure returns (bool) {
+    return (value - min) <= (max - min);
+    // Uses wrapping: if value < min, underflows to large number
+}
+```
+
+### Safe vs Unchecked
+
+**Solidity 0.8.0+:**
+```solidity
+// Default: checked arithmetic (adds underflow checks)
+uint256 result = a - b;  // Reverts on underflow
+
+// Explicit wrapping (uses raw SUB)
+unchecked {
+    uint256 result = a - b;  // Wraps on underflow
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SUB opcode (0x03) - Subtraction with underflow wrapping
+ */
+export function sub(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands (a - b)
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();  // top
+  const b = frame.stack.pop();  // second
+
+  // Compute result with wrapping (modulo 2^256)
+  const result = (a - b) & ((1n << 256n) - 1n);
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SUB opcode (0x03) - Subtraction with underflow wrapping
+pub fn sub(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const top = try frame.popStack();
+    const second = try frame.popStack();
+    try frame.pushStack(top -% second);  // Wrapping subtraction
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { sub } from './0x03_SUB.js';
+
+describe('SUB (0x03)', () => {
+  it('subtracts two numbers', () => {
+    const frame = createFrame([10n, 5n]);
+    expect(sub(frame)).toBeNull();
+    expect(frame.stack).toEqual([5n]);
+  });
+
+  it('handles underflow wrapping', () => {
+    const frame = createFrame([0n, 1n]);
+    expect(sub(frame)).toBeNull();
+    const MAX = (1n << 256n) - 1n;
+    expect(frame.stack).toEqual([MAX]);
+  });
+
+  it('handles large underflow', () => {
+    const frame = createFrame([5n, 10n]);
+    expect(sub(frame)).toBeNull();
+    const MAX = (1n << 256n) - 1n;
+    expect(frame.stack).toEqual([MAX - 4n]);
+  });
+
+  it('handles zero subtraction', () => {
+    const frame = createFrame([42n, 0n]);
+    expect(sub(frame)).toBeNull();
+    expect(frame.stack).toEqual([42n]);
+  });
+
+  it('handles self-subtraction', () => {
+    const frame = createFrame([42n, 42n]);
+    expect(sub(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame([5n]);
+    expect(sub(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('consumes correct gas (3)', () => {
+    const frame = createFrame([10n, 5n], 100n);
+    expect(sub(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(97n);
+  });
+});
+```
+
+## Security
+
+### Underflow Vulnerabilities
+
+**Classic vulnerability (pre-0.8.0):**
+```solidity
+// VULNERABLE: No underflow protection
+function withdraw(uint256 amount) public {
+    balances[msg.sender] -= amount;  // Can underflow!
+    payable(msg.sender).transfer(amount);
+}
+```
+
+**Attack scenario:**
+```solidity
+// User with balance 5 withdraws 10
+// balances[msg.sender] = 5 - 10 = wraps to MAX_UINT256
+// Attacker now has infinite balance
+```
+
+**Famous exploit: BatchOverflow (2018)**
+```solidity
+// Beauty Chain (BEC) token vulnerability
+function batchTransfer(address[] recipients, uint256 value) {
+    uint256 amount = recipients.length * value;  // Can overflow!
+    require(balances[msg.sender] >= amount);    // Check bypassed
+
+    balances[msg.sender] -= amount;  // Underflow if amount wrapped
+    for (uint i = 0; i < recipients.length; i++) {
+        balances[recipients[i]] += value;
+    }
+}
+
+// Attack: batchTransfer([addr1, addr2], 2^255)
+// amount = 2 * 2^255 = wraps to 0
+// Check passes, sender balance unchanged, recipients get tokens
+```
+
+### Safe Patterns (Pre-0.8.0)
+
+```solidity
+// SafeMath library
+function safeSub(uint256 a, uint256 b) internal pure returns (uint256) {
+    require(b <= a, "subtraction underflow");
+    return a - b;
+}
+
+function withdraw(uint256 amount) public {
+    balances[msg.sender] = safeSub(balances[msg.sender], amount);
+    payable(msg.sender).transfer(amount);
+}
+```
+
+### Modern Solidity (0.8.0+)
+
+```solidity
+// Automatic underflow checks
+function withdraw(uint256 amount) public {
+    balances[msg.sender] -= amount;  // Reverts on underflow
+    payable(msg.sender).transfer(amount);
+}
+
+// Explicit wrapping when needed
+function decrementWrapping(uint256 counter) pure returns (uint256) {
+    unchecked {
+        return counter - 1;  // Uses raw SUB, wraps on underflow
+    }
+}
+```
+
+### Comparison Patterns
+
+```solidity
+// Check difference without underflow risk
+function isGreater(uint256 a, uint256 b) pure returns (bool) {
+    // WRONG: Can underflow
+    // return (a - b) > 0;
+
+    // RIGHT: Direct comparison
+    return a > b;
+}
+
+// Safe difference with minimum value
+function safeDifference(uint256 a, uint256 b) pure returns (uint256) {
+    return a > b ? a - b : 0;
+}
+```
+
+## Benchmarks
+
+SUB performance characteristics:
+
+**Execution time (relative):**
+- SUB: 1.0x (same as ADD)
+- MUL: 1.2x
+- DIV: 2.5x
+
+**Gas efficiency:**
+- 3 gas per 256-bit subtraction
+- ~333,333 subtractions per million gas
+- Identical cost to ADD
+
+**Optimization:**
+```solidity
+// These have identical gas costs:
+uint256 result1 = a - b;  // 3 gas
+uint256 result2 = a + (~b + 1);  // More expensive (NOT + ADD + ADD)
+
+// Prefer SUB for clarity and efficiency
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - SUB](https://www.evm.codes/#03)
+- [SWC-101: Integer Overflow and Underflow](https://swcregistry.io/docs/SWC-101)
+- [BatchOverflow Exploit Analysis](https://medium.com/@peckshield/alert-new-batchoverflow-bug-in-multiple-erc20-smart-contracts-cve-2018-10299-511067db6536)
