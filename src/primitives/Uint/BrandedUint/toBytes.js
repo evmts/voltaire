@@ -15,7 +15,7 @@
  */
 export function toBytes(uint) {
 	const bytes = new Uint8Array(32);
-	let val = uint;
+	let val = typeof uint === "bigint" ? uint : BigInt(uint);
 
 	for (let i = 31; i >= 0; i--) {
 		bytes[i] = Number(val & 0xffn);

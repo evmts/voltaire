@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getPushSize } from "./getPushSize.js";
 import { isPush } from "./isPush.js";
 

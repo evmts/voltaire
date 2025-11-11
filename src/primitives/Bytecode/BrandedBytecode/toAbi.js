@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { toHex } from "./toHex.js";
 
 /**

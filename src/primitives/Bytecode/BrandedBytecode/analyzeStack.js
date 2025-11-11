@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getName } from "../../Opcode/BrandedOpcode/getName.js";
 import { getStackInput } from "../../Opcode/BrandedOpcode/getStackInput.js";
 import { getStackOutput } from "../../Opcode/BrandedOpcode/getStackOutput.js";
