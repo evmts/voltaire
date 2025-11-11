@@ -1,0 +1,278 @@
+---
+title: Address.fromAbiEncoded
+description: Decode address from 32-byte ABI-encoded data
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Address.fromAbiEncoded(bytes: Uint8Array): Address`
+
+Decodes an address from 32-byte ABI-encoded data. Extracts the last 20 bytes from the 32-byte word, ignoring the first 12 padding bytes.
+
+**Parameters:**
+- `bytes: Uint8Array` - 32-byte ABI-encoded address data
+
+**Returns:** `Address` - Address instance
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Decode from ABI-encoded data (32 bytes)
+const encoded = new Uint8Array(32)
+// First 12 bytes are zeros (padding)
+// Last 20 bytes contain the address
+for (let i = 12; i < 32; i++) {
+  encoded[i] = i - 11
+}
+
+const addr = Address.fromAbiEncoded(encoded)
+console.log(addr.toHex())
+
+// Round-trip with toAbiEncoded
+const original = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const abiEncoded = original.toAbiEncoded()
+const decoded = Address.fromAbiEncoded(abiEncoded)
+console.log(original.equals(decoded)) // true
+```
+
+**Throws:**
+- `Error` - If bytes length is not exactly 32
+
+**Defined in:** [primitives/Address/BrandedAddress/fromAbiEncoded.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `fromAbiEncoded(bytes: Uint8Array): BrandedAddress`
+
+Decodes an address from 32-byte ABI-encoded data. Extracts the last 20 bytes from the 32-byte word.
+
+**Parameters:**
+- `bytes: Uint8Array` - 32-byte ABI-encoded address data
+
+**Returns:** `BrandedAddress` - Branded Uint8Array (20 bytes)
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Decode ABI-encoded address
+const encoded = new Uint8Array(32)
+// Set address bytes (last 20 bytes)
+for (let i = 12; i < 32; i++) {
+  encoded[i] = i - 11
+}
+
+const addr = Address.fromAbiEncoded(encoded)
+
+// Access raw bytes
+console.log(addr.length)  // 20
+console.log(addr[0])      // 1
+console.log(addr[19])     // 20
+
+// Convert to hex
+console.log(Address.toHex(addr))
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/fromAbiEncoded.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.js#L17)
+
+</Tab>
+<Tab title="Effect.ts API">
+
+## `Address.fromAbiEncoded(value: Uint8Array): Address`
+
+Effect.ts Schema API for decoding ABI-encoded addresses with validation.
+
+**Parameters:**
+- `value: Uint8Array` - 32-byte ABI-encoded data
+
+**Returns:** `Address` - Effect Schema Address instance
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import { Effect } from 'effect'
+
+// Create from ABI-encoded data
+const encoded = new Uint8Array(32)
+for (let i = 12; i < 32; i++) {
+  encoded[i] = 0x42
+}
+
+const addr = Address.fromAbiEncoded(encoded)
+
+// Access underlying branded address
+console.log(addr.address.length) // 20
+
+// Use Effect.ts composition
+const program = Effect.gen(function* (_) {
+  const addr = Address.fromAbiEncoded(encoded)
+  const hex = addr.toHex()
+  console.log(hex)
+})
+
+Effect.runSync(program)
+```
+
+**Defined in:** [primitives/Address/effect.ts:92](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L92)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.fromAbiEncoded(bytes: []const u8): !Address`
+
+Parse address from 32-byte ABI-encoded data. Extracts the last 20 bytes as the address.
+
+**Parameters:**
+- `bytes: []const u8` - 32-byte slice
+
+**Returns:** `Address` - Parsed address
+
+**Errors:**
+- `InvalidAbiEncodedLength` - Bytes length is not 32
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+// Create ABI-encoded data (32 bytes)
+var encoded: [32]u8 = [_]u8{0} ** 32;
+// Set last 20 bytes to address
+for (0..20) |i| {
+  encoded[12 + i] = @intCast(i + 1);
+}
+
+// Decode to address
+const addr = try Address.fromAbiEncoded(&encoded);
+const hex = Address.toHex(addr);
+
+// Round-trip test
+const original = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+const abi = Address.toAbiEncoded(original);
+const decoded = try Address.fromAbiEncoded(&abi);
+try std.testing.expect(Address.equals(original, decoded));
+```
+
+**Defined in:** [primitives/Address/address.zig:128](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L128)
+
+</Tab>
+<Tab title="C">
+
+## C bindings not available
+
+ABI encoding/decoding functions are not currently exposed in the C API.
+
+<Tip>
+Use the TypeScript or Zig APIs for ABI encoding operations. C API support may be added in future releases.
+</Tip>
+
+</Tab>
+</Tabs>
+
+## ABI Encoding Format
+
+EVM ABI encoding represents addresses as 32-byte words with right-aligned data:
+
+**Structure:**
+- Bytes 0-11: Zero padding (12 bytes)
+- Bytes 12-31: Address data (20 bytes)
+
+**Example:**
+
+```
+32-byte ABI-encoded word:
+0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3
+  └─────── padding ─────┘└────────── address ──────────┘
+     12 bytes (zeros)         20 bytes (address)
+```
+
+## Usage Patterns
+
+### Decoding Contract Call Results
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// ABI-encoded address from contract call return data
+const returnData = new Uint8Array([
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25,
+  0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf2, 0x51, 0xe3
+])
+
+const addr = Address.fromAbiEncoded(returnData)
+console.log(addr.toChecksummed())
+```
+
+### Round-trip Encoding
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const original = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Encode to ABI format
+const encoded = original.toAbiEncoded()
+console.log(encoded.length) // 32
+
+// Decode back
+const decoded = Address.fromAbiEncoded(encoded)
+console.log(original.equals(decoded)) // true
+```
+
+### Multiple Addresses from ABI Data
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// ABI-encoded array of addresses (2 addresses = 64 bytes)
+const abiData = new Uint8Array(64)
+
+// First address at bytes 0-31
+const addr1 = Address.fromAbiEncoded(abiData.slice(0, 32))
+
+// Second address at bytes 32-63
+const addr2 = Address.fromAbiEncoded(abiData.slice(32, 64))
+```
+
+## Error Handling
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Wrong length - throws error
+try {
+  const tooShort = new Uint8Array(20)
+  Address.fromAbiEncoded(tooShort)
+} catch (e) {
+  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 20"
+}
+
+try {
+  const tooLong = new Uint8Array(33)
+  Address.fromAbiEncoded(tooLong)
+} catch (e) {
+  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 33"
+}
+```
+
+## Implementation Notes
+
+- First 12 bytes are ignored (can be any value, typically zeros)
+- Only last 20 bytes are extracted as the address
+- No validation of padding bytes
+- Efficient slice operation (no copying until necessary)
+
+## See Also
+
+- [toAbiEncoded](/primitives/address/to-abi-encoded) - Encode address to 32-byte ABI format
+- [fromBytes](/primitives/address/from-bytes) - Create from 20-byte raw data
+- [fromHex](/primitives/address/from-hex) - Create from hex string
+- [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
