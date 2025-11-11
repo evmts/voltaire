@@ -20,14 +20,14 @@ export function handle(frame) {
 	const gasErr = consumeGas(frame, FastestStep);
 	if (gasErr) return gasErr;
 
-	// Pop operands
-	const aResult = popStack(frame);
-	if (aResult.error) return aResult.error;
-	const a = aResult.value;
-
+	// Pop operands (b is top, a is second)
 	const bResult = popStack(frame);
 	if (bResult.error) return bResult.error;
 	const b = bResult.value;
+
+	const aResult = popStack(frame);
+	if (aResult.error) return aResult.error;
+	const a = aResult.value;
 
 	// Compare: a > b
 	const result = a > b ? 1n : 0n;
