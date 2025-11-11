@@ -1,5 +1,6 @@
 ---
-title: "Ox Blobs API Reference"
+title: Ox Blobs API Reference
+description: Quick reference for migrating from Voltaire Blob to Ox Blobs
 ---
 
 # Ox Blobs API Reference
