@@ -285,9 +285,10 @@ describe("RLP Fuzz Tests", () => {
 
 	describe("Maximum Depth Nested Structures Fuzz", () => {
 		it("should handle maximum allowed depth", () => {
-			// Build nested structure at exactly MAX_DEPTH
+			// Build nested structure at exactly MAX_DEPTH - 1
+			// (MAX_DEPTH is checked after the top-level list adds 1 to depth)
 			let nested: any = [randomBytes(5)];
-			for (let i = 1; i < MAX_DEPTH; i++) {
+			for (let i = 1; i < MAX_DEPTH - 1; i++) {
 				nested = [nested];
 			}
 
