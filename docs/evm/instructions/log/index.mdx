@@ -1,0 +1,133 @@
+---
+title: "LOG Instructions (0xa0-0xa4)"
+description: "Event logging with 0-4 indexed topics for contract communication"
+---
+
+## Overview
+
+**Opcodes:** `0xa0` (LOG0) to `0xa4` (LOG4)`
+**Introduced:** Frontier (EVM genesis)
+
+The LOG family of instructions emits event logs that external systems (off-chain indexers, monitoring services) can capture and process. Each instruction encodes a fixed number of topics (indexed parameters) and flexible data, enabling efficient event filtering without on-chain computation.
+
+## Instruction Set
+
+| Opcode | Name | Topics | Stack Items |
+|--------|------|--------|-------------|
+| 0xa0   | LOG0 | 0      | 2 (offset, length) |
+| 0xa1   | LOG1 | 1      | 3 (offset, length, topic0) |
+| 0xa2   | LOG2 | 2      | 4 (offset, length, topic0, topic1) |
+| 0xa3   | LOG3 | 3      | 5 (offset, length, topic0, topic1, topic2) |
+| 0xa4   | LOG4 | 4      | 6 (offset, length, topic0, topic1, topic2, topic3) |
+
+## Gas Cost
+
+All LOG instructions cost:
+
+```
+375 gas (base)
++ 375 gas per topic
++ 8 gas per byte of data
+```
+
+**Examples:**
+- LOG0 with empty data: 375 gas
+- LOG1 with 32 bytes: 375 + 375 + 256 = 1006 gas
+- LOG4 with 64 bytes: 375 + (4 × 375) + 512 = 2387 gas
+
+Memory expansion costs apply when reading data beyond current allocation.
+
+## Key Constraints
+
+**EIP-214 (Static Call Protection):**
+LOG instructions cannot execute in static call context. Attempting to log during a `STATICCALL` reverts with `StaticCallViolation`.
+
+```solidity
+// This will revert
+function badLog() external view {
+    // emit event - reverts in view functions
+}
+```
+
+**Data Limit:**
+Data size is limited by available gas and memory. No hard cap exists, but practical limits depend on transaction gas budget.
+
+## Common Usage
+
+### Event Indexing
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+
+function transfer(address to, uint256 amount) public {
+    balances[msg.sender] -= amount;
+    balances[to] += amount;
+    emit Transfer(msg.sender, to, amount);  // Compiler generates LOG2
+}
+```
+
+### Event Filtering
+
+Off-chain services use topics for fast filtering without parsing all event data:
+
+```typescript
+// Listen for Transfer events from specific address
+const logs = await getLogs({
+  address: tokenAddress,
+  topics: [
+    keccak256("Transfer(address,indexed address,indexed uint256)"),
+    null,                                    // Match any 'from'
+    "0xaddressToFilterFor"                   // Match specific 'to'
+  ]
+});
+```
+
+### Multiple Events
+
+A transaction can emit multiple logs, which are returned in order:
+
+```solidity
+event Approval(address indexed owner, address indexed spender, uint256 value);
+
+function approve(address spender, uint256 amount) public {
+    allowances[msg.sender][spender] = amount;
+    emit Approval(msg.sender, spender, amount);  // LOG2
+    return true;
+}
+```
+
+## Implementation Notes
+
+### Topic Encoding
+
+Topics are 256-bit values. For dynamic types (strings, arrays), the keccak256 hash is used:
+
+```solidity
+event StringLog(string indexed data);
+// Topic is keccak256(data), not the string itself
+
+event DynamicLog(uint256[] indexed arr);
+// Topic is keccak256(abi.encode(arr)), not individual values
+```
+
+### Data vs Topics
+
+- **Topics** (0-4): Indexed parameters, optimized for efficient filtering
+- **Data**: Non-indexed parameters, stored but not indexed
+
+```solidity
+event Transfer(
+  address indexed from,    // Topic 1
+  address indexed to,      // Topic 2
+  uint256 value           // Data (non-indexed)
+);
+
+// Generates: LOG2 with topics=[from, to] and data=abi.encode(value)
+```
+
+## References
+
+- [LOG Instruction Reference (evm.codes)](https://www.evm.codes/#a0)
+- [EIP-214 (New opcode: STATICCALL)](https://eips.ethereum.org/EIPS/eip-214)
+- [Solidity Events Documentation](https://docs.soliditylang.org/en/latest/contracts.html#events)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9 (Execution Model)

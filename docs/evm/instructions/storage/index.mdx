@@ -1,0 +1,160 @@
+---
+title: "Storage Instructions"
+description: "EVM storage and transient storage operations (SLOAD, SSTORE, TLOAD, TSTORE)"
+---
+
+## Overview
+
+Storage instructions provide persistent and transient data access for smart contracts. The EVM supports two distinct storage scopes:
+
+**Persistent Storage (SLOAD/SSTORE)**
+- Contract state maintained across transactions
+- Account-specific storage per contract instance
+- Complex gas metering with refunds (EIP-2200, EIP-2929, EIP-3529)
+- Cold/warm access tracking for gas optimization
+
+**Transient Storage (TLOAD/TSTORE)**
+- Transaction-scoped temporary storage (Cancun, EIP-1153)
+- Cleared at end of transaction, not persisted
+- Fixed 100 gas cost (no refunds, no access tracking)
+- Common for reentrancy guards and local state
+
+## Instructions
+
+| Opcode | Mnemonic | Name | Gas | Hardfork | Purpose |
+|--------|----------|------|-----|----------|---------|
+| 0x54 | SLOAD | Storage Load | 100/2100 | Frontier | Load persistent storage |
+| 0x55 | SSTORE | Storage Store | 5000-20000 | Frontier | Save persistent storage |
+| 0x5c | TLOAD | Transient Load | 100 | Cancun | Load transient storage |
+| 0x5d | TSTORE | Transient Store | 100 | Cancun | Save transient storage |
+
+## Storage Model
+
+### Persistent Storage
+
+Each contract account has a key-value store mapping 256-bit keys to 256-bit values:
+
+```
+contract MyContract {
+  uint256 public count;        // Storage slot 0
+  mapping(address => uint) balances;  // Slot 1+ (hash-based)
+}
+```
+
+Storage changes are:
+- Committed to blockchain state
+- Persisted across transactions and blocks
+- Accessible to all transactions and external callers
+- Refundable when clearing slots (EIP-3529)
+
+### Transient Storage
+
+Similar structure but transaction-scoped and cleared automatically:
+
+```javascript
+// During transaction execution
+TSTORE(key, value)   // Write to transient storage
+TLOAD(key)           // Read from transient storage
+// Transaction ends
+// Transient storage cleared (not persisted)
+```
+
+Use cases:
+- Reentrancy protection (guard flags)
+- Call context passing (inter-contract communication)
+- Temporary work variables
+- Avoiding expensive storage refunds
+
+## Gas Costs
+
+### SLOAD (Persistent Read)
+
+| Condition | Cost | EIP |
+|-----------|------|-----|
+| Warm access | 100 gas | EIP-2929 |
+| Cold access | 2100 gas | EIP-2929 |
+
+Cold/warm tracking per transaction. First access to a slot: cold (2100). Subsequent accesses: warm (100).
+
+### SSTORE (Persistent Write)
+
+Complex metering based on current/original values and access history:
+
+| Case | Cost | Refund | Notes |
+|------|------|--------|-------|
+| Sentry check fail | None | 0 | Requires >= 2300 gas remaining |
+| Zero to non-zero | 20000 | 0 | Setting new value |
+| Non-zero to different | 5000 | 0 | Modifying existing |
+| Any to zero | 5000 | 4800 (EIP-3529) | Clearing slot |
+| Reset to original | 5000 | 4800 | Restoring pre-transaction value |
+
+**EIP-2200 Rules (Istanbul+):**
+- Sentry: SSTORE requires >= 2300 gas remaining
+- Gas varies by current vs original value
+- Refunds only 4800 per cleared slot (EIP-3529 reduced from 15000)
+
+### TLOAD/TSTORE (Transient)
+
+Fixed 100 gas each, no gas refunds, no access tracking.
+
+## Common Patterns
+
+### Persistent Storage Patterns
+
+**State management:**
+```solidity
+// Simple counter
+uint256 public count;
+
+function increment() external {
+  count++;  // SLOAD, ADD, SSTORE
+}
+```
+
+**Access list optimization:**
+```javascript
+// Multiple reads from same slot - use local var
+function expensive() external {
+  uint256 value = state[key];  // Cold SLOAD (2100)
+  for (let i = 0; i < 10; i++) {
+    // ... use value ...
+    // Next reads are warm (100) if cached
+  }
+}
+```
+
+### Transient Storage Patterns
+
+**Reentrancy guard:**
+```solidity
+contract ReentrancyGuard {
+  // Check pattern using transient storage
+  function _nonReentrant() internal {
+    uint256 locked = 1;
+    assembly {
+      // tstore(key, locked)
+      // Before call: check tload(key) == 0
+      // After call: tstore(key, 0)
+    }
+  }
+}
+```
+
+**Call context:**
+```javascript
+// Pass data between contract calls without storage
+TSTORE(contextKey, contextValue)  // Store in caller
+CALL(...)                          // Callee can TLOAD(contextKey)
+// Context available only during transaction
+```
+
+## See Also
+
+- [SLOAD (0x54)](/evm/instructions/storage/sload) - Persistent storage read
+- [SSTORE (0x55)](/evm/instructions/storage/sstore) - Persistent storage write
+- [TLOAD (0x5c)](/evm/instructions/storage/tload) - Transient storage read
+- [TSTORE (0x5d)](/evm/instructions/storage/tstore) - Transient storage write
+- [EIP-2929: Gas-cost increases for state access opcodes](https://eips.ethereum.org/EIPS/eip-2929)
+- [EIP-2200: Structured Definitions for Net Gas Metering](https://eips.ethereum.org/EIPS/eip-2200)
+- [EIP-3529: Reduction in refunds](https://eips.ethereum.org/EIPS/eip-3529)
+- [EIP-1153: Transient storage opcodes](https://eips.ethereum.org/EIPS/eip-1153)

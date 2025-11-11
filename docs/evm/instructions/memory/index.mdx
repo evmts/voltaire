@@ -1,0 +1,205 @@
+---
+title: "Memory Operations"
+description: "EVM memory opcodes (0x51-0x5e) for loading, storing, and copying memory"
+---
+
+## Overview
+
+Memory operations provide byte-addressable read/write access to the EVM's transient linear memory. Memory is 256-bit word-aligned, zero-initialized, and expands dynamically with quadratic gas costs.
+
+4 opcodes enable:
+- **Load:** MLOAD - Read 32-byte word
+- **Store:** MSTORE - Write 32-byte word, MSTORE8 - Write single byte
+- **Copy:** MCOPY - Copy memory regions (Cancun+, EIP-5656)
+
+Memory is ephemeral within a transaction context and not persisted to state.
+
+## Opcodes
+
+| Opcode | Name | Gas | Stack In → Out | Description |
+|--------|------|-----|----------------|-------------|
+| 0x51 | [MLOAD](/evm/instructions/memory/mload) | 3 + mem | offset → value | Load 32-byte word from memory |
+| 0x52 | [MSTORE](/evm/instructions/memory/mstore) | 3 + mem | offset, value → | Write 32-byte word to memory |
+| 0x53 | [MSTORE8](/evm/instructions/memory/mstore8) | 3 + mem | offset, value → | Write single byte to memory |
+| 0x5e | [MCOPY](/evm/instructions/memory/mcopy) | 3 + mem + copy | dest, src, len → | Copy memory (Cancun+) |
+
+## Memory Expansion
+
+Memory is byte-addressable and expands in 32-byte words. When an operation accesses memory beyond the current size, expansion cost applies:
+
+**Formula:**
+```
+words_new = ceil(offset + size) / 32
+expansion_cost = (words_new)² / 512 + 3 * (words_new - words_old)
+```
+
+**Examples:**
+- Access bytes 0-31 (1 word): 0 gas (no expansion)
+- Access bytes 0-32 (2 words): 3 + 1 = 3 gas expansion
+- Access bytes 0-256 (9 words): Quadratic scaling
+
+Memory is always word-aligned. Reading/writing at offset 1 expands to word boundary.
+
+## Memory Model
+
+- **Size:** Byte-addressable, up to 2^256 bytes theoretically (limited by gas)
+- **Initialization:** All bytes zero-initialized
+- **Atomicity:** 32-byte word operations are atomic
+- **Aliasing:** No restriction - memory fully aliasable
+- **Scope:** Ephemeral within transaction/call context
+
+## Overlap Handling
+
+MCOPY handles overlapping source/destination regions correctly using temporary copy:
+
+```typescript
+// Copy with forward overlap: source and destination overlap
+// [A B C D E F] -> copy 3 bytes from offset 1 to offset 2
+// Result: [A B B C D F]
+```
+
+No special ordering needed - uses temporary buffer to avoid in-place issues.
+
+## Gas Costs
+
+Memory operations charge base cost + memory expansion:
+
+| Operation | Base Gas | Memory Cost | Formula |
+|-----------|----------|-------------|---------|
+| MLOAD | 3 | Expansion | 3 + exp(offset+32) |
+| MSTORE | 3 | Expansion | 3 + exp(offset+32) |
+| MSTORE8 | 3 | Expansion | 3 + exp(offset+1) |
+| MCOPY | 3 | Expansion + copy | 3 + exp(max(src+len, dest+len)) + ceil(len/32)*3 |
+
+Memory expansion is the dominant cost for large operations.
+
+## Common Patterns
+
+### Free Memory Pointer
+
+Solidity maintains free memory pointer at 0x40:
+
+```solidity
+// Get free memory pointer
+let ptr := mload(0x40)
+
+// Allocate memory
+mstore(ptr, value)
+
+// Update free pointer
+mstore(0x40, add(ptr, 0x20))
+```
+
+### Dynamic Array Construction
+
+```solidity
+assembly {
+    let offset := 0
+
+    // Array header
+    mstore(offset, length)
+    offset := add(offset, 0x20)
+
+    // Array elements
+    for { let i := 0 } lt(i, length) { i := add(i, 1) } {
+        mstore(add(offset, mul(i, 0x20)), element)
+    }
+}
+```
+
+### Memory Copying
+
+```solidity
+// Before EIP-5656 (pre-Cancun)
+let dst := 0x80
+let src := 0
+let len := 32
+
+// Manual copy
+for { let i := 0 } lt(i, len) { i := add(i, 1) } {
+    mstore8(add(dst, i), mload8(add(src, i)))
+}
+
+// With MCOPY (Cancun+)
+mcopy(0x80, 0, 32)
+```
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import * as Memory from '@tevm/voltaire/evm/instructions/memory';
+
+// Execute memory operations
+Memory.mload(frame);      // 0x51
+Memory.mstore(frame);     // 0x52
+Memory.mstore8(frame);    // 0x53
+Memory.mcopy(frame);      // 0x5e
+```
+
+### Zig
+
+```zig
+const evm = @import("evm");
+const MemoryHandlers = evm.instructions.memory.Handlers(FrameType);
+
+// Execute operations
+try MemoryHandlers.mload(frame);
+try MemoryHandlers.mstore(frame);
+try MemoryHandlers.mstore8(frame);
+try MemoryHandlers.mcopy(frame);
+```
+
+## Edge Cases
+
+### Zero-Length Operations
+
+```typescript
+// MCOPY with length 0: only base gas (no expansion, no copy)
+mcopy(dest=1000, src=5000, len=0)  // 3 gas only
+```
+
+### Large Memory Access
+
+```typescript
+// Accessing 1MB requires significant gas
+const largeOffset = 1024 * 1024;
+mload(largeOffset);  // Quadratic expansion cost
+```
+
+### Byte Alignment
+
+```typescript
+// MLOAD always reads 32 bytes, even at misaligned offset
+mload(1)  // Reads bytes 1-32, expands to 2 words (64 bytes)
+```
+
+## Memory Safety
+
+Memory is isolated per transaction/call context:
+- **No persistence:** Memory cleared between calls
+- **No cross-contract visibility:** Each call has independent memory
+- **No bounds check in application code:** Out-of-memory accesses just allocate and charge gas
+
+Applications must enforce bounds checking explicitly.
+
+## Hardfork Support
+
+- **MLOAD/MSTORE/MSTORE8:** Frontier (genesis)
+- **MCOPY:** Cancun (EIP-5656)
+
+MCOPY reverts with InvalidOpcode before Cancun.
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.2 (Memory)
+- **[EIP-5656](https://eips.ethereum.org/EIPS/eip-5656)** - MCOPY (Cancun)
+- **[evm.codes](https://www.evm.codes/)** - Interactive memory instruction reference
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Memory layout and assembly
+
+## Related Documentation
+
+- [Stack Operations](/evm/instructions/stack) - PUSH, DUP, SWAP
+- [Storage Operations](/evm/instructions/storage) - SLOAD, SSTORE
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions

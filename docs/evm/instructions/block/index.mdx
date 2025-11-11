@@ -1,0 +1,220 @@
+---
+title: "Block Context Instructions"
+description: "EVM opcodes for accessing block and chain environment context (0x40-0x4A)"
+---
+
+## Overview
+
+Block context instructions provide access to blockchain environment data within smart contract execution. These opcodes allow contracts to query information about the current block, historical blocks, and chain configuration.
+
+**Opcode Range:** `0x40` - `0x4A` (11 opcodes)
+
+## Instructions
+
+### Core Block Information
+
+| Opcode | Name | Gas | Introduced | Description |
+|--------|------|-----|------------|-------------|
+| `0x40` | [BLOCKHASH](/evm/instructions/block/blockhash) | 20 | Frontier | Get hash of recent block |
+| `0x41` | [COINBASE](/evm/instructions/block/coinbase) | 2 | Frontier | Get block beneficiary address |
+| `0x42` | [TIMESTAMP](/evm/instructions/block/timestamp) | 2 | Frontier | Get block timestamp |
+| `0x43` | [NUMBER](/evm/instructions/block/number) | 2 | Frontier | Get block number |
+| `0x44` | [DIFFICULTY](/evm/instructions/block/difficulty) | 2 | Frontier | Get block difficulty (PREVRANDAO post-Merge) |
+| `0x45` | [GASLIMIT](/evm/instructions/block/gaslimit) | 2 | Frontier | Get block gas limit |
+
+### Chain and Account Context
+
+| Opcode | Name | Gas | Introduced | Description |
+|--------|------|-----|------------|-------------|
+| `0x46` | [CHAINID](/evm/instructions/block/chainid) | 2 | Istanbul | Get chain identifier |
+| `0x47` | [SELFBALANCE](/evm/instructions/block/selfbalance) | 5 | Istanbul | Get balance of executing contract |
+
+### EIP-4844 Blob Context
+
+| Opcode | Name | Gas | Introduced | Description |
+|--------|------|-----|------------|-------------|
+| `0x49` | [BLOBHASH](/evm/instructions/block/blobhash) | 3 | Cancun | Get versioned blob hash by index |
+| `0x4A` | [BLOBBASEFEE](/evm/instructions/block/blobbasefee) | 2 | Cancun | Get current blob base fee |
+
+## Historical Evolution
+
+### Frontier (Genesis)
+- `BLOCKHASH`, `COINBASE`, `TIMESTAMP`, `NUMBER`, `DIFFICULTY`, `GASLIMIT`
+- Original block context operations for basic blockchain awareness
+
+### Istanbul (EIP-1344, EIP-1884)
+- `CHAINID` - Enable replay protection across different chains
+- `SELFBALANCE` - More efficient balance queries for current contract
+
+### Paris (The Merge)
+- `DIFFICULTY` repurposed as `PREVRANDAO` for post-merge randomness
+
+### Cancun (EIP-4844)
+- `BLOBHASH`, `BLOBBASEFEE` - Support for proto-danksharding blob transactions
+
+## Common Patterns
+
+### Timestamp-Based Logic
+
+```solidity
+// Time-locked functionality
+contract TimeLock {
+    uint256 public unlockTime;
+
+    function withdraw() public {
+        require(block.timestamp >= unlockTime, "Still locked");
+        // Withdrawal logic
+    }
+}
+```
+
+### Block-Based Randomness (Legacy)
+
+```solidity
+// DEPRECATED: Not secure for production
+function randomNumber() public view returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(
+        blockhash(block.number - 1),
+        block.timestamp,
+        block.difficulty  // Now PREVRANDAO post-merge
+    )));
+}
+```
+
+### Chain-Specific Behavior
+
+```solidity
+// Cross-chain contract behavior
+function getToken() internal view returns (address) {
+    if (block.chainid == 1) return MAINNET_TOKEN;
+    if (block.chainid == 137) return POLYGON_TOKEN;
+    revert("Unsupported chain");
+}
+```
+
+### Historical Block Queries
+
+```solidity
+// Verify past block hash
+function verifyProof(uint256 blockNumber, bytes32 expectedHash) public view returns (bool) {
+    require(block.number - blockNumber <= 256, "Block too old");
+    return blockhash(blockNumber) == expectedHash;
+}
+```
+
+## Gas Costs Summary
+
+| Category | Gas Cost | Opcodes |
+|----------|----------|---------|
+| Fast | 3 | `BLOBHASH` |
+| Quick | 2 | `COINBASE`, `TIMESTAMP`, `NUMBER`, `DIFFICULTY`, `GASLIMIT`, `CHAINID`, `BLOBBASEFEE` |
+| Fast | 5 | `SELFBALANCE` |
+| Ext | 20 | `BLOCKHASH` |
+
+## Security Considerations
+
+### Timestamp Manipulation
+
+Block timestamps can be manipulated by miners within bounds (±15 seconds typically):
+
+```solidity
+// VULNERABLE: Exact timestamp matching
+require(block.timestamp == expectedTime);
+
+// SAFER: Range checking
+require(block.timestamp >= startTime && block.timestamp <= endTime);
+```
+
+### Blockhash Limitations
+
+`BLOCKHASH` only returns hashes for the most recent 256 blocks:
+
+```solidity
+function getBlockHash(uint256 blockNum) public view returns (bytes32) {
+    require(blockNum < block.number, "Future block");
+    require(block.number - blockNum <= 256, "Block too old");
+    return blockhash(blockNum);
+}
+```
+
+### PREVRANDAO Considerations
+
+Post-merge, `DIFFICULTY` returns `PREVRANDAO` - beacon chain randomness:
+
+- More unpredictable than PoW difficulty
+- Still not suitable for high-stakes randomness
+- Use Chainlink VRF for critical applications
+
+### Chain ID Replay Protection
+
+Always include `block.chainid` in transaction hashing for cross-chain protection:
+
+```solidity
+// EIP-155: Replay-protected transaction signing
+bytes32 hash = keccak256(abi.encodePacked(
+    nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0
+));
+```
+
+## Implementation Notes
+
+### Zig Implementation
+
+All block context handlers follow this pattern:
+
+```zig
+pub fn opcode_name(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // Check hardfork availability (if introduced post-Frontier)
+    if (evm.hardfork.isBefore(.REQUIRED_FORK)) return error.InvalidOpcode;
+
+    // Consume gas
+    try frame.consumeGas(GasConstants.GasAmount);
+
+    // Push block context value
+    try frame.pushStack(evm.block_context.field_name);
+
+    frame.pc += 1;
+}
+```
+
+### TypeScript Usage
+
+```typescript
+import { BlockHandlers } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Create frame with block context
+const frame = createFrame({
+  blockContext: {
+    block_number: 18_000_000n,
+    block_timestamp: 1696000000n,
+    block_coinbase: coinbaseAddress,
+    block_gas_limit: 30_000_000n,
+    block_base_fee: 20_000_000_000n,
+    chain_id: 1n,
+  }
+});
+
+// Execute block opcode
+const handlers = BlockHandlers(frame);
+const err = handlers.timestamp(frame);
+```
+
+## Related Instructions
+
+- **[Context Instructions](/evm/instructions/context)** - Execution environment (origin, caller, callvalue)
+- **[Storage Instructions](/evm/instructions/storage)** - Persistent state access
+- **[System Instructions](/evm/instructions/system)** - Contract creation and calls
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix H (Virtual Machine Specification)
+- [EIP-1344](https://eips.ethereum.org/EIPS/eip-1344) - ChainID opcode
+- [EIP-1884](https://eips.ethereum.org/EIPS/eip-1884) - Repricing, SELFBALANCE
+- [EIP-3198](https://eips.ethereum.org/EIPS/eip-3198) - BASEFEE opcode
+- [EIP-4399](https://eips.ethereum.org/EIPS/eip-4399) - DIFFICULTY → PREVRANDAO
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Blob transactions
+- [EIP-7516](https://eips.ethereum.org/EIPS/eip-7516) - BLOBBASEFEE opcode
+- [evm.codes](https://www.evm.codes/#40) - Interactive opcode reference

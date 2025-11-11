@@ -1,0 +1,397 @@
+---
+title: "Comparison Operations"
+description: "EVM comparison opcodes (0x10-0x15) for unsigned, signed, equality, and zero checks"
+---
+
+## Overview
+
+Comparison operations provide boolean logic for 256-bit integers. All comparisons return 1 (true) or 0 (false) and consume minimal gas. These operations enable conditional logic, bounds checking, and control flow in smart contracts.
+
+6 opcodes enable:
+- **Unsigned comparison:** LT, GT
+- **Signed comparison:** SLT, SGT
+- **Equality:** EQ
+- **Zero check:** ISZERO
+
+## Opcodes
+
+| Opcode | Name | Gas | Stack In → Out | Description |
+|--------|------|-----|----------------|-------------|
+| 0x10 | [LT](/evm/instructions/comparison/lt) | 3 | a, b → (a<b) | Unsigned less than |
+| 0x11 | [GT](/evm/instructions/comparison/gt) | 3 | a, b → (a>b) | Unsigned greater than |
+| 0x12 | [SLT](/evm/instructions/comparison/slt) | 3 | a, b → (a<b) | Signed less than |
+| 0x13 | [SGT](/evm/instructions/comparison/sgt) | 3 | a, b → (a>b) | Signed greater than |
+| 0x14 | [EQ](/evm/instructions/comparison/eq) | 3 | a, b → (a==b) | Equality check |
+| 0x15 | [ISZERO](/evm/instructions/comparison/iszero) | 3 | a → (a==0) | Zero check |
+
+## Signed vs Unsigned Comparison
+
+### Unsigned (LT, GT)
+
+Standard unsigned integer comparison treating all 256-bit values as positive:
+
+```typescript
+// Range: 0 to 2^256 - 1
+const a = 0x8000000000000000000000000000000000000000000000000000000000000000n;  // 2^255
+const b = 1n;
+
+// Unsigned: a > b (2^255 > 1)
+LT(a, b)  // = 0 (false)
+GT(a, b)  // = 1 (true)
+```
+
+### Signed (SLT, SGT)
+
+Two's complement signed integer comparison:
+
+```typescript
+// Range: -2^255 to 2^255 - 1
+// Bit 255 = 1 means negative
+const a = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn;  // -1
+const b = 1n;
+
+// Signed: a < b (-1 < 1)
+SLT(a, b)  // = 1 (true)
+SGT(a, b)  // = 0 (false)
+```
+
+### Two's Complement Representation
+
+Signed operations interpret bit 255 as the sign bit:
+
+```typescript
+// Positive: bit 255 = 0
+0x0000...0005  // = +5
+0x7FFF...FFFF  // = 2^255 - 1 (MAX_INT256)
+
+// Negative: bit 255 = 1
+0xFFFF...FFFB  // = -5 (2^256 - 5)
+0x8000...0000  // = -2^255 (MIN_INT256)
+```
+
+## Gas Costs
+
+All comparison operations cost **3 gas** (GasFastestStep), making them the cheapest operations in the EVM.
+
+| Operation | Gas | Category |
+|-----------|-----|----------|
+| LT, GT, SLT, SGT | 3 | Fastest |
+| EQ, ISZERO | 3 | Fastest |
+| ADD, SUB | 3 | Fastest (same tier) |
+| MUL, DIV | 5 | Fast |
+| ADDMOD, MULMOD | 8 | Mid |
+
+## Common Patterns
+
+### Conditional Logic
+
+```solidity
+// if (a < b)
+assembly {
+    let lessThan := lt(a, b)
+    if lessThan {
+        // Execute if true
+    }
+}
+```
+
+### Bounds Checking
+
+```solidity
+// require(index < length)
+assembly {
+    if iszero(lt(index, length)) {
+        revert(0, 0)
+    }
+}
+```
+
+### Range Validation
+
+```solidity
+// Check if value in range [min, max]
+assembly {
+    let inRange := and(
+        iszero(lt(value, min)),  // value >= min
+        iszero(gt(value, max))   // value <= max
+    )
+}
+```
+
+### Zero Address Check
+
+```solidity
+// require(addr != address(0))
+assembly {
+    if iszero(addr) {
+        revert(0, 0)
+    }
+}
+```
+
+### Signed Integer Logic
+
+```solidity
+// Check if signed value is negative
+assembly {
+    let isNegative := slt(value, 0)
+}
+
+// Absolute value
+assembly {
+    let abs := value
+    if slt(value, 0) {
+        abs := sub(0, value)  // Negate
+    }
+}
+```
+
+## Boolean Operations
+
+Comparison results (0 or 1) compose with bitwise operations for complex logic:
+
+```solidity
+// AND: (a < b) && (c < d)
+assembly {
+    let result := and(lt(a, b), lt(c, d))
+}
+
+// OR: (a < b) || (c < d)
+assembly {
+    let result := or(lt(a, b), lt(c, d))
+}
+
+// NOT: !(a < b)
+assembly {
+    let result := iszero(lt(a, b))
+}
+```
+
+## Edge Cases
+
+### Maximum Values
+
+```typescript
+const MAX_UINT256 = (1n << 256n) - 1n;
+const MIN_INT256 = 1n << 255n;  // -2^255 in signed
+const MAX_INT256 = (1n << 255n) - 1n;  // 2^255 - 1 in signed
+
+// Unsigned edge cases
+LT(MAX_UINT256, 0)  // = 0 (max not less than 0)
+GT(MAX_UINT256, 0)  // = 1 (max greater than 0)
+
+// Signed edge cases
+SLT(MIN_INT256, MAX_INT256)  // = 1 (-2^255 < 2^255-1)
+SGT(MAX_INT256, MIN_INT256)  // = 1 (2^255-1 > -2^255)
+
+// Equality
+EQ(MAX_UINT256, MAX_UINT256)  // = 1
+EQ(0, 0)  // = 1
+
+// Zero check
+ISZERO(0)  // = 1
+ISZERO(MAX_UINT256)  // = 0
+```
+
+### Sign Bit Boundary
+
+```typescript
+// 2^255 - 1 (largest positive signed)
+const maxPos = (1n << 255n) - 1n;
+// 2^255 (smallest negative signed = -2^255)
+const minNeg = 1n << 255n;
+
+// Unsigned: minNeg > maxPos
+LT(minNeg, maxPos)  // = 0
+GT(minNeg, maxPos)  // = 1
+
+// Signed: minNeg < maxPos
+SLT(minNeg, maxPos)  // = 1
+SGT(minNeg, maxPos)  // = 0
+```
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import * as Comparison from '@tevm/voltaire/evm/instructions/comparison';
+
+// Execute comparison operations
+Comparison.lt(frame);      // 0x10
+Comparison.gt(frame);      // 0x11
+Comparison.slt(frame);     // 0x12
+Comparison.sgt(frame);     // 0x13
+Comparison.eq(frame);      // 0x14
+Comparison.iszero(frame);  // 0x15
+```
+
+### Zig
+
+```zig
+const evm = @import("evm");
+const ComparisonHandlers = evm.instructions.comparison.Handlers(FrameType);
+
+// Execute operations
+try ComparisonHandlers.lt(frame);
+try ComparisonHandlers.gt(frame);
+try ComparisonHandlers.slt(frame);
+try ComparisonHandlers.sgt(frame);
+try ComparisonHandlers.eq(frame);
+try ComparisonHandlers.iszero(frame);
+```
+
+## Testing
+
+All comparison operations tested with:
+- Basic comparisons (less, greater, equal)
+- Edge cases (MIN/MAX values)
+- Signed vs unsigned behavior
+- Zero values
+- Stack underflow
+- Out of gas
+
+```bash
+# Run comparison tests
+zig build test -Dtest-filter=comparison
+bun run test -- comparison
+```
+
+## Security Considerations
+
+### Signed Integer Confusion
+
+Mixing signed and unsigned comparisons can cause vulnerabilities:
+
+```solidity
+// VULNERABLE: Using unsigned comparison for signed values
+function withdraw(int256 amount) {
+    // LT instead of SLT - negative amounts bypass check!
+    assembly {
+        if lt(balance, amount) {  // Wrong! Treats -1 as huge positive
+            revert(0, 0)
+        }
+    }
+}
+
+// CORRECT: Use signed comparison
+function withdraw(int256 amount) {
+    assembly {
+        if slt(balance, amount) {  // Correct: -1 < balance
+            revert(0, 0)
+        }
+    }
+}
+```
+
+### Integer Overflow in Comparisons
+
+Comparisons happen after arithmetic wrapping:
+
+```solidity
+// VULNERABLE: Overflow before comparison
+uint256 total = a + b;  // May wrap to small value
+require(total > a, "overflow");  // Check may pass incorrectly
+
+// BETTER: Check before operation
+require(a <= type(uint256).max - b, "overflow");
+uint256 total = a + b;
+```
+
+### Off-by-One Errors
+
+```solidity
+// VULNERABLE: Should use <= not <
+require(index < array.length);  // Allows array.length (out of bounds!)
+
+// CORRECT: Strict less than for 0-indexed arrays
+require(index < array.length);  // Max valid index is length - 1
+```
+
+### Zero Address Checks
+
+Always validate addresses:
+
+```solidity
+// VULNERABLE: Missing zero check
+function transfer(address to, uint256 amount) {
+    balances[to] += amount;  // Can send to 0x0, burning tokens
+}
+
+// CORRECT: Explicit validation
+function transfer(address to, uint256 amount) {
+    require(to != address(0), "zero address");
+    balances[to] += amount;
+}
+```
+
+## Optimizations
+
+### Gas-Efficient Patterns
+
+```solidity
+// Cheaper: ISZERO + ISZERO instead of EQ for zero check
+assembly {
+    // Cost: 3 + 3 = 6 gas
+    let isZero := iszero(value)
+
+    // Same as: eq(value, 0)
+    // Cost: 3 gas (but ISZERO + ISZERO is 6)
+    // Prefer EQ when comparing to zero
+}
+
+// Multiple conditions: short-circuit with branches
+assembly {
+    // Evaluate cheapest condition first
+    if iszero(lt(a, b)) {
+        // Skip expensive checks if first fails
+        if condition2 {
+            // ...
+        }
+    }
+}
+```
+
+### Comparison Inversion
+
+```solidity
+// These are equivalent:
+// a < b  ===  !(a >= b)  ===  iszero(or(gt(a, b), eq(a, b)))
+// Sometimes inversions save gas or simplify logic
+
+assembly {
+    // Direct
+    let less := lt(a, b)
+
+    // Inverted (NOT greater-or-equal)
+    let less := iszero(or(gt(a, b), eq(a, b)))
+}
+```
+
+## Benchmarks
+
+Comparison operations are among the fastest EVM operations:
+
+| Operation | Gas | Execution Time (relative) |
+|-----------|-----|---------------------------|
+| LT/GT/SLT/SGT | 3 | 1.0x (baseline) |
+| EQ | 3 | 1.0x |
+| ISZERO | 3 | 0.9x (slightly faster) |
+| ADD/SUB | 3 | 1.0x |
+| MUL | 5 | 1.5x |
+
+See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed benchmarks.
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.1 (Comparison Operations)
+- **[evm.codes](https://www.evm.codes/)** - Interactive reference
+- **[EIP-145](https://eips.ethereum.org/EIPS/eip-145)** - Bitwise shifts (related operations)
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Type system and comparison semantics
+
+## Related Documentation
+
+- [Arithmetic Operations](/evm/instructions/arithmetic) - ADD, SUB, MUL, DIV, signed arithmetic
+- [Bitwise Operations](/evm/instructions/bitwise) - AND, OR, XOR, NOT
+- [Control Flow](/evm/instructions/control-flow) - JUMP, JUMPI (use comparison results)
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions
