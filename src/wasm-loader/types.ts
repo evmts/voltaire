@@ -1,10 +1,23 @@
 /**
- * Type definitions for WebAssembly FFI layer
- * Defines all WASM exports and memory management types
+ * Type definitions for WebAssembly FFI layer.
+ * Defines all WASM exports and memory management types.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  */
 
 /**
- * Error codes returned by WASM functions
+ * Error codes returned by WASM functions.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @example
+ * ```typescript
+ * import { ErrorCode } from './wasm-loader/types.js';
+ * if (result === ErrorCode.INVALID_HEX) {
+ *   console.error('Invalid hex string');
+ * }
+ * ```
  */
 export enum ErrorCode {
 	SUCCESS = 0,
@@ -22,7 +35,16 @@ export enum ErrorCode {
 }
 
 /**
- * Complete interface for all WASM exported functions
+ * Complete interface for all WASM exported functions.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @example
+ * ```typescript
+ * import type { WasmExports } from './wasm-loader/types.js';
+ * import { getExports } from './wasm-loader/loader.js';
+ * const exports: WasmExports = getExports();
+ * ```
  */
 export interface WasmExports {
 	[key: string]: unknown;
@@ -394,7 +416,18 @@ export interface WasmExports {
 }
 
 /**
- * WASI imports for wasm32-wasi modules
+ * WASI imports for wasm32-wasi modules.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @example
+ * ```typescript
+ * import type { WasiImports } from './wasm-loader/types.js';
+ * const wasi: WasiImports = {
+ *   args_get: () => 0,
+ *   // ... other WASI functions
+ * };
+ * ```
  */
 export interface WasiImports {
 	[key: string]: (...args: number[]) => number | never;

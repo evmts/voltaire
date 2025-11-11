@@ -1018,6 +1018,20 @@ export function bls12G1Add(
 
 /**
  * BLS12_G1_MUL precompile (0x0c)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (G1 point + scalar)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G1 point multiplied by scalar
+ * @throws {Error} If input length is not 160 bytes or point is malformed
+ * @example
+ * ```javascript
+ * import { bls12G1Mul } from './precompiles.js';
+ * const input = new Uint8Array(160); // G1 point (128 bytes) + scalar (32 bytes)
+ * const result = bls12G1Mul(input, 100000n);
+ * console.log('BLS12 G1 Mul:', result.output);
+ * ```
  */
 export function bls12G1Mul(
 	input: Uint8Array,
@@ -1067,6 +1081,20 @@ export function bls12G1Mul(
 
 /**
  * BLS12_G1_MSM precompile (0x0d)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (multiple G1 points + scalars, 160 bytes per pair)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G1 multi-scalar multiplication result
+ * @throws {Error} If input length is not a multiple of 160 bytes or points are malformed
+ * @example
+ * ```javascript
+ * import { bls12G1Msm } from './precompiles.js';
+ * const input = new Uint8Array(320); // Two G1 point-scalar pairs (160 bytes each)
+ * const result = bls12G1Msm(input, 100000n);
+ * console.log('BLS12 G1 MSM:', result.output);
+ * ```
  */
 export function bls12G1Msm(
 	input: Uint8Array,
@@ -1123,6 +1151,20 @@ export function bls12G1Msm(
 
 /**
  * BLS12_G2_ADD precompile (0x0e)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (two G2 points, 256 bytes each)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with sum of two BLS12-381 G2 points
+ * @throws {Error} If input length is not 512 bytes or points are malformed
+ * @example
+ * ```javascript
+ * import { bls12G2Add } from './precompiles.js';
+ * const input = new Uint8Array(512); // Two G2 points (256 bytes each)
+ * const result = bls12G2Add(input, 100000n);
+ * console.log('BLS12 G2 Add:', result.output);
+ * ```
  */
 export function bls12G2Add(
 	input: Uint8Array,
@@ -1172,6 +1214,20 @@ export function bls12G2Add(
 
 /**
  * BLS12_G2_MUL precompile (0x0f)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (G2 point + scalar)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G2 point multiplied by scalar
+ * @throws {Error} If input length is not 288 bytes or point is malformed
+ * @example
+ * ```javascript
+ * import { bls12G2Mul } from './precompiles.js';
+ * const input = new Uint8Array(288); // G2 point (256 bytes) + scalar (32 bytes)
+ * const result = bls12G2Mul(input, 100000n);
+ * console.log('BLS12 G2 Mul:', result.output);
+ * ```
  */
 export function bls12G2Mul(
 	input: Uint8Array,
@@ -1221,6 +1277,20 @@ export function bls12G2Mul(
 
 /**
  * BLS12_G2_MSM precompile (0x10)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (multiple G2 points + scalars, 288 bytes per pair)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G2 multi-scalar multiplication result
+ * @throws {Error} If input length is not a multiple of 288 bytes or points are malformed
+ * @example
+ * ```javascript
+ * import { bls12G2Msm } from './precompiles.js';
+ * const input = new Uint8Array(576); // Two G2 point-scalar pairs (288 bytes each)
+ * const result = bls12G2Msm(input, 100000n);
+ * console.log('BLS12 G2 MSM:', result.output);
+ * ```
  */
 export function bls12G2Msm(
 	input: Uint8Array,
@@ -1277,6 +1347,20 @@ export function bls12G2Msm(
 
 /**
  * BLS12_PAIRING precompile (0x11)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (G1-G2 pairs, 384 bytes per pair)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 pairing check result (1 if valid, 0 if invalid)
+ * @throws {Error} If input length is not a multiple of 384 bytes or points are malformed
+ * @example
+ * ```javascript
+ * import { bls12Pairing } from './precompiles.js';
+ * const input = new Uint8Array(384); // One G1-G2 pair
+ * const result = bls12Pairing(input, 100000n);
+ * console.log('Pairing valid:', result.output[31] === 1);
+ * ```
  */
 export function bls12Pairing(
 	input: Uint8Array,
@@ -1351,6 +1435,20 @@ export function bls12Pairing(
 
 /**
  * BLS12_MAP_FP_TO_G1 precompile (0x12)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (Fp element, 64 bytes)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G1 point from Fp element
+ * @throws {Error} If input length is not 64 bytes or mapping fails
+ * @example
+ * ```javascript
+ * import { bls12MapFpToG1 } from './precompiles.js';
+ * const input = new Uint8Array(64); // Fp element
+ * const result = bls12MapFpToG1(input, 100000n);
+ * console.log('Mapped G1 point:', result.output);
+ * ```
  */
 export function bls12MapFpToG1(
 	input: Uint8Array,
@@ -1399,6 +1497,20 @@ export function bls12MapFpToG1(
 
 /**
  * BLS12_MAP_FP2_TO_G2 precompile (0x13)
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param input - Input data (Fp2 element, 128 bytes)
+ * @param gasLimit - Gas limit for execution
+ * @returns Precompile execution result with BLS12-381 G2 point from Fp2 element
+ * @throws {Error} If input length is not 128 bytes or mapping fails
+ * @example
+ * ```javascript
+ * import { bls12MapFp2ToG2 } from './precompiles.js';
+ * const input = new Uint8Array(128); // Fp2 element
+ * const result = bls12MapFp2ToG2(input, 100000n);
+ * console.log('Mapped G2 point:', result.output);
+ * ```
  */
 export function bls12MapFp2ToG2(
 	input: Uint8Array,

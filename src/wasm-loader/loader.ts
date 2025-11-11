@@ -1473,8 +1473,17 @@ export function txDetectType(data: Uint8Array): number {
 // ============================================================================
 
 /**
- * Generate a cryptographically secure random private key
+ * Generate a cryptographically secure random private key.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @returns 32-byte private key
+ * @throws {Error} If key generation fails
+ * @example
+ * ```javascript
+ * import { generatePrivateKey } from './wasm-loader/loader.js';
+ * const privateKey = generatePrivateKey();
+ * ```
  */
 export function generatePrivateKey(): Uint8Array {
 	const savedOffset = memoryOffset;
@@ -1522,10 +1531,19 @@ export function compressPublicKey(uncompressed: Uint8Array): Uint8Array {
 // ============================================================================
 
 /**
- * Sign message hash with private key
+ * Sign message hash with private key using secp256k1.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @param messageHash - 32-byte message hash
  * @param privateKey - 32-byte private key
  * @returns Object with r (32 bytes), s (32 bytes), and v (recovery ID 0-1)
+ * @throws {Error} If signing fails
+ * @example
+ * ```javascript
+ * import { secp256k1Sign } from './wasm-loader/loader.js';
+ * const sig = secp256k1Sign(messageHash, privateKey);
+ * ```
  */
 export function secp256k1Sign(
 	messageHash: Uint8Array,

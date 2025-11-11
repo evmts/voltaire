@@ -1,16 +1,40 @@
 /**
- * WebAssembly module loader for Ethereum primitives
- * Type declarations for loader.js
+ * WebAssembly module loader for Ethereum primitives.
+ * Type declarations for loader.js.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  */
 
 /**
- * Load and instantiate the WASM module
+ * Load and instantiate the WASM module.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
  * @param wasmPath - Path to WASM file, URL, or ArrayBuffer
+ * @returns Promise that resolves when WASM is loaded
+ * @throws {Error} If WASM module does not export memory or instantiation fails
+ * @example
+ * ```typescript
+ * import { loadWasm } from './wasm-loader/loader.js';
+ * await loadWasm('./wasm/primitives.wasm');
+ * ```
  */
 export function loadWasm(wasmPath: string | URL | ArrayBuffer): Promise<void>;
 
 /**
- * Get the WASM exports (for direct access if needed)
+ * Get the WASM exports for direct access if needed.
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @returns WASM exports
+ * @throws {Error} If WASM module not loaded
+ * @example
+ * ```typescript
+ * import { loadWasm, getExports } from './wasm-loader/loader.js';
+ * await loadWasm('./wasm/primitives.wasm');
+ * const exports = getExports();
+ * ```
  */
 export function getExports(): any;
 
