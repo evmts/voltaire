@@ -1,0 +1,597 @@
+---
+title: "BYTE (0x1a)"
+description: "Extract single byte from 256-bit word at specified big-endian index"
+---
+
+## Overview
+
+**Opcode:** `0x1a`
+**Introduced:** Frontier (EVM genesis)
+
+BYTE extracts a single byte from a 256-bit value at a specified index, using big-endian byte ordering where byte 0 is the most significant byte (leftmost). Returns 0 if the index is out of range (>= 32).
+
+Primary uses: extracting individual bytes from packed data, parsing structured data, endianness conversions.
+
+## Specification
+
+**Stack Input:**
+```
+i (top) - byte index (0-31)
+x - value to extract from
+```
+
+**Stack Output:**
+```
+x[i] - byte at index i, or 0 if i >= 32
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Byte Ordering (Big-Endian):**
+```
+bytes32: [0][1][2]...[29][30][31]
+          ↑                      ↑
+         MSB                    LSB
+       byte 0                 byte 31
+```
+
+## Behavior
+
+BYTE pops two values from the stack:
+1. **i** - byte index (0 = MSB, 31 = LSB)
+2. **x** - 256-bit value to extract from
+
+Returns the byte at position i, or 0 if i >= 32.
+
+**Algorithm:**
+```
+if i >= 32:
+  result = 0
+else:
+  result = (x >> (8 * (31 - i))) & 0xFF
+```
+
+## Examples
+
+### Extract MSB (Most Significant Byte)
+
+```typescript
+import { byte } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Extract byte 0 (MSB)
+const value = 0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEFn;
+const frame = createFrame({ stack: [0n, value] });
+const err = byte(frame);
+
+console.log(frame.stack[0].toString(16));  // '12' (first byte)
+```
+
+### Extract LSB (Least Significant Byte)
+
+```typescript
+// Extract byte 31 (LSB)
+const value = 0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEFn;
+const frame = createFrame({ stack: [31n, value] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ef' (last byte)
+```
+
+### Extract Middle Byte
+
+```typescript
+// Extract byte 15 (middle of 32-byte value)
+const value = 0x000000000000000000000000000000FF00000000000000000000000000000000n;
+const frame = createFrame({ stack: [15n, value] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ff'
+```
+
+### Out of Range Index
+
+```typescript
+// Index >= 32 returns 0
+const value = 0x123456789ABCDEFn;
+const frame = createFrame({ stack: [32n, value] });
+byte(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Extract Address Byte
+
+```typescript
+// Extract specific byte from address
+const addr = 0x000000000000000000000000dEaDbEeFcAfE1234567890ABCDEf12345678n;
+// Address starts at byte 12 (160 bits / 8 = 20 bytes, offset from byte 12)
+const frame = createFrame({ stack: [12n, addr] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'de' (first byte of address)
+```
+
+### Iterate Through Bytes
+
+```typescript
+// Extract all 32 bytes
+const value = 0x0123456789ABCDEFn;  // Only lower bytes set
+
+for (let i = 0; i < 32; i++) {
+  const frame = createFrame({ stack: [BigInt(i), value] });
+  byte(frame);
+  const byteVal = frame.stack[0];
+
+  if (byteVal !== 0n) {
+    console.log(`Byte ${i}: 0x${byteVal.toString(16)}`);
+  }
+}
+// Output:
+// Byte 24: 0x01
+// Byte 25: 0x23
+// Byte 26: 0x45
+// ...
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+BYTE shares the lowest gas tier with:
+- AND (0x16), OR (0x17), XOR (0x18), NOT (0x19)
+- SHL (0x1b), SHR (0x1c), SAR (0x1d)
+- ADD (0x01), SUB (0x03)
+- Comparison operations
+
+## Edge Cases
+
+### Index Zero (MSB)
+
+```typescript
+// Byte 0 is most significant byte
+const value = 0xFF00000000000000000000000000000000000000000000000000000000000000n;
+const frame = createFrame({ stack: [0n, value] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ff'
+```
+
+### Index 31 (LSB)
+
+```typescript
+// Byte 31 is least significant byte
+const value = 0x00000000000000000000000000000000000000000000000000000000000000FFn;
+const frame = createFrame({ stack: [31n, value] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ff'
+```
+
+### Index Out of Range
+
+```typescript
+// Any index >= 32 returns 0
+const value = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn;
+
+for (const idx of [32n, 100n, 256n, (1n << 255n)]) {
+  const frame = createFrame({ stack: [idx, value] });
+  byte(frame);
+  console.log(frame.stack[0]);  // 0n for all
+}
+```
+
+### Zero Value
+
+```typescript
+// All bytes are 0
+const frame = createFrame({ stack: [15n, 0n] });
+byte(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Maximum Value
+
+```typescript
+// All bytes are 0xFF
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [15n, MAX] });
+byte(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ff'
+```
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack items
+const frame = createFrame({ stack: [5n] });
+const err = byte(frame);
+
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [5n, 0x123n], gasRemaining: 2n });
+const err = byte(frame);
+
+console.log(err);  // { type: "OutOfGas" }
+console.log(frame.gasRemaining);  // 0n
+```
+
+## Common Usage
+
+### Parse Function Selector
+
+```solidity
+// Extract 4-byte function selector from calldata
+function getSelector(bytes memory data) pure returns (bytes4) {
+    require(data.length >= 4, "data too short");
+
+    assembly {
+        let word := mload(add(data, 32))  // Load first 32 bytes
+        // Extract bytes 0-3 (function selector)
+        let b0 := byte(0, word)
+        let b1 := byte(1, word)
+        let b2 := byte(2, word)
+        let b3 := byte(3, word)
+
+        // Pack into bytes4
+        mstore(0, or(or(or(shl(24, b0), shl(16, b1)), shl(8, b2)), b3))
+        return(0, 4)
+    }
+}
+```
+
+### Extract Nibble (4 bits)
+
+```solidity
+// Extract nibble (half-byte) from bytes32
+function getNibble(bytes32 data, uint256 nibbleIndex) pure returns (uint8) {
+    require(nibbleIndex < 64, "index out of range");
+
+    uint256 byteIndex = nibbleIndex / 2;
+    bool isLowerNibble = (nibbleIndex % 2) == 1;
+
+    assembly {
+        let b := byte(byteIndex, data)
+        let nibble := and(shr(mul(4, iszero(isLowerNibble)), b), 0x0F)
+        mstore(0, nibble)
+        return(0, 32)
+    }
+}
+```
+
+### Validate Address Encoding
+
+```solidity
+// Check if address is properly zero-padded in uint256
+function isValidAddressEncoding(uint256 value) pure returns (bool) {
+    // Bytes 0-11 must be zero for valid address encoding
+    assembly {
+        let valid := 1
+        for { let i := 0 } lt(i, 12) { i := add(i, 1) } {
+            if iszero(eq(byte(i, value), 0)) {
+                valid := 0
+                break
+            }
+        }
+        mstore(0, valid)
+        return(0, 32)
+    }
+}
+```
+
+### Extract Packed Timestamp
+
+```solidity
+// Extract 5-byte (40-bit) timestamp from packed data
+function extractTimestamp(bytes32 packed) pure returns (uint40) {
+    assembly {
+        // Timestamp is bytes 0-4
+        let b0 := byte(0, packed)
+        let b1 := byte(1, packed)
+        let b2 := byte(2, packed)
+        let b3 := byte(3, packed)
+        let b4 := byte(4, packed)
+
+        let timestamp := or(or(or(or(
+            shl(32, b0),
+            shl(24, b1)),
+            shl(16, b2)),
+            shl(8, b3)),
+            b4)
+
+        mstore(0, timestamp)
+        return(0, 32)
+    }
+}
+```
+
+### Check UTF-8 Encoding
+
+```solidity
+// Check if byte is valid UTF-8 continuation byte (10xxxxxx)
+function isUtf8Continuation(bytes32 data, uint256 byteIndex) pure returns (bool) {
+    assembly {
+        let b := byte(byteIndex, data)
+        // Continuation bytes: 0b10xxxxxx (0x80-0xBF)
+        let isContinuation := and(eq(and(b, 0xC0), 0x80), 1)
+        mstore(0, isContinuation)
+        return(0, 32)
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// BYTE opcode (0x1a) - Extract byte from word
+pub fn byte(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const i = try frame.popStack();
+    const x = try frame.popStack();
+    const result = if (i >= 32) 0 else (x >> @intCast(8 * (31 - i))) & 0xff;
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * BYTE opcode (0x1a) - Extract byte at index i from value x
+ */
+export function byte(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const i = frame.stack.pop();  // Byte index
+  const x = frame.stack.pop();  // Value
+
+  // Extract byte (big-endian: byte 0 = MSB)
+  const result = i >= 32n
+    ? 0n
+    : (x >> (8n * (31n - i))) & 0xFFn;
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { byte } from './byte.js';
+
+describe('BYTE (0x1a)', () => {
+  it('extracts MSB (byte 0)', () => {
+    const value = 0xFF00000000000000000000000000000000000000000000000000000000000000n;
+    const frame = createFrame({ stack: [0n, value] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0xFFn);
+  });
+
+  it('extracts LSB (byte 31)', () => {
+    const value = 0x00000000000000000000000000000000000000000000000000000000000000FFn;
+    const frame = createFrame({ stack: [31n, value] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0xFFn);
+  });
+
+  it('extracts middle byte', () => {
+    const value = 0x000000000000000000000000000000AB00000000000000000000000000000000n;
+    const frame = createFrame({ stack: [15n, value] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0xABn);
+  });
+
+  it('returns 0 for index >= 32', () => {
+    const value = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn;
+    const frame = createFrame({ stack: [32n, value] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('returns 0 for large index', () => {
+    const value = 0x123456n;
+    const frame = createFrame({ stack: [1000n, value] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('extracts from zero value', () => {
+    const frame = createFrame({ stack: [15n, 0n] });
+    expect(byte(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('extracts all bytes from MAX value', () => {
+    const MAX = (1n << 256n) - 1n;
+    for (let i = 0; i < 32; i++) {
+      const frame = createFrame({ stack: [BigInt(i), MAX] });
+      expect(byte(frame)).toBeNull();
+      expect(frame.stack[0]).toBe(0xFFn);
+    }
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame({ stack: [5n] });
+    expect(byte(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame({ stack: [5n, 0x123n], gasRemaining: 2n });
+    expect(byte(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- MSB extraction (byte 0)
+- LSB extraction (byte 31)
+- Middle byte extraction
+- Out of range indices (>= 32)
+- Large indices (1000+)
+- Zero value
+- Maximum value (all bytes 0xFF)
+- All 32 byte positions
+- Stack underflow
+- Out of gas
+
+## Security
+
+### Endianness Confusion
+
+```solidity
+// WRONG: Assuming byte 0 is LSB (little-endian)
+function extractLSB(bytes32 data) pure returns (uint8) {
+    assembly {
+        let b := byte(0, data)  // Actually MSB, not LSB!
+        mstore(0, b)
+        return(0, 32)
+    }
+}
+
+// CORRECT: Byte 31 is LSB
+function extractLSB(bytes32 data) pure returns (uint8) {
+    assembly {
+        let b := byte(31, data)  // LSB
+        mstore(0, b)
+        return(0, 32)
+    }
+}
+```
+
+### Index Validation
+
+```solidity
+// DANGEROUS: No bounds check on user input
+function extractByte(bytes32 data, uint256 index) pure returns (uint8) {
+    assembly {
+        let b := byte(index, data)  // Returns 0 if index >= 32
+        mstore(0, b)
+        return(0, 32)
+    }
+}
+
+// BETTER: Explicit validation
+function extractByte(bytes32 data, uint256 index) pure returns (uint8) {
+    require(index < 32, "index out of range");
+    assembly {
+        let b := byte(index, data)
+        mstore(0, b)
+        return(0, 32)
+    }
+}
+```
+
+### Off-by-One Errors
+
+```solidity
+// WRONG: Confusing byte index with bit index
+function extractNthBit(bytes32 data, uint256 bitIndex) pure returns (bool) {
+    // bitIndex = 0-255, but BYTE takes byte index (0-31)
+    assembly {
+        let b := byte(bitIndex, data)  // WRONG: treats bit index as byte index
+        mstore(0, and(b, 1))
+        return(0, 32)
+    }
+}
+
+// CORRECT: Convert bit index to byte index
+function extractNthBit(bytes32 data, uint256 bitIndex) pure returns (bool) {
+    require(bitIndex < 256, "bit index out of range");
+    uint256 byteIndex = bitIndex / 8;
+    uint256 bitPosition = bitIndex % 8;
+
+    assembly {
+        let b := byte(byteIndex, data)
+        let bit := and(shr(sub(7, bitPosition), b), 1)
+        mstore(0, bit)
+        return(0, 32)
+    }
+}
+```
+
+### Packed Data Alignment
+
+```solidity
+// RISKY: Assuming specific packing without validation
+struct Packed {
+    uint40 timestamp;   // Bytes 0-4
+    uint160 addr;       // Bytes 5-24
+    uint72 value;       // Bytes 25-31
+}
+
+function extractTimestamp(bytes32 packed) pure returns (uint40) {
+    // Assumes timestamp is at bytes 0-4
+    // If packing changes, this breaks silently
+    assembly {
+        let t := or(or(or(or(
+            shl(32, byte(0, packed)),
+            shl(24, byte(1, packed))),
+            shl(16, byte(2, packed))),
+            shl(8, byte(3, packed))),
+            byte(4, packed))
+        mstore(0, t)
+        return(0, 32)
+    }
+}
+```
+
+## Benchmarks
+
+BYTE is one of the fastest EVM operations:
+
+**Execution time (relative):**
+- BYTE: 1.0x (baseline, fastest tier)
+- SHR/SHL: 1.0x (same tier, can be used as alternative)
+- AND: 1.0x (same tier)
+- DIV: 2.5x
+
+**Gas efficiency:**
+- 3 gas per byte extraction
+- ~333,333 BYTE operations per million gas
+
+**Comparison with alternatives:**
+- BYTE: 3 gas (direct extraction)
+- SHR + AND: 6 gas (shift + mask)
+- DIV + MOD: 10 gas (arithmetic extraction)
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Bitwise Logic Operations)
+- [EVM Codes - BYTE](https://www.evm.codes/#1a)
+- [Solidity Docs - Bitwise Operators](https://docs.soliditylang.org/en/latest/types.html#integers)
+
+## Related Documentation
+
+- [SHR (0x1c)](/evm/instructions/bitwise/shr) - Shift right (alternative extraction method)
+- [SHL (0x1b)](/evm/instructions/bitwise/shl) - Shift left
+- [AND (0x16)](/evm/instructions/bitwise/and) - Bitwise AND (for masking)

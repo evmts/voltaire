@@ -1,0 +1,455 @@
+---
+title: "DIFFICULTY (0x44)"
+description: "Get block difficulty (pre-merge) or PREVRANDAO (post-merge)"
+---
+
+## Overview
+
+**Opcode:** `0x44`
+**Introduced:** Frontier (EVM genesis)
+**Repurposed:** Paris (The Merge, EIP-4399)
+
+DIFFICULTY returns different values depending on the network's consensus mechanism:
+- **Pre-Merge (PoW):** Block mining difficulty
+- **Post-Merge (PoS):** PREVRANDAO - beacon chain randomness from previous slot
+
+This semantic change occurred at The Merge (Paris hardfork) when Ethereum transitioned from Proof of Work to Proof of Stake.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+Pre-Merge: block.difficulty (mining difficulty)
+Post-Merge: block.prevrandao (beacon chain randomness)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+Pre-Merge: stack.push(block.difficulty)
+Post-Merge: stack.push(block.prevrandao)
+```
+
+## Behavior
+
+### Pre-Merge (PoW)
+
+Returns the computational difficulty required to mine the block:
+
+```
+Difficulty range: ~2 PH (petahash) average
+Adjusts every block to maintain ~13.2 second block time
+Higher difficulty = more computational work required
+```
+
+### Post-Merge (PoS)
+
+Returns PREVRANDAO - the beacon chain randomness output from the previous slot:
+
+```
+PREVRANDAO: 32-byte value from beacon chain
+More unpredictable than PoW difficulty
+Determined by beacon chain RANDAO mix
+Cannot be manipulated by single validator
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { difficulty } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Pre-merge frame
+const preMergeFrame = createFrame({
+  stack: [],
+  hardfork: 'LONDON',
+  blockContext: {
+    block_difficulty: 10_000_000_000_000n // 10 TH
+  }
+});
+
+difficulty(preMergeFrame);
+console.log(preMergeFrame.stack); // [10000000000000n]
+
+// Post-merge frame
+const postMergeFrame = createFrame({
+  stack: [],
+  hardfork: 'PARIS',
+  blockContext: {
+    block_prevrandao: 0x123456789abcdef...n // Beacon chain randomness
+  }
+});
+
+difficulty(postMergeFrame);
+console.log(postMergeFrame.stack); // [beacon chain PREVRANDAO value]
+```
+
+### Hardfork Detection
+
+```typescript
+// Detect if post-merge based on DIFFICULTY value
+difficulty(frame);
+const value = frame.stack[0];
+
+// Pre-merge: Large difficulty value (billions+)
+// Post-merge: PREVRANDAO (unpredictable 256-bit value)
+
+const isPostMerge = /* check hardfork or use PREVRANDAO heuristics */;
+```
+
+### Random Number Generation (Pre-Merge - Not Secure)
+
+```typescript
+// PRE-MERGE ONLY: Weak randomness
+difficulty(frame);
+const diff = frame.stack[0];
+
+// Hash difficulty for pseudo-randomness (not secure!)
+const random = keccak256(diff);
+```
+
+### Random Number Generation (Post-Merge)
+
+```typescript
+// POST-MERGE: Better randomness (still not secure for high stakes)
+difficulty(frame); // Returns PREVRANDAO
+const prevrandao = frame.stack[0];
+
+// More unpredictable than PoW difficulty
+// But still not suitable for high-value lotteries
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+Same cost pre and post-merge despite different semantic meaning.
+
+**Comparison:**
+- `DIFFICULTY`: 2 gas
+- `NUMBER`, `TIMESTAMP`, `GASLIMIT`: 2 gas
+- `BLOCKHASH`: 20 gas
+
+## Common Usage
+
+### Pre-Merge: Difficulty-Based Logic
+
+```solidity
+// Pre-merge only
+contract DifficultyAware {
+    uint256 public constant MIN_DIFFICULTY = 1_000_000_000_000;
+
+    function checkDifficulty() public view returns (bool) {
+        return block.difficulty >= MIN_DIFFICULTY;
+    }
+}
+```
+
+### Post-Merge: PREVRANDAO Usage
+
+```solidity
+// Post-merge: Use PREVRANDAO for improved randomness
+contract RandomnessBetter {
+    function randomNumber() public view returns (uint256) {
+        // block.difficulty is now PREVRANDAO
+        return uint256(keccak256(abi.encodePacked(
+            block.prevrandao, // Same as block.difficulty post-merge
+            block.timestamp,
+            msg.sender
+        )));
+    }
+}
+```
+
+### Merge-Aware Contract
+
+```solidity
+contract MergeAware {
+    uint256 public constant MERGE_BLOCK = 15_537_394;
+
+    function getRandomness() public view returns (uint256) {
+        if (block.number >= MERGE_BLOCK) {
+            // Post-merge: Use PREVRANDAO
+            return uint256(block.prevrandao);
+        } else {
+            // Pre-merge: Use difficulty (less random)
+            return uint256(block.difficulty);
+        }
+    }
+}
+```
+
+### Solidity Compatibility
+
+```solidity
+// Solidity 0.8.18+ has block.prevrandao
+contract Modern {
+    function getPrevrandao() public view returns (uint256) {
+        return block.prevrandao; // Explicit name
+    }
+
+    function getDifficulty() public view returns (uint256) {
+        return block.difficulty; // Still works, returns PREVRANDAO post-merge
+    }
+}
+```
+
+### On-Chain Randomness (Still Not Fully Secure)
+
+```solidity
+contract ImprovedLottery {
+    // Post-merge PREVRANDAO is better but still manipulable
+    function drawWinner(address[] memory participants) public view returns (address) {
+        // PREVRANDAO is more unpredictable than PoW difficulty
+        // But validators can still influence it slightly
+        uint256 randomness = uint256(keccak256(abi.encodePacked(
+            block.prevrandao,
+            block.timestamp,
+            participants.length
+        )));
+
+        uint256 index = randomness % participants.length;
+        return participants[index];
+    }
+}
+```
+
+## Security Considerations
+
+### Pre-Merge: Miner Manipulation
+
+PoW miners could manipulate difficulty-based randomness:
+
+```solidity
+// VULNERABLE (Pre-Merge)
+contract DifficultyLottery {
+    function draw() external {
+        uint256 winner = uint256(block.difficulty) % 100;
+        // Miner can try different nonces to influence difficulty
+    }
+}
+```
+
+### Post-Merge: Validator Influence
+
+PREVRANDAO is more secure but validators have limited influence:
+
+```solidity
+// IMPROVED but not perfect (Post-Merge)
+contract PrevrandaoLottery {
+    function draw() external {
+        uint256 winner = uint256(block.prevrandao) % 100;
+        // Validators can influence RANDAO reveal but:
+        // - Must reveal in advance (can't see outcome first)
+        // - Mixed with many other validators
+        // - Still not suitable for high-stakes randomness
+    }
+}
+```
+
+**Attack Vector:**
+- Validator can choose to propose or skip slot
+- Limited influence (not full control like PoW)
+- Cost: Lost block rewards if skipping
+
+### Semantic Change at Merge
+
+Contracts relying on difficulty semantics broke at The Merge:
+
+```solidity
+// BROKEN POST-MERGE
+contract DifficultyThreshold {
+    function isHighDifficulty() public view returns (bool) {
+        // Pre-merge: Returns true if mining difficulty high
+        // Post-merge: Returns unpredictable value (PREVRANDAO)
+        return block.difficulty > 10_000_000_000_000;
+    }
+}
+```
+
+### Recommended: Use Chainlink VRF
+
+For secure randomness:
+
+```solidity
+// SECURE: Chainlink VRF
+contract SecureLottery {
+    VRFCoordinatorV2Interface COORDINATOR;
+
+    function requestRandomWords() external {
+        // Request verifiable randomness from Chainlink
+        uint256 requestId = COORDINATOR.requestRandomWords(
+            keyHash,
+            subId,
+            requestConfirmations,
+            callbackGasLimit,
+            numWords
+        );
+    }
+
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal {
+        // Use cryptographically secure randomness
+        uint256 winner = randomWords[0] % participants.length;
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// DIFFICULTY/PREVRANDAO opcode (0x44)
+/// Pre-Merge: returns block difficulty
+/// Post-Merge: returns prevrandao value
+pub fn difficulty(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    if (evm.hardfork.isAtLeast(.MERGE)) {
+        // Post-merge: Return PREVRANDAO
+        try frame.pushStack(evm.block_context.block_prevrandao);
+    } else {
+        // Pre-merge: Return difficulty
+        try frame.pushStack(evm.block_context.block_difficulty);
+    }
+
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * DIFFICULTY opcode (0x44)
+ * Pre-Merge: Block difficulty
+ * Post-Merge: PREVRANDAO
+ */
+export function difficulty(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Check hardfork to determine value
+  const isPostMerge = frame.evm.hardfork.isAtLeast('MERGE');
+
+  const value = isPostMerge
+    ? frame.evm.blockContext.block_prevrandao
+    : frame.evm.blockContext.block_difficulty;
+
+  // Push to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(value);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-Merge Zero Difficulty
+
+```typescript
+// Genesis or test network
+const frame = createFrame({
+  hardfork: 'LONDON',
+  blockContext: { block_difficulty: 0n }
+});
+
+difficulty(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Post-Merge PREVRANDAO
+
+```typescript
+// Random 256-bit value from beacon chain
+const frame = createFrame({
+  hardfork: 'PARIS',
+  blockContext: {
+    block_prevrandao: 0x9876543210abcdef...n
+  }
+});
+
+difficulty(frame);
+console.log(frame.stack); // [PREVRANDAO value]
+```
+
+### Maximum Values
+
+```typescript
+// Pre-merge: Theoretical max difficulty
+const maxDifficulty = (1n << 256n) - 1n;
+
+// Post-merge: Any 256-bit value possible
+const anyPrevrandao = 0xffffffffffffffffffffffffffffffffffffffffn;
+```
+
+## Historical Context
+
+### Pre-Merge Difficulty Adjustment
+
+```solidity
+// Pre-merge: Difficulty adjusted to maintain ~13.2s blocks
+// Difficulty Bomb: Exponentially increasing difficulty
+// Ice Age: Periods of increased difficulty to force upgrades
+```
+
+### The Merge Transition
+
+```
+Block 15,537,393: Last PoW block
+Block 15,537,394: First PoS block (TTD reached)
+
+Pre-Merge:  DIFFICULTY = mining difficulty
+Post-Merge: DIFFICULTY = PREVRANDAO (beacon chain randomness)
+```
+
+### EIP-4399 Specification
+
+```
+Opcode: 0x44
+Name: DIFFICULTY (unchanged)
+Return: PREVRANDAO (semantic change)
+Rationale: Reuse opcode, avoid breaking EVM layout
+```
+
+## Benchmarks
+
+**Performance:**
+- Hardfork check: O(1)
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[BLOCKHASH (0x40)](/evm/instructions/block/blockhash)** - Get block hash
+- **[NUMBER (0x43)](/evm/instructions/block/number)** - Get block number
+- **[TIMESTAMP (0x42)](/evm/instructions/block/timestamp)** - Get block timestamp
+
+## References
+
+- [EIP-4399](https://eips.ethereum.org/EIPS/eip-4399) - DIFFICULTY → PREVRANDAO
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - DIFFICULTY](https://www.evm.codes/#44)
+- [The Merge](https://ethereum.org/en/roadmap/merge/)
+- [Beacon Chain RANDAO](https://eth2book.info/capella/part2/building_blocks/randomness/)
+- [Chainlink VRF](https://docs.chain.link/vrf/v2/introduction)

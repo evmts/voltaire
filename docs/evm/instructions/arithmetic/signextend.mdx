@@ -1,0 +1,574 @@
+---
+title: "SIGNEXTEND (0x0b)"
+description: "Sign extension for converting smaller signed integers to 256-bit signed representation"
+---
+
+## Overview
+
+**Opcode:** `0x0b`
+**Introduced:** Frontier (EVM genesis)
+
+SIGNEXTEND extends the sign bit of a value stored in fewer than 32 bytes to fill the full 256-bit word. This operation converts smaller signed integers (int8, int16, etc.) to the full int256 representation required for signed arithmetic operations in the EVM.
+
+The operation is critical for handling signed integer types smaller than 256 bits, particularly when interfacing with external systems or optimizing storage.
+
+## Specification
+
+**Stack Input:**
+```
+byte_index (top)
+value
+```
+
+**Stack Output:**
+```
+sign_extended_value
+```
+
+**Gas Cost:** 5 (GasFastStep)
+
+**Operation:**
+```
+if byte_index >= 31:
+  result = value  // No extension needed
+else:
+  sign_bit_position = byte_index * 8 + 7
+  if bit at sign_bit_position is 1:
+    // Sign extend with 1s
+    result = value | ~((1 << (sign_bit_position + 1)) - 1)
+  else:
+    // Zero extend (clear upper bits)
+    result = value & ((1 << (sign_bit_position + 1)) - 1)
+```
+
+## Behavior
+
+SIGNEXTEND pops two values from the stack:
+1. **byte_index** - Which byte contains the sign bit (0 = rightmost byte)
+2. **value** - The value to sign-extend
+
+The sign bit is at position `byte_index * 8 + 7` (the MSB of that byte):
+- If sign bit = 1: Fill upper bits with 1s (negative number)
+- If sign bit = 0: Clear upper bits to 0 (positive number)
+- If byte_index >= 31: Return value unchanged (already 256-bit)
+
+## Examples
+
+### Extend 1-Byte Signed Value
+
+```typescript
+import { signextend } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Extend positive int8 value 0x7F (127)
+const frame1 = createFrame({ stack: [0n, 0x7fn] });
+const err1 = signextend(frame1);
+console.log(frame1.stack); // [0x7Fn] - positive, stays same
+
+// Extend negative int8 value 0xFF (-1)
+const frame2 = createFrame({ stack: [0n, 0xffn] });
+const err2 = signextend(frame2);
+const MAX_U256 = (1n << 256n) - 1n;
+console.log(frame2.stack); // [MAX_U256] - all bits set (two's complement -1)
+```
+
+### Extend 2-Byte Signed Value
+
+```typescript
+// Extend positive int16 value 0x7FFF (32767)
+const frame1 = createFrame({ stack: [1n, 0x7fffn] });
+signextend(frame1);
+console.log(frame1.stack); // [0x7FFFn] - positive
+
+// Extend negative int16 value 0x8000 (-32768)
+const frame2 = createFrame({ stack: [1n, 0x8000n] });
+signextend(frame2);
+
+// Sign bit at position 15 is set, extend with 1s
+const MAX_U256 = (1n << 256n) - 1n;
+const expected = (MAX_U256 & ~0x7fffn) | 0x8000n;
+console.log(frame2.stack); // [expected]
+```
+
+### Clear Upper Bits (Positive Values)
+
+```typescript
+// Value 0x123 with byte_index 0
+// Should keep only lower 8 bits
+const frame = createFrame({ stack: [0n, 0x123n] });
+signextend(frame);
+
+console.log(frame.stack); // [0x23n] - upper bits cleared
+```
+
+### No Extension Needed
+
+```typescript
+// byte_index >= 31 means already full 256-bit
+const MAX_U256 = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [31n, MAX_U256] });
+signextend(frame);
+
+console.log(frame.stack); // [MAX_U256] - unchanged
+```
+
+### Zero Value
+
+```typescript
+// Sign extending 0 always gives 0
+const frame = createFrame({ stack: [0n, 0n] });
+signextend(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+## Gas Cost
+
+**Cost:** 5 gas (GasFastStep)
+
+SIGNEXTEND shares the gas tier with other basic arithmetic operations:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- **SIGNEXTEND: 5 gas**
+- MUL/DIV/MOD: 5 gas
+- ADDMOD/MULMOD: 8 gas
+
+Despite bit manipulation complexity, SIGNEXTEND costs the same as MUL/DIV due to efficient implementation.
+
+## Edge Cases
+
+### Byte Index 30 (31-byte value)
+
+```typescript
+// Byte 30 means sign bit at position 247 (30*8+7)
+const value = 1n << 247n; // Sign bit set
+const frame = createFrame({ stack: [30n, value] });
+signextend(frame);
+
+// Extend with 1s above bit 247
+const mask = (1n << 248n) - 1n;
+const MAX_U256 = (1n << 256n) - 1n;
+const expected = (MAX_U256 & ~mask) | value;
+console.log(frame.stack); // [expected]
+```
+
+### Large Byte Index
+
+```typescript
+// byte_index > 31 treated same as 31 (no change)
+const frame = createFrame({ stack: [1000n, 0xffn] });
+signextend(frame);
+
+console.log(frame.stack); // [0xFFn] - no extension
+```
+
+### Sign Bit Exactly at Boundary
+
+```typescript
+// Value 0x80 (byte 0, bit 7 set)
+const frame = createFrame({ stack: [0n, 0x80n] });
+signextend(frame);
+
+// 0x80 = 10000000, sign bit set
+const MAX_U256 = (1n << 256n) - 1n;
+const expected = (MAX_U256 & ~0x7fn) | 0x80n;
+console.log(frame.stack); // [expected]
+```
+
+### Stack Underflow
+
+```typescript
+// Not enough stack items
+const frame = createFrame({ stack: [0n] });
+const err = signextend(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [0n, 0x7fn], gasRemaining: 4n });
+const err = signextend(frame);
+
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### int8/int16/int32 Operations
+
+```solidity
+// Convert int8 from storage to int256 for arithmetic
+function processInt8(bytes32 data) pure returns (int256) {
+    assembly {
+        let val := and(data, 0xFF)  // Extract byte
+        val := signextend(0, val)   // Extend to int256
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+
+// Convert int16
+function processInt16(bytes32 data) pure returns (int256) {
+    assembly {
+        let val := and(data, 0xFFFF)  // Extract 2 bytes
+        val := signextend(1, val)     // Extend to int256
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+```
+
+### ABI Decoding Signed Types
+
+```solidity
+// Decode packed int8 array
+function decodeInt8Array(bytes memory data)
+    pure returns (int8[] memory)
+{
+    int8[] memory result = new int8[](data.length);
+
+    assembly {
+        let dataPtr := add(data, 0x20)
+        let resultPtr := add(result, 0x20)
+
+        for { let i := 0 } lt(i, mload(data)) { i := add(i, 1) } {
+            let val := byte(0, mload(add(dataPtr, i)))
+            val := signextend(0, val)  // int8 sign extension
+
+            // Store as int256 (Solidity array storage)
+            mstore(add(resultPtr, mul(i, 0x20)), val)
+        }
+    }
+
+    return result;
+}
+```
+
+### Optimized Storage Layout
+
+```solidity
+// Pack multiple signed values in one slot
+struct PackedInts {
+    int8 a;   // byte 0
+    int16 b;  // bytes 1-2
+    int32 c;  // bytes 3-6
+}
+
+function unpackA(bytes32 slot) pure returns (int256) {
+    assembly {
+        let val := and(slot, 0xFF)
+        val := signextend(0, val)
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+
+function unpackB(bytes32 slot) pure returns (int256) {
+    assembly {
+        let val := and(shr(8, slot), 0xFFFF)
+        val := signextend(1, val)
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+```
+
+### Type Conversion Safety
+
+```solidity
+// Safe int256 to int8 conversion
+function toInt8(int256 value) pure returns (int8) {
+    assembly {
+        // Truncate to 8 bits
+        let truncated := and(value, 0xFF)
+
+        // Sign extend back
+        let extended := signextend(0, truncated)
+
+        // Verify no data loss
+        if iszero(eq(extended, value)) {
+            revert(0, 0)  // Overflow
+        }
+
+        mstore(0x00, truncated)
+        return(0x00, 0x20)
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SIGNEXTEND opcode (0x0b) - Sign extension
+ */
+export function signextend(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastStep = 5)
+  frame.gasRemaining -= 5n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const byteIndex = frame.stack.pop();
+  const value = frame.stack.pop();
+
+  // If byte_index >= 31, no sign extension needed
+  let result: bigint;
+  if (byteIndex >= 31n) {
+    result = value;
+  } else {
+    const bitIndex = Number(byteIndex * 8n + 7n);
+    const signBit = 1n << BigInt(bitIndex);
+    const mask = signBit - 1n;
+
+    // Check if sign bit is set
+    const isNegative = (value & signBit) !== 0n;
+
+    if (isNegative) {
+      // Sign extend with 1s
+      result = value | ~mask;
+    } else {
+      // Zero extend (clear upper bits)
+      result = value & mask;
+    }
+
+    // Ensure result is 256-bit
+    result = result & ((1n << 256n) - 1n);
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SIGNEXTEND opcode (0x0b) - Sign extension
+pub fn signextend(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastStep);
+    const byte_index = try frame.popStack();
+    const value = try frame.popStack();
+
+    // If byte_index >= 31, no sign extension needed
+    const result = if (byte_index >= 31) value else blk: {
+        const bit_index = @as(u8, @truncate(byte_index * 8 + 7));
+        const sign_bit = @as(u256, 1) << @as(u8, bit_index);
+        const mask = sign_bit - 1;
+
+        // Check if sign bit is set
+        const is_negative = (value & sign_bit) != 0;
+
+        if (is_negative) {
+            // Sign extend with 1s
+            break :blk value | ~mask;
+        } else {
+            // Zero extend (clear upper bits)
+            break :blk value & mask;
+        }
+    };
+
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { signextend } from './0x0b_SIGNEXTEND.js';
+
+describe('SIGNEXTEND (0x0b)', () => {
+  it('extends positive 1-byte value', () => {
+    const frame = createFrame([0n, 0x7fn]);
+    expect(signextend(frame)).toBeNull();
+    expect(frame.stack).toEqual([0x7fn]); // Positive, stays same
+  });
+
+  it('extends negative 1-byte value', () => {
+    const frame = createFrame([0n, 0xffn]);
+    expect(signextend(frame)).toBeNull();
+    const MAX = (1n << 256n) - 1n;
+    expect(frame.stack).toEqual([MAX]); // All 1s
+  });
+
+  it('extends negative 2-byte value', () => {
+    const frame = createFrame([1n, 0x8000n]);
+    expect(signextend(frame)).toBeNull();
+    // Sign bit at position 15 set, extend with 1s
+    const MAX = (1n << 256n) - 1n;
+    const expected = (MAX & ~0x7fffn) | 0x8000n;
+    expect(frame.stack).toEqual([expected]);
+  });
+
+  it('clears upper bits when sign bit is 0', () => {
+    const frame = createFrame([0n, 0x123n]);
+    expect(signextend(frame)).toBeNull();
+    expect(frame.stack).toEqual([0x23n]); // Keep lower 8 bits only
+  });
+
+  it('handles byte index 31 (no extension)', () => {
+    const MAX = (1n << 256n) - 1n;
+    const frame = createFrame([31n, MAX]);
+    expect(signextend(frame)).toBeNull();
+    expect(frame.stack).toEqual([MAX]); // No change
+  });
+
+  it('handles byte index > 31 (no extension)', () => {
+    const frame = createFrame([32n, 0xffn]);
+    expect(signextend(frame)).toBeNull();
+    expect(frame.stack).toEqual([0xffn]); // No change
+  });
+
+  it('handles zero value', () => {
+    const frame = createFrame([0n, 0n]);
+    expect(signextend(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame([0n]);
+    expect(signextend(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame([0n, 0x7fn], 4n);
+    expect(signextend(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Positive 1-byte value (0x7F)
+- Negative 1-byte value (0xFF, 0x80)
+- Positive 2-byte value (0x7FFF)
+- Negative 2-byte value (0x8000, 0xFFFF)
+- Upper bit clearing (0x123 → 0x23)
+- Byte index 31 (no extension)
+- Byte index > 31 (no extension)
+- Zero value
+- Various byte boundaries (byte 0, 1, 3, 15, 30)
+- Sign bit exactly at boundary
+- Stack underflow (< 2 items)
+- Out of gas (< 5 gas)
+
+## Security
+
+### Two's Complement Representation
+
+SIGNEXTEND correctly implements two's complement sign extension:
+
+```
+int8 value = -1 = 0xFF
+int256 extended = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+```
+
+Both represent -1 in their respective sizes.
+
+### ABI Compatibility
+
+Essential for correctly decoding signed integer types from ABI-encoded calldata:
+
+```solidity
+// Correct handling of int8 from calldata
+function handleInt8(int8 x) external {
+    assembly {
+        let val := calldataload(4)  // Load after selector
+        val := signextend(0, val)   // Extend sign
+        // Now val is correct int256 representation
+    }
+}
+```
+
+### Storage Optimization Safety
+
+When packing signed values, SIGNEXTEND ensures correct unpacking:
+
+```solidity
+// CORRECT: Sign extension
+function unpack(bytes32 slot) pure returns (int8) {
+    assembly {
+        let val := and(slot, 0xFF)
+        val := signextend(0, val)  // Must sign extend
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+
+// WRONG: No sign extension
+function unpackWrong(bytes32 slot) pure returns (int8) {
+    assembly {
+        let val := and(slot, 0xFF)
+        // Missing signextend - negative values become positive!
+        mstore(0x00, val)
+        return(0x00, 0x20)
+    }
+}
+```
+
+### Type Safety
+
+SIGNEXTEND is critical for maintaining type safety across different integer sizes:
+
+- Prevents incorrect interpretation of negative values
+- Ensures arithmetic operations produce correct results
+- Maintains ABI compatibility with external systems
+
+## Mathematical Properties
+
+### Sign Bit Position
+
+For a value stored in N bytes (byte_index = N-1):
+- Sign bit position: `(N-1) * 8 + 7 = N * 8 - 1`
+- Example: 2 bytes (byte_index=1) → bit 15
+
+### Extension Pattern
+
+**Negative value (sign bit = 1):**
+```
+Original: 0x...00000080 (byte 0)
+Extended: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80
+```
+
+**Positive value (sign bit = 0):**
+```
+Original: 0x...00000123 (byte 0)
+Extended: 0x0000000000000000000000000000000000000000000000000000000000000023
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - SIGNEXTEND](https://www.evm.codes/#0b)
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Signed integer representation
+- [Solidity ABI Spec](https://docs.soliditylang.org/en/latest/abi-spec.html) - Integer encoding
+- [EIP-198](https://eips.ethereum.org/EIPS/eip-198) - BigInt operations (related)
+
+## Related Instructions
+
+- [AND](/evm/instructions/bitwise/and) - Extract byte before sign extension
+- [SHR](/evm/instructions/bitwise/shr) - Shift to extract bytes
+- [BYTE](/evm/instructions/bitwise/byte) - Extract specific byte
+- [SDIV](/evm/instructions/arithmetic/sdiv) - Signed division (uses signed interpretation)
+- [SMOD](/evm/instructions/arithmetic/smod) - Signed modulo (uses signed interpretation)

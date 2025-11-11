@@ -1,0 +1,729 @@
+---
+title: "RETURN (0xf3)"
+description: "Halt execution successfully and return output data"
+---
+
+## Overview
+
+**Opcode:** `0xf3`
+**Introduced:** Frontier (EVM genesis)
+
+RETURN halts execution successfully and returns output data to the caller. All state changes are preserved, and the specified memory range is copied to the return buffer.
+
+This is the standard way to complete execution with a return value in the EVM.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top) - Memory offset of return data
+length       - Length of return data in bytes
+```
+
+**Stack Output:** None
+
+**Gas Cost:** Memory expansion cost (dynamic)
+
+**Operation:**
+```
+1. Pop offset and length from stack
+2. Charge gas for memory expansion
+3. Copy memory[offset:offset+length] to output
+4. Set stopped = true
+5. Return to caller
+```
+
+## Behavior
+
+RETURN terminates execution with output:
+
+1. Pops offset from stack (top)
+2. Pops length from stack (second)
+3. Validates offset and length fit in u32
+4. Charges gas for memory expansion to offset+length
+5. Copies length bytes from memory[offset] to output buffer
+6. Sets execution state to stopped
+7. Returns control to caller with success status
+
+**State Effects:**
+- All state changes preserved (storage, logs, balance transfers)
+- Output data available to caller
+- Remaining gas NOT refunded (consumed by transaction)
+- Execution marked as successful
+
+## Examples
+
+### Basic Return
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0xf3_RETURN } from '@tevm/voltaire/evm/control';
+
+// Return 32 bytes from memory offset 0
+const frame = createFrame({
+  stack: [32n, 0n],  // length=32, offset=0
+  memory: new Uint8Array(64),
+  gasRemaining: 1000n
+});
+
+// Write data to memory
+frame.memory[0] = 0x42;
+
+const err = handler_0xf3_RETURN(frame);
+
+console.log(err);             // null (success)
+console.log(frame.stopped);   // true
+console.log(frame.output);    // Uint8Array([0x42, 0x00, ...]) (32 bytes)
+```
+
+### Return Value
+
+```solidity
+function getValue() external pure returns (uint256) {
+    assembly {
+        // Store return value in memory
+        mstore(0, 42)
+
+        // Return 32 bytes from offset 0
+        return(0, 32)
+    }
+}
+```
+
+Compiled to:
+```
+PUSH1 42
+PUSH1 0
+MSTORE         // memory[0] = 42
+
+PUSH1 32       // length
+PUSH1 0        // offset
+RETURN         // return memory[0:32]
+```
+
+### Return String
+
+```solidity
+function getString() external pure returns (string memory) {
+    return "Hello";
+}
+```
+
+Compiled (simplified):
+```
+// ABI encoding: offset, length, data
+PUSH1 0x20     // offset of string data
+PUSH1 0
+MSTORE
+
+PUSH1 5        // string length
+PUSH1 0x20
+MSTORE
+
+PUSH5 "Hello"  // string data
+PUSH1 0x40
+MSTORE
+
+PUSH1 0x60     // total length
+PUSH1 0        // offset
+RETURN
+```
+
+### Empty Return
+
+```typescript
+// Return 0 bytes (void function)
+const frame = createFrame({
+  stack: [0n, 0n],  // length=0, offset=0
+  gasRemaining: 1000n
+});
+
+handler_0xf3_RETURN(frame);
+
+console.log(frame.output);  // undefined (no output)
+console.log(frame.stopped); // true
+```
+
+### Constructor Return
+
+```solidity
+contract Example {
+    constructor() {
+        // Constructor code
+    }
+}
+```
+
+Constructor bytecode:
+```
+// Initialization code
+<setup code>
+
+// Return runtime bytecode
+PUSH1 runtime_size
+PUSH1 runtime_offset
+RETURN           // Return deployed code
+```
+
+## Gas Cost
+
+**Cost:** Memory expansion cost (dynamic)
+
+**Formula:**
+```
+memory_size_word = (offset + length + 31) / 32
+memory_cost = (memory_size_word ^ 2) / 512 + (3 * memory_size_word)
+gas = memory_cost - previous_memory_cost
+```
+
+**Examples:**
+
+Return 32 bytes (1 word):
+```typescript
+const frame = createFrame({
+  stack: [32n, 0n],
+  memorySize: 0,
+});
+
+// New memory size: 32 bytes = 1 word
+// Cost: (1^2)/512 + 3*1 = 0 + 3 = 3 gas
+```
+
+Return 256 bytes (8 words):
+```typescript
+const frame = createFrame({
+  stack: [256n, 0n],
+  memorySize: 0,
+});
+
+// New memory size: 256 bytes = 8 words
+// Cost: (8^2)/512 + 3*8 = 0.125 + 24 = 24 gas (rounded)
+```
+
+Return from existing memory (no expansion):
+```typescript
+const frame = createFrame({
+  stack: [32n, 0n],
+  memorySize: 64,  // Already expanded
+});
+
+// No expansion needed: 0 gas
+```
+
+## Edge Cases
+
+### Zero Length Return
+
+```typescript
+// Return 0 bytes
+const frame = createFrame({
+  stack: [0n, 0n],
+  gasRemaining: 1000n
+});
+
+handler_0xf3_RETURN(frame);
+
+console.log(frame.output);     // undefined
+console.log(frame.stopped);    // true
+console.log(frame.gasRemaining); // ~1000n (minimal gas consumed)
+```
+
+### Large Return Data
+
+```typescript
+// Return 1 KB
+const frame = createFrame({
+  stack: [1024n, 0n],
+  memory: new Uint8Array(2048),
+  gasRemaining: 10000n
+});
+
+handler_0xf3_RETURN(frame);
+
+console.log(frame.output.length); // 1024
+// Gas consumed for 32 words memory expansion
+```
+
+### Out of Bounds
+
+```typescript
+// Offset + length overflow u32
+const frame = createFrame({
+  stack: [0x100000000n, 0n],  // length > u32::MAX
+  gasRemaining: 1000n
+});
+
+const err = handler_0xf3_RETURN(frame);
+console.log(err); // { type: "OutOfBounds" }
+```
+
+### Offset Overflow
+
+```typescript
+// offset + length causes overflow
+const frame = createFrame({
+  stack: [100n, 0xffffffffn],  // offset + length overflows
+  gasRemaining: 1000n
+});
+
+const err = handler_0xf3_RETURN(frame);
+console.log(err); // { type: "OutOfBounds" }
+```
+
+### Stack Underflow
+
+```typescript
+// Need 2 stack items
+const frame = createFrame({
+  stack: [32n],  // Only 1 item
+  gasRemaining: 1000n
+});
+
+const err = handler_0xf3_RETURN(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas for memory expansion
+const frame = createFrame({
+  stack: [1000n, 0n],  // Large return data
+  gasRemaining: 1n,    // Insufficient gas
+});
+
+const err = handler_0xf3_RETURN(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Function Return Values
+
+```solidity
+function add(uint256 a, uint256 b) external pure returns (uint256) {
+    return a + b;
+}
+```
+
+Compiled to:
+```
+// Add a + b
+PUSH1 0x04
+CALLDATALOAD
+PUSH1 0x24
+CALLDATALOAD
+ADD
+
+// Store result in memory
+PUSH1 0
+MSTORE
+
+// Return 32 bytes
+PUSH1 32
+PUSH1 0
+RETURN
+```
+
+### Multiple Return Values
+
+```solidity
+function swap(uint256 a, uint256 b) external pure returns (uint256, uint256) {
+    return (b, a);
+}
+```
+
+Compiled to:
+```
+// Store first return value
+PUSH1 0x24
+CALLDATALOAD
+PUSH1 0
+MSTORE
+
+// Store second return value
+PUSH1 0x04
+CALLDATALOAD
+PUSH1 0x20
+MSTORE
+
+// Return 64 bytes
+PUSH1 64
+PUSH1 0
+RETURN
+```
+
+### Constructor Deployment
+
+```solidity
+contract Example {
+    uint256 public value;
+
+    constructor(uint256 _value) {
+        value = _value;
+    }
+}
+```
+
+Constructor ends with RETURN containing runtime bytecode:
+```
+// Initialization
+PUSH1 _value
+PUSH1 0
+SSTORE
+
+// Copy runtime code to memory
+PUSH1 runtime_size
+PUSH1 runtime_offset
+PUSH1 0
+CODECOPY
+
+// Return runtime code
+PUSH1 runtime_size
+PUSH1 0
+RETURN
+```
+
+### View Function
+
+```solidity
+function getBalance(address account) external view returns (uint256) {
+    return balances[account];
+}
+```
+
+Compiled to:
+```
+// Load balance
+PUSH1 0x04
+CALLDATALOAD
+PUSH1 0
+SLOAD
+
+// Return balance
+PUSH1 0
+MSTORE
+PUSH1 32
+PUSH1 0
+RETURN
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { popStack } from "../Frame/popStack.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { readMemory } from "../Frame/readMemory.js";
+
+/**
+ * RETURN opcode (0xf3) - Halt execution and return output data
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0xf3_RETURN(frame: BrandedFrame): EvmError | null {
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+  const offset = offsetResult.value;
+
+  const lengthResult = popStack(frame);
+  if (lengthResult.error) return lengthResult.error;
+  const length = lengthResult.value;
+
+  // Check if offset + length fits in u32
+  if (offset > 0xffffffffn || length > 0xffffffffn) {
+    return { type: "OutOfBounds" };
+  }
+
+  const off = Number(offset);
+  const len = Number(length);
+
+  if (length > 0n) {
+    // Check for overflow
+    const endOffset = off + len;
+    if (endOffset < off) {
+      return { type: "OutOfBounds" };
+    }
+
+    // Charge memory expansion
+    const memCost = memoryExpansionCost(frame, endOffset);
+    const gasErr = consumeGas(frame, memCost);
+    if (gasErr) return gasErr;
+
+    const alignedSize = wordAlignedSize(endOffset);
+    if (alignedSize > frame.memorySize) {
+      frame.memorySize = alignedSize;
+    }
+
+    // Copy memory to output
+    frame.output = new Uint8Array(len);
+    for (let idx = 0; idx < len; idx++) {
+      const addr = off + idx;
+      frame.output[idx] = readMemory(frame, addr);
+    }
+  }
+
+  frame.stopped = true;
+  return null;
+}
+
+function wordAlignedSize(bytes: number): number {
+  const words = Math.ceil(bytes / 32);
+  return words * 32;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// RETURN opcode (0xf3) - Halt execution and return output data
+pub fn ret(frame: *FrameType) FrameType.EvmError!void {
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+
+    if (length > 0) {
+        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+        const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+        // Check overflow
+        const end_offset = off +% len;
+        if (end_offset < off) return error.OutOfBounds;
+
+        // Charge memory expansion
+        const end_bytes = @as(u64, off) + @as(u64, len);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+        const aligned_size = wordAlignedSize(end_bytes);
+        if (aligned_size > frame.memory_size) frame.memory_size = aligned_size;
+
+        frame.output = try frame.allocator.alloc(u8, len);
+        var idx: u32 = 0;
+        while (idx < len) : (idx += 1) {
+            const addr = try add_u32(off, idx);
+            frame.output[idx] = frame.readMemory(addr);
+        }
+    }
+
+    frame.stopped = true;
+    return;
+}
+
+inline fn wordAlignedSize(bytes: u64) u32 {
+    const words = (bytes + 31) / 32;
+    return @intCast(words * 32);
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0xf3_RETURN } from './0xf3_RETURN.js';
+
+describe('RETURN (0xf3)', () => {
+  it('returns data from memory', () => {
+    const memory = new Uint8Array(64);
+    memory[0] = 0x42;
+    memory[1] = 0x43;
+
+    const frame = createFrame({
+      stack: [2n, 0n],
+      memory,
+      gasRemaining: 1000n,
+    });
+
+    const err = handler_0xf3_RETURN(frame);
+
+    expect(err).toBeNull();
+    expect(frame.stopped).toBe(true);
+    expect(frame.output).toEqual(new Uint8Array([0x42, 0x43]));
+  });
+
+  it('handles zero-length return', () => {
+    const frame = createFrame({
+      stack: [0n, 0n],
+      gasRemaining: 1000n,
+    });
+
+    handler_0xf3_RETURN(frame);
+
+    expect(frame.stopped).toBe(true);
+    expect(frame.output).toBeUndefined();
+  });
+
+  it('charges memory expansion gas', () => {
+    const frame = createFrame({
+      stack: [32n, 0n],
+      memorySize: 0,
+      gasRemaining: 1000n,
+    });
+
+    handler_0xf3_RETURN(frame);
+
+    expect(frame.gasRemaining).toBeLessThan(1000n);
+  });
+
+  it('rejects out of bounds offset', () => {
+    const frame = createFrame({
+      stack: [1n, 0x100000000n],
+    });
+
+    expect(handler_0xf3_RETURN(frame)).toEqual({ type: 'OutOfBounds' });
+  });
+
+  it('rejects overflow', () => {
+    const frame = createFrame({
+      stack: [100n, 0xffffffffn],
+    });
+
+    expect(handler_0xf3_RETURN(frame)).toEqual({ type: 'OutOfBounds' });
+  });
+});
+```
+
+## Security
+
+### Return Data Size
+
+Large return data consumes significant gas:
+
+```solidity
+// EXPENSIVE: Return 10 KB
+function getLargeData() external pure returns (bytes memory) {
+    bytes memory data = new bytes(10000);
+    return data;  // High gas cost for RETURN
+}
+```
+
+**Gas cost grows quadratically** with memory expansion:
+- 1 KB: ~100 gas
+- 10 KB: ~1,500 gas
+- 100 KB: ~150,000 gas
+
+### Memory Expansion Attack
+
+Attacker cannot cause excessive memory expansion via RETURN:
+- Gas limit prevents unlimited expansion
+- Quadratic cost makes large expansion expensive
+- Out-of-gas reverts transaction
+
+### Return Data Validation
+
+Caller must validate returned data:
+
+```solidity
+// VULNERABLE: Trusts return data
+function unsafeCall(address target) external {
+    (bool success, bytes memory data) = target.call("");
+    require(success);
+
+    uint256 value = abi.decode(data, (uint256));  // DANGEROUS
+    // No validation - could be malicious
+}
+```
+
+**Safe pattern:**
+```solidity
+function safeCall(address target) external {
+    (bool success, bytes memory data) = target.call("");
+    require(success);
+    require(data.length == 32, "Invalid return size");
+
+    uint256 value = abi.decode(data, (uint256));
+    require(value <= MAX_VALUE, "Value out of range");
+    // Validated return data
+}
+```
+
+### State Finality
+
+RETURN makes all state changes final:
+
+```solidity
+function unsafeUpdate(uint256 value) external {
+    balance = value;  // State changed
+
+    // RETURN makes this final - no further validation possible
+    assembly {
+        mstore(0, value)
+        return(0, 32)
+    }
+}
+```
+
+**Better:** Validate before state changes.
+
+## Compiler Behavior
+
+### Function Returns
+
+Solidity encodes return values using ABI encoding:
+
+```solidity
+function getValues() external pure returns (uint256, address) {
+    return (42, address(0x123));
+}
+```
+
+Compiled to:
+```
+// Encode first return value
+PUSH1 42
+PUSH1 0
+MSTORE
+
+// Encode second return value
+PUSH20 0x123...
+PUSH1 0x20
+MSTORE
+
+// Return 64 bytes
+PUSH1 64
+PUSH1 0
+RETURN
+```
+
+### Constructor Pattern
+
+Every constructor ends with RETURN:
+
+```solidity
+constructor() {
+    owner = msg.sender;
+}
+```
+
+Bytecode structure:
+```
+<constructor code>
+CODECOPY        // Copy runtime code to memory
+RETURN          // Return runtime code
+
+<runtime code>
+```
+
+### View Functions
+
+View functions use RETURN to provide read-only data:
+
+```solidity
+function balanceOf(address account) external view returns (uint256) {
+    return balances[account];
+}
+```
+
+Staticcall context + RETURN = gas-efficient reads.
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.4 (RETURN instruction)
+- [EVM Codes - RETURN](https://www.evm.codes/#f3)
+- [Solidity Docs - ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)

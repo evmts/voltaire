@@ -1,0 +1,352 @@
+---
+title: "ADDRESS (0x30)"
+description: "Get address of currently executing account"
+---
+
+## Overview
+
+**Opcode:** `0x30`
+**Introduced:** Frontier (EVM genesis)
+
+ADDRESS pushes the address of the currently executing account onto the stack. This is the address of the contract whose code is being executed, not the address of the contract that initiated the call chain.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+address (uint160 as uint256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(execution_context.address)
+```
+
+## Behavior
+
+ADDRESS provides access to the address of the contract currently executing. In the context of DELEGATECALL, this returns the address of the contract being called into (the caller's address), not the implementation contract.
+
+Key characteristics:
+- Returns the address where code is executing
+- Value is a 160-bit address stored as uint256 (20 bytes right-padded)
+- Does not change with CALL but changes with DELEGATECALL
+- Always available (cannot fail)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { address } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Get current contract address
+const contractAddr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const frame = createFrame({
+  address: contractAddr,
+  stack: []
+});
+
+const err = address(frame);
+
+console.log(frame.stack.length); // 1
+console.log(frame.stack[0]); // 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEbn
+```
+
+### Contract Self-Reference
+
+```solidity
+contract Example {
+    address public self;
+
+    constructor() {
+        // Store contract's own address
+        assembly {
+            let addr := address()
+            sstore(0, addr)
+        }
+    }
+
+    function getAddress() public view returns (address) {
+        return address(this);  // Compiler uses ADDRESS opcode
+    }
+}
+```
+
+### CALL vs DELEGATECALL
+
+```solidity
+contract Implementation {
+    function whoAmI() public view returns (address) {
+        return address(this);
+    }
+}
+
+contract Proxy {
+    Implementation impl;
+
+    function regularCall() public view returns (address) {
+        // Returns Implementation's address
+        return impl.whoAmI();
+    }
+
+    function delegateCall() public returns (address) {
+        // Returns Proxy's address (context is preserved)
+        (bool success, bytes memory data) = address(impl).delegatecall(
+            abi.encodeWithSignature("whoAmI()")
+        );
+        require(success);
+        return abi.decode(data, (address));
+    }
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+ADDRESS is one of the cheapest operations, sharing the same cost tier with:
+- ORIGIN (0x32)
+- CALLER (0x33)
+- CALLVALUE (0x34)
+- CALLDATASIZE (0x36)
+- CODESIZE (0x38)
+- GASPRICE (0x3a)
+- RETURNDATASIZE (0x3d)
+
+**Comparison:**
+- Environment context (ADDRESS, CALLER, ORIGIN): 2 gas
+- Data loading (CALLDATALOAD): 3 gas
+- External account access (BALANCE, EXTCODESIZE): 700+ gas
+
+## Common Usage
+
+### Proxy Pattern Identification
+
+```solidity
+contract Proxy {
+    address public implementation;
+
+    fallback() external payable {
+        address impl = implementation;
+        assembly {
+            // Load calldata
+            calldatacopy(0, 0, calldatasize())
+
+            // Delegate to implementation
+            let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+
+            // In implementation: address() returns Proxy's address
+
+            // Return data
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+```
+
+### Self-Destruct Recipient
+
+```solidity
+contract SelfDestructible {
+    function destroy() public {
+        // Send remaining balance to this contract's address
+        selfdestruct(payable(address(this)));
+    }
+}
+```
+
+### Token Address Validation
+
+```solidity
+contract TokenSwap {
+    function swap(address token, uint256 amount) public {
+        // Ensure not swapping with the swap contract itself
+        require(token != address(this), "Cannot swap with self");
+        // ...
+    }
+}
+```
+
+### Ether Reception Check
+
+```solidity
+contract PaymentReceiver {
+    receive() external payable {
+        // Log payment to this contract
+        emit PaymentReceived(msg.sender, address(this), msg.value);
+    }
+}
+```
+
+## Security
+
+### ADDRESS vs CALLER vs ORIGIN
+
+**Critical distinction:**
+```solidity
+// ADDRESS (0x30) - Contract being executed
+address(this)
+
+// CALLER (0x33) - Immediate caller
+msg.sender
+
+// ORIGIN (0x32) - Transaction originator
+tx.origin
+```
+
+**Example call chain:**
+```
+User (0xAAA) → Contract A (0xBBB) → Contract B (0xCCC)
+
+In Contract B:
+- address(this) = 0xCCC (Contract B's address)
+- msg.sender = 0xBBB (Contract A called us)
+- tx.origin = 0xAAA (User started the transaction)
+```
+
+### DELEGATECALL Context Preservation
+
+```solidity
+contract Vulnerable {
+    address public owner;
+
+    function upgrade(address newImpl) public {
+        // DANGEROUS: In delegatecall, address(this) is caller's address
+        // An attacker can delegatecall to malicious code
+        require(msg.sender == owner);
+        (bool success,) = newImpl.delegatecall(msg.data);
+        require(success);
+    }
+}
+```
+
+### Safe Patterns
+
+```solidity
+contract Safe {
+    // Store contract's own address for validation
+    address immutable self = address(this);
+
+    function initialize() public {
+        // Prevent initialization in delegatecall context
+        require(address(this) == self, "Cannot delegatecall initialize");
+        // ...
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
+
+/**
+ * ADDRESS opcode (0x30) - Get address of currently executing account
+ *
+ * Stack: [] => [address]
+ * Gas: 2 (GasQuickStep)
+ */
+export function address(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const addrU256 = toU256(frame.address);
+  const pushErr = pushStack(frame, addrU256);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// ADDRESS opcode (0x30) - Get address of currently executing account
+pub fn address(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    // Convert 20-byte address to u256
+    var addr_u256: u256 = 0;
+    for (frame.address) |byte| {
+        addr_u256 = (addr_u256 << 8) | byte;
+    }
+
+    try frame.pushStack(addr_u256);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Maximum Address Value
+
+```typescript
+// Address is 160 bits, stored as uint256
+const maxAddr = (1n << 160n) - 1n;
+const frame = createFrame({ address: maxAddr });
+address(frame);
+
+console.log(frame.stack[0]); // 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn
+```
+
+### Zero Address
+
+```typescript
+// Zero address is valid
+const frame = createFrame({ address: 0x0n });
+address(frame);
+
+console.log(frame.stack[0]); // 0x0n
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  address: 0x123n,
+  stack: new Array(1024).fill(0n)
+});
+
+const err = address(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  address: 0x123n,
+  gasRemaining: 1n
+});
+
+const err = address(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Execution Environment)
+- [EVM Codes - ADDRESS](https://www.evm.codes/#30)
+- [Solidity Docs - address(this)](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#address-related)
+- [EIP-1967](https://eips.ethereum.org/EIPS/eip-1967) - Proxy Storage Slots (uses ADDRESS for context)

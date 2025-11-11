@@ -1,0 +1,620 @@
+---
+title: "JUMPDEST (0x5b)"
+description: "Valid jump destination marker for JUMP and JUMPI"
+---
+
+## Overview
+
+**Opcode:** `0x5b`
+**Introduced:** Frontier (EVM genesis)
+
+JUMPDEST marks a valid destination for JUMP and JUMPI instructions. It's the only opcode that JUMP/JUMPI can target - attempting to jump to any other instruction causes InvalidJump error.
+
+This is a critical security feature that prevents arbitrary code execution by restricting where jumps can land.
+
+## Specification
+
+**Stack Input:** None
+
+**Stack Output:** None
+
+**Gas Cost:** 1 (JumpdestGas)
+
+**Operation:**
+```
+1. Consume 1 gas
+2. Increment PC by 1
+```
+
+JUMPDEST is effectively a no-op that validates jump destinations.
+
+## Behavior
+
+JUMPDEST serves two purposes:
+
+**At execution time:**
+1. Consumes 1 gas (cheapest opcode)
+2. Increments program counter
+3. No other side effects (no stack/memory changes)
+
+**At validation time (before execution):**
+1. Analyzed during bytecode deployment/validation
+2. Positions marked as valid jump destinations
+3. Used to validate JUMP/JUMPI targets
+
+**Key Characteristics:**
+- Only valid target for JUMP/JUMPI
+- Cannot be inside PUSH data
+- Multiple JUMPDESTs can exist in bytecode
+- Can be consecutive (JUMPDEST JUMPDEST is valid)
+
+## Examples
+
+### Basic JUMPDEST
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x5b_JUMPDEST } from '@tevm/voltaire/evm/control';
+
+const frame = createFrame({
+  pc: 5,
+  gasRemaining: 100n
+});
+
+const err = handler_0x5b_JUMPDEST(frame);
+
+console.log(err);              // null (success)
+console.log(frame.pc);         // 6 (incremented)
+console.log(frame.gasRemaining); // 99n (consumed 1 gas)
+```
+
+### Valid Jump Target
+
+```typescript
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x56,        // JUMP
+  0x00,        // STOP (skipped)
+  0x00,        // STOP (skipped)
+  0x5b,        // JUMPDEST (position 5 - valid target)
+  0x60, 0x2a,  // PUSH1 42
+]);
+
+// Jump succeeds because destination is JUMPDEST
+const frame = createFrame({
+  bytecode,
+  stack: [5n],
+  pc: 2
+});
+
+handler_0x56_JUMP(frame);
+console.log(frame.pc); // 5 (at JUMPDEST)
+
+// Execute JUMPDEST
+handler_0x5b_JUMPDEST(frame);
+console.log(frame.pc); // 6 (after JUMPDEST)
+```
+
+### JUMPDEST in PUSH Data (Invalid)
+
+```typescript
+const bytecode = new Uint8Array([
+  0x60, 0x05,        // PUSH1 5
+  0x56,              // JUMP
+  0x61, 0x5b, 0x00,  // PUSH2 0x5b00 (0x5b is data, not JUMPDEST)
+]);
+
+// Attempt to jump to position 4 (looks like JUMPDEST but is PUSH data)
+const frame = createFrame({
+  bytecode,
+  stack: [4n],
+  pc: 2
+});
+
+const err = handler_0x56_JUMP(frame);
+console.log(err); // { type: "InvalidJump" }
+// Position 4 is inside PUSH2 data, not a valid JUMPDEST
+```
+
+### Consecutive JUMPDESTs
+
+```solidity
+assembly {
+    jumpdest
+    jumpdest
+    jumpdest
+    // Valid - multiple consecutive JUMPDESTs allowed
+}
+```
+
+Bytecode:
+```
+0x5b  // JUMPDEST
+0x5b  // JUMPDEST
+0x5b  // JUMPDEST
+```
+
+All three positions are valid jump targets.
+
+## Gas Cost
+
+**Cost:** 1 gas (JumpdestGas)
+
+JUMPDEST is the cheapest opcode in the EVM.
+
+**Comparison:**
+- JUMPDEST: 1 gas (cheapest)
+- PC: 2 gas
+- PUSH1-32: 3 gas
+- ADD/SUB: 3 gas
+- JUMP: 8 gas
+
+**Jump Operation Total Cost:**
+```
+PUSH1 dest:    3 gas
+JUMP:          8 gas
+JUMPDEST:      1 gas
+Total:        12 gas
+```
+
+## Edge Cases
+
+### Empty Stack
+
+```typescript
+// JUMPDEST doesn't interact with stack
+const frame = createFrame({
+  stack: [],
+  pc: 0
+});
+
+const err = handler_0x5b_JUMPDEST(frame);
+console.log(err); // null (success - no stack access)
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({
+  gasRemaining: 0n,
+  pc: 0
+});
+
+const err = handler_0x5b_JUMPDEST(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### JUMPDEST at End
+
+```typescript
+const bytecode = new Uint8Array([0x5b]);
+const frame = createFrame({
+  bytecode,
+  pc: 0
+});
+
+handler_0x5b_JUMPDEST(frame);
+console.log(frame.pc); // 1 (past bytecode - execution stops)
+```
+
+### Multiple JUMPDESTs Same Location
+
+```typescript
+// Multiple jumps can target the same JUMPDEST
+const bytecode = new Uint8Array([
+  0x60, 0x07,  // PUSH1 7
+  0x56,        // JUMP
+  0x60, 0x07,  // PUSH1 7
+  0x56,        // JUMP
+  0x5b,        // JUMPDEST (position 7 - shared target)
+  0x00,        // STOP
+]);
+
+// Both JUMPs target position 7 - valid
+```
+
+## Common Usage
+
+### Function Entry Points
+
+Every internal function starts with JUMPDEST:
+
+```solidity
+function main() public {
+    uint256 result = helper(42);
+}
+
+function helper(uint256 x) internal pure returns (uint256) {
+    return x * 2;
+}
+```
+
+Compiled:
+```
+// main()
+PUSH1 42
+PUSH2 helper
+JUMP
+
+// helper()
+helper:
+  JUMPDEST       // Function entry point
+  DUP1
+  PUSH1 2
+  MUL
+  SWAP1
+  JUMP           // Return
+```
+
+### Loop Start
+
+```solidity
+assembly {
+    let i := 0
+
+    loop:
+        jumpdest    // Loop entry point
+
+        // Loop body
+        i := add(i, 1)
+
+        // Condition
+        let continue := lt(i, 10)
+        jumpi(loop, continue)
+}
+```
+
+### Branch Targets
+
+```solidity
+assembly {
+    switch value
+    case 0 { jump(case0) }
+    case 1 { jump(case1) }
+
+    case0:
+        jumpdest    // Branch target
+        // Handle case 0
+        jump(end)
+
+    case1:
+        jumpdest    // Branch target
+        // Handle case 1
+
+    end:
+        jumpdest    // Merge point
+}
+```
+
+### Jump Table
+
+```solidity
+assembly {
+    // Function dispatch
+    switch selector
+    case 0x12345678 { jump(func1) }
+    case 0x87654321 { jump(func2) }
+    default { revert(0, 0) }
+
+    func1:
+        jumpdest    // Function 1 entry
+        // ...
+        return(0, 32)
+
+    func2:
+        jumpdest    // Function 2 entry
+        // ...
+        return(0, 64)
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { Jumpdest } from "../../primitives/GasConstants/constants.js";
+
+/**
+ * JUMPDEST opcode (0x5b) - Jump destination marker
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0x5b_JUMPDEST(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, Jumpdest);
+  if (gasErr) return gasErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// JUMPDEST opcode (0x5b) - Jump destination marker
+pub fn jumpdest(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.JumpdestGas);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## JUMPDEST Validation
+
+### Bytecode Analysis
+
+Before execution, bytecode is analyzed to identify valid JUMPDESTs:
+
+```typescript
+/**
+ * Analyze bytecode to find valid JUMPDEST positions
+ */
+function analyzeJumpDests(bytecode: Uint8Array): Set<number> {
+  const validDests = new Set<number>();
+  let i = 0;
+
+  while (i < bytecode.length) {
+    const opcode = bytecode[i];
+
+    if (opcode === 0x5b) {
+      // Found JUMPDEST - mark as valid
+      validDests.add(i);
+      i++;
+    } else if (opcode >= 0x60 && opcode <= 0x7f) {
+      // PUSH1-PUSH32 - skip data bytes
+      const pushSize = opcode - 0x5f;
+      i += 1 + pushSize;
+    } else {
+      // Other opcode
+      i++;
+    }
+  }
+
+  return validDests;
+}
+```
+
+**Key points:**
+1. Scan bytecode linearly
+2. Mark JUMPDEST positions (0x5b)
+3. Skip PUSH data (don't mark 0x5b inside PUSH as valid)
+4. Build set of valid destinations
+
+### Validation at Jump Time
+
+```typescript
+function validateJumpDest(bytecode: Uint8Array, dest: number): boolean {
+  // Check bounds
+  if (dest >= bytecode.length) return false;
+
+  // Must be JUMPDEST opcode
+  if (bytecode[dest] !== 0x5b) return false;
+
+  // Must not be inside PUSH data
+  return isValidJumpDest(bytecode, dest);
+}
+```
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0x5b_JUMPDEST } from './0x5b_JUMPDEST.js';
+
+describe('JUMPDEST (0x5b)', () => {
+  it('executes as no-op', () => {
+    const frame = createFrame({
+      stack: [42n],
+      pc: 5,
+    });
+
+    const err = handler_0x5b_JUMPDEST(frame);
+
+    expect(err).toBeNull();
+    expect(frame.stack).toEqual([42n]); // Stack unchanged
+    expect(frame.pc).toBe(6);
+  });
+
+  it('consumes 1 gas', () => {
+    const frame = createFrame({ gasRemaining: 100n });
+    handler_0x5b_JUMPDEST(frame);
+
+    expect(frame.gasRemaining).toBe(99n);
+  });
+
+  it('works with empty stack', () => {
+    const frame = createFrame({ stack: [] });
+
+    expect(handler_0x5b_JUMPDEST(frame)).toBeNull();
+  });
+
+  it('handles out of gas', () => {
+    const frame = createFrame({ gasRemaining: 0n });
+
+    expect(handler_0x5b_JUMPDEST(frame)).toEqual({ type: 'OutOfGas' });
+  });
+
+  it('allows consecutive JUMPDESTs', () => {
+    const bytecode = new Uint8Array([0x5b, 0x5b, 0x5b]);
+    const frame = createFrame({ bytecode, pc: 0 });
+
+    // Execute all three
+    handler_0x5b_JUMPDEST(frame);
+    expect(frame.pc).toBe(1);
+
+    handler_0x5b_JUMPDEST(frame);
+    expect(frame.pc).toBe(2);
+
+    handler_0x5b_JUMPDEST(frame);
+    expect(frame.pc).toBe(3);
+  });
+});
+```
+
+## Security
+
+### Critical Security Feature
+
+JUMPDEST validation prevents arbitrary code execution:
+
+**Without JUMPDEST requirement:**
+```
+// DANGEROUS (theoretical - not how EVM works)
+PUSH1 arbitrary_address
+JUMP  // Could jump to ANY instruction
+```
+
+**With JUMPDEST requirement:**
+```
+// SAFE (actual EVM behavior)
+PUSH1 some_address
+JUMP  // MUST target JUMPDEST or fails
+```
+
+This prevents:
+- Jumping into middle of multi-byte instructions
+- Jumping into PUSH data
+- Executing data as code
+- Arbitrary control flow hijacking
+
+### PUSH Data vs Real JUMPDEST
+
+**Critical distinction:**
+```
+Position  Bytecode  Instruction
+--------  --------  -----------
+0         0x61      PUSH2
+1         0x5b      [data byte 1]
+2         0x00      [data byte 2]
+3         0x5b      JUMPDEST (real)
+```
+
+Only position 3 is a valid jump destination. Position 1 looks like JUMPDEST but is PUSH data.
+
+**Validation must:**
+1. Track PUSH boundaries
+2. Only mark 0x5b as valid if NOT in PUSH data
+3. Reject jumps to PUSH data even if byte value is 0x5b
+
+### Static vs Dynamic Analysis
+
+**Static analysis (deployment time):**
+- Scan bytecode for all JUMPDESTs
+- Build valid destination set
+- O(n) time complexity, done once
+
+**Dynamic validation (execution time):**
+- Check if jump target is in valid set
+- O(1) lookup with hash set
+- Fast validation on every JUMP/JUMPI
+
+### Malicious Bytecode
+
+**Attack attempt:**
+```
+0x60 0x03  // PUSH1 3
+0x56       // JUMP
+0x60       // PUSH1 (try to jump here - position 3)
+0x42       // [data]
+```
+
+Jump to position 3 targets PUSH1 opcode, not JUMPDEST → InvalidJump error.
+
+## Compiler Behavior
+
+### Automatic JUMPDEST Insertion
+
+Solidity automatically inserts JUMPDEST at:
+- Function entry points
+- Loop starts
+- Branch targets
+- Case statements
+
+```solidity
+function example(uint256 x) internal pure returns (uint256) {
+    if (x > 0) {
+        return x * 2;
+    }
+    return 0;
+}
+```
+
+Compiled to:
+```
+example:
+  JUMPDEST         // Function entry
+
+  DUP1
+  ISZERO
+  PUSH2 else_branch
+  JUMPI
+
+  // Then branch
+  DUP1
+  PUSH1 2
+  MUL
+  SWAP1
+  JUMP
+
+else_branch:
+  JUMPDEST         // Else target
+  PUSH1 0
+  SWAP1
+  JUMP
+```
+
+### Optimization
+
+Compilers can optimize unreachable JUMPDESTs:
+
+```solidity
+assembly {
+    return(0, 0)
+
+    unreachable:
+        jumpdest  // Never executed - can be removed
+}
+```
+
+Optimized bytecode removes unreachable JUMPDEST, saving 1 gas.
+
+### Label Resolution
+
+Solidity labels are resolved to JUMPDEST positions at compile time:
+
+```solidity
+assembly {
+    jump(target)  // Compiler knows target = position X
+
+    target:       // Compiler inserts JUMPDEST at position X
+        jumpdest
+}
+```
+
+## Historical Context
+
+JUMPDEST was introduced in Frontier to:
+1. Prevent arbitrary code execution
+2. Enable static analysis of control flow
+3. Distinguish code from data
+4. Support jump validation without runtime overhead
+
+**Alternative designs considered:**
+- Unrestricted jumps (rejected - too dangerous)
+- Jump tables only (rejected - not flexible enough)
+- Type system for code pointers (rejected - too complex)
+
+JUMPDEST provides optimal balance of security, flexibility, and performance.
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.3 (JUMPDEST instruction)
+- [EVM Codes - JUMPDEST](https://www.evm.codes/#5b)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)
+- [EVM Deep Dives - Jump Validation](https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-3ea)

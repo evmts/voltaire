@@ -1,0 +1,681 @@
+---
+title: "LOG4 (0xa4)"
+description: "Emit log with 4 indexed topics"
+---
+
+## Overview
+
+**Opcode:** `0xa4`
+**Introduced:** Frontier (EVM genesis)
+
+LOG4 emits a log entry with four indexed topics, the maximum allowed. This enables filtering events with up to four indexed parameters, supporting complex multi-dimensional queries like buyer-seller-token-amount combinations.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top)
+length
+topic0
+topic1
+topic2
+topic3
+```
+
+**Stack Output:**
+```
+(none)
+```
+
+**Gas Cost:** `375 + (4 × 375) + (8 × data_length) + memory_expansion_cost`
+
+**Operation:**
+```
+data = memory[offset : offset + length]
+topic0 = stack.pop()
+topic1 = stack.pop()
+topic2 = stack.pop()
+topic3 = stack.pop()
+log_entry = { address: msg.sender, topics: [topic0, topic1, topic2, topic3], data: data }
+append log_entry to logs
+```
+
+## Behavior
+
+LOG4 pops six values from the stack:
+
+1. **Offset**: Starting position in memory (256-bit value)
+2. **Length**: Number of bytes to read from memory (256-bit value)
+3. **Topic0**: First indexed parameter (256-bit value)
+4. **Topic1**: Second indexed parameter (256-bit value)
+5. **Topic2**: Third indexed parameter (256-bit value)
+6. **Topic3**: Fourth indexed parameter (256-bit value)
+
+This represents the maximum topic capacity, enabling four-dimensional filtering without on-chain computation.
+
+### Topic Values
+
+All four topics are preserved as full 256-bit values. For dynamic types, keccak256 hashes are used.
+
+### Memory Expansion
+
+Memory expands in 32-byte word increments with proportional gas costs.
+
+### Static Call Protection
+
+LOG4 cannot execute in static call context (EIP-214).
+
+## Examples
+
+### Complex Event with Four Dimensions
+
+```typescript
+import { handler_0xa4_LOG4 } from '@tevm/voltaire/evm/log';
+
+const frame = createFrame({
+  address: "0x1234567890123456789012345678901234567890",
+  stack: [
+    0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddn,  // topic3
+    0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccn,  // topic2
+    0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn,  // topic1
+    0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan,  // topic0
+    0n,  // length
+    0n,  // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+const err = handler_0xa4_LOG4(frame);
+console.log(err); // null (success)
+console.log(frame.logs[0].topics.length); // 4
+console.log(frame.gasRemaining);
+// 999000n - 375 (base) - 1500 (4 topics)
+```
+
+### Marketplace Event with Full Metadata
+
+```typescript
+const frame = createFrame({
+  address: "0xmarketplace",
+  memory: new Map([
+    [0, 0x00], [1, 0x00], [2, 0x00], [3, 0x00],  // Price/metadata
+  ]),
+  stack: [
+    0xtoken_id,
+    0xcurrency_type,
+    0xseller,
+    0xbuyer,
+    4n,    // length
+    0n,    // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+handler_0xa4_LOG4(frame);
+
+const log = frame.logs[0];
+console.log(log.topics.length); // 4
+console.log(log.topics);
+// [buyer, seller, currency_type, token_id]
+```
+
+### Order Book Entry
+
+```solidity
+event OrderCreated(
+  address indexed maker,
+  address indexed taker,
+  address indexed baseToken,
+  address indexed quoteToken,
+  uint256 amount
+);
+
+contract OrderBook {
+  function createOrder(
+    address taker,
+    address baseToken,
+    address quoteToken,
+    uint256 amount
+  ) public {
+    uint256 orderId = nextOrderId++;
+    orders[orderId] = Order({
+      maker: msg.sender,
+      taker: taker,
+      baseToken: baseToken,
+      quoteToken: quoteToken,
+      amount: amount
+    });
+
+    // Compiler generates LOG4
+    emit OrderCreated(msg.sender, taker, baseToken, quoteToken, amount);
+  }
+}
+```
+
+### MultiHop Swap Event
+
+```solidity
+event Swap(
+  address indexed user,
+  address indexed tokenIn,
+  address indexed tokenOut,
+  address indexed pool,
+  uint256 amountIn
+);
+
+contract MultiHopDEX {
+  function swapMultiHop(
+    address[] calldata path,
+    uint256 amountIn
+  ) external {
+    require(path.length >= 2, "Invalid path");
+
+    address tokenIn = path[0];
+    address tokenOut = path[path.length - 1];
+
+    // Swap through each pool
+    for (uint i = 0; i < path.length - 1; i++) {
+      address pool = getPool(path[i], path[i + 1]);
+      amountIn = executeSwap(pool, path[i], path[i + 1], amountIn);
+
+      // LOG4: user, tokenIn, tokenOut, pool, amountIn
+      emit Swap(msg.sender, path[i], path[i + 1], pool, amountIn);
+    }
+  }
+}
+```
+
+### Cross-Chain Bridge Event
+
+```solidity
+event BridgeTransfer(
+  address indexed sender,
+  address indexed recipient,
+  address indexed token,
+  uint256 chainId,
+  uint256 amount
+);
+
+contract Bridge {
+  function bridgeTransfer(
+    uint256 destChain,
+    address recipient,
+    address token,
+    uint256 amount
+  ) public {
+    require(supportedChains[destChain], "Unsupported chain");
+
+    bridges[msg.sender][token][destChain] += amount;
+    escrow.lock(token, amount);
+
+    // LOG4: all 4 key parameters are indexed
+    emit BridgeTransfer(msg.sender, recipient, token, destChain, amount);
+  }
+}
+```
+
+### Permission Grant Event
+
+```solidity
+event PermissionGrant(
+  address indexed grantor,
+  address indexed grantee,
+  address indexed resource,
+  uint256 roleId,
+  uint256 permissions
+);
+
+contract AccessControl {
+  function grantPermission(
+    address grantee,
+    address resource,
+    uint256 roleId,
+    uint256 permissions
+  ) public {
+    require(hasAdmin(msg.sender), "Not admin");
+
+    rolePermissions[grantee][resource][roleId] = permissions;
+
+    // LOG4: all parameters indexed for fine-grained filtering
+    emit PermissionGrant(msg.sender, grantee, resource, roleId, permissions);
+  }
+}
+```
+
+## Gas Cost
+
+**Base Cost:** 375 gas
+
+**Topic Cost:** 375 gas per topic = 1500 gas (for 4 topics)
+
+**Data Cost:** 8 gas per byte
+
+**Memory Expansion:** Proportional to new memory range
+
+**Examples:**
+- Empty data: 375 + 1500 = 1875 gas
+- 1 byte: 1875 + 8 = 1883 gas
+- 32 bytes: 1875 + 256 = 2131 gas
+- 64 bytes: 1875 + 512 + 3 = 2390 gas
+- 256 bytes: 1875 + 2048 + 6 = 3929 gas
+- 1024 bytes: 1875 + 8192 + 15 = 10082 gas
+
+## Edge Cases
+
+### All Topics Identical
+
+```typescript
+const topic = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+const frame = createFrame({
+  stack: [topic, topic, topic, topic, 0n, 0n],
+  gasRemaining: 1000000n,
+});
+handler_0xa4_LOG4(frame);
+const log = frame.logs[0];
+console.log(log.topics); // [topic, topic, topic, topic]
+```
+
+### Mixed Topic Values
+
+```typescript
+const frame = createFrame({
+  stack: [
+    (1n << 256n) - 1n,     // Max
+    0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddne, // Mixed
+    0x1111111111111111111111111111111111111111111111111111111111111111n,   // Custom
+    0n,                    // Min
+    0n,                    // length
+    0n,                    // offset
+  ],
+  gasRemaining: 1000000n,
+});
+handler_0xa4_LOG4(frame);
+const log = frame.logs[0];
+// Topics preserved exactly as provided
+```
+
+### Large Data with Maximum Topics
+
+```typescript
+const frame = createFrame({
+  stack: [
+    0xfff, 0xfff, 0xfff, 0xfff,
+    10000n,  // length
+    0n,      // offset
+  ],
+  gasRemaining: 100000n,
+});
+const err = handler_0xa4_LOG4(frame);
+// Gas: 1875 + 80000 (data) + memory expansion
+// Result: OutOfGas
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame({ stack: [0n, 0n, 0n, 0n, 0n] });  // Only 5 items
+const err = handler_0xa4_LOG4(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({
+  stack: [0xfff, 0xfff, 0xfff, 0xfff, 0n, 0n],
+  gasRemaining: 1874n,  // Not enough for base + all topics
+});
+const err = handler_0xa4_LOG4(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Four-Dimensional Event Filtering
+
+```solidity
+event Transaction(
+  address indexed user,
+  address indexed from,
+  address indexed to,
+  bytes32 indexed txId,
+  uint256 amount
+);
+
+contract Router {
+  function route(address from, address to, bytes32 txId, uint256 amount) public {
+    // ... routing logic
+    emit Transaction(msg.sender, from, to, txId, amount);  // LOG4
+  }
+}
+```
+
+Off-chain filtering:
+
+```typescript
+// Listen for transactions by a specific user and pair
+const logs = await provider.getLogs({
+  address: router.address,
+  topics: [
+    keccak256("Transaction(address,indexed address,indexed address,indexed bytes32,uint256)"),
+    "0xuser_address",
+    "0xfrom_address",
+    "0xto_address",
+    // txId can also be filtered here if needed
+  ]
+});
+```
+
+### Dimensional Data Warehouse
+
+```solidity
+event DataPoint(
+  uint256 indexed dimension1,
+  uint256 indexed dimension2,
+  uint256 indexed dimension3,
+  uint256 indexed dimension4,
+  bytes value
+);
+
+contract DataWarehouse {
+  function logDataPoint(
+    uint256 d1,
+    uint256 d2,
+    uint256 d3,
+    uint256 d4,
+    bytes memory value
+  ) public {
+    emit DataPoint(d1, d2, d3, d4, value);  // LOG4
+  }
+}
+```
+
+### Maximum Filtering Capability
+
+```solidity
+// When all 4 topics are indexed, off-chain systems can efficiently:
+// 1. Filter by any subset of topics
+// 2. Combine filters with AND logic
+// 3. Query without parsing event data
+
+event MultiFilter(
+  address indexed a,
+  address indexed b,
+  address indexed c,
+  bytes32 indexed d
+);
+```
+
+## Security
+
+### Topic Visibility and Privacy
+
+All topics are visible off-chain. Maximum topics = maximum visibility:
+
+```solidity
+// All 4 parameters are filterable, searchable, and visible
+event BadPractice(
+  address indexed user,
+  address indexed password,        // DO NOT: hashed passwords in topics
+  address indexed privateKey,      // DO NOT: sensitive keys
+  address indexed secret           // DO NOT: confidential data
+);
+
+// BETTER: Hash sensitive values
+event GoodPractice(
+  address indexed user,
+  bytes32 passwordHash,            // Hash sensitive data
+  bytes32 keyHash,
+  bytes32 secretHash
+);
+```
+
+### Filtering Logic
+
+Ensure consistent topic interpretation:
+
+```solidity
+// Standard pattern: indexed parameters in function signature order
+event Action(
+  address indexed user,
+  address indexed resource,
+  address indexed operator,
+  uint256 timestamp
+);
+
+// Off-chain filtering uses topics in same order:
+// topics[0] = event signature hash
+// topics[1] = user
+// topics[2] = resource
+// topics[3] = operator
+// topics[4] = timestamp
+```
+
+### Static Call Context
+
+LOG4 reverts in view/pure functions:
+
+```solidity
+// WRONG: Reverts in static context
+function badView(address a, address b, address c, bytes32 d) external view {
+  emit Event(a, b, c, d);
+}
+
+// CORRECT: State-changing function
+function goodNonView(address a, address b, address c, bytes32 d) external {
+  emit Event(a, b, c, d);
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * LOG4 opcode (0xa4) - Emit log with 4 indexed topics (maximum)
+ */
+export function handler_0xa4_LOG4(frame: BrandedFrame): EvmError | null {
+  if (frame.isStatic) {
+    return { type: "WriteProtection" };
+  }
+
+  if (frame.stack.length < 6) {
+    return { type: "StackUnderflow" };
+  }
+
+  const offset = frame.stack.pop();
+  const length = frame.stack.pop();
+  const topic0 = frame.stack.pop();
+  const topic1 = frame.stack.pop();
+  const topic2 = frame.stack.pop();
+  const topic3 = frame.stack.pop();
+
+  if (offset > Number.MAX_SAFE_INTEGER || length > Number.MAX_SAFE_INTEGER) {
+    return { type: "OutOfBounds" };
+  }
+
+  const offsetNum = Number(offset);
+  const lengthNum = Number(length);
+
+  // Gas: 375 base + 1500 topics + 8 per byte data
+  const logGas = 375n + 1500n;
+  const dataGas = BigInt(lengthNum) * 8n;
+  const totalGas = logGas + dataGas;
+
+  // Memory expansion
+  if (lengthNum > 0) {
+    const endByte = offsetNum + lengthNum;
+    const newMemWords = Math.ceil(endByte / 32);
+    const newMemSize = newMemWords * 32;
+    const memExpansion = calculateMemoryExpansion(frame.memorySize, newMemSize);
+    frame.memorySize = newMemSize;
+    frame.gasRemaining -= BigInt(memExpansion);
+  }
+
+  frame.gasRemaining -= totalGas;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Read data
+  const data = new Uint8Array(lengthNum);
+  for (let i = 0; i < lengthNum; i++) {
+    data[i] = frame.memory.get(offsetNum + i) ?? 0;
+  }
+
+  // Create log entry
+  const logEntry = {
+    address: frame.address,
+    topics: [topic0, topic1, topic2, topic3],
+    data,
+  };
+
+  if (!frame.logs) frame.logs = [];
+  frame.logs.push(logEntry);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// LOG4 opcode (0xa4) - Emit log with 4 indexed topics (maximum)
+pub fn log4(frame: *FrameType) FrameType.EvmError!void {
+    if (frame.is_static) return error.StaticCallViolation;
+
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+    const topic0 = try frame.popStack();
+    const topic1 = try frame.popStack();
+    const topic2 = try frame.popStack();
+    const topic3 = try frame.popStack();
+
+    const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+    const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+    // Gas: 375 base + 375 per topic (4 topics = 1500) + 8 per data byte
+    const log_cost = 375 + 1500 + @as(u64, length_u32) * 8;
+    try frame.consumeGas(log_cost);
+
+    if (length_u32 > 0) {
+        const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+        const aligned = wordAlignedSize(end_bytes);
+        if (aligned > frame.memory_size) frame.memory_size = aligned;
+    }
+
+    const evm = frame.getEvm();
+
+    // Read data
+    var data_slice: []u8 = &[_]u8{};
+    if (length_u32 > 0) {
+        const alloc = evm.arena.allocator();
+        const buf = try alloc.alloc(u8, length_u32);
+        var idx: u32 = 0;
+        while (idx < length_u32) : (idx += 1) {
+            buf[idx] = frame.readMemory(off_u32 + idx);
+        }
+        data_slice = buf;
+    }
+
+    // Create and append log with 4 topics
+    var topics_buf = try evm.arena.allocator().alloc(u256, 4);
+    topics_buf[0] = topic0;
+    topics_buf[1] = topic1;
+    topics_buf[2] = topic2;
+    topics_buf[3] = topic3;
+
+    const log_entry = call_result.Log{
+        .address = frame.address,
+        .topics = topics_buf,
+        .data = data_slice,
+    };
+
+    try evm.logs.append(evm.arena.allocator(), log_entry);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0xa4_LOG4 } from './0xa4_LOG4.js';
+
+describe('LOG4 (0xa4)', () => {
+  it('emits log with 4 topics and empty data', () => {
+    const topic0 = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan;
+    const topic1 = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn;
+    const topic2 = 0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccn;
+    const topic3 = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddn;
+    const frame = createFrame({
+      stack: [topic3, topic2, topic1, topic0, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    const err = handler_0xa4_LOG4(frame);
+    expect(err).toBeNull();
+    expect(frame.logs).toHaveLength(1);
+    expect(frame.logs[0].topics).toEqual([topic0, topic1, topic2, topic3]);
+    expect(frame.gasRemaining).toBe(998125n);
+  });
+
+  it('emits log with 4 topics and data', () => {
+    const frame = createFrame({
+      memory: new Map([[0, 0xde], [1, 0xad], [2, 0xbe], [3, 0xef]]),
+      stack: [0x4444n, 0x3333n, 0x2222n, 0x1111n, 4n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa4_LOG4(frame);
+    const log = frame.logs[0];
+    expect(log.topics).toEqual([0x1111n, 0x2222n, 0x3333n, 0x4444n]);
+    expect(log.data).toEqual(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
+  });
+
+  it('returns WriteProtection in static context', () => {
+    const frame = createFrame({ isStatic: true, stack: [0n, 0n, 0n, 0n, 0n, 0n] });
+    const err = handler_0xa4_LOG4(frame);
+    expect(err).toEqual({ type: "WriteProtection" });
+  });
+
+  it('returns StackUnderflow with 5 items', () => {
+    const frame = createFrame({ stack: [0n, 0n, 0n, 0n, 0n] });
+    const err = handler_0xa4_LOG4(frame);
+    expect(err).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('handles boundary topic values', () => {
+    const max = (1n << 256n) - 1n;
+    const frame = createFrame({
+      stack: [max, 0n, max, 0n, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa4_LOG4(frame);
+    expect(frame.logs[0].topics).toEqual([0n, max, 0n, max]);
+  });
+
+  it('expands memory correctly with large data', () => {
+    const frame = createFrame({
+      stack: [0xffff, 0xffff, 0xffff, 0xffff, 1000n, 0n],
+      gasRemaining: 100000n,
+    });
+    handler_0xa4_LOG4(frame);
+    // Memory expands to cover offset 0 + length 1000 = 1000 bytes
+    // Word-aligned to 1024 bytes (32 words * 32)
+    expect(frame.memorySize).toBe(1024);
+  });
+});
+```
+
+## References
+
+- [LOG4 Instruction (evm.codes)](https://www.evm.codes/#a4)
+- [EIP-214: New opcode STATICCALL](https://eips.ethereum.org/EIPS/eip-214)
+- [Solidity Events with Four Indexed Parameters](https://docs.soliditylang.org/en/latest/contracts.html#events)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (Logging)
+- [Event Indexing Best Practices](https://docs.soliditylang.org/en/latest/contracts.html#events)

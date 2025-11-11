@@ -1,0 +1,67 @@
+---
+title: Voltaire
+description: High-performance, type-safe Ethereum primitives and cryptography
+mode: custom
+---
+
+<div style={{ textAlign: 'center', padding: '8rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
+  <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
+    <span style={{ display: 'block' }}>Simple Ethereum</span>
+    <span style={{ display: 'block', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
+  </h1>
+
+  <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
+    High-performance, type-safe wasm primitives and cryptography for building on Ethereum with TypeScript
+  </p>
+
+  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
+    <a href="/introduction#why-voltaire" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white' }}>
+      Why Voltaire?
+    </a>
+    <a href="/getting-started" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'rgba(255, 255, 255, 0.05)', color: '#e0e0e0', border: '2px solid rgba(255, 255, 255, 0.1)' }}>
+      Get Started
+    </a>
+    <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'rgba(255, 255, 255, 0.05)', color: '#e0e0e0', border: '2px solid rgba(255, 255, 255, 0.1)' }}>
+      View on GitHub
+    </a>
+  </div>
+</div>
+
+<div style={{ padding: '4rem 2rem', background: '#1a1a1a' }}>
+  <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+    <CardGroup cols={3}>
+      <Card title="Type-Safe" icon="shield-check">
+        Branded types prevent mixing incompatible values. Zero runtime overhead.
+      </Card>
+      <Card title="High-Performance" icon="bolt">
+        Native Zig implementations via WASM. 2-3x faster than pure JavaScript.
+      </Card>
+      <Card title="Tree-Shakeable" icon="tree">
+        Import only what you need. Unused code automatically excluded from bundles.
+      </Card>
+    </CardGroup>
+  </div>
+</div>
+
+<div style={{ padding: '6rem 2rem', maxWidth: '1280px', margin: '0 auto' }}>
+  <h2 style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+    Quick Example
+  </h2>
+  <p style={{ textAlign: 'center', color: '#999', marginBottom: '3rem', fontSize: '1.2rem' }}>
+    Get started with Voltaire primitives
+  </p>
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+// Create address from bigint
+const address = Address.from(0x742d35cc6634c0532925a3b844bc9e7595f51e3en);
+
+// Checksum it (EIP-55)
+const checksummed = Address.toChecksummed(address);
+
+console.log(checksummed);
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+</div>

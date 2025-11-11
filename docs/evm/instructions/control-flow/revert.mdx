@@ -1,0 +1,830 @@
+---
+title: "REVERT (0xfd)"
+description: "Halt execution, revert state changes, and return error data"
+---
+
+## Overview
+
+**Opcode:** `0xfd`
+**Introduced:** Byzantium (EIP-140)
+
+REVERT halts execution, reverts all state changes in the current execution context, and returns error data to the caller. Unlike pre-Byzantium failures, REVERT refunds remaining gas and provides error information.
+
+This enables graceful failure handling with gas efficiency and informative error messages.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top) - Memory offset of error data
+length       - Length of error data in bytes
+```
+
+**Stack Output:** None
+
+**Gas Cost:** Memory expansion cost (dynamic)
+
+**Operation:**
+```
+1. Pop offset and length from stack
+2. Charge gas for memory expansion
+3. Copy memory[offset:offset+length] to output
+4. Revert all state changes in current context
+5. Set reverted = true
+6. Return to caller with failure status
+7. Refund remaining gas
+```
+
+## Behavior
+
+REVERT terminates execution with error:
+
+1. Pops offset from stack (top)
+2. Pops length from stack (second)
+3. Validates offset and length fit in u32
+4. Charges gas for memory expansion to offset+length
+5. Copies length bytes from memory[offset] to output buffer
+6. Reverts all state changes (storage, logs, balance transfers)
+7. Sets execution state to reverted
+8. Returns control to caller with failure status
+9. Refunds remaining gas to transaction
+
+**State Effects:**
+- All state changes reverted in current call context
+- Error data available to caller
+- Remaining gas refunded (not consumed like INVALID)
+- Execution marked as failed
+
+**Hardfork Requirement:**
+- Byzantium or later: REVERT available
+- Pre-Byzantium: REVERT triggers InvalidOpcode error
+
+## Examples
+
+### Basic Revert
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0xfd_REVERT } from '@tevm/voltaire/evm/control';
+
+// Revert with error message
+const frame = createFrame({
+  stack: [32n, 0n],  // length=32, offset=0
+  memory: new Uint8Array(64),
+  gasRemaining: 1000n,
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+// Write error data to memory
+const errorMsg = Buffer.from("Insufficient balance");
+frame.memory.set(errorMsg, 0);
+
+const err = handler_0xfd_REVERT(frame);
+
+console.log(err);             // null (opcode succeeded)
+console.log(frame.reverted);  // true (execution reverted)
+console.log(frame.output);    // Uint8Array containing error message
+console.log(frame.gasRemaining); // ~1000n (remaining gas preserved)
+```
+
+### Require Statement
+
+```solidity
+function transfer(address to, uint256 amount) external {
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+    // ...
+}
+```
+
+Compiled to (simplified):
+```
+// Load balance
+CALLER
+PUSH1 0
+SLOAD
+
+// Check balance >= amount
+CALLDATA_LOAD 0x24
+DUP2
+LT
+ISZERO
+PUSH2 continue
+JUMPI
+
+// Revert with error message
+PUSH1 error_length
+PUSH1 error_offset
+REVERT
+
+continue:
+  JUMPDEST
+  // Continue execution
+```
+
+### Custom Error (Solidity 0.8.4+)
+
+```solidity
+error InsufficientBalance(uint256 available, uint256 required);
+
+function transfer(address to, uint256 amount) external {
+    if (balances[msg.sender] < amount) {
+        revert InsufficientBalance(balances[msg.sender], amount);
+    }
+    // ...
+}
+```
+
+Compiled to:
+```
+// Check condition
+CALLER
+PUSH1 0
+SLOAD
+CALLDATA_LOAD 0x24
+DUP2
+LT
+ISZERO
+PUSH2 continue
+JUMPI
+
+// Encode custom error
+PUSH4 0x12345678    // Error selector
+PUSH1 0
+MSTORE
+
+CALLER
+PUSH1 0
+SLOAD
+PUSH1 0x04
+MSTORE              // available parameter
+
+CALLDATA_LOAD 0x24
+PUSH1 0x24
+MSTORE              // required parameter
+
+// Revert with error data
+PUSH1 0x44          // 4 + 32 + 32 bytes
+PUSH1 0
+REVERT
+
+continue:
+  JUMPDEST
+```
+
+### Empty Revert
+
+```typescript
+// Revert with no error data
+const frame = createFrame({
+  stack: [0n, 0n],  // length=0, offset=0
+  gasRemaining: 1000n,
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+handler_0xfd_REVERT(frame);
+
+console.log(frame.output);    // undefined (no error data)
+console.log(frame.reverted);  // true
+```
+
+### Pre-Byzantium Error
+
+```typescript
+// REVERT before Byzantium hardfork
+const frame = createFrame({
+  stack: [0n, 0n],
+  evm: { hardfork: Hardfork.HOMESTEAD }  // Before Byzantium
+});
+
+const err = handler_0xfd_REVERT(frame);
+console.log(err); // { type: "InvalidOpcode" }
+// REVERT not available pre-Byzantium
+```
+
+## Gas Cost
+
+**Cost:** Memory expansion cost (dynamic) + remaining gas refunded
+
+**Memory Expansion Formula:**
+```
+memory_size_word = (offset + length + 31) / 32
+memory_cost = (memory_size_word ^ 2) / 512 + (3 * memory_size_word)
+gas_consumed = memory_cost - previous_memory_cost
+remaining_gas = refunded to transaction
+```
+
+**Key Difference from INVALID:**
+- REVERT: Refunds remaining gas
+- INVALID (0xfe): Consumes all gas
+
+**Example:**
+
+```typescript
+const frame = createFrame({
+  stack: [32n, 0n],
+  gasRemaining: 10000n,
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+handler_0xfd_REVERT(frame);
+
+// Memory expansion: ~3 gas consumed
+// Remaining: ~9997 gas refunded to transaction
+```
+
+## Edge Cases
+
+### Zero Length Revert
+
+```typescript
+// Revert with no error data
+const frame = createFrame({
+  stack: [0n, 0n],
+  gasRemaining: 1000n,
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+handler_0xfd_REVERT(frame);
+
+console.log(frame.output);     // undefined
+console.log(frame.reverted);   // true
+console.log(frame.gasRemaining); // ~1000n (minimal gas consumed)
+```
+
+### Large Error Data
+
+```typescript
+// Revert with 1 KB error message
+const frame = createFrame({
+  stack: [1024n, 0n],
+  memory: new Uint8Array(2048),
+  gasRemaining: 10000n,
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+handler_0xfd_REVERT(frame);
+
+console.log(frame.output.length); // 1024
+console.log(frame.reverted);      // true
+// Gas consumed for memory expansion, rest refunded
+```
+
+### Out of Bounds
+
+```typescript
+// Offset + length overflow u32
+const frame = createFrame({
+  stack: [0x100000000n, 0n],  // length > u32::MAX
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+const err = handler_0xfd_REVERT(frame);
+console.log(err); // { type: "OutOfBounds" }
+```
+
+### Stack Underflow
+
+```typescript
+// Need 2 stack items
+const frame = createFrame({
+  stack: [32n],  // Only 1 item
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+const err = handler_0xfd_REVERT(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### State Reversion
+
+```typescript
+// State changes are reverted
+const frame = createFrame({
+  stack: [0n, 0n],
+  storage: new Map([[0n, 42n]]),
+  evm: { hardfork: Hardfork.BYZANTIUM }
+});
+
+// Make state change
+frame.storage.set(1n, 123n);
+
+handler_0xfd_REVERT(frame);
+
+// State changes reverted by EVM executor
+// storage[1] not persisted
+```
+
+## Common Usage
+
+### Input Validation
+
+```solidity
+function withdraw(uint256 amount) external {
+    require(amount > 0, "Amount must be positive");
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+
+    balances[msg.sender] -= amount;
+    payable(msg.sender).transfer(amount);
+}
+```
+
+Each `require` compiles to conditional REVERT.
+
+### Access Control
+
+```solidity
+modifier onlyOwner() {
+    require(msg.sender == owner, "Not owner");
+    _;
+}
+
+function updateConfig() external onlyOwner {
+    // ...
+}
+```
+
+### Business Logic Checks
+
+```solidity
+function buy(uint256 tokenId) external payable {
+    require(!sold[tokenId], "Already sold");
+    require(msg.value >= price, "Insufficient payment");
+
+    sold[tokenId] = true;
+    // ...
+}
+```
+
+### Custom Errors (Gas Efficient)
+
+```solidity
+error Unauthorized(address caller);
+error InsufficientFunds(uint256 available, uint256 required);
+
+function withdraw(uint256 amount) external {
+    if (msg.sender != owner) {
+        revert Unauthorized(msg.sender);
+    }
+
+    if (balances[msg.sender] < amount) {
+        revert InsufficientFunds(balances[msg.sender], amount);
+    }
+
+    // ...
+}
+```
+
+Custom errors are more gas efficient than string messages:
+- String: ~50 gas per character
+- Custom error: ~4 gas (function selector) + parameter encoding
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { popStack } from "../Frame/popStack.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { readMemory } from "../Frame/readMemory.js";
+
+/**
+ * REVERT opcode (0xfd) - Halt execution and revert state changes
+ *
+ * Note: REVERT was introduced in Byzantium hardfork (EIP-140).
+ * Hardfork validation should be handled by the EVM executor.
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0xfd_REVERT(frame: BrandedFrame): EvmError | null {
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+  const offset = offsetResult.value;
+
+  const lengthResult = popStack(frame);
+  if (lengthResult.error) return lengthResult.error;
+  const length = lengthResult.value;
+
+  // Check if offset + length fits in u32
+  if (offset > 0xffffffffn || length > 0xffffffffn) {
+    return { type: "OutOfBounds" };
+  }
+
+  const off = Number(offset);
+  const len = Number(length);
+
+  if (length > 0n) {
+    // Charge memory expansion
+    const endBytes = off + len;
+    const memCost = memoryExpansionCost(frame, endBytes);
+    const gasErr = consumeGas(frame, memCost);
+    if (gasErr) return gasErr;
+
+    const alignedSize = wordAlignedSize(endBytes);
+    if (alignedSize > frame.memorySize) {
+      frame.memorySize = alignedSize;
+    }
+
+    // Copy memory to output
+    frame.output = new Uint8Array(len);
+    for (let idx = 0; idx < len; idx++) {
+      const addr = off + idx;
+      frame.output[idx] = readMemory(frame, addr);
+    }
+  }
+
+  frame.reverted = true;
+  return null;
+}
+
+function wordAlignedSize(bytes: number): number {
+  const words = Math.ceil(bytes / 32);
+  return words * 32;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// REVERT opcode (0xfd) - Halt execution and revert state changes
+pub fn revert(frame: *FrameType) FrameType.EvmError!void {
+    // EIP-140: REVERT was introduced in Byzantium hardfork
+    const evm = frame.getEvm();
+    if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;
+
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+
+    if (length > 0) {
+        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+        const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+        // Charge memory expansion
+        const end_bytes: u64 = @as(u64, off) + @as(u64, len);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+        const aligned_size = wordAlignedSize(end_bytes);
+        if (aligned_size > frame.memory_size) frame.memory_size = aligned_size;
+
+        frame.output = try frame.allocator.alloc(u8, len);
+        var idx: u32 = 0;
+        while (idx < len) : (idx += 1) {
+            const addr = try add_u32(off, idx);
+            frame.output[idx] = frame.readMemory(addr);
+        }
+    }
+
+    frame.reverted = true;
+    return;
+}
+
+inline fn wordAlignedSize(bytes: u64) u32 {
+    const words = (bytes + 31) / 32;
+    return @intCast(words * 32);
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0xfd_REVERT } from './0xfd_REVERT.js';
+
+describe('REVERT (0xfd)', () => {
+  it('reverts with error data', () => {
+    const memory = new Uint8Array(64);
+    memory[0] = 0x42;
+    memory[1] = 0x43;
+
+    const frame = createFrame({
+      stack: [2n, 0n],
+      memory,
+      gasRemaining: 1000n,
+      evm: { hardfork: Hardfork.BYZANTIUM },
+    });
+
+    const err = handler_0xfd_REVERT(frame);
+
+    expect(err).toBeNull();
+    expect(frame.reverted).toBe(true);
+    expect(frame.output).toEqual(new Uint8Array([0x42, 0x43]));
+  });
+
+  it('handles zero-length revert', () => {
+    const frame = createFrame({
+      stack: [0n, 0n],
+      gasRemaining: 1000n,
+      evm: { hardfork: Hardfork.BYZANTIUM },
+    });
+
+    handler_0xfd_REVERT(frame);
+
+    expect(frame.reverted).toBe(true);
+    expect(frame.output).toBeUndefined();
+  });
+
+  it('refunds remaining gas', () => {
+    const frame = createFrame({
+      stack: [0n, 0n],
+      gasRemaining: 10000n,
+      evm: { hardfork: Hardfork.BYZANTIUM },
+    });
+
+    handler_0xfd_REVERT(frame);
+
+    expect(frame.gasRemaining).toBeGreaterThan(9990n);
+  });
+
+  it('rejects pre-Byzantium', () => {
+    const frame = createFrame({
+      stack: [0n, 0n],
+      evm: { hardfork: Hardfork.HOMESTEAD },
+    });
+
+    expect(handler_0xfd_REVERT(frame)).toEqual({ type: 'InvalidOpcode' });
+  });
+
+  it('charges memory expansion gas', () => {
+    const frame = createFrame({
+      stack: [1024n, 0n],
+      memorySize: 0,
+      gasRemaining: 1000n,
+      evm: { hardfork: Hardfork.BYZANTIUM },
+    });
+
+    handler_0xfd_REVERT(frame);
+
+    expect(frame.gasRemaining).toBeLessThan(1000n);
+  });
+});
+```
+
+## Security
+
+### REVERT vs INVALID
+
+**REVERT (0xfd):**
+- Refunds remaining gas
+- Returns error data
+- Graceful failure
+- Use for: validation, business logic, access control
+
+**INVALID (0xfe):**
+- Consumes all gas
+- No error data
+- Hard failure
+- Use for: should-never-happen, invariant violations
+
+**Example:**
+
+```solidity
+// GOOD: Use REVERT for expected failures
+function withdraw(uint256 amount) external {
+    require(amount <= balance, "Insufficient balance");  // REVERT
+    // ...
+}
+
+// GOOD: Use INVALID for invariant violations
+function criticalOperation() internal {
+    assert(invariant);  // INVALID if false (should never happen)
+    // ...
+}
+```
+
+### Gas Refund Implications
+
+REVERT refunds gas - important for:
+
+**Nested calls:**
+```solidity
+contract Parent {
+    function callChild(address child) external {
+        // Provide gas stipend
+        (bool success, ) = child.call{gas: 10000}("");
+
+        if (!success) {
+            // Child may have reverted - gas refunded
+            // Remaining gas available for error handling
+        }
+    }
+}
+```
+
+**Gas griefing prevention:**
+```solidity
+// SAFE: REVERT refunds gas
+function safeOperation() external {
+    require(condition, "Failed");  // REVERT
+    // Caller gets unused gas back
+}
+
+// DANGEROUS: INVALID consumes all gas
+function dangerousOperation() external {
+    assert(condition);  // INVALID - consumes all gas
+    // Caller loses all provided gas
+}
+```
+
+### Error Data Validation
+
+Caller must validate error data:
+
+```solidity
+// VULNERABLE: Trusts error data size
+function unsafeCall(address target) external {
+    (bool success, bytes memory data) = target.call("");
+
+    if (!success) {
+        // data could be arbitrarily large
+        string memory error = abi.decode(data, (string));
+        emit Error(error);  // Could run out of gas
+    }
+}
+```
+
+**Safe pattern:**
+```solidity
+function safeCall(address target) external {
+    (bool success, bytes memory data) = target.call("");
+
+    if (!success) {
+        // Validate size before decoding
+        require(data.length <= 1024, "Error too large");
+
+        if (data.length >= 4) {
+            bytes4 errorSig = bytes4(data);
+            // Handle specific errors
+        }
+    }
+}
+```
+
+### State Reversion Scope
+
+REVERT only reverts current call context:
+
+```solidity
+contract Parent {
+    uint256 public value;
+
+    function callChild(address child) external {
+        value = 1;  // State change in Parent
+
+        try child.doSomething() {
+            // Success
+        } catch {
+            // Child reverted, but Parent's state change persists
+        }
+
+        // value = 1 (Parent state not reverted)
+    }
+}
+
+contract Child {
+    function doSomething() external {
+        revert("Failed");  // Only reverts Child's state
+    }
+}
+```
+
+### Reentrancy
+
+REVERT doesn't prevent reentrancy:
+
+```solidity
+// VULNERABLE: Reentrancy still possible
+function withdraw() external {
+    uint256 balance = balances[msg.sender];
+
+    // External call before state update
+    (bool success, ) = msg.sender.call{value: balance}("");
+
+    // REVERT doesn't prevent reentrancy if call succeeds
+    require(success, "Transfer failed");
+
+    balances[msg.sender] = 0;  // Too late
+}
+```
+
+**Safe:** Update state before external calls (Checks-Effects-Interactions).
+
+## Compiler Behavior
+
+### Require Statements
+
+```solidity
+require(condition, "Error message");
+```
+
+Compiles to:
+```
+// Evaluate condition
+<condition code>
+
+// Jump if true
+PUSH2 continue
+JUMPI
+
+// Encode error message
+PUSH1 error_offset
+PUSH1 error_length
+REVERT
+
+continue:
+  JUMPDEST
+```
+
+### Custom Errors
+
+```solidity
+error CustomError(uint256 value);
+
+if (!condition) {
+    revert CustomError(42);
+}
+```
+
+Compiles to:
+```
+// Evaluate condition
+<condition code>
+
+PUSH2 continue
+JUMPI
+
+// Encode error selector
+PUSH4 0x12345678
+PUSH1 0
+MSTORE
+
+// Encode parameter
+PUSH1 42
+PUSH1 0x04
+MSTORE
+
+// Revert
+PUSH1 0x24
+PUSH1 0
+REVERT
+
+continue:
+  JUMPDEST
+```
+
+### Try-Catch
+
+```solidity
+try externalCall() {
+    // Success
+} catch Error(string memory reason) {
+    // Handle revert with string
+} catch (bytes memory lowLevelData) {
+    // Handle other failures
+}
+```
+
+Caller receives REVERT data and decodes based on error type.
+
+## Hardfork History
+
+### Pre-Byzantium (Frontier, Homestead, Tangerine Whistle, Spurious Dragon)
+
+**No REVERT opcode:**
+- Only INVALID (0xfe) for reverting
+- Consumed all gas
+- No error data
+- Poor UX
+
+### Byzantium (EIP-140)
+
+**REVERT introduced:**
+- Opcode 0xfd
+- Refunds remaining gas
+- Returns error data
+- Graceful failure handling
+
+**Impact:**
+- Better error messages
+- Gas efficiency
+- Improved debugging
+- Custom errors possible
+
+### Post-Byzantium (Constantinople → Cancun)
+
+**No changes to REVERT:**
+- Behavior stable since Byzantium
+- Foundation for Solidity 0.8.4+ custom errors
+- Essential for modern error handling
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.4 (REVERT instruction)
+- [EIP-140: REVERT instruction](https://eips.ethereum.org/EIPS/eip-140)
+- [EVM Codes - REVERT](https://www.evm.codes/#fd)
+- [Solidity Docs - Error Handling](https://docs.soliditylang.org/en/latest/control-structures.html#error-handling-assert-require-revert-and-exceptions)
+- [Solidity Docs - Custom Errors](https://docs.soliditylang.org/en/latest/contracts.html#errors-and-the-revert-statement)

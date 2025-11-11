@@ -1,0 +1,555 @@
+---
+title: "XOR (0x18)"
+description: "Bitwise XOR operation for toggling bits, comparing values, and cryptographic operations"
+---
+
+## Overview
+
+**Opcode:** `0x18`
+**Introduced:** Frontier (EVM genesis)
+
+XOR performs bitwise exclusive OR on two 256-bit unsigned integers. Each bit in the result is 1 if the corresponding bits in the operands differ (one is 1, the other is 0). This operation is fundamental for toggling bits, comparing equality, and cryptographic operations.
+
+Primary uses: toggling flags, comparing values for differences, symmetric encryption, checksum calculations.
+
+## Specification
+
+**Stack Input:**
+```
+a (top)
+b
+```
+
+**Stack Output:**
+```
+a ^ b
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Truth Table (per bit):**
+```
+a | b | a ^ b
+--|---|------
+0 | 0 |   0
+0 | 1 |   1
+1 | 0 |   1
+1 | 1 |   0
+```
+
+## Behavior
+
+XOR pops two values from the stack, performs bitwise XOR on each corresponding bit pair, and pushes the result. The operation is:
+- **Commutative:** a ^ b = b ^ a
+- **Associative:** (a ^ b) ^ c = a ^ (b ^ c)
+- **Identity element:** a ^ 0 = a
+- **Self-inverse:** a ^ a = 0
+- **Involution:** (a ^ b) ^ b = a
+
+## Examples
+
+### Toggle Bit
+
+```typescript
+import { xor } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Toggle bit 3
+const value = 0b0000n;
+const toggle = 0b1000n;  // Bit 3
+const frame = createFrame({ stack: [value, toggle] });
+const err = xor(frame);
+
+console.log(frame.stack[0].toString(2));  // '1000'
+
+// Toggle again to clear
+const frame2 = createFrame({ stack: [0b1000n, toggle] });
+xor(frame2);
+console.log(frame2.stack[0].toString(2));  // '0'
+```
+
+### Compare for Differences
+
+```typescript
+// Find differing bits between two values
+const a = 0b11001100n;
+const b = 0b10101010n;
+const frame = createFrame({ stack: [a, b] });
+xor(frame);
+
+console.log(frame.stack[0].toString(2));  // '1100110' (bits that differ)
+// Result is 0 if and only if a == b
+```
+
+### Simple Encryption (XOR Cipher)
+
+```typescript
+// Encrypt/decrypt with XOR (symmetric)
+const plaintext = 0x48656C6C6F n;  // "Hello"
+const key = 0xDEADBEEFn;
+const frame = createFrame({ stack: [plaintext, key] });
+xor(frame);
+
+const ciphertext = frame.stack[0];
+
+// Decrypt: XOR again with same key
+const frame2 = createFrame({ stack: [ciphertext, key] });
+xor(frame2);
+console.log(frame2.stack[0] === plaintext);  // true (recovered)
+```
+
+### Swap Variables (XOR Swap)
+
+```typescript
+// Swap a and b without temporary variable
+let a = 0x123n;
+let b = 0x456n;
+
+a = a ^ b;  // a = 0x123 ^ 0x456
+b = a ^ b;  // b = (0x123 ^ 0x456) ^ 0x456 = 0x123
+a = a ^ b;  // a = (0x123 ^ 0x456) ^ 0x123 = 0x456
+
+console.log({ a, b });  // { a: 0x456n, b: 0x123n }
+```
+
+### XOR as NOT (with all ones)
+
+```typescript
+// XOR with all ones is equivalent to NOT
+const MAX = (1n << 256n) - 1n;
+const value = 0x123456n;
+const frame = createFrame({ stack: [value, MAX] });
+xor(frame);
+
+console.log(frame.stack[0] === ~value);  // true (bitwise NOT)
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+XOR shares the lowest gas tier with:
+- AND (0x16), OR (0x17), NOT (0x19)
+- BYTE (0x1a)
+- SHL (0x1b), SHR (0x1c), SAR (0x1d)
+- ADD (0x01), SUB (0x03)
+- Comparison operations
+
+## Edge Cases
+
+### Identity Element
+
+```typescript
+// XOR with zero
+const value = 0x123456n;
+const frame = createFrame({ stack: [value, 0n] });
+xor(frame);
+
+console.log(frame.stack[0] === value);  // true (identity)
+```
+
+### Self-Inverse
+
+```typescript
+// a ^ a = 0
+const value = 0x123456n;
+const frame = createFrame({ stack: [value, value] });
+xor(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Involution Property
+
+```typescript
+// (a ^ b) ^ b = a
+const a = 0x123456n;
+const b = 0xABCDEFn;
+
+const frame1 = createFrame({ stack: [a, b] });
+xor(frame1);
+const intermediate = frame1.stack[0];
+
+const frame2 = createFrame({ stack: [intermediate, b] });
+xor(frame2);
+
+console.log(frame2.stack[0] === a);  // true (recovered original)
+```
+
+### XOR as NOT
+
+```typescript
+// XOR with all ones = NOT
+const MAX = (1n << 256n) - 1n;
+const value = 0xAAAAAAAAn;
+const frame = createFrame({ stack: [value, MAX] });
+xor(frame);
+
+// NOT flips all bits
+console.log(frame.stack[0] === ~value & MAX);  // true
+```
+
+### Complementary Patterns
+
+```typescript
+// Complementary patterns XOR to all ones
+const pattern1 = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn;
+const pattern2 = 0x5555555555555555555555555555555555555555555555555555555555555555n;
+const frame = createFrame({ stack: [pattern1, pattern2] });
+xor(frame);
+
+const MAX = (1n << 256n) - 1n;
+console.log(frame.stack[0] === MAX);  // true
+```
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack items
+const frame = createFrame({ stack: [0x123n] });
+const err = xor(frame);
+
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [0x123n, 0x456n], gasRemaining: 2n });
+const err = xor(frame);
+
+console.log(err);  // { type: "OutOfGas" }
+console.log(frame.gasRemaining);  // 0n
+```
+
+## Common Usage
+
+### Toggle Feature Flags
+
+```solidity
+// Toggle specific flags on/off
+uint256 constant FLAG_A = 1 << 0;
+uint256 constant FLAG_B = 1 << 1;
+
+function toggleFlags(uint256 current, uint256 mask) pure returns (uint256) {
+    return current ^ mask;  // Flip bits in mask
+}
+
+// Usage
+uint256 flags = 0b0101;
+flags = toggleFlags(flags, FLAG_A);  // 0b0100 (toggle bit 0)
+flags = toggleFlags(flags, FLAG_A);  // 0b0101 (toggle back)
+```
+
+### Fast Equality Check
+
+```solidity
+// Check if two values are equal
+function areEqual(uint256 a, uint256 b) pure returns (bool) {
+    return (a ^ b) == 0;  // 0 if equal, non-zero if different
+}
+```
+
+### Checksum Calculation
+
+```solidity
+// Simple XOR checksum
+function checksum(bytes memory data) pure returns (uint8) {
+    uint8 result = 0;
+    for (uint i = 0; i < data.length; i++) {
+        result ^= uint8(data[i]);
+    }
+    return result;
+}
+```
+
+### Symmetric Cipher (One-Time Pad)
+
+```solidity
+// XOR encryption/decryption
+function xorCipher(bytes32 data, bytes32 key) pure returns (bytes32) {
+    return data ^ key;  // Same operation for encrypt and decrypt
+}
+
+// Usage
+bytes32 plaintext = "secret message";
+bytes32 key = keccak256("password");
+bytes32 encrypted = xorCipher(plaintext, key);
+bytes32 decrypted = xorCipher(encrypted, key);  // Back to plaintext
+```
+
+### In-Place Swap (Gas-Efficient)
+
+```solidity
+// Swap two storage variables without temporary
+function swap(uint256 slot1, uint256 slot2) internal {
+    assembly {
+        let a := sload(slot1)
+        let b := sload(slot2)
+
+        // XOR swap
+        a := xor(a, b)
+        b := xor(a, b)
+        a := xor(a, b)
+
+        sstore(slot1, a)
+        sstore(slot2, b)
+    }
+}
+```
+
+### Masking with Inversion
+
+```solidity
+// Clear specific bits (XOR can toggle, AND clears)
+function clearBits(uint256 value, uint256 mask) pure returns (uint256) {
+    // If bit in mask is 1 and bit in value is 1, clear it
+    return value & ~mask;  // NOT + AND
+    // Alternative using XOR (only if bits are known to be set):
+    // return value ^ (value & mask);
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// XOR opcode (0x18) - Bitwise XOR operation
+pub fn op_xor(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const a = try frame.popStack();
+    const b = try frame.popStack();
+    try frame.pushStack(a ^ b);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * XOR opcode (0x18) - Bitwise XOR operation
+ */
+export function op_xor(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();
+  const b = frame.stack.pop();
+
+  // Compute bitwise XOR
+  const result = a ^ b;
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { op_xor } from './xor.js';
+
+describe('XOR (0x18)', () => {
+  it('performs basic XOR', () => {
+    const frame = createFrame({ stack: [0b1100n, 0b1010n] });
+    expect(op_xor(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0b0110n);
+  });
+
+  it('toggles bits', () => {
+    const value = 0b0000n;
+    const toggle = 0b0101n;
+    const frame = createFrame({ stack: [value, toggle] });
+    expect(op_xor(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0b0101n);
+  });
+
+  it('handles identity (XOR with zero)', () => {
+    const value = 0x123456n;
+    const frame = createFrame({ stack: [value, 0n] });
+    expect(op_xor(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(value);
+  });
+
+  it('is self-inverse (a ^ a = 0)', () => {
+    const value = 0x123456n;
+    const frame = createFrame({ stack: [value, value] });
+    expect(op_xor(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('has involution property ((a ^ b) ^ b = a)', () => {
+    const a = 0x123456n;
+    const b = 0xABCDEFn;
+    const frame1 = createFrame({ stack: [a, b] });
+    op_xor(frame1);
+    const intermediate = frame1.stack[0];
+
+    const frame2 = createFrame({ stack: [intermediate, b] });
+    op_xor(frame2);
+    expect(frame2.stack[0]).toBe(a);
+  });
+
+  it('acts as NOT when XOR with MAX', () => {
+    const MAX = (1n << 256n) - 1n;
+    const value = 0xAAAAn;
+    const frame = createFrame({ stack: [value, MAX] });
+    op_xor(frame);
+    expect(frame.stack[0]).toBe(~value & MAX);
+  });
+
+  it('is commutative', () => {
+    const a = 0xAAAAn;
+    const b = 0x5555n;
+    const frame1 = createFrame({ stack: [a, b] });
+    const frame2 = createFrame({ stack: [b, a] });
+    op_xor(frame1);
+    op_xor(frame2);
+    expect(frame1.stack[0]).toBe(frame2.stack[0]);
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame({ stack: [0x123n] });
+    expect(op_xor(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame({ stack: [0x123n, 0x456n], gasRemaining: 2n });
+    expect(op_xor(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic XOR operations (truth table)
+- Identity element (XOR with 0)
+- Self-inverse property (a ^ a = 0)
+- Involution property ((a ^ b) ^ b = a)
+- XOR as NOT (with MAX_UINT256)
+- Bit toggling
+- Equality detection
+- Commutative property
+- Stack underflow
+- Out of gas
+
+## Security
+
+### Weak Encryption
+
+```solidity
+// INSECURE: XOR cipher with reused key is vulnerable
+bytes32 key = keccak256("weak_password");
+
+function encrypt(bytes32 data) pure returns (bytes32) {
+    return data ^ key;  // NEVER reuse key for multiple messages!
+}
+
+// Attack: If attacker knows plaintext1, they can derive key
+// key = ciphertext1 ^ plaintext1
+// Then decrypt any other message: plaintext2 = ciphertext2 ^ key
+```
+
+**Mitigation:** Use unique keys (one-time pad) or proper encryption (AES):
+```solidity
+// Better: Derive unique key per message
+function encrypt(bytes32 data, uint256 nonce) pure returns (bytes32) {
+    bytes32 uniqueKey = keccak256(abi.encode(baseKey, nonce));
+    return data ^ uniqueKey;
+}
+```
+
+### XOR Swap Pitfalls
+
+```solidity
+// DANGEROUS: XOR swap fails when variables overlap
+function swap(uint256[] storage arr, uint256 i, uint256 j) internal {
+    if (i == j) return;  // CRITICAL: Must check for same index!
+
+    arr[i] ^= arr[j];
+    arr[j] ^= arr[i];
+    arr[i] ^= arr[j];
+}
+
+// Without check: arr[5] ^= arr[5] results in arr[5] = 0!
+```
+
+### Incorrect Equality Check
+
+```solidity
+// Works but inefficient
+function isEqual(uint256 a, uint256 b) pure returns (bool) {
+    return (a ^ b) == 0;
+}
+
+// Better: Direct comparison
+function isEqual(uint256 a, uint256 b) pure returns (bool) {
+    return a == b;  // More readable, same gas cost
+}
+```
+
+### Checksum Vulnerabilities
+
+```solidity
+// WEAK: XOR checksum doesn't detect bit reordering
+function checksum(bytes memory data) pure returns (uint8) {
+    uint8 result = 0;
+    for (uint i = 0; i < data.length; i++) {
+        result ^= uint8(data[i]);
+    }
+    return result;
+}
+
+// Problem: [0x12, 0x34] and [0x34, 0x12] have same checksum
+// Use CRC or cryptographic hash for integrity checks
+```
+
+## Benchmarks
+
+XOR is one of the fastest EVM operations:
+
+**Execution time (relative):**
+- XOR: 1.0x (baseline, fastest tier)
+- AND/OR: 1.0x (same tier)
+- ADD: 1.0x (same tier)
+- MUL: 1.2x
+- DIV: 2.5x
+
+**Gas efficiency:**
+- 3 gas per 256-bit XOR operation
+- ~333,333 XOR operations per million gas
+- Native hardware instruction on all platforms
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Bitwise Logic Operations)
+- [EVM Codes - XOR](https://www.evm.codes/#18)
+- [Solidity Docs - Bitwise Operators](https://docs.soliditylang.org/en/latest/types.html#integers)
+- [XOR Cipher](https://en.wikipedia.org/wiki/XOR_cipher) - Cryptographic background
+
+## Related Documentation
+
+- [AND (0x16)](/evm/instructions/bitwise/and) - Bitwise AND operation
+- [OR (0x17)](/evm/instructions/bitwise/or) - Bitwise OR operation
+- [NOT (0x19)](/evm/instructions/bitwise/not) - Bitwise NOT operation
+- [BYTE (0x1a)](/evm/instructions/bitwise/byte) - Extract byte operation

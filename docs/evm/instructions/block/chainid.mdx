@@ -1,0 +1,508 @@
+---
+title: "CHAINID (0x46)"
+description: "Get the chain identifier for replay protection"
+---
+
+## Overview
+
+**Opcode:** `0x46`
+**Introduced:** Istanbul (EIP-1344)
+
+CHAINID retrieves the unique identifier for the current blockchain network. This enables contracts to implement replay protection and chain-specific behavior, preventing transactions from one chain being replayed on another.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+chain_id (u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(chainId)
+```
+
+**Hardfork:** Available from Istanbul onwards
+
+## Behavior
+
+CHAINID pushes the chain identifier onto the stack as a 256-bit unsigned integer:
+
+```
+Ethereum Mainnet:   1
+Sepolia Testnet:    11155111
+Polygon:            137
+Arbitrum One:       42161
+Optimism:           10
+Base:               8453
+```
+
+If called before Istanbul hardfork, the instruction is invalid and returns an error.
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { chainid } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  hardfork: 'ISTANBUL',
+  blockContext: {
+    chain_id: 1n // Ethereum mainnet
+  }
+});
+
+const err = chainid(frame);
+console.log(frame.stack); // [1n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Pre-Istanbul Error
+
+```typescript
+// Before Istanbul hardfork
+const preIstanbulFrame = createFrame({
+  stack: [],
+  hardfork: 'PETERSBURG',
+  blockContext: { chain_id: 1n }
+});
+
+const err = chainid(preIstanbulFrame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Chain Detection
+
+```typescript
+// Detect specific chains
+const MAINNET = 1n;
+const SEPOLIA = 11155111n;
+const POLYGON = 137n;
+
+chainid(frame);
+const currentChain = frame.stack[0];
+
+if (currentChain === MAINNET) {
+  console.log("Running on Ethereum mainnet");
+} else if (currentChain === SEPOLIA) {
+  console.log("Running on Sepolia testnet");
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+CHAINID is one of the cheapest operations in the EVM.
+
+**Comparison:**
+- `CHAINID`: 2 gas
+- `NUMBER`, `TIMESTAMP`, `GASLIMIT`: 2 gas
+- `COINBASE`: 2 gas
+- `SELFBALANCE`: 5 gas
+
+## Common Usage
+
+### Chain-Specific Token Addresses
+
+```solidity
+contract MultiChainToken {
+    function getTokenAddress() public view returns (address) {
+        if (block.chainid == 1) {
+            return 0x123...; // Mainnet USDC
+        } else if (block.chainid == 137) {
+            return 0x456...; // Polygon USDC
+        } else if (block.chainid == 42161) {
+            return 0x789...; // Arbitrum USDC
+        }
+        revert("Unsupported chain");
+    }
+}
+```
+
+### Cross-Chain Message Verification
+
+```solidity
+contract CrossChainBridge {
+    struct Message {
+        uint256 sourceChain;
+        uint256 destinationChain;
+        bytes data;
+        bytes signature;
+    }
+
+    function verifyMessage(Message memory msg) public view returns (bool) {
+        require(msg.destinationChain == block.chainid, "Wrong chain");
+        // Verify signature and process
+        return true;
+    }
+}
+```
+
+### Replay Protection
+
+```solidity
+contract ReplayProtected {
+    mapping(bytes32 => bool) public executed;
+
+    function executeTransaction(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nonce,
+        bytes memory signature
+    ) external {
+        // Include chainid in hash to prevent replay
+        bytes32 txHash = keccak256(abi.encodePacked(
+            block.chainid,
+            to,
+            value,
+            data,
+            nonce
+        ));
+
+        require(!executed[txHash], "Already executed");
+        require(verify(txHash, signature), "Invalid signature");
+
+        executed[txHash] = true;
+        // Execute transaction
+    }
+}
+```
+
+### Chain-Specific Configuration
+
+```solidity
+contract ChainConfig {
+    function getBlockTime() public view returns (uint256) {
+        if (block.chainid == 1) {
+            return 12; // Ethereum: 12 seconds
+        } else if (block.chainid == 137) {
+            return 2; // Polygon: 2 seconds
+        } else if (block.chainid == 42161) {
+            return 1; // Arbitrum: ~1 second
+        }
+        return 12; // Default
+    }
+
+    function getGasToken() public view returns (string memory) {
+        if (block.chainid == 1) return "ETH";
+        if (block.chainid == 137) return "MATIC";
+        if (block.chainid == 56) return "BNB";
+        return "ETH";
+    }
+}
+```
+
+### Multi-Chain Deployment Detection
+
+```solidity
+contract DeploymentTracker {
+    struct Deployment {
+        uint256 chainId;
+        address contractAddress;
+        uint256 blockNumber;
+    }
+
+    Deployment[] public deployments;
+
+    constructor() {
+        deployments.push(Deployment({
+            chainId: block.chainid,
+            contractAddress: address(this),
+            blockNumber: block.number
+        }));
+    }
+
+    function isMainnet() public view returns (bool) {
+        return block.chainid == 1;
+    }
+
+    function isTestnet() public view returns (bool) {
+        return block.chainid == 11155111 || // Sepolia
+               block.chainid == 5 ||        // Goerli (deprecated)
+               block.chainid == 17000;      // Holesky
+    }
+}
+```
+
+## Security Considerations
+
+### EIP-155 Replay Protection
+
+CHAINID enables EIP-155 replay protection in transactions:
+
+```solidity
+contract EIP155Aware {
+    function getTransactionHash(
+        uint256 nonce,
+        uint256 gasPrice,
+        uint256 gasLimit,
+        address to,
+        uint256 value,
+        bytes memory data
+    ) public view returns (bytes32) {
+        // EIP-155: Include chainId in transaction hash
+        return keccak256(abi.encodePacked(
+            nonce,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            data,
+            block.chainid,
+            uint256(0),
+            uint256(0)
+        ));
+    }
+}
+```
+
+### Fork Safety
+
+During chain forks, chainid prevents replay:
+
+```solidity
+contract ForkSafe {
+    // Transaction signed for chain 1 can't be replayed on chain 10
+    function sensitiveOperation(bytes memory signature) external {
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            "Action",
+            msg.sender,
+            block.chainid // Different on forked chains
+        ));
+
+        require(verify(messageHash, signature), "Invalid signature");
+        // Execute
+    }
+}
+```
+
+### Testnet vs Mainnet Safety
+
+```solidity
+contract ProductionGuard {
+    modifier mainnetOnly() {
+        require(block.chainid == 1, "Mainnet only");
+        _;
+    }
+
+    modifier testnetOnly() {
+        require(
+            block.chainid == 11155111 || // Sepolia
+            block.chainid == 17000,       // Holesky
+            "Testnet only"
+        );
+        _;
+    }
+
+    function dangerousOperation() external mainnetOnly {
+        // Critical mainnet-only logic
+    }
+
+    function experimentalFeature() external testnetOnly {
+        // Testing-only features
+    }
+}
+```
+
+### Cross-Chain Attack Prevention
+
+```solidity
+contract CrossChainSafe {
+    // VULNERABLE: No chain verification
+    function vulnerableTransfer(
+        address to,
+        uint256 amount,
+        bytes memory signature
+    ) external {
+        bytes32 hash = keccak256(abi.encodePacked(to, amount));
+        require(verify(hash, signature), "Invalid sig");
+        // Signature from mainnet could work on testnet!
+    }
+
+    // SAFE: Include chainid
+    function safeTransfer(
+        address to,
+        uint256 amount,
+        bytes memory signature
+    ) external {
+        bytes32 hash = keccak256(abi.encodePacked(
+            to,
+            amount,
+            block.chainid // Prevents cross-chain replay
+        ));
+        require(verify(hash, signature), "Invalid sig");
+        // Execute
+    }
+}
+```
+
+### Pre-Istanbul Compatibility
+
+```solidity
+contract BackwardCompatible {
+    // Check if CHAINID is available
+    function getChainId() public view returns (uint256) {
+        uint256 chainId;
+        assembly {
+            // CHAINID opcode (0x46)
+            chainId := chainid()
+        }
+
+        // If chainId is 0, might be pre-Istanbul
+        // (or actual chainId is 0, which is unlikely)
+        return chainId;
+    }
+
+    // Fallback for pre-Istanbul
+    function getChainIdLegacy() public pure returns (uint256) {
+        // Must be hardcoded or use assembly checks
+        return 1; // Assume mainnet
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// CHAINID opcode (0x46) - Get chain ID (EIP-1344, Istanbul+)
+pub fn chainid(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // EIP-1344: CHAINID was introduced in Istanbul hardfork
+    if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(evm.block_context.chain_id);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * CHAINID opcode (0x46) - Get chain ID
+ * Available: Istanbul+
+ */
+export function chainid(frame: BrandedFrame): EvmError | null {
+  // Check hardfork availability
+  if (frame.evm.hardfork.isBefore('ISTANBUL')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push chain ID to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(frame.evm.blockContext.chain_id);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-Istanbul Execution
+
+```typescript
+// Before Istanbul: InvalidOpcode
+const frame = createFrame({
+  hardfork: 'CONSTANTINOPLE',
+  blockContext: { chain_id: 1n }
+});
+
+const err = chainid(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Uncommon Chain IDs
+
+```typescript
+// Private network with custom chain ID
+const frame = createFrame({
+  hardfork: 'ISTANBUL',
+  blockContext: { chain_id: 999999n }
+});
+
+chainid(frame);
+console.log(frame.stack); // [999999n]
+```
+
+### Maximum Chain ID
+
+```typescript
+// Theoretical maximum (u256)
+const frame = createFrame({
+  hardfork: 'ISTANBUL',
+  blockContext: { chain_id: (1n << 256n) - 1n }
+});
+
+chainid(frame);
+console.log(frame.stack); // [max u256]
+```
+
+## Known Chain IDs
+
+```solidity
+// Major networks
+uint256 constant ETHEREUM_MAINNET = 1;
+uint256 constant SEPOLIA = 11155111;
+uint256 constant HOLESKY = 17000;
+
+// L2s
+uint256 constant OPTIMISM = 10;
+uint256 constant ARBITRUM_ONE = 42161;
+uint256 constant BASE = 8453;
+uint256 constant ZKSYNC_ERA = 324;
+
+// Alt-L1s
+uint256 constant POLYGON = 137;
+uint256 constant BNB_CHAIN = 56;
+uint256 constant AVALANCHE = 43114;
+```
+
+## Benchmarks
+
+**Performance:**
+- Hardfork check: O(1)
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[COINBASE (0x41)](/evm/instructions/block/coinbase)** - Get block producer
+- **[NUMBER (0x43)](/evm/instructions/block/number)** - Get block number
+- **[SELFBALANCE (0x47)](/evm/instructions/block/selfbalance)** - Get balance (also Istanbul+)
+
+## References
+
+- [EIP-1344](https://eips.ethereum.org/EIPS/eip-1344) - ChainID opcode
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Simple replay attack protection
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - CHAINID](https://www.evm.codes/#46)
+- [Chainlist](https://chainlist.org/) - Comprehensive chain ID registry

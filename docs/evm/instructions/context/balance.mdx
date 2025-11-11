@@ -1,0 +1,415 @@
+---
+title: "BALANCE (0x31)"
+description: "Get balance of an account in wei"
+---
+
+## Overview
+
+**Opcode:** `0x31`
+**Introduced:** Frontier (EVM genesis)
+
+BALANCE retrieves the balance (in wei) of any account on the blockchain. It pops an address from the stack and pushes the balance of that address.
+
+## Specification
+
+**Stack Input:**
+```
+address (uint160 as uint256)
+```
+
+**Stack Output:**
+```
+balance (uint256)
+```
+
+**Gas Cost:** Variable (hardfork-dependent)
+- Frontier - Homestead: 20 gas
+- Tangerine Whistle (EIP-150): 400 gas
+- Istanbul (EIP-1884): 700 gas
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+**Operation:**
+```
+address = stack.pop()
+balance = state.getBalance(address)
+stack.push(balance)
+```
+
+## Behavior
+
+BALANCE accesses the blockchain state to retrieve an account's balance. The address is popped from the stack as a uint256, with only the lower 160 bits used.
+
+Key characteristics:
+- Returns balance in wei (1 ether = 10^18 wei)
+- Returns 0 for non-existent accounts
+- Gas cost depends on warm/cold access (Berlin+)
+- Does not distinguish between EOA and contract accounts
+
+## Examples
+
+### Basic Balance Check
+
+```typescript
+import { balance } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Check balance of an address
+const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const addrU256 = BigInt(addr); // Convert to u256
+
+const frame = createFrame({ stack: [addrU256] });
+const host = {
+  getBalance: (addr) => 1000000000000000000n // 1 ETH
+};
+
+const err = balance(frame, host);
+
+console.log(frame.stack[0]); // 1000000000000000000n (1 ETH in wei)
+```
+
+### Contract Balance Check
+
+```solidity
+contract BalanceChecker {
+    function getBalance(address account) public view returns (uint256) {
+        return account.balance;  // Uses BALANCE opcode
+    }
+
+    function getSelfBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function hasMinimumBalance(address account, uint256 min) public view returns (bool) {
+        return account.balance >= min;
+    }
+}
+```
+
+### Payment Validation
+
+```solidity
+contract PaymentProcessor {
+    function processPayment(address payer, uint256 amount) public {
+        // Verify payer has sufficient balance
+        require(payer.balance >= amount, "Insufficient balance");
+
+        // Process payment...
+    }
+}
+```
+
+## Gas Cost
+
+**Historical evolution:**
+
+| Hardfork | Gas Cost | Rationale |
+|----------|----------|-----------|
+| Frontier | 20 | Initial cost |
+| Tangerine Whistle (EIP-150) | 400 | Anti-DoS measure |
+| Istanbul (EIP-1884) | 700 | Storage access alignment |
+| Berlin (EIP-2929) | 2600 (cold) / 100 (warm) | Access list model |
+
+**Cold vs Warm Access (Berlin+):**
+- **Cold**: First access to an address in transaction (2600 gas)
+- **Warm**: Subsequent accesses to same address (100 gas)
+
+```typescript
+// First access: cold (2600 gas)
+let bal1 = address(0x123).balance;
+
+// Second access: warm (100 gas)
+let bal2 = address(0x123).balance;
+
+// Different address: cold again (2600 gas)
+let bal3 = address(0x456).balance;
+```
+
+**Access List (EIP-2930):**
+```typescript
+// Pre-warm addresses in transaction
+{
+  accessList: [
+    {
+      address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+      storageKeys: []
+    }
+  ]
+}
+// BALANCE now costs only 100 gas
+```
+
+## Common Usage
+
+### Minimum Balance Requirement
+
+```solidity
+contract MinimumBalance {
+    uint256 public constant MINIMUM = 1 ether;
+
+    modifier hasMinimum(address account) {
+        require(account.balance >= MINIMUM, "Insufficient balance");
+        _;
+    }
+
+    function restricted() public hasMinimum(msg.sender) {
+        // Only callable if sender has >= 1 ETH
+    }
+}
+```
+
+### Balance Tracking
+
+```solidity
+contract BalanceTracker {
+    mapping(address => uint256) public lastKnownBalance;
+
+    function updateBalance(address account) public {
+        lastKnownBalance[account] = account.balance;
+    }
+
+    function balanceChanged(address account) public view returns (bool) {
+        return account.balance != lastKnownBalance[account];
+    }
+}
+```
+
+### Withdrawal Pattern
+
+```solidity
+contract Withdrawable {
+    mapping(address => uint256) public balances;
+
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "No balance");
+
+        // Check contract has sufficient balance
+        require(address(this).balance >= amount, "Insufficient contract balance");
+
+        balances[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+### Payment Routing
+
+```solidity
+contract PaymentRouter {
+    function routePayment(address[] memory recipients, uint256 amount) public payable {
+        require(msg.value >= amount * recipients.length);
+
+        for (uint i = 0; i < recipients.length; i++) {
+            // Check if recipient can receive (not always reliable)
+            if (recipients[i].balance + amount <= type(uint256).max) {
+                payable(recipients[i]).transfer(amount);
+            }
+        }
+    }
+}
+```
+
+## Security
+
+### Balance Checks Are Not Atomic
+
+```solidity
+// VULNERABLE: Balance can change between checks
+function withdraw(uint256 amount) public {
+    require(address(this).balance >= amount);  // Check
+    // ... other operations ...
+    payable(msg.sender).transfer(amount);      // Use
+    // Balance may have changed in between!
+}
+```
+
+**Safe pattern:**
+```solidity
+function withdraw(uint256 amount) public {
+    uint256 balance = address(this).balance;
+    require(balance >= amount);
+    payable(msg.sender).transfer(amount);
+}
+```
+
+### Self-Destruct Race Condition
+
+```solidity
+contract Vulnerable {
+    function doSomething() public {
+        require(address(this).balance == 0, "Must be empty");
+        // DANGEROUS: Attacker can selfdestruct and force-send ETH
+    }
+}
+```
+
+**Attack:**
+```solidity
+contract Attacker {
+    function attack(address target) public payable {
+        selfdestruct(payable(target));  // Force-send ETH
+        // Now target.balance > 0, breaking the invariant
+    }
+}
+```
+
+**Safe pattern:**
+```solidity
+contract Safe {
+    uint256 public accountedBalance;
+
+    receive() external payable {
+        accountedBalance += msg.value;
+    }
+
+    function doSomething() public {
+        // Use accounting, not balance
+        require(accountedBalance == 0);
+    }
+}
+```
+
+### Integer Overflow in Balance Calculations
+
+```solidity
+// Pre-Solidity 0.8.0: VULNERABLE
+function totalBalance(address[] memory accounts) public view returns (uint256) {
+    uint256 total = 0;
+    for (uint i = 0; i < accounts.length; i++) {
+        total += accounts[i].balance;  // Can overflow!
+    }
+    return total;
+}
+```
+
+**Safe pattern (0.8.0+):**
+```solidity
+function totalBalance(address[] memory accounts) public view returns (uint256) {
+    uint256 total = 0;
+    for (uint i = 0; i < accounts.length; i++) {
+        total += accounts[i].balance;  // Reverts on overflow
+    }
+    return total;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
+
+/**
+ * BALANCE opcode (0x31) - Get balance of an account
+ *
+ * Stack: [address] => [balance]
+ * Gas: Variable (hardfork-dependent: 20/400/700/2600/100)
+ */
+export function balance(
+  frame: BrandedFrame,
+  host: BrandedHost
+): EvmError | null {
+  const addrResult = popStack(frame);
+  if (addrResult.error) return addrResult.error;
+  const addrU256 = addrResult.value;
+
+  const addr = fromNumber(addrU256);
+
+  // Gas cost: simplified to 700 (Istanbul+)
+  // TODO: Add hardfork-aware gas pricing
+  const gasErr = consumeGas(frame, 700n);
+  if (gasErr) return gasErr;
+
+  const bal = host.getBalance(addr);
+  const pushErr = pushStack(frame, bal);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// BALANCE opcode (0x31) - Get balance of an account
+pub fn balance(frame: *FrameType, host: *Host) FrameType.EvmError!void {
+    const addr_u256 = try frame.popStack();
+
+    // Convert u256 to 20-byte address (take lower 160 bits)
+    var addr: [20]u8 = undefined;
+    var temp = addr_u256;
+    var i: usize = 20;
+    while (i > 0) : (i -= 1) {
+        addr[i - 1] = @truncate(temp & 0xFF);
+        temp >>= 8;
+    }
+
+    // Charge gas (simplified to 700)
+    try frame.consumeGas(700);
+
+    const balance = try host.getBalance(&addr);
+    try frame.pushStack(balance);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Zero Address Balance
+
+```typescript
+// Zero address may have balance
+const frame = createFrame({ stack: [0n] });
+balance(frame, host);
+
+// Returns actual balance, not necessarily 0
+```
+
+### Non-Existent Account
+
+```typescript
+// Non-existent accounts have balance 0
+const randomAddr = 0x999999n;
+const frame = createFrame({ stack: [randomAddr] });
+balance(frame, { getBalance: () => 0n });
+
+console.log(frame.stack[0]); // 0n
+```
+
+### Maximum Balance
+
+```typescript
+// Theoretically possible (though impractical)
+const MAX_U256 = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [0x123n] });
+balance(frame, { getBalance: () => MAX_U256 });
+
+console.log(frame.stack[0]); // MAX_U256
+```
+
+### Stack Underflow
+
+```typescript
+// No address on stack
+const frame = createFrame({ stack: [] });
+const err = balance(frame, host);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Execution Environment)
+- [EVM Codes - BALANCE](https://www.evm.codes/#31)
+- [EIP-150](https://eips.ethereum.org/EIPS/eip-150) - Gas cost changes (Tangerine Whistle)
+- [EIP-1884](https://eips.ethereum.org/EIPS/eip-1884) - Repricing (Istanbul)
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists (Berlin)
+- [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) - Access list transactions

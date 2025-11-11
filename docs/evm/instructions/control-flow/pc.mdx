@@ -1,0 +1,528 @@
+---
+title: "PC (0x58)"
+description: "Push current program counter value onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x58`
+**Introduced:** Frontier (EVM genesis)
+
+PC pushes the current program counter value onto the stack. The program counter represents the position of the currently executing instruction in the bytecode.
+
+This opcode enables position-aware bytecode, dynamic jump calculations, and self-referential code patterns.
+
+## Specification
+
+**Stack Input:** None
+
+**Stack Output:**
+```
+pc (top) - Current program counter value
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+1. Push current PC onto stack
+2. Increment PC by 1
+```
+
+## Behavior
+
+PC provides the current execution position:
+
+1. Consumes 2 gas (GasQuickStep)
+2. Pushes current PC value onto stack
+3. Increments PC to next instruction
+
+**Important:** The value pushed is the PC of the PC instruction itself, NOT the next instruction.
+
+**Example:**
+```
+Position  Opcode
+--------  ------
+0x00      PUSH1 0x05
+0x02      PC          ← PC = 0x02
+0x03      ADD
+```
+
+When PC executes at position 0x02, it pushes `0x02` onto the stack.
+
+## Examples
+
+### Basic PC Usage
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x58_PC } from '@tevm/voltaire/evm/control';
+
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5 (positions 0-1)
+  0x58,        // PC (position 2)
+  0x01,        // ADD (position 3)
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [5n],
+  pc: 2  // At PC instruction
+});
+
+const err = handler_0x58_PC(frame);
+
+console.log(err);         // null (success)
+console.log(frame.stack); // [5n, 2n] (pushed PC value 2)
+console.log(frame.pc);    // 3 (incremented)
+```
+
+### Calculate Relative Position
+
+```solidity
+assembly {
+    let currentPos := pc()
+    let targetPos := add(currentPos, 10)  // 10 bytes ahead
+    // Use for relative jumps or calculations
+}
+```
+
+### Position-Aware Code
+
+```typescript
+const bytecode = new Uint8Array([
+  0x58,        // PC → pushes 0
+  0x60, 0x05,  // PUSH1 5
+  0x01,        // ADD → 0 + 5 = 5
+  0x58,        // PC → pushes 5
+  0x01,        // ADD → 5 + 5 = 10
+]);
+
+const frame = createFrame({ bytecode, pc: 0 });
+
+// First PC
+handler_0x58_PC(frame);
+console.log(frame.stack); // [0n]
+
+// Execute PUSH1 5
+frame.pc = 1;
+handler_0x60_PUSH1(frame);
+console.log(frame.stack); // [0n, 5n]
+
+// ADD
+frame.pc = 3;
+handler_0x01_ADD(frame);
+console.log(frame.stack); // [5n]
+
+// Second PC
+frame.pc = 4;
+handler_0x58_PC(frame);
+console.log(frame.stack); // [5n, 4n]
+```
+
+### Dynamic Jump Table
+
+```solidity
+assembly {
+    let base := pc()
+
+    // Jump table based on current position
+    let offset := mul(selector, 0x20)
+    let dest := add(base, offset)
+
+    jump(dest)
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+**Comparison:**
+- PC: 2 gas (read position)
+- PUSH1: 3 gas (push constant)
+- JUMP: 8 gas
+- JUMPI: 10 gas
+
+**Efficiency:**
+PC is cheaper than PUSH for getting current position, but PUSH is still preferred for constants.
+
+## Edge Cases
+
+### PC at Start
+
+```typescript
+// PC at position 0
+const bytecode = new Uint8Array([0x58, 0x00]);
+const frame = createFrame({ bytecode, pc: 0 });
+
+handler_0x58_PC(frame);
+console.log(frame.stack); // [0n]
+```
+
+### PC at End
+
+```typescript
+// PC at last instruction
+const bytecode = new Uint8Array([0x00, 0x00, 0x58]);
+const frame = createFrame({ bytecode, pc: 2 });
+
+handler_0x58_PC(frame);
+console.log(frame.stack); // [2n]
+console.log(frame.pc);    // 3 (past bytecode - will stop)
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at max capacity (1024 items)
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  pc: 0
+});
+
+const err = handler_0x58_PC(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Multiple PC Calls
+
+```typescript
+const bytecode = new Uint8Array([
+  0x58,  // PC → 0
+  0x58,  // PC → 1
+  0x58,  // PC → 2
+  0x58,  // PC → 3
+]);
+
+const frame = createFrame({ bytecode, pc: 0 });
+
+// Execute all PC instructions
+for (let i = 0; i < 4; i++) {
+  handler_0x58_PC(frame);
+}
+
+console.log(frame.stack); // [0n, 1n, 2n, 3n]
+```
+
+## Common Usage
+
+### Relative Addressing
+
+Calculate addresses relative to current position:
+
+```solidity
+assembly {
+    let here := pc()
+    let data_offset := add(here, 0x20)  // 32 bytes ahead
+
+    // Load data from relative position
+    let data := mload(data_offset)
+}
+```
+
+### Position Verification
+
+```solidity
+assembly {
+    let expected := 0x1234
+    let actual := pc()
+
+    // Verify we're at expected position
+    if iszero(eq(actual, expected)) {
+        revert(0, 0)
+    }
+}
+```
+
+### Code Size Calculation
+
+```solidity
+assembly {
+    let start := pc()
+
+    // ... code block ...
+
+    let end := pc()
+    let size := sub(end, start)
+}
+```
+
+### Dynamic Dispatch Base
+
+```solidity
+assembly {
+    // Get base address for jump table
+    let base := pc()
+
+    // Calculate jump destination
+    switch selector
+    case 0 { jump(add(base, 0x10)) }
+    case 1 { jump(add(base, 0x30)) }
+    case 2 { jump(add(base, 0x50)) }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { QuickStep } from "../../primitives/GasConstants/constants.js";
+
+/**
+ * PC opcode (0x58) - Get program counter
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0x58_PC(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, QuickStep);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, BigInt(frame.pc));
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PC opcode (0x58) - Get program counter
+pub fn pc(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(frame.pc);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0x58_PC } from './0x58_PC.js';
+
+describe('PC (0x58)', () => {
+  it('pushes current PC value', () => {
+    const frame = createFrame({ pc: 42 });
+    const err = handler_0x58_PC(frame);
+
+    expect(err).toBeNull();
+    expect(frame.stack).toEqual([42n]);
+    expect(frame.pc).toBe(43);
+  });
+
+  it('pushes 0 at start', () => {
+    const frame = createFrame({ pc: 0 });
+    handler_0x58_PC(frame);
+
+    expect(frame.stack).toEqual([0n]);
+    expect(frame.pc).toBe(1);
+  });
+
+  it('increments PC after execution', () => {
+    const frame = createFrame({ pc: 100 });
+    handler_0x58_PC(frame);
+
+    expect(frame.pc).toBe(101);
+  });
+
+  it('consumes 2 gas', () => {
+    const frame = createFrame({ gasRemaining: 1000n, pc: 0 });
+    handler_0x58_PC(frame);
+
+    expect(frame.gasRemaining).toBe(998n);
+  });
+
+  it('handles stack overflow', () => {
+    const frame = createFrame({
+      stack: new Array(1024).fill(0n),
+      pc: 0,
+    });
+
+    expect(handler_0x58_PC(frame)).toEqual({ type: 'StackOverflow' });
+  });
+
+  it('handles out of gas', () => {
+    const frame = createFrame({ gasRemaining: 1n, pc: 0 });
+
+    expect(handler_0x58_PC(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+## Security
+
+### Position-Dependent Code
+
+PC enables position-dependent bytecode, which can be fragile:
+
+```solidity
+assembly {
+    // FRAGILE: Depends on exact bytecode layout
+    let current := pc()
+    let target := add(current, 0x42)  // Assumes 0x42 offset
+    jump(target)
+}
+```
+
+**Issues:**
+- Compiler optimizations can change positions
+- Adding code shifts all offsets
+- Hard to maintain and debug
+
+**Better approach:**
+```solidity
+assembly {
+    // ROBUST: Use labels, let compiler handle positions
+    jump(target)
+
+    target:
+        jumpdest
+        // Code here
+}
+```
+
+### Code Obfuscation
+
+PC can be used for code obfuscation:
+
+```solidity
+assembly {
+    // Obfuscated jump calculation
+    let x := pc()
+    let y := add(x, 0x10)
+    let z := xor(y, 0x5b)
+    jump(z)  // Hard to analyze statically
+}
+```
+
+**Security impact:**
+- Makes auditing difficult
+- Hides control flow
+- Red flag for malicious code
+- Avoid in production contracts
+
+### Limited Practical Use
+
+PC has few legitimate use cases in modern Solidity:
+
+**Not useful for:**
+- Function dispatch (compiler handles this)
+- Relative jumps (labels are better)
+- Code size (codesize opcode exists)
+
+**Occasionally useful for:**
+- Gas optimization (avoid PUSH for position)
+- Self-modifying code patterns (advanced, rare)
+- Position verification in tests
+
+## Compiler Behavior
+
+### Solidity Avoids PC
+
+Modern Solidity rarely generates PC instructions:
+
+```solidity
+function example() public pure returns (uint256) {
+    assembly {
+        let pos := pc()  // Explicit PC usage
+    }
+}
+```
+
+Compiles to:
+```
+PC         // 0x58 - explicit from assembly
+```
+
+But normal Solidity doesn't use PC - it uses PUSH for constants and labels for jumps.
+
+### Labels vs PC
+
+**Old pattern (PC-based):**
+```solidity
+assembly {
+    let dest := add(pc(), 0x10)
+    jump(dest)
+}
+```
+
+**Modern pattern (label-based):**
+```solidity
+assembly {
+    jump(target)
+
+    target:
+        jumpdest
+}
+```
+
+Compiler resolves labels to absolute positions at compile time.
+
+### Optimization
+
+Compilers can optimize PC away:
+
+```solidity
+assembly {
+    let x := pc()
+    let y := add(x, 5)
+}
+```
+
+Could be optimized to:
+```solidity
+assembly {
+    let y := <constant>  // PC value known at compile time
+}
+```
+
+## Comparison with Other Chains
+
+### EVM (Ethereum)
+
+PC returns bytecode position, 0-indexed.
+
+### WASM
+
+No direct equivalent. WASM uses structured control flow (blocks, loops) rather than position-based jumps.
+
+### x86 Assembly
+
+EIP (Extended Instruction Pointer) register similar to PC, but:
+- Hardware register, not stack
+- 64-bit on x64, 32-bit on x86
+- Can be read/written directly
+
+### JVM
+
+No equivalent. JVM uses structured bytecode with exception tables rather than position-based control flow.
+
+## Historical Context
+
+PC was included in original EVM for:
+1. Position-aware code patterns
+2. Relative addressing calculations
+3. Dynamic jump table construction
+
+**Modern usage:**
+- Rarely needed in practice
+- Compilers use labels instead
+- Maintained for compatibility
+- Occasionally useful for gas optimization
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (PC instruction)
+- [EVM Codes - PC](https://www.evm.codes/#58)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)

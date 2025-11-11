@@ -1,0 +1,386 @@
+---
+title: "ORIGIN (0x32)"
+description: "Get transaction origination address (tx.origin)"
+---
+
+## Overview
+
+**Opcode:** `0x32`
+**Introduced:** Frontier (EVM genesis)
+
+ORIGIN pushes the address of the account that originated the transaction (tx.origin) onto the stack. This address never changes throughout the entire call chain, unlike CALLER which changes with each call.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+origin (uint160 as uint256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(transaction.origin)
+```
+
+## Behavior
+
+ORIGIN provides the address of the externally owned account (EOA) that signed and initiated the transaction. This value remains constant throughout the entire execution, regardless of how many contract calls are made.
+
+Key characteristics:
+- Always an EOA (never a contract address)
+- Immutable throughout transaction execution
+- Same value in all contracts called during transaction
+- Cannot be a contract (contracts cannot initiate transactions)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { origin } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Transaction originated by this EOA
+const originAddr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const frame = createFrame({ stack: [] });
+
+const err = origin(frame, originAddr);
+
+console.log(frame.stack[0]); // 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEbn
+```
+
+### Call Chain Comparison
+
+```solidity
+contract ContractC {
+    function check() public view returns (address txOrigin, address caller) {
+        return (tx.origin, msg.sender);
+    }
+}
+
+contract ContractB {
+    function forward(ContractC c) public returns (address, address) {
+        return c.check();
+    }
+}
+
+contract ContractA {
+    function start(ContractB b, ContractC c) public returns (address, address) {
+        return b.forward(c);
+    }
+}
+
+// Call chain: EOA (0xAAA) → A (0xBBB) → B (0xCCC) → C (0xDDD)
+//
+// In ContractC.check():
+// - tx.origin = 0xAAA (EOA that started transaction)
+// - msg.sender = 0xCCC (ContractB called us)
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+ORIGIN shares the lowest gas cost tier with other environment access opcodes:
+- ADDRESS (0x30)
+- CALLER (0x33)
+- CALLVALUE (0x34)
+- CALLDATASIZE (0x36)
+- CODESIZE (0x38)
+- GASPRICE (0x3a)
+- RETURNDATASIZE (0x3d)
+
+## Common Usage
+
+### Logging Transaction Source
+
+```solidity
+contract EventLogger {
+    event Action(address indexed origin, address indexed sender, string action);
+
+    function logAction(string memory action) public {
+        emit Action(tx.origin, msg.sender, action);
+        // tx.origin: Who initiated the transaction
+        // msg.sender: Who called this contract
+    }
+}
+```
+
+### Gas Refunds
+
+```solidity
+contract GasRefunder {
+    function expensiveOperation() public {
+        // ... expensive operations ...
+
+        // Refund gas to transaction originator
+        uint256 gasUsed = gasleft();
+        payable(tx.origin).transfer(gasUsed * tx.gasprice);
+    }
+}
+```
+
+## Security
+
+### CRITICAL: Never Use for Authorization
+
+**VULNERABLE pattern:**
+```solidity
+// EXTREMELY DANGEROUS - DO NOT USE
+contract Vulnerable {
+    address public owner;
+
+    function withdraw() public {
+        require(tx.origin == owner, "Not owner");  // WRONG!
+        payable(owner).transfer(address(this).balance);
+    }
+}
+```
+
+**Attack scenario:**
+```solidity
+contract Attacker {
+    Vulnerable victim;
+
+    constructor(Vulnerable _victim) {
+        victim = _victim;
+    }
+
+    function attack() public {
+        // Trick the owner into calling this
+        victim.withdraw();
+    }
+}
+
+// Attack flow:
+// 1. Owner (tx.origin) calls Attacker.attack()
+// 2. Attacker.attack() calls Vulnerable.withdraw()
+// 3. tx.origin == owner ✓ (passes the check!)
+// 4. Funds are stolen
+```
+
+**SAFE pattern - use msg.sender:**
+```solidity
+contract Safe {
+    address public owner;
+
+    function withdraw() public {
+        require(msg.sender == owner, "Not owner");  // CORRECT!
+        payable(owner).transfer(address(this).balance);
+    }
+}
+```
+
+### tx.origin vs msg.sender
+
+**Critical distinction:**
+
+| Property | tx.origin | msg.sender |
+|----------|-----------|------------|
+| Value | Original EOA | Immediate caller |
+| Changes in call chain | No | Yes |
+| Can be contract | Never | Yes |
+| Safe for auth | **NO** | **YES** |
+| Opcode | ORIGIN (0x32) | CALLER (0x33) |
+
+**Example:**
+```
+User EOA (0xAAA) → Contract A (0xBBB) → Contract B (0xCCC)
+
+In Contract B:
+- tx.origin = 0xAAA (never changes)
+- msg.sender = 0xBBB (Contract A called us)
+```
+
+### Phishing Attack Vector
+
+```solidity
+// Attacker creates malicious contract
+contract Phishing {
+    Vulnerable target;
+
+    function harmlessLooking() public {
+        // Owner thinks this is safe to call
+        // But it triggers the vulnerable withdraw
+        target.withdraw();
+        // tx.origin is still the owner, so it works!
+    }
+}
+```
+
+### Limited Valid Use Cases
+
+**Valid (but rare) use case - gas payment:**
+```solidity
+contract Relayer {
+    function executeForUser(address target, bytes memory data) public {
+        // Meta-transaction: we pay gas, user signs intent
+        (bool success,) = target.call(data);
+        require(success);
+
+        // Charge the original user (who signed the transaction)
+        // This is ONE OF THE RARE valid uses of tx.origin
+        payable(tx.origin).transfer(calculateGasCost());
+    }
+}
+```
+
+**Even better - explicit parameter:**
+```solidity
+contract BetterRelayer {
+    function executeForUser(
+        address user,
+        address target,
+        bytes memory data
+    ) public {
+        // Don't use tx.origin at all
+        (bool success,) = target.call(data);
+        require(success);
+
+        payable(user).transfer(calculateGasCost());
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
+
+/**
+ * ORIGIN opcode (0x32) - Get execution origination address
+ *
+ * Stack: [] => [origin]
+ * Gas: 2 (GasQuickStep)
+ */
+export function origin(
+  frame: BrandedFrame,
+  origin: Address
+): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const originU256 = toU256(origin);
+  const pushErr = pushStack(frame, originU256);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// ORIGIN opcode (0x32) - Get execution origination address
+pub fn origin(frame: *FrameType, origin_addr: [20]u8) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    // Convert 20-byte address to u256
+    var addr_u256: u256 = 0;
+    for (origin_addr) |byte| {
+        addr_u256 = (addr_u256 << 8) | byte;
+    }
+
+    try frame.pushStack(addr_u256);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({ stack: new Array(1024).fill(0n) });
+const err = origin(frame, originAddr);
+
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ gasRemaining: 1n });
+const err = origin(frame, originAddr);
+
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Zero Address Origin
+
+```typescript
+// Theoretically invalid (can't sign transaction)
+// but handled by EVM
+const frame = createFrame({});
+const err = origin(frame, Address.from('0x0000000000000000000000000000000000000000'));
+
+console.log(frame.stack[0]); // 0n
+```
+
+## Best Practices
+
+### ❌ DON'T: Use for authorization
+
+```solidity
+// WRONG
+require(tx.origin == owner);
+```
+
+### ✅ DO: Use msg.sender for authorization
+
+```solidity
+// CORRECT
+require(msg.sender == owner);
+```
+
+### ❌ DON'T: Trust tx.origin in access control
+
+```solidity
+// WRONG
+modifier onlyOwner() {
+    require(tx.origin == owner);
+    _;
+}
+```
+
+### ✅ DO: Use for logging/analytics only
+
+```solidity
+// ACCEPTABLE
+event UserAction(address indexed origin, string action);
+emit UserAction(tx.origin, "purchased");
+```
+
+### ⚠️ CAUTION: Meta-transactions
+
+```solidity
+// Acceptable but prefer explicit parameters
+function chargeUser() internal {
+    payable(tx.origin).transfer(gasCost);
+}
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Execution Environment)
+- [EVM Codes - ORIGIN](https://www.evm.codes/#32)
+- [SWC-115: Authorization through tx.origin](https://swcregistry.io/docs/SWC-115)
+- [Solidity Docs - tx.origin](https://docs.soliditylang.org/en/latest/security-considerations.html#tx-origin)
+- [Consensys Best Practices - Avoid tx.origin](https://consensys.github.io/smart-contract-best-practices/development-recommendations/solidity-specific/tx-origin/)

@@ -1,0 +1,481 @@
+---
+title: "NUMBER (0x43)"
+description: "Get the current block number"
+---
+
+## Overview
+
+**Opcode:** `0x43`
+**Introduced:** Frontier (EVM genesis)
+
+NUMBER retrieves the current block number - the sequential index of the block in the blockchain. Block numbers start at 0 (genesis) and increment by 1 for each new block.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+block_number (u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.number)
+```
+
+## Behavior
+
+NUMBER pushes the current block number onto the stack as a 256-bit unsigned integer:
+
+```
+Genesis Block:    0
+First Block:      1
+Millionth Block:  1,000,000
+Current (2024):   ~19,500,000
+```
+
+The block number is deterministic and strictly increasing, making it reliable for sequencing and versioning.
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { number } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  blockContext: {
+    block_number: 19_500_000n
+  }
+});
+
+const err = number(frame);
+console.log(frame.stack); // [19500000n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Block Range Checks
+
+```typescript
+// Check if within specific block range
+const START_BLOCK = 19_000_000n;
+const END_BLOCK = 20_000_000n;
+
+number(frame);
+const currentBlock = frame.stack[0];
+
+const inRange = currentBlock >= START_BLOCK && currentBlock < END_BLOCK;
+console.log(`In range: ${inRange}`);
+```
+
+### Block Calculations
+
+```typescript
+// Calculate blocks elapsed
+const DEPLOYMENT_BLOCK = 18_000_000n;
+
+number(frame);
+const currentBlock = frame.stack[0];
+const blocksElapsed = currentBlock - DEPLOYMENT_BLOCK;
+
+// Estimate time elapsed (assuming 12 sec/block post-merge)
+const secondsElapsed = blocksElapsed * 12n;
+const daysElapsed = secondsElapsed / 86400n;
+
+console.log(`Blocks: ${blocksElapsed}, Days: ~${daysElapsed}`);
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+NUMBER is one of the cheapest EVM operations.
+
+**Comparison:**
+- `NUMBER`: 2 gas
+- `TIMESTAMP`, `COINBASE`, `GASLIMIT`: 2 gas
+- `BLOCKHASH`: 20 gas
+- `SLOAD` (cold): 2100 gas
+
+## Common Usage
+
+### Block-Based Scheduling
+
+```solidity
+contract BlockScheduler {
+    uint256 public startBlock;
+    uint256 public endBlock;
+
+    constructor(uint256 duration) {
+        startBlock = block.number;
+        endBlock = block.number + duration;
+    }
+
+    function isActive() public view returns (bool) {
+        return block.number >= startBlock && block.number < endBlock;
+    }
+}
+```
+
+### Phased Rollout
+
+```solidity
+contract PhasedDeployment {
+    uint256 public constant PHASE_1 = 19_000_000;
+    uint256 public constant PHASE_2 = 19_500_000;
+    uint256 public constant PHASE_3 = 20_000_000;
+
+    function currentPhase() public view returns (uint256) {
+        if (block.number < PHASE_1) return 0;
+        if (block.number < PHASE_2) return 1;
+        if (block.number < PHASE_3) return 2;
+        return 3;
+    }
+
+    function featureEnabled(uint256 phase) public view returns (bool) {
+        return currentPhase() >= phase;
+    }
+}
+```
+
+### Block-Based Rewards
+
+```solidity
+contract BlockRewards {
+    uint256 public lastRewardBlock;
+    uint256 public rewardPerBlock = 1 ether;
+
+    function claimRewards() external {
+        uint256 pending = (block.number - lastRewardBlock) * rewardPerBlock;
+        lastRewardBlock = block.number;
+
+        payable(msg.sender).transfer(pending);
+    }
+}
+```
+
+### Version Control
+
+```solidity
+contract Versioned {
+    struct Version {
+        uint256 blockNumber;
+        bytes32 codeHash;
+    }
+
+    Version[] public versions;
+
+    function upgrade(bytes32 newCodeHash) external {
+        versions.push(Version({
+            blockNumber: block.number,
+            codeHash: newCodeHash
+        }));
+    }
+
+    function versionAt(uint256 blockNum) public view returns (bytes32) {
+        for (uint i = versions.length; i > 0; i--) {
+            if (versions[i-1].blockNumber <= blockNum) {
+                return versions[i-1].codeHash;
+            }
+        }
+        return bytes32(0);
+    }
+}
+```
+
+### Block Number Checkpoint
+
+```solidity
+contract Checkpoint {
+    mapping(address => uint256) public lastActionBlock;
+
+    modifier minBlockGap(uint256 gap) {
+        require(
+            block.number >= lastActionBlock[msg.sender] + gap,
+            "Too soon"
+        );
+        lastActionBlock[msg.sender] = block.number;
+        _;
+    }
+
+    function rateLimit() external minBlockGap(100) {
+        // Can only be called every 100 blocks (~20 minutes post-merge)
+    }
+}
+```
+
+## Security Considerations
+
+### Not Suitable for Randomness
+
+Block numbers are predictable and should never be used for randomness:
+
+```solidity
+// DANGEROUS: Completely predictable
+function badRandom() public view returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(block.number)));
+}
+```
+
+### Block Reorganizations
+
+Block numbers can temporarily decrease during chain reorgs:
+
+```solidity
+contract ReorgAware {
+    uint256 public highestBlockSeen;
+
+    function update() external {
+        // Possible: block.number < highestBlockSeen during reorg
+        if (block.number > highestBlockSeen) {
+            highestBlockSeen = block.number;
+        }
+    }
+}
+```
+
+### Future Block Conditions
+
+Never check for exact future blocks:
+
+```solidity
+// PROBLEMATIC: What if skipped?
+require(block.number == 20_000_000); // Fragile
+
+// BETTER: Use ranges
+require(block.number >= 20_000_000); // Robust
+```
+
+### Block Time Variability
+
+Block production time varies by network and consensus:
+
+```solidity
+contract TimeEstimation {
+    // Mainnet: ~12 sec/block (post-merge)
+    // Pre-merge: ~13.2 sec/block average
+    // L2s: Much faster (2-5 seconds)
+
+    function estimateTime(uint256 blocks) public pure returns (uint256) {
+        return blocks * 12; // seconds (Ethereum mainnet post-merge)
+    }
+}
+```
+
+### Block Number Overflow
+
+Theoretical but not practical concern (would take millions of years):
+
+```solidity
+// No overflow risk in practice
+uint256 futureBlock = block.number + 1_000_000_000;
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// NUMBER opcode (0x43) - Get block number
+pub fn number(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(evm.block_context.block_number);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * NUMBER opcode (0x43) - Get block number
+ */
+export function number(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push block number to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(frame.evm.blockContext.block_number);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Genesis Block
+
+```typescript
+// Block 0 (genesis)
+const frame = createFrame({
+  blockContext: { block_number: 0n }
+});
+
+number(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Large Block Number
+
+```typescript
+// Far future block
+const frame = createFrame({
+  blockContext: { block_number: 1_000_000_000n }
+});
+
+number(frame);
+console.log(frame.stack); // [1000000000n]
+```
+
+### Maximum u256 Block
+
+```typescript
+// Theoretical maximum (impossible in practice)
+const frame = createFrame({
+  blockContext: { block_number: (1n << 256n) - 1n }
+});
+
+number(frame);
+console.log(frame.stack); // [max u256]
+```
+
+### Stack Overflow
+
+```typescript
+// Stack full (1024 items)
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  blockContext: { block_number: 19_500_000n }
+});
+
+const err = number(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 1n,
+  blockContext: { block_number: 19_500_000n }
+});
+
+const err = number(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Practical Patterns
+
+### Safe Block Range Checks
+
+```solidity
+contract SafeBlockRange {
+    function isWithinRange(
+        uint256 start,
+        uint256 end
+    ) public view returns (bool) {
+        require(start <= end, "Invalid range");
+        return block.number >= start && block.number < end;
+    }
+}
+```
+
+### Block-Based Epochs
+
+```solidity
+contract Epochs {
+    uint256 public constant EPOCH_LENGTH = 7200; // ~24 hours
+    uint256 public genesisBlock;
+
+    constructor() {
+        genesisBlock = block.number;
+    }
+
+    function currentEpoch() public view returns (uint256) {
+        return (block.number - genesisBlock) / EPOCH_LENGTH;
+    }
+
+    function blocksUntilNextEpoch() public view returns (uint256) {
+        uint256 currentEpochStart = genesisBlock + (currentEpoch() * EPOCH_LENGTH);
+        uint256 nextEpochStart = currentEpochStart + EPOCH_LENGTH;
+        return nextEpochStart - block.number;
+    }
+}
+```
+
+### Hardfork Detection
+
+```solidity
+contract HardforkAware {
+    // Example: Shanghai hardfork at block 17,034,870
+    uint256 public constant SHANGHAI_BLOCK = 17_034_870;
+
+    function isShanghaiActive() public view returns (bool) {
+        return block.number >= SHANGHAI_BLOCK;
+    }
+
+    function features() public view returns (string[] memory) {
+        if (block.number >= SHANGHAI_BLOCK) {
+            // PUSH0, warm coinbase, etc.
+        }
+    }
+}
+```
+
+## Historical Milestones
+
+```solidity
+// Notable Ethereum block numbers
+uint256 constant GENESIS = 0;
+uint256 constant HOMESTEAD = 1_150_000;
+uint256 constant DAO_FORK = 1_920_000;
+uint256 constant BYZANTIUM = 4_370_000;
+uint256 constant CONSTANTINOPLE = 7_280_000;
+uint256 constant ISTANBUL = 9_069_000;
+uint256 constant BERLIN = 12_244_000;
+uint256 constant LONDON = 12_965_000; // EIP-1559
+uint256 constant PARIS = 15_537_394; // The Merge
+uint256 constant SHANGHAI = 17_034_870;
+uint256 constant CANCUN = 19_426_587; // EIP-4844
+```
+
+## Benchmarks
+
+**Performance:**
+- Stack push: O(1)
+- No computation required
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[BLOCKHASH (0x40)](/evm/instructions/block/blockhash)** - Get hash of recent block
+- **[TIMESTAMP (0x42)](/evm/instructions/block/timestamp)** - Get block timestamp
+- **[DIFFICULTY (0x44)](/evm/instructions/block/difficulty)** - Get difficulty/PREVRANDAO
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Block Information)
+- [EVM Codes - NUMBER](https://www.evm.codes/#43)
+- [Solidity Docs - block.number](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [Ethereum Block Explorer](https://etherscan.io/blocks)

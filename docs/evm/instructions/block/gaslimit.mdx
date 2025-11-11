@@ -1,0 +1,456 @@
+---
+title: "GASLIMIT (0x45)"
+description: "Get the current block's gas limit"
+---
+
+## Overview
+
+**Opcode:** `0x45`
+**Introduced:** Frontier (EVM genesis)
+
+GASLIMIT retrieves the maximum amount of gas that can be consumed by all transactions in the current block. This limit is dynamically adjusted by validators/miners based on network demand and consensus rules.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+gas_limit (u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.gasLimit)
+```
+
+## Behavior
+
+GASLIMIT pushes the block gas limit onto the stack as a 256-bit unsigned integer:
+
+```
+Ethereum Mainnet (2024): ~30,000,000 gas
+Historical:
+- Genesis:      5,000 gas
+- Homestead:    ~3,000,000 gas
+- London:       ~15,000,000 gas
+- Post-London:  ~30,000,000 gas (dynamic)
+```
+
+The gas limit can adjust by ±1/1024 per block, allowing gradual increases or decreases based on validator votes.
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { gaslimit } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  blockContext: {
+    block_gas_limit: 30_000_000n
+  }
+});
+
+const err = gaslimit(frame);
+console.log(frame.stack); // [30000000n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Gas Capacity Checks
+
+```typescript
+// Check if transaction could fit in block
+const TX_GAS = 500_000n;
+
+gaslimit(frame);
+const blockGasLimit = frame.stack[0];
+
+const canFit = TX_GAS <= blockGasLimit;
+console.log(`Transaction fits: ${canFit}`);
+```
+
+### Gas Usage Estimation
+
+```typescript
+// Calculate block capacity
+gaslimit(frame);
+const limit = frame.stack[0];
+
+// Average simple transfer: 21,000 gas
+const maxSimpleTransfers = limit / 21_000n;
+
+console.log(`Max simple transfers: ${maxSimpleTransfers}`);
+// ~1,428 transfers per block
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+GASLIMIT is one of the cheapest EVM operations.
+
+**Comparison:**
+- `GASLIMIT`: 2 gas
+- `NUMBER`, `TIMESTAMP`, `COINBASE`: 2 gas
+- `GAS` (0x5A): 2 gas
+- `GASPRICE` (0x3A): 2 gas
+
+## Common Usage
+
+### Gas-Aware Operations
+
+```solidity
+contract GasAware {
+    function checkBlockCapacity() public view returns (bool) {
+        // Check if expensive operation could fit
+        uint256 estimatedGas = 5_000_000;
+        return estimatedGas <= block.gaslimit;
+    }
+}
+```
+
+### Dynamic Batch Sizing
+
+```solidity
+contract BatchProcessor {
+    uint256 constant GAS_PER_ITEM = 50_000;
+
+    function maxBatchSize() public view returns (uint256) {
+        // Calculate max items based on block gas limit
+        return block.gaslimit / GAS_PER_ITEM;
+    }
+
+    function processBatch(bytes[] memory data) external {
+        uint256 maxItems = maxBatchSize();
+        require(data.length <= maxItems, "Batch too large");
+
+        for (uint i = 0; i < data.length; i++) {
+            // Process each item
+        }
+    }
+}
+```
+
+### Gas Target Validation
+
+```solidity
+contract GasLimitValidator {
+    uint256 public constant MIN_GAS_LIMIT = 15_000_000;
+
+    function isNetworkHealthy() public view returns (bool) {
+        return block.gaslimit >= MIN_GAS_LIMIT;
+    }
+}
+```
+
+### Network Congestion Detection
+
+```solidity
+contract CongestionDetector {
+    uint256 public constant TARGET_GAS_LIMIT = 30_000_000;
+    uint256 public constant TOLERANCE = 5_000_000;
+
+    function isCongested() public view returns (bool) {
+        // If gas limit dropping, network congestion possible
+        return block.gaslimit < TARGET_GAS_LIMIT - TOLERANCE;
+    }
+
+    function adjustStrategy() external view returns (string memory) {
+        if (block.gaslimit < 20_000_000) {
+            return "High congestion - delay non-urgent txs";
+        } else if (block.gaslimit < 25_000_000) {
+            return "Moderate congestion - increase gas price";
+        } else {
+            return "Normal operation";
+        }
+    }
+}
+```
+
+### Transaction Splitting Logic
+
+```solidity
+contract SmartBatcher {
+    function shouldSplit(uint256 totalGas) public view returns (bool) {
+        // Split if would consume >50% of block gas limit
+        return totalGas > (block.gaslimit / 2);
+    }
+
+    function calculateChunks(uint256 totalGas) public view returns (uint256) {
+        uint256 safeLimit = (block.gaslimit * 80) / 100; // 80% safety margin
+        return (totalGas + safeLimit - 1) / safeLimit; // Ceiling division
+    }
+}
+```
+
+## Security Considerations
+
+### Gas Limit Manipulation
+
+Validators can gradually adjust gas limit (±1/1024 per block):
+
+```solidity
+// Be aware: Gas limit can change over time
+contract GasDependent {
+    uint256 public deploymentGasLimit;
+
+    constructor() {
+        deploymentGasLimit = block.gaslimit;
+    }
+
+    function checkGasLimitChange() public view returns (int256) {
+        return int256(block.gaslimit) - int256(deploymentGasLimit);
+    }
+}
+```
+
+### DoS via Gas Limit Assumptions
+
+Don't assume gas limit won't change:
+
+```solidity
+// VULNERABLE: Assumes constant gas limit
+contract Vulnerable {
+    function massUpdate(uint256[] memory data) external {
+        // Could fail if gas limit decreases
+        for (uint i = 0; i < data.length; i++) {
+            // Operations consuming gas
+        }
+    }
+}
+
+// SAFE: Dynamic sizing
+contract Safe {
+    function safeUpdate(uint256[] memory data) external {
+        uint256 maxItems = block.gaslimit / 100_000; // Dynamic limit
+        require(data.length <= maxItems, "Too many items");
+
+        for (uint i = 0; i < data.length; i++) {
+            // Operations consuming gas
+        }
+    }
+}
+```
+
+### Block Gas Limit vs Transaction Gas Limit
+
+```solidity
+contract GasLimitAware {
+    // block.gaslimit: Max gas for entire block
+    // gasleft(): Remaining gas in current transaction
+
+    function expensiveOperation() external {
+        // Check transaction gas, not block gas
+        require(gasleft() >= 100_000, "Insufficient gas in tx");
+
+        // Heavy computation
+    }
+}
+```
+
+### EIP-1559 Considerations
+
+Post-London (EIP-1559), gas limit still applies:
+
+```solidity
+contract EIP1559Aware {
+    // Block gas limit: Hard cap
+    // Base fee: Adjusts based on block fullness
+    // Target: 50% of gas limit (15M if limit is 30M)
+
+    function gasMetrics() public view returns (
+        uint256 limit,
+        uint256 target,
+        uint256 baseFee
+    ) {
+        limit = block.gaslimit;
+        target = block.gaslimit / 2; // EIP-1559 target
+        baseFee = block.basefee;
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// GASLIMIT opcode (0x45) - Get block gas limit
+pub fn gaslimit(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(@as(u256, evm.block_context.block_gas_limit));
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * GASLIMIT opcode (0x45) - Get block gas limit
+ */
+export function gaslimit(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push gas limit to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(BigInt(frame.evm.blockContext.block_gas_limit));
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Minimum Gas Limit
+
+```typescript
+// Extremely low gas limit (test network)
+const frame = createFrame({
+  blockContext: { block_gas_limit: 5000 }
+});
+
+gaslimit(frame);
+console.log(frame.stack); // [5000n]
+```
+
+### Maximum Gas Limit
+
+```typescript
+// Theoretical maximum (u64 in practice)
+const frame = createFrame({
+  blockContext: { block_gas_limit: 1_000_000_000 }
+});
+
+gaslimit(frame);
+console.log(frame.stack); // [1000000000n]
+```
+
+### Historical Gas Limits
+
+```typescript
+// London hardfork (~15M)
+const londonFrame = createFrame({
+  blockContext: { block_gas_limit: 15_000_000 }
+});
+
+// Current (~30M)
+const currentFrame = createFrame({
+  blockContext: { block_gas_limit: 30_000_000 }
+});
+```
+
+### Stack Overflow
+
+```typescript
+// Stack full (1024 items)
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  blockContext: { block_gas_limit: 30_000_000 }
+});
+
+const err = gaslimit(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+## Historical Evolution
+
+### Gas Limit Increases
+
+```
+Genesis (2015):        5,000 gas
+Frontier:              ~3,000,000 gas
+Homestead (2016):      ~3,000,000 gas
+Spurious Dragon:       ~4,700,000 gas
+Byzantium:             ~8,000,000 gas
+Constantinople:        ~8,000,000 gas
+Istanbul:              ~10,000,000 gas
+Berlin:                ~15,000,000 gas
+London (2021):         ~15,000,000 gas
+Post-London (2024):    ~30,000,000 gas
+```
+
+### Adjustment Rules
+
+```solidity
+// Gas limit can adjust by ±1/1024 per block
+uint256 maxIncrease = currentGasLimit / 1024;
+uint256 maxDecrease = currentGasLimit / 1024;
+
+// Validators vote by setting gas target in block header
+// Network gradually converges to consensus
+```
+
+## Practical Patterns
+
+### Safe Batch Processing
+
+```solidity
+contract SafeBatcher {
+    uint256 constant SAFETY_MARGIN = 20; // 20% safety margin
+
+    function safeBatchSize(uint256 gasPerItem) public view returns (uint256) {
+        uint256 availableGas = (block.gaslimit * (100 - SAFETY_MARGIN)) / 100;
+        return availableGas / gasPerItem;
+    }
+}
+```
+
+### Gas Limit Monitoring
+
+```solidity
+contract GasLimitMonitor {
+    event GasLimitChanged(uint256 oldLimit, uint256 newLimit, uint256 blockNumber);
+
+    uint256 public lastSeenGasLimit;
+
+    function checkAndUpdate() external {
+        uint256 current = block.gaslimit;
+
+        if (current != lastSeenGasLimit) {
+            emit GasLimitChanged(lastSeenGasLimit, current, block.number);
+            lastSeenGasLimit = current;
+        }
+    }
+}
+```
+
+## Benchmarks
+
+**Performance:**
+- Stack push: O(1)
+- No computation required
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[GAS (0x5A)](/evm/instructions/context/gas)** - Get remaining transaction gas
+- **[GASPRICE (0x3A)](/evm/instructions/context/gasprice)** - Get gas price
+- **[BASEFEE (0x48)](/evm/instructions/block/basefee)** - Get base fee (EIP-1559)
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Block Information)
+- [EVM Codes - GASLIMIT](https://www.evm.codes/#45)
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee market change
+- [Solidity Docs - block.gaslimit](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)

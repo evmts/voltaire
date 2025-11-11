@@ -1,0 +1,204 @@
+---
+title: "Context Instructions"
+description: "EVM opcodes for accessing execution environment information"
+---
+
+## Overview
+
+Context instructions provide access to information about the current execution environment, including addresses, call data, gas prices, and external account state. These opcodes (0x30-0x3f) form the foundation for contracts to understand their execution context and interact with the broader blockchain state.
+
+## Instruction Categories
+
+### Environment Context (0x30-0x34)
+
+Basic execution environment information:
+
+- **ADDRESS (0x30)** - Get currently executing account address
+- **BALANCE (0x31)** - Get balance of an account
+- **ORIGIN (0x32)** - Get transaction origination address
+- **CALLER (0x33)** - Get immediate caller address
+- **CALLVALUE (0x34)** - Get deposited value in current call
+
+### Call Data Access (0x35-0x37)
+
+Reading input data passed to the contract:
+
+- **CALLDATALOAD (0x35)** - Load 32 bytes from calldata
+- **CALLDATASIZE (0x36)** - Get size of calldata
+- **CALLDATACOPY (0x37)** - Copy calldata to memory
+
+### Code Introspection (0x38-0x39)
+
+Accessing the currently executing code:
+
+- **CODESIZE (0x38)** - Get size of executing code
+- **CODECOPY (0x39)** - Copy executing code to memory
+
+### Transaction Context (0x3a)
+
+Transaction-level information:
+
+- **GASPRICE (0x3a)** - Get transaction gas price
+
+### External Account Access (0x3b-0x3f)
+
+Querying other accounts on the blockchain:
+
+- **EXTCODESIZE (0x3b)** - Get size of external account's code
+- **EXTCODECOPY (0x3c)** - Copy external account's code to memory
+- **RETURNDATASIZE (0x3d)** - Get size of return data from last call
+- **RETURNDATACOPY (0x3e)** - Copy return data to memory
+- **EXTCODEHASH (0x3f)** - Get keccak256 hash of external account's code
+
+## Gas Costs
+
+Context instructions have varying gas costs based on their complexity and hardfork:
+
+**Simple Environment Access (2 gas):**
+- ADDRESS, ORIGIN, CALLER, CALLVALUE
+- CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE
+
+**Call Data Operations (3+ gas):**
+- CALLDATALOAD: 3 gas
+- CALLDATACOPY, CODECOPY, RETURNDATACOPY: 3 + memory expansion + copy cost
+
+**External Account Access (700+ gas):**
+- BALANCE: 700 gas (Istanbul+)
+- EXTCODESIZE: 700 gas (Tangerine Whistle+)
+- EXTCODECOPY: 700 + memory expansion + copy cost
+- EXTCODEHASH: 700 gas (Constantinople+)
+
+## Access Cost Evolution
+
+External account access costs have changed significantly across hardforks to prevent DoS attacks:
+
+| Opcode | Frontier | Tangerine Whistle | Berlin |
+|--------|----------|-------------------|--------|
+| BALANCE | 20 | 400 | 2600 (cold) / 100 (warm) |
+| EXTCODESIZE | 20 | 700 | 2600 (cold) / 100 (warm) |
+| EXTCODECOPY | 20 | 700 | 2600 (cold) / 100 (warm) |
+| EXTCODEHASH | - | - | 2600 (cold) / 100 (warm) |
+
+## Security Considerations
+
+### tx.origin vs msg.sender
+
+**Critical distinction:**
+- `ORIGIN (0x32)` - Original transaction sender (never changes)
+- `CALLER (0x33)` - Immediate caller (changes with each call)
+
+**Vulnerability:**
+```solidity
+// VULNERABLE: Uses tx.origin for authorization
+function withdraw() public {
+    require(tx.origin == owner);  // Can be exploited!
+    // ...
+}
+```
+
+**Attack scenario:**
+1. Attacker deploys malicious contract
+2. Owner calls attacker's contract
+3. Attacker's contract calls victim's `withdraw()`
+4. `tx.origin == owner` passes, funds stolen
+
+**Safe pattern:**
+```solidity
+// SAFE: Use msg.sender for authorization
+function withdraw() public {
+    require(msg.sender == owner);  // Correct!
+    // ...
+}
+```
+
+### Return Data Bounds
+
+RETURNDATACOPY can revert if copying beyond actual return data:
+
+```solidity
+// Can revert if returndata size < offset + length
+assembly {
+    returndatacopy(dest, offset, length)
+}
+```
+
+### External Code Checks
+
+EXTCODESIZE returns 0 for:
+- Externally owned accounts (EOAs)
+- Contracts during construction (before constructor completes)
+
+**Bypass example:**
+```solidity
+// INSUFFICIENT: Can be bypassed during construction
+modifier onlyEOA() {
+    uint256 size;
+    assembly { size := extcodesize(caller()) }
+    require(size == 0);
+    _;
+}
+```
+
+## Common Patterns
+
+### Checking Contract vs EOA
+
+```solidity
+function isContract(address addr) view returns (bool) {
+    uint256 size;
+    assembly { size := extcodesize(addr) }
+    return size > 0;
+}
+```
+
+### Reading Call Data Efficiently
+
+```solidity
+// Load single value
+function getValue() pure returns (uint256 value) {
+    assembly {
+        value := calldataload(4)  // Skip function selector
+    }
+}
+
+// Copy calldata to memory
+function copyData(uint256 offset, uint256 length) pure returns (bytes memory) {
+    bytes memory data = new bytes(length);
+    assembly {
+        calldatacopy(add(data, 0x20), offset, length)
+    }
+    return data;
+}
+```
+
+### Verifying Code Hash
+
+```solidity
+function verifyImplementation(address impl, bytes32 expected) view returns (bool) {
+    bytes32 hash;
+    assembly { hash := extcodehash(impl) }
+    return hash == expected;
+}
+```
+
+## Implementation Reference
+
+Context instruction handlers are implemented in:
+- TypeScript: `/src/evm/context/`
+- Zig: `/src/evm/context/handlers_context.zig`
+
+Each instruction follows the standard handler pattern:
+1. Pop operands from stack
+2. Consume gas (including memory expansion for copy operations)
+3. Access context information or external state
+4. Push result to stack
+5. Increment program counter
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix H (Virtual Machine Specification)
+- [EVM Codes - Context Instructions](https://www.evm.codes/#30?fork=cancun)
+- [EIP-150](https://eips.ethereum.org/EIPS/eip-150) - Gas cost changes (Tangerine Whistle)
+- [EIP-1052](https://eips.ethereum.org/EIPS/eip-1052) - EXTCODEHASH opcode
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Gas cost increases (Berlin)
+- [SWC-115: Authorization through tx.origin](https://swcregistry.io/docs/SWC-115)
