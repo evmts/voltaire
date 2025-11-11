@@ -10,7 +10,7 @@ import { Bn254InvalidPointError } from "../errors.js";
  * @param {bigint} x - X coordinate
  * @param {bigint} y - Y coordinate
  * @returns {import('../BrandedG1Point.js').BrandedG1Point} G1 point
- * @throws {Bn254InvalidPointError} If point not on curve
+ * @throws {Bn254InvalidPointError} If point not on bn254 G1 curve
  * @example
  * ```javascript
  * import * as G1 from './crypto/bn254/G1/index.js';
@@ -26,7 +26,11 @@ export function fromAffine(x, y) {
 	const rhs = Fp.add(x3, B_G1);
 
 	if (y2 !== rhs) {
-		throw new Bn254InvalidPointError("Point not on G1 curve");
+		throw new Bn254InvalidPointError("Point not on bn254 G1 curve", {
+			code: "INVALID_CURVE_POINT",
+			context: { x: x_mod.toString(16), y: y_mod.toString(16), curve: "G1" },
+			docsPath: "/crypto/bn254#g1-operations",
+		});
 	}
 
 	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({

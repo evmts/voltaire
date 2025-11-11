@@ -11,8 +11,8 @@ import { isOnCurve } from "./isOnCurve.js";
  * @param {import('../Fp2.js').Fp2} x - X coordinate (Fp2 element)
  * @param {import('../Fp2.js').Fp2} y - Y coordinate (Fp2 element)
  * @returns {import('../BrandedG2Point.js').BrandedG2Point} G2 point
- * @throws {Bn254InvalidPointError} If point not on curve
- * @throws {Bn254SubgroupCheckError} If point not in subgroup
+ * @throws {Bn254InvalidPointError} If point not on bn254 G2 curve
+ * @throws {Bn254SubgroupCheckError} If point not in G2 subgroup
  * @example
  * ```javascript
  * import * as G2 from './crypto/bn254/G2/index.js';
@@ -30,10 +30,25 @@ export function fromAffine(x, y) {
 	});
 
 	if (!isOnCurve(point)) {
-		throw new Bn254InvalidPointError("Point not on G2 curve");
+		throw new Bn254InvalidPointError("Point not on bn254 G2 curve", {
+			code: "INVALID_CURVE_POINT",
+			context: {
+				x: { c0: x.c0.toString(16), c1: x.c1.toString(16) },
+				y: { c0: y.c0.toString(16), c1: y.c1.toString(16) },
+				curve: "G2",
+			},
+			docsPath: "/crypto/bn254#g2-operations",
+		});
 	}
 	if (!isInSubgroup(point)) {
-		throw new Bn254SubgroupCheckError("Point not in G2 subgroup");
+		throw new Bn254SubgroupCheckError("Point not in bn254 G2 subgroup", {
+			code: "INVALID_SUBGROUP",
+			context: {
+				x: { c0: x.c0.toString(16), c1: x.c1.toString(16) },
+				y: { c0: y.c0.toString(16), c1: y.c1.toString(16) },
+			},
+			docsPath: "/crypto/bn254#subgroup-check",
+		});
 	}
 	return point;
 }

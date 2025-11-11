@@ -9,7 +9,7 @@ import { Bn254Error } from "./errors.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - 128-byte serialization
  * @returns {import('./BrandedG2Point.js').BrandedG2Point} G2 point
- * @throws {Bn254Error} If bytes length is invalid
+ * @throws {Bn254Error} If bytes length is invalid (must be 128 bytes)
  * @example
  * ```javascript
  * import { deserializeG2 } from './crypto/bn254/deserializeG2.js';
@@ -19,7 +19,11 @@ import { Bn254Error } from "./errors.js";
  */
 export function deserializeG2(bytes) {
 	if (bytes.length !== 128) {
-		throw new Bn254Error("Invalid G2 point serialization");
+		throw new Bn254Error("Invalid G2 point serialization length", {
+			code: "INVALID_LENGTH",
+			context: { received: bytes.length, expected: 128, curve: "G2" },
+			docsPath: "/crypto/bn254#serialization",
+		});
 	}
 
 	const xc0 = BigInt(`0x${bytesToHex(bytes.slice(0, 32))}`);

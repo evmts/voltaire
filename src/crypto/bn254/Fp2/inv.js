@@ -9,7 +9,7 @@ import { isZero } from "./isZero.js";
  * @since 0.0.0
  * @param {import('../Fp2.js').Fp2} a - Element to invert
  * @returns {import('../Fp2.js').Fp2} Inverse
- * @throws {Bn254Error} If element is zero
+ * @throws {Bn254Error} If element is zero (division by zero)
  * @example
  * ```javascript
  * import * as Fp2 from './crypto/bn254/Fp2/index.js';
@@ -18,7 +18,13 @@ import { isZero } from "./isZero.js";
  * ```
  */
 export function inv(a) {
-	if (isZero(a)) throw new Bn254Error("Division by zero in Fp2");
+	if (isZero(a)) {
+		throw new Bn254Error("Division by zero in Fp2 field", {
+			code: "DIVISION_BY_ZERO",
+			context: { field: "Fp2", value: a },
+			docsPath: "/crypto/bn254#extension-field",
+		});
+	}
 	const factor = Fp.inv(Fp.add(Fp.mul(a.c0, a.c0), Fp.mul(a.c1, a.c1)));
 	return { c0: Fp.mul(a.c0, factor), c1: Fp.neg(Fp.mul(a.c1, factor)) };
 }

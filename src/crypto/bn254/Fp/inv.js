@@ -9,7 +9,7 @@ import { pow } from "./pow.js";
  * @since 0.0.0
  * @param {bigint} a - Element to invert
  * @returns {bigint} a^(-1) mod FP_MOD
- * @throws {Bn254Error} If a is zero
+ * @throws {Bn254Error} If a is zero (division by zero)
  * @example
  * ```javascript
  * import * as Fp from './crypto/bn254/Fp/index.js';
@@ -17,6 +17,12 @@ import { pow } from "./pow.js";
  * ```
  */
 export function inv(a) {
-	if (a === 0n) throw new Bn254Error("Division by zero");
+	if (a === 0n) {
+		throw new Bn254Error("Division by zero in Fp field", {
+			code: "DIVISION_BY_ZERO",
+			context: { field: "Fp", value: a },
+			docsPath: "/crypto/bn254#field-operations",
+		});
+	}
 	return pow(a, FP_MOD - 2n);
 }
