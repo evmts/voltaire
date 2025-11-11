@@ -70,6 +70,39 @@ console.log(`Valid: ${analysis.valid}`)
 **Defined in:** [primitives/Bytecode/BrandedBytecode/fromHex.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/fromHex.js#L8)
 
 </Tab>
+<Tab title="Zig">
+
+## `Bytecode.init(allocator: Allocator, code: []const u8): !Bytecode`
+
+Initialize bytecode from raw bytes. `init` works with any byte slice, whether parsed from hex or provided directly.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for analyzed data
+- `code: []const u8` - Raw bytecode bytes
+
+**Returns:** `Bytecode` - Bytecode with pre-analyzed jump destinations
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Parse hex string manually or use your hex parser
+const code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // PUSH1 0x80, PUSH1 0x40, MSTORE
+var bytecode = try Bytecode.init(allocator, &code);
+defer bytecode.deinit();
+```
+
+**Memory:** Must call `deinit()` to clean up jump destination map.
+
+**Defined in:** [primitives/Bytecode/bytecode.zig:36](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig#L36)
+
+</Tab>
 </Tabs>
 
 ## See Also

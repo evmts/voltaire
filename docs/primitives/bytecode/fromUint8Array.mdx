@@ -70,6 +70,42 @@ if (!validate(code)) {
 **Defined in:** [primitives/Bytecode/BrandedBytecode/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/from.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `Bytecode.fromUint8Array(allocator: Allocator, bytes: []const u8): !Bytecode`
+
+Create bytecode from raw byte slice. Alias for `init` that emphasizes the byte array input.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for analyzed data
+- `bytes: []const u8` - Raw bytecode bytes
+
+**Returns:** `Bytecode` - Bytecode with pre-analyzed jump destinations
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const bytes = [_]u8{
+  0x60, 0x80,  // PUSH1 0x80
+  0x60, 0x40,  // PUSH1 0x40
+  0x52,        // MSTORE
+};
+var bytecode = try Bytecode.fromUint8Array(allocator, &bytes);
+defer bytecode.deinit();
+```
+
+**Memory:** Must call `deinit()` to clean up.
+
+**Defined in:** [primitives/Bytecode/bytecode.zig:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig#L49)
+
+</Tab>
 </Tabs>
 
 ## See Also
