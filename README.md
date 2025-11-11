@@ -32,7 +32,7 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 - **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
 - **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
 - **High-performance** - Opt-in [WASM](https://webassembly.org/) implementations for performance-critical operations
-- **Type-safe** - [Branded types](https://voltaire.tevm.sh/primitives/branded-types/) provided for opt-in typesafety
+- **Type-safe** - [Branded types](https://voltaire.tevm.sh/concepts/branded-types/) provided for opt-in typesafety
 - **Multi-language** - Currently supports TypeScript and [Zig](https://ziglang.org/). Additional languages planned (see Language Support Wishlist below).
 
 ## Get Started
