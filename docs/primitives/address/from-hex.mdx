@@ -201,9 +201,15 @@ result = primitives_address_from_hex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E
 
 ## Format Requirements
 
-**Length:**
-- With `0x` prefix: exactly 42 characters
-- Without `0x` prefix: exactly 40 characters
+**Length (implementation-dependent):**
+
+**TypeScript implementations (Class API, Namespace API, Effect.ts):**
+- **Requires** `0x` prefix: exactly 42 characters total
+
+**Zig and C implementations:**
+- **Accepts** both formats:
+  - With `0x` prefix: exactly 42 characters
+  - Without `0x` prefix: exactly 40 characters
 
 **Characters:**
 - Valid: `0-9`, `a-f`, `A-F`
