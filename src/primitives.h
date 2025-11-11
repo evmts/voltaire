@@ -669,6 +669,15 @@ int p256Verify(const uint8_t * hash, const uint8_t * signature, const uint8_t * 
  */
 int p256DerivePublicKey(const uint8_t * private_key, uint8_t * out_public_key);
 
+/**
+ * Perform P256 ECDH key exchange
+ * private_key: 32-byte private key
+ * public_key: 64-byte uncompressed public key (x || y)
+ * out_shared: 32-byte output buffer for shared secret
+ * Returns 0 on success, negative error code on failure
+ */
+int p256Ecdh(const uint8_t * private_key, const uint8_t * public_key, uint8_t * out_shared);
+
 // ============================================================================
 // HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
 // ============================================================================

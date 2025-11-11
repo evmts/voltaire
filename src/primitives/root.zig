@@ -152,6 +152,8 @@ pub const Ens = @import("Ens/ens.zig");
 // Protocol
 pub const Hardfork = @import("Hardfork/hardfork.zig").Hardfork;
 pub const ForkTransition = @import("Hardfork/hardfork.zig").ForkTransition;
+pub const Eips = @import("Hardfork/Eips.zig").Eips;
+pub const EipOverride = @import("Hardfork/Eips.zig").EipOverride;
 
 // Data structures
 pub const Trie = @import("trie.zig").Trie;

@@ -133,6 +133,53 @@ pub const Hardfork = enum {
         return self.toInt() < target.toInt();
     }
 
+    /// Mainnet activation block numbers for each hardfork
+    /// Returns null if hardfork hasn't been activated yet or is network-specific
+    pub fn mainnetActivationBlock(self: Hardfork) ?u64 {
+        return switch (self) {
+            .FRONTIER => 0,
+            .HOMESTEAD => 1150000,
+            .DAO => 1920000,
+            .TANGERINE_WHISTLE => 2463000,
+            .SPURIOUS_DRAGON => 2675000,
+            .BYZANTIUM => 4370000,
+            .CONSTANTINOPLE => 7280000,
+            .PETERSBURG => 7280000,
+            .ISTANBUL => 9069000,
+            .MUIR_GLACIER => 9200000,
+            .BERLIN => 12244000,
+            .LONDON => 12965000,
+            .ARROW_GLACIER => 13773000,
+            .GRAY_GLACIER => 15050000,
+            .MERGE => 15537394,
+            .SHANGHAI => 17034870,
+            .CANCUN => 19426587,
+            .PRAGUE => null, // Not yet activated on mainnet
+            .OSAKA => null, // Not yet activated on mainnet
+        };
+    }
+
+    /// Mainnet activation timestamps for post-Merge hardforks
+    /// Returns null if hardfork is pre-Merge or hasn't been activated yet
+    pub fn mainnetActivationTimestamp(self: Hardfork) ?u64 {
+        return switch (self) {
+            .FRONTIER, .HOMESTEAD, .DAO, .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG, .ISTANBUL, .MUIR_GLACIER, .BERLIN, .LONDON, .ARROW_GLACIER, .GRAY_GLACIER => null,
+            .MERGE => 1663224162,
+            .SHANGHAI => 1681338455,
+            .CANCUN => 1710338135,
+            .PRAGUE => null, // Not yet activated on mainnet
+            .OSAKA => null, // Not yet activated on mainnet
+        };
+    }
+
+    /// Check if a specific EIP number is active in this hardfork
+    /// This delegates to the Eips struct for the actual EIP tracking
+    pub fn isEipActive(self: Hardfork, eip: u16) bool {
+        const Eips = @import("./Eips.zig").Eips;
+        const eips = Eips{ .hardfork = self };
+        return eips.is_eip_active(eip);
+    }
+
     /// Parse hardfork from string name (case-insensitive)
     /// Supports both standard names and common variations
     pub fn fromString(name: []const u8) ?Hardfork {
@@ -732,4 +779,102 @@ test "toInt consistency" {
 
     // Verify ordering through toInt
     try testing.expect(frontier.toInt() < osaka.toInt());
+}
+
+test "mainnet activation blocks" {
+    try testing.expectEqual(@as(?u64, 0), Hardfork.FRONTIER.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 1150000), Hardfork.HOMESTEAD.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 1920000), Hardfork.DAO.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 2463000), Hardfork.TANGERINE_WHISTLE.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 2675000), Hardfork.SPURIOUS_DRAGON.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 4370000), Hardfork.BYZANTIUM.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 7280000), Hardfork.CONSTANTINOPLE.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 7280000), Hardfork.PETERSBURG.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 9069000), Hardfork.ISTANBUL.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 9200000), Hardfork.MUIR_GLACIER.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 12244000), Hardfork.BERLIN.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 12965000), Hardfork.LONDON.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 13773000), Hardfork.ARROW_GLACIER.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 15050000), Hardfork.GRAY_GLACIER.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 15537394), Hardfork.MERGE.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 17034870), Hardfork.SHANGHAI.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 19426587), Hardfork.CANCUN.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, null), Hardfork.PRAGUE.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, null), Hardfork.OSAKA.mainnetActivationBlock());
+}
+
+test "mainnet activation timestamps" {
+    // Pre-Merge forks have no timestamp
+    try testing.expectEqual(@as(?u64, null), Hardfork.FRONTIER.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, null), Hardfork.HOMESTEAD.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, null), Hardfork.BERLIN.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, null), Hardfork.LONDON.mainnetActivationTimestamp());
+
+    // Post-Merge forks have timestamps
+    try testing.expectEqual(@as(?u64, 1663224162), Hardfork.MERGE.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, 1681338455), Hardfork.SHANGHAI.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, 1710338135), Hardfork.CANCUN.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, null), Hardfork.PRAGUE.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, null), Hardfork.OSAKA.mainnetActivationTimestamp());
+}
+
+test "mainnet activation block ordering" {
+    const frontier = Hardfork.FRONTIER.mainnetActivationBlock().?;
+    const homestead = Hardfork.HOMESTEAD.mainnetActivationBlock().?;
+    const berlin = Hardfork.BERLIN.mainnetActivationBlock().?;
+    const london = Hardfork.LONDON.mainnetActivationBlock().?;
+    const merge = Hardfork.MERGE.mainnetActivationBlock().?;
+    const shanghai = Hardfork.SHANGHAI.mainnetActivationBlock().?;
+    const cancun = Hardfork.CANCUN.mainnetActivationBlock().?;
+
+    try testing.expect(frontier < homestead);
+    try testing.expect(homestead < berlin);
+    try testing.expect(berlin < london);
+    try testing.expect(london < merge);
+    try testing.expect(merge < shanghai);
+    try testing.expect(shanghai < cancun);
+}
+
+test "mainnet activation timestamp ordering" {
+    const merge = Hardfork.MERGE.mainnetActivationTimestamp().?;
+    const shanghai = Hardfork.SHANGHAI.mainnetActivationTimestamp().?;
+    const cancun = Hardfork.CANCUN.mainnetActivationTimestamp().?;
+
+    try testing.expect(merge < shanghai);
+    try testing.expect(shanghai < cancun);
+}
+
+test "isEipActive delegation" {
+    try testing.expect(!Hardfork.FRONTIER.isEipActive(150));
+    try testing.expect(Hardfork.TANGERINE_WHISTLE.isEipActive(150));
+
+    try testing.expect(!Hardfork.ISTANBUL.isEipActive(2929));
+    try testing.expect(Hardfork.BERLIN.isEipActive(2929));
+
+    try testing.expect(!Hardfork.BERLIN.isEipActive(1559));
+    try testing.expect(Hardfork.LONDON.isEipActive(1559));
+
+    try testing.expect(!Hardfork.LONDON.isEipActive(3855));
+    try testing.expect(Hardfork.SHANGHAI.isEipActive(3855));
+
+    try testing.expect(!Hardfork.SHANGHAI.isEipActive(1153));
+    try testing.expect(Hardfork.CANCUN.isEipActive(1153));
+    try testing.expect(Hardfork.CANCUN.isEipActive(4844));
+    try testing.expect(Hardfork.CANCUN.isEipActive(6780));
+
+    try testing.expect(!Hardfork.CANCUN.isEipActive(7702));
+    try testing.expect(Hardfork.PRAGUE.isEipActive(7702));
+    try testing.expect(Hardfork.PRAGUE.isEipActive(2537));
+    try testing.expect(Hardfork.PRAGUE.isEipActive(7002));
+
+    try testing.expect(Hardfork.OSAKA.isEipActive(7883));
+    try testing.expect(Hardfork.OSAKA.isEipActive(7823));
+    try testing.expect(Hardfork.OSAKA.isEipActive(7702));
+}
+
+test "constantinople petersburg same block" {
+    const constantinople_block = Hardfork.CONSTANTINOPLE.mainnetActivationBlock().?;
+    const petersburg_block = Hardfork.PETERSBURG.mainnetActivationBlock().?;
+
+    try testing.expectEqual(constantinople_block, petersburg_block);
 }
