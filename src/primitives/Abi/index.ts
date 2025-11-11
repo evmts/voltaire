@@ -9,6 +9,7 @@ export * as Function from "./function/index.js";
 export * as Event from "./event/index.js";
 export * as Error from "./error/index.js";
 export * as Constructor from "./constructor/index.js";
+export * as Parameter from "./parameter/index.js";
 
 // Export Item namespace for generic ABI item operations
 import { format } from "./BrandedAbi/format.js";
@@ -30,3 +31,12 @@ export { encode } from "./BrandedAbi/encode.js";
 export { decode } from "./BrandedAbi/decode.js";
 export { decodeData } from "./BrandedAbi/decodeData.js";
 export { parseLogs } from "./BrandedAbi/parseLogs.js";
+
+// Export error types
+export {
+	AbiEncodingError,
+	AbiDecodingError,
+	AbiParameterMismatchError,
+	AbiItemNotFoundError,
+	AbiInvalidSelectorError,
+} from "./Errors.js";
