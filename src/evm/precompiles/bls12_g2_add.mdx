@@ -1,0 +1,77 @@
+---
+title: BLS12-381 G2 Add (0x0E)
+description: BLS12-381 G2 point addition precompile
+---
+
+# BLS12-381 G2 Add
+
+BLS12-381 G2 curve point addition for BLS signature aggregation.
+
+## Overview
+
+The BLS12-381 G2 Add precompile provides:
+- **G2 Point Addition**: Add two points on BLS12-381 G2 curve
+- **Signature Aggregation**: Used in BLS signature schemes
+- **Fixed Gas**: Constant cost
+- **C Library**: Uses blst for performance
+- **Address**: 0x000000000000000000000000000000000000000E
+- **Since**: Prague (EIP-2537)
+
+**Source**: `src/precompiles/bls12_g2_add.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: 512 bytes (two 256-byte G2 points)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (512 bytes):
+- Bytes 0-255: G2 point 1 (x, y coordinates over F_p²)
+- Bytes 256-511: G2 point 2
+
+**Returns:** 256 bytes (result point)
+
+**Errors:** `OutOfGas`, `InvalidInput`, `InvalidPoint`
+
+## Gas Costs
+
+**Fixed Cost:** 800 gas
+
+## BLS12-381 G2 Curve
+
+**Equation:** y² = x³ + 4(1 + i) (over F_p²)
+
+**Point Format:** Uncompressed (x, y) = 256 bytes total
+
+## Performance
+
+**Native (ReleaseFast)**: ~40-80 μs
+**WASM (ReleaseFast)**: Not supported (uses C library)
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bls12_g2_add
+```
+
+## Related
+
+- [BLS12-381 G2 Mul](/zig/precompiles/bls12_g2_mul/) - G2 scalar multiplication (0x0F)
+- [BLS12-381 G1 Add](/zig/precompiles/bls12_g1_add/) - G1 addition (0x0B)
+
+## References
+
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Precompile for BLS12-381 curve operations

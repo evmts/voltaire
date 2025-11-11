@@ -1,0 +1,73 @@
+---
+title: BLS12-381 G2 MSM (0x10)
+description: BLS12-381 G2 multi-scalar multiplication precompile
+---
+
+# BLS12-381 G2 MSM
+
+BLS12-381 G2 curve multi-scalar multiplication (MSM) for efficient batch operations.
+
+## Overview
+
+The BLS12-381 G2 MSM precompile provides:
+- **Multi-Scalar Multiplication**: Compute Σ(kᵢ * Pᵢ) efficiently
+- **Batch Operations**: More efficient than individual multiplications
+- **Variable Gas**: Cost scales with number of points
+- **C Library**: Uses blst for performance
+- **Address**: 0x0000000000000000000000000000000000000010
+- **Since**: Prague (EIP-2537)
+
+**Source**: `src/precompiles/bls12_g2_msm.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: Multiple of 288 bytes (k pairs of point + scalar)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (288k bytes for k pairs):
+Each pair (288 bytes):
+- Bytes 0-255: G2 point
+- Bytes 256-287: Scalar (32 bytes)
+
+**Returns:** 256 bytes (result point)
+
+**Errors:** `OutOfGas`, `InvalidInput`, `InvalidPoint`
+
+## Gas Costs
+
+**Formula:** `55000 * k * discount(k)`
+
+Where discount depends on batch size for efficiency.
+
+## Performance
+
+**Native (ReleaseFast)**: Scales sub-linearly with k
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bls12_g2_msm
+```
+
+## Related
+
+- [BLS12-381 G2 Mul](/zig/precompiles/bls12_g2_mul/) - Single scalar mul (0x0F)
+- [BLS12-381 G1 MSM](/zig/precompiles/bls12_g1_msm/) - G1 MSM (0x0D)
+
+## References
+
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Precompile for BLS12-381 curve operations
