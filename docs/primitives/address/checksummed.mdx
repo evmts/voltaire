@@ -358,7 +358,7 @@ Validate user-provided addresses and detect typos:
 
 ```typescript
 import { Address } from '@tevm/voltaire'
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 
 function validateUserInput(input: string): { valid: boolean; error?: string; address?: Address } {
   const trimmed = input.trim()
@@ -550,10 +550,10 @@ Using `ChecksumAddress` includes keccak256 implementation (~5-10 KB). For minima
 
 ```typescript
 // Minimal bundle (no crypto)
-import { from, toHex } from '@tevm/voltaire/BrandedAddress'
+import { from, toHex } from '@tevm/voltaire/Address'
 
 // With checksumming (+ keccak256)
-import { from } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import { from } from '@tevm/voltaire/Address/ChecksumAddress'
 ```
 
 ## Related
