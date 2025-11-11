@@ -1,0 +1,526 @@
+---
+title: "BLOCKHASH (0x40)"
+description: "Get the hash of one of the 256 most recent complete blocks"
+---
+
+## Overview
+
+**Opcode:** `0x40`
+**Introduced:** Frontier (EVM genesis)
+
+BLOCKHASH retrieves the keccak256 hash of a specified block number. It only returns hashes for the 256 most recent complete blocks. For blocks outside this range or future blocks, it returns zero.
+
+This instruction enables contracts to reference historical blockchain state for verification, commitment schemes, and deterministic randomness.
+
+## Specification
+
+**Stack Input:**
+```
+block_number (top)
+```
+
+**Stack Output:**
+```
+hash (or 0 if unavailable)
+```
+
+**Gas Cost:** 20 (GasExtStep)
+
+**Behavior:**
+- Returns block hash if `current_block - 256 < block_number < current_block`
+- Returns `0x0000...0000` if block is too old (> 256 blocks ago)
+- Returns `0x0000...0000` if block_number >= current_block
+- Returns `0x0000...0000` if block hash not available in context
+
+## Behavior
+
+### Valid Range Window
+
+BLOCKHASH maintains a sliding 256-block window:
+
+```
+Current Block: 18,000,000
+
+Valid Range: 17,999,744 to 17,999,999 (256 blocks)
+├─ 17,999,744 (oldest available)
+├─ 17,999,745
+│  ...
+├─ 17,999,999 (most recent complete)
+└─ 18,000,000 (current - unavailable)
+
+Returns 0:
+├─ <= 17,999,743 (too old)
+└─ >= 18,000,000 (current or future)
+```
+
+### Hash Availability
+
+The EVM maintains an internal `block_hashes` array indexed with negative offsets:
+```
+block_hashes[-(current_block - block_number)]
+```
+
+## Examples
+
+### Recent Block Hash
+
+```typescript
+import { blockhash } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Query hash of block 17,999,999 (current: 18,000,000)
+const frame = createFrame({
+  stack: [17_999_999n],
+  blockContext: {
+    block_number: 18_000_000n,
+    block_hashes: [
+      new Uint8Array(32).fill(0xaa), // block 17,999,999
+      // ... more hashes
+    ]
+  }
+});
+
+const err = blockhash(frame);
+console.log(frame.stack); // [hash as u256]
+console.log(frame.gasRemaining); // Original - 20
+```
+
+### Block Too Old
+
+```typescript
+// Query block from 300 blocks ago (outside 256 window)
+const frame = createFrame({
+  stack: [17_999_700n],
+  blockContext: {
+    block_number: 18_000_000n,
+    block_hashes: [/* recent 256 hashes */]
+  }
+});
+
+const err = blockhash(frame);
+console.log(frame.stack); // [0n] - Too old
+```
+
+### Current or Future Block
+
+```typescript
+// Query current block (not yet complete)
+const frame = createFrame({
+  stack: [18_000_000n],
+  blockContext: {
+    block_number: 18_000_000n,
+    block_hashes: [/* hashes */]
+  }
+});
+
+const err = blockhash(frame);
+console.log(frame.stack); // [0n] - Current block unavailable
+
+// Query future block
+const frame2 = createFrame({
+  stack: [18_000_001n],
+  blockContext: { block_number: 18_000_000n }
+});
+
+blockhash(frame2);
+console.log(frame2.stack); // [0n] - Future block
+```
+
+### Full 256-Block Range
+
+```typescript
+// Iterate through valid range
+const currentBlock = 18_000_000n;
+
+for (let i = 1; i <= 256; i++) {
+  const queryBlock = currentBlock - BigInt(i);
+  const frame = createFrame({
+    stack: [queryBlock],
+    blockContext: {
+      block_number: currentBlock,
+      block_hashes: blockHashesArray
+    }
+  });
+
+  blockhash(frame);
+  const hash = frame.stack[0];
+
+  if (hash !== 0n) {
+    console.log(`Block ${queryBlock}: ${hash.toString(16)}`);
+  }
+}
+```
+
+## Gas Cost
+
+**Cost:** 20 gas (GasExtStep)
+
+BLOCKHASH is more expensive than simple context queries (2 gas) because it requires:
+- Range validation
+- Array index calculation
+- Hash retrieval from storage
+- 32-byte hash conversion to u256
+
+**Comparison:**
+- `BLOCKHASH`: 20 gas
+- `NUMBER`, `TIMESTAMP`, `GASLIMIT`: 2 gas
+- `SLOAD` (cold): 2100 gas
+- `BALANCE` (cold): 2600 gas
+
+Despite the 20 gas cost, BLOCKHASH is efficient compared to storage operations.
+
+## Common Usage
+
+### Commit-Reveal Schemes
+
+```solidity
+contract CommitReveal {
+    mapping(address => bytes32) public commits;
+    mapping(address => uint256) public commitBlocks;
+
+    function commit(bytes32 hash) external {
+        commits[msg.sender] = hash;
+        commitBlocks[msg.sender] = block.number;
+    }
+
+    function reveal(uint256 secret) external {
+        uint256 commitBlock = commitBlocks[msg.sender];
+        require(block.number - commitBlock <= 256, "Commitment expired");
+
+        bytes32 blockHash = blockhash(commitBlock);
+        bytes32 expectedCommit = keccak256(abi.encodePacked(secret, blockHash));
+        require(commits[msg.sender] == expectedCommit, "Invalid reveal");
+
+        // Process reveal
+    }
+}
+```
+
+### Block Hash Verification
+
+```solidity
+contract BlockVerifier {
+    function verifyBlockHash(
+        uint256 blockNumber,
+        bytes32 expectedHash
+    ) external view returns (bool) {
+        require(blockNumber < block.number, "Future block");
+        require(block.number - blockNumber <= 256, "Block too old");
+
+        return blockhash(blockNumber) == expectedHash;
+    }
+}
+```
+
+### Historical Data Anchoring
+
+```solidity
+contract DataAnchor {
+    struct Anchor {
+        bytes32 dataHash;
+        uint256 blockNumber;
+        bytes32 blockHash;
+    }
+
+    mapping(bytes32 => Anchor) public anchors;
+
+    function anchor(bytes32 dataHash) external {
+        uint256 anchorBlock = block.number - 1;
+        bytes32 blockHash = blockhash(anchorBlock);
+
+        require(blockHash != bytes32(0), "Block hash unavailable");
+
+        anchors[dataHash] = Anchor({
+            dataHash: dataHash,
+            blockNumber: anchorBlock,
+            blockHash: blockHash
+        });
+    }
+
+    function verify(bytes32 dataHash) external view returns (bool) {
+        Anchor memory a = anchors[dataHash];
+        if (a.blockNumber == 0) return false;
+
+        // Can only verify if block is still in 256-block window
+        if (block.number - a.blockNumber > 256) return false;
+
+        return blockhash(a.blockNumber) == a.blockHash;
+    }
+}
+```
+
+### Simple Randomness (Not Secure)
+
+```solidity
+// WARNING: Not secure for production
+contract BasicLottery {
+    function drawWinner(address[] memory participants) external view returns (address) {
+        bytes32 blockHash = blockhash(block.number - 1);
+        uint256 randomIndex = uint256(blockHash) % participants.length;
+        return participants[randomIndex];
+    }
+}
+```
+
+## Security Considerations
+
+### Not Suitable for High-Stakes Randomness
+
+Block hashes are predictable by miners and can be manipulated:
+
+```solidity
+// VULNERABLE: Miner can influence outcome
+function lottery() external {
+    bytes32 hash = blockhash(block.number - 1);
+    address winner = participants[uint256(hash) % participants.length];
+    payable(winner).transfer(jackpot);
+}
+```
+
+**Attack Vector:**
+- Miner sees they won't win
+- Miner withholds block to try different nonce
+- Profitability: If jackpot > block reward, rational to try
+
+**Mitigation:**
+Use Chainlink VRF or commit-reveal with multiple participants.
+
+### 256-Block Expiration
+
+Commitments using BLOCKHASH expire after 256 blocks:
+
+```solidity
+contract SecureCommit {
+    uint256 constant MAX_BLOCK_AGE = 240; // Safety margin
+
+    function reveal(uint256 secret) external {
+        uint256 commitBlock = commitBlocks[msg.sender];
+
+        // Use safety margin to account for reveal tx delays
+        require(
+            block.number - commitBlock <= MAX_BLOCK_AGE,
+            "Commitment expired - please recommit"
+        );
+
+        bytes32 blockHash = blockhash(commitBlock);
+        require(blockHash != bytes32(0), "Block hash unavailable");
+
+        // Verify commitment
+    }
+}
+```
+
+### Zero Hash Ambiguity
+
+Zero hash can mean multiple things:
+
+```solidity
+function safeBlockHash(uint256 blockNum) internal view returns (bytes32) {
+    require(blockNum < block.number, "Future block");
+    require(block.number - blockNum <= 256, "Block too old");
+
+    bytes32 hash = blockhash(blockNum);
+    require(hash != bytes32(0), "Block hash unavailable");
+
+    return hash;
+}
+```
+
+### Current Block Unavailability
+
+The current block hash is never available within the block:
+
+```solidity
+// ALWAYS returns 0
+bytes32 currentHash = blockhash(block.number);
+
+// CORRECT: Query previous block
+bytes32 previousHash = blockhash(block.number - 1);
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// BLOCKHASH opcode (0x40) - Get hash of recent block
+pub fn blockhash(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // GAS_BLOCK_HASH = 20 (GasExtStep)
+    try frame.consumeGas(GasConstants.GasExtStep);
+
+    const block_number = try frame.popStack();
+    const current_block = evm.block_context.block_number;
+
+    // Return 0 if:
+    // 1. Requested block >= current block
+    // 2. Requested block is more than 256 blocks old
+    const max_block_number = block_number + 256;
+    if (block_number >= current_block or current_block > max_block_number) {
+        // Out of range - return zero
+        try frame.pushStack(0);
+    } else {
+        // In range - get hash from block_hashes array
+        // Access with negative index: block_hashes[-(current - target)]
+        const index: usize = @intCast(current_block - block_number);
+
+        if (index > 0 and index <= evm.block_context.block_hashes.len) {
+            const actual_index = evm.block_context.block_hashes.len - index;
+            const block_hash = evm.block_context.block_hashes[actual_index];
+
+            // Convert 32-byte hash to u256
+            var hash_value: u256 = 0;
+            for (block_hash) |byte| {
+                hash_value = (hash_value << 8) | byte;
+            }
+            try frame.pushStack(hash_value);
+        } else {
+            // Hash not available - return zero
+            try frame.pushStack(0);
+        }
+    }
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * BLOCKHASH opcode (0x40) - Get hash of recent block
+ */
+export function blockhash(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasExtStep = 20)
+  frame.gasRemaining -= 20n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop block number
+  if (frame.stack.length < 1) return { type: "StackUnderflow" };
+  const blockNumber = frame.stack.pop();
+
+  const currentBlock = frame.evm.blockContext.block_number;
+
+  // Check if block is in valid range
+  if (blockNumber >= currentBlock || currentBlock - blockNumber > 256n) {
+    // Out of range - return zero
+    if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+    frame.stack.push(0n);
+  } else {
+    // In range - get hash
+    const index = Number(currentBlock - blockNumber);
+    const blockHashes = frame.evm.blockContext.block_hashes;
+
+    if (index > 0 && index <= blockHashes.length) {
+      const actualIndex = blockHashes.length - index;
+      const blockHash = blockHashes[actualIndex];
+
+      // Convert 32-byte hash to u256
+      let hashValue = 0n;
+      for (const byte of blockHash) {
+        hashValue = (hashValue << 8n) | BigInt(byte);
+      }
+
+      if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+      frame.stack.push(hashValue);
+    } else {
+      // Hash not available - return zero
+      if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+      frame.stack.push(0n);
+    }
+  }
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Exactly 256 Blocks Ago
+
+```typescript
+// Block exactly at boundary (oldest available)
+const frame = createFrame({
+  stack: [currentBlock - 256n],
+  blockContext: {
+    block_number: currentBlock,
+    block_hashes: hashes256
+  }
+});
+
+blockhash(frame);
+// Returns hash if available in array
+```
+
+### 257 Blocks Ago
+
+```typescript
+// One block past the boundary
+const frame = createFrame({
+  stack: [currentBlock - 257n],
+  blockContext: { block_number: currentBlock }
+});
+
+blockhash(frame);
+console.log(frame.stack); // [0n] - Too old
+```
+
+### Genesis Block Query
+
+```typescript
+// Query block 0 from block 1000
+const frame = createFrame({
+  stack: [0n],
+  blockContext: { block_number: 1000n }
+});
+
+blockhash(frame);
+console.log(frame.stack); // [0n] - Too old (> 256 blocks)
+```
+
+### Empty Block Hashes Array
+
+```typescript
+// No hashes available in context
+const frame = createFrame({
+  stack: [currentBlock - 10n],
+  blockContext: {
+    block_number: currentBlock,
+    block_hashes: []
+  }
+});
+
+blockhash(frame);
+console.log(frame.stack); // [0n] - No hashes available
+```
+
+## Benchmarks
+
+**Performance characteristics:**
+- Array index calculation: O(1)
+- Hash retrieval: O(1)
+- Conversion to u256: O(32) - iterate 32 bytes
+
+**Gas efficiency:**
+- 20 gas per query
+- ~50,000 queries per million gas
+- More efficient than equivalent storage reads (2100 gas cold)
+
+## Related Instructions
+
+- **[NUMBER (0x43)](/evm/instructions/block/number)** - Get current block number
+- **[TIMESTAMP (0x42)](/evm/instructions/block/timestamp)** - Get block timestamp
+- **[DIFFICULTY (0x44)](/evm/instructions/block/difficulty)** - Get difficulty/PREVRANDAO
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.2 (Block Information)
+- [EVM Codes - BLOCKHASH](https://www.evm.codes/#40)
+- [Solidity Docs - Block Variables](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) - Block context handling
