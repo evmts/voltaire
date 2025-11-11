@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Keccak256 } from "../crypto/Keccak256/index.js";
-import { Secp256k1 } from "../crypto/Secp256k1/index.js";
-import { Address } from "../primitives/Address/index.js";
-import * as Hardfork from "../primitives/Hardfork/index.js";
+import { Keccak256 } from "../../crypto/Keccak256/index.js";
+import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
+import { Address } from "../../primitives/Address/index.js";
+import * as Hardfork from "../../primitives/Hardfork/index.js";
 import { PrecompileAddress, ecrecover, execute } from "./precompiles.js";
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as Hardfork from "../primitives/Hardfork/index.js";
+import * as Hardfork from "../../primitives/Hardfork/index.js";
 import { PrecompileAddress, execute, modexp } from "./precompiles.js";
 
 /**
