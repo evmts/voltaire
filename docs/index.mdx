@@ -4,7 +4,7 @@ description: High-performance, type-safe Ethereum primitives and cryptography
 mode: custom
 ---
 
-<div style={{ textAlign: 'center', padding: '8rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
+<div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
   <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
     <span style={{ display: 'block' }}>Simple Ethereum</span>
     <span style={{ display: 'block', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
@@ -14,51 +14,69 @@ mode: custom
     High-performance, type-safe wasm primitives and cryptography for building on Ethereum with TypeScript
   </p>
 
-  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
-    <a href="/introduction#why-voltaire" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white' }}>
+  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
+    <a href="/introduction#why-voltaire"
+       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+       onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(66, 211, 146, 0.3)'; }}
+       onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
       Why Voltaire?
     </a>
-    <a href="/getting-started" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'var(--primary)', color: 'white', border: '2px solid var(--primary)' }}>
+    <a href="/getting-started"
+       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'var(--text-color, #e0e0e0)', border: '2px solid rgba(255, 255, 255, 0.2)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
+       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
       Get Started
     </a>
-    <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'var(--primary)', color: 'white', border: '2px solid var(--primary)' }}>
+    <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
+       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'var(--text-color, #e0e0e0)', border: '2px solid rgba(255, 255, 255, 0.2)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
+       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
       View on GitHub
     </a>
   </div>
-</div>
 
-<div style={{ padding: '4rem 2rem', background: '#1a1a1a' }}>
-  <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-    <CardGroup cols={3}>
-      <Card title="Type-Safe" icon="shield-check">
-        Branded types prevent mixing incompatible values. Zero runtime overhead.
-      </Card>
-      <Card title="High-Performance" icon="bolt">
-        Native Zig implementations via WASM. 2-3x faster than pure JavaScript.
-      </Card>
-      <Card title="Tree-Shakeable" icon="tree">
-        Import only what you need. Unused code automatically excluded from bundles.
-      </Card>
-    </CardGroup>
-  </div>
-</div>
-
-<div style={{ padding: '6rem 2rem', maxWidth: '1280px', margin: '0 auto' }}>
-  <h2 style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-    AI Agent Integration
-  </h2>
-  <p style={{ textAlign: 'center', color: '#999', marginBottom: '3rem', fontSize: '1.2rem' }}>
-    Use Voltaire with Claude and other AI agents via the MCP server
-  </p>
-
-<Tip>
-**Model Context Protocol Support** - Connect AI assistants directly to Voltaire documentation:
-
+  <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+    <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
+      Copied!
+    </div>
+    <div style={{ cursor: 'pointer' }}
+         onMouseDown={(e) => {
+      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+      if (codeBlock) {
+        codeBlock.style.transition = 'box-shadow 0.1s ease';
+        codeBlock.style.boxShadow = '0 0 0 3px #42d392, 0 0 0 6px #647eff';
+      }
+    }}
+         onMouseUp={(e) => {
+      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+      if (codeBlock) {
+        codeBlock.style.boxShadow = '';
+      }
+    }}
+         onMouseLeave={(e) => {
+      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+      if (codeBlock) {
+        codeBlock.style.boxShadow = '';
+      }
+    }}
+         onClick={(e) => {
+      navigator.clipboard.writeText('claude mcp add --transport http tevm https://voltaire.tevm.app/mcp');
+      const feedback = document.getElementById('copy-feedback');
+      feedback.style.opacity = '1';
+      setTimeout(() => {
+        feedback.style.opacity = '0';
+      }, 500);
+    }}>
 ```bash
 claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
-
-This enables AI assistants to query Voltaire documentation and examples in real-time.
-</Tip>
-
+    </div>
+  </div>
 </div>
+
