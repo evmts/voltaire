@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
-import { Address, ChecksumAddress, AddressFromHex, AddressFromUnknown } from "./effect.js";
+import {
+	Address,
+	ChecksumAddress,
+	AddressFromHex,
+	AddressFromUnknown,
+} from "./effect.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 
 describe("Address Effect Schema", () => {
@@ -98,8 +103,12 @@ describe("Address Effect Schema", () => {
 			expect(ChecksumAddress.isValid(correctChecksum)).toBe(true);
 
 			// Wrong checksum fails
-			expect(ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")).toBe(false);
-			expect(ChecksumAddress.isValid("0x742d35CC6634C0532925a3b844Bc9e7595f251e3")).toBe(false);
+			expect(
+				ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+			).toBe(false);
+			expect(
+				ChecksumAddress.isValid("0x742d35CC6634C0532925a3b844Bc9e7595f251e3"),
+			).toBe(false);
 		});
 
 		it("converts to Address", () => {

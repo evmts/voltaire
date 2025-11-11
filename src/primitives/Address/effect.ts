@@ -21,11 +21,14 @@ export type ChecksumAddressBrand = Checksummed & Brand.Brand<"ChecksumAddress">;
  */
 export class Address extends Schema.Class<Address>("Address")({
 	value: Schema.Uint8ArrayFromSelf.pipe(
-		Schema.filter((bytes): bytes is Uint8Array => {
-			return BrandedAddressImpl.is(bytes);
-		}, {
-			message: () => "Invalid address: must be 20 bytes",
-		}),
+		Schema.filter(
+			(bytes): bytes is Uint8Array => {
+				return BrandedAddressImpl.is(bytes);
+			},
+			{
+				message: () => "Invalid address: must be 20 bytes",
+			},
+		),
 	),
 }) {
 	/**
@@ -204,11 +207,15 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	"ChecksumAddress",
 )({
 	value: Schema.String.pipe(
-		Schema.filter((str): str is string => {
-			return ChecksumAddressImpl.isValid(str);
-		}, {
-			message: () => "Invalid checksum address: EIP-55 checksum validation failed",
-		}),
+		Schema.filter(
+			(str): str is string => {
+				return ChecksumAddressImpl.isValid(str);
+			},
+			{
+				message: () =>
+					"Invalid checksum address: EIP-55 checksum validation failed",
+			},
+		),
 	),
 }) {
 	/**
@@ -221,9 +228,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	/**
 	 * Create from universal input (validates checksum)
 	 */
-	static from(
-		value: number | bigint | string | Uint8Array,
-	): ChecksumAddress {
+	static from(value: number | bigint | string | Uint8Array): ChecksumAddress {
 		const checksummed = ChecksumAddressImpl.from(value);
 		return new ChecksumAddress({ value: checksummed });
 	}

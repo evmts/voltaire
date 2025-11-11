@@ -96,9 +96,14 @@ export function verify(signature, messageHash, publicKey) {
 		prefixedPublicKey[0] = 0x04;
 		prefixedPublicKey.set(publicKey, 1);
 
-		const isValid = secp256k1.verify(compactSig, messageHash, prefixedPublicKey, {
-			prehash: false,
-		});
+		const isValid = secp256k1.verify(
+			compactSig,
+			messageHash,
+			prefixedPublicKey,
+			{
+				prehash: false,
+			},
+		);
 
 		if (!isValid) {
 			return false;

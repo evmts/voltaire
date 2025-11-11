@@ -34,9 +34,14 @@ export function from(value) {
 			// Convert back to bytes
 			const bytes = new Uint8Array(20);
 			for (let i = 0; i < 20; i++) {
-				bytes[i] = Number.parseInt(hexResult.slice(2 + i * 2, 2 + i * 2 + 2), 16);
+				bytes[i] = Number.parseInt(
+					hexResult.slice(2 + i * 2, 2 + i * 2 + 2),
+					16,
+				);
 			}
-			return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (bytes);
+			return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+				bytes
+			);
 		} catch (error) {
 			// Convert ox errors to our custom errors
 			throw new InvalidHexFormatError(

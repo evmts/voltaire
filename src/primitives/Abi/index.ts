@@ -5,7 +5,13 @@ export type { Abi } from "./Abi.js";
 export { Abi } from "./Abi.js";
 
 // Re-export sub-namespaces from BrandedAbi for top-level access
-export { Function, Event, Error, Constructor, Item } from "./BrandedAbi/index.js";
+export {
+	Function,
+	Event,
+	Error,
+	Constructor,
+	Item,
+} from "./BrandedAbi/index.js";
 
 // Re-export encoding/decoding methods
 export { encode, decode, decodeData, parseLogs } from "./BrandedAbi/index.js";
