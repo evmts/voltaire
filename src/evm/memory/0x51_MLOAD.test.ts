@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mload } from "./0x51_MLOAD.js";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
-import * as Address from "../../primitives/Address/index.js";
+import { Address } from "../../primitives/Address/index.js";
 
 /**
  * Create a minimal frame for testing
@@ -9,7 +9,7 @@ import * as Address from "../../primitives/Address/index.js";
 function createTestFrame(
 	overrides?: Partial<BrandedFrame>,
 ): BrandedFrame {
-	const zeroAddress = Address.from("0x0000000000000000000000000000000000000000");
+	const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 	return {
 		__tag: "Frame",
 		stack: [],
