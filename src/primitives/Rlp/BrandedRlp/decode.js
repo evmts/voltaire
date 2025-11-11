@@ -178,7 +178,10 @@ function getRlpItemLength(bytes) {
 			`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
 			{
 				code: "RLP_INPUT_TOO_SHORT",
-				context: { expected: 1 + lengthOfLength + length, actual: bytes.length },
+				context: {
+					expected: 1 + lengthOfLength + length,
+					actual: bytes.length,
+				},
 			},
 		);
 	}

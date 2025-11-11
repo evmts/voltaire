@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { InvalidCharacterError, InvalidFormatError } from "../../errors/index.js";
+import {
+	InvalidCharacterError,
+	InvalidFormatError,
+} from "../../errors/index.js";
 import { validate } from "./validate.js";
 
 describe("validate", () => {

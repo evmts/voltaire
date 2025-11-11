@@ -3,7 +3,10 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
-import { InvalidPublicKeyError, InvalidSignatureError } from "../../primitives/errors/index.js";
+import {
+	InvalidPublicKeyError,
+	InvalidSignatureError,
+} from "../../primitives/errors/index.js";
 import { sign } from "./sign.js";
 import { verify } from "./verify.js";
 

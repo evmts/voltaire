@@ -1,7 +1,4 @@
-import {
-	InvalidLengthError,
-	InvalidRangeError,
-} from "../../errors/index.js";
+import { InvalidLengthError, InvalidRangeError } from "../../errors/index.js";
 
 /**
  * Error thrown when BloomFilter parameters are invalid
@@ -36,8 +33,7 @@ export class InvalidBloomFilterParameterError extends InvalidRangeError {
 			value: options?.value,
 			expected: options?.expected || "valid bloom filter parameters",
 			context: options?.context,
-			docsPath:
-				options?.docsPath || "/primitives/bloom-filter#error-handling",
+			docsPath: options?.docsPath || "/primitives/bloom-filter#error-handling",
 			cause: options?.cause,
 		});
 		this.name = "InvalidBloomFilterParameterError";
@@ -77,8 +73,7 @@ export class InvalidBloomFilterLengthError extends InvalidLengthError {
 			value: options?.value,
 			expected: options?.expected || "valid bloom filter length",
 			context: options?.context,
-			docsPath:
-				options?.docsPath || "/primitives/bloom-filter#error-handling",
+			docsPath: options?.docsPath || "/primitives/bloom-filter#error-handling",
 			cause: options?.cause,
 		});
 		this.name = "InvalidBloomFilterLengthError";

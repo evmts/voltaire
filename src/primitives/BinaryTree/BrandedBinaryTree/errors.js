@@ -1,7 +1,4 @@
-import {
-	InvalidLengthError,
-	ValidationError,
-} from "../../errors/index.js";
+import { InvalidLengthError, ValidationError } from "../../errors/index.js";
 
 /**
  * Error thrown when an invalid address length is provided
@@ -37,7 +34,8 @@ export class InvalidAddressLengthError extends InvalidLengthError {
 			expected: options?.expected || "20 bytes",
 			context: options?.context,
 			docsPath:
-				options?.docsPath || "/primitives/binary-tree/address-to-key#error-handling",
+				options?.docsPath ||
+				"/primitives/binary-tree/address-to-key#error-handling",
 			cause: options?.cause,
 		});
 		this.name = "InvalidAddressLengthError";

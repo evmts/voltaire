@@ -6,15 +6,13 @@ import { InvalidFormatError } from "../../errors/ValidationError.js";
  * @throws {InvalidLabelExtensionError}
  */
 export class InvalidLabelExtensionError extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Invalid label extension: double-dash at positions 2-3", {
 			...options,
 			expected: "Valid ENS label without double-dash at positions 2-3",
@@ -30,15 +28,13 @@ export class InvalidLabelExtensionError extends InvalidFormatError {
  * @throws {IllegalMixtureError}
  */
 export class IllegalMixtureError extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Illegal mixture: incompatible script combinations", {
 			...options,
 			expected: "Valid ENS name without mixed scripts",
@@ -54,15 +50,13 @@ export class IllegalMixtureError extends InvalidFormatError {
  * @throws {WholeConfusableError}
  */
 export class WholeConfusableError extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Whole confusable: name resembles different script", {
 			...options,
 			expected: "Valid ENS name without confusable characters",
@@ -78,15 +72,13 @@ export class WholeConfusableError extends InvalidFormatError {
  * @throws {DisallowedCharacterError}
  */
 export class DisallowedCharacterError extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Disallowed character: prohibited ENS character", {
 			...options,
 			expected: "Valid ENS name with allowed characters only",
@@ -102,15 +94,13 @@ export class DisallowedCharacterError extends InvalidFormatError {
  * @throws {EmptyLabelError}
  */
 export class EmptyLabelError extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Empty label: zero-length label segment", {
 			...options,
 			expected: "Valid ENS name without empty labels",
@@ -126,15 +116,13 @@ export class EmptyLabelError extends InvalidFormatError {
  * @throws {InvalidUtf8Error}
  */
 export class InvalidUtf8Error extends InvalidFormatError {
-	constructor(
-		options: {
-			value: string;
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	constructor(options: {
+		value: string;
+		code?: string;
+		context?: Record<string, unknown>;
+		docsPath?: string;
+		cause?: Error;
+	}) {
 		super("Invalid UTF-8: malformed UTF-8 encoding", {
 			...options,
 			expected: "Valid UTF-8 encoded ENS name",

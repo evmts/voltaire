@@ -201,7 +201,8 @@ export class InvalidDERError extends InvalidFormatError {
 			value: options?.value,
 			expected: options?.expected || "valid DER encoding",
 			context: options?.context,
-			docsPath: options?.docsPath || "/primitives/signature/from-der#error-handling",
+			docsPath:
+				options?.docsPath || "/primitives/signature/from-der#error-handling",
 			cause: options?.cause,
 		});
 		this.name = "InvalidDERError";

@@ -1,6 +1,9 @@
 import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { DecodingError } from "../../errors/SerializationError.js";
-import { InvalidFormatError, InvalidLengthError } from "../../errors/ValidationError.js";
+import {
+	InvalidFormatError,
+	InvalidLengthError,
+} from "../../errors/ValidationError.js";
 
 /**
  * Decode RLP bytes to access list (EIP-2930)
