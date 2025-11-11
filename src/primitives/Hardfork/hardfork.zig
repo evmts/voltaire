@@ -25,7 +25,7 @@
 //!
 //! ## Hardfork Timeline
 //!
-//! Each hardfork builds upon previous ones, maintaining backward compatibility:
+//! Each hardfork builds upon previous ones:
 //! - **FRONTIER** (July 2015): Original Ethereum launch
 //! - **HOMESTEAD** (March 2016): Added DELEGATECALL
 //! - **BYZANTIUM** (October 2017): Added REVERT, STATICCALL
@@ -43,8 +43,7 @@
 ///
 /// Hardforks represent protocol upgrades that change EVM behavior,
 /// gas costs, or add new features. Each hardfork builds upon the
-/// previous ones, maintaining backward compatibility while adding
-/// improvements.
+/// previous ones while adding improvements.
 pub const Hardfork = enum {
     /// Original Ethereum launch (July 2015).
     /// Base EVM with fundamental opcodes.

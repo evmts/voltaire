@@ -2,8 +2,8 @@
  * Hardfork Constants
  *
  * Each hardfork represents a protocol upgrade that changes EVM behavior,
- * gas costs, or adds new features. Hardforks build upon previous ones,
- * maintaining backward compatibility while adding improvements.
+ * gas costs, or adds new features. Hardforks build upon previous ones
+ * while adding improvements.
  *
  * @typedef {import('./BrandedHardfork.js').BrandedHardfork} BrandedHardfork
  */

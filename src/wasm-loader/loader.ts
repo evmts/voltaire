@@ -1056,6 +1056,169 @@ export function bytecodeValidate(code: Uint8Array): void {
 	}
 }
 
+/**
+ * Get next program counter after current instruction
+ * @param code - EVM bytecode
+ * @param currentPc - Current program counter
+ * @returns Next PC or undefined if at end of bytecode
+ */
+export function bytecodeGetNextPc(
+	code: Uint8Array,
+	currentPc: number,
+): number | undefined {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const codePtr = malloc(code.length);
+		writeBytes(code, codePtr);
+		const nextPc = exports.primitives_bytecode_get_next_pc(
+			codePtr,
+			code.length,
+			currentPc,
+		);
+		return nextPc < 0 ? undefined : nextPc;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Instruction data structure (mirrors Zig packed struct)
+ */
+export interface Instruction {
+	pc: number;
+	opcode: number;
+	pushSize: number;
+}
+
+/**
+ * Scan bytecode and collect all instructions in range
+ * @param code - EVM bytecode
+ * @param startPc - Start program counter
+ * @param endPc - End program counter (exclusive)
+ * @returns Array of instructions
+ */
+export function bytecodeScan(
+	code: Uint8Array,
+	startPc: number,
+	endPc: number,
+): Instruction[] {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const codePtr = malloc(code.length);
+		const outPtr = malloc(code.length * 8); // 8 bytes per instruction
+		const outLenPtr = malloc(8);
+
+		writeBytes(code, codePtr);
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		// Write length to outLenPtr
+		const lenView = new DataView(wasmMemory.buffer);
+		lenView.setBigUint64(outLenPtr, BigInt(code.length * 8), true);
+
+		const count = exports.primitives_bytecode_scan(
+			codePtr,
+			code.length,
+			startPc,
+			endPc,
+			outPtr,
+			outLenPtr,
+		);
+
+		if (count < 0) {
+			checkResult(count);
+		}
+
+		// Read instructions from output buffer
+		const memory = new Uint8Array(wasmMemory.buffer);
+		const instructions: Instruction[] = [];
+
+		for (let i = 0; i < count; i++) {
+			const offset = outPtr + i * 8;
+			const view = new DataView(wasmMemory.buffer, offset, 8);
+
+			instructions.push({
+				pc: view.getUint32(0, true),
+				opcode: view.getUint8(4),
+				pushSize: view.getUint8(5),
+			});
+		}
+
+		return instructions;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Fusion pattern data structure
+ */
+export interface FusionPattern {
+	pc: number;
+	patternType: number; // 1 = PUSH+OP, 2 = DUP+OP, etc.
+	firstOpcode: number;
+	secondOpcode: number;
+}
+
+/**
+ * Detect instruction fusion patterns (optimizable sequences)
+ * @param code - EVM bytecode
+ * @returns Array of detected fusion patterns
+ */
+export function bytecodeDetectFusions(code: Uint8Array): FusionPattern[] {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const codePtr = malloc(code.length);
+		const outPtr = malloc(code.length * 8); // 8 bytes per fusion
+		const outLenPtr = malloc(8);
+
+		writeBytes(code, codePtr);
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		// Write length to outLenPtr
+		const lenView = new DataView(wasmMemory.buffer);
+		lenView.setBigUint64(outLenPtr, BigInt(code.length * 8), true);
+
+		const count = exports.primitives_bytecode_detect_fusions(
+			codePtr,
+			code.length,
+			outPtr,
+			outLenPtr,
+		);
+
+		if (count < 0) {
+			checkResult(count);
+		}
+
+		// Read fusions from output buffer
+		const fusions: FusionPattern[] = [];
+
+		for (let i = 0; i < count; i++) {
+			const offset = outPtr + i * 8;
+			const view = new DataView(wasmMemory.buffer, offset, 8);
+
+			fusions.push({
+				pc: view.getUint32(0, true),
+				patternType: view.getUint8(4),
+				firstOpcode: view.getUint8(5),
+				secondOpcode: view.getUint8(6),
+			});
+		}
+
+		return fusions;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
 // ============================================================================
 // U256 API
 // ============================================================================

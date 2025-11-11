@@ -175,7 +175,7 @@ pub fn main() !void {
 
     std.debug.print("When to use each type:\n\n", .{});
     std.debug.print("Legacy:\n", .{});
-    std.debug.print("  • Backwards compatibility\n", .{});
+    std.debug.print("  • Required by older infrastructure\n", .{});
     std.debug.print("  • Pre-London networks\n", .{});
     std.debug.print("  • Simple transfers\n\n", .{});
 

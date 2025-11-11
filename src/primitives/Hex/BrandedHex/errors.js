@@ -25,9 +25,3 @@ export class OddLengthError extends Error {
 		this.name = "OddLengthHexError";
 	}
 }
-
-// Re-export for backward compatibility
-export const InvalidHexFormatError = InvalidFormatError;
-export const InvalidHexCharacterError = InvalidCharacterError;
-export const OddLengthHexError = OddLengthError;
-export const InvalidHexLengthError = InvalidLengthError;

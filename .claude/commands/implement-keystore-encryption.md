@@ -37,7 +37,7 @@ OX comparison revealed they have JSON keystore encryption/decryption. This is th
 
 2. **KDF Support**:
    - **Scrypt** (recommended): Memory-hard, resistant to ASIC attacks
-   - **PBKDF2** (legacy): Backward compatibility
+   - **PBKDF2** (legacy): For compatibility with older keystores
 
 3. **Encryption**:
    - Cipher: AES-128-CTR (can use existing AES-GCM infrastructure)

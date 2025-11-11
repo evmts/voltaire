@@ -166,7 +166,7 @@ pub fn main() !void {
     std.debug.print("RIPEMD160 is considered legacy:\n", .{});
     std.debug.print("- Designed in 1996 (pre-SHA-256)\n", .{});
     std.debug.print("- Used in Bitcoin since 2009\n", .{});
-    std.debug.print("- Maintained for backward compatibility\n", .{});
+    std.debug.print("- Maintained for Bitcoin compatibility\n", .{});
     std.debug.print("- Not recommended for new applications\n", .{});
     std.debug.print("\nFor new projects, prefer:\n", .{});
     std.debug.print("- SHA-256 (256-bit, widely supported)\n", .{});

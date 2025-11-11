@@ -144,6 +144,25 @@ export interface WasmExports {
 		position: number,
 	) => number;
 	primitives_bytecode_validate: (codePtr: number, codeLen: number) => number;
+	primitives_bytecode_get_next_pc: (
+		codePtr: number,
+		codeLen: number,
+		currentPc: number,
+	) => number;
+	primitives_bytecode_scan: (
+		codePtr: number,
+		codeLen: number,
+		startPc: number,
+		endPc: number,
+		outPtr: number,
+		outLenPtr: number,
+	) => number;
+	primitives_bytecode_detect_fusions: (
+		codePtr: number,
+		codeLen: number,
+		outPtr: number,
+		outLenPtr: number,
+	) => number;
 
 	// U256 functions
 	primitives_u256_from_hex: (hexPtr: number, outPtr: number) => number;
