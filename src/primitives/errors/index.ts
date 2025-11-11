@@ -1,3 +1,6 @@
+// Abstract base error (foundation)
+export { AbstractError } from "./AbstractError.js";
+
 // Base error
 export { PrimitiveError } from "./PrimitiveError.js";
 

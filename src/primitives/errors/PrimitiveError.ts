@@ -1,24 +1,33 @@
+import { AbstractError } from "./AbstractError.js";
+
 /**
  * Base error for all primitive-related errors
+ *
+ * @example
+ * ```typescript
+ * throw new PrimitiveError('Invalid primitive value', {
+ *   code: 'INVALID_PRIMITIVE',
+ *   context: { value: '0x123' },
+ *   docsPath: '/primitives/overview#errors'
+ * })
+ * ```
  */
-export class PrimitiveError extends Error {
-	code: string;
-	context?: Record<string, any>;
-
+export class PrimitiveError extends AbstractError {
 	constructor(
 		message: string,
-		options?: { code?: string; context?: Record<string, any> },
+		options?: {
+			code?: string;
+			context?: Record<string, unknown>;
+			docsPath?: string;
+			cause?: Error;
+		},
 	) {
-		super(message);
+		super(message, {
+			code: options?.code || "PRIMITIVE_ERROR",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
 		this.name = "PrimitiveError";
-		this.code = options?.code || "PRIMITIVE_ERROR";
-		if (options?.context) {
-			this.context = options.context;
-		}
-
-		// Maintains proper stack trace for where error was thrown
-		if (Error.captureStackTrace) {
-			Error.captureStackTrace(this, this.constructor);
-		}
 	}
 }
