@@ -178,12 +178,15 @@ function toData(value, depth = 0) {
 /**
  * Decodes RLP-encoded bytes
  *
+ * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ * @since 0.0.0
  * @param {Uint8Array} bytes - RLP-encoded data
  * @param {boolean} [stream=false] - If true, allows extra data after decoded value. If false, expects exact match
  * @returns {Decoded} Decoded RLP data with remainder
- *
+ * @throws {Error} If input is too short, invalid, or has unexpected remainder (when stream=false)
  * @example
  * ```javascript
+ * import * as Rlp from './primitives/Rlp/index.js';
  * // Decode single value
  * const bytes = new Uint8Array([0x83, 1, 2, 3]);
  * const result = Rlp.decode(bytes);

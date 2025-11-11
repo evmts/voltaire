@@ -1,11 +1,14 @@
 /**
  * Flatten nested list Data into array of bytes Data (depth-first)
  *
- * @param {import('./BrandedRlp.js').BrandedRlp} data - RLP Data to flatten
- * @returns {Array<import('./BrandedRlp.js').BrandedRlp & { type: "bytes" }>} Array of bytes Data
- *
+ * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ * @since 0.0.0
+ * @param {import('./BrandedRlp.js').BrandedRlp} data - RLP data structure to flatten
+ * @returns {Array<import('./BrandedRlp.js').BrandedRlp & { type: "bytes" }>} Array of bytes data (all nested lists flattened)
+ * @throws {never}
  * @example
  * ```javascript
+ * import * as Rlp from './primitives/Rlp/index.js';
  * const nested = {
  *   type: 'list',
  *   value: [
