@@ -1,0 +1,472 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for bytecode analysis and manipulation"
+---
+
+# Usage Patterns
+
+Practical patterns for analyzing, disassembling, and working with EVM bytecode.
+
+## Bytecode Analysis
+
+### Contract Analysis
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+// Analyze deployed contract
+async function analyzeContract(
+  address: string,
+  provider: Provider
+): Promise<void> {
+  // Fetch bytecode
+  const code = await provider.getCode(address);
+  const bytecode = Bytecode.fromHex(code);
+
+  // Analyze structure
+  const analysis = Bytecode.analyze(bytecode);
+
+  console.log(`Code size: ${Bytecode.size(bytecode)} bytes`);
+  console.log(`Instructions: ${analysis.instructions.length}`);
+  console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
+  console.log(`Has metadata: ${Bytecode.hasMetadata(bytecode)}`);
+}
+```
+
+### Gas Analysis
+
+```typescript
+// Analyze gas costs
+function analyzeGas(bytecode: BrandedBytecode): {
+  total: number;
+  perInstruction: Map<string, number>;
+  expensive: Array<{ pc: number; opcode: string; gas: number }>;
+} {
+  const gasAnalysis = Bytecode.analyzeGas(bytecode);
+  const perInstruction = new Map<string, number>();
+
+  let total = 0;
+  const expensive: Array<{ pc: number; opcode: string; gas: number }> = [];
+
+  for (const [pc, gas] of gasAnalysis) {
+    total += gas;
+
+    const block = Bytecode.getBlock(bytecode, pc);
+    const opcodeName = block.opcode.name;
+
+    perInstruction.set(
+      opcodeName,
+      (perInstruction.get(opcodeName) ?? 0) + gas
+    );
+
+    if (gas > 100) {
+      expensive.push({ pc, opcode: opcodeName, gas });
+    }
+  }
+
+  return {
+    total,
+    perInstruction,
+    expensive: expensive.sort((a, b) => b.gas - a.gas)
+  };
+}
+```
+
+## Disassembly
+
+### Human-Readable Output
+
+```typescript
+// Disassemble to readable format
+function disassemble(bytecode: BrandedBytecode): string {
+  const instructions = Bytecode.parseInstructions(bytecode);
+  const lines: string[] = [];
+
+  for (const instr of instructions) {
+    const formatted = Bytecode.formatInstruction(instr);
+    lines.push(`${instr.pc.toString().padStart(6)}  ${formatted}`);
+  }
+
+  return lines.join('\n');
+}
+
+// Pretty print with labels
+function prettyPrint(bytecode: BrandedBytecode): string {
+  return Bytecode.prettyPrint(bytecode);
+}
+```
+
+### Instruction Scanning
+
+```typescript
+// Find specific opcodes
+function findOpcodes(
+  bytecode: BrandedBytecode,
+  opcodes: number[]
+): number[] {
+  const positions: number[] = [];
+  let pc = 0;
+
+  while (pc < bytecode.length) {
+    const block = Bytecode.getBlock(bytecode, pc);
+
+    if (opcodes.includes(block.opcode.code)) {
+      positions.push(pc);
+    }
+
+    pc = Bytecode.getNextPc(bytecode, pc);
+  }
+
+  return positions;
+}
+
+// Scan for patterns
+function scanForPattern(
+  bytecode: BrandedBytecode,
+  pattern: number[]
+): number[] {
+  const matches: number[] = [];
+
+  for (let i = 0; i <= bytecode.length - pattern.length; i++) {
+    let match = true;
+
+    for (let j = 0; j < pattern.length; j++) {
+      if (bytecode[i + j] !== pattern[j]) {
+        match = false;
+        break;
+      }
+    }
+
+    if (match) {
+      matches.push(i);
+    }
+  }
+
+  return matches;
+}
+```
+
+## Metadata Handling
+
+### Extract and Strip Metadata
+
+```typescript
+// Check for compiler metadata
+function hasCompilerMetadata(bytecode: BrandedBytecode): boolean {
+  return Bytecode.hasMetadata(bytecode);
+}
+
+// Strip metadata for comparison
+function normalizeForComparison(bytecode: BrandedBytecode): BrandedBytecode {
+  return Bytecode.stripMetadata(bytecode);
+}
+
+// Compare contracts ignoring metadata
+function compareContracts(
+  bytecode1: BrandedBytecode,
+  bytecode2: BrandedBytecode
+): boolean {
+  const stripped1 = Bytecode.stripMetadata(bytecode1);
+  const stripped2 = Bytecode.stripMetadata(bytecode2);
+
+  return Bytecode.equals(stripped1, stripped2);
+}
+```
+
+### Extract Runtime Code
+
+```typescript
+// Extract runtime code from deployment bytecode
+function getRuntime Bytecode(
+  deploymentBytecode: BrandedBytecode
+): BrandedBytecode {
+  return Bytecode.extractRuntime(deploymentBytecode);
+}
+
+// Analyze deployment vs runtime
+function compareDeploymentAndRuntime(
+  deploymentBytecode: BrandedBytecode
+): {
+  deployment: number;
+  runtime: number;
+  initCode: number;
+} {
+  const runtime = Bytecode.extractRuntime(deploymentBytecode);
+  const runtimeSize = Bytecode.size(runtime);
+  const deploymentSize = Bytecode.size(deploymentBytecode);
+
+  return {
+    deployment: deploymentSize,
+    runtime: runtimeSize,
+    initCode: deploymentSize - runtimeSize
+  };
+}
+```
+
+## Jump Destination Analysis
+
+### Validate Jump Destinations
+
+```typescript
+// Check if PC is valid jump destination
+function isValidJump(
+  bytecode: BrandedBytecode,
+  pc: number
+): boolean {
+  return Bytecode.isValidJumpDest(bytecode, pc);
+}
+
+// Find all valid jump destinations
+function getAllJumpDests(bytecode: BrandedBytecode): Set<number> {
+  return Bytecode.analyzeJumpDestinations(bytecode);
+}
+
+// Validate JUMP/JUMPI targets
+function validateJumpTargets(bytecode: BrandedBytecode): {
+  valid: boolean;
+  invalidJumps: Array<{ from: number; to: number }>;
+} {
+  const jumpDests = Bytecode.analyzeJumpDestinations(bytecode);
+  const invalidJumps: Array<{ from: number; to: number }> = [];
+
+  // This is simplified - actual analysis requires runtime state
+  // to know where dynamic jumps go
+  const instructions = Bytecode.parseInstructions(bytecode);
+
+  for (const instr of instructions) {
+    if (instr.opcode.name === 'JUMP' || instr.opcode.name === 'JUMPI') {
+      // Static jump target analysis would go here
+    }
+  }
+
+  return {
+    valid: invalidJumps.length === 0,
+    invalidJumps
+  };
+}
+```
+
+## Stack Analysis
+
+### Track Stack Depth
+
+```typescript
+// Analyze stack usage
+function analyzeStack(bytecode: BrandedBytecode): {
+  maxDepth: number;
+  violations: Array<{ pc: number; depth: number }>;
+} {
+  const stackAnalysis = Bytecode.analyzeStack(bytecode);
+
+  let maxDepth = 0;
+  const violations: Array<{ pc: number; depth: number }> = [];
+
+  for (const [pc, depth] of stackAnalysis) {
+    maxDepth = Math.max(maxDepth, depth);
+
+    if (depth > 1024) {
+      violations.push({ pc, depth });
+    }
+  }
+
+  return { maxDepth, violations };
+}
+```
+
+## Block Analysis
+
+### Control Flow Graph
+
+```typescript
+// Build control flow graph
+function buildCFG(bytecode: BrandedBytecode): Map<number, number[]> {
+  const cfg = new Map<number, number[]>();
+  const blocks = Bytecode.analyzeBlocks(bytecode);
+
+  for (const block of blocks) {
+    const successors: number[] = [];
+
+    // Add fall-through successor
+    if (block.fallthrough !== null) {
+      successors.push(block.fallthrough);
+    }
+
+    // Add jump targets
+    successors.push(...block.jumps);
+
+    cfg.set(block.start, successors);
+  }
+
+  return cfg;
+}
+```
+
+## Function Selector Detection
+
+### Extract Function Selectors
+
+```typescript
+// Find function dispatch table
+function findFunctionSelectors(bytecode: BrandedBytecode): Set<string> {
+  const selectors = new Set<string>();
+
+  // Look for PUSH4 instructions (function selectors are 4 bytes)
+  let pc = 0;
+
+  while (pc < bytecode.length) {
+    const block = Bytecode.getBlock(bytecode, pc);
+
+    if (block.opcode.code === 0x63) {  // PUSH4
+      const selector = bytecode.slice(pc + 1, pc + 5);
+      selectors.add(Hex.fromBytes(selector));
+    }
+
+    pc = Bytecode.getNextPc(bytecode, pc);
+  }
+
+  return selectors;
+}
+
+// Match selectors to known functions
+function matchFunctionSignatures(
+  bytecode: BrandedBytecode,
+  knownFunctions: Map<string, string>
+): Map<string, string> {
+  const selectors = findFunctionSelectors(bytecode);
+  const matched = new Map<string, string>();
+
+  for (const selector of selectors) {
+    const name = knownFunctions.get(selector);
+    if (name) {
+      matched.set(selector, name);
+    }
+  }
+
+  return matched;
+}
+```
+
+## Optimization Detection
+
+### Detect Compiler Optimizations
+
+```typescript
+// Detect PUSH0 optimization (Shanghai+)
+function usesPush0(bytecode: BrandedBytecode): boolean {
+  return findOpcodes(bytecode, [0x5F]).length > 0;
+}
+
+// Detect opcode fusion
+function detectFusions(bytecode: BrandedBytecode): Array<{
+  pc: number;
+  pattern: string;
+}> {
+  return Bytecode.detectFusions(bytecode);
+}
+
+// Estimate compiler settings
+function estimateCompilerSettings(bytecode: BrandedBytecode): {
+  optimized: boolean;
+  runs: number | null;
+  version: string | null;
+} {
+  const hasPush0 = usesPush0(bytecode);
+  const fusions = detectFusions(bytecode);
+  const size = Bytecode.size(bytecode);
+
+  // Heuristic analysis
+  const optimized = fusions.length > 0 || size < 5000;
+
+  return {
+    optimized,
+    runs: null,  // Would need deeper analysis
+    version: hasPush0 ? "≥0.8.20" : null
+  };
+}
+```
+
+## Testing and Verification
+
+### Bytecode Validation
+
+```typescript
+// Validate bytecode structure
+function validateBytecode(bytecode: BrandedBytecode): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  try {
+    // Check if parseable
+    const instructions = Bytecode.parseInstructions(bytecode);
+
+    // Check for truncated PUSH data
+    const validation = Bytecode.validate(bytecode);
+    if (!validation.valid) {
+      errors.push(...validation.errors);
+    }
+
+    // Check jump destinations
+    const jumpAnalysis = validateJumpTargets(bytecode);
+    if (!jumpAnalysis.valid) {
+      errors.push(`Invalid jump targets: ${jumpAnalysis.invalidJumps.length}`);
+    }
+
+    // Check stack
+    const stackAnalysis = analyzeStack(bytecode);
+    if (stackAnalysis.violations.length > 0) {
+      errors.push(`Stack violations: ${stackAnalysis.violations.length}`);
+    }
+  } catch (err) {
+    errors.push(`Parse error: ${err}`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+```
+
+### Bytecode Comparison
+
+```typescript
+// Compare two bytecodes with detailed diff
+function diffBytecode(
+  bytecode1: BrandedBytecode,
+  bytecode2: BrandedBytecode
+): {
+  identical: boolean;
+  identicalWithoutMetadata: boolean;
+  sizeDiff: number;
+  instructionDiff: number;
+} {
+  const identical = Bytecode.equals(bytecode1, bytecode2);
+
+  const stripped1 = Bytecode.stripMetadata(bytecode1);
+  const stripped2 = Bytecode.stripMetadata(bytecode2);
+  const identicalWithoutMetadata = Bytecode.equals(stripped1, stripped2);
+
+  const size1 = Bytecode.size(bytecode1);
+  const size2 = Bytecode.size(bytecode2);
+
+  const instr1 = Bytecode.parseInstructions(bytecode1);
+  const instr2 = Bytecode.parseInstructions(bytecode2);
+
+  return {
+    identical,
+    identicalWithoutMetadata,
+    sizeDiff: size2 - size1,
+    instructionDiff: instr2.length - instr1.length
+  };
+}
+```
+
+## Related
+
+- [analyze](/primitives/bytecode/analyze) - Bytecode analysis
+- [parseInstructions](/primitives/bytecode/parseInstructions) - Instruction parsing
+- [prettyPrint](/primitives/bytecode/pretty-print) - Disassembly
+- [stripMetadata](/primitives/bytecode/stripMetadata) - Metadata handling
+- [Fundamentals](/primitives/bytecode/fundamentals) - Bytecode basics

@@ -1,0 +1,367 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for working with chain IDs"
+---
+
+# Usage Patterns
+
+Practical patterns for chain ID validation, network detection, and multi-chain applications.
+
+## Chain Identification
+
+### Network Detection
+
+```typescript
+import * as Chain from '@tevm/voltaire/Chain';
+
+// Detect network from chain ID
+function getNetworkName(chainId: BrandedChain): string {
+  const metadata = Chain.getMetadata(chainId);
+  return metadata?.name ?? `Unknown (${chainId})`;
+}
+
+// Check if mainnet
+function isMainnet(chainId: BrandedChain): boolean {
+  return Chain.equals(chainId, Chain.from(1));
+}
+
+// Check if testnet
+function isTestnet(chainId: BrandedChain): boolean {
+  const testnets = [5, 11155111, 17000]; // Goerli, Sepolia, Holesky
+  return testnets.some(id => Chain.equals(chainId, Chain.from(id)));
+}
+```
+
+### Multi-chain Support
+
+```typescript
+// Supported chains configuration
+const SUPPORTED_CHAINS = [
+  1,      // Ethereum Mainnet
+  10,     // Optimism
+  137,    // Polygon
+  8453,   // Base
+  42161,  // Arbitrum One
+] as const;
+
+function isSupportedChain(chainId: BrandedChain): boolean {
+  return SUPPORTED_CHAINS.some(id =>
+    Chain.equals(chainId, Chain.from(id))
+  );
+}
+
+function requireSupportedChain(chainId: BrandedChain): void {
+  if (!isSupportedChain(chainId)) {
+    const supported = SUPPORTED_CHAINS.join(', ');
+    throw new Error(
+      `Unsupported chain ${chainId}. Supported: ${supported}`
+    );
+  }
+}
+```
+
+## Provider Configuration
+
+### Dynamic Provider Setup
+
+```typescript
+interface ProviderConfig {
+  rpcUrl: string;
+  chainId: BrandedChain;
+  name: string;
+}
+
+// Configure provider based on chain
+function getProviderConfig(chainId: BrandedChain): ProviderConfig {
+  const configs: Record<number, ProviderConfig> = {
+    1: {
+      rpcUrl: "https://eth.llamarpc.com",
+      chainId: Chain.from(1),
+      name: "Ethereum Mainnet"
+    },
+    137: {
+      rpcUrl: "https://polygon.llamarpc.com",
+      chainId: Chain.from(137),
+      name: "Polygon"
+    },
+    // ... more chains
+  };
+
+  const config = configs[Number(chainId)];
+  if (!config) {
+    throw new Error(`No provider config for chain ${chainId}`);
+  }
+
+  return config;
+}
+
+// Create provider
+async function createProvider(chainId: BrandedChain): Promise<Provider> {
+  const config = getProviderConfig(chainId);
+  const provider = new Provider(config.rpcUrl);
+
+  // Verify chain ID
+  const actualChainId = await provider.getChainId();
+  if (!Chain.equals(Chain.from(actualChainId), chainId)) {
+    throw new Error(
+      `Chain ID mismatch. Expected: ${chainId}, Got: ${actualChainId}`
+    );
+  }
+
+  return provider;
+}
+```
+
+### Chain-specific Configuration
+
+```typescript
+// Get block explorer URL
+function getExplorerUrl(chainId: BrandedChain): string {
+  const explorers: Record<number, string> = {
+    1: "https://etherscan.io",
+    10: "https://optimistic.etherscan.io",
+    137: "https://polygonscan.com",
+    8453: "https://basescan.org",
+    42161: "https://arbiscan.io"
+  };
+
+  return explorers[Number(chainId)] ?? "";
+}
+
+// Get native token symbol
+function getNativeToken(chainId: BrandedChain): string {
+  const tokens: Record<number, string> = {
+    1: "ETH",
+    137: "MATIC",
+    56: "BNB",
+    43114: "AVAX"
+  };
+
+  return tokens[Number(chainId)] ?? "ETH";
+}
+```
+
+## Transaction Routing
+
+### Chain-aware Transaction Builder
+
+```typescript
+// Build transaction for specific chain
+function buildTransaction(
+  chainId: BrandedChain,
+  params: {
+    to: string;
+    value: bigint;
+    data: Uint8Array;
+  }
+): Transaction {
+  const metadata = Chain.getMetadata(chainId);
+
+  // Chain-specific gas settings
+  const gasSettings = getGasSettings(chainId);
+
+  return Transaction.from({
+    chainId,
+    to: params.to,
+    value: params.value,
+    data: params.data,
+    ...gasSettings
+  });
+}
+
+// Get chain-specific gas settings
+function getGasSettings(chainId: BrandedChain): {
+  maxFeePerGas?: bigint;
+  maxPriorityFeePerGas?: bigint;
+  gasPrice?: bigint;
+} {
+  // Use EIP-1559 for chains that support it
+  const eip1559Chains = [1, 10, 137, 8453, 42161];
+
+  if (eip1559Chains.some(id => Chain.equals(chainId, Chain.from(id)))) {
+    return {
+      maxFeePerGas: 50_000_000_000n,
+      maxPriorityFeePerGas: 2_000_000_000n
+    };
+  }
+
+  // Legacy gas price for others
+  return {
+    gasPrice: 20_000_000_000n
+  };
+}
+```
+
+### Cross-chain Message Routing
+
+```typescript
+interface CrossChainMessage {
+  sourceChain: BrandedChain;
+  targetChain: BrandedChain;
+  data: Uint8Array;
+}
+
+// Route message between chains
+async function routeCrossChainMessage(
+  msg: CrossChainMessage
+): Promise<void> {
+  // Validate chains
+  requireSupportedChain(msg.sourceChain);
+  requireSupportedChain(msg.targetChain);
+
+  // Get bridge contract for chain pair
+  const bridge = getBridgeContract(msg.sourceChain, msg.targetChain);
+
+  // Submit message
+  await bridge.sendMessage(msg.data);
+}
+```
+
+## Validation
+
+### Input Validation
+
+```typescript
+// Validate chain ID from user input
+function validateChainId(input: string | number): BrandedChain {
+  let chainId: number;
+
+  if (typeof input === 'string') {
+    chainId = parseInt(input, 10);
+    if (isNaN(chainId)) {
+      throw new Error(`Invalid chain ID: ${input}`);
+    }
+  } else {
+    chainId = input;
+  }
+
+  if (chainId < 1 || chainId > 4294967295) {  // uint32 max
+    throw new Error(`Chain ID out of range: ${chainId}`);
+  }
+
+  return Chain.from(chainId);
+}
+
+// Safe chain ID parsing
+function safeParseChainId(input: unknown): BrandedChain | null {
+  try {
+    if (typeof input === 'number') {
+      return Chain.from(input);
+    }
+    if (typeof input === 'string') {
+      return validateChainId(input);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Transaction Validation
+
+```typescript
+// Verify transaction chain ID
+function verifyTransactionChain(
+  tx: Transaction,
+  expectedChainId: BrandedChain
+): void {
+  if (!Chain.equals(tx.chainId, expectedChainId)) {
+    throw new Error(
+      `Transaction chain ID mismatch. ` +
+      `Expected: ${expectedChainId}, Got: ${tx.chainId}`
+    );
+  }
+}
+
+// Validate replay protection
+function hasReplayProtection(tx: Transaction): boolean {
+  // EIP-155 replay protection requires chain ID
+  return tx.chainId !== 0n;
+}
+```
+
+## Metadata Access
+
+### Chain Information Display
+
+```typescript
+// Display chain information
+function displayChainInfo(chainId: BrandedChain): void {
+  const metadata = Chain.getMetadata(chainId);
+
+  if (metadata) {
+    console.log(`Chain: ${metadata.name}`);
+    console.log(`ID: ${chainId}`);
+    console.log(`Native Token: ${metadata.nativeCurrency.symbol}`);
+    console.log(`RPC: ${metadata.rpcUrls[0]}`);
+    console.log(`Explorer: ${metadata.blockExplorers?.[0]}`);
+  } else {
+    console.log(`Chain ID: ${chainId} (unknown network)`);
+  }
+}
+
+// Get chain selector for UI
+function getChainSelector(): Array<{
+  value: number;
+  label: string;
+  icon: string;
+}> {
+  return SUPPORTED_CHAINS.map(id => {
+    const chainId = Chain.from(id);
+    const metadata = Chain.getMetadata(chainId);
+
+    return {
+      value: id,
+      label: metadata?.name ?? `Chain ${id}`,
+      icon: metadata?.icon ?? ""
+    };
+  });
+}
+```
+
+## Testing
+
+### Mock Chain IDs
+
+```typescript
+// Test chains
+const TEST_CHAINS = {
+  mainnet: Chain.from(1),
+  sepolia: Chain.from(11155111),
+  hardhat: Chain.from(31337),
+  ganache: Chain.from(1337)
+};
+
+// Use in tests
+function setupTestProvider(network: keyof typeof TEST_CHAINS): Provider {
+  const chainId = TEST_CHAINS[network];
+  return createTestProvider(chainId);
+}
+```
+
+### Chain Mocking
+
+```typescript
+// Mock chain metadata for tests
+function mockChainMetadata(chainId: number) {
+  return {
+    chainId: Chain.from(chainId),
+    name: `Test Chain ${chainId}`,
+    nativeCurrency: {
+      name: "Test Ether",
+      symbol: "TEST",
+      decimals: 18
+    },
+    rpcUrls: [`http://localhost:8545`],
+    blockExplorers: []
+  };
+}
+```
+
+## Related
+
+- [Constructors](/primitives/chain/constructors) - Creating chain IDs
+- [Metadata](/primitives/chain/metadata) - Chain information
+- [Network Comparison](/primitives/chain/network-comparison) - Chain comparison
+- [Fundamentals](/primitives/chain/fundamentals) - Chain ID basics
