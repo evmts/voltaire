@@ -1,9 +1,6 @@
-import type {
-	AbiParameterToPrimitiveType,
-	AbiParameter as AbiTypeParameter,
-	AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
-} from "abitype";
+import type { AbiParameter as AbiTypeParameter } from "abitype";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AbiParameterToPrimitiveTypeWithUint8Array } from "./abitype-uint8array.js";
 import type { AbiType } from "./Type.js";
 
 export type Parameter<
@@ -23,8 +20,8 @@ export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 		? TType extends "address"
 			? BrandedAddress
 			: TParams[K] extends AbiTypeParameter
-				? AbiParameterToPrimitiveType<TParams[K]>
-				: AbiTypeParametersToPrimitiveTypes<[TParams[K] & AbiTypeParameter]>[0]
+				? AbiParameterToPrimitiveTypeWithUint8Array<TParams[K]>
+				: never
 		: never;
 };
 
@@ -35,7 +32,7 @@ export type ParametersToObject<TParams extends readonly Parameter[]> = {
 		? TType extends "address"
 			? BrandedAddress
 			: K extends AbiTypeParameter
-				? AbiParameterToPrimitiveType<K>
-				: AbiTypeParametersToPrimitiveTypes<[K & AbiTypeParameter]>[0]
+				? AbiParameterToPrimitiveTypeWithUint8Array<K>
+				: never
 		: never;
 };
