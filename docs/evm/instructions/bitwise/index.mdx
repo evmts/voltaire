@@ -1,0 +1,426 @@
+---
+title: "Bitwise Operations"
+description: "EVM bitwise opcodes (0x16-0x1d) for bit manipulation, masking, and shift operations"
+---
+
+## Overview
+
+Bitwise operations provide low-level bit manipulation on 256-bit (32-byte) values. These operations enable efficient masking, flag management, and bit-level data packing critical for optimized smart contract implementations.
+
+8 opcodes enable:
+- **Logical operations:** AND, OR, XOR, NOT
+- **Byte extraction:** BYTE
+- **Shift operations (EIP-145):** SHL, SHR, SAR
+
+All operations work on unsigned 256-bit integers, with shift operations introduced in the Constantinople hardfork (EIP-145).
+
+## Opcodes
+
+| Opcode | Name | Gas | Stack In → Out | Description |
+|--------|------|-----|----------------|-------------|
+| 0x16 | [AND](/evm/instructions/bitwise/and) | 3 | a, b → a&b | Bitwise AND |
+| 0x17 | [OR](/evm/instructions/bitwise/or) | 3 | a, b → a\|b | Bitwise OR |
+| 0x18 | [XOR](/evm/instructions/bitwise/xor) | 3 | a, b → a^b | Bitwise XOR |
+| 0x19 | [NOT](/evm/instructions/bitwise/not) | 3 | a → ~a | Bitwise NOT (one's complement) |
+| 0x1a | [BYTE](/evm/instructions/bitwise/byte) | 3 | i, x → x[i] | Extract byte at index i |
+| 0x1b | [SHL](/evm/instructions/bitwise/shl) | 3 | shift, val → val<<shift | Shift left (Constantinople+) |
+| 0x1c | [SHR](/evm/instructions/bitwise/shr) | 3 | shift, val → val>>shift | Logical shift right (Constantinople+) |
+| 0x1d | [SAR](/evm/instructions/bitwise/sar) | 3 | shift, val → val>>shift | Arithmetic shift right (Constantinople+) |
+
+## Bit Manipulation Patterns
+
+### Masking
+
+Extract specific bits using AND:
+
+```typescript
+// Extract lower 160 bits (address from uint256)
+const mask = (1n << 160n) - 1n;  // 0x00000...000FFFFF...FFFF
+const address = value & mask;
+
+// Extract specific byte range (bytes 12-19)
+const mask = 0xFFFFFFFFFFFFFFFF000000000000000000000000n << 96n;
+const extracted = (value & mask) >> 96n;
+```
+
+### Flag Management
+
+Use individual bits as boolean flags:
+
+```typescript
+// Set flags (OR)
+const FLAG_A = 1n << 0n;  // Bit 0
+const FLAG_B = 1n << 1n;  // Bit 1
+const FLAG_C = 1n << 2n;  // Bit 2
+let flags = 0n;
+flags |= FLAG_A | FLAG_C;  // Enable flags A and C
+
+// Check flags (AND)
+const hasA = (flags & FLAG_A) !== 0n;  // true
+const hasB = (flags & FLAG_B) !== 0n;  // false
+
+// Clear flags (AND + NOT)
+flags &= ~FLAG_A;  // Disable flag A
+
+// Toggle flags (XOR)
+flags ^= FLAG_B;  // Toggle flag B
+```
+
+### Data Packing
+
+Pack multiple values into single uint256:
+
+```typescript
+// Pack three values: (uint64, uint96, uint96)
+const packed =
+  (value1 << 192n) |  // Upper 64 bits
+  (value2 << 96n) |   // Middle 96 bits
+  value3;             // Lower 96 bits
+
+// Unpack
+const value1 = packed >> 192n;
+const value2 = (packed >> 96n) & ((1n << 96n) - 1n);
+const value3 = packed & ((1n << 96n) - 1n);
+```
+
+## Shift Operations (EIP-145)
+
+### EIP-145 Background
+
+Before Constantinople (pre-EIP-145), shift operations required expensive arithmetic:
+- Left shift: `value * 2^shift` (MUL + EXP)
+- Right shift: `value / 2^shift` (DIV + EXP)
+
+EIP-145 introduced native shift opcodes (SHL, SHR, SAR) at 3 gas each, making shifts as cheap as basic arithmetic.
+
+### Shift Direction
+
+**Stack order matters:**
+```typescript
+// SHL/SHR/SAR: shift amount is TOS (top of stack)
+PUSH 8      // shift amount (TOS)
+PUSH 0xFF   // value
+SHL         // Result: 0xFF << 8 = 0xFF00
+```
+
+### Logical vs Arithmetic Shifts
+
+**SHR (Logical Shift Right):**
+- Shifts bits right, filling with zeros
+- Unsigned operation
+- Divides by powers of 2
+
+```typescript
+// 0x80...00 >> 1 = 0x40...00 (positive result)
+const value = 1n << 255n;  // MSB set (would be negative if signed)
+const result = value >> 1n;  // 0x40...00 (logical, fills with 0)
+```
+
+**SAR (Arithmetic Shift Right):**
+- Shifts bits right, preserving sign bit
+- Signed operation (two's complement)
+- Divides signed integers by powers of 2
+
+```typescript
+// 0x80...00 >> 1 = 0xC0...00 (negative result)
+const value = 1n << 255n;  // MSB set (negative in two's complement)
+const result_sar = sar(value, 1n);  // 0xC0...00 (sign-extended)
+```
+
+### Overflow Behavior
+
+Shifts >= 256 bits have defined behavior:
+
+```typescript
+// SHL: shift >= 256 → 0
+shl(0xFF, 256n)  // 0
+
+// SHR: shift >= 256 → 0
+shr(0xFF, 256n)  // 0
+
+// SAR: shift >= 256 → all bits = sign bit
+sar(0xFF, 256n)             // 0 (positive)
+sar(1n << 255n, 256n)       // 0xFFFF...FFFF (negative, all 1s)
+```
+
+## Common Patterns
+
+### Efficient Multiplication/Division by Powers of 2
+
+```solidity
+// Instead of: value * 256
+assembly {
+    result := shl(8, value)  // 3 gas vs MUL (5 gas)
+}
+
+// Instead of: value / 16
+assembly {
+    result := shr(4, value)  // 3 gas vs DIV (5 gas)
+}
+```
+
+### Extract Address from uint256
+
+```solidity
+// Convert uint256 to address (lower 160 bits)
+assembly {
+    addr := and(value, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+}
+```
+
+### Check if Power of 2
+
+```solidity
+// value & (value - 1) == 0 for powers of 2
+function isPowerOfTwo(uint256 x) pure returns (bool) {
+    return x != 0 && (x & (x - 1)) == 0;
+}
+```
+
+### Count Set Bits (Hamming Weight)
+
+```solidity
+// Brian Kernighan's algorithm
+function countSetBits(uint256 x) pure returns (uint256 count) {
+    while (x != 0) {
+        x &= x - 1;  // Clear lowest set bit
+        count++;
+    }
+}
+```
+
+### Bit Reversal
+
+```solidity
+// Reverse bits in byte
+function reverseByte(uint8 b) pure returns (uint8 result) {
+    result = ((b & 0xAA) >> 1) | ((b & 0x55) << 1);
+    result = ((result & 0xCC) >> 2) | ((result & 0x33) << 2);
+    result = (result >> 4) | (result << 4);
+}
+```
+
+### Zero/One Extension
+
+```typescript
+// Zero-extend (logical)
+const extended = value & mask;
+
+// Sign-extend (use SIGNEXTEND opcode 0x0b)
+// Or manual: check sign bit and fill
+const sign = (value >> (bits - 1n)) & 1n;
+const extended = sign ? value | (~0n << bits) : value;
+```
+
+## Gas Costs
+
+All bitwise operations cost 3 gas (GasFastestStep):
+
+| Category | Gas | Opcodes |
+|----------|-----|---------|
+| Very Low (Fastest Step) | 3 | AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR |
+
+Comparison with arithmetic:
+- Bitwise ops: 3 gas
+- ADD/SUB: 3 gas
+- MUL/DIV/MOD: 5 gas
+- Shifts replace expensive MUL/EXP or DIV/EXP combinations (5-60+ gas → 3 gas)
+
+## Edge Cases
+
+### Maximum Values
+
+```typescript
+const MAX = (1n << 256n) - 1n;
+
+// AND: identity with all 1s
+and(value, MAX)  // = value
+
+// OR: all 1s with anything
+or(value, MAX)  // = MAX
+
+// XOR: NOT when XOR with all 1s
+xor(value, MAX)  // = ~value
+
+// NOT: double negation
+not(not(value))  // = value
+```
+
+### Zero Inputs
+
+```typescript
+// AND: zero with anything
+and(0, value)  // = 0
+
+// OR: identity with zero
+or(0, value)  // = value
+
+// XOR: identity with zero
+xor(0, value)  // = value
+
+// NOT: all ones
+not(0)  // = 2^256 - 1
+```
+
+### Byte Extraction
+
+```typescript
+// BYTE: out of range index
+byte(32, value)  // = 0 (index >= 32)
+byte(0, value)   // = MSB (byte 0 is leftmost)
+byte(31, value)  // = LSB (byte 31 is rightmost)
+```
+
+### Shift Edge Cases
+
+```typescript
+// Zero shift
+shl(0, value)  // = value
+shr(0, value)  // = value
+sar(0, value)  // = value
+
+// Shift by 256+ bits
+shl(256, value)  // = 0
+shr(256, value)  // = 0
+sar(256, positive)  // = 0
+sar(256, negative)  // = 0xFFFF...FFFF (all 1s)
+```
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import * as Bitwise from '@tevm/voltaire/evm/instructions/bitwise';
+
+// Execute bitwise operations
+Bitwise.and(frame);      // 0x16
+Bitwise.or(frame);       // 0x17
+Bitwise.xor(frame);      // 0x18
+Bitwise.not(frame);      // 0x19
+Bitwise.byte(frame);     // 0x1a
+Bitwise.shl(frame);      // 0x1b (Constantinople+)
+Bitwise.shr(frame);      // 0x1c (Constantinople+)
+Bitwise.sar(frame);      // 0x1d (Constantinople+)
+```
+
+### Zig
+
+```zig
+const evm = @import("evm");
+const BitwiseHandlers = evm.instructions.bitwise.Handlers(FrameType);
+
+// Execute operations
+try BitwiseHandlers.op_and(frame);
+try BitwiseHandlers.op_or(frame);
+try BitwiseHandlers.xor(frame);
+try BitwiseHandlers.not(frame);
+try BitwiseHandlers.byte(frame);
+try BitwiseHandlers.shl(frame);  // Constantinople+
+try BitwiseHandlers.shr(frame);  // Constantinople+
+try BitwiseHandlers.sar(frame);  // Constantinople+
+```
+
+## Testing
+
+All bitwise operations tested with:
+- Logical operation truth tables
+- Masking patterns
+- Byte extraction boundaries
+- Shift overflow (>= 256 bits)
+- Signed vs unsigned shifts (SAR vs SHR)
+- Zero and maximum values
+- Hardfork compatibility (EIP-145)
+
+```bash
+# Run bitwise tests
+zig build test -Dtest-filter=bitwise
+bun run test -- bitwise
+```
+
+## Security Considerations
+
+### Off-by-One Errors
+
+Bit indexing is zero-based and left-to-right (MSB to LSB):
+
+```solidity
+// BYTE opcode: byte 0 is MSB (leftmost)
+// Common mistake: assuming byte 0 is LSB
+bytes32 data = 0x0123456789ABCDEF...;
+assembly {
+    let b := byte(0, data)  // = 0x01 (not 0xEF!)
+}
+```
+
+### Mask Construction
+
+Incorrect masks can leak unintended bits:
+
+```solidity
+// Bad: mask doesn't cover full range
+uint256 mask = 0xFFFFFFFF;  // Only 32 bits
+uint160 addr = uint160(value & mask);  // Missing upper bits!
+
+// Good: proper mask for type
+uint256 mask = type(uint160).max;  // Full 160 bits
+uint160 addr = uint160(value & mask);
+```
+
+### Shift Amount Validation
+
+```solidity
+// Dangerous: unchecked shift amount from user input
+function shiftLeft(uint256 value, uint256 shift) returns (uint256) {
+    return value << shift;  // shift >= 256 → 0 (may not be intended)
+}
+
+// Safer: validate bounds
+require(shift < 256, "shift overflow");
+```
+
+### Sign Extension Pitfalls
+
+SAR treats MSB as sign bit. Ensure values are properly signed:
+
+```solidity
+// Unexpected: SAR on unsigned value with MSB set
+uint256 value = type(uint256).max;  // All 1s
+assembly {
+    result := sar(1, value)  // = 0xFFFF...FFFF (sign-extended!)
+}
+
+// Use SHR for unsigned values
+assembly {
+    result := shr(1, value)  // = 0x7FFF...FFFF (zero-filled)
+}
+```
+
+## Benchmarks
+
+Bitwise operations are among the fastest EVM operations:
+
+| Operation | Gas | Relative Speed |
+|-----------|-----|----------------|
+| AND/OR/XOR/NOT | 3 | Fastest |
+| BYTE | 3 | Fastest |
+| SHL/SHR/SAR | 3 | Fastest (vs 5-60+ pre-EIP-145) |
+
+EIP-145 impact:
+- Pre-Constantinople: Left shift = MUL + EXP = 5 + (10 + 50/byte) gas
+- Post-Constantinople: SHL = 3 gas
+- **Savings:** 12-1607 gas per shift operation
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.1 (Arithmetic Operations)
+- **[EIP-145](https://eips.ethereum.org/EIPS/eip-145)** - Bitwise shifting instructions (SHL, SHR, SAR)
+- **[evm.codes](https://www.evm.codes/)** - Interactive reference
+- **[Hacker's Delight](https://en.wikipedia.org/wiki/Hacker%27s_Delight)** - Bit manipulation techniques
+
+## Related Documentation
+
+- [Arithmetic Operations](/evm/instructions/arithmetic) - ADD, MUL, DIV, MOD
+- [Comparison Operations](/evm/instructions/comparison) - LT, GT, EQ
+- [Gas Constants](/primitives/gas-constants) - Gas cost definitions
+- [Hardfork](/primitives/hardfork) - Constantinople (EIP-145)
