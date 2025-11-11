@@ -7,13 +7,16 @@ import { MAGIC_BYTE } from "./constants.js";
  *
  * Hash = keccak256(MAGIC || rlp([chain_id, address, nonce]))
  *
+ * @see https://voltaire.tevm.sh/primitives/authorization
+ * @since 0.0.0
  * @param {{chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}} unsigned - Unsigned authorization
  * @returns {import("../../Hash/index.js").BrandedHash} Hash to sign
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const unsigned: Unsigned = { chainId: 1n, address, nonce: 0n };
- * const sigHash = hash(unsigned);
+ * ```javascript
+ * import * as Authorization from './primitives/Authorization/index.js';
+ * const unsigned = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n };
+ * const sigHash = Authorization.hash(unsigned);
  * // Now sign sigHash with private key
  * ```
  */

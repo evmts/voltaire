@@ -6,14 +6,16 @@ import { validate } from "./validate.js";
 /**
  * Verify authorization signature and recover authority
  *
+ * @see https://voltaire.tevm.sh/primitives/authorization
+ * @since 0.0.0
  * @param {import("./BrandedAuthorization.js").BrandedAuthorization} auth - Authorization to verify
  * @returns {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} Recovered signer address (authority)
  * @throws {import("./errors.js").ValidationError} if validation fails
- *
  * @example
- * ```typescript
- * const auth: Item = {...};
- * const authority = verify(auth);
+ * ```javascript
+ * import * as Authorization from './primitives/Authorization/index.js';
+ * const auth = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n, yParity: 0, r: 0n, s: 0n };
+ * const authority = Authorization.verify(auth);
  * console.log(`Authorized by: ${authority}`);
  * ```
  */

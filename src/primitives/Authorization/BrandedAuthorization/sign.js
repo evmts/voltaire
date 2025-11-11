@@ -6,14 +6,17 @@ import { hash } from "./hash.js";
 /**
  * Create signed authorization from unsigned
  *
+ * @see https://voltaire.tevm.sh/primitives/authorization
+ * @since 0.0.0
  * @param {{chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}} unsigned - Unsigned authorization
  * @param {Uint8Array} privateKey - Private key (32 bytes) for signing
  * @returns {import("./BrandedAuthorization.js").BrandedAuthorization} Signed authorization
- *
+ * @throws {Error} If signing fails
  * @example
- * ```typescript
- * const unsigned: Unsigned = { chainId: 1n, address, nonce: 0n };
- * const auth = sign(unsigned, privateKey);
+ * ```javascript
+ * import * as Authorization from './primitives/Authorization/index.js';
+ * const unsigned = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n };
+ * const auth = Authorization.sign(unsigned, privateKey);
  * ```
  */
 export function sign(unsigned, privateKey) {
