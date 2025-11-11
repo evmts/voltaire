@@ -19,7 +19,7 @@ import {
 	pointEvaluation,
 	ripemd160,
 	sha256,
-} from "./precompiles/precompiles.js";
+} from "./evm/precompiles/precompiles.js";
 import { Address } from "./primitives/Address/index.js";
 import * as Hardfork from "./primitives/Hardfork/index.js";
 import type { BrandedHash } from "./primitives/Hash/index.js";

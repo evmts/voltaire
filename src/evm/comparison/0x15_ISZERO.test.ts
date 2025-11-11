@@ -1,6 +1,33 @@
 import { describe, expect, it } from "vitest";
-import * as Frame from "../Frame/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handle as ISZERO } from "./0x15_ISZERO.js";
+
+
+/**
+ * Create a minimal test frame
+ */
+function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
+	return {
+		__tag: "Frame",
+		stack,
+		memory: new Map(),
+		memorySize: 0,
+		pc: 0,
+		gasRemaining,
+		bytecode: new Uint8Array(),
+		caller: new Uint8Array(20) as any,
+		address: new Uint8Array(20) as any,
+		value: 0n,
+		calldata: new Uint8Array(),
+		output: new Uint8Array(),
+		returnData: new Uint8Array(),
+		stopped: false,
+		reverted: false,
+		isStatic: false,
+		authorized: null,
+		callDepth: 0,
+	};
+}
 
 describe("ISZERO opcode (0x15)", () => {
 	it("returns 1 when value is zero", () => {

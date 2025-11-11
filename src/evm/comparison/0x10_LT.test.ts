@@ -1,13 +1,36 @@
 import { describe, expect, it } from "vitest";
-import * as Frame from "../Frame/index.js";
 import { handle as LT } from "./0x10_LT.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+
+/**
+ * Create a minimal test frame
+ */
+function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
+	return {
+		__tag: "Frame",
+		stack,
+		memory: new Map(),
+		memorySize: 0,
+		pc: 0,
+		gasRemaining,
+		bytecode: new Uint8Array(),
+		caller: new Uint8Array(20) as any,
+		address: new Uint8Array(20) as any,
+		value: 0n,
+		calldata: new Uint8Array(),
+		output: new Uint8Array(),
+		returnData: new Uint8Array(),
+		stopped: false,
+		reverted: false,
+		isStatic: false,
+		authorized: null,
+		callDepth: 0,
+	};
+}
 
 describe("LT opcode (0x10)", () => {
 	it("returns 1 when a < b", () => {
-		const frame = Frame.from({
-			stack: [10n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([10n, 20n], 1000n);
 
 		const err = LT(frame);
 
@@ -18,10 +41,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("returns 0 when a >= b (equal)", () => {
-		const frame = Frame.from({
-			stack: [20n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([20n, 20n], 1000n);
 
 		const err = LT(frame);
 
@@ -32,10 +52,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("returns 0 when a > b", () => {
-		const frame = Frame.from({
-			stack: [30n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([30n, 20n], 1000n);
 
 		const err = LT(frame);
 
@@ -46,10 +63,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("handles 0 < 1", () => {
-		const frame = Frame.from({
-			stack: [0n, 1n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([0n, 1n], 1000n);
 
 		const err = LT(frame);
 
@@ -58,10 +72,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("handles 1 < 0", () => {
-		const frame = Frame.from({
-			stack: [1n, 0n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([1n, 0n], 1000n);
 
 		const err = LT(frame);
 
@@ -71,10 +82,7 @@ describe("LT opcode (0x10)", () => {
 
 	it("handles max uint256 values", () => {
 		const MAX_UINT256 = (1n << 256n) - 1n;
-		const frame = Frame.from({
-			stack: [MAX_UINT256 - 1n, MAX_UINT256],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([MAX_UINT256 - 1n, MAX_UINT256], 1000n);
 
 		const err = LT(frame);
 
@@ -85,10 +93,7 @@ describe("LT opcode (0x10)", () => {
 	it("treats all values as unsigned", () => {
 		// 2^255 is large positive as unsigned
 		const SIGN_BIT = 1n << 255n;
-		const frame = Frame.from({
-			stack: [1n, SIGN_BIT],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([1n, SIGN_BIT], 1000n);
 
 		const err = LT(frame);
 
@@ -97,10 +102,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("returns StackUnderflow when stack has < 2 items", () => {
-		const frame = Frame.from({
-			stack: [10n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([10n], 1000n);
 
 		const err = LT(frame);
 
@@ -108,10 +110,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("returns OutOfGas when insufficient gas", () => {
-		const frame = Frame.from({
-			stack: [10n, 20n],
-			gasRemaining: 2n,
-		});
+		const frame = createFrame([10n, 20n], 2n);
 
 		const err = LT(frame);
 
@@ -123,10 +122,7 @@ describe("LT opcode (0x10)", () => {
 		const a = 123456789012345678901234567890n;
 		const b = 987654321098765432109876543210n;
 
-		const frame = Frame.from({
-			stack: [a, b],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([a, b], 1000n);
 
 		const err = LT(frame);
 
@@ -135,10 +131,7 @@ describe("LT opcode (0x10)", () => {
 	});
 
 	it("preserves stack below compared values", () => {
-		const frame = Frame.from({
-			stack: [100n, 200n, 10n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([100n, 200n, 10n, 20n], 1000n);
 
 		const err = LT(frame);
 
