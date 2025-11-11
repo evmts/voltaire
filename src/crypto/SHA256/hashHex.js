@@ -3,13 +3,16 @@ import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
 /**
  * Compute SHA256 hash of hex string (without 0x prefix)
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string (with or without 0x prefix)
  * @returns {Uint8Array} 32-byte hash
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import { SHA256 } from './crypto/SHA256/index.js';
  * const hash = SHA256.hashHex("0xdeadbeef");
- * // Uint8Array(32) [...]
+ * console.log(hash.length); // 32
  * ```
  */
 export function hashHex(hex) {

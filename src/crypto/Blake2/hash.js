@@ -3,13 +3,15 @@ import { blake2b } from "@noble/hashes/blake2.js";
 /**
  * Hash data with BLAKE2b
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array | string} data - Input data to hash (Uint8Array or string)
  * @param {number} [outputLength=64] - Output length in bytes (1-64, default 64)
  * @returns {Uint8Array} BLAKE2b hash
  * @throws {Error} If outputLength is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Blake2 from './crypto/Blake2/index.js';
  * const hash = Blake2.hash(new Uint8Array([1, 2, 3]));
  * const hash32 = Blake2.hash("hello", 32);
  * ```

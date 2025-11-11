@@ -1,14 +1,17 @@
 /**
  * Convert hash output to hex string
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} hash - Hash bytes
  * @returns {string} Hex string with 0x prefix
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const hash = SHA256.hash(data);
+ * ```javascript
+ * import { SHA256 } from './crypto/SHA256/index.js';
+ * const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
  * const hexStr = SHA256.toHex(hash);
- * // "0x..."
+ * console.log(hexStr); // "0x..."
  * ```
  */
 export function toHex(hash) {
