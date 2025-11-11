@@ -392,6 +392,23 @@ bun run src/crypto/secp256k1.bench.ts
 
 ## Security Considerations
 
+### TypeScript vs Zig Implementation Security
+
+**⚠️ CRITICAL: The Zig secp256k1 implementation contains known timing attack vulnerabilities.**
+
+| Implementation | Status | Security Properties | Recommendation |
+|---------------|--------|-------------------|----------------|
+| **TypeScript** | ✅ Production-ready | @noble/curves (audited, constant-time) | **Use for all production cryptographic operations** |
+| **Zig** | ⚠️ Unaudited | Custom implementation with potential timing attacks (see `secp256k1.zig:14`) | Educational/testing only |
+
+The Zig implementation has explicit warnings about:
+- Potential timing attacks in modular arithmetic
+- Unvalidated against known ECC vulnerabilities
+- Custom point arithmetic may have edge case bugs
+- Memory safety not guaranteed under all conditions
+
+**For production use, always use the TypeScript implementation backed by @noble/curves.**
+
 ### Using Audited Cryptography
 
 This implementation uses `@noble/curves`, a well-audited cryptographic library. All core operations (signing, verification, key derivation) delegate to noble's implementations.
