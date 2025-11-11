@@ -241,16 +241,18 @@ export fn primitives_u256_to_hex(
 
     const value = std.mem.readInt(u256, &value_u256.bytes, .big);
 
-    var stack_buf: [256]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-    const allocator = fba.allocator();
+    // Format as padded hex: 0x + 64 hex chars
+    buf[0] = '0';
+    buf[1] = 'x';
 
-    const hex = primitives.Hex.u256ToHex(allocator, value) catch {
-        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
-    };
-    defer allocator.free(hex);
+    const hex_chars = "0123456789abcdef";
+    var i: usize = 0;
+    while (i < 64) : (i += 1) {
+        const shift = @as(u8, @intCast((63 - i) * 4));
+        const nibble = @as(u8, @intCast((value >> shift) & 0xF));
+        buf[2 + i] = hex_chars[nibble];
+    }
 
-    @memcpy(buf[0..hex.len], hex);
     return PRIMITIVES_SUCCESS;
 }
 
@@ -2099,14 +2101,14 @@ export fn x25519KeypairFromSeed(
 // ============================================================================
 // Ed25519 API - DISABLED (Use TypeScript @noble/curves implementation)
 // ============================================================================
-// Note: Ed25519 Zig wrappers disabled due to API changes in Zig 0.15.1
-// Use the TypeScript implementation in src/crypto/ed25519.ts instead
+// Note: Ed25519 Zig implementation needs updating for Zig 0.15.1 API changes
+// Use the TypeScript implementation via @noble/curves which is already integrated
 
 // ============================================================================
 // P256 (secp256r1) API - DISABLED (Use TypeScript @noble/curves implementation)
 // ============================================================================
-// Note: P256 Zig wrappers disabled due to API changes in Zig 0.15.1
-// Use the TypeScript implementation in src/crypto/p256.ts instead
+// Note: P256 Zig implementation needs updating for Zig 0.15.1 API changes
+// Use the TypeScript implementation via @noble/curves which is already integrated
 
 // ============================================================================
 // HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
