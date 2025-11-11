@@ -8,7 +8,7 @@ import * as Hex from "../Hex/index.js";
  *
  * @param {string} signature - Function/event/error signature (e.g., "transfer(address,uint256)")
  * @param {{ type?: "function" | "event" | "error" }} [options] - Options
- * @returns {import('../Hex/index.js').Hex} Selector (4 bytes for function/error, 32 bytes for event)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Selector (4 bytes for function/error, 32 bytes for event)
  *
  * @example
  * ```typescript

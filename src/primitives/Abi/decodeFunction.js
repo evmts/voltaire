@@ -6,8 +6,10 @@ import * as Function from "./function/index.js";
  * Decode function call data using ABI
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
- * @param {import('../Hex/index.js').Hex | Uint8Array} data - Encoded function call data
+ * @param {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array} data - Encoded function call data
  * @returns {{ name: string, params: readonly unknown[] }} Decoded function name and parameters
+ * @throws {AbiInvalidSelectorError} If data too short for selector
+ * @throws {AbiItemNotFoundError} If function selector not found in ABI
  *
  * @example
  * ```typescript
@@ -29,7 +31,11 @@ export function decodeFunction(abi, data) {
 	const bytes = typeof data === "string" ? Hex.toBytes(data) : data;
 
 	if (bytes.length < 4) {
-		throw new AbiInvalidSelectorError("Data too short to contain selector");
+		throw new AbiInvalidSelectorError("Data too short to contain selector", {
+			value: bytes.length,
+			expected: 'at least 4 bytes',
+			context: { dataLength: bytes.length }
+		});
 	}
 
 	const selector = bytes.slice(0, 4);
@@ -51,6 +57,11 @@ export function decodeFunction(abi, data) {
 	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function with selector ${Hex.fromBytes(selector)} not found in ABI`,
+			{
+				value: Hex.fromBytes(selector),
+				expected: 'valid function selector in ABI',
+				context: { selector: Hex.fromBytes(selector), abi }
+			}
 		);
 	}
 

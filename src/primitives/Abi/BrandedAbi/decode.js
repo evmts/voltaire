@@ -26,6 +26,11 @@ export function decode(functionName, data) {
 	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function "${functionName}" not found in ABI`,
+			{
+				value: functionName,
+				expected: 'valid function name in ABI',
+				context: { functionName, abi: this }
+			}
 		);
 	}
 

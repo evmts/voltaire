@@ -110,7 +110,7 @@ describe("Abi.encodeParameters - string", () => {
 		// Offset (32) + Length (32) + Data padded = 128 bytes
 		expect(encoded.length).toBe(128);
 		expect(encoded[31]).toBe(0x20); // offset
-		expect(encoded[63]).toBe(44); // length
+		expect(encoded[63]).toBe(43); // length
 	});
 
 	it("encodes string exactly 32 bytes", () => {
@@ -191,8 +191,8 @@ describe("Abi.encodeParameters - dynamic arrays", () => {
 			[{ type: "bool[]" }],
 			[[true, false, true, false]],
 		);
-		// Offset (32) + Length (32) + Data (4*32) = 160 bytes
-		expect(encoded.length).toBe(160);
+		// Offset pointer (32) + Length (32) + Data (4*32) = 192 bytes
+		expect(encoded.length).toBe(192);
 		expect(encoded[63]).toBe(4); // length
 		expect(encoded[95]).toBe(1);
 		expect(encoded[127]).toBe(0);
@@ -541,7 +541,7 @@ describe("Abi.encodeParameters - dynamic edge cases", () => {
 		const longStr = "a".repeat(1000);
 		const encoded = Abi.encodeParameters([{ type: "string" }], [longStr]);
 		expect(encoded).toBeInstanceOf(Uint8Array);
-		expect(encoded[63]).toBe(244); // length % 256
+		expect(encoded[63]).toBe(232); // length % 256 (1000 % 256 = 232)
 	});
 
 	it("encodes large uint256 array", () => {

@@ -7,7 +7,8 @@ import * as Constructor from "./constructor/index.js";
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {readonly unknown[]} args - Constructor arguments
- * @returns {import('../Hex/index.js').Hex} Encoded constructor parameters (hex string)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Encoded constructor parameters (hex string)
+ * @throws {AbiItemNotFoundError} If constructor not found in ABI
  *
  * @example
  * ```typescript
@@ -28,7 +29,11 @@ export function encodeConstructor(abi, args) {
 	const item = abi.find((item) => item.type === "constructor");
 
 	if (!item || item.type !== "constructor") {
-		throw new AbiItemNotFoundError("Constructor not found in ABI");
+		throw new AbiItemNotFoundError("Constructor not found in ABI", {
+			value: 'constructor',
+			expected: 'valid constructor item in ABI',
+			context: { abi }
+		});
 	}
 
 	// Type assertion after guard

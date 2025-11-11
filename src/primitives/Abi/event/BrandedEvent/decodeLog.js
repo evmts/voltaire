@@ -34,18 +34,26 @@ export function decodeLog(event, data, topics) {
 
 	if (!event.anonymous) {
 		if (topics.length === 0) {
-			throw new AbiDecodingError("Missing topic0 for non-anonymous event");
+			throw new AbiDecodingError("Missing topic0 for non-anonymous event", {
+				context: { eventName: event.name, anonymous: event.anonymous }
+			});
 		}
 		const topic0 = topics[0];
 		if (!topic0) {
-			throw new AbiDecodingError("Missing topic0 for non-anonymous event");
+			throw new AbiDecodingError("Missing topic0 for non-anonymous event", {
+				context: { eventName: event.name, anonymous: event.anonymous }
+			});
 		}
 		const expectedSelector = getSelector(event);
 		for (let i = 0; i < 32; i++) {
 			const t0Byte = topic0[i];
 			const expByte = expectedSelector[i];
 			if (t0Byte !== expByte) {
-				throw new AbiInvalidSelectorError("Event selector mismatch");
+				throw new AbiInvalidSelectorError("Event selector mismatch", {
+					value: topic0,
+					expected: expectedSelector,
+					context: { topic0, expectedSelector, eventName: event.name }
+				});
 			}
 		}
 		topicIndex = 1;
@@ -60,12 +68,18 @@ export function decodeLog(event, data, topics) {
 			if (topicIndex >= topics.length) {
 				throw new AbiDecodingError(
 					`Missing topic for indexed parameter ${param.name}`,
+					{
+						context: { parameterName: param.name, topicIndex, topicsLength: topics.length, eventName: event.name }
+					}
 				);
 			}
 			const topic = topics[topicIndex++];
 			if (!topic) {
 				throw new AbiDecodingError(
 					`Missing topic for indexed parameter ${param.name}`,
+					{
+						context: { parameterName: param.name, topicIndex: topicIndex - 1, eventName: event.name }
+					}
 				);
 			}
 

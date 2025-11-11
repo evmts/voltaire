@@ -8,9 +8,10 @@ import * as Event from "./event/index.js";
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {Object} log - Log object with data and topics
- * @param {import('../Hex/index.js').Hex | Uint8Array} log.data - Log data bytes
- * @param {readonly (import('../Hex/index.js').Hex | Uint8Array)[]} log.topics - Log topics (topic0 is event selector)
+ * @param {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array} log.data - Log data bytes
+ * @param {readonly (import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array)[]} log.topics - Log topics (topic0 is event selector)
  * @returns {{ event: string, params: Record<string, unknown> }} Decoded event name and parameters
+ * @throws {AbiItemNotFoundError} If no topics, missing topic0, or event not found in ABI
  *
  * @example
  * ```typescript
@@ -47,12 +48,21 @@ export function decodeLog(abi, log) {
 	if (topicBytes.length === 0) {
 		throw new AbiItemNotFoundError(
 			"No topics in log (anonymous events not yet supported)",
+			{
+				value: topicBytes.length,
+				expected: 'at least one topic',
+				context: { log }
+			}
 		);
 	}
 
 	const topic0 = topicBytes[0];
 	if (!topic0) {
-		throw new AbiItemNotFoundError("Missing topic0");
+		throw new AbiItemNotFoundError("Missing topic0", {
+			value: topic0,
+			expected: 'valid topic0',
+			context: { topics: topicBytes }
+		});
 	}
 
 	// Find event by selector (topic0 for non-anonymous events)
@@ -72,6 +82,11 @@ export function decodeLog(abi, log) {
 	if (!item || item.type !== "event") {
 		throw new AbiItemNotFoundError(
 			`Event with selector ${Hex.fromBytes(topic0)} not found in ABI`,
+			{
+				value: Hex.fromBytes(topic0),
+				expected: 'valid event selector in ABI',
+				context: { selector: Hex.fromBytes(topic0), abi }
+			}
 		);
 	}
 

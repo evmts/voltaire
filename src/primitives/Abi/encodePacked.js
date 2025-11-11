@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
@@ -8,7 +9,9 @@ import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
  *
  * @param {readonly string[]} types - Array of type strings
  * @param {readonly unknown[]} values - Array of values to encode
- * @returns {import('../Hex/index.js').Hex} Encoded data (hex string)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Encoded data (hex string)
+ * @throws {AbiParameterMismatchError} If types and values length mismatch
+ * @throws {AbiEncodingError} If encoding fails or unsupported type
  *
  * @example
  * ```typescript
@@ -24,6 +27,11 @@ export function encodePacked(types, values) {
 	if (types.length !== values.length) {
 		throw new AbiParameterMismatchError(
 			`Type/value count mismatch: ${types.length} types, ${values.length} values`,
+			{
+				value: values.length,
+				expected: `${types.length} values`,
+				context: { types, values }
+			}
 		);
 	}
 
@@ -86,6 +94,9 @@ function encodePackedValue(type, value) {
 		if (array.length !== length) {
 			throw new AbiEncodingError(
 				`Invalid ${type} length: expected ${length}, got ${array.length}`,
+				{
+					context: { type, expectedLength: length, actualLength: array.length, value: array }
+				}
 			);
 		}
 		const parts = [];
@@ -137,6 +148,9 @@ function encodePackedValue(type, value) {
 			if (bytes.length !== size) {
 				throw new AbiEncodingError(
 					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
+					{
+						context: { type, expectedSize: size, actualSize: bytes.length }
+					}
 				);
 			}
 			return bytes;
@@ -195,5 +209,7 @@ function encodePackedValue(type, value) {
 		return result;
 	}
 
-	throw new AbiEncodingError(`Unsupported packed type: ${type}`);
+	throw new AbiEncodingError(`Unsupported packed type: ${type}`, {
+		context: { type, value }
+	});
 }

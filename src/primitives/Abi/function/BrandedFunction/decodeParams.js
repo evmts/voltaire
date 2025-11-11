@@ -38,7 +38,9 @@ import { getSelector } from "./getSelector.js";
  */
 export function decodeParams(fn, data) {
 	if (data.length < 4) {
-		throw new FunctionDecodingError("Data too short for function selector");
+		throw new FunctionDecodingError("Data too short for function selector", {
+			context: { dataLength: data.length, functionName: fn.name }
+		});
 	}
 	const selector = data.slice(0, 4);
 	const expectedSelector = getSelector(fn);
@@ -46,7 +48,11 @@ export function decodeParams(fn, data) {
 		const selByte = selector[i];
 		const expByte = expectedSelector[i];
 		if (selByte !== expByte) {
-			throw new FunctionInvalidSelectorError();
+			throw new FunctionInvalidSelectorError(undefined, {
+				value: selector,
+				expected: expectedSelector,
+				context: { selector, expectedSelector, functionName: fn.name }
+			});
 		}
 	}
 	return /** @type {any} */ (decodeParameters(fn.inputs, data.slice(4)));

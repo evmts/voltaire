@@ -62,6 +62,8 @@ function encodeValue(
 	type: Parameter["type"],
 	value: unknown,
 ): { encoded: Uint8Array; isDynamic: boolean } {
+	// Check for arrays FIRST before other types
+	// Dynamic arrays: uint256[], address[], etc.
 	if (type.endsWith("[]")) {
 		const elementType = type.slice(0, -2) as Parameter["type"];
 		const array = value as unknown[];
@@ -77,6 +79,26 @@ function encodeValue(
 		result.set(length, 0);
 		result.set(encodedElements, length.length);
 		return { encoded: result, isDynamic: true };
+	}
+
+	// Fixed arrays: uint256[3], address[2], etc.
+	// MUST check before uint/int to avoid matching "uint256[3]" as "uint"
+	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
+		const elementType = fixedArrayMatch[1] as Parameter["type"];
+		const arraySize = Number.parseInt(fixedArrayMatch[2]);
+		const array = value as unknown[];
+
+		if (array.length !== arraySize) {
+			throw new AbiEncodingError(
+				`Array length mismatch: expected ${arraySize}, got ${array.length}`,
+			);
+		}
+
+		const elementParams = array.map(() => ({ type: elementType }));
+		const encoded = encodeParameters(elementParams as any, array as any);
+		const isDynamic = isDynamicType(elementType);
+		return { encoded, isDynamic };
 	}
 
 	if (type.startsWith("uint")) {
@@ -151,24 +173,6 @@ function encodeValue(
 		result.set(length, 0);
 		result.set(data, length.length);
 		return { encoded: result, isDynamic: true };
-	}
-
-	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
-		const elementType = fixedArrayMatch[1] as Parameter["type"];
-		const arraySize = Number.parseInt(fixedArrayMatch[2]);
-		const array = value as unknown[];
-
-		if (array.length !== arraySize) {
-			throw new AbiEncodingError(
-				`Array length mismatch: expected ${arraySize}, got ${array.length}`,
-			);
-		}
-
-		const elementParams = array.map(() => ({ type: elementType }));
-		const encoded = encodeParameters(elementParams as any, array as any);
-		const isDynamic = isDynamicType(elementType);
-		return { encoded, isDynamic };
 	}
 
 	throw new AbiEncodingError(`Unsupported type: ${type}`);

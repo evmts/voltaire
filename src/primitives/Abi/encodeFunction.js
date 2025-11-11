@@ -8,7 +8,8 @@ import * as Function from "./function/index.js";
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {string} functionName - Function name to encode
  * @param {readonly unknown[]} args - Function arguments
- * @returns {import('../Hex/index.js').Hex} Encoded function call data (hex string)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Encoded function call data (hex string)
+ * @throws {AbiItemNotFoundError} If function not found in ABI
  *
  * @example
  * ```typescript
@@ -40,6 +41,11 @@ export function encodeFunction(abi, functionName, args) {
 	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function "${functionName}" not found in ABI`,
+			{
+				value: functionName,
+				expected: 'valid function name in ABI',
+				context: { functionName, abi }
+			}
 		);
 	}
 
