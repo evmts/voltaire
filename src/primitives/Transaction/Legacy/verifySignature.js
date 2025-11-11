@@ -3,14 +3,17 @@ import { getChainId } from "./getChainId.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
- * Verify transaction signature
+ * Verify transaction signature.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
  * @returns {boolean} True if signature is valid, false otherwise
- *
+ * @throws {never} Never throws - returns false on error
  * @example
- * ```typescript
- * const isValid = TransactionLegacy.verifySignature.call(tx);
+ * ```javascript
+ * import { verifySignature } from './primitives/Transaction/Legacy/verifySignature.js';
+ * const isValid = verifySignature.call(tx);
  * ```
  */
 export function verifySignature() {
