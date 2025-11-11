@@ -1,0 +1,123 @@
+---
+title: "CALLDATACOPY (0x37)"
+description: "Copy call data to memory"
+---
+
+## Overview
+
+**Opcode:** `0x37`
+**Introduced:** Frontier (EVM genesis)
+
+CALLDATACOPY copies a specified range of call data bytes to memory. Out-of-bounds bytes are zero-padded.
+
+## Specification
+
+**Stack Input:**
+```
+destOffset (memory offset)
+offset (calldata offset)
+length (bytes to copy)
+```
+
+**Stack Output:**
+```
+[]
+```
+
+**Gas Cost:** 3 + memory expansion + (length / 32) * 3 (rounded up)
+
+**Operation:**
+```
+destOffset = stack.pop()
+offset = stack.pop()
+length = stack.pop()
+memory[destOffset:destOffset+length] = calldata[offset:offset+length]
+```
+
+## Behavior
+
+Copies `length` bytes from calldata starting at `offset` to memory starting at `destOffset`. Zero-pads if calldata bounds exceeded.
+
+## Examples
+
+### Basic Copy
+
+```solidity
+function copyCalldata() public pure {
+    assembly {
+        // Copy entire calldata to memory at 0
+        calldatacopy(0, 0, calldatasize())
+    }
+}
+```
+
+### Proxy Pattern
+
+```solidity
+fallback() external payable {
+    assembly {
+        calldatacopy(0, 0, calldatasize())
+        let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+        returndatacopy(0, 0, returndatasize())
+        switch result
+        case 0 { revert(0, returndatasize()) }
+        default { return(0, returndatasize()) }
+    }
+}
+```
+
+## Gas Cost
+
+**Base:** 3 gas
+**Memory expansion:** Variable
+**Copy cost:** 3 gas per 32-byte word (rounded up)
+
+## Common Usage
+
+### Forwarding Calls
+
+```solidity
+function forward(address target) public {
+    assembly {
+        let size := calldatasize()
+        calldatacopy(0, 0, size)
+        call(gas(), target, 0, 0, size, 0, 0)
+    }
+}
+```
+
+## Security
+
+### Bounds Validation
+
+Check offsets don't overflow when adding length.
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function calldatacopy(frame: BrandedFrame): EvmError | null {
+  const destOffsetResult = popStack(frame);
+  if (destOffsetResult.error) return destOffsetResult.error;
+
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+
+  const lengthResult = popStack(frame);
+  if (lengthResult.error) return lengthResult.error;
+
+  // Gas calculation + copying logic
+  // See full implementation in codebase
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - CALLDATACOPY](https://www.evm.codes/#37)

@@ -1,0 +1,148 @@
+---
+title: "CALLDATASIZE (0x36)"
+description: "Get size of call data in bytes"
+---
+
+## Overview
+
+**Opcode:** `0x36`
+**Introduced:** Frontier (EVM genesis)
+
+CALLDATASIZE pushes the byte length of the call data (input data) onto the stack.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+size (uint256, in bytes)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(calldata.length)
+```
+
+## Behavior
+
+CALLDATASIZE returns the total number of bytes in the call data, including function selector.
+
+Key characteristics:
+- Returns exact byte count
+- Includes 4-byte function selector (if present)
+- Always >= 0
+- Constant throughout execution
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { calldatasize } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const calldata = new Uint8Array(68); // selector + 2 uint256
+const frame = createFrame({ calldata, stack: [] });
+
+const err = calldatasize(frame);
+
+console.log(frame.stack[0]); // 68n
+```
+
+### Validation
+
+```solidity
+contract CalldataValidator {
+    function requireMinimumCalldata(uint256 minSize) public pure {
+        assembly {
+            if lt(calldatasize(), minSize) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function hasArguments() public pure returns (bool) {
+        // Function selector = 4 bytes
+        // If calldatasize > 4, has arguments
+        return msg.data.length > 4;
+    }
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+Same as ADDRESS, ORIGIN, CALLER, etc.
+
+## Common Usage
+
+### Bounds Checking
+
+```solidity
+function safeDecod() public pure {
+    assembly {
+        // Ensure enough data for selector + 1 uint256
+        if lt(calldatasize(), 36) {
+            revert(0, 0)
+        }
+    }
+}
+```
+
+### Copying Entire Calldata
+
+```solidity
+function forwardCalldata(address target) public {
+    assembly {
+        let size := calldatasize()
+        calldatacopy(0, 0, size)
+        let result := call(gas(), target, 0, 0, size, 0, 0)
+        if iszero(result) { revert(0, 0) }
+    }
+}
+```
+
+## Security
+
+Safe opcode, no vulnerabilities.
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function calldatasize(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, BigInt(frame.calldata.length));
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+pub fn calldatasize(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(2);
+    try frame.pushStack(frame.calldata.len);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - CALLDATASIZE](https://www.evm.codes/#36)

@@ -1,0 +1,361 @@
+---
+title: "CALLDATALOAD (0x35)"
+description: "Load 32 bytes from call data at specified offset"
+---
+
+## Overview
+
+**Opcode:** `0x35`
+**Introduced:** Frontier (EVM genesis)
+
+CALLDATALOAD reads 32 bytes from the call data (input data passed to the contract) starting at a specified offset. Bytes beyond call data bounds are zero-padded.
+
+## Specification
+
+**Stack Input:**
+```
+offset (uint256)
+```
+
+**Stack Output:**
+```
+data (bytes32 as uint256)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+offset = stack.pop()
+data = calldata[offset:offset+32]  // zero-padded if out of bounds
+stack.push(data)
+```
+
+## Behavior
+
+CALLDATALOAD loads exactly 32 bytes from call data, reading from the specified byte offset. If the offset extends beyond call data, the remaining bytes are padded with zeros.
+
+Key characteristics:
+- Always returns 32 bytes (256 bits)
+- Zero-pads when offset + 32 > calldata.length
+- Big-endian byte order
+- Does not revert on out-of-bounds access
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { calldataload } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Load from calldata
+const calldata = new Uint8Array([
+  0x12, 0x34, 0x56, 0x78, // First 4 bytes
+  ...new Array(28).fill(0xAB) // Next 28 bytes
+]);
+
+const frame = createFrame({
+  calldata,
+  stack: [0n] // offset = 0
+});
+
+const err = calldataload(frame);
+
+// Result: 0x12345678AB...AB (32 bytes)
+```
+
+### Function Arguments
+
+```solidity
+contract Example {
+    function process(uint256 x, uint256 y) public pure returns (uint256) {
+        // Calldata layout:
+        // 0x00-0x03: function selector (4 bytes)
+        // 0x04-0x23: first argument (x)
+        // 0x24-0x43: second argument (y)
+
+        uint256 firstArg;
+        uint256 secondArg;
+
+        assembly {
+            firstArg := calldataload(4)   // Skip selector
+            secondArg := calldataload(36) // 4 + 32
+        }
+
+        return firstArg + secondArg;
+    }
+}
+```
+
+### Zero Padding
+
+```typescript
+// Calldata shorter than 32 bytes
+const shortCalldata = new Uint8Array([0xFF, 0xEE]);
+
+const frame = createFrame({
+  calldata: shortCalldata,
+  stack: [0n]
+});
+
+calldataload(frame);
+
+// Result: 0xFFEE000000000000000000000000000000000000000000000000000000000000
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+CALLDATALOAD shares the same cost tier with:
+- ADD, SUB (0x01, 0x03): 3 gas
+- NOT, ISZERO (0x19, 0x15): 3 gas
+- Comparison operations: 3 gas
+
+**Comparison:**
+- CALLDATALOAD (read 32 bytes): 3 gas
+- CALLDATACOPY (copy N bytes): 3 + memory + copy cost
+- MLOAD (read from memory): 3 gas
+
+## Common Usage
+
+### Function Selector Extraction
+
+```solidity
+function getSelector() public pure returns (bytes4) {
+    bytes4 selector;
+    assembly {
+        // First 4 bytes contain function selector
+        let data := calldataload(0)
+        selector := shr(224, data) // Shift right 224 bits (32-4)*8
+    }
+    return selector;
+}
+```
+
+### Manual ABI Decoding
+
+```solidity
+function decodeUint256(uint256 offset) public pure returns (uint256 value) {
+    assembly {
+        value := calldataload(offset)
+    }
+}
+
+function decodeAddress(uint256 offset) public pure returns (address addr) {
+    assembly {
+        let data := calldataload(offset)
+        addr := and(data, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+    }
+}
+```
+
+### Dynamic Array Length
+
+```solidity
+function getArrayLength(uint256 arrayOffset) public pure returns (uint256 length) {
+    assembly {
+        // Array length is stored at arrayOffset
+        length := calldataload(arrayOffset)
+    }
+}
+```
+
+### Calldata Validation
+
+```solidity
+function validateCalldata() public pure returns (bool) {
+    assembly {
+        // Check if calldata is at least 36 bytes (selector + 1 uint256)
+        if lt(calldatasize(), 36) {
+            revert(0, 0)
+        }
+
+        // Load and validate first parameter
+        let param := calldataload(4)
+        if gt(param, 1000) {
+            revert(0, 0)
+        }
+    }
+    return true;
+}
+```
+
+## Security
+
+### Out-of-Bounds Reading
+
+```solidity
+// Safe: automatically zero-padded
+function readAtOffset(uint256 offset) public pure returns (uint256) {
+    uint256 value;
+    assembly {
+        value := calldataload(offset)
+        // If offset >= calldatasize(), returns 0
+    }
+    return value;
+}
+```
+
+### Function Selector Validation
+
+```solidity
+function onlyCorrectSelector() public pure {
+    assembly {
+        let selector := shr(224, calldataload(0))
+        // Verify expected selector
+        if iszero(eq(selector, 0x12345678)) {
+            revert(0, 0)
+        }
+    }
+}
+```
+
+### Calldata Bounds Check
+
+```solidity
+function safeRead(uint256 offset) public pure returns (uint256) {
+    require(offset + 32 <= msg.data.length, "Out of bounds");
+
+    uint256 value;
+    assembly {
+        value := calldataload(offset)
+    }
+    return value;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { pushStack } from "../Frame/pushStack.js";
+
+/**
+ * CALLDATALOAD opcode (0x35) - Load 32 bytes from calldata
+ *
+ * Stack: [offset] => [data]
+ * Gas: 3 (GasFastestStep)
+ */
+export function calldataload(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 3n);
+  if (gasErr) return gasErr;
+
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+  const offset = offsetResult.value;
+
+  if (offset > 0xffffffffn) {
+    // Offset beyond reasonable range, return zero
+    const pushErr = pushStack(frame, 0n);
+    if (pushErr) return pushErr;
+  } else {
+    const off = Number(offset);
+    let result = 0n;
+
+    // Load 32 bytes (zero-padded if out of bounds)
+    for (let i = 0; i < 32; i++) {
+      const idx = off + i;
+      const byte = idx < frame.calldata.length ? frame.calldata[idx] : 0;
+      result = (result << 8n) | BigInt(byte);
+    }
+
+    const pushErr = pushStack(frame, result);
+    if (pushErr) return pushErr;
+  }
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CALLDATALOAD opcode (0x35) - Load 32 bytes from calldata
+pub fn calldataload(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(3);
+
+    const offset = try frame.popStack();
+
+    var result: u256 = 0;
+    if (offset <= std.math.maxInt(u32)) {
+        const off: usize = @intCast(offset);
+        for (0..32) |i| {
+            const idx = off + i;
+            const byte: u8 = if (idx < frame.calldata.len)
+                frame.calldata[idx]
+            else
+                0;
+            result = (result << 8) | byte;
+        }
+    }
+
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Offset Beyond Calldata
+
+```typescript
+const frame = createFrame({
+  calldata: new Uint8Array([0xFF]),
+  stack: [100n] // Offset beyond calldata
+});
+
+calldataload(frame);
+console.log(frame.stack[0]); // 0n (all zeros)
+```
+
+### Partial Overlap
+
+```typescript
+// 4 bytes calldata, offset = 1
+const frame = createFrame({
+  calldata: new Uint8Array([0xAA, 0xBB, 0xCC, 0xDD]),
+  stack: [1n]
+});
+
+calldataload(frame);
+// Result: 0xBBCCDD00...00 (3 bytes data, 29 bytes padding)
+```
+
+### Zero Offset Empty Calldata
+
+```typescript
+const frame = createFrame({
+  calldata: new Uint8Array([]),
+  stack: [0n]
+});
+
+calldataload(frame);
+console.log(frame.stack[0]); // 0n
+```
+
+### Maximum Offset
+
+```typescript
+const frame = createFrame({
+  calldata: new Uint8Array(100),
+  stack: [(1n << 256n) - 1n] // Max u256
+});
+
+calldataload(frame);
+console.log(frame.stack[0]); // 0n (out of bounds)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Machine State)
+- [EVM Codes - CALLDATALOAD](https://www.evm.codes/#35)
+- [Solidity Docs - ABI Encoding](https://docs.soliditylang.org/en/latest/abi-spec.html)
+- [EIP-211](https://eips.ethereum.org/EIPS/eip-211) - Related return data opcodes

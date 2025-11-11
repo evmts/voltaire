@@ -647,6 +647,43 @@
 			]
 		},
 		{
+			"group": "EVM Instructions",
+			"pages": [
+				"evm/index",
+				"evm/instructions/index",
+				{
+					"group": "Arithmetic",
+					"pages": [
+						"evm/instructions/arithmetic/index",
+						"evm/instructions/arithmetic/add",
+						"evm/instructions/arithmetic/mul",
+						"evm/instructions/arithmetic/sub",
+						"evm/instructions/arithmetic/div",
+						"evm/instructions/arithmetic/sdiv",
+						"evm/instructions/arithmetic/mod",
+						"evm/instructions/arithmetic/smod"
+					]
+				},
+				{
+					"group": "Block Context",
+					"pages": [
+						"evm/instructions/block/index",
+						"evm/instructions/block/blockhash",
+						"evm/instructions/block/coinbase",
+						"evm/instructions/block/timestamp",
+						"evm/instructions/block/number",
+						"evm/instructions/block/difficulty",
+						"evm/instructions/block/gaslimit",
+						"evm/instructions/block/chainid",
+						"evm/instructions/block/selfbalance",
+						"evm/instructions/block/basefee",
+						"evm/instructions/block/blobhash",
+						"evm/instructions/block/blobbasefee"
+					]
+				}
+			]
+		},
+		{
 			"group": "JSON-RPC",
 			"pages": [
 				"jsonrpc/index",

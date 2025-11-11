@@ -1,0 +1,94 @@
+---
+title: "CODESIZE (0x38)"
+description: "Get size of executing code in bytes"
+---
+
+## Overview
+
+**Opcode:** `0x38`
+**Introduced:** Frontier (EVM genesis)
+
+CODESIZE pushes the byte length of the currently executing code onto the stack.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+size (uint256, in bytes)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(code.length)
+```
+
+## Behavior
+
+Returns the size of the currently executing bytecode, including deployed code and constructor code.
+
+## Examples
+
+### Basic Usage
+
+```solidity
+function getCodeSize() public pure returns (uint256 size) {
+    assembly {
+        size := codesize()
+    }
+}
+```
+
+### Code Copying
+
+```solidity
+function copyOwnCode() public pure returns (bytes memory code) {
+    assembly {
+        let size := codesize()
+        code := mload(0x40) // Free memory pointer
+        mstore(code, size)
+        codecopy(add(code, 0x20), 0, size)
+        mstore(0x40, add(add(code, 0x20), size))
+    }
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+## Common Usage
+
+### Constructor Detection
+
+During contract construction, CODESIZE includes constructor code. After deployment, only runtime code.
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function codesize(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, BigInt(frame.bytecode.length));
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - CODESIZE](https://www.evm.codes/#38)

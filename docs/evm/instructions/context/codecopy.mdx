@@ -1,0 +1,90 @@
+---
+title: "CODECOPY (0x39)"
+description: "Copy executing code to memory"
+---
+
+## Overview
+
+**Opcode:** `0x39`
+**Introduced:** Frontier (EVM genesis)
+
+CODECOPY copies a specified range of the currently executing code to memory.
+
+## Specification
+
+**Stack Input:**
+```
+destOffset (memory offset)
+offset (code offset)
+length (bytes to copy)
+```
+
+**Stack Output:**
+```
+[]
+```
+
+**Gas Cost:** 3 + memory expansion + (length / 32) * 3 (rounded up)
+
+## Behavior
+
+Copies `length` bytes from executing code at `offset` to memory at `destOffset`. Zero-pads if code bounds exceeded.
+
+## Examples
+
+### Copy Runtime Code
+
+```solidity
+function getRuntimeCode() public pure returns (bytes memory code) {
+    assembly {
+        let size := codesize()
+        code := mload(0x40)
+        mstore(code, size)
+        codecopy(add(code, 0x20), 0, size)
+        mstore(0x40, add(add(code, 0x20), size))
+    }
+}
+```
+
+### CREATE2 Factory
+
+```solidity
+function deploy() public returns (address) {
+    bytes memory code;
+    assembly {
+        let size := codesize()
+        code := mload(0x40)
+        codecopy(add(code, 0x20), 0, size)
+    }
+    // Use code for CREATE2
+}
+```
+
+## Gas Cost
+
+**Base:** 3 gas
+**Memory expansion:** Variable
+**Copy cost:** 3 gas per 32-byte word
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+export function codecopy(frame: BrandedFrame): EvmError | null {
+  // Pop destOffset, offset, length
+  // Calculate gas (base + memory + copy cost)
+  // Copy bytecode to memory
+  // See full implementation in codebase
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - CODECOPY](https://www.evm.codes/#39)
