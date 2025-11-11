@@ -30,7 +30,10 @@ Bytecode.fromHex.prototype = Bytecode.prototype;
 
 // Static utility methods (don't return Bytecode instances)
 Bytecode.analyze = BrandedBytecode.analyze;
+Bytecode.analyzeGas = BrandedBytecode.analyzeGas;
 Bytecode.analyzeJumpDestinations = BrandedBytecode.analyzeJumpDestinations;
+Bytecode.analyzeStack = BrandedBytecode.analyzeStack;
+Bytecode.detectFusions = BrandedBytecode.detectFusions;
 Bytecode.equals = BrandedBytecode.equals;
 Bytecode.extractRuntime = BrandedBytecode.extractRuntime;
 Bytecode.formatInstruction = BrandedBytecode.formatInstruction;
@@ -47,7 +50,6 @@ Bytecode.stripMetadata = BrandedBytecode.stripMetadata;
 Bytecode.toHex = BrandedBytecode.toHex;
 Bytecode.validate = BrandedBytecode.validate;
 
-
 // Set up Bytecode.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
 
@@ -55,8 +57,17 @@ Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
 Bytecode.prototype.analyze = function () {
 	return BrandedBytecode.analyze(this);
 };
+Bytecode.prototype.analyzeGas = function (options) {
+	return BrandedBytecode.analyzeGas(this, options);
+};
 Bytecode.prototype.analyzeJumpDestinations = function () {
 	return BrandedBytecode.analyzeJumpDestinations(this);
+};
+Bytecode.prototype.analyzeStack = function (options) {
+	return BrandedBytecode.analyzeStack(this, options);
+};
+Bytecode.prototype.detectFusions = function () {
+	return BrandedBytecode.detectFusions(this);
 };
 Bytecode.prototype.equals = function (other) {
 	return BrandedBytecode.equals(this, other);

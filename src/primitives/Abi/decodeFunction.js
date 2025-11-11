@@ -37,7 +37,9 @@ export function decodeFunction(abi, data) {
 	// Find function by selector
 	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
-		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (item);
+		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
+			item
+		);
 		const itemSelector = Function.getSelector(fn);
 		// Compare bytes
 		for (let i = 0; i < 4; i++) {
@@ -53,7 +55,9 @@ export function decodeFunction(abi, data) {
 	}
 
 	// Type assertion after guard
-	const fn = /** @type {import('./function/index.js').BrandedFunction} */ (item);
+	const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
+		item
+	);
 	const params = Function.decodeParams(fn, bytes.slice(4));
 
 	return {

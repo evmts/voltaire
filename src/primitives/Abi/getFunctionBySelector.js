@@ -37,7 +37,9 @@ export function getFunctionBySelector(abi, selector) {
 
 	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
-		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (item);
+		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
+			item
+		);
 
 		const itemSelector = Function.getSelector(fn);
 		// Compare bytes
