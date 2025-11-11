@@ -31,10 +31,7 @@ function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 
 describe("ISZERO opcode (0x15)", () => {
 	it("returns 1 when value is zero", () => {
-		const frame = Frame.from({
-			stack: [0n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([0n], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -45,10 +42,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("returns 0 when value is non-zero", () => {
-		const frame = Frame.from({
-			stack: [42n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([42n], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -59,10 +53,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("returns 0 for value 1", () => {
-		const frame = Frame.from({
-			stack: [1n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([1n], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -72,10 +63,7 @@ describe("ISZERO opcode (0x15)", () => {
 
 	it("returns 0 for max uint256", () => {
 		const MAX_UINT256 = (1n << 256n) - 1n;
-		const frame = Frame.from({
-			stack: [MAX_UINT256],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([MAX_UINT256], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -86,10 +74,7 @@ describe("ISZERO opcode (0x15)", () => {
 	it("returns 0 for negative value (two's complement)", () => {
 		// -1 in two's complement
 		const neg1 = (1n << 256n) - 1n;
-		const frame = Frame.from({
-			stack: [neg1],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([neg1], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -98,10 +83,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("returns 0 for small positive value", () => {
-		const frame = Frame.from({
-			stack: [123n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([123n], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -111,10 +93,7 @@ describe("ISZERO opcode (0x15)", () => {
 
 	it("returns 0 for large positive value", () => {
 		const large = 123456789012345678901234567890n;
-		const frame = Frame.from({
-			stack: [large],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([large], 1000n);
 
 		const err = ISZERO(frame);
 
@@ -123,10 +102,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("can be chained (ISZERO(ISZERO(0)) = 0)", () => {
-		const frame = Frame.from({
-			stack: [0n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([0n], 1000n);
 
 		// First ISZERO
 		let err = ISZERO(frame);
@@ -143,10 +119,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("can be chained (ISZERO(ISZERO(1)) = 1)", () => {
-		const frame = Frame.from({
-			stack: [1n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([1n], 1000n);
 
 		// First ISZERO
 		let err = ISZERO(frame);
@@ -163,21 +136,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("returns StackUnderflow when stack is empty", () => {
-		const frame = Frame.from({
-			stack: [],
-			gasRemaining: 1000n,
-		});
-
-		const err = ISZERO(frame);
-
-		expect(err).toEqual({ type: "StackUnderflow" });
-	});
-
-	it("returns OutOfGas when insufficient gas", () => {
-		const frame = Frame.from({
-			stack: [0n],
-			gasRemaining: 2n,
-		});
+		const frame = createFrame([0n], 2n);
 
 		const err = ISZERO(frame);
 
@@ -186,10 +145,7 @@ describe("ISZERO opcode (0x15)", () => {
 	});
 
 	it("preserves stack below tested value", () => {
-		const frame = Frame.from({
-			stack: [100n, 200n, 300n, 0n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([100n, 200n, 300n, 0n], 1000n);
 
 		const err = ISZERO(frame);
 

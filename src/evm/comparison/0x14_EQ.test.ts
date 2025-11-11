@@ -31,10 +31,7 @@ function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 
 describe("EQ opcode (0x14)", () => {
 	it("returns 1 when values are equal", () => {
-		const frame = Frame.from({
-			stack: [42n, 42n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([42n, 42n], 1000n);
 
 		const err = EQ(frame);
 
@@ -45,10 +42,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("returns 0 when values are not equal", () => {
-		const frame = Frame.from({
-			stack: [10n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([10n, 20n], 1000n);
 
 		const err = EQ(frame);
 
@@ -59,10 +53,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("handles 0 == 0", () => {
-		const frame = Frame.from({
-			stack: [0n, 0n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([0n, 0n], 1000n);
 
 		const err = EQ(frame);
 
@@ -71,10 +62,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("handles 0 != 1", () => {
-		const frame = Frame.from({
-			stack: [0n, 1n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([0n, 1n], 1000n);
 
 		const err = EQ(frame);
 
@@ -84,10 +72,7 @@ describe("EQ opcode (0x14)", () => {
 
 	it("handles max uint256 equality", () => {
 		const MAX_UINT256 = (1n << 256n) - 1n;
-		const frame = Frame.from({
-			stack: [MAX_UINT256, MAX_UINT256],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([MAX_UINT256, MAX_UINT256], 1000n);
 
 		const err = EQ(frame);
 
@@ -97,10 +82,7 @@ describe("EQ opcode (0x14)", () => {
 
 	it("handles max uint256 inequality", () => {
 		const MAX_UINT256 = (1n << 256n) - 1n;
-		const frame = Frame.from({
-			stack: [MAX_UINT256 - 1n, MAX_UINT256],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([MAX_UINT256 - 1n, MAX_UINT256], 1000n);
 
 		const err = EQ(frame);
 
@@ -109,15 +91,9 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("is symmetric (order doesn't matter)", () => {
-		const frame1 = Frame.from({
-			stack: [10n, 20n],
-			gasRemaining: 1000n,
-		});
+		const frame1 = createFrame([10n, 20n], 1000n);
 
-		const frame2 = Frame.from({
-			stack: [20n, 10n],
-			gasRemaining: 1000n,
-		});
+		const frame2 = createFrame([20n, 10n], 1000n);
 
 		const err1 = EQ(frame1);
 		const err2 = EQ(frame2);
@@ -129,10 +105,7 @@ describe("EQ opcode (0x14)", () => {
 
 	it("handles large value equality", () => {
 		const large = 123456789012345678901234567890n;
-		const frame = Frame.from({
-			stack: [large, large],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([large, large], 1000n);
 
 		const err = EQ(frame);
 
@@ -143,10 +116,7 @@ describe("EQ opcode (0x14)", () => {
 	it("handles large value inequality", () => {
 		const a = 123456789012345678901234567890n;
 		const b = 123456789012345678901234567891n;
-		const frame = Frame.from({
-			stack: [a, b],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([a, b], 1000n);
 
 		const err = EQ(frame);
 
@@ -155,10 +125,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("returns StackUnderflow when stack has < 2 items", () => {
-		const frame = Frame.from({
-			stack: [10n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([10n], 1000n);
 
 		const err = EQ(frame);
 
@@ -166,10 +133,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("returns OutOfGas when insufficient gas", () => {
-		const frame = Frame.from({
-			stack: [10n, 20n],
-			gasRemaining: 2n,
-		});
+		const frame = createFrame([10n, 20n], 2n);
 
 		const err = EQ(frame);
 
@@ -178,10 +142,7 @@ describe("EQ opcode (0x14)", () => {
 	});
 
 	it("preserves stack below compared values", () => {
-		const frame = Frame.from({
-			stack: [100n, 200n, 42n, 42n],
-			gasRemaining: 1000n,
-		});
+		const frame = createFrame([100n, 200n, 42n, 42n], 1000n);
 
 		const err = EQ(frame);
 
