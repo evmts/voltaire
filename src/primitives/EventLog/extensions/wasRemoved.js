@@ -7,10 +7,8 @@ import { isRemoved } from "./isRemoved.js";
  * @returns {boolean}
  *
  * @example
- * ```typescript
  * import { wasRemoved } from './extensions'
- * if (wasRemoved(log)) { /* reorg detected */ }
- * ```
+ * if (wasRemoved(log)) console.log('reorg detected')
  */
 export function wasRemoved(log) {
 	return isRemoved(log);

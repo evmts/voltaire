@@ -30,6 +30,12 @@ export function sign(messageHash, privateKey) {
 		);
 	}
 
+	// Validate private key is not zero
+	const isZero = privateKey.every((byte) => byte === 0);
+	if (isZero) {
+		throw new InvalidPrivateKeyError("Private key cannot be zero");
+	}
+
 	try {
 		// Sign with compact format (prehash:false since we already have the hash)
 		const sigCompact = secp256k1.sign(messageHash, privateKey, {

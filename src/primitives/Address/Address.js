@@ -7,9 +7,19 @@ import {
 } from "./BrandedAddress/polyfills.js";
 
 /**
- * Factory function for creating Address instances
- * @param {number | bigint | string | Uint8Array} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Factory function for creating Address instances with prototype chain
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {number | bigint | string | Uint8Array} value - Value to convert to Address
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance with prototype methods
+ * @throws {Error} If value format is invalid
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * console.log(addr.toChecksummed());
+ * ```
  */
 export function Address(value) {
 	const result = BrandedAddress.from(value);
@@ -19,8 +29,20 @@ export function Address(value) {
 
 // Static constructors
 /**
- * @param {number | bigint | string | Uint8Array} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from various input types (universal factory)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {number | bigint | string | Uint8Array} value - Value to convert (hex string, bytes, or number)
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If value format is invalid
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr1 = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const addr2 = Address.from(new Uint8Array(20));
+ * const addr3 = Address.from(123n);
+ * ```
  */
 Address.from = (value) => {
 	const result = BrandedAddress.from(value);
@@ -29,8 +51,18 @@ Address.from = (value) => {
 };
 
 /**
- * @param {string} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from base64-encoded string
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {string} value - Base64-encoded address string
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If base64 format is invalid
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.fromBase64('dC01zGY0wFMpJaO4RLyedZXyUeM=');
+ * ```
  */
 Address.fromBase64 = (value) => {
 	const result = BrandedAddress.fromBase64(value);
@@ -39,8 +71,18 @@ Address.fromBase64 = (value) => {
 };
 
 /**
- * @param {string} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from hex string (with or without 0x prefix)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {string} value - Hex string address (40 or 42 characters)
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If hex format is invalid or length incorrect
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * ```
  */
 Address.fromHex = (value) => {
 	const result = BrandedAddress.fromHex(value);
@@ -49,8 +91,19 @@ Address.fromHex = (value) => {
 };
 
 /**
- * @param {Uint8Array} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from 20-byte Uint8Array
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {Uint8Array} value - 20-byte array representing address
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If not exactly 20 bytes
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const bytes = new Uint8Array(20);
+ * const addr = Address.fromBytes(bytes);
+ * ```
  */
 Address.fromBytes = (value) => {
 	const result = BrandedAddress.fromBytes(value);
@@ -59,8 +112,18 @@ Address.fromBytes = (value) => {
 };
 
 /**
- * @param {number | bigint} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from number or bigint (right-padded to 20 bytes)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {number | bigint} value - Numeric value to convert
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {never} Never throws - accepts any valid number/bigint
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.fromNumber(123n);
+ * ```
  */
 Address.fromNumber = (value) => {
 	const result = BrandedAddress.fromNumber(value);
@@ -69,9 +132,21 @@ Address.fromNumber = (value) => {
 };
 
 /**
- * @param {bigint} x
- * @param {bigint} y
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Derives an Address from secp256k1 public key coordinates (keccak256(pubkey)[12:32])
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {bigint} x - Public key X coordinate (32 bytes)
+ * @param {bigint} y - Public key Y coordinate (32 bytes)
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Derived address
+ * @throws {never} Never throws - accepts any valid bigint coordinates
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const xCoord = 0x123n;
+ * const yCoord = 0x456n;
+ * const addr = Address.fromPublicKey(xCoord, yCoord);
+ * ```
  */
 Address.fromPublicKey = (x, y) => {
 	const result = BrandedAddress.fromPublicKey(x, y);
@@ -80,8 +155,19 @@ Address.fromPublicKey = (x, y) => {
 };
 
 /**
- * @param {Uint8Array} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Derives an Address from secp256k1 private key (derives pubkey then address)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {Uint8Array} value - 32-byte private key
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Derived address
+ * @throws {Error} If private key is invalid
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const privateKey = new Uint8Array(32);
+ * const addr = Address.fromPrivateKey(privateKey);
+ * ```
  */
 Address.fromPrivateKey = (value) => {
 	const result = BrandedAddress.fromPrivateKey(value);
@@ -90,8 +176,19 @@ Address.fromPrivateKey = (value) => {
 };
 
 /**
- * @param {Uint8Array} value
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Decodes an Address from ABI-encoded bytes (left-padded 32 bytes)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {Uint8Array} value - 32-byte ABI-encoded address (12 zero bytes + 20 address bytes)
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If not exactly 32 bytes
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const abiEncoded = new Uint8Array(32); // 12 zero bytes + 20 address bytes
+ * const addr = Address.fromAbiEncoded(abiEncoded);
+ * ```
  */
 Address.fromAbiEncoded = (value) => {
 	const result = BrandedAddress.fromAbiEncoded(value);
@@ -114,7 +211,18 @@ Address.isValidChecksum = BrandedAddress.isValidChecksum;
 Address.is = BrandedAddress.is;
 
 /**
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Returns the zero address (0x0000000000000000000000000000000000000000)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Zero address
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const zero = Address.zero();
+ * console.log(Address.isZero(zero)); // true
+ * ```
  */
 Address.zero = () => {
 	const result = BrandedAddress.zero();
@@ -123,8 +231,18 @@ Address.zero = () => {
 };
 
 /**
- * @param {...number} items
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Creates an Address from variable number of byte values
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {...number} items - Byte values (must be exactly 20 bytes)
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @throws {Error} If not exactly 20 byte values provided
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.of(0x74, 0x2d, 0x35, ..., 0xe3); // 20 bytes
+ * ```
  */
 Address.of = (...items) => {
 	const result = Uint8Array.of(...items);

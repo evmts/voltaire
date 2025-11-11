@@ -33,16 +33,25 @@ export function hash(domain) {
 	// Filter domain to only included fields
 	/** @type {Record<string, any>} */
 	const filteredDomain = {};
+	const domainKeys = [];
 	for (const key of Object.keys(domain)) {
 		const value = /** @type {Record<string, any>} */ (domain)[key];
 		if (value !== undefined) {
 			filteredDomain[key] = value;
+			domainKeys.push(key);
 		}
 	}
+
+	// Filter type definition to only included fields
+	const filteredTypes = {
+		EIP712Domain: EIP712_DOMAIN_TYPES.EIP712Domain.filter((field) =>
+			domainKeys.includes(field.name),
+		),
+	};
 
 	return hashStruct(
 		"EIP712Domain",
 		/** @type {import('../BrandedEIP712.js').Message} */ (filteredDomain),
-		EIP712_DOMAIN_TYPES,
+		filteredTypes,
 	);
 }

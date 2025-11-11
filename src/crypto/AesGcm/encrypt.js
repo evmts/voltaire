@@ -4,18 +4,21 @@ import { AesGcmError, InvalidNonceError } from "./errors.js";
 /**
  * Encrypt data with AES-GCM
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} plaintext - Data to encrypt
  * @param {CryptoKey} key - AES key (128 or 256 bit)
  * @param {Uint8Array} nonce - 12-byte nonce (IV)
  * @param {Uint8Array} [additionalData] - Optional additional authenticated data
  * @returns {Promise<Uint8Array>} Ciphertext with authentication tag appended
- *
+ * @throws {AesGcmError} If encryption fails
  * @example
- * ```typescript
+ * ```javascript
+ * import * as AesGcm from './crypto/AesGcm/index.js';
  * const plaintext = new TextEncoder().encode('Secret message');
- * const key = await generateKey(256);
- * const nonce = crypto.getRandomValues(new Uint8Array(12));
- * const ciphertext = await encrypt(plaintext, key, nonce);
+ * const key = await AesGcm.generateKey(256);
+ * const nonce = AesGcm.generateNonce();
+ * const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
  * ```
  */
 export async function encrypt(plaintext, key, nonce, additionalData) {

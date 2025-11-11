@@ -5,10 +5,8 @@
  * @returns {boolean}
  *
  * @example
- * ```typescript
  * import { isRemoved } from './extensions'
- * if (isRemoved(log)) { /* reorg detected */ }
- * ```
+ * if (isRemoved(log)) console.log('reorg detected')
  */
 export function isRemoved(log) {
 	return log.removed === true;
