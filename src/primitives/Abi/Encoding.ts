@@ -360,9 +360,9 @@ export function decodeParameters<const TParams extends readonly Parameter[]>(
 	let offset = 0;
 
 	for (const param of params) {
-		const { value } = decodeValue(param.type, data, offset);
+		const { value, newOffset } = decodeValue(param.type, data, offset);
 		result.push(value);
-		offset += 32;
+		offset = newOffset;
 	}
 
 	return result as import("./Parameter.js").ParametersToPrimitiveTypes<TParams>;
