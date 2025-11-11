@@ -135,7 +135,7 @@ import {
   isValid,
   isValidChecksum,
   is
-} from '@tevm/voltaire/BrandedAddress'
+} from '@tevm/voltaire/Address'
 
 isValid("0x742d35Cc...")     // boolean
 isValidChecksum("0x742d35Cc...") // boolean (uses keccak256)
@@ -152,7 +152,7 @@ See [Validation](/primitives/address/validation) for details.
 import {
   calculateCreateAddress,
   calculateCreate2Address
-} from '@tevm/voltaire/BrandedAddress'
+} from '@tevm/voltaire/Address'
 
 const createAddr = calculateCreateAddress(deployerAddr, nonce)
 // Uses keccak256 + RLP
