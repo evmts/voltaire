@@ -1,0 +1,833 @@
+---
+title: "JUMPI (0x57)"
+description: "Conditional jump to valid JUMPDEST destination based on condition"
+---
+
+## Overview
+
+**Opcode:** `0x57`
+**Introduced:** Frontier (EVM genesis)
+
+JUMPI performs a conditional jump to a destination if a condition is non-zero. Like JUMP, the destination MUST be a valid JUMPDEST opcode. If the condition is zero, execution continues sequentially.
+
+This enables if-statements, loops, and conditional control flow in EVM bytecode.
+
+## Specification
+
+**Stack Input:**
+```
+destination (top)
+condition
+```
+
+**Stack Output:** None
+
+**Gas Cost:** 10 (GasSlowStep)
+
+**Operation:**
+```
+1. Pop destination from stack
+2. Pop condition from stack
+3. If condition != 0:
+   - Validate destination is JUMPDEST
+   - Set PC = destination
+4. Else:
+   - PC = PC + 1 (continue)
+```
+
+## Behavior
+
+JUMPI conditionally alters program flow:
+
+1. Consumes 10 gas (GasSlowStep)
+2. Pops destination address from stack (top)
+3. Pops condition value from stack (second)
+4. If condition is non-zero (any value except 0):
+   - Validates destination is valid JUMPDEST
+   - Updates PC to destination
+5. If condition is zero:
+   - Increments PC by 1 (continue sequentially)
+
+**Validation (when jumping):**
+- Destination must be JUMPDEST opcode (0x5b)
+- Destination must not be inside PUSH data
+- Destination must be within bytecode bounds
+- Failure causes InvalidJump error
+
+**Note:** Validation only occurs if jump is taken. If condition is zero, destination is not validated.
+
+## Examples
+
+### Basic Conditional Jump
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x57_JUMPI } from '@tevm/voltaire/evm/control';
+
+// Bytecode with JUMPDEST at position 6
+const bytecode = new Uint8Array([
+  0x60, 0x06,  // PUSH1 6 (destination)
+  0x60, 0x01,  // PUSH1 1 (condition: true)
+  0x57,        // JUMPI
+  0x00,        // STOP (skipped)
+  0x5b,        // JUMPDEST (destination)
+  0x60, 0x2a,  // PUSH1 42
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [1n, 6n],  // condition=1, dest=6
+  pc: 4
+});
+
+const err = handler_0x57_JUMPI(frame);
+
+console.log(err);       // null (success)
+console.log(frame.pc);  // 6 (jumped to JUMPDEST)
+```
+
+### Conditional Not Taken
+
+```typescript
+// Same bytecode, but condition is 0
+const frame = createFrame({
+  bytecode,
+  stack: [0n, 6n],  // condition=0, dest=6
+  pc: 4
+});
+
+const err = handler_0x57_JUMPI(frame);
+
+console.log(err);       // null (success)
+console.log(frame.pc);  // 5 (continued, no jump)
+```
+
+### Loop Pattern
+
+```solidity
+assembly {
+    let i := 0
+    let n := 10
+
+    loop:
+        jumpdest
+
+        // Loop body
+        sstore(i, i)
+
+        // Increment counter
+        i := add(i, 1)
+
+        // Continue if i < n
+        let continue := lt(i, n)
+        jumpi(loop, continue)
+}
+```
+
+Bytecode pattern:
+```
+PUSH1 0          // i = 0
+PUSH1 10         // n = 10
+
+loop:
+  JUMPDEST       // Loop start
+
+  DUP2           // Duplicate i
+  DUP2           // Duplicate i
+  SSTORE         // sstore(i, i)
+
+  DUP2           // Get i
+  PUSH1 1
+  ADD            // i + 1
+  SWAP2
+  POP            // Update i
+
+  DUP2           // Get i
+  DUP1           // Get n
+  LT             // i < n
+  PUSH2 loop     // Loop address
+  JUMPI          // Jump if i < n
+
+// Exit loop
+POP
+POP
+```
+
+### If-Else Pattern
+
+```solidity
+assembly {
+    let value := sload(0)
+
+    // If value == 0
+    if iszero(value) {
+        sstore(1, 100)
+        jump(end)
+    }
+
+    // Else
+    sstore(1, 200)
+
+    end:
+        jumpdest
+}
+```
+
+Compiled to:
+```
+PUSH1 0
+SLOAD              // value = sload(0)
+
+DUP1
+ISZERO             // value == 0
+PUSH2 then_branch
+JUMPI
+
+// Else branch
+PUSH1 200
+PUSH1 1
+SSTORE
+PUSH2 end
+JUMP
+
+// Then branch
+then_branch:
+  JUMPDEST
+  PUSH1 100
+  PUSH1 1
+  SSTORE
+
+end:
+  JUMPDEST
+```
+
+### Non-Zero Condition
+
+```typescript
+// Any non-zero value is truthy
+const testConditions = [1n, 42n, 0xffffffffn, -1n & ((1n << 256n) - 1n)];
+
+for (const condition of testConditions) {
+  const frame = createFrame({
+    bytecode,
+    stack: [condition, 6n],
+    pc: 4
+  });
+
+  handler_0x57_JUMPI(frame);
+  console.log(frame.pc); // 6 (all jump - non-zero is true)
+}
+```
+
+## Gas Cost
+
+**Cost:** 10 gas (GasSlowStep)
+
+**Comparison:**
+- JUMP: 8 gas (unconditional)
+- JUMPI: 10 gas (conditional)
+- PC: 2 gas
+- JUMPDEST: 1 gas
+
+**Total Conditional Jump:**
+```
+PUSH1 dest:    3 gas
+PUSH1 cond:    3 gas
+JUMPI:        10 gas
+JUMPDEST:      1 gas (if taken)
+Total:        17 gas (jump taken)
+              16 gas (not taken, no JUMPDEST)
+```
+
+**Cost is same whether jump is taken or not:**
+- Jump taken: 10 gas + JUMPDEST (1 gas) = 11 gas
+- Jump not taken: 10 gas
+
+## Edge Cases
+
+### Invalid Destination When Jumped
+
+```typescript
+// Invalid destination but condition is true
+const bytecode = new Uint8Array([0x60, 0x00]); // PUSH1 0 (not JUMPDEST)
+
+const frame = createFrame({
+  bytecode,
+  stack: [1n, 1n],  // condition=1, dest=1 (PUSH data)
+  pc: 0
+});
+
+const err = handler_0x57_JUMPI(frame);
+console.log(err); // { type: "InvalidJump" }
+```
+
+### Invalid Destination Not Validated
+
+```typescript
+// Invalid destination but condition is false
+const bytecode = new Uint8Array([0x60, 0x00, 0x00]); // PUSH1 0, STOP
+
+const frame = createFrame({
+  bytecode,
+  stack: [0n, 1n],  // condition=0, dest=1 (invalid but not checked)
+  pc: 1
+});
+
+const err = handler_0x57_JUMPI(frame);
+console.log(err);      // null (success - destination not validated)
+console.log(frame.pc); // 2 (continued, no jump)
+```
+
+### Zero is False
+
+```typescript
+// Only 0 is falsy - all other values are truthy
+const frame = createFrame({
+  bytecode,
+  stack: [0n, 6n],  // condition=0 is false
+  pc: 4
+});
+
+handler_0x57_JUMPI(frame);
+console.log(frame.pc); // 5 (not jumped)
+```
+
+### Stack Underflow
+
+```typescript
+// Need 2 stack items
+const frame = createFrame({
+  stack: [6n],  // Only 1 item
+  pc: 0
+});
+
+const err = handler_0x57_JUMPI(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Bounds
+
+```typescript
+// Destination too large for u32
+const frame = createFrame({
+  stack: [1n, 0x100000000n],  // dest > u32::MAX
+  pc: 0
+});
+
+const err = handler_0x57_JUMPI(frame);
+console.log(err); // { type: "OutOfBounds" }
+```
+
+## Common Usage
+
+### Require Statements
+
+Solidity `require` compiles to JUMPI:
+
+```solidity
+function transfer(address to, uint256 amount) external {
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+    // ...
+}
+```
+
+Compiled (simplified):
+```
+// Load balance
+CALLER
+PUSH1 0
+SLOAD
+
+// Check balance >= amount
+CALLDATA_LOAD 0x04  // amount
+DUP2
+LT
+ISZERO              // balance >= amount
+
+// Jump to continue if true
+PUSH2 continue
+JUMPI
+
+// Revert if false
+REVERT
+
+continue:
+  JUMPDEST
+  // Continue execution
+```
+
+### For Loops
+
+```solidity
+for (uint i = 0; i < n; i++) {
+    // body
+}
+```
+
+Compiled to:
+```
+PUSH1 0           // i = 0
+
+loop_condition:
+  JUMPDEST
+
+  // Check i < n
+  DUP1            // Get i
+  PUSH1 n
+  LT              // i < n
+  PUSH2 loop_body
+  JUMPI
+
+  // Exit loop
+  POP
+  JUMP exit
+
+loop_body:
+  JUMPDEST
+  // Loop body
+
+  // Increment i
+  PUSH1 1
+  ADD
+
+  PUSH2 loop_condition
+  JUMP
+
+exit:
+  JUMPDEST
+```
+
+### While Loops
+
+```solidity
+while (condition) {
+    // body
+}
+```
+
+Compiled to:
+```
+loop_start:
+  JUMPDEST
+
+  // Evaluate condition
+  <condition code>
+
+  // Continue if true
+  PUSH2 loop_body
+  JUMPI
+
+  // Exit
+  JUMP loop_end
+
+loop_body:
+  JUMPDEST
+  // Loop body
+  PUSH2 loop_start
+  JUMP
+
+loop_end:
+  JUMPDEST
+```
+
+### Switch Statements
+
+```solidity
+assembly {
+    switch value
+    case 0 { /* ... */ }
+    case 1 { /* ... */ }
+    default { /* ... */ }
+}
+```
+
+Compiled to:
+```
+// Check case 0
+DUP1
+ISZERO
+PUSH2 case0
+JUMPI
+
+// Check case 1
+DUP1
+PUSH1 1
+EQ
+PUSH2 case1
+JUMPI
+
+// Default case
+JUMP default
+
+case0:
+  JUMPDEST
+  // Case 0 code
+  JUMP end
+
+case1:
+  JUMPDEST
+  // Case 1 code
+  JUMP end
+
+default:
+  JUMPDEST
+  // Default code
+
+end:
+  JUMPDEST
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { isValidJumpDest } from "../../primitives/Bytecode/isValidJumpDest.js";
+import { SlowStep } from "../../primitives/GasConstants/constants.js";
+
+/**
+ * JUMPI opcode (0x57) - Conditional jump
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0x57_JUMPI(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, SlowStep);
+  if (gasErr) return gasErr;
+
+  const destResult = popStack(frame);
+  if (destResult.error) return destResult.error;
+  const dest = destResult.value;
+
+  const conditionResult = popStack(frame);
+  if (conditionResult.error) return conditionResult.error;
+  const condition = conditionResult.value;
+
+  if (condition !== 0n) {
+    // Check if destination fits in u32 range
+    if (dest > 0xffffffffn) {
+      return { type: "OutOfBounds" };
+    }
+
+    const destPc = Number(dest);
+
+    // Validate jump destination
+    if (!isValidJumpDest(frame.bytecode, destPc)) {
+      return { type: "InvalidJump" };
+    }
+
+    frame.pc = destPc;
+  } else {
+    frame.pc += 1;
+  }
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// JUMPI opcode (0x57) - Conditional jump
+pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasSlowStep);
+    const dest = try frame.popStack();
+    const condition = try frame.popStack();
+
+    if (condition != 0) {
+        const dest_pc = std.math.cast(u32, dest) orelse return error.OutOfBounds;
+
+        // Validate jump destination
+        if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
+
+        frame.pc = dest_pc;
+    } else {
+        frame.pc += 1;
+    }
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0x57_JUMPI } from './0x57_JUMPI.js';
+
+describe('JUMPI (0x57)', () => {
+  it('jumps when condition is non-zero', () => {
+    const bytecode = new Uint8Array([
+      0x60, 0x05, // PUSH1 5
+      0x60, 0x01, // PUSH1 1
+      0x57,       // JUMPI
+      0x00,       // STOP
+      0x5b,       // JUMPDEST
+    ]);
+
+    const frame = createFrame({
+      bytecode,
+      stack: [1n, 5n],
+      pc: 4,
+    });
+
+    expect(handler_0x57_JUMPI(frame)).toBeNull();
+    expect(frame.pc).toBe(5);
+  });
+
+  it('continues when condition is zero', () => {
+    const bytecode = new Uint8Array([0x57, 0x00]);
+
+    const frame = createFrame({
+      bytecode,
+      stack: [0n, 5n],
+      pc: 0,
+    });
+
+    expect(handler_0x57_JUMPI(frame)).toBeNull();
+    expect(frame.pc).toBe(1);
+  });
+
+  it('rejects invalid destination when jumped', () => {
+    const bytecode = new Uint8Array([0x60, 0x00]);
+
+    const frame = createFrame({
+      bytecode,
+      stack: [1n, 1n],
+      pc: 0,
+    });
+
+    expect(handler_0x57_JUMPI(frame)).toEqual({ type: 'InvalidJump' });
+  });
+
+  it('does not validate destination when not jumped', () => {
+    const bytecode = new Uint8Array([0x57, 0x00]);
+
+    const frame = createFrame({
+      bytecode,
+      stack: [0n, 999n], // Invalid dest but not validated
+      pc: 0,
+    });
+
+    expect(handler_0x57_JUMPI(frame)).toBeNull();
+    expect(frame.pc).toBe(1);
+  });
+
+  it('treats any non-zero as truthy', () => {
+    const conditions = [1n, 42n, 0xffffffffn];
+
+    for (const condition of conditions) {
+      const bytecode = new Uint8Array([0x57, 0x5b]);
+      const frame = createFrame({
+        bytecode,
+        stack: [condition, 1n],
+        pc: 0,
+      });
+
+      handler_0x57_JUMPI(frame);
+      expect(frame.pc).toBe(1);
+    }
+  });
+});
+```
+
+## Security
+
+### Conditional Validation Bypass
+
+**Pattern to avoid:**
+```solidity
+// VULNERABLE: Condition can bypass validation
+function unsafeConditional(uint256 condition, uint256 dest) external {
+    assembly {
+        jumpi(dest, condition)
+    }
+}
+```
+
+**Attack:**
+- Set condition = 0
+- Invalid destination not validated
+- If destination is later used, could cause issues
+
+**Not exploitable in practice:**
+- Invalid destinations only checked when jumped
+- No jump means no execution at destination
+- Still poor practice - validate explicitly
+
+### Infinite Loops
+
+JUMPI enables infinite loops that exhaust gas:
+
+```solidity
+assembly {
+    loop:
+        jumpdest
+        push1 1        // Always true
+        push2 loop
+        jumpi          // Jump back forever
+}
+```
+
+**Gas protection:**
+- Out-of-gas halts execution
+- Only affects transaction sender
+- Transaction reverts, state unchanged
+
+### Condition Manipulation
+
+**VULNERABLE:**
+```solidity
+// User controls condition
+function unsafeJump(uint256 userCondition) external {
+    assembly {
+        jumpi(privileged_code, userCondition)
+
+        // Normal code path
+        jump(end)
+
+        privileged_code:
+            jumpdest
+            // Privileged operations
+            // Should not be accessible
+
+        end:
+            jumpdest
+    }
+}
+```
+
+**Attack:**
+- User sets userCondition = 1
+- Jumps to privileged code
+- Bypasses access control
+
+**SAFE:**
+```solidity
+// Validate condition internally
+function safeJump() external {
+    bool isAuthorized = (msg.sender == owner);
+
+    assembly {
+        jumpi(privileged_code, isAuthorized)
+
+        revert(0, 0)
+
+        privileged_code:
+            jumpdest
+            // Safe - condition validated
+    }
+}
+```
+
+### Short-Circuit Evaluation
+
+Solidity's `&&` and `||` compile to JUMPI for short-circuiting:
+
+```solidity
+if (condition1 && condition2) {
+    // code
+}
+```
+
+Compiled to:
+```
+// Evaluate condition1
+<condition1 code>
+ISZERO
+PUSH2 skip      // Skip if false
+JUMPI
+
+// Evaluate condition2 (only if condition1 true)
+<condition2 code>
+ISZERO
+PUSH2 skip
+JUMPI
+
+// Execute code
+<code>
+
+skip:
+  JUMPDEST
+```
+
+This prevents evaluating condition2 if condition1 is false, saving gas and avoiding side effects.
+
+## Compiler Behavior
+
+### Require Statements
+
+```solidity
+require(balance >= amount, "Insufficient");
+```
+
+Compiles to:
+```
+// Check condition
+PUSH balance
+PUSH amount
+LT
+ISZERO
+
+// Jump to continue if true
+PUSH2 continue
+JUMPI
+
+// Revert with error message
+PUSH error_data_offset
+PUSH error_data_size
+REVERT
+
+continue:
+  JUMPDEST
+```
+
+### If Statements
+
+```solidity
+if (value > 0) {
+    result = 1;
+} else {
+    result = 2;
+}
+```
+
+Compiles to:
+```
+// Evaluate condition
+PUSH value
+PUSH1 0
+GT
+
+// Jump to then if true
+PUSH2 then_branch
+JUMPI
+
+// Else branch
+PUSH1 2
+PUSH1 result_slot
+SSTORE
+PUSH2 end
+JUMP
+
+// Then branch
+then_branch:
+  JUMPDEST
+  PUSH1 1
+  PUSH1 result_slot
+  SSTORE
+
+end:
+  JUMPDEST
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.3 (JUMPI instruction)
+- [EVM Codes - JUMPI](https://www.evm.codes/#57)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)
+- [EVM Deep Dives - Control Flow](https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-3ea)
