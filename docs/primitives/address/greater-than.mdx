@@ -1,0 +1,424 @@
+---
+title: Address.greaterThan
+description: Check if one address is greater than another lexicographically
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.greaterThan(other: BrandedAddress): boolean`
+
+Check if this address is lexicographically greater than another address. Compares byte-by-byte from left to right.
+
+**Parameters:**
+- `other: BrandedAddress` - Address to compare with
+
+**Returns:** `boolean` - `true` if this address is greater than other
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(100n)
+const addr2 = Address.from(50n)
+
+console.log(addr1.greaterThan(addr2)) // true
+console.log(addr2.greaterThan(addr1)) // false
+
+const equal = Address.from(100n)
+console.log(addr1.greaterThan(equal)) // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/greaterThan.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/greaterThan.js#L10)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `greaterThan(a: BrandedAddress, b: BrandedAddress): boolean`
+
+Check if first address is lexicographically greater than second address.
+
+**Parameters:**
+- `a: BrandedAddress` - First address
+- `b: BrandedAddress` - Second address
+
+**Returns:** `boolean` - `true` if a > b
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.from(100n)
+const addr2 = Address.from(50n)
+
+console.log(Address.greaterThan(addr1, addr2)) // true
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/greaterThan.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/greaterThan.js#L10)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.mem.order(u8, addr1.bytes, addr2.bytes) == .gt: bool`
+
+Check if first address is greater than second using memory ordering.
+
+**Parameters:**
+- `addr1.bytes: [20]u8` - First address bytes
+- `addr2.bytes: [20]u8` - Second address bytes
+
+**Returns:** `bool` - `true` if addr1 > addr2
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr1 = Address.fromHex("0x0000000000000000000000000000000000000002") catch unreachable;
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001") catch unreachable;
+
+const isGreater = std.mem.order(u8, &addr1.bytes, &addr2.bytes) == .gt;
+try std.testing.expect(isGreater);
+
+// Filter addresses greater than minimum
+const min = Address.fromHex("0x0000000000000000000000000000000000000100") catch unreachable;
+var filtered = std.ArrayList(Address){};
+defer filtered.deinit(allocator);
+
+for (addresses) |addr| {
+    if (std.mem.order(u8, &addr.bytes, &min.bytes) == .gt) {
+        try filtered.append(allocator, addr);
+    }
+}
+```
+
+**Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## `Schema.greaterThan(schema: typeof Address.schema, value: Address): Effect.Effect<boolean, ParseError>`
+
+Effect-wrapped greater-than comparison with validation.
+
+**Parameters:**
+- `schema: typeof Address.schema` - Address schema for validation
+- `value: Address` - Address to compare with
+
+**Returns:** `Effect.Effect<boolean, ParseError>` - Effect yielding comparison result or parse error
+
+**Example:**
+
+```typescript
+import { Effect, Schema } from 'effect'
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(100n)
+const addr2 = Address.from(50n)
+
+const program = Effect.gen(function* () {
+  const result = yield* Schema.greaterThan(Address.schema, addr2)(addr1)
+  console.log(result) // true
+  return result
+})
+
+Effect.runSync(program)
+
+// With validation failure handling
+const validateAndCompare = (a: unknown, b: unknown) =>
+  Effect.gen(function* () {
+    const validated1 = yield* Schema.decode(Address.schema)(a)
+    const validated2 = yield* Schema.decode(Address.schema)(b)
+    return yield* Schema.greaterThan(Address.schema, validated2)(validated1)
+  }).pipe(
+    Effect.catchAll(error => Effect.succeed(false))
+  )
+```
+
+**Defined in:** Effect.ts Schema comparison operators
+
+</Tab>
+<Tab title="Use Cases">
+
+## Filtering
+
+Filter addresses above a threshold:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const MIN_ADDRESS = Address.fromHex("0x0000000000000000000000000000000000001000")
+
+function filterHighAddresses(addresses: Address[]): Address[] {
+  return addresses.filter(addr => addr.greaterThan(MIN_ADDRESS))
+}
+```
+
+## Range Checks
+
+Validate addresses within a range:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function isInRange(
+  address: Address,
+  min: Address,
+  max: Address
+): boolean {
+  return address.greaterThan(min) && !address.greaterThan(max)
+}
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const minRange = Address.from(1000n)
+const maxRange = Address.from(2000n)
+
+console.log(isInRange(addr, minRange, maxRange))
+```
+
+## Pagination
+
+Implement cursor-based pagination:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface PaginationParams {
+  cursor?: Address
+  limit: number
+}
+
+function paginateAddresses(
+  addresses: Address[],
+  params: PaginationParams
+): { items: Address[]; nextCursor?: Address } {
+  // Sort addresses
+  const sorted = [...addresses].sort((a, b) => a.compare(b))
+
+  // Filter addresses greater than cursor
+  const filtered = params.cursor
+    ? sorted.filter(addr => addr.greaterThan(params.cursor!))
+    : sorted
+
+  // Take limit
+  const items = filtered.slice(0, params.limit)
+
+  // Next cursor is last item if more exist
+  const nextCursor = filtered.length > params.limit
+    ? items[items.length - 1]
+    : undefined
+
+  return { items, nextCursor }
+}
+
+// Usage
+const allAddresses = [
+  Address.from(100n),
+  Address.from(200n),
+  Address.from(300n),
+  Address.from(400n),
+]
+
+const page1 = paginateAddresses(allAddresses, { limit: 2 })
+console.log(page1.items) // [100n, 200n]
+
+const page2 = paginateAddresses(allAddresses, {
+  cursor: page1.nextCursor,
+  limit: 2
+})
+console.log(page2.items) // [300n, 400n]
+```
+
+## Shard Selection
+
+Select database shard based on address range:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Shard {
+  id: number
+  minAddress: Address
+  maxAddress: Address
+}
+
+const SHARDS: Shard[] = [
+  {
+    id: 0,
+    minAddress: Address.zero(),
+    maxAddress: Address.fromHex("0x3fffffffffffffffffffffffffffffffffffffff")
+  },
+  {
+    id: 1,
+    minAddress: Address.fromHex("0x4000000000000000000000000000000000000000"),
+    maxAddress: Address.fromHex("0x7fffffffffffffffffffffffffffffffffffffff")
+  },
+  {
+    id: 2,
+    minAddress: Address.fromHex("0x8000000000000000000000000000000000000000"),
+    maxAddress: Address.fromHex("0xbfffffffffffffffffffffffffffffffffffffff")
+  },
+  {
+    id: 3,
+    minAddress: Address.fromHex("0xc000000000000000000000000000000000000000"),
+    maxAddress: Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+  },
+]
+
+function selectShard(address: Address): number {
+  for (const shard of SHARDS) {
+    if (
+      !address.greaterThan(shard.maxAddress) &&
+      (address.greaterThan(shard.minAddress) || address.equals(shard.minAddress))
+    ) {
+      return shard.id
+    }
+  }
+  throw new Error('Address out of range')
+}
+```
+
+## Finding Maximum
+
+Find maximum address in collection:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function findMaxAddress(addresses: Address[]): Address | undefined {
+  if (addresses.length === 0) return undefined
+
+  return addresses.reduce((max, current) =>
+    current.greaterThan(max) ? current : max
+  )
+}
+
+const addresses = [
+  Address.from(50n),
+  Address.from(200n),
+  Address.from(100n),
+]
+
+const max = findMaxAddress(addresses)
+console.log(max?.toHex()) // 0x00...c8 (200)
+```
+
+## Sorted Insertion
+
+Maintain sorted order when inserting:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class SortedAddressList {
+  private addresses: Address[] = []
+
+  insert(address: Address): void {
+    // Find insertion point using binary search
+    let left = 0
+    let right = this.addresses.length
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2)
+      if (this.addresses[mid].greaterThan(address)) {
+        right = mid
+      } else {
+        left = mid + 1
+      }
+    }
+
+    this.addresses.splice(left, 0, address)
+  }
+
+  toArray(): Address[] {
+    return [...this.addresses]
+  }
+}
+
+const list = new SortedAddressList()
+list.insert(Address.from(100n))
+list.insert(Address.from(50n))
+list.insert(Address.from(200n))
+
+console.log(list.toArray()) // [50n, 100n, 200n] in sorted order
+```
+
+</Tab>
+</Tabs>
+
+## Comparison Semantics
+
+**Lexicographic ordering:** Compares byte-by-byte from left to right until a difference is found.
+
+**Returns:**
+- `true` if first address is greater than second
+- `false` if addresses are equal or first is less than second
+
+**Example ordering:**
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const a1 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const a2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const a3 = Address.fromHex("0x1000000000000000000000000000000000000000")
+
+console.log(a2.greaterThan(a1)) // true  (2 > 1)
+console.log(a3.greaterThan(a2)) // true  (0x10... > 0x00...)
+console.log(a1.greaterThan(a2)) // false (1 < 2)
+console.log(a1.greaterThan(a1)) // false (equal)
+```
+
+## Relation to Other Comparisons
+
+`greaterThan()` is built on top of `compare()`:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(100n)
+const addr2 = Address.from(50n)
+
+// These are equivalent:
+addr1.greaterThan(addr2)         // true
+addr1.compare(addr2) > 0         // true
+
+// Helper methods built on compare():
+addr1.lessThan(addr2)    === (addr1.compare(addr2) < 0)   // false
+addr1.greaterThan(addr2) === (addr1.compare(addr2) > 0)   // true
+addr1.equals(addr2)      === (addr1.compare(addr2) === 0) // false
+```
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time for addresses)
+
+**Implementation:** Uses `compare()` which terminates early at first differing byte
+
+**Optimization:** For repeated comparisons, consider sorting once:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const threshold = Address.from(1000n)
+
+// Less efficient (repeated comparisons)
+for (const addr of addresses) {
+  if (addr.greaterThan(threshold)) {
+    // ...
+  }
+}
+
+// More efficient (sort once)
+const sorted = [...addresses].sort((a, b) => a.compare(b))
+const index = sorted.findIndex(addr => addr.greaterThan(threshold))
+const greaterAddresses = sorted.slice(index)
+```
+
+## See Also
+
+- [compare](/primitives/address/compare) - Full ordering comparison
+- [lessThan](/primitives/address/less-than) - Less than comparison
+- [equals](/primitives/address/equals) - Equality comparison

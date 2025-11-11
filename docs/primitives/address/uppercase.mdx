@@ -1,0 +1,375 @@
+---
+title: Uppercase
+description: Branded uppercase hex string type for addresses
+---
+
+# Uppercase
+
+Branded hex string type representing an address in all uppercase format. Provides compile-time guarantees that the string is a valid 42-character uppercase address hex string.
+
+## Type Definition
+
+```typescript
+type Uppercase = string & {
+  readonly __tag: 'Hex'
+  readonly __variant: 'Address'
+  readonly __uppercase: true
+}
+```
+
+The `Uppercase` type is a branded string, not a `Uint8Array`. It guarantees:
+- Valid hex string with `0x` prefix
+- Exactly 42 characters (2 prefix + 40 hex)
+- All alphabetic hex characters (A-F) are uppercase
+- Numeric characters (0-9) unchanged
+
+## When to Use
+
+Use `Uppercase` addresses when:
+
+**Legacy system requirements** - Some older systems expect uppercase addresses:
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Legacy API requires uppercase
+async function registerWithOldSystem(address: Address) {
+  const upper = Address.Uppercase.from(address)
+  await fetch('/legacy/register', {
+    method: 'POST',
+    body: JSON.stringify({ address: upper })
+  })
+}
+```
+
+**Display consistency** - Standardize address display across your UI:
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function formatForDisplay(address: Address): string {
+  return Address.Uppercase.from(address)
+}
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+console.log(formatForDisplay(addr))
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+
+**Performance-critical normalization** - Faster than checksummed format (no crypto):
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Fast - simple string transformation
+const upper = Address.Uppercase.from(address)
+
+// Slower - requires keccak256 hash
+const checksum = Address.Checksummed.from(address)
+```
+
+## Methods
+
+### `Address.Uppercase.from(addr)`
+
+Create uppercase hex string from Address.
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const upper = Address.Uppercase.from(addr)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const addr: BrandedAddress = /* ... */
+const upper = UppercaseAddress.from(addr)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+</Tab>
+</Tabs>
+
+**Parameters:**
+- `addr: BrandedAddress` - Address to convert
+
+**Returns:** `Uppercase` - Branded uppercase hex string
+
+**Defined in:** [primitives/Address/BrandedAddress/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/UppercaseAddress.js#L20)
+
+## Differences from Other Formats
+
+### vs Checksummed
+
+**Uppercase** is purely cosmetic case transformation, **Checksummed** provides integrity verification:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Uppercase - all caps, no validation
+const upper = Address.Uppercase.from(addr)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+
+// Checksummed - mixed case based on keccak256
+const checksum = Address.Checksummed.from(addr)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+```
+
+**Key differences:**
+- **Performance**: Uppercase is faster (no crypto operations)
+- **Validation**: Checksummed can detect typos via EIP-55
+- **Format**: Uppercase all caps, Checksummed mixed case
+- **Use case**: Uppercase for display/legacy, Checksummed for user-facing/wallets
+
+### vs Lowercase
+
+**Lowercase** is the canonical Ethereum format, **Uppercase** is for specific use cases:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+
+// Lowercase - standard Ethereum format
+const lower = Address.Lowercase.from(addr)
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+
+// Uppercase - legacy/display format
+const upper = Address.Uppercase.from(addr)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+
+**When to use each:**
+- **Lowercase**: Database storage, API responses, standard tooling (ethers.js, viem)
+- **Uppercase**: Legacy systems, consistent UI display, case normalization
+
+## Use Cases
+
+### Legacy System Integration
+
+Some older systems require uppercase addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class LegacyAPIClient {
+  async register(address: Address) {
+    // Legacy system expects uppercase
+    const upper = Address.Uppercase.from(address)
+
+    return fetch('https://legacy.example.com/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress: upper
+      })
+    })
+  }
+}
+```
+
+### Display Consistency
+
+Standardize address formatting across your application:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class AddressFormatter {
+  // Consistent uppercase display
+  static format(address: Address): string {
+    return Address.Uppercase.from(address)
+  }
+
+  // React component example
+  static Component({ address }: { address: Address }) {
+    return <code>{this.format(address)}</code>
+  }
+}
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+console.log(AddressFormatter.format(addr))
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+
+### CSV Export
+
+Consistent formatting for data exports:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function exportAddressesCSV(
+  addresses: Address[],
+  balances: bigint[]
+): string {
+  const header = "Address,Balance\n"
+  const rows = addresses.map((addr, i) => {
+    const upper = Address.Uppercase.from(addr)
+    return `${upper},${balances[i]}`
+  }).join("\n")
+
+  return header + rows
+}
+
+// Example output:
+// Address,Balance
+// 0x742D35CC6634C0532925A3B844BC9E7595F251E3,1000
+// 0xABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCD,2000
+```
+
+### Case Normalization
+
+Normalize addresses for non-critical operations:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Note: For address comparison, use equals() instead
+function normalizeAddressSet(addresses: Address[]): Set<string> {
+  return new Set(
+    addresses.map(addr => Address.Uppercase.from(addr))
+  )
+}
+
+const addrs = [
+  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3"),
+  Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3"),
+]
+
+const normalized = normalizeAddressSet(addrs)
+console.log(normalized.size) // 1 (same address)
+```
+
+## Comparison Table
+
+| Format | Casing | Performance | Validation | Use Case |
+|--------|--------|-------------|------------|----------|
+| **Uppercase** | All uppercase | Fast (no crypto) | None | Legacy systems, display consistency |
+| **Checksummed** | Mixed case | Slower (keccak256) | EIP-55 checksum | User-facing, wallets, QR codes |
+| **Lowercase** | All lowercase | Fast (no crypto) | None | Storage, APIs, standard tooling |
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Mixed case input
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+const upper = Address.Uppercase.from(addr)
+console.log(upper)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+
+// Already uppercase - returns same format
+const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const upper2 = Address.Uppercase.from(addr2)
+console.log(upper2)
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```
+
+### Idempotency
+
+Converting to uppercase multiple times produces the same result:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const upper1 = Address.Uppercase.from(addr)
+
+// Convert back to Address and to uppercase again
+const addr2 = Address.fromHex(upper1)
+const upper2 = Address.Uppercase.from(addr2)
+
+console.log(upper1 === upper2) // true
+```
+
+### All Formats Comparison
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Lowercase (canonical)
+console.log(Address.Lowercase.from(addr))
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+
+// Uppercase
+console.log(Address.Uppercase.from(addr))
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+
+// Checksummed (EIP-55)
+console.log(Address.Checksummed.from(addr))
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+
+// All represent the same address
+const fromLower = Address.fromHex(Address.Lowercase.from(addr))
+const fromUpper = Address.fromHex(Address.Uppercase.from(addr))
+const fromChecksum = Address.fromHex(Address.Checksummed.from(addr))
+
+console.log(fromLower.equals(fromUpper)) // true
+console.log(fromUpper.equals(fromChecksum)) // true
+```
+
+### Edge Cases
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Zero address
+const zero = Address.zero()
+console.log(Address.Uppercase.from(zero))
+// "0x0000000000000000000000000000000000000000"
+
+// Max address
+const max = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+console.log(Address.Uppercase.from(max))
+// "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+
+// All numeric (no alpha characters to uppercase)
+const numeric = Address.fromNumber(420n)
+console.log(Address.Uppercase.from(numeric))
+// "0x00000000000000000000000000000000000001A4"
+```
+
+## Tree-Shakeable Usage
+
+Import only `UppercaseAddress` to reduce bundle size:
+
+```typescript
+import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const addr: BrandedAddress = /* ... */
+const upper = UppercaseAddress.from(addr)
+```
+
+**Bundle size benefit:** Avoids importing `ChecksumAddress` and its keccak256 dependency.
+
+## Performance
+
+**Time complexity:** O(1) - constant time (20 bytes always)
+
+**Operations:** Simple string transformation using JavaScript's `toUpperCase()`
+
+**Comparison with checksummed:**
+- **Uppercase**: ~0.001ms (string transform)
+- **Checksummed**: ~0.1ms (includes keccak256 hash)
+
+For high-frequency operations, uppercase is ~100x faster than checksummed.
+
+## See Also
+
+- [Checksummed](/primitives/address/checksummed) - EIP-55 checksummed address format
+- [Lowercase](/primitives/address/lowercase) - Lowercase address format
+- [Variants](/primitives/address/variants) - Overview of all address formats
+- [toUppercase](/primitives/address/to-uppercase) - Method to convert Address to uppercase
+- [fromHex](/primitives/address/from-hex) - Parse addresses from hex strings (case-insensitive)

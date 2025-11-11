@@ -1,0 +1,459 @@
+---
+title: Address.lessThan
+description: Lexicographic less-than comparison of addresses
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.lessThan(other: BrandedAddress): boolean`
+
+Check if address is lexicographically less than another address.
+
+**Parameters:**
+- `other: BrandedAddress` - Address to compare with
+
+**Returns:** `boolean` - `true` if this address < other, `false` otherwise
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+const addr3 = Address.from(10n)
+
+console.log(addr1.lessThan(addr2)) // true (addr1 < addr2)
+console.log(addr2.lessThan(addr1)) // false (addr2 > addr1)
+console.log(addr1.lessThan(addr3)) // false (addr1 == addr3)
+
+// Sorting with lessThan
+const addresses = [addr2, addr1]
+addresses.sort((a, b) => a.lessThan(b) ? -1 : b.lessThan(a) ? 1 : 0)
+console.log(addresses) // [addr1, addr2]
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/lessThan.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/lessThan.js#L10)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `lessThan(a: BrandedAddress, b: BrandedAddress): boolean`
+
+Check if first address is lexicographically less than second address.
+
+**Parameters:**
+- `a: BrandedAddress` - First address
+- `b: BrandedAddress` - Second address
+
+**Returns:** `boolean` - `true` if a < b, `false` otherwise
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+
+console.log(Address.lessThan(addr1, addr2)) // true
+console.log(Address.lessThan(addr2, addr1)) // false
+console.log(Address.lessThan(addr1, addr1)) // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/lessThan.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/lessThan.js#L10)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## Effect.ts Schema API
+
+Effect.ts Address class inherits comparison from underlying `BrandedAddress` through the `compare()` method.
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import { Effect } from 'effect'
+
+// Direct comparison
+const addr1 = Address.from('0x0000000000000000000000000000000000000001')
+const addr2 = Address.from('0x0000000000000000000000000000000000000002')
+
+// Use compare() to implement lessThan
+const isLess = addr1.address < addr2.address // false (comparing references)
+
+// Correct way: use underlying BrandedAddress methods
+import * as BrandedAddress from '@tevm/voltaire/Address/BrandedAddress'
+const result = BrandedAddress.lessThan(addr1.address, addr2.address) // true
+
+// Or use compare
+console.log(addr1.address.compare(addr2.address) < 0) // true
+```
+
+**Schema validation with ordering:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Schema from 'effect/Schema'
+import * as BrandedAddress from '@tevm/voltaire/Address/BrandedAddress'
+
+// Validate and sort addresses
+const AddressArray = Schema.Array(Schema.instanceOf(Address))
+
+const program = Effect.gen(function* () {
+  const decoded = yield* Schema.decodeUnknown(AddressArray)([
+    '0x0000000000000000000000000000000000000002',
+    '0x0000000000000000000000000000000000000001',
+  ])
+
+  // Sort using underlying BrandedAddress comparison
+  const sorted = decoded.sort((a, b) =>
+    BrandedAddress.lessThan(a.address, b.address) ? -1 :
+    BrandedAddress.lessThan(b.address, a.address) ? 1 : 0
+  )
+
+  return sorted
+})
+```
+
+</Tab>
+<Tab title="Zig">
+
+## Lexicographic comparison in Zig
+
+Use `std.mem.order` to compare addresses, then check for `.lt` ordering.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+pub fn lessThan(a: Address, b: Address) bool {
+    return std.mem.order(u8, &a.bytes, &b.bytes) == .lt;
+}
+
+test "address lessThan comparison" {
+    const addr1 = try Address.fromHex("0x0000000000000000000000000000000000000001");
+    const addr2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
+
+    try std.testing.expect(lessThan(addr1, addr2)); // true
+    try std.testing.expect(!lessThan(addr2, addr1)); // false
+    try std.testing.expect(!lessThan(addr1, addr1)); // false
+}
+
+// Use in sorting
+test "sort addresses" {
+    var addresses = [_]Address{
+        try Address.fromHex("0x0000000000000000000000000000000000000003"),
+        try Address.fromHex("0x0000000000000000000000000000000000000001"),
+        try Address.fromHex("0x0000000000000000000000000000000000000002"),
+    };
+
+    std.mem.sort(Address, &addresses, {}, struct {
+        fn lessThan(_: void, a: Address, b: Address) bool {
+            return std.mem.order(u8, &a.bytes, &b.bytes) == .lt;
+        }
+    }.lessThan);
+
+    try std.testing.expectEqual(@as(u8, 1), addresses[0].bytes[19]);
+    try std.testing.expectEqual(@as(u8, 2), addresses[1].bytes[19]);
+    try std.testing.expectEqual(@as(u8, 3), addresses[2].bytes[19]);
+}
+```
+
+**Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+<Tab title="WASM">
+
+## WASM Implementation
+
+WASM uses the same TypeScript implementation - comparison happens in JavaScript layer.
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/wasm'
+
+const addr1 = Address.from(1n)
+const addr2 = Address.from(2n)
+
+// Same API as native
+console.log(Address.lessThan(addr1, addr2)) // true
+
+// Instance method
+console.log(addr1.lessThan(addr2)) // true
+```
+
+**Performance note:** Lexicographic comparison is performed byte-by-byte in JavaScript. For large-scale sorting operations (>10k addresses), consider native implementation for better performance.
+
+</Tab>
+</Tabs>
+
+## Comparison Semantics
+
+**Lexicographic ordering:** Compares byte-by-byte from left to right.
+
+**Return value:**
+- `true`: First address is less than second
+- `false`: First address is equal to or greater than second
+
+**Implementation:** Returns `true` when `compare(a, b) < 0`
+
+**Example ordering:**
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const a1 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const a2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const a3 = Address.fromHex("0x1000000000000000000000000000000000000000")
+
+console.log(a1.lessThan(a2)) // true
+console.log(a2.lessThan(a3)) // true
+console.log(a1.lessThan(a3)) // true
+console.log(a3.lessThan(a1)) // false
+```
+
+## Use Cases
+
+### Sorting Arrays
+
+Sort addresses in ascending order:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addresses = [
+  Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff"),
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+]
+
+// Sort using lessThan
+addresses.sort((a, b) =>
+  a.lessThan(b) ? -1 : b.lessThan(a) ? 1 : 0
+)
+
+// More efficient: use compare() directly
+addresses.sort((a, b) => a.compare(b))
+```
+
+### Range Queries
+
+Filter addresses within a range:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function getAddressesInRange(
+  addresses: Address[],
+  min: Address,
+  max: Address
+): Address[] {
+  return addresses.filter(addr =>
+    !addr.lessThan(min) && addr.lessThan(max) || addr.equals(max)
+  )
+}
+
+const allAddresses = [
+  Address.from(5n),
+  Address.from(15n),
+  Address.from(25n),
+]
+
+const inRange = getAddressesInRange(
+  allAddresses,
+  Address.from(10n),
+  Address.from(20n)
+)
+// Returns: [Address.from(15n)]
+```
+
+### Binary Search
+
+Efficient lookup in sorted arrays:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function binarySearch(sorted: Address[], target: Address): number {
+  let left = 0
+  let right = sorted.length - 1
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const midAddr = sorted[mid]
+
+    if (midAddr.equals(target)) return mid
+    if (midAddr.lessThan(target)) {
+      left = mid + 1
+    } else {
+      right = mid - 1
+    }
+  }
+
+  return -1 // Not found
+}
+
+const sorted = [
+  Address.from(1n),
+  Address.from(5n),
+  Address.from(10n),
+  Address.from(50n),
+]
+
+const index = binarySearch(sorted, Address.from(10n))
+console.log(index) // 2
+```
+
+### Ordered Data Structures
+
+Maintain sorted set of addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class SortedAddressSet {
+  private addresses: Address[] = []
+
+  add(address: Address): void {
+    // Find insertion point using binary search
+    let left = 0
+    let right = this.addresses.length
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2)
+      if (this.addresses[mid].lessThan(address)) {
+        left = mid + 1
+      } else {
+        right = mid
+      }
+    }
+
+    // Check if already exists
+    if (left < this.addresses.length &&
+        this.addresses[left].equals(address)) {
+      return
+    }
+
+    this.addresses.splice(left, 0, address)
+  }
+
+  has(address: Address): boolean {
+    let left = 0
+    let right = this.addresses.length - 1
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2)
+      const midAddr = this.addresses[mid]
+
+      if (midAddr.equals(address)) return true
+      if (midAddr.lessThan(address)) {
+        left = mid + 1
+      } else {
+        right = mid - 1
+      }
+    }
+
+    return false
+  }
+
+  toArray(): Address[] {
+    return [...this.addresses]
+  }
+}
+```
+
+### Merkle Tree Construction
+
+Build ordered merkle trees:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+function buildMerkleTree(addresses: Address[]): Uint8Array {
+  // Sort addresses first for deterministic tree
+  const sorted = [...addresses].sort((a, b) =>
+    a.lessThan(b) ? -1 : b.lessThan(a) ? 1 : 0
+  )
+
+  let level = sorted.map(addr => keccak256(addr))
+
+  while (level.length > 1) {
+    const nextLevel: Uint8Array[] = []
+
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 < level.length) {
+        const combined = new Uint8Array(64)
+        combined.set(level[i], 0)
+        combined.set(level[i + 1], 32)
+        nextLevel.push(keccak256(combined))
+      } else {
+        nextLevel.push(level[i])
+      }
+    }
+
+    level = nextLevel
+  }
+
+  return level[0]
+}
+```
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time for addresses)
+
+**Implementation:** Single call to `compare()`, which stops at first differing byte
+
+**Optimization:** For repeated comparisons, `compare()` is more efficient than separate `lessThan` calls:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Less efficient (multiple comparisons)
+if (a.lessThan(b)) {
+  // handle less
+} else if (b.lessThan(a)) {
+  // handle greater
+} else {
+  // handle equal
+}
+
+// More efficient (single comparison)
+const cmp = a.compare(b)
+if (cmp < 0) {
+  // handle less
+} else if (cmp > 0) {
+  // handle greater
+} else {
+  // handle equal
+}
+```
+
+## Relation to Other Comparisons
+
+`lessThan` is a convenience method built on `compare()`:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const a = Address.from(10n)
+const b = Address.from(20n)
+
+// These are equivalent
+a.lessThan(b)           === (a.compare(b) < 0)
+a.greaterThan(b)        === (a.compare(b) > 0)
+a.equals(b)             === (a.compare(b) === 0)
+!a.lessThan(b) && !a.equals(b) === a.greaterThan(b)
+```
+
+## See Also
+
+- [compare](/primitives/address/compare) - Full comparison returning -1, 0, or 1
+- [equals](/primitives/address/equals) - Equality comparison
+- [greaterThan](/primitives/address/comparisons#greaterthan) - Greater than comparison

@@ -66,6 +66,70 @@ const contractAddr = Address.calculateCreateAddress(deployer, 0n)
 **Defined in:** [primitives/Address/BrandedAddress/calculateCreateAddress.js:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js#L49)
 
 </Tab>
+<Tab title="Effect.ts API">
+
+## `address.calculateCreateAddress(nonce: bigint): Address`
+
+Calculate CREATE contract address using Effect.ts Schema Address class.
+
+**Parameters:**
+- `nonce: bigint` - Transaction nonce (must be ≥ 0)
+
+**Returns:** `Address` - New Address schema instance with calculated contract address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import { Effect } from 'effect'
+
+// Direct usage
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const contract = deployer.calculateCreateAddress(0n)
+console.log(contract.toHex())
+
+// Within Effect.gen
+const program = Effect.gen(function* () {
+  const deployer = yield* Effect.sync(() =>
+    Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+  )
+
+  const contract = yield* Effect.sync(() =>
+    deployer.calculateCreateAddress(0n)
+  )
+
+  return contract.toHex()
+})
+
+const result = await Effect.runPromise(program)
+console.log(result) // Contract address
+```
+
+**Schema validation:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import * as Schema from 'effect/Schema'
+
+// Validate contract calculation in pipeline
+const ValidContract = Schema.Struct({
+  deployer: Schema.instanceOf(Address),
+  nonce: Schema.BigIntFromSelf,
+  contract: Schema.instanceOf(Address)
+})
+
+const data = {
+  deployer: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  nonce: 0n,
+  contract: deployer.calculateCreateAddress(0n)
+}
+
+const validated = Schema.decodeUnknownSync(ValidContract)(data)
+```
+
+**Defined in:** [primitives/Address/effect.ts:191](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L191)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address.calculateCreateAddress(allocator: Allocator, sender: Address, nonce: u64): !Address`
@@ -95,7 +159,18 @@ const contract = try Address.calculateCreateAddress(allocator, deployer, 0);
 std.debug.print("Contract: {}\n", .{contract});
 ```
 
-**Defined in:** [primitives/Address/address.zig:195](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L195)
+**Defined in:** [primitives/Address/address.zig:382](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L382)
+
+</Tab>
+<Tab title="C API">
+
+## C API Not Available
+
+CREATE address calculation is not exposed in the C API. Use TypeScript, Effect.ts, or Zig implementations directly.
+
+<Tip>
+The C API focuses on core primitives. For contract address derivation requiring RLP encoding and keccak256, use higher-level TypeScript or Zig APIs.
+</Tip>
 
 </Tab>
 </Tabs>

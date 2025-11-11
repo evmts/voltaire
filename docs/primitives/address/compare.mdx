@@ -63,6 +63,43 @@ console.log(Address.compare(addr1, addr2)) // -1
 **Defined in:** [primitives/Address/BrandedAddress/compare.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/compare.js#L8)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `address.compare(other: Address | BrandedAddress): number`
+
+Lexicographic comparison with automatic schema validation.
+
+**Parameters:**
+- `other: Address | BrandedAddress` - Address to compare with (accepts both Effect and branded types)
+
+**Returns:** `number` - `-1` if less than, `0` if equal, `1` if greater than
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Effect from 'effect/Effect'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+
+// Direct comparison
+console.log(addr1.compare(addr2)) // -1
+
+// Effect composition
+const program = Effect.gen(function* () {
+  const a1 = yield* Effect.sync(() => Address.from(10n))
+  const a2 = yield* Effect.sync(() => Address.from(20n))
+  const result = yield* Effect.sync(() => a1.compare(a2))
+  return result
+})
+
+await Effect.runPromise(program) // -1
+```
+
+**Defined in:** [primitives/Address/effect.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
+
+</Tab>
 <Tab title="Zig">
 
 ## `std.mem.order(u8, addr1.bytes, addr2.bytes): std.math.Order`
@@ -97,6 +134,64 @@ std.mem.sort(Address, &addresses, {}, struct {
 ```
 
 **Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+<Tab title="C">
+
+## C API - Manual Implementation Required
+
+The C API currently provides `primitives_address_equals()` but not a three-way comparison. Implement lexicographic comparison manually:
+
+**Example:**
+
+```c
+#include "voltaire.h"
+#include <string.h>
+
+// Custom compare function for addresses
+int address_compare(const PrimitivesAddress* a, const PrimitivesAddress* b) {
+    // Compare bytes lexicographically
+    for (int i = 0; i < 20; i++) {
+        if (a->bytes[i] < b->bytes[i]) return -1;
+        if (a->bytes[i] > b->bytes[i]) return 1;
+    }
+    return 0;
+}
+
+// Usage
+PrimitivesAddress addr1;
+PrimitivesAddress addr2;
+PrimitivesAddress addr3;
+
+primitives_address_from_hex("0x000000000000000000000000000000000000000a", &addr1);
+primitives_address_from_hex("0x0000000000000000000000000000000000000014", &addr2);
+primitives_address_from_hex("0x000000000000000000000000000000000000000a", &addr3);
+
+int cmp1 = address_compare(&addr1, &addr2);
+int cmp2 = address_compare(&addr2, &addr1);
+int cmp3 = address_compare(&addr1, &addr3);
+
+printf("%d\n", cmp1);  // -1 (addr1 < addr2)
+printf("%d\n", cmp2);  // 1  (addr2 > addr1)
+printf("%d\n", cmp3);  // 0  (addr1 == addr3)
+
+// Use with qsort for sorting
+int compare_wrapper(const void* a, const void* b) {
+    return address_compare((const PrimitivesAddress*)a, (const PrimitivesAddress*)b);
+}
+
+PrimitivesAddress addresses[] = {addr2, addr1, addr3};
+qsort(addresses, 3, sizeof(PrimitivesAddress), compare_wrapper);
+```
+
+**Alternative:** Use `memcmp` for byte-level comparison:
+
+```c
+int cmp = memcmp(addr1.bytes, addr2.bytes, 20);
+// Returns: <0 if addr1 < addr2, 0 if equal, >0 if addr1 > addr2
+```
+
+**See also:** [primitives_address_equals()](/primitives/address/equals#c) for equality comparison
 
 </Tab>
 </Tabs>

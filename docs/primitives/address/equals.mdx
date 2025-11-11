@@ -4,7 +4,7 @@ description: Compare two addresses for equality
 ---
 
 <Tabs>
-<Tab title="Class API">
+<Tab title="Class API (recommended)">
 
 ## `address.equals(other: BrandedAddress): boolean`
 
@@ -31,10 +31,10 @@ const different = Address.from(42n)
 console.log(addr1.equals(different)) // false
 ```
 
-**Defined in:** [primitives/Address/BrandedAddress/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js#L18)
+**Defined in:** [primitives/Address/BrandedAddress/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js)
 
 </Tab>
-<Tab title="Namespace API">
+<Tab title="Namespace API (Tree-shakeable)">
 
 ## `equals(a: BrandedAddress, b: BrandedAddress): boolean`
 
@@ -57,7 +57,37 @@ const addr2 = Address.from(69n)
 console.log(Address.equals(addr1, addr2)) // true
 ```
 
-**Defined in:** [primitives/Address/BrandedAddress/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js#L18)
+**Defined in:** [primitives/Address/BrandedAddress/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/equals.js)
+
+</Tab>
+<Tab title="Effect.ts Schema API">
+
+## `address.equals(other: Address | BrandedAddress): boolean`
+
+Compare two Address schema instances for equality. Accepts both Effect.ts Address instances and BrandedAddress types.
+
+**Parameters:**
+- `other: Address | BrandedAddress` - Address to compare with
+
+**Returns:** `boolean` - `true` if addresses are equal
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+
+const addr1 = Address.from(69n)
+const addr2 = Address.from(69n)
+const addr3 = Address.fromHex("0x0000000000000000000000000000000000000045")
+
+console.log(addr1.equals(addr2)) // true
+console.log(addr1.equals(addr3)) // true (69 = 0x45)
+
+const different = Address.from(42n)
+console.log(addr1.equals(different)) // false
+```
+
+**Defined in:** [primitives/Address/effect.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
 
 </Tab>
 <Tab title="Zig">
@@ -87,6 +117,42 @@ try std.testing.expect(!std.mem.eql(u8, &addr1.bytes, &addr3.bytes));
 ```
 
 **Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bool primitives_address_equals(const PrimitivesAddress *a, const PrimitivesAddress *b)`
+
+Compare two address instances for equality.
+
+**Parameters:**
+- `a: const PrimitivesAddress *` - First address
+- `b: const PrimitivesAddress *` - Second address
+
+**Returns:** `bool` - `true` if addresses are equal
+
+**Example:**
+
+```c
+#include "voltaire.h"
+
+uint8_t bytes1[20] = {0x00, 0x00, ..., 0x45};  // 0x...45 (69)
+uint8_t bytes2[20] = {0x00, 0x00, ..., 0x45};  // 0x...45 (69)
+uint8_t bytes3[20] = {0x00, 0x00, ..., 0x2A};  // 0x...2A (42)
+
+PrimitivesAddress addr1, addr2, addr3;
+memcpy(addr1.bytes, bytes1, 20);
+memcpy(addr2.bytes, bytes2, 20);
+memcpy(addr3.bytes, bytes3, 20);
+
+bool equal1 = primitives_address_equals(&addr1, &addr2);
+bool equal2 = primitives_address_equals(&addr1, &addr3);
+
+printf("%d\n", equal1);  // 1 (true)
+printf("%d\n", equal2);  // 0 (false)
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
 
 </Tab>
 </Tabs>

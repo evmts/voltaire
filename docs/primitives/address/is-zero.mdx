@@ -1,0 +1,408 @@
+---
+title: Address.isZero
+description: Check if address is zero address (0x0000...0000)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.isZero(): boolean`
+
+Checks if address is the zero address (all bytes are zero).
+
+**Returns:** `boolean` - `true` if address is `0x0000000000000000000000000000000000000000`
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const zero = Address.fromHex("0x0000000000000000000000000000000000000000")
+const nonZero = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+console.log(zero.isZero())    // true
+console.log(nonZero.isZero()) // false
+
+// Single non-zero byte is not zero
+const almostZero = Address.fromHex("0x0000000000000000000000000000000000000001")
+console.log(almostZero.isZero()) // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/isZero.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/isZero.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isZero(address: BrandedAddress): boolean`
+
+Checks if address is the zero address.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to check
+
+**Returns:** `boolean` - `true` if all bytes are zero
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000000")
+console.log(Address.isZero(addr)) // true
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/isZero.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/isZero.js#L14)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## `address.isZero(): boolean`
+
+Effect.ts Schema wrapper provides the same `isZero()` method through the underlying BrandedAddress.
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000000")
+console.log(addr.isZero()) // true
+
+// Schema validation with zero check
+const maybeAddr = Address.fromHex(input)
+if (maybeAddr.isZero()) {
+  console.log("Cannot send to zero address")
+}
+```
+
+**Defined in:** [primitives/Address/effect.ts:157](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L157)
+
+</Tab>
+<Tab title="Zig">
+
+## Custom implementation required
+
+Zig Address type is a simple byte array - implement zero check manually.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+fn isZero(addr: Address) bool {
+    for (addr.bytes) |byte| {
+        if (byte != 0) return false;
+    }
+    return true;
+}
+
+test "zero address check" {
+    const zero = Address.fromHex("0x0000000000000000000000000000000000000000") catch unreachable;
+    const nonZero = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+
+    try std.testing.expect(isZero(zero));
+    try std.testing.expect(!isZero(nonZero));
+}
+```
+
+**Alternative using std.mem:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+fn isZero(addr: Address) bool {
+    const zero_bytes = [_]u8{0} ** 20;
+    return std.mem.eql(u8, &addr.bytes, &zero_bytes);
+}
+```
+
+</Tab>
+<Tab title="Constructor">
+
+## `Address.zero(): BrandedAddress`
+
+Create zero address directly instead of checking.
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const zero = Address.zero()
+console.log(zero.isZero())            // true
+console.log(zero.toHex())             // "0x0000000000000000000000000000000000000000"
+
+// Equivalent to
+const alsoZero = Address.fromHex("0x0000000000000000000000000000000000000000")
+console.log(zero.equals(alsoZero))    // true
+```
+
+</Tab>
+</Tabs>
+
+## Zero Address Semantics
+
+The zero address (`0x0000000000000000000000000000000000000000`) has special meaning in Ethereum:
+
+**Null value:** Represents uninitialized or invalid addresses
+**Burn address:** Tokens sent here are effectively destroyed
+**Contract creation:** `to` field is zero for contract deployments
+**Default value:** Uninitialized storage/state uses zero address
+
+## Use Cases
+
+### Null Checks
+
+Validate address is initialized:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function validateRecipient(to: Address) {
+  if (to.isZero()) {
+    throw new Error('Cannot send to zero address')
+  }
+}
+
+// Check before transfer
+const recipient = Address.fromHex(userInput)
+if (!recipient.isZero()) {
+  await transfer(recipient, amount)
+}
+```
+
+### Uninitialized Addresses
+
+Check if address variable has been set:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface TokenBalance {
+  owner: Address
+  balance: bigint
+}
+
+function isInitialized(record: TokenBalance): boolean {
+  return !record.owner.isZero() && record.balance > 0n
+}
+```
+
+### Contract Creation Detection
+
+Identify contract deployment transactions:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Transaction {
+  from: Address
+  to: Address
+  data: Uint8Array
+}
+
+function isContractCreation(tx: Transaction): boolean {
+  return tx.to.isZero() && tx.data.length > 0
+}
+
+// Filter deployment transactions
+const deployments = transactions.filter(isContractCreation)
+```
+
+### Burn Validation
+
+Detect token burn operations:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Transfer {
+  from: Address
+  to: Address
+  amount: bigint
+}
+
+function isBurn(transfer: Transfer): boolean {
+  return transfer.to.isZero()
+}
+
+function getTotalBurned(transfers: Transfer[]): bigint {
+  return transfers
+    .filter(isBurn)
+    .reduce((sum, t) => sum + t.amount, 0n)
+}
+```
+
+### Default Value Checks
+
+Check if storage slot contains default value:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface StorageSlot {
+  key: Uint8Array
+  value: Address
+}
+
+function hasCustomValue(slot: StorageSlot): boolean {
+  return !slot.value.isZero()
+}
+
+// Find all non-default storage slots
+const nonDefaultSlots = slots.filter(hasCustomValue)
+```
+
+### Address Filtering
+
+Filter out zero addresses from collections:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function removeZeroAddresses(addresses: Address[]): Address[] {
+  return addresses.filter(addr => !addr.isZero())
+}
+
+// Validate address list
+const validAddresses = removeZeroAddresses([
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address.zero(),
+  Address.fromHex("0x1234567890123456789012345678901234567890"),
+  Address.zero(),
+])
+console.log(validAddresses.length) // 2
+```
+
+## Implementation Details
+
+**Algorithm:** Checks if every byte equals zero using `array.every()`:
+
+```javascript
+export function isZero(address) {
+  return address.every((b) => b === 0);
+}
+```
+
+**Performance:** O(n) where n=20 bytes (address length). Early exit on first non-zero byte.
+
+**Memory:** Zero allocation - operates directly on address bytes.
+
+## Common Patterns
+
+### Guard Clauses
+
+Validate before processing:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function sendTokens(to: Address, amount: bigint) {
+  if (to.isZero()) {
+    throw new Error('Cannot send to zero address')
+  }
+  if (amount === 0n) {
+    throw new Error('Cannot send zero amount')
+  }
+
+  // Process transfer
+}
+```
+
+### Conditional Logic
+
+Branch on zero check:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function getAddressLabel(addr: Address): string {
+  if (addr.isZero()) {
+    return 'Unset'
+  }
+  return addr.toChecksummed()
+}
+```
+
+### Optional Addresses
+
+Represent optional values:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Config {
+  // Zero address means no delegate set
+  delegate: Address
+}
+
+function hasDelegate(config: Config): boolean {
+  return !config.delegate.isZero()
+}
+
+function getDelegate(config: Config): Address | null {
+  return config.delegate.isZero() ? null : config.delegate
+}
+```
+
+## Edge Cases
+
+### All Constructors
+
+Zero check works regardless of how address was created:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const zero1 = Address.fromHex("0x0000000000000000000000000000000000000000")
+const zero2 = Address.from(0n)
+const zero3 = Address.fromNumber(0)
+const zero4 = Address.fromBytes(new Uint8Array(20))
+const zero5 = Address.zero()
+
+console.log(zero1.isZero()) // true
+console.log(zero2.isZero()) // true
+console.log(zero3.isZero()) // true
+console.log(zero4.isZero()) // true
+console.log(zero5.isZero()) // true
+```
+
+### Almost Zero
+
+Single non-zero byte is not zero:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000001")
+console.log(addr.isZero()) // false
+
+const addr2 = Address.from(1n)
+console.log(addr2.isZero()) // false
+```
+
+## Related Methods
+
+**Create zero address:**
+```typescript
+const zero = Address.zero()
+```
+
+**Check equality:**
+```typescript
+const isZero = addr.equals(Address.zero())
+```
+
+**Check specific value:**
+```typescript
+const isOne = addr.equals(Address.from(1n))
+```
+
+## See Also
+
+- [zero](/primitives/address/zero) - Create zero address
+- [equals](/primitives/address/equals) - Compare addresses for equality
+- [from](/primitives/address/from) - Universal address constructor
+- [isValid](/primitives/address/is-valid) - Validate address format

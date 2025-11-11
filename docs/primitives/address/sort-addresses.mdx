@@ -1,0 +1,622 @@
+---
+title: Address.sortAddresses
+description: Sort addresses lexicographically for canonical ordering
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## Not Available in Class API
+
+The `sortAddresses` method is not available on class instances. Use the Namespace API or array methods with `compare`:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addresses = [
+  Address.from("0x0000000000000000000000000000000000000003"),
+  Address.from("0x0000000000000000000000000000000000000001"),
+  Address.from("0x0000000000000000000000000000000000000002"),
+]
+
+// Sort using Array.sort with compare
+const sorted = addresses.sort((a, b) => a.compare(b))
+```
+
+See [Namespace API](#namespace-api) for dedicated `sortAddresses` function.
+
+</Tab>
+<Tab title="Namespace API">
+
+## `sortAddresses(addresses: BrandedAddress[]): BrandedAddress[]`
+
+Sorts array of addresses lexicographically. Returns new sorted array without modifying original.
+
+**Parameters:**
+- `addresses: BrandedAddress[]` - Array of addresses to sort
+
+**Returns:** `BrandedAddress[]` - New array with addresses sorted in ascending lexicographic order
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const addr3 = Address.fromHex("0x0000000000000000000000000000000000000003")
+
+// Sort unordered addresses
+const sorted = Address.sortAddresses([addr3, addr1, addr2])
+
+console.log(Address.toHex(sorted[0])) // "0x0000000000000000000000000000000000000001"
+console.log(Address.toHex(sorted[1])) // "0x0000000000000000000000000000000000000002"
+console.log(Address.toHex(sorted[2])) // "0x0000000000000000000000000000000000000003"
+
+// Original array unchanged
+console.log(Address.toHex(addr3)) // Still addr3
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/sortAddresses.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/sortAddresses.js)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## Not Available in Effect.ts
+
+Effect.ts does not provide a dedicated `sortAddresses` method. Use standard array sorting with `compare`:
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  // Create addresses
+  const addr1 = Address.from("0x0000000000000000000000000000000000000003")
+  const addr2 = Address.from("0x0000000000000000000000000000000000000001")
+  const addr3 = Address.from("0x0000000000000000000000000000000000000002")
+
+  // Sort using compare
+  const addresses = [addr1, addr2, addr3]
+  const sorted = addresses.sort((a, b) => a.compare(b))
+
+  return sorted
+})
+
+const sorted = await Effect.runPromise(program)
+```
+
+For batch operations in Effect.ts pipelines, use `Array` methods:
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Effect from 'effect/Effect'
+import * as Array from 'effect/Array'
+
+const program = Effect.gen(function* () {
+  const addresses = yield* Effect.sync(() => [
+    Address.from("0x0000000000000000000000000000000000000003"),
+    Address.from("0x0000000000000000000000000000000000000001"),
+    Address.from("0x0000000000000000000000000000000000000002"),
+  ])
+
+  return Array.sort(addresses, (a, b) => a.compare(b))
+})
+```
+
+</Tab>
+<Tab title="Zig">
+
+## `std.mem.sort(Address, addresses, {}, lessThan)`
+
+Sort addresses using standard library sorting with custom comparator.
+
+**Parameters:**
+- `T`: `Address` - Type to sort
+- `addresses`: `[]Address` - Mutable slice of addresses
+- `context`: `{}` - Empty context (no context needed)
+- `lessThan`: Comparison function
+
+**Returns:** `void` - Sorts in place
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+test "sort addresses" {
+    var addresses = [_]Address{
+        try Address.fromHex("0x0000000000000000000000000000000000000003"),
+        try Address.fromHex("0x0000000000000000000000000000000000000001"),
+        try Address.fromHex("0x0000000000000000000000000000000000000002"),
+    };
+
+    // Sort in place
+    std.mem.sort(Address, &addresses, {}, struct {
+        fn lessThan(_: void, a: Address, b: Address) bool {
+            return std.mem.order(u8, &a.bytes, &b.bytes) == .lt;
+        }
+    }.lessThan);
+
+    // Verify order
+    const expected1 = try Address.fromHex("0x0000000000000000000000000000000000000001");
+    const expected2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
+    const expected3 = try Address.fromHex("0x0000000000000000000000000000000000000003");
+
+    try std.testing.expect(addresses[0].equals(expected1));
+    try std.testing.expect(addresses[1].equals(expected2));
+    try std.testing.expect(addresses[2].equals(expected3));
+}
+```
+
+**Creating new sorted array:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+fn sortAddresses(allocator: std.mem.Allocator, addresses: []const Address) ![]Address {
+    // Allocate new array
+    const sorted = try allocator.alloc(Address, addresses.len);
+    @memcpy(sorted, addresses);
+
+    // Sort
+    std.mem.sort(Address, sorted, {}, struct {
+        fn lessThan(_: void, a: Address, b: Address) bool {
+            return std.mem.order(u8, &a.bytes, &b.bytes) == .lt;
+        }
+    }.lessThan);
+
+    return sorted;
+}
+
+test "sort addresses returning new array" {
+    const allocator = std.testing.allocator;
+
+    var original = [_]Address{
+        try Address.fromHex("0x0000000000000000000000000000000000000003"),
+        try Address.fromHex("0x0000000000000000000000000000000000000001"),
+    };
+
+    const sorted = try sortAddresses(allocator, &original);
+    defer allocator.free(sorted);
+
+    // Original unchanged
+    try std.testing.expect(original[0].bytes[19] == 3);
+
+    // Sorted correct
+    try std.testing.expect(sorted[0].bytes[19] == 1);
+}
+```
+
+**Defined in:** Use standard library `std.mem.sort`
+
+</Tab>
+<Tab title="C">
+
+## Manual Implementation with `qsort`
+
+C API requires manual sorting using standard library `qsort` with custom comparator.
+
+**Example:**
+
+```c
+#include "voltaire.h"
+#include <stdlib.h>
+#include <string.h>
+
+// Comparator function for qsort
+int address_compare(const void* a, const void* b) {
+    const PrimitivesAddress* addr_a = (const PrimitivesAddress*)a;
+    const PrimitivesAddress* addr_b = (const PrimitivesAddress*)b;
+
+    // Lexicographic byte comparison
+    return memcmp(addr_a->bytes, addr_b->bytes, 20);
+}
+
+int main() {
+    // Create addresses
+    PrimitivesAddress addresses[3];
+    primitives_address_from_hex("0x0000000000000000000000000000000000000003", &addresses[0]);
+    primitives_address_from_hex("0x0000000000000000000000000000000000000001", &addresses[1]);
+    primitives_address_from_hex("0x0000000000000000000000000000000000000002", &addresses[2]);
+
+    // Sort in place
+    qsort(addresses, 3, sizeof(PrimitivesAddress), address_compare);
+
+    // Verify order
+    printf("%02x\n", addresses[0].bytes[19]); // 01
+    printf("%02x\n", addresses[1].bytes[19]); // 02
+    printf("%02x\n", addresses[2].bytes[19]); // 03
+
+    return 0;
+}
+```
+
+**Creating sorted copy:**
+
+```c
+#include "voltaire.h"
+#include <stdlib.h>
+#include <string.h>
+
+PrimitivesAddress* sort_addresses(const PrimitivesAddress* addresses, size_t count) {
+    // Allocate new array
+    PrimitivesAddress* sorted = malloc(count * sizeof(PrimitivesAddress));
+    if (!sorted) return NULL;
+
+    // Copy addresses
+    memcpy(sorted, addresses, count * sizeof(PrimitivesAddress));
+
+    // Sort
+    qsort(sorted, count, sizeof(PrimitivesAddress), address_compare);
+
+    return sorted;
+}
+
+int main() {
+    PrimitivesAddress original[2];
+    primitives_address_from_hex("0x0000000000000000000000000000000000000003", &original[0]);
+    primitives_address_from_hex("0x0000000000000000000000000000000000000001", &original[1]);
+
+    // Sort to new array
+    PrimitivesAddress* sorted = sort_addresses(original, 2);
+
+    // Original unchanged
+    printf("Original: %02x\n", original[0].bytes[19]); // 03
+
+    // Sorted correct
+    printf("Sorted: %02x\n", sorted[0].bytes[19]); // 01
+
+    free(sorted);
+    return 0;
+}
+```
+
+**See also:** [address_compare](#) for comparison implementation
+
+</Tab>
+</Tabs>
+
+## Sorting Behavior
+
+**Lexicographic ordering:** Compares addresses byte-by-byte from left to right.
+
+**Ascending order:** Returns addresses from smallest to largest.
+
+**Immutability:** Namespace API returns new array without modifying original.
+
+**Example ordering:**
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// These addresses sorted lexicographically:
+const addrs = [
+  "0xffffffffffffffffffffffffffffffffffffffff", // Highest
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  "0x0000000000000000000000000000000000000001", // Lowest
+]
+
+const sorted = Address.sortAddresses(addrs.map(Address.fromHex))
+// Result: [0x0000...0001, 0x742d...1e3e, 0xffff...ffff]
+```
+
+## Use Cases
+
+### Canonical Ordering
+
+Ensure deterministic address order for signatures or storage:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function signMultisigTransaction(signers: Address[], tx: Transaction) {
+  // Sort signers for canonical order
+  const sortedSigners = Address.sortAddresses(signers)
+
+  // Generate message with sorted signers
+  const message = encodeMessage(sortedSigners, tx)
+
+  return sign(message)
+}
+```
+
+### Merkle Trees
+
+Build ordered merkle trees with sorted leaves:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+function buildAddressMerkleTree(addresses: Address[]) {
+  // Sort addresses for deterministic tree structure
+  const sorted = Address.sortAddresses(addresses)
+
+  // Hash sorted addresses as leaves
+  const leaves = sorted.map(addr => keccak256(addr))
+
+  // Build merkle tree from sorted leaves
+  return buildMerkleTree(leaves)
+}
+```
+
+### Deterministic Output
+
+Ensure consistent output across runs:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function findCommonAddresses(
+  list1: Address[],
+  list2: Address[]
+): Address[] {
+  const set2 = new Set(list2.map(Address.toHex))
+
+  // Find intersection
+  const common = list1.filter(addr =>
+    set2.has(Address.toHex(addr))
+  )
+
+  // Return sorted for deterministic output
+  return Address.sortAddresses(common)
+}
+```
+
+### Deduplication
+
+Sort before removing duplicates (often more efficient):
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function deduplicate(addresses: Address[]): Address[] {
+  // Sort first
+  const sorted = Address.sortAddresses(addresses)
+
+  // Remove adjacent duplicates
+  const unique: Address[] = []
+  for (let i = 0; i < sorted.length; i++) {
+    if (i === 0 || !Address.equals(sorted[i], sorted[i - 1])) {
+      unique.push(sorted[i])
+    }
+  }
+
+  return unique
+}
+```
+
+**Note:** Voltaire provides optimized `deduplicateAddresses` function. Above shown for educational purposes.
+
+### Binary Search
+
+Sort for efficient lookup:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+class SortedAddressSet {
+  private addresses: Address[]
+
+  constructor(addresses: Address[]) {
+    this.addresses = Address.sortAddresses(addresses)
+  }
+
+  has(target: Address): boolean {
+    let left = 0
+    let right = this.addresses.length - 1
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2)
+      const cmp = Address.compare(this.addresses[mid], target)
+
+      if (cmp === 0) return true
+      if (cmp < 0) left = mid + 1
+      else right = mid - 1
+    }
+
+    return false
+  }
+
+  range(min: Address, max: Address): Address[] {
+    // Binary search finds range efficiently in sorted array
+    const startIdx = this.findInsertionPoint(min)
+    const endIdx = this.findInsertionPoint(max)
+    return this.addresses.slice(startIdx, endIdx)
+  }
+
+  private findInsertionPoint(target: Address): number {
+    let left = 0
+    let right = this.addresses.length
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2)
+      if (Address.compare(this.addresses[mid], target) < 0) {
+        left = mid + 1
+      } else {
+        right = mid
+      }
+    }
+
+    return left
+  }
+}
+```
+
+### Event Log Processing
+
+Sort addresses in event logs for indexed storage:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import type { EventLog } from '@tevm/voltaire/EventLog'
+
+function indexEventsByAddress(logs: EventLog[]): Map<string, EventLog[]> {
+  const index = new Map<string, EventLog[]>()
+
+  for (const log of logs) {
+    const key = Address.toHex(log.address)
+    const existing = index.get(key) || []
+    existing.push(log)
+    index.set(key, existing)
+  }
+
+  // Sort addresses in each bucket for deterministic iteration
+  for (const [key, logs] of index.entries()) {
+    const addresses = logs.map(log => log.address)
+    const sorted = Address.sortAddresses(addresses)
+    // ... process sorted addresses
+  }
+
+  return index
+}
+```
+
+## Performance
+
+**Time complexity:** O(n log n) where n = number of addresses
+
+**Space complexity:** O(n) - creates new array
+
+**Implementation:** Uses Array.sort with optimized lexicographic comparator
+
+**Early termination:** Comparison stops at first differing byte
+
+### Optimization Tips
+
+For large arrays, consider single-pass operations:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Less efficient - multiple iterations
+const sorted = Address.sortAddresses(addresses)
+const unique = Address.deduplicateAddresses(sorted)
+
+// More efficient - combined sort + dedupe
+function sortAndDedupe(addresses: Address[]): Address[] {
+  const sorted = Address.sortAddresses(addresses)
+
+  if (sorted.length <= 1) return sorted
+
+  const unique: Address[] = [sorted[0]]
+  for (let i = 1; i < sorted.length; i++) {
+    if (!Address.equals(sorted[i], sorted[i - 1])) {
+      unique.push(sorted[i])
+    }
+  }
+
+  return unique
+}
+```
+
+### Memory Considerations
+
+Original array unchanged (immutable operation):
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const original = [addr3, addr1, addr2]
+const sorted = Address.sortAddresses(original)
+
+console.log(sorted !== original) // true
+console.log(original[0] === addr3) // true (unchanged)
+```
+
+## Relation to Other Methods
+
+**Built on compare():**
+```typescript
+Address.sortAddresses(addresses)
+
+// Equivalent to:
+[...addresses].sort((a, b) => Address.compare(a, b))
+```
+
+**Combined with deduplication:**
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Sort then dedupe
+const sorted = Address.sortAddresses(addresses)
+const unique = Address.deduplicateAddresses(sorted)
+
+// Or use optimized dedupe (already sorts internally)
+const unique = Address.deduplicateAddresses(addresses)
+```
+
+**With filtering:**
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Filter non-zero addresses and sort
+const nonZero = addresses.filter(addr => !Address.isZero(addr))
+const sorted = Address.sortAddresses(nonZero)
+```
+
+## Edge Cases
+
+### Empty Array
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const sorted = Address.sortAddresses([])
+console.log(sorted.length) // 0
+```
+
+### Single Address
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const single = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const sorted = Address.sortAddresses([single])
+
+console.log(sorted.length) // 1
+console.log(Address.equals(sorted[0], single)) // true
+```
+
+### Duplicate Addresses
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000001")
+const sorted = Address.sortAddresses([addr, addr, addr])
+
+console.log(sorted.length) // 3 (duplicates preserved)
+```
+
+**Remove duplicates with:**
+```typescript
+const unique = Address.deduplicateAddresses(sorted)
+console.log(unique.length) // 1
+```
+
+### Already Sorted
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const alreadySorted = [
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address.fromHex("0x0000000000000000000000000000000000000002"),
+  Address.fromHex("0x0000000000000000000000000000000000000003"),
+]
+
+// Still creates new array
+const sorted = Address.sortAddresses(alreadySorted)
+console.log(sorted !== alreadySorted) // true
+```
+
+## See Also
+
+- [compare](/primitives/address/compare) - Lexicographic comparison (underlying implementation)
+- [deduplicateAddresses](/primitives/address/deduplicate-addresses) - Remove duplicate addresses
+- [equals](/primitives/address/equals) - Equality comparison
+- [lessThan](/primitives/address/less-than) - Less than comparison
+- [greaterThan](/primitives/address/greater-than) - Greater than comparison

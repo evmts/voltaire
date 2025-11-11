@@ -89,7 +89,136 @@ const invalid = Address.isValidChecksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1be
 try std.testing.expect(!invalid);
 ```
 
-**Defined in:** [primitives/Address/address.zig:285](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L285)
+**Defined in:** [primitives/Address/address.zig:185](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L185)
+
+</Tab>
+<Tab title="Effect.ts API">
+
+## `ChecksumAddress.isValid(str: string): boolean`
+
+Validate EIP-55 checksum using Effect Schema. Static method on ChecksumAddress class.
+
+**Parameters:**
+- `str: string` - Address string to validate
+
+**Returns:** `boolean` - `true` if checksum is valid
+
+**Example:**
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+// Valid checksummed addresses
+console.log(ChecksumAddress.isValid("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")) // true
+console.log(ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")) // true
+
+// Invalid checksum (wrong casing)
+console.log(ChecksumAddress.isValid("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")) // false
+console.log(ChecksumAddress.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // false (all uppercase = no checksum)
+
+// All lowercase/uppercase passes (no checksum to verify)
+console.log(ChecksumAddress.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")) // true
+console.log(ChecksumAddress.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // true
+```
+
+**Schema Usage:**
+
+```typescript
+import { ChecksumAddress, AddressFromChecksummed } from '@tevm/voltaire/Address/effect'
+import * as Schema from 'effect/Schema'
+
+// Parse and validate checksummed address
+const parseChecksum = Schema.decodeSync(AddressFromChecksummed)
+
+try {
+  const addr = parseChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+  console.log(addr.checksummed) // Valid checksummed string
+} catch (e) {
+  console.error("Invalid checksum")
+}
+
+// Create ChecksumAddress instance
+const checksumAddr = ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+console.log(checksumAddr.checksummed) // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Convert to Address schema
+const addr = checksumAddr.toAddress()
+console.log(addr.toHex())
+```
+
+**Effect Schema Features:**
+- Schema validation with type-safe errors
+- Automatic checksum validation on decode
+- Integration with Effect's error handling
+- Composable with other Effect schemas
+- Type-safe checksummed address guarantees
+
+**Defined in:** [primitives/Address/effect.ts:239](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L239)
+
+</Tab>
+<Tab title="C">
+
+## `bool primitives_address_validate_checksum(const char* hex)`
+
+Validate EIP-55 checksum in C. Checks if hex string has valid mixed-case checksum.
+
+**Parameters:**
+- `hex: const char*` - Address hex string (with or without `0x` prefix)
+
+**Returns:** `bool` - `true` if checksum is valid
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <stdio.h>
+
+// Valid checksummed addresses
+bool valid1 = primitives_address_validate_checksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
+printf("Valid: %d\n", valid1); // 1 (true)
+
+bool valid2 = primitives_address_validate_checksum("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+printf("Valid: %d\n", valid2); // 1 (true)
+
+// Invalid checksum (wrong casing)
+bool invalid1 = primitives_address_validate_checksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed");
+printf("Valid: %d\n", invalid1); // 0 (false)
+
+bool invalid2 = primitives_address_validate_checksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E");
+printf("Valid: %d\n", invalid2); // 0 (false) - wrong case
+
+// All lowercase/uppercase passes (no checksum)
+bool lower = primitives_address_validate_checksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+printf("Valid: %d\n", lower); // 1 (true)
+
+bool upper = primitives_address_validate_checksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E");
+printf("Valid: %d\n", upper); // 1 (true)
+```
+
+**EIP-55 Rules:**
+- All lowercase: valid (no checksum to verify)
+- All uppercase: valid (no checksum to verify)
+- Mixed case: must match keccak256-based checksum
+
+**Use Case - Strict Validation:**
+
+```c
+#include "primitives.h"
+
+int parse_strict_address(const char* input, PrimitivesAddress* out) {
+    // Validate checksum first
+    if (!primitives_address_validate_checksum(input)) {
+        return -1; // Invalid checksum
+    }
+
+    // Parse if valid
+    return primitives_address_from_hex(input, out);
+}
+```
+
+**Memory:** No allocation - pure validation function.
+
+**Defined in:** [primitives.h:130](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L130)
 
 </Tab>
 </Tabs>

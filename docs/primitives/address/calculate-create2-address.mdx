@@ -77,6 +77,150 @@ const contract = Address.calculateCreate2Address(deployer, salt, initCode)
 **Defined in:** [primitives/Address/BrandedAddress/calculateCreate2Address.js:25](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js#L25)
 
 </Tab>
+<Tab title="Effect.ts API">
+
+## `address.calculateCreate2Address(salt: Uint8Array, initCode: Uint8Array): Address`
+
+Calculate CREATE2 contract address using Effect.ts Schema Address class.
+
+**Parameters:**
+- `salt: Uint8Array` - 32-byte salt value
+- `initCode: Uint8Array` - Contract initialization code
+
+**Returns:** `Address` - New Address schema instance with calculated contract address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import { Effect } from 'effect'
+import * as Hex from '@tevm/voltaire/Hex'
+
+// Direct usage
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const salt = new Uint8Array(32)
+salt[31] = 42
+const initCode = Hex.toBytes("0x608060405234801561001057600080fd5b50...")
+
+const contract = deployer.calculateCreate2Address(salt, initCode)
+console.log(contract.toHex())
+
+// Within Effect.gen
+const program = Effect.gen(function* () {
+  const deployer = yield* Effect.sync(() =>
+    Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+  )
+
+  const salt = new Uint8Array(32)
+  salt[31] = 42
+  const initCode = Hex.toBytes("0x6080...")
+
+  const contract = yield* Effect.sync(() =>
+    deployer.calculateCreate2Address(salt, initCode)
+  )
+
+  return contract.toHex()
+})
+
+const result = await Effect.runPromise(program)
+console.log(result) // Contract address
+```
+
+**Schema validation:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import * as Schema from 'effect/Schema'
+
+// Validate contract calculation in pipeline
+const ValidCreate2 = Schema.Struct({
+  deployer: Schema.instanceOf(Address),
+  salt: Schema.Uint8ArrayFromSelf,
+  initCode: Schema.Uint8ArrayFromSelf,
+  contract: Schema.instanceOf(Address)
+})
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const salt = new Uint8Array(32)
+const initCode = Hex.toBytes("0x6080...")
+
+const data = {
+  deployer,
+  salt,
+  initCode,
+  contract: deployer.calculateCreate2Address(salt, initCode)
+}
+
+const validated = Schema.decodeUnknownSync(ValidCreate2)(data)
+```
+
+**Defined in:** [primitives/Address/effect.ts:202](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L202)
+
+</Tab>
+<Tab title="C API">
+
+## `primitives_calculate_create2_address(sender, salt, init_code, init_code_len, out_address)`
+
+Calculate CREATE2 contract address from C.
+
+**Parameters:**
+- `sender: const PrimitivesAddress*` - Deployer address (20 bytes)
+- `salt: const uint8_t*` - 32-byte salt value
+- `init_code: const uint8_t*` - Contract initialization code bytes
+- `init_code_len: size_t` - Length of init code in bytes
+- `out_address: PrimitivesAddress*` - Output buffer for calculated address
+
+**Returns:** `int` - Status code
+- `PRIMITIVES_SUCCESS` (0) - Success
+- `PRIMITIVES_ERROR_INVALID_INPUT` (-5) - Invalid parameters
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <stdio.h>
+
+int main() {
+    // Deployer address
+    PrimitivesAddress deployer;
+    int result = primitives_address_from_hex(
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+        &deployer
+    );
+    if (result != PRIMITIVES_SUCCESS) return result;
+
+    // Salt (32 bytes)
+    uint8_t salt[32] = {0};
+    salt[31] = 42;
+
+    // Init code
+    uint8_t init_code[] = {0x60, 0x80, 0x60, 0x40};
+    size_t init_code_len = sizeof(init_code);
+
+    // Calculate CREATE2 address
+    PrimitivesAddress contract;
+    result = primitives_calculate_create2_address(
+        &deployer,
+        salt,
+        init_code,
+        init_code_len,
+        &contract
+    );
+
+    if (result == PRIMITIVES_SUCCESS) {
+        // Convert to hex for display
+        char hex[43];
+        primitives_address_to_hex(&contract, hex, sizeof(hex));
+        printf("Contract: %s\n", hex);
+    }
+
+    return result;
+}
+```
+
+**Defined in:** [primitives.h:403](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L403)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address.calculateCreate2Address(sender: Address, salt: [32]u8, init_code: []const u8): !Address`

@@ -4,7 +4,7 @@ description: Create zero address (0x0000...0000)
 ---
 
 <Tabs>
-<Tab title="Class API">
+<Tab title="Class API (recommended)">
 
 ## `Address.zero(): Address`
 
@@ -32,7 +32,7 @@ console.log(addr.equals(zero)) // false
 **Defined in:** [primitives/Address/BrandedAddress/zero.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/zero.js#L13)
 
 </Tab>
-<Tab title="Namespace API">
+<Tab title="Namespace API (Tree-shakeable)">
 
 ## `zero(): BrandedAddress`
 
@@ -84,7 +84,101 @@ const other = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catc
 try std.testing.expect(!std.mem.eql(u8, &zero.bytes, &other.bytes));
 ```
 
-**Defined in:** [primitives/Address/address.zig:25](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L25)
+**Defined in:** [primitives/Address/address.zig:45](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L45)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## `Address.zero(): Address`
+
+Static method that creates zero address using Effect.ts Schema API.
+
+**Returns:** `Address` - Effect.ts Schema class instance wrapping zero address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Effect from 'effect/Effect'
+
+// Create zero address
+const zero = Address.zero()
+
+// Use in Effect pipeline
+const program = Effect.gen(function* () {
+  const addr = yield* Effect.sync(() => Address.zero())
+
+  // Check if zero
+  const isZero = yield* Effect.sync(() => addr.isZero())
+  console.log(isZero) // true
+
+  return addr.toHex()
+})
+
+const result = await Effect.runPromise(program)
+console.log(result) // "0x0000000000000000000000000000000000000000"
+```
+
+**Type Safety:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Schema from 'effect/Schema'
+
+// Schema validation
+const validateAddress = Schema.decodeUnknownSync(Schema.instanceOf(Address))
+
+const zero = Address.zero()
+const validated = validateAddress(zero) // Type-safe validation
+```
+
+**Defined in:** [primitives/Address/effect.ts:100](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L100)
+
+</Tab>
+<Tab title="C">
+
+## `PrimitivesAddress` Zero Constant
+
+In C API, use the zero-initialized struct pattern to create zero address.
+
+**Type:** `PrimitivesAddress`
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+#include <string.h>
+
+// Create zero address
+PrimitivesAddress zero = {0};
+
+// Verify it's zero
+bool is_zero = primitives_address_is_zero(&zero);
+// is_zero == true
+
+// Alternative: explicitly zero all bytes
+PrimitivesAddress zero2;
+memset(zero2.bytes, 0, 20);
+```
+
+**Verification:**
+
+```c
+#include <voltaire/primitives.h>
+
+PrimitivesAddress zero = {0};
+
+// Compare with known zero
+PrimitivesAddress expected = {0};
+bool equal = primitives_address_equals(&zero, &expected);
+// equal == true
+
+// Check directly
+bool is_zero = primitives_address_is_zero(&zero);
+// is_zero == true
+```
+
+**Defined in:** [primitives.h:65](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L65)
 
 </Tab>
 </Tabs>

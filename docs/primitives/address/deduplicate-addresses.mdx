@@ -1,0 +1,610 @@
+---
+title: Address.deduplicateAddresses
+description: Remove duplicate addresses from array
+---
+
+<Tabs>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `deduplicateAddresses(addresses: BrandedAddress[]): BrandedAddress[]`
+
+Remove duplicate addresses from array, preserving first occurrence of each unique address.
+
+**Parameters:**
+- `addresses: BrandedAddress[]` - Array of addresses to deduplicate
+
+**Returns:** `BrandedAddress[]` - New array with duplicates removed
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const addr3 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") // Duplicate of addr1
+
+const unique = Address.deduplicateAddresses([addr1, addr2, addr3])
+// Returns [addr1, addr2] - preserves first occurrence
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/deduplicateAddresses.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/deduplicateAddresses.js)
+
+</Tab>
+<Tab title="Effect.ts Schema API">
+
+## Effect.ts Implementation
+
+Effect.ts does not currently provide a static `deduplicateAddresses` method. Use the BrandedAddress implementation directly:
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import * as BrandedAddress from '@tevm/voltaire/Address'
+
+const addr1 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address.from("0x0000000000000000000000000000000000000001")
+const addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Convert to BrandedAddress for deduplication
+const branded = [addr1.address, addr2.address, addr3.address]
+const unique = BrandedAddress.deduplicateAddresses(branded)
+
+// Convert back to Effect.ts Address if needed
+const effectAddresses = unique.map(addr => new Address({ value: addr }))
+```
+
+</Tab>
+<Tab title="Zig">
+
+## Zig Implementation
+
+Zig does not provide array deduplication utilities. Implement manually using equality comparison:
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+pub fn deduplicateAddresses(
+    allocator: std.mem.Allocator,
+    addresses: []const Address,
+) ![]Address {
+    var result = std.ArrayList(Address){};
+    defer result.deinit(allocator);
+
+    var seen = std.ArrayList(Address){};
+    defer seen.deinit(allocator);
+
+    for (addresses) |addr| {
+        var found = false;
+        for (seen.items) |seen_addr| {
+            if (std.mem.eql(u8, &addr.bytes, &seen_addr.bytes)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            try result.append(allocator, addr);
+            try seen.append(allocator, addr);
+        }
+    }
+
+    return result.toOwnedSlice(allocator);
+}
+```
+
+</Tab>
+<Tab title="C">
+
+## C Implementation
+
+C does not provide array deduplication. Implement manually using `primitives_address_equals`:
+
+```c
+#include "voltaire.h"
+#include <stdlib.h>
+
+typedef struct {
+    PrimitivesAddress *addresses;
+    size_t count;
+    size_t capacity;
+} AddressArray;
+
+AddressArray deduplicate_addresses(
+    const PrimitivesAddress *addresses,
+    size_t count
+) {
+    AddressArray result = {0};
+    result.addresses = malloc(count * sizeof(PrimitivesAddress));
+    result.capacity = count;
+
+    PrimitivesAddress *seen = malloc(count * sizeof(PrimitivesAddress));
+    size_t seen_count = 0;
+
+    for (size_t i = 0; i < count; i++) {
+        bool found = false;
+        for (size_t j = 0; j < seen_count; j++) {
+            if (primitives_address_equals(&addresses[i], &seen[j])) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            result.addresses[result.count++] = addresses[i];
+            seen[seen_count++] = addresses[i];
+        }
+    }
+
+    free(seen);
+    return result;
+}
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
+<Tab title="Python">
+
+## Python Implementation
+
+Python can deduplicate addresses using list comprehension or set-based approach:
+
+```python
+from voltaire import Address
+
+def deduplicate_addresses(addresses: list[Address]) -> list[Address]:
+    """Remove duplicate addresses preserving first occurrence."""
+    seen = []
+    result = []
+
+    for addr in addresses:
+        # Convert to comparable format (hex string)
+        hex_addr = addr.to_hex()
+        if hex_addr not in seen:
+            seen.append(hex_addr)
+            result.append(addr)
+
+    return result
+
+# Usage
+addr1 = Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+addr2 = Address.from_hex("0x0000000000000000000000000000000000000001")
+addr3 = Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+unique = deduplicate_addresses([addr1, addr2, addr3])
+# Returns [addr1, addr2]
+```
+
+**More efficient with set:**
+
+```python
+def deduplicate_addresses_optimized(addresses: list[Address]) -> list[Address]:
+    """Deduplicate using set for O(n) complexity."""
+    seen = set()
+    result = []
+
+    for addr in addresses:
+        hex_addr = addr.to_hex()
+        if hex_addr not in seen:
+            seen.add(hex_addr)
+            result.append(addr)
+
+    return result
+```
+
+</Tab>
+</Tabs>
+
+## Deduplication Semantics
+
+**First occurrence preserved:** When duplicates exist, the first instance in the input array is kept:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1a = Address.fromHex("0x0000000000000000000000000000000000000001")
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const addr1b = Address.fromHex("0x0000000000000000000000000000000000000001")
+
+const unique = Address.deduplicateAddresses([addr1a, addr2, addr1b])
+
+// unique[0] === addr1a (same reference)
+// unique[1] === addr2
+// addr1b is discarded
+```
+
+**New array returned:** Original array is not modified:
+
+```typescript
+const original = [addr1, addr2, addr1]
+const unique = Address.deduplicateAddresses(original)
+
+console.log(original.length)  // 3 (unchanged)
+console.log(unique.length)    // 2
+console.log(unique !== original) // true
+```
+
+**Value-based equality:** Uses `Address.equals()` internally for byte-by-byte comparison:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Different case representations of same address
+const lowercase = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const uppercase = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+
+const unique = Address.deduplicateAddresses([lowercase, checksummed, uppercase])
+// Returns [lowercase] - all three are equal
+```
+
+## Use Cases
+
+### Unique Address Lists
+
+Remove duplicates from collected addresses:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+interface Transaction {
+  from: BrandedAddress
+  to: BrandedAddress
+}
+
+function getUniqueParticipants(txs: Transaction[]): BrandedAddress[] {
+  const allAddresses = txs.flatMap(tx => [tx.from, tx.to])
+  return Address.deduplicateAddresses(allAddresses)
+}
+
+// Usage
+const txs = [
+  { from: addr1, to: addr2 },
+  { from: addr2, to: addr3 },
+  { from: addr1, to: addr3 }, // addr1 appears again
+]
+
+const participants = getUniqueParticipants(txs)
+// Returns [addr1, addr2, addr3]
+```
+
+### Allowlist Management
+
+Clean up allowlists with duplicate entries:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+class Allowlist {
+  private addresses: BrandedAddress[]
+
+  constructor(addresses: BrandedAddress[]) {
+    // Automatically deduplicate on construction
+    this.addresses = Address.deduplicateAddresses(addresses)
+  }
+
+  add(address: BrandedAddress): void {
+    // Only add if not already present
+    if (!this.addresses.some(addr => Address.equals(addr, address))) {
+      this.addresses.push(address)
+    }
+  }
+
+  contains(address: BrandedAddress): boolean {
+    return this.addresses.some(addr => Address.equals(addr, address))
+  }
+
+  get unique(): BrandedAddress[] {
+    return [...this.addresses]
+  }
+}
+
+// Usage
+const allowlist = new Allowlist([
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"), // Duplicate
+])
+
+console.log(allowlist.unique.length) // 2
+```
+
+### Data Cleaning
+
+Clean datasets with duplicate addresses:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+interface UserAccount {
+  id: string
+  address: BrandedAddress
+  balance: bigint
+}
+
+function cleanUserDatabase(accounts: UserAccount[]): UserAccount[] {
+  // Group by address
+  const byAddress = new Map<string, UserAccount[]>()
+
+  for (const account of accounts) {
+    const hex = Address.toHex(account.address)
+    if (!byAddress.has(hex)) {
+      byAddress.set(hex, [])
+    }
+    byAddress.get(hex)!.push(account)
+  }
+
+  // Merge duplicates (keep highest balance)
+  const cleaned: UserAccount[] = []
+
+  for (const [hex, dupes] of byAddress) {
+    const merged = dupes.reduce((best, current) =>
+      current.balance > best.balance ? current : best
+    )
+    cleaned.push(merged)
+  }
+
+  return cleaned
+}
+
+// Usage
+const accounts = [
+  { id: 'user1', address: addr1, balance: 100n },
+  { id: 'user2', address: addr2, balance: 200n },
+  { id: 'user3', address: addr1, balance: 150n }, // Duplicate address
+]
+
+const cleaned = cleanUserDatabase(accounts)
+// Returns 2 accounts, addr1 has balance 150n (higher)
+```
+
+### Event Log Processing
+
+Extract unique addresses from event logs:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import type { EventLog } from '@tevm/voltaire'
+
+function getUniqueTokenHolders(logs: EventLog[]): BrandedAddress[] {
+  const holders: BrandedAddress[] = []
+
+  for (const log of logs) {
+    // Extract addresses from Transfer events
+    // Transfer(address indexed from, address indexed to, uint256 value)
+    if (log.topics.length >= 3) {
+      // topics[1] is 'from' address (32 bytes, last 20 are address)
+      const from = Address.fromAbiEncoded(log.topics[1]!)
+      holders.push(from)
+
+      // topics[2] is 'to' address
+      const to = Address.fromAbiEncoded(log.topics[2]!)
+      holders.push(to)
+    }
+  }
+
+  return Address.deduplicateAddresses(holders)
+}
+
+// Usage
+const transferLogs: EventLog[] = [
+  /* ... ERC-20 Transfer logs ... */
+]
+
+const uniqueHolders = getUniqueTokenHolders(transferLogs)
+console.log(`${uniqueHolders.length} unique token holders`)
+```
+
+### Batch Operations
+
+Prepare unique addresses for batch RPC calls:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+async function getBalances(
+  addresses: BrandedAddress[],
+  provider: any
+): Promise<Map<string, bigint>> {
+  // Deduplicate to avoid redundant RPC calls
+  const unique = Address.deduplicateAddresses(addresses)
+
+  const balances = new Map<string, bigint>()
+
+  // Batch request for unique addresses only
+  const results = await Promise.all(
+    unique.map(addr =>
+      provider.getBalance(Address.toHex(addr))
+    )
+  )
+
+  unique.forEach((addr, i) => {
+    balances.set(Address.toHex(addr), results[i]!)
+  })
+
+  return balances
+}
+
+// Usage
+const addresses = [addr1, addr2, addr1, addr3, addr2] // 5 addresses, 3 unique
+const balances = await getBalances(addresses, provider)
+// Only 3 RPC calls made
+```
+
+## Performance Considerations
+
+**Algorithm complexity:** O(n²) time, O(n) space - uses nested loops for comparison.
+
+**For small arrays** (< 100 addresses), this is efficient:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addresses = [ /* 50 addresses */ ]
+const unique = Address.deduplicateAddresses(addresses)
+// Fast enough for most use cases
+```
+
+**For large arrays** (> 1000 addresses), use Set-based approach:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function deduplicateAddressesOptimized(
+  addresses: BrandedAddress[]
+): BrandedAddress[] {
+  const seen = new Set<string>()
+  const result: BrandedAddress[] = []
+
+  for (const addr of addresses) {
+    const hex = Address.toHex(addr)
+    if (!seen.has(hex)) {
+      seen.add(hex)
+      result.push(addr)
+    }
+  }
+
+  return result
+}
+
+// O(n) time, O(n) space - much faster for large datasets
+const manyAddresses = [ /* 10,000 addresses */ ]
+const unique = deduplicateAddressesOptimized(manyAddresses)
+```
+
+**Memory usage:** Creates two arrays internally (result + seen), doubling memory requirement temporarily.
+
+## Relation to Other Operations
+
+### Sort then Deduplicate
+
+Combine with `sortAddresses` for sorted unique lists:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addresses = [addr3, addr1, addr2, addr1, addr3]
+
+// Deduplicate first (preserves first occurrence order)
+const unique = Address.deduplicateAddresses(addresses)
+const sorted = Address.sortAddresses(unique)
+// Result: [addr1, addr2, addr3] (sorted, unique)
+
+// Or sort first (loses original order)
+const sortedFirst = Address.sortAddresses(addresses)
+const uniqueSorted = Address.deduplicateAddresses(sortedFirst)
+// Result: [addr1, addr2, addr3] (same result, different approach)
+```
+
+### Filter with Equals
+
+Alternative implementation using `filter`:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function deduplicateWithFilter(
+  addresses: BrandedAddress[]
+): BrandedAddress[] {
+  return addresses.filter((addr, index, arr) =>
+    // Keep only first occurrence
+    arr.findIndex(a => Address.equals(a, addr)) === index
+  )
+}
+
+// Same result as deduplicateAddresses
+const unique = deduplicateWithFilter([addr1, addr2, addr1])
+```
+
+### Set Operations
+
+Implement set union, intersection, difference:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function union(
+  a: BrandedAddress[],
+  b: BrandedAddress[]
+): BrandedAddress[] {
+  return Address.deduplicateAddresses([...a, ...b])
+}
+
+function intersection(
+  a: BrandedAddress[],
+  b: BrandedAddress[]
+): BrandedAddress[] {
+  return a.filter(addrA =>
+    b.some(addrB => Address.equals(addrA, addrB))
+  )
+}
+
+function difference(
+  a: BrandedAddress[],
+  b: BrandedAddress[]
+): BrandedAddress[] {
+  return a.filter(addrA =>
+    !b.some(addrB => Address.equals(addrA, addrB))
+  )
+}
+
+// Usage
+const setA = [addr1, addr2, addr3]
+const setB = [addr2, addr3, addr4]
+
+console.log(union(setA, setB))        // [addr1, addr2, addr3, addr4]
+console.log(intersection(setA, setB)) // [addr2, addr3]
+console.log(difference(setA, setB))   // [addr1]
+```
+
+## Alternative Implementations
+
+### Using Map
+
+Track seen addresses with Map for O(n) complexity:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function deduplicateWithMap(
+  addresses: BrandedAddress[]
+): BrandedAddress[] {
+  const seen = new Map<string, BrandedAddress>()
+
+  for (const addr of addresses) {
+    const hex = Address.toHex(addr)
+    if (!seen.has(hex)) {
+      seen.set(hex, addr)
+    }
+  }
+
+  return Array.from(seen.values())
+}
+```
+
+### Using Set with Hex
+
+Most efficient for large datasets:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function deduplicateWithSet(
+  addresses: BrandedAddress[]
+): BrandedAddress[] {
+  const seen = new Set<string>()
+  return addresses.filter(addr => {
+    const hex = Address.toHex(addr)
+    if (seen.has(hex)) {
+      return false
+    }
+    seen.add(hex)
+    return true
+  })
+}
+```
+
+## See Also
+
+- [equals](/primitives/address/equals) - Address equality comparison
+- [sortAddresses](/primitives/address/sort-addresses) - Sort addresses lexicographically
+- [compare](/primitives/address/compare) - Ordering comparison

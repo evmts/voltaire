@@ -1,0 +1,473 @@
+---
+title: Address.is
+description: Type guard for runtime validation of BrandedAddress values
+---
+
+<Tabs>
+<Tab title="Namespace API">
+
+## `is(value: unknown): value is BrandedAddress`
+
+Runtime type guard checking if value is a valid BrandedAddress. Returns true only if value is a Uint8Array with exactly 20 bytes.
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `value is BrandedAddress` - TypeScript type predicate narrowing to BrandedAddress
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Type narrowing
+function processAddress(value: unknown) {
+  if (Address.is(value)) {
+    // TypeScript knows value is BrandedAddress here
+    const hex = Address.toHex(value) // Type-safe
+    console.log(hex)
+  }
+}
+
+// Runtime validation
+const maybeAddr = getSomeValue()
+if (Address.is(maybeAddr)) {
+  // Safe to use Address methods
+  Address.equals(maybeAddr, Address.zero())
+}
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/is.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/is.js#L16)
+
+</Tab>
+<Tab title="Effect.ts API">
+
+## `BrandedAddressImpl.is(bytes: Uint8Array): boolean`
+
+Type guard used internally by Effect Schema. Validates that Uint8Array is exactly 20 bytes for Address schema.
+
+**Parameters:**
+- `bytes: Uint8Array` - Byte array to validate
+
+**Returns:** `boolean` - `true` if valid address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as BrandedAddressImpl from '@tevm/voltaire/Address/BrandedAddress'
+
+// Effect Schema validation
+const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+
+// Manual validation of underlying bytes
+if (BrandedAddressImpl.is(addr.value)) {
+  // addr.value is BrandedAddress
+  console.log("Valid address bytes")
+}
+
+// Schema filter uses this internally
+import * as Schema from "effect/Schema"
+
+const AddressSchema = Schema.Uint8ArrayFromSelf.pipe(
+  Schema.filter(
+    (bytes): bytes is Uint8Array => {
+      return BrandedAddressImpl.is(bytes)
+    },
+    { message: () => "Invalid address: must be 20 bytes" }
+  )
+)
+```
+
+**Defined in:** [primitives/Address/effect.ts:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L26)
+
+</Tab>
+<Tab title="Zig">
+
+## Type Checking Not Required
+
+Zig addresses use fixed-size arrays `[20]u8` enforced at compile time. No runtime type guard needed.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+// Compile-time size enforcement
+const addr: Address = Address.init([_]u8{0} ** 20); // OK
+// const invalid: Address = Address.init([_]u8{0} ** 19); // Compile error
+
+// Runtime length check for dynamic arrays
+fn isValidAddressBytes(bytes: []const u8) bool {
+    return bytes.len == 20;
+}
+
+test "validate dynamic bytes" {
+    const valid = [_]u8{0} ** 20;
+    const invalid = [_]u8{0} ** 19;
+
+    try std.testing.expect(isValidAddressBytes(&valid));
+    try std.testing.expect(!isValidAddressBytes(&invalid));
+}
+```
+
+**Note:** Zig's type system prevents invalid addresses at compile time. Runtime checks only needed for external data.
+
+</Tab>
+<Tab title="C">
+
+## `primitives_address_is_valid(const PrimitivesAddress* addr): bool`
+
+Validate address pointer is non-null (size already enforced by struct).
+
+**Parameters:**
+- `addr: const PrimitivesAddress*` - Address pointer to check
+
+**Returns:** `bool` - `true` if pointer is non-null
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+// Validate before use
+void processAddress(const PrimitivesAddress* addr) {
+    if (!primitives_address_is_valid(addr)) {
+        // Handle null pointer
+        return;
+    }
+
+    // Safe to use addr
+    char hex[43]; // 0x + 40 chars + null
+    primitives_address_to_hex(addr, hex);
+}
+
+// Size enforced by struct (always 20 bytes)
+PrimitivesAddress addr;
+// sizeof(addr) == 20 guaranteed
+```
+
+**Note:** C struct definition enforces 20-byte size. Runtime check only validates pointer.
+
+</Tab>
+<Tab title="Type Guard Pattern">
+
+## TypeScript Type Predicates
+
+Type guards use TypeScript's `is` operator to narrow types:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Type predicate signature
+function is(value: unknown): value is BrandedAddress {
+  return value instanceof Uint8Array && value.length === 20
+}
+
+// Before type guard
+function example1(value: unknown) {
+  const hex = Address.toHex(value) // Type error: unknown not assignable
+}
+
+// After type guard
+function example2(value: unknown) {
+  if (Address.is(value)) {
+    // Type narrowed to BrandedAddress
+    const hex = Address.toHex(value) // OK
+    const checksummed = Address.toChecksummed(value) // OK
+  }
+}
+```
+
+**Benefits:**
+- Type safety without type assertions
+- Catches errors at compile time
+- No runtime overhead (inline check)
+- Works with TypeScript's control flow analysis
+
+</Tab>
+</Tabs>
+
+## Type Narrowing
+
+Type guards enable safe handling of unknown values:
+
+### Basic Narrowing
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function handleUnknown(value: unknown) {
+  if (Address.is(value)) {
+    // Type: BrandedAddress
+    console.log(value.length) // 20
+    const hex = Address.toHex(value)
+  } else {
+    // Type: unknown
+    console.log("Not an address")
+  }
+}
+```
+
+### Union Type Narrowing
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import * as Hash from '@tevm/voltaire/Hash'
+
+type AddressOrHash = BrandedAddress | Hash
+
+function process(value: AddressOrHash) {
+  if (Address.is(value)) {
+    // Narrowed to BrandedAddress
+    console.log("Address:", Address.toHex(value))
+  } else {
+    // Narrowed to Hash
+    console.log("Hash:", Hash.toHex(value))
+  }
+}
+```
+
+### Array Filtering
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const mixed: unknown[] = [
+  Address.from(69n),
+  "not an address",
+  Address.zero(),
+  42,
+  Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+]
+
+// Filter to only addresses
+const addresses = mixed.filter(Address.is)
+// Type: BrandedAddress[]
+
+addresses.forEach(addr => {
+  console.log(Address.toHex(addr)) // Type-safe
+})
+```
+
+## Defensive Programming
+
+Type guards enable validation at system boundaries:
+
+### API Input Validation
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function transferTokens(to: unknown, amount: bigint) {
+  if (!Address.is(to)) {
+    throw new Error("Invalid recipient address")
+  }
+
+  // Type-safe operations
+  if (Address.equals(to, Address.zero())) {
+    throw new Error("Cannot transfer to zero address")
+  }
+
+  // Process transfer...
+}
+```
+
+### User Input Sanitization
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function parseUserInput(input: string): BrandedAddress {
+  try {
+    const addr = Address.fromHex(input)
+
+    if (!Address.is(addr)) {
+      throw new Error("Invalid address format")
+    }
+
+    return addr
+  } catch (e) {
+    throw new Error(`Failed to parse address: ${e.message}`)
+  }
+}
+```
+
+### External Data Validation
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+interface Transaction {
+  from: unknown
+  to: unknown
+  value: bigint
+}
+
+function validateTransaction(tx: Transaction): boolean {
+  // Validate both addresses
+  if (!Address.is(tx.from) || !Address.is(tx.to)) {
+    return false
+  }
+
+  // Validate not zero addresses
+  if (Address.equals(tx.from, Address.zero())) {
+    return false
+  }
+
+  return true
+}
+```
+
+## Implementation Details
+
+**Check logic:**
+```javascript
+export function is(value) {
+  return value instanceof Uint8Array && value.length === 20
+}
+```
+
+**Two conditions:**
+1. `instanceof Uint8Array` - Must be Uint8Array (not regular Array)
+2. `length === 20` - Exactly 20 bytes (not 19, not 21)
+
+**What it accepts:**
+```typescript
+Address.is(new Uint8Array(20))           // true
+Address.is(Address.from(69n))            // true
+Address.is(Address.zero())               // true
+```
+
+**What it rejects:**
+```typescript
+Address.is(new Uint8Array(19))           // false (wrong length)
+Address.is(new Uint8Array(32))           // false (wrong length)
+Address.is("0x742d35...")               // false (string)
+Address.is(42n)                          // false (bigint)
+Address.is(null)                         // false (null)
+Address.is(undefined)                    // false (undefined)
+Address.is({})                           // false (object)
+Address.is(new Array(20).fill(0))       // false (Array not Uint8Array)
+```
+
+## Use Cases
+
+### Function Overloading
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function normalize(value: unknown): BrandedAddress {
+  if (Address.is(value)) {
+    // Already valid address
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return Address.fromHex(value)
+  }
+
+  if (typeof value === 'bigint' || typeof value === 'number') {
+    return Address.fromNumber(value)
+  }
+
+  throw new Error("Cannot convert to address")
+}
+```
+
+### Safe Deserialization
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+interface SerializedTransaction {
+  from: Uint8Array
+  to: Uint8Array
+  value: string
+}
+
+function deserialize(data: unknown): Transaction | null {
+  if (!isSerializedTransaction(data)) {
+    return null
+  }
+
+  // Validate addresses
+  if (!Address.is(data.from) || !Address.is(data.to)) {
+    return null
+  }
+
+  return {
+    from: data.from,
+    to: data.to,
+    value: BigInt(data.value)
+  }
+}
+```
+
+### Collection Validation
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+function validateWhitelist(addresses: unknown[]): BrandedAddress[] {
+  const valid: BrandedAddress[] = []
+
+  for (const addr of addresses) {
+    if (Address.is(addr)) {
+      valid.push(addr)
+    } else {
+      console.warn("Skipping invalid address:", addr)
+    }
+  }
+
+  return valid
+}
+```
+
+## Comparison with Other Validators
+
+### vs `Address.isValid(hex)`
+
+`isValid` validates hex string format:
+```typescript
+Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3") // true
+Address.is("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")      // false (string)
+```
+
+`is` validates BrandedAddress type:
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+Address.is(addr)      // true (BrandedAddress)
+Address.isValid(addr) // false (not string)
+```
+
+### vs `Address.isValidChecksum(hex)`
+
+`isValidChecksum` validates EIP-55 checksumming:
+```typescript
+Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3") // true
+Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // false
+```
+
+`is` doesn't validate checksum:
+```typescript
+const lower = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksum = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+Address.is(lower)    // true (valid BrandedAddress)
+Address.is(checksum) // true (valid BrandedAddress)
+```
+
+**Summary:**
+- `Address.is(value)` - Runtime type guard for BrandedAddress
+- `Address.isValid(hex)` - Validates hex string format
+- `Address.isValidChecksum(hex)` - Validates EIP-55 checksum
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [isValid](/primitives/address/is-valid) - Validate hex string format
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [equals](/primitives/address/equals) - Compare two addresses
+- [BrandedAddress](/primitives/address/branded-address) - Type definition

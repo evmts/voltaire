@@ -1,0 +1,567 @@
+---
+title: Checksummed
+description: EIP-55 checksummed address type and validation
+---
+
+# Checksummed
+
+EIP-55 checksummed address type providing mixed-case format for display and integrity verification.
+
+## Overview
+
+`Checksummed` is a branded hex string type representing an Ethereum address with EIP-55 checksum encoding. Unlike `BrandedAddress` (a `Uint8Array`), `Checksummed` is a `string` with mixed casing that encodes integrity verification in the character case.
+
+**Key characteristics:**
+- **Type:** Branded string (not `Uint8Array`)
+- **Format:** Mixed-case hex (e.g., `0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e`)
+- **Use cases:** UI display, user input validation, QR codes, wallet integrations
+- **Validation:** Checksum encodes keccak256 hash for detecting typos
+
+## Type Definition
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+type Checksummed = string & {
+  readonly __tag: 'Hex'
+  readonly __variant: 'Address'
+  readonly __checksummed: true
+}
+```
+
+Branded string with EIP-55 mixed-case checksum.
+
+Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L8)
+
+</Tab>
+<Tab title="Effect Schema">
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+// Schema class with automatic EIP-55 validation
+class ChecksumAddress {
+  value: string  // Validated checksummed string
+  checksummed: Checksummed  // Getter for branded type
+}
+```
+
+Effect.ts Schema class providing runtime validation and type safety.
+
+Defined in: [primitives/Address/effect.ts:216](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L216)
+
+</Tab>
+</Tabs>
+
+## ChecksumAddress Namespace
+
+### `ChecksumAddress.from(value)`
+
+Create checksummed address from any input format.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+const checksummed = ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Works with any input type
+ChecksumAddress.from(69n)
+ChecksumAddress.from(new Uint8Array([...]))
+ChecksumAddress.from("0x742d35cc...")
+```
+
+</Tab>
+<Tab title="Class API">
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = Address.Checksummed.from(addr)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+</Tab>
+<Tab title="Effect Schema">
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+// Validates EIP-55 checksum automatically
+const checksumAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+checksumAddr.checksummed // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+checksumAddr.value       // Same as checksummed
+
+// Convert to Address schema
+const addr = checksumAddr.toAddress()
+```
+
+</Tab>
+<Tab title="Tree-shakeable">
+
+```typescript
+import { from } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import type { Checksummed } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+const checksummed: Checksummed = from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+<Note>
+Tree-shakeable import includes keccak256 (~5-10 KB). For minimal bundle size without checksum validation, use `Address.toHex()` instead.
+</Note>
+
+</Tab>
+</Tabs>
+
+**Parameters:**
+- `value: number | bigint | string | Uint8Array` - Input to convert
+
+**Returns:** `Checksummed` - EIP-55 checksummed hex string
+
+Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L23)
+
+**Example:**
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+// Various input formats
+ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+ChecksumAddress.from(69n)
+// "0x0000000000000000000000000000000000000045"
+
+ChecksumAddress.from(addr)  // BrandedAddress
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### `ChecksumAddress.isValid(str)`
+
+Validate EIP-55 checksum of address string.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+// Valid checksummed address
+ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+// true
+
+// Invalid checksum (wrong casing)
+ChecksumAddress.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+// false (all lowercase, but not matching checksum)
+
+ChecksumAddress.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+// false (all uppercase, but not matching checksum)
+
+// Zero address (all same case passes)
+ChecksumAddress.isValid("0x0000000000000000000000000000000000000000")
+// true
+```
+
+</Tab>
+<Tab title="Class API">
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+Address.Checksummed.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+// true
+
+Address.Checksummed.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+// false
+```
+
+</Tab>
+<Tab title="Effect Schema">
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+// Static validation method
+ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+// true
+
+// Constructor validates automatically
+try {
+  const addr = ChecksumAddress.from("0x742d35cc...")  // Invalid checksum
+} catch (e) {
+  // Throws: "Invalid checksum address: EIP-55 checksum validation failed"
+}
+```
+
+</Tab>
+<Tab title="Tree-shakeable">
+
+```typescript
+import { isValid } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+if (isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")) {
+  console.log("Valid checksum")
+}
+```
+
+</Tab>
+</Tabs>
+
+**Parameters:**
+- `str: string` - Address string to validate
+
+**Returns:** `boolean` - `true` if checksum is valid
+
+Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:63](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L63)
+
+**EIP-55 Logic:**
+- If all letters same case (all lower OR all upper), valid
+- If mixed case, each letter's case must match keccak256-based checksum
+- Zero address with all same case always valid
+
+**Example:**
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+// Correct checksum
+ChecksumAddress.isValid("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+// true
+
+// Wrong case on one character
+ChecksumAddress.isValid("0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+// false (first 'A' should be uppercase)
+
+// All lowercase (no mixed case = no checksum requirement)
+ChecksumAddress.isValid("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+// true
+
+// All uppercase (no mixed case = no checksum requirement)
+ChecksumAddress.isValid("0x5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED")
+// true
+```
+
+## EIP-55 Checksum Algorithm
+
+The checksum encodes integrity verification in hexadecimal character casing:
+
+1. Convert address to lowercase hex (without `0x` prefix)
+2. Compute keccak256 hash of lowercase hex string
+3. For each hex character:
+   - If character is a letter (a-f):
+     - If corresponding hash nibble >= 8: uppercase
+     - Otherwise: lowercase
+   - If character is a digit (0-9): unchanged
+
+**Pseudocode:**
+
+```
+lowercase = address.toHex().slice(2)  // Remove 0x
+hash = keccak256(lowercase)
+result = "0x"
+for i in 0..39:
+  char = lowercase[i]
+  if char is letter:
+    hashNibble = hash[i/2] nibble at position (i % 2)
+    if hashNibble >= 8:
+      result += char.toUpperCase()
+    else:
+      result += char.toLowerCase()
+  else:
+    result += char
+```
+
+## Effect.ts ChecksumAddress Class
+
+Schema class providing runtime validation and type safety.
+
+### Constructor
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+const checksumAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+```
+
+### Properties
+
+```typescript
+checksumAddr.value         // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+checksumAddr.checksummed   // Same as value (getter)
+```
+
+### Methods
+
+#### `toAddress()`
+
+Convert to `Address` schema instance.
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+const checksumAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = checksumAddr.toAddress()
+
+// addr is Address schema instance
+addr.address  // BrandedAddress (Uint8Array)
+addr.toHex()  // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+Defined in: [primitives/Address/effect.ts:256](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L256)
+
+#### `isValid(str)` (static)
+
+Validate EIP-55 checksum (static method).
+
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+// true
+```
+
+Defined in: [primitives/Address/effect.ts:249](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L249)
+
+## Use Cases
+
+### UI Display
+
+Display addresses with integrity verification:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function AddressDisplay({ address }: { address: Address }) {
+  const checksummed = address.toChecksummed()
+
+  return (
+    <div>
+      <span className="font-mono">{checksummed}</span>
+      <button onClick={() => navigator.clipboard.writeText(checksummed)}>
+        Copy
+      </button>
+    </div>
+  )
+}
+```
+
+### User Input Validation
+
+Validate user-provided addresses and detect typos:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+function validateUserInput(input: string): { valid: boolean; error?: string; address?: Address } {
+  const trimmed = input.trim()
+
+  // Check basic format
+  if (!Address.isValid(trimmed)) {
+    return { valid: false, error: "Invalid address format" }
+  }
+
+  // Check checksum if mixed case
+  const hasMixedCase = trimmed !== trimmed.toLowerCase() && trimmed !== trimmed.toUpperCase()
+  if (hasMixedCase && !ChecksumAddress.isValid(trimmed)) {
+    // Provide correct checksummed version
+    const addr = Address.fromHex(trimmed)
+    const correct = addr.toChecksummed()
+    return {
+      valid: false,
+      error: `Invalid checksum. Did you mean: ${correct}?`
+    }
+  }
+
+  const address = Address.fromHex(trimmed)
+  return { valid: true, address }
+}
+
+// Usage
+const result = validateUserInput("0x742d35cc6634C0532925a3b844Bc9e7595f51e3e")
+if (!result.valid) {
+  console.error(result.error)
+  // "Invalid checksum. Did you mean: 0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e?"
+}
+```
+
+### QR Codes
+
+Use checksummed addresses in QR codes for error detection:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import QRCode from 'qrcode'
+
+async function generateAddressQR(address: Address): Promise<string> {
+  const checksummed = address.toChecksummed()
+  const qr = await QRCode.toDataURL(checksummed)
+  return qr
+}
+
+// Usage
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const qrDataUrl = await generateAddressQR(addr)
+```
+
+### Wallet Integrations
+
+Wallets expect checksummed addresses:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function requestPayment(recipient: Address, amount: bigint) {
+  const checksummed = recipient.toChecksummed()
+
+  await ethereum.request({
+    method: 'eth_sendTransaction',
+    params: [{
+      to: checksummed,
+      value: `0x${amount.toString(16)}`
+    }]
+  })
+}
+```
+
+### Storage
+
+Store addresses with checksums for verification on retrieval:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+// Store
+function saveAddress(key: string, address: Address) {
+  const checksummed = address.toChecksummed()
+  localStorage.setItem(key, checksummed)
+}
+
+// Retrieve with validation
+function loadAddress(key: string): Address | null {
+  const stored = localStorage.getItem(key)
+  if (!stored) return null
+
+  // Validate checksum to detect corruption
+  if (!ChecksumAddress.isValid(stored)) {
+    console.error("Stored address checksum invalid - possible corruption")
+    return null
+  }
+
+  return Address.fromHex(stored)
+}
+```
+
+## Comparison with Other Formats
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+
+// Lowercase (toHex)
+addr.toHex()
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Checksummed (toChecksummed)
+addr.toChecksummed()
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Uppercase (toUppercase)
+addr.toUppercase()
+// "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"
+
+// All represent the same address
+Address.fromHex(addr.toHex()).equals(Address.fromHex(addr.toChecksummed()))
+// true
+```
+
+## Example Walkthrough
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Input address (lowercase)
+const addr = Address.fromHex("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+
+// Generate checksummed output
+console.log(addr.toChecksummed())
+// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+//     ^  ^     ^  ^ ^^     ^  ^             ^
+//     Letters capitalized based on keccak256 hash
+```
+
+**Breakdown:**
+1. Lowercase hex: `5aaeb6053f3e94c9b9a09f33669435e7ef1beaed`
+2. Keccak256 hash of lowercase: `ce1b9e8e5e10a90a16c6c3ae3f56c5cf99d82e39c703c1a2adcdf2bd7ad9d685`
+3. For each letter character:
+   - `a` at position 1: hash nibble = `c` (12) >= 8 → `A`
+   - `a` at position 2: hash nibble = `e` (14) >= 8 → `A`
+   - `e` at position 3: hash nibble = `1` (1) < 8 → `e`
+   - And so on...
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time)
+
+**Overhead:** One keccak256 hash computation
+
+For repeated conversions, consider caching:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+import type { Checksummed } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+
+class CachedAddress {
+  private _checksumCache?: Checksummed
+
+  constructor(private address: Address) {}
+
+  toChecksummed(): Checksummed {
+    if (!this._checksumCache) {
+      this._checksumCache = this.address.toChecksummed()
+    }
+    return this._checksumCache
+  }
+}
+```
+
+## Bundle Size Considerations
+
+<Warning>
+Using `ChecksumAddress` includes keccak256 implementation (~5-10 KB). For minimal bundle size without checksum validation, use `Address.toHex()` or `Address.toLowercase()` instead.
+</Warning>
+
+**Tree-shaking:**
+- `ChecksumAddress.from()` → Includes keccak256
+- `ChecksumAddress.isValid()` → Includes keccak256
+- `Address.toLowercase()` → No crypto dependencies
+- `Address.toUppercase()` → No crypto dependencies
+
+**Selective imports for optimal bundle size:**
+
+```typescript
+// Minimal bundle (no crypto)
+import { from, toHex } from '@tevm/voltaire/BrandedAddress'
+
+// With checksumming (+ keccak256)
+import { from } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+```
+
+## Related
+
+- [Address](/primitives/address) - Main Address class documentation
+- [toChecksummed](/primitives/address/to-checksummed) - Convert address to checksummed format
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [Variants](/primitives/address/variants) - Overview of all address variants
+- [BrandedAddress](/primitives/address/branded-address) - Functional API and tree-shaking
+- [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55) - Specification
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function

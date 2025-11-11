@@ -35,7 +35,7 @@ console.log(Address.isValid("not an address"))                             // fa
 **Defined in:** [primitives/Address/BrandedAddress/isValid.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/isValid.js#L16)
 
 </Tab>
-<Tab title="Namespace API">
+<Tab title="Namespace API (Tree-shakeable)">
 
 ## `isValid(str: string): boolean`
 
@@ -89,7 +89,54 @@ const invalid = Address.isValid("0x742d35");
 try std.testing.expect(!invalid);
 ```
 
-**Defined in:** [primitives/Address/address.zig:255](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L255)
+**Defined in:** [primitives/Address/address.zig:181](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L181)
+
+</Tab>
+<Tab title="Effect.ts Schema">
+
+## Static validation method
+
+Effect.ts provides static validation through the underlying branded implementation:
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import * as BrandedAddress from '@tevm/voltaire/Address'
+
+// Validate before parsing
+if (BrandedAddress.isValid(input)) {
+  const addr = Address.fromHex(input)
+  console.log('Valid address:', addr.toHex())
+} else {
+  console.error('Invalid address format')
+}
+```
+
+**Note:** The `Address` schema class doesn't expose `isValid` as a static method. Use the namespace API (`BrandedAddress.isValid()`) for validation.
+
+### Schema validation
+
+Use Effect.ts Schema for runtime validation:
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+import * as Schema from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+// Validate and parse with Effect
+const parseAddress = (input: unknown) =>
+  Effect.gen(function* () {
+    const decoded = yield* Schema.decodeUnknown(Address)(input)
+    return decoded
+  })
+
+// Use in Effect pipeline
+const program = parseAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3").pipe(
+  Effect.map(addr => addr.toHex()),
+  Effect.catchAll(err => Effect.succeed("Invalid address"))
+)
+```
+
+**Defined in:** [primitives/Address/effect.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
 
 </Tab>
 </Tabs>

@@ -60,6 +60,37 @@ console.log(addr1 === addr2)              // false
 **Defined in:** [primitives/Address/BrandedAddress/clone.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/clone.js#L17)
 
 </Tab>
+<Tab title="Effect.ts Schema API">
+
+## `address.clone(): Address`
+
+Creates a deep copy of the Address schema instance. Returns a new Address instance with copied underlying bytes.
+
+**Returns:** `Address` - Deep copy of address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = addr1.clone()
+
+// Values are equal
+console.log(addr1.equals(addr2)) // true
+
+// But different instances
+console.log(addr1 === addr2) // false
+
+// Independent copies
+const modified = addr2.clone()
+modified.address[0] = 0xFF
+console.log(addr1.address[0]) // Still 0x74
+```
+
+**Defined in:** [primitives/Address/effect.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
+
+</Tab>
 <Tab title="Zig">
 
 ## `address` (value type)
@@ -87,6 +118,70 @@ try std.testing.expect(addr1.bytes[0] != addr3.bytes[0]);
 **Note:** No explicit clone needed in Zig - assignment copies value types.
 
 **Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
+
+</Tab>
+<Tab title="C">
+
+## Value type (copy by assignment)
+
+In C, `PrimitivesAddress` is a struct with a fixed-size byte array. Assignment creates a copy automatically.
+
+**Example:**
+
+```c
+#include "voltaire.h"
+#include <string.h>
+
+int main() {
+    // Create original address
+    PrimitivesAddress addr1;
+    int result = primitives_address_from_hex(
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+        42,
+        &addr1
+    );
+
+    if (result != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
+
+    // Assignment copies value
+    PrimitivesAddress addr2 = addr1;
+
+    // Independent copies - modify addr2
+    addr2.bytes[0] = 0xFF;
+    addr2.bytes[19] = 0xAA;
+
+    // addr1 unchanged
+    printf("addr1[0]: 0x%02x\n", addr1.bytes[0]);   // 0x74
+    printf("addr1[19]: 0x%02x\n", addr1.bytes[19]); // 0x3e
+    printf("addr2[0]: 0x%02x\n", addr2.bytes[0]);   // 0xff
+    printf("addr2[19]: 0x%02x\n", addr2.bytes[19]); // 0xaa
+
+    return 0;
+}
+```
+
+**Manual copy with memcpy:**
+
+```c
+#include "voltaire.h"
+#include <string.h>
+
+PrimitivesAddress addr1;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", 42, &addr1);
+
+// Explicit copy using memcpy
+PrimitivesAddress addr2;
+memcpy(&addr2, &addr1, sizeof(PrimitivesAddress));
+
+// Or copy just the bytes
+memcpy(addr2.bytes, addr1.bytes, 20);
+```
+
+**Note:** No explicit clone function needed in C - assignment or `memcpy` creates independent copies.
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
 
 </Tab>
 </Tabs>
