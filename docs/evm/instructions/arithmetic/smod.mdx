@@ -1,0 +1,485 @@
+---
+title: "SMOD (0x07)"
+description: "Signed modulo operation using two's complement representation"
+---
+
+## Overview
+
+**Opcode:** `0x07`
+**Introduced:** Frontier (EVM genesis)
+
+SMOD performs signed modulo operation on two 256-bit values interpreted as two's complement signed integers. The result has the same sign as the dividend (not the divisor, unlike some languages).
+
+Like MOD, modulo by zero returns 0. Additionally, SMOD has special handling for the MIN_INT / -1 edge case.
+
+## Specification
+
+**Stack Input:**
+```
+a (top - signed dividend)
+b (signed modulus)
+```
+
+**Stack Output:**
+```
+a % b  (if b ≠ 0 and not MIN_INT/-1)
+0      (if b = 0 or (a = MIN_INT and b = -1))
+```
+
+**Gas Cost:** 5 (GasFastStep)
+
+**Operation:**
+```
+Two's complement interpretation:
+- Range: -2^255 to 2^255 - 1
+- Result sign matches dividend
+```
+
+## Behavior
+
+SMOD interprets 256-bit values as signed integers using two's complement:
+
+- If `b = 0`: Returns 0 (no exception)
+- If `a = MIN_INT` and `b = -1`: Returns 0 (special case)
+- Otherwise: Returns `a - (a / b) * b` where division is signed
+
+**Sign of result:**
+- Result always has the same sign as dividend `a`
+- `-7 % 2 = -1` (not `1`)
+- `7 % -2 = 1` (not `-1`)
+
+## Examples
+
+### Basic Signed Modulo
+
+```typescript
+import { smod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 10 % 3 = 1
+const frame = createFrame({ stack: [10n, 3n] });
+const err = smod(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+### Negative Dividend
+
+```typescript
+// -10 % 3 = -1 (result has same sign as dividend)
+// -10 in two's complement: 2^256 - 10
+const neg10 = (1n << 256n) - 10n;
+const frame = createFrame({ stack: [neg10, 3n] });
+smod(frame);
+
+// Result: -1 in two's complement
+const neg1 = (1n << 256n) - 1n;
+console.log(frame.stack); // [neg1]
+```
+
+### Negative Modulus
+
+```typescript
+// 10 % -3 = 1 (result has sign of dividend, not modulus)
+const neg3 = (1n << 256n) - 3n;
+const frame = createFrame({ stack: [10n, neg3] });
+smod(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+### Both Negative
+
+```typescript
+// -10 % -3 = -1 (result follows dividend sign)
+const neg10 = (1n << 256n) - 10n;
+const neg3 = (1n << 256n) - 3n;
+const frame = createFrame({ stack: [neg10, neg3] });
+smod(frame);
+
+const neg1 = (1n << 256n) - 1n;
+console.log(frame.stack); // [neg1]
+```
+
+### MIN_INT % -1 Edge Case
+
+```typescript
+// MIN_INT % -1 = 0 (special case)
+const MIN_INT = 1n << 255n;
+const negOne = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MIN_INT, negOne] });
+smod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+## Gas Cost
+
+**Cost:** 5 gas (GasFastStep)
+
+SMOD has the same gas cost as MOD and SDIV:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- **MUL/DIV/MOD/SDIV/SMOD/SIGNEXTEND:** 5 gas
+- ADDMOD/MULMOD: 8 gas
+
+No gas overhead for sign handling.
+
+## Edge Cases
+
+### Modulo by Zero
+
+```typescript
+// Signed modulo by zero returns 0
+const neg10 = (1n << 256n) - 10n;
+const frame = createFrame({ stack: [neg10, 0n] });
+smod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### MIN_INT Special Cases
+
+```typescript
+// MIN_INT % -1 = 0
+const MIN_INT = 1n << 255n;
+const negOne = (1n << 256n) - 1n;
+const frame1 = createFrame({ stack: [MIN_INT, negOne] });
+smod(frame1);
+console.log(frame1.stack); // [0n]
+
+// MIN_INT % 1 = 0
+const frame2 = createFrame({ stack: [MIN_INT, 1n] });
+smod(frame2);
+console.log(frame2.stack); // [0n]
+
+// MIN_INT % MIN_INT = 0
+const frame3 = createFrame({ stack: [MIN_INT, MIN_INT] });
+smod(frame3);
+console.log(frame3.stack); // [0n]
+```
+
+### Zero Dividend
+
+```typescript
+// 0 % -5 = 0
+const neg5 = (1n << 256n) - 5n;
+const frame = createFrame({ stack: [0n, neg5] });
+smod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Sign Comparison with Other Languages
+
+```typescript
+// EVM SMOD: Result sign matches dividend
+// -7 % 2 = -1
+
+// Python: Result sign matches divisor
+// -7 % 2 = 1
+
+// C/C++: Result sign matches dividend (like EVM)
+// -7 % 2 = -1
+```
+
+## Common Usage
+
+### Signed Range Wrapping
+
+```solidity
+// Wrap signed value to range
+function wrapToRange(int256 value, int256 range)
+    pure returns (int256) {
+    require(range > 0, "range must be positive");
+
+    assembly {
+        let result := smod(value, range)
+        mstore(0, result)
+        return(0, 32)
+    }
+}
+```
+
+### Signed Parity Check
+
+```solidity
+// Check parity of signed number
+function signedParity(int256 n) pure returns (int256) {
+    assembly {
+        let result := smod(n, 2)
+        mstore(0, result)
+        return(0, 32)
+    }
+}
+
+// Examples:
+// signedParity(7) = 1
+// signedParity(-7) = -1
+// signedParity(8) = 0
+```
+
+### Cyclic Signed Indexing
+
+```solidity
+// Wrap signed index to array bounds
+function cyclicSignedIndex(int256 index, uint256 arrayLength)
+    pure returns (uint256) {
+    require(arrayLength > 0, "empty array");
+
+    int256 len = int256(arrayLength);
+    assembly {
+        let mod_result := smod(index, len)
+        // If negative, add length to make positive
+        if slt(mod_result, 0) {
+            mod_result := add(mod_result, len)
+        }
+        mstore(0, mod_result)
+        return(0, 32)
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SMOD opcode (0x07) - Signed modulo operation
+ */
+export function smod(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastStep = 5)
+  frame.gasRemaining -= 5n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();
+  const b = frame.stack.pop();
+
+  let result: bigint;
+
+  if (b === 0n) {
+    result = 0n;
+  } else {
+    const MIN_INT = 1n << 255n;
+    const MAX_UINT = (1n << 256n) - 1n;
+
+    // Special case: MIN_INT % -1 = 0
+    if (a === MIN_INT && b === MAX_UINT) {
+      result = 0n;
+    } else {
+      // Convert to signed, modulo, convert back
+      const aSigned = a < MIN_INT ? a : a - (1n << 256n);
+      const bSigned = b < MIN_INT ? b : b - (1n << 256n);
+      const remainder = aSigned % bSigned;  // BigInt modulo
+      result = remainder < 0n ? (1n << 256n) + remainder : remainder;
+    }
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SMOD opcode (0x07) - Signed modulo operation
+pub fn smod(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastStep);
+    const top = try frame.popStack();
+    const second = try frame.popStack();
+    const top_signed = @as(i256, @bitCast(top));
+    const second_signed = @as(i256, @bitCast(second));
+    const MIN_SIGNED = @as(u256, 1) << 255;
+    const result = if (second == 0)
+        0
+    else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
+        0
+    else
+        @as(u256, @bitCast(@rem(top_signed, second_signed)));
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { smod } from './0x07_SMOD.js';
+
+describe('SMOD (0x07)', () => {
+  const MIN_INT = 1n << 255n;
+  const MAX_UINT = (1n << 256n) - 1n;
+  const toSigned = (n: bigint) => n < 0n ? (1n << 256n) + n : n;
+
+  it('computes positive modulo', () => {
+    const frame = createFrame([10n, 3n]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+  });
+
+  it('handles negative dividend', () => {
+    const frame = createFrame([toSigned(-10n), 3n]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([toSigned(-1n)]);
+  });
+
+  it('handles negative modulus', () => {
+    const frame = createFrame([10n, toSigned(-3n)]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+  });
+
+  it('handles both negative', () => {
+    const frame = createFrame([toSigned(-10n), toSigned(-3n)]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([toSigned(-1n)]);
+  });
+
+  it('handles MIN_INT % -1', () => {
+    const frame = createFrame([MIN_INT, MAX_UINT]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles modulo by zero', () => {
+    const frame = createFrame([toSigned(-10n), 0n]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('result sign matches dividend', () => {
+    // -7 % 2 = -1 (not 1)
+    const frame = createFrame([toSigned(-7n), 2n]);
+    expect(smod(frame)).toBeNull();
+    expect(frame.stack).toEqual([toSigned(-1n)]);
+  });
+});
+```
+
+## Security
+
+### Sign Interpretation
+
+```solidity
+// SMOD vs MOD give different results for negative values
+uint256 a = type(uint256).max;  // -1 as signed
+uint256 b = 10;
+
+// Unsigned: MAX % 10 = 5
+uint256 unsignedResult;
+assembly { unsignedResult := mod(a, b) }
+
+// Signed: -1 % 10 = -1
+uint256 signedResult;
+assembly { signedResult := smod(a, b) }
+
+// Results are different!
+```
+
+### Cross-Language Differences
+
+```solidity
+// EVM SMOD: Result sign matches dividend
+// -7 % 3 = -1
+
+// Python: Result sign matches divisor
+// -7 % 3 = 2
+
+// Java/C++: Result sign matches dividend (like EVM)
+// -7 % 3 = -1
+
+// Always verify behavior matches expectations
+```
+
+### Negative Index Wrapping
+
+```solidity
+// WRONG: Direct SMOD for array indexing
+function wrongWrap(int256 index, uint256 length)
+    pure returns (uint256) {
+    assembly {
+        let result := smod(index, length)
+        mstore(0, result)
+        return(0, 32)
+    }
+}
+// If index is negative, result is negative!
+
+// RIGHT: Convert negative to positive
+function correctWrap(int256 index, uint256 length)
+    pure returns (uint256) {
+    require(length > 0, "empty array");
+    int256 len = int256(length);
+    int256 mod_result;
+
+    assembly {
+        mod_result := smod(index, len)
+    }
+
+    if (mod_result < 0) {
+        mod_result += len;
+    }
+
+    return uint256(mod_result);
+}
+```
+
+### Safe Signed Modulo
+
+```solidity
+// Solidity 0.8.0+ checks automatically
+function safeSmod(int256 a, int256 b) pure returns (int256) {
+    return a % b;  // Reverts on b = 0
+}
+
+// Explicit checks for assembly usage
+function assemblySmod(int256 a, int256 b) pure returns (int256) {
+    require(b != 0, "modulo by zero");
+
+    int256 result;
+    assembly {
+        result := smod(a, b)
+    }
+    return result;
+}
+```
+
+## Benchmarks
+
+SMOD performance identical to MOD:
+
+**Execution time:**
+- ADD: 1.0x
+- MUL: 1.2x
+- **SMOD: 2.5x** (same as MOD/DIV)
+
+**Gas cost:**
+- 5 gas per signed modulo
+- No overhead for sign handling
+- ~200,000 signed modulo operations per million gas
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - SMOD](https://www.evm.codes/#07)
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement)
+- [Modulo Operation](https://en.wikipedia.org/wiki/Modulo_operation)

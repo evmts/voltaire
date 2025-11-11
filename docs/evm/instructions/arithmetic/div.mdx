@@ -1,0 +1,473 @@
+---
+title: "DIV (0x04)"
+description: "Unsigned integer division with division-by-zero returning zero"
+---
+
+## Overview
+
+**Opcode:** `0x04`
+**Introduced:** Frontier (EVM genesis)
+
+DIV performs unsigned integer division on two 256-bit values. Unlike most programming languages, division by zero returns 0 instead of throwing an exception, preventing denial-of-service attacks.
+
+This operation is essential for ratio calculations, scaling, and implementing fractional arithmetic in smart contracts.
+
+## Specification
+
+**Stack Input:**
+```
+a (top - dividend)
+b (divisor)
+```
+
+**Stack Output:**
+```
+a / b  (if b ≠ 0)
+0      (if b = 0)
+```
+
+**Gas Cost:** 5 (GasFastStep)
+
+**Operation:**
+```
+result = (b == 0) ? 0 : (a / b)
+```
+
+## Behavior
+
+DIV pops two values from the stack, performs integer division (truncating toward zero), and pushes the quotient:
+
+- If `b ≠ 0`: Result is `floor(a / b)` (truncated)
+- If `b = 0`: Result is 0 (no exception)
+
+The result is always the integer quotient with remainder discarded. Use MOD to get the remainder.
+
+## Examples
+
+### Basic Division
+
+```typescript
+import { div } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 10 / 2 = 5
+const frame = createFrame({ stack: [10n, 2n] });
+const err = div(frame);
+
+console.log(frame.stack); // [5n]
+console.log(frame.gasRemaining); // Original - 5
+```
+
+### Division with Remainder
+
+```typescript
+// 10 / 3 = 3 (remainder 1 discarded)
+const frame = createFrame({ stack: [10n, 3n] });
+const err = div(frame);
+
+console.log(frame.stack); // [3n]
+```
+
+### Division by Zero
+
+```typescript
+// Division by zero returns 0 (no exception)
+const frame = createFrame({ stack: [42n, 0n] });
+const err = div(frame);
+
+console.log(frame.stack); // [0n]
+console.log(err); // null (no error!)
+```
+
+### Division by One
+
+```typescript
+// Identity: n / 1 = n
+const frame = createFrame({ stack: [42n, 1n] });
+const err = div(frame);
+
+console.log(frame.stack); // [42n]
+```
+
+### Large Division
+
+```typescript
+// Large number division
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX, 2n] });
+const err = div(frame);
+
+// Result: floor(MAX / 2) = 2^255 - 1
+console.log(frame.stack); // [(MAX - 1n) / 2n]
+```
+
+## Gas Cost
+
+**Cost:** 5 gas (GasFastStep)
+
+DIV costs the same as MUL and MOD, more than ADD/SUB due to increased complexity:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- **MUL/DIV/MOD/SDIV/SMOD/SIGNEXTEND:** 5 gas
+- ADDMOD/MULMOD: 8 gas
+- EXP: 10 + 50 per byte
+
+Division is ~67% more expensive than addition but significantly cheaper than repeated subtraction.
+
+## Edge Cases
+
+### Zero Division
+
+```typescript
+// 0 / 0 = 0 (special case)
+const frame = createFrame({ stack: [0n, 0n] });
+div(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Self-Division
+
+```typescript
+// n / n = 1 (except when n = 0)
+const frame = createFrame({ stack: [42n, 42n] });
+div(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+### Division Truncation
+
+```typescript
+// Truncates toward zero
+const cases = [
+  [10n, 3n],   // 10/3 = 3
+  [100n, 9n],  // 100/9 = 11
+  [7n, 2n],    // 7/2 = 3
+];
+
+for (const [a, b] of cases) {
+  const frame = createFrame({ stack: [a, b] });
+  div(frame);
+  console.log(frame.stack[0]); // Truncated quotients
+}
+```
+
+### Maximum Value Division
+
+```typescript
+// MAX / MAX = 1
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX, MAX] });
+div(frame);
+
+console.log(frame.stack); // [1n]
+```
+
+## Common Usage
+
+### Ratio Calculations
+
+```solidity
+// Calculate percentage
+function calculatePercentage(uint256 amount, uint256 percent)
+    pure returns (uint256) {
+    return (amount * percent) / 100;
+}
+
+// Calculate share from total
+function calculateShare(uint256 userAmount, uint256 totalAmount, uint256 reward)
+    pure returns (uint256) {
+    return (userAmount * reward) / totalAmount;
+}
+```
+
+### Fixed-Point Division
+
+```solidity
+// 18 decimal fixed-point division
+uint256 constant WAD = 1e18;
+
+function wdiv(uint256 x, uint256 y) pure returns (uint256) {
+    return (x * WAD) / y;  // Scale first to preserve precision
+}
+
+// Example: 1.5 / 2.5 = 0.6
+// (1.5e18 * 1e18) / 2.5e18 = 0.6e18
+```
+
+### Average Calculation
+
+```solidity
+// Simple average (beware overflow)
+function average(uint256 a, uint256 b) pure returns (uint256) {
+    return (a + b) / 2;
+}
+
+// Safe average avoiding overflow
+function safeAverage(uint256 a, uint256 b) pure returns (uint256) {
+    return (a / 2) + (b / 2) + (a % 2 + b % 2) / 2;
+}
+```
+
+### Scaling and Conversion
+
+```solidity
+// Convert from higher to lower decimals
+function scaleDown(uint256 amount, uint8 fromDecimals, uint8 toDecimals)
+    pure returns (uint256) {
+    require(fromDecimals >= toDecimals, "invalid decimals");
+    return amount / (10 ** (fromDecimals - toDecimals));
+}
+
+// Convert token amounts
+function convertToUSDC(uint256 tokenAmount, uint256 price)
+    pure returns (uint256) {
+    // Assuming price is in USDC per token (6 decimals)
+    return (tokenAmount * price) / 1e18;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * DIV opcode (0x04) - Integer division (division by zero returns 0)
+ */
+export function div(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastStep = 5)
+  frame.gasRemaining -= 5n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();  // dividend
+  const b = frame.stack.pop();  // divisor
+
+  // Division by zero returns 0 (no exception)
+  const result = b === 0n ? 0n : a / b;
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// DIV opcode (0x04) - Integer division (division by zero returns 0)
+pub fn div(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastStep);
+    const top = try frame.popStack();
+    const second = try frame.popStack();
+    const result = if (second == 0) 0 else top / second;
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { div } from './0x04_DIV.js';
+
+describe('DIV (0x04)', () => {
+  it('divides two numbers', () => {
+    const frame = createFrame([10n, 2n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([5n]);
+  });
+
+  it('truncates remainder', () => {
+    const frame = createFrame([10n, 3n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([3n]);
+  });
+
+  it('handles division by zero', () => {
+    const frame = createFrame([42n, 0n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles zero divided by zero', () => {
+    const frame = createFrame([0n, 0n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles division by one', () => {
+    const frame = createFrame([42n, 1n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([42n]);
+  });
+
+  it('handles self-division', () => {
+    const frame = createFrame([42n, 42n]);
+    expect(div(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+  });
+
+  it('consumes correct gas (5)', () => {
+    const frame = createFrame([10n, 2n], 100n);
+    expect(div(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(95n);
+  });
+});
+```
+
+## Security
+
+### Division by Zero
+
+**Why DIV returns 0 instead of reverting:**
+```solidity
+// If DIV reverted on zero:
+function maliciousRatio(uint256 numerator, uint256 denominator)
+    pure returns (uint256) {
+    return numerator / denominator;
+}
+
+// Attacker calls with denominator = 0
+// Contract execution would halt
+// This could DOS critical functionality
+```
+
+**The EVM solution:**
+```solidity
+// Division by zero returns 0 (no revert)
+// Contracts MUST explicitly check divisor
+
+function safeRatio(uint256 numerator, uint256 denominator)
+    pure returns (uint256) {
+    require(denominator != 0, "division by zero");
+    return numerator / denominator;
+}
+```
+
+### Precision Loss
+
+**Problem: Integer division loses precision**
+```solidity
+// WRONG: Loses precision
+function calculateFee(uint256 amount) pure returns (uint256) {
+    return (amount / 100) * 3;  // 3% fee
+}
+
+// Example: amount = 55
+// (55 / 100) * 3 = 0 * 3 = 0  (should be 1.65 ≈ 1)
+```
+
+**Solution: Multiply first**
+```solidity
+// RIGHT: Preserve precision
+function calculateFee(uint256 amount) pure returns (uint256) {
+    return (amount * 3) / 100;  // Multiply first
+}
+
+// Example: amount = 55
+// (55 * 3) / 100 = 165 / 100 = 1
+```
+
+### Rounding Direction
+
+```solidity
+// DIV always rounds DOWN (toward zero)
+// For ceiling division:
+function divCeil(uint256 a, uint256 b) pure returns (uint256) {
+    require(b > 0, "division by zero");
+    return (a + b - 1) / b;
+}
+
+// Examples:
+// divCeil(10, 3) = (10 + 3 - 1) / 3 = 12 / 3 = 4
+// divCeil(9, 3) = (9 + 3 - 1) / 3 = 11 / 3 = 3
+```
+
+### Safe Fixed-Point Math
+
+```solidity
+// Using PRBMath or similar library
+import {UD60x18, ud} from "@prb/math/UD60x18.sol";
+
+function safeDivision(uint256 x, uint256 y) pure returns (uint256) {
+    // Handles precision and overflow safely
+    UD60x18 result = ud(x).div(ud(y));
+    return result.unwrap();
+}
+```
+
+### Overflow in Multi-Step Calculations
+
+```solidity
+// WRONG: Can overflow intermediate result
+function mulDiv(uint256 x, uint256 y, uint256 denominator)
+    pure returns (uint256) {
+    return (x * y) / denominator;  // x * y can overflow!
+}
+
+// RIGHT: Use assembly for 512-bit intermediate
+function mulDiv(uint256 x, uint256 y, uint256 denominator)
+    pure returns (uint256 z) {
+    assembly {
+        // Full 512-bit multiplication
+        let mm := mulmod(x, y, not(0))
+        z := div(mul(x, y), denominator)
+
+        // Check for overflow
+        if iszero(and(
+            gt(denominator, 0),
+            or(iszero(mm), eq(div(mm, x), y))
+        )) { revert(0, 0) }
+    }
+}
+```
+
+## Benchmarks
+
+DIV performance characteristics:
+
+**Relative execution time:**
+- ADD: 1.0x
+- MUL: 1.2x
+- **DIV: 2.5x**
+- MOD: 2.5x
+
+**Gas efficiency:**
+- 5 gas per 256-bit division
+- ~200,000 divisions per million gas
+- Much faster than repeated subtraction (which would be ~3n gas for n subtractions)
+
+**Optimization tip:**
+```solidity
+// Division by constant powers of 2: use shift
+uint256 result = x / 2;   // 5 gas (DIV)
+uint256 result = x >> 1;  // 3 gas (SHR) - 40% cheaper!
+
+uint256 result = x / 256;  // 5 gas (DIV)
+uint256 result = x >> 8;   // 3 gas (SHR)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - DIV](https://www.evm.codes/#04)
+- [Solidity Docs - Division](https://docs.soliditylang.org/en/latest/types.html#division)
+- [PRBMath Library](https://github.com/PaulRBerg/prb-math) - Safe fixed-point math

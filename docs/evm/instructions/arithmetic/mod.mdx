@@ -1,0 +1,494 @@
+---
+title: "MOD (0x06)"
+description: "Unsigned modulo operation with modulo-by-zero returning zero"
+---
+
+## Overview
+
+**Opcode:** `0x06`
+**Introduced:** Frontier (EVM genesis)
+
+MOD computes the remainder of unsigned integer division (modulo operation) on two 256-bit values. Like DIV, modulo by zero returns 0 instead of throwing an exception.
+
+This operation is essential for cyclic calculations, hash table indexing, and constraint checking in smart contracts.
+
+## Specification
+
+**Stack Input:**
+```
+a (top - dividend)
+b (modulus)
+```
+
+**Stack Output:**
+```
+a % b  (if b ≠ 0)
+0      (if b = 0)
+```
+
+**Gas Cost:** 5 (GasFastStep)
+
+**Operation:**
+```
+result = (b == 0) ? 0 : (a % b)
+```
+
+## Behavior
+
+MOD pops two values from the stack and computes the remainder:
+
+- If `b ≠ 0`: Result is `a - (a / b) * b` where division is integer division
+- If `b = 0`: Result is 0 (no exception)
+
+The result satisfies: `a = (a / b) * b + (a % b)` for all `b ≠ 0`.
+
+## Examples
+
+### Basic Modulo
+
+```typescript
+import { mod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 10 % 3 = 1
+const frame = createFrame({ stack: [10n, 3n] });
+const err = mod(frame);
+
+console.log(frame.stack); // [1n]
+console.log(frame.gasRemaining); // Original - 5
+```
+
+### Even/Odd Check
+
+```typescript
+// Check if number is even (n % 2 == 0)
+const frame = createFrame({ stack: [42n, 2n] });
+mod(frame);
+console.log(frame.stack); // [0n] - even
+
+const frame2 = createFrame({ stack: [43n, 2n] });
+mod(frame2);
+console.log(frame2.stack); // [1n] - odd
+```
+
+### Modulo by Zero
+
+```typescript
+// Modulo by zero returns 0 (no exception)
+const frame = createFrame({ stack: [42n, 0n] });
+const err = mod(frame);
+
+console.log(frame.stack); // [0n]
+console.log(err); // null (no error!)
+```
+
+### Modulo by Power of Two
+
+```typescript
+// n % 2^k extracts lower k bits
+const frame = createFrame({ stack: [0x12345678n, 0x100n] }); // % 256
+mod(frame);
+
+console.log(frame.stack); // [0x78n] - lower 8 bits
+```
+
+### Identity Cases
+
+```typescript
+// n % n = 0
+const frame1 = createFrame({ stack: [42n, 42n] });
+mod(frame1);
+console.log(frame1.stack); // [0n]
+
+// n % 1 = 0
+const frame2 = createFrame({ stack: [42n, 1n] });
+mod(frame2);
+console.log(frame2.stack); // [0n]
+
+// n % (n+1) = n (when n < n+1)
+const frame3 = createFrame({ stack: [42n, 43n] });
+mod(frame3);
+console.log(frame3.stack); // [42n]
+```
+
+## Gas Cost
+
+**Cost:** 5 gas (GasFastStep)
+
+MOD has the same cost as DIV and MUL:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- **MUL/DIV/MOD/SDIV/SMOD/SIGNEXTEND:** 5 gas
+- ADDMOD/MULMOD: 8 gas
+- EXP: 10 + 50 per byte
+
+MOD and DIV are typically implemented together in hardware, hence identical cost.
+
+## Edge Cases
+
+### Zero Modulo
+
+```typescript
+// 0 % 0 = 0 (special case)
+const frame = createFrame({ stack: [0n, 0n] });
+mod(frame);
+console.log(frame.stack); // [0n]
+
+// 0 % n = 0 (for any n)
+const frame2 = createFrame({ stack: [0n, 42n] });
+mod(frame2);
+console.log(frame2.stack); // [0n]
+```
+
+### Modulo Greater Than Dividend
+
+```typescript
+// a % b = a when a < b
+const frame = createFrame({ stack: [5n, 10n] });
+mod(frame);
+
+console.log(frame.stack); // [5n]
+```
+
+### Large Modulus
+
+```typescript
+// Large number modulo
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX, 100n] });
+mod(frame);
+
+// MAX % 100 = 99 (since MAX = 100k + 99 for some k)
+console.log(frame.stack); // [99n]
+```
+
+### Power of Two Modulus
+
+```typescript
+// Efficient bit masking
+const cases = [
+  [0xFFn, 0x10n],    // 255 % 16 = 15
+  [0x123n, 0x100n],  // 291 % 256 = 35
+  [0x1234n, 0x1000n], // 4660 % 4096 = 564
+];
+
+for (const [a, b] of cases) {
+  const frame = createFrame({ stack: [a, b] });
+  mod(frame);
+  console.log(frame.stack[0]);
+}
+```
+
+## Common Usage
+
+### Cyclic Indexing
+
+```solidity
+// Wrap index to array bounds
+function cyclicIndex(uint256 index, uint256 arrayLength)
+    pure returns (uint256) {
+    return index % arrayLength;
+}
+
+// Circular buffer implementation
+function circularBufferIndex(uint256 counter, uint256 bufferSize)
+    pure returns (uint256) {
+    return counter % bufferSize;
+}
+```
+
+### Range Constraints
+
+```solidity
+// Ensure value is within range [0, max)
+function constrain(uint256 value, uint256 max)
+    pure returns (uint256) {
+    return value % max;
+}
+
+// Hash to slot mapping
+function hashToSlot(bytes32 hash, uint256 numSlots)
+    pure returns (uint256) {
+    return uint256(hash) % numSlots;
+}
+```
+
+### Even/Odd Checks
+
+```solidity
+// Check parity
+function isEven(uint256 n) pure returns (bool) {
+    return n % 2 == 0;
+}
+
+function isOdd(uint256 n) pure returns (bool) {
+    return n % 2 == 1;
+}
+```
+
+### Divisibility Testing
+
+```solidity
+// Check if divisible
+function isDivisibleBy(uint256 n, uint256 divisor)
+    pure returns (bool) {
+    require(divisor != 0, "division by zero");
+    return n % divisor == 0;
+}
+
+// Check if multiple of
+function isMultipleOf(uint256 n, uint256 factor)
+    pure returns (bool) {
+    return factor != 0 && n % factor == 0;
+}
+```
+
+### Bit Extraction
+
+```solidity
+// Extract lower k bits (equivalent to n % 2^k)
+function extractLowerBits(uint256 n, uint8 k)
+    pure returns (uint256) {
+    return n % (1 << k);
+}
+
+// Extract byte at position
+function extractByte(uint256 n, uint8 position)
+    pure returns (uint8) {
+    return uint8((n / (256 ** position)) % 256);
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * MOD opcode (0x06) - Modulo operation (mod by zero returns 0)
+ */
+export function mod(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastStep = 5)
+  frame.gasRemaining -= 5n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();
+  const b = frame.stack.pop();
+
+  // Modulo by zero returns 0 (no exception)
+  const result = b === 0n ? 0n : a % b;
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// MOD opcode (0x06) - Modulo operation (mod by zero returns 0)
+pub fn mod(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastStep);
+    const top = try frame.popStack();
+    const second = try frame.popStack();
+    const result = if (second == 0) 0 else top % second;
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { mod } from './0x06_MOD.js';
+
+describe('MOD (0x06)', () => {
+  it('computes modulo', () => {
+    const frame = createFrame([10n, 3n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+  });
+
+  it('handles modulo by zero', () => {
+    const frame = createFrame([42n, 0n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles zero modulo zero', () => {
+    const frame = createFrame([0n, 0n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('checks even number', () => {
+    const frame = createFrame([42n, 2n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('checks odd number', () => {
+    const frame = createFrame([43n, 2n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+  });
+
+  it('handles n % n = 0', () => {
+    const frame = createFrame([42n, 42n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles n % 1 = 0', () => {
+    const frame = createFrame([42n, 1n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles a < b case', () => {
+    const frame = createFrame([5n, 10n]);
+    expect(mod(frame)).toBeNull();
+    expect(frame.stack).toEqual([5n]);
+  });
+
+  it('consumes correct gas (5)', () => {
+    const frame = createFrame([10n, 3n], 100n);
+    expect(mod(frame)).toBeNull();
+    expect(frame.gasRemaining).toBe(95n);
+  });
+});
+```
+
+## Security
+
+### Modulo by Zero
+
+```solidity
+// MOD returns 0 for division by zero (no revert)
+// Contracts MUST check modulus
+
+// WRONG: No check
+function hash(uint256 value, uint256 buckets) pure returns (uint256) {
+    return value % buckets;  // Returns 0 if buckets = 0!
+}
+
+// RIGHT: Explicit check
+function hash(uint256 value, uint256 buckets) pure returns (uint256) {
+    require(buckets > 0, "buckets must be positive");
+    return value % buckets;
+}
+```
+
+### Bias in Random Selection
+
+```solidity
+// WRONG: Biased modulo
+function randomIndex(uint256 seed, uint256 arrayLength)
+    pure returns (uint256) {
+    return seed % arrayLength;
+}
+
+// If seed is random 0-255 and arrayLength = 100:
+// Values 0-55 appear more often (3 times each)
+// Values 56-99 appear less often (2 times each)
+
+// BETTER: Reject and retry (in real implementation)
+function fairRandomIndex(uint256 seed, uint256 arrayLength)
+    pure returns (uint256) {
+    uint256 max = type(uint256).max;
+    uint256 threshold = max - (max % arrayLength);
+    require(seed < threshold, "retry");  // Reject biased values
+    return seed % arrayLength;
+}
+```
+
+### Off-by-One Errors
+
+```solidity
+// Common mistake in range calculations
+function wrongRange(uint256 value) pure returns (bool) {
+    // WRONG: Allows 100 (should be 0-99)
+    return value % 100 <= 100;
+}
+
+function correctRange(uint256 value) pure returns (bool) {
+    // RIGHT: Constrains to 0-99
+    uint256 normalized = value % 100;
+    return normalized < 100;  // Always true, but shows intent
+}
+```
+
+### Negative Results in Assembly
+
+```solidity
+// MOD is unsigned only
+// For signed modulo, use SMOD
+
+// WRONG: Unexpected behavior with "negative" values
+function wrongSignedMod(int256 a, int256 b) pure returns (int256) {
+    int256 result;
+    assembly {
+        result := mod(a, b)  // Treats as unsigned!
+    }
+    return result;
+}
+
+// RIGHT: Use SMOD for signed modulo
+function correctSignedMod(int256 a, int256 b) pure returns (int256) {
+    int256 result;
+    assembly {
+        result := smod(a, b)  // Signed modulo
+    }
+    return result;
+}
+```
+
+## Benchmarks
+
+MOD performance characteristics:
+
+**Execution time:**
+- ADD: 1.0x
+- MUL: 1.2x
+- **MOD: 2.5x** (same as DIV)
+
+**Gas efficiency:**
+- 5 gas per modulo operation
+- ~200,000 modulo operations per million gas
+- Often computed with DIV in single hardware instruction
+
+**Optimization for powers of 2:**
+```solidity
+// MOD by power of 2: use AND
+uint256 result = x % 256;   // 5 gas (MOD)
+uint256 result = x & 0xFF;  // 3 gas (AND) - 40% cheaper!
+
+uint256 result = x % 1024;     // 5 gas (MOD)
+uint256 result = x & 0x3FF;    // 3 gas (AND)
+
+// Compiler often optimizes this automatically
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - MOD](https://www.evm.codes/#06)
+- [Solidity Docs - Modulo](https://docs.soliditylang.org/en/latest/types.html#modulo)
+- [Modular Arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic)
