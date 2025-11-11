@@ -7,10 +7,10 @@
 import { Address } from "../Address/index.js";
 import type { BrandedItem as Item } from "./Item/index.js";
 import type { BrandedError } from "./error/BrandedError/BrandedError.js";
-import type { Function as AbiFunction } from "./function/BrandedFunction/BrandedFunction.js";
 import type { Event as AbiEvent } from "./event/BrandedEvent/BrandedEvent.js";
-import * as Parameter from "./parameter/index.js";
+import type { Function as AbiFunction } from "./function/BrandedFunction/BrandedFunction.js";
 import * as Abi from "./index.js";
+import * as Parameter from "./parameter/index.js";
 
 // Helper to work around strict type checking in benchmarks
 const encodeParams = Abi.encodeParameters as any;

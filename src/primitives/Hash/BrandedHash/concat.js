@@ -3,11 +3,14 @@ import { keccak256 } from "./keccak256.js";
 /**
  * Concatenate multiple hashes and hash the result
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @param {...import('./BrandedHash.ts').BrandedHash} hashes - Hashes to concatenate
  * @returns {import('./BrandedHash.ts').BrandedHash} Hash of concatenated hashes
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
  * const h1 = Hash.keccak256(data1);
  * const h2 = Hash.keccak256(data2);
  * const combined = Hash.concat(h1, h2);
