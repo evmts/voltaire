@@ -7,8 +7,9 @@ You are tasked with updating the Voltaire Mintlify documentation. Follow these p
 ## CRITICAL CONTEXT
 
 **Architecture**: Dual API (Class + Branded Types), multi-language (TS/Zig/Rust/C), tree-shakeable, WASM-accelerated
-**Docs Framework**: Mintlify (MDX), mint.json navigation, centralized docs
+**Docs Framework**: Mintlify (MDX), docs.json navigation (legacy: mint.json), centralized docs
 **Communication**: Brief, concise, evidence-based. No fluff.
+**AI Optimization**: Docs optimized for both human and LLM readers (llms.txt, Model Context Protocol)
 
 **Documentation Style Inspiration**: Write in the style of world-class documentation sites:
 - **Vue.js docs** - Clear progressive examples, scannable structure, excellent use of code tabs
@@ -78,7 +79,12 @@ src/                           # Source code (no docs)
 ### Configuration Files
 
 - **docs.json** - Global site configuration (navigation, theme, metadata, integrations)
-- **mint.json** - Legacy name (same as docs.json, Mintlify supports both)
+  - Modern format with recursive navigation structure
+  - Tabs, groups, and pages unified in single hierarchy
+  - More flexible than legacy mint.json format
+- **mint.json** - Legacy name (deprecated but still supported for backwards compatibility)
+  - Voltaire uses docs.json (mint.json is symlink/alias)
+  - New projects should use docs.json
 
 ---
 
@@ -459,6 +465,14 @@ Group related code examples. Use for showing Class vs Namespace API or different
 
 **Important**: Mintlify tabs do NOT synchronize across the page (each tab group is independent).
 
+**Snippets** (reusable components):
+```mdx
+<Snippet file="shared-content.mdx" />
+```
+- Store in `snippets/` directory
+- Supports variables and parameters
+- Use for content repeated across multiple pages
+
 ---
 
 ### Callout Components
@@ -773,6 +787,28 @@ graph TD
 <ParamField path="bytecode" type="string" required>
   Hex-encoded bytecode string
 </ParamField>
+```
+
+**RequestExample / ResponseExample** (API two-column layout):
+```mdx
+<RequestExample>
+```typescript
+const response = await fetch('/api/endpoint');
+```
+</RequestExample>
+
+<ResponseExample>
+```json
+{ "status": "success" }
+```
+</ResponseExample>
+```
+
+**Update** (changelog entries):
+```mdx
+<Update date="January 2025">
+New feature: WASM acceleration for keccak256
+</Update>
 ```
 
 ---
@@ -1784,18 +1820,35 @@ Mintlify is AI-native with several built-in AI capabilities:
 }
 ```
 
-**Agent API** - Automated doc generation and maintenance:
-- Generate docs from code
-- Update docs based on code changes
-- API endpoint for programmatic access
+**Contextual** - Code block context menu integration:
+```json
+{
+  "contextual": {
+    "options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
+  }
+}
+```
+- Adds AI tools to code block menus
+- Enables "Ask Claude", "Ask ChatGPT", etc. directly from examples
+- MCP option for Model Context Protocol integration
 
-**llms.txt** - Optimize content for LLM indexing:
+**llms.txt** - **CRITICAL FOR 2025** - Optimize content for LLM indexing:
 - Add `llms.txt` file to improve AI tool discoverability
 - Lists all documentation pages for LLM context
+- **Required by end of 2025** for AI interface surfacing
+- De facto standard since September 2024
 
 **Model Context Protocol** - Third-party AI tool integration:
 - Allows Claude, ChatGPT, and other AI tools to access docs
 - Enables AI-assisted development with your docs as context
+- Voltaire provides MCP server at https://voltaire.tevm.app/mcp
+
+**AI Optimization Best Practices (2025)**:
+- Structure content for both human and LLM readers
+- Use clear headings for AI navigation
+- Include complete, runnable code examples
+- Add semantic markup (types, parameters, returns)
+- Keep examples self-contained
 
 ---
 
