@@ -1,0 +1,1 @@
+{"name":"eth_gasPrice","summary":"Returns the current price per gas in wei.","params":[],"result":{"name":"Gas price","schema":{"title":"Gas price","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"}},"examples":[{"name":"eth_gasPrice example","params":[],"result":{"name":"Gas price","value":"0x3e8"}}]}
