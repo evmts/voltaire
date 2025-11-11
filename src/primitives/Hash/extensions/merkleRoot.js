@@ -5,11 +5,14 @@ import { ZERO } from "./constants.js";
  * Calculate Merkle root of hash array
  * Uses keccak256 for parent node hashing
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @param {import('./BrandedHash.ts').BrandedHash[]} hashes - Array of hashes (leaf nodes)
  * @returns {import('./BrandedHash.ts').BrandedHash} Merkle root hash
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
  * const leaves = [
  *   Hash.keccak256(data1),
  *   Hash.keccak256(data2),
