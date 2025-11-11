@@ -1,0 +1,257 @@
+---
+title: Hardfork.toString
+description: Convert hardfork to canonical string name
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `fork.toString(): string`
+
+Convert hardfork to canonical string name (lowercase).
+
+**Returns:** `string` - Canonical hardfork name (lowercase)
+
+**Example:**
+
+```typescript
+import { Hardfork, CANCUN, MERGE, PETERSBURG } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+
+fork.toString()  // "cancun"
+
+// Returns canonical names (not aliases)
+MERGE.toString()       // "merge" (not "paris")
+PETERSBURG.toString()  // "petersburg" (not "constantinoplefix")
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/toString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/toString.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toString(fork: BrandedHardfork): string`
+
+Convert hardfork to canonical string name (lowercase).
+
+**Parameters:**
+- `fork: BrandedHardfork` - Hardfork to convert
+
+**Returns:** `string` - Canonical hardfork name (lowercase)
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { CANCUN, MERGE } from '@tevm/voltaire'
+
+Hardfork.toString(CANCUN)  // "cancun"
+Hardfork.toString(MERGE)   // "merge"
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/toString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/toString.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Canonical Names
+
+Returns canonical name (not aliases):
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const merge = Hardfork.fromString("merge")
+const paris = Hardfork.fromString("paris")  // Alias
+
+Hardfork.toString(merge)   // "merge"
+Hardfork.toString(paris)   // "merge" (canonical, not "paris")
+```
+
+### Alias Mapping
+
+| Input Alias | Canonical Output |
+|-------------|------------------|
+| paris | merge |
+| constantinoplefix | petersburg |
+
+## Usage Patterns
+
+### Display Names
+
+Convert for user display:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function displayHardfork(fork: BrandedHardfork): string {
+  const name = Hardfork.toString(fork)
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+displayHardfork(CANCUN)  // "Cancun"
+displayHardfork(MERGE)   // "Merge"
+```
+
+### Logging
+
+Log current hardfork:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function logHardforkInfo(fork: BrandedHardfork) {
+  console.log(`Current hardfork: ${Hardfork.toString(fork)}`)
+  console.log(`EIP-1559: ${fork.hasEIP1559()}`)
+  console.log(`PUSH0: ${fork.hasEIP3855()}`)
+  console.log(`Blobs: ${fork.hasEIP4844()}`)
+}
+```
+
+### Configuration Serialization
+
+Normalize for storage:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function saveConfig(fork: BrandedHardfork) {
+  const config = {
+    hardfork: Hardfork.toString(fork),  // Canonical name
+    timestamp: Date.now()
+  }
+
+  localStorage.setItem("config", JSON.stringify(config))
+}
+
+// Load and parse
+function loadConfig() {
+  const data = JSON.parse(localStorage.getItem("config"))
+  return Hardfork.fromString(data.hardfork)
+}
+```
+
+### API Responses
+
+Serialize for API:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getNetworkInfo(fork: BrandedHardfork) {
+  return {
+    hardfork: Hardfork.toString(fork),
+    consensus: fork.isPostMerge() ? "pos" : "pow",
+    features: {
+      eip1559: fork.hasEIP1559(),
+      push0: fork.hasEIP3855(),
+      blobs: fork.hasEIP4844()
+    }
+  }
+}
+```
+
+### Comparison Keys
+
+Use as map keys:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const featureMatrix = new Map<string, Features>()
+
+function addHardforkFeatures(fork: BrandedHardfork, features: Features) {
+  const key = Hardfork.toString(fork)
+  featureMatrix.set(key, features)
+}
+
+function getHardforkFeatures(fork: BrandedHardfork): Features | undefined {
+  const key = Hardfork.toString(fork)
+  return featureMatrix.get(key)
+}
+```
+
+## Format
+
+**Lowercase:**
+- All names lowercase
+- Consistent formatting
+
+**No Spaces:**
+- Single word (no spaces)
+- Examples: "cancun", "shanghai", "tangerinewhistle"
+
+**Complete List:**
+
+```typescript
+"frontier"
+"homestead"
+"dao"
+"tangerinewhistle"
+"spuriousdragon"
+"byzantium"
+"constantinople"
+"petersburg"
+"istanbul"
+"muirglacier"
+"berlin"
+"london"
+"arrowglacier"
+"grayglacier"
+"merge"
+"shanghai"
+"cancun"
+"prague"
+"osaka"
+```
+
+## Normalization
+
+Always use `toString` for storage/comparison:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+// Good - normalized
+function saveHardfork(fork: BrandedHardfork) {
+  const normalized = Hardfork.toString(fork)
+  storage.set("hardfork", normalized)  // "merge" not "paris"
+}
+
+// Bad - storing alias
+function saveHardforkBad(input: string) {
+  storage.set("hardfork", input)  // Might be "Paris" or "MERGE"
+}
+```
+
+## Inverse Operation
+
+`fromString` is the inverse:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const fork = Hardfork.fromString("cancun")
+const name = Hardfork.toString(fork)
+const fork2 = Hardfork.fromString(name)
+
+fork.isEqual(fork2)  // true - round trip works
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Direct return (hardforks are already strings internally)
+
+**Typical Time:** ~20-40ns per call
+
+## See Also
+
+- [fromString](/primitives/hardfork/from-string) - Parse hardfork from string (inverse)
+- [allNames](/primitives/hardfork/all-names) - Get all hardfork names
+- [isValidName](/primitives/hardfork/is-valid-name) - Validate hardfork name

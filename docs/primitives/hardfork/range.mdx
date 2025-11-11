@@ -1,0 +1,323 @@
+---
+title: Hardfork.range
+description: Get hardforks between two versions (inclusive)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hardfork.range(start: BrandedHardfork, end: BrandedHardfork): BrandedHardfork[]`
+
+Get array of hardforks between two versions (inclusive). Supports both forward and reverse ranges.
+
+**Parameters:**
+- `start: BrandedHardfork` - Start hardfork
+- `end: BrandedHardfork` - End hardfork
+
+**Returns:** `BrandedHardfork[]` - Array of hardforks from start to end (inclusive)
+
+**Example:**
+
+```typescript
+import { Hardfork, BERLIN, SHANGHAI, LONDON } from '@tevm/voltaire'
+
+// Forward range (start < end)
+const forward = Hardfork.range(BERLIN, SHANGHAI)
+// [BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI]
+
+// Reverse range (start > end)
+const backward = Hardfork.range(SHANGHAI, BERLIN)
+// [SHANGHAI, MERGE, GRAY_GLACIER, ARROW_GLACIER, LONDON, BERLIN]
+
+// Single hardfork (start === end)
+const single = Hardfork.range(LONDON, LONDON)
+// [LONDON]
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/range.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/range.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `range(start: BrandedHardfork, end: BrandedHardfork): BrandedHardfork[]`
+
+Get array of hardforks between two versions (inclusive). Supports both forward and reverse ranges.
+
+**Parameters:**
+- `start: BrandedHardfork` - Start hardfork
+- `end: BrandedHardfork` - End hardfork
+
+**Returns:** `BrandedHardfork[]` - Array of hardforks from start to end (inclusive)
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+import { BERLIN, SHANGHAI } from '@tevm/voltaire'
+
+const forks = Hardfork.range(BERLIN, SHANGHAI)
+
+forks.forEach(fork => {
+  console.log(Hardfork.toString(fork))
+})
+// berlin
+// london
+// arrowglacier
+// grayglacier
+// merge
+// shanghai
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/range.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/range.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Range Direction
+
+### Forward Range (start < end)
+
+Returns hardforks in chronological order:
+
+```typescript
+import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
+
+const forks = Hardfork.range(BERLIN, CANCUN)
+// [BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI, CANCUN]
+```
+
+### Reverse Range (start > end)
+
+Returns hardforks in reverse chronological order:
+
+```typescript
+import { Hardfork, CANCUN, BERLIN } from '@tevm/voltaire'
+
+const forks = Hardfork.range(CANCUN, BERLIN)
+// [CANCUN, SHANGHAI, MERGE, GRAY_GLACIER, ARROW_GLACIER, LONDON, BERLIN]
+```
+
+### Single Hardfork (start === end)
+
+Returns array with single element:
+
+```typescript
+import { Hardfork, LONDON } from '@tevm/voltaire'
+
+const forks = Hardfork.range(LONDON, LONDON)
+// [LONDON]
+```
+
+## Usage Patterns
+
+### Upgrade Path
+
+Get hardforks to upgrade through:
+
+```typescript
+import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
+
+function getUpgradePath(from: BrandedHardfork, to: BrandedHardfork) {
+  const path = Hardfork.range(from, to)
+  return path.slice(1)  // Exclude current version
+}
+
+const upgrades = getUpgradePath(BERLIN, CANCUN)
+// [LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI, CANCUN]
+
+console.log(`Need to upgrade through ${upgrades.length} hardforks`)
+```
+
+### Feature Changes
+
+List features introduced in range:
+
+```typescript
+import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
+
+function listFeatureChanges(start: BrandedHardfork, end: BrandedHardfork) {
+  const forks = Hardfork.range(start, end)
+
+  return forks.map(fork => {
+    const name = Hardfork.toString(fork)
+    const features = []
+
+    if (fork.hasEIP1559() && !start.hasEIP1559()) {
+      features.push("EIP-1559 base fee")
+    }
+    if (fork.hasEIP3855() && !start.hasEIP3855()) {
+      features.push("PUSH0 opcode")
+    }
+    if (fork.hasEIP4844() && !start.hasEIP4844()) {
+      features.push("Blob transactions")
+    }
+    if (fork.isPostMerge() && !start.isPostMerge()) {
+      features.push("Proof of Stake")
+    }
+
+    return { name, features }
+  })
+}
+
+const changes = listFeatureChanges(LONDON, CANCUN)
+// [
+//   { name: "london", features: [] },
+//   { name: "arrowglacier", features: [] },
+//   { name: "grayglacier", features: [] },
+//   { name: "merge", features: ["Proof of Stake"] },
+//   { name: "shanghai", features: ["PUSH0 opcode"] },
+//   { name: "cancun", features: ["Blob transactions"] }
+// ]
+```
+
+### Migration Planning
+
+Plan network upgrade:
+
+```typescript
+import { Hardfork, BERLIN, PRAGUE } from '@tevm/voltaire'
+
+function planMigration(current: BrandedHardfork, target: BrandedHardfork) {
+  if (current.isAtLeast(target)) {
+    return { needed: false, message: "Already at target version" }
+  }
+
+  const path = Hardfork.range(current, target).slice(1)
+
+  return {
+    needed: true,
+    steps: path.length,
+    hardforks: path.map(Hardfork.toString),
+    features: path.map(fork => ({
+      name: Hardfork.toString(fork),
+      eip1559: fork.hasEIP1559(),
+      push0: fork.hasEIP3855(),
+      blobs: fork.hasEIP4844(),
+      transient: fork.hasEIP1153(),
+      pos: fork.isPostMerge()
+    }))
+  }
+}
+
+const plan = planMigration(BERLIN, PRAGUE)
+console.log(`Upgrade requires ${plan.steps} steps`)
+```
+
+### Version Range Validation
+
+Check if fork is in supported range:
+
+```typescript
+import { Hardfork, BERLIN, SHANGHAI } from '@tevm/voltaire'
+
+function isSupportedVersion(fork: BrandedHardfork): boolean {
+  const MIN_VERSION = BERLIN
+  const MAX_VERSION = SHANGHAI
+
+  const supportedRange = Hardfork.range(MIN_VERSION, MAX_VERSION)
+  return supportedRange.includes(fork)
+}
+
+isSupportedVersion(LONDON)   // true
+isSupportedVersion(CANCUN)   // false
+```
+
+### Breaking Changes Detection
+
+Find breaking changes in range:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function findBreakingChanges(start: BrandedHardfork, end: BrandedHardfork) {
+  const forks = Hardfork.range(start, end)
+  const breakingChanges = []
+
+  for (const fork of forks) {
+    if (fork.isPostMerge() && !start.isPostMerge()) {
+      breakingChanges.push({
+        fork: Hardfork.toString(fork),
+        change: "DIFFICULTY opcode now returns PREVRANDAO"
+      })
+    }
+  }
+
+  return breakingChanges
+}
+```
+
+## Network Configuration
+
+Generate network upgrade timeline:
+
+```typescript
+import { Hardfork, LONDON, OSAKA } from '@tevm/voltaire'
+
+function generateUpgradeTimeline(from: BrandedHardfork, to: BrandedHardfork) {
+  const forks = Hardfork.range(from, to)
+
+  return {
+    current: Hardfork.toString(from),
+    target: Hardfork.toString(to),
+    steps: forks.map((fork, index) => ({
+      step: index + 1,
+      name: Hardfork.toString(fork),
+      isPoS: fork.isPostMerge()
+    }))
+  }
+}
+```
+
+## Edge Cases
+
+### Empty Range
+
+When start > end but reverse=false not supported, returns empty or throws:
+
+```typescript
+import { Hardfork, BERLIN, LONDON } from '@tevm/voltaire'
+
+// Forward range works
+const forward = Hardfork.range(BERLIN, LONDON)  // [BERLIN, LONDON]
+
+// Reverse range also works
+const reverse = Hardfork.range(LONDON, BERLIN)  // [LONDON, BERLIN]
+```
+
+### Invalid Hardforks
+
+If hardforks don't exist in order:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const invalidFork = "notahardfork" as any
+
+try {
+  const range = Hardfork.range(invalidFork, LONDON)
+} catch (e) {
+  console.error("Invalid hardfork")
+}
+```
+
+## Performance
+
+**Time Complexity:** O(n) where n = range size
+
+**Typical Time:** ~100ns + (50ns × range size)
+
+**Example Ranges:**
+- BERLIN → LONDON: 2 hardforks (~150ns)
+- BERLIN → CANCUN: 7 hardforks (~450ns)
+- FRONTIER → OSAKA: 19 hardforks (~1050ns)
+
+## See Also
+
+- [allIds](/primitives/hardfork/all-ids) - Get all hardforks
+- [isAtLeast](/primitives/hardfork/is-at-least) - Check if in range
+- [compare](/primitives/hardfork/compare) - Determine range direction

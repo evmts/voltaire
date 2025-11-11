@@ -29,8 +29,17 @@ export function fromHex(hex: string): BrandedAddress {
 
 /**
  * Convert Address to lowercase hex string
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Lowercase hex string with 0x prefix
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * const hex = Address.toHex(addr);
+ * ```
  */
 export function toHex(address: BrandedAddress): string {
 	return loader.addressToHex(address);
@@ -38,8 +47,17 @@ export function toHex(address: BrandedAddress): string {
 
 /**
  * Convert Address to EIP-55 checksummed hex string
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Checksummed hex string with 0x prefix
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * const checksummed = Address.toChecksummed(addr);
+ * ```
  */
 export function toChecksummed(address: BrandedAddress): Checksummed {
 	return loader.addressToChecksumHex(address) as Checksummed;
@@ -47,8 +65,17 @@ export function toChecksummed(address: BrandedAddress): Checksummed {
 
 /**
  * Convert Address to lowercase hex string
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Lowercase hex string
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * const lower = Address.toLowercase(addr);
+ * ```
  */
 export function toLowercase(address: BrandedAddress): Lowercase {
 	return loader.addressToHex(address) as Lowercase;
@@ -56,8 +83,17 @@ export function toLowercase(address: BrandedAddress): Lowercase {
 
 /**
  * Convert Address to uppercase hex string
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns Uppercase hex string
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * const upper = Address.toUppercase(addr);
+ * ```
  */
 export function toUppercase(address: BrandedAddress): Uppercase {
 	const hex = loader.addressToHex(address);
@@ -66,8 +102,17 @@ export function toUppercase(address: BrandedAddress): Uppercase {
 
 /**
  * Check if address is zero address
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param address - 20-byte address
  * @returns true if address is 0x0000...0000
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * if (Address.isZero(addr)) { ... }
+ * ```
  */
 export function isZero(address: BrandedAddress): boolean {
 	return loader.addressIsZero(address);
@@ -75,9 +120,18 @@ export function isZero(address: BrandedAddress): boolean {
 
 /**
  * Compare two addresses for equality
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param a - First address
  * @param b - Second address
  * @returns true if addresses are equal
+ * @throws {never} Never throws
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * if (Address.equals(addr1, addr2)) { ... }
+ * ```
  */
 export function equals(a: BrandedAddress, b: BrandedAddress): boolean {
 	return loader.addressEquals(a, b);
@@ -85,8 +139,17 @@ export function equals(a: BrandedAddress, b: BrandedAddress): boolean {
 
 /**
  * Validate EIP-55 checksum
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param hex - Hex string to validate
  * @returns true if checksum is valid
+ * @throws {never} Never throws - returns false on errors
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * if (Address.isValidChecksum('0x742d35Cc...')) { ... }
+ * ```
  */
 export function isValidChecksum(hex: string): boolean {
 	return loader.addressValidateChecksum(hex);
@@ -94,8 +157,17 @@ export function isValidChecksum(hex: string): boolean {
 
 /**
  * Validate address format
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param hex - Hex string to validate
  * @returns true if valid address format
+ * @throws {never} Never throws - returns false on errors
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * if (Address.isValid('0x742d35...')) { ... }
+ * ```
  */
 export function isValid(hex: string): boolean {
 	try {

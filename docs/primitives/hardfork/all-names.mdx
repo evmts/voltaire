@@ -1,0 +1,261 @@
+---
+title: Hardfork.allNames
+description: Get all hardfork names in chronological order
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hardfork.allNames(): string[]`
+
+Get all hardfork names in chronological order (oldest to newest).
+
+**Returns:** `string[]` - Array of hardfork names (lowercase)
+
+**Example:**
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+const names = Hardfork.allNames()
+// [
+//   "frontier", "homestead", "dao", "tangerinewhistle",
+//   "spuriousdragon", "byzantium", "constantinople",
+//   "petersburg", "istanbul", "muirglacier", "berlin",
+//   "london", "arrowglacier", "grayglacier", "merge",
+//   "shanghai", "cancun", "prague", "osaka"
+// ]
+
+console.log(`Total hardforks: ${names.length}`)  // 19
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/allNames.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allNames.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `allNames(): string[]`
+
+Get all hardfork names in chronological order (oldest to newest).
+
+**Returns:** `string[]` - Array of hardfork names (lowercase)
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+
+const names = Hardfork.allNames()
+// [
+//   "frontier", "homestead", "dao", ...
+// ]
+
+// Iterate over all hardforks
+names.forEach(name => {
+  console.log(name)
+})
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/allNames.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allNames.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Chronological Order
+
+Returns hardforks in deployment order:
+
+```
+FRONTIER → HOMESTEAD → DAO → TANGERINE_WHISTLE → SPURIOUS_DRAGON →
+BYZANTIUM → CONSTANTINOPLE → PETERSBURG → ISTANBUL → MUIR_GLACIER →
+BERLIN → LONDON → ARROW_GLACIER → GRAY_GLACIER → MERGE →
+SHANGHAI → CANCUN → PRAGUE → OSAKA
+```
+
+## Usage Patterns
+
+### UI Selector
+
+Build hardfork selector dropdown:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function buildHardforkSelector(): string {
+  const names = Hardfork.allNames()
+
+  const options = names
+    .map(name => {
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1)
+      return `<option value="${name}">${capitalized}</option>`
+    })
+    .join('\n')
+
+  return `<select name="hardfork">${options}</select>`
+}
+```
+
+### Configuration Validation
+
+Validate user input:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function validateHardfork(input: string): void {
+  const validNames = Hardfork.allNames()
+
+  if (!validNames.includes(input.toLowerCase())) {
+    throw new Error(
+      `Invalid hardfork: ${input}\n` +
+      `Valid options: ${validNames.join(", ")}`
+    )
+  }
+}
+```
+
+### Timeline Generation
+
+Generate hardfork timeline:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function generateTimeline() {
+  const names = Hardfork.allNames()
+
+  return names.map((name, index) => ({
+    index,
+    name,
+    displayName: name.charAt(0).toUpperCase() + name.slice(1)
+  }))
+}
+
+// [
+//   { index: 0, name: "frontier", displayName: "Frontier" },
+//   { index: 1, name: "homestead", displayName: "Homestead" },
+//   ...
+// ]
+```
+
+### Feature Matrix
+
+Build feature availability table:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function generateFeatureMatrix() {
+  const names = Hardfork.allNames()
+
+  return names.map(name => {
+    const fork = Hardfork.fromString(name)
+    return {
+      name,
+      eip1559: fork.hasEIP1559(),
+      push0: fork.hasEIP3855(),
+      blobs: fork.hasEIP4844(),
+      transientStorage: fork.hasEIP1153(),
+      pos: fork.isPostMerge()
+    }
+  })
+}
+```
+
+### CLI Tools
+
+Display available hardforks:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function listHardforks() {
+  const names = Hardfork.allNames()
+
+  console.log("Available hardforks:")
+  names.forEach((name, index) => {
+    console.log(`  ${index.toString().padStart(2)}: ${name}`)
+  })
+}
+```
+
+## Network Configuration
+
+Get supported versions:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function getSupportedVersions(minVersion: string, maxVersion: string) {
+  const allNames = Hardfork.allNames()
+  const minIndex = allNames.indexOf(minVersion)
+  const maxIndex = allNames.indexOf(maxVersion)
+
+  if (minIndex === -1 || maxIndex === -1) {
+    throw new Error("Invalid version range")
+  }
+
+  return allNames.slice(minIndex, maxIndex + 1)
+}
+
+// Get all hardforks from London to Prague
+const supported = getSupportedVersions("london", "prague")
+```
+
+## Return Format
+
+**Canonical Names:**
+- Returns canonical names (not aliases)
+- "merge" not "paris"
+- "petersburg" not "constantinoplefix"
+
+**Lowercase:**
+- All names lowercase
+- Consistent formatting
+
+**Complete List:**
+- Includes all hardforks (historical and future)
+- 19 total hardforks as of Osaka
+
+## Complete List
+
+```typescript
+[
+  "frontier",         // 0 - Genesis
+  "homestead",        // 1 - March 2016
+  "dao",              // 2 - July 2016
+  "tangerinewhistle", // 3 - October 2016
+  "spuriousdragon",   // 4 - November 2016
+  "byzantium",        // 5 - October 2017
+  "constantinople",   // 6 - February 2019
+  "petersburg",       // 7 - February 2019
+  "istanbul",         // 8 - December 2019
+  "muirglacier",      // 9 - January 2020
+  "berlin",           // 10 - April 2021
+  "london",           // 11 - August 2021
+  "arrowglacier",     // 12 - December 2021
+  "grayglacier",      // 13 - June 2022
+  "merge",            // 14 - September 2022
+  "shanghai",         // 15 - April 2023
+  "cancun",           // 16 - March 2024
+  "prague",           // 17 - Future
+  "osaka"             // 18 - Future
+]
+```
+
+## Performance
+
+**Time Complexity:** O(n) where n = number of hardforks (19)
+
+**Typical Time:** ~100-200ns (returns pre-allocated array)
+
+## See Also
+
+- [allIds](/primitives/hardfork/all-ids) - Get hardfork constants (not strings)
+- [fromString](/primitives/hardfork/from-string) - Parse hardfork from string
+- [isValidName](/primitives/hardfork/is-valid-name) - Validate hardfork name

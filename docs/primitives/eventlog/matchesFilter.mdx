@@ -1,0 +1,365 @@
+---
+title: EventLog.matchesFilter
+description: Check if log matches complete filter with address, topics, and block range
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.matchesFilter(filter: Filter): boolean`
+
+Check if log matches complete filter including address, topics, block range, and block hash.
+
+**Parameters:**
+- `filter: Filter` - Filter object with optional fields:
+  - `address?: BrandedAddress | BrandedAddress[]` - Address or array of addresses
+  - `topics?: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter
+  - `fromBlock?: bigint` - Starting block number (inclusive)
+  - `toBlock?: bigint` - Ending block number (inclusive)
+  - `blockHash?: BrandedHash` - Specific block hash
+
+**Returns:** `boolean` - True if log matches all specified criteria
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
+  data: new Uint8Array([]),
+  blockNumber: 18000000n,
+  blockHash: Hash.fromHex('0xabc...'),
+});
+
+// Complete filter
+const matches = log.matchesFilter({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...'), null, Hash.fromHex('0x000...to')],
+  fromBlock: 17000000n,
+  toBlock: 19000000n,
+});
+console.log(matches); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesFilter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `matchesFilter(log: BrandedEventLog, filter: Filter): boolean`
+
+Check if log matches complete filter including address, topics, block range, and block hash.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `filter: Filter` - Filter criteria
+
+**Returns:** `boolean` - True if log matches all specified criteria
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
+  data: new Uint8Array([]),
+  blockNumber: 18000000n,
+});
+
+const matches = EventLog.matchesFilter(log, {
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...'), null, Hash.fromHex('0x000...to')],
+  fromBlock: 17000000n,
+  toBlock: 19000000n,
+});
+console.log(matches); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/matchesFilter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
+
+</Tab>
+</Tabs>
+
+## Filter Fields
+
+### Address Filter
+
+Single address or array (OR logic):
+
+```typescript
+import { EventLog, Address } from '@tevm/voltaire';
+
+// Single address
+const matches1 = log.matchesFilter({
+  address: usdcAddress,
+});
+
+// Multiple addresses
+const matches2 = log.matchesFilter({
+  address: [usdcAddress, daiAddress, wethAddress],
+});
+
+// Undefined: matches all addresses
+const matches3 = log.matchesFilter({
+  topics: [TRANSFER_SIG],
+});
+```
+
+### Topics Filter
+
+Array with null wildcards and OR logic:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000...user');
+
+const matches = log.matchesFilter({
+  topics: [
+    TRANSFER_SIG,  // topic0: exact match
+    null,          // topic1: any value
+    userHash,      // topic2: exact match
+  ],
+});
+```
+
+### Block Range Filter
+
+Inclusive bounds on block number:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Blocks 18M to 18.5M (inclusive)
+const matches = log.matchesFilter({
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Only requires log.blockNumber to be defined
+```
+
+### Block Hash Filter
+
+Exact block match:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const blockHash = Hash.fromHex('0xabc...');
+
+const matches = log.matchesFilter({
+  blockHash: blockHash,
+});
+
+// Only requires log.blockHash to be defined
+```
+
+## Filter Combinations
+
+All specified filters use AND logic:
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Must match ALL conditions
+const matches = log.matchesFilter({
+  address: [usdc, dai],              // AND address is USDC or DAI
+  topics: [TRANSFER_SIG, null, userHash],  // AND is Transfer to user
+  fromBlock: 18000000n,               // AND block >= 18M
+  toBlock: 18500000n,                 // AND block <= 18.5M
+});
+```
+
+## Usage Patterns
+
+### Complete RPC-Style Filter
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000...user');
+
+// Equivalent to eth_getLogs filter
+const filtered = allLogs.filter(log =>
+  log.matchesFilter({
+    address: [
+      Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+      Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+    ],
+    topics: [
+      TRANSFER_SIG,      // Transfer events
+      null,              // from any
+      userHash,          // to user
+    ],
+    fromBlock: 18000000n,
+    toBlock: 18500000n,
+  })
+);
+
+console.log(`Found ${filtered.length} matching logs`);
+```
+
+### Partial Filters
+
+Omit unnecessary fields:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Only address filter
+const byAddress = log.matchesFilter({
+  address: tokenAddress,
+});
+
+// Only topics filter
+const byTopics = log.matchesFilter({
+  topics: [TRANSFER_SIG, null, userHash],
+});
+
+// Only block range
+const byBlock = log.matchesFilter({
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+```
+
+### Block Hash vs Block Range
+
+Block hash is alternative to from/to block:
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+// Option 1: Block range
+const range = log.matchesFilter({
+  fromBlock: 18000000n,
+  toBlock: 18000000n,  // Same block
+});
+
+// Option 2: Block hash (more precise)
+const hash = log.matchesFilter({
+  blockHash: Hash.fromHex('0xabc...'),
+});
+
+// Don't mix: blockHash takes precedence
+const mixed = log.matchesFilter({
+  blockHash: Hash.fromHex('0xabc...'),
+  fromBlock: 18000000n,  // Ignored
+  toBlock: 18500000n,    // Ignored
+});
+```
+
+### Multi-Stage Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Stage 1: Coarse filter (address + block range)
+const coarse = allLogs.filter(log =>
+  log.matchesFilter({
+    address: [usdc, dai, weth],
+    fromBlock: 18000000n,
+    toBlock: 18500000n,
+  })
+);
+
+// Stage 2: Refined filter (specific event + parameters)
+const refined = coarse.filter(log =>
+  log.matchesFilter({
+    topics: [TRANSFER_SIG, null, userHash],
+  })
+);
+
+console.log(`Coarse: ${coarse.length}, Refined: ${refined.length}`);
+```
+
+### Validating Log Completeness
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function requiresBlockNumber(filter: Filter): boolean {
+  return filter.fromBlock !== undefined || filter.toBlock !== undefined;
+}
+
+function requiresBlockHash(filter: Filter): boolean {
+  return filter.blockHash !== undefined;
+}
+
+// Check if log has required fields
+const filter = { fromBlock: 18000000n };
+
+if (requiresBlockNumber(filter) && log.blockNumber === undefined) {
+  console.error('Log missing blockNumber for filter');
+}
+```
+
+## Batch Filtering
+
+For multiple logs, use `filterLogs` instead:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Efficient: Single pass with optimizations
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdc, dai],
+  topics: [TRANSFER_SIG, null, userHash],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Less efficient: Multiple passes
+const filtered2 = allLogs.filter(log =>
+  log.matchesFilter({
+    address: [usdc, dai],
+    topics: [TRANSFER_SIG, null, userHash],
+    fromBlock: 18000000n,
+    toBlock: 18500000n,
+  })
+);
+```
+
+## Missing Optional Fields
+
+Filter checks only apply if log has required fields:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const pendingLog = EventLog.from({
+  address: contractAddress,
+  topics: [TRANSFER_SIG],
+  data: new Uint8Array([]),
+  // No blockNumber, blockHash, etc.
+});
+
+// Block range filter ignored (no blockNumber)
+const matches1 = pendingLog.matchesFilter({
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+console.log(matches1); // true (block filters skipped)
+
+// Block hash filter ignored (no blockHash)
+const matches2 = pendingLog.matchesFilter({
+  blockHash: Hash.fromHex('0xabc...'),
+});
+console.log(matches2); // true (block hash filter skipped)
+```
+
+## See Also
+
+- [matchesAddress](/primitives/eventlog/matchesaddress) - Address filtering
+- [matchesTopics](/primitives/eventlog/matchestopics) - Topic filtering
+- [filterLogs](/primitives/eventlog/filterlogs) - Batch filtering (recommended for arrays)
+- [Fundamentals](/primitives/eventlog/fundamentals) - Filter semantics

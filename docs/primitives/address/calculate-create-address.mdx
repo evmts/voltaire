@@ -1,0 +1,264 @@
+---
+title: Address.calculateCreateAddress
+description: Calculate CREATE contract address from deployer and nonce
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.calculateCreateAddress(nonce: bigint): Address`
+
+Calculate CREATE contract address using sender address and transaction nonce. Contract deployed with CREATE opcode has deterministic address based on deployer and nonce.
+
+**Formula:** `keccak256(rlp([sender, nonce]))[12:32]`
+
+**Parameters:**
+- `nonce: bigint` - Transaction nonce (must be ≥ 0)
+
+**Returns:** `Address` - Calculated contract address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// First contract deployed (nonce 0)
+const contract1 = deployer.calculateCreateAddress(0n)
+console.log(contract1.toHex())
+
+// Second contract (nonce 1)
+const contract2 = deployer.calculateCreateAddress(1n)
+console.log(contract2.toHex())
+
+// Addresses are different for each nonce
+console.log(contract1.equals(contract2)) // false
+```
+
+**Throws:**
+- `InvalidValueError` - If nonce is negative
+
+**Defined in:** [primitives/Address/BrandedAddress/calculateCreateAddress.js:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js#L49)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `calculateCreateAddress(address: BrandedAddress, nonce: bigint): BrandedAddress`
+
+Calculate CREATE contract address.
+
+**Parameters:**
+- `address: BrandedAddress` - Deployer address
+- `nonce: bigint` - Transaction nonce
+
+**Returns:** `BrandedAddress` - Calculated contract address
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const contractAddr = Address.calculateCreateAddress(deployer, 0n)
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/calculateCreateAddress.js:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js#L49)
+
+</Tab>
+<Tab title="Zig">
+
+## `Address.calculateCreateAddress(allocator: Allocator, sender: Address, nonce: u64): !Address`
+
+Calculate CREATE contract address. Requires allocator for RLP encoding.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator
+- `sender: Address` - Deployer address
+- `nonce: u64` - Transaction nonce
+
+**Returns:** `Address` - Calculated contract address
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+const contract = try Address.calculateCreateAddress(allocator, deployer, 0);
+
+std.debug.print("Contract: {}\n", .{contract});
+```
+
+**Defined in:** [primitives/Address/address.zig:195](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L195)
+
+</Tab>
+</Tabs>
+
+## Algorithm
+
+1. **RLP encode** sender address and nonce as list: `[address, nonce]`
+2. **Hash with keccak256** producing 32-byte hash
+3. **Extract address** from last 20 bytes: `hash[12:32]`
+
+**Pseudocode:**
+```
+rlp_data = rlp([sender_address, nonce])
+hash = keccak256(rlp_data)
+contract_address = hash[12:32]
+```
+
+## Nonce Handling
+
+**Nonce encoding:** RLP encodes nonce as minimal big-endian bytes (no leading zeros)
+
+**Examples:**
+- Nonce `0` → empty bytes `[]`
+- Nonce `1` → `[0x01]`
+- Nonce `127` → `[0x7f]`
+- Nonce `255` → `[0xff]`
+- Nonce `256` → `[0x01, 0x00]`
+
+## Complete Example
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Deployer address
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Track deployed contracts
+const deployedContracts: Address[] = []
+
+// Deploy first contract (nonce 0)
+const contract1 = deployer.calculateCreateAddress(0n)
+deployedContracts.push(contract1)
+console.log(`Contract 1: ${contract1.toHex()}`)
+
+// Deploy second contract (nonce 1)
+const contract2 = deployer.calculateCreateAddress(1n)
+deployedContracts.push(contract2)
+console.log(`Contract 2: ${contract2.toHex()}`)
+
+// Each deployment increments nonce
+for (let i = 2; i < 10; i++) {
+  const contract = deployer.calculateCreateAddress(BigInt(i))
+  deployedContracts.push(contract)
+}
+```
+
+## Use Cases
+
+### Predicting Contract Addresses
+
+Calculate address before deployment:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+async function deployContract(deployer: Address, bytecode: Uint8Array) {
+  // Get current nonce
+  const nonce = await provider.getTransactionCount(deployer.toHex())
+
+  // Predict contract address
+  const predictedAddress = deployer.calculateCreateAddress(BigInt(nonce))
+
+  // Deploy contract
+  const tx = await signer.sendTransaction({
+    data: bytecode
+  })
+
+  await tx.wait()
+
+  // Verify prediction
+  console.log(`Predicted: ${predictedAddress.toHex()}`)
+  console.log(`Actual: ${tx.contractAddress}`)
+  // Should match!
+}
+```
+
+### Factory Contracts
+
+Track contract addresses deployed by factory:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class ContractFactory {
+  constructor(private factoryAddress: Address) {}
+
+  async getDeployedAddress(deploymentIndex: bigint): Promise<Address> {
+    // Factory's nonce when deploying this contract
+    const nonce = await this.getFactoryNonceAtDeployment(deploymentIndex)
+
+    return this.factoryAddress.calculateCreateAddress(nonce)
+  }
+}
+```
+
+### Address Validation
+
+Verify contract was deployed by expected address:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function verifyContractOrigin(
+  contract: Address,
+  expectedDeployer: Address,
+  nonce: bigint
+): boolean {
+  const calculated = expectedDeployer.calculateCreateAddress(nonce)
+  return calculated.equals(contract)
+}
+```
+
+## CREATE vs CREATE2
+
+| Feature | CREATE | CREATE2 |
+|---------|--------|---------|
+| **Determinism** | Nonce-based (sequential) | Salt-based (arbitrary) |
+| **Dependencies** | Keccak256, RLP | Keccak256 only |
+| **Parameters** | `(address, nonce)` | `(address, salt, initCode)` |
+| **Predictability** | Requires tracking nonce | Fully deterministic always |
+| **Redeployment** | Different address each time | Same address if inputs identical |
+
+## Performance
+
+**Cryptographic operations:**
+- RLP encoding (~O(n) where n = nonce size)
+- keccak256 hash
+
+**Bundle size impact:** Adds keccak256 + RLP encoder (~10-15 KB total)
+
+## Error Handling
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Valid nonces
+console.log(deployer.calculateCreateAddress(0n))   // ✓
+console.log(deployer.calculateCreateAddress(100n)) // ✓
+
+// Invalid: negative nonce
+try {
+  deployer.calculateCreateAddress(-1n)
+} catch (e) {
+  console.error(e) // InvalidValueError: Nonce cannot be negative
+}
+```
+
+## See Also
+
+- [calculateCreate2Address](/primitives/address/calculate-create2-address) - CREATE2 address derivation
+- [fromHex](/primitives/address/from-hex) - Parse address from hex
+- [Rlp](/primitives/rlp) - RLP encoding
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 7 (Contract creation)

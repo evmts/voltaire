@@ -1,0 +1,240 @@
+---
+title: Hardfork.allIds
+description: Get all hardfork constants in chronological order
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hardfork.allIds(): BrandedHardfork[]`
+
+Get all hardfork constants in chronological order (oldest to newest).
+
+**Returns:** `BrandedHardfork[]` - Array of hardfork constants
+
+**Example:**
+
+```typescript
+import { Hardfork, FRONTIER, OSAKA } from '@tevm/voltaire'
+
+const ids = Hardfork.allIds()
+// [FRONTIER, HOMESTEAD, DAO, ..., CANCUN, PRAGUE, OSAKA]
+
+console.log(`Total hardforks: ${ids.length}`)  // 19
+
+// First and last
+console.log(Hardfork.toString(ids[0]))   // "frontier"
+console.log(Hardfork.toString(ids[18]))  // "osaka"
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/allIds.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allIds.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `allIds(): BrandedHardfork[]`
+
+Get all hardfork constants in chronological order (oldest to newest).
+
+**Returns:** `BrandedHardfork[]` - Array of hardfork constants
+
+**Example:**
+
+```typescript
+import * as Hardfork from '@tevm/voltaire/Hardfork'
+
+const ids = Hardfork.allIds()
+
+// Iterate over all hardforks
+for (const fork of ids) {
+  console.log(
+    `${Hardfork.toString(fork)}: ` +
+    `EIP-1559=${fork.hasEIP1559()}, ` +
+    `Blobs=${fork.hasEIP4844()}`
+  )
+}
+```
+
+**Defined in:** [primitives/Hardfork/BrandedHardfork/allIds.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allIds.js)
+
+</Tab>
+<Tab title="Zig">
+
+TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
+
+</Tab>
+</Tabs>
+
+## Chronological Order
+
+Returns hardforks in deployment order:
+
+```typescript
+[
+  FRONTIER, HOMESTEAD, DAO, TANGERINE_WHISTLE, SPURIOUS_DRAGON,
+  BYZANTIUM, CONSTANTINOPLE, PETERSBURG, ISTANBUL, MUIR_GLACIER,
+  BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE,
+  SHANGHAI, CANCUN, PRAGUE, OSAKA
+]
+```
+
+## Usage Patterns
+
+### Feature Matrix Generation
+
+Generate complete feature matrix:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function generateFeatureMatrix() {
+  const forks = Hardfork.allIds()
+
+  return forks.map(fork => ({
+    name: Hardfork.toString(fork),
+    consensus: fork.isPostMerge() ? "PoS" : "PoW",
+    eip1559: fork.hasEIP1559(),
+    push0: fork.hasEIP3855(),
+    blobs: fork.hasEIP4844(),
+    transientStorage: fork.hasEIP1153()
+  }))
+}
+
+// [
+//   { name: "frontier", consensus: "PoW", eip1559: false, ... },
+//   { name: "homestead", consensus: "PoW", eip1559: false, ... },
+//   ...
+//   { name: "cancun", consensus: "PoS", eip1559: true, ... },
+// ]
+```
+
+### Iterate All Hardforks
+
+Process each hardfork:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function analyzeAllHardforks() {
+  const forks = Hardfork.allIds()
+
+  for (const fork of forks) {
+    console.log(`\n${Hardfork.toString(fork).toUpperCase()}`)
+    console.log(`  EIP-1559: ${fork.hasEIP1559()}`)
+    console.log(`  PUSH0: ${fork.hasEIP3855()}`)
+    console.log(`  Blobs: ${fork.hasEIP4844()}`)
+    console.log(`  Transient: ${fork.hasEIP1153()}`)
+    console.log(`  PoS: ${fork.isPostMerge()}`)
+  }
+}
+```
+
+### Find Feature Introduction
+
+Find when feature was introduced:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+function findFeatureIntroduction(
+  featureCheck: (fork: BrandedHardfork) => boolean
+): BrandedHardfork | null {
+  const forks = Hardfork.allIds()
+
+  for (const fork of forks) {
+    if (featureCheck(fork)) {
+      return fork
+    }
+  }
+
+  return null
+}
+
+// Find when EIP-1559 was introduced
+const eip1559Fork = findFeatureIntroduction(fork => fork.hasEIP1559())
+console.log(Hardfork.toString(eip1559Fork))  // "london"
+
+// Find when blobs were introduced
+const blobsFork = findFeatureIntroduction(fork => fork.hasEIP4844())
+console.log(Hardfork.toString(blobsFork))  // "cancun"
+```
+
+### Network Configuration
+
+Get supported hardfork range:
+
+```typescript
+import { Hardfork, BERLIN, PRAGUE } from '@tevm/voltaire'
+
+function getSupportedRange(min: BrandedHardfork, max: BrandedHardfork) {
+  const allForks = Hardfork.allIds()
+
+  return allForks.filter(fork =>
+    fork.isAtLeast(min) && fork.lte(max)
+  )
+}
+
+// Get all hardforks from Berlin to Prague
+const supported = getSupportedRange(BERLIN, PRAGUE)
+// [BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI, CANCUN, PRAGUE]
+```
+
+### Sorting
+
+Sort hardforks chronologically:
+
+```typescript
+import { Hardfork, CANCUN, BERLIN, SHANGHAI } from '@tevm/voltaire'
+
+const unsorted = [CANCUN, BERLIN, SHANGHAI]
+
+// Sort using compare
+const sorted = unsorted.sort(Hardfork.compare)
+// [BERLIN, SHANGHAI, CANCUN]
+
+// Verify against canonical order
+const allForks = Hardfork.allIds()
+const expectedOrder = allForks.filter(f => unsorted.includes(f))
+console.log(sorted === expectedOrder)  // true (same order)
+```
+
+## Comparison with allNames
+
+**allIds():**
+- Returns `BrandedHardfork[]` constants
+- Type-safe, can call methods directly
+- Better for programmatic use
+
+**allNames():**
+- Returns `string[]` names
+- Better for display/UI
+- Requires parsing back to hardfork
+
+```typescript
+import { Hardfork } from '@tevm/voltaire'
+
+// allIds - type-safe, direct method calls
+const ids = Hardfork.allIds()
+ids.forEach(fork => {
+  console.log(fork.hasEIP1559())  // ✅ Direct method call
+})
+
+// allNames - requires parsing
+const names = Hardfork.allNames()
+names.forEach(name => {
+  const fork = Hardfork.fromString(name)
+  console.log(fork.hasEIP1559())  // ⚠️ Must parse first
+})
+```
+
+## Performance
+
+**Time Complexity:** O(n) where n = number of hardforks (19)
+
+**Typical Time:** ~100-200ns (returns pre-allocated array)
+
+## See Also
+
+- [allNames](/primitives/hardfork/all-names) - Get hardfork names as strings
+- [range](/primitives/hardfork/range) - Get hardforks between two versions
+- [compare](/primitives/hardfork/compare) - Sort hardforks chronologically

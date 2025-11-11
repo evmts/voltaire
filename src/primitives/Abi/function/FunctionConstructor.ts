@@ -1,5 +1,4 @@
 import type { Parameter } from "../Parameter.js";
-import type { ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { Function as BrandedFunction } from "./BrandedFunction/BrandedFunction.js";
 import type { decodeParams } from "./BrandedFunction/decodeParams.js";
 import type { decodeResult } from "./BrandedFunction/decodeResult.js";

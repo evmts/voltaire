@@ -1,0 +1,325 @@
+---
+title: Uint.tryFrom
+description: Safe constructor returning undefined instead of throwing
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.tryFrom(value: bigint | number | string): BrandedUint | undefined`
+
+Safe constructor that returns `undefined` instead of throwing on invalid input.
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint | undefined` - Uint256 or undefined if invalid
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Valid inputs return BrandedUint
+const a = Uint.tryFrom(100n)         // BrandedUint
+const b = Uint.tryFrom(255)          // BrandedUint
+const c = Uint.tryFrom("12345")      // BrandedUint
+const d = Uint.tryFrom("0xff")       // BrandedUint
+
+// Invalid inputs return undefined
+const e = Uint.tryFrom(-1n)          // undefined
+const f = Uint.tryFrom(2n ** 256n)   // undefined
+const g = Uint.tryFrom("invalid")    // undefined
+const h = Uint.tryFrom(3.14)         // undefined
+const i = Uint.tryFrom(NaN)          // undefined
+
+// Use for safe parsing
+function parseUint(input: string): BrandedUint | null {
+  const result = Uint.tryFrom(input)
+  return result ?? null
+}
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/tryFrom.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `tryFrom(value: bigint | number | string): BrandedUint | undefined`
+
+Safe constructor that returns `undefined` instead of throwing on invalid input.
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint | undefined` - Uint256 or undefined if invalid
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Valid inputs
+const a = Uint.tryFrom(100n)
+const b = Uint.tryFrom("0xff")
+
+// Invalid inputs
+const c = Uint.tryFrom(-1n)        // undefined
+const d = Uint.tryFrom("invalid")  // undefined
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/tryFrom.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.fromInt(value: anytype): ?Uint`
+
+Safe constructor that returns null on invalid input.
+
+**Parameters:**
+- `value: anytype` - Integer value of any type
+
+**Returns:** `?Uint` - Uint256 or null if invalid
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Uint = @import("primitives").Uint;
+
+// Valid inputs
+const a = Uint.fromInt(100) orelse unreachable;
+const b = Uint.fromInt(0) orelse unreachable;
+
+// Invalid inputs (would overflow or be negative)
+const c = Uint.fromInt(-1);  // null
+if (c == null) {
+    std.debug.print("Invalid input\n", .{});
+}
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## Why Use tryFrom?
+
+`tryFrom` is ideal for **user input validation** and **parsing untrusted data**:
+
+### User Input
+
+```typescript
+function handleUserInput(input: string) {
+  const value = Uint.tryFrom(input)
+
+  if (value === undefined) {
+    return { error: "Invalid number format" }
+  }
+
+  return { value }
+}
+
+// Usage
+handleUserInput("123")      // { value: BrandedUint }
+handleUserInput("0xff")     // { value: BrandedUint }
+handleUserInput("invalid")  // { error: "Invalid number format" }
+handleUserInput("-1")       // { error: "Invalid number format" }
+```
+
+### API Response Parsing
+
+```typescript
+interface ApiResponse {
+  balance: string
+  nonce: string
+}
+
+function parseApiResponse(data: ApiResponse) {
+  const balance = Uint.tryFrom(data.balance)
+  const nonce = Uint.tryFrom(data.nonce)
+
+  if (!balance || !nonce) {
+    throw new Error("Invalid API response")
+  }
+
+  return { balance, nonce }
+}
+```
+
+### Form Validation
+
+```typescript
+function validateAmount(input: string): { valid: boolean; value?: BrandedUint; error?: string } {
+  if (input.trim() === "") {
+    return { valid: false, error: "Amount required" }
+  }
+
+  const value = Uint.tryFrom(input)
+
+  if (value === undefined) {
+    return { valid: false, error: "Invalid amount format" }
+  }
+
+  if (value.isZero()) {
+    return { valid: false, error: "Amount must be greater than zero" }
+  }
+
+  return { valid: true, value }
+}
+```
+
+## Error Cases
+
+`tryFrom` returns `undefined` for all error cases that `from` would throw:
+
+### Negative Values
+
+```typescript
+Uint.tryFrom(-1n)          // undefined
+Uint.tryFrom(-100)         // undefined
+Uint.tryFrom("-1")         // undefined
+```
+
+### Overflow
+
+```typescript
+Uint.tryFrom(2n ** 256n)   // undefined
+Uint.tryFrom(2n ** 257n)   // undefined
+
+// String exceeding max
+const tooLarge = "115792089237316195423570985008687907853269984665640564039457584007913129639936"
+Uint.tryFrom(tooLarge)     // undefined (max + 1)
+```
+
+### Invalid Format
+
+```typescript
+Uint.tryFrom("invalid")    // undefined
+Uint.tryFrom("0xGG")       // undefined
+Uint.tryFrom("")           // undefined
+Uint.tryFrom("  ")         // undefined
+```
+
+### Non-Integer Numbers
+
+```typescript
+Uint.tryFrom(3.14)         // undefined
+Uint.tryFrom(1.5)          // undefined
+Uint.tryFrom(NaN)          // undefined
+Uint.tryFrom(Infinity)     // undefined
+```
+
+## Pattern Comparison
+
+### Without tryFrom (verbose error handling)
+
+```typescript
+function parse(input: string): BrandedUint | null {
+  try {
+    return Uint.from(input)
+  } catch (error) {
+    console.error("Parse failed:", error)
+    return null
+  }
+}
+```
+
+### With tryFrom (clean)
+
+```typescript
+function parse(input: string): BrandedUint | null {
+  return Uint.tryFrom(input) ?? null
+}
+```
+
+## Type Guards
+
+Combine with type guards for type narrowing:
+
+```typescript
+function processValue(input: string | bigint): void {
+  const value = Uint.tryFrom(input)
+
+  // TypeScript knows value is BrandedUint | undefined
+  if (value === undefined) {
+    console.log("Invalid input")
+    return
+  }
+
+  // TypeScript knows value is BrandedUint here
+  console.log(value.toHex())
+}
+```
+
+## Usage Patterns
+
+### Optional Values
+
+```typescript
+interface Transaction {
+  value: BrandedUint
+  gasPrice?: BrandedUint
+}
+
+function parseTransaction(data: any): Transaction | null {
+  const value = Uint.tryFrom(data.value)
+  if (!value) return null
+
+  const gasPrice = data.gasPrice !== undefined
+    ? Uint.tryFrom(data.gasPrice)
+    : undefined
+
+  return { value, gasPrice }
+}
+```
+
+### Fallback Values
+
+```typescript
+function getAmountOrDefault(input: string): BrandedUint {
+  return Uint.tryFrom(input) ?? Uint.ZERO
+}
+
+function getAmountOrMax(input: string): BrandedUint {
+  return Uint.tryFrom(input) ?? Uint.MAX
+}
+```
+
+### Validation Chain
+
+```typescript
+function validateAndParse(input: string): BrandedUint {
+  const value = Uint.tryFrom(input)
+
+  if (value === undefined) {
+    throw new Error("Invalid format")
+  }
+
+  if (value.isZero()) {
+    throw new Error("Value must be non-zero")
+  }
+
+  const max = Uint.from(2n ** 128n)
+  if (value.greaterThan(max)) {
+    throw new Error("Value too large")
+  }
+
+  return value
+}
+```
+
+## Performance
+
+`tryFrom` has **identical performance** to `from` - just wraps in try/catch internally.
+
+No performance penalty for using the safe version.
+
+## See Also
+
+- [from](/primitives/uint/from) - Universal constructor (throws)
+- [isValid](/primitives/uint/is-valid) - Type guard validation
+- [fromHex](/primitives/uint/from-hex) - From hex string
+- [fromBigInt](/primitives/uint/from-bigint) - From BigInt
+- [fromNumber](/primitives/uint/from-number) - From number

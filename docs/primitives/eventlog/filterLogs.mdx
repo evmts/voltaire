@@ -1,0 +1,352 @@
+---
+title: EventLog.filterLogs
+description: Filter array of logs by complete filter criteria
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `EventLog.filterLogs(logs: readonly BrandedEventLog[], filter: Filter): BrandedEventLog[]`
+
+Filter array of logs by complete filter criteria. Returns new array with matching logs.
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs to filter
+- `filter: Filter` - Filter criteria (address, topics, block range, block hash)
+
+**Returns:** `BrandedEventLog[]` - New array containing only matching logs
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000...user');
+
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [
+    Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+    Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  ],
+  topics: [TRANSFER_SIG, null, userHash],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+console.log(`Found ${filtered.length} matching logs`);
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/filterLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/filterLogs.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `filterLogs(logs: readonly BrandedEventLog[], filter: Filter): BrandedEventLog[]`
+
+Filter array of logs by complete filter criteria. Returns new array with matching logs.
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs to filter
+- `filter: Filter` - Filter criteria (address, topics, block range, block hash)
+
+**Returns:** `BrandedEventLog[]` - New array containing only matching logs
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userHash = Hash.fromHex('0x000...user');
+
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [
+    Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+    Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  ],
+  topics: [TRANSFER_SIG, null, userHash],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+console.log(`Found ${filtered.length} matching logs`);
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/filterLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/filterLogs.js)
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### ERC-20 Transfer Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const userAddress = Address.fromHex('0xa1b2c3d4...');
+const userHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+);
+
+// All incoming transfers to user
+const incoming = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [TRANSFER_SIG, null, userHash],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// All outgoing transfers from user
+const outgoing = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [TRANSFER_SIG, userHash, null],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Calculate net change
+let netChange = 0n;
+for (const log of incoming) {
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+  netChange += value;
+}
+for (const log of outgoing) {
+  const value = new DataView(log.data.buffer).getBigUint64(24, false);
+  netChange -= value;
+}
+
+console.log(`Net change: ${netChange}`);
+console.log(`Incoming: ${incoming.length} transfers`);
+console.log(`Outgoing: ${outgoing.length} transfers`);
+```
+
+### Multi-Token Monitoring
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+const tokens = [
+  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+  Address.fromHex('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
+];
+
+// All Transfer events from these tokens
+const transfers = EventLog.filterLogs(allLogs, {
+  address: tokens,
+  topics: [TRANSFER_SIG],
+  fromBlock: 18000000n,
+});
+
+// Group by token
+const byToken = new Map();
+for (const log of transfers) {
+  const addr = Address.toHex(log.address);
+  if (!byToken.has(addr)) {
+    byToken.set(addr, []);
+  }
+  byToken.get(addr).push(log);
+}
+
+console.log(`Total transfers: ${transfers.length}`);
+console.log(`Tokens with activity: ${byToken.size}`);
+```
+
+### Multiple Event Types
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
+
+// Transfer, Approval, or Swap events
+const filtered = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [[TRANSFER_SIG, APPROVAL_SIG, SWAP_SIG]],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Separate by event type
+const transfers = filtered.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, TRANSFER_SIG);
+});
+
+const approvals = filtered.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, APPROVAL_SIG);
+});
+
+const swaps = filtered.filter(log => {
+  const sig = log.getTopic0();
+  return sig && Hash.equals(sig, SWAP_SIG);
+});
+
+console.log(`Transfers: ${transfers.length}`);
+console.log(`Approvals: ${approvals.length}`);
+console.log(`Swaps: ${swaps.length}`);
+```
+
+### Block Range Analysis
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+// Process in 100k block chunks
+const chunkSize = 100000n;
+const startBlock = 18000000n;
+const endBlock = 18500000n;
+
+for (let from = startBlock; from < endBlock; from += chunkSize) {
+  const to = from + chunkSize - 1n;
+
+  const chunkLogs = EventLog.filterLogs(allLogs, {
+    address: usdcAddress,
+    topics: [TRANSFER_SIG],
+    fromBlock: from,
+    toBlock: to,
+  });
+
+  console.log(`Blocks ${from}-${to}: ${chunkLogs.length} transfers`);
+
+  // Process chunk
+  // ...
+}
+```
+
+### Specific Block Query
+
+```typescript
+import { EventLog, Hash } from '@tevm/voltaire';
+
+const blockHash = Hash.fromHex('0xabc...');
+
+// All logs in specific block
+const blockLogs = EventLog.filterLogs(allLogs, {
+  blockHash: blockHash,
+});
+
+console.log(`Block contains ${blockLogs.length} logs`);
+```
+
+### Progressive Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+
+// Stage 1: Filter by contract
+const tokenLogs = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+});
+
+// Stage 2: Filter by event type
+const relevantLogs = EventLog.filterLogs(tokenLogs, {
+  topics: [[TRANSFER_SIG, APPROVAL_SIG]],
+});
+
+// Stage 3: Filter by block range
+const recentLogs = EventLog.filterLogs(relevantLogs, {
+  fromBlock: 18000000n,
+});
+
+console.log(`Stage 1: ${tokenLogs.length} logs`);
+console.log(`Stage 2: ${relevantLogs.length} logs`);
+console.log(`Stage 3: ${recentLogs.length} logs`);
+```
+
+### Combining with Sorting
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdc, dai, weth],
+  topics: [TRANSFER_SIG],
+  fromBlock: 18000000n,
+  toBlock: 18500000n,
+});
+
+// Sort chronologically
+const sorted = EventLog.sortLogs(filtered);
+
+// Process in order
+for (const log of sorted) {
+  console.log(`Block ${log.blockNumber}, Index ${log.logIndex}`);
+  // ... decode and process
+}
+```
+
+### Empty Filter
+
+Empty filter returns all logs:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// No filtering (returns all)
+const all = EventLog.filterLogs(allLogs, {});
+
+console.log(`All logs: ${all.length}`);
+```
+
+## Performance
+
+`filterLogs` is optimized for batch operations:
+
+**Internal optimizations:**
+- Single pass through input array
+- Early exit for non-matching logs
+- Efficient address/hash comparisons
+
+**Best practices:**
+```typescript
+// Good: Single filterLogs call
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdc, dai],
+  topics: [TRANSFER_SIG, null, userHash],
+  fromBlock: 18000000n,
+});
+
+// Less efficient: Multiple passes
+const step1 = allLogs.filter(log => log.matchesAddress([usdc, dai]));
+const step2 = step1.filter(log => log.matchesTopics([TRANSFER_SIG, null, userHash]));
+const step3 = step2.filter(log => log.blockNumber >= 18000000n);
+```
+
+## Return Value
+
+Returns new array (doesn't modify input):
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const original = [log1, log2, log3];
+const filtered = EventLog.filterLogs(original, { address: usdcAddress });
+
+console.log(original.length); // 3 (unchanged)
+console.log(filtered.length); // 1 (new array)
+```
+
+## See Also
+
+- [matchesFilter](/primitives/eventlog/matchesfilter) - Single log matching
+- [matchesAddress](/primitives/eventlog/matchesaddress) - Address filtering
+- [matchesTopics](/primitives/eventlog/matchestopics) - Topic filtering
+- [sortLogs](/primitives/eventlog/sortlogs) - Sort filtered results
+- [Fundamentals](/primitives/eventlog/fundamentals) - Filter semantics
