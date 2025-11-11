@@ -30,28 +30,44 @@ export function signTypedData(typedData, privateKey) {
 	}
 
 	const hash = hashTypedData(typedData);
-	// console.log("[signTypedData] hash:", Buffer.from(hash).toString('hex'));
 
-	// Sign with prehash:false (we already have the hash) and format:'recovered' to get recovery bit
-	const sigBytes = secp256k1.sign(hash, privateKey, {
-		prehash: false,
-		format: "recovered",
-	});
-
-	// sigBytes is 65 bytes: r (32) || s (32) || recovery_byte (1)
+	// Sign the hash - returns 64 bytes (r + s)
+	const sigBytes = secp256k1.sign(hash, privateKey);
 	const r = sigBytes.slice(0, 32);
 	const s = sigBytes.slice(32, 64);
 
-	// Convert recovery byte to Ethereum v (27 or 28)
-	const recoveryByte = sigBytes[64];
-	if (recoveryByte === undefined) {
-		throw new Eip712Error("Invalid signature: missing recovery byte", {
-			code: "EIP712_MISSING_RECOVERY_BYTE",
-			context: { signatureLength: sigBytes.length },
-			docsPath: "/crypto/eip712/sign-typed-data#error-handling",
-		});
+	// Create signature object for recovery
+	const sigObj = secp256k1.Signature.fromBytes(sigBytes);
+
+	// Get expected public key
+	const expectedPubKey = secp256k1.getPublicKey(privateKey, false);
+
+	// Try both recovery bits to find which one recovers the correct public key
+	let recoveryBit = 0;
+	for (let bit = 0; bit < 2; bit++) {
+		try {
+			const recovered = sigObj.addRecoveryBit(bit).recoverPublicKey(hash);
+			const recoveredBytes = recovered.toBytes(false);
+
+			// Compare with expected public key
+			let match = true;
+			for (let i = 0; i < recoveredBytes.length; i++) {
+				if (recoveredBytes[i] !== expectedPubKey[i]) {
+					match = false;
+					break;
+				}
+			}
+
+			if (match) {
+				recoveryBit = bit;
+				break;
+			}
+		} catch {
+			// Try next recovery bit
+		}
 	}
-	const v = 27 + (recoveryByte & 1);
+
+	const v = 27 + recoveryBit;
 
 	return { r, s, v };
 }

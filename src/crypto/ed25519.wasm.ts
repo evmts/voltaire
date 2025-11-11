@@ -160,7 +160,7 @@ export namespace Ed25519Wasm {
 
 		if (secretKey.length !== SECRET_KEY_SIZE) {
 			throw new InvalidSecretKeyError(
-				`Secret key must be ${SEED_SIZE} or ${SECRET_KEY_SIZE} bytes, got ${secretKey.length}`,
+				`Secret key must be ${SECRET_KEY_SIZE} bytes, got ${secretKey.length}`,
 			);
 		}
 
