@@ -1,0 +1,732 @@
+---
+title: "MCOPY (0x5e)"
+description: "Copy memory region (Cancun+, EIP-5656)"
+---
+
+## Overview
+
+**Opcode:** `0x5e`
+**Introduced:** Cancun (EIP-5656)
+**Deprecated:** Never
+
+MCOPY copies a region of memory from source to destination. It handles overlapping regions correctly using an internal temporary buffer. This is the first memory-to-memory copy opcode in the EVM, replacing manual byte-by-byte loops with a single atomic operation.
+
+Before Cancun, copying memory required loops with MLOAD/MSTORE or MSTORE8, which was inefficient and error-prone for overlapping regions.
+
+## Specification
+
+**Stack Input:**
+```
+dest   (top)     - Destination address
+src             - Source address
+len             - Number of bytes to copy
+```
+
+**Stack Output:**
+```
+(empty)
+```
+
+**Gas Cost:** 3 + memory expansion cost + copy cost
+
+**Copy cost formula:**
+```
+copy_cost = ceil(len / 32) * 3  (3 gas per word)
+```
+
+**Operation:**
+```
+for i in range(len):
+    memory[dest + i] = memory[src + i]
+```
+
+## Behavior
+
+MCOPY pops three values from stack: dest (top), src (middle), len (bottom). It copies len bytes from src to dest, expanding memory as needed.
+
+- All addresses interpreted as unsigned 256-bit integers
+- Copy handles overlapping regions correctly (atomic, not in-place)
+- Memory expansion covers both source AND destination ranges
+- Zero-length copy (len=0) charges only base gas, no expansion
+- Expansion cost quadratic; copy cost linear in words
+
+Stack order note: Different from most opcodes - destination popped first.
+
+## Examples
+
+### Basic Copy
+
+```typescript
+import { mcopy } from '@tevm/voltaire/evm/instructions/memory';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame();
+
+// Write source data (bytes 0-31)
+for (let i = 0; i < 32; i++) {
+  frame.memory.set(i, i + 1);
+}
+
+frame.stack.push(32n);   // len
+frame.stack.push(0n);    // src
+frame.stack.push(64n);   // dest
+
+const err = mcopy(frame);
+
+// Check destination has copied data
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(64 + i));  // i + 1
+}
+
+console.log(frame.pc);  // 1 (incremented)
+```
+
+### Zero-Length Copy
+
+```typescript
+const frame = createFrame();
+
+frame.stack.push(0n);   // len (zero)
+frame.stack.push(0n);   // src
+frame.stack.push(0n);   // dest
+
+mcopy(frame);
+
+// No memory expansion
+console.log(frame.memorySize);  // 0
+console.log(frame.gasRemaining);  // Original - 3 (only base gas)
+```
+
+### Forward Overlap (Non-Destructive)
+
+```typescript
+const frame = createFrame();
+
+// Source data at offset 0-63
+for (let i = 0; i < 64; i++) {
+  frame.memory.set(i, i);
+}
+
+// Copy 32 bytes from offset 0 to offset 16
+// Result: bytes 0-15 stay same, bytes 16-31 duplicated, bytes 32-63 stay same
+frame.stack.push(32n);   // len
+frame.stack.push(0n);    // src
+frame.stack.push(16n);   // dest
+
+mcopy(frame);
+
+// Verify: bytes 16-31 now contain copy of bytes 0-15
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(16 + i));  // i (copied from src)
+}
+```
+
+### Backward Overlap (Non-Destructive)
+
+```typescript
+const frame = createFrame();
+
+// Source data at offset 16-47
+for (let i = 0; i < 64; i++) {
+  frame.memory.set(16 + i, 100 + i);
+}
+
+// Copy 32 bytes from offset 16 to offset 0
+// Uses temporary buffer - no in-place issues
+frame.stack.push(32n);   // len
+frame.stack.push(16n);   // src
+frame.stack.push(0n);    // dest
+
+mcopy(frame);
+
+// Bytes 0-31 now contain what was at 16-47
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(i));  // 100 + i
+}
+```
+
+### Exact Overlap (Same Source and Destination)
+
+```typescript
+const frame = createFrame();
+
+// Write pattern
+for (let i = 0; i < 32; i++) {
+  frame.memory.set(i, i + 50);
+}
+
+// Copy to itself
+frame.stack.push(32n);   // len
+frame.stack.push(0n);    // src
+frame.stack.push(0n);    // dest
+
+mcopy(frame);
+
+// Data unchanged
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(i));  // i + 50
+}
+```
+
+### Large Copy
+
+```typescript
+const frame = createFrame();
+
+// Write 256 bytes
+for (let i = 0; i < 256; i++) {
+  frame.memory.set(i, i & 0xFF);
+}
+
+// Copy 256 bytes from offset 0 to offset 1000
+frame.stack.push(256n);     // len
+frame.stack.push(0n);       // src
+frame.stack.push(1000n);    // dest
+
+mcopy(frame);
+
+// Verify copy
+for (let i = 0; i < 256; i++) {
+  console.log(frame.memory.get(1000 + i));  // i & 0xFF
+}
+
+// Memory expanded to cover both ranges
+console.log(frame.memorySize);  // >= 1256 (word-aligned)
+```
+
+## Gas Cost
+
+**Base cost:** 3 gas
+
+**Memory expansion:** Quadratic, covers max(src+len, dest+len)
+
+**Copy cost:** 3 gas per word (rounded up)
+
+**Formula:**
+```
+words_required_src = ceil((src + len) / 32)
+words_required_dest = ceil((dest + len) / 32)
+max_words = max(words_required_src, words_required_dest)
+
+expansion_cost = (max_words)² / 512 + 3 * (max_words - words_old)
+copy_words = ceil(len / 32)
+copy_cost = copy_words * 3
+
+total_cost = 3 + expansion_cost + copy_cost
+```
+
+**Examples:**
+
+- **Copy 32 bytes (1 word), no expansion:** 3 + 0 + 3 = 6 gas
+- **Copy 64 bytes (2 words), no expansion:** 3 + 0 + 6 = 9 gas
+- **Copy 33 bytes (2 words, rounded up):** 3 + 0 + 6 = 9 gas
+- **Copy with large expansion:** 3 + exp(max_range) + copy_cost
+
+Zero-length copy charges only 3 gas (no expansion, no copy cost).
+
+## Hardfork Availability
+
+MCOPY is only available on **Cancun** and later:
+
+```typescript
+// Error before Cancun
+frame.evm.hardfork = 'Shanghai';
+const err = mcopy(frame);
+console.log(err);  // { type: "InvalidOpcode" }
+
+// Works on Cancun+
+frame.evm.hardfork = 'Cancun';
+const err = mcopy(frame);
+console.log(err);  // null (no error)
+```
+
+Attempting MCOPY on pre-Cancun chains reverts with InvalidOpcode.
+
+## Edge Cases
+
+### Uninitialized Source
+
+```typescript
+const frame = createFrame();
+
+// Copy from uninitialized memory (all zeros)
+frame.stack.push(32n);   // len
+frame.stack.push(0n);    // src (uninitialized)
+frame.stack.push(64n);   // dest
+
+mcopy(frame);
+
+// Destination has zeros
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(64 + i));  // 0
+}
+```
+
+### Massive Offset
+
+```typescript
+const frame = createFrame({ gasRemaining: 100000000n });
+
+// Copy from very high offset
+frame.stack.push(32n);      // len
+frame.stack.push(10000000n); // src (huge offset)
+frame.stack.push(10000064n); // dest
+
+mcopy(frame);
+
+// Memory expands to accommodate (very expensive)
+console.log(frame.gasRemaining);  // Significantly reduced
+```
+
+### Out of Gas During Expansion
+
+```typescript
+const frame = createFrame({ gasRemaining: 100n });
+
+// Insufficient gas for memory expansion
+frame.stack.push(10000n);   // len (large)
+frame.stack.push(0n);       // src
+frame.stack.push(10000n);   // dest
+
+const err = mcopy(frame);
+console.log(err);  // { type: "OutOfGas" }
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame();
+
+// Only two values on stack
+frame.stack.push(0n);
+frame.stack.push(0n);
+
+const err = mcopy(frame);
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+## Common Usage
+
+### Copy Constructor Arguments
+
+```solidity
+// Copy calldata to memory for processing
+assembly {
+    let calldata_size := calldatasize()
+    mcopy(0x20, 0, calldata_size)  // Copy calldata to memory at 0x20
+}
+```
+
+### Cache Optimization
+
+```solidity
+assembly {
+    // Copy frequently accessed data to free memory for faster access
+    let cached_offset := mload(0x40)
+    mcopy(cached_offset, storageSlot, 0x20)  // Cache storage value
+
+    // Use cached_offset instead of SLOAD
+}
+```
+
+### Memory Consolidation
+
+```solidity
+assembly {
+    // Compact memory layout
+    let src1 := 0x100
+    let src2 := 0x200
+    let dst := mload(0x40)
+
+    mcopy(dst, src1, 0x20)           // Copy first chunk
+    mcopy(add(dst, 0x20), src2, 0x20) // Copy second chunk
+
+    mstore(0x40, add(dst, 0x40))     // Update free pointer
+}
+```
+
+### Memory-to-Memory Transfer
+
+```solidity
+assembly {
+    // Efficient data transfer between memory regions
+    let length := mload(sourceAddr)  // Get length prefix
+
+    // Copy length + data
+    mcopy(destAddr, sourceAddr, add(0x20, length))
+}
+```
+
+## Memory Safety
+
+**Copy safety properties:**
+
+- **Atomic:** Entire copy completes without intermediate states visible
+- **Non-destructive for overlaps:** Uses temporary buffer internally
+- **Initialization:** Uninitialized source reads as zero
+- **No side effects:** Doesn't affect storage or state
+
+Memory layout considerations:
+
+```solidity
+// Good: Managed memory regions
+assembly {
+    let region1 := mload(0x40)
+    let region2 := add(region1, 0x100)
+
+    mcopy(region2, region1, 0x50)  // Safe, non-overlapping
+    mstore(0x40, add(region2, 0x50))
+}
+
+// Risky: Overlapping regions without buffer
+assembly {
+    mcopy(0x00, 0x10, 0x20)  // Forward overlap (but handled correctly)
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * MCOPY opcode (0x5e) - Copy memory (Cancun+, EIP-5656)
+ */
+export function mcopy(frame: BrandedFrame): EvmError | null {
+  // Check Cancun availability
+  if (frame.evm.hardfork.isBefore('CANCUN')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Pop stack values (dest, src, len)
+  if (frame.stack.length < 3) {
+    return { type: "StackUnderflow" };
+  }
+  const dest = frame.stack.pop();
+  const src = frame.stack.pop();
+  const len = frame.stack.pop();
+
+  // Cast to u32
+  const destNum = Number(dest);
+  const srcNum = Number(src);
+  const lenNum = Number(len);
+
+  if (!Number.isSafeInteger(destNum) || !Number.isSafeInteger(srcNum) ||
+      !Number.isSafeInteger(lenNum) || destNum < 0 || srcNum < 0 || lenNum < 0) {
+    return { type: "OutOfBounds" };
+  }
+
+  // Zero-length copy: only base gas
+  if (lenNum === 0) {
+    frame.gasRemaining -= 3n;
+    if (frame.gasRemaining < 0n) {
+      return { type: "OutOfGas" };
+    }
+    frame.pc += 1;
+    return null;
+  }
+
+  // Calculate memory expansion for both ranges
+  const maxEnd = Math.max(destNum + lenNum, srcNum + lenNum);
+  const expansionCost = calculateMemoryExpansion(maxEnd);
+
+  // Calculate copy cost (3 gas per word)
+  const copyWords = Math.ceil(lenNum / 32);
+  const copyCost = copyWords * 3;
+
+  // Total gas
+  const totalGas = 3n + BigInt(expansionCost) + BigInt(copyCost);
+  frame.gasRemaining -= totalGas;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Expand memory
+  const alignedSize = Math.ceil(maxEnd / 32) * 32;
+  frame.memorySize = Math.max(frame.memorySize, alignedSize);
+
+  // Copy using temporary buffer to handle overlaps
+  const temp = new Uint8Array(lenNum);
+  for (let i = 0; i < lenNum; i++) {
+    temp[i] = frame.memory.get(srcNum + i) ?? 0;
+  }
+  for (let i = 0; i < lenNum; i++) {
+    frame.memory.set(destNum + i, temp[i]);
+  }
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// MCOPY opcode (0x5e) - Copy memory (EIP-5656, Cancun+)
+pub fn mcopy(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    // EIP-5656: MCOPY was introduced in Cancun hardfork
+    if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
+    // Stack order (top to bottom): dest, src, len
+    const dest = try frame.popStack();
+    const src = try frame.popStack();
+    const len = try frame.popStack();
+
+    // Calculate memory expansion cost BEFORE bounds checking
+    // If len == 0, no memory expansion occurs
+    const mem_cost = if (len == 0)
+        0  // Zero-length copies don't expand memory
+    else blk: {
+        const dest_u64 = std.math.cast(u64, dest) orelse std.math.maxInt(u64);
+        const src_u64 = std.math.cast(u64, src) orelse std.math.maxInt(u64);
+        const len_u64 = std.math.cast(u64, len) orelse std.math.maxInt(u64);
+
+        const end_dest: u64 = dest_u64 +| len_u64;
+        const end_src: u64 = src_u64 +| len_u64;
+
+        const max_end = @max(end_dest, end_src);
+        break :blk frame.memoryExpansionCost(max_end);
+    };
+
+    // Calculate copy cost (3 gas per word)
+    const copy_cost: u64 = if (len <= std.math.maxInt(u32))
+        copyGasCost(@intCast(len))
+    else
+        std.math.maxInt(u64);  // Huge value triggers OutOfGas
+
+    const total_gas = GasConstants.GasFastestStep +| mem_cost +| copy_cost;
+    try frame.consumeGas(total_gas);
+
+    // Fast path: zero length - gas charged but no copy
+    if (len == 0) {
+        frame.pc += 1;
+        return;
+    }
+
+    // Bounds checking for actual memory operations
+    const dest_u32 = std.math.cast(u32, dest) orelse return error.OutOfBounds;
+    const src_u32 = std.math.cast(u32, src) orelse return error.OutOfBounds;
+    const len_u32 = std.math.cast(u32, len) orelse return error.OutOfBounds;
+
+    // Expand memory to cover both ranges
+    const src_end: u64 = @as(u64, src_u32) + @as(u64, len_u32);
+    const dest_end: u64 = @as(u64, dest_u32) + @as(u64, len_u32);
+    const max_memory_end = @max(src_end, dest_end);
+    const required_size = wordAlignedSize(max_memory_end);
+    const required_size_u32 = std.math.cast(u32, required_size) orelse return error.OutOfBounds;
+    if (required_size_u32 > frame.memory_size) {
+        frame.memory_size = required_size_u32;
+    }
+
+    // Copy via temporary buffer to handle overlapping regions
+    const tmp = try frame.allocator.alloc(u8, len_u32);
+
+    var i: u32 = 0;
+    while (i < len_u32) : (i += 1) {
+        const s = try add_u32(src_u32, i);
+        tmp[i] = frame.readMemory(s);
+    }
+    i = 0;
+    while (i < len_u32) : (i += 1) {
+        const d = try add_u32(dest_u32, i);
+        try frame.writeMemory(d, tmp[i]);
+    }
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { mcopy } from './0x5e_MCOPY.js';
+
+describe('MCOPY (0x5e)', () => {
+  it('copies memory from source to destination', () => {
+    const frame = createFrame();
+
+    for (let i = 0; i < 32; i++) {
+      frame.memory.set(i, i + 1);
+    }
+
+    frame.stack.push(32n);  // len
+    frame.stack.push(0n);   // src
+    frame.stack.push(64n);  // dest
+
+    expect(mcopy(frame)).toBeNull();
+
+    for (let i = 0; i < 32; i++) {
+      expect(frame.memory.get(64 + i)).toBe(i + 1);
+    }
+    expect(frame.pc).toBe(1);
+  });
+
+  it('handles zero-length copy', () => {
+    const frame = createFrame();
+
+    frame.stack.push(0n);   // len = 0
+    frame.stack.push(0n);   // src
+    frame.stack.push(0n);   // dest
+
+    expect(mcopy(frame)).toBeNull();
+
+    expect(frame.memorySize).toBe(0);  // No expansion
+    expect(frame.gasRemaining).toBe(999997n);  // Only base gas
+  });
+
+  it('handles forward overlap correctly', () => {
+    const frame = createFrame();
+
+    for (let i = 0; i < 64; i++) {
+      frame.memory.set(i, i);
+    }
+
+    frame.stack.push(32n);  // len
+    frame.stack.push(0n);   // src
+    frame.stack.push(16n);  // dest (overlap)
+
+    expect(mcopy(frame)).toBeNull();
+
+    for (let i = 0; i < 32; i++) {
+      expect(frame.memory.get(16 + i)).toBe(i);
+    }
+  });
+
+  it('handles backward overlap correctly', () => {
+    const frame = createFrame();
+
+    for (let i = 0; i < 64; i++) {
+      frame.memory.set(16 + i, i + 100);
+    }
+
+    frame.stack.push(32n);  // len
+    frame.stack.push(16n);  // src
+    frame.stack.push(0n);   // dest (backward overlap)
+
+    expect(mcopy(frame)).toBeNull();
+
+    for (let i = 0; i < 32; i++) {
+      expect(frame.memory.get(i)).toBe(i + 100);
+    }
+  });
+
+  it('charges correct gas for copy', () => {
+    const frame = createFrame({ gasRemaining: 1000n, memorySize: 128 });
+
+    frame.stack.push(32n);  // 1 word
+    frame.stack.push(0n);
+    frame.stack.push(64n);
+
+    expect(mcopy(frame)).toBeNull();
+
+    // Base: 3, Copy: 1 word * 3 = 3
+    expect(frame.gasRemaining).toBe(994n);
+  });
+
+  it('returns InvalidOpcode before Cancun', () => {
+    const frame = createFrame();
+    frame.evm.hardfork = 'Shanghai';
+
+    frame.stack.push(32n);
+    frame.stack.push(0n);
+    frame.stack.push(0n);
+
+    expect(mcopy(frame)).toEqual({ type: "InvalidOpcode" });
+  });
+
+  it('returns OutOfGas when insufficient', () => {
+    const frame = createFrame({ gasRemaining: 2n });
+
+    frame.stack.push(32n);
+    frame.stack.push(0n);
+    frame.stack.push(0n);
+
+    expect(mcopy(frame)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('returns StackUnderflow with only 2 items', () => {
+    const frame = createFrame();
+    frame.stack.push(0n);
+    frame.stack.push(0n);
+
+    expect(mcopy(frame)).toEqual({ type: "StackUnderflow" });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic copy (32 bytes)
+- Zero-length copy
+- Forward overlap
+- Backward overlap
+- Exact overlap (src == dest)
+- Uninitialized source (zeros)
+- Memory expansion
+- Copy cost calculation
+- Large copies (256+ bytes)
+- Hardfork checking
+- Stack underflow/overflow
+- Out of gas conditions
+
+## Security Considerations
+
+### Overlap Handling
+
+MCOPY correctly handles all overlap scenarios with internal buffering:
+
+```solidity
+// Safe: Overlapping regions
+assembly {
+    // Bytes 0-63 contain source pattern
+    mcopy(32, 0, 64)  // Copy bytes 0-63 to 32-95 (forward overlap)
+
+    // Result: bytes 0-31 unchanged, bytes 32-95 contain copy
+}
+```
+
+### Memory Exhaustion
+
+Large copies can trigger quadratic memory expansion costs:
+
+```solidity
+// Expensive: Very large copy
+assembly {
+    mcopy(1000000, 0, 1000000)  // Quadratic gas cost
+}
+
+// Better: Validate size before copying
+require(len < maxSize, "copy too large");
+mcopy(dest, src, len);
+```
+
+## Benchmarks
+
+MCOPY efficiency gains over manual loops:
+
+**MLOAD/MSTORE loop (32 bytes):**
+```
+6 ops × 3 gas = 18 gas (base only, no expansion)
+```
+
+**MCOPY (32 bytes):**
+```
+3 (base) + 0 (expansion) + 3 (copy) = 6 gas
+```
+
+**3x more efficient** for single-word copies.
+
+Gains increase for larger copies due to reduced opcode overhead.
+
+## References
+
+- **[EIP-5656](https://eips.ethereum.org/EIPS/eip-5656)** - MCOPY specification
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.2 (Memory)
+- **[evm.codes - MCOPY](https://www.evm.codes/#5e)** - Interactive reference
+- **[Cancun Upgrade](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md)** - Hardfork details
