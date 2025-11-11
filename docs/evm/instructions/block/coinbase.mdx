@@ -1,0 +1,443 @@
+---
+title: "COINBASE (0x41)"
+description: "Get the beneficiary address receiving block rewards and transaction fees"
+---
+
+## Overview
+
+**Opcode:** `0x41`
+**Introduced:** Frontier (EVM genesis)
+
+COINBASE retrieves the address of the block beneficiary - the account that receives the block reward and transaction fees for the current block. This is typically the miner's address (pre-merge) or validator's address (post-merge).
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+coinbase_address (as u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.coinbase as u256)
+```
+
+## Behavior
+
+COINBASE pushes the 20-byte beneficiary address onto the stack as a 256-bit unsigned integer. The address is right-aligned (lower-order bytes):
+
+```
+Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+As u256: 0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb
+         └─ 12 zero bytes ─┘└────────── 20 address bytes ──────────┘
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { coinbase } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const minerAddress = new Uint8Array([
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
+  0x29, 0x25, 0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75,
+  0x95, 0xf0, 0xbe, 0xb0
+]);
+
+const frame = createFrame({
+  stack: [],
+  blockContext: {
+    block_coinbase: minerAddress
+  }
+});
+
+const err = coinbase(frame);
+console.log(frame.stack); // [0x742d35cc6634c0532925a3b844bc9e7595f0beb0]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Extract Address from Stack
+
+```typescript
+// Execute COINBASE
+coinbase(frame);
+const coinbaseU256 = frame.stack[0];
+
+// Convert u256 back to address
+const addressBytes = new Uint8Array(20);
+for (let i = 0; i < 20; i++) {
+  addressBytes[19 - i] = Number((coinbaseU256 >> BigInt(i * 8)) & 0xFFn);
+}
+
+console.log(addressBytes); // Original 20-byte address
+```
+
+### Compare with Current Address
+
+```typescript
+import { address } from '@tevm/voltaire/evm/context';
+
+// Get coinbase
+coinbase(frame);
+const coinbaseAddr = frame.stack[0];
+
+// Get current contract address
+address(frame);
+const currentAddr = frame.stack[0];
+
+// Check if contract is coinbase
+const isCoinbase = coinbaseAddr === currentAddr;
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+COINBASE is one of the cheapest operations, sharing the GasQuickStep tier with:
+- `TIMESTAMP` (0x42)
+- `NUMBER` (0x43)
+- `DIFFICULTY` (0x44)
+- `GASLIMIT` (0x45)
+- `CHAINID` (0x46)
+
+**Comparison:**
+- `COINBASE`: 2 gas
+- `SELFBALANCE`: 5 gas
+- `BLOCKHASH`: 20 gas
+- `BALANCE` (cold): 2600 gas
+
+## Common Usage
+
+### Miner Tipping
+
+```solidity
+contract MinerTip {
+    // Send tip directly to block producer
+    function tipMiner() external payable {
+        require(msg.value > 0, "No tip sent");
+        payable(block.coinbase).transfer(msg.value);
+    }
+}
+```
+
+### Coinbase Verification
+
+```solidity
+contract OnlyMiner {
+    modifier onlyMiner() {
+        require(msg.sender == block.coinbase, "Only miner can call");
+        _;
+    }
+
+    function privilegedOperation() external onlyMiner {
+        // Only callable by block producer
+    }
+}
+```
+
+### Flashbots/MEV Protection
+
+```solidity
+contract AntiMEV {
+    // Ensure transaction is included by specific validator
+    function protectedSwap(address expectedCoinbase) external {
+        require(block.coinbase == expectedCoinbase, "Wrong validator");
+        // Execute swap
+    }
+}
+```
+
+### Block Producer Allowlist
+
+```solidity
+contract ValidatorGated {
+    mapping(address => bool) public approvedValidators;
+
+    modifier onlyApprovedValidator() {
+        require(approvedValidators[block.coinbase], "Validator not approved");
+        _;
+    }
+
+    function sensitiveOperation() external onlyApprovedValidator {
+        // Only execute if produced by approved validator
+    }
+}
+```
+
+### Historical Validator Tracking
+
+```solidity
+contract ValidatorTracker {
+    struct BlockInfo {
+        uint256 blockNumber;
+        address validator;
+        uint256 timestamp;
+    }
+
+    BlockInfo[] public history;
+
+    function recordBlock() external {
+        history.push(BlockInfo({
+            blockNumber: block.number,
+            validator: block.coinbase,
+            timestamp: block.timestamp
+        }));
+    }
+}
+```
+
+## Pre-Merge vs Post-Merge
+
+### Pre-Merge (PoW)
+
+```solidity
+// Coinbase = Miner's address
+contract MinerReward {
+    // Miners could redirect rewards
+    function() external payable {
+        // Miner can set coinbase to this contract
+        // to receive rewards + fees here
+    }
+}
+```
+
+**Characteristics:**
+- Miner can set coinbase to any address
+- Often set to mining pool contract
+- Can change between blocks
+
+### Post-Merge (PoS)
+
+```solidity
+// Coinbase = Validator's fee recipient
+contract ValidatorOperator {
+    mapping(address => address) public feeRecipients;
+
+    // Validators configure their fee recipient
+    function setFeeRecipient(address recipient) external {
+        feeRecipients[msg.sender] = recipient;
+    }
+}
+```
+
+**Characteristics:**
+- Set by validator client configuration
+- Typically validator's withdrawal address
+- More predictable than PoW mining pools
+
+## Security Considerations
+
+### Centralization Risk
+
+Relying on `block.coinbase` for access control creates centralization:
+
+```solidity
+// RISKY: Single point of failure
+contract CentralizedControl {
+    function privilegedAction() external {
+        require(msg.sender == block.coinbase, "Only validator");
+        // Critical operation controlled by single validator
+    }
+}
+```
+
+**Mitigation:**
+Use multi-signature or DAO governance instead of validator-gated logic.
+
+### Validator Collusion
+
+Validators can coordinate to manipulate coinbase-dependent logic:
+
+```solidity
+// VULNERABLE: Validators can coordinate
+contract CoinbaseDependent {
+    mapping(address => uint256) public validatorScores;
+
+    function rewardValidator() external {
+        validatorScores[block.coinbase] += 1;
+    }
+}
+```
+
+**Attack:**
+- Multiple validators coordinate
+- Take turns producing blocks
+- Maximize collective score
+
+### MEV Considerations
+
+`block.coinbase` enables MEV-aware contract designs:
+
+```solidity
+contract MEVAware {
+    // Pay validators to include transaction
+    function urgentSwap() external payable {
+        uint256 validatorBribe = msg.value / 10; // 10% to validator
+        payable(block.coinbase).transfer(validatorBribe);
+
+        // Execute swap with remaining value
+    }
+}
+```
+
+### Coinbase Replay Attacks
+
+Be careful with coinbase-based authentication across chains:
+
+```solidity
+// VULNERABLE: Validator could exist on multiple chains
+contract CrossChainVulnerable {
+    function authenticate() external view returns (bool) {
+        return msg.sender == block.coinbase; // Same validator on different chain!
+    }
+}
+
+// SAFE: Include chain ID
+contract CrossChainSafe {
+    function authenticate(uint256 expectedChain) external view returns (bool) {
+        require(block.chainid == expectedChain, "Wrong chain");
+        return msg.sender == block.coinbase;
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// COINBASE opcode (0x41) - Get block coinbase address
+pub fn coinbase(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    // Convert 20-byte address to u256
+    const coinbase_u256 = primitives.Address.toU256(evm.block_context.block_coinbase);
+
+    try frame.pushStack(coinbase_u256);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * COINBASE opcode (0x41) - Get block coinbase address
+ */
+export function coinbase(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Convert 20-byte address to u256
+  const coinbaseAddr = frame.evm.blockContext.block_coinbase;
+  let coinbaseU256 = 0n;
+  for (let i = 0; i < 20; i++) {
+    coinbaseU256 = (coinbaseU256 << 8n) | BigInt(coinbaseAddr[i]);
+  }
+
+  // Push to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(coinbaseU256);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Zero Address Coinbase
+
+```typescript
+// Coinbase set to 0x0000...0000
+const frame = createFrame({
+  blockContext: {
+    block_coinbase: new Uint8Array(20) // All zeros
+  }
+});
+
+coinbase(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Maximum Address Value
+
+```typescript
+// Coinbase = 0xFFFF...FFFF
+const frame = createFrame({
+  blockContext: {
+    block_coinbase: new Uint8Array(20).fill(0xFF)
+  }
+});
+
+coinbase(frame);
+console.log(frame.stack); // [0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF]
+```
+
+### Stack Overflow
+
+```typescript
+// Stack already full (1024 items)
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  blockContext: { block_coinbase: minerAddress }
+});
+
+const err = coinbase(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 1n,
+  blockContext: { block_coinbase: minerAddress }
+});
+
+const err = coinbase(frame);
+console.log(err); // { type: "OutOfGas" }
+console.log(frame.gasRemaining); // 0n
+```
+
+## Benchmarks
+
+**Performance:**
+- Address to u256 conversion: O(20) - iterate 20 bytes
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+- One of the cheapest EVM operations
+
+## Related Instructions
+
+- **[ADDRESS (0x30)](/evm/instructions/context/address)** - Get executing contract address
+- **[ORIGIN (0x32)](/evm/instructions/context/origin)** - Get transaction origin
+- **[CALLER (0x33)](/evm/instructions/context/caller)** - Get caller address
+- **[SELFBALANCE (0x47)](/evm/instructions/block/selfbalance)** - Get balance of current contract
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Block Information)
+- [EVM Codes - COINBASE](https://www.evm.codes/#41)
+- [Solidity Docs - block.coinbase](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [Flashbots Docs - MEV](https://docs.flashbots.net/)

@@ -1,0 +1,637 @@
+---
+title: "JUMP (0x56)"
+description: "Unconditional jump to valid JUMPDEST destination"
+---
+
+## Overview
+
+**Opcode:** `0x56`
+**Introduced:** Frontier (EVM genesis)
+
+JUMP performs an unconditional jump to a destination in the bytecode. The destination MUST be a valid JUMPDEST opcode - any other destination causes InvalidJump error and halts execution.
+
+This strict validation prevents arbitrary code execution and maintains the EVM's security model.
+
+## Specification
+
+**Stack Input:**
+```
+destination (top)
+```
+
+**Stack Output:** None
+
+**Gas Cost:** 8 (GasMidStep)
+
+**Operation:**
+```
+1. Pop destination from stack
+2. Validate destination is JUMPDEST
+3. Validate destination is not in PUSH data
+4. Set PC = destination
+```
+
+## Behavior
+
+JUMP alters program flow by changing the program counter:
+
+1. Consumes 8 gas (GasMidStep)
+2. Pops destination address from stack
+3. Validates destination is valid JUMPDEST
+4. Updates program counter to destination
+5. Execution continues at new location
+
+**Validation Requirements:**
+- Destination must be JUMPDEST opcode (0x5b)
+- Destination must not be inside PUSH data
+- Destination must be within bytecode bounds
+- Failure causes InvalidJump error
+
+## Examples
+
+### Basic Jump
+
+```typescript
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x56_JUMP } from '@tevm/voltaire/evm/control';
+
+// Bytecode with JUMPDEST at position 5
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x56,        // JUMP
+  0x00,        // STOP (skipped)
+  0x00,        // STOP (skipped)
+  0x5b,        // JUMPDEST (destination)
+  0x60, 0x2a,  // PUSH1 42
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [5n],  // Jump to position 5
+  pc: 2         // At JUMP instruction
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err);       // null (success)
+console.log(frame.pc);  // 5 (jumped to JUMPDEST)
+console.log(frame.stack); // [] (destination popped)
+```
+
+### Function Call Pattern
+
+```solidity
+assembly {
+    // Jump to function
+    push(func)
+    jump
+
+    // Return here after function
+    jumpdest
+    // Continue execution
+
+    func:
+        jumpdest
+        // Function implementation
+        // ...
+        jump(return_address)
+}
+```
+
+Bytecode pattern:
+```
+PUSH2 0x0010  // Push return address
+PUSH2 0x0020  // Push function address
+JUMP          // Jump to function
+
+// Return point
+JUMPDEST      // 0x0010
+// Continue execution
+
+// Function
+JUMPDEST      // 0x0020
+// Function body
+SWAP1
+JUMP          // Return to caller
+```
+
+### Invalid Jump
+
+```typescript
+// Attempt to jump to non-JUMPDEST
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x56,        // JUMP
+  0x00,        // STOP
+  0x00,        // STOP
+  0x60, 0x00,  // PUSH1 0 (NOT a JUMPDEST)
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [5n],  // Try to jump to PUSH1
+  pc: 2
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err); // { type: "InvalidJump" }
+console.log(frame.pc); // 2 (unchanged - jump failed)
+```
+
+### Jump Into PUSH Data
+
+```typescript
+// Attempt to jump into PUSH data
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x56,        // JUMP
+  0x61, 0x5b, 0x00,  // PUSH2 0x5b00 (0x5b is PUSH data, not instruction)
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [4n],  // Try to jump to byte that looks like JUMPDEST
+  pc: 2
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err); // { type: "InvalidJump" }
+// Destination 4 is inside PUSH2 data, not a real JUMPDEST
+```
+
+## Gas Cost
+
+**Cost:** 8 gas (GasMidStep)
+
+**Comparison:**
+- JUMP: 8 gas (unconditional)
+- JUMPI: 10 gas (conditional)
+- PC: 2 gas (read counter)
+- JUMPDEST: 1 gas (destination marker)
+
+**Total Jump Cost:**
+```
+PUSH1 dest:  3 gas
+JUMP:        8 gas
+JUMPDEST:    1 gas
+Total:      12 gas (minimum for jump operation)
+```
+
+## Edge Cases
+
+### Out of Bounds
+
+```typescript
+// Jump destination exceeds bytecode length
+const bytecode = new Uint8Array([0x56]); // Just JUMP
+
+const frame = createFrame({
+  bytecode,
+  stack: [1000n],  // Beyond bytecode
+  pc: 0
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err); // { type: "InvalidJump" }
+// Destination 1000 is out of bounds
+```
+
+### Destination Too Large
+
+```typescript
+// Destination doesn't fit in u32
+const frame = createFrame({
+  stack: [0x100000000n],  // > u32::MAX
+  pc: 0
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err); // { type: "OutOfBounds" }
+```
+
+### Stack Underflow
+
+```typescript
+// No destination on stack
+const frame = createFrame({
+  stack: [],
+  pc: 0
+});
+
+const err = handler_0x56_JUMP(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Jump to Self
+
+```typescript
+// Jump to JUMPDEST at current position (infinite loop)
+const bytecode = new Uint8Array([
+  0x5b,        // JUMPDEST (position 0)
+  0x60, 0x00,  // PUSH1 0
+  0x56,        // JUMP (back to position 0)
+]);
+
+const frame = createFrame({
+  bytecode,
+  stack: [0n],
+  pc: 3
+});
+
+handler_0x56_JUMP(frame);
+console.log(frame.pc); // 0 (jumped to self)
+// Execution will loop until out of gas
+```
+
+## Common Usage
+
+### Function Calls
+
+Solidity internal functions use JUMP for calls:
+
+```solidity
+function main() public {
+    uint256 result = helper(42);
+    // Use result
+}
+
+function helper(uint256 x) internal pure returns (uint256) {
+    return x * 2;
+}
+```
+
+Compiled pattern:
+```
+// main() calls helper()
+PUSH1 0x2a      // Argument: 42
+PUSH2 helper    // Function address
+JUMP
+
+// Return from helper
+JUMPDEST
+// Use return value
+
+// helper() implementation
+helper:
+  JUMPDEST
+  DUP1
+  PUSH1 0x02
+  MUL
+  SWAP1
+  JUMP        // Return to caller
+```
+
+### Switch Statements
+
+```solidity
+assembly {
+    switch value
+    case 0 { jump(case0) }
+    case 1 { jump(case1) }
+    default { jump(defaultCase) }
+
+    case0:
+        jumpdest
+        // Handle case 0
+        jump(end)
+
+    case1:
+        jumpdest
+        // Handle case 1
+        jump(end)
+
+    defaultCase:
+        jumpdest
+        // Handle default
+        jump(end)
+
+    end:
+        jumpdest
+}
+```
+
+### Early Exit
+
+```solidity
+assembly {
+    // Check condition
+    let shouldExit := iszero(sload(0))
+
+    // Jump to exit if true
+    if shouldExit {
+        jump(exit)
+    }
+
+    // Continue normal execution
+    // ...
+
+    exit:
+        jumpdest
+        return(0, 0)
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { isValidJumpDest } from "../../primitives/Bytecode/isValidJumpDest.js";
+import { MidStep } from "../../primitives/GasConstants/constants.js";
+
+/**
+ * JUMP opcode (0x56) - Unconditional jump
+ *
+ * @param frame - Frame instance
+ * @returns Error if operation fails
+ */
+export function handler_0x56_JUMP(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, MidStep);
+  if (gasErr) return gasErr;
+
+  const { value: dest, error } = popStack(frame);
+  if (error) return error;
+
+  // Check if destination fits in u32 range
+  if (dest > 0xffffffffn) {
+    return { type: "OutOfBounds" };
+  }
+
+  const destPc = Number(dest);
+
+  // Validate jump destination
+  if (!isValidJumpDest(frame.bytecode, destPc)) {
+    return { type: "InvalidJump" };
+  }
+
+  frame.pc = destPc;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// JUMP opcode (0x56) - Unconditional jump
+pub fn jump(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasMidStep);
+    const dest = try frame.popStack();
+    const dest_pc = std.math.cast(u32, dest) orelse return error.OutOfBounds;
+
+    // Validate jump destination
+    if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
+
+    frame.pc = dest_pc;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0x56_JUMP } from './0x56_JUMP.js';
+
+describe('JUMP (0x56)', () => {
+  it('jumps to valid JUMPDEST', () => {
+    const bytecode = new Uint8Array([
+      0x60, 0x05, // PUSH1 5
+      0x56,       // JUMP
+      0x00, 0x00, // STOP (skipped)
+      0x5b,       // JUMPDEST
+    ]);
+
+    const frame = createFrame({
+      bytecode,
+      stack: [5n],
+      pc: 2,
+    });
+
+    expect(handler_0x56_JUMP(frame)).toBeNull();
+    expect(frame.pc).toBe(5);
+  });
+
+  it('rejects jump to non-JUMPDEST', () => {
+    const bytecode = new Uint8Array([0x60, 0x00]);
+    const frame = createFrame({
+      bytecode,
+      stack: [1n],
+      pc: 0,
+    });
+
+    expect(handler_0x56_JUMP(frame)).toEqual({ type: 'InvalidJump' });
+  });
+
+  it('rejects out of bounds destination', () => {
+    const frame = createFrame({
+      bytecode: new Uint8Array([0x5b]),
+      stack: [1000n],
+    });
+
+    expect(handler_0x56_JUMP(frame)).toEqual({ type: 'InvalidJump' });
+  });
+
+  it('rejects destination larger than u32', () => {
+    const frame = createFrame({
+      stack: [0x100000000n],
+    });
+
+    expect(handler_0x56_JUMP(frame)).toEqual({ type: 'OutOfBounds' });
+  });
+
+  it('handles stack underflow', () => {
+    const frame = createFrame({ stack: [] });
+    expect(handler_0x56_JUMP(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+});
+```
+
+## Security
+
+### Jump Validation is Critical
+
+**Without validation, arbitrary code execution:**
+
+```solidity
+// DANGEROUS if validation disabled (theoretical)
+assembly {
+    let malicious := 0x1234  // Arbitrary address
+    jump(malicious)  // Could jump into malicious code
+}
+```
+
+**EVM prevents this:**
+- Destination MUST be JUMPDEST
+- JUMPDEST cannot be in PUSH data
+- Static analysis pre-validates all JUMPDESTs
+
+### Dynamic Jump Attacks
+
+**VULNERABLE pattern:**
+```solidity
+// User controls jump destination
+function unsafeJump(uint256 dest) external {
+    assembly {
+        jump(dest)  // DANGER: user can jump anywhere valid
+    }
+}
+```
+
+**Attack scenario:**
+- Attacker finds valid JUMPDEST in unintended code path
+- Bypasses access control or validation logic
+- Executes privileged operations
+
+**SAFE pattern:**
+```solidity
+// Whitelist valid destinations
+function safeJump(uint256 selector) external {
+    assembly {
+        switch selector
+        case 0 { jump(option0) }
+        case 1 { jump(option1) }
+        default { revert(0, 0) }
+
+        option0:
+            jumpdest
+            // Safe code path 0
+
+        option1:
+            jumpdest
+            // Safe code path 1
+    }
+}
+```
+
+### Infinite Loops
+
+JUMP can create infinite loops that consume all gas:
+
+```solidity
+assembly {
+    loop:
+        jumpdest
+        jump(loop)  // Infinite loop - will exhaust gas
+}
+```
+
+**Not a vulnerability:**
+- Gas limit prevents DoS
+- Only affects caller
+- Transaction reverts on out-of-gas
+
+### JUMPDEST Analysis
+
+Bytecode analysis must handle PUSH data correctly:
+
+```solidity
+// Bytecode: 0x61 5b 00 5b
+//           PUSH2 [0x5b, 0x00] JUMPDEST
+//                  ^    ^       ^
+//                  data data    real instruction
+```
+
+Valid JUMPDEST is only at position 3, not position 1.
+
+Implementation must:
+1. Skip PUSH data during analysis
+2. Mark only real JUMPDESTs as valid
+3. Reject jumps into PUSH data
+
+## Compiler Behavior
+
+### Function Dispatch
+
+Solidity generates jump tables:
+
+```solidity
+contract Example {
+    function foo() external pure returns (uint256) { return 42; }
+    function bar() external pure returns (uint256) { return 123; }
+}
+```
+
+Compiled dispatch (simplified):
+```
+// Check function selector
+CALLDATALOAD 0
+SHR 224
+
+// foo() selector
+DUP1
+PUSH4 0x12345678
+EQ
+PUSH2 foo_impl
+JUMPI
+
+// bar() selector
+DUP1
+PUSH4 0x87654321
+EQ
+PUSH2 bar_impl
+JUMPI
+
+// No match
+REVERT
+
+// foo() implementation
+foo_impl:
+    JUMPDEST
+    PUSH1 42
+    // ... return
+
+// bar() implementation
+bar_impl:
+    JUMPDEST
+    PUSH1 123
+    // ... return
+```
+
+### Internal Function Calls
+
+```solidity
+function caller() public pure returns (uint256) {
+    return helper(42);
+}
+
+function helper(uint256 x) internal pure returns (uint256) {
+    return x * 2;
+}
+```
+
+Compiled to:
+```
+// caller()
+PUSH1 42          // Argument
+PUSH2 helper      // Function address
+JUMP              // Call helper
+
+// helper() returns here
+JUMPDEST
+
+// helper()
+helper:
+    JUMPDEST
+    DUP1
+    PUSH1 2
+    MUL
+    SWAP1         // Return address now on top
+    JUMP          // Return to caller
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.3 (JUMP instruction)
+- [EVM Codes - JUMP](https://www.evm.codes/#56)
+- [Solidity Docs - Assembly](https://docs.soliditylang.org/en/latest/assembly.html)
+- [EVM Deep Dives - Jump Validation](https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-3ea)

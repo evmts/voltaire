@@ -1,0 +1,537 @@
+---
+title: "MSTORE (0x52)"
+description: "Write 32-byte word to memory at given offset"
+---
+
+## Overview
+
+**Opcode:** `0x52`
+**Introduced:** Frontier (EVM genesis)
+
+MSTORE writes a 32-byte word to memory at the specified offset. The value is taken from the stack as a 256-bit unsigned integer and written in big-endian order. This is the primary mechanism for writing arbitrary data to memory during execution.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top)
+value
+```
+
+**Stack Output:**
+```
+(empty)
+```
+
+**Gas Cost:** 3 + memory expansion cost
+
+**Operation:**
+```
+memory[offset:offset+32] = value  (big-endian)
+```
+
+## Behavior
+
+MSTORE pops two values: offset (top of stack) and value (next). It writes the 32-byte representation of value to memory starting at offset.
+
+- Offset is interpreted as unsigned 256-bit integer
+- Value is written as 32 bytes in big-endian order (most significant byte first)
+- Memory automatically expands to accommodate write (quadratic cost)
+- Overwrites existing memory without checking
+- All 32 bytes are always written (no partial writes)
+
+## Examples
+
+### Basic Store
+
+```typescript
+import { mstore } from '@tevm/voltaire/evm/instructions/memory';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame();
+
+const value = 0x12345678n;
+frame.stack.push(0n);              // offset
+frame.stack.push(value);           // value
+
+const err = mstore(frame);
+
+// Check written bytes (big-endian)
+console.log(frame.memory.get(0));   // 0x00 (leading zeros)
+console.log(frame.memory.get(28));  // 0x12
+console.log(frame.memory.get(29));  // 0x34
+console.log(frame.memory.get(30));  // 0x56
+console.log(frame.memory.get(31));  // 0x78
+console.log(frame.pc);              // 1 (incremented)
+```
+
+### Write All Ones
+
+```typescript
+const frame = createFrame();
+
+const allOnes = (1n << 256n) - 1n;  // 0xFFFF...FFFF
+frame.stack.push(0n);              // offset
+frame.stack.push(allOnes);         // value
+
+mstore(frame);
+
+// All 32 bytes should be 0xFF
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(i));  // 0xFF
+}
+```
+
+### Write Zero (Clear Memory)
+
+```typescript
+const frame = createFrame();
+
+// Pre-populate memory
+for (let i = 0; i < 32; i++) {
+  frame.memory.set(i, 0xAA);
+}
+
+// Clear with MSTORE 0
+frame.stack.push(0n);   // offset
+frame.stack.push(0n);   // value (zero)
+
+mstore(frame);
+
+// All bytes cleared to 0
+for (let i = 0; i < 32; i++) {
+  console.log(frame.memory.get(i));  // 0
+}
+```
+
+### Write at Non-Aligned Offset
+
+```typescript
+const frame = createFrame();
+
+frame.stack.push(16n);                // offset 16 (misaligned)
+frame.stack.push(0x12345678n);        // value
+
+mstore(frame);
+
+// Expands memory to 48 bytes (2 words)
+console.log(frame.memorySize);        // 64 (next word boundary)
+
+// Bytes 16-47 contain the written value
+console.log(frame.memory.get(44));    // 0x12
+console.log(frame.memory.get(47));    // 0x78
+```
+
+### Sequential Writes
+
+```typescript
+const frame = createFrame();
+
+// Write first word
+frame.stack.push(0n);
+frame.stack.push(0x0102030405060708n);
+mstore(frame);
+
+// Write second word
+frame.stack.push(32n);
+frame.stack.push(0x090a0b0c0d0e0f10n);
+mstore(frame);
+
+// Check both words written
+console.log(frame.memory.get(7));   // 0x08
+console.log(frame.memory.get(39));  // 0x10
+console.log(frame.memorySize);      // 64
+```
+
+## Gas Cost
+
+**Base cost:** 3 gas (GasFastestStep)
+
+**Memory expansion:** Quadratic based on access range
+
+**Formula:**
+```
+words_required = ceil((offset + 32) / 32)
+expansion_cost = (words_required)² / 512 + 3 * (words_required - words_old)
+total_cost = 3 + expansion_cost
+```
+
+**Examples:**
+
+- **Writing bytes 0-31:** 1 word, no prior expansion: 3 gas
+- **Writing bytes 1-32:** 2 words (rounds up), 1 word prior: 3 + (4 - 1) = 6 gas
+- **Writing bytes 0-4095:** ~125 words: 3 + (125² / 512 + expansion) ≈ 3 + 30 = 33 gas
+
+Memory cost dominates for large writes.
+
+## Edge Cases
+
+### Overwriting Memory
+
+```typescript
+const frame = createFrame();
+
+// First write
+frame.stack.push(0n);
+frame.stack.push(0xAAAAAAAAn);
+mstore(frame);
+
+// Second write (overwrite)
+frame.stack.push(0n);
+frame.stack.push(0xBBBBBBBBn);
+mstore(frame);
+
+// Second value wins
+console.log(frame.memory.get(31));  // 0xBB
+```
+
+### Partial Overlap
+
+```typescript
+const frame = createFrame();
+
+// Write at offset 0
+frame.stack.push(0n);
+frame.stack.push(0xFFFFFFFFFFFFFFFFn);
+mstore(frame);
+
+// Write at offset 16 (overlaps previous)
+frame.stack.push(16n);
+frame.stack.push(0x0000000000000000n);
+mstore(frame);
+
+// Bytes 16-31 cleared, bytes 0-15 unchanged
+console.log(frame.memory.get(15));  // 0xFF
+console.log(frame.memory.get(16));  // 0x00
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({ gasRemaining: 2n });
+
+frame.stack.push(0n);
+frame.stack.push(0x42n);
+
+const err = mstore(frame);
+console.log(err);  // { type: "OutOfGas" }
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame();
+
+// Only one value on stack
+frame.stack.push(0n);
+
+const err = mstore(frame);
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+## Common Usage
+
+### Update Free Memory Pointer
+
+```solidity
+assembly {
+    let ptr := mload(0x40)  // Load free pointer
+    mstore(ptr, value)      // Write value
+    mstore(0x40, add(ptr, 0x20))  // Update pointer
+}
+```
+
+### Encode Function Return
+
+```solidity
+assembly {
+    // Return a single uint256
+    let ptr := mload(0x40)
+    mstore(ptr, value)
+    return(ptr, 0x20)
+}
+```
+
+### Build ABI-Encoded Calldata
+
+```solidity
+assembly {
+    let offset := 0x20
+
+    // Function selector (4 bytes padded)
+    mstore(offset, shl(224, selector))
+
+    // Parameter 1
+    mstore(add(offset, 0x20), param1)
+
+    // Parameter 2
+    mstore(add(offset, 0x40), param2)
+}
+```
+
+### Temporary Storage (Local Variables)
+
+```solidity
+assembly {
+    let temp := mload(0x40)  // Free memory
+    mstore(temp, value)       // Store value
+    let loaded := mload(temp) // Load back
+}
+```
+
+## Memory Safety
+
+**Write safety properties:**
+
+- **No side effects:** Writing memory doesn't affect storage or state
+- **Atomic writes:** 32-byte write is atomic
+- **Initialization:** Uninitialized memory automatically allocated
+- **Overwrite safety:** Always replaces all 32 bytes
+
+Applications must ensure offset correctness:
+
+```solidity
+// Good: Manage free memory pointer
+let ptr := mload(0x40)
+mstore(ptr, value)
+mstore(0x40, add(ptr, 0x20))  // Update for next allocation
+
+// Risky: Fixed offsets
+mstore(0x100, value)  // Assumes offset 0x100 is free
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * MSTORE opcode (0x52) - Write 32-byte word to memory
+ */
+export function mstore(frame: BrandedFrame): EvmError | null {
+  // Pop offset and value from stack
+  if (frame.stack.length < 2) {
+    return { type: "StackUnderflow" };
+  }
+  const offset = frame.stack.pop();
+  const value = frame.stack.pop();
+
+  // Cast offset to u32
+  const off = Number(offset);
+  if (!Number.isSafeInteger(off) || off < 0) {
+    return { type: "OutOfBounds" };
+  }
+
+  // Calculate memory expansion
+  const endBytes = BigInt(off + 32);
+  const expansionCost = calculateMemoryExpansion(endBytes);
+
+  // Charge gas
+  frame.gasRemaining -= 3n + expansionCost;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Expand memory
+  const alignedSize = Math.ceil((off + 32) / 32) * 32;
+  frame.memorySize = Math.max(frame.memorySize, alignedSize);
+
+  // Write 32 bytes in big-endian order
+  for (let i = 0; i < 32; i++) {
+    const byte = Number((value >> BigInt((31 - i) * 8)) & 0xFFn);
+    frame.memory.set(off + i, byte);
+  }
+
+  // Increment PC
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// MSTORE opcode (0x52) - Save word to memory
+pub fn mstore(frame: *FrameType) FrameType.EvmError!void {
+    const offset = try frame.popStack();
+    const value = try frame.popStack();
+
+    const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+
+    // Charge base + memory expansion for writing 32 bytes
+    const end_bytes: u64 = @as(u64, off) + 32;
+    const mem_cost = frame.memoryExpansionCost(end_bytes);
+    try frame.consumeGas(GasConstants.GasFastestStep + mem_cost);
+
+    // Update memory size
+    const aligned_size = wordAlignedSize(end_bytes);
+    const aligned_size_u32 = std.math.cast(u32, aligned_size) orelse return error.OutOfBounds;
+    if (aligned_size_u32 > frame.memory_size) {
+        frame.memory_size = aligned_size_u32;
+    }
+
+    // Write word to memory (big-endian)
+    var idx: u32 = 0;
+    while (idx < 32) : (idx += 1) {
+        const byte = @as(u8, @truncate(value >> @intCast((31 - idx) * 8)));
+        const addr = try add_u32(off, idx);
+        try frame.writeMemory(addr, byte);
+    }
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { mstore } from './0x52_MSTORE.js';
+
+describe('MSTORE (0x52)', () => {
+  it('writes 32 bytes to memory at offset 0', () => {
+    const frame = createFrame();
+    const value = 0x0102030405...n;
+
+    frame.stack.push(value);
+    frame.stack.push(0n);
+
+    expect(mstore(frame)).toBeNull();
+    expect(frame.stack.length).toBe(0);
+    expect(frame.memory.get(0)).toBe(0x01);
+    expect(frame.memory.get(31)).toBe(0x20);
+    expect(frame.pc).toBe(1);
+  });
+
+  it('writes zero to clear memory', () => {
+    const frame = createFrame();
+    // Pre-populate
+    for (let i = 0; i < 32; i++) {
+      frame.memory.set(i, 0xFF);
+    }
+
+    frame.stack.push(0n);
+    frame.stack.push(0n);
+
+    mstore(frame);
+
+    for (let i = 0; i < 32; i++) {
+      expect(frame.memory.get(i)).toBe(0);
+    }
+  });
+
+  it('expands memory to word boundary', () => {
+    const frame = createFrame();
+    frame.stack.push(0xABn);
+    frame.stack.push(1n);
+
+    mstore(frame);
+
+    expect(frame.memorySize).toBe(64);
+  });
+
+  it('overwrites existing memory', () => {
+    const frame = createFrame();
+
+    frame.stack.push(0xAAAAn);
+    frame.stack.push(0n);
+    mstore(frame);
+
+    frame.stack.push(0xBBBBn);
+    frame.stack.push(0n);
+    mstore(frame);
+
+    expect(frame.memory.get(31)).toBe(0xBB);
+  });
+
+  it('returns OutOfGas when insufficient', () => {
+    const frame = createFrame({ gasRemaining: 2n });
+    frame.stack.push(0xFFn);
+    frame.stack.push(0n);
+
+    expect(mstore(frame)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('returns StackUnderflow when insufficient stack', () => {
+    const frame = createFrame();
+    frame.stack.push(0n);
+
+    expect(mstore(frame)).toEqual({ type: "StackUnderflow" });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic write (32 bytes)
+- Zero write (memory clear)
+- Non-aligned offset
+- Overwrite handling
+- Word boundary alignment
+- Stack underflow/overflow
+- Out of gas conditions
+- Big-endian encoding
+
+## Security Considerations
+
+### Incorrect Free Pointer Management
+
+```solidity
+// Risky: Not updating free pointer
+assembly {
+    let ptr := mload(0x40)
+    mstore(ptr, value)
+    // Missing: mstore(0x40, add(ptr, 0x20))
+}
+// Next allocation overwrites this data!
+
+// Correct: Always update pointer
+assembly {
+    let ptr := mload(0x40)
+    mstore(ptr, value)
+    mstore(0x40, add(ptr, 0x20))
+}
+```
+
+### Memory Overlap Bugs
+
+```solidity
+// Bad: Assumes memory layout
+assembly {
+    let a := mload(0x80)
+    let b := mload(0xA0)
+    mstore(0x80, a + b)    // Overwrites a!
+}
+
+// Good: Use separate offsets
+assembly {
+    let a := mload(0x80)
+    let b := mload(0xA0)
+    mstore(0xC0, a + b)    // Safe, no overlap
+}
+```
+
+## Benchmarks
+
+MSTORE is among the fastest EVM operations:
+
+**Relative performance:**
+- MSTORE (new memory): 1.0x baseline
+- MSTORE (existing memory): 1.0x baseline
+- MLOAD: 1.0x (similar cost)
+- SSTORE: 100x slower (storage vs memory)
+
+**Gas scaling:**
+- First word: 3 gas
+- Second word: 3 gas (small expansion)
+- Large memory: Quadratic scaling beyond practical use
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.2 (Memory)
+- **[evm.codes - MSTORE](https://www.evm.codes/#52)** - Interactive reference
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Assembly and memory layout

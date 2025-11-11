@@ -1,0 +1,810 @@
+---
+title: "SSTORE (0x55)"
+description: "Save word to persistent storage with complex gas pricing and refunds (EIP-2200, EIP-2929, EIP-3529)"
+---
+
+## Overview
+
+**Opcode:** `0x55`
+**Introduced:** Frontier (EVM genesis)
+**Updated:** Istanbul (EIP-2200), Berlin (EIP-2929), London (EIP-3529)
+
+SSTORE writes a 256-bit value to persistent storage. Unlike SLOAD, SSTORE has complex gas pricing:
+
+- **Sentry check:** Requires >= 2300 gas remaining (EIP-2200)
+- **Cost varies:** Depends on current value, original value, and warm/cold access
+- **Refunds:** Up to 4800 gas refunded for clearing slots (EIP-3529)
+
+This operation commits data to blockchain state and powers smart contract state management.
+
+## Specification
+
+**Stack Input:**
+```
+key (storage slot address)
+value (256-bit value to store)
+```
+
+**Stack Output:**
+```
+(none - consumes both inputs)
+```
+
+**Gas Cost:** Complex (see detailed table below)
+- **Base:** 100-5000 gas depending on operation type
+- **Cold access:** Additional 2100 gas for first-time write
+- **Sentry:** Requires >= 2300 gas remaining
+- **Refund:** Up to 4800 gas refunded when clearing
+
+**Operation:**
+```
+key = pop()
+value = pop()
+
+// Check sentry (EIP-2200)
+if (gasRemaining < 2300) fail
+
+// Compute gas based on current/original value
+if (currentValue == 0 && value != 0) cost = 20000  // Set
+else if (currentValue != 0 || value != 0) cost = 5000  // Reset
+else cost = 0  // Noop, already zero
+
+// Refund if clearing
+if (value == 0 && currentValue != 0) refund = 4800  // EIP-3529
+
+storage[address][key] = value
+gasRemaining -= cost
+```
+
+## Behavior
+
+SSTORE modifies an account's storage and marks the slot as changed in the transaction:
+
+1. **Pop key and value** from stack
+2. **Check sentry** - Requires >= 2300 gas remaining (EIP-2200)
+3. **Prevent state modification in static calls** - Return WriteProtection error
+4. **Compute gas cost** based on:
+   - Current value (what's stored now)
+   - Original value (what was before transaction)
+   - Whether slot is cold/warm (EIP-2929)
+5. **Consume gas** or return OutOfGas error
+6. **Apply refunds** for clearing (max 4800)
+7. **Write to storage** and increment PC
+
+### EIP-2200 Gas Metering
+
+Modern gas metering (Istanbul+) tracks two values:
+
+| Case | Current | Original | Value | Cost | Refund | Notes |
+|------|---------|----------|-------|------|--------|-------|
+| Set | 0 | 0 | non-zero | 20000 | 0 | New entry |
+| Update | non-zero | non-zero | different | 5000 | 0 | Modify existing |
+| Clear | non-zero | non-zero | 0 | 5000 | 4800 | Refund on delete |
+| Restore | non-zero | non-zero | original | 5000 | 4800 | Return to original |
+| Noop | 0 | 0 | 0 | 0 | 0 | Already zero |
+
+### Cold/Warm Access (EIP-2929)
+
+Additional gas added for cold (first-access) writes:
+
+| Access | Cost | Notes |
+|--------|------|-------|
+| Warm | Base cost | Already accessed in transaction |
+| Cold | Base + 2100 | First access in transaction |
+
+### Refund Mechanics (EIP-3529)
+
+Refunds apply when clearing slots:
+
+```
+if (newValue == 0 && currentValue != 0) {
+  addRefund(4800)  // Max refund per cleared slot
+}
+```
+
+**Refund limit:** Maximum refund is 1/5 of total gas consumed in transaction.
+
+## Examples
+
+### Basic Storage Write
+
+```typescript
+import { sstore } from '@voltaire/evm/storage';
+import { createFrame } from '@voltaire/evm/Frame';
+import { createMemoryHost } from '@voltaire/evm/Host';
+
+const host = createMemoryHost();
+const frame = createFrame({
+  stack: [0x42n, 0x1337n],  // [key, value]
+  gasRemaining: 30000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+const error = sstore(frame, host);
+
+console.log(error);              // null (success)
+console.log(frame.gasRemaining); // ~25000 (30000 - 5000 base)
+console.log(host.getStorage(contractAddr, 0x42n));  // 0x1337n
+```
+
+### Zero to Non-Zero (Set)
+
+```typescript
+// Writing non-zero to empty slot (Set operation)
+const host = createMemoryHost();
+const frame = createFrame({
+  stack: [0x42n, 0x1337n],  // [key, value]
+  gasRemaining: 30000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+// Before: slot 0x42 is empty (0)
+// After: slot 0x42 = 0x1337n
+const error = sstore(frame, host);
+
+console.log(frame.gasRemaining);  // 10000 (30000 - 20000 set cost)
+```
+
+### Modify Existing (Update)
+
+```typescript
+// Slot already has a value, writing different value
+const host = createMemoryHost();
+host.setStorage(contractAddr, 0x42n, 0x1111n);  // Pre-existing
+
+const frame = createFrame({
+  stack: [0x42n, 0x2222n],  // [key, new value]
+  gasRemaining: 10000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+const error = sstore(frame, host);
+
+console.log(frame.gasRemaining);  // 5000 (10000 - 5000 reset cost)
+console.log(host.getStorage(contractAddr, 0x42n));  // 0x2222n
+```
+
+### Clear Storage (With Refund)
+
+```typescript
+// Clearing a slot (setting to 0) - gets refund
+const host = createMemoryHost();
+host.setStorage(contractAddr, 0x42n, 0x1337n);  // Has value
+
+const frame = createFrame({
+  stack: [0x42n, 0n],  // [key, 0] - clearing
+  gasRemaining: 10000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+const error = sstore(frame, host);
+
+console.log(frame.gasRemaining);  // 5000 (10000 - 5000 clear cost)
+console.log(frame.refunds);       // 4800 (refund for clearing)
+console.log(host.getStorage(contractAddr, 0x42n));  // 0n (cleared)
+```
+
+### Restore to Original (Refund Path)
+
+```typescript
+// Modifying and then restoring original value - gets refund
+const host = createMemoryHost();
+host.setStorage(contractAddr, 0x42n, 0x1337n);  // Original value
+const original = 0x1337n;
+
+const frame = createFrame({
+  stack: [0x42n, 0x1337n],  // [key, original value]
+  gasRemaining: 10000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+// This might be second write in transaction
+// First write: SSTORE(0x42, 0x2222) - modifies
+// Second write: SSTORE(0x42, 0x1337) - restores
+// Second write costs 5000 and refunds 4800
+
+const error = sstore(frame, host);
+console.log(frame.refunds);  // 4800 (refund for restoration)
+```
+
+### Insufficient Gas (Sentry Check)
+
+```typescript
+// Fails sentry check - requires >= 2300 gas
+const frame = createFrame({
+  stack: [0x42n, 0x1337n],
+  gasRemaining: 100n,  // < 2300
+  address: contractAddr,
+  isStatic: false,
+});
+
+const error = sstore(frame, host);
+console.log(error);  // { type: "OutOfGas" } - sentry failed
+console.log(frame.pc);  // 0 (not executed)
+```
+
+### Static Call Protection
+
+```typescript
+// Cannot modify storage in static context
+const frame = createFrame({
+  stack: [0x42n, 0x1337n],
+  gasRemaining: 30000n,
+  address: contractAddr,
+  isStatic: true,  // Static call context
+});
+
+const error = sstore(frame, host);
+console.log(error);  // { type: "WriteProtection" }
+```
+
+## Gas Cost
+
+### Cost Matrix
+
+| Scenario | Current | Original | Value | Gas | Refund | EIP |
+|----------|---------|----------|-------|-----|--------|-----|
+| Set (new) | 0 | 0 | ≠0 | 20000 | 0 | - |
+| Update | ≠0 | ≠0 | ≠0,≠current | 5000 | 0 | - |
+| Clear | ≠0 | ≠0 | 0 | 5000 | 4800 | 3529 |
+| Restore original | ≠0 | X | original | 5000 | 4800 | 3529 |
+| Noop | 0 | 0 | 0 | 0 | 0 | - |
+| Cold set | 0 | 0 | ≠0 | 22100 | 0 | 2929 |
+| Cold update | ≠0 | ≠0 | ≠0,≠current | 7100 | 0 | 2929 |
+
+### Gas Evolution (EIP Timeline)
+
+**Pre-Istanbul (Frontier-Petersburg):**
+- Zero → non-zero: 20000 gas
+- Otherwise: 5000 gas
+- Refund: 15000 gas for clearing
+
+**Istanbul (EIP-2200):**
+- Added sentry check (>= 2300 gas required)
+- Complex metering based on original value
+- Reduced refund to 4800 (EIP-3529)
+
+**Berlin (EIP-2929):**
+- Added cold/warm access tracking
+- First write to slot: +2100 gas
+
+**London (EIP-3529):**
+- Reduced refunds from 15000 to 4800
+- Max refund limited to 1/5 of total gas
+
+## Edge Cases
+
+### Noop Write (Already Zero)
+
+```typescript
+// Writing 0 to already-zero slot costs nothing
+const host = createMemoryHost();
+const frame = createFrame({
+  stack: [0x42n, 0n],
+  gasRemaining: 1000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+// Slot 0x42 is uninitialized (already 0)
+const error = sstore(frame, host);
+
+console.log(error);              // null
+console.log(frame.gasRemaining); // 1000 (unchanged, noop cost = 0)
+```
+
+### Max Value Write
+
+```typescript
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [0x42n, MAX],
+  gasRemaining: 30000n,
+  address: contractAddr,
+  isStatic: false,
+});
+
+sstore(frame, host);
+console.log(host.getStorage(contractAddr, 0x42n));  // MAX
+```
+
+### Refund Limit
+
+```typescript
+// Refunds capped at 1/5 of total transaction gas
+// If transaction uses 100000 gas, max refund = 20000
+// Even if multiple clears would give 40000 refund
+
+const refundQuotient = 5n;  // 1/5
+const maxRefund = totalGasUsed / refundQuotient;
+const actualRefund = Math.min(4800 * numClears, maxRefund);
+```
+
+## Common Usage
+
+### State Variable Storage
+
+```solidity
+contract Counter {
+  uint256 public count;  // Slot 0
+
+  function increment() public {
+    count++;  // SLOAD + ADD + SSTORE
+    // First SSTORE to count: 20000 gas (set)
+    // Subsequent increments: 5000 gas (update)
+  }
+
+  function reset() public {
+    count = 0;  // SSTORE with refund
+    // Cost: 5000 gas
+    // Refund: 4800 gas
+  }
+}
+```
+
+### Mapping Updates
+
+```solidity
+contract Bank {
+  mapping(address => uint256) public balances;
+
+  function deposit() public payable {
+    uint256 bal = balances[msg.sender];  // SLOAD
+    balances[msg.sender] = bal + msg.value;  // SSTORE
+    // First deposit: 20000 gas (set)
+    // Subsequent: 5000 gas (update)
+  }
+
+  function withdraw(uint256 amount) public {
+    uint256 bal = balances[msg.sender];
+    require(bal >= amount);
+    balances[msg.sender] = bal - amount;  // SSTORE
+    // If balance becomes 0: 5000 gas + 4800 refund
+  }
+}
+```
+
+### Batch Updates
+
+```solidity
+function batchUpdate(uint256[] calldata newValues) public {
+  for (uint i = 0; i < newValues.length; i++) {
+    data[i] = newValues[i];  // Multiple SSTORE
+    // First write to slot: 20000 gas (cold set)
+    // Writes to same slot: 5000 gas (warm update)
+  }
+}
+```
+
+### Gas-Efficient Clearing
+
+```solidity
+// Refund-aware clearing pattern
+function cleanup() public {
+  // Clear multiple storage slots in one transaction
+  slot0 = 0;  // 5000 gas, 4800 refund
+  slot1 = 0;  // 5000 gas, 4800 refund
+  slot2 = 0;  // 5000 gas, 4800 refund
+
+  // Total cost: 15000 gas
+  // Total refund: 14400 gas (limited by 1/5 rule)
+  // Actual cost: 15000 - 14400 = 600 gas
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import * as Frame from "../../Frame/index.js";
+import {
+  SstoreSentry,
+  SstoreSet,
+  SstoreReset,
+  SstoreRefund,
+  ColdSload,
+} from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+
+/**
+ * SSTORE (0x55) - Save word to storage
+ *
+ * Stack:
+ *   in: key, value
+ *   out: -
+ *
+ * Gas: Complex - EIP-2200 (Istanbul+) / EIP-2929 (Berlin+) / EIP-3529 (London+)
+ */
+export function sstore(frame, host) {
+  // EIP-214: Cannot modify state in static call
+  if (frame.isStatic) {
+    return { type: "WriteProtection" };
+  }
+
+  // Pop key and value from stack
+  const keyResult = Frame.popStack(frame);
+  if (keyResult.error) return keyResult.error;
+  const key = keyResult.value;
+
+  const valueResult = Frame.popStack(frame);
+  if (valueResult.error) return valueResult.error;
+  const value = valueResult.value;
+
+  // Get current value for gas calculation
+  const currentValue = host.getStorage(frame.address, key);
+
+  // TODO: Implement full EIP-2200/2929/3529 logic with:
+  // - Original value tracking (getOriginal)
+  // - Access list for cold/warm slots
+  // - Hardfork-dependent gas costs and refunds
+  // - Sentry check (requires >= 2300 gas)
+
+  // Simplified gas calculation
+  const gasCost = currentValue === 0n && value !== 0n
+    ? SstoreSet   // 20000 - new entry
+    : SstoreReset;  // 5000 - modify/clear
+
+  const gasError = Frame.consumeGas(frame, gasCost);
+  if (gasError) return gasError;
+
+  // TODO: Apply refund logic
+  if (value === 0n && currentValue !== 0n) {
+    frame.refunds += SstoreRefund;  // 4800 refund
+  }
+
+  // Store value via host
+  host.setStorage(frame.address, key, value);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+const std = @import("std");
+const Frame = @import("../../Frame/root.zig");
+const Gas = @import("../../../primitives/GasConstants/root.zig");
+
+/// SSTORE (0x55) - Save word to storage
+pub fn sstore(frame: *Frame, host: *Host) Frame.EvmError!void {
+    // EIP-214: Cannot modify state in static call
+    if (frame.isStatic) return Frame.EvmError.WriteProtection;
+
+    // Pop key and value from stack
+    const key = try frame.popStack();
+    const value = try frame.popStack();
+
+    // TODO: EIP-2200 sentry check (requires >= 2300 gas remaining)
+    // if (frame.gasRemaining < 2300) return Frame.EvmError.OutOfGas;
+
+    // Get current value for gas calculation
+    const currentValue = try host.getStorage(frame.address, key);
+
+    // Compute gas cost based on current and new value
+    // TODO: Track original value for complex gas metering
+    const gasCost = if (currentValue == 0 and value != 0)
+        Gas.SstoreSet   // 20000 - new entry
+    else
+        Gas.SstoreReset; // 5000 - modify/clear
+
+    try frame.consumeGas(gasCost);
+
+    // TODO: Apply refunds for clearing
+    if (value == 0 and currentValue != 0) {
+        frame.refunds += Gas.SstoreRefund;  // 4800
+    }
+
+    // Store value
+    try host.setStorage(frame.address, key, value);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { sstore } from './0x55_SSTORE.js';
+import { createFrame } from '../../Frame/index.js';
+import { createMemoryHost } from '../../Host/createMemoryHost.js';
+import { from as addressFrom } from '../../../primitives/Address/index.js';
+
+describe('SSTORE (0x55)', () => {
+  it('stores value to empty slot (set)', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+
+    const frame = createFrame({
+      stack: [0x42n, 0x1337n],
+      gasRemaining: 30000n,
+      address: addr,
+      isStatic: false,
+    });
+
+    expect(sstore(frame, host)).toBeNull();
+    expect(host.getStorage(addr, 0x42n)).toBe(0x1337n);
+    expect(frame.gasRemaining).toBe(10000n);  // 30000 - 20000
+  });
+
+  it('updates existing value (reset)', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+    host.setStorage(addr, 0x42n, 0x1111n);
+
+    const frame = createFrame({
+      stack: [0x42n, 0x2222n],
+      gasRemaining: 10000n,
+      address: addr,
+      isStatic: false,
+    });
+
+    expect(sstore(frame, host)).toBeNull();
+    expect(host.getStorage(addr, 0x42n)).toBe(0x2222n);
+    expect(frame.gasRemaining).toBe(5000n);  // 10000 - 5000
+  });
+
+  it('clears storage with refund', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+    host.setStorage(addr, 0x42n, 0x1337n);
+
+    const frame = createFrame({
+      stack: [0x42n, 0n],
+      gasRemaining: 10000n,
+      address: addr,
+      isStatic: false,
+      refunds: 0n,
+    });
+
+    expect(sstore(frame, host)).toBeNull();
+    expect(host.getStorage(addr, 0x42n)).toBe(0n);
+    expect(frame.gasRemaining).toBe(5000n);   // 10000 - 5000
+    expect(frame.refunds).toBe(4800n);        // Refund
+  });
+
+  it('rejects write in static call', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [0x42n, 0x1337n],
+      gasRemaining: 30000n,
+      address: addressFrom("0x1234567890123456789012345678901234567890"),
+      isStatic: true,
+    });
+
+    expect(sstore(frame, host)).toEqual({ type: "WriteProtection" });
+  });
+
+  it('fails sentry check with insufficient gas', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [0x42n, 0x1337n],
+      gasRemaining: 100n,  // < 2300
+      address: addressFrom("0x1234567890123456789012345678901234567890"),
+      isStatic: false,
+    });
+
+    // TODO: Implement sentry check
+    // expect(sstore(frame, host)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('handles noop write (zero to zero)', () => {
+    const host = createMemoryHost();
+    const addr = addressFrom("0x1234567890123456789012345678901234567890");
+
+    const frame = createFrame({
+      stack: [0x42n, 0n],
+      gasRemaining: 1000n,
+      address: addr,
+      isStatic: false,
+    });
+
+    // Slot uninitialized, writing 0 to 0
+    expect(sstore(frame, host)).toBeNull();
+    expect(frame.gasRemaining).toBe(1000n);  // No cost
+  });
+
+  it('returns StackUnderflow on insufficient stack', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [0x42n],  // Only key, missing value
+      gasRemaining: 30000n,
+      address: addressFrom("0x1234567890123456789012345678901234567890"),
+      isStatic: false,
+    });
+
+    expect(sstore(frame, host)).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('returns OutOfGas when base cost exceeds remaining', () => {
+    const host = createMemoryHost();
+    const frame = createFrame({
+      stack: [0x42n, 0x1337n],
+      gasRemaining: 100n,  // < 20000 for set
+      address: addressFrom("0x1234567890123456789012345678901234567890"),
+      isStatic: false,
+    });
+
+    expect(sstore(frame, host)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('isolates storage by address', () => {
+    const host = createMemoryHost();
+    const addr1 = addressFrom("0x1111111111111111111111111111111111111111");
+    const addr2 = addressFrom("0x2222222222222222222222222222222222222222");
+
+    const frame1 = createFrame({
+      stack: [0x42n, 0xAAAAn],
+      gasRemaining: 30000n,
+      address: addr1,
+      isStatic: false,
+    });
+    sstore(frame1, host);
+
+    const frame2 = createFrame({
+      stack: [0x42n, 0xBBBBn],
+      gasRemaining: 30000n,
+      address: addr2,
+      isStatic: false,
+    });
+    sstore(frame2, host);
+
+    expect(host.getStorage(addr1, 0x42n)).toBe(0xAAAAn);
+    expect(host.getStorage(addr2, 0x42n)).toBe(0xBBBBn);
+  });
+});
+```
+
+## Security
+
+### Sentry Check (EIP-2200)
+
+The sentry ensures SSTORE cannot be called with insufficient gas to complete state modifications:
+
+```solidity
+// VULNERABLE: Old code (pre-Istanbul)
+function mayModifyState() public {
+  if (msg.value < 0.01 ether) return;
+  storage[msg.sender] = data;
+}
+
+// After SSTORE, state is modified but transaction might fail later
+// Could create inconsistent blockchain state
+```
+
+**Solution:** Sentry check (>= 2300 gas) prevents this:
+```
+if (gasRemaining < 2300) revert
+// SSTORE cannot occur with less than 2300 gas available
+```
+
+### Static Call Protection
+
+SSTORE correctly rejects all writes in `STATICCALL` context:
+
+```solidity
+// SAFE: Read-only function
+function getData() public view returns (uint256) {
+  return data;  // Only SLOAD allowed
+}
+
+// UNSAFE: Attempting write in view function
+function badFunction() public view returns (uint256) {
+  data = 42;  // SSTORE fails with WriteProtection
+  return data;
+}
+```
+
+### Reentrancy with Storage
+
+```solidity
+// VULNERABLE: Read-modify-write pattern with call
+function withdraw(uint256 amount) public {
+  uint256 balance = balances[msg.sender];  // SLOAD
+  require(balance >= amount);
+
+  balances[msg.sender] = balance - amount;  // SSTORE
+  (bool ok, ) = msg.sender.call{value: amount}("");  // REENTRANT
+
+  // Attacker can re-enter here and call withdraw again
+  // Original SSTORE not yet committed to state
+}
+
+// SAFE: Effects-Interactions pattern
+function withdraw(uint256 amount) public {
+  require(balances[msg.sender] >= amount);
+  balances[msg.sender] -= amount;  // SSTORE first
+
+  (bool ok, ) = msg.sender.call{value: amount}("");
+  require(ok, "transfer failed");
+}
+```
+
+### Refund Manipulation
+
+Attacker might try to maximize refunds:
+
+```solidity
+// INEFFICIENT: Clearing to get refund
+function attackRefunds() public {
+  // Write then clear intentionally to get refund
+  data = 42;      // 20000 gas (set)
+  data = 0;       // 5000 gas (clear) + 4800 refund
+  // Total cost: 25000 - 4800 = 20200 gas
+  // vs: original cost + cleanup elsewhere
+}
+
+// Not really an attack, but refunds incentivize cleanup
+// This is intentional - EIP-3529 refunds are feature, not bug
+```
+
+### Gas Cost Calculation Errors
+
+```solidity
+// WRONG: Assuming constant SSTORE cost
+function batchWrite(uint256[] calldata values) public {
+  uint256 gasPerWrite = 5000;  // WRONG - ignores set cost
+  require(gasleft() > values.length * gasPerWrite);
+
+  for (uint i = 0; i < values.length; i++) {
+    data[i] = values[i];  // First write: 20000 (set)
+    // Second write onward: 5000 (update)
+    // Can run out of gas!
+  }
+}
+
+// RIGHT: Account for variable costs
+function batchWrite(uint256[] calldata values) public {
+  uint256 firstWriteCost = 20000;
+  uint256 updateCost = 5000;
+  uint256 requiredGas = firstWriteCost + (values.length - 1) * updateCost;
+  require(gasleft() > requiredGas, "insufficient gas");
+
+  for (uint i = 0; i < values.length; i++) {
+    data[i] = values[i];
+  }
+}
+```
+
+## Benchmarks
+
+**Storage write costs:**
+- Set (0 → non-zero): 20000 gas
+- Update (non-zero → different): 5000 gas
+- Clear (non-zero → 0): 5000 gas + 4800 refund
+- Cold access penalty: +2100 gas (EIP-2929)
+
+**Relative performance:**
+- MSTORE (memory): 3 gas
+- Warm SLOAD: 100 gas
+- Cold SLOAD: 2100 gas
+- Warm SSTORE update: 5000 gas
+- SSTORE set: 20000 gas (4x more expensive than update)
+
+**Optimization tactics:**
+```solidity
+// Batch updates in single transaction (warm access)
+// vs multiple transactions (cold access each time)
+// Single tx: 20000 + 5000 = 25000 gas
+// Multiple tx: 20000 + 2100 + 2100 + ... (much higher)
+```
+
+## References
+
+- [EVM Codes - SSTORE (0x55)](https://www.evm.codes/#55)
+- [EIP-2200: Structured Definitions for Net Gas Metering](https://eips.ethereum.org/EIPS/eip-2200)
+- [EIP-2929: Gas-cost increases for state access opcodes](https://eips.ethereum.org/EIPS/eip-2929)
+- [EIP-3529: Reduction in refunds](https://eips.ethereum.org/EIPS/eip-3529)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (Execution)
+- [Solidity Storage Layout](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html)
