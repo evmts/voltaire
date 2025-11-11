@@ -1,0 +1,115 @@
+---
+title: eth Methods
+description: Standard Ethereum JSON-RPC methods (40 methods)
+---
+
+# eth Methods
+
+The `eth` namespace provides standard Ethereum JSON-RPC methods for interacting with Ethereum nodes.
+
+## Overview
+
+**Total Methods**: 40
+
+The `eth` namespace covers:
+- **Block queries** - Get block data by hash or number
+- **Transaction operations** - Send, get, and query transactions
+- **State queries** - Get balances, code, storage, and account state
+- **Filters & logs** - Create filters and query event logs
+- **Gas estimation** - Estimate gas costs for transactions
+- **Network info** - Chain ID, sync status, coinbase
+
+## Common Methods
+
+### eth_blockNumber
+Get the current block number.
+
+### eth_call
+Execute a message call (read-only contract call).
+
+### eth_getBalance
+Get the balance of an address at a given block.
+
+### eth_getBlockByNumber / eth_getBlockByHash
+Get block data by block number or hash.
+
+### eth_getTransactionByHash
+Get transaction data by transaction hash.
+
+### eth_getTransactionReceipt
+Get transaction receipt (includes logs and status).
+
+### eth_getLogs
+Get logs matching a filter.
+
+### eth_sendRawTransaction
+Submit a signed transaction to the network.
+
+### eth_estimateGas
+Estimate gas required for a transaction.
+
+## All Methods (40)
+
+- `eth_accounts`
+- `eth_blobBaseFee`
+- `eth_blockNumber`
+- `eth_call`
+- `eth_chainId`
+- `eth_coinbase`
+- `eth_createAccessList`
+- `eth_estimateGas`
+- `eth_feeHistory`
+- `eth_gasPrice`
+- `eth_getBalance`
+- `eth_getBlockByHash`
+- `eth_getBlockByNumber`
+- `eth_getBlockReceipts`
+- `eth_getBlockTransactionCountByHash`
+- `eth_getBlockTransactionCountByNumber`
+- `eth_getCode`
+- `eth_getFilterChanges`
+- `eth_getFilterLogs`
+- `eth_getLogs`
+- `eth_getProof`
+- `eth_getStorageAt`
+- `eth_getTransactionByBlockHashAndIndex`
+- `eth_getTransactionByBlockNumberAndIndex`
+- `eth_getTransactionByHash`
+- `eth_getTransactionCount`
+- `eth_getTransactionReceipt`
+- `eth_getUncleCountByBlockHash`
+- `eth_getUncleCountByBlockNumber`
+- `eth_maxPriorityFeePerGas`
+- `eth_newBlockFilter`
+- `eth_newFilter`
+- `eth_newPendingTransactionFilter`
+- `eth_sendRawTransaction`
+- `eth_sendTransaction`
+- `eth_sign`
+- `eth_signTransaction`
+- `eth_simulateV1`
+- `eth_syncing`
+- `eth_uninstallFilter`
+
+## Usage
+
+```typescript
+import * as eth from '@tevm/voltaire/jsonrpc/eth';
+
+// eth_getBalance
+const balanceParams: typeof eth.eth_getBalance.Params = {
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  block: 'latest'
+};
+
+// eth_call
+const callParams: typeof eth.eth_call.Params = {
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  data: '0x70a08231...',
+  block: 'latest'
+};
+```
+
+## Reference
+
+For detailed parameter and return type information, see the [Ethereum JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/).

@@ -1,0 +1,118 @@
+---
+title: JSON-RPC
+description: Type-safe Ethereum JSON-RPC method definitions from the official OpenRPC specification
+---
+
+# JSON-RPC
+
+Type-safe Ethereum JSON-RPC method definitions generated from the [official OpenRPC specification](https://github.com/ethereum/execution-apis).
+
+## Overview
+
+The `jsonrpc` module provides complete type coverage for Ethereum JSON-RPC methods across three namespaces:
+
+- **`eth`** - 40 methods for standard Ethereum operations (blocks, transactions, state queries)
+- **`debug`** - 5 methods for debugging and development
+- **`engine`** - 20 methods for consensus layer integration (Engine API)
+
+All types are **auto-generated** from the Ethereum execution-apis OpenRPC specification, ensuring they stay in sync with the official Ethereum JSON-RPC API.
+
+## Installation
+
+```bash
+npm install @tevm/voltaire
+```
+
+## Usage
+
+### TypeScript
+
+```typescript
+import * as jsonrpc from '@tevm/voltaire/jsonrpc';
+
+// Use specific namespace
+import * as eth from '@tevm/voltaire/jsonrpc/eth';
+import * as debug from '@tevm/voltaire/jsonrpc/debug';
+import * as engine from '@tevm/voltaire/jsonrpc/engine';
+
+// Example: eth_getBalance params
+const params: typeof eth.eth_getBalance.Params = {
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  block: 'latest'
+};
+```
+
+### Zig
+
+```zig
+const jsonrpc = @import("jsonrpc");
+
+// Use specific namespace
+const eth = jsonrpc.eth;
+const debug = jsonrpc.debug;
+const engine = jsonrpc.engine;
+
+// Example: eth_getBalance
+const params = eth.EthGetBalance.Params{
+    .address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+    .block = "latest",
+};
+```
+
+## Code Generation
+
+The JSON-RPC types are generated from the OpenRPC specification using Zig codegen tools.
+
+### Regenerate Types
+
+```bash
+# Generate all types (eth, debug, engine)
+zig build generate-jsonrpc
+
+# Or using npm script
+npm run generate:jsonrpc
+```
+
+### Clean Generated Files
+
+```bash
+# Remove all generated files (preserves hand-written types)
+zig build clean-jsonrpc
+
+# Or using npm script
+npm run clean:jsonrpc
+```
+
+## Architecture
+
+```
+src/jsonrpc/
+├── types/              # Hand-written base types
+│   ├── Address.zig/js
+│   ├── Hash.zig/js
+│   ├── Quantity.zig/js
+│   ├── BlockTag.zig/js
+│   └── BlockSpec.zig/js
+├── eth/                # Generated: 40 eth_* methods
+├── debug/              # Generated: 5 debug_* methods
+├── engine/             # Generated: 20 engine_* methods
+├── JsonRpc.zig/js      # Root union of all methods
+├── root.zig            # Zig module entry
+└── index.ts            # TypeScript module entry
+```
+
+**Important**: All files except `types/` are auto-generated and should **not** be edited manually. Regenerate them using `zig build generate-jsonrpc`.
+
+## Method Namespaces
+
+- [eth Methods](/jsonrpc/eth) - Standard Ethereum JSON-RPC (40 methods)
+- [debug Methods](/jsonrpc/debug) - Debugging & development (5 methods)
+- [engine Methods](/jsonrpc/engine) - Consensus layer integration (20 methods)
+
+## Source
+
+Generated from: [ethereum/execution-apis](https://github.com/ethereum/execution-apis)
+
+Specification format: [OpenRPC](https://open-rpc.org/)
+
+Total methods: **65**

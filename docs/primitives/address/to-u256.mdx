@@ -1,0 +1,398 @@
+---
+title: Address.toU256
+description: Convert address to 256-bit unsigned integer (bigint)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.toU256(): bigint`
+
+Converts 20-byte address to 256-bit unsigned integer (bigint). Useful for numeric operations, sorting, and contract interactions that treat addresses as numbers.
+
+**Returns:** `bigint` - 256-bit unsigned integer representation
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const value = addr.toU256()
+console.log(value)
+// 662570784624965186509451281704661422481108140515n
+
+// Zero address
+const zero = Address.fromHex("0x0000000000000000000000000000000000000000")
+console.log(zero.toU256())
+// 0n
+
+// Max address (2^160 - 1)
+const max = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+console.log(max.toU256())
+// 1461501637330902918203684832716283019655932542975n
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toU256.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toU256.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toU256(address: BrandedAddress): bigint`
+
+Converts 20-byte address to 256-bit unsigned integer.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to convert
+
+**Returns:** `bigint` - 256-bit unsigned integer
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const value = Address.toU256(addr)
+console.log(value)
+// 662570784624965186509451281704661422481108140515n
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/toU256.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toU256.js#L14)
+
+</Tab>
+<Tab title="Effect.ts">
+
+## `address.toU256(): bigint`
+
+Convert address to 256-bit unsigned integer. Effect Schema API provides validation and type safety.
+
+**Returns:** `bigint` - 256-bit unsigned integer representation
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const value = addr.toU256()
+console.log(value)
+// 662570784624965186509451281704661422481108140515n
+
+// Reversible with fromNumber
+const original = 0x742d35cc6634c0532925a3b844bc9e7595f251e3n
+const addr2 = Address.fromNumber(original)
+console.log(addr2.toU256() === original)
+// true
+```
+
+**Defined in:** [primitives/Address/effect.ts:136](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L136)
+
+</Tab>
+<Tab title="Zig">
+
+## `toU256(address: Address): u256`
+
+Convert 20-byte address to 256-bit unsigned integer.
+
+**Parameters:**
+- `address: Address` - Address to convert
+
+**Returns:** `u256` - 256-bit unsigned integer
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+const value = Address.toU256(addr);
+
+std.debug.print("{}\n", .{value});
+// 662570784624965186509451281704661422481108140515
+
+// Reversible with fromU256
+const addr2 = Address.fromU256(value);
+try std.testing.expect(Address.equals(addr, addr2));
+```
+
+**Defined in:** [primitives/Address/address.zig:51](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L51)
+
+</Tab>
+<Tab title="C">
+
+## C API Not Available
+
+The `toU256` function is not directly exposed in the C API. Use language-specific integer conversion utilities to work with address bytes:
+
+```c
+#include <voltaire/primitives.h>
+#include <stdint.h>
+
+// Manual conversion from address bytes to integer
+uint64_t address_to_partial_uint(const PrimitivesAddress* addr) {
+    uint64_t result = 0;
+    for (int i = 12; i < 20; i++) {
+        result = (result << 8) | addr->bytes[i];
+    }
+    return result;
+}
+```
+
+For full 256-bit integer support, use the TypeScript, Zig, or Rust bindings.
+
+</Tab>
+</Tabs>
+
+## Conversion Details
+
+**Input:** 20-byte address (160 bits)
+**Output:** 256-bit unsigned integer (bigint)
+
+The conversion interprets the address bytes as big-endian unsigned integer:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Address bytes (hex): 0x0000000000000000000000000000000000000045
+// As integer: 69n
+const addr = Address.fromNumber(69n)
+console.log(addr.toU256())
+// 69n
+
+// Breakdown for 0x742d35cc6634c0532925a3b844bc9e7595f251e3:
+// Each byte contributes to position in big-endian order
+// result = (0x74 << 152) | (0x2d << 144) | ... | 0xe3
+```
+
+## Reversibility
+
+`toU256()` and `fromNumber()` are inverse operations:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const original = 0x742d35cc6634c0532925a3b844bc9e7595f251e3n
+const addr = Address.fromNumber(original)
+const converted = addr.toU256()
+
+console.log(converted === original)
+// true
+
+// Round trip
+const addr2 = Address.fromNumber(converted)
+console.log(addr.equals(addr2))
+// true
+```
+
+## Use Cases
+
+### Numeric Comparison
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+
+const value1 = addr1.toU256()
+const value2 = addr2.toU256()
+
+if (value1 < value2) {
+  console.log("addr1 is numerically less than addr2")
+}
+// "addr1 is numerically less than addr2"
+```
+
+### Sorting Addresses
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addresses = [
+  Address.fromHex("0x0000000000000000000000000000000000000003"),
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address.fromHex("0x0000000000000000000000000000000000000002"),
+]
+
+const sorted = addresses.sort((a, b) => {
+  const aValue = a.toU256()
+  const bValue = b.toU256()
+  return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+})
+
+console.log(sorted.map(a => a.toHex()))
+// [
+//   "0x0000000000000000000000000000000000000001",
+//   "0x0000000000000000000000000000000000000002",
+//   "0x0000000000000000000000000000000000000003"
+// ]
+```
+
+### Contract Interactions
+
+Some contracts treat addresses as uint160 or uint256 for numeric operations:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const value = addr.toU256()
+
+// Pass to contract expecting uint256
+const calldata = encodeFunctionData({
+  abi: contractAbi,
+  functionName: 'processAddressAsNumber',
+  args: [value]
+})
+```
+
+### Range Checks
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000045")
+const value = addr.toU256()
+
+// Check if address is in specific numeric range
+const MIN_ADDR = 0x0000000000000000000000000000000000000001n
+const MAX_ADDR = 0x0000000000000000000000000000000000001000n
+
+if (value >= MIN_ADDR && value <= MAX_ADDR) {
+  console.log("Address is in valid range")
+}
+```
+
+### Mathematical Operations
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000100")
+const value = addr.toU256()
+
+// Perform arithmetic
+const incremented = value + 1n
+const decremented = value - 1n
+const doubled = value * 2n
+
+// Convert back to addresses
+const nextAddr = Address.fromNumber(incremented)
+const prevAddr = Address.fromNumber(decremented)
+
+console.log(nextAddr.toHex())
+// "0x0000000000000000000000000000000000000101"
+
+console.log(prevAddr.toHex())
+// "0x00000000000000000000000000000000000000ff"
+```
+
+### Bitwise Operations
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.fromHex("0x00000000000000000000000000000000000000ff")
+const addr2 = Address.fromHex("0x000000000000000000000000000000000000ff00")
+
+const value1 = addr1.toU256()
+const value2 = addr2.toU256()
+
+// Bitwise OR
+const combined = value1 | value2
+console.log(Address.fromNumber(combined).toHex())
+// "0x000000000000000000000000000000000000ffff"
+
+// Bitwise AND
+const intersection = value1 & value2
+console.log(Address.fromNumber(intersection).toHex())
+// "0x0000000000000000000000000000000000000000"
+```
+
+## Performance
+
+**Zero allocation** - Direct byte-to-bigint conversion.
+
+**Time complexity:** O(n) where n = 20 bytes (constant time).
+
+**Space complexity:** O(1) - Single bigint result.
+
+The conversion is implemented as a simple left-shift accumulator:
+
+```typescript
+// Conceptual implementation
+function toU256(address: Uint8Array): bigint {
+  let result = 0n
+  for (let i = 0; i < 20; i++) {
+    result = (result << 8n) | BigInt(address[i])
+  }
+  return result
+}
+```
+
+## Range and Limits
+
+Addresses are 20 bytes (160 bits), which fits within a 256-bit integer:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Maximum address value: 2^160 - 1
+const MAX_ADDRESS_VALUE = (1n << 160n) - 1n
+
+const maxAddr = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+console.log(maxAddr.toU256() === MAX_ADDRESS_VALUE)
+// true
+
+// Leading zeros are preserved in address but not in bigint
+const small = Address.fromHex("0x0000000000000000000000000000000000000001")
+console.log(small.toU256())
+// 1n (not 0x0000000000000000000000000000000000000001n)
+```
+
+## Type Safety
+
+TypeScript enforces proper typing:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const value: bigint = addr.toU256()  // Type-safe
+
+// Compiler error: Type 'bigint' is not assignable to type 'string'
+// const hexValue: string = addr.toU256()
+```
+
+## Comparison with Other Conversions
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x0000000000000000000000000000000000000045")
+
+// To bigint (toU256)
+console.log(addr.toU256())
+// 69n
+
+// To hex string (toHex)
+console.log(addr.toHex())
+// "0x0000000000000000000000000000000000000045"
+
+// To bytes (toBytes)
+console.log(addr.toBytes())
+// Uint8Array(20) [0, 0, ..., 0, 69]
+
+// To ABI-encoded (toAbiEncoded)
+console.log(addr.toAbiEncoded())
+// Uint8Array(32) [0, 0, ..., 0, 69]  (32 bytes, left-padded)
+```
+
+## See Also
+
+- [fromNumber](/primitives/address/from-number) - Create address from number or bigint
+- [compare](/primitives/address/compare) - Compare addresses (also numeric)
+- [toHex](/primitives/address/to-hex) - Convert to hex string
+- [toAbiEncoded](/primitives/address/to-abi-encoded) - Convert to ABI-encoded bytes

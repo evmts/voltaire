@@ -38,6 +38,16 @@ export type BrandedFrame = {
 	// Other
 	authorized: bigint | null;
 	callDepth: number;
+
+	// Block context (optional, for block opcodes)
+	blockNumber?: bigint;
+	blockTimestamp?: bigint;
+	blockGasLimit?: bigint;
+	blockDifficulty?: bigint;
+	blockPrevrandao?: bigint;
+	blockBaseFee?: bigint;
+	chainId?: bigint;
+	blobBaseFee?: bigint;
 };
 
 /**

@@ -1,0 +1,66 @@
+---
+title: debug Methods
+description: Debugging and development JSON-RPC methods (5 methods)
+---
+
+# debug Methods
+
+The `debug` namespace provides debugging and development methods for Ethereum nodes.
+
+## Overview
+
+**Total Methods**: 5
+
+These methods are primarily used for:
+- **Low-level debugging** - Access raw block and transaction data
+- **Development** - Inspect internal node state
+- **Testing** - Validate block and transaction processing
+
+:::caution
+Debug methods may not be available on all Ethereum nodes, especially public RPC endpoints. They're typically only enabled on development/testing nodes.
+:::
+
+## Methods
+
+### debug_getBadBlocks
+Get a list of bad blocks that the client has seen.
+
+### debug_getRawBlock
+Get the RLP-encoded block data.
+
+### debug_getRawHeader
+Get the RLP-encoded block header.
+
+### debug_getRawReceipts
+Get the RLP-encoded receipts for a block.
+
+### debug_getRawTransaction
+Get the RLP-encoded transaction data.
+
+## All Methods (5)
+
+- `debug_getBadBlocks`
+- `debug_getRawBlock`
+- `debug_getRawHeader`
+- `debug_getRawReceipts`
+- `debug_getRawTransaction`
+
+## Usage
+
+```typescript
+import * as debug from '@tevm/voltaire/jsonrpc/debug';
+
+// debug_getRawBlock
+const params: typeof debug.debug_getRawBlock.Params = {
+  blockNumber: '0x10d4f'
+};
+
+// debug_getRawTransaction
+const txParams: typeof debug.debug_getRawTransaction.Params = {
+  hash: '0x...'
+};
+```
+
+## Reference
+
+For detailed parameter and return type information, see the [Ethereum JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/).

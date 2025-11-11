@@ -1,0 +1,126 @@
+---
+title: engine Methods
+description: Consensus layer integration JSON-RPC methods (Engine API, 20 methods)
+---
+
+# engine Methods
+
+The `engine` namespace provides the Engine API for consensus layer (beacon chain) integration with execution layer clients.
+
+## Overview
+
+**Total Methods**: 20
+
+The Engine API enables:
+- **Consensus integration** - Communication between consensus and execution layers
+- **Block production** - Payload building and validation
+- **Fork choice** - Head tracking and finalization
+- **Blob transactions** - EIP-4844 blob sidecar management (Cancun+)
+
+## Key Method Groups
+
+### Payload Methods
+Build and retrieve execution payloads for block production.
+
+- `engine_getPayloadV1` through `engine_getPayloadV6`
+- `engine_newPayloadV1` through `engine_newPayloadV5`
+
+### Fork Choice
+Update fork choice state and trigger payload building.
+
+- `engine_forkchoiceUpdatedV1`
+- `engine_forkchoiceUpdatedV2`
+- `engine_forkchoiceUpdatedV3`
+
+### Blob Methods (EIP-4844)
+Manage blob sidecars for blob transactions.
+
+- `engine_getBlobsV1`
+- `engine_getBlobsV2`
+
+### Payload Bodies
+Retrieve historical execution payload data.
+
+- `engine_getPayloadBodiesByHashV1`
+- `engine_getPayloadBodiesByRangeV1`
+
+### Configuration
+Exchange capabilities and transition configuration.
+
+- `engine_exchangeCapabilities`
+- `engine_exchangeTransitionConfigurationV1`
+
+## All Methods (20)
+
+- `engine_exchangeCapabilities`
+- `engine_exchangeTransitionConfigurationV1`
+- `engine_forkchoiceUpdatedV1`
+- `engine_forkchoiceUpdatedV2`
+- `engine_forkchoiceUpdatedV3`
+- `engine_getBlobsV1`
+- `engine_getBlobsV2`
+- `engine_getPayloadBodiesByHashV1`
+- `engine_getPayloadBodiesByRangeV1`
+- `engine_getPayloadV1`
+- `engine_getPayloadV2`
+- `engine_getPayloadV3`
+- `engine_getPayloadV4`
+- `engine_getPayloadV5`
+- `engine_getPayloadV6`
+- `engine_newPayloadV1`
+- `engine_newPayloadV2`
+- `engine_newPayloadV3`
+- `engine_newPayloadV4`
+- `engine_newPayloadV5`
+
+## Usage
+
+```typescript
+import * as engine from '@tevm/voltaire/jsonrpc/engine';
+
+// engine_forkchoiceUpdatedV3
+const forkChoiceParams: typeof engine.engine_forkchoiceUpdatedV3.Params = {
+  forkchoiceState: {
+    headBlockHash: '0x...',
+    safeBlockHash: '0x...',
+    finalizedBlockHash: '0x...'
+  },
+  payloadAttributes: {
+    timestamp: '0x...',
+    prevRandao: '0x...',
+    suggestedFeeRecipient: '0x...'
+  }
+};
+
+// engine_newPayloadV3
+const newPayloadParams: typeof engine.engine_newPayloadV3.Params = {
+  executionPayload: {
+    parentHash: '0x...',
+    feeRecipient: '0x...',
+    stateRoot: '0x...',
+    // ... more fields
+  },
+  expectedBlobVersionedHashes: ['0x...'],
+  parentBeaconBlockRoot: '0x...'
+};
+```
+
+## Version History
+
+The Engine API has evolved through multiple versions corresponding to Ethereum hard forks:
+
+- **V1** - Merge (Paris)
+- **V2** - Shanghai (withdrawals)
+- **V3** - Cancun (blobs / EIP-4844)
+- **V4** - Prague/Electra
+- **V5** - Future upgrades
+- **V6** - Future upgrades
+
+Always use the version corresponding to your target fork.
+
+## Reference
+
+For detailed specifications, see:
+- [Engine API Specification](https://github.com/ethereum/execution-apis/tree/main/src/engine)
+- [EIP-3675: Upgrade consensus to Proof-of-Stake](https://eips.ethereum.org/EIPS/eip-3675)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)

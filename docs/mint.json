@@ -641,6 +641,15 @@
 					]
 				}
 			]
+		},
+		{
+			"group": "JSON-RPC",
+			"pages": [
+				"jsonrpc/index",
+				"jsonrpc/eth",
+				"jsonrpc/debug",
+				"jsonrpc/engine"
+			]
 		}
 	],
 	"footerSocials": {
