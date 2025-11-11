@@ -8,16 +8,17 @@ import {
 } from "../utils.js";
 
 /**
- * Deserialize RLP encoded EIP-7702 transaction
+ * Deserialize RLP encoded EIP-7702 transaction.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction bytes with type prefix
  * @returns {import('../types.js').EIP7702} Deserialized transaction
  * @throws {Error} If transaction is invalid or malformed
- *
  * @example
  * ```javascript
- * const tx = TransactionEIP7702.deserialize(bytes);
- * // { type: 4, chainId: 1n, nonce: 0n, ... }
+ * import { deserialize } from './primitives/Transaction/EIP7702/deserialize.js';
+ * const tx = deserialize(bytes);
  * ```
  */
 export function deserialize(data) {

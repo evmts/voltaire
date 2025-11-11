@@ -4,18 +4,18 @@ import { ValidationError } from "./errors.js";
 /**
  * Validate authorization structure
  *
+ * @see https://voltaire.tevm.sh/primitives/authorization
+ * @since 0.0.0
  * @param {import("./BrandedAuthorization.js").BrandedAuthorization} auth - Authorization to validate
  * @throws {ValidationError} if invalid
- *
  * @example
- * ```typescript
- * const auth: Item = {...};
+ * ```javascript
+ * import * as Authorization from './primitives/Authorization/index.js';
+ * const auth = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n, yParity: 0, r: 0n, s: 0n };
  * try {
- *   validate(auth);
+ *   Authorization.validate(auth);
  * } catch (e) {
- *   if (e instanceof ValidationError) {
- *     console.error(e.message);
- *   }
+ *   console.error('Invalid authorization:', e.message);
  * }
  * ```
  */

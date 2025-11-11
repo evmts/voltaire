@@ -9,15 +9,17 @@ import {
 } from "../utils.js";
 
 /**
- * Get signing hash
+ * Get signing hash.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702} tx - Transaction to get signing hash for
  * @returns {import('../../Hash/index.js').BrandedHash} Keccak256 hash for signing
- *
+ * @throws {never} Never throws
  * @example
  * ```javascript
- * const signingHash = TransactionEIP7702.getSigningHash(tx);
- * // Used to create or verify transaction signature
+ * import { getSigningHash } from './primitives/Transaction/EIP7702/getSigningHash.js';
+ * const signingHash = getSigningHash(tx);
  * ```
  */
 export function getSigningHash(tx) {

@@ -1,16 +1,19 @@
 /**
- * Check if this authorization equals another
+ * Check if two addresses are equal
  *
+ * @see https://voltaire.tevm.sh/primitives/authorization
+ * @since 0.0.0
  * @param {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} a - First address
  * @param {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} b - Second address
  * @returns {boolean} True if equal
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const auth1: Item = {...};
- * const auth2: Item = {...};
- * if (equals(auth1, auth2)) {
- *   console.log('Authorizations are equal');
+ * ```javascript
+ * import * as Authorization from './primitives/Authorization/index.js';
+ * const addr1 = '0x742d35Cc...';
+ * const addr2 = '0x742d35Cc...';
+ * if (Authorization.equals(addr1, addr2)) {
+ *   console.log('Addresses are equal');
  * }
  * ```
  */
