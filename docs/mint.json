@@ -46,7 +46,7 @@
 		},
 		{
 			"group": "Concepts",
-			"pages": ["concepts/branded-types", "concepts/data-first"]
+			"pages": ["concepts/branded-types", "concepts/data-first", "concepts/api-patterns"]
 		},
 		{
 			"group": "Primitives",
