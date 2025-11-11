@@ -58,15 +58,16 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
     const messageHash = Keccak256.hash(message);
     console.log("Message hash:", messageHash);
 
-    // Generate a keypair
-    const privateKey = Secp256k1.randomPrivateKey();
-    const publicKey = Secp256k1.getPublicKey(privateKey);
+    // Generate a keypair (using crypto.getRandomValues or similar)
+    const privateKey = crypto.getRandomValues(new Uint8Array(32));
+    const publicKey = Secp256k1.derivePublicKey(privateKey);
 
     // Sign the hash
     const signature = Secp256k1.sign(messageHash, privateKey);
 
     // Recover the signer's address
-    const signerAddress = Secp256k1.recoverAddress(messageHash, signature);
+    const recoveredPublicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+    const signerAddress = Address.fromPublicKey(recoveredPublicKey);
     console.log("Signer address:", Address.toChecksummed(signerAddress));
 
     // Verify the signature
@@ -83,13 +84,14 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
     const messageHash = Keccak256.hash(message);
     document.body.innerHTML += `<p>Hash: ${messageHash}</p>`;
 
-    // Generate a keypair
-    const privateKey = Secp256k1.randomPrivateKey();
-    const publicKey = Secp256k1.getPublicKey(privateKey);
+    // Generate a keypair (using crypto.getRandomValues or similar)
+    const privateKey = crypto.getRandomValues(new Uint8Array(32));
+    const publicKey = Secp256k1.derivePublicKey(privateKey);
 
     // Sign and verify
     const signature = Secp256k1.sign(messageHash, privateKey);
-    const signerAddress = Secp256k1.recoverAddress(messageHash, signature);
+    const recoveredPublicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+    const signerAddress = Address.fromPublicKey(recoveredPublicKey);
 
     document.body.innerHTML += `
       <p>Signer: ${Address.toChecksummed(signerAddress)}</p>

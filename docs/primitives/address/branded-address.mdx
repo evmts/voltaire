@@ -34,11 +34,11 @@ Defined in: [primitives/Address/BrandedAddress/BrandedAddress.js](https://github
 All functions exported as both individual exports and namespace:
 
 ```typescript
-import * as BrandedAddress from '@tevm/voltaire/BrandedAddress'
+import * as Address from '@tevm/voltaire/Address'
 
 // Namespace usage
-const addr = BrandedAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const hex = BrandedAddress.toHex(addr)
+const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const hex = Address.toHex(addr)
 ```
 
 ## Tree-Shakeable Usage
@@ -46,8 +46,8 @@ const hex = BrandedAddress.toHex(addr)
 Import only what you need:
 
 ```typescript
-import { from, toHex, equals } from '@tevm/voltaire/BrandedAddress'
-import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+import { from, toHex, equals } from '@tevm/voltaire/Address'
+import type { BrandedAddress } from '@tevm/voltaire/Address'
 
 const addr: BrandedAddress = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const hex = toHex(addr)
@@ -169,9 +169,9 @@ See [Contract Addresses](/primitives/address/contract-addresses) for details.
 ### Variants
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
-import * as LowercaseAddress from '@tevm/voltaire/BrandedAddress/LowercaseAddress'
-import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
+import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
+import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
 
 const checksummed = ChecksumAddress.from(addr) // uses keccak256
 const lowercase = LowercaseAddress.from(addr)
@@ -201,7 +201,7 @@ deployerAddr.calculateCreateAddress(nonce)
 This enables functional composition and partial application:
 
 ```typescript
-import { toHex, equals, isZero } from '@tevm/voltaire/BrandedAddress'
+import { toHex, equals, isZero } from '@tevm/voltaire/Address'
 
 // Function composition
 const formatAddress = (addr: BrandedAddress) => toHex(addr).toUpperCase()
@@ -235,7 +235,7 @@ const isEqual = equals(addr, otherAddr)
 ### Example 2: With Checksum (Keccak256 Only)
 
 ```typescript
-import { from, toHex, toChecksummed } from '@tevm/voltaire/BrandedAddress'
+import { from, toHex, toChecksummed } from '@tevm/voltaire/Address'
 
 const addr = from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 const checksummed = toChecksummed(addr)
@@ -246,7 +246,7 @@ const checksummed = toChecksummed(addr)
 ### Example 3: With CREATE (Keccak256 + RLP)
 
 ```typescript
-import { from, calculateCreateAddress } from '@tevm/voltaire/BrandedAddress'
+import { from, calculateCreateAddress } from '@tevm/voltaire/Address'
 
 const deployer = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const contractAddr = calculateCreateAddress(deployer, 0n)
@@ -317,7 +317,7 @@ const checksummed = Address.toChecksummed(branded) // ✓ works
 ## Constants
 
 ```typescript
-import { SIZE, HEX_SIZE } from '@tevm/voltaire/BrandedAddress'
+import { SIZE, HEX_SIZE } from '@tevm/voltaire/Address'
 
 SIZE      // 20 (bytes)
 HEX_SIZE  // 42 (characters, including "0x")

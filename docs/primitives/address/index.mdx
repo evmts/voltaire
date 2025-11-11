@@ -347,7 +347,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { fromHex, toChecksummed, equals } from '@tevm/voltaire/BrandedAddress';
+import { fromHex, toChecksummed, equals } from '@tevm/voltaire/Address';
 
 const addr = fromHex("0x742d35cc...");
 const checksummed = toChecksummed(addr);
@@ -358,7 +358,7 @@ const isEqual = equals(addr, addr2);
 ```
 
 <Tip title="Bundle Impact">
-Importing from `@tevm/voltaire/BrandedAddress` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `fromHex` and `toChecksummed`, contract address calculation and public key derivation are excluded from your bundle.
+Importing from `@tevm/voltaire/Address` instead of the main entry point enables tree-shaking. For example, if you only need `fromHex` and `toChecksummed`, contract address calculation and public key derivation are excluded from your bundle.
 </Tip>
 
 ## Related
