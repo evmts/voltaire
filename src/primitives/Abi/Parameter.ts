@@ -17,57 +17,84 @@ export type Parameter<
 
 // Helper type to recursively convert Parameter components to AbiTypeParameter components
 type ConvertComponents<T> = T extends readonly Parameter[]
-	? { readonly [K in keyof T]: ConvertToAbiParameter<T[K]> }
+	? {
+			readonly [K in keyof T]: T[K] extends Parameter
+				? ConvertToAbiParameter<T[K]>
+				: T[K];
+		}
 	: never;
 
 // Helper to convert our Parameter type to abitype's AbiTypeParameter
+// Must preserve exact name type (not optional) for abitype tuple->object conversion
 type ConvertToAbiParameter<T extends Parameter> = {
 	readonly type: T["type"];
-	readonly name?: T["name"];
-	readonly internalType?: T["internalType"];
-	readonly indexed?: T["indexed"];
-} & (T["components"] extends readonly Parameter[]
-	? { readonly components: ConvertComponents<T["components"]> }
-	: {});
+} & (undefined extends T["name"]
+	? {}
+	: T["name"] extends string
+		? { readonly name: T["name"] }
+		: {}) &
+	(undefined extends T["internalType"]
+		? {}
+		: T["internalType"] extends string
+			? { readonly internalType: T["internalType"] }
+			: {}) &
+	(undefined extends T["indexed"]
+		? {}
+		: T["indexed"] extends boolean
+			? { readonly indexed: T["indexed"] }
+			: {}) &
+	(T["components"] extends readonly Parameter[]
+		? { readonly components: ConvertComponents<T["components"]> }
+		: {});
 
-// Helper to replace address types with BrandedAddress in abitype output
-type ReplaceAddress<T> = T extends `0x${string}`
-	? BrandedAddress
-	: T extends readonly (infer U)[]
-		? T extends readonly [infer A, infer B, infer C, infer D, infer E]
-			? readonly [ReplaceAddress<A>, ReplaceAddress<B>, ReplaceAddress<C>, ReplaceAddress<D>, ReplaceAddress<E>]
-			: T extends readonly [infer A, infer B, infer C, infer D]
-				? readonly [ReplaceAddress<A>, ReplaceAddress<B>, ReplaceAddress<C>, ReplaceAddress<D>]
-				: T extends readonly [infer A, infer B, infer C]
-					? readonly [ReplaceAddress<A>, ReplaceAddress<B>, ReplaceAddress<C>]
-					: T extends readonly [infer A, infer B]
-						? readonly [ReplaceAddress<A>, ReplaceAddress<B>]
-						: T extends readonly [infer A]
-							? readonly [ReplaceAddress<A>]
-							: readonly ReplaceAddress<U>[]
-		: T extends object
-			? T extends Uint8Array
-				? T
-				: T extends bigint
-					? T
-					: { [K in keyof T]: ReplaceAddress<T[K]> }
-			: T;
+// Custom tuple-to-object converter that handles components recursively
+type TupleComponentsToObject<TComponents extends readonly Parameter[]> = {
+	[K in TComponents[number] as K["name"] extends string
+		? K["name"]
+		: never]: K extends Parameter ? ResolveSingleParameter<K> : never;
+};
 
-// Main type resolver that converts Parameter to primitive type
-type ResolveParameterType<T extends Parameter> = ReplaceAddress<
-	AbiParameterToPrimitiveTypeWithUint8Array<ConvertToAbiParameter<T>>
->;
+// Resolve a single parameter type, handling tuples specially
+type ResolveSingleParameter<T extends Parameter> = T["type"] extends "tuple"
+	? T extends { components: infer C extends readonly Parameter[] }
+		? TupleComponentsToObject<C>
+		: never
+	: T["type"] extends `tuple[${infer Size}]`
+		? T extends { components: infer C extends readonly Parameter[] }
+			? Size extends `${number}`
+				? readonly TupleComponentsToObject<C>[]
+				: TupleComponentsToObject<C>[]
+			: never
+		: T["type"] extends "tuple[]"
+			? T extends { components: infer C extends readonly Parameter[] }
+				? TupleComponentsToObject<C>[]
+				: never
+			: T["type"] extends "address"
+				? BrandedAddress
+				: T["type"] extends "address[]"
+					? BrandedAddress[]
+					: T["type"] extends `address[${string}]`
+						? readonly BrandedAddress[]
+						: T["type"] extends `${string}[]`
+							? T extends ConvertToAbiParameter<T>
+								? AbiParameterToPrimitiveTypeWithUint8Array<
+										ConvertToAbiParameter<T>
+									>
+								: never
+							: T extends ConvertToAbiParameter<T>
+								? AbiParameterToPrimitiveTypeWithUint8Array<
+										ConvertToAbiParameter<T>
+									>
+								: never;
 
 export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 	[K in keyof TParams]: TParams[K] extends Parameter
-		? ResolveParameterType<TParams[K]>
+		? ResolveSingleParameter<TParams[K]>
 		: never;
 };
 
 export type ParametersToObject<TParams extends readonly Parameter[]> = {
-	[K in TParams[number] as K extends { name: infer TName extends string }
-		? TName
-		: never]: K extends Parameter
-			? ResolveParameterType<K>
-			: never;
+	[K in TParams[number] as K["name"] extends string
+		? K["name"]
+		: never]: K extends Parameter ? ResolveSingleParameter<K> : never;
 };

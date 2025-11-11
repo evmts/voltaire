@@ -15,6 +15,8 @@ declare module "abitype" {
 			inputs: Uint8Array;
 			outputs: Uint8Array;
 		};
+		// Override intType to use bigint for all integer types (not just > 48 bits)
+		intType: bigint;
 	}
 }
 
