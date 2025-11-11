@@ -11,7 +11,7 @@ mode: custom
   </h1>
 
   <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-    High-performance, type-safe wasm primitives and cryptography for building on Ethereum with TypeScript
+    A powerful, modern, high-performance, wasm-based Ethereum library
   </p>
 
   <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -77,6 +77,22 @@ mode: custom
 claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
     </div>
+  </div>
+</div>
+
+<div style={{ padding: '4rem 2rem', background: '#1a1a1a' }}>
+  <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+    <CardGroup cols={3}>
+      <Card title="Type-Safe" icon="shield-check">
+        Branded types prevent mixing incompatible values. Zero runtime overhead.
+      </Card>
+      <Card title="High-Performance" icon="bolt">
+        Native Zig implementations via WASM. 2-3x faster than pure JavaScript.
+      </Card>
+      <Card title="Tree-Shakeable" icon="tree">
+        Import only what you need. Unused code automatically excluded from bundles.
+      </Card>
+    </CardGroup>
   </div>
 </div>
 
