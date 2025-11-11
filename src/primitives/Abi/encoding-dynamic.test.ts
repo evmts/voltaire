@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type * as Address from "../Address/index.js";
+import type { BrandedAddress as Address } from "../Address/BrandedAddress/BrandedAddress.js";
 import * as Abi from "./index.js";
 
 // ============================================================================
@@ -163,12 +163,12 @@ describe("Abi.encodeParameters - dynamic arrays", () => {
 			[{ type: "uint256[]" }],
 			[[1n, 2n, 3n]],
 		);
-		// Offset (32) + Length (32) + Data (3*32) = 128 bytes
-		expect(encoded.length).toBe(128);
+		// Offset (32) + Length (32) + Data (3*32) = 160 bytes
+		expect(encoded.length).toBe(160);
 		expect(encoded[31]).toBe(0x20); // offset
 		expect(encoded[63]).toBe(3); // length
 		expect(encoded[95]).toBe(1);
-		expect(encoded[127]).toBe(3);
+		expect(encoded[159]).toBe(3);
 	});
 
 	it("encodes address[] with multiple addresses", () => {
@@ -178,8 +178,8 @@ describe("Abi.encodeParameters - dynamic arrays", () => {
 			"0x0000000000000000000000000000000000000003",
 		] as Address[];
 		const encoded = Abi.encodeParameters([{ type: "address[]" }], [addrs]);
-		// Offset (32) + Length (32) + Data (3*32) = 128 bytes
-		expect(encoded.length).toBe(128);
+		// Offset (32) + Length (32) + Data (3*32) = 160 bytes
+		expect(encoded.length).toBe(160);
 		expect(encoded[63]).toBe(3); // length
 		expect(encoded[95]).toBe(1);
 		expect(encoded[127]).toBe(2);

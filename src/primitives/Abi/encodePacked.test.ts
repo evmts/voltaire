@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type * as Address from "../Address/index.js";
+import type { BrandedAddress as Address } from "../Address/BrandedAddress/BrandedAddress.js";
 import { AbiParameterMismatchError } from "./Errors.js";
 import { encodePacked } from "./encodePacked.js";
 import * as Abi from "./index.js";
