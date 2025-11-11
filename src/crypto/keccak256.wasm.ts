@@ -73,12 +73,16 @@ export function hashHex(hex: string): BrandedHash {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
-	// Remove 0x prefix if present
-	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
-	// Convert hex to bytes
-	const bytes = new Uint8Array(cleanHex.length / 2);
-	for (let i = 0; i < cleanHex.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (!/^[0-9a-fA-F]*$/.test(normalized)) {
+		throw new Error("Invalid hex string");
+	}
+	if (normalized.length % 2 !== 0) {
+		throw new Error("Hex string must have even length");
+	}
+	const bytes = new Uint8Array(normalized.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
 	return loader.keccak256(bytes) as BrandedHash;
 }
@@ -110,17 +114,15 @@ export function hashMultiple(chunks: Uint8Array[]): BrandedHash {
 /**
  * Compute function selector (first 4 bytes of hash)
  * @param signature - Function signature string (e.g., "transfer(address,uint256)")
- * @returns 4-byte function selector as hex string
+ * @returns 4-byte function selector
  */
-export function selector(signature: string): string {
+export function selector(signature: string): Uint8Array {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	const bytes = new TextEncoder().encode(signature);
 	const hash = loader.keccak256(bytes);
-	return `0x${Array.from(hash.slice(0, 4))
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return hash.slice(0, 4);
 }
 
 /**
@@ -149,11 +151,21 @@ export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
-	// RLP encode [sender, nonce]
-	// This is a simplified version - real implementation needs proper RLP encoding
-	const nonceBytes = new Uint8Array(8);
-	const view = new DataView(nonceBytes.buffer);
-	view.setBigUint64(0, nonce, false);
+	if (sender.length !== 20) {
+		throw new Error("Sender must be 20 bytes");
+	}
+	// Convert nonce to minimal bytes
+	let nonceBytes: Uint8Array;
+	if (nonce === 0n) {
+		nonceBytes = new Uint8Array([0x80]); // RLP empty list
+	} else {
+		const hex = nonce.toString(16);
+		const paddedHex = hex.length % 2 ? `0${hex}` : hex;
+		nonceBytes = new Uint8Array(paddedHex.length / 2);
+		for (let i = 0; i < nonceBytes.length; i++) {
+			nonceBytes[i] = Number.parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16);
+		}
+	}
 
 	// Concatenate sender and nonce bytes
 	const combined = new Uint8Array(sender.length + nonceBytes.length);
@@ -161,7 +173,7 @@ export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
 	combined.set(nonceBytes, sender.length);
 
 	const hash = loader.keccak256(combined);
-	return hash.slice(-20); // Take last 20 bytes
+	return hash.slice(12); // Take last 20 bytes
 }
 
 /**
@@ -178,6 +190,15 @@ export function create2Address(
 ): Uint8Array {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
+	}
+	if (sender.length !== 20) {
+		throw new Error("Sender must be 20 bytes");
+	}
+	if (salt.length !== 32) {
+		throw new Error("Salt must be 32 bytes");
+	}
+	if (initCodeHash.length !== 32) {
+		throw new Error("Init code hash must be 32 bytes");
 	}
 	// 0xff ++ sender ++ salt ++ initCodeHash
 	const combined = new Uint8Array(

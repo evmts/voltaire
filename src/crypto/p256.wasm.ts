@@ -81,10 +81,28 @@ export namespace P256Wasm {
 
 		try {
 			const result = loader.p256Sign(messageHash, privateKey);
-			return {
-				r: result.slice(0, 32),
-				s: result.slice(32, 64),
-			};
+			let r = result.slice(0, 32);
+			let s = result.slice(32, 64);
+
+			// Ensure low-s form (malleability protection)
+			let sBigInt = 0n;
+			for (let i = 0; i < 32; i++) {
+				sBigInt = (sBigInt << 8n) | BigInt(s[i] ?? 0);
+			}
+
+			const halfN = CURVE_ORDER / 2n;
+			if (sBigInt > halfN) {
+				// Normalize s to low form: s = n - s
+				sBigInt = CURVE_ORDER - sBigInt;
+				const sBytes = new Uint8Array(32);
+				for (let i = 31; i >= 0; i--) {
+					sBytes[i] = Number(sBigInt & 0xffn);
+					sBigInt >>= 8n;
+				}
+				s = sBytes;
+			}
+
+			return { r, s };
 		} catch (error) {
 			throw new P256Error(`Signing failed: ${error}`);
 		}
@@ -117,6 +135,25 @@ export namespace P256Wasm {
 			);
 		}
 
+		// Validate signature components
+		let r = 0n;
+		for (let i = 0; i < 32; i++) {
+			r = (r << 8n) | BigInt(signature.r[i] ?? 0);
+		}
+
+		let s = 0n;
+		for (let i = 0; i < 32; i++) {
+			s = (s << 8n) | BigInt(signature.s[i] ?? 0);
+		}
+
+		// Reject invalid ranges
+		if (r === 0n || r >= CURVE_ORDER) return false;
+		if (s === 0n || s >= CURVE_ORDER) return false;
+
+		// Reject high-s (malleability protection)
+		const halfN = CURVE_ORDER / 2n;
+		if (s > halfN) return false;
+
 		try {
 			const sig = new Uint8Array(64);
 			sig.set(signature.r, 0);
@@ -135,6 +172,13 @@ export namespace P256Wasm {
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
+			);
+		}
+
+		// Validate private key is in valid range [1, n-1]
+		if (!validatePrivateKey(privateKey)) {
+			throw new InvalidPrivateKeyError(
+				"Private key must be in range [1, n-1]",
 			);
 		}
 

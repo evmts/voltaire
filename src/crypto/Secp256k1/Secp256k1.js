@@ -1,6 +1,7 @@
 // @ts-nocheck
 export * from "./constants.js";
 export * from "./BrandedSignature.js";
+export * from "./errors.js";
 
 import * as SignatureMethods from "./Signature/index.js";
 import {

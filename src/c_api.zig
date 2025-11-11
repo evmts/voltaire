@@ -2269,6 +2269,36 @@ export fn p256DerivePublicKey(
     return 0;
 }
 
+/// Perform P256 ECDH key exchange
+/// private_key: 32-byte private key
+/// public_key: 64-byte uncompressed public key (x || y)
+/// out_shared: 32-byte output buffer for shared secret
+/// Returns 0 on success, negative error code on failure
+export fn p256Ecdh(
+    private_key: [*]const u8,
+    public_key: [*]const u8,
+    out_shared: [*]u8,
+) c_int {
+    const pk = private_key[0..32];
+    const pubkey = public_key[0..64];
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const shared = crypto.p256.ecdh(allocator, pk, pubkey) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+    defer allocator.free(shared);
+
+    if (shared.len != 32) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_shared[0..32], shared);
+    return 0;
+}
+
 // ============================================================================
 // HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
 // ============================================================================
