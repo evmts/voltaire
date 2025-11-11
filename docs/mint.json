@@ -1,650 +1,614 @@
 {
-  "$schema": "https://mintlify.com/schema.json",
-  "name": "Voltaire",
-  "openapi": [],
-  "logo": {
-    "light": "/logo.svg",
-    "dark": "/logo.svg",
-    "href": "https://voltaire.dev"
-  },
-  "favicon": "/favicon.svg",
-  "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
-    "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
-    }
-  },
-  "topbarLinks": [
-    {
-      "name": "GitHub",
-      "url": "https://github.com/evmts/voltaire"
-    }
-  ],
-  "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "/getting-started"
-  },
-  "anchors": [
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/evmts/voltaire"
-    },
-    {
-      "name": "Twitter",
-      "icon": "twitter",
-      "url": "https://twitter.com/tevmtools"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        "introduction",
-        "getting-started"
-      ]
-    },
-    {
-      "group": "Concepts",
-      "pages": [
-        "concepts/branded-types",
-        "concepts/data-first"
-      ]
-    },
-    {
-      "group": "Primitives",
-      "pages": [
-        {
-          "group": "ABI",
-          "pages": [
-            "primitives/abi/fundamentals",
-            "primitives/abi/index"
-          ]
-        },
-        {
-          "group": "AccessList",
-          "pages": [
-            "primitives/accesslist/index",
-            "primitives/accesslist/fundamentals",
-            "primitives/accesslist/branded-accesslist",
-            "primitives/accesslist/constructors",
-            "primitives/accesslist/conversions",
-            "primitives/accesslist/manipulation",
-            "primitives/accesslist/queries",
-            "primitives/accesslist/validation",
-            "primitives/accesslist/gas-optimization",
-            "primitives/accesslist/usage-patterns",
-            "primitives/accesslist/wasm"
-          ]
-        },
-        {
-          "group": "Address",
-          "pages": [
-            "primitives/address/index",
-            "primitives/address/fundamentals",
-            "primitives/address/branded-address",
-            "primitives/address/constructors",
-            "primitives/address/conversions",
-            "primitives/address/validation",
-            "primitives/address/comparisons",
-            "primitives/address/contract-addresses",
-            "primitives/address/uint8array-methods",
-            "primitives/address/variants",
-            "primitives/address/wasm"
-          ]
-        },
-        {
-          "group": "Authorization",
-          "pages": [
-            "primitives/authorization/fundamentals",
-            "primitives/authorization/index",
-            "primitives/authorization/branded-authorization",
-            "primitives/authorization/eip7702",
-            "primitives/authorization/constructors",
-            "primitives/authorization/signing",
-            "primitives/authorization/validation",
-            "primitives/authorization/processing",
-            "primitives/authorization/utilities",
-            "primitives/authorization/gas-calculations",
-            "primitives/authorization/workflows-and-diagrams",
-            "primitives/authorization/real-world-examples",
-            "primitives/authorization/usage-patterns",
-            "primitives/authorization/wasm"
-          ]
-        },
-        {
-          "group": "Base64",
-          "pages": [
-            "primitives/base64/index",
-            "primitives/base64/fundamentals",
-            "primitives/base64/branded-base64",
-            "primitives/base64/encoding",
-            "primitives/base64/decoding",
-            "primitives/base64/validation",
-            "primitives/base64/utilities"
-          ]
-        },
-        {
-          "group": "BinaryTree",
-          "pages": [
-            "primitives/binarytree/fundamentals",
-            "primitives/binarytree/index",
-            "primitives/binarytree/branded-binarytree",
-            "primitives/binarytree/constructors",
-            "primitives/binarytree/operations",
-            "primitives/binarytree/hashing",
-            "primitives/binarytree/key-utilities",
-            "primitives/binarytree/usage-patterns",
-            "primitives/binarytree/wasm"
-          ]
-        },
-        {
-          "group": "BloomFilter",
-          "pages": [
-            "primitives/bloomfilter/fundamentals",
-            "primitives/bloomfilter/index",
-            "primitives/bloomfilter/branded-bloomfilter",
-            "primitives/bloomfilter/algorithm",
-            "primitives/bloomfilter/constructors",
-            "primitives/bloomfilter/conversions",
-            "primitives/bloomfilter/operations",
-            "primitives/bloomfilter/queries",
-            "primitives/bloomfilter/log-filtering",
-            "primitives/bloomfilter/usage-patterns"
-          ]
-        },
-        {
-          "group": "Bytecode",
-          "pages": [
-            "primitives/bytecode/index",
-            "primitives/bytecode/fundamentals",
-            "primitives/bytecode/scan",
-            "primitives/bytecode/instruction-types",
-            "primitives/bytecode/from",
-            "primitives/bytecode/fromHex",
-            "primitives/bytecode/fromUint8Array",
-            "primitives/bytecode/toHex",
-            "primitives/bytecode/toAbi",
-            "primitives/bytecode/validate",
-            "primitives/bytecode/equals",
-            "primitives/bytecode/analyze",
-            "primitives/bytecode/analyze-blocks",
-            "primitives/bytecode/analyze-gas",
-            "primitives/bytecode/analyze-stack",
-            "primitives/bytecode/analyzeJumpDestinations",
-            "primitives/bytecode/detect-fusions",
-            "primitives/bytecode/extractRuntime",
-            "primitives/bytecode/getBlock",
-            "primitives/bytecode/getNextPc",
-            "primitives/bytecode/formatInstruction",
-            "primitives/bytecode/formatInstructions",
-            "primitives/bytecode/pretty-print",
-            "primitives/bytecode/hasMetadata",
-            "primitives/bytecode/hash",
-            "primitives/bytecode/isValidJumpDest",
-            "primitives/bytecode/parseInstructions",
-            "primitives/bytecode/size",
-            "primitives/bytecode/stripMetadata",
-            "primitives/bytecode/synthetic-opcodes"
-          ]
-        },
-        {
-          "group": "Chain",
-          "pages": [
-            "primitives/chain/fundamentals",
-            "primitives/chain/index",
-            "primitives/chain/branded-chain",
-            "primitives/chain/constructors",
-            "primitives/chain/chain-lookup",
-            "primitives/chain/metadata",
-            "primitives/chain/network-comparison"
-          ]
-        },
-        {
-          "group": "Denomination",
-          "pages": [
-            "primitives/denomination/fundamentals",
-            "primitives/denomination/index",
-            "primitives/denomination/wei",
-            "primitives/denomination/gwei",
-            "primitives/denomination/ether",
-            "primitives/denomination/branded-wei",
-            "primitives/denomination/branded-gwei",
-            "primitives/denomination/branded-ether",
-            "primitives/denomination/conversions",
-            "primitives/denomination/gas-calculator",
-            "primitives/denomination/scale-visualization",
-            "primitives/denomination/usage-patterns",
-            "primitives/denomination/wasm"
-          ]
-        },
-        {
-          "group": "ENS",
-          "pages": [
-            "primitives/ens/index",
-            "primitives/ens/fundamentals",
-            "primitives/ens/branded-ens",
-            "primitives/ens/encoding",
-            "primitives/ens/normalization",
-            "primitives/ens/validation",
-            "primitives/ens/ensip-standards",
-            "primitives/ens/errors",
-            "primitives/ens/security",
-            "primitives/ens/usage-patterns",
-            "primitives/ens/wasm"
-          ]
-        },
-        {
-          "group": "FeeMarket",
-          "pages": [
-            "primitives/feemarket/index",
-            "primitives/feemarket/fundamentals",
-            "primitives/feemarket/branded-feemarket",
-            "primitives/feemarket/eip1559",
-            "primitives/feemarket/eip4844",
-            "primitives/feemarket/types",
-            "primitives/feemarket/calculations",
-            "primitives/feemarket/constants",
-            "primitives/feemarket/utilities",
-            "primitives/feemarket/usage-patterns",
-            "primitives/feemarket/wasm"
-          ]
-        },
-        {
-          "group": "GasConstants",
-          "pages": [
-            "primitives/gasconstants/fundamentals",
-            "primitives/gasconstants/index",
-            "primitives/gasconstants/branded-gasconstants",
-            "primitives/gasconstants/constants",
-            "primitives/gasconstants/calculation-functions",
-            "primitives/gasconstants/convenience-functions",
-            "primitives/gasconstants/hardfork-utilities",
-            "primitives/gasconstants/precompiles",
-            "primitives/gasconstants/usage-patterns",
-            "primitives/gasconstants/wasm"
-          ]
-        },
-        {
-          "group": "Hardfork",
-          "pages": [
-            "primitives/hardfork/index",
-            "primitives/hardfork/fundamentals",
-            "primitives/hardfork/branded-hardfork",
-            "primitives/hardfork/hardforks",
-            "primitives/hardfork/features",
-            "primitives/hardfork/comparisons",
-            "primitives/hardfork/utilities",
-            "primitives/hardfork/usage-patterns",
-            "primitives/hardfork/wasm"
-          ]
-        },
-        {
-          "group": "Hash",
-          "pages": [
-            "primitives/hash/index",
-            "primitives/hash/fundamentals",
-            "primitives/hash/branded-hash",
-            "primitives/hash/constructors",
-            "primitives/hash/conversions",
-            "primitives/hash/validation",
-            "primitives/hash/hashing",
-            "primitives/hash/comparisons",
-            "primitives/hash/utilities",
-            "primitives/hash/uint8array-methods",
-            "primitives/hash/wasm"
-          ]
-        },
-        {
-          "group": "Hex",
-          "pages": [
-            "primitives/hex/index",
-            "primitives/hex/fundamentals",
-            "primitives/hex/branded-hex",
-            "primitives/hex/constructors",
-            "primitives/hex/conversions",
-            "primitives/hex/validation",
-            "primitives/hex/manipulation",
-            "primitives/hex/sizing",
-            "primitives/hex/utilities",
-            "primitives/hex/wasm"
-          ]
-        },
-        {
-          "group": "Opcode",
-          "pages": [
-            "primitives/opcode/index",
-            "primitives/opcode/fundamentals",
-            "primitives/opcode/branded-opcode",
-            "primitives/opcode/constructors",
-            "primitives/opcode/reference-guide",
-            "primitives/opcode/utilities",
-            "primitives/opcode/validation",
-            "primitives/opcode/usage-patterns",
-            "primitives/opcode/wasm"
-          ]
-        },
-        {
-          "group": "RLP",
-          "pages": [
-            "primitives/rlp/index",
-            "primitives/rlp/fundamentals",
-            "primitives/rlp/Rlp",
-            "primitives/rlp/branded-rlp",
-            "primitives/rlp/algorithm",
-            "primitives/rlp/encoding",
-            "primitives/rlp/decoding",
-            "primitives/rlp/serialization",
-            "primitives/rlp/types",
-            "primitives/rlp/utilities",
-            "primitives/rlp/usage-patterns",
-            "primitives/rlp/wasm"
-          ]
-        },
-        {
-          "group": "Signature",
-          "pages": [
-            "primitives/signature/index",
-            "primitives/signature/fundamentals",
-            "primitives/signature/branded-signature",
-            "primitives/signature/constructors",
-            "primitives/signature/conversions",
-            "primitives/signature/validation",
-            "primitives/signature/formats",
-            "primitives/signature/eip-2098",
-            "primitives/signature/recovery",
-            "primitives/signature/utilities",
-            "primitives/signature/usage-patterns",
-            "primitives/signature/wasm"
-          ]
-        },
-        {
-          "group": "SIWE",
-          "pages": [
-            "primitives/siwe/fundamentals",
-            "primitives/siwe/index",
-            "primitives/siwe/branded-siwe",
-            "primitives/siwe/message-format",
-            "primitives/siwe/constructors",
-            "primitives/siwe/parsing",
-            "primitives/siwe/signing",
-            "primitives/siwe/verification",
-            "primitives/siwe/validation",
-            "primitives/siwe/utilities",
-            "primitives/siwe/interactive-guide",
-            "primitives/siwe/usage-patterns",
-            "primitives/siwe/wasm"
-          ]
-        },
-        {
-          "group": "State",
-          "pages": [
-            "primitives/state/index",
-            "primitives/state/fundamentals",
-            "primitives/state/branded-state",
-            "primitives/state/constructors",
-            "primitives/state/conversions",
-            "primitives/state/merkle-trees",
-            "primitives/state/utilities",
-            "primitives/state/validation",
-            "primitives/state/storage-examples",
-            "primitives/state/usage-patterns",
-            "primitives/state/wasm"
-          ]
-        },
-        {
-          "group": "Transaction",
-          "pages": [
-            "primitives/transaction/fundamentals",
-            "primitives/transaction/index",
-            "primitives/transaction/types",
-            "primitives/transaction/legacy",
-            "primitives/transaction/eip2930",
-            "primitives/transaction/eip1559",
-            "primitives/transaction/eip4844",
-            "primitives/transaction/eip7702",
-            "primitives/transaction/detection",
-            "primitives/transaction/serialization",
-            "primitives/transaction/hashing",
-            "primitives/transaction/signing",
-            "primitives/transaction/utilities",
-            "primitives/transaction/usage-patterns"
-          ]
-        },
-        {
-          "group": "Uint",
-          "pages": [
-            "primitives/uint/index",
-            "primitives/uint/fundamentals"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "Cryptography",
-      "pages": [
-        {
-          "group": "Overview",
-          "pages": [
-            "crypto/comparison",
-            "crypto/symmetric-encryption-comparison",
-            "crypto/wallet-integration"
-          ]
-        },
-        {
-          "group": "Keccak256",
-          "pages": [
-            "crypto/keccak256/index"
-          ]
-        },
-        {
-          "group": "Secp256k1",
-          "pages": [
-            "crypto/secp256k1/index",
-            "crypto/secp256k1/signing",
-            "crypto/secp256k1/verification",
-            "crypto/secp256k1/recovery",
-            "crypto/secp256k1/key-derivation",
-            "crypto/secp256k1/point-operations",
-            "crypto/secp256k1/security",
-            "crypto/secp256k1/performance",
-            "crypto/secp256k1/test-vectors",
-            "crypto/secp256k1/usage-patterns"
-          ]
-        },
-        {
-          "group": "BLS12-381",
-          "pages": [
-            "crypto/bls12-381",
-            "crypto/bls12-381/index",
-            "crypto/bls12-381/signatures",
-            "crypto/bls12-381/aggregation",
-            "crypto/bls12-381/g1-operations",
-            "crypto/bls12-381/g2-operations",
-            "crypto/bls12-381/pairing",
-            "crypto/bls12-381/precompiles",
-            "crypto/bls12-381/security",
-            "crypto/bls12-381/performance",
-            "crypto/bls12-381/test-vectors",
-            "crypto/bls12-381/usage-patterns"
-          ]
-        },
-        {
-          "group": "BN254",
-          "pages": [
-            "crypto/bn254",
-            "crypto/bn254/index",
-            "crypto/bn254/g1-operations",
-            "crypto/bn254/g2-operations",
-            "crypto/bn254/pairing",
-            "crypto/bn254/precompiles",
-            "crypto/bn254/zk-usage",
-            "crypto/bn254/performance",
-            "crypto/bn254/test-vectors",
-            "crypto/bn254/usage-patterns"
-          ]
-        },
-        {
-          "group": "KZG",
-          "pages": [
-            "crypto/kzg",
-            "crypto/kzg/index",
-            "crypto/kzg/eip-4844",
-            "crypto/kzg/commitments",
-            "crypto/kzg/proofs",
-            "crypto/kzg/point-evaluation",
-            "crypto/kzg/trusted-setup",
-            "crypto/kzg/performance",
-            "crypto/kzg/test-vectors",
-            "crypto/kzg/usage-patterns"
-          ]
-        },
-        {
-          "group": "SHA256",
-          "pages": [
-            "crypto/sha256/index",
-            "crypto/sha256/api-reference",
-            "crypto/sha256/comparison",
-            "crypto/sha256/security",
-            "crypto/sha256/performance",
-            "crypto/sha256/test-vectors",
-            "crypto/sha256/usage-patterns"
-          ]
-        },
-        {
-          "group": "RIPEMD160",
-          "pages": [
-            "crypto/ripemd160/index"
-          ]
-        },
-        {
-          "group": "Blake2",
-          "pages": [
-            "crypto/blake2/index"
-          ]
-        },
-        {
-          "group": "AES-GCM",
-          "pages": [
-            "crypto/aesgcm/index",
-            "crypto/aesgcm/encryption",
-            "crypto/aesgcm/decryption",
-            "crypto/aesgcm/security",
-            "crypto/aesgcm/test-vectors"
-          ]
-        },
-        {
-          "group": "ChaCha20Poly1305",
-          "pages": [
-            "crypto/chacha20poly1305/index"
-          ]
-        },
-        {
-          "group": "P256",
-          "pages": [
-            "crypto/p256/index"
-          ]
-        },
-        {
-          "group": "Ed25519",
-          "pages": [
-            "crypto/ed25519/index"
-          ]
-        },
-        {
-          "group": "X25519",
-          "pages": [
-            "crypto/x25519/index"
-          ]
-        },
-        {
-          "group": "BIP39",
-          "pages": [
-            "crypto/bip39/index",
-            "crypto/bip39/generation",
-            "crypto/bip39/validation",
-            "crypto/bip39/seed-derivation",
-            "crypto/bip39/wordlists",
-            "crypto/bip39/passphrase",
-            "crypto/bip39/security"
-          ]
-        },
-        {
-          "group": "HDWallet",
-          "pages": [
-            "crypto/hdwallet/index",
-            "crypto/hdwallet/extended-keys",
-            "crypto/hdwallet/child-derivation",
-            "crypto/hdwallet/derivation-paths"
-          ]
-        },
-        {
-          "group": "EIP712",
-          "pages": [
-            "crypto/eip712/index"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "Precompiles",
-      "pages": [
-        "precompiles/index",
-        "precompiles/ecrecover",
-        "precompiles/sha256",
-        "precompiles/ripemd160",
-        "precompiles/identity",
-        "precompiles/modexp",
-        "precompiles/bn254-add",
-        "precompiles/bn254-mul",
-        "precompiles/bn254-pairing",
-        "precompiles/blake2f",
-        "precompiles/point-evaluation",
-        {
-          "group": "BLS12-381",
-          "pages": [
-            "precompiles/bls12-381/index",
-            "precompiles/bls12-g1-add",
-            "precompiles/bls12-g1-mul",
-            "precompiles/bls12-g1-msm",
-            "precompiles/bls12-g2-add",
-            "precompiles/bls12-g2-mul",
-            "precompiles/bls12-g2-msm",
-            "precompiles/bls12-pairing",
-            "precompiles/bls12-map-fp-to-g1",
-            "precompiles/bls12-map-fp2-to-g2"
-          ]
-        }
-      ]
-    }
-  ],
-  "footerSocials": {
-    "github": "https://github.com/evmts/voltaire",
-    "twitter": "https://twitter.com/tevmtools"
-  },
-  "feedback": {
-    "thumbsRating": true,
-    "suggestEdit": true,
-    "raiseIssue": true
-  },
-  "search": {
-    "prompt": "Search Voltaire docs..."
-  },
-  "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "claude",
-      "chatgpt",
-      "cursor",
-      "vscode",
-      "mcp"
-    ]
-  },
-  "assistant": {
-    "enabled": true
-  }
+	"$schema": "https://mintlify.com/schema.json",
+	"name": "Voltaire",
+	"openapi": [],
+	"logo": {
+		"light": "/logo.svg",
+		"dark": "/logo.svg",
+		"href": "https://voltaire.dev"
+	},
+	"favicon": "/favicon.svg",
+	"colors": {
+		"primary": "#0D9373",
+		"light": "#07C983",
+		"dark": "#0D9373",
+		"anchors": {
+			"from": "#0D9373",
+			"to": "#07C983"
+		}
+	},
+	"topbarLinks": [
+		{
+			"name": "GitHub",
+			"url": "https://github.com/evmts/voltaire"
+		}
+	],
+	"topbarCtaButton": {
+		"name": "Get Started",
+		"url": "/getting-started"
+	},
+	"anchors": [
+		{
+			"name": "GitHub",
+			"icon": "github",
+			"url": "https://github.com/evmts/voltaire"
+		},
+		{
+			"name": "Twitter",
+			"icon": "twitter",
+			"url": "https://twitter.com/tevmtools"
+		}
+	],
+	"navigation": [
+		{
+			"group": "Getting Started",
+			"pages": ["introduction", "getting-started"]
+		},
+		{
+			"group": "Concepts",
+			"pages": ["concepts/branded-types", "concepts/data-first"]
+		},
+		{
+			"group": "Primitives",
+			"pages": [
+				{
+					"group": "ABI",
+					"pages": ["primitives/abi/fundamentals", "primitives/abi/index"]
+				},
+				{
+					"group": "AccessList",
+					"pages": [
+						"primitives/accesslist/index",
+						"primitives/accesslist/fundamentals",
+						"primitives/accesslist/branded-accesslist",
+						"primitives/accesslist/constructors",
+						"primitives/accesslist/conversions",
+						"primitives/accesslist/manipulation",
+						"primitives/accesslist/queries",
+						"primitives/accesslist/validation",
+						"primitives/accesslist/gas-optimization",
+						"primitives/accesslist/usage-patterns",
+						"primitives/accesslist/wasm"
+					]
+				},
+				{
+					"group": "Address",
+					"pages": [
+						"primitives/address/index",
+						"primitives/address/fundamentals",
+						"primitives/address/branded-address",
+						"primitives/address/constructors",
+						"primitives/address/conversions",
+						"primitives/address/validation",
+						"primitives/address/comparisons",
+						"primitives/address/contract-addresses",
+						"primitives/address/uint8array-methods",
+						"primitives/address/variants",
+						"primitives/address/wasm"
+					]
+				},
+				{
+					"group": "Authorization",
+					"pages": [
+						"primitives/authorization/fundamentals",
+						"primitives/authorization/index",
+						"primitives/authorization/branded-authorization",
+						"primitives/authorization/eip7702",
+						"primitives/authorization/constructors",
+						"primitives/authorization/signing",
+						"primitives/authorization/validation",
+						"primitives/authorization/processing",
+						"primitives/authorization/utilities",
+						"primitives/authorization/gas-calculations",
+						"primitives/authorization/workflows-and-diagrams",
+						"primitives/authorization/real-world-examples",
+						"primitives/authorization/usage-patterns",
+						"primitives/authorization/wasm"
+					]
+				},
+				{
+					"group": "Base64",
+					"pages": [
+						"primitives/base64/index",
+						"primitives/base64/fundamentals",
+						"primitives/base64/branded-base64",
+						"primitives/base64/encoding",
+						"primitives/base64/decoding",
+						"primitives/base64/validation",
+						"primitives/base64/utilities"
+					]
+				},
+				{
+					"group": "BinaryTree",
+					"pages": [
+						"primitives/binarytree/fundamentals",
+						"primitives/binarytree/index",
+						"primitives/binarytree/branded-binarytree",
+						"primitives/binarytree/constructors",
+						"primitives/binarytree/operations",
+						"primitives/binarytree/hashing",
+						"primitives/binarytree/key-utilities",
+						"primitives/binarytree/usage-patterns",
+						"primitives/binarytree/wasm"
+					]
+				},
+				{
+					"group": "BloomFilter",
+					"pages": [
+						"primitives/bloomfilter/fundamentals",
+						"primitives/bloomfilter/index",
+						"primitives/bloomfilter/branded-bloomfilter",
+						"primitives/bloomfilter/algorithm",
+						"primitives/bloomfilter/constructors",
+						"primitives/bloomfilter/conversions",
+						"primitives/bloomfilter/operations",
+						"primitives/bloomfilter/queries",
+						"primitives/bloomfilter/log-filtering",
+						"primitives/bloomfilter/usage-patterns"
+					]
+				},
+				{
+					"group": "Bytecode",
+					"pages": [
+						"primitives/bytecode/index",
+						"primitives/bytecode/fundamentals",
+						"primitives/bytecode/scan",
+						"primitives/bytecode/instruction-types",
+						"primitives/bytecode/from",
+						"primitives/bytecode/fromHex",
+						"primitives/bytecode/fromUint8Array",
+						"primitives/bytecode/toHex",
+						"primitives/bytecode/toAbi",
+						"primitives/bytecode/validate",
+						"primitives/bytecode/equals",
+						"primitives/bytecode/analyze",
+						"primitives/bytecode/analyze-blocks",
+						"primitives/bytecode/analyze-gas",
+						"primitives/bytecode/analyze-stack",
+						"primitives/bytecode/analyzeJumpDestinations",
+						"primitives/bytecode/detect-fusions",
+						"primitives/bytecode/extractRuntime",
+						"primitives/bytecode/getBlock",
+						"primitives/bytecode/getNextPc",
+						"primitives/bytecode/formatInstruction",
+						"primitives/bytecode/formatInstructions",
+						"primitives/bytecode/pretty-print",
+						"primitives/bytecode/hasMetadata",
+						"primitives/bytecode/hash",
+						"primitives/bytecode/isValidJumpDest",
+						"primitives/bytecode/parseInstructions",
+						"primitives/bytecode/size",
+						"primitives/bytecode/stripMetadata",
+						"primitives/bytecode/synthetic-opcodes"
+					]
+				},
+				{
+					"group": "Chain",
+					"pages": [
+						"primitives/chain/fundamentals",
+						"primitives/chain/index",
+						"primitives/chain/branded-chain",
+						"primitives/chain/constructors",
+						"primitives/chain/chain-lookup",
+						"primitives/chain/metadata",
+						"primitives/chain/network-comparison"
+					]
+				},
+				{
+					"group": "Denomination",
+					"pages": [
+						"primitives/denomination/fundamentals",
+						"primitives/denomination/index",
+						"primitives/denomination/wei",
+						"primitives/denomination/gwei",
+						"primitives/denomination/ether",
+						"primitives/denomination/branded-wei",
+						"primitives/denomination/branded-gwei",
+						"primitives/denomination/branded-ether",
+						"primitives/denomination/conversions",
+						"primitives/denomination/gas-calculator",
+						"primitives/denomination/scale-visualization",
+						"primitives/denomination/usage-patterns",
+						"primitives/denomination/wasm"
+					]
+				},
+				{
+					"group": "ENS",
+					"pages": [
+						"primitives/ens/index",
+						"primitives/ens/fundamentals",
+						"primitives/ens/branded-ens",
+						"primitives/ens/encoding",
+						"primitives/ens/normalization",
+						"primitives/ens/validation",
+						"primitives/ens/ensip-standards",
+						"primitives/ens/errors",
+						"primitives/ens/security",
+						"primitives/ens/usage-patterns",
+						"primitives/ens/wasm"
+					]
+				},
+				{
+					"group": "FeeMarket",
+					"pages": [
+						"primitives/feemarket/index",
+						"primitives/feemarket/fundamentals",
+						"primitives/feemarket/branded-feemarket",
+						"primitives/feemarket/eip1559",
+						"primitives/feemarket/eip4844",
+						"primitives/feemarket/types",
+						"primitives/feemarket/calculations",
+						"primitives/feemarket/constants",
+						"primitives/feemarket/utilities",
+						"primitives/feemarket/usage-patterns",
+						"primitives/feemarket/wasm"
+					]
+				},
+				{
+					"group": "GasConstants",
+					"pages": [
+						"primitives/gasconstants/fundamentals",
+						"primitives/gasconstants/index",
+						"primitives/gasconstants/branded-gasconstants",
+						"primitives/gasconstants/constants",
+						"primitives/gasconstants/calculation-functions",
+						"primitives/gasconstants/convenience-functions",
+						"primitives/gasconstants/hardfork-utilities",
+						"primitives/gasconstants/precompiles",
+						"primitives/gasconstants/usage-patterns",
+						"primitives/gasconstants/wasm"
+					]
+				},
+				{
+					"group": "Hardfork",
+					"pages": [
+						"primitives/hardfork/index",
+						"primitives/hardfork/fundamentals",
+						"primitives/hardfork/branded-hardfork",
+						"primitives/hardfork/hardforks",
+						"primitives/hardfork/features",
+						"primitives/hardfork/comparisons",
+						"primitives/hardfork/utilities",
+						"primitives/hardfork/usage-patterns",
+						"primitives/hardfork/wasm"
+					]
+				},
+				{
+					"group": "Hash",
+					"pages": [
+						"primitives/hash/index",
+						"primitives/hash/fundamentals",
+						"primitives/hash/branded-hash",
+						"primitives/hash/constructors",
+						"primitives/hash/conversions",
+						"primitives/hash/validation",
+						"primitives/hash/hashing",
+						"primitives/hash/comparisons",
+						"primitives/hash/utilities",
+						"primitives/hash/uint8array-methods",
+						"primitives/hash/wasm"
+					]
+				},
+				{
+					"group": "Hex",
+					"pages": [
+						"primitives/hex/index",
+						"primitives/hex/fundamentals",
+						"primitives/hex/branded-hex",
+						"primitives/hex/constructors",
+						"primitives/hex/conversions",
+						"primitives/hex/validation",
+						"primitives/hex/manipulation",
+						"primitives/hex/sizing",
+						"primitives/hex/utilities",
+						"primitives/hex/wasm"
+					]
+				},
+				{
+					"group": "Opcode",
+					"pages": [
+						"primitives/opcode/index",
+						"primitives/opcode/fundamentals",
+						"primitives/opcode/branded-opcode",
+						"primitives/opcode/constructors",
+						"primitives/opcode/reference-guide",
+						"primitives/opcode/utilities",
+						"primitives/opcode/validation",
+						"primitives/opcode/usage-patterns",
+						"primitives/opcode/wasm"
+					]
+				},
+				{
+					"group": "RLP",
+					"pages": [
+						"primitives/rlp/index",
+						"primitives/rlp/fundamentals",
+						"primitives/rlp/Rlp",
+						"primitives/rlp/branded-rlp",
+						"primitives/rlp/algorithm",
+						"primitives/rlp/encoding",
+						"primitives/rlp/decoding",
+						"primitives/rlp/serialization",
+						"primitives/rlp/types",
+						"primitives/rlp/utilities",
+						"primitives/rlp/usage-patterns",
+						"primitives/rlp/wasm"
+					]
+				},
+				{
+					"group": "Signature",
+					"pages": [
+						"primitives/signature/index",
+						"primitives/signature/fundamentals",
+						"primitives/signature/branded-signature",
+						"primitives/signature/constructors",
+						"primitives/signature/conversions",
+						"primitives/signature/validation",
+						"primitives/signature/formats",
+						"primitives/signature/eip-2098",
+						"primitives/signature/recovery",
+						"primitives/signature/utilities",
+						"primitives/signature/usage-patterns",
+						"primitives/signature/wasm"
+					]
+				},
+				{
+					"group": "SIWE",
+					"pages": [
+						"primitives/siwe/fundamentals",
+						"primitives/siwe/index",
+						"primitives/siwe/branded-siwe",
+						"primitives/siwe/message-format",
+						"primitives/siwe/constructors",
+						"primitives/siwe/parsing",
+						"primitives/siwe/signing",
+						"primitives/siwe/verification",
+						"primitives/siwe/validation",
+						"primitives/siwe/utilities",
+						"primitives/siwe/interactive-guide",
+						"primitives/siwe/usage-patterns",
+						"primitives/siwe/wasm"
+					]
+				},
+				{
+					"group": "State",
+					"pages": [
+						"primitives/state/index",
+						"primitives/state/fundamentals",
+						"primitives/state/branded-state",
+						"primitives/state/constructors",
+						"primitives/state/conversions",
+						"primitives/state/merkle-trees",
+						"primitives/state/utilities",
+						"primitives/state/validation",
+						"primitives/state/storage-examples",
+						"primitives/state/usage-patterns",
+						"primitives/state/wasm"
+					]
+				},
+				{
+					"group": "Transaction",
+					"pages": [
+						"primitives/transaction/fundamentals",
+						"primitives/transaction/index",
+						"primitives/transaction/types",
+						"primitives/transaction/legacy",
+						"primitives/transaction/eip2930",
+						"primitives/transaction/eip1559",
+						"primitives/transaction/eip4844",
+						"primitives/transaction/eip7702",
+						"primitives/transaction/detection",
+						"primitives/transaction/serialization",
+						"primitives/transaction/hashing",
+						"primitives/transaction/signing",
+						"primitives/transaction/utilities",
+						"primitives/transaction/usage-patterns"
+					]
+				},
+				{
+					"group": "Uint",
+					"pages": ["primitives/uint/index", "primitives/uint/fundamentals"]
+				}
+			]
+		},
+		{
+			"group": "Cryptography",
+			"pages": [
+				{
+					"group": "Overview",
+					"pages": [
+						"crypto/comparison",
+						"crypto/symmetric-encryption-comparison",
+						"crypto/wallet-integration"
+					]
+				},
+				{
+					"group": "Keccak256",
+					"pages": ["crypto/keccak256/index"]
+				},
+				{
+					"group": "Secp256k1",
+					"pages": [
+						"crypto/secp256k1/index",
+						"crypto/secp256k1/signing",
+						"crypto/secp256k1/verification",
+						"crypto/secp256k1/recovery",
+						"crypto/secp256k1/key-derivation",
+						"crypto/secp256k1/point-operations",
+						"crypto/secp256k1/security",
+						"crypto/secp256k1/performance",
+						"crypto/secp256k1/test-vectors",
+						"crypto/secp256k1/usage-patterns"
+					]
+				},
+				{
+					"group": "BLS12-381",
+					"pages": [
+						"crypto/bls12-381",
+						"crypto/bls12-381/index",
+						"crypto/bls12-381/signatures",
+						"crypto/bls12-381/aggregation",
+						"crypto/bls12-381/g1-operations",
+						"crypto/bls12-381/g2-operations",
+						"crypto/bls12-381/pairing",
+						"crypto/bls12-381/precompiles",
+						"crypto/bls12-381/security",
+						"crypto/bls12-381/performance",
+						"crypto/bls12-381/test-vectors",
+						"crypto/bls12-381/usage-patterns"
+					]
+				},
+				{
+					"group": "BN254",
+					"pages": [
+						"crypto/bn254",
+						"crypto/bn254/index",
+						"crypto/bn254/g1-operations",
+						"crypto/bn254/g2-operations",
+						"crypto/bn254/pairing",
+						"crypto/bn254/precompiles",
+						"crypto/bn254/zk-usage",
+						"crypto/bn254/performance",
+						"crypto/bn254/test-vectors",
+						"crypto/bn254/usage-patterns"
+					]
+				},
+				{
+					"group": "KZG",
+					"pages": [
+						"crypto/kzg",
+						"crypto/kzg/index",
+						"crypto/kzg/eip-4844",
+						"crypto/kzg/commitments",
+						"crypto/kzg/proofs",
+						"crypto/kzg/point-evaluation",
+						"crypto/kzg/trusted-setup",
+						"crypto/kzg/performance",
+						"crypto/kzg/test-vectors",
+						"crypto/kzg/usage-patterns"
+					]
+				},
+				{
+					"group": "SHA256",
+					"pages": [
+						"crypto/sha256/index",
+						"crypto/sha256/api-reference",
+						"crypto/sha256/comparison",
+						"crypto/sha256/security",
+						"crypto/sha256/performance",
+						"crypto/sha256/test-vectors",
+						"crypto/sha256/usage-patterns"
+					]
+				},
+				{
+					"group": "RIPEMD160",
+					"pages": ["crypto/ripemd160/index"]
+				},
+				{
+					"group": "Blake2",
+					"pages": ["crypto/blake2/index"]
+				},
+				{
+					"group": "AES-GCM",
+					"pages": [
+						"crypto/aesgcm/index",
+						"crypto/aesgcm/encryption",
+						"crypto/aesgcm/decryption",
+						"crypto/aesgcm/security",
+						"crypto/aesgcm/test-vectors"
+					]
+				},
+				{
+					"group": "ChaCha20Poly1305",
+					"pages": ["crypto/chacha20poly1305/index"]
+				},
+				{
+					"group": "P256",
+					"pages": ["crypto/p256/index"]
+				},
+				{
+					"group": "Ed25519",
+					"pages": ["crypto/ed25519/index"]
+				},
+				{
+					"group": "X25519",
+					"pages": ["crypto/x25519/index"]
+				},
+				{
+					"group": "BIP39",
+					"pages": [
+						"crypto/bip39/index",
+						"crypto/bip39/generation",
+						"crypto/bip39/validation",
+						"crypto/bip39/seed-derivation",
+						"crypto/bip39/wordlists",
+						"crypto/bip39/passphrase",
+						"crypto/bip39/security"
+					]
+				},
+				{
+					"group": "HDWallet",
+					"pages": [
+						"crypto/hdwallet/index",
+						"crypto/hdwallet/extended-keys",
+						"crypto/hdwallet/child-derivation",
+						"crypto/hdwallet/derivation-paths"
+					]
+				},
+				{
+					"group": "EIP712",
+					"pages": ["crypto/eip712/index"]
+				}
+			]
+		},
+		{
+			"group": "Precompiles",
+			"pages": [
+				"precompiles/index",
+				"precompiles/ecrecover",
+				"precompiles/sha256",
+				"precompiles/ripemd160",
+				"precompiles/identity",
+				"precompiles/modexp",
+				"precompiles/bn254-add",
+				"precompiles/bn254-mul",
+				"precompiles/bn254-pairing",
+				"precompiles/blake2f",
+				"precompiles/point-evaluation",
+				{
+					"group": "BLS12-381",
+					"pages": [
+						"precompiles/bls12-381/index",
+						"precompiles/bls12-g1-add",
+						"precompiles/bls12-g1-mul",
+						"precompiles/bls12-g1-msm",
+						"precompiles/bls12-g2-add",
+						"precompiles/bls12-g2-mul",
+						"precompiles/bls12-g2-msm",
+						"precompiles/bls12-pairing",
+						"precompiles/bls12-map-fp-to-g1",
+						"precompiles/bls12-map-fp2-to-g2"
+					]
+				}
+			]
+		}
+	],
+	"footerSocials": {
+		"github": "https://github.com/evmts/voltaire",
+		"twitter": "https://twitter.com/tevmtools"
+	},
+	"feedback": {
+		"thumbsRating": true,
+		"suggestEdit": true,
+		"raiseIssue": true
+	},
+	"search": {
+		"prompt": "Search Voltaire docs..."
+	},
+	"contextual": {
+		"options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
+	},
+	"assistant": {
+		"enabled": true
+	}
 }
