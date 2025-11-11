@@ -616,69 +616,262 @@
 			]
 		},
 		{
-			"group": "Precompiles",
-			"pages": [
-				"precompiles/index",
-				"precompiles/ecrecover",
-				"precompiles/sha256",
-				"precompiles/ripemd160",
-				"precompiles/identity",
-				"precompiles/modexp",
-				"precompiles/bn254-add",
-				"precompiles/bn254-mul",
-				"precompiles/bn254-pairing",
-				"precompiles/blake2f",
-				"precompiles/point-evaluation",
-				{
-					"group": "BLS12-381",
-					"pages": [
-						"precompiles/bls12-381/index",
-						"precompiles/bls12-g1-add",
-						"precompiles/bls12-g1-mul",
-						"precompiles/bls12-g1-msm",
-						"precompiles/bls12-g2-add",
-						"precompiles/bls12-g2-mul",
-						"precompiles/bls12-g2-msm",
-						"precompiles/bls12-pairing",
-						"precompiles/bls12-map-fp-to-g1",
-						"precompiles/bls12-map-fp2-to-g2"
-					]
-				}
-			]
-		},
-		{
-			"group": "EVM Instructions",
+			"group": "EVM",
 			"pages": [
 				"evm/index",
-				"evm/instructions/index",
 				{
-					"group": "Arithmetic",
+					"group": "Instructions",
 					"pages": [
-						"evm/instructions/arithmetic/index",
-						"evm/instructions/arithmetic/add",
-						"evm/instructions/arithmetic/mul",
-						"evm/instructions/arithmetic/sub",
-						"evm/instructions/arithmetic/div",
-						"evm/instructions/arithmetic/sdiv",
-						"evm/instructions/arithmetic/mod",
-						"evm/instructions/arithmetic/smod"
+						"evm/instructions/index",
+						{
+							"group": "Arithmetic",
+							"pages": [
+								"evm/instructions/arithmetic/index",
+								"evm/instructions/arithmetic/add",
+								"evm/instructions/arithmetic/mul",
+								"evm/instructions/arithmetic/sub",
+								"evm/instructions/arithmetic/div",
+								"evm/instructions/arithmetic/sdiv",
+								"evm/instructions/arithmetic/mod",
+								"evm/instructions/arithmetic/smod",
+								"evm/instructions/arithmetic/addmod",
+								"evm/instructions/arithmetic/mulmod",
+								"evm/instructions/arithmetic/exp",
+								"evm/instructions/arithmetic/signextend"
+							]
+						},
+						{
+							"group": "Comparison",
+							"pages": [
+								"evm/instructions/comparison/index",
+								"evm/instructions/comparison/lt",
+								"evm/instructions/comparison/gt",
+								"evm/instructions/comparison/slt",
+								"evm/instructions/comparison/sgt",
+								"evm/instructions/comparison/eq",
+								"evm/instructions/comparison/iszero"
+							]
+						},
+						{
+							"group": "Bitwise",
+							"pages": [
+								"evm/instructions/bitwise/index",
+								"evm/instructions/bitwise/and",
+								"evm/instructions/bitwise/or",
+								"evm/instructions/bitwise/xor",
+								"evm/instructions/bitwise/not",
+								"evm/instructions/bitwise/byte",
+								"evm/instructions/bitwise/shl",
+								"evm/instructions/bitwise/shr",
+								"evm/instructions/bitwise/sar"
+							]
+						},
+						{
+							"group": "Keccak",
+							"pages": [
+								"evm/instructions/keccak/index",
+								"evm/instructions/keccak/sha3"
+							]
+						},
+						{
+							"group": "Context",
+							"pages": [
+								"evm/instructions/context/index",
+								"evm/instructions/context/address",
+								"evm/instructions/context/balance",
+								"evm/instructions/context/origin",
+								"evm/instructions/context/caller",
+								"evm/instructions/context/callvalue",
+								"evm/instructions/context/calldataload",
+								"evm/instructions/context/calldatasize",
+								"evm/instructions/context/calldatacopy",
+								"evm/instructions/context/codesize",
+								"evm/instructions/context/codecopy",
+								"evm/instructions/context/gasprice",
+								"evm/instructions/context/extcodesize",
+								"evm/instructions/context/extcodecopy",
+								"evm/instructions/context/returndatasize",
+								"evm/instructions/context/returndatacopy",
+								"evm/instructions/context/extcodehash"
+							]
+						},
+						{
+							"group": "Block",
+							"pages": [
+								"evm/instructions/block/index",
+								"evm/instructions/block/blockhash",
+								"evm/instructions/block/coinbase",
+								"evm/instructions/block/timestamp",
+								"evm/instructions/block/number",
+								"evm/instructions/block/difficulty",
+								"evm/instructions/block/gaslimit",
+								"evm/instructions/block/chainid",
+								"evm/instructions/block/selfbalance",
+								"evm/instructions/block/basefee",
+								"evm/instructions/block/blobhash",
+								"evm/instructions/block/blobbasefee"
+							]
+						},
+						{
+							"group": "Stack",
+							"pages": [
+								"evm/instructions/stack/index",
+								"evm/instructions/stack/pop",
+								"evm/instructions/stack/push0",
+								"evm/instructions/stack/push1",
+								"evm/instructions/stack/push2",
+								"evm/instructions/stack/push3",
+								"evm/instructions/stack/push4",
+								"evm/instructions/stack/push5",
+								"evm/instructions/stack/push6",
+								"evm/instructions/stack/push7",
+								"evm/instructions/stack/push8",
+								"evm/instructions/stack/push9",
+								"evm/instructions/stack/push10",
+								"evm/instructions/stack/push11",
+								"evm/instructions/stack/push12",
+								"evm/instructions/stack/push13",
+								"evm/instructions/stack/push14",
+								"evm/instructions/stack/push15",
+								"evm/instructions/stack/push16",
+								"evm/instructions/stack/push17",
+								"evm/instructions/stack/push18",
+								"evm/instructions/stack/push19",
+								"evm/instructions/stack/push20",
+								"evm/instructions/stack/push21",
+								"evm/instructions/stack/push22",
+								"evm/instructions/stack/push23",
+								"evm/instructions/stack/push24",
+								"evm/instructions/stack/push25",
+								"evm/instructions/stack/push26",
+								"evm/instructions/stack/push27",
+								"evm/instructions/stack/push28",
+								"evm/instructions/stack/push29",
+								"evm/instructions/stack/push30",
+								"evm/instructions/stack/push31",
+								"evm/instructions/stack/push32",
+								"evm/instructions/stack/dup1",
+								"evm/instructions/stack/dup2",
+								"evm/instructions/stack/dup3",
+								"evm/instructions/stack/dup4",
+								"evm/instructions/stack/dup5",
+								"evm/instructions/stack/dup6",
+								"evm/instructions/stack/dup7",
+								"evm/instructions/stack/dup8",
+								"evm/instructions/stack/dup9",
+								"evm/instructions/stack/dup10",
+								"evm/instructions/stack/dup11",
+								"evm/instructions/stack/dup12",
+								"evm/instructions/stack/dup13",
+								"evm/instructions/stack/dup14",
+								"evm/instructions/stack/dup15",
+								"evm/instructions/stack/dup16",
+								"evm/instructions/stack/swap1",
+								"evm/instructions/stack/swap2",
+								"evm/instructions/stack/swap3",
+								"evm/instructions/stack/swap4",
+								"evm/instructions/stack/swap5",
+								"evm/instructions/stack/swap6",
+								"evm/instructions/stack/swap7",
+								"evm/instructions/stack/swap8",
+								"evm/instructions/stack/swap9",
+								"evm/instructions/stack/swap10",
+								"evm/instructions/stack/swap11",
+								"evm/instructions/stack/swap12",
+								"evm/instructions/stack/swap13",
+								"evm/instructions/stack/swap14",
+								"evm/instructions/stack/swap15",
+								"evm/instructions/stack/swap16"
+							]
+						},
+						{
+							"group": "Memory",
+							"pages": [
+								"evm/instructions/memory/index",
+								"evm/instructions/memory/mload",
+								"evm/instructions/memory/mstore",
+								"evm/instructions/memory/mstore8",
+								"evm/instructions/memory/mcopy"
+							]
+						},
+						{
+							"group": "Storage",
+							"pages": [
+								"evm/instructions/storage/index",
+								"evm/instructions/storage/sload",
+								"evm/instructions/storage/sstore",
+								"evm/instructions/storage/tload",
+								"evm/instructions/storage/tstore"
+							]
+						},
+						{
+							"group": "Control Flow",
+							"pages": [
+								"evm/instructions/control-flow/index",
+								"evm/instructions/control-flow/jump",
+								"evm/instructions/control-flow/jumpi",
+								"evm/instructions/control-flow/jumpdest",
+								"evm/instructions/control-flow/pc",
+								"evm/instructions/control-flow/stop",
+								"evm/instructions/control-flow/return",
+								"evm/instructions/control-flow/revert"
+							]
+						},
+						{
+							"group": "Log",
+							"pages": [
+								"evm/instructions/log/index",
+								"evm/instructions/log/log0",
+								"evm/instructions/log/log1",
+								"evm/instructions/log/log2",
+								"evm/instructions/log/log3",
+								"evm/instructions/log/log4"
+							]
+						},
+						{
+							"group": "System",
+							"pages": [
+								"evm/instructions/system/index",
+								"evm/instructions/system/create",
+								"evm/instructions/system/create2",
+								"evm/instructions/system/call",
+								"evm/instructions/system/callcode",
+								"evm/instructions/system/delegatecall",
+								"evm/instructions/system/staticcall",
+								"evm/instructions/system/selfdestruct"
+							]
+						}
 					]
 				},
 				{
-					"group": "Block Context",
+					"group": "Precompiles",
 					"pages": [
-						"evm/instructions/block/index",
-						"evm/instructions/block/blockhash",
-						"evm/instructions/block/coinbase",
-						"evm/instructions/block/timestamp",
-						"evm/instructions/block/number",
-						"evm/instructions/block/difficulty",
-						"evm/instructions/block/gaslimit",
-						"evm/instructions/block/chainid",
-						"evm/instructions/block/selfbalance",
-						"evm/instructions/block/basefee",
-						"evm/instructions/block/blobhash",
-						"evm/instructions/block/blobbasefee"
+						"evm/precompiles/index",
+						"evm/precompiles/ecrecover",
+						"evm/precompiles/sha256",
+						"evm/precompiles/ripemd160",
+						"evm/precompiles/identity",
+						"evm/precompiles/modexp",
+						"evm/precompiles/bn254-add",
+						"evm/precompiles/bn254-mul",
+						"evm/precompiles/bn254-pairing",
+						"evm/precompiles/blake2f",
+						"evm/precompiles/point-evaluation",
+						{
+							"group": "BLS12-381",
+							"pages": [
+								"evm/precompiles/bls12-381/index",
+								"evm/precompiles/bls12-g1-add",
+								"evm/precompiles/bls12-g1-mul",
+								"evm/precompiles/bls12-g1-msm",
+								"evm/precompiles/bls12-g2-add",
+								"evm/precompiles/bls12-g2-mul",
+								"evm/precompiles/bls12-g2-msm",
+								"evm/precompiles/bls12-pairing",
+								"evm/precompiles/bls12-map-fp-to-g1",
+								"evm/precompiles/bls12-map-fp2-to-g2"
+							]
+						}
 					]
 				}
 			]
