@@ -7,7 +7,17 @@ import * as Legacy from "./Legacy/getSigningHash.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Get signing hash for transaction
+ * Get signing hash for transaction.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @returns Signing hash
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { getSigningHash } from './primitives/Transaction/getSigningHash.js';
+ * const signingHash = getSigningHash.call(tx);
+ * ```
  */
 export function getSigningHash(this: Any): BrandedHash {
 	switch (this.type) {

@@ -7,7 +7,17 @@ import * as Legacy from "./Legacy/hash.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Compute transaction hash
+ * Compute transaction hash.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @returns Transaction hash
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { hash } from './primitives/Transaction/hash.js';
+ * const txHash = hash.call(tx);
+ * ```
  */
 export function hash(this: Any): BrandedHash {
 	switch (this.type) {

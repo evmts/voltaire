@@ -6,7 +6,17 @@ import * as Legacy from "./Legacy/serialize.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Serialize transaction to RLP encoded bytes
+ * Serialize transaction to RLP encoded bytes.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @returns RLP encoded transaction
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { serialize } from './primitives/Transaction/serialize.js';
+ * const bytes = serialize.call(tx);
+ * ```
  */
 export function serialize(this: Any): Uint8Array {
 	switch (this.type) {

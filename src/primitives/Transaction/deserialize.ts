@@ -7,7 +7,18 @@ import { detectType } from "./detectType.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Deserialize RLP encoded transaction
+ * Deserialize RLP encoded transaction.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @param data - RLP encoded transaction data
+ * @returns Deserialized transaction
+ * @throws {Error} If data is invalid
+ * @example
+ * ```javascript
+ * import { deserialize } from './primitives/Transaction/deserialize.js';
+ * const tx = deserialize(bytes);
+ * ```
  */
 export function deserialize(data: Uint8Array): Any {
 	const type = detectType(data);

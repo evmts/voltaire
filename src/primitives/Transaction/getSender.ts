@@ -7,7 +7,17 @@ import * as Legacy from "./Legacy/getSender.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Get sender address from transaction signature
+ * Get sender address from transaction signature.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @returns Sender address
+ * @throws {Error} If signature recovery fails
+ * @example
+ * ```javascript
+ * import { getSender } from './primitives/Transaction/getSender.js';
+ * const sender = getSender.call(tx);
+ * ```
  */
 export function getSender(this: Any): BrandedAddress {
 	switch (this.type) {

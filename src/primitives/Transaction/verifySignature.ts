@@ -11,7 +11,17 @@ import * as Legacy from "./Legacy/verifySignature.js";
 import { type Any, Type } from "./types.js";
 
 /**
- * Verify transaction signature
+ * Verify transaction signature.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @returns True if signature is valid
+ * @throws {never} Never throws - returns false on error
+ * @example
+ * ```javascript
+ * import { verifySignature } from './primitives/Transaction/verifySignature.js';
+ * const isValid = verifySignature.call(tx);
+ * ```
  */
 export function verifySignature(this: Any): boolean {
 	switch (this.type) {
