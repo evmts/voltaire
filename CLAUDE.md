@@ -45,7 +45,7 @@ Ethereum primitives + crypto. Multi-language: TS + Zig + Rust + C.
 zig build                     # Full build (Zig + TS typecheck + C libs)
 zig build test                # All Zig tests (primitives + crypto + precompiles)
 zig build -Dtest-filter=[p]   # Filter tests
-zig build --release=fast      # Release build
+zig build -Doptimize=ReleaseFast # Release build
 
 # Multi-target
 zig build build-ts-native     # Native FFI (.dylib/.so) - ReleaseFast
@@ -69,9 +69,9 @@ zig build test-integration    # Integration tests
 zig build test-security       # Security tests
 
 # Benchmarks
-zig build bench               # zbench Zig benchmarks
-zig build bench-ts            # TS comparison benchmarks
-zig build -Dbench-filter=[p]  # Filter benchmarks
+zig build bench -Dwith-benches=true              # zbench Zig benchmarks
+zig build bench-ts                               # TS comparison benchmarks
+zig build -Dwith-benches=true -Dfilter=[p]      # Filter benchmarks
 
 # Examples (examples/ dir)
 zig build example-keccak256
@@ -102,9 +102,7 @@ bun run test:native           # Native FFI tests
 bun run test:wasm             # WASM tests
 
 # Docs
-bun run docs:dev              # Astro dev (localhost:4321)
-bun run docs:build            # Build docs site
-bun run docs:preview          # Preview built docs
+bun run docs:dev              # Mintlify dev (localhost:3000)
 
 # Quality
 bun run format                # biome format
