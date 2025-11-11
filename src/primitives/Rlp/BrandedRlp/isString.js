@@ -3,11 +3,14 @@ import { Error } from "./errors.js";
 /**
  * Checks if RLP-encoded data represents a string (byte array)
  *
+ * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ * @since 0.0.0
  * @param {Uint8Array} data - RLP-encoded data
  * @returns {boolean} True if data encodes a string
- *
+ * @throws {Error} If data is empty
  * @example
  * ```javascript
+ * import * as Rlp from './primitives/Rlp/index.js';
  * const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
  * Rlp.isString(bytes);
  * // => true

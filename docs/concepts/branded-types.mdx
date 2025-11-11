@@ -160,70 +160,44 @@ Brand field only exists in TypeScript's type checker. Compiled JavaScript contai
 
 ## Variants with Multiple Brands
 
-Types can have multiple brand properties:
+String-based types can have variant discriminators for different formats. Address hex strings share the same base brand `Symbol("AddressHex")` but use additional discriminators for case variants:
 
 ```typescript
-type Checksummed = string & {
-  readonly __tag: "Hex"
-  readonly __variant: "Address"
+// All variants have __brand = Symbol("AddressHex")
+// Additional discriminators specify exact format
+
+type AddressChecksummed = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
   readonly __checksummed: true
 }
 
-type Lowercase = string & {
-  readonly __tag: "Hex"
-  readonly __variant: "Address"
+type AddressLowercase = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
   readonly __lowercase: true
 }
-```
 
-Different combinations create incompatible types:
-
-```typescript
-const checksummed: Checksummed = "0x742d35Cc..." as Checksummed
-const lowercase: Lowercase = "0x742d35cc..." as Lowercase
-
-function display(addr: Checksummed) { /* ... */ }
-display(checksummed) // ✓
-display(lowercase)   // ✗ Error
-```
-
-## Common Patterns
-
-### Validation Functions
-
-```typescript
-function isValidAddress(value: unknown): value is BrandedAddress {
-  return value instanceof Uint8Array && value.length === 20
+type AddressUppercase = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  readonly __uppercase: true
 }
 
-if (isValidAddress(data)) {
-  // data is BrandedAddress here
-  processAddress(data)
+type AddressHex = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  // No discriminator = generic/unknown case format (could be mixed)
 }
 ```
 
-### Conversion Functions
+TypeScript distinguishes these as separate types despite sharing the same brand symbol:
 
 ```typescript
-function addressToHex(addr: BrandedAddress): BrandedHex {
-  const hex = "0x" + Array.from(addr, b => b.toString(16).padStart(2, "0")).join("")
-  return hex as BrandedHex
-}
+const checksummed: AddressChecksummed = "0x742d35Cc..." as AddressChecksummed
+const lowercase: AddressLowercase = "0x742d35cc..." as AddressLowercase
+const unknown: AddressHex = "0x742D35cc..." as AddressHex  // Mixed case
+
+function requireChecksummed(addr: AddressChecksummed) { /* ... */ }
+requireChecksummed(checksummed) // ✓ Correct
+requireChecksummed(lowercase)   // ✗ Error: __lowercase !== __checksummed
+requireChecksummed(unknown)     // ✗ Error: no __checksummed discriminator
 ```
 
-### Unwrapping (Rarely Needed)
-
-```typescript
-type Unbrand<T> = T extends infer U & { [brand]: any } ? U : T
-
-const addr: BrandedAddress = /* ... */
-const plain: Uint8Array = addr as Unbrand<BrandedAddress>
-```
-
-Usually unnecessary - branded types already compatible with underlying type operations.
-
-## Related
-
-- [Address](/primitives/address/) - Uses `BrandedAddress` type
-- [Hex](/primitives/hex/) - Uses `BrandedHex` type
-- [BrandedAddress](/primitives/address/branded-address) - Tree-shakeable branded API
+This allows APIs to require specific formats (e.g., EIP-55 checksummed) while accepting generic hex in other contexts.
