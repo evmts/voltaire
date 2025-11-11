@@ -1,0 +1,405 @@
+---
+title: "ADDMOD (0x08)"
+description: "Modular addition for 256-bit unsigned integers with arbitrary modulus"
+---
+
+## Overview
+
+**Opcode:** `0x08`
+**Introduced:** Frontier (EVM genesis)
+
+ADDMOD performs modular addition `(a + b) % N` where all operands are 256-bit unsigned integers. Unlike standard ADD followed by MOD, ADDMOD computes the result using wider arithmetic to prevent intermediate overflow, making it essential for cryptographic operations.
+
+Division by zero (N = 0) returns 0 rather than throwing an exception.
+
+## Specification
+
+**Stack Input:**
+```
+a (top)
+b
+N (modulus)
+```
+
+**Stack Output:**
+```
+(a + b) % N
+```
+
+**Gas Cost:** 8 (GasMidStep)
+
+**Operation:**
+```
+if N == 0:
+  result = 0
+else:
+  result = (a + b) % N
+```
+
+## Behavior
+
+ADDMOD pops three values from the stack (a, b, N), computes `(a + b) mod N`, and pushes the result back:
+
+- **Normal case:** Result is `(a + b) % N`
+- **N = 0:** Returns 0 (EVM convention)
+- **No intermediate overflow:** Uses 512-bit arithmetic internally
+
+The key advantage over `ADD` then `MOD` is that ADDMOD avoids intermediate overflow when `a + b >= 2^256`.
+
+## Examples
+
+### Basic Modular Addition
+
+```typescript
+import { addmod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// (5 + 10) % 3 = 15 % 3 = 0
+const frame = createFrame({ stack: [5n, 10n, 3n] });
+const err = addmod(frame);
+
+console.log(frame.stack); // [0n]
+console.log(frame.gasRemaining); // Original - 8
+```
+
+### Overflow-Safe Addition
+
+```typescript
+// MAX + MAX would overflow in ADD, but ADDMOD handles it
+const MAX_U256 = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX_U256, MAX_U256, 100n] });
+const err = addmod(frame);
+
+// (MAX + MAX) % 100 = (2^256 - 2) % 100
+const expected = ((MAX_U256 + MAX_U256) % 100n);
+console.log(frame.stack); // [expected]
+```
+
+### Zero Modulus
+
+```typescript
+// Division by zero returns 0
+const frame = createFrame({ stack: [5n, 10n, 0n] });
+const err = addmod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Modulus of 1
+
+```typescript
+// Any number mod 1 is 0
+const frame = createFrame({ stack: [999n, 888n, 1n] });
+const err = addmod(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Large Modulus
+
+```typescript
+// Result when sum < modulus
+const frame = createFrame({ stack: [5n, 10n, 1000n] });
+const err = addmod(frame);
+
+console.log(frame.stack); // [15n] (no reduction needed)
+```
+
+## Gas Cost
+
+**Cost:** 8 gas (GasMidStep)
+
+ADDMOD costs more than basic ADD due to wider arithmetic requirements:
+
+**Comparison:**
+- ADD/SUB: 3 gas
+- MUL/DIV/MOD: 5 gas
+- **ADDMOD/MULMOD: 8 gas**
+- EXP: 10 + 50 per byte
+
+Despite higher cost, ADDMOD is more efficient than separate ADD + MOD operations when dealing with potential overflow.
+
+## Edge Cases
+
+### Maximum Values
+
+```typescript
+const MAX = (1n << 256n) - 1n;
+
+// MAX + MAX mod 7
+const frame = createFrame({ stack: [MAX, MAX, 7n] });
+addmod(frame);
+
+const expected = (MAX + MAX) % 7n;
+console.log(frame.stack); // [expected]
+```
+
+### Identity Elements
+
+```typescript
+// a + 0 = a (mod N)
+const frame1 = createFrame({ stack: [42n, 0n, 17n] });
+addmod(frame1);
+console.log(frame1.stack); // [42n % 17n = 8n]
+
+// 0 + 0 = 0 (mod N)
+const frame2 = createFrame({ stack: [0n, 0n, 17n] });
+addmod(frame2);
+console.log(frame2.stack); // [0n]
+```
+
+### Stack Underflow
+
+```typescript
+// Not enough stack items
+const frame = createFrame({ stack: [5n, 10n] });
+const err = addmod(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [5n, 10n, 3n], gasRemaining: 7n });
+const err = addmod(frame);
+
+console.log(err); // { type: "OutOfGas" }
+console.log(frame.gasRemaining); // 0n
+```
+
+## Common Usage
+
+### Elliptic Curve Point Addition
+
+```solidity
+// secp256k1 field arithmetic (p = 2^256 - 2^32 - 977)
+assembly {
+    let p := 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+
+    // Add two field elements
+    let x1 := mload(0x00)
+    let x2 := mload(0x20)
+    let sum := addmod(x1, x2, p)
+}
+```
+
+### Modular Ring Operations
+
+```solidity
+// Ring arithmetic mod N
+function addInRing(uint256 a, uint256 b, uint256 N)
+    pure returns (uint256)
+{
+    assembly {
+        mstore(0x00, addmod(a, b, N))
+        return(0x00, 0x20)
+    }
+}
+```
+
+### Hash Computations
+
+```solidity
+// Polynomial rolling hash
+assembly {
+    let hash := 0
+    let base := 31
+    let mod := 1000000007
+
+    // hash = (hash * base + char) % mod
+    hash := addmod(mulmod(hash, base, mod), char, mod)
+}
+```
+
+### Schnorr/BLS Signature Math
+
+```solidity
+// s = (k + e*x) mod n (Schnorr signature)
+assembly {
+    let n := 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    let k := mload(0x00)
+    let e_x := mulmod(e, x, n)
+    let s := addmod(k, e_x, n)
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * ADDMOD opcode (0x08) - Addition modulo N
+ */
+export function addmod(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasMidStep = 8)
+  frame.gasRemaining -= 8n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands: a, b, N
+  if (frame.stack.length < 3) return { type: "StackUnderflow" };
+  const a = frame.stack.pop();
+  const b = frame.stack.pop();
+  const n = frame.stack.pop();
+
+  // Compute result
+  let result: bigint;
+  if (n === 0n) {
+    result = 0n;
+  } else {
+    // BigInt handles arbitrary precision - no overflow
+    result = (a + b) % n;
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// ADDMOD opcode (0x08) - Addition modulo n
+pub fn addmod(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasMidStep);
+    const a = try frame.popStack();
+    const b = try frame.popStack();
+    const n = try frame.popStack();
+
+    const result = if (n == 0) 0 else blk: {
+        // Use u512 to avoid overflow
+        const a_wide = @as(u512, a);
+        const b_wide = @as(u512, b);
+        const n_wide = @as(u512, n);
+        break :blk @as(u256, @truncate((a_wide + b_wide) % n_wide));
+    };
+
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { addmod } from './0x08_ADDMOD.js';
+
+describe('ADDMOD (0x08)', () => {
+  it('computes (a + b) % N', () => {
+    const frame = createFrame([5n, 10n, 3n]);
+    expect(addmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]); // 15 % 3 = 0
+  });
+
+  it('returns 0 when N is 0', () => {
+    const frame = createFrame([5n, 10n, 0n]);
+    expect(addmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('handles large values without overflow', () => {
+    const MAX = (1n << 256n) - 1n;
+    const frame = createFrame([MAX, MAX, 7n]);
+    expect(addmod(frame)).toBeNull();
+    expect(frame.stack).toEqual([(MAX + MAX) % 7n]);
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame([5n, 10n]);
+    expect(addmod(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame([5n, 10n, 3n], 7n);
+    expect(addmod(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic modular addition (15 % 3 = 0)
+- Zero modulus (returns 0)
+- Modulus of 1 (always returns 0)
+- Large values (MAX + MAX)
+- Overflow-safe computation
+- Identity elements (a + 0, 0 + 0)
+- Stack underflow (< 3 items)
+- Out of gas (< 8 gas)
+
+## Security
+
+### Cryptographic Importance
+
+ADDMOD is critical for implementing cryptographic operations that require modular arithmetic:
+
+**Elliptic Curve Operations:**
+```solidity
+// secp256k1 field addition
+uint256 constant FIELD_P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
+
+function fieldAdd(uint256 a, uint256 b) pure returns (uint256) {
+    return addmod(a, b, FIELD_P);
+}
+```
+
+**BLS12-381 Group Operations:**
+```solidity
+// BLS12-381 field modulus
+uint256 constant BLS_P = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab;
+
+function blsFieldAdd(uint256 a, uint256 b) pure returns (uint256) {
+    return addmod(a, b, BLS_P);
+}
+```
+
+### Timing Safety
+
+ADDMOD operations complete in constant time regardless of operand values, preventing timing side-channel attacks in cryptographic implementations.
+
+### Overflow Protection
+
+Unlike `ADD` then `MOD`, ADDMOD prevents intermediate overflow:
+
+**Vulnerable pattern:**
+```solidity
+// Can overflow if a + b >= 2^256
+uint256 sum = a + b;
+uint256 result = sum % N;  // Wrong result if overflow occurred
+```
+
+**Safe pattern:**
+```solidity
+// Always correct
+uint256 result = addmod(a, b, N);
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Arithmetic Operations)
+- [EVM Codes - ADDMOD](https://www.evm.codes/#08)
+- [EIP-196](https://eips.ethereum.org/EIPS/eip-196) - Precompiled contracts for addition and scalar multiplication on curve alt_bn128
+- [secp256k1 Parameters](https://www.secg.org/sec2-v2.pdf) - SEC 2 specification
+- [BLS12-381 For The Rest Of Us](https://hackmd.io/@benjaminion/bls12-381) - BLS curve reference
+
+## Related Instructions
+
+- [ADD](/evm/instructions/arithmetic/add) - Basic addition with wrapping
+- [MULMOD](/evm/instructions/arithmetic/mulmod) - Modular multiplication
+- [MOD](/evm/instructions/arithmetic/mod) - Unsigned modulo operation
