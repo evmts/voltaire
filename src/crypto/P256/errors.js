@@ -1,8 +1,8 @@
 import {
-	CryptoError,
-	InvalidSignatureError as BaseInvalidSignatureError,
-	InvalidPublicKeyError as BaseInvalidPublicKeyError,
 	InvalidPrivateKeyError as BaseInvalidPrivateKeyError,
+	InvalidPublicKeyError as BaseInvalidPublicKeyError,
+	InvalidSignatureError as BaseInvalidSignatureError,
+	CryptoError,
 } from "../../primitives/errors/CryptoError.js";
 
 /**

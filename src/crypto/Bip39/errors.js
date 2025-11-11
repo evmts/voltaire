@@ -23,7 +23,7 @@ export class Bip39Error extends CryptoError {
 	 * @param {string} [message]
 	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message = "BIP-39 error", options) {
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "BIP39_ERROR",
 			context: options?.context,
@@ -55,7 +55,7 @@ export class InvalidMnemonicError extends InvalidFormatError {
 	 * @param {string} [message]
 	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message = "Invalid BIP-39 mnemonic phrase", options) {
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "BIP39_INVALID_MNEMONIC",
 			value: options?.context?.mnemonic || "",
@@ -89,7 +89,7 @@ export class InvalidEntropyError extends Bip39Error {
 	 * @param {string} [message]
 	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
-	constructor(message = "Invalid entropy", options) {
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "BIP39_INVALID_ENTROPY",
 			context: options?.context,

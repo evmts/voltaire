@@ -1,10 +1,10 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 import {
 	InvalidPublicKeyError,
 	InvalidSignatureError,
 } from "../../primitives/errors/index.js";
+import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 
 /**
  * Concatenate multiple Uint8Arrays

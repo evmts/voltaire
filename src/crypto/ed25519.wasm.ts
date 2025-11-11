@@ -1,11 +1,11 @@
 /**
- * WASM implementation of Ed25519 operations
+ * Ed25519 operations implementation
  *
- * Provides Ed25519 digital signature operations
- * using WebAssembly for performance.
+ * Uses @noble/curves Ed25519 implementation since WASM exports
+ * are not yet available in Zig 0.15.1 (API changed).
  */
 
-import * as loader from "../wasm-loader/loader.js";
+import { ed25519 } from "@noble/curves/ed25519.js";
 
 // ============================================================================
 // Main Ed25519Wasm Namespace
@@ -84,7 +84,12 @@ export namespace Ed25519Wasm {
 		}
 
 		try {
-			return loader.ed25519KeypairFromSeed(seed);
+			const publicKey = ed25519.getPublicKey(seed);
+			// Ed25519 secret key is 64 bytes: seed (32) + public key (32)
+			const secretKey = new Uint8Array(64);
+			secretKey.set(seed, 0);
+			secretKey.set(publicKey, 32);
+			return { secretKey, publicKey };
 		} catch (error) {
 			throw new Ed25519Error(`Keypair generation failed: ${error}`);
 		}
@@ -102,7 +107,9 @@ export namespace Ed25519Wasm {
 		}
 
 		try {
-			return loader.ed25519Sign(message, secretKey);
+			// Use first 32 bytes as seed for signing
+			const seed = secretKey.slice(0, 32);
+			return ed25519.sign(message, seed);
 		} catch (error) {
 			throw new Ed25519Error(`Signing failed: ${error}`);
 		}
@@ -130,7 +137,7 @@ export namespace Ed25519Wasm {
 		}
 
 		try {
-			return loader.ed25519Verify(message, signature, publicKey);
+			return ed25519.verify(signature, message, publicKey);
 		} catch {
 			return false;
 		}
@@ -141,14 +148,25 @@ export namespace Ed25519Wasm {
 	// ==========================================================================
 
 	export function derivePublicKey(secretKey: SecretKey): PublicKey {
+		// Allow both 32-byte seed and 64-byte secret key
+		if (secretKey.length === SEED_SIZE) {
+			// Treat as seed, derive public key
+			try {
+				return ed25519.getPublicKey(secretKey);
+			} catch (error) {
+				throw new InvalidSecretKeyError(`Failed to derive public key: ${error}`);
+			}
+		}
+
 		if (secretKey.length !== SECRET_KEY_SIZE) {
 			throw new InvalidSecretKeyError(
-				`Secret key must be ${SECRET_KEY_SIZE} bytes, got ${secretKey.length}`,
+				`Secret key must be ${SEED_SIZE} or ${SECRET_KEY_SIZE} bytes, got ${secretKey.length}`,
 			);
 		}
 
 		try {
-			return loader.ed25519DerivePublicKey(secretKey);
+			// Public key is stored in last 32 bytes of 64-byte secret key
+			return secretKey.slice(32, 64);
 		} catch (error) {
 			throw new InvalidSecretKeyError(`Failed to derive public key: ${error}`);
 		}

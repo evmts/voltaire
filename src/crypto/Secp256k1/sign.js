@@ -1,10 +1,10 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { PRIVATE_KEY_SIZE } from "./constants.js";
 import {
-	InvalidPrivateKeyError,
 	CryptoError,
+	InvalidPrivateKeyError,
 } from "../../primitives/errors/index.js";
+import { PRIVATE_KEY_SIZE } from "./constants.js";
 
 /**
  * Sign a message hash with a private key

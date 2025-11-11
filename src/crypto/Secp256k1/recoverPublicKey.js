@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 import { InvalidSignatureError } from "../../primitives/errors/index.js";
+import { SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 
 /**
  * Concatenate multiple Uint8Arrays

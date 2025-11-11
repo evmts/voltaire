@@ -1,12 +1,12 @@
 /**
- * WASM implementation of P256 (secp256r1) operations
+ * P256 (secp256r1) operations implementation
  *
- * Provides cryptographic operations for NIST P-256 curve
- * using WebAssembly for performance.
+ * Uses @noble/curves P256 implementation since WASM exports
+ * are not yet available in Zig 0.15.1 (API changed).
  */
 
+import { p256 } from "@noble/curves/p256.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
-import * as loader from "../wasm-loader/loader.js";
 
 // ============================================================================
 // Main P256Wasm Namespace
@@ -83,10 +83,11 @@ export namespace P256Wasm {
 		}
 
 		try {
-			const result = loader.p256Sign(messageHash, privateKey);
+			const sig = p256.sign(messageHash, privateKey);
+			const sigBytes = sig.toCompactRawBytes();
 			return {
-				r: result.slice(0, 32),
-				s: result.slice(32, 64),
+				r: sigBytes.slice(0, 32),
+				s: sigBytes.slice(32, 64),
 			};
 		} catch (error) {
 			throw new P256Error(`Signing failed: ${error}`);
@@ -124,7 +125,11 @@ export namespace P256Wasm {
 			const sig = new Uint8Array(64);
 			sig.set(signature.r, 0);
 			sig.set(signature.s, 32);
-			return loader.p256Verify(messageHash, sig, publicKey);
+			// Prefix with 0x04 for uncompressed point
+			const pkWithPrefix = new Uint8Array(65);
+			pkWithPrefix[0] = 0x04;
+			pkWithPrefix.set(publicKey, 1);
+			return p256.verify(sig, messageHash, pkWithPrefix);
 		} catch {
 			return false;
 		}
@@ -142,7 +147,9 @@ export namespace P256Wasm {
 		}
 
 		try {
-			return loader.p256DerivePublicKey(privateKey);
+			const point = p256.getPublicKey(privateKey, false);
+			// Remove 0x04 prefix from uncompressed point
+			return point.slice(1);
 		} catch (error) {
 			throw new InvalidPrivateKeyError(`Failed to derive public key: ${error}`);
 		}
@@ -169,7 +176,13 @@ export namespace P256Wasm {
 		}
 
 		try {
-			return loader.p256Ecdh(privateKey, publicKey);
+			// Prefix with 0x04 for uncompressed point
+			const pkWithPrefix = new Uint8Array(65);
+			pkWithPrefix[0] = 0x04;
+			pkWithPrefix.set(publicKey, 1);
+			const shared = p256.getSharedSecret(privateKey, pkWithPrefix, false);
+			// Return x-coordinate only (first 32 bytes after 0x04 prefix)
+			return shared.slice(1, 33);
 		} catch (error) {
 			throw new P256Error(`ECDH failed: ${error}`);
 		}

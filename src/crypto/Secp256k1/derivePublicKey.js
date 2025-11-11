@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { PRIVATE_KEY_SIZE } from "./constants.js";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
+import { PRIVATE_KEY_SIZE } from "./constants.js";
 
 /**
  * Derive public key from private key
