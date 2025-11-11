@@ -1,0 +1,425 @@
+---
+title: Rlp.encodeArray
+description: Encode array of values to RLP format
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.encodeArray(items: Encodable[]): Uint8Array`
+
+Encodes an array of values to RLP format. Alias for `encodeList` for clarity when working with arrays.
+
+**Parameters:**
+- `items: Encodable[]` - Array of values to encode
+
+**Returns:** `Uint8Array` - RLP-encoded bytes
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Encode array of bytes
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+const encoded = Rlp.encodeArray(items)
+// => Uint8Array([0xc8, 0x83, 1, 2, 3, 0x83, 4, 5, 6])
+
+// Transaction fields
+const txFields = [
+  new Uint8Array([0x00]),                    // nonce
+  new Uint8Array([0x04, 0xa8, 0x17, 0xc8]),  // gasPrice
+  new Uint8Array([0x52, 0x08]),               // gas
+  new Uint8Array(20).fill(0x01),              // to
+  new Uint8Array([0x00]),                    // value
+  new Uint8Array([]),                         // data
+  new Uint8Array([0x1b]),                    // v
+  new Uint8Array(32).fill(0x02),              // r
+  new Uint8Array(32).fill(0x03)               // s
+]
+const encoded = Rlp.encodeArray(txFields)
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/encodeArray.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeArray.js#L22)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `encodeArray(items: Encodable[]): Uint8Array`
+
+Encodes an array of values to RLP format.
+
+**Parameters:**
+- `items: Encodable[]` - Array of values to encode
+
+**Returns:** `Uint8Array` - RLP-encoded bytes
+
+**Example:**
+
+```typescript
+import { encodeArray } from '@tevm/voltaire/BrandedRlp'
+
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+const encoded = encodeArray(items)
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/encodeArray.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeArray.js#L22)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.encodeArray(allocator: Allocator, items: []const []const u8) ![]u8`
+
+Encode array of byte slices to RLP format.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for encoded bytes
+- `items: []const []const u8` - Array of byte slices
+
+**Returns:** `[]u8` - RLP-encoded bytes (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const items = [_][]const u8{
+    &[_]u8{1, 2, 3},
+    &[_]u8{4, 5, 6}
+};
+const encoded = try rlp.encodeArray(allocator, &items);
+defer allocator.free(encoded);
+```
+
+**Memory:** Caller must free returned slice.
+
+**Defined in:** [primitives/rlp/encode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/encode.zig)
+
+</Tab>
+</Tabs>
+
+## encodeArray vs encodeList
+
+`encodeArray` is functionally identical to `encodeList` - it's provided as an alias for semantic clarity:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const items = [new Uint8Array([1]), new Uint8Array([2])]
+
+// These are equivalent
+const encoded1 = Rlp.encodeArray(items)
+const encoded2 = Rlp.encodeList(items)
+// Both => Uint8Array([0xc4, 0x01, 0x02])
+```
+
+Use `encodeArray` when thinking of the input as an **array of values** (e.g., transaction fields, block components).
+
+Use `encodeList` when thinking of the input as a **list structure** (e.g., nested lists, tree structures).
+
+## Usage Patterns
+
+### Transaction Encoding
+
+Encode transaction fields as array:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface LegacyTx {
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: Uint8Array
+  value: bigint
+  data: Uint8Array
+  v: bigint
+  r: Uint8Array
+  s: Uint8Array
+}
+
+function encodeLegacyTx(tx: LegacyTx): Uint8Array {
+  const fields = [
+    bigintToBytes(tx.nonce),
+    bigintToBytes(tx.gasPrice),
+    bigintToBytes(tx.gasLimit),
+    tx.to,
+    bigintToBytes(tx.value),
+    tx.data,
+    bigintToBytes(tx.v),
+    tx.r,
+    tx.s
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+
+const tx: LegacyTx = {
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: new Uint8Array(20).fill(0x01),
+  value: 1000000000000000000n,
+  data: new Uint8Array([]),
+  v: 27n,
+  r: new Uint8Array(32).fill(0x02),
+  s: new Uint8Array(32).fill(0x03)
+}
+
+const encoded = encodeLegacyTx(tx)
+```
+
+### Block Header Encoding
+
+Encode block header fields:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface BlockHeader {
+  parentHash: Uint8Array
+  uncleHash: Uint8Array
+  coinbase: Uint8Array
+  stateRoot: Uint8Array
+  transactionsRoot: Uint8Array
+  receiptsRoot: Uint8Array
+  logsBloom: Uint8Array
+  difficulty: bigint
+  number: bigint
+  gasLimit: bigint
+  gasUsed: bigint
+  timestamp: bigint
+  extraData: Uint8Array
+}
+
+function encodeBlockHeader(header: BlockHeader): Uint8Array {
+  const fields = [
+    header.parentHash,
+    header.uncleHash,
+    header.coinbase,
+    header.stateRoot,
+    header.transactionsRoot,
+    header.receiptsRoot,
+    header.logsBloom,
+    bigintToBytes(header.difficulty),
+    bigintToBytes(header.number),
+    bigintToBytes(header.gasLimit),
+    bigintToBytes(header.gasUsed),
+    bigintToBytes(header.timestamp),
+    header.extraData
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+```
+
+### Log Entry Encoding
+
+Encode event log entries:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Log {
+  address: Uint8Array
+  topics: Uint8Array[]
+  data: Uint8Array
+}
+
+function encodeLog(log: Log): Uint8Array {
+  const fields = [
+    log.address,
+    log.topics,  // Nested array
+    log.data
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+
+const log: Log = {
+  address: new Uint8Array(20).fill(0x01),
+  topics: [
+    new Uint8Array(32).fill(0x02),
+    new Uint8Array(32).fill(0x03)
+  ],
+  data: new Uint8Array([0x04, 0x05, 0x06])
+}
+
+const encoded = encodeLog(log)
+```
+
+### Receipt Encoding
+
+Encode transaction receipts:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Receipt {
+  status: bigint
+  gasUsed: bigint
+  logsBloom: Uint8Array
+  logs: Log[]
+}
+
+function encodeReceipt(receipt: Receipt): Uint8Array {
+  const encodedLogs = receipt.logs.map(log => encodeLog(log))
+
+  const fields = [
+    bigintToBytes(receipt.status),
+    bigintToBytes(receipt.gasUsed),
+    receipt.logsBloom,
+    encodedLogs
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+```
+
+### Merkle Patricia Trie Node
+
+Encode trie nodes:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+type TrieNode =
+  | { type: 'branch'; children: Uint8Array[]; value: Uint8Array }
+  | { type: 'extension'; path: Uint8Array; child: Uint8Array }
+  | { type: 'leaf'; path: Uint8Array; value: Uint8Array }
+
+function encodeTrieNode(node: TrieNode): Uint8Array {
+  if (node.type === 'branch') {
+    // Branch node: [child0, child1, ..., child15, value]
+    return Rlp.encodeArray([...node.children, node.value])
+  }
+
+  if (node.type === 'extension') {
+    // Extension node: [path, child]
+    return Rlp.encodeArray([node.path, node.child])
+  }
+
+  // Leaf node: [path, value]
+  return Rlp.encodeArray([node.path, node.value])
+}
+```
+
+## Schema-based Encoding
+
+Define typed schemas for RLP encoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Define schema
+interface AccountState {
+  nonce: bigint
+  balance: bigint
+  storageRoot: Uint8Array
+  codeHash: Uint8Array
+}
+
+// Encoder function
+function encodeAccountState(account: AccountState): Uint8Array {
+  return Rlp.encodeArray([
+    bigintToBytes(account.nonce),
+    bigintToBytes(account.balance),
+    account.storageRoot,
+    account.codeHash
+  ])
+}
+
+// Decoder function (see decodeArray)
+function decodeAccountState(bytes: Uint8Array): AccountState {
+  const arr = Rlp.decodeArray(bytes)
+  return {
+    nonce: bytesToBigint(arr[0]),
+    balance: bytesToBigint(arr[1]),
+    storageRoot: arr[2],
+    codeHash: arr[3]
+  }
+}
+```
+
+## Performance
+
+### Pre-calculate Sizes
+
+Calculate total size before encoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+
+// Calculate size first
+const size = Rlp.getEncodedLength(items)
+console.log(`Array will encode to ${size} bytes`)
+
+// Then encode
+const encoded = Rlp.encodeArray(items)
+```
+
+### Batch Encoding
+
+Encode multiple arrays efficiently:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const transactions = [
+  [nonce1, gasPrice1, ...],
+  [nonce2, gasPrice2, ...],
+  [nonce3, gasPrice3, ...]
+]
+
+// Encode each transaction
+const encodedTxs = transactions.map(tx => Rlp.encodeArray(tx))
+
+// Encode as list of transactions
+const block = Rlp.encodeArray(encodedTxs)
+```
+
+### Reusable Buffers
+
+For high-frequency encoding, consider pre-allocating buffers:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+class TxEncoder {
+  private buffer = new Uint8Array(1024)  // Reusable buffer
+
+  encode(tx: Transaction): Uint8Array {
+    const fields = [
+      bigintToBytes(tx.nonce),
+      bigintToBytes(tx.gasPrice),
+      // ...
+    ]
+
+    return Rlp.encodeArray(fields)
+  }
+}
+```
+
+## See Also
+
+- [encode](/primitives/rlp/encode) - Universal encoder
+- [encodeList](/primitives/rlp/encode-list) - Encode list
+- [decodeArray](/primitives/rlp/decode-array) - Decode to array
+- [encodeObject](/primitives/rlp/encode-object) - Encode object
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification

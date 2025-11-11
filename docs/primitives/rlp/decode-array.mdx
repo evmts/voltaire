@@ -1,0 +1,496 @@
+---
+title: Rlp.decodeArray
+description: Decode RLP-encoded bytes to array
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.decodeArray(data: Uint8Array): any[]`
+
+Decodes RLP-encoded bytes to an array. Converts RLP data structures to raw arrays.
+
+**Parameters:**
+- `data: Uint8Array` - RLP-encoded data
+
+**Returns:** `any[]` - Decoded array
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Decode array of bytes
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4])
+])
+const arr = Rlp.decodeArray(encoded)
+// => [Uint8Array([1, 2]), Uint8Array([3, 4])]
+
+// Decode transaction
+const txEncoded = Rlp.encodeArray([
+  new Uint8Array([0x00]),           // nonce
+  new Uint8Array([0x04, 0xa8]),     // gasPrice
+  new Uint8Array([0x52, 0x08])      // gas
+  // ...
+])
+const [nonce, gasPrice, gas, ...rest] = Rlp.decodeArray(txEncoded)
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/decodeArray.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decodeArray.js#L20)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `decodeArray(data: Uint8Array): any[]`
+
+Decodes RLP-encoded bytes to an array.
+
+**Parameters:**
+- `data: Uint8Array` - RLP-encoded data
+
+**Returns:** `any[]` - Decoded array
+
+**Example:**
+
+```typescript
+import { decodeArray } from '@tevm/voltaire/BrandedRlp'
+
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4])
+])
+const arr = decodeArray(encoded)
+// => [Uint8Array([1, 2]), Uint8Array([3, 4])]
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/decodeArray.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decodeArray.js#L20)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.decodeArray(allocator: Allocator, bytes: []const u8) ![][]u8`
+
+Decode RLP-encoded bytes to array of byte slices.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for decoded data
+- `bytes: []const u8` - RLP-encoded bytes
+
+**Returns:** `[][]u8` - Array of byte slices (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const encoded = [_]u8{ 0xc8, 0x83, 1, 2, 3, 0x83, 4, 5, 6 };
+const arr = try rlp.decodeArray(allocator, &encoded);
+defer {
+    for (arr) |item| allocator.free(item);
+    allocator.free(arr);
+}
+```
+
+**Memory:** Caller must free array and each element.
+
+**Defined in:** [primitives/rlp/decode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/decode.zig)
+
+</Tab>
+</Tabs>
+
+## Return Type
+
+`decodeArray` returns a JavaScript array with decoded elements:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+])
+
+const arr = Rlp.decodeArray(encoded)
+// arr is an array: [Uint8Array([1,2,3]), Uint8Array([4,5,6])]
+
+// Can destructure
+const [first, second] = arr
+console.log(first)  // Uint8Array([1, 2, 3])
+console.log(second)  // Uint8Array([4, 5, 6])
+
+// Can iterate
+for (const item of arr) {
+  console.log('Item:', item)
+}
+```
+
+## Usage Patterns
+
+### Transaction Decoding
+
+Decode transaction fields:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface LegacyTx {
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: Uint8Array
+  value: bigint
+  data: Uint8Array
+  v: bigint
+  r: Uint8Array
+  s: Uint8Array
+}
+
+function decodeLegacyTx(bytes: Uint8Array): LegacyTx {
+  const arr = Rlp.decodeArray(bytes)
+
+  return {
+    nonce: bytesToBigint(arr[0]),
+    gasPrice: bytesToBigint(arr[1]),
+    gasLimit: bytesToBigint(arr[2]),
+    to: arr[3],
+    value: bytesToBigint(arr[4]),
+    data: arr[5],
+    v: bytesToBigint(arr[6]),
+    r: arr[7],
+    s: arr[8]
+  }
+}
+
+const txBytes = new Uint8Array([...])
+const tx = decodeLegacyTx(txBytes)
+console.log('Nonce:', tx.nonce)
+console.log('To:', tx.to)
+```
+
+### Block Header Decoding
+
+Decode block header:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface BlockHeader {
+  parentHash: Uint8Array
+  uncleHash: Uint8Array
+  coinbase: Uint8Array
+  stateRoot: Uint8Array
+  transactionsRoot: Uint8Array
+  receiptsRoot: Uint8Array
+  logsBloom: Uint8Array
+  difficulty: bigint
+  number: bigint
+  gasLimit: bigint
+  gasUsed: bigint
+  timestamp: bigint
+  extraData: Uint8Array
+}
+
+function decodeBlockHeader(bytes: Uint8Array): BlockHeader {
+  const [
+    parentHash,
+    uncleHash,
+    coinbase,
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
+    logsBloom,
+    difficulty,
+    number,
+    gasLimit,
+    gasUsed,
+    timestamp,
+    extraData
+  ] = Rlp.decodeArray(bytes)
+
+  return {
+    parentHash,
+    uncleHash,
+    coinbase,
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
+    logsBloom,
+    difficulty: bytesToBigint(difficulty),
+    number: bytesToBigint(number),
+    gasLimit: bytesToBigint(gasLimit),
+    gasUsed: bytesToBigint(gasUsed),
+    timestamp: bytesToBigint(timestamp),
+    extraData
+  }
+}
+```
+
+### Log Entry Decoding
+
+Decode event logs:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Log {
+  address: Uint8Array
+  topics: Uint8Array[]
+  data: Uint8Array
+}
+
+function decodeLog(bytes: Uint8Array): Log {
+  const [address, topics, data] = Rlp.decodeArray(bytes)
+
+  return {
+    address,
+    topics,  // Already an array
+    data
+  }
+}
+
+const logBytes = new Uint8Array([...])
+const log = decodeLog(logBytes)
+console.log('Address:', log.address)
+console.log('Topics:', log.topics)
+```
+
+### Account State Decoding
+
+Decode account state:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface AccountState {
+  nonce: bigint
+  balance: bigint
+  storageRoot: Uint8Array
+  codeHash: Uint8Array
+}
+
+function decodeAccountState(bytes: Uint8Array): AccountState {
+  const [nonce, balance, storageRoot, codeHash] = Rlp.decodeArray(bytes)
+
+  return {
+    nonce: bytesToBigint(nonce),
+    balance: bytesToBigint(balance),
+    storageRoot,
+    codeHash
+  }
+}
+
+const accountBytes = new Uint8Array([...])
+const account = decodeAccountState(accountBytes)
+console.log('Balance:', account.balance)
+```
+
+### Merkle Patricia Trie Node
+
+Decode trie nodes:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+type TrieNode =
+  | { type: 'branch'; children: Uint8Array[]; value: Uint8Array }
+  | { type: 'extension'; path: Uint8Array; child: Uint8Array }
+  | { type: 'leaf'; path: Uint8Array; value: Uint8Array }
+
+function decodeTrieNode(bytes: Uint8Array): TrieNode {
+  const arr = Rlp.decodeArray(bytes)
+
+  if (arr.length === 17) {
+    // Branch node: 16 children + value
+    return {
+      type: 'branch',
+      children: arr.slice(0, 16),
+      value: arr[16]
+    }
+  }
+
+  if (arr.length === 2) {
+    // Extension or leaf
+    const path = arr[0]
+    const hasTerminator = (path[0] & 0x20) !== 0
+
+    if (hasTerminator) {
+      return {
+        type: 'leaf',
+        path,
+        value: arr[1]
+      }
+    } else {
+      return {
+        type: 'extension',
+        path,
+        child: arr[1]
+      }
+    }
+  }
+
+  throw new Error('Invalid trie node')
+}
+```
+
+## Validation
+
+`decodeArray` validates RLP encoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid encoding
+const valid = new Uint8Array([0xc4, 0x01, 0x02, 0x03])
+const arr = Rlp.decodeArray(valid)
+// => [Uint8Array([1]), Uint8Array([2]), Uint8Array([3])]
+
+// Invalid encoding throws
+const invalid = new Uint8Array([0xc4, 0x01])  // Incomplete
+try {
+  Rlp.decodeArray(invalid)
+} catch (error) {
+  console.error('Invalid RLP:', error)
+}
+
+// Not a list throws
+const notList = new Uint8Array([0x83, 1, 2, 3])  // Bytes, not list
+try {
+  Rlp.decodeArray(notList)
+} catch (error) {
+  console.error('Expected list:', error)
+}
+```
+
+## Schema-based Decoding
+
+Define typed decoders:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Define schema
+type Schema<T> = {
+  encode: (value: T) => Uint8Array
+  decode: (bytes: Uint8Array) => T
+}
+
+// Create schema
+function createArraySchema<T>(
+  itemSchema: Schema<T>
+): Schema<T[]> {
+  return {
+    encode: (items) => {
+      const encoded = items.map(item => itemSchema.encode(item))
+      return Rlp.encodeArray(encoded)
+    },
+    decode: (bytes) => {
+      const arr = Rlp.decodeArray(bytes)
+      return arr.map(item => itemSchema.decode(item))
+    }
+  }
+}
+
+// Use schema
+const uint256Schema: Schema<bigint> = {
+  encode: (n) => bigintToBytes(n),
+  decode: (b) => bytesToBigint(b)
+}
+
+const uint256ArraySchema = createArraySchema(uint256Schema)
+
+// Encode
+const numbers = [1n, 2n, 3n]
+const encoded = uint256ArraySchema.encode(numbers)
+
+// Decode
+const decoded = uint256ArraySchema.decode(encoded)
+// => [1n, 2n, 3n]
+```
+
+## Performance
+
+### Direct Array Access
+
+`decodeArray` returns a plain JavaScript array for efficient access:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1]),
+  new Uint8Array([2]),
+  new Uint8Array([3])
+])
+
+const arr = Rlp.decodeArray(encoded)
+
+// Fast array access
+console.log(arr[0])  // O(1)
+console.log(arr.length)  // O(1)
+
+// Fast iteration
+for (const item of arr) {
+  process(item)
+}
+```
+
+### vs decode
+
+`decodeArray` is more convenient than `decode` for array access:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const encoded = new Uint8Array([...])
+
+// Using decodeArray (convenient)
+const arr = Rlp.decodeArray(encoded)
+const first = arr[0]
+
+// Using decode (more verbose)
+const decoded = Rlp.decode(encoded)
+if (decoded.data.type === 'list') {
+  const first = decoded.data.value[0]
+  if (first.type === 'bytes') {
+    const value = first.value
+  }
+}
+```
+
+### Caching
+
+Cache decoded results for repeated access:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+class TxCache {
+  private cache = new Map<string, any[]>()
+
+  decode(bytes: Uint8Array): any[] {
+    const key = Buffer.from(bytes).toString('hex')
+
+    let cached = this.cache.get(key)
+    if (!cached) {
+      cached = Rlp.decodeArray(bytes)
+      this.cache.set(key, cached)
+    }
+
+    return cached
+  }
+}
+```
+
+## See Also
+
+- [decode](/primitives/rlp/decode) - Decode to RLP data structure
+- [encodeArray](/primitives/rlp/encode-array) - Encode array
+- [decodeObject](/primitives/rlp/decode-object) - Decode to object
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification
