@@ -1,0 +1,3 @@
+[submodule "vendor/execution-apis"]
+	path = vendor/execution-apis
+	url = https://github.com/ethereum/execution-apis.git
