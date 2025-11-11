@@ -14,8 +14,8 @@ export * from "./crypto/index.js";
 // WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";
 
-// EVM precompiles and opcodes
-export * as evm from "./precompiles/precompiles.js";
+// EVM execution (frame, host, instruction handlers)
+export * as evm from "./evm/index.js";
 
-// Legacy: precompiles alias (deprecated, use evm instead)
-export * as precompiles from "./precompiles/precompiles.js";
+// Precompiles (0x01-0x0a + BLS)
+export * as precompiles from "./evm/precompiles/precompiles.js";
