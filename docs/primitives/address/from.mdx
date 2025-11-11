@@ -76,6 +76,54 @@ const addr4 = Address.from(bytes)
 **Defined in:** [primitives/Address/BrandedAddress/from.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/from.js#L23)
 
 </Tab>
+<Tab title="Effect.ts API">
+
+## `Address.from(value: number | bigint | string | Uint8Array): Address`
+
+Universal constructor using Effect Schema. Accepts numbers, bigints, hex strings, or Uint8Array. Returns validated Address schema instance.
+
+**Parameters:**
+- `value: number | bigint | string | Uint8Array` - Number, bigint, hex string (with or without `0x` prefix), or Uint8Array
+
+**Returns:** `Address` - Effect Schema instance wrapping validated BrandedAddress
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+// From bigint
+const addr1 = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+
+// From number
+const addr2 = Address.from(69)
+
+// From hex string
+const addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr4 = Address.from("742d35Cc6634C0532925a3b844Bc9e7595f51e3e") // Works without prefix
+
+// From Uint8Array
+const bytes = new Uint8Array(20)
+const addr5 = Address.from(bytes)
+
+// Access underlying BrandedAddress
+const branded = addr1.address // BrandedAddress Uint8Array
+```
+
+**Throws:**
+- `InvalidValueError` - Unsupported value type or negative number
+- `InvalidHexFormatError` - Invalid hex string format
+- `InvalidAddressLengthError` - Uint8Array is not 20 bytes
+
+**Effect Schema Features:**
+- Schema validation and transformation
+- Type-safe encoding/decoding
+- Integration with Effect's error handling
+- Composable with other Effect schemas
+
+**Defined in:** [primitives/Address/effect.ts:44](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L44)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address.init(bytes: [20]u8): Address`
@@ -107,6 +155,49 @@ const addr2 = Address.init([_]u8{
 ```
 
 **Defined in:** [primitives/Address/address.zig:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L15)
+
+</Tab>
+<Tab title="C">
+
+## `primitives_address_from_hex(const char* hex, PrimitivesAddress* out_address): int`
+
+Create address from hex string in C. Accepts hex strings with or without `0x` prefix.
+
+**Parameters:**
+- `hex: const char*` - Hex string (with or without `0x` prefix)
+- `out_address: PrimitivesAddress*` - Pointer to output address struct (20 bytes)
+
+**Returns:** `int` - `PRIMITIVES_SUCCESS` (0) on success, error code otherwise
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+// From hex string
+PrimitivesAddress addr1;
+int result = primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr1);
+if (result != PRIMITIVES_SUCCESS) {
+    // Handle error
+}
+
+// From hex without prefix
+PrimitivesAddress addr2;
+result = primitives_address_from_hex("742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr2);
+
+// From number (converted to hex first)
+PrimitivesAddress addr3;
+result = primitives_address_from_hex("0x0000000000000000000000000000000000000045", &addr3);
+```
+
+**Error Handling:**
+- Returns non-zero error code on failure
+- Check result before using `out_address`
+- Common errors: invalid hex format, incorrect length
+
+**Memory:** No allocation - address is copied to provided struct.
+
+**Defined in:** [primitives.h:103](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L103)
 
 </Tab>
 </Tabs>

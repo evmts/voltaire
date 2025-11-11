@@ -60,6 +60,82 @@ const addr = Address.fromPublicKey(x, y)
 **Defined in:** [primitives/Address/BrandedAddress/fromPublicKey.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js#L15)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `Address.fromPublicKey(x: bigint, y: bigint): Address`
+
+Derives Ethereum address from secp256k1 public key coordinates using Effect.ts Schema validation.
+
+**Parameters:**
+- `x: bigint` - X coordinate of public key (256 bits)
+- `y: bigint` - Y coordinate of public key (256 bits)
+
+**Returns:** `Address` - Effect Schema instance wrapping BrandedAddress
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+
+// secp256k1 public key coordinates
+const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
+const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
+
+const addr = Address.fromPublicKey(x, y)
+console.log(addr.toHex())
+
+// Access underlying BrandedAddress
+const brandedAddr = addr.address
+```
+
+**Defined in:** [primitives/Address/effect.ts:76](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L76)
+
+</Tab>
+<Tab title="C">
+
+## `primitives_keccak256(data, data_len, out_hash)`
+
+Derive address from secp256k1 public key using C API. Requires manual concatenation of coordinates and keccak256 hashing.
+
+**Parameters:**
+- `x_bytes: uint8_t[32]` - X coordinate (32 bytes, big-endian)
+- `y_bytes: uint8_t[32]` - Y coordinate (32 bytes, big-endian)
+- `out_address: PrimitivesAddress*` - Output address
+
+**Returns:** `int` - PRIMITIVES_SUCCESS or error code
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <string.h>
+
+// Public key coordinates (32 bytes each, big-endian)
+uint8_t x[32] = { /* x coordinate bytes */ };
+uint8_t y[32] = { /* y coordinate bytes */ };
+
+// Concatenate coordinates
+uint8_t pubkey[64];
+memcpy(pubkey, x, 32);
+memcpy(pubkey + 32, y, 32);
+
+// Hash with keccak256
+PrimitivesHash hash;
+int result = primitives_keccak256(pubkey, 64, &hash);
+if (result != PRIMITIVES_SUCCESS) {
+    // Handle error
+}
+
+// Extract last 20 bytes as address
+PrimitivesAddress addr;
+memcpy(addr.bytes, hash.bytes + 12, 20);
+```
+
+**Note:** C API does not provide a dedicated `fromPublicKey` function. Derive manually using `primitives_keccak256` and extract last 20 bytes.
+
+**Defined in:** [primitives.h:139](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L139)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address.fromPublicKey(x: [32]u8, y: [32]u8): !Address`

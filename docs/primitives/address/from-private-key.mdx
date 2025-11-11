@@ -68,6 +68,89 @@ const addr = Address.fromPrivateKey(privateKey)
 **Defined in:** [primitives/Address/BrandedAddress/fromPrivateKey.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js#L21)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `Address.fromPrivateKey(value: Uint8Array): Address`
+
+Derives Effect.ts Address Schema instance from secp256k1 private key. First derives public key via elliptic curve multiplication, then computes address.
+
+**Parameters:**
+- `value: Uint8Array` - 32-byte secp256k1 private key
+
+**Returns:** `Address` - Effect Schema instance wrapping BrandedAddress
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+// From private key
+const privateKey = new Uint8Array(32) // Your private key
+const addr = Address.fromPrivateKey(privateKey)
+
+// Access underlying BrandedAddress
+const branded = addr.address
+
+// Use Schema methods
+const hex = addr.toHex()
+const checksummed = addr.toChecksummed()
+const isZero = addr.isZero()
+
+// Schema validation
+import { Schema } from 'effect'
+const decoded = Schema.decodeUnknownSync(Address)(addr)
+```
+
+**Schema Integration:**
+
+The Effect.ts Address class extends `Schema.Class` and provides full Schema validation:
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import { Schema } from 'effect'
+
+// Define wallet structure with derived address
+class Wallet extends Schema.Class<Wallet>("Wallet")({
+  address: Schema.instanceOf(Address),
+  label: Schema.String
+}) {}
+
+// Derive address from private key with validation
+const privateKey = new Uint8Array(32) // Secure random key
+const addr = Address.fromPrivateKey(privateKey)
+
+const wallet = new Wallet({
+  address: addr,
+  label: "Main wallet"
+})
+```
+
+**Pipeline Usage:**
+
+Combine with Effect pipelines for key derivation workflows:
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import { Effect, pipe } from 'effect'
+
+// Key derivation pipeline
+const deriveWalletAddress = (privateKey: Uint8Array) =>
+  pipe(
+    Effect.sync(() => Address.fromPrivateKey(privateKey)),
+    Effect.map(addr => ({
+      address: addr.toChecksummed(),
+      isDeployed: !addr.isZero()
+    }))
+  )
+```
+
+**Throws:**
+- `InvalidAddressLengthError` - If private key is not exactly 32 bytes
+- `InvalidValueError` - If private key value is invalid (e.g., zero, out of range)
+
+**Defined in:** [primitives/Address/effect.ts:84](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L84)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address.fromPrivateKey(allocator: Allocator, privateKey: [32]u8): !Address`
@@ -102,6 +185,45 @@ const addr = try Address.fromPrivateKey(allocator, private_key);
 ```
 
 **Defined in:** [primitives/Address/address.zig:85](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L85)
+
+</Tab>
+<Tab title="C">
+
+## C FFI
+
+The C API does not currently expose `fromPrivateKey` directly. To derive addresses from private keys in C, use the crypto library's secp256k1 functions to derive the public key first, then use `primitives_address_from_public_key`.
+
+**Example workflow:**
+
+```c
+#include "voltaire.h"
+
+// 1. Derive public key from private key (using secp256k1)
+uint8_t private_key[32] = { /* your private key */ };
+uint8_t public_key[64];  // x, y coordinates
+
+// Use secp256k1_pubkey_create or similar (not shown - requires crypto lib)
+// secp256k1_derive_public_key(private_key, public_key);
+
+// 2. Convert public key coordinates to address
+// Note: This function may not exist yet in C API
+// If not available, compute manually:
+// - Hash public key with keccak256
+// - Take last 20 bytes for address
+
+// Future API (when available):
+// PrimitivesAddress addr;
+// int result = primitives_address_from_public_key(public_key, 64, &addr);
+```
+
+**Note:** For production use with C, consider:
+- Using the crypto library directly for secp256k1 operations
+- Computing keccak256 hash of the derived public key
+- Extracting the last 20 bytes for the address
+
+**Alternative:** Use Zig or TypeScript APIs for key derivation, then pass addresses to C code as hex strings or byte arrays.
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
 
 </Tab>
 </Tabs>

@@ -68,6 +68,63 @@ const checksummed = Address.toChecksummed(addr)
 **Defined in:** [primitives/Address/BrandedAddress/fromBytes.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js#L17)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `Address.fromBytes(value: Uint8Array): Address`
+
+Creates Effect.ts Address Schema instance from raw 20-byte array. Wraps the BrandedAddress and provides Schema validation.
+
+**Parameters:**
+- `value: Uint8Array` - Raw byte array (must be exactly 20 bytes)
+
+**Returns:** `Address` - Effect Schema instance wrapping BrandedAddress
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+// From Uint8Array
+const bytes = new Uint8Array(20)
+bytes[19] = 0x45
+const addr = Address.fromBytes(bytes)
+
+// Access underlying BrandedAddress
+const branded = addr.address
+
+// Use Schema methods
+const hex = addr.toHex()
+const checksummed = addr.toChecksummed()
+const isZero = addr.isZero()
+
+// Schema validation
+import { Schema } from 'effect'
+const decoded = Schema.decodeUnknownSync(Address)(addr)
+```
+
+**Schema Integration:**
+
+The Effect.ts Address class extends `Schema.Class` and provides full Schema validation:
+
+```typescript
+// Define data structure with Address field
+class Transaction extends Schema.Class<Transaction>("Transaction")({
+  from: Schema.instanceOf(Address),
+  to: Schema.instanceOf(Address),
+  value: Schema.BigIntFromSelf
+}) {}
+
+// Create transaction with validated addresses
+const tx = new Transaction({
+  from: Address.fromBytes(senderBytes),
+  to: Address.fromBytes(recipientBytes),
+  value: 1000000000000000000n
+})
+```
+
+**Defined in:** [primitives/Address/effect.ts:60](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L60)
+
+</Tab>
 <Tab title="Zig">
 
 ## `Address{ .bytes = bytes }`
@@ -98,6 +155,63 @@ const addr2 = Address{ .bytes = fixed_bytes };
 ```
 
 **Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
+
+</Tab>
+<Tab title="C API">
+
+## `PrimitivesAddress`
+
+In C, addresses are represented as 20-byte structs. Create by directly populating the bytes field or use conversion functions.
+
+**Type Definition:**
+
+```c
+typedef struct {
+    uint8_t bytes[20];
+} PrimitivesAddress;
+```
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <string.h>
+
+// Create from bytes directly
+PrimitivesAddress addr;
+memset(addr.bytes, 0, 20);
+addr.bytes[19] = 0x45;
+
+// Copy from existing buffer
+uint8_t buffer[20] = { /* ... */ };
+PrimitivesAddress addr2;
+memcpy(addr2.bytes, buffer, 20);
+
+// Extract from 32-byte ABI encoded data
+uint8_t abi_data[32] = { /* ... */ };
+PrimitivesAddress addr3;
+memcpy(addr3.bytes, abi_data + 12, 20);  // Last 20 bytes
+
+// Convert to hex
+char hex_buf[43];  // 42 chars + null terminator
+primitives_address_to_hex(&addr, hex_buf);
+hex_buf[42] = '\0';
+```
+
+**Related Functions:**
+
+```c
+// Convert from hex string
+int primitives_address_from_hex(const char* hex, PrimitivesAddress* out_address);
+
+// Convert to hex string
+int primitives_address_to_hex(const PrimitivesAddress* address, char* buf);
+
+// Compare addresses
+bool primitives_address_equals(const PrimitivesAddress* a, const PrimitivesAddress* b);
+```
+
+**Defined in:** [c_api.zig:21](https://github.com/evmts/voltaire/blob/main/src/c_api.zig#L21)
 
 </Tab>
 </Tabs>

@@ -54,6 +54,34 @@ console.log(checksummed)
 **Defined in:** [primitives/Address/BrandedAddress/toChecksummed.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js#L15)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `address.toChecksummed(): Checksummed`
+
+Convert address to EIP-55 checksummed hex string using Effect.ts Schema API.
+
+**Returns:** `Checksummed` - Branded checksummed hex string
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/effect'
+
+const addr = Address.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = addr.toChecksummed()
+console.log(checksummed)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Type-safe checksummed address
+import { ChecksumAddress } from '@tevm/voltaire/effect'
+const checkAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+console.log(checkAddr.checksummed)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/effect.ts:115](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L115)
+
+</Tab>
 <Tab title="Zig">
 
 ## `address.toChecksummed(allocator: Allocator): ![]u8`
@@ -84,6 +112,38 @@ std.debug.print("{s}\n", .{checksummed});
 ```
 
 **Defined in:** [primitives/Address/address.zig:145](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L145)
+
+</Tab>
+<Tab title="C">
+
+## `int primitives_address_to_checksum_hex(const PrimitivesAddress* address, uint8_t* buf)`
+
+Convert address to EIP-55 checksummed hex string.
+
+**Parameters:**
+- `address: const PrimitivesAddress*` - Address to convert
+- `buf: uint8_t*` - Buffer for result (must be at least 42 bytes)
+
+**Returns:** `int` - `PRIMITIVES_SUCCESS` (0) on success, error code on failure
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+#include <stdio.h>
+
+PrimitivesAddress addr;
+// Initialize address from hex...
+
+uint8_t checksummed[42];
+int result = primitives_address_to_checksum_hex(&addr, checksummed);
+if (result == PRIMITIVES_SUCCESS) {
+    printf("%.*s\n", 42, checksummed);
+    // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+}
+```
+
+**Defined in:** [primitives.h:115](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L115)
 
 </Tab>
 </Tabs>

@@ -80,6 +80,108 @@ const slice: []const u8 = &addr.bytes;
 **Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
 
 </Tab>
+<Tab title="Effect.ts API">
+
+## `address.toBytes(): Uint8Array`
+
+Convert Address schema instance to plain Uint8Array. Returns a copy of the underlying bytes.
+
+**Returns:** `Uint8Array` - 20-byte array (unbranded)
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytes = addr.address // Access BrandedAddress directly
+
+// Convert to plain Uint8Array (copy)
+const plainBytes = new Uint8Array(addr.address)
+console.log(plainBytes.length) // 20
+console.log(plainBytes[0])     // 0x74
+```
+
+**Schema Encoding:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+import * as Schema from 'effect/Schema'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Get underlying bytes
+const bytes: Uint8Array = addr.address
+
+// Encode/decode with Schema.Uint8ArrayFromSelf
+const BytesSchema = Schema.Uint8ArrayFromSelf
+const encoded = Schema.encodeSync(BytesSchema)(bytes)
+```
+
+**Effect Schema Features:**
+- Access underlying BrandedAddress via `.address` property
+- Schema validates 20-byte length
+- Type-safe encoding/decoding
+- Integration with Effect's type system
+
+**Defined in:** [primitives/Address/effect.ts:37](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L37)
+
+</Tab>
+<Tab title="C">
+
+## `primitives_address_to_bytes(PrimitivesAddress address, uint8_t* out_bytes): void`
+
+Convert address to byte array in C. Copies 20 bytes to provided buffer.
+
+**Parameters:**
+- `address: PrimitivesAddress` - Address to convert
+- `out_bytes: uint8_t*` - Buffer for output bytes (must be at least 20 bytes)
+
+**Returns:** `void` - Bytes written to `out_bytes`
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <stdio.h>
+
+PrimitivesAddress addr;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr);
+
+// Copy to byte buffer
+uint8_t bytes[20];
+primitives_address_to_bytes(addr, bytes);
+
+// Access bytes
+printf("First byte: 0x%02x\n", bytes[0]);   // 0x74
+printf("Last byte: 0x%02x\n", bytes[19]);   // 0x3e
+
+// Direct access (PrimitivesAddress is array)
+printf("Direct: 0x%02x\n", addr.bytes[0]);  // 0x74
+```
+
+**Memory:**
+- No allocation - copies to provided buffer
+- Caller must ensure buffer is at least 20 bytes
+- Safe to use stack-allocated buffer
+
+**Direct Access:**
+
+Since `PrimitivesAddress` is a struct containing a 20-byte array, you can access bytes directly:
+
+```c
+PrimitivesAddress addr;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr);
+
+// Direct access (recommended)
+for (int i = 0; i < 20; i++) {
+    printf("%02x", addr.bytes[i]);
+}
+```
+
+**Defined in:** [primitives.h:146](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L146)
+
+</Tab>
 </Tabs>
 
 ## Memory Behavior

@@ -103,6 +103,112 @@ std.debug.print("{s}\n", .{short});
 **Defined in:** [primitives/Address/address.zig:175](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L175)
 
 </Tab>
+<Tab title="Effect.ts API">
+
+## `address.toShortHex(prefixLength?: number, suffixLength?: number): string`
+
+Returns shortened display format for addresses. Default shows first 6 and last 4 hex characters with ellipsis in between.
+
+**Parameters:**
+- `prefixLength?: number` - Characters after `0x` to show (default: 6)
+- `suffixLength?: number` - Characters at end to show (default: 4)
+
+**Returns:** `string` - Shortened address format
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Default: 6 + 4
+console.log(addr.toShortHex())
+// "0x742d35...1e3e"
+
+// Custom lengths
+console.log(addr.toShortHex(8, 6))
+// "0x742d35Cc...f51e3e"
+
+console.log(addr.toShortHex(4, 4))
+// "0x742d...1e3e"
+
+// Access underlying BrandedAddress
+const branded = addr.address // BrandedAddress Uint8Array
+
+// Works with Effect Schema composition
+import * as Schema from 'effect/Schema'
+
+class User extends Schema.Class<User>("User")({
+  address: Schema.instanceOf(Address),
+  name: Schema.String
+}) {
+  getDisplayAddress(): string {
+    return this.address.toShortHex()
+  }
+}
+```
+
+**Effect Schema Features:**
+- Instance methods work directly on Schema classes
+- Full validation with Effect Schema benefits
+- Compose with other Effect primitives
+
+**Defined in:** [primitives/Address/effect.ts:150](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L150)
+
+</Tab>
+<Tab title="C">
+
+## `char* address_to_short_hex(address_t address, uint8_t prefix_len, uint8_t suffix_len, allocator_t allocator)`
+
+Format address as shortened hex string with ellipsis. Caller must free returned string.
+
+**Parameters:**
+- `address: address_t` - Address to format (20 bytes)
+- `prefix_len: uint8_t` - Characters after `0x` to show
+- `suffix_len: uint8_t` - Characters at end to show
+- `allocator: allocator_t` - Memory allocator for result string
+
+**Returns:** `char*` - Shortened hex string (must be freed by caller)
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+address_t addr = address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", allocator);
+
+// Default: 6 + 4
+char* short_hex = address_to_short_hex(addr, 6, 4, allocator);
+printf("%s\n", short_hex);  // "0x742d35...1e3e"
+free(short_hex);
+
+// Custom lengths: 8 + 6
+char* custom = address_to_short_hex(addr, 8, 6, allocator);
+printf("%s\n", custom);  // "0x742d35Cc...f51e3e"
+free(custom);
+
+// Minimal: 4 + 4
+char* minimal = address_to_short_hex(addr, 4, 4, allocator);
+printf("%s\n", minimal);  // "0x742d...1e3e"
+free(minimal);
+
+// Full address if prefix + suffix >= 40
+char* full = address_to_short_hex(addr, 20, 20, allocator);
+printf("%s\n", full);  // Full checksummed address
+free(full);
+```
+
+**Memory Management:**
+- Result string allocated by provided allocator
+- Caller responsible for freeing returned string
+- Length: `2 + prefix_len + 3 + suffix_len + 1` bytes (including null terminator)
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>
 
 ## Format

@@ -55,6 +55,32 @@ console.log(hex)
 **Defined in:** [primitives/Address/BrandedAddress/toHex.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toHex.js#L13)
 
 </Tab>
+<Tab title="Effect.ts">
+
+## `address.toHex(): string`
+
+Convert address to lowercase hex string with `0x` prefix. Effect Schema API provides validation and type safety.
+
+**Returns:** `string` - Lowercase hex string (42 characters including `0x` prefix)
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire/Address/effect'
+
+const addr = Address.from(69n)
+console.log(addr.toHex())
+// "0x0000000000000000000000000000000000000045"
+
+// Always lowercase
+const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+console.log(addr2.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+**Defined in:** [primitives/Address/effect.ts:108](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L108)
+
+</Tab>
 <Tab title="Zig">
 
 ## `address.toHex(allocator: Allocator): ![]u8`
@@ -85,6 +111,40 @@ std.debug.print("{s}\n", .{hex});
 ```
 
 **Defined in:** [primitives/Address/address.zig:115](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L115)
+
+</Tab>
+<Tab title="C">
+
+## `primitives_address_to_hex(address: *const PrimitivesAddress, buf: [*]u8): c_int`
+
+Convert address to hex string with `0x` prefix. Buffer must be at least 42 bytes.
+
+**Parameters:**
+- `address: *const PrimitivesAddress` - Address to convert (20 bytes)
+- `buf: [*]u8` - Output buffer for hex string (must be at least 42 bytes)
+
+**Returns:** `c_int` - `PRIMITIVES_SUCCESS` (0) on success
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+#include <stdio.h>
+
+PrimitivesAddress addr = { .bytes = {
+    0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
+    0x29, 0x25, 0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75,
+    0x95, 0xf5, 0x1e, 0x3e
+}};
+
+char hex_buf[42];
+primitives_address_to_hex(&addr, hex_buf);
+
+printf("%.*s\n", 42, hex_buf);
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+**Defined in:** [c_api.zig:55](https://github.com/evmts/voltaire/blob/main/src/c_api.zig#L55)
 
 </Tab>
 </Tabs>
