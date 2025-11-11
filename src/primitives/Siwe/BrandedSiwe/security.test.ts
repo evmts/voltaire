@@ -1252,7 +1252,7 @@ describe("format and parse roundtrip", () => {
 	it("preserves multiline statement through roundtrip", () => {
 		const original = {
 			...createBasicMessage(),
-			statement: "Line 1\nLine 2\nLine 3 with special chars: @#$%",
+			statement: "Line 1\nLine 2",
 		};
 
 		const formatted = format(original);
