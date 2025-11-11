@@ -108,7 +108,7 @@ pub const Address = @import("Address/address.zig");
 pub const Hex = @import("Hex/Hex.zig");
 pub const Rlp = @import("Rlp/Rlp.zig");
 pub const Abi = @import("Abi/Abi.zig");
-pub const AbiEncoding = @import("abi/abi_encoding.zig");
+pub const AbiEncoding = @import("Abi/abi_encoding.zig");
 pub const Base64 = @import("base64.zig");
 
 // Utilities
