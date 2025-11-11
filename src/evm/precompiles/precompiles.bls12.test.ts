@@ -117,7 +117,7 @@ describe("BLS12-381 G1 Add (0x0b)", () => {
 	});
 
 	test("generator + identity = generator", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(256);
 		input.set(genBytes, 0);
@@ -127,7 +127,7 @@ describe("BLS12-381 G1 Add (0x0b)", () => {
 	});
 
 	test("identity + generator = generator", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(256);
 		input.set(genBytes, 128);
@@ -137,7 +137,7 @@ describe("BLS12-381 G1 Add (0x0b)", () => {
 	});
 
 	test("generator + generator = 2*generator", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const doubled = gen.double();
 		const doubledBytes = serializeG1Point(doubled);
@@ -150,7 +150,7 @@ describe("BLS12-381 G1 Add (0x0b)", () => {
 	});
 
 	test("generator + (-generator) = identity", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const neg = gen.negate();
 		const genBytes = serializeG1Point(gen);
 		const negBytes = serializeG1Point(neg);
@@ -233,7 +233,7 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 	});
 
 	test("generator * 0 = identity", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(160);
 		input.set(genBytes, 0);
@@ -243,7 +243,7 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 	});
 
 	test("generator * 1 = generator", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(160);
 		input.set(genBytes, 0);
@@ -254,7 +254,7 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 	});
 
 	test("generator * 2 = 2*generator", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const doubled = gen.double();
 		const doubledBytes = serializeG1Point(doubled);
@@ -267,7 +267,7 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 	});
 
 	test("generator * large scalar", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const scalar = 0x123456789abcdefn;
 		const expected = gen.multiply(scalar);
@@ -282,7 +282,7 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 	});
 
 	test("generator * max scalar", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(160);
 		input.set(genBytes, 0);
@@ -366,7 +366,7 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 	});
 
 	test("generator with scalar 1", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(160);
 		input.set(genBytes, 0);
@@ -377,7 +377,7 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 	});
 
 	test("generator with scalar 5", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const expected = gen.multiply(5n);
 		const expectedBytes = serializeG1Point(expected);
@@ -390,7 +390,7 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 	});
 
 	test("two generators with scalars 1 and 2", () => {
-		const gen = bls12_381.G1.ProjectivePoint.BASE;
+		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const expected = gen.multiply(3n);
 		const expectedBytes = serializeG1Point(expected);
@@ -474,7 +474,7 @@ describe("BLS12-381 G2 Add (0x0e)", () => {
 	});
 
 	test("generator + identity = generator", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const input = new Uint8Array(512);
 		input.set(genBytes, 0);
@@ -484,7 +484,7 @@ describe("BLS12-381 G2 Add (0x0e)", () => {
 	});
 
 	test("identity + generator = generator", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const input = new Uint8Array(512);
 		input.set(genBytes, 256);
@@ -494,7 +494,7 @@ describe("BLS12-381 G2 Add (0x0e)", () => {
 	});
 
 	test("generator + generator = 2*generator", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const doubled = gen.double();
 		const doubledBytes = serializeG2Point(doubled);
@@ -507,7 +507,7 @@ describe("BLS12-381 G2 Add (0x0e)", () => {
 	});
 
 	test("generator + (-generator) = identity", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const neg = gen.negate();
 		const genBytes = serializeG2Point(gen);
 		const negBytes = serializeG2Point(neg);
@@ -582,7 +582,7 @@ describe("BLS12-381 G2 Mul (0x0f)", () => {
 	});
 
 	test("generator * 0 = identity", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const input = new Uint8Array(288);
 		input.set(genBytes, 0);
@@ -592,7 +592,7 @@ describe("BLS12-381 G2 Mul (0x0f)", () => {
 	});
 
 	test("generator * 1 = generator", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const input = new Uint8Array(288);
 		input.set(genBytes, 0);
@@ -603,7 +603,7 @@ describe("BLS12-381 G2 Mul (0x0f)", () => {
 	});
 
 	test("generator * 2 = 2*generator", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const doubled = gen.double();
 		const doubledBytes = serializeG2Point(doubled);
@@ -616,7 +616,7 @@ describe("BLS12-381 G2 Mul (0x0f)", () => {
 	});
 
 	test("generator * large scalar", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const scalar = 0x123456789abcdefn;
 		const expected = gen.multiply(scalar);
@@ -702,7 +702,7 @@ describe("BLS12-381 G2 MSM (0x10)", () => {
 	});
 
 	test("generator with scalar 1", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const input = new Uint8Array(288);
 		input.set(genBytes, 0);
@@ -713,7 +713,7 @@ describe("BLS12-381 G2 MSM (0x10)", () => {
 	});
 
 	test("generator with scalar 5", () => {
-		const gen = bls12_381.G2.ProjectivePoint.BASE;
+		const gen = bls12_381.G2.Point.BASE;
 		const genBytes = serializeG2Point(gen);
 		const expected = gen.multiply(5n);
 		const expectedBytes = serializeG2Point(expected);
