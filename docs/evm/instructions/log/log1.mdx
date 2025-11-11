@@ -1,0 +1,518 @@
+---
+title: "LOG1 (0xa1)"
+description: "Emit log with 1 indexed topic"
+---
+
+## Overview
+
+**Opcode:** `0xa1`
+**Introduced:** Frontier (EVM genesis)
+
+LOG1 emits a log entry with one indexed topic. This is the most common form for single-parameter event filtering, used extensively in token transfer events and simple state changes.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top)
+length
+topic0
+```
+
+**Stack Output:**
+```
+(none)
+```
+
+**Gas Cost:** `375 + 375 + (8 × data_length) + memory_expansion_cost`
+
+**Operation:**
+```
+data = memory[offset : offset + length]
+topic = stack.pop()
+log_entry = { address: msg.sender, topics: [topic], data: data }
+append log_entry to logs
+```
+
+## Behavior
+
+LOG1 pops three values from the stack:
+
+1. **Offset**: Starting position in memory (256-bit value)
+2. **Length**: Number of bytes to read from memory (256-bit value)
+3. **Topic0**: First indexed parameter (256-bit value)
+
+The log entry contains one topic for efficient filtering while supporting arbitrary data.
+
+### Topic Values
+
+Topics are stored as full 256-bit values. For dynamic types (strings, arrays, structs), the keccak256 hash is used as the topic:
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+// Topic = keccak256("Transfer(address,indexed address,indexed uint256)")
+
+event Named(string indexed name);
+// Topic = keccak256(abi.encode(name))
+```
+
+### Memory Expansion
+
+Memory expands in 32-byte words beyond the current allocation, with associated gas costs.
+
+### Static Call Protection
+
+LOG1 cannot execute in static call context (EIP-214).
+
+## Examples
+
+### Basic Topic Logging
+
+```typescript
+import { handler_0xa1_LOG1 } from '@tevm/voltaire/evm/log';
+
+const frame = createFrame({
+  address: "0x1234567890123456789012345678901234567890",
+  stack: [
+    0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan,  // topic0
+    0n,  // length
+    0n,  // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+const err = handler_0xa1_LOG1(frame);
+console.log(err); // null (success)
+console.log(frame.logs[0].topics); // [0xaaa...aaan]
+console.log(frame.gasRemaining); // 999250n (1000000 - 375 base - 375 topic)
+```
+
+### Topic with Data
+
+```typescript
+const frame = createFrame({
+  address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  memory: new Map([
+    [0, 0x00], [1, 0x00], [2, 0x00], [3, 0x10],  // 16 in bytes
+  ]),
+  stack: [
+    0x1111111111111111111111111111111111111111111111111111111111111111n,
+    4n,    // length
+    0n,    // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+handler_0xa1_LOG1(frame);
+
+const log = frame.logs[0];
+console.log(log.topics); // [0x1111...1111n]
+console.log(log.data);   // Uint8Array(4) [0, 0, 0, 16]
+console.log(frame.gasRemaining); // 999633n (375 + 375 + 32 data + 3 memory)
+```
+
+### Solidity Transfer Event
+
+```solidity
+contract ERC20 {
+  event Transfer(address indexed from, address indexed to, uint256 value);
+
+  function transfer(address to, uint256 amount) public returns (bool) {
+    require(balances[msg.sender] >= amount);
+    balances[msg.sender] -= amount;
+    balances[to] += amount;
+
+    // Compiler generates LOG2 or LOG1 depending on indexed params
+    emit Transfer(msg.sender, to, amount);
+    return true;
+  }
+}
+```
+
+### Named Event Log
+
+```solidity
+event Named(string indexed name, string description);
+
+contract NameRegistry {
+  function register(string memory name, string memory description) public {
+    names[msg.sender] = name;
+    emit Named(name, description);
+    // LOG1: topic = keccak256(abi.encode(name))
+    //       data = abi.encode(description)
+  }
+}
+```
+
+### ID-Based Event
+
+```solidity
+event ItemCreated(uint256 indexed itemId);
+
+contract ItemFactory {
+  function create() public returns (uint256) {
+    uint256 id = nextId++;
+    items[id] = Item({ creator: msg.sender, timestamp: block.timestamp });
+    emit ItemCreated(id);  // LOG1 with itemId as topic
+    return id;
+  }
+}
+```
+
+## Gas Cost
+
+**Base Cost:** 375 gas
+
+**Topic Cost:** 375 gas (per topic, 1 for LOG1)
+
+**Data Cost:** 8 gas per byte
+
+**Memory Expansion:** Proportional to new memory range
+
+**Examples:**
+- Empty data: 375 + 375 = 750 gas
+- 1 byte: 750 + 8 = 758 gas
+- 32 bytes: 750 + 256 = 1006 gas
+- 64 bytes: 750 + 512 + 3 (memory expansion) = 1265 gas
+
+## Edge Cases
+
+### Topic Boundary Values
+
+```typescript
+const frame = createFrame({
+  stack: [
+    (1n << 256n) - 1n,  // Max uint256 topic
+    0n,                 // length
+    0n,                 // offset
+  ],
+  gasRemaining: 1000000n,
+});
+handler_0xa1_LOG1(frame);
+const log = frame.logs[0];
+console.log(log.topics[0]); // (1n << 256n) - 1n (preserved)
+```
+
+### Zero Topic
+
+```typescript
+const frame = createFrame({
+  stack: [0n, 0n, 0n],
+  gasRemaining: 1000000n,
+});
+handler_0xa1_LOG1(frame);
+const log = frame.logs[0];
+console.log(log.topics[0]); // 0n
+```
+
+### Large Data
+
+```typescript
+const frame = createFrame({
+  stack: [0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, 5000n, 0n],
+  gasRemaining: 100000n,
+});
+const err = handler_0xa1_LOG1(frame);
+// Gas: 750 + 40000 (data) = 40750, exceeds 100000 after memory expansion
+// Result: OutOfGas or success depending on memory costs
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame({ stack: [0n, 0n] });  // Missing topic
+const err = handler_0xa1_LOG1(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({
+  stack: [0x1111111111111111111111111111111111111111111111111111111111111111n, 0n, 0n],
+  gasRemaining: 749n,  // Not enough for base + topic cost
+});
+const err = handler_0xa1_LOG1(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Event Filtering in Contracts
+
+```solidity
+event LogIn(address indexed user);
+event LogOut(address indexed user);
+
+contract SessionManager {
+  mapping(address => bool) public isLoggedIn;
+
+  function login() public {
+    isLoggedIn[msg.sender] = true;
+    emit LogIn(msg.sender);  // LOG1: topic = msg.sender
+  }
+
+  function logout() public {
+    isLoggedIn[msg.sender] = false;
+    emit LogOut(msg.sender);  // LOG1: topic = msg.sender
+  }
+}
+```
+
+### Off-Chain Filtering
+
+```typescript
+// Listen for LogIn events from specific user
+const logs = await getLogs({
+  address: sessionManager.address,
+  topics: [
+    keccak256("LogIn(address)"),
+    "0x1234567890123456789012345678901234567890",
+  ]
+});
+
+// Returns only LogIn events where user matches the address
+```
+
+### State Change Events
+
+```solidity
+event Configured(uint256 indexed configId);
+
+contract ConfigManager {
+  function setConfig(uint256 id, bytes memory data) public {
+    configs[id] = data;
+    emit Configured(id);  // LOG1
+  }
+}
+```
+
+## Security
+
+### Topic Hashing
+
+For dynamic types, ensure consistent hashing:
+
+```solidity
+event DataLogged(bytes32 indexed dataHash);
+
+function logData(string memory data) public {
+  // Correct: topic is keccak256 of the data
+  emit DataLogged(keccak256(abi.encode(data)));
+}
+```
+
+### Static Call Context
+
+LOG1 reverts in view/pure functions:
+
+```solidity
+// WRONG: Reverts
+function badView(address user) external view {
+  emit LogIn(user);
+}
+
+// CORRECT: Use non-view function
+function actuallyLogin(address user) external {
+  emit LogIn(user);
+}
+```
+
+### Topic Value Limits
+
+Topics are stored as full 256-bit values. No truncation or padding:
+
+```solidity
+event LogSmallValue(uint8 indexed value);
+// Topic stores full 256-bit value, not just uint8
+// If value = 255, topic = 255n (with leading zeros)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * LOG1 opcode (0xa1) - Emit log with 1 indexed topic
+ */
+export function handler_0xa1_LOG1(frame: BrandedFrame): EvmError | null {
+  if (frame.isStatic) {
+    return { type: "WriteProtection" };
+  }
+
+  if (frame.stack.length < 3) {
+    return { type: "StackUnderflow" };
+  }
+
+  const offset = frame.stack.pop();
+  const length = frame.stack.pop();
+  const topic0 = frame.stack.pop();
+
+  if (offset > Number.MAX_SAFE_INTEGER || length > Number.MAX_SAFE_INTEGER) {
+    return { type: "OutOfBounds" };
+  }
+
+  const offsetNum = Number(offset);
+  const lengthNum = Number(length);
+
+  // Gas: 375 base + 375 topic + 8 per byte data
+  const logGas = 375n + 375n;
+  const dataGas = BigInt(lengthNum) * 8n;
+  const totalGas = logGas + dataGas;
+
+  // Memory expansion
+  if (lengthNum > 0) {
+    const endByte = offsetNum + lengthNum;
+    const newMemWords = Math.ceil(endByte / 32);
+    const newMemSize = newMemWords * 32;
+    const memExpansion = calculateMemoryExpansion(frame.memorySize, newMemSize);
+    frame.memorySize = newMemSize;
+    frame.gasRemaining -= BigInt(memExpansion);
+  }
+
+  frame.gasRemaining -= totalGas;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Read data
+  const data = new Uint8Array(lengthNum);
+  for (let i = 0; i < lengthNum; i++) {
+    data[i] = frame.memory.get(offsetNum + i) ?? 0;
+  }
+
+  // Create log entry
+  const logEntry = {
+    address: frame.address,
+    topics: [topic0],
+    data,
+  };
+
+  if (!frame.logs) frame.logs = [];
+  frame.logs.push(logEntry);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// LOG1 opcode (0xa1) - Emit log with 1 indexed topic
+pub fn log1(frame: *FrameType) FrameType.EvmError!void {
+    if (frame.is_static) return error.StaticCallViolation;
+
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+    const topic0 = try frame.popStack();
+
+    const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+    const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+    // Gas: 375 base + 375 per topic + 8 per data byte
+    const log_cost = 375 + 375 + @as(u64, length_u32) * 8;
+    try frame.consumeGas(log_cost);
+
+    if (length_u32 > 0) {
+        const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+        const aligned = wordAlignedSize(end_bytes);
+        if (aligned > frame.memory_size) frame.memory_size = aligned;
+    }
+
+    const evm = frame.getEvm();
+
+    // Read data
+    var data_slice: []u8 = &[_]u8{};
+    if (length_u32 > 0) {
+        const alloc = evm.arena.allocator();
+        const buf = try alloc.alloc(u8, length_u32);
+        var idx: u32 = 0;
+        while (idx < length_u32) : (idx += 1) {
+            buf[idx] = frame.readMemory(off_u32 + idx);
+        }
+        data_slice = buf;
+    }
+
+    // Create and append log
+    var topics_buf = try evm.arena.allocator().alloc(u256, 1);
+    topics_buf[0] = topic0;
+
+    const log_entry = call_result.Log{
+        .address = frame.address,
+        .topics = topics_buf,
+        .data = data_slice,
+    };
+
+    try evm.logs.append(evm.arena.allocator(), log_entry);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0xa1_LOG1 } from './0xa1_LOG1.js';
+
+describe('LOG1 (0xa1)', () => {
+  it('emits log with 1 topic and empty data', () => {
+    const topic = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan;
+    const frame = createFrame({
+      stack: [topic, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    const err = handler_0xa1_LOG1(frame);
+    expect(err).toBeNull();
+    expect(frame.logs).toHaveLength(1);
+    expect(frame.logs[0].topics).toEqual([topic]);
+    expect(frame.gasRemaining).toBe(999250n);
+  });
+
+  it('emits log with topic and data', () => {
+    const frame = createFrame({
+      memory: new Map([[0, 0xde], [1, 0xad]]),
+      stack: [0x1111n, 2n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa1_LOG1(frame);
+    const log = frame.logs[0];
+    expect(log.topics).toEqual([0x1111n]);
+    expect(log.data).toEqual(new Uint8Array([0xde, 0xad]));
+  });
+
+  it('returns WriteProtection in static context', () => {
+    const frame = createFrame({ isStatic: true, stack: [0n, 0n, 0n] });
+    const err = handler_0xa1_LOG1(frame);
+    expect(err).toEqual({ type: "WriteProtection" });
+  });
+
+  it('returns StackUnderflow with 2 items', () => {
+    const frame = createFrame({ stack: [0n, 0n] });
+    const err = handler_0xa1_LOG1(frame);
+    expect(err).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('handles max uint256 topic', () => {
+    const maxUint256 = (1n << 256n) - 1n;
+    const frame = createFrame({
+      stack: [maxUint256, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa1_LOG1(frame);
+    expect(frame.logs[0].topics[0]).toBe(maxUint256);
+  });
+});
+```
+
+## References
+
+- [LOG1 Instruction (evm.codes)](https://www.evm.codes/#a1)
+- [EIP-214: New opcode STATICCALL](https://eips.ethereum.org/EIPS/eip-214)
+- [Solidity Events with Indexed Parameters](https://docs.soliditylang.org/en/latest/contracts.html#events)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (Logging)
