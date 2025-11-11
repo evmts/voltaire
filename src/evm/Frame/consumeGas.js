@@ -7,8 +7,11 @@
  */
 export function consumeGas(frame, amount) {
 	// Ensure both values are bigint
-	const amountBigInt = typeof amount === 'bigint' ? amount : BigInt(amount);
-	const gasRemaining = typeof frame.gasRemaining === 'bigint' ? frame.gasRemaining : BigInt(frame.gasRemaining);
+	const amountBigInt = typeof amount === "bigint" ? amount : BigInt(amount);
+	const gasRemaining =
+		typeof frame.gasRemaining === "bigint"
+			? frame.gasRemaining
+			: BigInt(frame.gasRemaining);
 
 	if (gasRemaining < amountBigInt) {
 		frame.gasRemaining = 0n;

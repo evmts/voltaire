@@ -155,9 +155,7 @@ export namespace P256Wasm {
 
 		// Validate private key is in valid range [1, n-1]
 		if (!validatePrivateKey(privateKey)) {
-			throw new InvalidPrivateKeyError(
-				"Private key must be in range [1, n-1]",
-			);
+			throw new InvalidPrivateKeyError("Private key must be in range [1, n-1]");
 		}
 
 		try {
