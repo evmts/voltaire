@@ -53,6 +53,61 @@ Bytecode.validate(invalid)  // false
 **Defined in:** [primitives/Bytecode/BrandedBytecode/validate.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/validate.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `Bytecode.init(allocator: Allocator, code: []const u8) !Bytecode`
+
+Validation happens during initialization. Invalid bytecode returns an error.
+
+```zig
+const bytecode = @import("bytecode");
+const std = @import("std");
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Valid bytecode
+const valid = try bytecode.Bytecode.init(allocator, &[_]u8{ 0x60, 0x01 });
+defer valid.deinit(allocator);
+
+// Invalid bytecode (PUSH1 with no data) returns error
+const invalid = bytecode.Bytecode.init(allocator, &[_]u8{0x60}) catch |err| {
+    // Invalid bytecode
+};
+```
+
+**Defined in:** [src/primitives/Bytecode/root.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/root.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bytecode_t bytecode_init(const uint8_t* code, size_t code_len)`
+
+Validation happens during initialization. Invalid bytecode returns null.
+
+```c
+#include "voltaire.h"
+
+// Valid bytecode
+uint8_t code[] = {0x60, 0x01};
+bytecode_t bc = bytecode_init(code, 2);
+if (bc == NULL) {
+    // Invalid bytecode
+}
+bytecode_free(bc);
+
+// Invalid bytecode (PUSH1 with no data)
+uint8_t invalid[] = {0x60};
+bytecode_t bc_invalid = bytecode_init(invalid, 1);
+if (bc_invalid == NULL) {
+    // Invalid bytecode caught
+}
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>
 
 ## See Also

@@ -59,4 +59,55 @@ This method includes keccak256 in your bundle. Only import if needed.
 **Defined in:** [primitives/Bytecode/BrandedBytecode/hash.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hash.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `Hash.keccak256(data: []const u8) Hash`
+
+Compute keccak256 hash of bytecode.
+
+```zig
+const std = @import("std");
+const Hash = @import("Hash");
+const bytecode = @import("bytecode");
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const bc = try bytecode.Bytecode.init(allocator, &[_]u8{ 0x60, 0x01 });
+defer bc.deinit(allocator);
+
+const hash_result = Hash.keccak256(bc.code);
+std.debug.print("Hash: {}\n", .{std.fmt.fmtSliceHexLower(hash_result.bytes[0..])});
+```
+
+**Defined in:** [src/crypto/Hash/root.zig](https://github.com/evmts/voltaire/blob/main/src/crypto/Hash/root.zig)
+
+</Tab>
+<Tab title="C">
+
+## `hash_t bytecode_hash(bytecode_t bytecode)`
+
+Compute keccak256 hash of bytecode.
+
+```c
+#include "voltaire.h"
+
+uint8_t code[] = {0x60, 0x01};
+bytecode_t bc = bytecode_init(code, 2);
+
+hash_t hash_result = bytecode_hash(bc);
+printf("Hash: ");
+for (size_t i = 0; i < 32; i++) {
+    printf("%02x", hash_result.bytes[i]);
+}
+printf("\n");
+
+bytecode_free(bc);
+hash_free(hash_result);
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>

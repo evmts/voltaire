@@ -496,9 +496,14 @@ Pretty printing is optimized for readability over speed:
 Use `formatInstructions()` if performance is critical and visual output not needed.
 </Note>
 
+<Note>
+**TypeScript-only:** Pretty printing requires complex string formatting with ANSI colors and Unicode drawing. Use simpler APIs like `Scanner` in Zig for bytecode iteration.
+</Note>
+
 ## See Also
 
 - [formatInstructions](/primitives/bytecode/formatInstructions) - Simple array-based disassembly
 - [analyzeBlocks](/primitives/bytecode/analyze-blocks) - Block metadata used in output
 - [detectFusions](/primitives/bytecode/detect-fusions) - Fusion patterns annotated
 - [scan](/primitives/bytecode/scan) - Underlying iterator
+- [parseInstructions](/primitives/bytecode/parseInstructions) - Zig Scanner for iteration

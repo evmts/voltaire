@@ -70,6 +70,69 @@ const nextPc = getNextPc(code, 0);
 **Defined in:** [BrandedBytecode/getNextPc.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/getNextPc.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `getNextPc(bytecode: Bytecode, current_pc: usize) ?usize`
+
+Calculate the next program counter position after the instruction at `current_pc`.
+
+**Parameters:**
+- `bytecode: Bytecode` - Bytecode to analyze
+- `current_pc: usize` - Current program counter position
+
+**Returns:** `?usize` - Next PC, or null if at end of bytecode
+
+**Example:**
+
+```zig
+const primitives = @import("primitives");
+
+const code = try primitives.Bytecode.fromHex(allocator, "0x60016002015b00");
+defer code.deinit(allocator);
+
+if (code.getNextPc(0)) |next_pc| {
+    std.debug.print("Next PC: {}\n", .{next_pc}); // 2
+} else {
+    std.debug.print("At end of bytecode\n", .{});
+}
+```
+
+**Defined in:** [primitives/Bytecode/Bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bytecode_get_next_pc(bytecode_t bytecode, size_t current_pc, size_t *next_pc) bool`
+
+Calculate the next program counter position after the instruction at `current_pc`.
+
+**Parameters:**
+- `bytecode`: Bytecode to analyze
+- `current_pc`: Current program counter position
+- `next_pc`: Output parameter for next PC
+
+**Returns:** `bool` - true if next_pc is valid, false if at end
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+bytecode_t code = bytecode_from_hex("0x60016002015b00");
+size_t next_pc;
+
+if (bytecode_get_next_pc(code, 0, &next_pc)) {
+    printf("Next PC: %zu\n", next_pc); // 2
+} else {
+    printf("At end of bytecode\n");
+}
+
+bytecode_free(code);
+```
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>
 
 ## How It Works

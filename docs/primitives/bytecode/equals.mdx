@@ -59,4 +59,62 @@ console.log(equals(code1, code3))  // false
 **Defined in:** [primitives/Bytecode/BrandedBytecode/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/equals.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `std.mem.eql(u8, bc1.code, bc2.code) bool`
+
+Compare bytecode by directly comparing the underlying byte arrays.
+
+```zig
+const std = @import("std");
+const bytecode = @import("bytecode");
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const bc1 = try bytecode.Bytecode.init(allocator, &[_]u8{ 0x60, 0x01 });
+defer bc1.deinit(allocator);
+
+const bc2 = try bytecode.Bytecode.init(allocator, &[_]u8{ 0x60, 0x01 });
+defer bc2.deinit(allocator);
+
+const equal = std.mem.eql(u8, bc1.code, bc2.code);
+std.debug.print("{}\n", .{equal});  // true
+```
+
+**Defined in:** [src/primitives/Bytecode/root.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/root.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bool bytecode_equals(bytecode_t a, bytecode_t b)`
+
+Compare two bytecode instances for equality.
+
+```c
+#include "voltaire.h"
+
+uint8_t code1[] = {0x60, 0x01};
+uint8_t code2[] = {0x60, 0x01};
+uint8_t code3[] = {0x60, 0x02};
+
+bytecode_t bc1 = bytecode_init(code1, 2);
+bytecode_t bc2 = bytecode_init(code2, 2);
+bytecode_t bc3 = bytecode_init(code3, 2);
+
+bool equal1 = bytecode_equals(bc1, bc2);
+bool equal2 = bytecode_equals(bc1, bc3);
+
+printf("%d\n", equal1);  // 1 (true)
+printf("%d\n", equal2);  // 0 (false)
+
+bytecode_free(bc1);
+bytecode_free(bc2);
+bytecode_free(bc3);
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>

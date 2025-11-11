@@ -70,6 +70,43 @@ const analysis = analyzeGas(code);
 **Defined in:** [BrandedBytecode/analyzeGas.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeGas.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `Bytecode.analyzeGasTotal(): u64`
+
+Calculate total static gas cost for all bytecode.
+
+Sums gas costs of all opcodes, correctly handling PUSH instruction immediates.
+
+**Returns:** `u64` - Total gas cost
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+pub fn main() !void {
+  var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+  defer _ = gpa.deinit();
+  const allocator = gpa.allocator();
+
+  // PUSH1 1 (3 gas), PUSH1 2 (3 gas), ADD (3 gas) = 9 gas total
+  const code = "60016002015b00";
+
+  var bytecode = try Bytecode.init(allocator, code);
+  defer bytecode.deinit();
+
+  const total_gas = bytecode.analyzeGasTotal();
+  std.debug.print("Total gas: {}\n", .{total_gas});
+}
+```
+
+<Tip>
+For detailed instruction-level and path-level analysis, use the TypeScript API. Zig provides basic static gas cost calculation.
+</Tip>
+
+</Tab>
 </Tabs>
 
 ## GasAnalysis Type

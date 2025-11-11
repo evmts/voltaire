@@ -61,6 +61,55 @@ const instructions = Bytecode.parseInstructions(code)
 **Defined in:** [primitives/Bytecode/BrandedBytecode/parseInstructions.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
 
 </Tab>
+<Tab title="Zig">
+
+## Using Scanner for Instruction Iteration
+
+Parse bytecode instructions using the `Scanner` API. Provides efficient forward-only iteration through instructions.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x5b }; // PUSH1 1, PUSH1 2, ADD, JUMPDEST
+var bytecode = try Bytecode.init(allocator, &code);
+defer bytecode.deinit();
+
+// Create scanner from start
+var scanner = bytecode.scan(0, bytecode.len());
+
+// Collect all instructions
+var instructions = std.ArrayList(Instruction).init(allocator);
+defer instructions.deinit();
+
+while (scanner.next()) |inst| {
+    try instructions.append(inst);
+    std.debug.print("PC {}: opcode 0x{x:0>2}\n", .{ inst.pc, inst.opcode });
+}
+
+// Output:
+// PC 0: opcode 0x60 (PUSH1)
+// PC 2: opcode 0x60 (PUSH1)
+// PC 4: opcode 0x01 (ADD)
+// PC 5: opcode 0x5b (JUMPDEST)
+```
+
+**API:**
+- `Bytecode.scan(start: u32, end: u32) Scanner` - Create forward scanner
+- `Scanner.next() ?Instruction` - Advance to next instruction (null at end)
+- `Instruction.pc` - Program counter
+- `Instruction.opcode` - Opcode byte
+- `Instruction.pushData` - Push immediates (optional)
+
+**Defined in:** [primitives/Bytecode/bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig)
+
+</Tab>
 </Tabs>
 
 ## See Also

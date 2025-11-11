@@ -47,4 +47,55 @@ console.log(size(code))  // 2
 **Defined in:** [primitives/Bytecode/BrandedBytecode/size.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/size.js)
 
 </Tab>
+<Tab title="Zig">
+
+## `len(bytecode: Bytecode) usize`
+
+Get bytecode size in bytes.
+
+**Parameters:**
+- `bytecode: Bytecode` - Bytecode to measure
+
+**Returns:** `usize` - Size in bytes
+
+**Example:**
+
+```zig
+const primitives = @import("primitives");
+
+const code = try primitives.Bytecode.fromHex(allocator, "0x6001");
+defer code.deinit(allocator);
+
+const length = code.len();
+std.debug.print("Size: {}\n", .{length}); // 2
+```
+
+**Defined in:** [primitives/Bytecode/Bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bytecode_len(bytecode_t bytecode) size_t`
+
+Get bytecode size in bytes.
+
+**Parameters:**
+- `bytecode`: Bytecode to measure
+
+**Returns:** `size_t` - Size in bytes
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+bytecode_t code = bytecode_from_hex("0x6001");
+size_t length = bytecode_len(code);
+printf("Size: %zu\n", length); // 2
+bytecode_free(code);
+```
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>

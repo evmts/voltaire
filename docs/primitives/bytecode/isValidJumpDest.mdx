@@ -59,6 +59,60 @@ Bytecode.isValidJumpDest(code, 3)  // true  - JUMPDEST at end
 **Defined in:** [primitives/Bytecode/BrandedBytecode/isValidJumpDest.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/isValidJumpDest.js#L8)
 
 </Tab>
+<Tab title="Zig">
+
+## `isValidJumpDest(bytecode: Bytecode, pc: usize) bool`
+
+Check if specific position is valid JUMPDEST.
+
+**Parameters:**
+- `bytecode: Bytecode` - Bytecode to check
+- `pc: usize` - Program counter (position to check)
+
+**Returns:** `bool` - `true` if position is valid JUMPDEST
+
+**Example:**
+
+```zig
+const bc = try Bytecode.fromHex(allocator, "0x5b60005b");  // JUMPDEST, PUSH1 0x00, JUMPDEST
+
+const valid0 = bc.isValidJumpDest(0);  // true  - JUMPDEST at start
+const valid1 = bc.isValidJumpDest(1);  // false - PUSH1 opcode
+const valid2 = bc.isValidJumpDest(2);  // false - PUSH1 data
+const valid3 = bc.isValidJumpDest(3);  // true  - JUMPDEST at end
+```
+
+**Defined in:** [primitives/Bytecode/bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig)
+
+</Tab>
+<Tab title="C">
+
+## `bool bytecode_is_valid_jump_dest(bytecode_t bytecode, size_t pc)`
+
+Check if specific position is valid JUMPDEST.
+
+**Parameters:**
+- `bytecode: bytecode_t` - Bytecode to check
+- `pc: size_t` - Program counter (position to check)
+
+**Returns:** `bool` - `true` if position is valid JUMPDEST
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+
+bytecode_t bc = bytecode_from_hex("0x5b60005b", allocator);
+
+bool valid0 = bytecode_is_valid_jump_dest(bc, 0);  // true  - JUMPDEST at start
+bool valid1 = bytecode_is_valid_jump_dest(bc, 1);  // false - PUSH1 opcode
+bool valid2 = bytecode_is_valid_jump_dest(bc, 2);  // false - PUSH1 data
+bool valid3 = bytecode_is_valid_jump_dest(bc, 3);  // true  - JUMPDEST at end
+```
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
 </Tabs>
 
 ## See Also

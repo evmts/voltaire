@@ -77,6 +77,40 @@ analysis.instructions.forEach(inst => {
 **Defined in:** [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js#L22)
 
 </Tab>
+<Tab title="Zig">
+
+## `Bytecode.analyze()` - Zig Implementation
+
+In Zig, the Bytecode struct provides pre-analyzed jump destinations on initialization. Use `analyzeJumpDests` for jump destination analysis:
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+pub fn main() !void {
+  var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+  defer _ = gpa.deinit();
+  const allocator = gpa.allocator();
+
+  const code = try std.fmt.allocPrint(allocator, "60016002015b00", .{});
+  defer allocator.free(code);
+
+  var bytecode = try Bytecode.init(allocator, code);
+  defer bytecode.deinit();
+
+  // Check if position is valid JUMPDEST
+  const isJumpDest = bytecode.isValidJumpDest(4);
+
+  // Get opcode at position
+  const opcode = bytecode.getOpcode(0);
+}
+```
+
+<Tip>
+For full bytecode analysis (validation + instructions + jump destinations), use the TypeScript API. Zig version planned for future release.
+</Tip>
+
+</Tab>
 </Tabs>
 
 ## See Also

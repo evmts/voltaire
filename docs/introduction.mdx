@@ -13,7 +13,7 @@ Modern Ethereum primitives and cryptography for TypeScript and Zig. Built for pe
 
 ## Why Voltaire?
 
-Voltaire is a low-level Ethereum library focusing on primitives and cryptography. Unlike full-featured libraries (viem, ethers), Voltaire provides just the foundational building blocks.
+Voltaire is a low-level Ethereum library focusing on primitives and cryptography. Unlike full-featured libraries (viem, ethers), Voltaire provides just the foundational building blocks that allow humans and LLMs to build performant, reliable applications in TypeScript and Zig with ease.
 
 **Key differentiators:**
 
@@ -23,6 +23,7 @@ Voltaire is a low-level Ethereum library focusing on primitives and cryptography
 - **Type-safe** - Branded primitives prevent mixing incompatible types
 - **Audited crypto** - Defaults to @noble, blst, c-kzg (widely audited implementations)
 - **Data-first** - No classes required, works with plain Uint8Arrays
+- **Minimal bundle impact** - Uses Ox as peer dependency wherever possible, adding minimal size to codebases already using Ox-based libraries like viem
 
 ## Quick Example
 
@@ -40,6 +41,16 @@ console.log(Address.toChecksummed(recovered));
 // 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
 ```
 
+<Tip>
+**AI Agent Integration** - Use Voltaire with Claude and other AI agents via the [MCP server](https://voltaire.tevm.app/mcp):
+
+```bash
+claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
+```
+
+This enables AI assistants to directly query Voltaire documentation and examples.
+</Tip>
+
 ## What's Included
 
 <Columns>
@@ -49,99 +60,11 @@ console.log(Address.toChecksummed(recovered));
   <Card title="Cryptography" icon="lock">
     Keccak256, secp256k1, BLS12-381, BN254, Ed25519, KZG, P256, PBKDF2, Poseidon, RIPEMD-160, Schnorr, SHA-256, SHA-3, SHA-512, X25519
   </Card>
-  <Card title="Precompiles" icon="bolt">
-    All 21 EVM precompile implementations (ecRecover, SHA2-256, RIPEMD-160, identity, modexp, ecAdd, ecMul, ecPairing, Blake2f, point evaluation)
+  <Card title="JSON-RPC" icon="network-wired">
+    Complete JSON-RPC provider support for Ethereum nodes with type-safe request/response handling
+  </Card>
+  <Card title="EVM" icon="bolt">
+    Low-level EVM execution primitives: all 21 precompiles, opcode handlers, instruction execution, and more
   </Card>
 </Columns>
 
-## Dual API Design
-
-Voltaire offers two complementary APIs for the same data:
-
-**Class API** - Familiar OOP patterns:
-```typescript
-import { Address } from "@tevm/voltaire";
-const addr = new Address("0xa0cf...");
-addr.toChecksummed(); // "0xA0Cf..."
-```
-
-**Namespace API** - Tree-shakeable functional style:
-```typescript
-import { BrandedAddress } from "@tevm/voltaire/Address";
-const addr = BrandedAddress.fromHex("0xa0cf...");
-BrandedAddress.toChecksummed(addr); // "0xA0Cf..."
-```
-
-Both APIs operate on the same branded Uint8Arrays—choose based on your needs.
-
-## Architecture
-
-Voltaire uses **branded types**—native primitives (Uint8Array, bigint, string) with TypeScript compile-time tags:
-
-```typescript
-type Address = Uint8Array & { readonly __tag: "Address" };
-type Hash = Uint8Array & { readonly __brand: symbol };
-type Uint = bigint & { readonly __brand: symbol };
-```
-
-**Benefits:**
-- Zero runtime overhead (just primitives)
-- Type safety (prevents mixing incompatible types)
-- Natural serialization (no class unwrapping)
-- Seamless interop with other libraries
-
-## Performance
-
-- **Zero overhead abstractions** - Branded types compile to primitives
-- **Tree-shaking** - Bundle only what you use
-- **Optional WASM** - Zig-compiled WASM for crypto-heavy operations
-- **Constant-time ops** - Security-critical comparisons are timing-safe
-
-Keccak256 benchmarks (1MB input):
-- Native JS: ~45ms
-- WASM: ~8ms (5.6x faster)
-- Bundle impact: +12KB gzipped
-
-## Getting Started
-
-<CardGroup cols={2}>
-  <Card title="Quick Start" icon="rocket" href="/getting-started">
-    Install and build your first example in 5 minutes
-  </Card>
-  <Card title="Core Primitives" icon="cube" href="/primitives/address">
-    Deep dive into Address, Hash, Uint, Transaction, RLP, ABI
-  </Card>
-  <Card title="Cryptography" icon="lock" href="/crypto/keccak256">
-    Keccak256, secp256k1, signatures, and more
-  </Card>
-  <Card title="Concepts" icon="book" href="/concepts/branded-types">
-    Understand branded types and data-first architecture
-  </Card>
-</CardGroup>
-
-## Design Principles
-
-1. **Simple data structures** - Built on native JavaScript primitives
-2. **Close-to-spec APIs** - Minimal abstraction over Ethereum primitives
-3. **Built for humans and LLMs** - APIs designed for developers and AI assistants
-4. **Performance first** - Zero-overhead abstractions and optional WASM
-5. **Type safety** - Branded types prevent common mistakes
-6. **Tree-shakeable** - Pay only for what you use
-7. **Multi-language** - TypeScript and Zig implementations
-
-## What Voltaire Is Not
-
-- **Not an EVM** - No contract execution (see [guillotine](https://github.com/evmts/guillotine) for that)
-- **Not a compiler** - No Solidity compilation (see [@tevm/compiler](https://github.com/evmts/tevm-monorepo) for that)
-
-Voltaire focuses on primitives, cryptography, and network providers—the foundational layer other tools build on.
-
-## Community
-
-- [GitHub](https://github.com/evmts/voltaire) - Source code and issues
-- [Twitter](https://twitter.com/tevmtools) - Updates and announcements
-- [Telegram](https://t.me/tevmgroup) - Community discussion
-
-## License
-
-MIT

@@ -20,11 +20,32 @@ EVM defines 256 opcodes (0x00-0xFF):
 ### Synthetic Opcodes
 
 Synthetic opcodes extend this with virtual instructions for fusions:
+
+<Tabs>
+<Tab title="TypeScript">
 - 0x100: PUSH_ADD (PUSH+ADD fusion)
 - 0x101: PUSH_MUL (PUSH+MUL fusion)
 - 0x102: PUSH_JUMP (PUSH+JUMP fusion)
 - ...
 - 0x11F: FUNCTION_DISPATCH (function selector pattern)
+</Tab>
+<Tab title="Zig">
+```zig
+pub const FusionType = enum {
+    push_jump,
+    push_jumpi,
+    push_add,
+    push_mul,
+    push_sub,
+    push_div,
+    dup_swap,
+    swap_pop,
+    push_dup,
+    push_swap,
+};
+```
+</Tab>
+</Tabs>
 
 <Note>
 Synthetic opcodes are **compile-time abstractions**, not runtime instructions. They represent sequences of real opcodes detected during bytecode analysis.

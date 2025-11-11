@@ -63,6 +63,46 @@ EVM JUMP/JUMPI must target valid JUMPDEST opcodes. Bytes inside PUSH data that e
 **Defined in:** [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js#L22)
 
 </Tab>
+<Tab title="Zig">
+
+## Jump Destinations (Built-in)
+
+Jump destination analysis is automatically performed during `Bytecode.init()`. Valid JUMPDEST positions are available via the bytecode structure.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const code = [_]u8{ 0x60, 0x5b, 0x5b, 0x00 }; // PUSH1 0x5b, JUMPDEST, STOP
+var bytecode = try Bytecode.init(allocator, &code);
+defer bytecode.deinit();
+
+// Check if position is valid JUMPDEST
+if (bytecode.valid_jumpdests.contains(2)) {
+    std.debug.print("PC 2 is valid JUMPDEST\n", .{});
+}
+
+// Iterate all valid jump destinations
+var iter = bytecode.valid_jumpdests.keyIterator();
+while (iter.next()) |pc| {
+    std.debug.print("Valid JUMPDEST at PC {}\n", .{pc.*});
+}
+```
+
+**Notes:**
+- Jump destinations are pre-computed during initialization
+- Data bytes inside PUSH instructions are correctly excluded
+- Accessed via `bytecode.valid_jumpdests` set
+
+**Defined in:** [primitives/Bytecode/bytecode.zig:36](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig#L36)
+
+</Tab>
 </Tabs>
 
 ## See Also
