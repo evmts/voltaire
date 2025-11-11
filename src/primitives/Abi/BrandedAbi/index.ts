@@ -6,6 +6,7 @@ export * as Function from "../function/index.js";
 export * as Event from "../event/index.js";
 export * as Error from "../error/index.js";
 export * as Constructor from "../constructor/index.js";
+export * as Item from "../Item/index.js";
 
 import { decode } from "./decode.js";
 import { decodeData } from "./decodeData.js";
@@ -18,6 +19,7 @@ import * as FunctionNs from "../function/index.js";
 import * as EventNs from "../event/index.js";
 import * as ErrorNs from "../error/index.js";
 import * as ConstructorNs from "../constructor/index.js";
+import * as ItemNs from "../Item/index.js";
 
 import * as ConstructorNs from "../constructor/index.js";
 import * as ErrorNs from "../error/index.js";
@@ -72,4 +74,5 @@ export const BrandedAbi = {
 	Event: EventNs,
 	Error: ErrorNs,
 	Constructor: ConstructorNs,
+	Item: ItemNs,
 };

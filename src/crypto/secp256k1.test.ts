@@ -17,7 +17,7 @@ import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 
 // Load WASM before running tests
-await loadWasm(new URL("../wasm/primitives.wasm", import.meta.url));
+await loadWasm(new URL("../../wasm/primitives.wasm", import.meta.url));
 
 // Test vectors from Ethereum
 const TEST_PRIVATE_KEY = new Uint8Array([

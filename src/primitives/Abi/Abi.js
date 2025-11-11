@@ -44,6 +44,7 @@ Abi.Function = BrandedAbi.Function;
 Abi.Event = BrandedAbi.Event;
 Abi.Error = BrandedAbi.Error;
 Abi.Constructor = BrandedAbi.Constructor;
+Abi.Item = BrandedAbi.Item;
 
 // Set up Abi.prototype to inherit from Array.prototype
 Object.setPrototypeOf(Abi.prototype, Array.prototype);
