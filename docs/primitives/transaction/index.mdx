@@ -291,46 +291,39 @@ Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Tr
 
 ## API Methods
 
-<CardGroup>
-<Card title="Serialization" icon="file-code">
-RLP encoding and decoding for all transaction types
-[View serialization →](/primitives/transaction/serialize)
-</Card>
-<Card title="Hashing" icon="hashtag">
-Compute transaction hashes and signing hashes
-[View hashing →](/primitives/transaction/hash)
-</Card>
-<Card title="Signatures" icon="signature">
-Recover sender, verify signatures, and check signing status
-[View signatures →](/primitives/transaction/getSender)
-</Card>
-<Card title="Gas Pricing" icon="gas-pump">
-Calculate effective gas price and blob gas costs
-[View gas pricing →](/primitives/transaction/getGasPrice)
-</Card>
-<Card title="Access Lists" icon="list">
-Check and retrieve access list data
-[View access lists →](/primitives/transaction/hasAccessList)
-</Card>
-<Card title="Type Detection" icon="magnifying-glass">
-Detect transaction type from bytes
-[View type detection →](/primitives/transaction/detectType)
-</Card>
-<Card title="Utilities" icon="wrench">
-Format, extract chain ID, and helper functions
-[View utilities →](/primitives/transaction/format)
-</Card>
-</CardGroup>
+### Serialization
 
-### Core Methods
+- [serialize](serialize) - RLP encode transaction to bytes
+- [deserialize](deserialize) - RLP decode transaction from bytes
+- [detectType](detectType) - Detect transaction type from serialized bytes
 
-- **Serialization**: `serialize`, `deserialize`, `detectType`
-- **Hashing**: `hash`, `getSigningHash`
-- **Signatures**: `getSender`, `verifySignature`, `isSigned`, `assertSigned`
-- **Gas**: `getGasPrice`, `getEffectiveGasPrice`, `getBlobGasCost`
-- **Access Lists**: `hasAccessList`, `getAccessList`
-- **Chain**: `getChainId`
-- **Display**: `format`
+### Hashing
+
+- [hash](hash) - Compute transaction hash
+- [getSigningHash](getSigningHash) - Get hash to sign
+
+### Signatures
+
+- [getSender](getSender) - Recover sender address from signature
+- [verifySignature](verifySignature) - Validate transaction signature
+- [isSigned](isSigned) - Check if transaction is signed
+- [assertSigned](assertSigned) - Assert transaction is signed (throws if not)
+
+### Gas Pricing
+
+- [getGasPrice](getGasPrice) - Calculate effective gas price
+- [getEffectiveGasPrice](getEffectiveGasPrice) - Get effective gas price for EIP-1559
+- [getBlobGasCost](getBlobGasCost) - Calculate blob gas cost for EIP-4844
+
+### Access Lists
+
+- [hasAccessList](hasAccessList) - Check if transaction has access list
+- [getAccessList](getAccessList) - Retrieve access list data
+
+### Utilities
+
+- [getChainId](getChainId) - Extract chain ID from transaction
+- [format](format) - Format transaction for display
 
 ## Usage Patterns
 

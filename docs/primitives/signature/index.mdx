@@ -25,68 +25,24 @@ Signature provides algorithm-agnostic signature handling with automatic metadata
 
 ## Documentation
 
-<CardGroup>
-  <Card
-    title="Constructors"
-    icon="rocket"
-    href="./constructors">
-    Create signatures from components, DER, compact formats, or algorithm-specific constructors
-  </Card>
-  <Card
-    title="Conversions"
-    icon="arrow-right-arrow-left"
-    href="./conversions">
-    Convert between signature formats: compact, DER, RSV, and raw bytes
-  </Card>
-  <Card
-    title="Validation"
-    icon="check"
-    href="./validation">
-    Validate signatures, check canonicality, and prevent malleability attacks
-  </Card>
-  <Card
-    title="Recovery"
-    icon="key"
-    href="./recovery">
-    Recover public keys and addresses from secp256k1 signatures using recovery ID
-  </Card>
-  <Card
-    title="Utilities"
-    icon="wrench"
-    href="./utilities">
-    Extract components, compare signatures, and type guards
-  </Card>
-  <Card
-    title="Formats"
-    icon="table"
-    href="./formats">
-    Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098
-  </Card>
-  <Card
-    title="EIP-2098"
-    icon="file-contract"
-    href="./eip-2098">
-    Compact 64-byte format with embedded recovery ID for gas savings
-  </Card>
-  <Card
-    title="Usage Patterns"
-    icon="code"
-    href="./usage-patterns">
-    Real-world examples: Ethereum transactions, EIP-712, personal_sign
-  </Card>
-  <Card
-    title="WASM"
-    icon="bolt"
-    href="./wasm">
-    WASM-accelerated signature operations for improved performance
-  </Card>
-  <Card
-    title="Branded Type"
-    icon="tag"
-    href="./branded-signature">
-    Type definition and metadata structure
-  </Card>
-</CardGroup>
+### Core Operations
+
+- [constructors](constructors) - Create signatures from components, DER, compact formats, or algorithm-specific constructors
+- [conversions](conversions) - Convert between signature formats: compact, DER, RSV, and raw bytes
+- [validation](validation) - Validate signatures, check canonicality, and prevent malleability attacks
+- [recovery](recovery) - Recover public keys and addresses from secp256k1 signatures using recovery ID
+- [utilities](utilities) - Extract components, compare signatures, and type guards
+
+### Formats
+
+- [formats](formats) - Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098
+- [eip-2098](eip-2098) - Compact 64-byte format with embedded recovery ID for gas savings
+
+### Advanced
+
+- [usage-patterns](usage-patterns) - Real-world examples: Ethereum transactions, EIP-712, personal_sign
+- [wasm](wasm) - WASM-accelerated signature operations for improved performance
+- [branded-signature](branded-signature) - Type definition and metadata structure
 
 ## Signature Format Comparison
 

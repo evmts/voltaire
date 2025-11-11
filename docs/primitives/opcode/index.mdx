@@ -580,14 +580,41 @@ Each parser, categorization check, and disassembly function is independently exp
 PUSH Data Skipping: When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These bytes must be skipped during parsing - they are data, not opcodes. The `parse()` and `jumpDests()` functions handle this correctly.
 </Warning>
 
-## API Documentation
+## API Reference
 
-- [Reference Guide](/primitives/opcode/reference-guide) - Complete opcode reference with execution traces, stack diagrams, and examples
-- [Constructors](/primitives/opcode/constructors) - Opcode constants, bytecode parsing, and jump destination analysis
-- [Validation](/primitives/opcode/validation) - Opcode validation, category checks, and jump destination verification
-- [Utilities](/primitives/opcode/utilities) - Metadata, stack effects, gas costs, and disassembly utilities
-- [Usage Patterns](/primitives/opcode/usage-patterns) - Real-world bytecode analysis, gas estimation, and pattern detection
-- [WASM Implementation](/primitives/opcode/wasm) - Performance analysis - why WASM is not implemented (pure TS is faster)
+### Core
+
+- [info](./info) - Get complete opcode metadata (gas cost, stack effects, name)
+- [name](./name) - Get opcode mnemonic name (PUSH1, ADD, etc.)
+- [isValid](./is-valid) - Check if byte is valid opcode
+- [parse](./parse) - Parse bytecode into instructions
+- [disassemble](./disassemble) - Disassemble bytecode to human-readable strings
+- [format](./format) - Format instruction as human-readable string
+
+### Categorization
+
+- [isPush](./is-push) - Check if opcode is PUSH1-PUSH32
+- [pushBytes](./push-bytes) - Get number of immediate bytes for PUSH opcode
+- [pushOpcode](./push-opcode) - Get PUSH opcode for given byte count
+- [isDup](./is-dup) - Check if opcode is DUP1-DUP16
+- [dupPosition](./dup-position) - Get stack position for DUP opcode (1-16)
+- [isSwap](./is-swap) - Check if opcode is SWAP1-SWAP16
+- [swapPosition](./swap-position) - Get stack position for SWAP opcode (1-16)
+
+### Jump Analysis
+
+- [jumpDests](./jump-dests) - Find all valid JUMPDEST positions in bytecode
+- [isValidJumpDest](./is-valid-jump-dest) - Check if offset is valid JUMPDEST
+
+### Documentation
+
+- [Reference Guide](./reference-guide) - Complete opcode reference with execution traces and stack diagrams
+- [Fundamentals](./fundamentals) - Learn stack machine architecture, gas costs, and patterns
+- [Usage Patterns](./usage-patterns) - Real-world bytecode analysis and gas estimation
+- [Constructors](./constructors) - Opcode constants and construction utilities
+- [Validation](./validation) - Opcode validation and category checks
+- [Utilities](./utilities) - Metadata, stack effects, and gas cost utilities
+- [WASM Implementation](./wasm) - Performance analysis (pure TS is faster)
 
 ## Related Types
 
