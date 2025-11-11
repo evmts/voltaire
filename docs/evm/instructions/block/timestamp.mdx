@@ -1,0 +1,473 @@
+---
+title: "TIMESTAMP (0x42)"
+description: "Get the current block's Unix timestamp in seconds"
+---
+
+## Overview
+
+**Opcode:** `0x42`
+**Introduced:** Frontier (EVM genesis)
+
+TIMESTAMP retrieves the Unix timestamp of the current block in seconds since epoch (January 1, 1970 00:00:00 UTC). Block producers set this value when creating blocks, subject to consensus rules.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+timestamp (Unix seconds as u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.timestamp)
+```
+
+## Behavior
+
+TIMESTAMP pushes the block timestamp as a 256-bit unsigned integer representing seconds since Unix epoch:
+
+```
+Block Time: 2024-03-15 14:30:00 UTC
+Timestamp:  1710513000 (seconds since epoch)
+As u256:    0x65f3f858
+```
+
+### Consensus Rules
+
+**Pre-Merge (PoW):**
+- Miners could manipulate ±15 seconds
+- Must be greater than parent timestamp
+- Limited by network propagation
+
+**Post-Merge (PoS):**
+- Strictly enforced to `12 * slot_number + genesis_time`
+- More predictable and regular
+- 12-second slot times on Ethereum mainnet
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { timestamp } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  blockContext: {
+    block_timestamp: 1710513000n // March 15, 2024
+  }
+});
+
+const err = timestamp(frame);
+console.log(frame.stack); // [1710513000n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Time-Based Calculations
+
+```typescript
+// Calculate time elapsed
+const START_TIME = 1700000000n; // Some past timestamp
+
+timestamp(frame);
+const currentTime = frame.stack[0];
+const elapsed = currentTime - START_TIME;
+
+console.log(`Seconds elapsed: ${elapsed}`);
+console.log(`Days elapsed: ${elapsed / 86400n}`);
+```
+
+### Timestamp Comparison
+
+```typescript
+// Check if deadline passed
+const DEADLINE = 1710600000n;
+
+timestamp(frame);
+const now = frame.stack[0];
+const isPastDeadline = now >= DEADLINE;
+
+console.log(`Deadline passed: ${isPastDeadline}`);
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+TIMESTAMP is one of the cheapest operations in the EVM.
+
+**Comparison:**
+- `TIMESTAMP`: 2 gas
+- `NUMBER`, `COINBASE`, `DIFFICULTY`, `GASLIMIT`: 2 gas
+- `BLOCKHASH`: 20 gas
+- `SLOAD` (cold): 2100 gas
+
+## Common Usage
+
+### Time Locks
+
+```solidity
+contract TimeLock {
+    uint256 public unlockTime;
+
+    constructor(uint256 lockDuration) {
+        unlockTime = block.timestamp + lockDuration;
+    }
+
+    function withdraw() external {
+        require(block.timestamp >= unlockTime, "Still locked");
+        // Withdrawal logic
+    }
+}
+```
+
+### Vesting Schedules
+
+```solidity
+contract VestingWallet {
+    uint256 public start;
+    uint256 public duration;
+    uint256 public totalAmount;
+
+    function vestedAmount() public view returns (uint256) {
+        if (block.timestamp < start) return 0;
+        if (block.timestamp >= start + duration) return totalAmount;
+
+        uint256 elapsed = block.timestamp - start;
+        return (totalAmount * elapsed) / duration;
+    }
+}
+```
+
+### Auction Deadlines
+
+```solidity
+contract Auction {
+    uint256 public auctionEnd;
+
+    constructor(uint256 duration) {
+        auctionEnd = block.timestamp + duration;
+    }
+
+    function bid() external payable {
+        require(block.timestamp < auctionEnd, "Auction ended");
+        // Bidding logic
+    }
+
+    function finalize() external {
+        require(block.timestamp >= auctionEnd, "Auction still active");
+        // Finalization logic
+    }
+}
+```
+
+### Cooldown Mechanisms
+
+```solidity
+contract WithCooldown {
+    mapping(address => uint256) public lastAction;
+    uint256 public constant COOLDOWN = 1 hours;
+
+    function action() external {
+        require(
+            block.timestamp >= lastAction[msg.sender] + COOLDOWN,
+            "Cooldown active"
+        );
+
+        lastAction[msg.sender] = block.timestamp;
+        // Execute action
+    }
+}
+```
+
+### Time-Window Operations
+
+```solidity
+contract TimeWindow {
+    uint256 public windowStart;
+    uint256 public windowEnd;
+
+    function isInWindow() public view returns (bool) {
+        return block.timestamp >= windowStart &&
+               block.timestamp < windowEnd;
+    }
+
+    modifier onlyDuringWindow() {
+        require(isInWindow(), "Outside time window");
+        _;
+    }
+
+    function limitedOperation() external onlyDuringWindow {
+        // Only callable during window
+    }
+}
+```
+
+## Security Considerations
+
+### Timestamp Manipulation
+
+Block producers can manipulate timestamps within bounds:
+
+```solidity
+// VULNERABLE: Exact timestamp checks
+require(block.timestamp == expectedTime); // Can be gamed by ±15 seconds
+
+// SAFER: Range checks with margin
+require(
+    block.timestamp >= startTime &&
+    block.timestamp <= endTime
+);
+```
+
+### Not Suitable for Randomness
+
+Timestamps are predictable and should not be used for randomness:
+
+```solidity
+// DANGEROUS: Predictable randomness
+function badRandom() public view returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(block.timestamp)));
+}
+
+// BETTER: Use Chainlink VRF or commit-reveal
+```
+
+### Short Time Windows
+
+Avoid time windows shorter than block time:
+
+```solidity
+// PROBLEMATIC: 1-second window
+require(block.timestamp == targetTime); // Only one block can match
+
+// BETTER: Reasonable window (minutes/hours)
+require(
+    block.timestamp >= targetTime &&
+    block.timestamp < targetTime + 1 hours
+);
+```
+
+### Overflow Considerations
+
+Timestamps will overflow u256 in ~10^60 years (not a practical concern):
+
+```solidity
+// No overflow risk in practice
+uint256 futureTime = block.timestamp + 100 years;
+```
+
+### Backwards Time Travel
+
+While rare, timestamp must be > parent timestamp:
+
+```solidity
+// Generally safe, but be aware edge cases exist
+contract TimeSensitive {
+    uint256 public lastSeen;
+
+    function update() external {
+        // Could theoretically fail if timestamp < lastSeen
+        // (e.g., chain reorg with earlier timestamp)
+        require(block.timestamp > lastSeen, "Time went backwards");
+        lastSeen = block.timestamp;
+    }
+}
+```
+
+### Pre vs Post-Merge Differences
+
+```solidity
+contract TimingAware {
+    // Pre-merge: ±15 second manipulation possible
+    // Post-merge: Predictable 12-second slots
+
+    function checkTiming() external view {
+        // Post-merge: Can predict timestamp from slot
+        // slot = (timestamp - genesis_time) / 12
+
+        // Pre-merge: Less predictable
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// TIMESTAMP opcode (0x42) - Get block timestamp
+pub fn timestamp(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(evm.block_context.block_timestamp);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * TIMESTAMP opcode (0x42) - Get block timestamp
+ */
+export function timestamp(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push timestamp to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(frame.evm.blockContext.block_timestamp);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Zero Timestamp
+
+```typescript
+// Timestamp = 0 (theoretically genesis, not practical)
+const frame = createFrame({
+  blockContext: { block_timestamp: 0n }
+});
+
+timestamp(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Far Future Timestamp
+
+```typescript
+// Year 2100 timestamp
+const frame = createFrame({
+  blockContext: { block_timestamp: 4102444800n }
+});
+
+timestamp(frame);
+console.log(frame.stack); // [4102444800n]
+```
+
+### Post-Merge Slot Calculation
+
+```typescript
+// Post-merge: timestamp = genesis_time + (slot * 12)
+const GENESIS_TIME = 1606824023n; // Beacon chain genesis
+const SLOT = 1000000n;
+const timestamp = GENESIS_TIME + (SLOT * 12n);
+
+const frame = createFrame({
+  blockContext: { block_timestamp: timestamp }
+});
+
+timestamp(frame);
+console.log(frame.stack); // [calculated timestamp]
+```
+
+### Stack Overflow
+
+```typescript
+// Stack full (1024 items)
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  blockContext: { block_timestamp: 1710513000n }
+});
+
+const err = timestamp(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 1n,
+  blockContext: { block_timestamp: 1710513000n }
+});
+
+const err = timestamp(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Practical Patterns
+
+### Safe Time Ranges
+
+```solidity
+contract SafeTimeRange {
+    uint256 constant MARGIN = 15; // Account for timestamp manipulation
+
+    function isInRange(uint256 start, uint256 end) public view returns (bool) {
+        return block.timestamp + MARGIN >= start &&
+               block.timestamp <= end + MARGIN;
+    }
+}
+```
+
+### Relative Time Checks
+
+```solidity
+contract RelativeTime {
+    uint256 public creationTime;
+
+    constructor() {
+        creationTime = block.timestamp;
+    }
+
+    function daysSinceCreation() public view returns (uint256) {
+        return (block.timestamp - creationTime) / 1 days;
+    }
+}
+```
+
+### Timestamp to Date Conversion
+
+```solidity
+// Off-chain: Convert Unix timestamp to readable date
+// timestamp = 1710513000
+// -> March 15, 2024 14:30:00 UTC
+
+// On-chain: Work with seconds directly
+uint256 constant SECONDS_PER_DAY = 86400;
+uint256 daysSinceEpoch = timestamp / SECONDS_PER_DAY;
+```
+
+## Benchmarks
+
+**Performance:**
+- Stack push: O(1)
+- No computation required
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[NUMBER (0x43)](/evm/instructions/block/number)** - Get block number
+- **[BLOCKHASH (0x40)](/evm/instructions/block/blockhash)** - Get block hash
+- **[DIFFICULTY (0x44)](/evm/instructions/block/difficulty)** - Get difficulty/PREVRANDAO
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Block Information)
+- [EVM Codes - TIMESTAMP](https://www.evm.codes/#42)
+- [Solidity Docs - block.timestamp](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [Consensys Best Practices - Timestamp Dependence](https://consensys.github.io/smart-contract-best-practices/development-recommendations/solidity-specific/timestamp-dependence/)
