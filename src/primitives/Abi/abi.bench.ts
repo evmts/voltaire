@@ -5,8 +5,11 @@
  */
 
 import { Address } from "../Address/index.js";
-import type { Item } from "./Item.js";
-import type { BrandedError } from "./error/BrandedError.js";
+import type { BrandedItem as Item } from "./Item/index.js";
+import type { BrandedError } from "./error/BrandedError/BrandedError.js";
+import type { Function as AbiFunction } from "./function/BrandedFunction/BrandedFunction.js";
+import type { Event as AbiEvent } from "./event/BrandedEvent/BrandedEvent.js";
+import * as Parameter from "./parameter/index.js";
 import * as Abi from "./index.js";
 
 // Helper to work around strict type checking in benchmarks
@@ -75,7 +78,7 @@ const transferFunc = {
 		{ type: "uint256", name: "amount" },
 	],
 	outputs: [{ type: "bool", name: "" }],
-} as const satisfies Abi.Function.Function;
+} as const satisfies AbiFunction;
 
 const balanceOfFunc = {
 	type: "function",
@@ -83,7 +86,7 @@ const balanceOfFunc = {
 	stateMutability: "view",
 	inputs: [{ type: "address", name: "account" }],
 	outputs: [{ type: "uint256", name: "" }],
-} as const satisfies Abi.Function.Function;
+} as const satisfies AbiFunction;
 
 const complexFunc = {
 	type: "function",
@@ -108,7 +111,7 @@ const complexFunc = {
 		},
 	],
 	outputs: [],
-} as const satisfies Abi.Function.Function;
+} as const satisfies AbiFunction;
 
 const transferEvent = {
 	type: "event",
@@ -118,16 +121,16 @@ const transferEvent = {
 		{ type: "address", name: "to", indexed: true },
 		{ type: "uint256", name: "value", indexed: false },
 	],
-} as const satisfies Abi.Event.Event;
+} as const satisfies AbiEvent;
 
 const insufficientBalanceError = {
 	type: "error",
 	name: "InsufficientBalance",
 	inputs: [
-		{ type: "uint256", name: "available" },
-		{ type: "uint256", name: "required" },
+		Parameter.from({ type: "uint256", name: "available" }),
+		Parameter.from({ type: "uint256", name: "required" }),
 	],
-} as const satisfies BrandedError;
+} satisfies BrandedError;
 
 const results: BenchmarkResult[] = [];
 results.push(
@@ -199,7 +202,10 @@ results.push(
 		const error = {
 			type: "error" as const,
 			name: "InsufficientBalance",
-			inputs: [{ type: "uint256" }, { type: "uint256" }] as const,
+			inputs: [
+				Parameter.from({ type: "uint256" }),
+				Parameter.from({ type: "uint256" }),
+			],
 		};
 		return Abi.Error.getSelector(error);
 	}),
@@ -412,26 +418,8 @@ results.push(
 );
 
 // Calculate statistics
-const allOpsPerSec = results.map((r) => r.opsPerSec);
-const avgOps = allOpsPerSec.reduce((a, b) => a + b, 0) / allOpsPerSec.length;
-const maxOps = Math.max(...allOpsPerSec);
-const minOps = Math.min(...allOpsPerSec);
 const sortedResults = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sortedResults.slice(0, 5).forEach((r, i) => {});
-
-// Encoding vs Decoding comparison
-const encodingOps = results
-	.filter((r) => r.name.includes("encode"))
-	.map((r) => r.opsPerSec);
-const decodingOps = results
-	.filter((r) => r.name.includes("decode"))
-	.map((r) => r.opsPerSec);
-if (encodingOps.length > 0 && decodingOps.length > 0) {
-	const avgEncoding =
-		encodingOps.reduce((a, b) => a + b, 0) / encodingOps.length;
-	const avgDecoding =
-		decodingOps.reduce((a, b) => a + b, 0) / decodingOps.length;
-}
+sortedResults.slice(0, 5).forEach(() => {});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

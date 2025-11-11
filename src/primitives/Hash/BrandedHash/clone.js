@@ -1,14 +1,16 @@
 /**
  * Clone hash
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @param {import('./BrandedHash.js').BrandedHash} hash - Hash to clone
  * @returns {import('./BrandedHash.js').BrandedHash} New hash with same value
- *
+ * @throws {never}
  * @example
- * ```js
- * const hash = Hash('0x1234...');
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
+ * const hash = Hash.from('0x1234...');
  * const copy = Hash.clone(hash);
- * const copy2 = hash.clone(); // Same result
  * ```
  */
 export function clone(hash) {

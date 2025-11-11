@@ -2304,7 +2304,11 @@ export function eventLogMatchesAddress(
 		// Write filter addresses as contiguous array
 		const filterPtr = malloc(filterAddresses.length * 20);
 		for (let i = 0; i < filterAddresses.length; i++) {
-			writeBytes(filterAddresses[i]!, filterPtr + i * 20);
+			const addr = filterAddresses[i];
+			if (!addr) {
+				throw new Error(`Filter address at index ${i} is undefined`);
+			}
+			writeBytes(addr, filterPtr + i * 20);
 		}
 
 		const result = exports.primitives_eventlog_matches_address(
@@ -2372,7 +2376,11 @@ export function eventLogMatchesTopics(
 		// Write log topics as contiguous array
 		const logTopicsPtr = malloc(logTopics.length * 32);
 		for (let i = 0; i < logTopics.length; i++) {
-			writeBytes(logTopics[i]!, logTopicsPtr + i * 32);
+			const topic = logTopics[i];
+			if (!topic) {
+				throw new Error(`Log topic at index ${i} is undefined`);
+			}
+			writeBytes(topic, logTopicsPtr + i * 32);
 		}
 
 		// Write filter topics
@@ -2387,11 +2395,11 @@ export function eventLogMatchesTopics(
 		for (let i = 0; i < filterTopics.length; i++) {
 			const filterTopic = filterTopics[i];
 			const idx = filterNullsPtr / 4 + i;
-			if (filterTopic === null) {
+			if (filterTopic === null || filterTopic === undefined) {
 				memory[idx] = 1;
 			} else {
 				memory[idx] = 0;
-				writeBytes(filterTopic!, filterTopicsPtr + i * 32);
+				writeBytes(filterTopic, filterTopicsPtr + i * 32);
 			}
 		}
 

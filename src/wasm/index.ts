@@ -11,11 +11,10 @@ import { Hash as HashClass, keccak256 as keccak256Fn, eip191HashMessage as eip19
 
 // Bytecode operations
 import {
-	type JumpDestination,
 	analyzeJumpDestinations as analyzeJumpDestinationsFn,
 	isBytecodeBoundary as isBytecodeBoundaryFn,
 	isValidJumpDest as isValidJumpDestFn,
-	validateBytecode as validateBytecodeFn,
+	validate as validateBytecodeFn,
 } from "../primitives/Bytecode/Bytecode.wasm.js";
 
 // Hash algorithms
@@ -72,7 +71,7 @@ import { generatePrivateKey as generatePrivateKeyFn, compressPublicKey as compre
 // Re-export all with original names
 export { AddressClass as Address };
 export { HashClass as Hash, keccak256Fn as keccak256, eip191HashMessageFn as eip191HashMessage };
-export { type JumpDestination, analyzeJumpDestinationsFn as analyzeJumpDestinations, isBytecodeBoundaryFn as isBytecodeBoundary, isValidJumpDestFn as isValidJumpDest, validateBytecodeFn as validateBytecode };
+export { analyzeJumpDestinationsFn as analyzeJumpDestinations, isBytecodeBoundaryFn as isBytecodeBoundary, isValidJumpDestFn as isValidJumpDest, validateBytecodeFn as validateBytecode };
 export { sha256Fn as sha256, ripemd160Fn as ripemd160, blake2bFn as blake2b, solidityKeccak256Fn as solidityKeccak256, soliditySha256Fn as soliditySha256 };
 export { hexToBytesFn as hexToBytes, bytesToHexFn as bytesToHex };
 export { rlpEncodeBytesFn as rlpEncodeBytes, rlpEncodeUintFn as rlpEncodeUint, rlpEncodeUintFromBigIntFn as rlpEncodeUintFromBigInt, rlpToHexFn as rlpToHex, rlpFromHexFn as rlpFromHex };

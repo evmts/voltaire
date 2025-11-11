@@ -10,9 +10,18 @@ import type { Lowercase } from "./BrandedAddress/LowercaseAddress.js";
 import type { Uppercase } from "./BrandedAddress/UppercaseAddress.js";
 
 /**
- * Create Address from hex string
+ * Create Address from hex string (WASM implementation)
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 20-byte Address
+ * @throws {Error} If hex format is invalid
+ * @example
+ * ```typescript
+ * import * as Address from './primitives/Address/Address.wasm.js';
+ * const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * ```
  */
 export function fromHex(hex: string): BrandedAddress {
 	return loader.addressFromHex(hex) as BrandedAddress;

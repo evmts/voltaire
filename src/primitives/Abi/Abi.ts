@@ -52,7 +52,7 @@ export * as BrandedAbi from "./BrandedAbi/index.js";
 import type { Fallback, Receive } from "./Item/index.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
 import type { BrandedError } from "./error/index.js";
-import type { Event } from "./event/index.js";
+import type { Event } from "./event/BrandedEvent/BrandedEvent.js";
 import type { BrandedFunction } from "./function/index.js";
 
 /**

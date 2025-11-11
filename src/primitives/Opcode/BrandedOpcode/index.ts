@@ -1,5 +1,5 @@
 // Re-export branded type
-export type { BrandedOpcode, Instruction, Info } from "./BrandedOpcode.js";
+export * from "./BrandedOpcode.js";
 
 // Export constants
 export * from "./constants.js";

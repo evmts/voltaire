@@ -1,5 +1,5 @@
 import type { BrandedAbi, Item } from "./BrandedAbi/BrandedAbi.js";
-import type * as AbiConstructor from "./constructor/index.js";
+import type * as AbiConstructorNs from "./constructor/index.js";
 import type * as AbiError from "./error/index.js";
 import type * as AbiEvent from "./event/index.js";
 import type * as AbiFunction from "./function/index.js";
@@ -21,10 +21,12 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	parseLogs(logs: any[]): any[];
 
 	// Convenience getters for specific item types
-	getFunction(name: string): AbiFunction.Function | undefined;
-	getEvent(name: string): AbiEvent.Event | undefined;
+	getFunction(name: string): AbiFunction.BrandedFunction | undefined;
+	getEvent(
+		name: string,
+	): import("./event/BrandedEvent/BrandedEvent.js").Event | undefined;
 	getError(name: string): AbiError.BrandedError | undefined;
-	getConstructor(): AbiConstructor.BrandedConstructor | undefined;
+	getConstructor(): AbiConstructorNs.BrandedConstructor | undefined;
 	getFallback(): any;
 	getReceive(): any;
 }
@@ -60,7 +62,7 @@ export interface AbiConstructor {
 	Function: typeof AbiFunction;
 	Event: typeof AbiEvent;
 	Error: typeof AbiError;
-	Constructor: typeof AbiConstructor;
+	Constructor: typeof AbiConstructorNs;
 
 	prototype: Abi;
 }

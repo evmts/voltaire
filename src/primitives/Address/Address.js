@@ -262,9 +262,20 @@ Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
 /**
- * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address
- * @param {bigint} nonce
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Calculates the CREATE contract address (keccak256(rlp([sender, nonce]))[12:32])
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address - Deployer address
+ * @param {bigint} nonce - Account nonce at deployment
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @throws {never} Never throws - accepts any valid inputs
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const deployer = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const contractAddr = Address.calculateCreateAddress(deployer, 42n);
+ * ```
  */
 Address.calculateCreateAddress = (address, nonce) => {
 	const result = BrandedAddress.calculateCreateAddress(address, nonce);
@@ -273,10 +284,23 @@ Address.calculateCreateAddress = (address, nonce) => {
 };
 
 /**
- * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address
- * @param {bigint | Uint8Array} salt
- * @param {Uint8Array} initCode
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * Calculates the CREATE2 contract address (keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32])
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address - Deployer address
+ * @param {bigint | Uint8Array} salt - 32-byte salt value
+ * @param {Uint8Array} initCode - Contract initialization code
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @throws {never} Never throws - accepts any valid inputs
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const deployer = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const salt = new Uint8Array(32);
+ * const initCode = new Uint8Array([0x60, 0x80, ...]);
+ * const contractAddr = Address.calculateCreate2Address(deployer, salt, initCode);
+ * ```
  */
 Address.calculateCreate2Address = (address, salt, initCode) => {
 	const result = BrandedAddress.calculateCreate2Address(
@@ -334,9 +358,20 @@ Address.prototype.equals = BrandedAddress.equals.call.bind(
 	BrandedAddress.equals,
 );
 /**
+ * Instance method to calculate CREATE contract address from this address
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
- * @param {bigint} nonce
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @param {bigint} nonce - Account nonce at deployment
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const deployer = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const contractAddr = deployer.calculateCreateAddress(42n);
+ * ```
  */
 Address.prototype.calculateCreateAddress = function (nonce) {
 	const result = BrandedAddress.calculateCreateAddress(
@@ -349,10 +384,23 @@ Address.prototype.calculateCreateAddress = function (nonce) {
 	return result;
 };
 /**
+ * Instance method to calculate CREATE2 contract address from this address
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
- * @param {bigint | Uint8Array} salt
- * @param {Uint8Array} initCode
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @param {bigint | Uint8Array} salt - 32-byte salt value
+ * @param {Uint8Array} initCode - Contract initialization code
+ * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const deployer = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const salt = new Uint8Array(32);
+ * const initCode = new Uint8Array([0x60, 0x80]);
+ * const contractAddr = deployer.calculateCreate2Address(salt, initCode);
+ * ```
  */
 Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(
@@ -367,10 +415,21 @@ Address.prototype.calculateCreate2Address = function (salt, initCode) {
 };
 
 /**
+ * Custom Node.js inspect formatter for Address instances
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
- * @param {number} _depth
- * @param {object} _options
- * @returns {string}
+ * @param {number} _depth - Inspection depth (unused)
+ * @param {object} _options - Inspection options (unused)
+ * @returns {string} Formatted string representation
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * console.log(addr); // Address(0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb)
+ * ```
  */
 Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	_depth,
@@ -384,8 +443,19 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 };
 
 /**
+ * Converts Address to string representation
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
- * @returns {string}
+ * @returns {string} String representation of address
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.js';
+ * const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * console.log(addr.toString()); // Address(0x742d35cc6634c0532925a3b844bc9e7595f0beb)
+ * ```
  */
 Address.prototype.toString = function () {
 	return `Address(${BrandedAddress.toHex(

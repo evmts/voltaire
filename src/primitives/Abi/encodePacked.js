@@ -58,6 +58,50 @@ export function encodePacked(types, values) {
  * @returns {Uint8Array} Encoded bytes (no padding)
  */
 function encodePackedValue(type, value) {
+	// Arrays - check this FIRST before other type checks
+	// because "uint256[]" starts with "uint" but should be handled as array
+	if (type.endsWith("[]")) {
+		const elementType = type.slice(0, -2);
+		const array = /** @type {unknown[]} */ (value);
+		const parts = [];
+		for (const item of array) {
+			parts.push(encodePackedValue(elementType, item));
+		}
+		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const part of parts) {
+			result.set(part, offset);
+			offset += part.length;
+		}
+		return result;
+	}
+
+	// Fixed arrays - also check early
+	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+	if (fixedArrayMatch) {
+		const elementType = fixedArrayMatch[1];
+		const length = Number.parseInt(fixedArrayMatch[2]);
+		const array = /** @type {unknown[]} */ (value);
+		if (array.length !== length) {
+			throw new AbiEncodingError(
+				`Invalid ${type} length: expected ${length}, got ${array.length}`,
+			);
+		}
+		const parts = [];
+		for (const item of array) {
+			parts.push(encodePackedValue(elementType, item));
+		}
+		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const part of parts) {
+			result.set(part, offset);
+			offset += part.length;
+		}
+		return result;
+	}
+
 	// Address - 20 bytes, no padding
 	if (type === "address") {
 		const addr = typeof value === "string" ? Address.fromHex(value) : value;
@@ -103,8 +147,15 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("uint")) {
 		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
 		const bytes = bits / 8;
-		const bigintValue =
-			typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
+		let bigintValue;
+		if (typeof value === "number") {
+			bigintValue = BigInt(value);
+		} else if (typeof value === "bigint") {
+			bigintValue = value;
+		} else {
+			// Convert string or other types to BigInt
+			bigintValue = BigInt(value);
+		}
 
 		// Convert to bytes (big-endian)
 		const result = new Uint8Array(bytes);
@@ -120,8 +171,15 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("int")) {
 		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
 		const bytes = bits / 8;
-		const bigintValue =
-			typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
+		let bigintValue;
+		if (typeof value === "number") {
+			bigintValue = BigInt(value);
+		} else if (typeof value === "bigint") {
+			bigintValue = value;
+		} else {
+			// Convert string or other types to BigInt
+			bigintValue = BigInt(value);
+		}
 
 		// Convert to two's complement if negative
 		const unsigned =
@@ -133,51 +191,6 @@ function encodePackedValue(type, value) {
 		for (let i = bytes - 1; i >= 0; i--) {
 			result[i] = Number(v & 0xffn);
 			v >>= 8n;
-		}
-		return result;
-	}
-
-	// Arrays - concatenate encoded elements
-	if (type.endsWith("[]")) {
-		const elementType = type.slice(0, -2);
-		const array = /** @type {unknown[]} */ (value);
-		const parts = [];
-		for (const item of array) {
-			parts.push(encodePackedValue(elementType, item));
-		}
-		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
-		const result = new Uint8Array(totalLength);
-		let offset = 0;
-		for (const part of parts) {
-			result.set(part, offset);
-			offset += part.length;
-		}
-		return result;
-	}
-
-	// Fixed arrays
-	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
-		const elementType = fixedArrayMatch[1];
-		const arraySize = Number.parseInt(fixedArrayMatch[2]);
-		const array = /** @type {unknown[]} */ (value);
-
-		if (array.length !== arraySize) {
-			throw new AbiEncodingError(
-				`Array length mismatch: expected ${arraySize}, got ${array.length}`,
-			);
-		}
-
-		const parts = [];
-		for (const item of array) {
-			parts.push(encodePackedValue(elementType, item));
-		}
-		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
-		const result = new Uint8Array(totalLength);
-		let offset = 0;
-		for (const part of parts) {
-			result.set(part, offset);
-			offset += part.length;
 		}
 		return result;
 	}

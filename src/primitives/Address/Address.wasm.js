@@ -41,12 +41,14 @@ import {
 /**
  * Universal factory for Address - accepts multiple input types
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {number | bigint | string | Uint8Array} value - Value to convert
  * @returns {BrandedAddress} Address bytes
  * @throws {InvalidValueError} If value type is unsupported
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const addr1 = Address.from("0x742d35Cc...");
  * const addr2 = Address.from(new Uint8Array(20));
  * const addr3 = Address.from(123n);
@@ -68,13 +70,15 @@ export function from(value) {
 /**
  * Parse hex string to Address (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string with 0x prefix
  * @returns {BrandedAddress} Address bytes
  * @throws {InvalidHexFormatError} If invalid format or length
  * @throws {InvalidHexStringError} If hex contains invalid characters
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
  * ```
  */
@@ -96,12 +100,14 @@ export function fromHex(hex) {
 /**
  * Create Address from 20-byte buffer
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {Uint8Array} bytes - 20-byte buffer
  * @returns {BrandedAddress} Address bytes
  * @throws {InvalidAddressLengthError} If not exactly 20 bytes
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const bytes = new Uint8Array(20);
  * const addr = Address.fromBytes(bytes);
  * ```
@@ -116,11 +122,14 @@ export function fromBytes(bytes) {
 /**
  * Create Address from number or bigint (right-padded to 20 bytes)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {number | bigint} value - Numeric value
  * @returns {BrandedAddress} Address bytes
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const addr = Address.fromNumber(123n);
  * ```
  */
@@ -138,12 +147,15 @@ export function fromNumber(value) {
 /**
  * Derive Address from secp256k1 public key coordinates (keccak256(pubkey)[12:32])
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {bigint} x - X coordinate
  * @param {bigint} y - Y coordinate
  * @returns {BrandedAddress} Address bytes
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const addr = Address.fromPublicKey(xCoord, yCoord);
  * ```
  */
@@ -174,12 +186,14 @@ export function fromPublicKey(x, y) {
 /**
  * Decode Address from ABI-encoded bytes (left-padded to 32 bytes)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {Uint8Array} value - ABI-encoded address (32 bytes)
  * @returns {BrandedAddress} Address bytes
  * @throws {InvalidAddressLengthError} If not 32 bytes
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const abiEncoded = new Uint8Array(32); // 12 zero bytes + 20 address bytes
  * const addr = Address.fromAbiEncoded(abiEncoded);
  * ```
@@ -198,11 +212,14 @@ export function fromAbiEncoded(value) {
 /**
  * Convert Address to lowercase hex string (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
  * @returns {import('../Hex/index.js').BrandedHex} Lowercase hex string with 0x prefix
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const hex = Address.toHex(addr);
  * // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
  * ```
@@ -216,11 +233,14 @@ export function toHex(address) {
 /**
  * Convert Address to EIP-55 checksummed hex string (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
  * @returns {import('./ChecksumAddress.js').ChecksumAddress} Checksummed hex string
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const checksummed = Address.toChecksummed(addr);
  * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
  * ```
@@ -234,11 +254,14 @@ export function toChecksummed(address) {
 /**
  * Convert Address to lowercase hex string
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
  * @returns {import('./LowercaseAddress.js').LowercaseAddress} Lowercase hex string
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const lower = Address.toLowercase(addr);
  * ```
  */
@@ -251,11 +274,14 @@ export function toLowercase(address) {
 /**
  * Convert Address to uppercase hex string
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
  * @returns {import('./UppercaseAddress.js').UppercaseAddress} Uppercase hex string
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const upper = Address.toUppercase(addr);
  * ```
  */
@@ -268,11 +294,14 @@ export function toUppercase(address) {
 /**
  * Convert Address to Uint256 representation (left-padded to 32 bytes)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
  * @returns {import('../Uint/index.js').BrandedUint256} Uint256 bytes
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const u256 = Address.toU256(addr);
  * ```
  */
@@ -285,11 +314,14 @@ export function toU256(address) {
 /**
  * Encode Address for ABI (left-padded to 32 bytes)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to encode
  * @returns {Uint8Array} ABI-encoded address (32 bytes)
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const encoded = Address.toAbiEncoded(addr);
  * ```
  */
@@ -302,11 +334,14 @@ export function toAbiEncoded(address) {
 /**
  * Convert Address to abbreviated hex string (0x1234...5678)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to format
  * @returns {string} Abbreviated hex string
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const short = Address.toShortHex(addr);
  * // "0x742d...51e3"
  * ```
@@ -323,11 +358,14 @@ export function toShortHex(address) {
 /**
  * Check if Address is zero address (0x0000...0000) (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} address - Address to check
  * @returns {boolean} True if zero address
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.isZero(addr)) { ... }
  * ```
  */
@@ -338,12 +376,15 @@ export function isZero(address) {
 /**
  * Compare two addresses for equality (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} a - First address
  * @param {BrandedAddress} b - Second address
  * @returns {boolean} True if equal
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.equals(addr1, addr2)) { ... }
  * ```
  */
@@ -354,11 +395,14 @@ export function equals(a, b) {
 /**
  * Validate hex string format (40 hex chars, optional 0x prefix)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string to validate
  * @returns {boolean} True if valid format
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.isValid("0x742d35...")) { ... }
  * ```
  */
@@ -372,11 +416,14 @@ export function isValid(hex) {
 /**
  * Validate EIP-55 checksum (WASM accelerated)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {string} hex - Hex string to validate
  * @returns {boolean} True if checksum is valid
- *
+ * @throws {never} Never throws - returns false on errors
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.isValidChecksum("0x742d35Cc...")) { ... }
  * ```
  */
@@ -391,11 +438,14 @@ export function isValidChecksum(hex) {
 /**
  * Type guard for Address
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {unknown} value - Value to check
  * @returns {value is BrandedAddress} True if valid Address
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.is(value)) { ... }
  * ```
  */
@@ -406,12 +456,15 @@ export function is(value) {
 /**
  * Lexicographic comparison of two addresses
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} a - First address
  * @param {BrandedAddress} b - Second address
  * @returns {-1 | 0 | 1} -1 if a < b, 0 if equal, 1 if a > b
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const result = Address.compare(addr1, addr2);
  * ```
  */
@@ -426,12 +479,15 @@ export function compare(a, b) {
 /**
  * Check if first address is less than second
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} a - First address
  * @param {BrandedAddress} b - Second address
  * @returns {boolean} True if a < b
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.lessThan(addr1, addr2)) { ... }
  * ```
  */
@@ -442,12 +498,15 @@ export function lessThan(a, b) {
 /**
  * Check if first address is greater than second
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} a - First address
  * @param {BrandedAddress} b - Second address
  * @returns {boolean} True if a > b
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * if (Address.greaterThan(addr1, addr2)) { ... }
  * ```
  */
@@ -463,12 +522,15 @@ export function greaterThan(a, b) {
  * Calculate CREATE contract address (WASM accelerated)
  * Formula: keccak256(rlp([sender, nonce]))[12:32]
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} sender - Deployer address
  * @param {number} nonce - Account nonce
  * @returns {BrandedAddress} Computed contract address
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const contractAddr = Address.calculateCreateAddress(sender, 42);
  * ```
  */
@@ -481,13 +543,16 @@ export function calculateCreateAddress(sender, nonce) {
  * Calculate CREATE2 contract address (WASM accelerated)
  * Formula: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @param {BrandedAddress} sender - Deployer address
  * @param {Uint8Array} salt - 32-byte salt
  * @param {Uint8Array} initCode - Contract initialization code
  * @returns {BrandedAddress} Computed contract address
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const salt = new Uint8Array(32);
  * const initCode = new Uint8Array([0x60, 0x80, ...]);
  * const contractAddr = Address.calculateCreate2Address(sender, salt, initCode);
@@ -505,10 +570,13 @@ export function calculateCreate2Address(sender, salt, initCode) {
 /**
  * Zero address constant
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @returns {BrandedAddress} Zero address (0x0000...0000)
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Address from './primitives/Address/Address.wasm.js';
  * const zeroAddr = Address.zero();
  * ```
  */
@@ -521,9 +589,19 @@ export function zero() {
 // ============================================================================
 
 /**
- * Factory function for creating Address instances
+ * Factory function for creating Address instances (WASM implementation)
  *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
  * @type {AddressConstructor}
+ * @param {number | bigint | string | Uint8Array} value - Value to convert
+ * @returns {BrandedAddress} Address instance
+ * @throws {Error} If value format is invalid
+ * @example
+ * ```javascript
+ * import { Address } from './primitives/Address/Address.wasm.js';
+ * const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * ```
  */
 export function Address(value) {
 	return from(value);
