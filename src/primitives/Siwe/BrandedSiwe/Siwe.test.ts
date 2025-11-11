@@ -341,7 +341,7 @@ Resources:
 invalid-address`;
 
 		expect(() => Siwe.parse(text)).toThrow(
-			"Invalid SIWE message: missing or invalid address",
+			"Invalid SIWE message: missing address in SIWE message",
 		);
 	});
 

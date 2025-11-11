@@ -411,10 +411,11 @@ describe("Secp256k1.verify", () => {
 			const valid = verify(signature, message, publicKey);
 			expect(valid).toBe(true);
 
-			// Wrong v should fail
+			// v is only used for recovery, not verification with known pubkey
+			// Different v should still verify with correct pubkey
 			const wrongV = { ...signature, v: signature.v === 27 ? 28 : 27 };
-			const invalidV = verify(wrongV, message, publicKey);
-			expect(invalidV).toBe(false);
+			const stillValid = verify(wrongV, message, publicKey);
+			expect(stillValid).toBe(true);
 		});
 	});
 });
