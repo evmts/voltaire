@@ -266,9 +266,38 @@
 						"primitives/hardfork/fundamentals",
 						"primitives/hardfork/branded-hardfork",
 						"primitives/hardfork/hardforks",
-						"primitives/hardfork/features",
-						"primitives/hardfork/comparisons",
-						"primitives/hardfork/utilities",
+						{
+							"group": "Comparison Methods",
+							"pages": [
+								"primitives/hardfork/compare",
+								"primitives/hardfork/is-at-least",
+								"primitives/hardfork/is-before",
+								"primitives/hardfork/is-after",
+								"primitives/hardfork/is-equal",
+								"primitives/hardfork/gte",
+								"primitives/hardfork/lte",
+								"primitives/hardfork/gt"
+							]
+						},
+						{
+							"group": "Feature Detection",
+							"pages": [
+								"primitives/hardfork/has-eip1559",
+								"primitives/hardfork/has-eip3855",
+								"primitives/hardfork/has-eip4844",
+								"primitives/hardfork/has-eip1153",
+								"primitives/hardfork/is-post-merge"
+							]
+						},
+						{
+							"group": "Collection Operations",
+							"pages": [
+								"primitives/hardfork/all-names",
+								"primitives/hardfork/all-ids",
+								"primitives/hardfork/range",
+								"primitives/hardfork/to-string"
+							]
+						},
 						"primitives/hardfork/usage-patterns",
 						"primitives/hardfork/wasm"
 					]
@@ -295,12 +324,33 @@
 						"primitives/hex/index",
 						"primitives/hex/fundamentals",
 						"primitives/hex/branded-hex",
-						"primitives/hex/constructors",
-						"primitives/hex/conversions",
-						"primitives/hex/validation",
-						"primitives/hex/manipulation",
-						"primitives/hex/sizing",
-						"primitives/hex/utilities",
+						"primitives/hex/from",
+						"primitives/hex/from-bytes",
+						"primitives/hex/from-number",
+						"primitives/hex/from-bigint",
+						"primitives/hex/from-string",
+						"primitives/hex/from-boolean",
+						"primitives/hex/random",
+						"primitives/hex/zero",
+						"primitives/hex/to-bytes",
+						"primitives/hex/to-number",
+						"primitives/hex/to-bigint",
+						"primitives/hex/to-string",
+						"primitives/hex/to-boolean",
+						"primitives/hex/is-hex",
+						"primitives/hex/validate",
+						"primitives/hex/is-sized",
+						"primitives/hex/assert-size",
+						"primitives/hex/concat",
+						"primitives/hex/slice",
+						"primitives/hex/pad",
+						"primitives/hex/pad-right",
+						"primitives/hex/trim",
+						"primitives/hex/xor",
+						"primitives/hex/size",
+						"primitives/hex/equals",
+						"primitives/hex/clone",
+						"primitives/hex/usage-patterns",
 						"primitives/hex/wasm"
 					]
 				},

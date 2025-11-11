@@ -44,36 +44,46 @@ const size = Hex.size(hex);
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create hex from bytes, numbers, strings, and booleans
-[View constructors →](./from)
-</Card>
-<Card title="Conversions" icon="arrow-right-arrow-left">
-Convert to bytes, numbers, bigints, strings, and booleans
-[View conversions →](./toBytes)
-</Card>
-<Card title="Validation" icon="check">
-Validate hex format, check sizes, and type guards
-[View validation →](./isHex)
-</Card>
-<Card title="Manipulation" icon="scissors">
-Concat, slice, pad, trim, and XOR operations
-[View manipulation →](./concat)
-</Card>
-<Card title="Utilities" icon="wrench">
-Size, equals, random, zero, and clone utilities
-[View utilities →](./size)
-</Card>
-</CardGroup>
+### Constructors
 
-### Methods Reference
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromBytes(bytes)`](./from-bytes) - Create from Uint8Array
+- [`fromNumber(value, size?)`](./from-number) - Create from number with optional padding
+- [`fromBigInt(value, size?)`](./from-bigint) - Create from bigint with optional padding
+- [`fromString(value)`](./from-string) - Create from UTF-8 string
+- [`fromBoolean(value)`](./from-boolean) - Create from boolean (0x00 or 0x01)
+- [`random(size)`](./random) - Generate cryptographically secure random hex
+- [`zero(size)`](./zero) - Create zero-filled hex
 
-- **Constructors**: `from`, `fromBytes`, `fromNumber`, `fromBigInt`, `fromString`, `fromBoolean`
-- **Conversions**: `toBytes`, `toNumber`, `toBigInt`, `toString`, `toBoolean`
-- **Validation**: `isHex`, `validate`, `isSized`, `assertSize`
-- **Manipulation**: `concat`, `slice`, `pad`, `padRight`, `trim`, `xor`
-- **Utilities**: `size`, `equals`, `random`, `zero`, `clone`
+### Conversions
+
+- [`toBytes(hex)`](./to-bytes) - Convert to Uint8Array
+- [`toNumber(hex)`](./to-number) - Convert to number (safe up to MAX_SAFE_INTEGER)
+- [`toBigInt(hex)`](./to-bigint) - Convert to bigint (arbitrary precision)
+- [`toString(hex)`](./to-string) - Convert to UTF-8 string
+- [`toBoolean(hex)`](./to-boolean) - Convert to boolean (non-zero check)
+
+### Validation
+
+- [`isHex(value)`](./is-hex) - Type guard checking if value is valid hex
+- [`validate(value)`](./validate) - Validate hex format and throw on error
+- [`isSized(hex, size)`](./is-sized) - Check if hex has specific byte size
+- [`assertSize(hex, size)`](./assert-size) - Assert hex size, throw on mismatch
+
+### Manipulation
+
+- [`concat(...hexes)`](./concat) - Concatenate multiple hex strings
+- [`slice(hex, start?, end?)`](./slice) - Extract portion by byte indices
+- [`pad(hex, size)`](./pad) - Left-pad with zeros to target size
+- [`padRight(hex, size)`](./pad-right) - Right-pad with zeros to target size
+- [`trim(hex)`](./trim) - Remove leading zero bytes
+- [`xor(a, b)`](./xor) - Bitwise XOR of two hex strings
+
+### Utilities
+
+- [`size(hex)`](./size) - Get byte length
+- [`equals(a, b)`](./equals) - Compare hex equality (case-insensitive)
+- [`clone(hex)`](./clone) - Create a copy of hex string
 
 
 ## Types

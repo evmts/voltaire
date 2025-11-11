@@ -99,115 +99,44 @@ console.log(txHash.equals(verifyHash)); // true
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create hash from hex strings, Uint8Array, or generic input
-[View constructors →](./from)
-</Card>
-<Card title="Hashing" icon="hashtag">
-Compute Keccak-256 hashes from bytes, strings, and hex data
-[View hashing →](./keccak256)
-</Card>
-<Card title="Conversions" icon="arrow-right-arrow-left">
-Convert hashes to hex strings, bytes, and display formats
-[View conversions →](./toHex)
-</Card>
-<Card title="Comparisons" icon="code-compare">
-Compare hash equality and check for zero values
-[View comparisons →](./equals)
-</Card>
-<Card title="Validation" icon="check">
-Validate hash format and check type constraints
-[View validation →](./isHash)
-</Card>
-<Card title="Utilities" icon="wrench">
-Generate random hashes, clone, slice, and format for display
-[View utilities →](./random)
-</Card>
-</CardGroup>
+### Constructors
 
-### All Methods
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
+- [`fromBytes(bytes)`](./from-bytes) - Create from Uint8Array (must be 32 bytes)
 
-<Tabs>
-<Tab title="Class API">
+### Hashing
 
-**Constructors:**
-- `Hash.from(value)` - Universal constructor from any input
-- `Hash.fromHex(hex)` - Parse hex string (with or without 0x prefix)
-- `Hash.fromBytes(bytes)` - Create from Uint8Array (must be 32 bytes)
+- [`keccak256(data)`](./keccak256) - Hash Uint8Array data
+- [`keccak256String(str)`](./keccak256-string) - Hash UTF-8 string
+- [`keccak256Hex(hex)`](./keccak256-hex) - Hash hex string (with or without 0x)
 
-**Hashing:**
-- `Hash.keccak256(data)` - Hash Uint8Array data
-- `Hash.keccak256String(str)` - Hash UTF-8 string
-- `Hash.keccak256Hex(hex)` - Hash hex string (with or without 0x)
+### Conversions
 
-**Conversions:**
-- `hash.toHex()` - Convert to hex string with 0x prefix
-- `hash.toBytes()` - Convert to Uint8Array
-- `hash.toString()` - Convert to hex string (alias for toHex)
-- `hash.format()` - Format as abbreviated string (0x123456...abcdef)
+- [`toHex(hash)`](./to-hex) - Convert to hex string with 0x prefix
+- [`toBytes(hash)`](./to-bytes) - Convert to Uint8Array
+- [`toString(hash)`](./to-string) - Convert to hex string (alias for toHex)
+- [`format(hash)`](./format) - Format as abbreviated string (0x123456...abcdef)
 
-**Comparisons:**
-- `hash.equals(other)` - Compare hash equality
-- `hash.isZero()` - Check if hash is all zeros
+### Comparisons
 
-**Validation:**
-- `Hash.isHash(value)` - Type guard checking if value is BrandedHash
-- `Hash.isValidHex(hex)` - Check if hex string is valid 32-byte hash
-- `Hash.assert(value)` - Assert value is valid hash (throws if not)
+- [`equals(a, b)`](./equals) - Compare hash equality
+- [`isZero(hash)`](./is-zero) - Check if hash is all zeros
 
-**Utilities:**
-- `Hash.random()` - Generate cryptographically random hash
-- `hash.clone()` - Create copy of hash
-- `hash.slice(start, end)` - Extract portion as new Uint8Array
-- `Hash.concat(...hashes)` - Concatenate multiple hashes
-- `Hash.merkleRoot(hashes)` - Compute Merkle root from hash array
+### Validation
 
-**Constants:**
-- `Hash.SIZE` - Hash size in bytes (32)
-- `Hash.ZERO` - Zero hash constant (32 zero bytes)
+- [`isHash(value)`](./is-hash) - Type guard checking if value is BrandedHash
+- [`isValidHex(hex)`](./is-valid-hex) - Check if hex string is valid 32-byte hash
+- [`assert(value)`](./assert) - Assert value is valid hash (throws if not)
 
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
+### Utilities
 
-**Constructors:**
-- `from(value)` - Universal constructor from any input
-- `fromHex(hex)` - Parse hex string (with or without 0x prefix)
-- `fromBytes(bytes)` - Create from Uint8Array (must be 32 bytes)
+- [`random()`](./random) - Generate cryptographically random hash
+- [`clone(hash)`](./clone) - Create copy of hash
+- [`slice(hash, start, end)`](./slice) - Extract portion as new Uint8Array
+- [`concat(...hashes)`](./concat) - Concatenate multiple hashes
+- [`merkleRoot(hashes)`](./merkle-root) - Compute Merkle root from hash array
 
-**Hashing:**
-- `keccak256(data)` - Hash Uint8Array data
-- `keccak256String(str)` - Hash UTF-8 string
-- `keccak256Hex(hex)` - Hash hex string (with or without 0x)
-
-**Conversions:**
-- `toHex(hash)` - Convert to hex string with 0x prefix
-- `toBytes(hash)` - Convert to Uint8Array
-- `toString(hash)` - Convert to hex string (alias for toHex)
-- `format(hash)` - Format as abbreviated string (0x123456...abcdef)
-
-**Comparisons:**
-- `equals(a, b)` - Compare hash equality
-- `isZero(hash)` - Check if hash is all zeros
-
-**Validation:**
-- `isHash(value)` - Type guard checking if value is BrandedHash
-- `isValidHex(hex)` - Check if hex string is valid 32-byte hash
-- `assert(value)` - Assert value is valid hash (throws if not)
-
-**Utilities:**
-- `random()` - Generate cryptographically random hash
-- `clone(hash)` - Create copy of hash
-- `slice(hash, start, end)` - Extract portion as new Uint8Array
-- `concat(...hashes)` - Concatenate multiple hashes
-- `merkleRoot(hashes)` - Compute Merkle root from hash array
-
-**Constants:**
-- `SIZE` - Hash size in bytes (32)
-- `ZERO` - Zero hash constant (32 zero bytes)
-
-</Tab>
-</Tabs>
 
 ## Types
 

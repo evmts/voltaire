@@ -50,14 +50,40 @@ Hardfork.fromString("paris")         // Alias → MERGE
 Hardfork.toString(fork)              // Normalized name
 ```
 
-## API Structure
+## API Methods
 
-### Factory
+### Constructors
 
-```typescript
-Hardfork(value: string): Hardfork
-Hardfork.fromString(value: string): Hardfork | undefined
-```
+- [`fromString(value)`](./from-string) - Parse hardfork name (case-insensitive, handles aliases)
+- [`toString(fork)`](./to-string) - Convert to normalized string name
+
+### Comparison Methods
+
+- [`compare(a, b)`](./compare) - Three-way comparison (-1, 0, 1)
+- [`isAtLeast(current, target)`](./is-at-least) - Check if current >= target
+- [`isBefore(current, target)`](./is-before) - Check if current < target
+- [`isAfter(current, target)`](./is-after) - Check if current > target
+- [`isEqual(a, b)`](./is-equal) - Equality check
+- [`gte(a, b)`](./gte) - Greater than or equal (alias)
+- [`lte(a, b)`](./lte) - Less than or equal (alias)
+- [`gt(a, b)`](./gt) - Greater than (alias)
+- [`lt(a, b)`](./lt) - Less than (alias)
+
+### Feature Detection
+
+- [`hasEIP1559(fork)`](./has-eip1559) - EIP-1559 base fee mechanism (London+)
+- [`hasEIP3855(fork)`](./has-eip3855) - PUSH0 opcode (Shanghai+)
+- [`hasEIP4844(fork)`](./has-eip4844) - Blob transactions (Cancun+)
+- [`hasEIP1153(fork)`](./has-eip1153) - Transient storage TLOAD/TSTORE (Cancun+)
+- [`isPostMerge(fork)`](./is-post-merge) - Proof of Stake consensus (Merge+)
+
+### Collection Operations
+
+- [`allNames()`](./all-names) - Get all hardfork names (chronological order)
+- [`allIds()`](./all-ids) - Get all hardfork IDs (chronological order)
+- [`range(start, end)`](./range) - Get hardforks between two versions (inclusive)
+- `min(forks)` - Find earliest hardfork in array
+- `max(forks)` - Find latest hardfork in array
 
 ### Constants
 
@@ -70,34 +96,6 @@ SHANGHAI, CANCUN, PRAGUE, OSAKA
 
 Hardfork.DEFAULT  // PRAGUE
 ```
-
-### Comparison Methods
-
-[See comparisons.mdx](./comparisons.mdx) for full details:
-- `isAtLeast(current, target)` - Check if current >= target
-- `isBefore(current, target)` - Check if current < target
-- `isAfter(current, target)` - Check if current > target
-- `isEqual(a, b)` - Equality check
-- `compare(a, b)` - Three-way comparison
-- `gte/lt/gt/equals/lte` - Convenience forms
-
-### Feature Detection
-
-[See features.mdx](./features.mdx) for all feature methods:
-- `hasEIP1559(fork)` - EIP-1559 base fee mechanism
-- `hasEIP3855(fork)` - PUSH0 opcode
-- `hasEIP4844(fork)` - Blob transactions
-- `hasEIP1153(fork)` - Transient storage (TLOAD/TSTORE)
-- `isPostMerge(fork)` - Proof of Stake consensus
-
-### Utilities
-
-[See utilities.mdx](./utilities.mdx) for utility functions:
-- `allNames()` - All hardfork names
-- `allIds()` - All hardfork IDs
-- `range(start, end)` - Range of hardforks
-- `min(forks)` - Minimum hardfork
-- `max(forks)` - Maximum hardfork
 
 ## Quick Examples
 
@@ -148,12 +146,10 @@ const upgradePath = range(BERLIN, CANCUN);
 console.log(`${upgradePath.length} hardforks to upgrade through`);
 ```
 
-## Documentation Sections
+## Additional Documentation
 
+- **[fundamentals.mdx](./fundamentals.mdx)** - Introduction to Ethereum protocol upgrades
 - **[hardforks.mdx](./hardforks.mdx)** - Complete hardfork timeline with all features
-- **[comparisons.mdx](./comparisons.mdx)** - Version comparison methods
-- **[features.mdx](./features.mdx)** - EIP feature detection
-- **[utilities.mdx](./utilities.mdx)** - Utility functions
 - **[usage-patterns.mdx](./usage-patterns.mdx)** - Common patterns and examples
 - **[branded-hardfork.mdx](./branded-hardfork.mdx)** - Branded type pattern
 - **[wasm.mdx](./wasm.mdx)** - WASM implementation status

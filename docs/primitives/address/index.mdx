@@ -88,34 +88,47 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create addresses from hex, bytes, numbers, public keys, and private keys
-[View constructors →](./constructors)
-</Card>
-<Card title="Conversions" icon="arrow-right-arrow-left">
-Convert to hex, checksummed, U256, ABI encoding, and display formats
-[View conversions →](./conversions)
-</Card>
-<Card title="Validation" icon="check">
-Validate addresses, verify checksums, and type guards
-[View validation →](./validation)
-</Card>
-<Card title="Comparisons" icon="code-compare">
-Compare addresses for equality and ordering
-[View comparisons →](./comparisons)
-</Card>
-<Card title="Contract Addresses" icon="file-contract">
-Calculate CREATE and CREATE2 deployment addresses
-[View contract addresses →](./contract-addresses)
-</Card>
-<Card title="Utilities" icon="wrench">
-Clone, sort, deduplicate, and zero addresses
-[View utilities →](./variants)
-</Card>
-</CardGroup>
+### Constructors
 
-### All Methods
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
+- [`fromBytes(bytes)`](./from-bytes) - Create from Uint8Array (must be 20 bytes)
+- [`fromNumber(value)`](./from-number) - Create from bigint or number
+- [`fromPublicKey(x, y)`](./from-public-key) - Derive from secp256k1 public key
+- [`fromPrivateKey(privateKey)`](./from-private-key) - Derive from private key
+- [`zero()`](./zero) - Create zero address (0x0000...0000)
+
+### Conversions
+
+- [`toHex(address)`](./to-hex) - Convert to lowercase hex string with 0x prefix
+- [`toChecksummed(address)`](./to-checksummed) - Convert to EIP-55 mixed-case checksummed hex
+- [`toShortHex(address)`](./to-short-hex) - Format for display (0x742d…1e3e)
+- [`toBytes(address)`](./to-bytes) - Return raw Uint8Array
+
+### Validation
+
+- [`isValid(value)`](./is-valid) - Check if value can be converted to address
+- [`isValidChecksum(hex)`](./is-valid-checksum) - Verify EIP-55 checksum (case-sensitive)
+
+### Comparisons
+
+- [`equals(a, b)`](./equals) - Check equality
+- [`compare(a, b)`](./compare) - Compare for sorting (-1, 0, 1)
+
+### Contract Addresses
+
+- [`calculateCreateAddress(address, nonce)`](./calculate-create-address) - Calculate CREATE deployment address
+- [`calculateCreate2Address(address, salt, initCode)`](./calculate-create2-address) - Calculate CREATE2 deployment address
+
+### Reference
+
+- [Fundamentals](./fundamentals) - Address derivation, checksumming, and deployment
+- [Usage Patterns](./usage-patterns) - Common patterns and best practices
+- [BrandedAddress](./branded-address) - Type definition and branded type pattern
+- [Variants](./variants) - Additional utilities and variants
+- [WASM](./wasm) - WebAssembly implementation details
+
+### Complete API
 
 <Tabs>
 <Tab title="Class API">

@@ -98,36 +98,61 @@ const hex = toHex(sum)
 
 ## API Methods
 
-<CardGroup>
-<Card title="Constructors" icon="rocket">
-Create from bigint, number, string, hex, bytes, and ABI-encoded data
-[View constructors →](/primitives/uint/constructors)
-</Card>
-<Card title="Conversions" icon="arrow-right-arrow-left">
-Convert to hex, bigint, number, bytes, ABI-encoded, and strings
-[View conversions →](/primitives/uint/conversions)
-</Card>
-<Card title="Arithmetic" icon="calculator">
-Addition, subtraction, multiplication, division, modulo, and power operations
-[View arithmetic →](/primitives/uint/arithmetic)
-</Card>
-<Card title="Bitwise" icon="binary">
-AND, OR, XOR, NOT, left shift, and right shift operations
-[View bitwise →](/primitives/uint/bitwise)
-</Card>
-<Card title="Comparisons" icon="code-compare">
-Equality, less than, greater than, and ordering comparisons
-[View comparisons →](/primitives/uint/comparisons)
-</Card>
-<Card title="Validation" icon="check">
-Validate uint256 values and check ranges
-[View validation →](/primitives/uint/validation)
-</Card>
-<Card title="Utilities" icon="wrench">
-Zero check, min/max, bit length, leading zeros, and pop count
-[View utilities →](/primitives/uint/utilities)
-</Card>
-</CardGroup>
+### Constructors
+
+- [`from(value)`](./from) - Universal constructor from bigint, number, or string
+- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
+- [`fromBigInt(value)`](./from-bigint) - Create from bigint with validation
+- [`fromNumber(value)`](./from-number) - Create from number (throws if out of range)
+- [`fromBytes(bytes)`](./from-bytes) - Parse from Uint8Array (big-endian)
+- [`fromAbiEncoded(bytes)`](./from-abi-encoded) - Parse ABI-encoded uint256
+- [`tryFrom(value)`](./try-from) - Safe constructor returning undefined on error
+
+### Conversions
+
+- [`toHex(uint, padded?)`](./to-hex) - Convert to hex string with optional padding
+- [`toBigInt(uint)`](./to-bigint) - Convert to bigint
+- [`toNumber(uint)`](./to-number) - Convert to number (throws if > MAX_SAFE_INTEGER)
+- [`toBytes(uint)`](./to-bytes) - Convert to Uint8Array (32 bytes, big-endian)
+- [`toAbiEncoded(uint)`](./to-abi-encoded) - Convert to ABI-encoded bytes
+- [`toString(uint, radix?)`](./to-string) - Convert to string with optional radix (2-36)
+
+### Arithmetic
+
+- [`plus(a, b)`](./plus) - Addition with wrapping on overflow
+- [`minus(a, b)`](./minus) - Subtraction with wrapping on underflow
+- [`times(a, b)`](./times) - Multiplication with wrapping on overflow
+- [`dividedBy(a, b)`](./divided-by) - Division (throws on divide by zero)
+- [`modulo(a, b)`](./modulo) - Modulo operation
+- [`toPower(base, exponent)`](./to-power) - Exponentiation with wrapping on overflow
+
+### Bitwise
+
+- [`bitwiseAnd(a, b)`](./bitwise-and) - Bitwise AND operation
+- [`bitwiseOr(a, b)`](./bitwise-or) - Bitwise OR operation
+- [`bitwiseXor(a, b)`](./bitwise-xor) - Bitwise XOR operation
+- [`bitwiseNot(value)`](./bitwise-not) - Bitwise NOT (one's complement)
+- [`shiftLeft(value, bits)`](./shift-left) - Left shift with wrapping
+- [`shiftRight(value, bits)`](./shift-right) - Right shift (logical)
+
+### Comparisons
+
+- [`equals(a, b)`](./equals) - Check equality
+- [`lessThan(a, b)`](./less-than) - Check if a < b
+- [`greaterThan(a, b)`](./greater-than) - Check if a > b
+
+### Validation
+
+- [`isValid(value)`](./is-valid) - Check if value is valid uint256
+
+### Utilities
+
+- [`isZero(value)`](./is-zero) - Check if value is zero
+- [`minimum(a, b)`](./minimum) - Return smaller of two values
+- [`maximum(a, b)`](./maximum) - Return larger of two values
+- [`bitLength(value)`](./bit-length) - Count significant bits (1-256)
+- [`leadingZeros(value)`](./leading-zeros) - Count leading zero bits
+- [`popCount(value)`](./pop-count) - Count number of 1 bits
 
 ## Types
 
@@ -135,7 +160,7 @@ Zero check, min/max, bit length, leading zeros, and pop count
 <Tab title="class Uint">
 ```typescript
 class Uint {
-  // Constructors (→ /primitives/uint/constructors)
+  // Constructors
   constructor(value: bigint | number | string): BrandedUint
   static from(value: bigint | number | string): BrandedUint
   static fromHex(hex: string): BrandedUint
@@ -145,7 +170,7 @@ class Uint {
   static fromAbiEncoded(bytes: Uint8Array): BrandedUint
   static tryFrom(value: bigint | number | string): BrandedUint | undefined
 
-  // Conversions (→ /primitives/uint/conversions)
+  // Conversions
   toHex(padded?: boolean): string
   toBigInt(): bigint
   toNumber(): number
@@ -153,7 +178,7 @@ class Uint {
   toAbiEncoded(): Uint8Array
   toString(radix?: number): string
 
-  // Arithmetic (→ /primitives/uint/arithmetic)
+  // Arithmetic
   plus(other: BrandedUint): BrandedUint
   minus(other: BrandedUint): BrandedUint
   times(other: BrandedUint): BrandedUint
@@ -161,7 +186,7 @@ class Uint {
   modulo(other: BrandedUint): BrandedUint
   toPower(exponent: BrandedUint): BrandedUint
 
-  // Bitwise (→ /primitives/uint/bitwise)
+  // Bitwise
   bitwiseAnd(other: BrandedUint): BrandedUint
   bitwiseOr(other: BrandedUint): BrandedUint
   bitwiseXor(other: BrandedUint): BrandedUint
@@ -169,7 +194,7 @@ class Uint {
   shiftLeft(bits: number): BrandedUint
   shiftRight(bits: number): BrandedUint
 
-  // Comparisons (→ /primitives/uint/comparisons)
+  // Comparisons
   equals(other: BrandedUint): boolean
   notEquals(other: BrandedUint): boolean
   lessThan(other: BrandedUint): boolean
@@ -177,7 +202,7 @@ class Uint {
   greaterThan(other: BrandedUint): boolean
   greaterThanOrEqual(other: BrandedUint): boolean
 
-  // Utilities (→ /primitives/uint/utilities)
+  // Utilities
   isZero(): boolean
   minimum(other: BrandedUint): BrandedUint
   maximum(other: BrandedUint): BrandedUint
