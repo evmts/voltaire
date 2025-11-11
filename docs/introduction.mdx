@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Ethereum primitives for TypeScript and Zig
+description: Robust performant Ethereum primitives for TypeScript and Zig
 ---
 
 # Voltaire
@@ -17,13 +17,13 @@ Voltaire is a low-level Ethereum library focusing on primitives and cryptography
 
 **Key differentiators:**
 
-- **Multi-language** - TypeScript + Zig with C-FFI, Python/Rust bindings planned
+- **Multi-language** - TypeScript + Zig with C-FFI, looking for contributors for Python, Rust, Swift, and Kotlin SDKs
 - **Optional WASM** - 2-10x faster crypto operations with minimal bundle impact
 - **Tree-shakeable** - Namespace API enables aggressive bundle optimization
 - **Type-safe** - Branded primitives prevent mixing incompatible types
 - **Audited crypto** - Defaults to @noble, blst, c-kzg (widely audited implementations)
 - **Data-first** - No classes required, works with plain Uint8Arrays
-- **Minimal bundle impact** - Uses Ox as peer dependency wherever possible, adding minimal size to codebases already using Ox-based libraries like viem
+- **Small** - Zig minimizes bundle size impact to JavaScript apps. Uses Ox JavaScript code when JS versions are as performant or much smaller bundle size
 
 ## Quick Example
 
