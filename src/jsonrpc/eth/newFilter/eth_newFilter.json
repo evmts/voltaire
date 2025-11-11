@@ -1,1 +1,168 @@
-{"name":"eth_newFilter","summary":"Install a log filter in the server, allowing for later polling. Registers client interest in logs matching the filter, and returns an identifier.","params":[{"name":"Filter","schema":{"title":"filter","type":"object","oneOf":[{"title":"Filter by block range","type":"object","properties":{"fromBlock":{"title":"from block","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"toBlock":{"title":"to block","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"address":{"title":"Address(es)","oneOf":[{"title":"Any Address","type":"null"},{"title":"Address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"},{"title":"Addresses","type":"array","items":{"title":"hex encoded address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"}}]},"topics":{"title":"Topics","oneOf":[{"title":"Any Topic Match","type":"null"},{"title":"Specified Filter Topics","type":"array","items":{"title":"Filter Topic List Entry","oneOf":[{"title":"Single Topic Match","type":"string","pattern":"^0x[0-9a-f]{64}$"},{"title":"Multiple Topic Match","type":"array","items":{"title":"32 hex encoded bytes","type":"string","pattern":"^0x[0-9a-f]{64}$"}}]}}]}}},{"title":"Filter by block hash","type":"object","properties":{"blockHash":{"title":"block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"},"address":{"title":"Address(es)","oneOf":[{"title":"Any Address","type":"null"},{"title":"Address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"},{"title":"Addresses","type":"array","items":{"title":"hex encoded address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"}}]},"topics":{"title":"Topics","oneOf":[{"title":"Any Topic Match","type":"null"},{"title":"Specified Filter Topics","type":"array","items":{"title":"Filter Topic List Entry","oneOf":[{"title":"Single Topic Match","type":"string","pattern":"^0x[0-9a-f]{64}$"},{"title":"Multiple Topic Match","type":"array","items":{"title":"32 hex encoded bytes","type":"string","pattern":"^0x[0-9a-f]{64}$"}}]}}]}},"required":["blockHash"]}],"additionalProperties":false},"required":true}],"result":{"name":"Filter identifier","schema":{"title":"hex encoded unsigned integer","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"}},"examples":[{"name":"eth_newFilter example","params":[{"name":"Filter","value":{"fromBlock":"0x137d3c2","toBlock":"0x137d3c3","address":"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2","topics":[]}}],"result":{"name":"Filter identifier","value":"0x01"}}]}
+{
+	"name": "eth_newFilter",
+	"summary": "Install a log filter in the server, allowing for later polling. Registers client interest in logs matching the filter, and returns an identifier.",
+	"params": [
+		{
+			"name": "Filter",
+			"schema": {
+				"title": "filter",
+				"type": "object",
+				"oneOf": [
+					{
+						"title": "Filter by block range",
+						"type": "object",
+						"properties": {
+							"fromBlock": {
+								"title": "from block",
+								"type": "string",
+								"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+							},
+							"toBlock": {
+								"title": "to block",
+								"type": "string",
+								"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+							},
+							"address": {
+								"title": "Address(es)",
+								"oneOf": [
+									{ "title": "Any Address", "type": "null" },
+									{
+										"title": "Address",
+										"type": "string",
+										"pattern": "^0x[0-9a-fA-F]{40}$"
+									},
+									{
+										"title": "Addresses",
+										"type": "array",
+										"items": {
+											"title": "hex encoded address",
+											"type": "string",
+											"pattern": "^0x[0-9a-fA-F]{40}$"
+										}
+									}
+								]
+							},
+							"topics": {
+								"title": "Topics",
+								"oneOf": [
+									{ "title": "Any Topic Match", "type": "null" },
+									{
+										"title": "Specified Filter Topics",
+										"type": "array",
+										"items": {
+											"title": "Filter Topic List Entry",
+											"oneOf": [
+												{
+													"title": "Single Topic Match",
+													"type": "string",
+													"pattern": "^0x[0-9a-f]{64}$"
+												},
+												{
+													"title": "Multiple Topic Match",
+													"type": "array",
+													"items": {
+														"title": "32 hex encoded bytes",
+														"type": "string",
+														"pattern": "^0x[0-9a-f]{64}$"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						}
+					},
+					{
+						"title": "Filter by block hash",
+						"type": "object",
+						"properties": {
+							"blockHash": {
+								"title": "block hash",
+								"type": "string",
+								"pattern": "^0x[0-9a-f]{64}$"
+							},
+							"address": {
+								"title": "Address(es)",
+								"oneOf": [
+									{ "title": "Any Address", "type": "null" },
+									{
+										"title": "Address",
+										"type": "string",
+										"pattern": "^0x[0-9a-fA-F]{40}$"
+									},
+									{
+										"title": "Addresses",
+										"type": "array",
+										"items": {
+											"title": "hex encoded address",
+											"type": "string",
+											"pattern": "^0x[0-9a-fA-F]{40}$"
+										}
+									}
+								]
+							},
+							"topics": {
+								"title": "Topics",
+								"oneOf": [
+									{ "title": "Any Topic Match", "type": "null" },
+									{
+										"title": "Specified Filter Topics",
+										"type": "array",
+										"items": {
+											"title": "Filter Topic List Entry",
+											"oneOf": [
+												{
+													"title": "Single Topic Match",
+													"type": "string",
+													"pattern": "^0x[0-9a-f]{64}$"
+												},
+												{
+													"title": "Multiple Topic Match",
+													"type": "array",
+													"items": {
+														"title": "32 hex encoded bytes",
+														"type": "string",
+														"pattern": "^0x[0-9a-f]{64}$"
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						},
+						"required": ["blockHash"]
+					}
+				],
+				"additionalProperties": false
+			},
+			"required": true
+		}
+	],
+	"result": {
+		"name": "Filter identifier",
+		"schema": {
+			"title": "hex encoded unsigned integer",
+			"type": "string",
+			"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+		}
+	},
+	"examples": [
+		{
+			"name": "eth_newFilter example",
+			"params": [
+				{
+					"name": "Filter",
+					"value": {
+						"fromBlock": "0x137d3c2",
+						"toBlock": "0x137d3c3",
+						"address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+						"topics": []
+					}
+				}
+			],
+			"result": { "name": "Filter identifier", "value": "0x01" }
+		}
+	]
+}

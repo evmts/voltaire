@@ -23,7 +23,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_feeHistory'
+export const method = "eth_feeHistory";
 
 /**
  * Parameters for `eth_feeHistory`
@@ -34,7 +34,7 @@ export const method = 'eth_feeHistory'
  * @property {Quantity} rewardpercentiles - rewardPercentiles
  */
 
-export {}
+export {};
 /**
  * Result for `eth_feeHistory`
  *

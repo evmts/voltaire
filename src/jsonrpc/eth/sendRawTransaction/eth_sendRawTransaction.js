@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_sendRawTransaction'
+export const method = "eth_sendRawTransaction";
 
 /**
  * Parameters for `eth_sendRawTransaction`
@@ -30,7 +30,7 @@ export const method = 'eth_sendRawTransaction'
  * @property {Quantity} transaction - hex encoded bytes
  */
 
-export {}
+export {};
 /**
  * Result for `eth_sendRawTransaction`
  *

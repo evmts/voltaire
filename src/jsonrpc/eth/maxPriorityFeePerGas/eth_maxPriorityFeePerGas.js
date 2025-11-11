@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_maxPriorityFeePerGas'
+export const method = "eth_maxPriorityFeePerGas";
 
 /**
  * Parameters for `eth_maxPriorityFeePerGas`
@@ -28,7 +28,7 @@ export const method = 'eth_maxPriorityFeePerGas'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_maxPriorityFeePerGas`
  *

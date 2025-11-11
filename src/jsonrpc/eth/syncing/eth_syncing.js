@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_syncing'
+export const method = "eth_syncing";
 
 /**
  * Parameters for `eth_syncing`
@@ -28,7 +28,7 @@ export const method = 'eth_syncing'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_syncing`
  *

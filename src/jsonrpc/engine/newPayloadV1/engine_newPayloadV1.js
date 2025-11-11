@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_newPayloadV1'
+export const method = "engine_newPayloadV1";
 
 /**
  * Parameters for `engine_newPayloadV1`
@@ -30,7 +30,7 @@ export const method = 'engine_newPayloadV1'
  * @property {Quantity} execution payload - Execution payload object V1
  */
 
-export {}
+export {};
 /**
  * Result for `engine_newPayloadV1`
  *

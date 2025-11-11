@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getTransactionByHash'
+export const method = "eth_getTransactionByHash";
 
 /**
  * Parameters for `eth_getTransactionByHash`
@@ -30,7 +30,7 @@ export const method = 'eth_getTransactionByHash'
  * @property {Hash} transaction hash - 32 byte hex value
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getTransactionByHash`
  *

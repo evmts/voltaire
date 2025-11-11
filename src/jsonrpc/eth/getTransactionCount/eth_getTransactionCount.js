@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getTransactionCount'
+export const method = "eth_getTransactionCount";
 
 /**
  * Parameters for `eth_getTransactionCount`
@@ -32,7 +32,7 @@ export const method = 'eth_getTransactionCount'
  * @property {BlockSpec} block - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getTransactionCount`
  *

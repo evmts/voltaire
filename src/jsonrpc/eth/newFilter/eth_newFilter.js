@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_newFilter'
+export const method = "eth_newFilter";
 
 /**
  * Parameters for `eth_newFilter`
@@ -30,7 +30,7 @@ export const method = 'eth_newFilter'
  * @property {Quantity} filter - filter
  */
 
-export {}
+export {};
 /**
  * Result for `eth_newFilter`
  *

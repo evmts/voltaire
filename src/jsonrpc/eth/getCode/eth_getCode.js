@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getCode'
+export const method = "eth_getCode";
 
 /**
  * Parameters for `eth_getCode`
@@ -32,7 +32,7 @@ export const method = 'eth_getCode'
  * @property {BlockSpec} block - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getCode`
  *

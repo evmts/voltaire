@@ -14,7 +14,6 @@ pub const method = "eth_chainId";
 
 /// Parameters for `eth_chainId`
 pub const Params = struct {
-
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         _ = self;
         try jws.write(.{});

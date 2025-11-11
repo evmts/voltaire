@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getBalance'
+export const method = "eth_getBalance";
 
 /**
  * Parameters for `eth_getBalance`
@@ -32,7 +32,7 @@ export const method = 'eth_getBalance'
  * @property {BlockSpec} block - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getBalance`
  *

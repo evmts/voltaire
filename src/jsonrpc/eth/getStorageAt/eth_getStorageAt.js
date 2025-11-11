@@ -23,7 +23,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getStorageAt'
+export const method = "eth_getStorageAt";
 
 /**
  * Parameters for `eth_getStorageAt`
@@ -34,7 +34,7 @@ export const method = 'eth_getStorageAt'
  * @property {BlockSpec} block - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getStorageAt`
  *

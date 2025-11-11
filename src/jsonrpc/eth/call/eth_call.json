@@ -1,1 +1,236 @@
-{"name":"eth_call","summary":"Executes a new message call immediately without creating a transaction on the block chain.","params":[{"name":"Transaction","required":true,"schema":{"type":"object","title":"Transaction object generic to all types","additionalProperties":false,"properties":{"type":{"title":"type","type":"string","pattern":"^0x([0-9a-fA-F]?){1,2}$"},"nonce":{"title":"nonce","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"to":{"title":"to address","oneOf":[{"title":"Contract Creation (null)","type":"null"},{"title":"Address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"}]},"from":{"title":"from address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"},"gas":{"title":"gas limit","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"value":{"title":"value","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"input":{"title":"input data","type":"string","pattern":"^0x[0-9a-f]*$"},"gasPrice":{"title":"gas price","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"The gas price willing to be paid by the sender in wei"},"maxPriorityFeePerGas":{"title":"max priority fee per gas","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"Maximum fee per gas the sender is willing to pay to miners in wei"},"maxFeePerGas":{"title":"max fee per gas","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"},"maxFeePerBlobGas":{"title":"max fee per blob gas","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"The maximum total fee per gas the sender is willing to pay for blob gas in wei"},"accessList":{"title":"accessList","type":"array","description":"EIP-2930 access list","items":{"title":"Access list entry","type":"object","required":["address","storageKeys"],"additionalProperties":false,"properties":{"address":{"title":"hex encoded address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"},"storageKeys":{"type":"array","items":{"title":"32 byte hex value","type":"string","pattern":"^0x[0-9a-f]{64}$"}}}}},"blobVersionedHashes":{"title":"blobVersionedHashes","description":"List of versioned blob hashes associated with the transaction's EIP-4844 data blobs.","type":"array","items":{"title":"32 byte hex value","type":"string","pattern":"^0x[0-9a-f]{64}$"}},"blobs":{"title":"blobs","description":"Raw blob data.","type":"array","items":{"title":"hex encoded bytes","type":"string","pattern":"^0x[0-9a-f]*$"}},"chainId":{"title":"chainId","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"Chain ID that this transaction is valid on."},"authorizationList":{"title":"authorizationList","description":"EIP-7702 authorization list","type":"array","items":{"type":"object","required":["chainId","nonce","address","yParity","r","s"],"properties":{"chainId":{"title":"chainId","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$","description":"Chain ID on which this transaction is valid"},"nonce":{"title":"nonce","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"address":{"title":"hex encoded address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"},"yParity":{"title":"yParity","type":"string","pattern":"^0x([0-9a-fA-F]?){1,2}$","description":"The parity (0 for even, 1 for odd) of the y-value of the secp256k1 signature"},"r":{"title":"r","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]{0,63})$"},"s":{"title":"s","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]{0,63})$"}}}}}}},{"name":"Block","required":false,"schema":{"title":"Block number, tag, or block hash","anyOf":[{"title":"Block number","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},{"title":"Block tag","type":"string","enum":["earliest","finalized","safe","latest","pending"],"description":"`earliest`: The lowest numbered block the client has available; `finalized`: The most recent crypto-economically secure block, cannot be re-orged outside of manual intervention driven by community coordination; `safe`: The most recent block that is safe from re-orgs under honest majority and certain synchronicity assumptions; `latest`: The most recent block in the canonical chain observed by the client, this block may be re-orged out of the canonical chain even under healthy/normal conditions; `pending`: A sample next block built by the client on top of `latest` and containing the set of transactions usually taken from local mempool. Before the merge transition is finalized, any call querying for `finalized` or `safe` block MUST be responded to with `-39001: Unknown block` error"},{"title":"Block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"}]}}],"result":{"name":"Return data","schema":{"title":"hex encoded bytes","type":"string","pattern":"^0x[0-9a-f]*$"}},"errors":[{"code":3,"message":"execution reverted","data":{"title":"raw EVM revert data","$ref":"#/components/schemas/bytes"}}],"examples":[{"name":"eth_call example","params":[{"name":"Transaction","value":{"to":"0x69498dd54bd25aa0c886cf1f8b8ae0856d55ff13","value":"0x1"}},{"name":"Block","value":"latest"}],"result":{"name":"Return data","value":"0x"}}]}
+{
+	"name": "eth_call",
+	"summary": "Executes a new message call immediately without creating a transaction on the block chain.",
+	"params": [
+		{
+			"name": "Transaction",
+			"required": true,
+			"schema": {
+				"type": "object",
+				"title": "Transaction object generic to all types",
+				"additionalProperties": false,
+				"properties": {
+					"type": {
+						"title": "type",
+						"type": "string",
+						"pattern": "^0x([0-9a-fA-F]?){1,2}$"
+					},
+					"nonce": {
+						"title": "nonce",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+					},
+					"to": {
+						"title": "to address",
+						"oneOf": [
+							{ "title": "Contract Creation (null)", "type": "null" },
+							{
+								"title": "Address",
+								"type": "string",
+								"pattern": "^0x[0-9a-fA-F]{40}$"
+							}
+						]
+					},
+					"from": {
+						"title": "from address",
+						"type": "string",
+						"pattern": "^0x[0-9a-fA-F]{40}$"
+					},
+					"gas": {
+						"title": "gas limit",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+					},
+					"value": {
+						"title": "value",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+					},
+					"input": {
+						"title": "input data",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]*$"
+					},
+					"gasPrice": {
+						"title": "gas price",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+						"description": "The gas price willing to be paid by the sender in wei"
+					},
+					"maxPriorityFeePerGas": {
+						"title": "max priority fee per gas",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+						"description": "Maximum fee per gas the sender is willing to pay to miners in wei"
+					},
+					"maxFeePerGas": {
+						"title": "max fee per gas",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+						"description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"
+					},
+					"maxFeePerBlobGas": {
+						"title": "max fee per blob gas",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+						"description": "The maximum total fee per gas the sender is willing to pay for blob gas in wei"
+					},
+					"accessList": {
+						"title": "accessList",
+						"type": "array",
+						"description": "EIP-2930 access list",
+						"items": {
+							"title": "Access list entry",
+							"type": "object",
+							"required": ["address", "storageKeys"],
+							"additionalProperties": false,
+							"properties": {
+								"address": {
+									"title": "hex encoded address",
+									"type": "string",
+									"pattern": "^0x[0-9a-fA-F]{40}$"
+								},
+								"storageKeys": {
+									"type": "array",
+									"items": {
+										"title": "32 byte hex value",
+										"type": "string",
+										"pattern": "^0x[0-9a-f]{64}$"
+									}
+								}
+							}
+						}
+					},
+					"blobVersionedHashes": {
+						"title": "blobVersionedHashes",
+						"description": "List of versioned blob hashes associated with the transaction's EIP-4844 data blobs.",
+						"type": "array",
+						"items": {
+							"title": "32 byte hex value",
+							"type": "string",
+							"pattern": "^0x[0-9a-f]{64}$"
+						}
+					},
+					"blobs": {
+						"title": "blobs",
+						"description": "Raw blob data.",
+						"type": "array",
+						"items": {
+							"title": "hex encoded bytes",
+							"type": "string",
+							"pattern": "^0x[0-9a-f]*$"
+						}
+					},
+					"chainId": {
+						"title": "chainId",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+						"description": "Chain ID that this transaction is valid on."
+					},
+					"authorizationList": {
+						"title": "authorizationList",
+						"description": "EIP-7702 authorization list",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": ["chainId", "nonce", "address", "yParity", "r", "s"],
+							"properties": {
+								"chainId": {
+									"title": "chainId",
+									"type": "string",
+									"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$",
+									"description": "Chain ID on which this transaction is valid"
+								},
+								"nonce": {
+									"title": "nonce",
+									"type": "string",
+									"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+								},
+								"address": {
+									"title": "hex encoded address",
+									"type": "string",
+									"pattern": "^0x[0-9a-fA-F]{40}$"
+								},
+								"yParity": {
+									"title": "yParity",
+									"type": "string",
+									"pattern": "^0x([0-9a-fA-F]?){1,2}$",
+									"description": "The parity (0 for even, 1 for odd) of the y-value of the secp256k1 signature"
+								},
+								"r": {
+									"title": "r",
+									"type": "string",
+									"pattern": "^0x(0|[1-9a-f][0-9a-f]{0,63})$"
+								},
+								"s": {
+									"title": "s",
+									"type": "string",
+									"pattern": "^0x(0|[1-9a-f][0-9a-f]{0,63})$"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"name": "Block",
+			"required": false,
+			"schema": {
+				"title": "Block number, tag, or block hash",
+				"anyOf": [
+					{
+						"title": "Block number",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+					},
+					{
+						"title": "Block tag",
+						"type": "string",
+						"enum": ["earliest", "finalized", "safe", "latest", "pending"],
+						"description": "`earliest`: The lowest numbered block the client has available; `finalized`: The most recent crypto-economically secure block, cannot be re-orged outside of manual intervention driven by community coordination; `safe`: The most recent block that is safe from re-orgs under honest majority and certain synchronicity assumptions; `latest`: The most recent block in the canonical chain observed by the client, this block may be re-orged out of the canonical chain even under healthy/normal conditions; `pending`: A sample next block built by the client on top of `latest` and containing the set of transactions usually taken from local mempool. Before the merge transition is finalized, any call querying for `finalized` or `safe` block MUST be responded to with `-39001: Unknown block` error"
+					},
+					{
+						"title": "Block hash",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					}
+				]
+			}
+		}
+	],
+	"result": {
+		"name": "Return data",
+		"schema": {
+			"title": "hex encoded bytes",
+			"type": "string",
+			"pattern": "^0x[0-9a-f]*$"
+		}
+	},
+	"errors": [
+		{
+			"code": 3,
+			"message": "execution reverted",
+			"data": {
+				"title": "raw EVM revert data",
+				"$ref": "#/components/schemas/bytes"
+			}
+		}
+	],
+	"examples": [
+		{
+			"name": "eth_call example",
+			"params": [
+				{
+					"name": "Transaction",
+					"value": {
+						"to": "0x69498dd54bd25aa0c886cf1f8b8ae0856d55ff13",
+						"value": "0x1"
+					}
+				},
+				{ "name": "Block", "value": "latest" }
+			],
+			"result": { "name": "Return data", "value": "0x" }
+		}
+	]
+}

@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getBlockTransactionCountByNumber'
+export const method = "eth_getBlockTransactionCountByNumber";
 
 /**
  * Parameters for `eth_getBlockTransactionCountByNumber`
@@ -30,7 +30,7 @@ export const method = 'eth_getBlockTransactionCountByNumber'
  * @property {Quantity} block - Block number or tag
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getBlockTransactionCountByNumber`
  *

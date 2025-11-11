@@ -14,7 +14,6 @@ pub const method = "eth_maxPriorityFeePerGas";
 
 /// Parameters for `eth_maxPriorityFeePerGas`
 pub const Params = struct {
-
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         _ = self;
         try jws.write(.{});

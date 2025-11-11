@@ -1,1 +1,20 @@
-{"name":"eth_blockNumber","summary":"Returns the number of most recent block.","params":[],"result":{"name":"Block number","schema":{"title":"hex encoded unsigned integer","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"}},"examples":[{"name":"eth_blockNumber example","params":[],"result":{"name":"Block number","value":"0x2377"}}]}
+{
+	"name": "eth_blockNumber",
+	"summary": "Returns the number of most recent block.",
+	"params": [],
+	"result": {
+		"name": "Block number",
+		"schema": {
+			"title": "hex encoded unsigned integer",
+			"type": "string",
+			"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+		}
+	},
+	"examples": [
+		{
+			"name": "eth_blockNumber example",
+			"params": [],
+			"result": { "name": "Block number", "value": "0x2377" }
+		}
+	]
+}

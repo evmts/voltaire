@@ -1,1 +1,54 @@
-{"name":"eth_syncing","summary":"Returns an object with data about the sync status or false.","params":[],"result":{"name":"Syncing status","schema":{"title":"Syncing status","oneOf":[{"title":"Syncing progress","type":"object","additionalProperties":false,"properties":{"startingBlock":{"title":"Starting block","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"currentBlock":{"title":"Current block","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},"highestBlock":{"title":"Highest block","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"}}},{"title":"Not syncing","description":"Should always return false if not syncing.","type":"boolean"}]}},"examples":[{"name":"eth_syncing example","params":[],"result":{"name":"Syncing status","value":{"startingBlock":"0x0","currentBlock":"0x1518","highestBlock":"0x9567a3"}}}]}
+{
+	"name": "eth_syncing",
+	"summary": "Returns an object with data about the sync status or false.",
+	"params": [],
+	"result": {
+		"name": "Syncing status",
+		"schema": {
+			"title": "Syncing status",
+			"oneOf": [
+				{
+					"title": "Syncing progress",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"startingBlock": {
+							"title": "Starting block",
+							"type": "string",
+							"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+						},
+						"currentBlock": {
+							"title": "Current block",
+							"type": "string",
+							"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+						},
+						"highestBlock": {
+							"title": "Highest block",
+							"type": "string",
+							"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+						}
+					}
+				},
+				{
+					"title": "Not syncing",
+					"description": "Should always return false if not syncing.",
+					"type": "boolean"
+				}
+			]
+		}
+	},
+	"examples": [
+		{
+			"name": "eth_syncing example",
+			"params": [],
+			"result": {
+				"name": "Syncing status",
+				"value": {
+					"startingBlock": "0x0",
+					"currentBlock": "0x1518",
+					"highestBlock": "0x9567a3"
+				}
+			}
+		}
+	]
+}

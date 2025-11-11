@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_exchangeCapabilities'
+export const method = "engine_exchangeCapabilities";
 
 /**
  * Parameters for `engine_exchangeCapabilities`
@@ -30,7 +30,7 @@ export const method = 'engine_exchangeCapabilities'
  * @property {Quantity} consensus client methods
  */
 
-export {}
+export {};
 /**
  * Result for `engine_exchangeCapabilities`
  *

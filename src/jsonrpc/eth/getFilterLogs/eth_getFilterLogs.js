@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getFilterLogs'
+export const method = "eth_getFilterLogs";
 
 /**
  * Parameters for `eth_getFilterLogs`
@@ -30,7 +30,7 @@ export const method = 'eth_getFilterLogs'
  * @property {Quantity} filter identifier - hex encoded unsigned integer
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getFilterLogs`
  *

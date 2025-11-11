@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_accounts'
+export const method = "eth_accounts";
 
 /**
  * Parameters for `eth_accounts`
@@ -28,7 +28,7 @@ export const method = 'eth_accounts'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_accounts`
  *

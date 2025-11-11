@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_sign'
+export const method = "eth_sign";
 
 /**
  * Parameters for `eth_sign`
@@ -32,7 +32,7 @@ export const method = 'eth_sign'
  * @property {Quantity} message - hex encoded bytes
  */
 
-export {}
+export {};
 /**
  * Result for `eth_sign`
  *

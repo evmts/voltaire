@@ -1,1 +1,64 @@
-{"name":"eth_getCode","summary":"Returns code at a given address.","params":[{"name":"Address","required":true,"schema":{"title":"hex encoded address","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"}},{"name":"Block","required":true,"schema":{"title":"Block number, tag, or block hash","anyOf":[{"title":"Block number","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"},{"title":"Block tag","type":"string","enum":["earliest","finalized","safe","latest","pending"],"description":"`earliest`: The lowest numbered block the client has available; `finalized`: The most recent crypto-economically secure block, cannot be re-orged outside of manual intervention driven by community coordination; `safe`: The most recent block that is safe from re-orgs under honest majority and certain synchronicity assumptions; `latest`: The most recent block in the canonical chain observed by the client, this block may be re-orged out of the canonical chain even under healthy/normal conditions; `pending`: A sample next block built by the client on top of `latest` and containing the set of transactions usually taken from local mempool. Before the merge transition is finalized, any call querying for `finalized` or `safe` block MUST be responded to with `-39001: Unknown block` error"},{"title":"Block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"}]}}],"result":{"name":"Bytecode","schema":{"title":"hex encoded bytes","type":"string","pattern":"^0x[0-9a-f]*$"}},"examples":[{"name":"eth_getCode example","params":[{"name":"Address","value":"0xa50a51c09a5c451c52bb714527e1974b686d8e77"},{"name":"Block","value":"latest"}],"result":{"name":"Bytecode","value":"0x60806040526004361060485763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416633fa4f2458114604d57806355241077146071575b600080fd5b348015605857600080fd5b50605f6088565b60408051918252519081900360200190f35b348015607c57600080fd5b506086600435608e565b005b60005481565b60008190556040805182815290517f199cd93e851e4c78c437891155e2112093f8f15394aa89dab09e38d6ca0727879181900360200190a1505600a165627a7a723058209d8929142720a69bde2ab3bfa2da6217674b984899b62753979743c0470a2ea70029"}}]}
+{
+	"name": "eth_getCode",
+	"summary": "Returns code at a given address.",
+	"params": [
+		{
+			"name": "Address",
+			"required": true,
+			"schema": {
+				"title": "hex encoded address",
+				"type": "string",
+				"pattern": "^0x[0-9a-fA-F]{40}$"
+			}
+		},
+		{
+			"name": "Block",
+			"required": true,
+			"schema": {
+				"title": "Block number, tag, or block hash",
+				"anyOf": [
+					{
+						"title": "Block number",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+					},
+					{
+						"title": "Block tag",
+						"type": "string",
+						"enum": ["earliest", "finalized", "safe", "latest", "pending"],
+						"description": "`earliest`: The lowest numbered block the client has available; `finalized`: The most recent crypto-economically secure block, cannot be re-orged outside of manual intervention driven by community coordination; `safe`: The most recent block that is safe from re-orgs under honest majority and certain synchronicity assumptions; `latest`: The most recent block in the canonical chain observed by the client, this block may be re-orged out of the canonical chain even under healthy/normal conditions; `pending`: A sample next block built by the client on top of `latest` and containing the set of transactions usually taken from local mempool. Before the merge transition is finalized, any call querying for `finalized` or `safe` block MUST be responded to with `-39001: Unknown block` error"
+					},
+					{
+						"title": "Block hash",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					}
+				]
+			}
+		}
+	],
+	"result": {
+		"name": "Bytecode",
+		"schema": {
+			"title": "hex encoded bytes",
+			"type": "string",
+			"pattern": "^0x[0-9a-f]*$"
+		}
+	},
+	"examples": [
+		{
+			"name": "eth_getCode example",
+			"params": [
+				{
+					"name": "Address",
+					"value": "0xa50a51c09a5c451c52bb714527e1974b686d8e77"
+				},
+				{ "name": "Block", "value": "latest" }
+			],
+			"result": {
+				"name": "Bytecode",
+				"value": "0x60806040526004361060485763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416633fa4f2458114604d57806355241077146071575b600080fd5b348015605857600080fd5b50605f6088565b60408051918252519081900360200190f35b348015607c57600080fd5b506086600435608e565b005b60005481565b60008190556040805182815290517f199cd93e851e4c78c437891155e2112093f8f15394aa89dab09e38d6ca0727879181900360200190a1505600a165627a7a723058209d8929142720a69bde2ab3bfa2da6217674b984899b62753979743c0470a2ea70029"
+			}
+		}
+	]
+}

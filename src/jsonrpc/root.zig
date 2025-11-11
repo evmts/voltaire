@@ -4,7 +4,6 @@
 /// Provides complete type coverage for eth, debug, and engine namespaces (65 methods total).
 ///
 /// Generated from: https://github.com/ethereum/execution-apis
-
 const std = @import("std");
 
 // Re-export the root JSON-RPC union and all namespace methods

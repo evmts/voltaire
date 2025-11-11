@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_newBlockFilter'
+export const method = "eth_newBlockFilter";
 
 /**
  * Parameters for `eth_newBlockFilter`
@@ -28,7 +28,7 @@ export const method = 'eth_newBlockFilter'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_newBlockFilter`
  *

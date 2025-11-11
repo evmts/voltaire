@@ -8,12 +8,12 @@
  */
 
 // Re-export all JSON-RPC types and methods
-export * from './JsonRpc.js';
+export * from "./JsonRpc.js";
 
 // Export namespace-specific methods for tree-shakable imports
-export * as eth from './eth/methods.js';
-export * as debug from './debug/methods.js';
-export * as engine from './engine/methods.js';
+export * as eth from "./eth/methods.js";
+export * as debug from "./debug/methods.js";
+export * as engine from "./engine/methods.js";
 
 // Export shared types
-export * as types from './types/index.js';
+export * as types from "./types/index.js";

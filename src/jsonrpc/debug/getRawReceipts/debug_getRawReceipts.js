@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'debug_getRawReceipts'
+export const method = "debug_getRawReceipts";
 
 /**
  * Parameters for `debug_getRawReceipts`
@@ -30,7 +30,7 @@ export const method = 'debug_getRawReceipts'
  * @property {Quantity} block - Block number or tag
  */
 
-export {}
+export {};
 /**
  * Result for `debug_getRawReceipts`
  *

@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getUncleCountByBlockHash'
+export const method = "eth_getUncleCountByBlockHash";
 
 /**
  * Parameters for `eth_getUncleCountByBlockHash`
@@ -30,7 +30,7 @@ export const method = 'eth_getUncleCountByBlockHash'
  * @property {Hash} block hash - 32 byte hex value
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getUncleCountByBlockHash`
  *

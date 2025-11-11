@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'debug_getBadBlocks'
+export const method = "debug_getBadBlocks";
 
 /**
  * Parameters for `debug_getBadBlocks`
@@ -28,7 +28,7 @@ export const method = 'debug_getBadBlocks'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `debug_getBadBlocks`
  *

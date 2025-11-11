@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_exchangeTransitionConfigurationV1'
+export const method = "engine_exchangeTransitionConfigurationV1";
 
 /**
  * Parameters for `engine_exchangeTransitionConfigurationV1`
@@ -30,7 +30,7 @@ export const method = 'engine_exchangeTransitionConfigurationV1'
  * @property {Quantity} consensus client configuration - Transition configuration object
  */
 
-export {}
+export {};
 /**
  * Result for `engine_exchangeTransitionConfigurationV1`
  *

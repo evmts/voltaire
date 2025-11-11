@@ -14,7 +14,6 @@ pub const method = "eth_syncing";
 
 /// Parameters for `eth_syncing`
 pub const Params = struct {
-
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         _ = self;
         try jws.write(.{});

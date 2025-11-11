@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getTransactionByBlockHashAndIndex'
+export const method = "eth_getTransactionByBlockHashAndIndex";
 
 /**
  * Parameters for `eth_getTransactionByBlockHashAndIndex`
@@ -32,7 +32,7 @@ export const method = 'eth_getTransactionByBlockHashAndIndex'
  * @property {Quantity} transaction index - hex encoded unsigned integer
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getTransactionByBlockHashAndIndex`
  *

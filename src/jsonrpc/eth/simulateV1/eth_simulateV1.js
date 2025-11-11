@@ -17,7 +17,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_simulateV1'
+export const method = "eth_simulateV1";
 
 /**
  * Parameters for `eth_simulateV1`
@@ -27,7 +27,7 @@ export const method = 'eth_simulateV1'
  * @property {BlockSpec} block tag - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_simulateV1`
  *

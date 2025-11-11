@@ -1,1 +1,137 @@
-{"name":"engine_forkchoiceUpdatedV1","summary":"Updates the forkchoice state","externalDocs":{"description":"Method specification","url":"https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_forkchoiceupdatedv1"},"params":[{"name":"Forkchoice state","required":true,"schema":{"title":"Forkchoice state object V1","type":"object","required":["headBlockHash","safeBlockHash","finalizedBlockHash"],"properties":{"headBlockHash":{"title":"Head block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"},"safeBlockHash":{"title":"Safe block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"},"finalizedBlockHash":{"title":"Finalized block hash","type":"string","pattern":"^0x[0-9a-f]{64}$"}}}},{"name":"Payload attributes","required":false,"schema":{"title":"Payload attributes object V1","type":"object","required":["timestamp","prevRandao","suggestedFeeRecipient"],"properties":{"timestamp":{"title":"Timestamp","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]{0,15})$"},"prevRandao":{"title":"Previous randao value","type":"string","pattern":"^0x[0-9a-f]{64}$"},"suggestedFeeRecipient":{"title":"Suggested fee recipient","type":"string","pattern":"^0x[0-9a-fA-F]{40}$"}}}}],"result":{"name":"Response object","schema":{"title":"Forkchoice updated response","type":"object","required":["payloadStatus"],"properties":{"payloadStatus":{"title":"Payload status","type":"object","required":["status"],"properties":{"status":{"title":"Payload validation status","type":"string","enum":["VALID","INVALID","SYNCING"],"description":"Set of possible values is restricted to VALID, INVALID, SYNCING"},"latestValidHash":{"title":"The hash of the most recent valid block","type":"string","pattern":"^0x[0-9a-f]{64}$"},"validationError":{"title":"Validation error message","type":"string"}}},"payloadId":{"title":"Payload id","type":"string","pattern":"^0x[0-9a-f]{16}$"}}}},"errors":[{"code":-38002,"message":"Invalid forkchoice state"},{"code":-38003,"message":"Invalid payload attributes"}],"examples":[{"name":"engine_forkchoiceUpdatedV1 example","params":[{"name":"Forkchoice state","value":{"headBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858","safeBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858","finalizedBlockHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a"}},{"name":"Payload attributes","value":{"timestamp":"0x5","prevRandao":"0x0000000000000000000000000000000000000000000000000000000000000000","suggestedFeeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"}}],"result":{"name":"Response object","value":{"payloadStatus":{"status":"VALID","latestValidHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858","validationError":null},"payloadId":"0x0000000021f32cc1"}}}]}
+{
+	"name": "engine_forkchoiceUpdatedV1",
+	"summary": "Updates the forkchoice state",
+	"externalDocs": {
+		"description": "Method specification",
+		"url": "https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_forkchoiceupdatedv1"
+	},
+	"params": [
+		{
+			"name": "Forkchoice state",
+			"required": true,
+			"schema": {
+				"title": "Forkchoice state object V1",
+				"type": "object",
+				"required": ["headBlockHash", "safeBlockHash", "finalizedBlockHash"],
+				"properties": {
+					"headBlockHash": {
+						"title": "Head block hash",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					},
+					"safeBlockHash": {
+						"title": "Safe block hash",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					},
+					"finalizedBlockHash": {
+						"title": "Finalized block hash",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					}
+				}
+			}
+		},
+		{
+			"name": "Payload attributes",
+			"required": false,
+			"schema": {
+				"title": "Payload attributes object V1",
+				"type": "object",
+				"required": ["timestamp", "prevRandao", "suggestedFeeRecipient"],
+				"properties": {
+					"timestamp": {
+						"title": "Timestamp",
+						"type": "string",
+						"pattern": "^0x(0|[1-9a-f][0-9a-f]{0,15})$"
+					},
+					"prevRandao": {
+						"title": "Previous randao value",
+						"type": "string",
+						"pattern": "^0x[0-9a-f]{64}$"
+					},
+					"suggestedFeeRecipient": {
+						"title": "Suggested fee recipient",
+						"type": "string",
+						"pattern": "^0x[0-9a-fA-F]{40}$"
+					}
+				}
+			}
+		}
+	],
+	"result": {
+		"name": "Response object",
+		"schema": {
+			"title": "Forkchoice updated response",
+			"type": "object",
+			"required": ["payloadStatus"],
+			"properties": {
+				"payloadStatus": {
+					"title": "Payload status",
+					"type": "object",
+					"required": ["status"],
+					"properties": {
+						"status": {
+							"title": "Payload validation status",
+							"type": "string",
+							"enum": ["VALID", "INVALID", "SYNCING"],
+							"description": "Set of possible values is restricted to VALID, INVALID, SYNCING"
+						},
+						"latestValidHash": {
+							"title": "The hash of the most recent valid block",
+							"type": "string",
+							"pattern": "^0x[0-9a-f]{64}$"
+						},
+						"validationError": {
+							"title": "Validation error message",
+							"type": "string"
+						}
+					}
+				},
+				"payloadId": {
+					"title": "Payload id",
+					"type": "string",
+					"pattern": "^0x[0-9a-f]{16}$"
+				}
+			}
+		}
+	},
+	"errors": [
+		{ "code": -38002, "message": "Invalid forkchoice state" },
+		{ "code": -38003, "message": "Invalid payload attributes" }
+	],
+	"examples": [
+		{
+			"name": "engine_forkchoiceUpdatedV1 example",
+			"params": [
+				{
+					"name": "Forkchoice state",
+					"value": {
+						"headBlockHash": "0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
+						"safeBlockHash": "0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
+						"finalizedBlockHash": "0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a"
+					}
+				},
+				{
+					"name": "Payload attributes",
+					"value": {
+						"timestamp": "0x5",
+						"prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
+						"suggestedFeeRecipient": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
+					}
+				}
+			],
+			"result": {
+				"name": "Response object",
+				"value": {
+					"payloadStatus": {
+						"status": "VALID",
+						"latestValidHash": "0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
+						"validationError": null
+					},
+					"payloadId": "0x0000000021f32cc1"
+				}
+			}
+		}
+	]
+}

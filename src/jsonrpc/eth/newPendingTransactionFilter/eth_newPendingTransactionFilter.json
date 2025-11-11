@@ -1,1 +1,20 @@
-{"name":"eth_newPendingTransactionFilter","summary":"Creates a filter in the node, allowing for later polling. Registers client interest in new transactions, and returns an identifier.","params":[],"result":{"name":"Filter identifier","schema":{"title":"hex encoded unsigned integer","type":"string","pattern":"^0x(0|[1-9a-f][0-9a-f]*)$"}},"examples":[{"name":"eth_newPendingTransactionFilter example","params":[],"result":{"name":"Filter identifier","value":"0x01"}}]}
+{
+	"name": "eth_newPendingTransactionFilter",
+	"summary": "Creates a filter in the node, allowing for later polling. Registers client interest in new transactions, and returns an identifier.",
+	"params": [],
+	"result": {
+		"name": "Filter identifier",
+		"schema": {
+			"title": "hex encoded unsigned integer",
+			"type": "string",
+			"pattern": "^0x(0|[1-9a-f][0-9a-f]*)$"
+		}
+	},
+	"examples": [
+		{
+			"name": "eth_newPendingTransactionFilter example",
+			"params": [],
+			"result": { "name": "Filter identifier", "value": "0x01" }
+		}
+	]
+}

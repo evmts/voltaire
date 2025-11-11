@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_createAccessList'
+export const method = "eth_createAccessList";
 
 /**
  * Parameters for `eth_createAccessList`
@@ -32,7 +32,7 @@ export const method = 'eth_createAccessList'
  * @property {Quantity} block - Block number or tag
  */
 
-export {}
+export {};
 /**
  * Result for `eth_createAccessList`
  *

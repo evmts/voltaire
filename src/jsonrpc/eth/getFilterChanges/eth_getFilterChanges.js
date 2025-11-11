@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getFilterChanges'
+export const method = "eth_getFilterChanges";
 
 /**
  * Parameters for `eth_getFilterChanges`
@@ -30,7 +30,7 @@ export const method = 'eth_getFilterChanges'
  * @property {Quantity} filter identifier - hex encoded unsigned integer
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getFilterChanges`
  *

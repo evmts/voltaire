@@ -5,12 +5,12 @@
  * Imports are kept tree-shakable - only import what you use.
  */
 
-export * from './engine/methods.js'
-export * from './eth/methods.js'
-export * from './debug/methods.js'
+export * from "./engine/methods.js";
+export * from "./eth/methods.js";
+export * from "./debug/methods.js";
 
 // Export primitive types separately
-export * as types from './types/index.js'
+export * as types from "./types/index.js";
 
 /**
  * @typedef {import('./engine/methods.js').EngineMethod} EngineMethod
@@ -24,4 +24,4 @@ export * as types from './types/index.js'
  * @typedef {EngineMethod | EthMethod | DebugMethod} JsonRpcMethod
  */
 
-export {}
+export {};

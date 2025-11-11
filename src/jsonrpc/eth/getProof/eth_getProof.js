@@ -23,7 +23,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getProof'
+export const method = "eth_getProof";
 
 /**
  * Parameters for `eth_getProof`
@@ -34,7 +34,7 @@ export const method = 'eth_getProof'
  * @property {BlockSpec} block - Block number, tag, or block hash
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getProof`
  *

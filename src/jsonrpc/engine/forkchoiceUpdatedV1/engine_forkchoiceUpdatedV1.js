@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_forkchoiceUpdatedV1'
+export const method = "engine_forkchoiceUpdatedV1";
 
 /**
  * Parameters for `engine_forkchoiceUpdatedV1`
@@ -32,7 +32,7 @@ export const method = 'engine_forkchoiceUpdatedV1'
  * @property {Quantity} payload attributes - Payload attributes object V1
  */
 
-export {}
+export {};
 /**
  * Result for `engine_forkchoiceUpdatedV1`
  *

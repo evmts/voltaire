@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_coinbase'
+export const method = "eth_coinbase";
 
 /**
  * Parameters for `eth_coinbase`
@@ -28,7 +28,7 @@ export const method = 'eth_coinbase'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_coinbase`
  *

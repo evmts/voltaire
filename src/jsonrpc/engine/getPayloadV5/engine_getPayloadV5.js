@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_getPayloadV5'
+export const method = "engine_getPayloadV5";
 
 /**
  * Parameters for `engine_getPayloadV5`
@@ -30,7 +30,7 @@ export const method = 'engine_getPayloadV5'
  * @property {Quantity} payload id - 8 hex encoded bytes
  */
 
-export {}
+export {};
 /**
  * Result for `engine_getPayloadV5`
  *

@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_getPayloadBodiesByRangeV1'
+export const method = "engine_getPayloadBodiesByRangeV1";
 
 /**
  * Parameters for `engine_getPayloadBodiesByRangeV1`
@@ -32,7 +32,7 @@ export const method = 'engine_getPayloadBodiesByRangeV1'
  * @property {Quantity} number of blocks to return - hex encoded 64 bit unsigned integer
  */
 
-export {}
+export {};
 /**
  * Result for `engine_getPayloadBodiesByRangeV1`
  *

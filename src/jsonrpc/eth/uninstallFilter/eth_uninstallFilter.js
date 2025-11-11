@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_uninstallFilter'
+export const method = "eth_uninstallFilter";
 
 /**
  * Parameters for `eth_uninstallFilter`
@@ -30,7 +30,7 @@ export const method = 'eth_uninstallFilter'
  * @property {Quantity} filter identifier - hex encoded unsigned integer
  */
 
-export {}
+export {};
 /**
  * Result for `eth_uninstallFilter`
  *

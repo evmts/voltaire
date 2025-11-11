@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_getPayloadBodiesByHashV1'
+export const method = "engine_getPayloadBodiesByHashV1";
 
 /**
  * Parameters for `engine_getPayloadBodiesByHashV1`
@@ -30,7 +30,7 @@ export const method = 'engine_getPayloadBodiesByHashV1'
  * @property {Quantity} array of block hashes
  */
 
-export {}
+export {};
 /**
  * Result for `engine_getPayloadBodiesByHashV1`
  *

@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getUncleCountByBlockNumber'
+export const method = "eth_getUncleCountByBlockNumber";
 
 /**
  * Parameters for `eth_getUncleCountByBlockNumber`
@@ -30,7 +30,7 @@ export const method = 'eth_getUncleCountByBlockNumber'
  * @property {Quantity} block - Block number or tag
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getUncleCountByBlockNumber`
  *

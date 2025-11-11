@@ -22,7 +22,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getBlockByHash'
+export const method = "eth_getBlockByHash";
 
 /**
  * Parameters for `eth_getBlockByHash`
@@ -32,7 +32,7 @@ export const method = 'eth_getBlockByHash'
  * @property {Quantity} hydrated transactions - hydrated
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getBlockByHash`
  *

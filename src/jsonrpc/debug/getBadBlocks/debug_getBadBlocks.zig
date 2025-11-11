@@ -14,7 +14,6 @@ pub const method = "debug_getBadBlocks";
 
 /// Parameters for `debug_getBadBlocks`
 pub const Params = struct {
-
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         _ = self;
         try jws.write(.{});

@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_estimateGas'
+export const method = "eth_estimateGas";
 
 /**
  * Parameters for `eth_estimateGas`
@@ -31,7 +31,7 @@ export const method = 'eth_estimateGas'
  * @property {Quantity} block - Block number or tag
  */
 
-export {}
+export {};
 /**
  * Result for `eth_estimateGas`
  *

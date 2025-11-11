@@ -20,7 +20,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_newPendingTransactionFilter'
+export const method = "eth_newPendingTransactionFilter";
 
 /**
  * Parameters for `eth_newPendingTransactionFilter`
@@ -28,7 +28,7 @@ export const method = 'eth_newPendingTransactionFilter'
  * @typedef {Object} Params
  */
 
-export {}
+export {};
 /**
  * Result for `eth_newPendingTransactionFilter`
  *

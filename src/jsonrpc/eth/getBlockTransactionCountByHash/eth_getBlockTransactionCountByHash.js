@@ -21,7 +21,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'eth_getBlockTransactionCountByHash'
+export const method = "eth_getBlockTransactionCountByHash";
 
 /**
  * Parameters for `eth_getBlockTransactionCountByHash`
@@ -30,7 +30,7 @@ export const method = 'eth_getBlockTransactionCountByHash'
  * @property {Hash} block hash - 32 byte hex value
  */
 
-export {}
+export {};
 /**
  * Result for `eth_getBlockTransactionCountByHash`
  *

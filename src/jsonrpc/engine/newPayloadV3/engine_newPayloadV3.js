@@ -23,7 +23,7 @@
  */
 
 /** The JSON-RPC method name */
-export const method = 'engine_newPayloadV3'
+export const method = "engine_newPayloadV3";
 
 /**
  * Parameters for `engine_newPayloadV3`
@@ -34,7 +34,7 @@ export const method = 'engine_newPayloadV3'
  * @property {Hash} root of the parent beacon block - 32 byte hex value
  */
 
-export {}
+export {};
 /**
  * Result for `engine_newPayloadV3`
  *
