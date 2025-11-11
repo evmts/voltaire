@@ -5,7 +5,7 @@
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
  */
 export function add(frame) {
-	const gasErr = frame.consumeGas ? consumeGas(frame, 3n) : null;
+	const gasErr = consumeGas(frame, 3n);
 	if (gasErr) return gasErr;
 
 	const resultA = popStack(frame);

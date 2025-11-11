@@ -1,3 +1,8 @@
+import { FastestStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
+import { pushStack } from "../Frame/pushStack.js";
+
 /**
  * LT opcode (0x10) - Less than comparison (unsigned)
  *
@@ -11,25 +16,18 @@
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
  */
 export function handle(frame) {
-	const { FastestStep } = await import(
-		"../../primitives/GasConstants/BrandedGasConstants/constants.js"
-	);
-	const { consumeGas } = await import("../Frame/consumeGas.js");
-	const { popStack } = await import("../Frame/popStack.js");
-	const { pushStack } = await import("../Frame/pushStack.js");
-
 	// Consume gas
 	const gasErr = consumeGas(frame, FastestStep);
 	if (gasErr) return gasErr;
 
 	// Pop operands
-	const aErr = popStack(frame);
-	if (aErr[1]) return aErr[1];
-	const a = aErr[0];
+	const aResult = popStack(frame);
+	if (aResult.error) return aResult.error;
+	const a = aResult.value;
 
-	const bErr = popStack(frame);
-	if (bErr[1]) return bErr[1];
-	const b = bErr[0];
+	const bResult = popStack(frame);
+	if (bResult.error) return bResult.error;
+	const b = bResult.value;
 
 	// Compare: a < b
 	const result = a < b ? 1n : 0n;
