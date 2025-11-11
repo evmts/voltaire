@@ -13,15 +13,20 @@ export { hashString };
  * Legacy hash function used primarily in Bitcoin for address generation.
  * RIPEMD160 produces 20-byte (160-bit) hashes.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @throws {Error} When called as constructor
  * @example
- * ```typescript
- * import { Ripemd160 } from './Ripemd160.js';
+ * ```javascript
+ * import { Ripemd160 } from './crypto/Ripemd160/index.js';
  *
  * // Hash bytes
- * const hash = Ripemd160.hash(data);
+ * const hash = Ripemd160.hash(new Uint8Array([1, 2, 3]));
+ * console.log(hash.length); // 20
  *
  * // Hash string
  * const hash2 = Ripemd160.hashString("hello");
+ * console.log(hash2.length); // 20
  * ```
  */
 export function Ripemd160() {

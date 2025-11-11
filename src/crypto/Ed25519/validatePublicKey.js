@@ -2,12 +2,19 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { PUBLIC_KEY_SIZE } from "./constants.js";
 
 /**
- * Validate a public key
+ * Validate Ed25519 public key format and curve membership.
  *
- * Checks if the public key is valid
- *
- * @param {import('./PublicKey.js').PublicKey} publicKey - Public key to validate
- * @returns {boolean} True if valid, false otherwise
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./PublicKey.js').PublicKey} publicKey - Ed25519 public key to validate
+ * @returns {boolean} True if public key is valid and on curve, false otherwise
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Ed25519 from './crypto/Ed25519/index.js';
+ * const isValid = Ed25519.validatePublicKey(publicKey);
+ * if (!isValid) console.log('Invalid public key');
+ * ```
  */
 export function validatePublicKey(publicKey) {
 	if (publicKey.length !== PUBLIC_KEY_SIZE) {

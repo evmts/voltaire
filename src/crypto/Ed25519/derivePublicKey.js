@@ -3,14 +3,17 @@ import { SECRET_KEY_SIZE } from "./constants.js";
 import { InvalidSecretKeyError } from "./errors.js";
 
 /**
- * Derive public key from secret key
+ * Derive Ed25519 public key from secret key.
  *
- * @param {import('./SecretKey.js').SecretKey} secretKey - 32-byte secret key (seed)
- * @returns {import('./PublicKey.js').PublicKey} 32-byte public key
- * @throws {InvalidSecretKeyError} If secret key is invalid
- *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./SecretKey.js').SecretKey} secretKey - 32-byte Ed25519 secret key (seed)
+ * @returns {import('./PublicKey.js').PublicKey} 32-byte Ed25519 public key
+ * @throws {InvalidSecretKeyError} If secret key length is invalid or derivation fails
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Ed25519 from './crypto/Ed25519/index.js';
+ * const secretKey = new Uint8Array(32); // Your secret key
  * const publicKey = Ed25519.derivePublicKey(secretKey);
  * ```
  */
