@@ -1,0 +1,68 @@
+---
+title: Uint.isZero
+description: Check if Uint256 value is zero
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.isZero(value: BrandedUint): boolean`
+
+Check if value is zero.
+
+**Parameters:**
+- `value: BrandedUint` - Value to check
+
+**Returns:** `boolean` - True if zero
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.isZero(Uint.ZERO)          // true
+Uint.isZero(Uint.from(0n))      // true
+Uint.isZero(Uint.from(1n))      // false
+Uint.isZero(Uint.MAX)           // false
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/isZero.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/isZero.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `isZero(value: BrandedUint): boolean`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const result = Uint.isZero(Uint.from(0n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/isZero.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/isZero.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `uint.isZero(): bool`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const value = Uint.init(0);
+const result = value.isZero();
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [equals](/primitives/uint/equals) - Equality check
+- [Comparisons](/primitives/uint/comparisons) - Full comparison reference

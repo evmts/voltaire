@@ -1,0 +1,68 @@
+---
+title: Uint.lessThan
+description: Check if first Uint256 is less than second
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.lessThan(a: BrandedUint, b: BrandedUint): boolean`
+
+Check if first value is less than second.
+
+**Parameters:**
+- `a: BrandedUint` - First value
+- `b: BrandedUint` - Second value
+
+**Returns:** `boolean` - True if a < b
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.lessThan(Uint.from(100n), Uint.from(200n))  // true
+Uint.lessThan(Uint.from(200n), Uint.from(100n))  // false
+Uint.lessThan(Uint.from(100n), Uint.from(100n))  // false
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/lessThan.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/lessThan.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `lessThan(a: BrandedUint, b: BrandedUint): boolean`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const result = Uint.lessThan(Uint.from(100n), Uint.from(200n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/lessThan.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/lessThan.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.lessThan(a: Uint, b: Uint): bool`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const result = Uint.lessThan(Uint.init(100), Uint.init(200));
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [lessThanOrEqual](/primitives/uint/less-than-or-equal) - Less than or equal
+- [greaterThan](/primitives/uint/greater-than) - Greater than
+- [Comparisons](/primitives/uint/comparisons) - Full comparison reference

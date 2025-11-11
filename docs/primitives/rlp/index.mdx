@@ -58,92 +58,46 @@ Rlp.validate(encoded);
 
 ## API Methods
 
-<Tabs>
-<Tab title="Namespace API">
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create RLP data structures from bytes or nested arrays
+[View constructors →](./from)
+</Card>
+<Card title="Encoding" icon="file-code">
+Encode bytes, lists, arrays, objects, and variadic arguments
+[View encoding →](./encode)
+</Card>
+<Card title="Decoding" icon="file-export">
+Decode RLP bytes to data structures, arrays, and objects
+[View decoding →](./decode)
+</Card>
+<Card title="Validation" icon="check">
+Validate RLP encoding structure and format
+[View validation →](./validate)
+</Card>
+<Card title="Utilities" icon="wrench">
+Calculate lengths, flatten, compare, and convert to raw arrays
+[View utilities →](./getEncodedLength)
+</Card>
+<Card title="Type Guards" icon="shield-check">
+Check if values are RLP data, bytes, lists, or strings
+[View type guards →](./isData)
+</Card>
+<Card title="Serialization" icon="arrows-rotate">
+Convert to/from JSON-serializable format
+[View serialization →](./toJSON)
+</Card>
+</CardGroup>
 
-**Constructors:**
-- `from(value)` - Create RLP data structure from bytes or nested arrays
+### Methods Reference
 
-**Encoding:**
-- `encode(data)` - Universal encoder (bytes, lists, nested structures)
-- `encodeBytes(bytes)` - Encode byte string
-- `encodeList(items)` - Encode list of items
-- `encodeArray(items, schema)` - Encode array with schema
-- `encodeObject(obj, schema)` - Encode object with schema
-- `encodeVariadic(...items)` - Encode variadic arguments
-- `encodeBatch(items)` - Batch encode multiple items
-
-**Decoding:**
-- `decode(bytes, stream?)` - Decode RLP bytes to data structure
-- `decodeArray(bytes, schema)` - Decode to array with schema
-- `decodeObject(bytes, schema)` - Decode to object with schema
-- `decodeBatch(bytes)` - Batch decode multiple items
-
-**Validation:**
-- `validate(bytes)` - Validate RLP encoding
-
-**Utilities:**
-- `getEncodedLength(data)` - Calculate encoded byte length
-- `getLength(bytes, offset)` - Parse length from encoded bytes
-- `flatten(data)` - Flatten nested structure to byte arrays
-- `equals(a, b)` - Compare RLP data structures
-- `toRaw(data)` - Convert to raw nested arrays
-
-**Type Guards:**
-- `isData(value)` - Check if value is RLP data
-- `isBytesData(value)` - Check if value is bytes data
-- `isListData(value)` - Check if value is list data
-- `isList(bytes)` - Check if encoded bytes represent list
-- `isString(bytes)` - Check if encoded bytes represent string
-
-**Serialization:**
-- `toJSON(data)` - Convert to JSON-serializable format
-- `fromJSON(json)` - Restore from JSON
-
-</Tab>
-<Tab title="Function API">
-
-**Constructors:**
-- `Rlp.from(value)` - Create RLP data structure from bytes or nested arrays
-
-**Encoding:**
-- `Rlp.encode(data)` - Universal encoder (bytes, lists, nested structures)
-- `Rlp.encodeBytes(bytes)` - Encode byte string
-- `Rlp.encodeList(items)` - Encode list of items
-- `Rlp.encodeArray(items, schema)` - Encode array with schema
-- `Rlp.encodeObject(obj, schema)` - Encode object with schema
-- `Rlp.encodeVariadic(...items)` - Encode variadic arguments
-- `Rlp.encodeBatch(items)` - Batch encode multiple items
-
-**Decoding:**
-- `Rlp.decode(bytes, stream?)` - Decode RLP bytes to data structure
-- `Rlp.decodeArray(bytes, schema)` - Decode to array with schema
-- `Rlp.decodeObject(bytes, schema)` - Decode to object with schema
-- `Rlp.decodeBatch(bytes)` - Batch decode multiple items
-
-**Validation:**
-- `Rlp.validate(bytes)` - Validate RLP encoding
-
-**Utilities:**
-- `Rlp.getEncodedLength(data)` - Calculate encoded byte length
-- `Rlp.getLength(bytes, offset)` - Parse length from encoded bytes
-- `Rlp.flatten(data)` - Flatten nested structure to byte arrays
-- `Rlp.equals(a, b)` - Compare RLP data structures
-- `Rlp.toRaw(data)` - Convert to raw nested arrays
-
-**Type Guards:**
-- `Rlp.isData(value)` - Check if value is RLP data
-- `Rlp.isBytesData(value)` - Check if value is bytes data
-- `Rlp.isListData(value)` - Check if value is list data
-- `Rlp.isList(bytes)` - Check if encoded bytes represent list
-- `Rlp.isString(bytes)` - Check if encoded bytes represent string
-
-**Serialization:**
-- `Rlp.toJSON(data)` - Convert to JSON-serializable format
-- `Rlp.fromJSON(json)` - Restore from JSON
-
-</Tab>
-</Tabs>
+- **Constructors**: `from`
+- **Encoding**: `encode`, `encodeBytes`, `encodeList`, `encodeArray`, `encodeObject`, `encodeVariadic`, `encodeBatch`
+- **Decoding**: `decode`, `decodeArray`, `decodeObject`, `decodeBatch`
+- **Validation**: `validate`
+- **Utilities**: `getEncodedLength`, `getLength`, `flatten`, `equals`, `toRaw`
+- **Type Guards**: `isData`, `isBytesData`, `isListData`, `isList`, `isString`
+- **Serialization**: `toJSON`, `fromJSON`
 
 ## Types
 

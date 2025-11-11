@@ -1,0 +1,251 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for Base64 encoding and decoding"
+---
+
+# Usage Patterns
+
+Practical patterns for Base64 encoding and decoding in Ethereum applications.
+
+## Data Encoding
+
+### Binary to Base64
+
+```typescript
+import * as Base64 from '@tevm/voltaire/Base64';
+
+// Encode binary data
+const binaryData = new Uint8Array([1, 2, 3, 4, 5]);
+const encoded = Base64.encode(binaryData);
+console.log(encoded);  // "AQIDBAU="
+
+// Encode hex to Base64
+import * as Hex from '@tevm/voltaire/Hex';
+const hexData = Hex.from("0x48656c6c6f");  // "Hello"
+const base64 = Base64.encode(Hex.toBytes(hexData));
+console.log(base64);  // "SGVsbG8="
+```
+
+### String to Base64
+
+```typescript
+// Encode UTF-8 string
+function encodeString(str: string): BrandedBase64 {
+  const bytes = new TextEncoder().encode(str);
+  return Base64.encode(bytes);
+}
+
+const encoded = encodeString("Hello, Ethereum!");
+// "SGVsbG8sIEV0aGVyZXVtIQ=="
+```
+
+## Data Decoding
+
+### Base64 to Binary
+
+```typescript
+// Decode to bytes
+const decoded = Base64.decode(encoded);
+console.log(Array.from(decoded));  // [1, 2, 3, 4, 5]
+
+// Decode to hex
+const hex = Hex.fromBytes(decoded);
+console.log(Hex.toHex(hex));  // "0x0102030405"
+```
+
+### Base64 to String
+
+```typescript
+// Decode to UTF-8 string
+function decodeString(base64: BrandedBase64): string {
+  const bytes = Base64.decode(base64);
+  return new TextDecoder().decode(bytes);
+}
+
+const text = decodeString(encoded);
+console.log(text);  // "Hello, Ethereum!"
+```
+
+## Validation
+
+### Input Validation
+
+```typescript
+// Validate before decoding
+function safeDecode(input: string): Uint8Array | null {
+  if (!Base64.isValid(input)) {
+    console.error("Invalid Base64 input");
+    return null;
+  }
+
+  try {
+    return Base64.decode(Base64.from(input));
+  } catch (err) {
+    console.error("Decoding failed:", err);
+    return null;
+  }
+}
+```
+
+### Format Checking
+
+```typescript
+// Check if string is valid Base64
+function isBase64String(str: string): boolean {
+  return Base64.isValid(str);
+}
+
+// Validate and normalize
+function normalizeBase64(input: string): BrandedBase64 {
+  // Remove whitespace
+  const cleaned = input.replace(/\s/g, '');
+
+  if (!Base64.isValid(cleaned)) {
+    throw new Error("Invalid Base64 format");
+  }
+
+  return Base64.from(cleaned);
+}
+```
+
+## API Integration
+
+### JSON Payload Encoding
+
+```typescript
+interface APIPayload {
+  data: string;  // Base64 encoded
+  signature: string;  // Base64 encoded
+}
+
+function createPayload(
+  data: Uint8Array,
+  signature: Uint8Array
+): APIPayload {
+  return {
+    data: Base64.encode(data),
+    signature: Base64.encode(signature)
+  };
+}
+
+function parsePayload(payload: APIPayload): {
+  data: Uint8Array;
+  signature: Uint8Array;
+} {
+  return {
+    data: Base64.decode(Base64.from(payload.data)),
+    signature: Base64.decode(Base64.from(payload.signature))
+  };
+}
+```
+
+### URL-safe Encoding
+
+```typescript
+// Convert standard Base64 to URL-safe
+function toURLSafe(base64: BrandedBase64): string {
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');  // Remove padding
+}
+
+// Convert URL-safe to standard Base64
+function fromURLSafe(urlSafe: string): BrandedBase64 {
+  let standard = urlSafe
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  // Add padding
+  const padding = (4 - (standard.length % 4)) % 4;
+  standard += '='.repeat(padding);
+
+  return Base64.from(standard);
+}
+```
+
+## Storage Patterns
+
+### Database Storage
+
+```typescript
+// Store binary data as Base64 in database
+async function storeBinaryData(
+  db: Database,
+  key: string,
+  data: Uint8Array
+): Promise<void> {
+  const encoded = Base64.encode(data);
+  await db.set(key, encoded);
+}
+
+async function loadBinaryData(
+  db: Database,
+  key: string
+): Promise<Uint8Array | null> {
+  const encoded = await db.get(key);
+  if (!encoded) return null;
+
+  return Base64.decode(Base64.from(encoded));
+}
+```
+
+### Configuration Files
+
+```typescript
+// Encode keys for JSON config
+interface Config {
+  privateKey: string;  // Base64
+  salt: string;  // Base64
+}
+
+function saveConfig(
+  privateKey: Uint8Array,
+  salt: Uint8Array
+): Config {
+  return {
+    privateKey: Base64.encode(privateKey),
+    salt: Base64.encode(salt)
+  };
+}
+
+function loadConfig(config: Config): {
+  privateKey: Uint8Array;
+  salt: Uint8Array;
+} {
+  return {
+    privateKey: Base64.decode(Base64.from(config.privateKey)),
+    salt: Base64.decode(Base64.from(config.salt))
+  };
+}
+```
+
+## Testing
+
+### Test Fixtures
+
+```typescript
+const TEST_VECTORS = [
+  { input: "", expected: "" },
+  { input: "f", expected: "Zg==" },
+  { input: "fo", expected: "Zm8=" },
+  { input: "foo", expected: "Zm9v" },
+  { input: "foob", expected: "Zm9vYg==" },
+  { input: "fooba", expected: "Zm9vYmE=" },
+  { input: "foobar", expected: "Zm9vYmFy" }
+];
+
+// Test encoding
+TEST_VECTORS.forEach(({ input, expected }) => {
+  const bytes = new TextEncoder().encode(input);
+  const encoded = Base64.encode(bytes);
+  console.assert(encoded === expected, `Encoding failed for: ${input}`);
+});
+```
+
+## Related
+
+- [Encoding](/primitives/base64/encoding) - Encoding methods
+- [Decoding](/primitives/base64/decoding) - Decoding methods
+- [Validation](/primitives/base64/validation) - Format validation
+- [Fundamentals](/primitives/base64/fundamentals) - Base64 basics

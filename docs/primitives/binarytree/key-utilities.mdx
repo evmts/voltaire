@@ -13,6 +13,9 @@ Binary State Tree uses 32-byte keys split into 31-byte stems (tree path) and 1-b
 
 ## Address to Key
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `BinaryTree.addressToKey(address)`
 
 Convert 20-byte Ethereum address to 32-byte tree key by prepending 12 zero bytes.
@@ -47,60 +50,37 @@ key = [0,0,0,0,0,0,0,0,0,0,0,0, a0,a1,a2,...,a19]
        ← 12 zero bytes →         ← 20 address bytes →
 ```
 
-<Tabs>
-<Tab title="Basic Usage">
-```typescript
-import { BinaryTree } from '@tevm/voltaire'
+</Tab>
+<Tab title="Zig">
+
+### `BinaryTree.addressToKey(addr: [20]u8) [32]u8`
+
+Convert 20-byte Ethereum address to 32-byte tree key by prepending 12 zero bytes.
+
+**Parameters:**
+- `addr: [20]u8` - 20-byte Ethereum address
+
+**Returns:** `[32]u8` - 32-byte key (12 zero bytes + 20 address bytes)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const BinaryTree = @import("primitives").BinaryTree;
 
 // Convert address to key
-const address = new Uint8Array(20)
-// ... set address bytes
+var address: [20]u8 = undefined;
+address[0] = 0x74;
+address[1] = 0x2d;
+@memset(address[2..], 0);
 
-const key = BinaryTree.addressToKey(address)
-
-// Use key for tree operations
-let tree = BinaryTree.init()
-tree = BinaryTree.insert(tree, key, value)
+const key = BinaryTree.addressToKey(address);
+// key[0..12] are zeros
+// key[12..32] contains address bytes
 ```
-</Tab>
-<Tab title="Account Key">
-```typescript
-import { BinaryTree } from '@tevm/voltaire'
 
-const address = new Uint8Array(20)
-// ... set address
+**Defined in:** [primitives/BinaryTree/binary_tree.zig:51](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig#L51)
 
-// Convert to base key
-const baseKey = BinaryTree.addressToKey(address)
-
-// Create keys for different subindices
-const accountDataKey = baseKey.slice()
-accountDataKey[31] = 0  // Subindex 0 for AccountData
-
-const storageSlot0Key = baseKey.slice()
-storageSlot0Key[31] = 1  // Subindex 1 for storage slot 0
-```
-</Tab>
-<Tab title="Validation">
-```typescript
-import { BinaryTree, InvalidAddressLengthError } from '@tevm/voltaire'
-
-try {
-  const invalidAddress = new Uint8Array(19) // Wrong length
-  const key = BinaryTree.addressToKey(invalidAddress)
-} catch (error) {
-  if (error instanceof InvalidAddressLengthError) {
-    console.error('Address must be 20 bytes')
-  }
-}
-```
-</Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { addressToKey } from '@tevm/voltaire/BrandedBinaryTree'
-
-const key = addressToKey(address)
-```
 </Tab>
 </Tabs>
 

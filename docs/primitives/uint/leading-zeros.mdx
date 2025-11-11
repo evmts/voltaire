@@ -1,0 +1,68 @@
+---
+title: Uint.leadingZeros
+description: Count leading zero bits in Uint256 value
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.leadingZeros(value: BrandedUint): number`
+
+Count leading zero bits (from most significant bit).
+
+**Parameters:**
+- `value: BrandedUint` - Value to analyze
+
+**Returns:** `number` - Number of leading zeros (0-256)
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.leadingZeros(Uint.ZERO)       // 256
+Uint.leadingZeros(Uint.from(1n))   // 255
+Uint.leadingZeros(Uint.from(255n)) // 248
+Uint.leadingZeros(Uint.MAX)        // 0
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/leadingZeros.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/leadingZeros.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `leadingZeros(value: BrandedUint): number`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const zeros = Uint.leadingZeros(Uint.from(255n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/leadingZeros.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/leadingZeros.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `uint.leadingZeros(): u9`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const value = Uint.init(255);
+const zeros = value.leadingZeros();
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [bitLength](/primitives/uint/bit-length) - Bit length
+- [popCount](/primitives/uint/pop-count) - Count set bits

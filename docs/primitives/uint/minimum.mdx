@@ -1,0 +1,67 @@
+---
+title: Uint.minimum
+description: Get minimum of two Uint256 values
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.minimum(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+Get minimum of two values.
+
+**Parameters:**
+- `a: BrandedUint` - First value
+- `b: BrandedUint` - Second value
+
+**Returns:** `BrandedUint` - Smaller value
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.minimum(Uint.from(100n), Uint.from(200n))  // 100
+Uint.minimum(Uint.from(200n), Uint.from(100n))  // 100
+Uint.minimum(Uint.ZERO, Uint.MAX)               // ZERO
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/minimum.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/minimum.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `minimum(a: BrandedUint, b: BrandedUint): BrandedUint`
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const min = Uint.minimum(Uint.from(100n), Uint.from(200n))
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/minimum.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/minimum.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.min(a: Uint, b: Uint): Uint`
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const min = Uint.min(Uint.init(100), Uint.init(200));
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [maximum](/primitives/uint/maximum) - Maximum of two values
+- [lessThan](/primitives/uint/less-than) - Less than comparison
