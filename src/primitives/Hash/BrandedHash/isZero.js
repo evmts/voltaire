@@ -3,14 +3,16 @@ import { ZERO } from "./constants.js";
 /**
  * Check if hash is zero hash
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @param {import('./BrandedHash.js').BrandedHash} hash - Hash to check
  * @returns {boolean} True if hash is all zeros
- *
+ * @throws {never}
  * @example
- * ```js
- * const hash = Hash('0x00...');
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
+ * const hash = Hash.from('0x00...');
  * const zero = Hash.isZero(hash); // true
- * const zero2 = hash.isZero(); // true
  * ```
  */
 export function isZero(hash) {

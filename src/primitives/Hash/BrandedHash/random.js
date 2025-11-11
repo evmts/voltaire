@@ -3,11 +3,13 @@ import { SIZE } from "./BrandedHash.js";
 /**
  * Generate random hash
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @returns {import('./BrandedHash.js').BrandedHash} Random 32-byte hash
  * @throws {Error} If crypto.getRandomValues not available
- *
  * @example
- * ```js
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
  * const hash = Hash.random();
  * ```
  */

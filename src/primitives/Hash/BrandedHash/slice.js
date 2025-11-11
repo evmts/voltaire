@@ -1,16 +1,18 @@
 /**
  * Get slice of hash
  *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
  * @param {import('./BrandedHash.js').BrandedHash} hash - Hash to slice
  * @param {number} [start] - Start index (inclusive)
  * @param {number} [end] - End index (exclusive)
  * @returns {Uint8Array} Slice of hash bytes
- *
+ * @throws {never}
  * @example
- * ```js
- * const hash = Hash('0x1234...');
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
+ * const hash = Hash.from('0x1234...');
  * const selector = Hash.slice(hash, 0, 4);
- * const selector2 = hash.slice(0, 4); // Same result
  * ```
  */
 export function slice(hash, start, end) {
