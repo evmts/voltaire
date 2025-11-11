@@ -7,7 +7,16 @@
  *
  * Value: Keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
  *
+ * @see https://voltaire.tevm.sh/primitives/state for State documentation
+ * @since 0.0.0
  * @type {import('../../Hash/index.js').BrandedHash}
+ * @example
+ * ```javascript
+ * import { EMPTY_CODE_HASH } from './primitives/State/index.js';
+ * if (codeHash.equals(EMPTY_CODE_HASH)) {
+ *   // Account has no code
+ * }
+ * ```
  */
 export const EMPTY_CODE_HASH =
 	/** @type {import('../../Hash/index.js').BrandedHash} */ (
@@ -27,7 +36,16 @@ export const EMPTY_CODE_HASH =
  *
  * Value: Keccak256(RLP(null)) = 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421
  *
+ * @see https://voltaire.tevm.sh/primitives/state for State documentation
+ * @since 0.0.0
  * @type {import('../../Hash/index.js').BrandedHash}
+ * @example
+ * ```javascript
+ * import { EMPTY_TRIE_ROOT } from './primitives/State/index.js';
+ * if (storageRoot.equals(EMPTY_TRIE_ROOT)) {
+ *   // Account has no storage
+ * }
+ * ```
  */
 export const EMPTY_TRIE_ROOT =
 	/** @type {import('../../Hash/index.js').BrandedHash} */ (

@@ -6,15 +6,18 @@ import { from } from "./from.js";
  * Two storage keys are equal if and only if both their address and
  * slot number match exactly.
  *
+ * @see https://voltaire.tevm.sh/primitives/state for State documentation
+ * @since 0.0.0
  * @param {import('./BrandedStorageKey.js').StorageKeyLike} a - First storage key
  * @param {import('./BrandedStorageKey.js').StorageKeyLike} b - Second storage key
  * @returns {boolean} True if both address and slot match
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as State from './primitives/State/index.js';
  * const key1 = { address: addr, slot: 0n };
  * const key2 = { address: addr, slot: 0n };
- * StorageKey.equals(key1, key2); // true
+ * State.equals(key1, key2); // true
  * ```
  */
 export function equals(a, b) {

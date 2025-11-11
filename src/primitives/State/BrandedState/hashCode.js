@@ -3,12 +3,15 @@ import { from } from "./from.js";
 /**
  * Compute a hash code for the storage key for use in hash-based collections
  *
+ * @see https://voltaire.tevm.sh/primitives/state for State documentation
+ * @since 0.0.0
  * @param {import('./BrandedStorageKey.js').StorageKeyLike} key - Storage key to hash
  * @returns {number} Hash code as a number
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const hash = StorageKey.hashCode(key);
+ * ```javascript
+ * import * as State from './primitives/State/index.js';
+ * const hash = State.hashCode(key);
  * ```
  */
 export function hashCode(key) {

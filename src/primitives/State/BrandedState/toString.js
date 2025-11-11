@@ -5,13 +5,16 @@ import { from } from "./from.js";
  *
  * The string format is: address_hex + "_" + slot_hex
  *
+ * @see https://voltaire.tevm.sh/primitives/state for State documentation
+ * @since 0.0.0
  * @param {import('./BrandedStorageKey.js').StorageKeyLike} key - Storage key to convert
- * @returns {string} String representation
- *
+ * @returns {string} String representation (address_hex + "_" + slot_hex)
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as State from './primitives/State/index.js';
  * const key = { address: addr, slot: 42n };
- * const str = StorageKey.toString(key);
+ * const str = State.toString(key);
  * // Use as Map key
  * map.set(str, value);
  * ```
