@@ -1,0 +1,299 @@
+---
+title: Hash.toHex
+description: Convert Hash to lowercase hex string with 0x prefix
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.toHex(): string`
+
+Converts hash to lowercase hex string with `0x` prefix.
+
+**Returns:** `string` - Lowercase hex string with `0x` prefix (66 chars total)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash = Hash.fromBytes(new Uint8Array(32))
+hash.toHex()
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+const hash2 = Hash.keccak256String("hello")
+hash2.toHex()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+```
+
+**Static form:**
+```typescript
+Hash.toHex(hash) // "0x..."
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toHex.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toHex.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toHex(hash: BrandedHash): string`
+
+Converts hash to lowercase hex string with `0x` prefix.
+
+**Parameters:**
+- `hash: BrandedHash` - Hash to convert
+
+**Returns:** `string` - Lowercase hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String("hello")
+const hex = Hash.toHex(hash)
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toHex.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toHex.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.fmt.fmtSliceHexLower`
+
+Zig uses `std.fmt` for hex formatting:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+const hash: [32]u8 = .{0x1c, 0x8a, 0xff, /* ... */};
+
+// Format with 0x prefix
+const hex_with_prefix = try std.fmt.allocPrint(
+    allocator,
+    "0x{x}",
+    .{std.fmt.fmtSliceHexLower(&hash)}
+);
+defer allocator.free(hex_with_prefix);
+
+// Format without prefix
+const hex_no_prefix = try std.fmt.allocPrint(
+    allocator,
+    "{x}",
+    .{std.fmt.fmtSliceHexLower(&hash)}
+);
+defer allocator.free(hex_no_prefix);
+```
+
+**Memory:** Allocates string - caller must free.
+
+</Tab>
+</Tabs>
+
+## Output Format
+
+Always returns lowercase hex with `0x` prefix:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+hash.toHex()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+// Always 66 characters:
+// - 2 chars for "0x" prefix
+// - 64 chars for 32 bytes (2 hex chars per byte)
+```
+
+## Usage Examples
+
+### API Responses
+
+```typescript
+interface TransactionResponse {
+  hash: string
+  blockHash: string
+  from: string
+  to: string
+}
+
+function formatTransaction(tx: Transaction): TransactionResponse {
+  return {
+    hash: tx.hash.toHex(),
+    blockHash: tx.blockHash.toHex(),
+    from: tx.from.toHex(),
+    to: tx.to.toHex()
+  }
+}
+```
+
+### JSON Serialization
+
+```typescript
+const tx = {
+  hash: Hash.keccak256(txData),
+  nonce: 1n,
+  value: 1000000000000000000n
+}
+
+// Convert to JSON-friendly format
+const json = JSON.stringify({
+  hash: tx.hash.toHex(),
+  nonce: tx.nonce.toString(),
+  value: tx.value.toString()
+})
+```
+
+### Logging
+
+```typescript
+const hash = Hash.keccak256String("Transfer(address,address,uint256)")
+console.log(`Event signature: ${hash.toHex()}`)
+// Event signature: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+### Database Storage
+
+```typescript
+interface StoredTransaction {
+  id: string
+  hash: string
+  blockHash: string
+}
+
+async function storeTransaction(tx: Transaction) {
+  await db.transactions.create({
+    id: uuid(),
+    hash: tx.hash.toHex(),
+    blockHash: tx.blockHash.toHex()
+  })
+}
+```
+
+### URL Parameters
+
+```typescript
+function buildTransactionUrl(hash: Hash): string {
+  return `https://etherscan.io/tx/${hash.toHex()}`
+}
+
+const url = buildTransactionUrl(txHash)
+// https://etherscan.io/tx/0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+```
+
+### Comparison with Hex Strings
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const expectedHex = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+if (hash.toHex() === expectedHex) {
+  console.log("Hash matches!")
+}
+
+// Or better: use equals for constant-time comparison
+const expectedHash = Hash.fromHex(expectedHex)
+if (hash.equals(expectedHash)) {
+  console.log("Hash matches!")
+}
+```
+
+### Map Keys
+
+```typescript
+const hashMap = new Map<string, any>()
+
+function setHash(hash: Hash, value: any) {
+  hashMap.set(hash.toHex(), value)
+}
+
+function getHash(hash: Hash): any {
+  return hashMap.get(hash.toHex())
+}
+
+// Usage
+const hash = Hash.random()
+setHash(hash, { data: "example" })
+const value = getHash(hash)
+```
+
+### Event Filters
+
+```typescript
+function createFilter(eventSignature: string) {
+  const hash = Hash.keccak256String(eventSignature)
+  return {
+    topics: [hash.toHex()]
+  }
+}
+
+const filter = createFilter("Transfer(address,address,uint256)")
+// { topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"] }
+```
+
+## Performance
+
+**Hex encoding:** Converting bytes to hex is relatively fast (~50-100ns for 32 bytes).
+
+**Caching:** For frequently converted hashes, consider caching the hex string:
+
+```typescript
+class CachedHash {
+  private hexCache?: string
+
+  constructor(private hash: Hash) {}
+
+  toHex(): string {
+    if (!this.hexCache) {
+      this.hexCache = this.hash.toHex()
+    }
+    return this.hexCache
+  }
+}
+```
+
+**Comparison:**
+```typescript
+// Direct conversion (repeated)
+for (let i = 0; i < 1000; i++) {
+  hash.toHex() // ~50ns each = 50μs total
+}
+
+// Cached (convert once)
+const hexCache = hash.toHex() // ~50ns
+for (let i = 0; i < 1000; i++) {
+  hexCache // ~1ns each = 1μs total
+}
+```
+
+## Lowercase vs Uppercase
+
+`toHex()` always returns lowercase. For uppercase, use custom formatting:
+
+```typescript
+function toUpperHex(hash: Hash): string {
+  return hash.toHex().toUpperCase()
+}
+
+const hash = Hash.keccak256String("hello")
+toUpperHex(hash)
+// "0X1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8"
+```
+
+For mixed-case (EIP-55 style), use Address encoding instead:
+
+```typescript
+// Addresses use EIP-55 checksum (mixed case)
+const address = Address.fromHash(hash)
+address.toHex() // Mixed case with checksum
+```
+
+## See Also
+
+- [toString](/primitives/hash/to-string) - Alias for toHex
+- [toBytes](/primitives/hash/to-bytes) - Convert to Uint8Array
+- [format](/primitives/hash/format) - Shortened display format
+- [fromHex](/primitives/hash/from-hex) - Parse hex string back to Hash
+- [Hex](/primitives/hex) - Working with hex strings

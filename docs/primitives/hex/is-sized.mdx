@@ -1,0 +1,262 @@
+---
+title: Hex.isSized
+description: Check if hex has specific byte size
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.isSized(hex: BrandedHex, targetSize: number): boolean`
+
+Checks if hex string has a specific byte size. Returns `true` if size matches, `false` otherwise.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `targetSize: number` - Expected size in bytes
+
+**Returns:** `boolean` - `true` if size matches, `false` otherwise
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+const hex = Hex("0x1234")
+
+// Check size
+Hex.isSized(hex, 2)   // true (0x1234 = 2 bytes)
+Hex.isSized(hex, 4)   // false
+Hex.isSized(hex, 1)   // false
+
+// Common Ethereum sizes
+const hash = Hex("0x" + "00".repeat(32))  // 32 bytes
+Hex.isSized(hash, 32)  // true (hash/uint256)
+
+const address = Hex("0x" + "00".repeat(20))  // 20 bytes
+Hex.isSized(address, 20)  // true (address/uint160)
+
+// Empty hex
+Hex.isSized("0x", 0)  // true (0 bytes)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/isSized.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isSized(hex: BrandedHex, targetSize: number): boolean`
+
+Checks if hex string has a specific byte size. Returns `true` if size matches, `false` otherwise.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `targetSize: number` - Expected size in bytes
+
+**Returns:** `boolean` - `true` if size matches, `false` otherwise
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+const hex = Hex.from("0x1234")
+
+// Check size
+Hex.isSized(hex, 2)   // true
+Hex.isSized(hex, 4)   // false
+
+// Common sizes
+const hash = Hex.from("0x" + "00".repeat(32))
+Hex.isSized(hash, 32)  // true (hash)
+
+const address = Hex.from("0x" + "00".repeat(20))
+Hex.isSized(address, 20)  // true (address)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/isSized.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.isSized(hex: []const u8, targetSize: usize): bool`
+
+Check if hex has specific byte size.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+- `targetSize: usize` - Expected byte size
+
+**Returns:** `bool` - `true` if size matches
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex = "0x1234";
+const is2Bytes = Hex.isSized(hex, 2);  // true
+const is4Bytes = Hex.isSized(hex, 4);  // false
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Size Calculation
+
+Size is calculated as: `(hex.length - 2) / 2`
+
+```typescript
+// Each pair of hex digits = 1 byte
+Hex.isSized("0x12", 1)       // true (1 byte)
+Hex.isSized("0x1234", 2)     // true (2 bytes)
+Hex.isSized("0x123456", 3)   // true (3 bytes)
+
+// Empty hex
+Hex.isSized("0x", 0)         // true (0 bytes)
+
+// Common Ethereum sizes
+Hex.isSized("0x" + "ff".repeat(1), 1)    // true (uint8)
+Hex.isSized("0x" + "ff".repeat(2), 2)    // true (uint16)
+Hex.isSized("0x" + "ff".repeat(4), 4)    // true (uint32)
+Hex.isSized("0x" + "ff".repeat(8), 8)    // true (uint64)
+Hex.isSized("0x" + "ff".repeat(20), 20)  // true (address)
+Hex.isSized("0x" + "ff".repeat(32), 32)  // true (hash/uint256)
+```
+
+## Common Ethereum Sizes
+
+**Address (20 bytes / uint160):**
+```typescript
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+Hex.isSized(address, 20)  // true
+```
+
+**Hash (32 bytes / uint256):**
+```typescript
+const hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+Hex.isSized(hash, 32)  // true
+```
+
+**Function Selector (4 bytes):**
+```typescript
+const selector = "0xa9059cbb"  // transfer(address,uint256)
+Hex.isSized(selector, 4)  // true
+```
+
+**Signature (65 bytes):**
+```typescript
+const signature = "0x" + "00".repeat(65)
+Hex.isSized(signature, 65)  // true
+```
+
+## Common Use Cases
+
+**Type Guards:**
+```typescript
+function isAddress(hex: string): boolean {
+  return Hex.isHex(hex) && Hex.isSized(hex, 20)
+}
+
+function isHash(hex: string): boolean {
+  return Hex.isHex(hex) && Hex.isSized(hex, 32)
+}
+```
+
+**Input Validation:**
+```typescript
+function setAddress(hex: string) {
+  if (!Hex.isSized(hex, 20)) {
+    throw new Error("Address must be 20 bytes")
+  }
+  this.address = hex
+}
+```
+
+**Conditional Processing:**
+```typescript
+function processValue(hex: string) {
+  if (Hex.isSized(hex, 20)) {
+    // Handle as address
+    return processAddress(hex)
+  } else if (Hex.isSized(hex, 32)) {
+    // Handle as hash
+    return processHash(hex)
+  } else {
+    throw new Error("Invalid size")
+  }
+}
+```
+
+**Filter Arrays:**
+```typescript
+const data = [
+  "0x1234",           // 2 bytes
+  "0x12345678",       // 4 bytes
+  "0x123456",         // 3 bytes
+]
+
+// Find all 4-byte values
+const fourByteValues = data.filter(hex => Hex.isSized(hex, 4))
+// ["0x12345678"]
+```
+
+**ABI Decoding:**
+```typescript
+function decodeParameter(hex: string, type: string) {
+  if (type === 'address' && !Hex.isSized(hex, 20)) {
+    throw new Error("Invalid address size")
+  }
+  if (type === 'bytes32' && !Hex.isSized(hex, 32)) {
+    throw new Error("Invalid bytes32 size")
+  }
+  // Decode...
+}
+```
+
+## Performance
+
+Simple arithmetic calculation: `(length - 2) / 2 === targetSize`. Constant time O(1).
+
+No exceptions thrown - safe for validation loops.
+
+## vs assertSize()
+
+**`isSized()` - Non-throwing:**
+```typescript
+if (Hex.isSized(hex, 20)) {
+  // Valid size
+} else {
+  // Invalid size - handle gracefully
+}
+```
+
+**`assertSize()` - Throwing:**
+```typescript
+try {
+  Hex.assertSize(hex, 20)  // Throws on mismatch
+  // Valid size - continue
+} catch (e) {
+  // Handle error
+}
+```
+
+Use `isSized()` for:
+- Conditional logic
+- Type guards
+- Silent validation
+- Filter operations
+
+Use `assertSize()` for:
+- Fail-fast validation
+- Invariant checking
+- Error reporting
+
+## See Also
+
+- [assertSize](/primitives/hex/assert-size) - Assert specific size and throw
+- [size](/primitives/hex/size) - Get hex byte size
+- [isHex](/primitives/hex/is-hex) - Check valid hex format
+- [pad](/primitives/hex/pad) - Pad to specific size

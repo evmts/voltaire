@@ -1,0 +1,270 @@
+---
+title: Blob.joinData
+description: Reconstruct data from multiple blobs
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## Signature
+
+```typescript
+Blob.joinData(blobs: Blob[]): Uint8Array
+```
+
+Reconstruct original data from multiple blobs created by `splitData()`. Extracts data from each blob and concatenates in order.
+
+### Parameters
+
+- **blobs** `Blob[]` - Array of blobs to join
+
+### Returns
+
+`Uint8Array` - Reconstructed original data
+
+### Throws
+
+- If any blob is invalid size
+- If any length prefix is invalid
+
+### Example
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Split large data
+const original = new Uint8Array(300_000);
+// ... fill with data ...
+
+const blobs = Blob.splitData(original);
+console.log(`Split into ${blobs.length} blobs`); // 3
+
+// Later: reconstruct
+const reconstructed = Blob.joinData(blobs);
+
+console.log(reconstructed.length === original.length); // true
+console.log(Blob.equals(reconstructed, original)); // true
+```
+
+### Example: L2 Data Recovery
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// L2 posts transaction batch
+const batch = new TextEncoder().encode(JSON.stringify({
+  transactions: [...],
+  blockNumber: 12345,
+}));
+
+// Split and send
+const blobs = Blob.splitData(batch);
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map(b => Blob.toProof(b));
+
+// Send transaction...
+
+// Later: L2 node recovers data
+const recoveredBlobs = /* fetch from beacon chain */;
+const recoveredData = Blob.joinData(recoveredBlobs);
+
+const batchObj = JSON.parse(new TextDecoder().decode(recoveredData));
+console.log(`Recovered block ${batchObj.blockNumber}`);
+console.log(`Transactions: ${batchObj.transactions.length}`);
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/joinData.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/joinData.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## Signature
+
+```typescript
+joinData(blobs: BrandedBlob[]): Uint8Array
+```
+
+Reconstruct original data from multiple blobs created by `splitData()`. Extracts data from each blob and concatenates in order.
+
+### Parameters
+
+- **blobs** `BrandedBlob[]` - Array of blobs to join
+
+### Returns
+
+`Uint8Array` - Reconstructed original data
+
+### Throws
+
+- If any blob is invalid size
+- If any length prefix is invalid
+
+### Example
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+
+const original = new Uint8Array(300_000);
+const blobs = Blob.splitData(original);
+
+// Reconstruct
+const reconstructed = Blob.joinData(blobs);
+console.log(reconstructed.length === original.length); // true
+```
+
+### Defined in
+
+[src/primitives/Blob/BrandedBlob/joinData.js](https://github.com/tevm/voltaire/blob/main/src/primitives/Blob/BrandedBlob/joinData.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Signature
+
+```zig
+pub fn joinData(allocator: std.mem.Allocator, blobs: []const Blob) ![]u8
+```
+
+Reconstruct data from multiple blobs.
+
+### Parameters
+
+- **allocator** `std.mem.Allocator` - Memory allocator
+- **blobs** `[]const Blob` - Array of blobs
+
+### Returns
+
+`[]u8` - Allocated data (caller owns memory)
+
+### Errors
+
+- `error.InvalidBlobSize` - Blob size incorrect
+- `error.InvalidLengthPrefix` - Length prefix invalid
+
+### Example
+
+```zig
+const Blob = @import("primitives").Blob;
+
+var original: [300_000]u8 = undefined;
+const blobs = try Blob.splitData(allocator, &original);
+defer {
+    for (blobs) |blob| blob.deinit(allocator);
+    allocator.free(blobs);
+}
+
+const reconstructed = try Blob.joinData(allocator, blobs);
+defer allocator.free(reconstructed);
+
+std.debug.print("Reconstructed {} bytes\n", .{reconstructed.len});
+```
+
+</Tab>
+</Tabs>
+
+## How It Works
+
+Extracts data from each blob and concatenates:
+
+```
+Blob 1: [length_1][chunk_1][padding] → Extract chunk_1
+Blob 2: [length_2][chunk_2][padding] → Extract chunk_2
+Blob 3: [length_3][chunk_3][padding] → Extract chunk_3
+
+Result: chunk_1 + chunk_2 + chunk_3
+```
+
+### Manual Join
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blobs = Blob.splitData(data);
+
+// Manual join (equivalent to joinData)
+const chunks = blobs.map(blob => Blob.toData(blob));
+const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+
+const result = new Uint8Array(totalLength);
+let offset = 0;
+for (const chunk of chunks) {
+  result.set(chunk, offset);
+  offset += chunk.length;
+}
+
+// Verify equivalence
+const auto = Blob.joinData(blobs);
+console.log(Blob.equals(result, auto)); // true
+```
+
+## Round-Trip Verification
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+function verifyRoundTrip(data: Uint8Array) {
+  // Split
+  const blobs = Blob.splitData(data);
+
+  // Join
+  const reconstructed = Blob.joinData(blobs);
+
+  // Verify
+  if (reconstructed.length !== data.length) {
+    throw new Error('Length mismatch');
+  }
+
+  if (!Blob.equals(reconstructed, data)) {
+    throw new Error('Data mismatch');
+  }
+
+  console.log('Round-trip verified');
+}
+
+// Test with various sizes
+verifyRoundTrip(new Uint8Array(1000));
+verifyRoundTrip(new Uint8Array(100_000));
+verifyRoundTrip(new Uint8Array(300_000));
+```
+
+## Error Handling
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Invalid blob size
+try {
+  const invalid = new Uint8Array(1000);
+  Blob.joinData([invalid as any]);
+} catch (e) {
+  console.error(e); // "Invalid blob size: 1000"
+}
+
+// Corrupted length prefix
+const blobs = Blob.splitData(data);
+blobs[0][0] = 0xff; // Corrupt length prefix
+try {
+  Blob.joinData(blobs);
+} catch (e) {
+  console.error(e); // "Invalid length prefix"
+}
+```
+
+## Empty Array
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Empty array returns empty data
+const result = Blob.joinData([]);
+console.log(result.length); // 0
+console.log(result instanceof Uint8Array); // true
+```
+
+## See Also
+
+- [splitData](./splitData) - Split data into blobs
+- [toData](./toData) - Extract single blob data
+- [fromData](./fromData) - Create single blob from data

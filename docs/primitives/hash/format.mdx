@@ -1,0 +1,373 @@
+---
+title: Hash.format
+description: Format Hash as shortened display string with ellipsis
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.format(prefixLength?: number, suffixLength?: number): string`
+
+Returns shortened display format with ellipsis. Default shows first 6 + last 4 hex chars.
+
+**Parameters:**
+- `prefixLength?: number` - Characters after `0x` to show (default: 6)
+- `suffixLength?: number` - Characters at end to show (default: 4)
+
+**Returns:** `string` - Formatted display string
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash = Hash.keccak256String("hello")
+
+hash.format()
+// "0x1c8aff...eac8" (default: 6+4)
+
+hash.format(8, 6)
+// "0x1c8aff95...6deac8" (custom: 8+6)
+
+hash.format(10, 8)
+// "0x1c8aff9506...a36deac8" (custom: 10+8)
+```
+
+**Static form:**
+```typescript
+Hash.format(hash, 8, 6) // "0x1c8aff95...6deac8"
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/format.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/format.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `format(hash: BrandedHash, prefixLength?: number, suffixLength?: number): string`
+
+Returns shortened display format with ellipsis. Default shows first 6 + last 4 hex chars.
+
+**Parameters:**
+- `hash: BrandedHash` - Hash to format
+- `prefixLength?: number` - Characters after `0x` to show (default: 6)
+- `suffixLength?: number` - Characters at end to show (default: 4)
+
+**Returns:** `string` - Formatted display string
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String("hello")
+
+Hash.format(hash)
+// "0x1c8aff...eac8"
+
+Hash.format(hash, 8, 6)
+// "0x1c8aff95...6deac8"
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/format.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/format.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual String Formatting
+
+Zig requires manual string formatting:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+fn formatHash(
+    allocator: std.mem.Allocator,
+    hash: [32]u8,
+    prefix_len: usize,
+    suffix_len: usize
+) ![]u8 {
+    const hex = try std.fmt.allocPrint(
+        allocator,
+        "{x}",
+        .{std.fmt.fmtSliceHexLower(&hash)}
+    );
+    defer allocator.free(hex);
+
+    const total = prefix_len + suffix_len;
+    if (hex.len <= total) {
+        return try allocator.dupe(u8, hex);
+    }
+
+    return try std.fmt.allocPrint(
+        allocator,
+        "0x{s}...{s}",
+        .{hex[0..prefix_len], hex[hex.len - suffix_len..]}
+    );
+}
+```
+
+</Tab>
+</Tabs>
+
+## Default Format
+
+Default shows 6 chars after `0x` and 4 chars at end:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+hash.format()
+// "0x1c8aff...eac8"
+
+// Full hash:
+// 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+//   ^^^^^^                                                        ^^^^
+//   prefix                                                      suffix
+```
+
+## Custom Lengths
+
+Adjust prefix and suffix lengths for different contexts:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// More context (8+6)
+hash.format(8, 6)
+// "0x1c8aff95...6deac8"
+
+// Even more context (10+8)
+hash.format(10, 8)
+// "0x1c8aff9506...a36deac8"
+
+// Minimal (4+4)
+hash.format(4, 4)
+// "0x1c8a...eac8"
+
+// Extra long (16+16)
+hash.format(16, 16)
+// "0x1c8aff950685c2ed...19a09a7a36deac8"
+```
+
+## Usage Examples
+
+### UI Display Lists
+
+```typescript
+interface Transaction {
+  hash: Hash
+  from: string
+  to: string
+  value: bigint
+}
+
+function TransactionRow({ tx }: { tx: Transaction }) {
+  return (
+    <tr>
+      <td>{tx.hash.format()}</td> {/* "0x1c8aff...eac8" */}
+      <td>{tx.from}</td>
+      <td>{tx.to}</td>
+      <td>{tx.value.toString()}</td>
+    </tr>
+  )
+}
+```
+
+### Tooltips and Detail Views
+
+```typescript
+function HashDisplay({ hash }: { hash: Hash }) {
+  return (
+    <span title={hash.toHex()}> {/* Full hash in tooltip */}
+      {hash.format()} {/* Shortened in display */}
+    </span>
+  )
+}
+```
+
+### Mobile Responsive Display
+
+```typescript
+function ResponsiveHash({ hash }: { hash: Hash }) {
+  const isMobile = useIsMobile()
+
+  return (
+    <span>
+      {isMobile ? hash.format(4, 4) : hash.format(8, 6)}
+    </span>
+  )
+}
+```
+
+### Log Output
+
+```typescript
+function logTransaction(tx: Transaction) {
+  console.log(`TX ${tx.hash.format()} confirmed in block ${tx.blockNumber}`)
+}
+// TX 0x1c8aff...eac8 confirmed in block 12345
+```
+
+### Error Messages
+
+```typescript
+function validateHash(expected: Hash, actual: Hash) {
+  if (!expected.equals(actual)) {
+    throw new Error(
+      `Hash mismatch: expected ${expected.format()}, got ${actual.format()}`
+    )
+  }
+}
+```
+
+### Table Columns
+
+```typescript
+const columns = [
+  {
+    header: 'Transaction Hash',
+    accessor: (tx: Transaction) => tx.hash.format(8, 6),
+    width: '150px'
+  },
+  {
+    header: 'Block Hash',
+    accessor: (tx: Transaction) => tx.blockHash.format(8, 6),
+    width: '150px'
+  }
+]
+```
+
+### Notification Messages
+
+```typescript
+function showTransactionNotification(hash: Hash) {
+  notify({
+    title: 'Transaction Sent',
+    message: `TX: ${hash.format(8, 6)}`,
+    action: {
+      label: 'View',
+      href: `/tx/${hash.toHex()}`
+    }
+  })
+}
+```
+
+### Search Results
+
+```typescript
+interface SearchResult {
+  type: 'transaction' | 'block'
+  hash: Hash
+  timestamp: number
+}
+
+function SearchResultItem({ result }: { result: SearchResult }) {
+  return (
+    <div>
+      <strong>{result.type}</strong>
+      <br />
+      <code>{result.hash.format(10, 8)}</code>
+      <br />
+      <small>{new Date(result.timestamp).toLocaleString()}</small>
+    </div>
+  )
+}
+```
+
+### Breadcrumbs
+
+```typescript
+function TransactionBreadcrumb({ hash }: { hash: Hash }) {
+  return (
+    <nav>
+      <a href="/">Home</a> /
+      <a href="/transactions">Transactions</a> /
+      <span>{hash.format(6, 4)}</span>
+    </nav>
+  )
+}
+```
+
+## Comparison with Full Hash
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// Full hash (66 chars)
+hash.toHex()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+// Formatted (15 chars with default 6+4)
+hash.format()
+// "0x1c8aff...eac8"
+
+// Space savings
+const full = hash.toHex().length // 66
+const formatted = hash.format().length // 15
+const savings = ((full - formatted) / full * 100).toFixed(0) // 77% smaller
+```
+
+## Edge Cases
+
+### Short Hashes
+
+If prefix + suffix >= hash length, returns full hash:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// Request more chars than available
+hash.format(32, 32) // Would be 64+ chars
+// Returns full hash instead
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+```
+
+### Zero Length
+
+```typescript
+// Empty format
+hash.format(0, 0)
+// "0x..."
+
+// Only prefix
+hash.format(10, 0)
+// "0x1c8aff9506..."
+
+// Only suffix
+hash.format(0, 10)
+// "0x...a36deac8"
+```
+
+## Performance
+
+**String slicing:** `format()` creates new string by slicing. Fast operation (~10-20ns):
+
+```typescript
+console.time('format')
+for (let i = 0; i < 10000; i++) {
+  hash.format()
+}
+console.timeEnd('format') // ~200μs = ~20ns each
+```
+
+**Caching:** For frequently formatted hashes, cache the result:
+
+```typescript
+const formattedCache = new WeakMap<Hash, string>()
+
+function getCachedFormat(hash: Hash): string {
+  let formatted = formattedCache.get(hash)
+  if (!formatted) {
+    formatted = hash.format()
+    formattedCache.set(hash, formatted)
+  }
+  return formatted
+}
+```
+
+## See Also
+
+- [toHex](/primitives/hash/to-hex) - Full hex string
+- [toString](/primitives/hash/to-string) - Alias for toHex
+- [Address.format](/primitives/address/format) - Similar formatting for addresses

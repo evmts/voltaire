@@ -1,0 +1,292 @@
+---
+title: Hash.toString
+description: Convert Hash to hex string (alias for toHex)
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.toString(): string`
+
+Converts hash to hex string. Alias for `toHex()`.
+
+**Returns:** `string` - Lowercase hex string with `0x` prefix (66 chars)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash = Hash.keccak256String("hello")
+hash.toString()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+// Useful for string interpolation
+console.log(`Hash: ${hash}`)
+// Hash: 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+
+// Equivalent to toHex()
+hash.toString() === hash.toHex() // true
+```
+
+**Static form:**
+```typescript
+Hash.toString(hash) // "0x..."
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toString.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toString.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toString(hash: BrandedHash): string`
+
+Converts hash to hex string. Alias for `toHex()`.
+
+**Parameters:**
+- `hash: BrandedHash` - Hash to convert
+
+**Returns:** `string` - Lowercase hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String("hello")
+const str = Hash.toString(hash)
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toString.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toString.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.fmt.fmtSliceHexLower`
+
+Zig uses `std.fmt` for string formatting:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+const hash: [32]u8 = .{0x1c, 0x8a, 0xff, /* ... */};
+
+// Format as hex string
+const hex = try std.fmt.allocPrint(
+    allocator,
+    "0x{x}",
+    .{std.fmt.fmtSliceHexLower(&hash)}
+);
+defer allocator.free(hex);
+```
+
+</Tab>
+</Tabs>
+
+## Alias for toHex
+
+`toString()` is a direct alias for `toHex()` - they produce identical output:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+hash.toString()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+hash.toHex()
+// "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+
+// Identical output
+hash.toString() === hash.toHex() // true
+```
+
+## Automatic String Conversion
+
+JavaScript automatically calls `toString()` in string contexts:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// String interpolation
+console.log(`Hash value: ${hash}`)
+// Hash value: 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+
+// String concatenation
+const message = "Transaction hash: " + hash
+// Transaction hash: 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+
+// Template literals
+const label = `Hash: ${hash}`
+```
+
+## Usage Examples
+
+### Logging
+
+```typescript
+const hash = Hash.keccak256String("Transfer(address,address,uint256)")
+
+// Automatic toString()
+console.log(hash)
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Explicit toString()
+console.log(hash.toString())
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+### String Concatenation
+
+```typescript
+function formatTransactionLog(txHash: Hash, status: string): string {
+  return `Transaction ${txHash} is ${status}`
+}
+
+const log = formatTransactionLog(hash, "confirmed")
+// Transaction 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8 is confirmed
+```
+
+### Error Messages
+
+```typescript
+function validateTransaction(expectedHash: Hash, actualHash: Hash) {
+  if (!expectedHash.equals(actualHash)) {
+    throw new Error(
+      `Hash mismatch: expected ${expectedHash}, got ${actualHash}`
+    )
+  }
+}
+```
+
+### Debug Output
+
+```typescript
+class Transaction {
+  hash: Hash
+
+  toString(): string {
+    return `Transaction(hash=${this.hash})`
+  }
+}
+
+const tx = new Transaction()
+console.log(tx.toString())
+// Transaction(hash=0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8)
+```
+
+### JSON.stringify Custom Serialization
+
+```typescript
+const obj = {
+  hash: Hash.keccak256String("hello"),
+  toJSON() {
+    return {
+      hash: this.hash.toString() // Explicit conversion
+    }
+  }
+}
+
+JSON.stringify(obj)
+// {"hash":"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"}
+```
+
+### React Components
+
+```typescript
+function HashDisplay({ hash }: { hash: Hash }) {
+  return (
+    <div>
+      <span>Hash: {hash}</span> {/* Automatic toString() */}
+    </div>
+  )
+}
+```
+
+### URL Building
+
+```typescript
+function buildExplorerUrl(hash: Hash): string {
+  return `https://etherscan.io/tx/${hash}`
+}
+
+const url = buildExplorerUrl(txHash)
+// https://etherscan.io/tx/0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+```
+
+### Set/Map Keys
+
+```typescript
+// Using toString() for Map keys
+const hashSet = new Set<string>()
+
+function addHash(hash: Hash) {
+  hashSet.add(hash.toString())
+}
+
+function hasHash(hash: Hash): boolean {
+  return hashSet.has(hash.toString())
+}
+```
+
+## When to Use toString vs toHex
+
+Both methods are identical - use whichever is more semantically clear:
+
+**Use `toString()`:**
+- String interpolation/concatenation
+- Logging and debugging
+- Human-readable output
+- When JavaScript calls it automatically
+
+**Use `toHex()`:**
+- Explicit hex conversion
+- API responses (clarity about format)
+- When hex format matters semantically
+
+```typescript
+// Logging - toString is natural
+console.log(`Hash: ${hash}`)
+
+// API response - toHex is clearer
+return {
+  txHash: hash.toHex()
+}
+
+// Debug output - toString is natural
+throw new Error(`Invalid hash: ${hash}`)
+
+// Hex formatting - toHex is clearer
+const hexString = hash.toHex()
+```
+
+## Performance
+
+Identical performance to `toHex()` - they're the same function:
+
+```typescript
+// Same implementation
+hash.toString() === hash.toHex() // true
+
+// Same performance
+console.time('toString')
+for (let i = 0; i < 10000; i++) {
+  hash.toString()
+}
+console.timeEnd('toString') // ~500μs
+
+console.time('toHex')
+for (let i = 0; i < 10000; i++) {
+  hash.toHex()
+}
+console.timeEnd('toHex') // ~500μs
+```
+
+## See Also
+
+- [toHex](/primitives/hash/to-hex) - Identical functionality
+- [toBytes](/primitives/hash/to-bytes) - Convert to Uint8Array
+- [format](/primitives/hash/format) - Shortened display format
+- [fromHex](/primitives/hash/from-hex) - Parse hex string back to Hash

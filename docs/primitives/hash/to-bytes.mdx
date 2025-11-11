@@ -1,0 +1,312 @@
+---
+title: Hash.toBytes
+description: Convert Hash to raw Uint8Array copy
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `hash.toBytes(): Uint8Array`
+
+Returns copy of hash as raw bytes. Creates new Uint8Array - modifications won't affect original.
+
+**Returns:** `Uint8Array` - Copy of hash bytes (32 bytes)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const hash = Hash.keccak256String("hello")
+const bytes = hash.toBytes() // Uint8Array(32)
+
+// Use for further processing
+const moreData = new Uint8Array([...bytes, 1, 2, 3])
+
+// Safe mutation (doesn't affect hash)
+bytes[0] = 0xff
+console.log(hash[0]) // Original unchanged
+```
+
+**Static form:**
+```typescript
+Hash.toBytes(hash) // Uint8Array(32)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toBytes.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toBytes.js#L14)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toBytes(hash: BrandedHash): Uint8Array`
+
+Returns copy of hash as raw bytes. Creates new Uint8Array - modifications won't affect original.
+
+**Parameters:**
+- `hash: BrandedHash` - Hash to convert
+
+**Returns:** `Uint8Array` - Copy of hash bytes (32 bytes)
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String("hello")
+const bytes = Hash.toBytes(hash) // Uint8Array(32)
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/toBytes.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/toBytes.js#L14)
+
+</Tab>
+<Tab title="Zig">
+
+## Direct Array Access
+
+Zig `[32]u8` arrays are already bytes - no conversion needed:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+const hash: [32]u8 = .{0x1c, 0x8a, 0xff, /* ... */};
+
+// Direct access
+const first_byte = hash[0];
+
+// Slice
+const slice: []const u8 = &hash;
+
+// Copy
+var copy: [32]u8 = undefined;
+@memcpy(&copy, &hash);
+```
+
+No allocation - arrays are stack values.
+
+</Tab>
+</Tabs>
+
+## Copy Behavior
+
+`toBytes()` returns a **copy**, not a reference:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const bytes = hash.toBytes()
+
+// Modifying bytes doesn't affect hash
+bytes[0] = 0xff
+console.log(hash[0]) // Original value (0x1c)
+console.log(bytes[0]) // Modified value (0xff)
+
+// Different objects
+console.log(bytes === hash) // false
+console.log(bytes.buffer === hash.buffer) // false
+```
+
+<Note>
+This differs from `fromBytes`, which is zero-copy. `toBytes` always creates a new copy.
+</Note>
+
+## Usage Examples
+
+### Concatenating Hashes
+
+```typescript
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("world")
+
+// Concatenate bytes
+const combined = new Uint8Array([...hash1.toBytes(), ...hash2.toBytes()])
+const combinedHash = Hash.keccak256(combined)
+```
+
+### Passing to Other Libraries
+
+```typescript
+import { sign } from '@noble/secp256k1'
+
+const messageHash = Hash.keccak256String("Hello, Ethereum!")
+const privateKey = new Uint8Array(32) // Private key bytes
+
+// Many crypto libraries expect Uint8Array
+const signature = await sign(messageHash.toBytes(), privateKey)
+```
+
+### Building Merkle Trees
+
+```typescript
+function hashPair(left: Hash, right: Hash): Hash {
+  const combined = new Uint8Array([
+    ...left.toBytes(),
+    ...right.toBytes()
+  ])
+  return Hash.keccak256(combined)
+}
+```
+
+### Creating Storage Keys
+
+```typescript
+// Compute Solidity mapping storage slot
+function computeStorageSlot(key: Hash, baseSlot: bigint): Hash {
+  const keyBytes = key.toBytes()
+  const slotBytes = new Uint8Array(32)
+
+  // Encode baseSlot as big-endian uint256
+  let slot = baseSlot
+  for (let i = 31; i >= 0; i--) {
+    slotBytes[i] = Number(slot & 0xFFn)
+    slot >>= 8n
+  }
+
+  const combined = new Uint8Array([...keyBytes, ...slotBytes])
+  return Hash.keccak256(combined)
+}
+```
+
+### Buffer Operations
+
+```typescript
+// Write hash to buffer
+function writeHashToBuffer(hash: Hash, buffer: Uint8Array, offset: number): void {
+  buffer.set(hash.toBytes(), offset)
+}
+
+const buffer = new Uint8Array(100)
+writeHashToBuffer(hash1, buffer, 0)
+writeHashToBuffer(hash2, buffer, 32)
+writeHashToBuffer(hash3, buffer, 64)
+```
+
+### RLP Encoding
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const hash = Hash.keccak256String("hello")
+
+// RLP encode hash
+const encoded = Rlp.encode([hash.toBytes()])
+```
+
+### Creating Byte Slices
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const bytes = hash.toBytes()
+
+// Extract portions
+const firstHalf = bytes.slice(0, 16)
+const secondHalf = bytes.slice(16, 32)
+
+// Process separately
+const hash1 = Hash.keccak256(firstHalf)
+const hash2 = Hash.keccak256(secondHalf)
+```
+
+### Binary Protocols
+
+```typescript
+// Serialize hash for binary protocol
+function serializeMessage(hash: Hash, data: Uint8Array): Uint8Array {
+  const hashBytes = hash.toBytes()
+  const header = new Uint8Array([
+    0x01, // Version
+    0x00, // Type
+    hashBytes.length // Hash length
+  ])
+
+  return new Uint8Array([...header, ...hashBytes, ...data])
+}
+```
+
+### WebSocket Messages
+
+```typescript
+async function sendHash(ws: WebSocket, hash: Hash) {
+  const bytes = hash.toBytes()
+  ws.send(bytes.buffer)
+}
+
+ws.onmessage = (event) => {
+  const bytes = new Uint8Array(event.data)
+  const hash = Hash.fromBytes(bytes)
+}
+```
+
+## Direct Access Alternative
+
+Since `Hash` extends `Uint8Array`, you can access bytes directly without `toBytes()`:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// Direct access (no copy)
+const firstByte = hash[0]
+const slice = hash.slice(0, 4)
+
+// But modifying affects original
+hash[0] = 0xff // Mutates hash!
+```
+
+Use `toBytes()` when you need:
+- Independent copy for mutation
+- Clear ownership semantics
+- Type conversion (Hash → Uint8Array)
+
+Use direct access when:
+- Reading bytes only
+- Performance critical (no copy overhead)
+- Zero-copy operations
+
+```typescript
+// Good: read-only access
+const firstByte = hash[0]
+
+// Bad: mutation through direct access
+hash[0] = 0xff // Mutates hash!
+
+// Good: safe mutation
+const bytes = hash.toBytes()
+bytes[0] = 0xff // Doesn't affect hash
+```
+
+## Performance
+
+**Copy overhead:** `toBytes()` creates a copy (~10ns for 32 bytes). For read-only access, use direct indexing instead:
+
+```typescript
+// Fast: no copy
+const firstByte = hash[0] // ~1ns
+
+// Slower: copies all bytes
+const bytes = hash.toBytes() // ~10ns
+const firstByte2 = bytes[0]
+```
+
+**When to use:**
+- Use `toBytes()` when you need independent copy
+- Use direct access for read-only operations
+- Use `slice()` for extracting portions
+
+```typescript
+// Need copy? Use toBytes()
+const copy = hash.toBytes()
+copy[0] = 0xff
+
+// Read-only? Direct access
+const value = hash[0]
+
+// Extract portion? Use slice()
+const selector = hash.slice(0, 4)
+```
+
+## See Also
+
+- [fromBytes](/primitives/hash/from-bytes) - Create Hash from Uint8Array
+- [toHex](/primitives/hash/to-hex) - Convert to hex string
+- [clone](/primitives/hash/clone) - Create copy (same as toBytes)
+- [slice](/primitives/hash/slice) - Extract portion of hash

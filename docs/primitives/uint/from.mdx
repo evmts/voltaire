@@ -1,0 +1,266 @@
+---
+title: Uint.from
+description: Universal constructor for creating Uint256 from bigint, number, or string
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.from(value: bigint | number | string): BrandedUint`
+
+Universal constructor that dispatches based on input type. Accepts bigint, number, or string (decimal or hex).
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint` - Uint256 as branded Uint8Array
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// From bigint
+const a = Uint.from(100n)
+const b = Uint.from(0n)
+const c = Uint.from(2n ** 255n)
+
+// From number
+const d = Uint.from(255)
+const e = Uint.from(0)
+
+// From decimal string
+const f = Uint.from("12345")
+const g = Uint.from("0")
+
+// From hex string
+const h = Uint.from("0xff")
+const i = Uint.from("0xFF")
+const j = Uint.from("ff")  // Works without prefix
+
+// Throws on invalid input
+Uint.from(-1)           // Error: cannot be negative
+Uint.from(2n ** 256n)   // Error: exceeds maximum
+Uint.from("invalid")    // Error: invalid format
+Uint.from(3.14)         // Error: must be integer
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/from.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/from.ts#L18)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `from(value: bigint | number | string): BrandedUint`
+
+Universal constructor that dispatches based on input type. Accepts bigint, number, or string (decimal or hex).
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint` - Uint256 as branded Uint8Array
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+// From bigint
+const a = Uint.from(100n)
+const b = Uint.from(0n)
+
+// From number
+const c = Uint.from(255)
+
+// From string
+const d = Uint.from("12345")
+const e = Uint.from("0xff")
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/from.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/from.ts#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.init(value: u256): Uint`
+
+Initialize Uint256 from u256 value.
+
+**Parameters:**
+- `value: u256` - 256-bit unsigned integer
+
+**Returns:** `Uint` - Uint256 value
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Uint = @import("primitives").Uint;
+
+// From literal
+const a = Uint.init(100);
+const b = Uint.init(0);
+
+// From variable
+const value: u256 = 255;
+const c = Uint.init(value);
+
+// From computation
+const d = Uint.init(2 << 255);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## Input Types
+
+`Uint.from` accepts multiple input types for flexibility:
+
+### BigInt (JavaScript)
+
+```typescript
+const max = Uint.from(2n ** 256n - 1n)
+const large = Uint.from(115792089237316195423570985008687907853269984665640564039457584007913129639935n)
+```
+
+<Warning>
+BigInt values must be in range [0, 2^256 - 1]. Negative values and values exceeding maximum will throw.
+</Warning>
+
+### Number (JavaScript)
+
+```typescript
+const small = Uint.from(255)
+const zero = Uint.from(0)
+
+// Throws on invalid
+Uint.from(-1)      // Error: negative
+Uint.from(3.14)    // Error: not integer
+Uint.from(NaN)     // Error: invalid
+Uint.from(Infinity) // Error: invalid
+```
+
+<Warning>
+Numbers must be safe integers. Use bigint for values > Number.MAX_SAFE_INTEGER (2^53 - 1).
+</Warning>
+
+### String - Decimal
+
+```typescript
+const a = Uint.from("12345")
+const b = Uint.from("0")
+const c = Uint.from("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+```
+
+### String - Hexadecimal
+
+Hex strings with or without `0x` prefix:
+
+```typescript
+const a = Uint.from("0xff")
+const b = Uint.from("FF")
+const c = Uint.from("0x0000000000000000000000000000000000000000000000000000000000000001")
+
+// Case insensitive
+Uint.from("0xDEADBEEF")  // Same as 0xdeadbeef
+```
+
+## Validation
+
+All inputs validated before construction:
+
+**Range checks:**
+```typescript
+Uint.from(-1n)          // Error: Value cannot be negative
+Uint.from(2n ** 256n)   // Error: Value exceeds 2^256 - 1
+```
+
+**Format checks:**
+```typescript
+Uint.from("invalid")    // Error: Invalid format
+Uint.from("0xGG")       // Error: Invalid hex
+Uint.from(3.14)         // Error: Must be integer
+```
+
+**Type checks:**
+```typescript
+Uint.from(null)         // Error: Invalid type
+Uint.from(undefined)    // Error: Invalid type
+Uint.from({})           // Error: Invalid type
+```
+
+## Usage Patterns
+
+### Constructor Selection
+
+```typescript
+// Known bigint - use from
+const a = Uint.from(100n)
+
+// Hex string - use fromHex (more explicit)
+const b = Uint.fromHex("0xff")
+
+// User input - use tryFrom (safe)
+const userInput = "12345"
+const c = Uint.tryFrom(userInput)
+if (c === undefined) {
+  throw new Error("Invalid uint")
+}
+```
+
+### Safe Parsing
+
+```typescript
+function parseUint(input: unknown): BrandedUint | null {
+  try {
+    if (typeof input === "bigint") {
+      return Uint.from(input)
+    }
+    if (typeof input === "number") {
+      return Uint.from(input)
+    }
+    if (typeof input === "string") {
+      return Uint.from(input)
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+// Better: use tryFrom
+function parseUintSafe(input: bigint | number | string): BrandedUint | null {
+  return Uint.tryFrom(input) ?? null
+}
+```
+
+### Type Conversion
+
+```typescript
+// From other primitives
+import { Address, Hash } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addrAsUint = Uint.fromBytes(addr)  // Address is Uint8Array(20)
+
+const hash = Hash.fromHex("0x1234...")
+const hashAsUint = Uint.fromBytes(hash)  // Hash is Uint8Array(32)
+```
+
+## Performance
+
+**Zero-copy** for direct Uint8Array construction (fromBytes, fromAbiEncoded).
+
+**Conversion required** for strings (parses and allocates new Uint8Array).
+
+For performance-critical code, prefer passing bigint directly or using fromBytes.
+
+## See Also
+
+- [tryFrom](/primitives/uint/try-from) - Safe constructor (no throw)
+- [fromHex](/primitives/uint/from-hex) - Parse hex string
+- [fromBigInt](/primitives/uint/from-bigint) - From BigInt
+- [fromNumber](/primitives/uint/from-number) - From number
+- [fromBytes](/primitives/uint/from-bytes) - From byte array
+- [fromAbiEncoded](/primitives/uint/from-abi-encoded) - From ABI bytes

@@ -1,0 +1,108 @@
+---
+title: format
+description: Format ABI item to human-readable signature string
+---
+
+<Tabs>
+<Tab title="Namespace API">
+
+## `format(item: AbiItem): string`
+
+Format an ABI item (function, event, error, constructor) into a human-readable signature string with parameter names.
+
+**Parameters:**
+- `item: AbiItem` - Any ABI item (function, event, error, or constructor)
+
+**Returns:** `string` - Formatted signature with parameter names
+
+**Example:**
+
+```typescript
+import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const formatted = BrandedAbi.format(transferFn)
+console.log(formatted)
+// "function transfer(address to, uint256 amount) returns (bool)"
+```
+
+**Defined in:** [primitives/Abi/BrandedAbi/format.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/format.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI formatting in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Format Function
+
+```typescript
+import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+
+const fn = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+}
+
+console.log(BrandedAbi.format(fn))
+// "function balanceOf(address owner) returns (uint256 balance)"
+```
+
+### Format Event
+
+```typescript
+import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+
+const event = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+}
+
+console.log(BrandedAbi.format(event))
+// "event Transfer(address indexed from, address indexed to, uint256 value)"
+```
+
+### Format Error
+
+```typescript
+import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+
+const error = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+console.log(BrandedAbi.format(error))
+// "error InsufficientBalance(uint256 balance, uint256 required)"
+```
+
+## See Also
+
+- [formatWithArgs](/primitives/abi/format-with-args) - Format with argument values
+- [getSignature](/primitives/abi/function/get-signature) - Get canonical signature (no names)

@@ -1,0 +1,82 @@
+---
+title: Parameter.from
+description: Create parameter definition from type string
+---
+
+<Tabs>
+<Tab title="Namespace API">
+
+## `from(type: string, name?: string): Parameter`
+
+Create a parameter definition from a type string.
+
+**Parameters:**
+- `type: string` - Solidity type string (e.g., "address", "uint256", "string")
+- `name?: string` - Optional parameter name
+
+**Returns:** `Parameter` - Parameter definition object
+
+**Example:**
+
+```typescript
+import * as Parameter from '@tevm/voltaire/Abi/parameter'
+
+const addressParam = Parameter.from("address", "owner")
+// { type: "address", name: "owner" }
+
+const uint256Param = Parameter.from("uint256", "amount")
+// { type: "uint256", name: "amount" }
+
+const stringParam = Parameter.from("string")
+// { type: "string" }
+```
+
+**Defined in:** [primitives/Abi/parameter/BrandedParameter/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/parameter/BrandedParameter/from.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+Parameter creation in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## Usage Examples
+
+### Build Function Definition
+
+```typescript
+import * as Parameter from '@tevm/voltaire/Abi/parameter'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    Parameter.from("address", "to"),
+    Parameter.from("uint256", "amount")
+  ],
+  outputs: [
+    Parameter.from("bool", "success")
+  ]
+}
+```
+
+### Complex Types
+
+```typescript
+import * as Parameter from '@tevm/voltaire/Abi/parameter'
+
+// Array types
+const addressesParam = Parameter.from("address[]", "recipients")
+const fixedArrayParam = Parameter.from("uint256[3]", "values")
+
+// Bytes types
+const bytesParam = Parameter.from("bytes", "data")
+const bytes32Param = Parameter.from("bytes32", "hash")
+```
+
+## See Also
+
+- [encode](/primitives/abi/parameter/encode) - Encode parameter value

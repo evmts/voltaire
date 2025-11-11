@@ -1,0 +1,467 @@
+---
+title: Rlp.validate
+description: Validate if data is valid RLP encoding
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.validate(data: Uint8Array): boolean`
+
+Validates if data is valid RLP encoding. Returns true if valid, false otherwise.
+
+**Parameters:**
+- `data: Uint8Array` - Data to validate
+
+**Returns:** `boolean` - True if valid RLP encoding
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid RLP
+const valid = Rlp.validate(new Uint8Array([0x83, 1, 2, 3]))
+// => true
+
+// Invalid RLP (incomplete)
+const invalid = Rlp.validate(new Uint8Array([0x83, 1]))
+// => false (says 3 bytes but only 1 provided)
+
+// Valid single byte
+const byte = Rlp.validate(new Uint8Array([0x7f]))
+// => true
+
+// Valid list
+const list = Rlp.validate(new Uint8Array([0xc2, 0x01, 0x02]))
+// => true
+
+// Invalid non-canonical
+const nonCanonical = Rlp.validate(new Uint8Array([0x81, 0x7f]))
+// => false (single byte < 0x80 should not be prefixed)
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/validate.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/validate.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `validate(data: Uint8Array): boolean`
+
+Validates if data is valid RLP encoding.
+
+**Parameters:**
+- `data: Uint8Array` - Data to validate
+
+**Returns:** `boolean` - True if valid RLP encoding
+
+**Example:**
+
+```typescript
+import { validate } from '@tevm/voltaire/BrandedRlp'
+
+const valid = validate(new Uint8Array([0x83, 1, 2, 3]))
+// => true
+
+const invalid = validate(new Uint8Array([0x83, 1]))
+// => false
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/validate.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/validate.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.validate(bytes: []const u8) bool`
+
+Validate if bytes are valid RLP encoding.
+
+**Parameters:**
+- `bytes: []const u8` - Bytes to validate
+
+**Returns:** `bool` - True if valid
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+const valid = [_]u8{ 0x83, 1, 2, 3 };
+const isValid = rlp.validate(&valid);
+// isValid = true
+
+const invalid = [_]u8{ 0x83, 1 };
+const isValid = rlp.validate(&invalid);
+// isValid = false
+```
+
+**Defined in:** [primitives/rlp/validate.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/validate.zig)
+
+</Tab>
+</Tabs>
+
+## Validation Rules
+
+RLP validation checks:
+
+1. **Canonical encoding** - Minimal representation
+2. **Length consistency** - Declared vs actual
+3. **Depth limits** - Max 32 levels
+4. **No leading zeros** - In length encodings
+5. **Proper prefixes** - Valid prefix ranges
+
+### Valid Examples
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Single byte < 0x80
+Rlp.validate(new Uint8Array([0x7f]))
+// => true
+
+// Empty bytes
+Rlp.validate(new Uint8Array([0x80]))
+// => true
+
+// Short string
+Rlp.validate(new Uint8Array([0x83, 1, 2, 3]))
+// => true
+
+// Long string
+const long = new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)])
+Rlp.validate(long)
+// => true
+
+// Empty list
+Rlp.validate(new Uint8Array([0xc0]))
+// => true
+
+// Short list
+Rlp.validate(new Uint8Array([0xc2, 0x01, 0x02]))
+// => true
+```
+
+### Invalid Examples
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Incomplete data
+Rlp.validate(new Uint8Array([0x83, 1]))
+// => false (says 3 bytes but only 1 provided)
+
+// Non-canonical single byte
+Rlp.validate(new Uint8Array([0x81, 0x7f]))
+// => false (single byte < 0x80 should not be prefixed)
+
+// Non-canonical short form
+Rlp.validate(new Uint8Array([0xb8, 0x03, 1, 2, 3]))
+// => false (< 56 bytes should use short form)
+
+// Leading zeros
+Rlp.validate(new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)]))
+// => false (length has leading zeros)
+
+// Empty input
+Rlp.validate(new Uint8Array([]))
+// => false
+
+// Extra data
+Rlp.validate(new Uint8Array([0x01, 0x02]))
+// => false (multiple values without stream mode)
+```
+
+## Usage Patterns
+
+### Pre-flight Validation
+
+Validate before decoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function safelyDecode(bytes: Uint8Array) {
+  if (!Rlp.validate(bytes)) {
+    throw new Error('Invalid RLP encoding')
+  }
+
+  return Rlp.decode(bytes)
+}
+
+try {
+  const data = safelyDecode(untrustedInput)
+  // Process data
+} catch (error) {
+  console.error('Invalid input:', error.message)
+}
+```
+
+### Transaction Validation
+
+Validate transaction bytes before processing:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function validateTransaction(txBytes: Uint8Array): boolean {
+  // First check if valid RLP
+  if (!Rlp.validate(txBytes)) {
+    return false
+  }
+
+  // Decode and check structure
+  const decoded = Rlp.decode(txBytes)
+  if (decoded.data.type !== 'list') {
+    return false
+  }
+
+  // Check field count (9 for legacy tx)
+  if (decoded.data.value.length !== 9) {
+    return false
+  }
+
+  return true
+}
+
+const tx = new Uint8Array([...])
+if (validateTransaction(tx)) {
+  // Process transaction
+}
+```
+
+### API Input Validation
+
+Validate API inputs:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface ApiRequest {
+  rlpData: string  // Hex-encoded RLP
+}
+
+function handleRequest(req: ApiRequest): Response {
+  // Convert hex to bytes
+  const bytes = hexToBytes(req.rlpData)
+
+  // Validate RLP encoding
+  if (!Rlp.validate(bytes)) {
+    return { error: 'Invalid RLP encoding' }
+  }
+
+  // Process valid RLP
+  const decoded = Rlp.decode(bytes)
+  return { data: decoded }
+}
+```
+
+### Batch Validation
+
+Validate multiple RLP values:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function validateBatch(items: Uint8Array[]): boolean[] {
+  return items.map(item => Rlp.validate(item))
+}
+
+const items = [
+  new Uint8Array([0x83, 1, 2, 3]),
+  new Uint8Array([0x83, 1]),  // Invalid
+  new Uint8Array([0xc0])
+]
+
+const results = validateBatch(items)
+// => [true, false, true]
+
+const allValid = results.every(r => r)
+console.log(`All valid: ${allValid}`)
+```
+
+### Storage Validation
+
+Validate stored RLP data:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+class RlpStorage {
+  private store = new Map<string, Uint8Array>()
+
+  set(key: string, rlpData: Uint8Array): void {
+    if (!Rlp.validate(rlpData)) {
+      throw new Error(`Invalid RLP data for key: ${key}`)
+    }
+    this.store.set(key, rlpData)
+  }
+
+  get(key: string): Uint8Array | undefined {
+    const data = this.store.get(key)
+    if (data && !Rlp.validate(data)) {
+      console.warn(`Corrupted RLP data for key: ${key}`)
+      return undefined
+    }
+    return data
+  }
+}
+```
+
+## Performance
+
+### Validation Cost
+
+Validation uses `decode` internally, so it has similar performance characteristics:
+
+```typescript
+// validate() is equivalent to:
+function validate(data: Uint8Array): boolean {
+  try {
+    decode(data)
+    return true
+  } catch {
+    return false
+  }
+}
+```
+
+### When to Validate
+
+**Always validate** untrusted input:
+- Network data
+- User input
+- External APIs
+- File uploads
+
+**Skip validation** for trusted data:
+- Just-encoded data
+- Internal processing
+- Cached results
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Trusted: just encoded
+const data = [new Uint8Array([1]), new Uint8Array([2])]
+const encoded = Rlp.encode(data)
+// No need to validate - we just encoded it
+const decoded = Rlp.decode(encoded)
+
+// Untrusted: from network
+const networkData = await fetchRlpData()
+if (Rlp.validate(networkData)) {
+  const decoded = Rlp.decode(networkData)
+}
+```
+
+### Error Handling
+
+`validate` never throws, always returns boolean:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Safe for any input
+const result1 = Rlp.validate(new Uint8Array([]))
+// => false (no throw)
+
+const result2 = Rlp.validate(new Uint8Array([0xff, 0xff, 0xff]))
+// => false (no throw)
+
+// Compare to decode (throws on invalid)
+try {
+  Rlp.decode(new Uint8Array([]))
+} catch (error) {
+  console.error('Decode threw:', error)
+}
+```
+
+## What Validation Checks
+
+### 1. Length Consistency
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Declared 3 bytes, provided 3 bytes
+Rlp.validate(new Uint8Array([0x83, 1, 2, 3]))
+// => true
+
+// Declared 3 bytes, provided 1 byte
+Rlp.validate(new Uint8Array([0x83, 1]))
+// => false
+```
+
+### 2. Canonical Encoding
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Canonical: single byte as-is
+Rlp.validate(new Uint8Array([0x7f]))
+// => true
+
+// Non-canonical: single byte with prefix
+Rlp.validate(new Uint8Array([0x81, 0x7f]))
+// => false
+```
+
+### 3. No Leading Zeros
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid: minimal length encoding
+Rlp.validate(new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)]))
+// => true
+
+// Invalid: leading zero in length
+Rlp.validate(new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)]))
+// => false
+```
+
+### 4. Depth Limits
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid: depth 3
+const shallow = [[[new Uint8Array([1])]]]
+const encoded = Rlp.encode(shallow)
+Rlp.validate(encoded)
+// => true
+
+// Invalid: depth > 32
+const deep = Array(40).fill(null).reduce(
+  (acc) => [acc],
+  new Uint8Array([1])
+)
+const encoded = Rlp.encode(deep)
+Rlp.validate(encoded)
+// => false
+```
+
+### 5. Proper Prefix Ranges
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid prefixes:
+// 0x00-0x7f: single byte
+// 0x80-0xb7: short string
+// 0xb8-0xbf: long string
+// 0xc0-0xf7: short list
+// 0xf8-0xff: long list
+
+Rlp.validate(new Uint8Array([0x7f]))  // true
+Rlp.validate(new Uint8Array([0x80]))  // true (empty string)
+Rlp.validate(new Uint8Array([0xc0]))  // true (empty list)
+```
+
+## See Also
+
+- [decode](/primitives/rlp/decode) - Decode RLP bytes (throws on invalid)
+- [encode](/primitives/rlp/encode) - Encode data to RLP
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification
+- [Fundamentals](/primitives/rlp/fundamentals) - RLP basics

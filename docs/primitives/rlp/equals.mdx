@@ -1,0 +1,472 @@
+---
+title: Rlp.equals
+description: Compare two RLP data structures for equality
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.equals(data: BrandedRlp, other: BrandedRlp): boolean`
+
+Check if two RLP data structures are equal. Performs deep comparison.
+
+**Parameters:**
+- `data: BrandedRlp` - First RLP data structure
+- `other: BrandedRlp` - Second RLP data structure
+
+**Returns:** `boolean` - True if equal
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Compare bytes
+const a = { type: 'bytes', value: new Uint8Array([1, 2]) }
+const b = { type: 'bytes', value: new Uint8Array([1, 2]) }
+Rlp.equals(a, b)
+// => true
+
+// Compare lists
+const list1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+const list2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+Rlp.equals(list1, list2)
+// => true
+
+// Different types
+const bytes = { type: 'bytes', value: new Uint8Array([1]) }
+const list = { type: 'list', value: [bytes] }
+Rlp.equals(bytes, list)
+// => false
+
+// Instance method
+const rlp1 = new Rlp(new Uint8Array([1, 2]))
+const rlp2 = new Rlp(new Uint8Array([1, 2]))
+rlp1.equals(rlp2)
+// => true
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/equals.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/equals.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `equals(data: BrandedRlp, other: BrandedRlp): boolean`
+
+Check if two RLP data structures are equal.
+
+**Parameters:**
+- `data: BrandedRlp` - First RLP data structure
+- `other: BrandedRlp` - Second RLP data structure
+
+**Returns:** `boolean` - True if equal
+
+**Example:**
+
+```typescript
+import { equals } from '@tevm/voltaire/BrandedRlp'
+
+const a = { type: 'bytes', value: new Uint8Array([1, 2]) }
+const b = { type: 'bytes', value: new Uint8Array([1, 2]) }
+equals(a, b)
+// => true
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/equals.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/equals.js#L15)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.equals(a: Data, b: Data) bool`
+
+Compare two RLP data structures for equality.
+
+**Parameters:**
+- `a: Data` - First data structure
+- `b: Data` - Second data structure
+
+**Returns:** `bool` - True if equal
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+const a = rlp.Data{ .bytes = &[_]u8{ 1, 2 } };
+const b = rlp.Data{ .bytes = &[_]u8{ 1, 2 } };
+const equal = rlp.equals(a, b);
+// equal = true
+```
+
+**Defined in:** [primitives/rlp/data.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/data.zig)
+
+</Tab>
+</Tabs>
+
+## BrandedRlp Type
+
+```typescript
+type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] }
+```
+
+### Bytes Comparison
+
+Compares byte-by-byte:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+const b = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+Rlp.equals(a, b)
+// => true
+
+// Different length
+const c = { type: 'bytes', value: new Uint8Array([1, 2]) }
+Rlp.equals(a, c)
+// => false
+
+// Different values
+const d = { type: 'bytes', value: new Uint8Array([1, 2, 4]) }
+Rlp.equals(a, d)
+// => false
+
+// Empty bytes
+const empty1 = { type: 'bytes', value: new Uint8Array([]) }
+const empty2 = { type: 'bytes', value: new Uint8Array([]) }
+Rlp.equals(empty1, empty2)
+// => true
+```
+
+### List Comparison
+
+Compares recursively:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const list1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+
+const list2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+
+Rlp.equals(list1, list2)
+// => true
+
+// Different length
+const list3 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) }
+  ]
+}
+Rlp.equals(list1, list3)
+// => false
+
+// Different order
+const list4 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([2]) },
+    { type: 'bytes', value: new Uint8Array([1]) }
+  ]
+}
+Rlp.equals(list1, list4)
+// => false
+```
+
+### Nested Comparison
+
+Deeply nested structures are compared recursively:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const nested1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    }
+  ]
+}
+
+const nested2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    }
+  ]
+}
+
+Rlp.equals(nested1, nested2)
+// => true
+```
+
+## Usage Patterns
+
+### Transaction Comparison
+
+Compare decoded transactions:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const tx1Bytes = new Uint8Array([...])
+const tx2Bytes = new Uint8Array([...])
+
+const tx1 = Rlp.decode(tx1Bytes)
+const tx2 = Rlp.decode(tx2Bytes)
+
+if (Rlp.equals(tx1.data, tx2.data)) {
+  console.log('Transactions are identical')
+}
+```
+
+### Deduplication
+
+Deduplicate RLP data structures:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function deduplicate(items: BrandedRlp[]): BrandedRlp[] {
+  const unique: BrandedRlp[] = []
+
+  for (const item of items) {
+    const isDuplicate = unique.some(existing =>
+      Rlp.equals(existing, item)
+    )
+    if (!isDuplicate) {
+      unique.push(item)
+    }
+  }
+
+  return unique
+}
+
+const items = [
+  { type: 'bytes', value: new Uint8Array([1]) },
+  { type: 'bytes', value: new Uint8Array([2]) },
+  { type: 'bytes', value: new Uint8Array([1]) },  // Duplicate
+]
+
+const unique = deduplicate(items)
+// => [{ type: 'bytes', value: [1] }, { type: 'bytes', value: [2] }]
+```
+
+### Cache Key Generation
+
+Use equality for cache lookups:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+class RlpCache {
+  private cache: Array<{ key: BrandedRlp; value: any }> = []
+
+  get(key: BrandedRlp): any | undefined {
+    const entry = this.cache.find(e => Rlp.equals(e.key, key))
+    return entry?.value
+  }
+
+  set(key: BrandedRlp, value: any): void {
+    // Remove existing entry if present
+    this.cache = this.cache.filter(e => !Rlp.equals(e.key, key))
+    this.cache.push({ key, value })
+  }
+}
+```
+
+### Test Assertions
+
+Compare expected vs actual in tests:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+import { expect } from 'vitest'
+
+test('encodes transaction correctly', () => {
+  const tx = [
+    new Uint8Array([0x00]),
+    new Uint8Array([0x01])
+  ]
+
+  const encoded = Rlp.encode(tx)
+  const decoded = Rlp.decode(encoded)
+
+  const expected = {
+    type: 'list',
+    value: [
+      { type: 'bytes', value: new Uint8Array([0x00]) },
+      { type: 'bytes', value: new Uint8Array([0x01]) }
+    ]
+  }
+
+  expect(Rlp.equals(decoded.data, expected)).toBe(true)
+})
+```
+
+### Merkle Proof Verification
+
+Compare proof nodes:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function verifyProof(
+  leaf: BrandedRlp,
+  proof: BrandedRlp[],
+  root: BrandedRlp
+): boolean {
+  let current = leaf
+
+  for (const node of proof) {
+    // Hash current with proof node
+    const combined = {
+      type: 'list' as const,
+      value: [current, node]
+    }
+    current = hashRlp(combined)
+  }
+
+  return Rlp.equals(current, root)
+}
+```
+
+## Performance
+
+### Comparison Algorithm
+
+```typescript
+// Conceptual implementation
+function equals(a: BrandedRlp, b: BrandedRlp): boolean {
+  // Different types
+  if (a.type !== b.type) {
+    return false
+  }
+
+  // Bytes comparison
+  if (a.type === 'bytes' && b.type === 'bytes') {
+    if (a.value.length !== b.value.length) return false
+    for (let i = 0; i < a.value.length; i++) {
+      if (a.value[i] !== b.value[i]) return false
+    }
+    return true
+  }
+
+  // List comparison (recursive)
+  if (a.type === 'list' && b.type === 'list') {
+    if (a.value.length !== b.value.length) return false
+    for (let i = 0; i < a.value.length; i++) {
+      if (!equals(a.value[i], b.value[i])) return false
+    }
+    return true
+  }
+
+  return false
+}
+```
+
+### Complexity
+
+- **Time**: O(n) where n is total number of bytes in all data structures
+- **Space**: O(d) where d is recursion depth (for nested lists)
+- **Early exit**: Returns false on first mismatch
+
+### Short-circuit Optimization
+
+Comparison short-circuits on first difference:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Large lists with difference at start
+const list1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    ...Array(1000).fill({ type: 'bytes', value: new Uint8Array([2]) })
+  ]
+}
+
+const list2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([99]) },  // Different
+    ...Array(1000).fill({ type: 'bytes', value: new Uint8Array([2]) })
+  ]
+}
+
+// Returns false after checking only first element
+Rlp.equals(list1, list2)
+// => false (fast - doesn't check all 1000 elements)
+```
+
+### Alternative: Encoded Comparison
+
+For faster comparison, compare encoded bytes:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function fastEquals(a: BrandedRlp, b: BrandedRlp): boolean {
+  const aEncoded = Rlp.encode(a)
+  const bEncoded = Rlp.encode(b)
+
+  if (aEncoded.length !== bEncoded.length) return false
+
+  for (let i = 0; i < aEncoded.length; i++) {
+    if (aEncoded[i] !== bEncoded[i]) return false
+  }
+
+  return true
+}
+
+// Faster for deeply nested structures
+// But requires encoding overhead
+```
+
+## See Also
+
+- [encode](/primitives/rlp/encode) - Encode data to RLP
+- [decode](/primitives/rlp/decode) - Decode RLP bytes
+- [validate](/primitives/rlp/validate) - Validate RLP structure
+- [Types](/primitives/rlp/types) - RLP type system

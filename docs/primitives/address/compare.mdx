@@ -1,0 +1,342 @@
+---
+title: Address.compare
+description: Lexicographic ordering comparison of addresses
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.compare(other: BrandedAddress): number`
+
+Lexicographic comparison returning -1 (less), 0 (equal), or 1 (greater). Useful for sorting addresses.
+
+**Parameters:**
+- `other: BrandedAddress` - Address to compare with
+
+**Returns:** `number` - `-1` if less than, `0` if equal, `1` if greater than
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+const addr3 = Address.from(10n)
+
+console.log(addr1.compare(addr2)) // -1 (addr1 < addr2)
+console.log(addr2.compare(addr1)) // 1  (addr2 > addr1)
+console.log(addr1.compare(addr3)) // 0  (addr1 == addr3)
+
+// Use for sorting
+const addresses = [addr2, addr1, addr3]
+addresses.sort((a, b) => a.compare(b))
+console.log(addresses) // [addr1, addr3, addr2]
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/compare.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/compare.js#L8)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `compare(a: BrandedAddress, b: BrandedAddress): number`
+
+Lexicographic comparison between two addresses.
+
+**Parameters:**
+- `a: BrandedAddress` - First address
+- `b: BrandedAddress` - Second address
+
+**Returns:** `number` - `-1` if a < b, `0` if equal, `1` if a > b
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+
+console.log(Address.compare(addr1, addr2)) // -1
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/compare.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/compare.js#L8)
+
+</Tab>
+<Tab title="Zig">
+
+## `std.mem.order(u8, addr1.bytes, addr2.bytes): std.math.Order`
+
+Compare addresses lexicographically. Returns `Order.lt`, `Order.eq`, or `Order.gt`.
+
+**Parameters:**
+- `addr1.bytes: [20]u8` - First address bytes
+- `addr2.bytes: [20]u8` - Second address bytes
+
+**Returns:** `std.math.Order` - Ordering result
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001") catch unreachable;
+const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002") catch unreachable;
+
+const order = std.mem.order(u8, &addr1.bytes, &addr2.bytes);
+try std.testing.expectEqual(std.math.Order.lt, order);
+
+// Use for sorting
+var addresses = [_]Address{ addr2, addr1 };
+std.mem.sort(Address, &addresses, {}, struct {
+    fn lessThan(_: void, a: Address, b: Address) bool {
+        return std.mem.order(u8, &a.bytes, &b.bytes) == .lt;
+    }
+}.lessThan);
+```
+
+**Defined in:** [primitives/Address/address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig)
+
+</Tab>
+</Tabs>
+
+## Comparison Semantics
+
+**Lexicographic ordering:** Compares byte-by-byte from left to right (big-endian).
+
+**Return values:**
+- `-1`: First address is less than second
+- `0`: Addresses are equal
+- `1`: First address is greater than second
+
+**Example ordering:**
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const a1 = Address.fromHex("0x0000000000000000000000000000000000000001")
+const a2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const a3 = Address.fromHex("0x1000000000000000000000000000000000000000")
+
+// Lexicographic order: a1 < a2 < a3
+console.log(a1.compare(a2)) // -1
+console.log(a2.compare(a3)) // -1
+console.log(a1.compare(a3)) // -1
+console.log(a3.compare(a1)) // 1
+```
+
+## Use Cases
+
+### Sorting Arrays
+
+Sort addresses in ascending or descending order:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addresses = [
+  Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff"),
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+]
+
+// Sort ascending
+addresses.sort((a, b) => a.compare(b))
+
+// Sort descending
+addresses.sort((a, b) => b.compare(a))
+```
+
+### Binary Search
+
+Efficient lookup in sorted arrays:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function binarySearch(sorted: Address[], target: Address): number {
+  let left = 0
+  let right = sorted.length - 1
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const cmp = sorted[mid].compare(target)
+
+    if (cmp === 0) return mid
+    if (cmp < 0) left = mid + 1
+    else right = mid - 1
+  }
+
+  return -1 // Not found
+}
+```
+
+### Ordered Sets
+
+Maintain addresses in sorted order:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class AddressSet {
+  private addresses: Address[] = []
+
+  add(address: Address) {
+    // Find insertion point
+    const index = this.addresses.findIndex(a => a.compare(address) >= 0)
+
+    if (index === -1) {
+      this.addresses.push(address)
+    } else if (this.addresses[index].compare(address) !== 0) {
+      this.addresses.splice(index, 0, address)
+    }
+  }
+
+  has(address: Address): boolean {
+    const index = binarySearch(this.addresses, address)
+    return index !== -1
+  }
+}
+```
+
+### Range Queries
+
+Find addresses within a range:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function getAddressesInRange(
+  addresses: Address[],
+  min: Address,
+  max: Address
+): Address[] {
+  return addresses.filter(addr =>
+    addr.compare(min) >= 0 && addr.compare(max) <= 0
+  )
+}
+```
+
+### Merkle Trees
+
+Build ordered merkle trees using address ordering:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function buildMerkleTree(addresses: Address[]) {
+  // Sort addresses first
+  const sorted = [...addresses].sort((a, b) => a.compare(b))
+
+  // Build tree with sorted addresses
+  // ...
+}
+```
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time for addresses)
+
+**Implementation:** Compares byte-by-byte until difference found or end reached
+
+**Early termination:** Stops at first differing byte
+
+For large-scale sorting, consider converting to hex once:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Less efficient (converts to hex repeatedly)
+addresses.sort((a, b) => a.compare(b))
+
+// More efficient (convert once)
+const withHex = addresses.map(addr => ({ addr, hex: addr.toHex() }))
+withHex.sort((a, b) => a.hex.localeCompare(b.hex))
+const sorted = withHex.map(({ addr }) => addr)
+```
+
+## Relation to Other Comparisons
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.from(10n)
+const addr2 = Address.from(20n)
+
+// compare() returns -1, 0, or 1
+const result = addr1.compare(addr2)
+
+// Equivalent to:
+if (addr1.lessThan(addr2)) {
+  // result === -1
+} else if (addr1.equals(addr2)) {
+  // result === 0
+} else if (addr1.greaterThan(addr2)) {
+  // result === 1
+}
+```
+
+**Helper methods built on compare():**
+```typescript
+addr1.lessThan(addr2)    === (addr1.compare(addr2) < 0)
+addr1.greaterThan(addr2) === (addr1.compare(addr2) > 0)
+addr1.equals(addr2)      === (addr1.compare(addr2) === 0)
+```
+
+## Sorting Examples
+
+### Sort transaction list by sender:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+interface Transaction {
+  from: Address
+  to: Address
+  value: bigint
+}
+
+function sortBySender(txs: Transaction[]): Transaction[] {
+  return txs.sort((a, b) => a.from.compare(b.from))
+}
+```
+
+### Group addresses by range:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function groupByRange(addresses: Address[], rangeSize: bigint) {
+  const sorted = [...addresses].sort((a, b) => a.compare(b))
+  const groups: Address[][] = []
+  let currentGroup: Address[] = []
+
+  for (const addr of sorted) {
+    if (currentGroup.length === 0) {
+      currentGroup.push(addr)
+    } else {
+      const first = currentGroup[0]
+      const diff = addr.toU256() - first.toU256()
+
+      if (diff < rangeSize) {
+        currentGroup.push(addr)
+      } else {
+        groups.push(currentGroup)
+        currentGroup = [addr]
+      }
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup)
+  }
+
+  return groups
+}
+```
+
+## See Also
+
+- [equals](/primitives/address/equals) - Equality comparison
+- [lessThan](/primitives/address/comparisons#lessthan) - Less than comparison
+- [greaterThan](/primitives/address/comparisons#greaterthan) - Greater than comparison

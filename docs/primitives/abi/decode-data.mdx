@@ -1,0 +1,53 @@
+---
+title: decodeData
+description: Decode ABI data without selector prefix
+---
+
+<Tabs>
+<Tab title="Namespace API">
+
+## `decodeData(item: AbiItem, data: Hex): unknown[]`
+
+Decode ABI-encoded data without selector prefix.
+
+**Parameters:**
+- `item: AbiItem` - ABI item with parameter definitions
+- `data: Hex` - Raw ABI-encoded data (no selector)
+
+**Returns:** `unknown[]` - Decoded parameter values
+
+**Example:**
+
+```typescript
+import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ]
+}
+
+// Data without selector (parameters only)
+const paramsData = "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8"
+
+const [to, amount] = BrandedAbi.decodeData(transferFn, paramsData)
+```
+
+**Defined in:** [primitives/Abi/BrandedAbi/decodeData.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/decodeData.js)
+
+</Tab>
+<Tab title="Zig">
+
+## Zig implementation planned
+
+ABI data decoding in Zig is planned for a future release. Use TypeScript API for now.
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [decode](/primitives/abi/decode) - Decode with selector

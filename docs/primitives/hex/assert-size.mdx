@@ -1,0 +1,301 @@
+---
+title: Hex.assertSize
+description: Assert hex has specific byte size and throw on mismatch
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.assertSize(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Asserts that hex string has a specific byte size. Throws if size doesn't match, returns the hex if it does.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `targetSize: number` - Expected byte size
+
+**Returns:** `BrandedHex` - Sized hex string (type-level size information)
+
+**Throws:**
+- `InvalidLengthError` - Size doesn't match expected
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+const hex = Hex("0x1234")
+
+// Assert size
+Hex.assertSize(hex, 2)   // Returns hex (size matches)
+
+// Size mismatch - throws
+try {
+  Hex.assertSize(hex, 4)
+} catch (e) {
+  console.error(e.message)
+  // "Expected 4 bytes, got 2"
+}
+
+// Common Ethereum sizes
+const hash = Hex("0x" + "00".repeat(32))
+Hex.assertSize(hash, 32)  // ✓ Hash is 32 bytes
+
+const address = Hex("0x" + "00".repeat(20))
+Hex.assertSize(address, 20)  // ✓ Address is 20 bytes
+
+// Empty hex
+Hex.assertSize("0x", 0)  // ✓ Empty is 0 bytes
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/assertSize.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `assertSize(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Asserts that hex string has a specific byte size. Throws if size doesn't match, returns the hex if it does.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `targetSize: number` - Expected byte size
+
+**Returns:** `BrandedHex` - Sized hex string
+
+**Throws:**
+- `InvalidLengthError` - Size doesn't match expected
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+const hex = Hex.from("0x1234")
+
+// Assert size
+Hex.assertSize(hex, 2)   // Returns hex
+
+// Size mismatch - throws
+try {
+  Hex.assertSize(hex, 4)
+} catch (e) {
+  console.error(e.message)
+  // "Expected 4 bytes, got 2"
+}
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/assertSize.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.assertSize(hex: []const u8, targetSize: usize): ![]const u8`
+
+Assert hex has specific byte size.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+- `targetSize: usize` - Expected byte size
+
+**Returns:** `[]const u8` - Validated hex string
+
+**Errors:**
+- `error.InvalidLength` - Size mismatch
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+const hex = "0x1234";
+
+// Valid size
+const sized = try Hex.assertSize(hex, 2);  // Returns hex
+
+// Invalid size
+const invalid = Hex.assertSize(hex, 4);  // error.InvalidLength
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Error Messages
+
+Provides descriptive error messages:
+
+```typescript
+const hex = Hex("0x1234")  // 2 bytes
+
+try {
+  Hex.assertSize(hex, 4)
+} catch (e) {
+  console.error(e.message)
+  // "Expected 4 bytes, got 2"
+}
+
+try {
+  Hex.assertSize(hex, 1)
+} catch (e) {
+  console.error(e.message)
+  // "Expected 1 bytes, got 2"
+}
+```
+
+## Common Ethereum Sizes
+
+**Address (20 bytes / uint160):**
+```typescript
+function setAddress(hex: string) {
+  const addr = Hex.assertSize(hex, 20)  // Throws if not 20 bytes
+  this.address = addr
+}
+```
+
+**Hash (32 bytes / uint256):**
+```typescript
+function setBlockHash(hex: string) {
+  const hash = Hex.assertSize(hex, 32)  // Throws if not 32 bytes
+  this.blockHash = hash
+}
+```
+
+**Function Selector (4 bytes):**
+```typescript
+function extractSelector(calldata: string) {
+  const selector = calldata.slice(0, 10)  // "0x" + 8 hex chars
+  return Hex.assertSize(selector, 4)  // Ensure exactly 4 bytes
+}
+```
+
+**Signature (65 bytes):**
+```typescript
+function verifySignature(sig: string) {
+  const signature = Hex.assertSize(sig, 65)  // r(32) + s(32) + v(1)
+  // Verify...
+}
+```
+
+## Common Use Cases
+
+**Constructor Validation:**
+```typescript
+class Transaction {
+  constructor(to: string, data: string) {
+    this.to = Hex.assertSize(to, 20)      // Must be address
+    this.data = Hex.validate(data)        // Any size ok
+  }
+}
+```
+
+**API Input Validation:**
+```typescript
+app.post('/setHash', (req, res) => {
+  try {
+    const hash = Hex.assertSize(req.body.hash, 32)
+    // Process hash...
+  } catch (e) {
+    return res.status(400).json({ error: e.message })
+  }
+})
+```
+
+**ABI Decoding:**
+```typescript
+function decodeAddress(hex: string) {
+  // Addresses in ABI are padded to 32 bytes
+  const padded = Hex.assertSize(hex, 32)
+  // Extract last 20 bytes
+  return padded.slice(-40)  // Keep "0x" + last 40 hex chars
+}
+```
+
+**Storage Slot Validation:**
+```typescript
+function readStorage(slot: string) {
+  const slotKey = Hex.assertSize(slot, 32)  // Slots are uint256
+  return provider.getStorageAt(address, slotKey)
+}
+```
+
+**Type-Safe Wrappers:**
+```typescript
+type Hash32 = BrandedHex & { readonly __size: 32 }
+type Address20 = BrandedHex & { readonly __size: 20 }
+
+function asHash(hex: string): Hash32 {
+  return Hex.assertSize(hex, 32) as Hash32
+}
+
+function asAddress(hex: string): Address20 {
+  return Hex.assertSize(hex, 20) as Address20
+}
+```
+
+## Size Calculation
+
+Size is: `(hex.length - 2) / 2`
+
+```typescript
+// Examples
+Hex.assertSize("0x12", 1)        // ✓ 1 byte
+Hex.assertSize("0x1234", 2)      // ✓ 2 bytes
+Hex.assertSize("0x123456", 3)    // ✓ 3 bytes
+Hex.assertSize("0x", 0)          // ✓ 0 bytes
+
+// Common sizes
+Hex.assertSize("0x" + "ff".repeat(4), 4)    // ✓ uint32
+Hex.assertSize("0x" + "ff".repeat(8), 8)    // ✓ uint64
+Hex.assertSize("0x" + "ff".repeat(20), 20)  // ✓ address
+Hex.assertSize("0x" + "ff".repeat(32), 32)  // ✓ uint256
+```
+
+## Performance
+
+Simple arithmetic check with error message construction on failure. Constant time O(1).
+
+Throws exception on mismatch - suitable for fail-fast validation.
+
+## vs isSized()
+
+**`assertSize()` - Throwing:**
+```typescript
+try {
+  const addr = Hex.assertSize(hex, 20)
+  // Valid - continue with addr
+} catch (e) {
+  console.error(e.message)  // Descriptive error
+}
+```
+
+**`isSized()` - Non-throwing:**
+```typescript
+if (Hex.isSized(hex, 20)) {
+  // Valid
+} else {
+  // Invalid - no error details
+}
+```
+
+Use `assertSize()` for:
+- Constructor validation
+- Fail-fast APIs
+- Type safety
+- Invariant checking
+- Error reporting
+
+Use `isSized()` for:
+- Conditional logic
+- Type guards
+- Silent validation
+- Filter operations
+
+## See Also
+
+- [isSized](/primitives/hex/is-sized) - Non-throwing size check
+- [size](/primitives/hex/size) - Get hex byte size
+- [pad](/primitives/hex/pad) - Pad hex to specific size
+- [validate](/primitives/hex/validate) - Validate hex format
