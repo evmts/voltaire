@@ -23,7 +23,8 @@
 			"*.so",
 			"*.dll",
 			"*.dylib",
-			"lib/c-kzg-4844",
+			"lib",
+			"scripts/dist-address-wasm",
 			"docs/.astro",
 			"worktrees"
 		]
