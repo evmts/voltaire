@@ -632,7 +632,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const expectedAddress = keccak_256(publicKey).slice(-20);
 
 			// Verify
-			const isValid = EIP712.verifyTypedData(signature, typedData, expectedAddress);
+			const isValid = EIP712.verifyTypedData(
+				signature,
+				typedData,
+				expectedAddress,
+			);
 			expect(isValid).toBe(true);
 		});
 
@@ -655,7 +659,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const wrongAddress = new Uint8Array(20).fill(0xff);
 
 			// Verify should fail
-			const isValid = EIP712.verifyTypedData(signature, typedData, wrongAddress);
+			const isValid = EIP712.verifyTypedData(
+				signature,
+				typedData,
+				wrongAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 
@@ -688,7 +696,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			};
 
 			// Verify should fail
-			const isValid = EIP712.verifyTypedData(signature, tamperedData, expectedAddress);
+			const isValid = EIP712.verifyTypedData(
+				signature,
+				tamperedData,
+				expectedAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 
@@ -721,7 +733,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			};
 
 			// Verify should fail
-			const isValid = EIP712.verifyTypedData(signature, tamperedData, expectedAddress);
+			const isValid = EIP712.verifyTypedData(
+				signature,
+				tamperedData,
+				expectedAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 
@@ -768,7 +784,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const invalidSignature = { ...signature, v: 29 };
 
 			// Should throw or return false
-			expect(() => EIP712.recoverAddress(invalidSignature, typedData)).toThrow();
+			expect(() =>
+				EIP712.recoverAddress(invalidSignature, typedData),
+			).toThrow();
 		});
 
 		it("should reject signature with all-zero r component", async () => {
@@ -799,7 +817,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
 			const expectedAddress = keccak_256(publicKey).slice(-20);
 
-			const isValid = EIP712.verifyTypedData(invalidSignature, typedData, expectedAddress);
+			const isValid = EIP712.verifyTypedData(
+				invalidSignature,
+				typedData,
+				expectedAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 
@@ -831,7 +853,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
 			const expectedAddress = keccak_256(publicKey).slice(-20);
 
-			const isValid = EIP712.verifyTypedData(invalidSignature, typedData, expectedAddress);
+			const isValid = EIP712.verifyTypedData(
+				invalidSignature,
+				typedData,
+				expectedAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 
@@ -853,7 +879,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const wrongLengthAddress = new Uint8Array(19);
 
 			// Should return false, not throw
-			const isValid = EIP712.verifyTypedData(signature, typedData, wrongLengthAddress);
+			const isValid = EIP712.verifyTypedData(
+				signature,
+				typedData,
+				wrongLengthAddress,
+			);
 			expect(isValid).toBe(false);
 		});
 

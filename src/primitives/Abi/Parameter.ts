@@ -48,17 +48,21 @@ type ConvertToAbiParameter<T extends Parameter> = {
 		: {});
 
 // Resolve basic parameter type (no tuples)
-type ResolveBasicParameterType<T extends Parameter> = T["type"] extends "address"
-	? BrandedAddress
-	: T["type"] extends "address[]"
-		? BrandedAddress[]
-		: T["type"] extends `address[${string}]`
-			? readonly BrandedAddress[]
-			: AbiParameterToPrimitiveTypeWithUint8Array<ConvertToAbiParameter<T>>;
+type ResolveBasicParameterType<T extends Parameter> =
+	T["type"] extends "address"
+		? BrandedAddress
+		: T["type"] extends "address[]"
+			? BrandedAddress[]
+			: T["type"] extends `address[${string}]`
+				? readonly BrandedAddress[]
+				: AbiParameterToPrimitiveTypeWithUint8Array<ConvertToAbiParameter<T>>;
 
 // Build a fixed-size tuple type
-type BuildFixedTuple<T, N extends number, Acc extends readonly T[] = []> =
-	Acc["length"] extends N ? Acc : BuildFixedTuple<T, N, readonly [T, ...Acc]>;
+type BuildFixedTuple<
+	T,
+	N extends number,
+	Acc extends readonly T[] = [],
+> = Acc["length"] extends N ? Acc : BuildFixedTuple<T, N, readonly [T, ...Acc]>;
 
 // Helper to recursively resolve a single component
 type ResolveComponent<T extends Parameter> = T["type"] extends "tuple"
@@ -111,7 +115,9 @@ export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 };
 
 export type ParametersToObject<TParams extends readonly Parameter[]> = {
-	[K in TParams[number] as K["name"] extends string
-		? K["name"]
+	[K in TParams[number] as K extends Parameter<any, infer N, any>
+		? N extends string
+			? N
+			: never
 		: never]: K extends Parameter ? ResolveSingleParameter<K> : never;
 };
