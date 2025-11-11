@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Building calldata with selectors
 /// - Decoding function calls
 /// - Common Ethereum function selectors
-
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
@@ -175,10 +174,12 @@ pub fn main() !void {
 
     try stdout.print("\n--- Selector Matching ---\n\n", .{});
 
-    fn matchesSelector(calldata: []const u8, expected: [4]u8) bool {
-        if (calldata.len < 4) return false;
-        return std.mem.eql(u8, calldata[0..4], &expected);
-    }
+    const matchesSelector = struct {
+        fn call(calldata: []const u8, expected: [4]u8) bool {
+            if (calldata.len < 4) return false;
+            return std.mem.eql(u8, calldata[0..4], &expected);
+        }
+    }.call;
 
     const test_calldata = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb, 0x00, 0x00 }; // transfer + padding
 

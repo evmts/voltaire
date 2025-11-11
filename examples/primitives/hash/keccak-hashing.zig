@@ -232,11 +232,11 @@ pub fn main() !void {
         v >>= 8;
     }
 
-    var packed: [52]u8 = undefined; // 20 + 32
-    @memcpy(packed[0..20], &addr);
-    @memcpy(packed[20..52], &value_bytes);
+    var combined = [_]u8{0} ** 52; // 20 + 32
+    @memcpy(combined[0..20], &addr);
+    @memcpy(combined[20..52], &value_bytes);
 
-    const packed_hash = try Hash.keccak256(&packed);
+    const packed_hash = try Hash.keccak256(&combined);
     const packed_hex = Hash.toHex(packed_hash);
     std.debug.print("Packed hash: {s}\n\n", .{&packed_hex});
 

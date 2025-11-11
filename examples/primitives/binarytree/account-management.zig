@@ -4,20 +4,20 @@ const BinaryTree = primitives.BinaryTree;
 
 // Helper functions for AccountData packing/unpacking
 fn packAccountData(account: BinaryTree.AccountData) [32]u8 {
-    var packed: [32]u8 = undefined;
-    @memset(&packed, 0);
+    var result = [_]u8{0} ** 32;
+    @memset(&result, 0);
 
     // Pack using standard layout
     const bytes: *const [@sizeOf(BinaryTree.AccountData)]u8 = @ptrCast(&account);
-    @memcpy(packed[0..@sizeOf(BinaryTree.AccountData)], bytes);
+    @memcpy(result[0..@sizeOf(BinaryTree.AccountData)], bytes);
 
-    return packed;
+    return result;
 }
 
-fn unpackAccountData(packed: [32]u8) BinaryTree.AccountData {
+fn unpackAccountData(data: [32]u8) BinaryTree.AccountData {
     var account: BinaryTree.AccountData = undefined;
     const dest: *[@sizeOf(BinaryTree.AccountData)]u8 = @ptrCast(&account);
-    @memcpy(dest, packed[0..@sizeOf(BinaryTree.AccountData)]);
+    @memcpy(dest, data[0..@sizeOf(BinaryTree.AccountData)]);
     return account;
 }
 
@@ -81,8 +81,8 @@ pub fn main() !void {
     std.debug.print("   -----------------------\n", .{});
 
     const retrieved_packed = tree.get(account_data_key);
-    if (retrieved_packed) |packed| {
-        const retrieved = unpackAccountData(packed);
+    if (retrieved_packed) |data| {
+        const retrieved = unpackAccountData(data);
         std.debug.print("   Retrieved account:\n", .{});
         std.debug.print("     Version: {}\n", .{retrieved.version});
         std.debug.print("     Code size: {}\n", .{retrieved.code_size});
@@ -96,8 +96,8 @@ pub fn main() !void {
     std.debug.print("4. Updating Account Balance\n", .{});
     std.debug.print("   ------------------------\n", .{});
 
-    if (tree.get(account_data_key)) |packed| {
-        var current = unpackAccountData(packed);
+    if (tree.get(account_data_key)) |data| {
+        var current = unpackAccountData(data);
         std.debug.print("   Current balance: {} wei\n", .{current.balance});
 
         current.balance += 500000000000000000; // Add 0.5 ETH
@@ -116,8 +116,8 @@ pub fn main() !void {
     std.debug.print("5. Incrementing Nonce\n", .{});
     std.debug.print("   ------------------\n", .{});
 
-    if (tree.get(account_data_key)) |packed| {
-        var current = unpackAccountData(packed);
+    if (tree.get(account_data_key)) |data| {
+        var current = unpackAccountData(data);
         std.debug.print("   Current nonce: {}\n", .{current.nonce});
 
         current.nonce += 1;

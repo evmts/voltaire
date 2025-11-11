@@ -30,15 +30,24 @@ const rangeFilter = filters.reduce(
 );
 const nonMember = encoder.encode("Burn");
 if (!rangeFilter.contains(nonMember)) {
+	// Non-member correctly not found
 } else {
+	// False positive
 }
 const transferBytes = encoder.encode("Transfer");
 
 // Quick check with merged filter
 if (rangeFilter.contains(transferBytes)) {
-
-	if (block1Filter.contains(transferBytes))
-	if (block2Filter.contains(transferBytes))
-	if (block3Filter.contains(transferBytes))
+	// Found in merged filter, check individual blocks
+	if (block1Filter.contains(transferBytes)) {
+		// Found in block 1
+	}
+	if (block2Filter.contains(transferBytes)) {
+		// Found in block 2
+	}
+	if (block3Filter.contains(transferBytes)) {
+		// Found in block 3
+	}
 } else {
+	// Not found in range
 }

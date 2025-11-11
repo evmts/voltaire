@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Verifying data hasn't been tampered with
 /// - Detecting data corruption
 /// - Content-addressable storage
-
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
@@ -206,12 +205,14 @@ pub fn main() !void {
     const leaf4 = Hash.keccak256String("data4");
 
     // Hash pairs
-    fn hashPair(left: Hash, right: Hash) Hash {
-        var combined: [64]u8 = undefined;
-        @memcpy(combined[0..32], &left);
-        @memcpy(combined[32..64], &right);
-        return Hash.keccak256(&combined);
-    }
+    const hashPair = struct {
+        fn call(left: Hash, right: Hash) Hash {
+            var combined: [64]u8 = undefined;
+            @memcpy(combined[0..32], &left);
+            @memcpy(combined[32..64], &right);
+            return Hash.keccak256(&combined);
+        }
+    }.call;
 
     const node1 = hashPair(leaf1, leaf2);
     const node2 = hashPair(leaf3, leaf4);

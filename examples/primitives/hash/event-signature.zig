@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Filtering logs by event type
 /// - Working with common ERC standards
 /// - Event signature registry
-
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
@@ -80,17 +79,23 @@ pub fn main() !void {
 
     try stdout.print("\n--- Filtering by Event Type ---\n\n", .{});
 
-    fn isTransferEvent(topic0: Hash) bool {
-        return Hash.equals(topic0, transfer_sig);
-    }
+    const isTransferEvent = struct {
+        fn call(topic0: Hash) bool {
+            return Hash.equals(topic0, transfer_sig);
+        }
+    }.call;
 
-    fn isApprovalEvent(topic0: Hash) bool {
-        return Hash.equals(topic0, approval_sig);
-    }
+    const isApprovalEvent = struct {
+        fn call(topic0: Hash) bool {
+            return Hash.equals(topic0, approval_sig);
+        }
+    }.call;
 
-    fn isDepositEvent(topic0: Hash) bool {
-        return Hash.equals(topic0, deposit_sig);
-    }
+    const isDepositEvent = struct {
+        fn call(topic0: Hash) bool {
+            return Hash.equals(topic0, deposit_sig);
+        }
+    }.call;
 
     // Test filtering
     const test_topics = [_]Hash{ transfer_sig, approval_sig, deposit_sig, transfer_sig };

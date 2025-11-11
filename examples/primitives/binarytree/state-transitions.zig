@@ -9,21 +9,21 @@ const AccountState = struct {
 };
 
 fn packAccountState(state: AccountState) [32]u8 {
-    var packed: [32]u8 = undefined;
-    @memset(&packed, 0);
+    var result = [_]u8{0} ** 32;
+    @memset(&result, 0);
 
     // Nonce at bytes 0-7
-    std.mem.writeInt(u64, packed[0..8], state.nonce, .big);
+    std.mem.writeInt(u64, result[0..8], state.nonce, .big);
 
     // Balance at bytes 8-23 (16 bytes for u128)
-    std.mem.writeInt(u128, packed[8..24], state.balance, .big);
+    std.mem.writeInt(u128, result[8..24], state.balance, .big);
 
-    return packed;
+    return result;
 }
 
-fn unpackAccountState(packed: [32]u8) AccountState {
-    const nonce = std.mem.readInt(u64, packed[0..8], .big);
-    const balance = std.mem.readInt(u128, packed[8..24], .big);
+fn unpackAccountState(data: [32]u8) AccountState {
+    const nonce = std.mem.readInt(u64, data[0..8], .big);
+    const balance = std.mem.readInt(u128, data[8..24], .big);
     return .{ .balance = balance, .nonce = nonce };
 }
 
