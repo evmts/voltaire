@@ -4,8 +4,18 @@ import * as BrandedAbi from "./BrandedAbi/index.js";
 /**
  * Factory function for creating Abi instances
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @param {readonly import('./BrandedAbi/BrandedAbi.js').Item[]} items - ABI items
  * @returns {import('./AbiConstructor.js').Abi} Abi instance
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { Abi } from './primitives/Abi/index.js';
+ * const abi = Abi([
+ *   { type: 'function', name: 'transfer', inputs: [...], outputs: [...] }
+ * ]);
+ * ```
  */
 export function Abi(items) {
 	const result = Array.from(items);

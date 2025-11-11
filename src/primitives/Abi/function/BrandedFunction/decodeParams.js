@@ -8,6 +8,8 @@ import { getSelector } from "./getSelector.js";
 /**
  * Decode function call data (verify selector and decode parameters)
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @template {string} TName
  * @template {import('./statemutability.js').StateMutability} TStateMutability
  * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
@@ -17,9 +19,9 @@ import { getSelector } from "./getSelector.js";
  * @returns {import('../../Parameter.js').ParametersToPrimitiveTypes<TInputs>} Decoded arguments
  * @throws {FunctionDecodingError} If data is too short
  * @throws {FunctionInvalidSelectorError} If selector doesn't match
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Abi from './primitives/Abi/index.js';
  * const func = {
  *   type: "function",
  *   name: "transfer",
@@ -30,7 +32,7 @@ import { getSelector } from "./getSelector.js";
  *   ],
  *   outputs: []
  * };
- * const decoded = decodeParams(func, encoded);
+ * const decoded = Abi.Function.decodeParams(func, encoded);
  * // ["0x742d35cc6634c0532925a3b844bc9e7595f251e3", 100n]
  * ```
  */

@@ -8,12 +8,26 @@ import * as BrandedFunction from "./BrandedFunction/index.js";
  * Factory function for creating/validating Function ABI items
  * Since Function items are plain objects, this mainly serves as a namespace
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @template {string} TName
  * @template {import('./BrandedFunction/statemutability.js').StateMutability} TStateMutability
  * @template {readonly import('../parameter/index.js').BrandedParameter[]} TInputs
  * @template {readonly import('../parameter/index.js').BrandedParameter[]} TOutputs
  * @param {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
  * @returns {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} Validated function item
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Abi from './primitives/Abi/index.js';
+ * const func = Abi.Function({
+ *   type: 'function',
+ *   name: 'transfer',
+ *   stateMutability: 'nonpayable',
+ *   inputs: [{ type: 'address' }, { type: 'uint256' }],
+ *   outputs: [{ type: 'bool' }]
+ * });
+ * ```
  */
 export function Function(fn) {
 	return fn;

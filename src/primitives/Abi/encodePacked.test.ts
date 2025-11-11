@@ -363,7 +363,7 @@ describe("encodePacked - real-world use cases", () => {
 		const creator = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3" as Address;
 		const index = 1n;
 		const result = encodePacked(["address", "uint256"], [creator, index]);
-		expect(result).toBeInstanceOf(String);
+		expect(typeof result).toBe("string");
 		expect(result.startsWith("0x")).toBe(true);
 	});
 
@@ -392,7 +392,7 @@ describe("encodePacked - real-world use cases", () => {
 			["string", "string", "uint256", "address"],
 			[name, version, chainId, verifyingContract],
 		);
-		expect(result).toBeInstanceOf(String);
+		expect(typeof result).toBe("string");
 	});
 });
 
@@ -469,7 +469,7 @@ describe("encodePacked - edge cases", () => {
 				],
 			],
 		);
-		expect(result).toBeInstanceOf(String);
+		expect(typeof result).toBe("string");
 	});
 
 	it("encodes very long array", () => {
@@ -518,7 +518,7 @@ describe("encodePacked vs standard encoding", () => {
 			value,
 		] as any);
 
-		// Both should be 32 bytes
-		expect(packed.length).toBe(standard.length);
+		// Both should be 32 bytes (packed is hex string with 0x prefix, standard is Uint8Array)
+		expect(packed.length).toBe(2 + standard.length * 2);
 	});
 });

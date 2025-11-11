@@ -4,6 +4,8 @@ import { getSelector } from "./getSelector.js";
 /**
  * Encode function call data (selector + ABI-encoded parameters)
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @template {string} TName
  * @template {import('./statemutability.js').StateMutability} TStateMutability
  * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
@@ -11,9 +13,10 @@ import { getSelector } from "./getSelector.js";
  * @param {import('./BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
  * @param {import('../../Parameter.js').ParametersToPrimitiveTypes<TInputs>} args - Function arguments
  * @returns {Uint8Array} Encoded calldata (selector + params)
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Abi from './primitives/Abi/index.js';
  * const func = {
  *   type: "function",
  *   name: "transfer",
@@ -24,7 +27,7 @@ import { getSelector } from "./getSelector.js";
  *   ],
  *   outputs: []
  * };
- * const encoded = encodeParams(func, [
+ * const encoded = Abi.Function.encodeParams(func, [
  *   "0x742d35cc6634c0532925a3b844bc9e7595f251e3",
  *   100n
  * ]);

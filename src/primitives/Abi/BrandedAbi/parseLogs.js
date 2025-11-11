@@ -4,14 +4,17 @@ import * as Event from "../event/index.js";
 /**
  * Parse event logs (branded ABI method)
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @this {import('./BrandedAbi.js').BrandedAbi}
  * @param {readonly { data: Uint8Array | string, topics: readonly (Uint8Array | string)[] }[]} logs - Array of log objects
  * @returns {readonly { eventName: string, args: Record<string, unknown> }[]} Parsed event logs
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const abi = [...];
- * const parsed = Abi.parseLogs.call(abi, logs);
+ * ```javascript
+ * import * as Abi from './primitives/Abi/index.js';
+ * const abi = [{ type: 'event', name: 'Transfer', inputs: [...] }];
+ * const parsed = Abi.parseLogs(abi, logs);
  * // [{ eventName: "Transfer", args: { from, to, value } }]
  * ```
  */

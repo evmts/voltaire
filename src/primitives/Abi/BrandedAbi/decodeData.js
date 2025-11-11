@@ -5,14 +5,18 @@ import * as Function from "../function/index.js";
 /**
  * Decode function call data and identify function (branded ABI method)
  *
+ * @see https://voltaire.tevm.sh/primitives/abi
+ * @since 0.0.0
  * @this {import('./BrandedAbi.js').BrandedAbi}
  * @param {Uint8Array} data - Encoded function call data
  * @returns {{ functionName: string, args: readonly unknown[] }} Decoded function name and arguments
- *
+ * @throws {AbiInvalidSelectorError} If data is too short to contain selector
+ * @throws {AbiItemNotFoundError} If function with selector not found in ABI
  * @example
- * ```typescript
- * const abi = [...];
- * const decoded = Abi.decodeData.call(abi, calldata);
+ * ```javascript
+ * import * as Abi from './primitives/Abi/index.js';
+ * const abi = [{ type: 'function', name: 'transfer', inputs: [...] }];
+ * const decoded = Abi.decodeData(abi, calldata);
  * // { functionName: "transfer", args: [address, amount] }
  * ```
  */
