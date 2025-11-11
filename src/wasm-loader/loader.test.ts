@@ -1,42 +1,42 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
-	loadWasm,
-	getExports,
-	resetMemory,
-	addressFromHex,
-	addressToHex,
-	addressToChecksumHex,
-	addressIsZero,
 	addressEquals,
+	addressFromHex,
+	addressIsZero,
+	addressToChecksumHex,
+	addressToHex,
 	addressValidateChecksum,
-	calculateCreateAddress,
-	calculateCreate2Address,
-	keccak256,
-	hashToHex,
-	hashFromHex,
-	hashEquals,
-	eip191HashMessage,
-	sha256,
-	ripemd160,
-	blake2b,
 	blake2Hash,
-	solidityKeccak256,
-	hexToBytes,
+	blake2b,
 	bytesToHex,
-	u256FromHex,
-	u256ToHex,
-	signatureRecover,
-	signatureRecoverAddress,
-	secp256k1PubkeyFromPrivate,
-	signatureNormalize,
-	signatureIsCanonical,
-	signatureParse,
-	signatureSerialize,
+	calculateCreate2Address,
+	calculateCreateAddress,
 	compressPublicKey,
+	eip191HashMessage,
+	getExports,
+	hashEquals,
+	hashFromHex,
+	hashToHex,
+	hexToBytes,
+	keccak256,
+	loadWasm,
+	resetMemory,
+	ripemd160,
 	rlpEncodeBytes,
 	rlpEncodeUint,
-	rlpToHex,
 	rlpFromHex,
+	rlpToHex,
+	secp256k1PubkeyFromPrivate,
+	sha256,
+	signatureIsCanonical,
+	signatureNormalize,
+	signatureParse,
+	signatureRecover,
+	signatureRecoverAddress,
+	signatureSerialize,
+	solidityKeccak256,
+	u256FromHex,
+	u256ToHex,
 } from "./loader.js";
 import { ErrorCode } from "./types.js";
 
@@ -126,7 +126,7 @@ describe("WASM Loader Infrastructure", () => {
 
 		it("handles very large strings", () => {
 			// Test encoding/decoding large hex strings (1KB to avoid buffer issues)
-			const largeHex = "0x" + "ff".repeat(1000);
+			const largeHex = `0x${"ff".repeat(1000)}`;
 			const bytes = hexToBytes(largeHex);
 			expect(bytes).toHaveLength(1000);
 			const backToHex = bytesToHex(bytes);
@@ -408,8 +408,7 @@ describe("WASM Loader Infrastructure", () => {
 
 		it("hexToBytes with all byte values", () => {
 			const allBytes = Array.from({ length: 256 }, (_, i) => i);
-			const hex =
-				"0x" + allBytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+			const hex = `0x${allBytes.map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 			const bytes = hexToBytes(hex);
 			expect(bytes).toEqual(new Uint8Array(allBytes));
 		});
@@ -417,7 +416,7 @@ describe("WASM Loader Infrastructure", () => {
 
 	describe("U256 Operations", () => {
 		it("u256FromHex parses hex to u256", () => {
-			const hex = "0x" + "ff".repeat(32);
+			const hex = `0x${"ff".repeat(32)}`;
 			const u256 = u256FromHex(hex);
 			expect(u256).toHaveLength(32);
 			expect(u256.every((b) => b === 0xff)).toBe(true);
