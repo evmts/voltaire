@@ -22,6 +22,7 @@ import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
 import { parseInstructions } from "./parseInstructions.js";
+import { prettyPrint } from "./prettyPrint.js";
 import { scan } from "./scan.js";
 import { size } from "./size.js";
 import { stripMetadata } from "./stripMetadata.js";
@@ -51,6 +52,7 @@ export {
 	isTerminator,
 	isValidJumpDest,
 	parseInstructions,
+	prettyPrint,
 	scan,
 	size,
 	stripMetadata,
@@ -82,6 +84,7 @@ export const BrandedBytecode = {
 	isTerminator,
 	isValidJumpDest,
 	parseInstructions,
+	prettyPrint,
 	scan,
 	toAbi,
 	size,

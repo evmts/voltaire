@@ -5,9 +5,6 @@
 // Re-export types
 export type { BrandedEventLog, Filter } from "./BrandedEventLog.js";
 
-// For backwards compatibility, export BrandedEventLog as Data and EventLog
-export type { BrandedEventLog as Data } from "./BrandedEventLog.js";
-
 // Re-export runtime functions
 export { clone } from "./clone.js";
 export { copy } from "./copy.js";

@@ -11,6 +11,3 @@ export type {
 	Opcode,
 	OpcodeMetadata,
 } from "./BrandedBytecode/BrandedBytecode.js";
-
-// For backwards compatibility, export BrandedBytecode as Bytecode
-export type { BrandedBytecode as Bytecode } from "./BrandedBytecode/BrandedBytecode.js";

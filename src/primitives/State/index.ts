@@ -25,5 +25,4 @@ StorageKey.toString = BrandedStorageKey.toString;
 StorageKey.fromString = BrandedStorageKey.fromString;
 StorageKey.hashCode = BrandedStorageKey.hashCode;
 
-// Export old StorageKey.js for backward compatibility
 export { StorageKey as default };

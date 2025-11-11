@@ -9,6 +9,3 @@ export type {
 	Proof,
 	VersionedHash,
 } from "./BrandedBlob.js";
-
-// For backwards compatibility, export BrandedBlob as Data
-export type { BrandedBlob as Data } from "./BrandedBlob.js";

@@ -30,6 +30,7 @@ Bytecode.fromHex.prototype = Bytecode.prototype;
 
 // Static utility methods (don't return Bytecode instances)
 Bytecode.analyze = BrandedBytecode.analyze;
+Bytecode.analyzeBlocks = BrandedBytecode.analyzeBlocks;
 Bytecode.analyzeGas = BrandedBytecode.analyzeGas;
 Bytecode.analyzeJumpDestinations = BrandedBytecode.analyzeJumpDestinations;
 Bytecode.analyzeStack = BrandedBytecode.analyzeStack;
@@ -38,6 +39,8 @@ Bytecode.equals = BrandedBytecode.equals;
 Bytecode.extractRuntime = BrandedBytecode.extractRuntime;
 Bytecode.formatInstruction = BrandedBytecode.formatInstruction;
 Bytecode.formatInstructions = BrandedBytecode.formatInstructions;
+Bytecode.getBlock = BrandedBytecode.getBlock;
+Bytecode.getNextPc = BrandedBytecode._getNextPc;
 Bytecode.getPushSize = BrandedBytecode.getPushSize;
 Bytecode.hash = BrandedBytecode.hash;
 Bytecode.hasMetadata = BrandedBytecode.hasMetadata;
@@ -45,8 +48,11 @@ Bytecode.isPush = BrandedBytecode.isPush;
 Bytecode.isTerminator = BrandedBytecode.isTerminator;
 Bytecode.isValidJumpDest = BrandedBytecode.isValidJumpDest;
 Bytecode.parseInstructions = BrandedBytecode.parseInstructions;
+Bytecode.prettyPrint = BrandedBytecode.prettyPrint;
+Bytecode.scan = BrandedBytecode.scan;
 Bytecode.size = BrandedBytecode.size;
 Bytecode.stripMetadata = BrandedBytecode.stripMetadata;
+Bytecode.toAbi = BrandedBytecode.toAbi;
 Bytecode.toHex = BrandedBytecode.toHex;
 Bytecode.validate = BrandedBytecode.validate;
 
@@ -56,6 +62,9 @@ Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
 // Instance methods
 Bytecode.prototype.analyze = function () {
 	return BrandedBytecode.analyze(this);
+};
+Bytecode.prototype.analyzeBlocks = function (options) {
+	return BrandedBytecode.analyzeBlocks(this, options);
 };
 Bytecode.prototype.analyzeGas = function (options) {
 	return BrandedBytecode.analyzeGas(this, options);
@@ -80,6 +89,12 @@ Bytecode.prototype.extractRuntime = function () {
 Bytecode.prototype.formatInstructions = function () {
 	return BrandedBytecode.formatInstructions(this);
 };
+Bytecode.prototype.getBlock = function (pc) {
+	return BrandedBytecode.getBlock(this, pc);
+};
+Bytecode.prototype.getNextPc = function (currentPc) {
+	return BrandedBytecode._getNextPc(this, currentPc);
+};
 Bytecode.prototype.hash = function () {
 	return BrandedBytecode.hash(this);
 };
@@ -92,6 +107,12 @@ Bytecode.prototype.isValidJumpDest = function (offset) {
 Bytecode.prototype.parseInstructions = function () {
 	return BrandedBytecode.parseInstructions(this);
 };
+Bytecode.prototype.prettyPrint = function (options) {
+	return BrandedBytecode.prettyPrint(this, options);
+};
+Bytecode.prototype.scan = function (options) {
+	return BrandedBytecode.scan(this, options);
+};
 Bytecode.prototype.size = function () {
 	return BrandedBytecode.size(this);
 };
@@ -99,6 +120,9 @@ Bytecode.prototype.stripMetadata = function () {
 	const result = BrandedBytecode.stripMetadata(this);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
+};
+Bytecode.prototype.toAbi = function () {
+	return BrandedBytecode.toAbi(this);
 };
 Bytecode.prototype.toHex = function () {
 	return BrandedBytecode.toHex(this);
