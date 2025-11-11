@@ -1,0 +1,498 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for working with event logs"
+---
+
+# Usage Patterns
+
+Practical patterns for filtering, parsing, and processing Ethereum event logs.
+
+## Log Filtering
+
+### Filter by Event Signature
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Event from '@tevm/voltaire/Event';
+
+// Define Transfer event
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+};
+
+// Get logs for specific event
+async function getTransferLogs(
+  provider: Provider,
+  tokenAddress: string,
+  fromBlock: number,
+  toBlock: number
+): Promise<EventLog[]> {
+  const topic0 = Event.getSelector(transferEvent);
+
+  const logs = await provider.getLogs({
+    address: tokenAddress,
+    fromBlock,
+    toBlock,
+    topics: [topic0]
+  });
+
+  return logs.map(log => EventLog.from(log));
+}
+```
+
+### Filter by Indexed Parameters
+
+```typescript
+// Filter Transfer events from specific address
+async function getTransfersFrom(
+  provider: Provider,
+  tokenAddress: string,
+  fromAddress: string
+): Promise<EventLog[]> {
+  const topic0 = Event.getSelector(transferEvent);
+  const topic1 = Event.encodeIndexed(
+    { type: "address" },
+    fromAddress
+  );
+
+  const logs = await provider.getLogs({
+    address: tokenAddress,
+    topics: [topic0, topic1]  // topic0 = event sig, topic1 = from
+  });
+
+  return logs.map(log => EventLog.from(log));
+}
+
+// Filter by multiple addresses (OR condition)
+async function getTransfersFromMultiple(
+  provider: Provider,
+  tokenAddress: string,
+  addresses: string[]
+): Promise<EventLog[]> {
+  const topic0 = Event.getSelector(transferEvent);
+  const topics1 = addresses.map(addr =>
+    Event.encodeIndexed({ type: "address" }, addr)
+  );
+
+  const logs = await provider.getLogs({
+    address: tokenAddress,
+    topics: [topic0, topics1]  // Multiple options for topic1
+  });
+
+  return logs.map(log => EventLog.from(log));
+}
+```
+
+## Log Parsing
+
+### Decode Event Data
+
+```typescript
+// Parse Transfer event
+function parseTransferLog(log: BrandedEventLog): {
+  from: string;
+  to: string;
+  value: bigint;
+} {
+  // Decode indexed topics
+  const from = EventLog.getIndexed(log, 0);  // First indexed param
+  const to = EventLog.getIndexed(log, 1);    // Second indexed param
+
+  // Decode non-indexed data
+  const decoded = Event.decodeLog(transferEvent, log.data, log.topics);
+
+  return {
+    from: decoded.from,
+    to: decoded.to,
+    value: decoded.value
+  };
+}
+
+// Batch parsing
+function parseTransferLogs(logs: BrandedEventLog[]): Array<{
+  from: string;
+  to: string;
+  value: bigint;
+  blockNumber: number;
+  transactionHash: string;
+}> {
+  return logs.map(log => ({
+    ...parseTransferLog(log),
+    blockNumber: log.blockNumber,
+    transactionHash: log.transactionHash
+  }));
+}
+```
+
+### Multi-event Parsing
+
+```typescript
+// Parse mixed event types
+interface EventRegistry {
+  [signature: string]: {
+    name: string;
+    definition: any;
+  };
+}
+
+function createEventRegistry(events: any[]): EventRegistry {
+  const registry: EventRegistry = {};
+
+  for (const event of events) {
+    const sig = Event.getSelector(event);
+    registry[sig] = {
+      name: event.name,
+      definition: event
+    };
+  }
+
+  return registry;
+}
+
+// Parse with registry
+function parseLog(
+  log: BrandedEventLog,
+  registry: EventRegistry
+): { name: string; args: any } | null {
+  const signature = EventLog.getSignature(log);
+  const event = registry[signature];
+
+  if (!event) return null;
+
+  const args = Event.decodeLog(event.definition, log.data, log.topics);
+
+  return {
+    name: event.name,
+    args
+  };
+}
+```
+
+## Log Filtering and Sorting
+
+### Filter by Address
+
+```typescript
+// Check if log is from specific address
+function isFromAddress(
+  log: BrandedEventLog,
+  address: string
+): boolean {
+  return EventLog.matchesAddress(log, address);
+}
+
+// Filter logs by address
+function filterByAddress(
+  logs: BrandedEventLog[],
+  address: string
+): BrandedEventLog[] {
+  return logs.filter(log => EventLog.matchesAddress(log, address));
+}
+
+// Filter by multiple addresses
+function filterByAddresses(
+  logs: BrandedEventLog[],
+  addresses: string[]
+): BrandedEventLog[] {
+  return logs.filter(log =>
+    addresses.some(addr => EventLog.matchesAddress(log, addr))
+  );
+}
+```
+
+### Filter by Topics
+
+```typescript
+// Create topic filter
+interface TopicFilter {
+  topic0?: string;
+  topic1?: string | string[];
+  topic2?: string | string[];
+  topic3?: string | string[];
+}
+
+function matchesTopicFilter(
+  log: BrandedEventLog,
+  filter: TopicFilter
+): boolean {
+  return EventLog.matchesTopics(log, [
+    filter.topic0,
+    filter.topic1,
+    filter.topic2,
+    filter.topic3
+  ]);
+}
+
+// Filter logs
+function filterLogs(
+  logs: BrandedEventLog[],
+  filter: TopicFilter
+): BrandedEventLog[] {
+  return logs.filter(log => matchesTopicFilter(log, filter));
+}
+```
+
+### Sort Logs
+
+```typescript
+// Sort by block number and log index
+function sortLogs(logs: BrandedEventLog[]): BrandedEventLog[] {
+  return EventLog.sortLogs(logs);
+}
+
+// Sort in reverse (newest first)
+function sortLogsDescending(logs: BrandedEventLog[]): BrandedEventLog[] {
+  return EventLog.sortLogs(logs).reverse();
+}
+
+// Group by block
+function groupByBlock(
+  logs: BrandedEventLog[]
+): Map<number, BrandedEventLog[]> {
+  const groups = new Map<number, BrandedEventLog[]>();
+
+  for (const log of logs) {
+    const blockLogs = groups.get(log.blockNumber) ?? [];
+    blockLogs.push(log);
+    groups.set(log.blockNumber, blockLogs);
+  }
+
+  return groups;
+}
+```
+
+## Reorg Handling
+
+### Detect Removed Logs
+
+```typescript
+// Check if log was removed due to reorg
+function checkForReorgs(logs: BrandedEventLog[]): {
+  valid: BrandedEventLog[];
+  removed: BrandedEventLog[];
+} {
+  const valid: BrandedEventLog[] = [];
+  const removed: BrandedEventLog[] = [];
+
+  for (const log of logs) {
+    if (EventLog.isRemoved(log)) {
+      removed.push(log);
+    } else {
+      valid.push(log);
+    }
+  }
+
+  return { valid, removed };
+}
+
+// Filter out removed logs
+function filterRemoved(logs: BrandedEventLog[]): BrandedEventLog[] {
+  return logs.filter(log => !EventLog.isRemoved(log));
+}
+```
+
+### Reorg-safe Log Processing
+
+```typescript
+// Process logs with reorg handling
+async function processLogsWithReorgHandling(
+  provider: Provider,
+  fromBlock: number,
+  toBlock: number,
+  confirmations: number = 12
+): Promise<void> {
+  const confirmedBlock = await provider.getBlockNumber() - confirmations;
+  const actualToBlock = Math.min(toBlock, confirmedBlock);
+
+  const logs = await provider.getLogs({
+    fromBlock,
+    toBlock: actualToBlock
+  });
+
+  // Process only confirmed logs
+  const validLogs = filterRemoved(logs.map(EventLog.from));
+
+  for (const log of validLogs) {
+    await processLog(log);
+  }
+}
+```
+
+## Real-time Monitoring
+
+### Subscribe to Events
+
+```typescript
+// Monitor Transfer events in real-time
+async function monitorTransfers(
+  provider: Provider,
+  tokenAddress: string,
+  callback: (log: BrandedEventLog) => void
+): Promise<() => void> {
+  const topic0 = Event.getSelector(transferEvent);
+
+  // Subscribe to logs
+  const filter = {
+    address: tokenAddress,
+    topics: [topic0]
+  };
+
+  provider.on(filter, (rawLog) => {
+    const log = EventLog.from(rawLog);
+    callback(log);
+  });
+
+  // Return unsubscribe function
+  return () => provider.off(filter);
+}
+
+// Usage
+const unsubscribe = await monitorTransfers(
+  provider,
+  tokenAddress,
+  (log) => {
+    const { from, to, value } = parseTransferLog(log);
+    console.log(`Transfer: ${from} → ${to}: ${value}`);
+  }
+);
+```
+
+### Batch Processing
+
+```typescript
+// Process logs in batches
+async function processLogsBatched(
+  provider: Provider,
+  fromBlock: number,
+  toBlock: number,
+  batchSize: number = 10000
+): Promise<void> {
+  for (let start = fromBlock; start <= toBlock; start += batchSize) {
+    const end = Math.min(start + batchSize - 1, toBlock);
+
+    const logs = await provider.getLogs({
+      fromBlock: start,
+      toBlock: end
+    });
+
+    const eventLogs = logs.map(EventLog.from);
+    await processBatch(eventLogs);
+
+    console.log(`Processed blocks ${start} to ${end}`);
+  }
+}
+```
+
+## Aggregation
+
+### Calculate Totals
+
+```typescript
+// Sum transfer amounts
+function calculateTotalTransferred(
+  logs: BrandedEventLog[]
+): bigint {
+  let total = 0n;
+
+  for (const log of logs) {
+    const { value } = parseTransferLog(log);
+    total += value;
+  }
+
+  return total;
+}
+
+// Group by sender
+function groupBySender(
+  logs: BrandedEventLog[]
+): Map<string, bigint> {
+  const totals = new Map<string, bigint>();
+
+  for (const log of logs) {
+    const { from, value } = parseTransferLog(log);
+    const current = totals.get(from) ?? 0n;
+    totals.set(from, current + value);
+  }
+
+  return totals;
+}
+```
+
+### Track Balances
+
+```typescript
+// Build balance map from Transfer events
+function buildBalanceMap(
+  logs: BrandedEventLog[]
+): Map<string, bigint> {
+  const balances = new Map<string, bigint>();
+
+  const sorted = EventLog.sortLogs(logs);
+
+  for (const log of sorted) {
+    const { from, to, value } = parseTransferLog(log);
+
+    // Debit from sender
+    if (from !== "0x0000000000000000000000000000000000000000") {
+      const fromBalance = balances.get(from) ?? 0n;
+      balances.set(from, fromBalance - value);
+    }
+
+    // Credit to receiver
+    const toBalance = balances.get(to) ?? 0n;
+    balances.set(to, toBalance + value);
+  }
+
+  return balances;
+}
+```
+
+## Testing
+
+### Mock Logs
+
+```typescript
+// Create test log
+function createTestLog(overrides?: Partial<EventLog>): BrandedEventLog {
+  return EventLog.create({
+    address: "0x1234567890123456789012345678901234567890",
+    topics: [
+      Event.getSelector(transferEvent),
+      Event.encodeIndexed({ type: "address" }, "0xalice"),
+      Event.encodeIndexed({ type: "address" }, "0xbob")
+    ],
+    data: Event.encode([{ type: "uint256" }], [1000n]),
+    blockNumber: 100,
+    transactionHash: "0xabc123",
+    transactionIndex: 0,
+    blockHash: "0xblock",
+    logIndex: 0,
+    removed: false,
+    ...overrides
+  });
+}
+
+// Create batch of test logs
+function createTestLogs(count: number): BrandedEventLog[] {
+  return Array.from({ length: count }, (_, i) =>
+    createTestLog({
+      blockNumber: 100 + i,
+      logIndex: i
+    })
+  );
+}
+```
+
+## Related
+
+- [filterLogs](/primitives/eventlog/filterLogs) - Log filtering
+- [matchesFilter](/primitives/eventlog/matchesFilter) - Filter matching
+- [sortLogs](/primitives/eventlog/sortLogs) - Log sorting
+- [isRemoved](/primitives/eventlog/isRemoved) - Reorg detection
+- [Fundamentals](/primitives/eventlog/fundamentals) - Event log basics

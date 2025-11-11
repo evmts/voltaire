@@ -92,33 +92,30 @@ process(hex) // ✗ Error
 
 Runtime: just `Uint8Array` and `string`. Brand only exists in types.
 
-## Creating Branded Values
+## How Branded Values Are Created
 
-Use factory functions that perform validation and cast:
+Factory functions validate then cast to branded type:
 
 ```typescript
 type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
 
-function fromHex(hex: string): BrandedAddress {
-  // Validate hex format
-  if (!hex.startsWith("0x") || hex.length !== 42) {
-    throw new Error("Invalid address")
+function fromUint8Array(bytes: Uint8Array): BrandedAddress {
+  // Validate
+  if (!Address.isValidAddress(bytes)) {
+    throw new InvalidAddressError()
   }
 
-  // Parse to Uint8Array
-  const bytes = new Uint8Array(20)
-  // ... parsing logic ...
-
-  // Cast to branded type
+  // Return input cast to branded type
   return bytes as BrandedAddress
 }
 
-const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-// addr runtime: Uint8Array(20)
+const bytes = new Uint8Array(20)
+const addr = fromUint8Array(bytes)
+// addr runtime: same Uint8Array reference
 // addr compile-time: BrandedAddress
 ```
 
-Validation happens once at construction. Brand ensures type safety throughout codebase.
+Validation at construction. Brand ensures type safety throughout codebase.
 
 ## Benefits
 

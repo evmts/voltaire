@@ -25,58 +25,68 @@ Signature provides algorithm-agnostic signature handling with automatic metadata
 
 ## Documentation
 
-<CardGrid>
-  <LinkCard
+<CardGroup>
+  <Card
     title="Constructors"
-    description="Create signatures from components, DER, compact formats, or algorithm-specific constructors"
-    href="./constructors"
-  />
-  <LinkCard
+    icon="rocket"
+    href="./constructors">
+    Create signatures from components, DER, compact formats, or algorithm-specific constructors
+  </Card>
+  <Card
     title="Conversions"
-    description="Convert between signature formats: compact, DER, RSV, and raw bytes"
-    href="./conversions"
-  />
-  <LinkCard
+    icon="arrow-right-arrow-left"
+    href="./conversions">
+    Convert between signature formats: compact, DER, RSV, and raw bytes
+  </Card>
+  <Card
     title="Validation"
-    description="Validate signatures, check canonicality, and prevent malleability attacks"
-    href="./validation"
-  />
-  <LinkCard
+    icon="check"
+    href="./validation">
+    Validate signatures, check canonicality, and prevent malleability attacks
+  </Card>
+  <Card
     title="Recovery"
-    description="Recover public keys and addresses from secp256k1 signatures using recovery ID"
-    href="./recovery"
-  />
-  <LinkCard
+    icon="key"
+    href="./recovery">
+    Recover public keys and addresses from secp256k1 signatures using recovery ID
+  </Card>
+  <Card
     title="Utilities"
-    description="Extract components, compare signatures, and type guards"
-    href="./utilities"
-  />
-  <LinkCard
+    icon="wrench"
+    href="./utilities">
+    Extract components, compare signatures, and type guards
+  </Card>
+  <Card
     title="Formats"
-    description="Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098"
-    href="./formats"
-  />
-  <LinkCard
+    icon="table"
+    href="./formats">
+    Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098
+  </Card>
+  <Card
     title="EIP-2098"
-    description="Compact 64-byte format with embedded recovery ID for gas savings"
-    href="./eip-2098"
-  />
-  <LinkCard
+    icon="file-contract"
+    href="./eip-2098">
+    Compact 64-byte format with embedded recovery ID for gas savings
+  </Card>
+  <Card
     title="Usage Patterns"
-    description="Real-world examples: Ethereum transactions, EIP-712, personal_sign"
-    href="./usage-patterns"
-  />
-  <LinkCard
+    icon="code"
+    href="./usage-patterns">
+    Real-world examples: Ethereum transactions, EIP-712, personal_sign
+  </Card>
+  <Card
     title="WASM"
-    description="WASM-accelerated signature operations for improved performance"
-    href="./wasm"
-  />
-  <LinkCard
+    icon="bolt"
+    href="./wasm">
+    WASM-accelerated signature operations for improved performance
+  </Card>
+  <Card
     title="Branded Type"
-    description="Type definition and metadata structure"
-    href="./branded-signature"
-  />
-</CardGrid>
+    icon="tag"
+    href="./branded-signature">
+    Type definition and metadata structure
+  </Card>
+</CardGroup>
 
 ## Signature Format Comparison
 

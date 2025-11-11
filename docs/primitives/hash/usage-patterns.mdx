@@ -1,0 +1,443 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for working with 32-byte hashes"
+---
+
+# Usage Patterns
+
+Practical patterns for hashing, validation, and working with 32-byte hash values.
+
+## Hashing Data
+
+### Hash Bytes
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash';
+
+// Hash raw bytes
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = Hash.keccak256(data);
+console.log(Hash.toHex(hash));
+
+// Hash multiple inputs
+function hashMultiple(...inputs: Uint8Array[]): BrandedHash {
+  const combined = new Uint8Array(
+    inputs.reduce((sum, arr) => sum + arr.length, 0)
+  );
+
+  let offset = 0;
+  for (const input of inputs) {
+    combined.set(input, offset);
+    offset += input.length;
+  }
+
+  return Hash.keccak256(combined);
+}
+```
+
+### Hash Strings
+
+```typescript
+// Hash UTF-8 string
+function hashString(str: string): BrandedHash {
+  return Hash.keccak256String(str);
+}
+
+// Hash with custom encoding
+function hashStringCustom(
+  str: string,
+  encoding: 'utf-8' | 'utf-16'
+): BrandedHash {
+  const encoder = encoding === 'utf-8'
+    ? new TextEncoder()
+    : new TextEncoder();  // UTF-16 would need custom impl
+
+  return Hash.keccak256(encoder.encode(str));
+}
+```
+
+### Hash Hex Strings
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex';
+
+// Hash hex string directly
+function hashHex(hex: string): BrandedHash {
+  return Hash.keccak256Hex(hex);
+}
+
+// Hash address
+import * as Address from '@tevm/voltaire/Address';
+
+function hashAddress(addr: BrandedAddress): BrandedHash {
+  return Hash.keccak256(addr);
+}
+```
+
+## Hash Validation
+
+### Check Hash Format
+
+```typescript
+// Validate hash
+function isValidHash(input: string): boolean {
+  return Hash.isValidHex(input);
+}
+
+// Require valid hash
+function requireHash(input: string): BrandedHash {
+  if (!Hash.isHash(input)) {
+    throw new Error(`Invalid hash: ${input}`);
+  }
+  return Hash.from(input);
+}
+
+// Safe parsing
+function safeParseHash(input: unknown): BrandedHash | null {
+  try {
+    if (typeof input === 'string') {
+      return Hash.from(input);
+    }
+    if (input instanceof Uint8Array && input.length === 32) {
+      return Hash.fromBytes(input);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Zero Hash Detection
+
+```typescript
+// Check for zero hash
+function isZeroHash(hash: BrandedHash): boolean {
+  return Hash.isZero(hash);
+}
+
+// Filter out zero hashes
+function removeZeroHashes(hashes: BrandedHash[]): BrandedHash[] {
+  return hashes.filter(h => !Hash.isZero(h));
+}
+
+// Use zero as sentinel
+const EMPTY_HASH = Hash.from("0x" + "00".repeat(32));
+
+function getHashOrEmpty(value?: BrandedHash): BrandedHash {
+  return value ?? EMPTY_HASH;
+}
+```
+
+## Hash Comparison
+
+### Equality Checks
+
+```typescript
+// Compare two hashes
+function hashesEqual(a: BrandedHash, b: BrandedHash): boolean {
+  return Hash.equals(a, b);
+}
+
+// Check membership
+function containsHash(
+  hashes: BrandedHash[],
+  target: BrandedHash
+): boolean {
+  return hashes.some(h => Hash.equals(h, target));
+}
+
+// Deduplicate hashes
+function deduplicateHashes(hashes: BrandedHash[]): BrandedHash[] {
+  const seen = new Set<string>();
+  const unique: BrandedHash[] = [];
+
+  for (const hash of hashes) {
+    const hex = Hash.toHex(hash);
+    if (!seen.has(hex)) {
+      seen.add(hex);
+      unique.push(hash);
+    }
+  }
+
+  return unique;
+}
+```
+
+### Sorting
+
+```typescript
+// Sort hashes lexicographically
+function sortHashes(hashes: BrandedHash[]): BrandedHash[] {
+  return [...hashes].sort((a, b) => {
+    const hexA = Hash.toHex(a);
+    const hexB = Hash.toHex(b);
+    return hexA < hexB ? -1 : hexA > hexB ? 1 : 0;
+  });
+}
+
+// Find min/max
+function getHashRange(hashes: BrandedHash[]): {
+  min: BrandedHash;
+  max: BrandedHash;
+} | null {
+  if (hashes.length === 0) return null;
+
+  const sorted = sortHashes(hashes);
+  return {
+    min: sorted[0],
+    max: sorted[sorted.length - 1]
+  };
+}
+```
+
+## Merkle Tree Construction
+
+### Build Merkle Tree
+
+```typescript
+// Calculate Merkle root from leaves
+function calculateMerkleRoot(leaves: BrandedHash[]): BrandedHash {
+  if (leaves.length === 0) {
+    throw new Error("Cannot calculate root of empty tree");
+  }
+
+  if (leaves.length === 1) {
+    return leaves[0];
+  }
+
+  // Build tree level by level
+  let level = leaves;
+
+  while (level.length > 1) {
+    const nextLevel: BrandedHash[] = [];
+
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 < level.length) {
+        // Hash pair
+        const combined = new Uint8Array(64);
+        combined.set(level[i], 0);
+        combined.set(level[i + 1], 32);
+        nextLevel.push(Hash.keccak256(combined));
+      } else {
+        // Odd node, promote to next level
+        nextLevel.push(level[i]);
+      }
+    }
+
+    level = nextLevel;
+  }
+
+  return level[0];
+}
+```
+
+### Generate Merkle Proof
+
+```typescript
+interface MerkleProof {
+  leaf: BrandedHash;
+  index: number;
+  proof: BrandedHash[];
+}
+
+function generateMerkleProof(
+  leaves: BrandedHash[],
+  leafIndex: number
+): MerkleProof {
+  if (leafIndex < 0 || leafIndex >= leaves.length) {
+    throw new Error("Invalid leaf index");
+  }
+
+  const proof: BrandedHash[] = [];
+  let level = leaves;
+  let index = leafIndex;
+
+  while (level.length > 1) {
+    const nextLevel: BrandedHash[] = [];
+
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 < level.length) {
+        const left = level[i];
+        const right = level[i + 1];
+
+        // Record sibling
+        if (i === index) {
+          proof.push(right);
+        } else if (i + 1 === index) {
+          proof.push(left);
+        }
+
+        // Hash pair
+        const combined = new Uint8Array(64);
+        combined.set(left, 0);
+        combined.set(right, 32);
+        nextLevel.push(Hash.keccak256(combined));
+      } else {
+        nextLevel.push(level[i]);
+      }
+    }
+
+    index = Math.floor(index / 2);
+    level = nextLevel;
+  }
+
+  return {
+    leaf: leaves[leafIndex],
+    index: leafIndex,
+    proof
+  };
+}
+
+// Verify Merkle proof
+function verifyMerkleProof(
+  proof: MerkleProof,
+  root: BrandedHash
+): boolean {
+  let computed = proof.leaf;
+  let index = proof.index;
+
+  for (const sibling of proof.proof) {
+    const combined = new Uint8Array(64);
+
+    if (index % 2 === 0) {
+      // We're on left, sibling on right
+      combined.set(computed, 0);
+      combined.set(sibling, 32);
+    } else {
+      // We're on right, sibling on left
+      combined.set(sibling, 0);
+      combined.set(computed, 32);
+    }
+
+    computed = Hash.keccak256(combined);
+    index = Math.floor(index / 2);
+  }
+
+  return Hash.equals(computed, root);
+}
+```
+
+## Storage Keys
+
+### Calculate Storage Slot
+
+```typescript
+// Calculate storage slot for mapping
+function calculateMappingSlot(
+  mappingSlot: number,
+  key: BrandedHash
+): BrandedHash {
+  const slotBytes = new Uint8Array(32);
+  const dataView = new DataView(slotBytes.buffer);
+  dataView.setUint32(28, mappingSlot, false);  // Big-endian
+
+  const combined = new Uint8Array(64);
+  combined.set(key, 0);
+  combined.set(slotBytes, 32);
+
+  return Hash.keccak256(combined);
+}
+
+// Calculate storage slot for nested mapping
+function calculateNestedMappingSlot(
+  mappingSlot: number,
+  key1: BrandedHash,
+  key2: BrandedHash
+): BrandedHash {
+  const intermediateSlot = calculateMappingSlot(mappingSlot, key1);
+  return calculateMappingSlot(0, key2);  // Use 0 as we already have the slot
+}
+```
+
+## Random Hashes
+
+### Generate Random Hash
+
+```typescript
+// Generate random hash
+function randomHash(): BrandedHash {
+  return Hash.random();
+}
+
+// Generate multiple random hashes
+function generateRandomHashes(count: number): BrandedHash[] {
+  return Array.from({ length: count }, () => Hash.random());
+}
+
+// Generate deterministic random hash (for testing)
+function deterministicHash(seed: number): BrandedHash {
+  const seedBytes = new Uint8Array(32);
+  const view = new DataView(seedBytes.buffer);
+  view.setUint32(0, seed, false);
+
+  return Hash.keccak256(seedBytes);
+}
+```
+
+## Display Formatting
+
+### Format for Display
+
+```typescript
+// Full hex string
+function formatHashFull(hash: BrandedHash): string {
+  return Hash.toHex(hash);
+}
+
+// Short format
+function formatHashShort(hash: BrandedHash): string {
+  const hex = Hash.toHex(hash);
+  return `${hex.slice(0, 10)}...${hex.slice(-8)}`;
+}
+
+// Custom truncation
+function formatHashCustom(
+  hash: BrandedHash,
+  prefixLen: number,
+  suffixLen: number
+): string {
+  const hex = Hash.toHex(hash);
+  const prefix = hex.slice(0, 2 + prefixLen);
+  const suffix = hex.slice(-suffixLen);
+  return `${prefix}...${suffix}`;
+}
+```
+
+## Testing
+
+### Test Fixtures
+
+```typescript
+// Known hash values
+const TEST_HASHES = {
+  zero: Hash.from("0x" + "00".repeat(32)),
+  max: Hash.from("0x" + "ff".repeat(32)),
+  empty: Hash.keccak256(new Uint8Array(0)),
+  // keccak256("")
+  emptyString: Hash.from(
+    "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  )
+};
+
+// Generate test hash from index
+function testHash(index: number): BrandedHash {
+  const bytes = new Uint8Array(32);
+  bytes[0] = index & 0xff;
+  bytes[1] = (index >> 8) & 0xff;
+  return Hash.fromBytes(bytes);
+}
+
+// Generate sequential test hashes
+function generateTestHashes(count: number): BrandedHash[] {
+  return Array.from({ length: count }, (_, i) => testHash(i));
+}
+```
+
+## Related
+
+- [keccak256](/primitives/hash/keccak256) - Keccak-256 hashing
+- [equals](/primitives/hash/equals) - Hash comparison
+- [Conversions](/primitives/hash/conversions) - Format conversion
+- [Validation](/primitives/hash/validation) - Hash validation
+- [Fundamentals](/primitives/hash/fundamentals) - Hash basics

@@ -1,0 +1,461 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for working with hex strings"
+---
+
+# Usage Patterns
+
+Practical patterns for hex string manipulation, validation, and conversion.
+
+## Hex Construction
+
+### From Various Types
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex';
+
+// From number
+const numHex = Hex.fromNumber(255);  // "0xff"
+
+// From bigint
+const bigintHex = Hex.fromBigint(1000000n);  // "0xf4240"
+
+// From boolean
+const boolHex = Hex.fromBoolean(true);  // "0x01"
+
+// From string
+const strHex = Hex.fromString("Hello");  // "0x48656c6c6f"
+
+// From bytes
+const bytes = new Uint8Array([1, 2, 3]);
+const bytesHex = Hex.fromBytes(bytes);  // "0x010203"
+```
+
+### Universal Constructor
+
+```typescript
+// Accept multiple input types
+function toHex(input: string | number | bigint | boolean | Uint8Array): BrandedHex {
+  if (typeof input === 'string') {
+    return Hex.from(input);
+  } else if (typeof input === 'number') {
+    return Hex.fromNumber(input);
+  } else if (typeof input === 'bigint') {
+    return Hex.fromBigint(input);
+  } else if (typeof input === 'boolean') {
+    return Hex.fromBoolean(input);
+  } else {
+    return Hex.fromBytes(input);
+  }
+}
+```
+
+## Hex Validation
+
+### Format Validation
+
+```typescript
+// Check if valid hex
+function isValidHex(input: string): boolean {
+  return Hex.isHex(input);
+}
+
+// Validate and throw
+function requireHex(input: string): BrandedHex {
+  if (!Hex.isHex(input)) {
+    throw new Error(`Invalid hex: ${input}`);
+  }
+  return Hex.from(input);
+}
+
+// Safe parsing
+function safeParseHex(input: unknown): BrandedHex | null {
+  try {
+    if (typeof input === 'string') {
+      return Hex.from(input);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Size Validation
+
+```typescript
+// Check size
+function requireSize(hex: BrandedHex, size: number): void {
+  if (!Hex.isSized(hex, size)) {
+    throw new Error(
+      `Expected ${size} bytes, got ${(hex.length - 2) / 2}`
+    );
+  }
+}
+
+// Assert size with helpful error
+function assertSize(hex: BrandedHex, size: number): void {
+  Hex.assertSize(hex, size);  // Throws if wrong size
+}
+
+// Validate address size (20 bytes)
+function isAddressHex(hex: string): boolean {
+  return Hex.isHex(hex) && Hex.isSized(Hex.from(hex), 20);
+}
+
+// Validate hash size (32 bytes)
+function isHashHex(hex: string): boolean {
+  return Hex.isHex(hex) && Hex.isSized(Hex.from(hex), 32);
+}
+```
+
+## Hex Conversion
+
+### To Primitive Types
+
+```typescript
+// To number (safe for small values)
+function hexToNumber(hex: BrandedHex): number {
+  return Hex.toNumber(hex);  // Throws if > Number.MAX_SAFE_INTEGER
+}
+
+// To bigint (safe for any size)
+function hexToBigint(hex: BrandedHex): bigint {
+  return Hex.toBigint(hex);
+}
+
+// To boolean
+function hexToBoolean(hex: BrandedHex): boolean {
+  return Hex.toBoolean(hex);
+}
+
+// To string
+function hexToString(hex: BrandedHex): string {
+  return Hex.toString(hex);
+}
+
+// To bytes
+function hexToBytes(hex: BrandedHex): Uint8Array {
+  return Hex.toBytes(hex);
+}
+```
+
+### Safe Conversions
+
+```typescript
+// Safe number conversion
+function safeHexToNumber(hex: BrandedHex): number | null {
+  try {
+    return Hex.toNumber(hex);
+  } catch {
+    return null;
+  }
+}
+
+// Convert with fallback
+function hexToNumberOrBigint(hex: BrandedHex): number | bigint {
+  try {
+    return Hex.toNumber(hex);
+  } catch {
+    return Hex.toBigint(hex);
+  }
+}
+```
+
+## Hex Manipulation
+
+### Padding
+
+```typescript
+// Pad to 32 bytes (left-pad with zeros)
+const padded = Hex.pad("0xff");  // "0x00000000...00ff" (32 bytes)
+
+// Pad to specific size
+const padded20 = Hex.pad("0xff", 20);  // 20 bytes
+
+// Right-pad
+const rightPadded = Hex.padRight("0xff", 32);  // "0xff00000000...00"
+
+// Pad to even length
+function ensureEvenLength(hex: string): string {
+  if (hex.length % 2 !== 0) {
+    return '0x0' + hex.slice(2);
+  }
+  return hex;
+}
+```
+
+### Trimming
+
+```typescript
+// Remove leading zeros
+const trimmed = Hex.trim("0x00000000ff");  // "0xff"
+
+// Trim to shortest form
+function toShortHex(hex: BrandedHex): string {
+  const trimmed = Hex.trim(hex);
+  return trimmed === "0x" ? "0x0" : trimmed;
+}
+```
+
+### Slicing
+
+```typescript
+// Extract bytes
+const sliced = Hex.slice("0x0102030405", 1, 3);  // "0x0203"
+
+// Get first N bytes
+function takeBytes(hex: BrandedHex, n: number): BrandedHex {
+  return Hex.slice(hex, 0, n);
+}
+
+// Get last N bytes
+function takeBytesRight(hex: BrandedHex, n: number): BrandedHex {
+  const totalBytes = (hex.length - 2) / 2;
+  return Hex.slice(hex, totalBytes - n, totalBytes);
+}
+
+// Extract function selector (first 4 bytes)
+function getFunctionSelector(calldata: BrandedHex): BrandedHex {
+  return Hex.slice(calldata, 0, 4);
+}
+```
+
+### Concatenation
+
+```typescript
+// Concatenate multiple hex strings
+const combined = Hex.concat(
+  Hex.from("0x01"),
+  Hex.from("0x02"),
+  Hex.from("0x03")
+);  // "0x010203"
+
+// Build calldata
+function buildCalldata(
+  selector: BrandedHex,
+  ...args: BrandedHex[]
+): BrandedHex {
+  return Hex.concat(selector, ...args);
+}
+```
+
+### XOR Operation
+
+```typescript
+// XOR two hex strings
+const xored = Hex.xor(
+  Hex.from("0x00ff"),
+  Hex.from("0xff00")
+);  // "0xffff"
+
+// XOR mask
+function applyMask(data: BrandedHex, mask: BrandedHex): BrandedHex {
+  return Hex.xor(data, mask);
+}
+```
+
+## ABI Encoding Patterns
+
+### Encode Function Calls
+
+```typescript
+// Build function call data
+function encodeFunctionCall(
+  selector: string,
+  ...params: BrandedHex[]
+): BrandedHex {
+  const selectorHex = Hex.from(selector);
+  const paddedParams = params.map(p => Hex.pad(p, 32));
+  return Hex.concat(selectorHex, ...paddedParams);
+}
+
+// Example: transfer(address,uint256)
+const transferCall = encodeFunctionCall(
+  "0xa9059cbb",  // transfer selector
+  Hex.pad(Hex.fromBytes(recipientAddress), 32),
+  Hex.pad(Hex.fromBigint(1000n), 32)
+);
+```
+
+### Decode Parameters
+
+```typescript
+// Extract parameters from calldata
+function extractParameters(
+  calldata: BrandedHex,
+  paramCount: number
+): BrandedHex[] {
+  const params: BrandedHex[] = [];
+
+  // Skip selector (first 4 bytes)
+  let offset = 4;
+
+  for (let i = 0; i < paramCount; i++) {
+    const param = Hex.slice(calldata, offset, offset + 32);
+    params.push(param);
+    offset += 32;
+  }
+
+  return params;
+}
+```
+
+## Data Encoding
+
+### Encode Tightly Packed
+
+```typescript
+// Encode multiple values without padding
+function encodePacked(...values: BrandedHex[]): BrandedHex {
+  // No padding, just concatenate
+  return Hex.concat(...values);
+}
+
+// Example: encodePacked(address, uint8)
+const packed = encodePacked(
+  Hex.fromBytes(address),      // 20 bytes
+  Hex.fromNumber(255)           // 1 byte
+);  // 21 bytes total
+```
+
+### Encode with Padding
+
+```typescript
+// Standard ABI encoding with 32-byte padding
+function encodeABI(...values: BrandedHex[]): BrandedHex {
+  const padded = values.map(v => Hex.pad(v, 32));
+  return Hex.concat(...padded);
+}
+```
+
+## Display Formatting
+
+### User-friendly Display
+
+```typescript
+// Truncate for display
+function formatHexShort(hex: BrandedHex): string {
+  if (hex.length <= 10) return hex;
+
+  const start = hex.slice(0, 6);
+  const end = hex.slice(-4);
+  return `${start}...${end}`;
+}
+
+// Format with byte count
+function formatHexWithSize(hex: BrandedHex): string {
+  const bytes = (hex.length - 2) / 2;
+  const truncated = formatHexShort(hex);
+  return `${truncated} (${bytes} bytes)`;
+}
+
+// Pretty print with line breaks
+function formatHexMultiline(hex: BrandedHex, bytesPerLine: number = 32): string {
+  const lines: string[] = [];
+  const hex Without Prefix = hex.slice(2);
+
+  for (let i = 0; i < hexWithoutPrefix.length; i += bytesPerLine * 2) {
+    const line = hexWithoutPrefix.slice(i, i + bytesPerLine * 2);
+    lines.push('0x' + line);
+  }
+
+  return lines.join('\n');
+}
+```
+
+## Comparison
+
+### Equality
+
+```typescript
+// Compare hex strings (case-insensitive)
+function hexEqual(a: BrandedHex, b: BrandedHex): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
+// Find duplicates
+function findDuplicateHex(hexes: BrandedHex[]): BrandedHex[] {
+  const seen = new Set<string>();
+  const duplicates: BrandedHex[] = [];
+
+  for (const hex of hexes) {
+    const lower = hex.toLowerCase();
+    if (seen.has(lower)) {
+      duplicates.push(hex);
+    } else {
+      seen.add(lower);
+    }
+  }
+
+  return duplicates;
+}
+```
+
+## Testing
+
+### Test Utilities
+
+```typescript
+// Generate test hex
+function testHex(size: number): BrandedHex {
+  const bytes = new Uint8Array(size);
+  crypto.getRandomValues(bytes);
+  return Hex.fromBytes(bytes);
+}
+
+// Generate sequential test hex
+function testHexSequential(size: number, seed: number = 0): BrandedHex {
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    bytes[i] = (seed + i) % 256;
+  }
+  return Hex.fromBytes(bytes);
+}
+
+// Common test values
+const TEST_HEX = {
+  empty: Hex.from("0x"),
+  zero: Hex.from("0x00"),
+  one: Hex.from("0x01"),
+  max8: Hex.from("0xff"),
+  max16: Hex.from("0xffff"),
+  max32: Hex.from("0x" + "ff".repeat(32))
+};
+```
+
+## Performance Patterns
+
+### Batch Conversions
+
+```typescript
+// Convert multiple hex strings efficiently
+function batchHexToBytes(hexes: BrandedHex[]): Uint8Array[] {
+  return hexes.map(Hex.toBytes);
+}
+
+// Reuse buffers when possible
+function batchHexToBytesWithBuffer(
+  hexes: BrandedHex[],
+  maxSize: number
+): Uint8Array[] {
+  const buffer = new Uint8Array(maxSize);
+  const results: Uint8Array[] = [];
+
+  for (const hex of hexes) {
+    const bytes = Hex.toBytes(hex);
+    buffer.set(bytes);
+    results.push(buffer.slice(0, bytes.length));
+  }
+
+  return results;
+}
+```
+
+## Related
+
+- [Constructors](/primitives/hex/constructors) - Creating hex strings
+- [Conversions](/primitives/hex/conversions) - Type conversion
+- [Manipulation](/primitives/hex/manipulation) - Hex manipulation
+- [Validation](/primitives/hex/validation) - Hex validation
+- [Fundamentals](/primitives/hex/fundamentals) - Hex basics
