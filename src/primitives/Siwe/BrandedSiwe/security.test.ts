@@ -722,7 +722,10 @@ Nonce: 32891756
 Issued At: 2021-09-30T16:25:24Z`;
 
 		const parsed = parse(text);
-		expect(parsed.statement).toContain("Fake Field");
+		expect(parsed.statement).toBeDefined();
+		if (parsed.statement) {
+			expect(parsed.statement.includes("Fake Field")).toBe(true);
+		}
 		expect(parsed.uri).toBe("https://example.com");
 	});
 });
@@ -826,7 +829,12 @@ describe("verify - signature verification", () => {
 	it("handles v value as 27/28", () => {
 		const { message, signature } = createValidSignedMessage();
 		const modifiedSignature = new Uint8Array(signature);
-		modifiedSignature[64] = signature[64] + 27;
+		const originalV = signature[64];
+		if (originalV >= 27) {
+			modifiedSignature[64] = originalV - 27;
+		} else {
+			modifiedSignature[64] = originalV + 27;
+		}
 		const result = verify(message, modifiedSignature);
 
 		expect(result).toBe(true);
