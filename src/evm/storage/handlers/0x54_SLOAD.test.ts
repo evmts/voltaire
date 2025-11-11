@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { sload } from "./0x54_SLOAD.js";
-import * as Frame from "../../Frame/index.js";
-import * as Host from "../../Host/index.js";
-import * as Address from "../../../primitives/Address/index.js";
+import { _from as frameFrom } from "../../Frame/from.js";
+import { _createMemoryHost as createMemoryHost } from "../../Host/createMemoryHost.js";
+import { from as addressFrom } from "../../../primitives/Address/BrandedAddress/from.js";
 
 describe("SLOAD (0x54)", () => {
 	it("loads value from storage", () => {
-		const host = Host.createMemoryHost();
-		const addr = Address.from("0x1234567890123456789012345678901234567890");
+		const host = createMemoryHost();
+		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
 		// Set storage value
 		host.setStorage(addr, 0x42n, 0x1337n);
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: [0x42n], // key
 			gasRemaining: 10000n,
 			address: addr,
@@ -30,7 +30,7 @@ describe("SLOAD (0x54)", () => {
 		const host = Host.createMemoryHost();
 		const addr = Address.from("0x1234567890123456789012345678901234567890");
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: [0x42n], // key
 			gasRemaining: 10000n,
 			address: addr,
@@ -47,7 +47,7 @@ describe("SLOAD (0x54)", () => {
 		const host = Host.createMemoryHost();
 		const addr = Address.from("0x1234567890123456789012345678901234567890");
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: [],
 			gasRemaining: 10000n,
 			address: addr,
@@ -63,7 +63,7 @@ describe("SLOAD (0x54)", () => {
 		const host = Host.createMemoryHost();
 		const addr = Address.from("0x1234567890123456789012345678901234567890");
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: [0x42n],
 			gasRemaining: 10n, // Not enough for cold SLOAD (2100)
 			address: addr,
@@ -83,7 +83,7 @@ describe("SLOAD (0x54)", () => {
 		// Create stack with 1024 items (max)
 		const fullStack = new Array(1024).fill(0n);
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: fullStack,
 			gasRemaining: 10000n,
 			address: addr,
@@ -102,7 +102,7 @@ describe("SLOAD (0x54)", () => {
 		const maxUint256 = (1n << 256n) - 1n;
 		host.setStorage(addr, 0x42n, maxUint256);
 
-		const frame = Frame.from({
+		const frame = frameFrom({
 			stack: [0x42n],
 			gasRemaining: 10000n,
 			address: addr,
@@ -156,34 +156,34 @@ describe("SLOAD (0x54)", () => {
 	});
 
 	it("isolates storage by address", () => {
-		const host = Host.createMemoryHost();
-		const addr1 = Address.from("0x1111111111111111111111111111111111111111");
-		const addr2 = Address.from("0x2222222222222222222222222222222222222222");
+		const host = createMemoryHost();
+		const addr1 = addressFrom("0x1111111111111111111111111111111111111111");
+		const addr2 = addressFrom("0x2222222222222222222222222222222222222222");
 
 		// Set storage for addr1
-		host.setStorage(addr1, 0x42n, 0xAABBn);
+		host.setStorage(addr1, 0x42n, 0xaabbn);
 
 		// Set storage for addr2
-		host.setStorage(addr2, 0x42n, 0xCCDDn);
+		host.setStorage(addr2, 0x42n, 0xccddn);
 
 		// Load from addr1
-		let frame = Frame.from({
+		let frame = frameFrom({
 			stack: [0x42n],
 			gasRemaining: 10000n,
 			address: addr1,
 		});
 		let error = sload(frame, host);
 		expect(error).toBeNull();
-		expect(frame.stack).toEqual([0xAABBn]);
+		expect(frame.stack).toEqual([0xaabbn]);
 
 		// Load from addr2
-		frame = Frame.from({
+		frame = frameFrom({
 			stack: [0x42n],
 			gasRemaining: 10000n,
 			address: addr2,
 		});
 		error = sload(frame, host);
 		expect(error).toBeNull();
-		expect(frame.stack).toEqual([0xCCDDn]);
+		expect(frame.stack).toEqual([0xccddn]);
 	});
 });
