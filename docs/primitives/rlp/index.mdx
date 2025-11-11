@@ -22,10 +22,10 @@ RLP provides deterministic serialization for transactions, blocks, state tries, 
 ## Quick Reference
 
 <Tabs>
-<Tab title="Namespace API">
+<Tab title="Class API">
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import { Rlp } from '@tevm/voltaire';
 
 // Encode bytes
 const encoded = Rlp.encode(new Uint8Array([1, 2, 3]));
@@ -38,10 +38,10 @@ Rlp.validate(encoded);
 ```
 
 </Tab>
-<Tab title="Function API">
+<Tab title="Namespace API">
 
 ```typescript
-import { Rlp } from '@tevm/voltaire';
+import * as Rlp from '@tevm/voltaire/Rlp';
 
 // Encode bytes
 const encoded = Rlp.encode(new Uint8Array([1, 2, 3]));
