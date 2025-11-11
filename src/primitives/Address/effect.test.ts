@@ -64,6 +64,16 @@ describe("Address Effect Schema", () => {
 			expect(addr1.equals(addr2)).toBe(true);
 		});
 
+		it("compares addresses lexicographically", () => {
+			const addr1 = Address.from(10n);
+			const addr2 = Address.from(20n);
+			const addr3 = Address.from(10n);
+
+			expect(addr1.compare(addr2)).toBe(-1);
+			expect(addr2.compare(addr1)).toBe(1);
+			expect(addr1.compare(addr3)).toBe(0);
+		});
+
 		it("clones address", () => {
 			const addr1 = Address.fromHex(testAddress);
 			const addr2 = addr1.clone();

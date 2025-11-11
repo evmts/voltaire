@@ -159,12 +159,22 @@ export class Address extends Schema.Class<Address>("Address")({
 	}
 
 	/**
-	 * Compare with another address
+	 * Compare with another address for equality
 	 */
 	equals(other: Address | BrandedAddress): boolean {
 		const otherAddr =
 			other instanceof Address ? other.address : (other as BrandedAddress);
 		return BrandedAddressImpl.equals(this.address, otherAddr);
+	}
+
+	/**
+	 * Compare with another address lexicographically
+	 * Returns -1 if this < other, 0 if equal, 1 if this > other
+	 */
+	compare(other: Address | BrandedAddress): number {
+		const otherAddr =
+			other instanceof Address ? other.address : (other as BrandedAddress);
+		return BrandedAddressImpl.compare(this.address, otherAddr);
 	}
 
 	/**
