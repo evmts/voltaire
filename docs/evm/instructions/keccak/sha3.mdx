@@ -1,0 +1,534 @@
+---
+title: "SHA3 (0x20)"
+description: "Keccak-256 opcode that hashes arbitrary memory regions"
+---
+
+## Overview
+
+**Opcode:** `0x20`
+**Introduced:** Frontier (EVM genesis)
+
+SHA3/KECCAK256 computes the Keccak-256 cryptographic hash of a memory region. Despite its name referencing SHA3, this opcode implements the original Keccak-256 algorithm, not the NIST-standardized SHA3.
+
+This operation is essential for:
+- Computing function selectors (first 4 bytes of `keccak256(signature)`)
+- Hashing event data and topics
+- Generating storage keys
+- Implementing authentication schemes
+
+## Specification
+
+**Stack Input:**
+```
+offset (top - memory byte offset)
+size (number of bytes to hash)
+```
+
+**Stack Output:**
+```
+hash (256-bit Keccak-256 digest as uint256)
+```
+
+**Gas Cost:**
+```
+30 (base) + 6 * ceil(size / 32) (word cost) + memory_expansion_cost
+```
+
+**Operation:**
+```typescript
+data = memory[offset : offset + size]
+hash = keccak256(data)  // Actual Keccak-256, not NIST SHA3-256
+push hash to stack
+```
+
+## Behavior
+
+SHA3 reads a variable-length byte sequence from memory, computes its Keccak-256 hash, and pushes the result to the stack:
+
+1. **Pop operands:** Remove `offset` and `size` from stack (in that order)
+2. **Validate:** Ensure offset/size fit in u32 range; calculate gas costs
+3. **Charge gas:** Base (30) + per-word (6 * ceil(size/32)) + memory expansion
+4. **Expand memory:** If accessing memory beyond current size, allocate word-aligned pages
+5. **Read data:** Copy bytes `[offset, offset+size)` from memory
+6. **Hash:** Compute Keccak-256 digest (32 bytes)
+7. **Push result:** Convert hash to u256 (big-endian) and push to stack
+8. **Increment PC:** Move to next instruction
+
+Special case: If size=0, return cached hash of empty data (0xc5d2460186f7...) without memory access.
+
+## Examples
+
+### Computing a Function Selector
+
+```typescript
+import { sha3 } from '@tevm/voltaire/evm/instructions/keccak';
+
+// Hash "transfer(address,uint256)" to get selector
+const frame = createFrame();
+
+// Write signature to memory
+const sig = "transfer(address,uint256)";
+const bytes = new TextEncoder().encode(sig);
+for (let i = 0; i < bytes.length; i++) {
+  frame.memory.set(i, bytes[i]);
+}
+
+// Push offset=0, size=25
+frame.stack.push(0n);      // offset
+frame.stack.push(25n);     // size
+
+// Execute SHA3
+sha3(frame);
+
+// Result: 0xa9059cbb2ab09eb219583f4a59a5d0623ade346d962bcd4e46b11da047c9049b
+// Selector: 0xa9059cbb (first 4 bytes)
+```
+
+### Event Topic Hash
+
+```solidity
+// Computing event signature hash
+event Transfer(address indexed from, address indexed to, uint256 value);
+
+// Solidity computes this during compilation
+bytes32 eventSig = keccak256("Transfer(address,address,uint256)");
+// = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+### Storage Key Generation
+
+```solidity
+// Mapping storage key: keccak256(abi.encode(key, slot))
+mapping(address => uint256) balances;  // slot 0
+
+// Key for balances[0x123...] is:
+// keccak256(abi.encodePacked(0x123..., 0))
+
+// In EVM assembly:
+// PUSH20 0x123...        // address
+// PUSH1 0                // slot
+// MSTORE                 // store address at mem[0:20]
+// MSTORE                 // store slot at mem[20:32]
+// PUSH1 32               // size = 32 bytes (address + slot)
+// PUSH0                  // offset = 0
+// SHA3                   // compute keccak256(addr || slot)
+```
+
+## Gas Cost Calculation
+
+### Base Gas
+
+All SHA3 operations cost minimum 30 gas (GasKeccak256Base).
+
+### Per-Word Gas
+
+Additional 6 gas per 32-byte word (rounded up):
+
+```typescript
+function wordCount(bytes) {
+  return Math.ceil(bytes / 32);
+}
+
+function sha3Gas(size) {
+  const baseGas = 30;
+  const wordGas = 6 * wordCount(size);
+  return baseGas + wordGas;
+}
+
+// Examples:
+sha3Gas(0)    // 30 + 0 = 30
+sha3Gas(1)    // 30 + 6 = 36 (rounds up to 1 word)
+sha3Gas(32)   // 30 + 6 = 36 (exactly 1 word)
+sha3Gas(33)   // 30 + 12 = 42 (rounds up to 2 words)
+sha3Gas(64)   // 30 + 12 = 42 (exactly 2 words)
+sha3Gas(65)   // 30 + 18 = 48 (rounds up to 3 words)
+```
+
+### Memory Expansion Cost
+
+Reading memory beyond current size triggers expansion cost:
+
+```typescript
+function memoryExpansionCost(currentSize, accessEnd) {
+  const newSize = Math.ceil(accessEnd / 32) * 32;  // Word-align
+  if (newSize <= currentSize) return 0;
+
+  // Quadratic cost: (newWords^2 - oldWords^2) / 512 + (newWords - oldWords) * 3
+  const oldWords = currentSize / 32;
+  const newWords = newSize / 32;
+  return (newWords * newWords - oldWords * oldWords) / 512
+         + (newWords - oldWords) * 3;
+}
+
+// Example: Read 10 bytes at offset 0 (requires 1 word = 32 bytes)
+memoryExpansionCost(0, 10)  // (1 - 0)/512 + (1 - 0)*3 = 3
+
+// Example: Read 1 byte at offset 1000000 (requires 31251 words)
+// Cost is thousands of gas due to quadratic growth
+```
+
+### Total Cost
+
+```
+totalGas = baseGas + wordGas + memoryExpansionCost
+```
+
+## Common Usage
+
+### Event Signatures
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+// Topic 0 = keccak256("Transfer(address,address,uint256)")
+
+event Approval(address indexed owner, address indexed spender, uint256 value);
+// Topic 0 = keccak256("Approval(address,address,uint256)")
+```
+
+### Function Selectors
+
+```solidity
+interface ERC20 {
+  // Selector = keccak256("transfer(address,uint256)")[0:4]
+  function transfer(address to, uint256 amount) external returns (bool);
+
+  // Selector = keccak256("approve(address,uint256)")[0:4]
+  function approve(address spender, uint256 amount) external returns (bool);
+}
+```
+
+### State Root Hashing
+
+Merkle tree construction hashes account storage:
+
+```
+hash(account) = keccak256(nonce || balance || storageRoot || codeHash)
+```
+
+### Commit-Reveal Pattern
+
+Prevents transaction front-running:
+
+```solidity
+// Phase 1: Commit
+bytes32 commitment = keccak256(abi.encode(secret, value));
+
+// Phase 2: Reveal (in later block)
+require(keccak256(abi.encode(secret, value)) == commitment, "Invalid reveal");
+```
+
+### Access Control (Legacy)
+
+```solidity
+// Mapping role -> account -> bool
+mapping(bytes32 => mapping(address => bool)) roles;
+
+// ADMIN_ROLE = keccak256("ADMIN_ROLE")
+bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+// Check admin
+require(roles[ADMIN_ROLE][msg.sender], "Not admin");
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SHA3/KECCAK256 opcode (0x20) - Hash memory region
+ */
+export function sha3(frame: BrandedFrame): EvmError | null {
+  // Pop offset and size from stack
+  const offsetResult = popStack(frame);
+  if (offsetResult.error) return offsetResult.error;
+  const offset = offsetResult.value;
+
+  const lengthResult = popStack(frame);
+  if (lengthResult.error) return lengthResult.error;
+  const length = lengthResult.value;
+
+  // Validate fit in safe integer range
+  if (offset > Number.MAX_SAFE_INTEGER) {
+    return { type: "OutOfBounds" };
+  }
+  if (length > Number.MAX_SAFE_INTEGER) {
+    return { type: "OutOfBounds" };
+  }
+
+  const off = Number(offset);
+  const len = Number(length);
+
+  // Calculate gas: base (30) + word_count * per_word (6)
+  const wordCount = len === 0 ? 0n : BigInt(Math.ceil(len / 32));
+  const dynamicGas = 30n + 6n * wordCount;
+
+  // Charge gas
+  const gasErr = consumeGas(frame, dynamicGas);
+  if (gasErr) return gasErr;
+
+  // Charge memory expansion
+  if (len > 0) {
+    const endBytes = off + len;
+    const memCost = memoryExpansionCost(frame, endBytes);
+    const memGasErr = consumeGas(frame, memCost);
+    if (memGasErr) return memGasErr;
+
+    // Update memory size
+    const alignedSize = Math.ceil(endBytes / 32) * 32;
+    if (alignedSize > frame.memorySize) {
+      frame.memorySize = alignedSize;
+    }
+  }
+
+  // Handle empty data
+  if (len === 0) {
+    const emptyHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470n;
+    const pushErr = pushStack(frame, emptyHash);
+    if (pushErr) return pushErr;
+    frame.pc += 1;
+    return null;
+  }
+
+  // Read data from memory
+  const data = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    data[i] = readMemory(frame, off + i);
+  }
+
+  // Compute Keccak-256 hash
+  const hashBytes = hash(data);
+
+  // Convert to u256 (big-endian)
+  let hashValue = 0n;
+  for (let i = 0; i < 32; i++) {
+    hashValue = (hashValue << 8n) | BigInt(hashBytes[i]);
+  }
+
+  // Push result
+  const pushErr = pushStack(frame, hashValue);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SHA3/KECCAK256 opcode (0x20) - Compute Keccak-256 hash
+pub fn sha3(frame: *FrameType) FrameType.EvmError!void {
+    const offset = try frame.popStack();
+    const size = try frame.popStack();
+
+    // Validate and cast to u32
+    const size_u32 = std.math.cast(u32, size) orelse return error.OutOfBounds;
+
+    // Calculate gas costs
+    const words = (size_u32 + 31) / 32;
+    const gas_cost = 30 + words * 6;
+    try frame.consumeGas(gas_cost);
+
+    // Handle empty data
+    if (size == 0) {
+        // keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+        const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+        try frame.pushStack(empty_hash);
+        frame.pc += 1;
+        return;
+    }
+
+    const offset_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+
+    // Charge memory expansion and update memory size
+    const end_addr = @as(u64, offset_u32) + @as(u64, size_u32);
+    const mem_cost = frame.memoryExpansionCost(end_addr);
+    try frame.consumeGas(mem_cost);
+
+    const aligned_size = ((end_addr + 31) / 32) * 32;
+    if (@as(u32, @intCast(aligned_size)) > frame.memory_size) {
+        frame.memory_size = @intCast(aligned_size);
+    }
+
+    // Read data from memory
+    const data = try frame.allocator.alloc(u8, size_u32);
+    for (0..size_u32) |i| {
+        data[i] = frame.readMemory(offset_u32 + @as(u32, @intCast(i)));
+    }
+
+    // Compute hash
+    var hash_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(data, &hash_bytes, .{});
+
+    // Convert to u256 (big-endian)
+    const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
+    try frame.pushStack(hash_u256);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { sha3 } from './0x20_SHA3.js';
+
+describe('SHA3 (0x20)', () => {
+  it('hashes empty data', () => {
+    const frame = createFrame([0n, 0n]);
+    expect(sha3(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(
+      0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470n
+    );
+  });
+
+  it('hashes "hello world"', () => {
+    const frame = createFrame();
+    const data = new TextEncoder().encode("hello world");
+    for (let i = 0; i < data.length; i++) {
+      frame.memory.set(i, data[i]);
+    }
+    frame.stack.push(11n, 0n);
+
+    expect(sha3(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(
+      0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fadn
+    );
+  });
+
+  it('charges correct gas', () => {
+    const frame = createFrame([32n, 0n], 100n);
+    sha3(frame);
+    expect(frame.gasRemaining).toBe(100n - 36n); // 30 + 6*1 word
+  });
+
+  it('expands memory correctly', () => {
+    const frame = createFrame([10n, 0n]);
+    expect(frame.memorySize).toBe(0);
+
+    sha3(frame);
+    expect(frame.memorySize).toBe(32); // 1 word
+  });
+
+  it('handles offset correctly', () => {
+    const frame = createFrame();
+    const data = new TextEncoder().encode("test");
+    for (let i = 0; i < data.length; i++) {
+      frame.memory.set(100 + i, data[i]);
+    }
+    frame.stack.push(4n, 100n);
+
+    sha3(frame);
+    expect(frame.stack[0]).toBe(
+      0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658n
+    );
+  });
+});
+```
+
+## Security
+
+### Preimage Resistance
+
+Keccak-256 is a cryptographic one-way function: finding input `x` given `keccak256(x) = h` requires ~2^256 operations.
+
+Used securely for:
+- Transaction hashing and signature verification
+- State root computation
+- Storage key generation
+
+### Collision Resistance
+
+Finding two different inputs with the same hash requires ~2^128 operations (birthday paradox bound). This guarantees:
+- Merkle tree integrity for account storage
+- Uniqueness of function selectors (extremely unlikely to collide accidentally)
+
+### Domain Separation (Keccak vs NIST SHA3)
+
+**Critical:** Ethereum uses Keccak-256, NOT NIST SHA3-256. Never assume compatibility:
+
+```typescript
+// These are DIFFERENT:
+const evmHash = keccak256("data");           // Ethereum opcode
+const nistHash = sha3_256("data");           // NIST standard (with 0x06 padding)
+// evmHash !== nistHash
+```
+
+### Predictable Randomness Anti-Pattern
+
+**⚠️ NEVER use for randomness:**
+
+```solidity
+// WRONG: Predictable by miners/validators
+bytes32 randomness = keccak256(abi.encodePacked(block.timestamp, msg.sender));
+
+// Miners can choose when to include transaction, or validator can reorder
+
+// CORRECT: Use Chainlink VRF or similar oracle
+```
+
+## Edge Cases
+
+### Maximum Memory Access
+
+```typescript
+// SHA3 with very large size triggers quadratic memory expansion cost
+const frame = createFrame();
+frame.stack.push(0x100000n);  // 1MB of data
+frame.stack.push(0n);         // offset 0
+
+// Gas cost is astronomical due to memory expansion
+// Even with large gas limit, operation may fail
+```
+
+### Uninitialized Memory Reads
+
+```solidity
+// Reading from uninitialized memory returns zeros
+bytes memory empty = new bytes(10);  // 10 zero bytes (not the same as "")
+bytes32 hash1 = keccak256("");       // = 0xc5d2460186f7...
+bytes32 hash2 = keccak256(empty);    // Different (hash of 10 zeros)
+assert(hash1 != hash2);
+```
+
+### Integer Overflow Prevention
+
+Stack values are u256, memory offsets are u32. Validation ensures no overflow:
+
+```typescript
+// If offset + size > 2^32, operation fails
+// This prevents integer overflow in memory address calculation
+```
+
+## Benchmarks
+
+Gas costs reflect computational and memory expenses:
+
+| Input Size | Words | Base Gas | Word Gas | Memory | Total | Per Byte |
+|------------|-------|----------|----------|--------|-------|----------|
+| 0 bytes | 0 | 30 | 0 | 3 | 33 | - |
+| 1 byte | 1 | 30 | 6 | 3 | 39 | 39.0 |
+| 32 bytes | 1 | 30 | 6 | 3 | 39 | 1.2 |
+| 64 bytes | 2 | 30 | 12 | 6 | 48 | 0.75 |
+| 256 bytes | 8 | 30 | 48 | 12 | 90 | 0.35 |
+| 1024 bytes | 32 | 30 | 192 | 48 | 270 | 0.26 |
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.1 (Cryptographic Functions)
+- **[evm.codes - SHA3](https://www.evm.codes/#20)** - Interactive reference
+- **[Keccak Team](https://keccak.team/)** - Official Keccak documentation
+- **[NIST SHA3 Standard](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)** - Shows differences from Ethereum's Keccak
+
+## Related Documentation
+
+- [Keccak256 Cryptography](/crypto/keccak256/index) - Full implementation details
+- [Arithmetic Operations](/evm/instructions/arithmetic) - Stack-based math
+- [Memory Operations](/evm/instructions/memory) - Memory read/write opcodes
+- [SHA256 Precompile](/evm/precompiles/sha256) - Alternative hash function

@@ -1,0 +1,166 @@
+---
+title: "Keccak256 (SHA3)"
+description: "Cryptographic hashing opcodes for computing Keccak-256 digests on arbitrary data"
+---
+
+## Overview
+
+Keccak-256 is the cryptographic hash function at the core of Ethereum. Despite being named "SHA3" in the EVM, it is actually the original Keccak-256 specification (not the NIST-standardized SHA3-256, which differs slightly).
+
+**1 opcode:**
+- **0x20** - SHA3/KECCAK256 - Compute Keccak-256 hash of memory region
+
+## Why "SHA3" but Actually Keccak-256?
+
+Ethereum adopted the original Keccak-256 algorithm before NIST finalized and modified the Secure Hash Algorithm 3 (SHA3) standard. NIST's final SHA3-256 includes different padding and constants than Keccak-256.
+
+**Key difference:**
+- **Ethereum/Keccak256:** Domain separation suffix = 0x01
+- **NIST SHA3-256:** Domain separation suffix = 0x06
+
+This means `keccak256("data")` in Solidity produces a different hash than `SHA3_256("data")` from crypto libraries expecting the NIST standard. Ethereum locked in Keccak-256 permanently at genesis to avoid breaking existing contracts.
+
+## Specifications
+
+| Opcode | Name | Gas | Stack In → Out | Description |
+|--------|------|-----|----------------|-------------|
+| 0x20 | [SHA3](/evm/instructions/keccak/sha3) | 30 + 6/word + memory | offset, size → hash | Keccak-256(memory[offset:offset+size]) |
+
+## Usage in Smart Contracts
+
+Keccak-256 is the primary hash function for:
+
+1. **Function Selectors** - First 4 bytes of `keccak256("functionName(argTypes)")`
+   ```solidity
+   bytes4 selector = bytes4(keccak256("transfer(address,uint256)"));
+   // selector = 0xa9059cbb
+   ```
+
+2. **Event Signatures** - `indexed` topic hashes
+   ```solidity
+   bytes32 eventSig = keccak256("Transfer(address,address,uint256)");
+   ```
+
+3. **Storage Keys** - Deterministic key generation
+   ```solidity
+   mapping(address => uint256) balances;
+   // Key for balances[0x123...] = keccak256(abi.encode(0x123..., 0))
+   ```
+
+4. **State Root Computation** - Merkle tree hashing for account state
+5. **Transaction Hashing** - Hash of transaction data for signatures
+6. **Commit-Reveal Schemes** - Hiding data with keccak256(data + secret)
+
+## Gas Model
+
+Base cost: 30 gas
+Per-word cost: 6 gas per 32-byte word (rounded up)
+Memory expansion: Charged for accessing memory region
+
+**Formula:** `30 + 6 * ceil(size / 32) + memory_expansion_cost`
+
+**Examples:**
+- Empty data: 30 gas (base only)
+- 1 byte: 30 + 6*1 = 36 gas (rounded to 1 word)
+- 32 bytes: 30 + 6*1 = 36 gas (exactly 1 word)
+- 33 bytes: 30 + 6*2 = 42 gas (rounded to 2 words)
+- 256 bytes: 30 + 6*8 = 78 gas (8 words)
+
+## Implementation
+
+### TypeScript
+
+```typescript
+import { sha3 } from '@tevm/voltaire/evm/instructions/keccak';
+
+// Hash arbitrary memory region
+const result = sha3(frame);
+if (result) {
+  // Handle error
+  return result;
+}
+
+// Stack now contains: keccak256(memory[offset:offset+size])
+const hash = frame.stack[frame.stack.length - 1];
+```
+
+### Zig
+
+```zig
+const evm = @import("evm");
+
+pub fn executeKeccak(frame: *FrameType) FrameType.EvmError!void {
+    const keccakHandlers = evm.instructions.keccak.Handlers(FrameType);
+    try keccakHandlers.sha3(frame);
+}
+```
+
+## Special Cases
+
+### Empty Input
+
+Hashing 0 bytes returns the constant Keccak-256 of empty data:
+
+```
+keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+```
+
+This is computed once and cached (no memory access needed).
+
+### Zero Bytes in Memory
+
+Uninitialized memory reads as zeros:
+
+```solidity
+// Memory not written to
+bytes32 hash = keccak256("");  // Only if size=0
+
+// Reading uninitialized memory region
+bytes memory empty = new bytes(10);  // 10 zero bytes
+bytes32 hash2 = keccak256(empty);   // Hash of 10 zero bytes (NOT the empty hash)
+```
+
+## Security
+
+### Preimage Resistance
+
+Keccak-256 is a cryptographically secure one-way function:
+- Given hash `h`, finding data such that `keccak256(data) = h` requires ~2^256 operations
+- Used for security-critical operations (transaction hashing, signature verification)
+
+### Collision Resistance
+
+Finding two different inputs with the same Keccak-256 hash requires ~2^128 operations (birthday bound). Ethereum relies on this for state roots and merkle trees.
+
+### Length Extension
+
+Keccak-256 is NOT vulnerable to length extension attacks (unlike SHA-1/SHA-256). Safe to use for:
+- Message authentication without additional nonce
+- Deterministic key derivation
+
+### Hash-Based Randomness
+
+**⚠️ WARNING:** Do NOT use `keccak256(block.timestamp, block.number)` for randomness—this is predictable:
+
+```solidity
+// WRONG: Predictable by miners/validators
+bytes32 randomness = keccak256(abi.encodePacked(block.timestamp));
+
+// BETTER: Use commit-reveal or VRF
+// Requires external oracle or multi-transaction protocol
+```
+
+## References
+
+- **[EVM Codes - KECCAK256](https://www.evm.codes/#20)** - Interactive reference
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.1 (Cryptographic Functions)
+- **[Keccak Specification](https://keccak.team/keccak_specs_summary.html)** - Official Keccak docs
+- **[NIST SHA3 Standard](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)** - Shows difference from Ethereum's Keccak
+- **[Solidity Docs - keccak256](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#mathematical-and-cryptographic-functions)** - Solidity wrapper
+
+## Related Documentation
+
+- [SHA256 Precompile](/evm/precompiles/sha256) - Alternative hash function (rarely used in Ethereum)
+- [Keccak256 Cryptography Module](/crypto/keccak256/index) - Full Keccak-256 implementation details
+- [ABI Encoding](/primitives/abi/fundamentals) - Uses Keccak-256 for function selectors
+- [Transaction Hashing](/primitives/transaction/hashing) - Keccak-256 of transaction data
