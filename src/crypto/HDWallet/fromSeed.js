@@ -2,16 +2,20 @@ import { HDKey } from "@scure/bip32";
 import { HDWalletError, InvalidSeedError } from "./errors.js";
 
 /**
- * Create root HD key from seed
+ * Create root HD key from BIP-39 seed.
  *
- * @param {Uint8Array} seed - BIP-39 seed (typically 64 bytes, must be 16-64 bytes)
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Root extended key
- * @throws {InvalidSeedError} If seed length is invalid
- * @throws {HDWalletError} If key derivation fails
+ * Master key for hierarchical deterministic wallet.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {Uint8Array} seed - BIP-39 seed bytes (typically 64 bytes from mnemonic, must be 16-64 bytes)
+ * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Root extended key for BIP-32 derivation
+ * @throws {InvalidSeedError} If seed length is not between 16 and 64 bytes
+ * @throws {HDWalletError} If master key derivation fails
  * @example
- * ```typescript
- * const seed = await Bip39.mnemonicToSeed(mnemonic);
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
+ * const seed = new Uint8Array(64); // From BIP-39 mnemonic
  * const root = HDWallet.fromSeed(seed);
  * ```
  */

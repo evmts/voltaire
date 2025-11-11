@@ -1,15 +1,20 @@
 import { HDWalletError } from "./errors.js";
 
 /**
- * Serialize extended private key to base58 (xprv)
+ * Serialize extended key to base58-encoded xprv string.
  *
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key
- * @returns {string} Base58-encoded extended private key
- * @throws {HDWalletError} If key does not have a private key
+ * Requires key with private key material.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key with private key
+ * @returns {string} Base58-encoded extended private key (xprv...)
+ * @throws {HDWalletError} If key does not have private key material
  * @example
- * ```typescript
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
  * const xprv = HDWallet.toExtendedPrivateKey(key);
+ * console.log(xprv); // "xprv9s21ZrQH143K..."
  * ```
  */
 export function toExtendedPrivateKey(key) {

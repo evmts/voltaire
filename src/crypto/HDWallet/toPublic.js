@@ -2,15 +2,20 @@ import { HDKey } from "@scure/bip32";
 import { HDWalletError } from "./errors.js";
 
 /**
- * Create public-only version of key (neutered key)
+ * Create public-only version of extended key (neutered key).
  *
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Public-only extended key
- * @throws {HDWalletError} If key does not have a public key
+ * Removes private key material, keeping only public key and chain code.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key with or without private key
+ * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Public-only extended key (cannot derive hardened children)
+ * @throws {HDWalletError} If key does not have public key
  * @example
- * ```typescript
+ * ```javascript
+ * import * as HDWallet from './crypto/HDWallet/index.js';
  * const pubOnlyKey = HDWallet.toPublic(key);
+ * // Can share publicly without exposing private key
  * ```
  */
 export function toPublic(key) {
