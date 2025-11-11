@@ -1,0 +1,16 @@
+export { address } from "./0x30_ADDRESS.js";
+export { balance } from "./0x31_BALANCE.js";
+export { origin } from "./0x32_ORIGIN.js";
+export { caller } from "./0x33_CALLER.js";
+export { callvalue } from "./0x34_CALLVALUE.js";
+export { calldataload } from "./0x35_CALLDATALOAD.js";
+export { calldatasize } from "./0x36_CALLDATASIZE.js";
+export { calldatacopy } from "./0x37_CALLDATACOPY.js";
+export { codesize } from "./0x38_CODESIZE.js";
+export { codecopy } from "./0x39_CODECOPY.js";
+export { gasprice } from "./0x3a_GASPRICE.js";
+export { extcodesize } from "./0x3b_EXTCODESIZE.js";
+export { extcodecopy } from "./0x3c_EXTCODECOPY.js";
+export { returndatasize } from "./0x3d_RETURNDATASIZE.js";
+export { returndatacopy } from "./0x3e_RETURNDATACOPY.js";
+export { extcodehash } from "./0x3f_EXTCODEHASH.js";
