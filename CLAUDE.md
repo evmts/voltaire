@@ -188,9 +188,9 @@ try list.append(allocator, item);
 ### Module Structure
 
 ```
-src/primitives/root.zig   # Module entry
-src/crypto/root.zig       # Module entry
-src/precompiles/root.zig  # Module entry
+src/primitives/root.zig       # Module entry
+src/crypto/root.zig           # Module entry
+src/evm/precompiles/root.zig  # Module entry
 ```
 
 ## Testing

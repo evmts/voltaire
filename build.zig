@@ -97,7 +97,7 @@ pub fn build(b: *std.Build) void {
 
     // Precompiles module - export for external packages
     const precompiles_mod = b.addModule("precompiles", .{
-        .root_source_file = b.path("src/precompiles/root.zig"),
+        .root_source_file = b.path("src/evm/precompiles/root.zig"),
         .target = target,
         .optimize = optimize,
     });
