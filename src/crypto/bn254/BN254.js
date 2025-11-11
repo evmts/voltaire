@@ -5,9 +5,11 @@
  * Complete implementation of BN254 pairing-friendly curve used in zkSNARKs.
  * Includes G1, G2 point operations and optimal ate pairing.
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @example
- * ```typescript
- * import { BN254 } from './BN254.js';
+ * ```javascript
+ * import { BN254 } from './crypto/bn254/BN254.js';
  *
  * // G1 operations
  * const p1 = BN254.G1.generator();

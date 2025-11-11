@@ -5,12 +5,15 @@ import { Bn254Error } from "./errors.js";
 /**
  * Deserialize G2 point from bytes
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {Uint8Array} bytes - 128-byte serialization
  * @returns {import('./BrandedG2Point.js').BrandedG2Point} G2 point
  * @throws {Bn254Error} If bytes length is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { deserializeG2 } from './crypto/bn254/deserializeG2.js';
+ * const bytes = new Uint8Array(128);
  * const point = deserializeG2(bytes);
  * ```
  */

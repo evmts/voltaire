@@ -4,12 +4,15 @@ import { Bn254Error } from "./errors.js";
 /**
  * Deserialize G1 point from bytes
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {Uint8Array} bytes - 64-byte serialization
  * @returns {import('./BrandedG1Point.js').BrandedG1Point} G1 point
  * @throws {Bn254Error} If bytes length is invalid
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { deserializeG1 } from './crypto/bn254/deserializeG1.js';
+ * const bytes = new Uint8Array(64);
  * const point = deserializeG1(bytes);
  * ```
  */
