@@ -24,41 +24,47 @@ const SPENDER_ADDRESS = Address.fromHex(
 	"0x1234567890123456789012345678901234567890",
 );
 
-const permit = {
-	domain: {
-		name: "USD Coin",
-		version: "2",
-		chainId: 1n,
-		verifyingContract: USDC_ADDRESS,
-	},
-	types: {
-		Permit: [
-			{ name: "owner", type: "address" },
-			{ name: "spender", type: "address" },
-			{ name: "value", type: "uint256" },
-			{ name: "nonce", type: "uint256" },
-			{ name: "deadline", type: "uint256" },
-		],
-	},
-	primaryType: "Permit",
+// Create permit structure
+const permitDomain = {
+	name: "USD Coin",
+	version: "2",
+	chainId: 1n,
+	verifyingContract: USDC_ADDRESS,
+};
+
+const permitTypes = {
+	Permit: [
+		{ name: "owner", type: "address" },
+		{ name: "spender", type: "address" },
+		{ name: "value", type: "uint256" },
+		{ name: "nonce", type: "uint256" },
+		{ name: "deadline", type: "uint256" },
+	],
+};
+
+// Create temporary permit to derive owner address
+const tempPermit = {
+	domain: permitDomain,
+	types: permitTypes,
+	primaryType: "Permit" as const,
 	message: {
-		owner: EIP712.recoverAddress(
-			EIP712.signTypedData(
-				{
-					domain: permit.domain,
-					types: permit.types,
-					primaryType: "Permit",
-					message: {} as any,
-				},
-				OWNER_PRIVATE_KEY,
-			),
-			{
-				domain: permit.domain,
-				types: permit.types,
-				primaryType: "Permit",
-				message: {} as any,
-			},
-		),
+		owner: USDC_ADDRESS,
+		spender: SPENDER_ADDRESS,
+		value: 0n,
+		nonce: 0n,
+		deadline: 0n,
+	},
+};
+
+const tempSignature = EIP712.signTypedData(tempPermit, OWNER_PRIVATE_KEY);
+const ownerAddress = EIP712.recoverAddress(tempSignature, tempPermit);
+
+const permit = {
+	domain: permitDomain,
+	types: permitTypes,
+	primaryType: "Permit" as const,
+	message: {
+		owner: ownerAddress,
 		spender: SPENDER_ADDRESS,
 		value: 1000000n, // 1 USDC (6 decimals)
 		nonce: 0n,

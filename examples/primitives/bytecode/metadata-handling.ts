@@ -69,7 +69,10 @@ function analyzeMetadata(code: typeof Bytecode.prototype) {
 	}
 
 	const stripped = Bytecode.stripMetadata(code);
-	const metadata = extractMetadata(code)!;
+	const metadata = extractMetadata(code);
+	if (!metadata) {
+		throw new Error("Expected metadata but extraction failed");
+	}
 
 	return {
 		hasMetadata: true,
@@ -176,7 +179,11 @@ function getCachedStripped(
 	if (!strippedCache.has(code)) {
 		strippedCache.set(code, Bytecode.stripMetadata(code));
 	}
-	return strippedCache.get(code)!;
+	const cached = strippedCache.get(code);
+	if (!cached) {
+		throw new Error("Cache miss immediately after set");
+	}
+	return cached;
 }
 
 // Usage: avoid repeated stripping

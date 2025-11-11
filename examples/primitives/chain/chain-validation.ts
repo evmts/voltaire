@@ -50,7 +50,10 @@ function isKnownChain(chainId: number): chainId is number {
 
 function processChainId(chainId: number): void {
 	if (isKnownChain(chainId)) {
-		const chain = Chain.fromId(chainId)!;
+		const chain = Chain.fromId(chainId);
+		if (!chain) {
+			throw new Error("Chain guard failed");
+		}
 	} else {
 	}
 }
@@ -88,7 +91,11 @@ function requireAllowedChain(chainId: number): ChainType {
 		throw new Error(`${name} is not in the allowlist`);
 	}
 
-	return Chain.fromId(chainId)!;
+	const chain = Chain.fromId(chainId);
+	if (!chain) {
+		throw new Error("Chain validation passed but chain not found");
+	}
+	return chain;
 }
 
 const testAllowed = [1, 9, 42161, 137];

@@ -128,7 +128,10 @@ for (const type of eventTypes) {
 	}
 }
 const exported = index.exportFilters();
-const transferHex = exported.get("Transfer")!;
+const transferHex = exported.get("Transfer");
+if (!transferHex) {
+	throw new Error("Transfer filter not found");
+}
 const totalEvents = events.length;
 const transferEvents = events.filter((e) => e.type === "Transfer").length;
 const swapEvents = events.filter((e) => e.type === "Swap").length;

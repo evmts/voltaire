@@ -66,7 +66,10 @@ for (let blockNum = 1000; blockNum < 1003; blockNum++) {
 		k: blockFilter.k,
 	});
 }
-const block1001Data = blockFilters.find((b) => b.blockNumber === 1001)!;
+const block1001Data = blockFilters.find((b) => b.blockNumber === 1001);
+if (!block1001Data) {
+	throw new Error("Block 1001 filter not found");
+}
 const block1001Filter = BrandedBloomFilter.fromHex(
 	block1001Data.hex,
 	block1001Data.m,

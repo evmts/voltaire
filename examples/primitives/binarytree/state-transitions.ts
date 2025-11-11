@@ -55,7 +55,11 @@ interface StateSnapshot {
 
 const history: StateSnapshot[] = [];
 
-function captureSnapshot(tree: any, blockNumber: number, description: string) {
+function captureSnapshot(
+	tree: ReturnType<typeof BinaryTree>,
+	blockNumber: number,
+	description: string,
+) {
 	const snapshot = {
 		blockNumber,
 		stateRoot: BinaryTree.rootHashHex(tree),

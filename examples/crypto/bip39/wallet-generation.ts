@@ -118,7 +118,9 @@ testWords[testWords.length - 1] = "zoo";
 const invalidMnemonic = testWords.join(" ");
 
 // Helper function
-function deriveFirstAddress(hdRoot: any): any {
+function deriveFirstAddress(
+	hdRoot: ReturnType<typeof HDWallet.fromSeed>,
+): ReturnType<typeof Address.fromPublicKey> {
 	const hdKey = HDWallet.deriveEthereum(hdRoot, 0, 0);
 	const privateKey = HDWallet.getPrivateKey(hdKey);
 	if (!privateKey) throw new Error("No private key");
