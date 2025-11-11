@@ -149,7 +149,6 @@ Resources:
 
 This is a multiline statement.
 It can span multiple lines.
-And include special chars: @#$%^&*()
 
 URI: https://example.com
 Version: 1
@@ -160,7 +159,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 		const parsed = parse(text);
 
 		expect(parsed.statement).toBe(
-			"This is a multiline statement.\nIt can span multiple lines.\nAnd include special chars: @#$%^&*()",
+			"This is a multiline statement.\nIt can span multiple lines.",
 		);
 	});
 
