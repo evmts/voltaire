@@ -3,15 +3,19 @@ import { hash as hashDomain } from "./Domain/hash.js";
 import { hashStruct } from "./hashStruct.js";
 
 /**
- * Hash typed data according to EIP-712
+ * Hash typed data according to EIP-712 specification.
  *
  * Computes: keccak256("\x19\x01" ‖ domainSeparator ‖ hashStruct(message))
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('./BrandedEIP712.js').TypedData} typedData - Complete typed data structure
- * @returns {import('../../primitives/Hash/index.js').BrandedHash} EIP-712 hash
- *
+ * @returns {import('../../primitives/Hash/index.js').BrandedHash} 32-byte EIP-712 hash for signing
+ * @throws {Eip712TypeNotFoundError} If types are not found
+ * @throws {Eip712InvalidMessageError} If message data is invalid
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EIP712 from './crypto/EIP712/index.js';
  * const hash = EIP712.hashTypedData(typedData);
  * ```
  */

@@ -3,15 +3,20 @@ import { Eip712EncodingError } from "./errors.js";
 import { hashStruct } from "./hashStruct.js";
 
 /**
- * Encode single value to 32 bytes
+ * Encode single value to 32 bytes according to EIP-712.
  *
- * @param {string} type - Solidity type string
+ * Handles primitive types, arrays, strings, bytes, and custom structs.
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {string} type - Solidity type string (e.g., 'uint256', 'address', 'string', 'bytes32', custom type)
  * @param {import('./BrandedEIP712.js').MessageValue} value - Value to encode
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions (for custom types)
- * @returns {Uint8Array} 32-byte encoded value
- *
+ * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions for custom types
+ * @returns {Uint8Array} 32-byte encoded value (or hash for dynamic types)
+ * @throws {Eip712EncodingError} If type is unsupported or value format is invalid
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EIP712 from './crypto/EIP712/index.js';
  * const encoded = EIP712.encodeValue('uint256', 42n, types);
  * ```
  */

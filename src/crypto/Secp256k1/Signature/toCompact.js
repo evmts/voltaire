@@ -18,12 +18,15 @@ function concat(...arrays) {
 /**
  * Convert signature to compact format (64 bytes: r || s)
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('../BrandedSignature.js').BrandedSignature} signature - ECDSA signature
  * @returns {Uint8Array} 64-byte compact signature
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const compact = Signature.toCompact(signature);
+ * ```javascript
+ * import { Secp256k1 } from './crypto/Secp256k1/index.js';
+ * const compact = Secp256k1.Signature.toCompact(signature);
  * console.log(compact.length); // 64
  * ```
  */

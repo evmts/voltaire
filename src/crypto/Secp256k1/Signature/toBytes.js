@@ -2,12 +2,15 @@
 /**
  * Convert signature to bytes with v appended (65 bytes: r || s || v)
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {import('../BrandedSignature.js').BrandedSignature} signature - ECDSA signature
  * @returns {Uint8Array} 65-byte signature
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const bytes = Signature.toBytes(signature);
+ * ```javascript
+ * import { Secp256k1 } from './crypto/Secp256k1/index.js';
+ * const bytes = Secp256k1.Signature.toBytes(signature);
  * console.log(bytes.length); // 65
  * ```
  */

@@ -42,14 +42,17 @@ export const Signature = SignatureMethods;
  * All operations use the audited @noble/curves library for security.
  * Full Ethereum compatibility with v = 27/28 recovery IDs.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @throws {never}
  * @example
- * ```typescript
- * import { Secp256k1 } from './Secp256k1.js';
- * import { Hash } from '../../primitives/Hash/index.js';
+ * ```javascript
+ * import { Secp256k1 } from './crypto/Secp256k1/index.js';
+ * import * as Hash from './primitives/Hash/index.js';
  *
  * // Sign a message hash
  * const messageHash = Hash.keccak256String('Hello, Ethereum!');
- * const privateKey = new Uint8Array(32); // Your private key
+ * const privateKey = new Uint8Array(32);
  * const signature = Secp256k1.sign(messageHash, privateKey);
  *
  * // Verify signature

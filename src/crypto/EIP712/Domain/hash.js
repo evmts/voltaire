@@ -14,19 +14,20 @@ const EIP712_DOMAIN_TYPES = {
 };
 
 /**
- * Hash EIP-712 domain separator
+ * Hash EIP-712 domain separator.
  *
- * @param {import('../BrandedEIP712.js').Domain} domain - Domain separator fields
- * @returns {import('../../../primitives/Hash/index.js').BrandedHash} Domain separator hash
+ * Only includes fields that are defined in the domain object.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('../BrandedEIP712.js').Domain} domain - Domain separator fields (name, version, chainId, verifyingContract, salt)
+ * @returns {import('../../../primitives/Hash/index.js').BrandedHash} 32-byte domain separator hash
+ * @throws {Eip712TypeNotFoundError} If domain type encoding fails
  * @example
- * ```typescript
- * const domain = {
- *   name: 'MyApp',
- *   version: '1',
- *   chainId: 1n,
- * };
- * const hash = Domain.hash(domain);
+ * ```javascript
+ * import { hash as hashDomain } from './crypto/EIP712/Domain/hash.js';
+ * const domain = { name: 'MyApp', version: '1', chainId: 1n };
+ * const domainHash = hashDomain(domain);
  * ```
  */
 export function hash(domain) {
