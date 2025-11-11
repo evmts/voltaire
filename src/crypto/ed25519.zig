@@ -9,12 +9,12 @@ pub const Ed25519 = crypto.sign.Ed25519;
 pub const PRIVATE_KEY_SIZE = Ed25519.SecretKey.encoded_length;
 pub const PUBLIC_KEY_SIZE = Ed25519.PublicKey.encoded_length;
 pub const SIGNATURE_SIZE = Ed25519.Signature.encoded_length;
-pub const SEED_SIZE = Ed25519.seed_length;
+pub const SEED_SIZE = Ed25519.KeyPair.seed_length;
 
 /// Generate keypair from seed
 pub fn keypairFromSeed(seed: []const u8) !Ed25519.KeyPair {
     if (seed.len != SEED_SIZE) return error.InvalidSeedLength;
-    return try Ed25519.KeyPair.create(seed[0..SEED_SIZE].*);
+    return try Ed25519.KeyPair.generateDeterministic(seed[0..SEED_SIZE].*);
 }
 
 /// Sign a message
@@ -25,7 +25,8 @@ pub fn sign(
 ) ![]u8 {
     if (secret_key.len != PRIVATE_KEY_SIZE) return error.InvalidSecretKeyLength;
 
-    const key_pair = try Ed25519.KeyPair.fromSecretKey(.{ .bytes = secret_key[0..PRIVATE_KEY_SIZE].*, .key_length = .b256 });
+    const sk = try Ed25519.SecretKey.fromBytes(secret_key[0..PRIVATE_KEY_SIZE].*);
+    const key_pair = try Ed25519.KeyPair.fromSecretKey(sk);
     const sig = try key_pair.sign(message, null);
 
     const result = try allocator.alloc(u8, SIGNATURE_SIZE);
@@ -57,10 +58,11 @@ pub fn publicKeyFromSecret(
 ) ![]u8 {
     if (secret_key.len != PRIVATE_KEY_SIZE) return error.InvalidSecretKeyLength;
 
-    const key_pair = try Ed25519.KeyPair.fromSecretKey(.{ .bytes = secret_key[0..PRIVATE_KEY_SIZE].*, .key_length = .b256 });
+    const sk = try Ed25519.SecretKey.fromBytes(secret_key[0..PRIVATE_KEY_SIZE].*);
+    const key_pair = try Ed25519.KeyPair.fromSecretKey(sk);
 
     const result = try allocator.alloc(u8, PUBLIC_KEY_SIZE);
-    @memcpy(result, &key_pair.public_key.bytes);
+    @memcpy(result, &key_pair.public_key.toBytes());
 
     return result;
 }
@@ -74,17 +76,17 @@ test "ed25519 basic" {
 
     // Test signing
     const message = "test message";
-    const signature = try sign(allocator, message, &key_pair.secret_key.bytes);
+    const signature = try sign(allocator, message, &key_pair.secret_key.toBytes());
     defer allocator.free(signature);
 
     try std.testing.expect(signature.len == SIGNATURE_SIZE);
 
     // Test verification
-    const valid = try verify(signature, message, &key_pair.public_key.bytes);
+    const valid = try verify(signature, message, &key_pair.public_key.toBytes());
     try std.testing.expect(valid);
 
     // Test with wrong message
-    const invalid = try verify(signature, "wrong message", &key_pair.public_key.bytes);
+    const invalid = try verify(signature, "wrong message", &key_pair.public_key.toBytes());
     try std.testing.expect(!invalid);
 }
 
@@ -94,8 +96,8 @@ test "ed25519 public key derivation" {
     const seed = [_]u8{2} ** SEED_SIZE;
     const key_pair = try keypairFromSeed(&seed);
 
-    const pub_key = try publicKeyFromSecret(allocator, &key_pair.secret_key.bytes);
+    const pub_key = try publicKeyFromSecret(allocator, &key_pair.secret_key.toBytes());
     defer allocator.free(pub_key);
 
-    try std.testing.expectEqualSlices(u8, pub_key, &key_pair.public_key.bytes);
+    try std.testing.expectEqualSlices(u8, pub_key, &key_pair.public_key.toBytes());
 }

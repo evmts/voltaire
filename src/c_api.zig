@@ -2099,16 +2099,175 @@ export fn x25519KeypairFromSeed(
 }
 
 // ============================================================================
-// Ed25519 API - DISABLED (Use TypeScript @noble/curves implementation)
+// Ed25519 API
 // ============================================================================
-// Note: Ed25519 Zig implementation needs updating for Zig 0.15.1 API changes
-// Use the TypeScript implementation via @noble/curves which is already integrated
+
+/// Sign a message with Ed25519
+/// message: message to sign
+/// message_len: length of message
+/// secret_key: 64-byte secret key
+/// out_signature: 64-byte output buffer for signature
+/// Returns 0 on success, negative error code on failure
+export fn ed25519Sign(
+    message: [*]const u8,
+    message_len: usize,
+    secret_key: [*]const u8,
+    out_signature: [*]u8,
+) c_int {
+    const msg = message[0..message_len];
+    const sk = secret_key[0..64];
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const signature = crypto.ed25519.sign(allocator, msg, sk) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+    defer allocator.free(signature);
+
+    if (signature.len != 64) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_signature[0..64], signature);
+    return 0;
+}
+
+/// Verify an Ed25519 signature
+/// message: message that was signed
+/// message_len: length of message
+/// signature: 64-byte signature
+/// public_key: 32-byte public key
+/// Returns 0 if valid, 1 if invalid, negative on error
+export fn ed25519Verify(
+    message: [*]const u8,
+    message_len: usize,
+    signature: [*]const u8,
+    public_key: [*]const u8,
+) c_int {
+    const msg = message[0..message_len];
+    const sig = signature[0..64];
+    const pk = public_key[0..32];
+
+    const valid = crypto.ed25519.verify(sig, msg, pk) catch {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    };
+
+    return if (valid) 0 else 1;
+}
+
+/// Derive Ed25519 public key from secret key
+/// secret_key: 64-byte secret key
+/// out_public_key: 32-byte output buffer for public key
+/// Returns 0 on success, negative error code on failure
+export fn ed25519DerivePublicKey(
+    secret_key: [*]const u8,
+    out_public_key: [*]u8,
+) c_int {
+    const sk = secret_key[0..64];
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const public_key = crypto.ed25519.publicKeyFromSecret(allocator, sk) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+    defer allocator.free(public_key);
+
+    if (public_key.len != 32) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_public_key[0..32], public_key);
+    return 0;
+}
 
 // ============================================================================
-// P256 (secp256r1) API - DISABLED (Use TypeScript @noble/curves implementation)
+// P256 (secp256r1) API
 // ============================================================================
-// Note: P256 Zig implementation needs updating for Zig 0.15.1 API changes
-// Use the TypeScript implementation via @noble/curves which is already integrated
+
+/// Sign a hash with P256
+/// hash: 32-byte hash to sign
+/// private_key: 32-byte private key
+/// out_signature: 64-byte output buffer for signature (r || s)
+/// Returns 0 on success, negative error code on failure
+export fn p256Sign(
+    hash: [*]const u8,
+    private_key: [*]const u8,
+    out_signature: [*]u8,
+) c_int {
+    const h = hash[0..32];
+    const pk = private_key[0..32];
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const signature = crypto.p256.sign(allocator, h, pk) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+    defer allocator.free(signature);
+
+    if (signature.len != 64) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_signature[0..64], signature);
+    return 0;
+}
+
+/// Verify a P256 signature
+/// hash: 32-byte hash that was signed
+/// signature: 64-byte signature (r || s)
+/// public_key: 64-byte uncompressed public key (x || y)
+/// Returns 0 if valid, 1 if invalid, negative on error
+export fn p256Verify(
+    hash: [*]const u8,
+    signature: [*]const u8,
+    public_key: [*]const u8,
+) c_int {
+    const h = hash[0..32];
+    const sig = signature[0..64];
+    const pk = public_key[0..64];
+
+    const r = sig[0..32];
+    const s = sig[32..64];
+
+    const valid = crypto.p256.verify(h, r, s, pk) catch {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    };
+
+    return if (valid) 0 else 1;
+}
+
+/// Derive P256 public key from private key
+/// private_key: 32-byte private key
+/// out_public_key: 64-byte output buffer for uncompressed public key (x || y)
+/// Returns 0 on success, negative error code on failure
+export fn p256DerivePublicKey(
+    private_key: [*]const u8,
+    out_public_key: [*]u8,
+) c_int {
+    const pk = private_key[0..32];
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const public_key = crypto.p256.publicKeyFromPrivate(allocator, pk) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+    defer allocator.free(public_key);
+
+    if (public_key.len != 64) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_public_key[0..64], public_key);
+    return 0;
+}
 
 // ============================================================================
 // HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings

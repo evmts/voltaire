@@ -1,9 +1,9 @@
 const std = @import("std");
-const crypto = std.crypto;
 
 /// P256 (secp256r1/prime256v1) elliptic curve operations
-/// Re-exports Zig's standard library P256 implementation
-pub const P256 = crypto.ecc.P256;
+/// Uses Zig's standard library P256 implementation via ECDSA
+pub const P256 = std.crypto.ecc.P256;
+pub const EcdsaP256Sha256 = std.crypto.sign.ecdsa.EcdsaP256Sha256;
 
 /// P256 curve parameters
 pub const P256_P: u256 = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff;
@@ -22,16 +22,13 @@ pub fn sign(
     if (hash.len != 32) return error.InvalidHashLength;
     if (private_key.len != 32) return error.InvalidPrivateKeyLength;
 
-    const key_pair = try P256.KeyPair.fromSecretKey(.{
-        .bytes = private_key[0..32].*,
-        .endian = .big,
-    });
+    const secret_key = try EcdsaP256Sha256.SecretKey.fromBytes(private_key[0..32].*);
+    const key_pair = try EcdsaP256Sha256.KeyPair.fromSecretKey(secret_key);
 
-    const sig = try key_pair.sign(hash, null);
+    const sig = try key_pair.signPrehashed(hash[0..32].*, null);
 
     const result = try allocator.alloc(u8, 64);
-    @memcpy(result[0..32], &sig.r.toBytes(.big));
-    @memcpy(result[32..64], &sig.s.toBytes(.big));
+    @memcpy(result, &sig.toBytes());
 
     return result;
 }
@@ -48,15 +45,15 @@ pub fn verify(
     if (s.len != 32) return error.InvalidSLength;
     if (public_key.len != 64) return error.InvalidPublicKeyLength;
 
-    const sig = P256.Signature{
-        .r = P256.Fe.fromBytes(r[0..32].*, .big),
-        .s = P256.Fe.fromBytes(s[0..32].*, .big),
-    };
+    var sig_bytes: [64]u8 = undefined;
+    @memcpy(sig_bytes[0..32], r);
+    @memcpy(sig_bytes[32..64], s);
+    const sig = EcdsaP256Sha256.Signature.fromBytes(sig_bytes);
 
     var uncompressed = [_]u8{0x04} ++ public_key[0..64].*;
-    const pub_key = try P256.fromSerializedPublicKey(&uncompressed);
+    const pub_key = try EcdsaP256Sha256.PublicKey.fromSec1(&uncompressed);
 
-    sig.verify(hash, pub_key) catch return false;
+    sig.verifyPrehashed(hash[0..32].*, pub_key) catch return false;
     return true;
 }
 
@@ -68,10 +65,8 @@ pub fn publicKeyFromPrivate(
 ) ![]u8 {
     if (private_key.len != 32) return error.InvalidPrivateKeyLength;
 
-    const key_pair = try P256.KeyPair.fromSecretKey(.{
-        .bytes = private_key[0..32].*,
-        .endian = .big,
-    });
+    const secret_key = try EcdsaP256Sha256.SecretKey.fromBytes(private_key[0..32].*);
+    const key_pair = try EcdsaP256Sha256.KeyPair.fromSecretKey(secret_key);
 
     const pub_key = key_pair.public_key.toUncompressedSec1();
 
@@ -91,10 +86,10 @@ pub fn ecdh(
     if (private_key.len != 32) return error.InvalidPrivateKeyLength;
     if (public_key.len != 64) return error.InvalidPublicKeyLength;
 
-    const secret = P256.Scalar.fromBytes(private_key[0..32].*, .big);
+    const secret = try P256.scalar.Scalar.fromBytes(private_key[0..32].*, .big);
 
     var uncompressed = [_]u8{0x04} ++ public_key[0..64].*;
-    const pub_key = try P256.fromSerializedPublicKey(&uncompressed);
+    const pub_key = try P256.fromSec1(&uncompressed);
 
     const shared = try pub_key.mul(secret.toBytes(.big), .big);
     const shared_bytes = shared.toUncompressedSec1();
