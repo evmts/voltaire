@@ -11,7 +11,7 @@ mode: custom
   </h1>
 
   <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-    A powerful, modern, high-performance, wasm-based Ethereum library
+    A modern, high-performance, wasm-based Ethereum library
   </p>
 
   <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -41,7 +41,7 @@ mode: custom
     </a>
   </div>
 
-  <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+  <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
     <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
       Copied!
     </div>
@@ -78,21 +78,52 @@ claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
     </div>
   </div>
-</div>
 
-<div style={{ padding: '4rem 2rem', background: '#1a1a1a' }}>
-  <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-    <CardGroup cols={3}>
-      <Card title="Type-Safe" icon="shield-check">
-        Branded types prevent mixing incompatible values. Zero runtime overhead.
-      </Card>
-      <Card title="High-Performance" icon="bolt">
-        Native Zig implementations via WASM. 2-3x faster than pure JavaScript.
-      </Card>
-      <Card title="Tree-Shakeable" icon="tree">
-        Import only what you need. Unused code automatically excluded from bundles.
-      </Card>
-    </CardGroup>
+  <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>📦</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Feature-Complete</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Primitives, encoding/decoding, cryptography, EVM, and JSON-RPC provider functionality</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🛡️</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Modern Typesafety</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Branded types and AbiType support for best in class robustness and typesafety</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>⚡</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Zig-Wasm-Accelerated</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Zig implementations built to balance speed and bundle-size</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🌲</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Tree-Shakeable</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Import only what you need. Unused code excluded</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🤖</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>LLM-Optimized</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API mirrors Ethereum spec with simple JavaScript data structures. MCP server enables highly productive AI-assisted development</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
+        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🌐</div>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Multiplatform</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works everywhere: browser, Node.js, Bun, mobile, serverless, Zig, and any language with C-FFI support</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
