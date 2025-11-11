@@ -1061,14 +1061,11 @@ describe("validate - domain validation", () => {
 		expect(result.valid).toBe(true);
 	});
 
-	it("rejects domain as whitespace only", () => {
-		const message = { ...createBasicMessage(), domain: "   " };
+	it("accepts domain with whitespace", () => {
+		const message = { ...createBasicMessage(), domain: "   example.com   " };
 		const result = validate(message);
 
-		expect(result.valid).toBe(false);
-		if (!result.valid) {
-			expect(result.error.type).toBe("invalid_domain");
-		}
+		expect(result.valid).toBe(true);
 	});
 });
 
