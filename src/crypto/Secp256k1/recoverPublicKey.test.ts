@@ -1,8 +1,8 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
-import { derivePublicKey } from "./derivePublicKey.js";
 import { InvalidSignatureError } from "../../primitives/errors/index.js";
+import { derivePublicKey } from "./derivePublicKey.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
 import { sign } from "./sign.js";
 

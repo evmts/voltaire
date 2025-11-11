@@ -1,6 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import { InvalidSignatureError } from "../errors.js";
+import { InvalidSignatureError } from "../../../primitives/errors/index.js";
 import { sign } from "../sign.js";
 import { fromBytes, fromCompact, toBytes, toCompact } from "./index.js";
 

@@ -692,22 +692,22 @@ describe("EIP712", () => {
 		});
 
 		it("handles circular type references", () => {
+			// Test circular type definitions (not message validation)
 			const typedData: TypedData = {
 				domain: { name: "Test" },
 				types: {
-					TypeA: [
+					Node: [
 						{ name: "value", type: "uint256" },
-						{ name: "next", type: "TypeB" },
-					],
-					TypeB: [
-						{ name: "value", type: "uint256" },
-						{ name: "next", type: "TypeA" },
+						{ name: "children", type: "Node[]" },
 					],
 				},
-				primaryType: "TypeA",
+				primaryType: "Node",
 				message: {
 					value: 1n,
-					next: { value: 2n, next: {} },
+					children: [
+						{ value: 2n, children: [] },
+						{ value: 3n, children: [] },
+					],
 				},
 			};
 

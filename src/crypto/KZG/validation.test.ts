@@ -301,7 +301,12 @@ describe("KZG Validation - Edge Cases", () => {
 			const { proof, y } = KZG.computeKzgProof(blob, z);
 
 			// Swap commitment and proof (both 48 bytes)
-			const isValid = KZG.verifyKzgProof(proof as any, z, y, commitment as any);
+			const isValid = KZG.verifyKzgProof(
+				proof as unknown as BrandedKzgProof,
+				z,
+				y,
+				commitment as unknown as BrandedKzgProof,
+			);
 			expect(isValid).toBe(false);
 		});
 

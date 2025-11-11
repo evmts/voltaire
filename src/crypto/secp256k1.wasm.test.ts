@@ -206,12 +206,12 @@ describe("Secp256k1 WASM Implementation", () => {
 
 			// All should be valid and unique
 			for (let i = 0; i < signatures.length; i++) {
-				expect(signatures[i]!.r.length).toBe(32);
-				expect(signatures[i]!.s.length).toBe(32);
+				expect(signatures[i]?.r.length).toBe(32);
+				expect(signatures[i]?.s.length).toBe(32);
 
 				// Should differ from others
 				for (let j = i + 1; j < signatures.length; j++) {
-					expect(signatures[i]!.r).not.toEqual(signatures[j]!.r);
+					expect(signatures[i]?.r).not.toEqual(signatures[j]?.r);
 				}
 			}
 		});

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { FP_MOD, G1_GENERATOR_X, G1_GENERATOR_Y } from "./constants.js";
 import * as G1 from "./G1/index.js";
+import { FP_MOD, G1_GENERATOR_X, G1_GENERATOR_Y } from "./constants.js";
 import { serializeG1 } from "./serializeG1.js";
 
 describe("serializeG1", () => {

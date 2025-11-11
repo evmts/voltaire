@@ -11,8 +11,8 @@
  * - WASM-specific concerns (memory, initialization, errors)
  */
 
-import { beforeAll, describe, expect, test } from "vitest";
 import { keccak_256 as nobleKeccak256 } from "@noble/hashes/sha3.js";
+import { beforeAll, describe, expect, test } from "vitest";
 import { equals } from "../primitives/Hash/BrandedHash/equals.js";
 import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
 import { isHash } from "../primitives/Hash/BrandedHash/isHash.js";
@@ -344,7 +344,7 @@ describe("Keccak256 WASM - hashHex()", () => {
 	});
 
 	test("long hex string", () => {
-		const longHex = "0x" + "ab".repeat(1000);
+		const longHex = `0x${"ab".repeat(1000)}`;
 		const result = Keccak256Wasm.hashHex(longHex);
 		expect(isHash(result)).toBe(true);
 	});
@@ -871,7 +871,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			"0x1234",
 			"0xabcdef",
 			"0xABCDEF",
-			"0x" + "ab".repeat(100),
+			`0x${"ab".repeat(100)}`,
 		];
 
 		for (const hex of hexStrings) {
@@ -899,11 +899,9 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 		for (const sig of signatures) {
 			const wasmResult = Keccak256Wasm.selector(sig);
 			const nobleResult = nobleKeccak256(new TextEncoder().encode(sig));
-			const nobleSelector =
-				"0x" +
-				Array.from(nobleResult.slice(0, 4))
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const nobleSelector = `0x${Array.from(nobleResult.slice(0, 4))
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 
 			expect(wasmResult).toBe(nobleSelector);
 		}

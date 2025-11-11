@@ -320,12 +320,12 @@ describe("X25519 WASM Implementation", () => {
 			// Each pair should have symmetric shared secret
 			for (let i = 0; i < keys.length - 1; i++) {
 				const shared1 = X25519Wasm.scalarmult(
-					keys[i]!.secret,
-					keys[i + 1]!.public,
+					keys[i]?.secret,
+					keys[i + 1]?.public,
 				);
 				const shared2 = X25519Wasm.scalarmult(
-					keys[i + 1]!.secret,
-					keys[i]!.public,
+					keys[i + 1]?.secret,
+					keys[i]?.public,
 				);
 				expect(shared1).toEqual(shared2);
 			}

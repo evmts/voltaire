@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
+import * as G1 from "./G1/index.js";
 import { FP_MOD, G1_GENERATOR_X, G1_GENERATOR_Y } from "./constants.js";
 import { deserializeG1 } from "./deserializeG1.js";
 import { Bn254Error } from "./errors.js";
-import * as G1 from "./G1/index.js";
 import { serializeG1 } from "./serializeG1.js";
 
 describe("deserializeG1", () => {

@@ -283,7 +283,7 @@ describe("Ed25519 WASM Implementation", () => {
 			// All should be valid and unique
 			expect(signatures.length).toBe(20);
 			for (let i = 0; i < signatures.length; i++) {
-				expect(signatures[i]!.length).toBe(64);
+				expect(signatures[i]?.length).toBe(64);
 				for (let j = i + 1; j < signatures.length; j++) {
 					expect(signatures[i]).not.toEqual(signatures[j]);
 				}

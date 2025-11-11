@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as Secp256k1 from "./Secp256k1/index.js";
 import * as Keccak256 from "./Keccak256/index.js";
+import * as Secp256k1 from "./Secp256k1/index.js";
 
 describe("Cryptographic memory safety", () => {
 	describe("private key memory handling", () => {
