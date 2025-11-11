@@ -7,13 +7,18 @@ import { pairingResultOne } from "./pairingResult.js";
 /**
  * Miller loop computation (simplified)
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG1Point.js').BrandedG1Point} p - G1 point
  * @param {import('../BrandedG2Point.js').BrandedG2Point} q - G2 point
  * @returns {{value: bigint}} Miller loop result
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const result = millerLoop(p, q);
+ * ```javascript
+ * import * as Pairing from './crypto/bn254/Pairing/index.js';
+ * import * as G1 from './crypto/bn254/G1/index.js';
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * const result = Pairing.millerLoop(G1.generator(), G2.generator());
  * ```
  */
 export function millerLoop(p, q) {

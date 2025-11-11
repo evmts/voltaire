@@ -13,7 +13,19 @@ export * from "./BrandedAddress/errors.js";
 export * from "./BrandedAddress/constants.js";
 
 /**
- * Factory function for creating Address instances
+ * Factory function for creating Address instances with prototype chain
+ *
+ * @see https://voltaire.tevm.sh/primitives/address for Address documentation
+ * @since 0.0.0
+ * @param value - Value to convert (hex string, bytes, or number)
+ * @returns Address instance with prototype methods
+ * @throws {Error} If value format is invalid
+ * @example
+ * ```typescript
+ * import { Address } from './primitives/Address/index.js';
+ * const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * console.log(addr.toChecksummed());
+ * ```
  */
 export function Address(
 	value: number | bigint | string | Uint8Array,
