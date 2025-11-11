@@ -91,7 +91,6 @@ zig-out/
 zig-cache/
 bin/
 /wasm/
-lib/libwally-core/
 
 # Python
 __pycache__/
