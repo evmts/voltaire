@@ -4,7 +4,8 @@
 		"rootDir": "src",
 		"outDir": "types",
 		"skipLibCheck": true,
-		"types": ["bun-types"]
+		"types": ["bun-types"],
+		"noPropertyAccessFromIndexSignature": false
 	},
 	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.json"],
 	"exclude": [
