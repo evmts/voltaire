@@ -764,7 +764,9 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.linkLibrary(c_kzg_lib);
     ts_native_lib.linkLibrary(blst_lib);
     ts_native_lib.addObjectFile(rust_crypto_lib_path);
+    ts_native_lib.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
     ts_native_lib.addIncludePath(b.path("lib"));
+    ts_native_lib.addIncludePath(b.path("lib/libwally-core/include"));
     ts_native_lib.step.dependOn(cargo_build_step);
     ts_native_lib.linkLibC();
 
