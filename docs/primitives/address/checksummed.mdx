@@ -106,8 +106,8 @@ const addr = checksumAddr.toAddress()
 <Tab title="Tree-shakeable">
 
 ```typescript
-import { from } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
-import type { Checksummed } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import { from } from '@tevm/voltaire/Address/ChecksumAddress'
+import type { Checksummed } from '@tevm/voltaire/Address/ChecksumAddress'
 
 const checksummed: Checksummed = from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
@@ -130,7 +130,7 @@ Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:23](https://gi
 **Example:**
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 
 // Various input formats
 ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
@@ -151,7 +151,7 @@ Validate EIP-55 checksum of address string.
 <Tab title="Namespace API">
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 
 // Valid checksummed address
 ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -204,7 +204,7 @@ try {
 <Tab title="Tree-shakeable">
 
 ```typescript
-import { isValid } from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import { isValid } from '@tevm/voltaire/Address/ChecksumAddress'
 
 if (isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")) {
   console.log("Valid checksum")
@@ -229,7 +229,7 @@ Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:63](https://gi
 **Example:**
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 
 // Correct checksum
 ChecksumAddress.isValid("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
@@ -437,7 +437,7 @@ Store addresses with checksums for verification on retrieval:
 
 ```typescript
 import { Address } from '@tevm/voltaire'
-import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 
 // Store
 function saveAddress(key: string, address: Address) {

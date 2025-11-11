@@ -163,6 +163,18 @@ Tests cover:
 - Edge cases (invalid signatures, malformed keys)
 - Cross-validation with known test vectors
 
+## Implementation Security Matrix
+
+| Module | TypeScript | Zig | Security Notes |
+|--------|-----------|-----|----------------|
+| secp256k1 | @noble/curves (audited, constant-time) | Custom (⚠️ unaudited, timing attacks possible) | Use TS for production |
+| keccak | @noble/hashes + keccak-asm (Rust) | keccak-asm wrapper | Hash functions don't require constant-time |
+| BN254 | arkworks (Rust, audited) | arkworks wrapper | ~100-bit security (reduced margin) |
+| BLS12-381 | blst (C, audited) | blst wrapper | Production-grade |
+| c-kzg | c-kzg-4844 (official) | c-kzg-4844 (official) | Not available in WASM |
+
+**Critical Security Notice:** The Zig secp256k1 implementation contains known timing attack vulnerabilities (see `secp256k1.zig:14`). For production cryptographic operations, use the TypeScript implementation backed by @noble/curves, which is audited and provides constant-time guarantees.
+
 ## Security Considerations
 
 - **UNAUDITED**: This code has not undergone a formal security audit

@@ -30,7 +30,7 @@ Never make time or work estimates of how long work will take it is not useful co
 
 Ethereum primitives + crypto. Multi-language: TS + Zig + Rust + C.
 
-**Modules**: primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), content/docs/ (Astro Starlight MDX docs), wasm-loader/ (WASM infra)
+**Modules**: primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), docs/ (Mintlify MDX docs), wasm-loader/ (WASM infra)
 
 **Imports**: ✅ `@import("primitives")` `@import("crypto")` `@import("precompiles")` ❌ `@import("../primitives/address.zig")`
 
@@ -103,6 +103,8 @@ bun run test:wasm             # WASM tests
 
 # Docs
 bun run docs:dev              # Mintlify dev (localhost:3000)
+bun run mint:dev              # Alternative (cd docs && mint dev)
+bun run mint:install          # Install/update Mintlify CLI
 
 # Quality
 bun run format                # biome format
@@ -222,29 +224,24 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 
 ## Documentation
 
-### Astro Starlight Site
+### Mintlify Site
 
-- **Location**: `src/content/docs/`
-- **Format**: MDX (Markdown + JSX) or MD
-- **Structure**: Hybrid (centralized + colocated)
-  - Centralized: `src/content/docs/primitives/{address,uint,hash,hex,transaction,bytecode,chain,denomination,base64,binarytree,bloomfilter}/` (11 primitives)
-  - Colocated: `src/primitives/{Abi,AccessList,Authorization,Blob,EventLog,FeeMarket,GasConstants,Hardfork,Opcode,Rlp,Siwe,State}/*.mdx` (12 primitives, symlinked to `src/content/docs/primitives/`)
-  - Overview: `src/content/docs/getting-started.mdx`, crypto docs
-
-### Colocated Documentation Pattern
-
-Primitives with colocated docs use symlinks for Starlight integration:
-
-- Source: `src/primitives/{PascalCase}/index.mdx`
-- Symlink: `src/content/docs/primitives/{lowercase} → ../../../primitives/{PascalCase}`
-- New primitives: Create docs in `src/primitives/{Name}/` and symlink to `src/content/docs/primitives/{name}`
+- **Location**: `docs/`
+- **Config**: `docs/mint.json` (schema-based navigation)
+- **Format**: MDX (Markdown + JSX) with YAML frontmatter
+- **Structure**: Organized by section (getting-started, concepts, primitives, crypto, precompiles)
+  - Getting Started: 2 pages
+  - Concepts: 2 pages (branded-types, data-first)
+  - Primitives: 23 modules with comprehensive docs
+  - Cryptography: 17 modules with comprehensive docs
+  - Precompiles: 21 EVM precompile implementations
 
 ### Commands
 
 ```bash
-bun run docs:dev      # Dev server (localhost:4321)
-bun run docs:build    # Production build
-bun run docs:preview  # Preview production
+bun run docs:dev      # Dev server (localhost:3000)
+bun run mint:dev      # Alternative (cd docs && mint dev)
+bun run mint:install  # Install/update Mintlify CLI
 ```
 
 ### Auto-generated
@@ -304,7 +301,7 @@ bun run test:wasm             # WASM-specific tests
 
 ### Node
 
-- **Astro + Starlight** - Docs site
+- **Mintlify** - Docs site
 - **Vitest** - Testing
 - **tsup** - Bundling
 - **biome** - Format/lint
