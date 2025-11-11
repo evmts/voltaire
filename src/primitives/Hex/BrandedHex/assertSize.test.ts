@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { InvalidLengthError } from "../../errors/index.js";
 import type { BrandedHex } from "./BrandedHex.js";
 import { assertSize } from "./assertSize.js";
-import { InvalidLengthError } from "../../errors/index.js";
 
 describe("assertSize", () => {
 	it("returns hex when size matches", () => {

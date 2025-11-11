@@ -19,12 +19,9 @@ function createAddress(byte: number): BrandedAddress {
 }
 
 function addressToHex(addr: BrandedAddress): string {
-	return (
-		"0x" +
-		Array.from(addr)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(addr)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 const MAX_UINT64 = 18446744073709551615n;

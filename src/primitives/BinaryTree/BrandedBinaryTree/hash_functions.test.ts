@@ -1,7 +1,7 @@
 import { blake3 } from "@noble/hashes/blake3.js";
 import { describe, expect, test } from "vitest";
-import * as BinaryTree from "./index.js";
 import type { LeafNode, Node, StemNode } from "./BrandedBinaryTree.js";
+import * as BinaryTree from "./index.js";
 
 describe("Hash Functions", () => {
 	describe("hashLeaf", () => {

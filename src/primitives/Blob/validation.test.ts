@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { Blob } from "./index.js";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
 	SIZE,
 } from "./BrandedBlob/constants.js";
+import { Blob } from "./index.js";
 
 describe("Blob Validation - Edge Cases", () => {
 	describe("Blob Construction", () => {

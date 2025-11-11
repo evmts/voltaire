@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
 	OddLengthError,
 } from "../../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { fromString } from "./fromString.js";
 import { toString } from "./toString.js";
 

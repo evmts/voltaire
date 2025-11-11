@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedRlp } from "./BrandedRlp.js";
 import * as Data from "./Data.js";
+import { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
 import { MAX_DEPTH } from "./constants.js";
 import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
@@ -12,7 +13,6 @@ import { encode } from "./encode.js";
 import { encodeBytes } from "./encodeBytes.js";
 import { encodeList } from "./encodeList.js";
 import { equals } from "./equals.js";
-import { RlpEncodingError, RlpDecodingError } from "./RlpError.js";
 import { flatten } from "./flatten.js";
 import { fromJSON } from "./fromJSON.js";
 import { getEncodedLength } from "./getEncodedLength.js";

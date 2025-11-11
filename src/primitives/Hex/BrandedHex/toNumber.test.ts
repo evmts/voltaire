@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { InvalidRangeError } from "../../errors/index.js";
 import type { BrandedHex } from "./BrandedHex.js";
 import { fromNumber } from "./fromNumber.js";
 import { toNumber } from "./toNumber.js";
-import { InvalidRangeError } from "../../errors/index.js";
 
 describe("toNumber", () => {
 	it("converts zero", () => {

@@ -1,19 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Blob } from "./index.js";
-import { KZG } from "../../crypto/KZG/index.js";
-import { SHA256 } from "../../crypto/SHA256/index.js";
 import {
 	BYTES_PER_COMMITMENT,
 	BYTES_PER_FIELD_ELEMENT,
 	BYTES_PER_PROOF,
 	FIELD_ELEMENTS_PER_BLOB,
 } from "../../crypto/KZG/constants.js";
+import { KZG } from "../../crypto/KZG/index.js";
+import { SHA256 } from "../../crypto/SHA256/index.js";
 import {
 	COMMITMENT_VERSION_KZG,
 	GAS_PER_BLOB,
 	MAX_PER_TRANSACTION,
 	SIZE,
 } from "./BrandedBlob/constants.js";
+import { Blob } from "./index.js";
 
 describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
 	beforeAll(() => {

@@ -292,9 +292,7 @@ describe("RLP WASM - encodeUintFromBigInt", () => {
 		const value = 0xdeadbeefn;
 		const result = RlpWasm.encodeUintFromBigInt(value);
 		expect(result[0]).toBe(0x84); // 0x80 + 4
-		expect(result.slice(1)).toEqual(
-			new Uint8Array([0xde, 0xad, 0xbe, 0xef]),
-		);
+		expect(result.slice(1)).toEqual(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
 	});
 
 	test("max u256", () => {

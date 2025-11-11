@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedHex } from "./BrandedHex.js";
 import { InvalidLengthError } from "../../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { xor } from "./xor.js";
 
 describe("xor", () => {

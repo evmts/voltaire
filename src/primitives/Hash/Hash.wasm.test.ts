@@ -106,15 +106,6 @@ describe("Hash WASM - sha256", () => {
 		const result2 = HashWasm.sha256("test2");
 		expect(result1).not.toEqual(result2);
 	});
-
-	test("throws on empty data", () => {
-		// Implementation may throw ValidationError
-		try {
-			HashWasm.sha256(new Uint8Array([]));
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-		}
-	});
 });
 
 // ============================================================================
@@ -226,14 +217,6 @@ describe("Hash WASM - Solidity Hash Functions", () => {
 	test("soliditySha256 - bytes", () => {
 		const result = HashWasm.soliditySha256(new Uint8Array([1, 2, 3]));
 		expect(result.length).toBe(32);
-	});
-
-	test("throws on empty input", () => {
-		try {
-			HashWasm.solidityKeccak256(new Uint8Array([]));
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-		}
 	});
 });
 
@@ -483,47 +466,32 @@ describe("Hash WASM - Edge Cases", () => {
 
 describe("Hash WASM - Error Handling", () => {
 	test("sha256 handles empty gracefully", () => {
-		try {
-			const result = HashWasm.sha256(new Uint8Array([]));
-			expect(result).toBeInstanceOf(Uint8Array);
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-		}
+		const result = HashWasm.sha256(new Uint8Array([]));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
 	});
 
 	test("ripemd160 handles empty gracefully", () => {
-		try {
-			const result = HashWasm.ripemd160(new Uint8Array([]));
-			expect(result).toBeInstanceOf(Uint8Array);
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-		}
+		const result = HashWasm.ripemd160(new Uint8Array([]));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(20);
 	});
 
 	test("blake2b handles empty gracefully", () => {
-		try {
-			const result = HashWasm.blake2b(new Uint8Array([]));
-			expect(result).toBeInstanceOf(Uint8Array);
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-		}
+		const result = HashWasm.blake2b(new Uint8Array([]));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(64);
 	});
 
-	test("solidityKeccak256 throws on empty", () => {
-		try {
-			HashWasm.solidityKeccak256(new Uint8Array([]));
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-			expect(error.code).toBe("HASH_EMPTY_INPUT");
-		}
+	test("solidityKeccak256 handles empty gracefully", () => {
+		const result = HashWasm.solidityKeccak256(new Uint8Array([]));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
 	});
 
-	test("soliditySha256 throws on empty", () => {
-		try {
-			HashWasm.soliditySha256(new Uint8Array([]));
-		} catch (error: any) {
-			expect(error.message).toMatch(/empty/i);
-			expect(error.code).toBe("HASH_EMPTY_INPUT");
-		}
+	test("soliditySha256 handles empty gracefully", () => {
+		const result = HashWasm.soliditySha256(new Uint8Array([]));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
 	});
 });

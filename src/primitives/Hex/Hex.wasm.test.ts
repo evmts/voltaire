@@ -56,7 +56,7 @@ const KNOWN_VECTORS = {
 	},
 	hash: {
 		bytes: new Uint8Array(32).fill(0xaa),
-		hex: "0x" + "aa".repeat(32),
+		hex: `0x${"aa".repeat(32)}`,
 	},
 };
 
@@ -97,7 +97,7 @@ describe("Hex WASM - bytesToHex", () => {
 
 	test("32 bytes (hash)", () => {
 		const result = HexWasm.bytesToHex(KNOWN_VECTORS.hash.bytes);
-		expect(result).toBe("0x" + "aa".repeat(32));
+		expect(result).toBe(`0x${"aa".repeat(32)}`);
 	});
 
 	test("returns lowercase hex", () => {
@@ -205,14 +205,14 @@ describe("Hex WASM - hexToBytes", () => {
 	});
 
 	test("32 bytes (hash)", () => {
-		const hex = "0x" + "aa".repeat(32);
+		const hex = `0x${"aa".repeat(32)}`;
 		const result = HexWasm.hexToBytes(hex);
 		expect(result.length).toBe(32);
 		expect(result.every((b) => b === 0xaa)).toBe(true);
 	});
 
 	test("large hex - 1KB", () => {
-		const hex = "0x" + "ab".repeat(1024);
+		const hex = `0x${"ab".repeat(1024)}`;
 		const result = HexWasm.hexToBytes(hex);
 		expect(result.length).toBe(1024);
 	});
@@ -463,7 +463,7 @@ describe("Hex WASM - WASM-Specific", () => {
 	});
 
 	test("performance - hexToBytes should be fast", () => {
-		const hex = "0x" + "aa".repeat(1024);
+		const hex = `0x${"aa".repeat(1024)}`;
 
 		const iterations = 1000;
 		const start = performance.now();
@@ -495,19 +495,19 @@ describe("Hex WASM - Edge Cases", () => {
 	});
 
 	test("all zeros", () => {
-		const hex = "0x" + "00".repeat(20);
+		const hex = `0x${"00".repeat(20)}`;
 		const result = HexWasm.hexToBytes(hex);
 		expect(result.every((b) => b === 0)).toBe(true);
 	});
 
 	test("all 0xff", () => {
-		const hex = "0x" + "ff".repeat(20);
+		const hex = `0x${"ff".repeat(20)}`;
 		const result = HexWasm.hexToBytes(hex);
 		expect(result.every((b) => b === 0xff)).toBe(true);
 	});
 
 	test("alternating pattern", () => {
-		const hex = "0x" + "aa55".repeat(10);
+		const hex = `0x${"aa55".repeat(10)}`;
 		const result = HexWasm.hexToBytes(hex);
 		for (let i = 0; i < result.length; i += 2) {
 			expect(result[i]).toBe(0xaa);
@@ -526,7 +526,7 @@ describe("Hex WASM - Edge Cases", () => {
 	});
 
 	test("single nibble repeated", () => {
-		const hex = "0x" + "1".repeat(10);
+		const hex = `0x${"1".repeat(10)}`;
 		// Odd length - behavior depends on implementation
 		try {
 			const result = HexWasm.hexToBytes(hex);

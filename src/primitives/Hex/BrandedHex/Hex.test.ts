@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidFormatError as InvalidHexFormatError,
 	InvalidLengthError as InvalidHexLengthError,
 	InvalidRangeError,
 } from "../../errors/index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	concat,
 	equals,
