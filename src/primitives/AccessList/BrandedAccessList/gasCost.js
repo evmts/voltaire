@@ -3,14 +3,16 @@ import { ADDRESS_COST, STORAGE_KEY_COST } from "./constants.js";
 /**
  * Calculate total gas cost for access list (EIP-2930)
  *
+ * @see https://voltaire.tevm.sh/primitives/accesslist
+ * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to calculate cost for
  * @returns {bigint} Total gas cost in wei
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const list = AccessList([{ address, storageKeys: [key1, key2] }]);
- * const cost = AccessList.gasCost(list); // Static call
- * const cost2 = list.gasCost(); // Instance call
+ * ```javascript
+ * import * as AccessList from './primitives/AccessList/index.js';
+ * const list = AccessList.from([{ address: '0x742d35Cc...', storageKeys: ['0x00...01', '0x00...02'] }]);
+ * const cost = AccessList.gasCost(list);
  * // cost = ADDRESS_COST + (2 * STORAGE_KEY_COST)
  * ```
  */

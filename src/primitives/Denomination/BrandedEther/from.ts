@@ -4,9 +4,11 @@ import type { BrandedEther } from "./BrandedEther.js";
 /**
  * Create Ether from bigint, number, or string
  *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
  * @param value - Value to convert (bigint, number, or string)
  * @returns Ether amount
- *
+ * @throws {never}
  * @example
  * ```typescript
  * const ether1 = Ether.from(1000000000000000000n);

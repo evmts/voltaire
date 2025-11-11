@@ -6,15 +6,17 @@
 /**
  * Get indexed topics (topic1-topic3) from log
  *
+ * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+ * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log
  * @returns {readonly BrandedHash[]} Array of indexed topic hashes
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const log = EventLog.create({ ... });
- * const indexed1 = EventLog.getIndexedTopics(log);
- * const indexed2 = log.getIndexedTopics();
+ * ```javascript
+ * import * as EventLog from './primitives/EventLog/index.js';
+ * const log = EventLog.create({ address, topics, data });
+ * const indexed = EventLog.getIndexedTopics(log);
  * ```
  */
 export function getIndexedTopics(log) {

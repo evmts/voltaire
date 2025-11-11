@@ -62,8 +62,19 @@ export {
 /**
  * Factory function for creating AccessList instances (EIP-2930)
  *
- * @param {readonly Item[] | Uint8Array} value
- * @returns {BrandedAccessList}
+ * @see https://voltaire.tevm.sh/primitives/accesslist
+ * @since 0.0.0
+ * @param {readonly Item[] | Uint8Array} value - Access list items or RLP-encoded bytes
+ * @returns {BrandedAccessList} Access list instance
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { AccessList } from './primitives/AccessList/index.js';
+ * const list = AccessList([{
+ *   address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+ *   storageKeys: ['0x0000000000000000000000000000000000000000000000000000000000000001']
+ * }]);
+ * ```
  */
 export function AccessList(value) {
 	return from(value);

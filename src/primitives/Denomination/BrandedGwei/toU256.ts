@@ -4,9 +4,11 @@ import type { BrandedGwei } from "./BrandedGwei.js";
 /**
  * Convert Gwei to base Uint256 type
  *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
  * @param gwei - Amount in Gwei
  * @returns Uint256 value (type cast, no conversion)
- *
+ * @throws {never}
  * @example
  * ```typescript
  * const gwei = Gwei.from(1000000000n);

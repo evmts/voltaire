@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Address } from "../Address/index.js";
+import * as Hex from "../Hex/index.js";
 import { AbiDecodingError } from "./Errors.js";
 import * as Abi from "./index.js";
 
@@ -247,28 +248,28 @@ describe("Abi.decodeParameters - fixed bytes types", () => {
 	it("decodes bytes1", () => {
 		const encoded = Abi.encodeParameters([{ type: "bytes1" }], ["0x42"]);
 		const decoded = Abi.decodeParameters([{ type: "bytes1" }], encoded);
-		expect(String(decoded[0]).toLowerCase()).toMatch(/0x42/i);
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toMatch(/0x42/i);
 	});
 
 	it("decodes bytes4", () => {
 		const value = "0x12345678";
 		const encoded = Abi.encodeParameters([{ type: "bytes4" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes4" }], encoded);
-		expect(String(decoded[0]).toLowerCase()).toBe(value.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(value.toLowerCase());
 	});
 
 	it("decodes bytes8", () => {
 		const value = "0x123456789abcdef0";
 		const encoded = Abi.encodeParameters([{ type: "bytes8" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes8" }], encoded);
-		expect(String(decoded[0]).toLowerCase()).toBe(value.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(value.toLowerCase());
 	});
 
 	it("decodes bytes32", () => {
 		const value = `0x${"ff".repeat(32)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes32" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes32" }], encoded);
-		expect(String(decoded[0]).toLowerCase()).toBe(value.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(value.toLowerCase());
 	});
 
 	it("decodes multiple fixed bytes", () => {
