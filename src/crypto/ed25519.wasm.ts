@@ -154,7 +154,9 @@ export namespace Ed25519Wasm {
 			try {
 				return ed25519.getPublicKey(secretKey);
 			} catch (error) {
-				throw new InvalidSecretKeyError(`Failed to derive public key: ${error}`);
+				throw new InvalidSecretKeyError(
+					`Failed to derive public key: ${error}`,
+				);
 			}
 		}
 

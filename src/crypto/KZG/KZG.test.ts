@@ -87,9 +87,11 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		});
 
 		it("should reject non-Uint8Array as blob", () => {
-			expect(() => KZG.validateBlobnull!).toThrow(KzgInvalidBlobError);
-			expect(() => KZG.validateBlob{} as unknown as Uint8Array).toThrow(KzgInvalidBlobError);
-			expect(() => KZG.validateBlob"blob" as unknown as Uint8Array).toThrow(
+			expect(() => KZG.validateBlob(null!)).toThrow(KzgInvalidBlobError);
+			expect(() => KZG.validateBlob({} as unknown as Uint8Array)).toThrow(
+				KzgInvalidBlobError,
+			);
+			expect(() => KZG.validateBlob("blob" as unknown as Uint8Array)).toThrow(
 				KzgInvalidBlobError,
 			);
 		});
