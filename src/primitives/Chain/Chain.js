@@ -23,7 +23,16 @@ import { supportsHardfork } from "./supportsHardfork.js";
 /**
  * Factory function for creating Chain instances
  *
+ * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
+ * @since 0.0.0
  * @type {ChainConstructor}
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { mainnet } from '@tevm/chains';
+ * import * as Chain from './primitives/Chain/index.js';
+ * const chain = Chain.Chain(mainnet);
+ * ```
  */
 export function Chain(chain) {
 	const result = BrandedChain.from(chain);
