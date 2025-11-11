@@ -4,12 +4,14 @@ import { SIZE } from "./constants.js";
  * Extract data from blob
  * Decodes blob format (reads length prefix and extracts data)
  *
+ * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @since 0.0.0
  * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
  * @returns {Uint8Array} Original data
  * @throws {Error} If blob size or length prefix is invalid
- *
  * @example
  * ```javascript
+ * import * as Blob from './primitives/Blob/index.js';
  * const data = Blob.toData(blob);
  * const text = new TextDecoder().decode(data);
  * ```

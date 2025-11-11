@@ -4,12 +4,14 @@ import { SIZE } from "./constants.js";
  * Create blob from arbitrary data (standard form)
  * Encodes data with length prefix + data + padding
  *
+ * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @since 0.0.0
  * @param {Uint8Array} data - Data to encode (max ~131KB)
  * @returns {import('../BrandedBlob.js').BrandedBlob} Blob containing encoded data
  * @throws {Error} If data exceeds maximum size
- *
  * @example
  * ```javascript
+ * import * as Blob from './primitives/Blob/index.js';
  * const data = new TextEncoder().encode("Hello, blob!");
  * const blob = Blob.fromData(data);
  * ```

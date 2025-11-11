@@ -3,13 +3,16 @@ import { SIZE } from "./constants.js";
 /**
  * Verify KZG proof
  *
+ * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @since 0.0.0
  * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
  * @param {import('../BrandedBlob.js').Commitment} commitment - KZG commitment
  * @param {import('../BrandedBlob.js').Proof} proof - KZG proof
  * @returns {boolean} true if proof is valid
- *
+ * @throws {Error} If blob, commitment, or proof size is invalid or c-kzg-4844 library not available
  * @example
  * ```javascript
+ * import * as Blob from './primitives/Blob/index.js';
  * const isValid = Blob.verify(blob, commitment, proof);
  * ```
  *

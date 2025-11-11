@@ -3,13 +3,16 @@ import { MAX_PER_TRANSACTION } from "./constants.js";
 /**
  * Verify multiple blob proofs in batch
  *
+ * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @since 0.0.0
  * @param {readonly import('../BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs
  * @param {readonly import('../BrandedBlob.js').Commitment[]} commitments - Array of commitments
  * @param {readonly import('../BrandedBlob.js').Proof[]} proofs - Array of proofs
  * @returns {boolean} true if all proofs are valid
- *
+ * @throws {Error} If arrays have different lengths, too many blobs, or c-kzg-4844 library not available
  * @example
  * ```javascript
+ * import * as Blob from './primitives/Blob/index.js';
  * const isValid = Blob.verifyBatch(blobs, commitments, proofs);
  * ```
  *

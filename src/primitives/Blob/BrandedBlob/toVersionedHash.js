@@ -5,11 +5,14 @@ import { COMMITMENT_VERSION_KZG } from "./constants.js";
  * Create versioned hash from commitment
  * Formula: BLOB_COMMITMENT_VERSION_KZG || sha256(commitment)[1:]
  *
+ * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @since 0.0.0
  * @param {import('../BrandedBlob.js').Commitment} commitment - KZG commitment
  * @returns {import('../BrandedBlob.js').VersionedHash} 32-byte versioned hash
- *
+ * @throws {Error} If commitment size is invalid
  * @example
  * ```javascript
+ * import * as Blob from './primitives/Blob/index.js';
  * const hash = Blob.toVersionedHash(commitment);
  * ```
  */
