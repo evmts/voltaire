@@ -8,14 +8,17 @@ import {
 } from "../utils.js";
 
 /**
- * Get signing hash for EIP-2930 transaction
+ * Get signing hash for EIP-2930 transaction.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} tx - Transaction
  * @returns {import('../../Hash/index.js').BrandedHash} Signing hash
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
- * const signingHash = TransactionEIP2930.getSigningHash(tx);
+ * ```javascript
+ * import { getSigningHash } from './primitives/Transaction/EIP2930/getSigningHash.js';
+ * const signingHash = getSigningHash(tx);
  * ```
  */
 export function getSigningHash(tx) {

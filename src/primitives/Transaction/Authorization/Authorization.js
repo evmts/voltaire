@@ -11,8 +11,10 @@ export { getAuthorizer, getSigningHash, verifySignature };
  */
 
 /**
- * Factory function for creating Authorization instances
+ * Factory function for creating Authorization instances.
  *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
  * @param {{
  *   chainId: bigint,
  *   address: import('../../Address/index.js').BrandedAddress,
@@ -22,9 +24,10 @@ export { getAuthorizer, getSigningHash, verifySignature };
  *   s: Uint8Array
  * }} auth - Authorization parameters
  * @returns {BrandedAuthorization} Authorization instance
- *
+ * @throws {never} Never throws
  * @example
- * ```typescript
+ * ```javascript
+ * import { Authorization } from './primitives/Transaction/Authorization/Authorization.js';
  * const auth = Authorization({
  *   chainId: 1n,
  *   address: addr,
@@ -33,16 +36,7 @@ export { getAuthorizer, getSigningHash, verifySignature };
  *   r: new Uint8Array(32),
  *   s: new Uint8Array(32)
  * });
- *
- * // Static methods
  * const hash = Authorization.getSigningHash(auth);
- * const authorizer = Authorization.getAuthorizer(auth);
- * const valid = Authorization.verifySignature(auth);
- *
- * // Instance methods
- * const hash2 = auth.getSigningHash();
- * const authorizer2 = auth.getAuthorizer();
- * const valid2 = auth.verifySignature();
  * ```
  */
 export function Authorization(auth) {
