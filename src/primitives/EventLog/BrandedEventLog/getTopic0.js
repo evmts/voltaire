@@ -6,15 +6,17 @@
 /**
  * Get topic0 (event signature) from log
  *
+ * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+ * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log
  * @returns {BrandedHash | undefined} Topic0 hash or undefined if no topics
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const log = EventLog.create({ ... });
- * const topic0_1 = EventLog.getTopic0(log);
- * const topic0_2 = log.getTopic0();
+ * ```javascript
+ * import * as EventLog from './primitives/EventLog/index.js';
+ * const log = EventLog.create({ address, topics, data });
+ * const topic0 = EventLog.getTopic0(log);
  * ```
  */
 export function getTopic0(log) {

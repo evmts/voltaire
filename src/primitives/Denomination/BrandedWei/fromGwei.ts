@@ -6,9 +6,11 @@ import { WEI_PER_GWEI } from "./constants.js";
 /**
  * Convert Gwei to Wei
  *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
  * @param gwei - Amount in Gwei
  * @returns Amount in Wei (gwei * 10^9)
- *
+ * @throws {never}
  * @example
  * ```typescript
  * const gwei = Gwei.from(5);

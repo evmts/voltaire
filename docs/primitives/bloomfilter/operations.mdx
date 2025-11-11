@@ -9,12 +9,13 @@ Methods for modifying bloom filters by adding items and merging multiple filters
 
 ## Add Operation
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `filter.add(item)` / `BloomFilter.add(filter, item)`
 
 Adds an item to the bloom filter by setting `k` bits based on hash functions.
 
-<Tabs>
-<Tab title="Instance Method">
 ```typescript
 import { BloomFilter } from '@tevm/voltaire'
 
@@ -32,19 +33,6 @@ filter.add(topic)
 const data = new TextEncoder().encode("custom-identifier")
 filter.add(data)
 ```
-</Tab>
-<Tab title="Static Method">
-```typescript
-import { BloomFilter } from '@tevm/voltaire'
-
-const filter = BloomFilter.create(2048, 3)
-const item = new TextEncoder().encode("Transfer")
-
-// Static method - data-first pattern
-BloomFilter.add(filter, item)
-```
-</Tab>
-</Tabs>
 
 **Parameters:**
 - `filter: BrandedBloomFilter` - Bloom filter to modify
@@ -77,6 +65,49 @@ filter.add(item)
 ```
 
 Defined in: [BrandedBloomFilter/add.js:3-27](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/add.js#L3-L27)
+
+</Tab>
+<Tab title="Zig">
+
+### `BloomFilter.add(self: *BloomFilter, item: []const u8) void`
+
+Adds item to bloom filter by setting `k` bits based on hash functions. Mutates filter in place.
+
+**Parameters:**
+- `self: *BloomFilter` - Pointer to bloom filter
+- `item: []const u8` - Item to add (arbitrary byte slice)
+
+**Returns:** `void` - Modifies filter in place
+
+**Example:**
+
+```zig
+const std = @import("std");
+const BloomFilter = @import("primitives").BloomFilter;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+var filter = try BloomFilter.init(allocator, 1000, 3);
+defer filter.deinit(allocator);
+
+// Add item
+const item = "Transfer";
+filter.add(item);
+
+// Add multiple items
+filter.add("Approval");
+filter.add("Swap");
+
+// Idempotent - adding same item again has no effect
+filter.add("Transfer");
+```
+
+**Defined in:** [primitives/BloomFilter/bloom_filter.zig:26](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/bloom_filter.zig#L26)
+
+</Tab>
+</Tabs>
 
 ### Adding Multiple Items
 

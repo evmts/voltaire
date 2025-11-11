@@ -8,16 +8,18 @@ import { hashEquals } from "./utils.js";
 /**
  * Check if log matches topic filter
  *
+ * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+ * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log to check
  * @param {readonly (BrandedHash | BrandedHash[] | null)[]} filterTopics - Topic filter array
  * @returns {boolean} True if log matches topic filter
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const log = EventLog.create({ ... });
- * const matches1 = EventLog.matchesTopics(log, [topic0, null, topic2]);
- * const matches2 = log.matchesTopics([topic0, null, topic2]);
+ * ```javascript
+ * import * as EventLog from './primitives/EventLog/index.js';
+ * const log = EventLog.create({ address, topics, data });
+ * const matches = EventLog.matchesTopics(log, [topic0, null, topic2]);
  * ```
  */
 export function matchesTopics(log, filterTopics) {

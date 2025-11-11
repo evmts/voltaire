@@ -9,12 +9,13 @@ Methods for testing set membership and checking bloom filter state.
 
 ## Membership Testing
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `filter.contains(item)` / `BloomFilter.contains(filter, item)`
 
 Checks if an item might be in the set. Returns `false` if definitely not present, `true` if possibly present.
 
-<Tabs>
-<Tab title="Instance Method">
 ```typescript
 import { BloomFilter } from '@tevm/voltaire'
 
@@ -35,21 +36,6 @@ if (!filter.contains(other)) {
   console.log("Item definitely not present")  // true - never added
 }
 ```
-</Tab>
-<Tab title="Static Method">
-```typescript
-import { BloomFilter } from '@tevm/voltaire'
-
-const filter = BloomFilter.create(2048, 3)
-const item = new TextEncoder().encode("Transfer")
-
-filter.add(item)
-
-// Static method - data-first pattern
-const result = BloomFilter.contains(filter, item)  // true
-```
-</Tab>
-</Tabs>
 
 **Parameters:**
 - `filter: BrandedBloomFilter` - Bloom filter to query
@@ -85,6 +71,52 @@ filter.contains(item)  // true
 ```
 
 Defined in: [BrandedBloomFilter/contains.js:3-30](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/contains.js#L3-L30)
+
+</Tab>
+<Tab title="Zig">
+
+### `BloomFilter.contains(self: *const BloomFilter, item: []const u8) bool`
+
+Checks if item might be in the set. Returns `false` if definitely not present, `true` if possibly present.
+
+**Parameters:**
+- `self: *const BloomFilter` - Pointer to bloom filter
+- `item: []const u8` - Item to check (arbitrary byte slice)
+
+**Returns:** `bool`
+- `false` - Item definitely not in set (no false negatives)
+- `true` - Item might be in set (false positives possible)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const BloomFilter = @import("primitives").BloomFilter;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+var filter = try BloomFilter.init(allocator, 1000, 3);
+defer filter.deinit(allocator);
+
+// Add item
+filter.add("foo");
+
+// Check membership
+if (filter.contains("foo")) {
+    // Item might be present (true - definitely added)
+}
+
+if (!filter.contains("bar")) {
+    // Item definitely not present (true - never added)
+}
+```
+
+**Defined in:** [primitives/BloomFilter/bloom_filter.zig:36](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/bloom_filter.zig#L36)
+
+</Tab>
+</Tabs>
 
 ### False Positives vs False Negatives
 

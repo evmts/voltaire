@@ -8,16 +8,19 @@ import { addressEquals } from "./utils.js";
 /**
  * Check if log matches address filter
  *
+ * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+ * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log to check
  * @param {BrandedAddress | BrandedAddress[]} filterAddress - Address or array of addresses to match
  * @returns {boolean} True if log matches address filter
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const log = EventLog.create({ ... });
- * const matches1 = EventLog.matchesAddress(log, "0x..." as Address);
- * const matches2 = log.matchesAddress("0x..." as Address);
+ * ```javascript
+ * import * as EventLog from './primitives/EventLog/index.js';
+ * import * as Address from './primitives/Address/index.js';
+ * const log = EventLog.create({ address, topics, data });
+ * const matches = EventLog.matchesAddress(log, Address.from("0x..."));
  * ```
  */
 export function matchesAddress(log, filterAddress) {

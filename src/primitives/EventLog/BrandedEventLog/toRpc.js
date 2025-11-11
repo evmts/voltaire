@@ -7,15 +7,18 @@ import * as OxLog from "ox/Log";
 /**
  * Convert EventLog to RPC format
  *
+ * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+ * @since 0.0.0
  * @param {BrandedEventLog} log - EventLog branded type
  * @returns {import('ox/Log').Rpc} RPC log object
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EventLog from './primitives/EventLog/index.js';
  * const log = EventLog.create({
- *   address: "0x..." as Address,
+ *   address: Address.from("0x..."),
  *   topics: [topic0, topic1],
- *   data: new Uint8Array([...]),
+ *   data: new Uint8Array([1, 2, 3]),
  *   blockNumber: 1n,
  *   transactionHash: txHash,
  *   transactionIndex: 0,

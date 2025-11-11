@@ -6,9 +6,11 @@ import { WEI_PER_ETHER } from "./constants.js";
 /**
  * Convert Ether to Wei
  *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
  * @param ether - Amount in Ether
  * @returns Amount in Wei (ether * 10^18)
- *
+ * @throws {never}
  * @example
  * ```typescript
  * const ether = Ether.from(1);

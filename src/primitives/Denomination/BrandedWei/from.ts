@@ -4,9 +4,11 @@ import type { BrandedWei } from "./BrandedWei.js";
 /**
  * Create Wei from bigint, number, or string
  *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
  * @param value - Value to convert (bigint, number, or string)
  * @returns Wei amount
- *
+ * @throws {never}
  * @example
  * ```typescript
  * const wei1 = Wei.from(1000000000n);
