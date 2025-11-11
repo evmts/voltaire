@@ -6,6 +6,9 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     // Optional: build benchmarks only when requested
     const with_benches = b.option(bool, "with-benches", "Build and install benchmark executables") orelse false;
+    // Optional: build C API (requires libwally-core with secp256k1 sources)
+    // Default to false until libwally-core dependency is fixed
+    const with_c_api = b.option(bool, "with-c-api", "Build C API library (requires libwally-core)") orelse false;
 
     // STEP 1: Verify vendored dependencies exist
     lib_build.checkVendoredDeps(b);
@@ -52,12 +55,14 @@ pub fn build(b: *std.Build) void {
     });
     const z_ens_normalize_mod = z_ens_normalize_dep.module("z_ens_normalize");
 
-    // libwally-core library
-    const libwally_core_dep = b.dependency("libwally_core", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const libwally_core_lib = libwally_core_dep.artifact("wally");
+    // libwally-core library (optional - only needed for C API)
+    const libwally_core_lib = if (with_c_api) blk: {
+        const libwally_core_dep = b.dependency("libwally_core", .{
+            .target = target,
+            .optimize = optimize,
+        });
+        break :blk libwally_core_dep.artifact("wally");
+    } else null;
 
     // Primitives module - export for external packages (includes Hardfork)
     const primitives_mod = b.addModule("primitives", .{
@@ -488,9 +493,9 @@ pub fn build(b: *std.Build) void {
     const clean_jsonrpc_step = b.step("clean-jsonrpc", "Clean generated JSON-RPC files (preserves types/)");
     clean_jsonrpc_step.dependOn(&run_clean_jsonrpc.step);
 
-    // C API library - skip for WASM targets
+    // C API library - skip for WASM targets and when with_c_api is false
     const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
-    if (!is_wasm) {
+    if (!is_wasm and with_c_api) {
         // C API library
         const c_api_lib = b.addLibrary(.{
             .name = "primitives_c",
@@ -506,7 +511,7 @@ pub fn build(b: *std.Build) void {
         c_api_lib.linkLibrary(c_kzg_lib);
         c_api_lib.linkLibrary(blst_lib);
         c_api_lib.addObjectFile(rust_crypto_lib_path);
-        c_api_lib.linkLibrary(libwally_core_lib);
+        c_api_lib.linkLibrary(libwally_core_lib.?);
         c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
         c_api_lib.step.dependOn(cargo_build_step);
         c_api_lib.step.dependOn(&run_generate_header.step); // Auto-generate header
@@ -529,7 +534,7 @@ pub fn build(b: *std.Build) void {
         c_api_shared.linkLibrary(c_kzg_lib);
         c_api_shared.linkLibrary(blst_lib);
         c_api_shared.addObjectFile(rust_crypto_lib_path);
-        c_api_shared.linkLibrary(libwally_core_lib);
+        c_api_shared.linkLibrary(libwally_core_lib.?);
         c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
         c_api_shared.step.dependOn(cargo_build_step);
         c_api_shared.step.dependOn(&run_generate_header.step); // Auto-generate header

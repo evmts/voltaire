@@ -53,8 +53,7 @@
             .hash = "z_ens_normalize-0.0.0-Iv6nMI2_AgCrLtEnZZnoeP87kZtP-36iIWzj3cD3v-vd",
         },
         .libwally_core = .{
-            .url = "git+https://github.com/evmts/libwally-core.git#94d68ffb8cf2b2ed89ddc54eb821292372fa7a20",
-            .hash = "libwally_core-1.5.1-a8o6vum-DACxQswbPJrYMH0mZTESbzByZ4wDdvssyGlm",
+            .path = "lib/libwally-core",
         },
     },
 

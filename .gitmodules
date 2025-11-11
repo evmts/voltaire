@@ -1,3 +1,6 @@
 [submodule "vendor/execution-apis"]
 	path = vendor/execution-apis
 	url = https://github.com/ethereum/execution-apis.git
+[submodule "lib/libwally-core"]
+	path = lib/libwally-core
+	url = https://github.com/evmts/libwally-core.git
