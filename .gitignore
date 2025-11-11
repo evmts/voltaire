@@ -221,3 +221,6 @@ scripts/*.js
 
 # Documentation build artifacts
 .astro/
+
+# Temporarily cloned repositories
+tevm-monorepo/
