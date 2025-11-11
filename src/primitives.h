@@ -612,48 +612,62 @@ int x25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_
 // ============================================================================
 
 /**
- * Sign message with Ed25519 secret key
+ * Sign a message with Ed25519
+ * message: message to sign
+ * message_len: length of message
+ * secret_key: 64-byte secret key
+ * out_signature: 64-byte output buffer for signature
+ * Returns 0 on success, negative error code on failure
  */
-int ed25519Sign(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * secret_ptr, uint8_t * sig_ptr);
+int ed25519Sign(const uint8_t * message, size_t message_len, const uint8_t * secret_key, uint8_t * out_signature);
 
 /**
- * Verify Ed25519 signature
+ * Verify an Ed25519 signature
+ * message: message that was signed
+ * message_len: length of message
+ * signature: 64-byte signature
+ * public_key: 32-byte public key
+ * Returns 0 if valid, 1 if invalid, negative on error
  */
-int ed25519Verify(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * sig_ptr, const uint8_t * pub_ptr);
+int ed25519Verify(const uint8_t * message, size_t message_len, const uint8_t * signature, const uint8_t * public_key);
 
 /**
  * Derive Ed25519 public key from secret key
+ * secret_key: 64-byte secret key
+ * out_public_key: 32-byte output buffer for public key
+ * Returns 0 on success, negative error code on failure
  */
-int ed25519DerivePublicKey(const uint8_t * secret_ptr, uint8_t * pub_ptr);
-
-/**
- * Generate Ed25519 keypair from seed
- */
-int ed25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_t * pub_ptr);
+int ed25519DerivePublicKey(const uint8_t * secret_key, uint8_t * out_public_key);
 
 // ============================================================================
 // P256 (secp256r1) API
 // ============================================================================
 
 /**
- * Sign message hash with P256 private key
+ * Sign a hash with P256
+ * hash: 32-byte hash to sign
+ * private_key: 32-byte private key
+ * out_signature: 64-byte output buffer for signature (r || s)
+ * Returns 0 on success, negative error code on failure
  */
-int p256Sign(const uint8_t * hash_ptr, const uint8_t * priv_ptr, uint8_t * sig_ptr);
+int p256Sign(const uint8_t * hash, const uint8_t * private_key, uint8_t * out_signature);
 
 /**
- * Verify P256 signature
+ * Verify a P256 signature
+ * hash: 32-byte hash that was signed
+ * signature: 64-byte signature (r || s)
+ * public_key: 64-byte uncompressed public key (x || y)
+ * Returns 0 if valid, 1 if invalid, negative on error
  */
-int p256Verify(const uint8_t * hash_ptr, const uint8_t * sig_ptr, const uint8_t * pub_ptr);
+int p256Verify(const uint8_t * hash, const uint8_t * signature, const uint8_t * public_key);
 
 /**
  * Derive P256 public key from private key
+ * private_key: 32-byte private key
+ * out_public_key: 64-byte output buffer for uncompressed public key (x || y)
+ * Returns 0 on success, negative error code on failure
  */
-int p256DerivePublicKey(const uint8_t * priv_ptr, uint8_t * pub_ptr);
-
-/**
- * Perform P256 ECDH key exchange
- */
-int p256Ecdh(const uint8_t * priv_ptr, const uint8_t * pub_ptr, uint8_t * shared_ptr);
+int p256DerivePublicKey(const uint8_t * private_key, uint8_t * out_public_key);
 
 // ============================================================================
 // HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
