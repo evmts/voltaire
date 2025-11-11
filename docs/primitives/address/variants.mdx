@@ -3,6 +3,8 @@ title: Address Variants
 description: Checksummed, Lowercase, and Uppercase branded address types
 ---
 
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
 # Address Variants
 
 Branded hex string types representing different address formats with compile-time guarantees.
@@ -20,10 +22,16 @@ Each variant is a [branded](/concepts/branded-types) hex string type (`string & 
 
 EIP-55 checksummed address format with mixed casing based on keccak256 hash.
 
+<Aside type="tip">
+Effect.ts provides `ChecksumAddress` schema with automatic EIP-55 validation. See Effect Schema tab in examples below.
+</Aside>
+
 ### `Address.Checksummed.from(addr)`
 
 Create checksummed hex string from Address.
 
+<Tabs>
+<TabItem label="Class/Namespace">
 ```typescript
 const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
@@ -34,6 +42,22 @@ const checksummed = Address.Checksummed.from(addr)
 // Type is branded Checksummed, not BrandedAddress
 typeof checksummed // "string"
 ```
+</TabItem>
+<TabItem label="Effect Schema">
+```typescript
+import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
+
+// Schema validates EIP-55 checksum automatically
+const checksumAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Access checksummed string
+checksumAddr.checksummed // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Convert to Address
+const addr = checksumAddr.toAddress()
+```
+</TabItem>
+</Tabs>
 
 **Parameters:**
 - `addr: BrandedAddress` - Address to checksum
