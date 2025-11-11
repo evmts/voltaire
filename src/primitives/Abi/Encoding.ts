@@ -361,6 +361,10 @@ export function encodeParameters<const TParams extends readonly Parameter[]>(
 	if (params.length !== values.length) {
 		throw new AbiParameterMismatchError(
 			`Parameter count mismatch: expected ${params.length}, got ${values.length}`,
+			{
+				value: values.length,
+				expected: `${params.length} parameters`,
+			},
 		);
 	}
 

@@ -1,5 +1,5 @@
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { fromBytes } from "../../Hex/fromBytes.ts";
+import { fromBytes } from "../../Hex/fromBytes.js";
 
 /**
  * Compute ENS namehash for a given name

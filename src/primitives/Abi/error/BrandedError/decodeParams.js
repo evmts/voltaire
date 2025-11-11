@@ -31,10 +31,24 @@ export function decodeParams(error, data) {
 		const selByte = selector[i];
 		const expByte = expectedSelector[i];
 		if (selByte !== expByte) {
+			const selectorHex =
+				"0x" +
+				Array.from(selector)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("");
+			const expectedHex =
+				"0x" +
+				Array.from(expectedSelector)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("");
 			throw new AbiInvalidSelectorError("Error selector mismatch", {
 				value: selector,
-				expected: expectedSelector,
-				context: { selector, expectedSelector, errorName: error.name },
+				expected: expectedHex,
+				context: {
+					selector: selectorHex,
+					expectedSelector: expectedHex,
+					errorName: error.name,
+				},
 			});
 		}
 	}

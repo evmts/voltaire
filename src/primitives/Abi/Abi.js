@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as BrandedAbi from "./BrandedAbi/index.js";
 
 /**

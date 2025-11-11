@@ -22,8 +22,8 @@ export function decode(encoded) {
 		const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
 		if (!base64Regex.test(encoded) || encoded.length % 4 !== 0) {
 			throw new DecodingError("Invalid base64 format", {
-				value: encoded,
 				code: "BASE64_INVALID_FORMAT",
+				context: { value: encoded },
 				docsPath: "/primitives/base64/decode#error-handling",
 			});
 		}
@@ -33,8 +33,8 @@ export function decode(encoded) {
 		return OxBase64.toBytes(encoded);
 	} catch (error) {
 		throw new DecodingError("Invalid base64", {
-			value: encoded,
 			code: "BASE64_DECODE_FAILED",
+			context: { value: encoded },
 			docsPath: "/primitives/base64/decode#error-handling",
 			cause: /** @type {Error} */ (error),
 		});
