@@ -1,0 +1,387 @@
+---
+title: "CALLVALUE (0x34)"
+description: "Get value deposited in current call (msg.value)"
+---
+
+## Overview
+
+**Opcode:** `0x34`
+**Introduced:** Frontier (EVM genesis)
+
+CALLVALUE pushes the amount of wei sent with the current call onto the stack. This corresponds to `msg.value` in Solidity.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+value (uint256, in wei)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(execution_context.value)
+```
+
+## Behavior
+
+CALLVALUE provides access to the wei amount sent with the current message call. This value is always 0 for STATICCALL and DELEGATECALL.
+
+Key characteristics:
+- Returns wei amount (1 ether = 10^18 wei)
+- Always 0 for STATICCALL (no value transfer allowed)
+- Preserved in DELEGATECALL (uses caller's value)
+- New value for each CALL
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { callvalue } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 1 ETH sent with this call
+const frame = createFrame({
+  value: 1000000000000000000n, // 1 ETH in wei
+  stack: []
+});
+
+const err = callvalue(frame);
+
+console.log(frame.stack[0]); // 1000000000000000000n
+```
+
+### Payable Function
+
+```solidity
+contract PaymentReceiver {
+    event PaymentReceived(address from, uint256 amount);
+
+    function pay() public payable {
+        require(msg.value > 0, "No payment");
+        emit PaymentReceived(msg.sender, msg.value);
+    }
+
+    function checkValue() public payable returns (uint256) {
+        return msg.value;  // Uses CALLVALUE opcode
+    }
+}
+```
+
+### Deposit Pattern
+
+```solidity
+contract Vault {
+    mapping(address => uint256) public balances;
+
+    function deposit() public payable {
+        require(msg.value > 0, "Must send ETH");
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw(uint256 amount) public {
+        require(balances[msg.sender] >= amount);
+        balances[msg.sender] -= amount;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+Same as other environment context opcodes:
+- ADDRESS (0x30): 2 gas
+- ORIGIN (0x32): 2 gas
+- CALLER (0x33): 2 gas
+
+## Common Usage
+
+### Minimum Payment
+
+```solidity
+contract MinimumPayment {
+    uint256 public constant MINIMUM = 0.1 ether;
+
+    function purchase() public payable {
+        require(msg.value >= MINIMUM, "Insufficient payment");
+        // Process purchase
+    }
+}
+```
+
+### Exact Payment
+
+```solidity
+contract FixedPrice {
+    uint256 public constant PRICE = 1 ether;
+
+    function buyItem() public payable {
+        require(msg.value == PRICE, "Incorrect payment");
+        // Transfer item
+    }
+
+    function buyWithRefund() public payable {
+        require(msg.value >= PRICE, "Insufficient payment");
+
+        // Refund excess
+        if (msg.value > PRICE) {
+            payable(msg.sender).transfer(msg.value - PRICE);
+        }
+
+        // Transfer item
+    }
+}
+```
+
+### Value Forwarding
+
+```solidity
+contract Forwarder {
+    address public recipient;
+
+    function forward() public payable {
+        require(msg.value > 0, "No value to forward");
+        payable(recipient).transfer(msg.value);
+    }
+
+    function forwardWithFee(uint256 feePercent) public payable {
+        require(msg.value > 0);
+        uint256 fee = (msg.value * feePercent) / 100;
+        uint256 remainder = msg.value - fee;
+
+        payable(owner).transfer(fee);
+        payable(recipient).transfer(remainder);
+    }
+}
+```
+
+### Crowdfunding
+
+```solidity
+contract Crowdfund {
+    uint256 public goal;
+    uint256 public raised;
+    mapping(address => uint256) public contributions;
+
+    function contribute() public payable {
+        require(msg.value > 0);
+        contributions[msg.sender] += msg.value;
+        raised += msg.value;
+    }
+
+    function refund() public {
+        require(raised < goal, "Goal reached");
+        uint256 amount = contributions[msg.sender];
+        require(amount > 0);
+
+        contributions[msg.sender] = 0;
+        raised -= amount;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+## Security
+
+### Payable vs Non-Payable
+
+```solidity
+// Non-payable: rejects ETH
+function nonPayable() public {
+    // Compiler inserts: require(msg.value == 0)
+    // Reverts if msg.value > 0
+}
+
+// Payable: accepts ETH
+function payable() public payable {
+    // Can receive ETH
+}
+```
+
+### Reentrancy with Value
+
+```solidity
+// VULNERABLE
+contract Vulnerable {
+    mapping(address => uint256) public balances;
+
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        // DANGEROUS: external call before state update
+        payable(msg.sender).call{value: amount}("");
+        balances[msg.sender] = 0;
+    }
+}
+
+// Attacker can reenter with msg.value = 0
+contract Attacker {
+    Vulnerable victim;
+
+    receive() external payable {
+        if (address(victim).balance > 0) {
+            victim.withdraw(); // Reenter
+        }
+    }
+}
+```
+
+**Safe pattern:**
+```solidity
+contract Safe {
+    mapping(address => uint256) public balances;
+
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0; // State update first
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+### Value Conservation
+
+```solidity
+contract ValueSplitter {
+    function split(address[] memory recipients) public payable {
+        require(recipients.length > 0);
+        uint256 share = msg.value / recipients.length;
+
+        // ISSUE: msg.value might not divide evenly
+        for (uint i = 0; i < recipients.length; i++) {
+            payable(recipients[i]).transfer(share);
+        }
+        // Dust remains in contract!
+    }
+}
+```
+
+**Better pattern:**
+```solidity
+function splitExact(address[] memory recipients) public payable {
+    uint256 count = recipients.length;
+    uint256 share = msg.value / count;
+    uint256 remainder = msg.value % count;
+
+    for (uint i = 0; i < count; i++) {
+        payable(recipients[i]).transfer(share);
+    }
+
+    // Return remainder to sender
+    if (remainder > 0) {
+        payable(msg.sender).transfer(remainder);
+    }
+}
+```
+
+### DELEGATECALL Value Preservation
+
+```solidity
+contract Implementation {
+    function getValue() public payable returns (uint256) {
+        return msg.value;
+    }
+}
+
+contract Proxy {
+    function proxyGetValue(address impl) public payable returns (uint256) {
+        (bool success, bytes memory data) = impl.delegatecall(
+            abi.encodeWithSignature("getValue()")
+        );
+        require(success);
+        return abi.decode(data, (uint256));
+    }
+}
+
+// If Proxy called with 1 ETH:
+// - In Implementation: msg.value = 1 ETH (preserved via delegatecall)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+
+/**
+ * CALLVALUE opcode (0x34) - Get deposited value in current call
+ *
+ * Stack: [] => [value]
+ * Gas: 2 (GasQuickStep)
+ */
+export function callvalue(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, frame.value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CALLVALUE opcode (0x34) - Get deposited value in current call
+pub fn callvalue(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasQuickStep);
+    try frame.pushStack(frame.value);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Zero Value
+
+```typescript
+// Call with no value
+const frame = createFrame({ value: 0n });
+callvalue(frame);
+
+console.log(frame.stack[0]); // 0n
+```
+
+### Maximum Value
+
+```typescript
+// Maximum possible value (impractical but valid)
+const MAX_U256 = (1n << 256n) - 1n;
+const frame = createFrame({ value: MAX_U256 });
+callvalue(frame);
+
+console.log(frame.stack[0]); // MAX_U256
+```
+
+### Stack Overflow
+
+```typescript
+const frame = createFrame({
+  value: 1000n,
+  stack: new Array(1024).fill(0n)
+});
+
+const err = callvalue(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Execution Environment)
+- [EVM Codes - CALLVALUE](https://www.evm.codes/#34)
+- [Solidity Docs - msg.value](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [SWC-132: Unexpected Ether balance](https://swcregistry.io/docs/SWC-132)

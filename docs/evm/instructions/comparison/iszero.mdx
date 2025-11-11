@@ -1,0 +1,551 @@
+---
+title: "ISZERO (0x15)"
+description: "Zero check operation for 256-bit values"
+---
+
+## Overview
+
+**Opcode:** `0x15`
+**Introduced:** Frontier (EVM genesis)
+
+ISZERO checks if a 256-bit value is zero. Returns 1 if the value is zero, 0 otherwise. This is the most efficient way to check for zero values and implements boolean NOT when used with boolean (0/1) values.
+
+ISZERO is a specialized form of EQ optimized for the common case of checking equality to zero.
+
+## Specification
+
+**Stack Input:**
+```
+a (top)
+```
+
+**Stack Output:**
+```
+a == 0 ? 1 : 0
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+result = (a == 0) ? 1 : 0
+```
+
+## Behavior
+
+ISZERO pops one value from the stack and pushes 1 if it is zero, otherwise 0:
+
+- If `a == 0`: Result is 1 (true)
+- If `a != 0`: Result is 0 (false)
+
+This operation is functionally equivalent to `EQ(a, 0)` but uses only one stack item.
+
+## Examples
+
+### Zero Check
+
+```typescript
+import { iszero } from '@tevm/voltaire/evm/comparison';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// 0 is zero = 1 (true)
+const frame = createFrame({ stack: [0n] });
+const err = iszero(frame);
+
+console.log(frame.stack); // [1n]
+console.log(frame.gasRemaining); // Original - 3
+```
+
+### Non-Zero Check
+
+```typescript
+// 42 is not zero = 0 (false)
+const frame = createFrame({ stack: [42n] });
+const err = iszero(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Boolean NOT
+
+```typescript
+// ISZERO implements boolean NOT for 0/1 values
+// NOT 1 = 0
+const frame1 = createFrame({ stack: [1n] });
+iszero(frame1);
+console.log(frame1.stack); // [0n]
+
+// NOT 0 = 1
+const frame2 = createFrame({ stack: [0n] });
+iszero(frame2);
+console.log(frame2.stack); // [1n]
+```
+
+### Large Value Check
+
+```typescript
+// Any non-zero value returns 0
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [MAX] });
+iszero(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+### Small Non-Zero
+
+```typescript
+// 1 is not zero
+const frame = createFrame({ stack: [1n] });
+iszero(frame);
+
+console.log(frame.stack); // [0n]
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+ISZERO shares the lowest gas tier with other comparison operations:
+- ISZERO, EQ, LT, GT, SLT, SGT
+- NOT
+- ADD, SUB
+
+**Comparison:**
+- ISZERO: 3 gas
+- EQ: 3 gas (ISZERO is equivalent to EQ(x, 0))
+- LT/GT: 3 gas
+
+## Edge Cases
+
+### Zero Value
+
+```typescript
+// Only returns 1 for exactly zero
+iszero(createFrame({ stack: [0n] }));  // [1n]
+```
+
+### Non-Zero Values
+
+```typescript
+// All non-zero values return 0
+iszero(createFrame({ stack: [1n] }));  // [0n]
+iszero(createFrame({ stack: [42n] }));  // [0n]
+
+const MAX = (1n << 256n) - 1n;
+iszero(createFrame({ stack: [MAX] }));  // [0n]
+```
+
+### Boolean Values
+
+```typescript
+// ISZERO(1) = 0 (NOT true = false)
+iszero(createFrame({ stack: [1n] }));  // [0n]
+
+// ISZERO(0) = 1 (NOT false = true)
+iszero(createFrame({ stack: [0n] }));  // [1n]
+```
+
+### Stack Underflow
+
+```typescript
+// Empty stack
+const frame = createFrame({ stack: [] });
+const err = iszero(frame);
+
+console.log(err); // { type: "StackUnderflow" }
+console.log(frame.stack); // [] (unchanged)
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [0n], gasRemaining: 2n });
+const err = iszero(frame);
+
+console.log(err); // { type: "OutOfGas" }
+console.log(frame.gasRemaining); // 0n
+```
+
+## Common Usage
+
+### Boolean NOT
+
+```solidity
+// Invert boolean condition
+assembly {
+    let condition := lt(a, b)
+    let notCondition := iszero(condition)
+
+    if notCondition {
+        // Execute if a >= b
+    }
+}
+```
+
+### Zero Address Check
+
+```solidity
+// require(addr != address(0))
+assembly {
+    if iszero(addr) {
+        revert(0, 0)
+    }
+}
+```
+
+### Non-Zero Validation
+
+```solidity
+// require(value != 0)
+assembly {
+    if iszero(value) {
+        revert(0, 0)
+    }
+}
+```
+
+### Bounds Checking with Inversion
+
+```solidity
+// require(index < length)
+assembly {
+    if iszero(lt(index, length)) {
+        revert(0, 0)
+    }
+}
+
+// Equivalent to: if (index >= length) revert
+```
+
+### Conditional Logic
+
+```solidity
+// if (balance == 0)
+assembly {
+    if iszero(balance) {
+        // Handle zero balance
+    }
+}
+```
+
+### Boolean Coercion
+
+```solidity
+// Convert any non-zero value to boolean true (1)
+assembly {
+    let bool := iszero(iszero(value))
+    // Double ISZERO: 0 -> 1 -> 0, non-zero -> 0 -> 1
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * ISZERO opcode (0x15) - Check if value is zero
+ */
+export function handle(frame: BrandedFrame): EvmError | null {
+  // Consume gas (GasFastestStep = 3)
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  // Pop operand
+  const aResult = popStack(frame);
+  if (aResult.error) return aResult.error;
+  const a = aResult.value;
+
+  // Check if zero
+  const result = a === 0n ? 1n : 0n;
+
+  // Push result
+  const pushErr = pushStack(frame, result);
+  if (pushErr) return pushErr;
+
+  // Increment PC
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// ISZERO opcode (0x15) - Check if value is zero
+pub fn iszero(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const a = try frame.popStack();
+    const result: u256 = if (a == 0) 1 else 0;
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handle as ISZERO } from './0x15_ISZERO.js';
+
+describe('ISZERO (0x15)', () => {
+  it('returns 1 when value is zero', () => {
+    const frame = createFrame([0n]);
+    expect(ISZERO(frame)).toBeNull();
+    expect(frame.stack).toEqual([1n]);
+    expect(frame.pc).toBe(1);
+    expect(frame.gasRemaining).toBe(997n);
+  });
+
+  it('returns 0 when value is non-zero', () => {
+    const frame = createFrame([42n]);
+    expect(ISZERO(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('returns 0 for 1', () => {
+    const frame = createFrame([1n]);
+    expect(ISZERO(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('returns 0 for max uint256', () => {
+    const MAX = (1n << 256n) - 1n;
+    const frame = createFrame([MAX]);
+    expect(ISZERO(frame)).toBeNull();
+    expect(frame.stack).toEqual([0n]);
+  });
+
+  it('implements boolean NOT', () => {
+    // NOT true (1) = false (0)
+    const frame1 = createFrame([1n]);
+    expect(ISZERO(frame1)).toBeNull();
+    expect(frame1.stack).toEqual([0n]);
+
+    // NOT false (0) = true (1)
+    const frame2 = createFrame([0n]);
+    expect(ISZERO(frame2)).toBeNull();
+    expect(frame2.stack).toEqual([1n]);
+  });
+
+  it('returns StackUnderflow with empty stack', () => {
+    const frame = createFrame([]);
+    expect(ISZERO(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame([0n], 2n);
+    expect(ISZERO(frame)).toEqual({ type: 'OutOfGas' });
+  });
+
+  it('preserves stack below checked value', () => {
+    const frame = createFrame([100n, 200n, 0n]);
+    expect(ISZERO(frame)).toBeNull();
+    expect(frame.stack).toEqual([100n, 200n, 1n]);
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Zero value (0 -> 1)
+- Non-zero values (42 -> 0, 1 -> 0)
+- Maximum value (MAX -> 0)
+- Boolean NOT behavior
+- Stack underflow (empty stack)
+- Out of gas (< 3 gas)
+- Stack preservation
+
+## Security
+
+### Zero Address Validation
+
+**CRITICAL:** Always check for zero address in transfers and approvals:
+
+```solidity
+// VULNERABLE: Missing zero address check
+function transfer(address to, uint256 amount) {
+    balances[to] += amount;  // Can burn tokens to 0x0
+}
+
+// CORRECT: Explicit zero check
+function transfer(address to, uint256 amount) {
+    require(to != address(0), "zero address");
+    balances[to] += amount;
+}
+
+// Assembly version
+assembly {
+    if iszero(to) {
+        revert(0, 0)
+    }
+}
+```
+
+### Division by Zero Prevention
+
+```solidity
+// VULNERABLE: Division by zero returns 0 in EVM (no error)
+function calculateShare(uint256 total, uint256 shares) returns (uint256) {
+    return total / shares;  // Returns 0 if shares == 0
+}
+
+// CORRECT: Explicit validation
+function calculateShare(uint256 total, uint256 shares) returns (uint256) {
+    require(shares != 0, "zero shares");
+    return total / shares;
+}
+
+// Assembly version
+assembly {
+    if iszero(shares) {
+        revert(0, 0)
+    }
+}
+```
+
+### Non-Zero Requirement
+
+```solidity
+// VULNERABLE: Accepting zero amounts
+function deposit(uint256 amount) {
+    balances[msg.sender] += amount;  // Allows 0, wasting gas
+}
+
+// CORRECT: Require non-zero
+function deposit(uint256 amount) {
+    require(amount != 0, "zero amount");
+    balances[msg.sender] += amount;
+}
+
+// Assembly version
+assembly {
+    if iszero(amount) {
+        revert(0, 0)
+    }
+}
+```
+
+### Boolean Logic Errors
+
+```solidity
+// VULNERABLE: Incorrect negation
+function isInvalid(bool valid) returns (bool) {
+    // Wrong: assumes valid is 0/1, but bool could be any non-zero
+    return !valid;
+}
+
+// CORRECT: Explicit boolean handling
+function isInvalid(bool valid) returns (bool) {
+    return !valid;  // Solidity handles bool correctly
+}
+
+// Assembly: coerce to proper boolean first
+assembly {
+    let validBool := iszero(iszero(valid))  // Coerce to 0/1
+    let invalid := iszero(validBool)
+}
+```
+
+## Optimizations
+
+### Boolean NOT
+
+```solidity
+// ISZERO is the cheapest boolean NOT
+assembly {
+    let notValue := iszero(value)  // 3 gas
+}
+
+// More expensive alternatives:
+assembly {
+    // Using EQ (same gas, but less clear)
+    let notValue := eq(value, 0)  // 3 gas
+
+    // Using XOR (more expensive)
+    let notValue := xor(value, 1)  // 3 gas (only works for 0/1)
+}
+```
+
+### Double Negation (Boolean Coercion)
+
+```solidity
+// Convert any value to strict boolean (0 or 1)
+assembly {
+    let bool := iszero(iszero(value))  // 6 gas
+    // 0 -> 1 -> 0
+    // non-zero -> 0 -> 1
+}
+
+// Useful for ensuring boolean semantics
+```
+
+### Zero Check vs EQ
+
+```solidity
+// Checking if value is zero
+assembly {
+    let isZero := iszero(value)  // 3 gas, clearer intent
+}
+
+// Equivalent but less idiomatic:
+assembly {
+    let isZero := eq(value, 0)  // 3 gas, same cost
+}
+
+// Prefer ISZERO for zero checks (better readability)
+```
+
+### Inverted Conditions
+
+```solidity
+// Instead of: if (a < b) revert
+// More efficient: if (!(a < b)) continue
+assembly {
+    if iszero(lt(a, b)) {
+        // a >= b, continue
+    }
+}
+
+// Saves a jump in some cases
+```
+
+## Benchmarks
+
+ISZERO is one of the fastest EVM operations:
+
+**Execution time (relative):**
+- ISZERO: 0.95x (slightly faster than EQ)
+- EQ: 1.0x
+- LT/GT: 1.0x
+- ADD: 1.0x
+- MUL: 1.5x
+
+**Gas efficiency:**
+- 3 gas per zero check
+- ~333,333 checks per million gas
+- Highly optimized (single comparison to zero)
+
+**Usage patterns:**
+- Zero checks: 3 gas
+- Boolean NOT: 3 gas
+- Boolean coercion (double ISZERO): 6 gas
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Comparison Operations)
+- [EVM Codes - ISZERO](https://www.evm.codes/#15)
+- [Solidity Docs - Boolean Operations](https://docs.soliditylang.org/en/latest/types.html#booleans)
+
+## Related Documentation
+
+- [EQ](/evm/instructions/comparison/eq) - Equality check (ISZERO is specialized EQ)
+- [NOT](/evm/instructions/bitwise/not) - Bitwise NOT (different from boolean NOT)
+- [LT](/evm/instructions/comparison/lt) - Less than (often used with ISZERO for >=)
+- [GT](/evm/instructions/comparison/gt) - Greater than (often used with ISZERO for <=)

@@ -1,0 +1,528 @@
+---
+title: "BLOBBASEFEE (0x4A)"
+description: "Get the current blob base fee for EIP-4844 blob transactions"
+---
+
+## Overview
+
+**Opcode:** `0x4A`
+**Introduced:** Cancun (EIP-7516, part of EIP-4844)
+
+BLOBBASEFEE retrieves the base fee per blob gas for the current block. This is part of the EIP-4844 blob fee market, enabling proto-danksharding by pricing blob data separately from execution gas.
+
+## Specification
+
+**Stack Input:**
+```
+(none)
+```
+
+**Stack Output:**
+```
+blob_base_fee (wei as u256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(block.blobBaseFee)
+```
+
+**Hardfork:** Available from Cancun onwards (EIP-7516)
+
+## Behavior
+
+BLOBBASEFEE pushes the blob base fee onto the stack as a 256-bit unsigned integer in wei:
+
+```
+Blob Base Fee:  1 wei (minimum)
+In wei:         1
+As u256:        0x1
+
+During congestion:  Can increase significantly
+```
+
+The blob base fee adjusts based on blob usage in the parent block using a similar algorithm to EIP-1559 but with different parameters:
+
+```
+Target: 3 blobs per block
+Maximum: 6 blobs per block
+
+Formula: blob_base_fee = fake_exponential(
+    MIN_BLOB_GASPRICE,  // 1 wei
+    excess_blob_gas,
+    BLOB_BASE_FEE_UPDATE_FRACTION  // 3338477
+)
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { blobbasefee } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  stack: [],
+  hardfork: 'CANCUN',
+  blockContext: {
+    blob_base_fee: 1n // Minimum 1 wei
+  }
+});
+
+const err = blobbasefee(frame);
+console.log(frame.stack); // [1n]
+console.log(frame.gasRemaining); // Original - 2
+```
+
+### Pre-Cancun Error
+
+```typescript
+// Before Cancun hardfork
+const preCancunFrame = createFrame({
+  hardfork: 'SHANGHAI',
+  blockContext: { blob_base_fee: 1n }
+});
+
+const err = blobbasefee(preCancunFrame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Blob Transaction Cost Calculation
+
+```typescript
+// Calculate cost for blob transaction
+blobbasefee(frame);
+const blobBaseFee = frame.stack[0];
+
+const BLOB_GAS_PER_BLOB = 131_072n; // Fixed per blob
+const numBlobs = 3n;
+
+const totalBlobGas = BLOB_GAS_PER_BLOB * numBlobs;
+const blobCost = blobBaseFee * totalBlobGas;
+
+console.log(`Cost for ${numBlobs} blobs: ${blobCost} wei`);
+```
+
+### Blob Fee Market Analysis
+
+```typescript
+// Compare blob fee to execution gas fee
+blobbasefee(frame);
+const blobFee = frame.stack[0];
+
+basefee(frame);
+const executionFee = frame.stack[0];
+
+const blobCostPerKB = (blobFee * 131_072n) / 128n; // Per KB
+const executionCostPerKB = executionFee * 256n; // ~256 gas/KB calldata
+
+console.log(`Blob data: ${blobCostPerKB} wei/KB`);
+console.log(`Calldata: ${executionCostPerKB} wei/KB`);
+// Blobs are dramatically cheaper for data availability
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+BLOBBASEFEE is one of the cheapest operations, enabling efficient fee market interaction.
+
+**Comparison:**
+- `BLOBBASEFEE`: 2 gas
+- `BASEFEE`: 2 gas
+- `BLOBHASH`: 3 gas
+- `GASLIMIT`: 2 gas
+
+## Common Usage
+
+### Blob Fee Threshold
+
+```solidity
+contract BlobFeeGuard {
+    uint256 public constant MAX_BLOB_BASE_FEE = 1000 wei;
+
+    modifier maxBlobFee() {
+        require(block.blobbasefee <= MAX_BLOB_BASE_FEE, "Blob fee too high");
+        _;
+    }
+
+    function submitData() external maxBlobFee {
+        // Only submit blob data when fees are reasonable
+    }
+}
+```
+
+### Dynamic Blob Strategy
+
+```solidity
+contract DynamicBlobStrategy {
+    function shouldUseBlobs() public view returns (bool) {
+        uint256 blobFee = block.blobbasefee;
+        uint256 executionFee = block.basefee;
+
+        // Use blobs if they're cheaper than calldata
+        uint256 blobCostPerByte = (blobFee * 131072) / (128 * 1024);
+        uint256 calldataCostPerByte = executionFee * 16; // ~16 gas/byte
+
+        return blobCostPerByte < calldataCostPerByte;
+    }
+}
+```
+
+### L2 Data Posting Decision
+
+```solidity
+contract L2BatchSubmitter {
+    uint256 public constant BLOB_SIZE = 128 * 1024; // 128 KB
+    uint256 public constant BLOB_GAS_PER_BLOB = 131072;
+
+    function estimateBatchCost(uint256 numBlobs) external view returns (uint256) {
+        uint256 blobFee = block.blobbasefee;
+        uint256 blobGas = BLOB_GAS_PER_BLOB * numBlobs;
+
+        return blobFee * blobGas;
+    }
+
+    function submitWhenCheap(bytes calldata data) external {
+        require(block.blobbasefee < 100 wei, "Wait for lower fees");
+        // Submit L2 batch data
+    }
+}
+```
+
+### Fee Market Monitoring
+
+```solidity
+contract BlobFeeMonitor {
+    struct FeeSnapshot {
+        uint256 blockNumber;
+        uint256 blobBaseFee;
+        uint256 timestamp;
+    }
+
+    FeeSnapshot[] public history;
+
+    function recordFees() external {
+        history.push(FeeSnapshot({
+            blockNumber: block.number,
+            blobBaseFee: block.blobbasefee,
+            timestamp: block.timestamp
+        }));
+    }
+
+    function averageBlobFee(uint256 blocks) external view returns (uint256) {
+        require(history.length >= blocks, "Insufficient data");
+
+        uint256 sum = 0;
+        uint256 start = history.length - blocks;
+
+        for (uint i = start; i < history.length; i++) {
+            sum += history[i].blobBaseFee;
+        }
+
+        return sum / blocks;
+    }
+}
+```
+
+### Blob vs Calldata Cost Comparison
+
+```solidity
+contract CostComparison {
+    uint256 constant BLOB_SIZE = 128 * 1024;
+    uint256 constant BLOB_GAS_PER_BLOB = 131072;
+
+    function compareCosts(uint256 dataSize) external view returns (
+        uint256 blobCost,
+        uint256 calldataCost,
+        bool useBlobsCheaper
+    ) {
+        // Blob cost
+        uint256 numBlobs = (dataSize + BLOB_SIZE - 1) / BLOB_SIZE;
+        blobCost = block.blobbasefee * BLOB_GAS_PER_BLOB * numBlobs;
+
+        // Calldata cost (16 gas per non-zero byte, 4 per zero)
+        // Assume worst case: all non-zero
+        calldataCost = block.basefee * dataSize * 16;
+
+        useBlobsCheaper = blobCost < calldataCost;
+    }
+}
+```
+
+## Security Considerations
+
+### Fee Market Manipulation
+
+Blob base fee follows algorithmic adjustment (cannot be directly manipulated):
+
+```solidity
+contract BlobFeeReliant {
+    // SAFE: Blob base fee follows EIP-4844 algorithm
+    function checkFee() external view returns (bool) {
+        // Adjusted based on excess_blob_gas, not validator discretion
+        return block.blobbasefee <= 1000 wei;
+    }
+}
+```
+
+### Fee Volatility
+
+Blob base fee can increase rapidly during congestion:
+
+```solidity
+contract VolatilityHandling {
+    uint256 public maxAcceptableFee;
+
+    function setMaxFee(uint256 newMax) external {
+        maxAcceptableFee = newMax;
+    }
+
+    function conditionalSubmit() external {
+        require(
+            block.blobbasefee <= maxAcceptableFee,
+            "Blob fee exceeds maximum"
+        );
+        // Submit data
+    }
+}
+```
+
+### Separate from Execution Fees
+
+Blob fees are independent of execution gas fees:
+
+```solidity
+contract FeeIndependence {
+    // Two separate fee markets:
+    // 1. Execution gas (block.basefee)
+    // 2. Blob gas (block.blobbasefee)
+
+    function totalTransactionCost(
+        uint256 gasUsed,
+        uint256 numBlobs
+    ) external view returns (uint256) {
+        uint256 executionCost = block.basefee * gasUsed;
+        uint256 blobCost = block.blobbasefee * 131072 * numBlobs;
+
+        return executionCost + blobCost;
+    }
+}
+```
+
+### Minimum Fee Floor
+
+Blob base fee has a minimum of 1 wei:
+
+```solidity
+contract MinimumFee {
+    uint256 constant MIN_BLOB_GASPRICE = 1 wei;
+
+    function verifyMinimum() external view returns (bool) {
+        // Blob base fee is always >= 1 wei
+        return block.blobbasefee >= MIN_BLOB_GASPRICE;
+    }
+}
+```
+
+## EIP-4844 Fee Mechanism
+
+### Blob Fee Adjustment Algorithm
+
+```
+excess_blob_gas = parent_excess_blob_gas + parent_blob_gas - TARGET_BLOB_GAS
+
+If excess_blob_gas > 0:
+    blob_base_fee = fake_exponential(MIN_BLOB_GASPRICE, excess_blob_gas, UPDATE_FRACTION)
+Else:
+    blob_base_fee = MIN_BLOB_GASPRICE
+
+Where:
+- MIN_BLOB_GASPRICE = 1 wei
+- TARGET_BLOB_GAS = 3 * 131072 (3 blobs)
+- UPDATE_FRACTION = 3338477
+```
+
+### Blob Gas Constants
+
+```solidity
+// EIP-4844 constants
+uint256 constant BLOB_GAS_PER_BLOB = 131072;
+uint256 constant TARGET_BLOB_GAS_PER_BLOCK = 393216; // 3 blobs
+uint256 constant MAX_BLOB_GAS_PER_BLOCK = 786432;    // 6 blobs
+uint256 constant MIN_BLOB_GASPRICE = 1 wei;
+uint256 constant BLOB_BASE_FEE_UPDATE_FRACTION = 3338477;
+```
+
+### Fake Exponential Function
+
+```solidity
+// Approximates e^(numerator/denominator)
+function fake_exponential(
+    uint256 factor,
+    uint256 numerator,
+    uint256 denominator
+) internal pure returns (uint256) {
+    uint256 output = 0;
+    uint256 numerator_accum = factor * denominator;
+
+    for (uint256 i = 1; numerator_accum > 0; i++) {
+        output += numerator_accum;
+        numerator_accum = (numerator_accum * numerator) / (denominator * i);
+    }
+
+    return output / denominator;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)
+pub fn blobbasefee(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // EIP-7516: BLOBBASEFEE was introduced in Cancun hardfork
+    if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    // blob_base_fee is pre-calculated from excess_blob_gas in BlockContext
+    try frame.pushStack(evm.block_context.blob_base_fee);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * BLOBBASEFEE opcode (0x4A) - Get blob base fee
+ * Available: Cancun+ (EIP-7516)
+ */
+export function blobbasefee(frame: BrandedFrame): EvmError | null {
+  // Check hardfork availability
+  if (frame.evm.hardfork.isBefore('CANCUN')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasQuickStep = 2)
+  frame.gasRemaining -= 2n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Push blob base fee to stack
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(frame.evm.blockContext.blob_base_fee);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-Cancun Execution
+
+```typescript
+// Before Cancun: InvalidOpcode
+const frame = createFrame({
+  hardfork: 'SHANGHAI',
+  blockContext: { blob_base_fee: 1n }
+});
+
+const err = blobbasefee(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Minimum Fee (1 wei)
+
+```typescript
+// No blob congestion
+const frame = createFrame({
+  hardfork: 'CANCUN',
+  blockContext: { blob_base_fee: 1n }
+});
+
+blobbasefee(frame);
+console.log(frame.stack); // [1n]
+```
+
+### High Congestion
+
+```typescript
+// Extreme blob demand
+const frame = createFrame({
+  hardfork: 'CANCUN',
+  blockContext: { blob_base_fee: 1_000_000_000n } // 1 gwei
+});
+
+blobbasefee(frame);
+console.log(frame.stack); // [1000000000n]
+```
+
+### First Cancun Block
+
+```typescript
+// Initial blob base fee
+const frame = createFrame({
+  hardfork: 'CANCUN',
+  blockContext: { blob_base_fee: 1n } // Starts at minimum
+});
+
+blobbasefee(frame);
+console.log(frame.stack); // [1n]
+```
+
+## Historical Context
+
+### Pre-Cancun (No Blobs)
+
+```solidity
+// Pre-Cancun: Only calldata available
+// Expensive for data-heavy operations
+// L2s paid high costs for data availability
+```
+
+### Post-Cancun (Proto-Danksharding)
+
+```solidity
+// Post-Cancun: Separate blob data market
+// Dramatically cheaper for L2 data posting
+// Base fee starts at 1 wei, increases with demand
+// Target: 3 blobs/block, Max: 6 blobs/block
+```
+
+## Benchmarks
+
+**Performance:**
+- Hardfork check: O(1)
+- Stack push: O(1)
+
+**Gas efficiency:**
+- 2 gas per query
+- ~500,000 queries per million gas
+
+## Related Instructions
+
+- **[BLOBHASH (0x49)](/evm/instructions/block/blobhash)** - Get blob hash by index
+- **[BASEFEE (0x48)](/evm/instructions/block/basefee)** - Get execution base fee
+- **[GASLIMIT (0x45)](/evm/instructions/block/gaslimit)** - Get block gas limit
+
+## References
+
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Shard Blob Transactions
+- [EIP-7516](https://eips.ethereum.org/EIPS/eip-7516) - BLOBBASEFEE opcode
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - BLOBBASEFEE](https://www.evm.codes/#4a)
+- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)
