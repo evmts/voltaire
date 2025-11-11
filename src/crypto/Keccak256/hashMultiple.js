@@ -5,11 +5,14 @@ import { hash } from "./hash.js";
  *
  * Equivalent to hashing the concatenation of all chunks.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {readonly Uint8Array[]} chunks - Array of data chunks to hash
  * @returns {import('../../primitives/Hash/index.js').BrandedHash} 32-byte hash
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Keccak256 from './crypto/Keccak256/index.js';
  * const hash = Keccak256.hashMultiple([data1, data2, data3]);
  * ```
  */

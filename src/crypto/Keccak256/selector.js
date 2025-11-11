@@ -5,11 +5,14 @@ import { hashString } from "./hashString.js";
  *
  * Used for Ethereum function signatures.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {string} signature - Function signature string
  * @returns {Uint8Array} 4-byte selector
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Keccak256 from './crypto/Keccak256/index.js';
  * const selector = Keccak256.selector('transfer(address,uint256)');
  * // Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
  * ```
