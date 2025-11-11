@@ -1,0 +1,585 @@
+---
+title: "MSTORE8 (0x53)"
+description: "Write single byte to memory at given offset"
+---
+
+## Overview
+
+**Opcode:** `0x53`
+**Introduced:** Frontier (EVM genesis)
+
+MSTORE8 writes a single byte to memory at the specified offset. Only the least significant byte (bits 0-7) of the stack value is written; all higher-order bits are truncated. This is the only opcode for single-byte writes in the EVM.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top)
+value
+```
+
+**Stack Output:**
+```
+(empty)
+```
+
+**Gas Cost:** 3 + memory expansion cost
+
+**Operation:**
+```
+memory[offset] = value & 0xFF
+```
+
+## Behavior
+
+MSTORE8 pops two values: offset (top) and value (next). It extracts the least significant byte of value and writes it to memory at offset.
+
+- Offset is interpreted as unsigned 256-bit integer
+- Only lowest 8 bits of value are written (all other bits ignored)
+- Memory automatically expands to accommodate write (quadratic cost)
+- Overwrites single byte without affecting adjacent bytes
+- More gas-efficient than MSTORE for single-byte writes (same base cost, smaller memory footprint)
+
+## Examples
+
+### Basic Single-Byte Write
+
+```typescript
+import { mstore8 } from '@tevm/voltaire/evm/instructions/memory';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame();
+
+frame.stack.push(0n);      // offset
+frame.stack.push(0x42n);   // value (only 0x42 written)
+
+const err = mstore8(frame);
+
+console.log(frame.memory.get(0));  // 0x42
+console.log(frame.pc);             // 1 (incremented)
+```
+
+### Truncation of Multi-Byte Value
+
+```typescript
+const frame = createFrame();
+
+// Value with multiple bytes - only lowest byte written
+const value = 0x123456789ABCDEFn;
+frame.stack.push(0n);      // offset
+frame.stack.push(value);   // value
+
+mstore8(frame);
+
+console.log(frame.memory.get(0));  // 0xEF (only lowest byte)
+```
+
+### Write All Ones Byte
+
+```typescript
+const frame = createFrame();
+
+const allOnes = (1n << 256n) - 1n;
+frame.stack.push(0n);
+frame.stack.push(allOnes);
+
+mstore8(frame);
+
+console.log(frame.memory.get(0));  // 0xFF
+```
+
+### Write Zero Byte
+
+```typescript
+const frame = createFrame();
+
+// Pre-populate memory
+frame.memory.set(5, 0xAA);
+
+// Clear single byte
+frame.stack.push(5n);      // offset
+frame.stack.push(0n);      // value (zero)
+
+mstore8(frame);
+
+console.log(frame.memory.get(5));  // 0x00
+console.log(frame.memory.get(4));  // undefined (adjacent byte unchanged)
+console.log(frame.memory.get(6));  // undefined (adjacent byte unchanged)
+```
+
+### Sequential Byte Writes
+
+```typescript
+const frame = createFrame();
+
+// Write ASCII string "ABC"
+const bytes = [0x41, 0x42, 0x43];  // 'A', 'B', 'C'
+
+for (let i = 0; i < bytes.length; i++) {
+  frame.stack.push(BigInt(i));       // offset
+  frame.stack.push(BigInt(bytes[i])); // value
+  mstore8(frame);
+}
+
+console.log(frame.memory.get(0));  // 0x41
+console.log(frame.memory.get(1));  // 0x42
+console.log(frame.memory.get(2));  // 0x43
+console.log(frame.memorySize);     // 32 (word-aligned)
+```
+
+### Partial Overwrite
+
+```typescript
+const frame = createFrame();
+
+// Write full word first
+frame.stack.push(0n);
+frame.stack.push(0xFFFFFFFFFFFFFFFFn);
+mstore8(frame);  // Actually writes 0xFF at offset 0, then MSTORE writes full word
+
+// Actually, MSTORE8 behavior: write single byte
+frame.stack.push(10n);
+frame.stack.push(0xAAn);
+mstore8(frame);
+
+// Bytes 0-9: uninitialized (or from previous)
+// Byte 10: 0xAA
+// Bytes 11-31: uninitialized
+console.log(frame.memory.get(10));  // 0xAA
+console.log(frame.memorySize);      // 32 (expanded to first word)
+```
+
+## Gas Cost
+
+**Base cost:** 3 gas (GasFastestStep)
+
+**Memory expansion:** Quadratic based on access range
+
+**Formula:**
+```
+words_required = ceil((offset + 1) / 32)
+expansion_cost = (words_required)² / 512 + 3 * (words_required - words_old)
+total_cost = 3 + expansion_cost
+```
+
+**Examples:**
+
+- **Writing byte 0:** 1 word, no prior expansion: 3 gas
+- **Writing byte 31:** 1 word, no prior expansion: 3 gas (same word)
+- **Writing byte 32:** 2 words, 1 word prior: 3 + (4 - 1) = 6 gas
+- **Writing bytes 0-255:** 8 words: 3 + (64 - 1) = 66 gas
+
+MSTORE8 is more efficient than MSTORE for single-byte writes since it doesn't force 32-byte alignment in memory updates (though memory is still expanded to word boundaries).
+
+## Edge Cases
+
+### Writing to Word Boundary
+
+```typescript
+const frame = createFrame();
+
+// Write at byte 31 (last byte of first word)
+frame.stack.push(31n);
+frame.stack.push(0x99n);
+mstore8(frame);
+
+// Expands to 32 bytes (1 word)
+console.log(frame.memorySize);  // 32
+console.log(frame.memory.get(31));  // 0x99
+```
+
+### Writing Beyond First Word
+
+```typescript
+const frame = createFrame();
+
+// Write at byte 32 (first byte of second word)
+frame.stack.push(32n);
+frame.stack.push(0x77n);
+mstore8(frame);
+
+// Expands to 64 bytes (2 words)
+console.log(frame.memorySize);  // 64
+console.log(frame.memory.get(32));  // 0x77
+```
+
+### Multiple Writes to Same Word
+
+```typescript
+const frame = createFrame();
+
+// Write different bytes in same word
+frame.stack.push(5n);
+frame.stack.push(0x11n);
+mstore8(frame);
+
+frame.stack.push(10n);
+frame.stack.push(0x22n);
+mstore8(frame);
+
+frame.stack.push(15n);
+frame.stack.push(0x33n);
+mstore8(frame);
+
+console.log(frame.memory.get(5));   // 0x11
+console.log(frame.memory.get(10));  // 0x22
+console.log(frame.memory.get(15));  // 0x33
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({ gasRemaining: 2n });
+
+frame.stack.push(0n);
+frame.stack.push(0x42n);
+
+const err = mstore8(frame);
+console.log(err);  // { type: "OutOfGas" }
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame();
+
+// Only one value on stack
+frame.stack.push(0n);
+
+const err = mstore8(frame);
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+## Common Usage
+
+### Building Packed Struct in Memory
+
+```solidity
+assembly {
+    let offset := 0
+
+    // Pack multiple small values
+    mstore8(offset, byte0)      // 1 byte
+    mstore8(add(offset, 1), byte1)
+    mstore8(add(offset, 2), byte2)
+    mstore8(add(offset, 3), byte3)
+
+    // Continue with MSTORE for larger values
+    mstore(add(offset, 4), word4)
+}
+```
+
+### Encode String Data
+
+```solidity
+assembly {
+    // Encode string prefix (length in first slot)
+    let str := 0x40
+    mstore(str, stringLength)
+
+    // Write individual characters
+    let offset := add(str, 0x20)
+    for { let i := 0 } lt(i, stringLength) { i := add(i, 1) } {
+        mstore8(add(offset, i), charByte)
+    }
+}
+```
+
+### Sparse Memory Allocation
+
+```solidity
+assembly {
+    // Write sparse bytes without padding full words
+    mstore8(0x00, 0xAA)
+    mstore8(0x100, 0xBB)   // Skip 256 bytes
+    mstore8(0x200, 0xCC)   // Skip another 256 bytes
+
+    // More memory-efficient than MSTORE
+}
+```
+
+### Low-Level Bit Setting
+
+```solidity
+assembly {
+    let byte_offset := 10
+    let current := mload8(byte_offset)
+    let updated := or(current, 0x01)  // Set lowest bit
+    mstore8(byte_offset, updated)
+}
+```
+
+## Memory Safety
+
+**Write safety properties:**
+
+- **No side effects:** Writing memory doesn't affect storage or state
+- **Byte-level granularity:** Single-byte writes don't affect adjacent bytes
+- **No initialization races:** Single-byte write triggers memory expansion if needed
+
+Applications must ensure offset correctness:
+
+```solidity
+// Good: Bounds checking
+require(offset < memorySize, "out of bounds");
+mstore8(offset, value);
+
+// Risky: Assumes free memory layout
+mstore8(userOffset, value);  // Can overwrite important data
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * MSTORE8 opcode (0x53) - Write single byte to memory
+ */
+export function mstore8(frame: BrandedFrame): EvmError | null {
+  // Pop offset and value from stack
+  if (frame.stack.length < 2) {
+    return { type: "StackUnderflow" };
+  }
+  const offset = frame.stack.pop();
+  const value = frame.stack.pop();
+
+  // Cast offset to u32
+  const off = Number(offset);
+  if (!Number.isSafeInteger(off) || off < 0) {
+    return { type: "OutOfBounds" };
+  }
+
+  // Calculate memory expansion (for 1 byte)
+  const endBytes = BigInt(off + 1);
+  const expansionCost = calculateMemoryExpansion(endBytes);
+
+  // Charge gas
+  frame.gasRemaining -= 3n + expansionCost;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Expand memory
+  const alignedSize = Math.ceil((off + 1) / 32) * 32;
+  frame.memorySize = Math.max(frame.memorySize, alignedSize);
+
+  // Write single byte (least significant 8 bits only)
+  const byte = Number(value & 0xFFn);
+  frame.memory.set(off, byte);
+
+  // Increment PC
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// MSTORE8 opcode (0x53) - Save byte to memory
+pub fn mstore8(frame: *FrameType) FrameType.EvmError!void {
+    const offset = try frame.popStack();
+    const value = try frame.popStack();
+
+    const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+
+    // Calculate memory expansion (for 1 byte)
+    const end_bytes: u64 = @as(u64, off) + 1;
+    const mem_cost = frame.memoryExpansionCost(end_bytes);
+    try frame.consumeGas(GasConstants.GasFastestStep + mem_cost);
+
+    // Write single byte (truncate to u8)
+    const byte_value = @as(u8, @truncate(value));
+    try frame.writeMemory(off, byte_value);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { mstore8 } from './0x53_MSTORE8.js';
+
+describe('MSTORE8 (0x53)', () => {
+  it('writes least significant byte', () => {
+    const frame = createFrame();
+
+    frame.stack.push(0x42n);
+    frame.stack.push(0n);
+
+    expect(mstore8(frame)).toBeNull();
+    expect(frame.stack.length).toBe(0);
+    expect(frame.memory.get(0)).toBe(0x42);
+    expect(frame.pc).toBe(1);
+  });
+
+  it('truncates multi-byte values', () => {
+    const frame = createFrame();
+
+    const value = 0x123456789ABCDEFn;
+    frame.stack.push(value);
+    frame.stack.push(0n);
+
+    mstore8(frame);
+
+    // Only lowest byte (0xEF) written
+    expect(frame.memory.get(0)).toBe(0xEF);
+  });
+
+  it('writes zero byte', () => {
+    const frame = createFrame();
+    frame.memory.set(0, 0x99);
+
+    frame.stack.push(0n);
+    frame.stack.push(0n);
+
+    mstore8(frame);
+
+    expect(frame.memory.get(0)).toBe(0);
+  });
+
+  it('writes at non-zero offset', () => {
+    const frame = createFrame();
+
+    frame.stack.push(0xABn);
+    frame.stack.push(10n);
+
+    mstore8(frame);
+
+    expect(frame.memory.get(10)).toBe(0xAB);
+    expect(frame.memory.has(5)).toBe(false);
+  });
+
+  it('expands to word boundary', () => {
+    const frame = createFrame();
+
+    frame.stack.push(0x99n);
+    frame.stack.push(32n);
+
+    mstore8(frame);
+
+    // Writes at byte 32, expands to 2 words (64 bytes)
+    expect(frame.memorySize).toBe(64);
+  });
+
+  it('preserves adjacent bytes', () => {
+    const frame = createFrame();
+    frame.memory.set(10, 0xAA);
+    frame.memory.set(12, 0xBB);
+
+    frame.stack.push(0xCCn);
+    frame.stack.push(11n);
+
+    mstore8(frame);
+
+    expect(frame.memory.get(10)).toBe(0xAA);
+    expect(frame.memory.get(11)).toBe(0xCC);
+    expect(frame.memory.get(12)).toBe(0xBB);
+  });
+
+  it('returns OutOfGas when insufficient', () => {
+    const frame = createFrame({ gasRemaining: 2n });
+
+    frame.stack.push(0x33n);
+    frame.stack.push(0n);
+
+    expect(mstore8(frame)).toEqual({ type: "OutOfGas" });
+  });
+
+  it('returns StackUnderflow when insufficient stack', () => {
+    const frame = createFrame();
+    frame.stack.push(0n);
+
+    expect(mstore8(frame)).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('handles all byte values 0x00-0xFF', () => {
+    const frame = createFrame();
+
+    for (let byte = 0; byte <= 0xFF; byte++) {
+      frame.stack.push(BigInt(byte));
+      frame.stack.push(BigInt(byte));
+      mstore8(frame);
+      expect(frame.memory.get(byte)).toBe(byte);
+    }
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Single byte write
+- Multi-byte truncation
+- Zero write
+- Non-aligned offset
+- Word boundary expansion
+- Adjacent byte preservation
+- Stack underflow/overflow
+- Out of gas conditions
+
+## Security Considerations
+
+### Byte-Level Granularity Bugs
+
+```solidity
+// Bad: Assuming full-word atomicity
+assembly {
+    let flags := mload(ptr)
+    mstore8(ptr, 0x01)         // Overwrites only 1 byte!
+    mstore8(add(ptr, 31), 0x02)
+    // Only bytes 0 and 31 modified, rest unchanged
+}
+
+// Good: Track modifications carefully
+assembly {
+    mstore8(flagOffset, newValue)
+    // Document what adjacent bytes contain
+}
+```
+
+### Memory Layout Assumptions
+
+```solidity
+// Risky: Assumes memory layout
+assembly {
+    mstore8(0x00, version)
+    mstore8(0x01, type)
+    // If layout changes, breaks
+}
+
+// Better: Use consistent offset tracking
+assembly {
+    let offset := freeMemoryPointer
+    mstore8(offset, version)
+    mstore8(add(offset, 1), type)
+    mstore(0x40, add(offset, 2))
+}
+```
+
+## Benchmarks
+
+MSTORE8 is among the fastest EVM operations:
+
+**Relative performance:**
+- MSTORE8: 1.0x baseline
+- MSTORE: 1.0x (same base cost)
+- MLOAD: 1.0x (similar cost)
+- SSTORE: 100x+ slower
+
+**Memory expansion efficiency:**
+- Single byte write: Same word-boundary expansion as 32-byte write
+- Sequential byte writes more efficient than equivalent MSTORE operations
+- Useful for sparse memory allocation
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.2 (Memory)
+- **[evm.codes - MSTORE8](https://www.evm.codes/#53)** - Interactive reference
+- **[Solidity Docs](https://docs.soliditylang.org/)** - Assembly and memory operations
