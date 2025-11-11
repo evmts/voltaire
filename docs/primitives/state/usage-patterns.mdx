@@ -1,21 +1,266 @@
 ---
-title: "usage patterns"
-description: "State usage-patterns documentation"
+title: Usage Patterns
+description: Real-world patterns for working with storage keys and EVM state
 ---
 
-# usage patterns
+Common patterns for working with storage keys and EVM state management.
 
-Documentation for State usage-patterns.
+## Basic Storage Operations
 
-<Note>
-This page is under construction. See [State Overview](/primitives/state) for core functionality.
-</Note>
+Track contract storage across multiple contracts:
 
-## Overview
+```typescript
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
 
-State storage key operations for usage-patterns.
+// Create storage database
+const storage = new Map<string, bigint>();
+
+// USDC contract
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcTotalSupply = State.StorageKey(usdcAddress, 0n);
+storage.set(State.StorageKey.toString(usdcTotalSupply), 1000000000n);
+
+// DAI contract
+const daiAddress = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F");
+const daiTotalSupply = State.StorageKey(daiAddress, 0n);
+storage.set(State.StorageKey.toString(daiTotalSupply), 5000000000n);
+
+// Query specific slot
+const value = storage.get(State.StorageKey.toString(usdcTotalSupply));
+console.log(value); // 1000000000n
+```
+
+## Computing Mapping Slots
+
+Calculate storage slots for Solidity mappings:
+
+```typescript
+import * as State from '@tevm/voltaire/State';
+import { Keccak256 } from '@tevm/crypto';
+
+function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
+  // Solidity: keccak256(abi.encode(key, baseSlot))
+  const encoded = new Uint8Array(64);
+
+  // Pad key to 32 bytes
+  encoded.set(new Uint8Array(32 - key.length).fill(0), 0);
+  encoded.set(key, 32 - key.length);
+
+  // Encode baseSlot as 32 bytes
+  const slotBytes = new Uint8Array(32);
+  const view = new DataView(slotBytes.buffer);
+  view.setBigUint64(24, baseSlot, false);
+  encoded.set(slotBytes, 32);
+
+  const hash = Keccak256.hash(encoded);
+  return BigInt('0x' + Buffer.from(hash).toString('hex'));
+}
+
+// Example: balances[userAddress] in ERC-20
+const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+const balancesBaseSlot = 1n; // Slot where balances mapping is declared
+const userBalanceSlot = computeMappingSlot(userAddress, balancesBaseSlot);
+const userBalanceKey = State.StorageKey(tokenAddress, userBalanceSlot);
+
+console.log(`User balance at slot: ${userBalanceSlot}`);
+```
+
+## Nested Mappings
+
+Handle nested mappings like `mapping(address => mapping(address => uint256))`:
+
+```typescript
+// allowances[owner][spender] in ERC-20
+const allowancesBaseSlot = 2n;
+
+// First level: keccak256(abi.encode(owner, allowancesBaseSlot))
+const ownerSlot = computeMappingSlot(ownerAddress, allowancesBaseSlot);
+
+// Second level: keccak256(abi.encode(spender, ownerSlot))
+const allowanceSlot = computeMappingSlot(spenderAddress, ownerSlot);
+
+const allowanceKey = State.StorageKey(tokenAddress, allowanceSlot);
+storage.set(State.StorageKey.toString(allowanceKey), 1000000n);
+```
+
+## Storage Change Tracking
+
+Track storage modifications:
+
+```typescript
+class StorageTracker {
+  private original = new Map<string, bigint>();
+  private current = new Map<string, bigint>();
+
+  load(key: BrandedStorageKey, value: bigint): void {
+    const keyStr = State.StorageKey.toString(key);
+    this.original.set(keyStr, value);
+    this.current.set(keyStr, value);
+  }
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const keyStr = State.StorageKey.toString(key);
+    this.current.set(keyStr, value);
+  }
+
+  getChanges(): Array<{ key: BrandedStorageKey; before: bigint; after: bigint }> {
+    const changes: Array<{ key: BrandedStorageKey; before: bigint; after: bigint }> = [];
+
+    for (const [keyStr, afterValue] of this.current) {
+      const beforeValue = this.original.get(keyStr) ?? 0n;
+      if (beforeValue !== afterValue) {
+        const key = State.StorageKey.fromString(keyStr);
+        changes.push({ key, before: beforeValue, after: afterValue });
+      }
+    }
+
+    return changes;
+  }
+}
+
+// Usage
+const tracker = new StorageTracker();
+tracker.load(State.StorageKey(contractAddr, 0n), 100n);
+tracker.set(State.StorageKey(contractAddr, 0n), 200n);
+
+const changes = tracker.getChanges();
+// [{ key: {...}, before: 100n, after: 200n }]
+```
+
+## Multi-Contract State Manager
+
+Manage state across multiple contracts:
+
+```typescript
+class StateManager {
+  private storage = new Map<string, bigint>();
+
+  get(address: BrandedAddress, slot: bigint): bigint {
+    const key = State.StorageKey(address, slot);
+    return this.storage.get(State.StorageKey.toString(key)) ?? 0n;
+  }
+
+  set(address: BrandedAddress, slot: bigint, value: bigint): void {
+    const key = State.StorageKey(address, slot);
+    this.storage.set(State.StorageKey.toString(key), value);
+  }
+
+  getContractStorage(address: BrandedAddress): Map<bigint, bigint> {
+    const result = new Map<bigint, bigint>();
+
+    for (const [keyStr, value] of this.storage) {
+      const key = State.StorageKey.fromString(keyStr);
+      if (Address.equals(key.address, address)) {
+        result.set(key.slot, value);
+      }
+    }
+
+    return result;
+  }
+
+  clear(address: BrandedAddress): void {
+    const toDelete: string[] = [];
+
+    for (const keyStr of this.storage.keys()) {
+      const key = State.StorageKey.fromString(keyStr);
+      if (Address.equals(key.address, address)) {
+        toDelete.push(keyStr);
+      }
+    }
+
+    for (const keyStr of toDelete) {
+      this.storage.delete(keyStr);
+    }
+  }
+}
+```
+
+## Persistent Storage
+
+Save and load state from disk:
+
+```typescript
+import * as fs from 'fs/promises';
+
+async function saveState(
+  storage: Map<string, bigint>,
+  filePath: string
+): Promise<void> {
+  const entries = Array.from(storage.entries()).map(([key, value]) => ({
+    key,
+    value: value.toString()
+  }));
+
+  await fs.writeFile(filePath, JSON.stringify(entries, null, 2));
+}
+
+async function loadState(filePath: string): Promise<Map<string, bigint>> {
+  const data = await fs.readFile(filePath, 'utf-8');
+  const entries = JSON.parse(data);
+
+  const storage = new Map<string, bigint>();
+  for (const { key, value } of entries) {
+    storage.set(key, BigInt(value));
+  }
+
+  return storage;
+}
+
+// Usage
+const storage = new Map<string, bigint>();
+storage.set(State.StorageKey.toString(key1), 1000n);
+await saveState(storage, './state.json');
+
+const loaded = await loadState('./state.json');
+```
+
+## Storage Diff
+
+Compare storage states:
+
+```typescript
+function diffStorage(
+  before: Map<string, bigint>,
+  after: Map<string, bigint>
+): {
+  added: Array<{ key: BrandedStorageKey; value: bigint }>;
+  modified: Array<{ key: BrandedStorageKey; before: bigint; after: bigint }>;
+  deleted: Array<{ key: BrandedStorageKey; value: bigint }>;
+} {
+  const added: Array<{ key: BrandedStorageKey; value: bigint }> = [];
+  const modified: Array<{ key: BrandedStorageKey; before: bigint; after: bigint }> = [];
+  const deleted: Array<{ key: BrandedStorageKey; value: bigint }> = [];
+
+  // Find added and modified
+  for (const [keyStr, afterValue] of after) {
+    const beforeValue = before.get(keyStr);
+    const key = State.StorageKey.fromString(keyStr);
+
+    if (beforeValue === undefined) {
+      added.push({ key, value: afterValue });
+    } else if (beforeValue !== afterValue) {
+      modified.push({ key, before: beforeValue, after: afterValue });
+    }
+  }
+
+  // Find deleted
+  for (const [keyStr, beforeValue] of before) {
+    if (!after.has(keyStr)) {
+      const key = State.StorageKey.fromString(keyStr);
+      deleted.push({ key, value: beforeValue });
+    }
+  }
+
+  return { added, modified, deleted };
+}
+```
 
 ## See Also
 
-- [State Overview](/primitives/state)
-- [State Utilities](/primitives/state/utilities)
+- [State Overview](/primitives/state) - Type definition and API reference
+- [Fundamentals](/primitives/state/fundamentals) - EVM state structure and MPT
+- [StorageKey()](/primitives/state/storage-key) - Factory function
+- [Merkle Trees](/primitives/state/merkle-trees) - Trie operations
