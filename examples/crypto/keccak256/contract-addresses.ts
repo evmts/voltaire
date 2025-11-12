@@ -117,9 +117,7 @@ const bytecode2Hash = Keccak256.hash(bytecode2);
 const addr1 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode1Hash);
 const addr2 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode2Hash);
 
-const uniswapFactory = Address(
-	"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-);
+const uniswapFactory = Address("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f");
 
 // Simplified pair bytecode for demo (real one is much larger)
 // In production, use the actual init code from Uniswap V2

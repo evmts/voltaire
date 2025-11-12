@@ -1,0 +1,262 @@
+---
+title: Effect.ts Integration
+description: Functional, composable, type-safe APIs with Effect.ts
+---
+
+[Effect.ts](https://effect.website) is a functional programming library for TypeScript that brings powerful abstractions for building robust applications. Voltaire provides Effect.ts APIs as a first-class alternative to the vanilla TypeScript API.
+
+## Why Effect.ts?
+
+<CardGroup cols={3}>
+  <Card title="Maximum Type-Safety" icon="shield-check">
+    Errors are typed and handled explicitly in function signatures. No uncaught exceptions.
+  </Card>
+  <Card title="Composable & Testable" icon="puzzle-piece">
+    Programs compose naturally. Dependencies injected through context for easy testing.
+  </Card>
+  <Card title="Rich Ecosystem" icon="cubes">
+    Extensive standard library with streaming, scheduling, resource management, and more.
+  </Card>
+</CardGroup>
+
+## Perfect for Robust Applications
+
+Effect.ts shines in production environments where reliability matters:
+
+- **Error handling** - All failure modes explicit in types
+- **Dependency injection** - Services injected via Effect context
+- **Testability** - Easy to mock services and test pure logic
+- **Composability** - Small functions compose into complex programs
+- **Resource safety** - Automatic cleanup with acquire/release patterns
+- **Observability** - Built-in tracing, metrics, and logging
+
+These capabilities make Effect ideal for backend services, blockchain infrastructure, and any application where correctness is critical.
+
+## Effect.ts APIs
+
+Voltaire treats Effect.ts as its own language with separate APIs. Currently implemented for:
+
+- **Address** - Full Effect.ts API with service-based crypto operations
+
+Additional primitives coming soon - looking for contributors!
+
+## Example: Address with Effect.ts
+
+The `Address` primitive demonstrates Effect.ts integration. Compare vanilla vs Effect approaches:
+
+### Vanilla TypeScript API
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// Simple operations - no crypto needed
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const hex = Address.toHex(address);
+
+// Crypto operations throw on error
+try {
+  const checksummed = Address.toChecksummed(address);
+} catch (error) {
+  // Error handling not explicit in types
+  console.error('Checksum failed:', error);
+}
+```
+
+### Effect.ts API
+
+```typescript
+import * as Effect from "effect/Effect";
+import { AddressSchema, ChecksumAddress } from '@tevm/voltaire/primitives/Address/effect';
+import { Keccak256Layer } from '@tevm/voltaire/primitives/Address/effect-layers';
+
+// Create address with typed errors
+const program = Effect.gen(function* () {
+  // All errors explicit in type signature
+  const address = yield* AddressSchema.fromHex(
+    "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+  );
+
+  // Crypto operations require service injection
+  const checksummed = yield* address.toChecksummed();
+
+  return checksummed;
+});
+
+// Provide crypto service and run
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(Keccak256Layer))
+);
+```
+
+## Service-Based Architecture
+
+Effect.ts APIs use services for crypto operations, enabling dependency injection:
+
+```typescript
+import * as Effect from "effect/Effect";
+import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
+import {
+  Keccak256Service,
+  Secp256k1Service,
+  RlpEncoderService
+} from '@tevm/voltaire/primitives/Address/effect-services';
+import {
+  Keccak256Layer,
+  Secp256k1Layer,
+  RlpEncoderLayer
+} from '@tevm/voltaire/primitives/Address/effect-layers';
+
+// Program declares service dependencies in types
+const deriveAddress = (privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    // Services injected via context
+    const address = yield* AddressSchema.fromPrivateKey(privateKey);
+    const checksummed = yield* address.toChecksummed();
+    return checksummed;
+  });
+
+// Type signature shows all dependencies:
+// Effect<ChecksumAddress, FromPrivateKeyErrors, Secp256k1Service | Keccak256Service>
+
+// Provide services at runtime
+const result = await Effect.runPromise(
+  deriveAddress(privateKey).pipe(
+    Effect.provide(Secp256k1Layer),
+    Effect.provide(Keccak256Layer)
+  )
+);
+```
+
+## Typed Error Handling
+
+All failure modes explicit in function signatures:
+
+```typescript
+import * as Effect from "effect/Effect";
+import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
+import {
+  InvalidHexFormatError,
+  InvalidAddressLengthError
+} from '@tevm/voltaire/primitives/Address/effect-errors';
+
+const program = AddressSchema.fromHex("0x742d");
+
+// Type: Effect<AddressSchema, FromHexErrors>
+// FromHexErrors = InvalidHexFormatError | InvalidAddressLengthError | ...
+
+// Handle specific errors
+const handled = program.pipe(
+  Effect.catchTag("InvalidHexFormatError", (error) =>
+    Effect.succeed(AddressSchema.zero())
+  ),
+  Effect.catchTag("InvalidAddressLengthError", (error) =>
+    Effect.fail(new CustomError(error))
+  )
+);
+```
+
+## Composable Operations
+
+Effects compose naturally:
+
+```typescript
+import * as Effect from "effect/Effect";
+import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
+import { Keccak256Layer, RlpEncoderLayer } from '@tevm/voltaire/primitives/Address/effect-layers';
+
+// Compose multiple operations
+const deployContract = (deployer: Uint8Array, nonce: bigint, initCode: Uint8Array) =>
+  Effect.gen(function* () {
+    // Create deployer address
+    const deployerAddr = yield* AddressSchema.fromBytes(deployer);
+
+    // Calculate CREATE address
+    const contractAddr = yield* deployerAddr.calculateCreateAddress(nonce);
+
+    // Calculate CREATE2 address for comparison
+    const salt = new Uint8Array(32);
+    const create2Addr = yield* deployerAddr.calculateCreate2Address(salt, initCode);
+
+    return { create: contractAddr, create2: create2Addr };
+  });
+
+// Run with all required services
+const result = await Effect.runPromise(
+  deployContract(deployer, 0n, bytecode).pipe(
+    Effect.provide(Keccak256Layer),
+    Effect.provide(RlpEncoderLayer)
+  )
+);
+```
+
+## Effect Schema Integration
+
+`AddressSchema` extends `Schema.Class` for automatic encoding/decoding:
+
+```typescript
+import * as Schema from "effect/Schema";
+import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
+
+// Schema automatically validates
+const MySchema = Schema.Struct({
+  to: Schema.instanceOf(AddressSchema),
+  from: Schema.instanceOf(AddressSchema),
+  value: Schema.BigIntFromSelf
+});
+
+// Parse and validate
+const decoded = Schema.decodeUnknownSync(MySchema)({
+  to: AddressSchema.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  from: AddressSchema.fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+  value: 1000000000000000000n
+});
+```
+
+## Source Code
+
+See the complete Effect.ts implementation:
+
+[`src/primitives/Address/effect.ts`](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
+
+Key features demonstrated:
+- Effect Schema `Class` with validation
+- Service-based crypto operations (Keccak256, Secp256k1, RLP)
+- Typed error handling with custom error types
+- Composable methods (fromPrivateKey, toChecksummed, calculateCreateAddress, etc.)
+- Effect generators for clean async/error handling
+
+## Contributing
+
+**We're looking for contributors to add Effect.ts support across Voltaire.**
+
+Effect.ts is treated as a first-class API alongside the vanilla TypeScript API. Each primitive should have:
+
+1. **Schema Classes** - Extend `Schema.Class` with branded types
+2. **Service Definitions** - Interface for crypto/encoding operations
+3. **Layer Implementations** - Default service implementations
+4. **Error Types** - Tagged errors for each failure mode
+5. **Composable Methods** - Operations that use Effect.gen
+
+Priority primitives for Effect.ts support:
+- **Signature** - Sign/verify with typed errors
+- **Transaction** - Encode/decode with RLP service
+- **Hash** - Hashing with Keccak256 service
+- **Bytecode** - Analysis with composable validation
+
+See [`src/primitives/Address/effect.ts`](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts) as the reference implementation.
+
+**Interested in contributing?** Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+
+## Learn More
+
+<CardGroup cols={3}>
+  <Card title="Effect.ts Docs" icon="book" href="https://effect.website/docs/introduction">
+    Official Effect.ts documentation
+  </Card>
+  <Card title="Address Effect API" icon="cube" href="/primitives/address">
+    Complete Address reference with Effect.ts examples
+  </Card>
+  <Card title="Effect Schema" icon="shield-check" href="https://effect.website/docs/schema/introduction">
+    Schema validation with Effect.ts
+  </Card>
+</CardGroup>

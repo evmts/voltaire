@@ -50,6 +50,7 @@
 			"pages": [
 				"introduction",
 				"getting-started/branded-types",
+				"getting-started/effect",
 				"getting-started/wasm",
 				"getting-started/tree-shaking",
 				"getting-started/llm-optimized",
