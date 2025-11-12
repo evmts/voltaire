@@ -687,7 +687,7 @@ const hex = code.toHex();
 ```typescript Class API
 import { Bytecode } from '@tevm/voltaire';
 
-const code = new Bytecode("0x6001");
+const code = Bytecode("0x6001");
 const hex = code.toHex();
 ```
 
@@ -1038,7 +1038,7 @@ export type BrandedThing = Uint8Array & {
 import { Thing } from '@tevm/voltaire';
 
 // Create instance
-const thing = new Thing("0x...");
+const thing = Thing("0x...");
 
 // Use methods
 const hex = thing.toHex();
@@ -1219,7 +1219,7 @@ Brief description of what this method does and when to use it.
 ```typescript
 import { Thing } from '@tevm/voltaire';
 
-const thing = new Thing("0x...");
+const thing = Thing("0x...");
 const result = thing.method(param);
 // result: expected output
 ```
@@ -1386,7 +1386,7 @@ Always demonstrate both Class and Namespace APIs using tabs:
 <Tabs>
 <Tab title="Class API">
 ```typescript
-const code = new Bytecode("0x6001");
+const code = Bytecode("0x6001");
 const hex = code.toHex();
 ```
 </Tab>
@@ -1601,7 +1601,7 @@ Always show both forms using tabs:
 ```typescript
 import { Bytecode } from '@tevm/voltaire';
 
-const code = new Bytecode("0x6001");
+const code = Bytecode("0x6001");
 const hex = code.toHex();
 const valid = code.validate();
 ```

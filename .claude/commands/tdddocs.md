@@ -901,7 +901,7 @@
       describe("Hash", () => {
         describe("class instantiation", () => {
           it("creates via new", () => {
-            const hash = new Hash("0x" + "12".repeat(32))
+            const hash = Hash("0x" + "12".repeat(32))
             expect(hash).toBeInstanceOf(Uint8Array)
             expect(hash.length).toBe(32)
           })
@@ -914,13 +914,13 @@
 
         describe("instance methods", () => {
           it("has toHex method", () => {
-            const hash = new Hash("0x" + "ab".repeat(32))
+            const hash = Hash("0x" + "ab".repeat(32))
             expect(hash.toHex()).toBe("0x" + "ab".repeat(32))
           })
 
           it("has equals method", () => {
-            const hash1 = new Hash("0x" + "12".repeat(32))
-            const hash2 = new Hash("0x" + "12".repeat(32))
+            const hash1 = Hash("0x" + "12".repeat(32))
+            const hash2 = Hash("0x" + "12".repeat(32))
             expect(hash1.equals(hash2)).toBe(true)
           })
         })
