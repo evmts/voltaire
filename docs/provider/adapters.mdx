@@ -1,0 +1,516 @@
+---
+title: Adapters
+description: Convert between Provider formats and create custom providers
+---
+
+# Adapters
+
+Adapters enable conversion between Voltaire's Provider interface and other provider formats.
+
+## Overview
+
+Provider adapters allow you to:
+
+- **Convert to EIP-1193** - Use with wallets and libraries expecting standard providers
+- **Convert to HTTP** - Transform provider calls into HTTP JSON-RPC requests
+- **Create custom providers** - Implement Provider interface for custom transports
+
+## EIP-1193 Adapter
+
+Convert Voltaire's Provider to a standard EIP-1193 provider.
+
+### Eip1193Provider.from
+
+Wrap a Voltaire Provider to expose an EIP-1193 compatible interface:
+
+```typescript
+import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
+import type { Provider } from '@tevm/voltaire/provider';
+
+// Your Voltaire provider
+const provider: Provider = /* ... */;
+
+// Convert to EIP-1193
+const eip1193 = Eip1193Provider.from(provider);
+
+// Now compatible with standard libraries
+await eip1193.request({ method: 'eth_blockNumber', params: [] });
+await eip1193.request({
+  method: 'eth_getBalance',
+  params: ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 'latest']
+});
+```
+
+### API Translation
+
+The adapter handles conversion between the two APIs:
+
+| Voltaire | EIP-1193 |
+|----------|----------|
+| `provider.eth_blockNumber()` | `request({ method: 'eth_blockNumber', params: [] })` |
+| `provider.eth_getBalance(addr, 'latest')` | `request({ method: 'eth_getBalance', params: [addr, 'latest'] })` |
+| `provider.events.newHeads()` | `on('newHeads', listener)` |
+
+### Type Conversion
+
+The adapter automatically converts between branded primitives and plain types:
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// EIP-1193 accepts plain strings
+const balance = await eip1193.request({
+  method: 'eth_getBalance',
+  params: ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 'latest']
+});
+
+// Internally converts to:
+// provider.eth_getBalance(Address.from('0x742d35...'), 'latest')
+```
+
+### Event Handling
+
+Async generator events are converted to standard event emitters:
+
+```typescript
+// Voltaire style
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+}
+
+// EIP-1193 style (via adapter)
+eip1193.on('newHeads', (block) => {
+  console.log('Block:', block.number);
+});
+
+// Cleanup
+eip1193.removeListener('newHeads', listener);
+```
+
+### Usage with Libraries
+
+Use the adapter with libraries that expect EIP-1193 providers:
+
+```typescript
+import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
+import { createWalletClient, custom } from 'viem';
+
+const eip1193 = Eip1193Provider.from(voltaireProvider);
+
+// Use with viem
+const client = createWalletClient({
+  transport: custom(eip1193)
+});
+
+// Use with ethers
+import { BrowserProvider } from 'ethers';
+const ethersProvider = new BrowserProvider(eip1193);
+```
+
+## HTTP Handler
+
+Convert provider calls to HTTP JSON-RPC requests.
+
+### HttpHandler.from
+
+Create an HTTP handler that wraps a Provider:
+
+```typescript
+import { HttpHandler } from '@tevm/voltaire/provider/adapters';
+import type { Provider } from '@tevm/voltaire/provider';
+
+const provider: Provider = /* ... */;
+
+// Create HTTP handler
+const handler = HttpHandler.from(provider);
+
+// Receives HTTP requests, calls provider methods, returns HTTP responses
+```
+
+### Request Handling
+
+The handler processes JSON-RPC HTTP requests:
+
+```typescript
+// HTTP Request
+POST /
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "eth_blockNumber",
+  "params": []
+}
+
+// Handler converts to:
+await provider.eth_blockNumber()
+
+// HTTP Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x1234567"
+}
+```
+
+### Batch Requests
+
+Supports JSON-RPC batch requests:
+
+```typescript
+// Batch HTTP Request
+[
+  { "jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": [] },
+  { "jsonrpc": "2.0", "id": 2, "method": "eth_chainId", "params": [] }
+]
+
+// Handler executes in parallel:
+await Promise.all([
+  provider.eth_blockNumber(),
+  provider.eth_chainId()
+])
+
+// Batch HTTP Response
+[
+  { "jsonrpc": "2.0", "id": 1, "result": "0x1234567" },
+  { "jsonrpc": "2.0", "id": 2, "result": "0x1" }
+]
+```
+
+### Server Integration
+
+Use with HTTP servers:
+
+```typescript
+import { createServer } from 'node:http';
+import { HttpHandler } from '@tevm/voltaire/provider/adapters';
+
+const handler = HttpHandler.from(provider);
+
+const server = createServer(async (req, res) => {
+  if (req.method === 'POST' && req.url === '/') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      const response = await handler.handle(JSON.parse(body));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(response));
+    });
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+server.listen(8545);
+console.log('JSON-RPC server listening on http://localhost:8545');
+```
+
+## Creating Custom Providers
+
+Implement the Provider interface for custom transports or functionality.
+
+### Provider Interface
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+import type * as Address from '@tevm/voltaire/primitives/Address';
+import type * as Hash from '@tevm/voltaire/primitives/Hash';
+
+class CustomProvider implements Provider {
+  // Implement all 65 methods
+  async eth_blockNumber(): Promise<Response<Quantity>> {
+    // Your implementation
+  }
+
+  async eth_getBalance(
+    address: Address.BrandedAddress,
+    blockTag: BlockTag
+  ): Promise<Response<Quantity>> {
+    // Your implementation
+  }
+
+  // ... 63 more methods
+
+  // Implement events
+  events = {
+    async *newHeads() {
+      // Your implementation
+      while (true) {
+        yield await this.getNextBlock();
+      }
+    },
+
+    async *logs(params?: LogsParams) {
+      // Your implementation
+    },
+
+    // ... more events
+  };
+}
+```
+
+### WebSocket Provider Example
+
+Custom provider using WebSocket transport:
+
+```typescript
+import { WebSocket } from 'ws';
+import type { Provider } from '@tevm/voltaire/provider';
+
+export class WebSocketProvider implements Provider {
+  private ws: WebSocket;
+  private requestId = 0;
+  private pending = new Map<number, (result: any) => void>();
+
+  constructor(url: string) {
+    this.ws = new WebSocket(url);
+
+    this.ws.on('message', (data) => {
+      const response = JSON.parse(data.toString());
+      const resolver = this.pending.get(response.id);
+      if (resolver) {
+        resolver(response);
+        this.pending.delete(response.id);
+      }
+    });
+  }
+
+  private async request(method: string, params: any[]): Promise<any> {
+    const id = ++this.requestId;
+
+    return new Promise((resolve) => {
+      this.pending.set(id, resolve);
+      this.ws.send(JSON.stringify({
+        jsonrpc: '2.0',
+        id,
+        method,
+        params
+      }));
+    });
+  }
+
+  async eth_blockNumber(): Promise<Response<Quantity>> {
+    const response = await this.request('eth_blockNumber', []);
+    return response.error
+      ? { error: response.error }
+      : { result: Quantity.from(response.result) };
+  }
+
+  async eth_getBalance(
+    address: Address.BrandedAddress,
+    blockTag: BlockTag
+  ): Promise<Response<Quantity>> {
+    const response = await this.request('eth_getBalance', [
+      Address.toHex(address),
+      blockTag
+    ]);
+    return response.error
+      ? { error: response.error }
+      : { result: Quantity.from(response.result) };
+  }
+
+  // ... implement remaining methods
+
+  events = {
+    async *newHeads() {
+      // Subscribe via WebSocket
+      const id = await this.request('eth_subscribe', ['newHeads']);
+
+      // Listen for subscription messages
+      this.ws.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.method === 'eth_subscription' && msg.params.subscription === id) {
+          // Yield block to async generator
+          return msg.params.result;
+        }
+      });
+    },
+
+    // ... implement remaining events
+  };
+}
+```
+
+### Caching Provider Example
+
+Wrap another provider with caching:
+
+```typescript
+export class CachingProvider implements Provider {
+  private cache = new Map<string, any>();
+
+  constructor(private inner: Provider) {}
+
+  async eth_blockNumber(): Promise<Response<Quantity>> {
+    // No caching for block number (always changes)
+    return this.inner.eth_blockNumber();
+  }
+
+  async eth_getCode(
+    address: Address.BrandedAddress,
+    blockTag: BlockTag
+  ): Promise<Response<Hex>> {
+    const key = `code:${Address.toHex(address)}:${blockTag}`;
+
+    if (this.cache.has(key)) {
+      return { result: this.cache.get(key) };
+    }
+
+    const result = await this.inner.eth_getCode(address, blockTag);
+
+    if (!result.error && blockTag !== 'latest' && blockTag !== 'pending') {
+      // Cache historical data (immutable)
+      this.cache.set(key, result.result);
+    }
+
+    return result;
+  }
+
+  // ... implement remaining methods with caching logic
+
+  // Forward events (no caching)
+  events = this.inner.events;
+}
+```
+
+### Multi-Provider Example
+
+Load balance across multiple providers:
+
+```typescript
+export class MultiProvider implements Provider {
+  private currentIndex = 0;
+
+  constructor(private providers: Provider[]) {}
+
+  private next(): Provider {
+    const provider = this.providers[this.currentIndex];
+    this.currentIndex = (this.currentIndex + 1) % this.providers.length;
+    return provider;
+  }
+
+  async eth_blockNumber(): Promise<Response<Quantity>> {
+    // Try providers in order until one succeeds
+    for (const provider of this.providers) {
+      const result = await provider.eth_blockNumber();
+      if (!result.error) return result;
+    }
+    return { error: { code: -32603, message: 'All providers failed' } };
+  }
+
+  // ... implement remaining methods with failover logic
+
+  events = {
+    // Use first provider for events
+    ...this.providers[0].events
+  };
+}
+```
+
+## Adapter Patterns
+
+### Provider Chain
+
+Compose multiple adapters:
+
+```typescript
+const provider = new WebSocketProvider('wss://eth.example.com');
+const cached = new CachingProvider(provider);
+const rateLimited = new RateLimitProvider(cached);
+const logged = new LoggingProvider(rateLimited);
+```
+
+### Conditional Routing
+
+Route methods to different providers:
+
+```typescript
+export class RoutingProvider implements Provider {
+  constructor(
+    private readProvider: Provider,
+    private writeProvider: Provider
+  ) {}
+
+  async eth_call(params: CallParams, blockTag: BlockTag) {
+    return this.readProvider.eth_call(params, blockTag);
+  }
+
+  async eth_sendRawTransaction(signedTx: Hex) {
+    return this.writeProvider.eth_sendRawTransaction(signedTx);
+  }
+
+  // ... route methods appropriately
+}
+```
+
+### Mock Provider
+
+Create mock provider for testing:
+
+```typescript
+export class MockProvider implements Provider {
+  private blockNumber = 1000000n;
+  private balances = new Map<string, bigint>();
+
+  async eth_blockNumber(): Promise<Response<Quantity>> {
+    return { result: Quantity.from(this.blockNumber) };
+  }
+
+  async eth_getBalance(
+    address: Address.BrandedAddress,
+    blockTag: BlockTag
+  ): Promise<Response<Quantity>> {
+    const key = Address.toHex(address);
+    const balance = this.balances.get(key) ?? 0n;
+    return { result: Quantity.from(balance) };
+  }
+
+  // Test helper methods
+  setBalance(address: Address.BrandedAddress, balance: bigint) {
+    this.balances.set(Address.toHex(address), balance);
+  }
+
+  incrementBlock() {
+    this.blockNumber++;
+  }
+
+  // ... implement remaining methods
+}
+```
+
+## Type Safety
+
+Adapters preserve type safety with branded primitives:
+
+```typescript
+// Voltaire Provider - type safe
+const address = Address.from('0x...');
+await provider.eth_getBalance(address, 'latest');
+
+// EIP-1193 adapter - converts automatically
+await eip1193.request({
+  method: 'eth_getBalance',
+  params: ['0x...', 'latest']  // Plain strings converted
+});
+
+// HTTP handler - validates and converts
+// Invalid addresses rejected before provider call
+```
+
+## Best Practices
+
+1. **Implement all methods** - Provider interface requires all 65 methods
+2. **Handle errors properly** - Return `{ error }` instead of throwing
+3. **Preserve semantics** - Match Ethereum JSON-RPC behavior
+4. **Test thoroughly** - Use mock providers for unit tests
+5. **Document assumptions** - Note any transport-specific limitations
+6. **Consider performance** - Cache immutable data, batch requests
+
+## Next Steps
+
+- [Provider Overview](/provider) - Learn about Provider interface
+- [Method API](/provider/methods) - Understand method patterns
+- [Events](/provider/events) - Work with async generator events
+- [Primitives](/primitives/address) - Learn about branded types
