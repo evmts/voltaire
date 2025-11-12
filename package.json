@@ -511,6 +511,7 @@
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",
+		"@codesandbox/sandpack-react": "^2.20.0",
 		"@scure/bip32": "^2.0.1",
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.23.0",
