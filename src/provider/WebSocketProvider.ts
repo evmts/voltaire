@@ -8,7 +8,7 @@
  */
 
 import type { Provider } from "./Provider.js";
-import type { Response, RequestOptions, ProviderEvents } from "./types.js";
+import type { ProviderEvents, RequestOptions, Response } from "./types.js";
 
 /**
  * WebSocket configuration options
@@ -207,7 +207,7 @@ export class WebSocketProvider implements Provider {
 				}
 			});
 
-			this.ws!.send(request);
+			this.ws?.send(request);
 		});
 	}
 
@@ -215,7 +215,10 @@ export class WebSocketProvider implements Provider {
 	 * Subscribe to WebSocket event
 	 */
 	private async subscribe(method: string, params: any[] = []): Promise<string> {
-		const response = await this.request<string>("eth_subscribe", [method, ...params]);
+		const response = await this.request<string>("eth_subscribe", [
+			method,
+			...params,
+		]);
 		if (response.error) {
 			throw new Error(response.error.message);
 		}
@@ -258,8 +261,16 @@ export class WebSocketProvider implements Provider {
 		return this.request<string>("eth_coinbase", [], options);
 	}
 
-	eth_createAccessList(params: any, blockTag = "latest", options?: RequestOptions) {
-		return this.request<any>("eth_createAccessList", [params, blockTag], options);
+	eth_createAccessList(
+		params: any,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
+		return this.request<any>(
+			"eth_createAccessList",
+			[params, blockTag],
+			options,
+		);
 	}
 
 	eth_estimateGas(params: any, options?: RequestOptions) {
@@ -282,7 +293,11 @@ export class WebSocketProvider implements Provider {
 		return this.request<string>("eth_gasPrice", [], options);
 	}
 
-	eth_getBalance(address: string, blockTag = "latest", options?: RequestOptions) {
+	eth_getBalance(
+		address: string,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
 		return this.request<string>("eth_getBalance", [address, blockTag], options);
 	}
 
@@ -291,7 +306,11 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getBlockByHash", [blockHash, fullTransactions], options);
+		return this.request<any>(
+			"eth_getBlockByHash",
+			[blockHash, fullTransactions],
+			options,
+		);
 	}
 
 	eth_getBlockByNumber(
@@ -299,19 +318,37 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getBlockByNumber", [blockTag, fullTransactions], options);
+		return this.request<any>(
+			"eth_getBlockByNumber",
+			[blockTag, fullTransactions],
+			options,
+		);
 	}
 
 	eth_getBlockReceipts(blockTag: string, options?: RequestOptions) {
 		return this.request<any[]>("eth_getBlockReceipts", [blockTag], options);
 	}
 
-	eth_getBlockTransactionCountByHash(blockHash: string, options?: RequestOptions) {
-		return this.request<string>("eth_getBlockTransactionCountByHash", [blockHash], options);
+	eth_getBlockTransactionCountByHash(
+		blockHash: string,
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getBlockTransactionCountByHash",
+			[blockHash],
+			options,
+		);
 	}
 
-	eth_getBlockTransactionCountByNumber(blockTag: string, options?: RequestOptions) {
-		return this.request<string>("eth_getBlockTransactionCountByNumber", [blockTag], options);
+	eth_getBlockTransactionCountByNumber(
+		blockTag: string,
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getBlockTransactionCountByNumber",
+			[blockTag],
+			options,
+		);
 	}
 
 	eth_getCode(address: string, blockTag = "latest", options?: RequestOptions) {
@@ -336,7 +373,11 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getProof", [address, storageKeys, blockTag], options);
+		return this.request<any>(
+			"eth_getProof",
+			[address, storageKeys, blockTag],
+			options,
+		);
 	}
 
 	eth_getStorageAt(
@@ -345,7 +386,11 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<string>("eth_getStorageAt", [address, position, blockTag], options);
+		return this.request<string>(
+			"eth_getStorageAt",
+			[address, position, blockTag],
+			options,
+		);
 	}
 
 	eth_getTransactionByBlockHashAndIndex(
@@ -353,7 +398,11 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getTransactionByBlockHashAndIndex", [blockHash, index], options);
+		return this.request<any>(
+			"eth_getTransactionByBlockHashAndIndex",
+			[blockHash, index],
+			options,
+		);
 	}
 
 	eth_getTransactionByBlockNumberAndIndex(
@@ -361,15 +410,27 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getTransactionByBlockNumberAndIndex", [blockTag, index], options);
+		return this.request<any>(
+			"eth_getTransactionByBlockNumberAndIndex",
+			[blockTag, index],
+			options,
+		);
 	}
 
 	eth_getTransactionByHash(txHash: string, options?: RequestOptions) {
 		return this.request<any>("eth_getTransactionByHash", [txHash], options);
 	}
 
-	eth_getTransactionCount(address: string, blockTag = "latest", options?: RequestOptions) {
-		return this.request<string>("eth_getTransactionCount", [address, blockTag], options);
+	eth_getTransactionCount(
+		address: string,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getTransactionCount",
+			[address, blockTag],
+			options,
+		);
 	}
 
 	eth_getTransactionReceipt(txHash: string, options?: RequestOptions) {
@@ -377,11 +438,19 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getUncleCountByBlockHash(blockHash: string, options?: RequestOptions) {
-		return this.request<string>("eth_getUncleCountByBlockHash", [blockHash], options);
+		return this.request<string>(
+			"eth_getUncleCountByBlockHash",
+			[blockHash],
+			options,
+		);
 	}
 
 	eth_getUncleCountByBlockNumber(blockTag: string, options?: RequestOptions) {
-		return this.request<string>("eth_getUncleCountByBlockNumber", [blockTag], options);
+		return this.request<string>(
+			"eth_getUncleCountByBlockNumber",
+			[blockTag],
+			options,
+		);
 	}
 
 	eth_maxPriorityFeePerGas(options?: RequestOptions) {
@@ -465,7 +534,9 @@ export class WebSocketProvider implements Provider {
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
-		const rpcParams = traceOptions ? [params, blockTag, traceOptions] : [params, blockTag];
+		const rpcParams = traceOptions
+			? [params, blockTag, traceOptions]
+			: [params, blockTag];
 		return this.request<any>("debug_traceCall", rpcParams, options);
 	}
 
@@ -543,19 +614,44 @@ export class WebSocketProvider implements Provider {
 	}
 
 	engine_getBlobsV1(blobVersionedHashes: string[], options?: RequestOptions) {
-		return this.request<any[]>("engine_getBlobsV1", [blobVersionedHashes], options);
+		return this.request<any[]>(
+			"engine_getBlobsV1",
+			[blobVersionedHashes],
+			options,
+		);
 	}
 
-	engine_exchangeCapabilities(capabilities: string[], options?: RequestOptions) {
-		return this.request<string[]>("engine_exchangeCapabilities", [capabilities], options);
+	engine_exchangeCapabilities(
+		capabilities: string[],
+		options?: RequestOptions,
+	) {
+		return this.request<string[]>(
+			"engine_exchangeCapabilities",
+			[capabilities],
+			options,
+		);
 	}
 
-	engine_exchangeTransitionConfigurationV1(config: any, options?: RequestOptions) {
-		return this.request<any>("engine_exchangeTransitionConfigurationV1", [config], options);
+	engine_exchangeTransitionConfigurationV1(
+		config: any,
+		options?: RequestOptions,
+	) {
+		return this.request<any>(
+			"engine_exchangeTransitionConfigurationV1",
+			[config],
+			options,
+		);
 	}
 
-	engine_getPayloadBodiesByHashV1(blockHashes: string[], options?: RequestOptions) {
-		return this.request<any[]>("engine_getPayloadBodiesByHashV1", [blockHashes], options);
+	engine_getPayloadBodiesByHashV1(
+		blockHashes: string[],
+		options?: RequestOptions,
+	) {
+		return this.request<any[]>(
+			"engine_getPayloadBodiesByHashV1",
+			[blockHashes],
+			options,
+		);
 	}
 
 	engine_getPayloadBodiesByRangeV1(
@@ -563,7 +659,11 @@ export class WebSocketProvider implements Provider {
 		count: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any[]>("engine_getPayloadBodiesByRangeV1", [start, count], options);
+		return this.request<any[]>(
+			"engine_getPayloadBodiesByRangeV1",
+			[start, count],
+			options,
+		);
 	}
 
 	// ============================================================================
@@ -588,7 +688,7 @@ export class WebSocketProvider implements Provider {
 			if (!this.subscriptions.has(subscriptionId)) {
 				this.subscriptions.set(subscriptionId, new Set());
 			}
-			this.subscriptions.get(subscriptionId)!.add(callback);
+			this.subscriptions.get(subscriptionId)?.add(callback);
 
 			try {
 				while (true) {
@@ -606,7 +706,10 @@ export class WebSocketProvider implements Provider {
 		}.bind(this),
 
 		logs: async function* (this: WebSocketProvider, params?: any) {
-			const subscriptionId = await this.subscribe("logs", params ? [params] : []);
+			const subscriptionId = await this.subscribe(
+				"logs",
+				params ? [params] : [],
+			);
 			const queue: any[] = [];
 			let resolve: ((value: any) => void) | null = null;
 
@@ -622,7 +725,7 @@ export class WebSocketProvider implements Provider {
 			if (!this.subscriptions.has(subscriptionId)) {
 				this.subscriptions.set(subscriptionId, new Set());
 			}
-			this.subscriptions.get(subscriptionId)!.add(callback);
+			this.subscriptions.get(subscriptionId)?.add(callback);
 
 			try {
 				while (true) {
@@ -656,7 +759,7 @@ export class WebSocketProvider implements Provider {
 			if (!this.subscriptions.has(subscriptionId)) {
 				this.subscriptions.set(subscriptionId, new Set());
 			}
-			this.subscriptions.get(subscriptionId)!.add(callback);
+			this.subscriptions.get(subscriptionId)?.add(callback);
 
 			try {
 				while (true) {
@@ -690,7 +793,7 @@ export class WebSocketProvider implements Provider {
 			if (!this.subscriptions.has(subscriptionId)) {
 				this.subscriptions.set(subscriptionId, new Set());
 			}
-			this.subscriptions.get(subscriptionId)!.add(callback);
+			this.subscriptions.get(subscriptionId)?.add(callback);
 
 			try {
 				while (true) {

@@ -8,7 +8,7 @@
  */
 
 import type { Provider } from "./Provider.js";
-import type { Response, RequestOptions, ProviderEvents } from "./types.js";
+import type { ProviderEvents, RequestOptions, Response } from "./types.js";
 
 /**
  * HTTP configuration options
@@ -139,7 +139,6 @@ export class HttpProvider implements Provider {
 				// Retry on network errors
 				if (attempt < retry) {
 					await new Promise((resolve) => setTimeout(resolve, retryDelay));
-					continue;
 				}
 			}
 		}
@@ -180,8 +179,16 @@ export class HttpProvider implements Provider {
 		return this.request<string>("eth_coinbase", [], options);
 	}
 
-	eth_createAccessList(params: any, blockTag = "latest", options?: RequestOptions) {
-		return this.request<any>("eth_createAccessList", [params, blockTag], options);
+	eth_createAccessList(
+		params: any,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
+		return this.request<any>(
+			"eth_createAccessList",
+			[params, blockTag],
+			options,
+		);
 	}
 
 	eth_estimateGas(params: any, options?: RequestOptions) {
@@ -204,7 +211,11 @@ export class HttpProvider implements Provider {
 		return this.request<string>("eth_gasPrice", [], options);
 	}
 
-	eth_getBalance(address: string, blockTag = "latest", options?: RequestOptions) {
+	eth_getBalance(
+		address: string,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
 		return this.request<string>("eth_getBalance", [address, blockTag], options);
 	}
 
@@ -213,7 +224,11 @@ export class HttpProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getBlockByHash", [blockHash, fullTransactions], options);
+		return this.request<any>(
+			"eth_getBlockByHash",
+			[blockHash, fullTransactions],
+			options,
+		);
 	}
 
 	eth_getBlockByNumber(
@@ -221,19 +236,37 @@ export class HttpProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getBlockByNumber", [blockTag, fullTransactions], options);
+		return this.request<any>(
+			"eth_getBlockByNumber",
+			[blockTag, fullTransactions],
+			options,
+		);
 	}
 
 	eth_getBlockReceipts(blockTag: string, options?: RequestOptions) {
 		return this.request<any[]>("eth_getBlockReceipts", [blockTag], options);
 	}
 
-	eth_getBlockTransactionCountByHash(blockHash: string, options?: RequestOptions) {
-		return this.request<string>("eth_getBlockTransactionCountByHash", [blockHash], options);
+	eth_getBlockTransactionCountByHash(
+		blockHash: string,
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getBlockTransactionCountByHash",
+			[blockHash],
+			options,
+		);
 	}
 
-	eth_getBlockTransactionCountByNumber(blockTag: string, options?: RequestOptions) {
-		return this.request<string>("eth_getBlockTransactionCountByNumber", [blockTag], options);
+	eth_getBlockTransactionCountByNumber(
+		blockTag: string,
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getBlockTransactionCountByNumber",
+			[blockTag],
+			options,
+		);
 	}
 
 	eth_getCode(address: string, blockTag = "latest", options?: RequestOptions) {
@@ -258,7 +291,11 @@ export class HttpProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getProof", [address, storageKeys, blockTag], options);
+		return this.request<any>(
+			"eth_getProof",
+			[address, storageKeys, blockTag],
+			options,
+		);
 	}
 
 	eth_getStorageAt(
@@ -267,7 +304,11 @@ export class HttpProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<string>("eth_getStorageAt", [address, position, blockTag], options);
+		return this.request<string>(
+			"eth_getStorageAt",
+			[address, position, blockTag],
+			options,
+		);
 	}
 
 	eth_getTransactionByBlockHashAndIndex(
@@ -275,7 +316,11 @@ export class HttpProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getTransactionByBlockHashAndIndex", [blockHash, index], options);
+		return this.request<any>(
+			"eth_getTransactionByBlockHashAndIndex",
+			[blockHash, index],
+			options,
+		);
 	}
 
 	eth_getTransactionByBlockNumberAndIndex(
@@ -283,15 +328,27 @@ export class HttpProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>("eth_getTransactionByBlockNumberAndIndex", [blockTag, index], options);
+		return this.request<any>(
+			"eth_getTransactionByBlockNumberAndIndex",
+			[blockTag, index],
+			options,
+		);
 	}
 
 	eth_getTransactionByHash(txHash: string, options?: RequestOptions) {
 		return this.request<any>("eth_getTransactionByHash", [txHash], options);
 	}
 
-	eth_getTransactionCount(address: string, blockTag = "latest", options?: RequestOptions) {
-		return this.request<string>("eth_getTransactionCount", [address, blockTag], options);
+	eth_getTransactionCount(
+		address: string,
+		blockTag = "latest",
+		options?: RequestOptions,
+	) {
+		return this.request<string>(
+			"eth_getTransactionCount",
+			[address, blockTag],
+			options,
+		);
 	}
 
 	eth_getTransactionReceipt(txHash: string, options?: RequestOptions) {
@@ -299,11 +356,19 @@ export class HttpProvider implements Provider {
 	}
 
 	eth_getUncleCountByBlockHash(blockHash: string, options?: RequestOptions) {
-		return this.request<string>("eth_getUncleCountByBlockHash", [blockHash], options);
+		return this.request<string>(
+			"eth_getUncleCountByBlockHash",
+			[blockHash],
+			options,
+		);
 	}
 
 	eth_getUncleCountByBlockNumber(blockTag: string, options?: RequestOptions) {
-		return this.request<string>("eth_getUncleCountByBlockNumber", [blockTag], options);
+		return this.request<string>(
+			"eth_getUncleCountByBlockNumber",
+			[blockTag],
+			options,
+		);
 	}
 
 	eth_maxPriorityFeePerGas(options?: RequestOptions) {
@@ -387,7 +452,9 @@ export class HttpProvider implements Provider {
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
-		const rpcParams = traceOptions ? [params, blockTag, traceOptions] : [params, blockTag];
+		const rpcParams = traceOptions
+			? [params, blockTag, traceOptions]
+			: [params, blockTag];
 		return this.request<any>("debug_traceCall", rpcParams, options);
 	}
 
@@ -465,19 +532,44 @@ export class HttpProvider implements Provider {
 	}
 
 	engine_getBlobsV1(blobVersionedHashes: string[], options?: RequestOptions) {
-		return this.request<any[]>("engine_getBlobsV1", [blobVersionedHashes], options);
+		return this.request<any[]>(
+			"engine_getBlobsV1",
+			[blobVersionedHashes],
+			options,
+		);
 	}
 
-	engine_exchangeCapabilities(capabilities: string[], options?: RequestOptions) {
-		return this.request<string[]>("engine_exchangeCapabilities", [capabilities], options);
+	engine_exchangeCapabilities(
+		capabilities: string[],
+		options?: RequestOptions,
+	) {
+		return this.request<string[]>(
+			"engine_exchangeCapabilities",
+			[capabilities],
+			options,
+		);
 	}
 
-	engine_exchangeTransitionConfigurationV1(config: any, options?: RequestOptions) {
-		return this.request<any>("engine_exchangeTransitionConfigurationV1", [config], options);
+	engine_exchangeTransitionConfigurationV1(
+		config: any,
+		options?: RequestOptions,
+	) {
+		return this.request<any>(
+			"engine_exchangeTransitionConfigurationV1",
+			[config],
+			options,
+		);
 	}
 
-	engine_getPayloadBodiesByHashV1(blockHashes: string[], options?: RequestOptions) {
-		return this.request<any[]>("engine_getPayloadBodiesByHashV1", [blockHashes], options);
+	engine_getPayloadBodiesByHashV1(
+		blockHashes: string[],
+		options?: RequestOptions,
+	) {
+		return this.request<any[]>(
+			"engine_getPayloadBodiesByHashV1",
+			[blockHashes],
+			options,
+		);
 	}
 
 	engine_getPayloadBodiesByRangeV1(
@@ -485,7 +577,11 @@ export class HttpProvider implements Provider {
 		count: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any[]>("engine_getPayloadBodiesByRangeV1", [start, count], options);
+		return this.request<any[]>(
+			"engine_getPayloadBodiesByRangeV1",
+			[start, count],
+			options,
+		);
 	}
 
 	// ============================================================================
@@ -497,7 +593,9 @@ export class HttpProvider implements Provider {
 			// HTTP providers use polling for events
 			let lastBlock = await this.eth_blockNumber();
 			if (lastBlock.error) {
-				throw new Error(`Failed to get initial block: ${lastBlock.error.message}`);
+				throw new Error(
+					`Failed to get initial block: ${lastBlock.error.message}`,
+				);
 			}
 
 			while (true) {
@@ -507,7 +605,10 @@ export class HttpProvider implements Provider {
 				if (currentBlock.error) continue;
 
 				if (currentBlock.result !== lastBlock.result) {
-					const block = await this.eth_getBlockByNumber(currentBlock.result, false);
+					const block = await this.eth_getBlockByNumber(
+						currentBlock.result,
+						false,
+					);
 					if (!block.error && block.result) {
 						yield block.result;
 						lastBlock = currentBlock;

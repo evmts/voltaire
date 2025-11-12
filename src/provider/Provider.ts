@@ -7,7 +7,7 @@
  * @module provider/Provider
  */
 
-import type { Response, RequestOptions, ProviderEvents } from "./types.js";
+import type { ProviderEvents, RequestOptions, Response } from "./types.js";
 
 /**
  * Provider interface for Ethereum JSON-RPC communication
@@ -209,9 +209,7 @@ export interface Provider {
 	): Promise<Response<string>>;
 
 	/** Get max priority fee per gas (EIP-1559) */
-	eth_maxPriorityFeePerGas(
-		options?: RequestOptions,
-	): Promise<Response<string>>;
+	eth_maxPriorityFeePerGas(options?: RequestOptions): Promise<Response<string>>;
 
 	/** Create new block filter */
 	eth_newBlockFilter(options?: RequestOptions): Promise<Response<string>>;
@@ -272,10 +270,7 @@ export interface Provider {
 	): Promise<Response<string>>;
 
 	/** Simulate multiple transactions */
-	eth_simulateV1(
-		params: any,
-		options?: RequestOptions,
-	): Promise<Response<any>>;
+	eth_simulateV1(params: any, options?: RequestOptions): Promise<Response<any>>;
 
 	/** Get sync status */
 	eth_syncing(options?: RequestOptions): Promise<Response<any>>;
