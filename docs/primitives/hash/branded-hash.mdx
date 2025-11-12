@@ -263,7 +263,7 @@ import { Hash, BrandedHash } from '@tevm/voltaire'
 import { toHex, equals } from '@tevm/voltaire/BrandedHash'
 
 // Hash IS a BrandedHash
-const hash = new Hash("0x1234567890abcdef...")
+const hash = Hash("0x1234567890abcdef...")
 const hex = toHex(hash) // ✓ works
 
 // BrandedHash works with Hash static methods

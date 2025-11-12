@@ -316,7 +316,7 @@ values.filter(v => !isZero(v))
 ```typescript
 import { Uint } from '@tevm/voltaire'
 
-const value = new Uint(100n)
+const value = Uint(100n)
 ```
 
 **Bundle:** Includes all Uint methods on prototype. Larger bundle but more convenient API.
@@ -354,7 +354,7 @@ import { Uint } from '@tevm/voltaire'
 import { toHex, plus } from '@tevm/voltaire/BrandedUint'
 
 // Uint IS a BrandedUint
-const uint = new Uint(100n)
+const uint = Uint(100n)
 const hex = toHex(uint)  // ✓ works
 
 // BrandedUint works with Uint static methods

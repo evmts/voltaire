@@ -29,7 +29,7 @@ Uint supports both **Class API** (instance methods) and **Namespace API** (funct
 import { Uint } from '@tevm/voltaire'
 
 // Construct from various formats (see Constructors)
-const a = new Uint(100n)
+const a = Uint(100n)
 const b = Uint.fromHex("0xff")
 const c = Uint.fromBytes(new Uint8Array(32))
 

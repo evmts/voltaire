@@ -77,7 +77,7 @@ addr.some(b => b !== 0) // true (has non-zero bytes)
 Always 20 for valid addresses:
 
 ```typescript
-const addr = new Address(69n)
+const addr = Address(69n)
 addr.length // 20
 ```
 
@@ -86,7 +86,7 @@ addr.length // 20
 Access underlying ArrayBuffer:
 
 ```typescript
-const addr = new Address(69n)
+const addr = Address(69n)
 addr.buffer       // ArrayBuffer(20)
 addr.byteOffset   // 0
 addr.byteLength   // 20
