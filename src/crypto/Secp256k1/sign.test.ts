@@ -12,7 +12,7 @@ describe("Secp256k1.sign", () => {
 		it("should produce deterministic signatures", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes); // Private key = 1
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Private key = 1
 
 			const message = Hash.fromBytes(
 				sha256(new TextEncoder().encode("hello world")),
@@ -30,7 +30,7 @@ describe("Secp256k1.sign", () => {
 		it("should produce different signatures for different messages", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const message1 = Hash.fromBytes(
 				sha256(new TextEncoder().encode("hello")),
@@ -68,7 +68,7 @@ describe("Secp256k1.sign", () => {
 		it("should return signature with r, s, v components", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			const sig = sign(message, privateKey);
@@ -84,7 +84,7 @@ describe("Secp256k1.sign", () => {
 		it("should produce 32-byte r and s components", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			const sig = sign(message, privateKey);
@@ -96,7 +96,7 @@ describe("Secp256k1.sign", () => {
 		it("should produce Ethereum-compatible v value (27 or 28)", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			const sig = sign(message, privateKey);
@@ -109,7 +109,7 @@ describe("Secp256k1.sign", () => {
 		it("should handle minimum valid private key (1)", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			const sig = sign(message, privateKey);
@@ -125,7 +125,7 @@ describe("Secp256k1.sign", () => {
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			]);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			const sig = sign(message, privateKey);
@@ -137,7 +137,7 @@ describe("Secp256k1.sign", () => {
 		it("should handle all-zero message hash", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(new Uint8Array(32)); // All zeros
 
 			const sig = sign(message, privateKey);
@@ -149,7 +149,7 @@ describe("Secp256k1.sign", () => {
 		it("should handle all-ones message hash", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(new Uint8Array(32).fill(0xff));
 
 			const sig = sign(message, privateKey);
@@ -162,7 +162,7 @@ describe("Secp256k1.sign", () => {
 	describe("validation", () => {
 		it("should throw InvalidPrivateKeyError for zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes); // All zeros
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // All zeros
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
@@ -175,7 +175,7 @@ describe("Secp256k1.sign", () => {
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
 			]);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			expect(() => sign(message, privateKey)).toThrow();
@@ -183,7 +183,7 @@ describe("Secp256k1.sign", () => {
 
 		it("should throw InvalidPrivateKeyError for wrong length private key", () => {
 			const privateKeyBytes = new Uint8Array(31);
-			const privateKey = PrivateKey.from(privateKeyBytes); // Too short
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too short
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
@@ -191,7 +191,7 @@ describe("Secp256k1.sign", () => {
 
 		it("should throw InvalidPrivateKeyError for too long private key", () => {
 			const privateKeyBytes = new Uint8Array(33);
-			const privateKey = PrivateKey.from(privateKeyBytes); // Too long
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too long
 			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
 			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
@@ -202,7 +202,7 @@ describe("Secp256k1.sign", () => {
 		it("should compute correct recovery bit for public key recovery", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(
 				sha256(new TextEncoder().encode("test recovery")),
 			);
@@ -225,7 +225,7 @@ describe("Secp256k1.sign", () => {
 	describe("cross-validation with @noble/curves", () => {
 		it("should produce signature verifiable by @noble/curves", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i + 1;
 			}
@@ -275,7 +275,7 @@ describe("Secp256k1.sign", () => {
 		it("should not early-return based on message content", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 5;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			// Different message patterns should all succeed
 			const messages = [
@@ -296,7 +296,7 @@ describe("Secp256k1.sign", () => {
 	describe("low-s enforcement", () => {
 		it("should produce low-s signatures (s <= n/2)", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}

@@ -9,7 +9,7 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should derive public key from private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const publicKey = derivePublicKey(privateKey);
 
@@ -20,7 +20,7 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should derive deterministic public key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const publicKey1 = derivePublicKey(privateKey);
 			const publicKey2 = derivePublicKey(privateKey);
@@ -42,7 +42,7 @@ describe("Secp256k1.derivePublicKey", () => {
 
 		it("should return 64-byte uncompressed public key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i + 1;
 			}
@@ -56,7 +56,7 @@ describe("Secp256k1.derivePublicKey", () => {
 	describe("validation errors", () => {
 		it("should throw InvalidPrivateKeyError for zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes); // All zeros
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // All zeros
 
 			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
@@ -68,21 +68,21 @@ describe("Secp256k1.derivePublicKey", () => {
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
 			]);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			expect(() => derivePublicKey(privateKey)).toThrow();
 		});
 
 		it("should throw InvalidPrivateKeyError for wrong length private key", () => {
 			const privateKeyBytes = new Uint8Array(31);
-			const privateKey = PrivateKey.from(privateKeyBytes); // Too short
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too short
 
 			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
 
 		it("should throw InvalidPrivateKeyError for too long private key", () => {
 			const privateKeyBytes = new Uint8Array(33);
-			const privateKey = PrivateKey.from(privateKeyBytes); // Too long
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too long
 
 			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
@@ -92,7 +92,7 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should handle minimum valid private key (1)", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const publicKey = derivePublicKey(privateKey);
 
@@ -106,7 +106,7 @@ describe("Secp256k1.derivePublicKey", () => {
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			]);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const publicKey = derivePublicKey(privateKey);
 
@@ -134,7 +134,7 @@ describe("Secp256k1.derivePublicKey", () => {
 	describe("cross-validation with @noble/curves", () => {
 		it("should derive same public key as @noble/curves", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 13) % 256;
 			}
@@ -176,7 +176,7 @@ describe("Secp256k1.derivePublicKey", () => {
 	describe("coordinate validation", () => {
 		it("should derive valid curve point", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 17) % 256;
 			}
@@ -197,7 +197,7 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should not produce point at infinity", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const publicKey = derivePublicKey(privateKey);
 
@@ -210,7 +210,7 @@ describe("Secp256k1.derivePublicKey", () => {
 	describe("consistency", () => {
 		it("should produce same key across multiple calls", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i;
 			}
@@ -233,7 +233,7 @@ describe("Secp256k1.derivePublicKey", () => {
 			for (let i = 1; i <= 10; i++) {
 				const privateKeyBytes = new Uint8Array(32);
 				privateKeyBytes[31] = i;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 				publicKeys.push(derivePublicKey(privateKey));
 			}
 

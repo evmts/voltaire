@@ -7,7 +7,7 @@ describe("fromPrivateKey", () => {
 		it("derives address from 32-byte private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
@@ -15,7 +15,7 @@ describe("fromPrivateKey", () => {
 
 		it("derives known address from test vector 1", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(1);
 			const addr = Address.fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
@@ -25,7 +25,7 @@ describe("fromPrivateKey", () => {
 
 		it("derives known address from test vector 2", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i + 1;
 			}
@@ -37,7 +37,7 @@ describe("fromPrivateKey", () => {
 		it("derives consistent address from same private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 0xcd;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr1 = Address.fromPrivateKey(privateKey);
 			const addr2 = Address.fromPrivateKey(privateKey);
 			expect(Address.equals(addr1, addr2)).toBe(true);
@@ -56,7 +56,7 @@ describe("fromPrivateKey", () => {
 		it("derives non-zero address from non-zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			expect(Address.isZero(addr)).toBe(false);
 		});
@@ -65,7 +65,7 @@ describe("fromPrivateKey", () => {
 	describe("invalid inputs", () => {
 		it("throws on wrong length - too short", () => {
 			const privateKeyBytes = new Uint8Array(31);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
@@ -73,7 +73,7 @@ describe("fromPrivateKey", () => {
 
 		it("throws on wrong length - too long", () => {
 			const privateKeyBytes = new Uint8Array(33);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
@@ -81,7 +81,7 @@ describe("fromPrivateKey", () => {
 
 		it("throws on empty array", () => {
 			const privateKeyBytes = new Uint8Array(0);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
@@ -89,7 +89,7 @@ describe("fromPrivateKey", () => {
 
 		it("throws on zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
@@ -97,7 +97,7 @@ describe("fromPrivateKey", () => {
 
 		it("throws on private key >= secp256k1 order", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(0xff);
 			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidValueError,
@@ -109,7 +109,7 @@ describe("fromPrivateKey", () => {
 		it("handles private key = 1", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
@@ -117,7 +117,7 @@ describe("fromPrivateKey", () => {
 
 		it("handles maximum valid private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			// secp256k1 order - 1
 			const orderMinus1 = [
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -135,7 +135,7 @@ describe("fromPrivateKey", () => {
 		it("works with Address factory", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			expect(Address.is(addr)).toBe(true);
 		});
@@ -143,7 +143,7 @@ describe("fromPrivateKey", () => {
 		it("works with Address namespace method", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(hex).toMatch(/^0x[0-9a-f]{40}$/);
@@ -152,7 +152,7 @@ describe("fromPrivateKey", () => {
 		it("derived address is valid", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = Address.fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(Address.isValid(hex)).toBe(true);

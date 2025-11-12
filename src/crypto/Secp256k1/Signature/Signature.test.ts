@@ -54,7 +54,7 @@ describe("Secp256k1.Signature methods", () => {
 		it("should convert real signature to bytes", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -123,7 +123,7 @@ describe("Secp256k1.Signature methods", () => {
 		it("should parse real signature bytes", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -186,7 +186,7 @@ describe("Secp256k1.Signature methods", () => {
 		it("should convert real signature to compact", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -253,7 +253,7 @@ describe("Secp256k1.Signature methods", () => {
 		it("should parse real signature compact bytes", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -293,7 +293,7 @@ describe("Secp256k1.Signature methods", () => {
 
 		it("should maintain data integrity across conversions", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.from(privateKeyBytes);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
