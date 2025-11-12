@@ -843,55 +843,55 @@ describe("Address", () => {
 	// Universal Constructor
 	// ==========================================================================
 
-	describe("Address.from()", () => {
+	describe("Address()", () => {
 		it("creates Address from bigint", () => {
-			const addr = Address.from(0x742d35cc6634c0532925a3b844bc9e7595f251e3n);
+			const addr = Address(0x742d35cc6634c0532925a3b844bc9e7595f251e3n);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
 
 		it("creates Address from number", () => {
-			const addr = Address.from(12345);
+			const addr = Address(12345);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
 
 		it("creates Address from hex string", () => {
-			const addr = Address.from("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+			const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
 
 		it("creates Address from Uint8Array", () => {
 			const bytes = new Uint8Array(20);
-			const addr = Address.from(bytes);
+			const addr = Address(bytes);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
 
 		it("throws on negative number", () => {
-			expect(() => Address.from(-1)).toThrow(
+			expect(() => Address(-1)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});
 
 		it("throws on invalid hex string", () => {
-			expect(() => Address.from("0x742d35cc")).toThrow(
+			expect(() => Address("0x742d35cc")).toThrow(
 				AddressNamespace.InvalidAddressError,
 			);
 		});
 
 		it("throws on invalid Uint8Array length", () => {
-			expect(() => Address.from(new Uint8Array(19))).toThrow(
+			expect(() => Address(new Uint8Array(19))).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
 		});
 
 		it("throws on unsupported type", () => {
-			expect(() => Address.from(null as any)).toThrow(
+			expect(() => Address(null as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
-			expect(() => Address.from({} as any)).toThrow(
+			expect(() => Address({} as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});

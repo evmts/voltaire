@@ -1,6 +1,7 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
 import { InvalidSignatureError } from "../../primitives/errors/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
@@ -9,8 +10,9 @@ import { sign } from "./sign.js";
 describe("Secp256k1.recoverPublicKey", () => {
 	describe("successful recovery", () => {
 		it("should recover correct public key from signature", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("hello world")));
 
 			const signature = sign(message, privateKey);
@@ -22,10 +24,11 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should recover public key for multiple messages", () => {
-			const privateKey = new Uint8Array(32);
+			const privateKeyBytes = new Uint8Array(32);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = i + 1;
+				privateKeyBytes[i] = i + 1;
 			}
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const expectedPublicKey = derivePublicKey(privateKey);
 
 			const messages = [
@@ -42,8 +45,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should return 64-byte uncompressed public key", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 42;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 42;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
@@ -56,8 +60,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("recovery with different v values", () => {
 		it("should recover with v=27", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 5;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 5;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test v=27")));
 
 			const signature = sign(message, privateKey);
@@ -70,8 +75,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should recover with v=28", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 3;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 3;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test v=28")));
 
 			const signature = sign(message, privateKey);
@@ -84,8 +90,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should handle normalized v values (0 and 1)", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(
 				sha256(new TextEncoder().encode("test normalized v")),
 			);
@@ -184,8 +191,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("wrong recovery fails", () => {
 		it("should fail to recover with wrong message", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message1 = Hash(
 				sha256(new TextEncoder().encode("original message")),
 			);
@@ -206,8 +214,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should fail to recover with wrong v value", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
@@ -228,8 +237,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("edge cases", () => {
 		it("should handle all-zero message hash", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(new Uint8Array(32)); // All zeros
 
 			const signature = sign(message, privateKey);
@@ -240,8 +250,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should handle all-ones message hash", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(new Uint8Array(32).fill(0xff));
 
 			const signature = sign(message, privateKey);
@@ -252,8 +263,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should handle minimum valid private key", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
@@ -264,11 +276,12 @@ describe("Secp256k1.recoverPublicKey", () => {
 		});
 
 		it("should handle maximum valid private key (n-1)", () => {
-			const privateKey = new Uint8Array([
+			const privateKeyBytes = new Uint8Array([
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			]);
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
@@ -281,7 +294,8 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("Ethereum address recovery", () => {
 		it("should recover public key suitable for address derivation", () => {
-			const privateKey = new Uint8Array(32);
+			const privateKeyBytes = new Uint8Array(32);
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
@@ -303,8 +317,9 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("cross-validation", () => {
 		it("should recover same key for multiple signatures from same key", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 99;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 99;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const expectedPublicKey = derivePublicKey(privateKey);
 
 			// Sign different messages
@@ -344,7 +359,8 @@ describe("Secp256k1.recoverPublicKey", () => {
 
 	describe("malleability protection", () => {
 		it("should handle low-s signatures correctly", () => {
-			const privateKey = new Uint8Array(32);
+			const privateKeyBytes = new Uint8Array(32);
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 11) % 256;
 			}

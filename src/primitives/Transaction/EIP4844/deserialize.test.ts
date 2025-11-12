@@ -19,7 +19,7 @@ describe("TransactionEIP4844.deserialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
 			],
@@ -65,13 +65,13 @@ describe("TransactionEIP4844.deserialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000002",
 				),
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000003",
 				),
 			],
@@ -110,7 +110,7 @@ describe("TransactionEIP4844.deserialize", () => {
 			],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
 			],
@@ -132,7 +132,7 @@ describe("TransactionEIP4844.deserialize", () => {
 
 	it("round-trips transaction with 6 blobs", () => {
 		const blobHashes = Array.from({ length: 6 }, (_, i) =>
-			Hash.from(
+			Hash(
 				`0x010000000000000000000000000000000000000000000000000000000000000${i}`,
 			),
 		);

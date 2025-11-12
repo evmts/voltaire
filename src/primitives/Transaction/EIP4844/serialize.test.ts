@@ -21,7 +21,7 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
 			],
@@ -51,13 +51,13 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000002",
 				),
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000003",
 				),
 			],
@@ -85,12 +85,12 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [Hash.from(new Uint8Array(32).fill(1))],
+					storageKeys: [Hash(new Uint8Array(32).fill(1))],
 				},
 			],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
 			],
@@ -119,7 +119,7 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: maxUint256,
 			blobVersionedHashes: [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
 			],
@@ -134,7 +134,7 @@ describe("TransactionEIP4844.serialize", () => {
 
 	it("serializes transaction with 6 blobs (max per block)", () => {
 		const blobHashes = Array.from({ length: 6 }, (_, i) =>
-			Hash.from(
+			Hash(
 				`0x010000000000000000000000000000000000000000000000000000000000000${i}`,
 			),
 		);

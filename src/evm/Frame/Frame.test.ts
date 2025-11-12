@@ -13,8 +13,8 @@ describe("Frame.from", () => {
 	it("creates frame with required parameters", () => {
 		const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02]);
 		const gas = 100000n;
-		const caller = Address.from("0x0000000000000000000000000000000000000001");
-		const address = Address.from("0x0000000000000000000000000000000000000002");
+		const caller = Address("0x0000000000000000000000000000000000000001");
+		const address = Address("0x0000000000000000000000000000000000000002");
 		const value = 1000n;
 		const calldata = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
 
@@ -472,8 +472,8 @@ describe("createTestFrame utility", () => {
 	});
 
 	it("overrides addresses", () => {
-		const caller = Address.from("0x1111111111111111111111111111111111111111");
-		const address = Address.from("0x2222222222222222222222222222222222222222");
+		const caller = Address("0x1111111111111111111111111111111111111111");
+		const address = Address("0x2222222222222222222222222222222222222222");
 		const frame = createTestFrame({ caller, address });
 		expect(frame.caller).toBe(caller);
 		expect(frame.address).toBe(address);

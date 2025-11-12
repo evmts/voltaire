@@ -67,7 +67,7 @@ describe("TransactionEIP1559.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [Hash.from(new Uint8Array(32).fill(1))],
+					storageKeys: [Hash(new Uint8Array(32).fill(1))],
 				},
 			],
 			yParity: 0,

@@ -12,7 +12,7 @@ describe("Transaction Utilities", () => {
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 1000000000000000000n,
 				data: new Uint8Array(),
 				v: 27n,
@@ -62,7 +62,7 @@ describe("Transaction Utilities", () => {
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 1000000000000000000n,
 				data: new Uint8Array(),
 				v: 27n,
@@ -78,7 +78,7 @@ describe("Transaction Utilities", () => {
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 0n,
 				data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
 				v: 27n,
@@ -110,7 +110,7 @@ describe("Transaction Utilities", () => {
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 1000000000000000000n,
 				data: new Uint8Array(),
 				v: 27n,
@@ -521,16 +521,16 @@ describe("Transaction Utilities", () => {
 				maxPriorityFeePerGas: 1000000000n,
 				maxFeePerGas: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 0n,
 				data: new Uint8Array(),
 				accessList: [],
 				maxFeePerBlobGas: 1000000000n,
 				blobVersionedHashes: [
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000001",
 					),
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000002",
 					),
 				],
@@ -543,10 +543,10 @@ describe("Transaction Utilities", () => {
 
 		test("getBlobVersionedHashes returns hashes array", () => {
 			const hashes = [
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000001",
 				),
-				Hash.from(
+				Hash(
 					"0x0100000000000000000000000000000000000000000000000000000000000002",
 				),
 			];
@@ -557,7 +557,7 @@ describe("Transaction Utilities", () => {
 				maxPriorityFeePerGas: 1000000000n,
 				maxFeePerGas: 20000000000n,
 				gasLimit: 21000n,
-				to: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 				value: 0n,
 				data: new Uint8Array(),
 				accessList: [],
@@ -585,7 +585,7 @@ describe("Transaction Utilities", () => {
 				authorizationList: [
 					{
 						chainId: 1n,
-						address: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+						address: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 						nonce: 0n,
 						yParity: 0,
 						r: new Uint8Array(32),
@@ -603,7 +603,7 @@ describe("Transaction Utilities", () => {
 			const authList = [
 				{
 					chainId: 1n,
-					address: Address.from("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+					address: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 					nonce: 0n,
 					yParity: 0,
 					r: new Uint8Array(32),

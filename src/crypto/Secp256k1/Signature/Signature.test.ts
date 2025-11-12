@@ -1,9 +1,9 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import { InvalidSignatureError } from "../../../primitives/errors/index.js";
+import { PrivateKey } from "../../../primitives/PrivateKey/BrandedPrivateKey/index.js";
 import { sign } from "../sign.js";
 import { fromBytes, fromCompact, toBytes, toCompact } from "./index.js";
-
 describe("Secp256k1.Signature methods", () => {
 	describe("toBytes", () => {
 		it("should convert signature to 65-byte format", () => {
@@ -52,8 +52,9 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should convert real signature to bytes", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -120,8 +121,9 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should parse real signature bytes", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -182,8 +184,9 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should convert real signature to compact", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -248,8 +251,9 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should parse real signature compact bytes", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -288,7 +292,8 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should maintain data integrity across conversions", () => {
-			const privateKey = new Uint8Array(32);
+			const privateKeyBytes = new Uint8Array(32);
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}

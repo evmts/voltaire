@@ -445,7 +445,7 @@ describe("Transaction Security Tests", () => {
 				accessList: [],
 				maxFeePerBlobGas: 2000000000n,
 				blobVersionedHashes: [
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000001",
 					),
 				],
@@ -472,13 +472,13 @@ describe("Transaction Security Tests", () => {
 				accessList: [],
 				maxFeePerBlobGas: 2000000000n,
 				blobVersionedHashes: [
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000001",
 					),
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000002",
 					),
-					Hash.from(
+					Hash(
 						"0x0100000000000000000000000000000000000000000000000000000000000003",
 					),
 				],

@@ -1,14 +1,15 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { describe, expect, it } from "vitest";
-import { CURVE_ORDER } from "./constants.js";
-import { isValidSignature } from "./isValidSignature.js";
-import { sign } from "./sign.js";
-
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { describe, expect, it } from "vitest";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { CURVE_ORDER } from "./constants.js";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { isValidSignature } from "./isValidSignature.js";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { sign } from "./sign.js";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
 describe("Secp256k1.isValidSignature", () => {
 	describe("valid signatures", () => {
 		it("should return true for valid signature", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -17,8 +18,9 @@ describe("Secp256k1.isValidSignature", () => {
 		});
 
 		it("should return true for multiple valid signatures", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 
 			const messages = [
 				sha256(new TextEncoder().encode("msg1")) as any,
@@ -33,7 +35,8 @@ describe("Secp256k1.isValidSignature", () => {
 		});
 
 		it("should return true for low-s signatures", () => {
-			const privateKey = new Uint8Array(32);
+			const privateKeyBytes = new Uint8Array(32);
+			const privateKey = PrivateKey.from(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
@@ -378,8 +381,9 @@ describe("Secp256k1.isValidSignature", () => {
 		});
 
 		it("should handle all valid signatures consistently", () => {
-			const privateKey = new Uint8Array(32);
-			privateKey[31] = 1;
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.from(privateKeyBytes);
 
 			const sigs = [];
 			for (let i = 0; i < 10; i++) {
