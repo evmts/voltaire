@@ -2,14 +2,14 @@ import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import { Address } from "../../../src/primitives/Address/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
-const deployer = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // Calculate contract addresses for different nonces
 for (const nonce of [0n, 1n, 5n, 10n, 100n]) {
 	const contractAddr = Keccak256.contractAddress(deployer, nonce);
 }
 
-const factory = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const factory = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // Simple bytecode example (empty contract)
 const initCode = new Uint8Array([
@@ -42,7 +42,7 @@ for (const saltValue of [0n, 1n, 42n, 12345n]) {
 	);
 }
 
-const deployer2 = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const deployer2 = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 const createAddr = Keccak256.contractAddress(deployer2, 1n);
 
@@ -54,7 +54,7 @@ const create2Addr = Keccak256.create2Address(
 	initCodeHash2,
 );
 
-const factoryAddr = Address.from("0x1111111111111111111111111111111111111111");
+const factoryAddr = Address("0x1111111111111111111111111111111111111111");
 
 const salts = [
 	{ name: "Alice", value: 100n },
@@ -74,7 +74,7 @@ for (const { name, value } of salts) {
 	);
 }
 
-const factoryAddr2 = Address.from("0x2222222222222222222222222222222222222222");
+const factoryAddr2 = Address("0x2222222222222222222222222222222222222222");
 
 const strategyInitCodeHash = Keccak256.hash(initCode);
 
@@ -100,7 +100,7 @@ const timestampAddr = Keccak256.create2Address(
 // Strategy 3: User-specific (encode user address in salt)
 // Note: In production, you'd encode the user address into the salt bytes
 const userSalt = new Uint8Array(32);
-const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 userSalt.set(userAddress, 12); // Put address in last 20 bytes
 const userAddr = Keccak256.create2Address(
 	factoryAddr2,
@@ -117,7 +117,7 @@ const bytecode2Hash = Keccak256.hash(bytecode2);
 const addr1 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode1Hash);
 const addr2 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode2Hash);
 
-const uniswapFactory = Address.from(
+const uniswapFactory = Address(
 	"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
 );
 

@@ -131,7 +131,7 @@ const built = new Uint8Array([
 	Bytecode.STOP, // STOP
 ]);
 
-const builtCode = Bytecode.from(built);
+const builtCode = Bytecode(built);
 const disasm = Bytecode.formatInstructions(builtCode);
 disasm.forEach((line) => {});
 
@@ -144,7 +144,7 @@ const testOpcodes = [
 ];
 
 for (const test of testOpcodes) {
-	const code = Bytecode.from(new Uint8Array([test.value, 0x00]));
+	const code = Bytecode(new Uint8Array([test.value, 0x00]));
 	const valid = Bytecode.validate(code);
 }
 

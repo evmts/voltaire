@@ -19,7 +19,7 @@ const code2 = Bytecode.fromHex("60016002015b00");
 
 // From bytes
 const bytes = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x5b, 0x00]);
-const code3 = Bytecode.from(bytes);
+const code3 = Bytecode(bytes);
 
 // Empty bytecode
 const empty = Bytecode.fromHex("0x");
@@ -103,11 +103,11 @@ function buildSimpleBytecode(): Uint8Array {
 	]);
 }
 
-const constructed = Bytecode.from(buildSimpleBytecode());
+const constructed = Bytecode(buildSimpleBytecode());
 
 function processBytecode(value: unknown): void {
 	if (value instanceof Uint8Array) {
-		const code = Bytecode.from(value);
+		const code = Bytecode(value);
 	} else if (typeof value === "string") {
 		const code = Bytecode.fromHex(value);
 	} else {
@@ -119,4 +119,4 @@ processBytecode(new Uint8Array([0x60, 0x01, 0x00]));
 const fullCode = Bytecode.fromHex("0x60016002015b60ff60aa01");
 
 // Slice first 5 bytes
-const sliced = Bytecode.from(fullCode.slice(0, 5));
+const sliced = Bytecode(fullCode.slice(0, 5));

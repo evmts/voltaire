@@ -8,7 +8,7 @@ import { Address } from "../../src/primitives/Address/index.js";
 const lowercaseAddr = "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed";
 
 // Convert to checksummed format
-const addr = Address.from(lowercaseAddr);
+const addr = Address(lowercaseAddr);
 const checksummed = Address.toChecksummed(addr);
 
 // Verify the checksum is valid

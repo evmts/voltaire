@@ -34,7 +34,7 @@ for (const test of pushTests) {
 	for (let i = 1; i <= test.size; i++) {
 		validBytes[i] = 0xff;
 	}
-	const valid = Bytecode.from(validBytes);
+	const valid = Bytecode(validBytes);
 
 	// Invalid - incomplete PUSH (missing 1 byte)
 	const invalidBytes = new Uint8Array(test.size); // Missing 1 byte
@@ -42,7 +42,7 @@ for (const test of pushTests) {
 	for (let i = 1; i < test.size; i++) {
 		invalidBytes[i] = 0xff;
 	}
-	const invalid = Bytecode.from(invalidBytes);
+	const invalid = Bytecode(invalidBytes);
 }
 
 // Bytecode that ends mid-instruction

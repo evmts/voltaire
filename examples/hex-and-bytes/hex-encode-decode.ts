@@ -12,7 +12,7 @@ const hexString = Hex.fromBytes(bytes);
 const decoded = Hex.toBytes(hexString);
 
 // Create hex directly from string
-const directHex = Hex.from("0x48656c6c6f");
+const directHex = Hex("0x48656c6c6f");
 // SNIPPET:END
 
 // Test assertions
