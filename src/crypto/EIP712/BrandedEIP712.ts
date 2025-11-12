@@ -1,3 +1,4 @@
+import type { brand } from "../../brand.js";
 import type { BrandedAddress } from "../../primitives/Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../../primitives/Hash/Hash.js";
 
@@ -70,5 +71,5 @@ export type Signature = {
  * Branded EIP-712 TypedData type
  */
 export type BrandedEIP712 = TypedData & {
-	readonly __tag: "EIP712";
+	readonly [brand]: "EIP712";
 };

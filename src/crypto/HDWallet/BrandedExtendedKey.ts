@@ -1,4 +1,5 @@
 import type { HDKey } from "@scure/bip32";
+import type { brand } from "../../brand.js";
 
 export type Path = string;
 export type Seed = Uint8Array;
@@ -7,7 +8,7 @@ export type PublicKey = Uint8Array | null;
 export type ChainCode = Uint8Array | null;
 
 export type BrandedExtendedKey = HDKey & {
-	readonly __tag: "ExtendedKey";
+	readonly [brand]: "ExtendedKey";
 	derivePath(this: BrandedExtendedKey, path: Path): BrandedExtendedKey;
 	deriveChild(this: BrandedExtendedKey, index: number): BrandedExtendedKey;
 	toExtendedPrivateKey(this: BrandedExtendedKey): string;

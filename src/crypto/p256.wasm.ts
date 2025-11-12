@@ -5,8 +5,8 @@
  * using WebAssembly for performance.
  */
 
-import * as loader from "../wasm-loader/loader.js";
 import type { Hash } from "../primitives/Hash/index.js";
+import * as loader from "../wasm-loader/loader.js";
 
 // ============================================================================
 // Main P256Wasm Namespace
@@ -203,10 +203,9 @@ export namespace P256Wasm {
 
 		// Check if key is in valid range [1, n-1]
 		const keyBigInt = BigInt(
-			"0x" +
-				Array.from(privateKey)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join(""),
+			`0x${Array.from(privateKey)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`,
 		);
 		return keyBigInt > 0n && keyBigInt < CURVE_ORDER;
 	}

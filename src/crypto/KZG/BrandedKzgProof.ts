@@ -1,3 +1,5 @@
+import type { brand } from "../../brand.js";
+
 /**
  * Branded type for KZG Proof (EIP-4844)
  *
@@ -7,5 +9,5 @@
  * @since 0.0.0
  */
 export type BrandedKzgProof = Uint8Array & {
-	readonly __tag: "KzgProof";
+	readonly [brand]: "KzgProof";
 };
