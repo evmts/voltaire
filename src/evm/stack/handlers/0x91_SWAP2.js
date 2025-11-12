@@ -1,5 +1,5 @@
-import { consumeGas } from "../../Frame/consumeGas.js";
 import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../../Frame/consumeGas.js";
 
 /**
  * SWAP2 opcode (0x91) - Swap top with (2+1)th item

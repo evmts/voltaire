@@ -1,5 +1,5 @@
-import { consumeGas } from "../Frame/consumeGas.js";
 import { Jumpdest } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../Frame/consumeGas.js";
 
 /**
  * JUMPDEST opcode (0x5b) - Jump destination marker (no-op)

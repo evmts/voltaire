@@ -1,13 +1,13 @@
-import { popStack } from "../Frame/popStack.js";
-import { pushStack } from "../Frame/pushStack.js";
-import { consumeGas } from "../Frame/consumeGas.js";
-import { readMemory } from "../Frame/readMemory.js";
-import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { hash } from "../../crypto/keccak256/hash.js";
 import {
 	Keccak256Base,
 	Keccak256Word,
 } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { popStack } from "../Frame/popStack.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { readMemory } from "../Frame/readMemory.js";
 
 /**
  * SHA3 opcode (0x20) - Compute Keccak-256 hash

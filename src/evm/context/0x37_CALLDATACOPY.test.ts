@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { calldatacopy } from "./0x37_CALLDATACOPY.js";
+import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { readMemory } from "../Frame/readMemory.js";
+import { calldatacopy } from "./0x37_CALLDATACOPY.js";
 
 function createFrame(
 	calldata: Uint8Array,

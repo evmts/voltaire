@@ -1,6 +1,6 @@
 import { consumeGas } from "../Frame/consumeGas.js";
-import { popStack } from "../Frame/popStack.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { popStack } from "../Frame/popStack.js";
 import { writeMemory } from "../Frame/writeMemory.js";
 
 /**

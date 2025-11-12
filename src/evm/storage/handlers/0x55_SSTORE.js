@@ -1,12 +1,12 @@
-import * as Frame from "../../Frame/index.js";
 import {
+	ColdSload,
+	SstoreRefund,
+	SstoreReset,
 	SstoreSentry,
 	SstoreSet,
-	SstoreReset,
-	SstoreRefund,
 	WarmStorageRead,
-	ColdSload,
 } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import * as Frame from "../../Frame/index.js";
 
 /**
  * SSTORE (0x55) - Save word to storage

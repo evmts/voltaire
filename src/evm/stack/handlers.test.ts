@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { handler_0x7F_PUSH32 } from "./handlers/0x7F_PUSH32.js";
 import { handler_0x50_POP } from "./handlers/0x50_POP.js";
 import { handler_0x60_PUSH1 } from "./handlers/0x60_PUSH1.js";
-import { handler_0x7F_PUSH32 } from "./handlers/0x7F_PUSH32.js";
 import { handler_0x80_DUP1 } from "./handlers/0x80_DUP1.js";
 import { handler_0x90_SWAP1 } from "./handlers/0x90_SWAP1.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 
 /**
  * Create a minimal test frame

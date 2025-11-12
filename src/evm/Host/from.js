@@ -13,8 +13,5 @@
  * @returns {import("./BrandedHost.js").BrandedHost} Host instance
  */
 export function from(impl) {
-	return /** @type {import("./BrandedHost.js").BrandedHost} */ ({
-		__tag: "Host",
-		...impl,
-	});
+	return /** @type {import("./BrandedHost.js").BrandedHost} */ (impl);
 }

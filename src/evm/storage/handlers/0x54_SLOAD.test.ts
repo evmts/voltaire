@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { sload } from "./0x54_SLOAD.js";
+import { from as addressFrom } from "../../../primitives/Address/BrandedAddress/from.js";
 import { from as frameFrom } from "../../Frame/index.js";
 import { createMemoryHost } from "../../Host/createMemoryHost.js";
-import { from as addressFrom } from "../../../primitives/Address/BrandedAddress/from.js";
+import { sload } from "./0x54_SLOAD.js";
 
 describe("SLOAD (0x54)", () => {
 	it("loads value from storage", () => {

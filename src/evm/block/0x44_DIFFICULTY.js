@@ -1,6 +1,6 @@
+import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * DIFFICULTY/PREVRANDAO opcode (0x44) - Get block difficulty or prevrandao

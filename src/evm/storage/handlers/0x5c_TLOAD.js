@@ -1,5 +1,5 @@
-import * as Frame from "../../Frame/index.js";
 import { TLoad } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import * as Frame from "../../Frame/index.js";
 
 /**
  * TLOAD (0x5c) - Load word from transient storage

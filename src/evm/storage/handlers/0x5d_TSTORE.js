@@ -1,5 +1,5 @@
-import * as Frame from "../../Frame/index.js";
 import { TStore } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import * as Frame from "../../Frame/index.js";
 
 /**
  * TSTORE (0x5d) - Save word to transient storage

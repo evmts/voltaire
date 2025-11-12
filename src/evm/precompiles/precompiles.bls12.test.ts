@@ -3,11 +3,11 @@ import { describe, expect, test } from "vitest";
 import {
 	PrecompileAddress,
 	bls12G1Add,
-	bls12G1Mul,
 	bls12G1Msm,
+	bls12G1Mul,
 	bls12G2Add,
-	bls12G2Mul,
 	bls12G2Msm,
+	bls12G2Mul,
 	bls12MapFp2ToG2,
 	bls12MapFpToG1,
 	bls12Pairing,
@@ -375,7 +375,6 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 		input[159] = 1;
 		const result = bls12G1Msm(input, 20000n);
 		expect(result.success).toBe(false);
-		
 	});
 
 	test("generator with scalar 1", () => {
@@ -711,7 +710,6 @@ describe("BLS12-381 G2 MSM (0x10)", () => {
 		const input = new Uint8Array(288);
 		const result = bls12G2Msm(input, 50000n);
 		expect(result.success).toBe(false);
-		
 	});
 
 	test("generator with scalar 1", () => {

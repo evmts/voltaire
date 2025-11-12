@@ -1,8 +1,8 @@
-import { consumeGas } from "../Frame/consumeGas.js";
-import { popStack } from "../Frame/popStack.js";
-import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
-import { writeMemory } from "../Frame/writeMemory.js";
 import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { popStack } from "../Frame/popStack.js";
+import { writeMemory } from "../Frame/writeMemory.js";
 
 /**
  * Add two u32 values with overflow checking

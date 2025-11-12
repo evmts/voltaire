@@ -1,7 +1,7 @@
-import { consumeGas } from "../Frame/consumeGas.js";
-import { popStack } from "../Frame/popStack.js";
 import { isValidJumpDest } from "../../primitives/Bytecode/BrandedBytecode/isValidJumpDest.js";
 import { SlowStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { popStack } from "../Frame/popStack.js";
 
 /**
  * JUMPI opcode (0x57) - Conditional jump

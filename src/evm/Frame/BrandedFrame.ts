@@ -1,3 +1,4 @@
+import type { brand } from "../../brand.js";
 import type { Address } from "../../primitives/Address/BrandedAddress.js";
 import type { Hex } from "../../primitives/Hex/BrandedHex.js";
 
@@ -8,7 +9,7 @@ import type { Hex } from "../../primitives/Hex/BrandedHex.js";
  * and execution state. Based on guillotine-mini Frame structure.
  */
 export type BrandedFrame = {
-	readonly __tag: "Frame";
+	readonly [brand]: "Frame";
 
 	// Stack (max 1024 items)
 	stack: bigint[];

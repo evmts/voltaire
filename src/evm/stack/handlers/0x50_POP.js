@@ -1,6 +1,6 @@
+import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../../Frame/consumeGas.js";
 import { popStack } from "../../Frame/popStack.js";
-import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * POP opcode (0x50) - Remove top item from stack

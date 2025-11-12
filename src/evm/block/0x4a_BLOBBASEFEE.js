@@ -1,6 +1,6 @@
+import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)

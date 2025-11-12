@@ -1,6 +1,6 @@
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
 
 /**
  * CALLER opcode (0x33) - Get caller address

@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { handler_0x46_CHAINID } from "./0x46_CHAINID.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { handler_0x46_CHAINID } from "./0x46_CHAINID.js";
 
 describe("CHAINID (0x46)", () => {
 	it("pushes chain ID to stack", () => {

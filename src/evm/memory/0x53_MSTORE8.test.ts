@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { mstore8 } from "./0x53_MSTORE8.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { mstore8 } from "./0x53_MSTORE8.js";
 
 /**
  * Create a minimal frame for testing

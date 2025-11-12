@@ -1,6 +1,6 @@
+import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * BASEFEE opcode (0x48) - Get base fee per gas (EIP-3198, London+)

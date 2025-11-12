@@ -1,3 +1,4 @@
+import type { brand } from "../../brand.js";
 import type { Address } from "../../primitives/Address/BrandedAddress.js";
 
 /**
@@ -7,7 +8,7 @@ import type { Address } from "../../primitives/Address/BrandedAddress.js";
  * Based on guillotine-mini HostInterface vtable pattern.
  */
 export type BrandedHost = {
-	readonly __tag: "Host";
+	readonly [brand]: "Host";
 
 	/**
 	 * Get account balance

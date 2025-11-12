@@ -1,6 +1,6 @@
+import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { QuickStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * COINBASE opcode (0x41) - Get block coinbase address

@@ -7,8 +7,8 @@ export { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 
 // Re-export as Host namespace
 import type { BrandedHost } from "./BrandedHost.js";
-import { from as _from } from "./from.js";
 import { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
+import { from as _from } from "./from.js";
 
 /**
  * Host namespace - EVM host interface for external state

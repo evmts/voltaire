@@ -1,6 +1,6 @@
+import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../../Frame/consumeGas.js";
 import { pushStack } from "../../Frame/pushStack.js";
-import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * DUP3 opcode (0x82) - Duplicate 3th stack item

@@ -1,7 +1,7 @@
-import { popStack } from "../Frame/popStack.js";
 import { consumeGas } from "../Frame/consumeGas.js";
-import { writeMemory } from "../Frame/writeMemory.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { popStack } from "../Frame/popStack.js";
+import { writeMemory } from "../Frame/writeMemory.js";
 
 /**
  * MSTORE8 opcode (0x53) - Save byte to memory

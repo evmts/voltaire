@@ -1,6 +1,6 @@
+import { FastStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { FastStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * SELFBALANCE opcode (0x47) - Get balance of currently executing account (EIP-1884, Istanbul+)

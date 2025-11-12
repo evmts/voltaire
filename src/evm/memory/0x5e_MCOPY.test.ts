@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { mcopy } from "./0x5e_MCOPY.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { mcopy } from "./0x5e_MCOPY.js";
 
 /**
  * Create a minimal frame for testing

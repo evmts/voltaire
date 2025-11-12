@@ -21,7 +21,6 @@ export function from({
 	isStatic = false,
 }) {
 	return /** @type {import("./BrandedFrame.js").BrandedFrame} */ ({
-		__tag: "Frame",
 		stack: [],
 		memory: new Map(),
 		memorySize: 0,

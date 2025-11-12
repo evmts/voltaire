@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { calldataload } from "./0x35_CALLDATALOAD.js";
+import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { calldataload } from "./0x35_CALLDATALOAD.js";
 
 function createFrame(
 	calldata: Uint8Array,

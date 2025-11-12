@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
-import { call } from "./0xf1_CALL.js";
 import { create } from "./0xf0_CREATE.js";
-import { create2 } from "./0xf5_CREATE2.js";
+import { call } from "./0xf1_CALL.js";
 import { delegatecall } from "./0xf4_DELEGATECALL.js";
-import { selfdestruct } from "./0xff_SELFDESTRUCT.js";
+import { create2 } from "./0xf5_CREATE2.js";
 import { staticcall } from "./0xfa_STATICCALL.js";
+import { selfdestruct } from "./0xff_SELFDESTRUCT.js";
 
 /**
  * Create a minimal test frame

@@ -1,8 +1,8 @@
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { consumeGas } from "../Frame/consumeGas.js";
 import { readMemory } from "../Frame/readMemory.js";
-import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 
 /**
  * MLOAD opcode (0x51) - Load word from memory

@@ -1,12 +1,12 @@
-import { popStack } from "../Frame/popStack.js";
-import { consumeGas } from "../Frame/consumeGas.js";
-import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
-import { readMemory } from "../Frame/readMemory.js";
 import {
 	LogBase,
 	LogData,
 	LogTopic,
 } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { consumeGas } from "../Frame/consumeGas.js";
+import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
+import { popStack } from "../Frame/popStack.js";
+import { readMemory } from "../Frame/readMemory.js";
 
 /**
  * LOG2 (0xa2) - Log with 2 topics

@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { from } from "./from.js";
-import { pushStack } from "./pushStack.js";
-import { popStack } from "./popStack.js";
+import { describe, expect, it } from "vitest";
+import { Address } from "../../primitives/Address/index.js";
 import { consumeGas } from "./consumeGas.js";
+import { createTestFrame } from "./createTestFrame.js";
+import { from } from "./from.js";
+import { memoryExpansionCost } from "./memoryExpansionCost.js";
+import { popStack } from "./popStack.js";
+import { pushStack } from "./pushStack.js";
 import { readMemory } from "./readMemory.js";
 import { writeMemory } from "./writeMemory.js";
-import { memoryExpansionCost } from "./memoryExpansionCost.js";
-import { createTestFrame } from "./createTestFrame.js";
-import { Address } from "../../primitives/Address/index.js";
 
 describe("Frame.from", () => {
 	it("creates frame with required parameters", () => {

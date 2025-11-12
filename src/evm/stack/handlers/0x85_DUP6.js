@@ -1,6 +1,6 @@
+import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../../Frame/consumeGas.js";
 import { pushStack } from "../../Frame/pushStack.js";
-import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * DUP6 opcode (0x85) - Duplicate 6th stack item

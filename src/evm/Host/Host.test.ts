@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Host } from "./index.js";
 import { from as addressFrom } from "../../primitives/Address/BrandedAddress/from.js";
+import { Host } from "./index.js";
 
 describe("Host", () => {
 	describe("from() - custom host creation", () => {

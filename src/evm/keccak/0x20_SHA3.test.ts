@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { sha3 } from "./0x20_SHA3.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { sha3 } from "./0x20_SHA3.js";
 
 /**
  * Create a minimal frame for testing

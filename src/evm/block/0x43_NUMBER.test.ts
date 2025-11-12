@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { handler_0x43_NUMBER } from "./0x43_NUMBER.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { handler_0x43_NUMBER } from "./0x43_NUMBER.js";
 
 describe("NUMBER (0x43)", () => {
 	it("pushes block number to stack", () => {

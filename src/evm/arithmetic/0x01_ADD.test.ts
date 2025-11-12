@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { add } from "./0x01_ADD.js";
+import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { add } from "./0x01_ADD.js";
 
 /**
  * Create a minimal test frame

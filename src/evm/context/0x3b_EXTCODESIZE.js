@@ -1,7 +1,7 @@
+import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
 
 /**
  * EXTCODESIZE opcode (0x3b) - Get size of an account's code

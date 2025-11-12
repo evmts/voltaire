@@ -19,7 +19,7 @@ export function selfdestruct(frame) {
 
 	// Calculate base gas cost
 	// EIP-150 (Tangerine Whistle): 5000 gas
-	let gasCost = 5000n;
+	const gasCost = 5000n;
 
 	// TODO: EIP-2929 (Berlin) cold account access
 	// If beneficiary is cold (not accessed), add 2600 gas

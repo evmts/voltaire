@@ -1,7 +1,7 @@
+import { FastestStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { FastestStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
 
 /**
  * BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { exp } from "./0x0a_EXP.js";
+import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { exp } from "./0x0a_EXP.js";
 
 function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 	return {

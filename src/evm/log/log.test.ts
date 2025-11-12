@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { from as addressFrom } from "../../primitives/Address/BrandedAddress/from.js";
+import type { BrandedFrame } from "../Frame/BrandedFrame.js";
 import { handler_0xa0_LOG0 } from "./0xa0_LOG0.js";
 import { handler_0xa2_LOG2 } from "./0xa2_LOG2.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
-import { from as addressFrom } from "../../primitives/Address/BrandedAddress/from.js";
 
 /**
  * Create a minimal frame for testing

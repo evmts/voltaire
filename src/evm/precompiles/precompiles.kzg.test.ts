@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import * as Kzg from "../../crypto/KZG/index.js";
 import {
 	BYTES_PER_COMMITMENT,
 	BYTES_PER_FIELD_ELEMENT,
 	BYTES_PER_PROOF,
 	FIELD_ELEMENTS_PER_BLOB,
 } from "../../crypto/KZG/constants.js";
+import * as Kzg from "../../crypto/KZG/index.js";
 import { pointEvaluation } from "./precompiles.js";
 
 describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {

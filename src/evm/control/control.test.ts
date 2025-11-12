@@ -1,11 +1,11 @@
-import { describe, test, expect } from "vitest";
-import { from as createFrame } from "../Frame/from.js";
+import { describe, expect, test } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
+import { from as createFrame } from "../Frame/from.js";
 import { handler_0x00_STOP } from "./0x00_STOP.js";
+import { handler_0x5b_JUMPDEST } from "./0x5b_JUMPDEST.js";
 import { handler_0x56_JUMP } from "./0x56_JUMP.js";
 import { handler_0x57_JUMPI } from "./0x57_JUMPI.js";
 import { handler_0x58_PC } from "./0x58_PC.js";
-import { handler_0x5b_JUMPDEST } from "./0x5b_JUMPDEST.js";
 import { handler_0xf3_RETURN } from "./0xf3_RETURN.js";
 import { handler_0xfd_REVERT } from "./0xfd_REVERT.js";
 

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { mulmod } from "./0x09_MULMOD.js";
+import { describe, expect, it } from "vitest";
 import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import { mulmod } from "./0x09_MULMOD.js";
 
 function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {
 	return {
