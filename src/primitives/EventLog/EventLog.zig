@@ -1,6 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const abi_encoding = @import("../abi/abi_encoding.zig");
+const abi_encoding = @import("../Abi/abi_encoding.zig");
 const crypto_pkg = @import("crypto");
 const hash = crypto_pkg.Hash;
 const address = @import("../Address/address.zig");
