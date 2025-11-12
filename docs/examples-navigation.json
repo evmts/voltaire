@@ -1,79 +1,79 @@
 {
-  "group": "Examples",
-  "pages": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        {
-          "title": "Hello Voltaire",
-          "path": "examples/getting-started/hello-voltaire"
-        }
-      ]
-    },
-    {
-      "group": "Addresses",
-      "pages": [
-        {
-          "title": "Compare and Sort Addresses",
-          "path": "examples/addresses/compare-addresses"
-        },
-        {
-          "title": "Derive Address from Private Key",
-          "path": "examples/addresses/address-from-private-key"
-        },
-        {
-          "title": "EIP-55 Checksum Address",
-          "path": "examples/addresses/checksum-address"
-        },
-        {
-          "title": "Validate Ethereum Address",
-          "path": "examples/addresses/validate-address"
-        }
-      ]
-    },
-    {
-      "group": "Hex And Bytes",
-      "pages": [
-        {
-          "title": "Concatenate Hex Strings",
-          "path": "examples/hex-and-bytes/hex-concatenate"
-        },
-        {
-          "title": "Hex Encoding and Decoding",
-          "path": "examples/hex-and-bytes/hex-encode-decode"
-        }
-      ]
-    },
-    {
-      "group": "Hashing",
-      "pages": [
-        {
-          "title": "Hash String with Keccak256",
-          "path": "examples/hashing/keccak256-string"
-        },
-        {
-          "title": "Hash String with SHA-256",
-          "path": "examples/hashing/sha256-hash"
-        }
-      ]
-    },
-    {
-      "group": "Signing",
-      "pages": [
-        {
-          "title": "Personal Sign Message",
-          "path": "examples/signing/personal-sign"
-        }
-      ]
-    },
-    {
-      "group": "Rlp",
-      "pages": [
-        {
-          "title": "RLP Encode List",
-          "path": "examples/rlp/rlp-encode-list"
-        }
-      ]
-    }
-  ]
+	"group": "Examples",
+	"pages": [
+		{
+			"group": "Getting Started",
+			"pages": [
+				{
+					"title": "Hello Voltaire",
+					"path": "examples/getting-started/hello-voltaire"
+				}
+			]
+		},
+		{
+			"group": "Addresses",
+			"pages": [
+				{
+					"title": "Compare and Sort Addresses",
+					"path": "examples/addresses/compare-addresses"
+				},
+				{
+					"title": "Derive Address from Private Key",
+					"path": "examples/addresses/address-from-private-key"
+				},
+				{
+					"title": "EIP-55 Checksum Address",
+					"path": "examples/addresses/checksum-address"
+				},
+				{
+					"title": "Validate Ethereum Address",
+					"path": "examples/addresses/validate-address"
+				}
+			]
+		},
+		{
+			"group": "Hex And Bytes",
+			"pages": [
+				{
+					"title": "Concatenate Hex Strings",
+					"path": "examples/hex-and-bytes/hex-concatenate"
+				},
+				{
+					"title": "Hex Encoding and Decoding",
+					"path": "examples/hex-and-bytes/hex-encode-decode"
+				}
+			]
+		},
+		{
+			"group": "Hashing",
+			"pages": [
+				{
+					"title": "Hash String with Keccak256",
+					"path": "examples/hashing/keccak256-string"
+				},
+				{
+					"title": "Hash String with SHA-256",
+					"path": "examples/hashing/sha256-hash"
+				}
+			]
+		},
+		{
+			"group": "Signing",
+			"pages": [
+				{
+					"title": "Personal Sign Message",
+					"path": "examples/signing/personal-sign"
+				}
+			]
+		},
+		{
+			"group": "Rlp",
+			"pages": [
+				{
+					"title": "RLP Encode List",
+					"path": "examples/rlp/rlp-encode-list"
+				}
+			]
+		}
+	]
 }

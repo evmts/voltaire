@@ -2,29 +2,24 @@
 // @description Check if a string is a valid Ethereum address with EIP-55 checksum validation
 
 // SNIPPET:START
-import { Address } from '../../src/primitives/Address/index.js';
+import { Address } from "../../src/primitives/Address/index.js";
 
 // Valid checksummed address
-const validAddr = '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3';
+const validAddr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
 const isValid = Address.isValid(validAddr);
-console.log(`${validAddr} is valid:`, isValid);
 
 // Invalid checksum
-const invalidChecksum = '0x742d35cc6634c0532925a3b844bc9e7595f251e3';
+const invalidChecksum = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
 const hasValidChecksum = Address.isValidChecksum(invalidChecksum);
-console.log(`${invalidChecksum} has valid checksum:`, hasValidChecksum);
 
 // Not an address
-const notAddress = '0x123';
-console.log(`${notAddress} is valid:`, Address.isValid(notAddress));
+const notAddress = "0x123";
 // SNIPPET:END
 
 // Test assertions
-import { strict as assert } from 'node:assert';
+import { strict as assert } from "node:assert";
 
 assert.equal(isValid, true);
 assert.equal(hasValidChecksum, false);
 assert.equal(Address.isValid(notAddress), false);
-
-console.log('✅ All assertions passed');
 process.exit(0);

@@ -54,10 +54,7 @@
 		},
 		{
 			"group": "Getting Started",
-			"pages": [
-				"getting-started",
-				"mcp"
-			]
+			"pages": ["getting-started", "mcp"]
 		},
 		{
 			"group": "JSON-RPC",
@@ -924,9 +921,7 @@
 			"pages": [
 				{
 					"group": "Getting Started",
-					"pages": [
-						"examples/getting-started/hello-voltaire"
-					]
+					"pages": ["examples/getting-started/hello-voltaire"]
 				},
 				{
 					"group": "Addresses",
@@ -953,15 +948,11 @@
 				},
 				{
 					"group": "Signing",
-					"pages": [
-						"examples/signing/personal-sign"
-					]
+					"pages": ["examples/signing/personal-sign"]
 				},
 				{
 					"group": "RLP Encoding",
-					"pages": [
-						"examples/rlp/rlp-encode-list"
-					]
+					"pages": ["examples/rlp/rlp-encode-list"]
 				}
 			]
 		}

@@ -77,14 +77,17 @@ addr.__brand = "Address" // runtime __brand field conflicts!
 
 ### Voltaire's Approach
 
-All primitives use branded types with `__tag`:
+All primitives use a shared `unique symbol` with string literal tags for type branding:
 
 ```typescript
+// Global brand symbol (declared once in src/brand.ts)
+declare const brand: unique symbol
+
 // BrandedAddress is Uint8Array with brand
-type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
+type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
 
 // BrandedHex is string with brand
-type BrandedHex = string & { readonly __tag: "Hex" }
+type BrandedHex = string & { readonly [brand]: "Hex" }
 
 // Can't mix them up
 function process(addr: BrandedAddress) { /* ... */ }
@@ -92,7 +95,7 @@ const hex: BrandedHex = "0x..." as BrandedHex
 process(hex) // ✗ Error
 ```
 
-Runtime: just `Uint8Array` and `string`. Brand only exists in types.
+Runtime: just `Uint8Array` and `string`. Brand only exists in types. The `unique symbol` ensures no name collisions while string literal tags identify each type.
 
 ### Console Formatting
 
@@ -142,7 +145,8 @@ transfer(bytecode, 100n);
 Factory functions validate then cast to branded type. `Address.from()` validates inputs at construction, eliminating the need for runtime validation libraries like Zod:
 
 ```typescript
-type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
+declare const brand: unique symbol
+type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
 
 function fromUint8Array(bytes: Uint8Array): BrandedAddress {
   // Validate
@@ -171,68 +175,6 @@ const invalid = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f5");
 ```
 
 Validation at construction. Brand ensures type safety throughout codebase.
-
-## Type-Safe Hex Variants
-
-Voltaire tracks not just the data type but also hex string casing. String-based types can have variant discriminators for different formats:
-
-```typescript
-import { Address } from '@tevm/voltaire';
-
-const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-
-const lowercase = Address.toHex(address);
-
-const checksummed = Address.toChecksummed(address);
-```
-
-Each method returns a precisely typed hex variant:
-- `toHex()` returns `LowercaseHex` - all lowercase
-- `toChecksummed()` returns `ChecksummedHex` - [EIP-55](https://eips.ethereum.org/EIPS/eip-55) mixed case
-
-### Multiple Brand Discriminators
-
-Address hex strings share the same base brand `Symbol("AddressHex")` but use additional discriminators for case variants:
-
-```typescript
-// All variants have __brand = Symbol("AddressHex")
-// Additional discriminators specify exact format
-
-type AddressChecksummed = string & {
-  readonly __brand: unique symbol  // Symbol("AddressHex")
-  readonly __checksummed: true
-}
-
-type AddressLowercase = string & {
-  readonly __brand: unique symbol  // Symbol("AddressHex")
-  readonly __lowercase: true
-}
-
-type AddressUppercase = string & {
-  readonly __brand: unique symbol  // Symbol("AddressHex")
-  readonly __uppercase: true
-}
-
-type AddressHex = string & {
-  readonly __brand: unique symbol  // Symbol("AddressHex")
-  // No discriminator = generic/unknown case format (could be mixed)
-}
-```
-
-TypeScript distinguishes these as separate types despite sharing the same brand symbol:
-
-```typescript
-const checksummed: AddressChecksummed = "0x742d35Cc..." as AddressChecksummed
-const lowercase: AddressLowercase = "0x742d35cc..." as AddressLowercase
-const unknown: AddressHex = "0x742D35cc..." as AddressHex  // Mixed case
-
-function requireChecksummed(addr: AddressChecksummed) { /* ... */ }
-requireChecksummed(checksummed) // ✓ Correct
-requireChecksummed(lowercase)   // ✗ Error: __lowercase !== __checksummed
-requireChecksummed(unknown)     // ✗ Error: no __checksummed discriminator
-```
-
-This allows APIs to require specific formats (e.g., EIP-55 checksummed) while accepting generic hex in other contexts.
 
 ## Benefits
 
