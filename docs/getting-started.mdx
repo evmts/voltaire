@@ -189,7 +189,7 @@ For familiar OOP ergonomics, Voltaire provides class wrappers:
 import { Address } from "@tevm/voltaire";
 
 // Constructor accepts multiple formats
-const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 
 // Instance methods
 addr.toHex();           // "0xa0cf..."
@@ -219,7 +219,7 @@ Address.zero();
 ```typescript
 import { Address, Hash, Uint } from "@tevm/voltaire";
 
-const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = addr.toChecksummed();
 
 const a = Uint.from(100n);
@@ -257,7 +257,7 @@ const sum = BrandedUint.plus(a, b);
 import { Address } from "@tevm/voltaire";
 import { BrandedAddress } from "@tevm/voltaire/Address";
 
-const addr1 = new Address("0x...");
+const addr1 = Address("0x...");
 const addr2 = BrandedAddress.fromHex("0x...");
 
 // Both work together
