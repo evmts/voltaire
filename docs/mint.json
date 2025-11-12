@@ -43,14 +43,13 @@
 		{
 			"group": "Why Voltaire?",
 			"pages": [
-				"index",
 				"introduction",
-				"getting-started/powerful-features",
 				"getting-started/branded-types",
 				"getting-started/wasm",
 				"getting-started/tree-shaking",
 				"getting-started/llm-optimized",
-				"getting-started/multiplatform"
+				"getting-started/multiplatform",
+				"getting-started/powerful-features"
 			]
 		},
 		{
@@ -58,6 +57,37 @@
 			"pages": [
 				"getting-started",
 				"mcp"
+			]
+		},
+		{
+			"group": "Guides",
+			"pages": [
+				"guides/index",
+				"primitives/address/fundamentals",
+				"primitives/accesslist/fundamentals",
+				"primitives/abi/fundamentals",
+				"primitives/authorization/fundamentals",
+				"primitives/base64/fundamentals",
+				"primitives/binarytree/fundamentals",
+				"primitives/blob/fundamentals",
+				"primitives/bloomfilter/fundamentals",
+				"primitives/bytecode/fundamentals",
+				"primitives/chain/fundamentals",
+				"primitives/denomination/fundamentals",
+				"primitives/ens/fundamentals",
+				"primitives/eventlog/fundamentals",
+				"primitives/feemarket/fundamentals",
+				"primitives/gasconstants/fundamentals",
+				"primitives/hardfork/fundamentals",
+				"primitives/hash/fundamentals",
+				"primitives/hex/fundamentals",
+				"primitives/opcode/fundamentals",
+				"primitives/rlp/fundamentals",
+				"primitives/signature/fundamentals",
+				"primitives/siwe/fundamentals",
+				"primitives/state/fundamentals",
+				"primitives/transaction/fundamentals",
+				"primitives/uint/fundamentals"
 			]
 		},
 		{
@@ -74,13 +104,12 @@
 			"pages": [
 				{
 					"group": "ABI",
-					"pages": ["primitives/abi/fundamentals", "primitives/abi/index"]
+					"pages": ["primitives/abi/index"]
 				},
 				{
 					"group": "AccessList",
 					"pages": [
 						"primitives/accesslist/index",
-						"primitives/accesslist/fundamentals",
 						"primitives/accesslist/branded-accesslist",
 						"primitives/accesslist/constructors",
 						"primitives/accesslist/conversions",
@@ -96,7 +125,6 @@
 					"group": "Address",
 					"pages": [
 						"primitives/address/index",
-						"primitives/address/fundamentals",
 						"primitives/address/branded-address",
 						"primitives/address/constructors",
 						"primitives/address/conversions",
@@ -111,7 +139,6 @@
 				{
 					"group": "Authorization",
 					"pages": [
-						"primitives/authorization/fundamentals",
 						"primitives/authorization/index",
 						"primitives/authorization/branded-authorization",
 						"primitives/authorization/eip7702",
@@ -131,7 +158,6 @@
 					"group": "Base64",
 					"pages": [
 						"primitives/base64/index",
-						"primitives/base64/fundamentals",
 						"primitives/base64/branded-base64",
 						"primitives/base64/encoding",
 						"primitives/base64/decoding",
@@ -142,7 +168,6 @@
 				{
 					"group": "BinaryTree",
 					"pages": [
-						"primitives/binarytree/fundamentals",
 						"primitives/binarytree/index",
 						"primitives/binarytree/branded-binarytree",
 						"primitives/binarytree/constructors",
@@ -156,7 +181,6 @@
 				{
 					"group": "BloomFilter",
 					"pages": [
-						"primitives/bloomfilter/fundamentals",
 						"primitives/bloomfilter/index",
 						"primitives/bloomfilter/branded-bloomfilter",
 						"primitives/bloomfilter/algorithm",
@@ -172,7 +196,6 @@
 					"group": "Bytecode",
 					"pages": [
 						"primitives/bytecode/index",
-						"primitives/bytecode/fundamentals",
 						"primitives/bytecode/scan",
 						"primitives/bytecode/instruction-types",
 						"primitives/bytecode/from",
@@ -206,7 +229,6 @@
 				{
 					"group": "Chain",
 					"pages": [
-						"primitives/chain/fundamentals",
 						"primitives/chain/index",
 						"primitives/chain/branded-chain",
 						"primitives/chain/constructors",
@@ -218,7 +240,6 @@
 				{
 					"group": "Denomination",
 					"pages": [
-						"primitives/denomination/fundamentals",
 						"primitives/denomination/index",
 						"primitives/denomination/wei",
 						"primitives/denomination/gwei",
@@ -237,7 +258,6 @@
 					"group": "ENS",
 					"pages": [
 						"primitives/ens/index",
-						"primitives/ens/fundamentals",
 						"primitives/ens/branded-ens",
 						"primitives/ens/encoding",
 						"primitives/ens/normalization",
@@ -253,7 +273,6 @@
 					"group": "FeeMarket",
 					"pages": [
 						"primitives/feemarket/index",
-						"primitives/feemarket/fundamentals",
 						"primitives/feemarket/branded-feemarket",
 						"primitives/feemarket/eip1559",
 						"primitives/feemarket/eip4844",
@@ -268,7 +287,6 @@
 				{
 					"group": "GasConstants",
 					"pages": [
-						"primitives/gasconstants/fundamentals",
 						"primitives/gasconstants/index",
 						"primitives/gasconstants/branded-gasconstants",
 						"primitives/gasconstants/constants",
@@ -284,7 +302,6 @@
 					"group": "Hardfork",
 					"pages": [
 						"primitives/hardfork/index",
-						"primitives/hardfork/fundamentals",
 						"primitives/hardfork/branded-hardfork",
 						"primitives/hardfork/hardforks",
 						{
@@ -327,7 +344,6 @@
 					"group": "Hash",
 					"pages": [
 						"primitives/hash/index",
-						"primitives/hash/fundamentals",
 						"primitives/hash/branded-hash",
 						"primitives/hash/constructors",
 						"primitives/hash/conversions",
@@ -343,7 +359,6 @@
 					"group": "Hex",
 					"pages": [
 						"primitives/hex/index",
-						"primitives/hex/fundamentals",
 						"primitives/hex/branded-hex",
 						"primitives/hex/from",
 						"primitives/hex/from-bytes",
@@ -379,7 +394,6 @@
 					"group": "Opcode",
 					"pages": [
 						"primitives/opcode/index",
-						"primitives/opcode/fundamentals",
 						"primitives/opcode/branded-opcode",
 						"primitives/opcode/constructors",
 						"primitives/opcode/reference-guide",
@@ -393,7 +407,6 @@
 					"group": "RLP",
 					"pages": [
 						"primitives/rlp/index",
-						"primitives/rlp/fundamentals",
 						"primitives/rlp/Rlp",
 						"primitives/rlp/branded-rlp",
 						"primitives/rlp/algorithm",
@@ -410,7 +423,6 @@
 					"group": "Signature",
 					"pages": [
 						"primitives/signature/index",
-						"primitives/signature/fundamentals",
 						"primitives/signature/branded-signature",
 						"primitives/signature/constructors",
 						"primitives/signature/conversions",
@@ -426,7 +438,6 @@
 				{
 					"group": "SIWE",
 					"pages": [
-						"primitives/siwe/fundamentals",
 						"primitives/siwe/index",
 						"primitives/siwe/branded-siwe",
 						"primitives/siwe/message-format",
@@ -445,7 +456,6 @@
 					"group": "State",
 					"pages": [
 						"primitives/state/index",
-						"primitives/state/fundamentals",
 						"primitives/state/branded-state",
 						"primitives/state/constructors",
 						"primitives/state/conversions",
@@ -460,7 +470,6 @@
 				{
 					"group": "Transaction",
 					"pages": [
-						"primitives/transaction/fundamentals",
 						"primitives/transaction/index",
 						"primitives/transaction/types",
 						"primitives/transaction/legacy",
@@ -478,7 +487,7 @@
 				},
 				{
 					"group": "Uint",
-					"pages": ["primitives/uint/index", "primitives/uint/fundamentals"]
+					"pages": ["primitives/uint/index"]
 				}
 			]
 		},
