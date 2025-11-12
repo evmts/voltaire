@@ -41,15 +41,32 @@
 	],
 	"navigation": [
 		{
-			"group": "Getting Started",
-			"pages": ["index", "introduction", "getting-started", "mcp"]
+			"group": "Why Voltaire?",
+			"pages": [
+				"index",
+				"introduction",
+				"getting-started/powerful-features",
+				"getting-started/branded-types",
+				"getting-started/wasm",
+				"getting-started/tree-shaking",
+				"getting-started/llm-optimized",
+				"getting-started/multiplatform"
+			]
 		},
 		{
-			"group": "Concepts",
+			"group": "Getting Started",
 			"pages": [
-				"concepts/branded-types",
-				"concepts/data-first",
-				"concepts/api-patterns"
+				"getting-started",
+				"mcp"
+			]
+		},
+		{
+			"group": "JSON-RPC",
+			"pages": [
+				"jsonrpc/index",
+				"jsonrpc/eth",
+				"jsonrpc/debug",
+				"jsonrpc/engine"
 			]
 		},
 		{
@@ -874,15 +891,6 @@
 						}
 					]
 				}
-			]
-		},
-		{
-			"group": "JSON-RPC",
-			"pages": [
-				"jsonrpc/index",
-				"jsonrpc/eth",
-				"jsonrpc/debug",
-				"jsonrpc/engine"
 			]
 		}
 	],

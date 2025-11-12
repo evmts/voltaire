@@ -1,58 +1,31 @@
 ---
-title: Introduction
-description: Robust performant Ethereum primitives for TypeScript and Zig
+title: What is Voltaire?
+description: A modern take on a general-purpose Ethereum library similar to ethers and viem
 ---
-
-# Voltaire
-
-Modern Ethereum primitives and cryptography for TypeScript and Zig. Built for performance, bundle size, and type safety—just the building blocks, no providers.
-
-<Warning>
-**Alpha Release** - APIs may change. Not production-ready.
-</Warning>
-
-## Why Voltaire?
-
-Voltaire is a low-level Ethereum library focusing on primitives and cryptography. Unlike full-featured libraries (viem, ethers), Voltaire provides just the foundational building blocks that allow humans and LLMs to build performant, reliable applications in TypeScript and Zig with ease.
-
-**Key differentiators:**
-
-- **Multi-language** - TypeScript + Zig with C-FFI, looking for contributors for Python, Rust, Swift, and Kotlin SDKs
-- **Optional WASM** - 2-10x faster crypto operations with minimal bundle impact
-- **Tree-shakeable** - Namespace API enables aggressive bundle optimization
-- **Type-safe** - Branded primitives prevent mixing incompatible types
-- **Audited crypto** - Defaults to @noble, blst, c-kzg (widely audited implementations)
-- **Data-first** - No classes required, works with plain Uint8Arrays
-- **Small** - Zig minimizes bundle size impact to JavaScript apps. Uses Ox JavaScript code when JS versions are as performant or much smaller bundle size
-
-## Quick Example
-
-<iframe src="https://stackblitz.com/edit/evmts-quick-start-pnnh3w?embed=1&file=README.md" style={{ width: '100%', height: '500px', border: '0', borderRadius: '4px', overflow: 'hidden' }} title="Voltaire Quick Start"></iframe>
-
-<Tip>
-**AI Agent Integration** - Use Voltaire with Claude and other AI agents via the [MCP server](https://voltaire.tevm.app/mcp):
-
-```bash
-claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
-```
-
-This enables AI assistants to directly query Voltaire documentation and examples.
-</Tip>
 
 ## What's Included
 
 <Columns>
+  <Card title="JSON-RPC Provider" icon="network-wired">
+    A shadcn style json-rpc provider interface customized for your codebase.
+  </Card>
   <Card title="Primitives" icon="cube">
-    Address, Uint256, Hash, Hex, Bytecode, Transaction, RLP, ABI, AccessList, Authorization, Blob, Chain, Denomination, EventLog, FeeMarket, GasConstants, Hardfork, Opcode, SIWE, State
+    Typesafe and featureful primitives such as Abi, Address, Bytecode, Ens, Chain, Opcodes, and Hardforks and more.
   </Card>
   <Card title="Cryptography" icon="lock">
-    Keccak256, secp256k1, BLS12-381, BN254, Ed25519, KZG, P256, PBKDF2, Poseidon, RIPEMD-160, Schnorr, SHA-256, SHA-3, SHA-512, X25519
-  </Card>
-  <Card title="JSON-RPC" icon="network-wired">
-    Complete JSON-RPC provider support for Ethereum nodes with type-safe request/response handling
+    High performance wasm based cryptography.
   </Card>
   <Card title="EVM" icon="bolt">
-    Low-level EVM execution primitives: all 21 precompiles, opcode handlers, instruction execution, and more
+    Execution primitives to process bytecode and execute the Evm.
   </Card>
 </Columns>
+
+## What's Unique?
+
+- **[Powerful Features](/getting-started/powerful-features)** - Unique features such as EVM execution and bytecode analysis in addition to standard primitives and provider functionality.
+- **[Branded Types](/getting-started/branded-types)** - Modern typesafety with runtime validated types using type-level tags that make structurally identical types distinguishable.
+- **[Zig-Wasm-Accelerated](/getting-started/wasm)** - High-performance WASM implementations built with Zig for cryptography and encoding.
+- **[Tree-Shakeable](/getting-started/tree-shaking)** - Import only what you need with unused code automatically excluded from bundles.
+- **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors Ethereum specification with MCP server enabling AI-assisted development.
+- **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript, Zig, and any language with C-FFI support.
 
