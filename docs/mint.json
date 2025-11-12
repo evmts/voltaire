@@ -60,37 +60,6 @@
 			]
 		},
 		{
-			"group": "Guides",
-			"pages": [
-				"guides/index",
-				"primitives/address/fundamentals",
-				"primitives/accesslist/fundamentals",
-				"primitives/abi/fundamentals",
-				"primitives/authorization/fundamentals",
-				"primitives/base64/fundamentals",
-				"primitives/binarytree/fundamentals",
-				"primitives/blob/fundamentals",
-				"primitives/bloomfilter/fundamentals",
-				"primitives/bytecode/fundamentals",
-				"primitives/chain/fundamentals",
-				"primitives/denomination/fundamentals",
-				"primitives/ens/fundamentals",
-				"primitives/eventlog/fundamentals",
-				"primitives/feemarket/fundamentals",
-				"primitives/gasconstants/fundamentals",
-				"primitives/hardfork/fundamentals",
-				"primitives/hash/fundamentals",
-				"primitives/hex/fundamentals",
-				"primitives/opcode/fundamentals",
-				"primitives/rlp/fundamentals",
-				"primitives/signature/fundamentals",
-				"primitives/siwe/fundamentals",
-				"primitives/state/fundamentals",
-				"primitives/transaction/fundamentals",
-				"primitives/uint/fundamentals"
-			]
-		},
-		{
 			"group": "JSON-RPC",
 			"pages": [
 				"jsonrpc/index",
@@ -900,6 +869,37 @@
 						}
 					]
 				}
+			]
+		},
+		{
+			"group": "Guides",
+			"pages": [
+				"guides/index",
+				"primitives/address/fundamentals",
+				"primitives/accesslist/fundamentals",
+				"primitives/abi/fundamentals",
+				"primitives/authorization/fundamentals",
+				"primitives/base64/fundamentals",
+				"primitives/binarytree/fundamentals",
+				"primitives/blob/fundamentals",
+				"primitives/bloomfilter/fundamentals",
+				"primitives/bytecode/fundamentals",
+				"primitives/chain/fundamentals",
+				"primitives/denomination/fundamentals",
+				"primitives/ens/fundamentals",
+				"primitives/eventlog/fundamentals",
+				"primitives/feemarket/fundamentals",
+				"primitives/gasconstants/fundamentals",
+				"primitives/hardfork/fundamentals",
+				"primitives/hash/fundamentals",
+				"primitives/hex/fundamentals",
+				"primitives/opcode/fundamentals",
+				"primitives/rlp/fundamentals",
+				"primitives/signature/fundamentals",
+				"primitives/siwe/fundamentals",
+				"primitives/state/fundamentals",
+				"primitives/transaction/fundamentals",
+				"primitives/uint/fundamentals"
 			]
 		}
 	],
