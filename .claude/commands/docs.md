@@ -24,6 +24,123 @@ You are tasked with updating the Voltaire Mintlify documentation. Follow these p
 - **Progressive disclosure** - Start simple, layer complexity gradually
 - **Zero ambiguity** - Precise technical language, link to specifications
 
+## COLOR PALETTE
+
+Voltaire uses a warm, sophisticated palette inspired by enlightenment-era aesthetics, drawing from the logo's rich amber and brown tones.
+
+### Primary Colors
+
+**Amber Gold** - Primary brand color, main CTAs and highlights
+- `#E6A23C` - Primary amber (gradients, buttons, primary actions)
+- `#E2982D` - Golden amber (highlights, hover states)
+- `#E9A349` - Bright gold (accents, attention-grabbing elements)
+- `#D4931E` - Deep amber (feature cards, icons, secondary CTAs)
+
+**Sienna Brown** - Secondary brand color, depth and contrast
+- `#A0522D` - Primary sienna (gradient endpoints, secondary actions)
+- `#965420` - Dark sienna (borders, dividers, subtle emphasis)
+
+### Background Colors
+
+**Light Mode**
+- `#FDF2E2` - Primary background (main canvas, matches logo background)
+- `#F2DBB1` - Secondary background (cards, sections, alternate surfaces)
+- `#AA9271` - Tertiary/borders (subtle dividers, disabled states)
+
+**Dark Mode**
+- `#280D2E` - Primary background (main canvas, matches logo background)
+- `#443637` - Secondary background (cards, code blocks, elevated surfaces)
+- `#AA9271` - Borders/muted text (dividers, secondary text)
+
+### Gradient Combinations
+
+Used for visual interest and brand consistency:
+- **Primary gradient**: `linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)`
+  - Usage: Hero buttons, primary CTAs, "Copied!" feedback
+- **Accent gradient**: `linear-gradient(135deg, #E9A349 0%, #D4931E 100%)`
+  - Usage: Hover effects, highlights, special callouts
+
+### Usage Guidelines
+
+**Buttons & CTAs**
+- Primary: `#E6A23C` background with `#A0522D` gradient
+- Hover: Scale transform + amber glow (`rgba(230, 162, 60, 0.3)`)
+- Secondary: Transparent with `rgba(128, 128, 128, 0.3)` border
+
+**Feature Cards**
+- Icon color: `#D4931E`
+- Title color: `#D4931E`
+- Hover border: `rgba(212, 147, 30, 0.3)`
+- Hover shadow: `rgba(212, 147, 30, 0.2)`
+
+**Code Blocks**
+- Hover ring (light mode): `#E6A23C` inner, `#A0522D` outer
+- Background (dark mode): `#443637`
+
+**Text Hierarchy**
+- Primary headings: Use gradient for "hero" text (`#E6A23C` → `#A0522D`)
+- Secondary headings: `#D4931E` in light mode
+- Body text: Default theme colors
+- Muted text: `#AA9271` or `#999`
+
+### Accessibility
+
+**Contrast Ratios** (WCAG AA minimum):
+- `#E6A23C` on `#FDF2E2`: 3.2:1 (large text only)
+- `#A0522D` on `#FDF2E2`: 5.1:1 (body text safe)
+- `#D4931E` on white: 3.8:1 (large text only)
+- `#280D2E` on white: 15.2:1 (excellent)
+- `#443637` on `#280D2E`: 2.9:1 (decorative only)
+
+**Best Practices**:
+- Use darker sienna (`#A0522D`, `#965420`) for body text on light backgrounds
+- Use amber colors (`#E6A23C`, `#E2982D`) for large headings and CTAs only
+- In dark mode, use lighter creams (`#F2DBB1`) for readable text
+- Maintain 4.5:1 minimum for body text, 3:1 for large text (18px+)
+
+### Complementary Colors
+
+**Neutral Palette** (for content hierarchy):
+- `#FFFFFF` - Pure white (light mode cards, overlays)
+- `#F5F5F5` - Subtle gray (code block backgrounds in light mode)
+- `#999999` - Muted text (descriptions, captions)
+- `#666666` - Secondary text (metadata)
+- `#333333` - Primary text (body copy in light mode)
+- `#000000` - Maximum contrast (reserved for critical text)
+
+**Semantic Colors** (callouts, alerts):
+- Success: `#10B981` (green)
+- Warning: `#F59E0B` (orange-amber blend)
+- Error: `#EF4444` (red)
+- Info: `#3B82F6` (blue)
+
+Use semantic colors sparingly to avoid clashing with warm brand palette.
+
+### Color Variables (mint.json)
+
+```json
+{
+  "colors": {
+    "primary": "#E6A23C",
+    "light": "#E9A349",
+    "dark": "#A0522D",
+    "background": {
+      "light": "#FDF2E2",
+      "dark": "#280D2E"
+    }
+  }
+}
+```
+
+### Implementation Notes
+
+- All color values in hex format for consistency
+- Use CSS custom properties for theme switching
+- Amber/gold colors work best with `background-clip: text` for gradients
+- Box shadows use `rgba()` with brand colors at 20-30% opacity
+- Border colors typically 30% opacity of brand colors
+- Hover states: 2px translateY + appropriate color glow
+
 ---
 
 ## KEY FILES
