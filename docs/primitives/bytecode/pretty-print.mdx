@@ -23,7 +23,7 @@ Returns multi-line string suitable for terminal output or debugging.
 ```typescript
 import { Bytecode } from '@tevm/voltaire';
 
-const code = Bytecode.fromHex("0x60016002015b00");
+const code = Bytecode("0x60016002015b00");
 console.log(code.prettyPrint({
   colors: true,
   showGas: true,
@@ -143,7 +143,7 @@ interface PrettyPrintOptions {
 ### Basic Disassembly
 
 ```typescript
-const code = Bytecode.fromHex("0x60016002015b00");
+const code = Bytecode("0x60016002015b00");
 
 // Simple output (no colors, no annotations)
 console.log(code.prettyPrint({
@@ -390,15 +390,15 @@ const blockInsts = instructions.filter(inst =>
 
 // Create temporary bytecode from range
 const range = code.raw().slice(100, 150);
-const blockCode = Bytecode.from(range);
+const blockCode = Bytecode(range);
 console.log(blockCode.prettyPrint());
 ```
 
 ### Compare Bytecode Versions
 
 ```typescript
-const v1 = Bytecode.fromHex(contractV1Bytecode);
-const v2 = Bytecode.fromHex(contractV2Bytecode);
+const v1 = Bytecode(contractV1Bytecode);
+const v2 = Bytecode(contractV2Bytecode);
 
 console.log("=== Version 1 ===");
 console.log(v1.prettyPrint({ colors: false }));
@@ -428,7 +428,7 @@ functions.forEach((target, selector) => {
 
   if (funcBlock) {
     const funcCode = code.raw().slice(funcBlock.startPc, funcBlock.endPc);
-    console.log(Bytecode.from(funcCode).prettyPrint());
+    console.log(Bytecode(funcCode).prettyPrint());
   }
 });
 ```

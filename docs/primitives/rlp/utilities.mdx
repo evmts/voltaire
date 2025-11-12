@@ -43,11 +43,11 @@ Source: [from.js:15-26](https://github.com/evmts/voltaire/blob/main/src/primitiv
 import { Rlp } from '@tevm/voltaire'
 
 // From Uint8Array (becomes bytes data)
-const bytes = Rlp.from(new Uint8Array([1, 2, 3]))
+const bytes = Rlp(new Uint8Array([1, 2, 3]))
 // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
 
 // From array (becomes list data)
-const list = Rlp.from([
+const list = Rlp([
   new Uint8Array([1]),
   new Uint8Array([2])
 ])
@@ -61,20 +61,16 @@ const list = Rlp.from([
 
 // From existing RLP data (pass through)
 const existing = { type: 'bytes', value: new Uint8Array([1]) }
-const same = Rlp.from(existing)
+const same = Rlp(existing)
 // => Returns existing unchanged
 
 // Empty bytes
-const empty = Rlp.from(new Uint8Array([]))
+const empty = Rlp(new Uint8Array([]))
 // => { type: 'bytes', value: Uint8Array([]) }
 
 // Empty list
-const emptyList = Rlp.from([])
+const emptyList = Rlp([])
 // => { type: 'list', value: [] }
-
-// Constructor also uses from internally
-const rlp = new Rlp(new Uint8Array([1, 2, 3]))
-// => Same as Rlp.from()
 ```
 </TabItem>
 <TabItem label="Namespace API">
@@ -111,7 +107,7 @@ The `from` method normalizes various input types into RLP data structures:
 import { Rlp } from '@tevm/voltaire'
 
 // Array items remain as-is (not converted to RLP data)
-const list = Rlp.from([
+const list = Rlp([
   new Uint8Array([1]),  // Stays as Uint8Array
   new Uint8Array([2])   // Stays as Uint8Array
 ])
@@ -133,7 +129,7 @@ import { Rlp } from '@tevm/voltaire'
 
 function processRlpData(input: Uint8Array | BrandedRlp | BrandedRlp[]) {
   // Normalize to RLP data
-  const data = Rlp.from(input)
+  const data = Rlp(input)
 
   // Now work with consistent type
   if (data.type === 'bytes') {
@@ -149,11 +145,11 @@ function processRlpData(input: Uint8Array | BrandedRlp | BrandedRlp[]) {
 import { Rlp } from '@tevm/voltaire'
 
 // Build transaction structure
-const nonce = Rlp.from(new Uint8Array([0x00]))
-const gasPrice = Rlp.from(new Uint8Array([0x04, 0xa8, 0x17, 0xc8]))
-const gas = Rlp.from(new Uint8Array([0x52, 0x08]))
+const nonce = Rlp(new Uint8Array([0x00]))
+const gasPrice = Rlp(new Uint8Array([0x04, 0xa8, 0x17, 0xc8]))
+const gas = Rlp(new Uint8Array([0x52, 0x08]))
 
-const transaction = Rlp.from([nonce, gasPrice, gas, /* ... */])
+const transaction = Rlp([nonce, gasPrice, gas, /* ... */])
 ```
 
 ## getEncodedLength
@@ -736,8 +732,8 @@ function getTotalBytesSize(data: BrandedRlp): number {
 import { Rlp } from '@tevm/voltaire'
 
 function normalizeAndCompare(a: unknown, b: unknown): boolean {
-  const dataA = Rlp.from(a)
-  const dataB = Rlp.from(b)
+  const dataA = Rlp(a)
+  const dataB = Rlp(b)
   return Rlp.equals(dataA, dataB)
 }
 ```

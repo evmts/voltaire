@@ -174,7 +174,7 @@ function maybeProcess(data: unknown) {
     return processAccessList(data);
   } else if (Array.isArray(data)) {
     try {
-      const list = AccessList.from(data);
+      const list = AccessList(data);
       AccessList.assertValid(list);
       return processAccessList(list);
     } catch {

@@ -37,7 +37,7 @@ cost = (addresses × 2400) + (storageKeys × 1900)
 
 **Example:**
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr1, storageKeys: [key1, key2] },
   { address: addr2, storageKeys: [key3] }
 ]);
@@ -77,7 +77,7 @@ totalSavings = addressSavings + keySavings
 
 **Example:**
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr1, storageKeys: [key1, key2] },
   { address: addr2, storageKeys: [] }
 ]);
@@ -136,7 +136,7 @@ Access lists are beneficial when:
 1. **Multiple storage reads**
    ```typescript
    // Reading 3+ storage slots from same contract
-   const list = AccessList.from([
+   const list = AccessList([
      { address: token, storageKeys: [slot1, slot2, slot3] }
    ]);
    // Cost: 2400 + (3 × 1900) = 8,100
@@ -157,7 +157,7 @@ Access lists are beneficial when:
 3. **Cross-contract interactions**
    ```typescript
    // Multiple contracts with storage reads
-   const list = AccessList.from([
+   const list = AccessList([
      { address: router, storageKeys: [] },
      { address: factory, storageKeys: [pairSlot] },
      { address: token0, storageKeys: [balanceSlot] },
@@ -172,7 +172,7 @@ Access lists waste gas when:
 1. **Few storage accesses**
    ```typescript
    // Single storage read
-   const list = AccessList.from([
+   const list = AccessList([
      { address: token, storageKeys: [balanceSlot] }
    ]);
    // Cost: 2400 + 1900 = 4,300
@@ -189,7 +189,7 @@ Access lists waste gas when:
 3. **Duplicate entries**
    ```typescript
    // Without deduplication
-   const list = AccessList.from([
+   const list = AccessList([
      { address: token, storageKeys: [key1] },
      { address: token, storageKeys: [key1] }  // Duplicate
    ]);
@@ -345,7 +345,7 @@ function calculateMultiAccessSavings(
 
 ```typescript
 // Router, two tokens, pair contract
-const list = AccessList.from([
+const list = AccessList([
   { address: router, storageKeys: [] },
   { address: pair, storageKeys: [reserve0Slot, reserve1Slot] },
   { address: token0, storageKeys: [balanceSlot] },
@@ -361,7 +361,7 @@ const list = AccessList.from([
 
 ```typescript
 // Contract + owner balance + token counter + new token data
-const list = AccessList.from([
+const list = AccessList([
   { address: nft, storageKeys: [
     ownerBalanceSlot,
     tokenCounterSlot,
@@ -379,7 +379,7 @@ const list = AccessList.from([
 
 ```typescript
 // Transferring to 10 recipients
-const list = AccessList.from([
+const list = AccessList([
   { address: token, storageKeys: [
     senderBalanceSlot,
     ...recipientBalanceSlots // 10 slots

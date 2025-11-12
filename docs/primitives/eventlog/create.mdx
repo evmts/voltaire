@@ -1,6 +1,6 @@
 ---
 title: EventLog.create
-description: Explicit constructor for creating event logs
+description: Explicit constructor (alias)
 ---
 
 <Tabs>
@@ -8,7 +8,7 @@ description: Explicit constructor for creating event logs
 
 ## `EventLog.create(params: EventLogParams): EventLog`
 
-Explicit constructor for event log. Alias for `EventLog.from()`.
+Explicit constructor for event log. Alias for `EventLog()` constructor.
 
 **Parameters:**
 - `params.address: BrandedAddress` - Contract address that emitted the log
@@ -45,7 +45,7 @@ console.log(log.blockNumber); // 18000000n
 
 ## `create(params: EventLogParams): BrandedEventLog`
 
-Explicit constructor for event log. Alias for `from()`.
+Explicit constructor for event log. Alias for namespace `from()`.
 
 **Parameters:**
 - `params.address: BrandedAddress` - Contract address that emitted the log
@@ -84,17 +84,19 @@ console.log(log.blockNumber); // 18000000n
 
 ## Usage Notes
 
-`create()` is functionally identical to `from()`. Use whichever name is clearer in context:
+`create()` is functionally identical to `EventLog()` and `EventLog.from()`. Use whichever name is clearest:
 
 ```typescript
-// Both equivalent
-const log1 = EventLog.from(params);
-const log2 = EventLog.create(params);
+// All equivalent
+const log1 = EventLog(params);       // Primary (recommended)
+const log2 = EventLog.from(params);  // Alias
+const log3 = EventLog.create(params); // Alias
 ```
 
-Most code uses `from()` as the primary constructor. Use `create()` when explicit construction intent improves readability.
+Most code uses `EventLog()` as the primary constructor. Use `create()` when explicit construction intent improves readability.
 
 ## See Also
 
-- [from](/primitives/eventlog/from) - Primary constructor
+- [EventLog()](/primitives/eventlog/from) - Primary constructor
+- [from](/primitives/eventlog/from) - Alias for EventLog() constructor
 - [clone](/primitives/eventlog/clone) - Deep clone existing log

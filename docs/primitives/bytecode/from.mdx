@@ -6,7 +6,7 @@ description: Universal constructor for creating bytecode from hex strings or Uin
 <Tabs>
 <Tab title="Class API (recommended)">
 
-## `Bytecode.from(value: BytecodeLike): Bytecode`
+## `Bytecode(value: BytecodeLike): Bytecode`
 
 Universal constructor that dispatches based on input type. Accepts hex strings or Uint8Array.
 
@@ -21,13 +21,15 @@ Universal constructor that dispatches based on input type. Accepts hex strings o
 import { Bytecode } from '@tevm/voltaire'
 
 // From hex string
-const code1 = Bytecode.from("0x6001")
-const code2 = Bytecode.from("6001")  // Works without prefix
+const code1 = Bytecode("0x6001")
+const code2 = Bytecode("6001")  // Works without prefix
 
 // From Uint8Array
 const bytes = new Uint8Array([0x60, 0x01])
-const code3 = Bytecode.from(bytes)
+const code3 = Bytecode(bytes)
 ```
+
+**Alias:** `Bytecode.from(value)` - same behavior
 
 **Defined in:** [primitives/Bytecode/BrandedBytecode/from.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/from.js#L15)
 
@@ -114,19 +116,19 @@ type BytecodeLike =
 **Uint8Array** - Raw byte arrays:
 ```typescript
 const bytes = new Uint8Array([0x60, 0x01])
-const code = Bytecode.from(bytes)
+const code = Bytecode(bytes)
 ```
 
 **BrandedBytecode** - Branded bytecode (passed through):
 ```typescript
 const branded = Bytecode.fromHex("0x6001")
-const code = Bytecode.from(branded)  // No conversion
+const code = Bytecode(branded)  // No conversion
 ```
 
 **Hex String** - With or without `0x` prefix:
 ```typescript
-const code1 = Bytecode.from("0x6001")
-const code2 = Bytecode.from("6001")  // Also valid
+const code1 = Bytecode("0x6001")
+const code2 = Bytecode("6001")  // Also valid
 ```
 
 <Warning title="String Interpretation">
@@ -139,7 +141,7 @@ Use `BytecodeLike` for flexible function parameters:
 
 ```typescript
 function analyzeBytecode(input: BytecodeLike): Analysis {
-  const code = Bytecode.from(input)
+  const code = Bytecode(input)
   return code.analyze()
 }
 

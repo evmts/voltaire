@@ -33,7 +33,7 @@ Create checksummed hex string from Address.
 <Tabs>
 <TabItem label="Class/Namespace">
 ```typescript
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
 // Get checksummed string
 const checksummed = Address.Checksummed.from(addr)
@@ -114,7 +114,7 @@ All lowercase hex format for canonical representation.
 Create lowercase hex string from Address.
 
 ```typescript
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
 
 const lowercase = Address.Lowercase.from(addr)
 // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
@@ -145,7 +145,7 @@ All uppercase hex format.
 Create uppercase hex string from Address.
 
 ```typescript
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
 const uppercase = Address.Uppercase.from(addr)
 // "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"

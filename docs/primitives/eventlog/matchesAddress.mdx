@@ -20,7 +20,7 @@ Check if log's address matches filter. Accepts single address or array (OR logic
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [Hash.fromHex('0xddf252ad...')],
   data: new Uint8Array([]),

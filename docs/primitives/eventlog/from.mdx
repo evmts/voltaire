@@ -1,14 +1,14 @@
 ---
-title: EventLog.from
-description: Create event log from parameters
+title: EventLog() / EventLog.from()
+description: Primary constructor for event logs
 ---
 
 <Tabs>
 <Tab title="Class API (recommended)">
 
-## `EventLog.from(params: EventLogParams): EventLog`
+## `EventLog(params: EventLogParams): EventLog`
 
-Create event log instance from parameters. Primary constructor for EventLog.
+Primary constructor for creating event log instances.
 
 **Parameters:**
 - `params.address: BrandedAddress` - Contract address that emitted the log
@@ -29,7 +29,7 @@ Create event log instance from parameters. Primary constructor for EventLog.
 import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
 
 // Create Transfer event log
-const log = EventLog.from({
+const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [
     Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
@@ -46,9 +46,12 @@ const log = EventLog.from({
 console.log(Address.toHex(log.address));
 console.log(log.topics.length); // 3
 console.log(log.blockNumber); // 18000000n
+
+// Alternative: EventLog.from() is an alias
+const log2 = EventLog.from({ /* same params */ });
 ```
 
-**Defined in:** [primitives/EventLog/BrandedEventLog/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/from.js)
+**Defined in:** [primitives/EventLog/EventLog.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.js)
 
 </Tab>
 <Tab title="Namespace API (Tree-shakeable)">
@@ -126,7 +129,7 @@ const rpcLog = {
   removed: false,
 };
 
-const log = EventLog.from({
+const log = EventLog({
   address: Address.fromHex(rpcLog.address),
   topics: rpcLog.topics.map(Hash.fromHex),
   data: Hex.toBytes(rpcLog.data),
@@ -145,7 +148,7 @@ const log = EventLog.from({
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Minimal log with required fields only
-const testLog = EventLog.from({
+const testLog = EventLog({
   address: Address.zero(),
   topics: [Hash.fromHex('0xddf252ad...')],
   data: new Uint8Array([]),
@@ -160,7 +163,7 @@ console.log(testLog.removed); // undefined (defaults to false)
 ```typescript
 import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [
     Hash.fromHex('0xddf252ad...'), // Transfer signature
@@ -183,7 +186,7 @@ const log = EventLog.from({
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Anonymous event with 4 indexed parameters (no signature in topic0)
-const anonymousLog = EventLog.from({
+const anonymousLog = EventLog({
   address: contractAddress,
   topics: [
     Hash.fromHex('0x000...param1'),

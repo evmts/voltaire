@@ -26,7 +26,7 @@ Addresses use EIP-55 mixed-case checksumming for error detection. Voltaire handl
 Despite being a `Uint8Array`, addresses display formatted in most environments:
 
 ```typescript
-const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
 console.log(address);
 // Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 ```
@@ -46,7 +46,7 @@ Address supports both **Class API** (instance methods) and **Namespace API** (fu
 import { Address } from '@tevm/voltaire';
 
 // Create from hex string (most common)
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // Validate input
 if (!Address.isValid("0xinvalid")) {
@@ -150,7 +150,7 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 <Tab title="Class API">
 
 **Constructors:**
-- `Address.from(value)` - Universal constructor from any input
+- `Address(value)` - Universal constructor from any input
 - `Address.fromHex(hex)` - Parse hex string (with or without 0x prefix)
 - `Address.fromBytes(bytes)` - Create from Uint8Array (must be 20 bytes)
 - `Address.fromNumber(value)` - Create from bigint or number
@@ -300,7 +300,7 @@ function parseUserAddress(input: string): Address {
     throw new Error("Invalid address format");
   }
 
-  const addr = Address.fromHex(input);
+  const addr = Address(input);
 
   // Optionally verify checksum if provided
   if (Address.isValidChecksum(input) === false) {
@@ -324,9 +324,9 @@ try {
 ```typescript
 // Sort addresses for consistent ordering
 const addresses = [
-  Address.fromHex("0xCCCC..."),
-  Address.fromHex("0xAAAA..."),
-  Address.fromHex("0xBBBB..."),
+  Address("0xCCCC..."),
+  Address("0xAAAA..."),
+  Address("0xBBBB..."),
 ];
 
 const sorted = Address.sortAddresses(addresses);
@@ -342,7 +342,7 @@ console.log(unique.length); // 2
 
 ```typescript
 // Predict CREATE2 address before deployment
-const factory = Address.fromHex("0x...");
+const factory = Address("0x...");
 const salt = new Uint8Array(32);
 const initCode = compileContract(); // bytecode
 

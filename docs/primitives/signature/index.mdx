@@ -319,7 +319,7 @@ console.log('Recovery ID:', Signature.getV(sig));        // 27 or 28
 console.log('Canonical:', Signature.isCanonical(sig));   // true
 
 // 4. Recover signer address
-const txHash = Hash.from(keccak256(encodedTxData));
+const txHash = Hash(keccak256(encodedTxData));
 const signer = Secp256k1.recoverAddress(sig, txHash);
 console.log('Signer:', Address.toString(signer)); // "0x..."
 

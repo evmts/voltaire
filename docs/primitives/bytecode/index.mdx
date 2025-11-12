@@ -42,7 +42,7 @@ Bytecode supports both **Class API** (instance methods) and **Namespace API** (f
 ```typescript
 import { Bytecode } from '@tevm/voltaire';
 
-const code = Bytecode.fromHex("0x6001600201");
+const code = Bytecode("0x6001600201");
 const analysis = code.analyze();
 const disassembly = code.formatInstructions();
 ```
@@ -176,7 +176,7 @@ Types for bytecode analysis results. See [analyze](./analyze).
 
 ```typescript
 const bytecode = await provider.getCode("0x...");
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 
 const analysis = code.analyze();
 console.log(`Valid: ${analysis.valid}`);
@@ -189,8 +189,8 @@ const isValidTarget = code.isValidJumpDest(100);
 ### Comparing Bytecode
 
 ```typescript
-const deployed = Bytecode.fromHex(await provider.getCode(address));
-const expected = Bytecode.fromHex(compiledBytecode);
+const deployed = Bytecode(await provider.getCode(address));
+const expected = Bytecode(compiledBytecode);
 
 if (deployed.equals(expected)) {
   console.log("Contract verified");
@@ -203,7 +203,7 @@ if (deployed.equals(expected)) {
 ### Extracting Runtime Code
 
 ```typescript
-const deploymentCode = Bytecode.fromHex("0x608060...");
+const deploymentCode = Bytecode("0x608060...");
 const runtimeCode = deploymentCode.extractRuntime();
 const cleanCode = runtimeCode.stripMetadata();
 ```

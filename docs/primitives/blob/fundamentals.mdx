@@ -91,11 +91,11 @@ import { Blob } from '@tevm/voltaire';
 const rawBlob = new Uint8Array(131072);
 // ... fill with your data format ...
 
-const blob = Blob.from(rawBlob);
+const blob = Blob(rawBlob);
 
 // Validates size
 try {
-  const invalid = Blob.from(new Uint8Array(1000)); // Too small
+  const invalid = Blob(new Uint8Array(1000)); // Too small
 } catch (e) {
   console.error(e); // Error: Invalid blob size
 }

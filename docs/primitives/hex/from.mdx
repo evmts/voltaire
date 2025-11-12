@@ -21,14 +21,14 @@ Universal constructor that dispatches based on input type. Accepts hex strings (
 import { Hex } from '@tevm/voltaire'
 
 // From hex string with prefix
-const hex1 = Hex.from("0x1234")
+const hex1 = Hex("0x1234")
 
 // From hex string without prefix
-const hex2 = Hex.from("1234")
+const hex2 = Hex("1234")
 
 // From Uint8Array
 const bytes = new Uint8Array([0x12, 0x34])
-const hex3 = Hex.from(bytes)
+const hex3 = Hex(bytes)
 ```
 
 **Defined in:** [primitives/Hex/BrandedHex/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/from.js)
@@ -97,24 +97,24 @@ const hex = Hex.init(&bytes);
 
 **Hex String with Prefix:**
 ```typescript
-const hex = Hex.from("0x1234")  // "0x1234"
+const hex = Hex("0x1234")  // "0x1234"
 ```
 
 **Hex String without Prefix:**
 ```typescript
-const hex = Hex.from("1234")  // "0x1234"
+const hex = Hex("1234")  // "0x1234"
 ```
 
 **Uint8Array:**
 ```typescript
 const bytes = new Uint8Array([0x12, 0x34])
-const hex = Hex.from(bytes)  // "0x1234"
+const hex = Hex(bytes)  // "0x1234"
 ```
 
 **Empty Values:**
 ```typescript
-const empty1 = Hex.from("0x")  // "0x"
-const empty2 = Hex.from(new Uint8Array())  // "0x"
+const empty1 = Hex("0x")  // "0x"
+const empty2 = Hex(new Uint8Array())  // "0x"
 ```
 
 ## Performance

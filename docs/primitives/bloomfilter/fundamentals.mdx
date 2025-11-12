@@ -204,7 +204,7 @@ import { BloomFilter, Address, Hex, Keccak256 } from '@tevm/voltaire';
 const blockBloom = BloomFilter.create(2048, 3);
 
 // Contract emits Transfer event
-const contract = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const contract = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 const transferSignature = "Transfer(address,address,uint256)";
 const transferTopic = Keccak256.hash(new TextEncoder().encode(transferSignature));
 
@@ -282,14 +282,14 @@ const bloom = BloomFilter.create(2048, 3);
 
 // Example log from ERC-20 Transfer
 const log = {
-  address: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+  address: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
   topics: [
     // topics[0] = keccak256("Transfer(address,address,uint256)")
-    Hash.from("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
+    Hash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
     // topics[1] = from address (indexed parameter)
-    Hash.from("0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
+    Hash("0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
     // topics[2] = to address (indexed parameter)
-    Hash.from("0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"),
+    Hash("0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"),
   ],
   data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000", // value (not indexed)
 };
@@ -683,7 +683,7 @@ for (let i = 100; i <= 200; i++) {
 }
 
 // Find Transfer events from USDC contract
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const blocks = index.findTransfersFromContract(usdcAddress);
 
 console.log(`Found ${blocks.length} blocks with potential USDC transfers`);

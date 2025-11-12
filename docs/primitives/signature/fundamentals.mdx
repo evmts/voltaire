@@ -93,7 +93,7 @@ import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
 
 // 1. Prepare message (hash it first)
 const message = new TextEncoder().encode("Transfer 10 ETH");
-const messageHash = Hash.from(keccak256(message));
+const messageHash = Hash(keccak256(message));
 
 // 2. Sign with private key
 const privateKey = new Uint8Array(32); // Your private key
@@ -124,11 +124,11 @@ import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
 
 // Message and signature (received from signer)
 const message = new TextEncoder().encode("Transfer 10 ETH");
-const messageHash = Hash.from(keccak256(message));
+const messageHash = Hash(keccak256(message));
 const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
 
 // Expected signer address
-const expectedSigner = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const expectedSigner = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 
 // Recover the actual signer address
 const recoveredAddress = Secp256k1.recoverAddress(sig, messageHash);
@@ -167,7 +167,7 @@ const senderAddress = Secp256k1.publicKeyToAddress(publicKey);
 
 // 3. Create message hash
 const message = new TextEncoder().encode("Approve 100 USDC transfer");
-const messageHash = Hash.from(keccak256(message));
+const messageHash = Hash(keccak256(message));
 
 // 4. Sign the message
 const sig = Secp256k1.sign(messageHash, privateKey);
@@ -313,7 +313,7 @@ const txData = {
 
 // Serialize and hash transaction
 const serialized = serializeTransaction(txData); // RLP encoding
-const txHash = Hash.from(keccak256(serialized));
+const txHash = Hash(keccak256(serialized));
 
 // Sign transaction hash
 const sig = Secp256k1.sign(txHash, privateKey);
@@ -346,7 +346,7 @@ function hashPersonalMessage(message) {
   combined.set(prefixBytes, 0);
   combined.set(messageBytes, prefixBytes.length);
 
-  return Hash.from(keccak256(combined));
+  return Hash(keccak256(combined));
 }
 
 // Sign a message

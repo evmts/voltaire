@@ -3,11 +3,12 @@
 	"name": "Voltaire",
 	"openapi": [],
 	"logo": {
-		"light": "/logo.svg",
-		"dark": "/logo.svg",
-		"href": "https://voltaire.tevm.sh"
+		"light": "/logo-light.png",
+		"dark": "/logo-dark.png",
+		"href": "https://voltaire.tevm.sh",
+		"height": 40
 	},
-	"favicon": "/favicon.svg",
+	"favicon": "/favicon.png",
 	"colors": {
 		"primary": "#0D9373",
 		"light": "#07C983",
@@ -15,6 +16,10 @@
 		"anchors": {
 			"from": "#0D9373",
 			"to": "#07C983"
+		},
+		"background": {
+			"light": "#FDF2E2",
+			"dark": "#0a0a0a"
 		}
 	},
 	"topbarLinks": [

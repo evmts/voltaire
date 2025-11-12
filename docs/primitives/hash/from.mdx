@@ -1,14 +1,18 @@
 ---
-title: Hash.from
+title: Hash()
 description: Universal constructor for creating Hash from hex strings or Uint8Array
 ---
 
 <Tabs>
 <Tab title="Class API">
 
-## `Hash.from(value: HashLike): Hash`
+## `Hash(value: HashLike): Hash`
 
 Universal constructor that dispatches based on input type. Accepts hex strings or Uint8Array.
+
+<Note>
+`Hash()` is the canonical constructor. `Hash.from()` remains available as an alias for backward compatibility.
+</Note>
 
 **Parameters:**
 - `value: HashLike` - Hex string (with or without `0x` prefix) or Uint8Array (32 bytes)
@@ -24,16 +28,19 @@ Universal constructor that dispatches based on input type. Accepts hex strings o
 ```typescript
 import { Hash } from '@tevm/voltaire'
 
-// From hex string
-const hash1 = Hash.from("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
-const hash2 = Hash.from("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+// From hex string (recommended)
+const hash1 = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // From Uint8Array
 const bytes = new Uint8Array(32)
-const hash3 = Hash.from(bytes)
+const hash3 = Hash(bytes)
 
 // From existing Hash (passed through)
-const hash4 = Hash.from(hash1)
+const hash4 = Hash(hash1)
+
+// Hash.from() also works (alias)
+const hash5 = Hash.from(hash1)
 ```
 
 **Defined in:** [primitives/Hash/BrandedHash/from.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/from.js#L16)
@@ -113,19 +120,19 @@ type HashLike =
 **Uint8Array** - Raw byte arrays (must be 32 bytes):
 ```typescript
 const bytes = new Uint8Array(32)
-const hash = Hash.from(bytes)
+const hash = Hash(bytes)
 ```
 
 **BrandedHash** - Branded hash (passed through):
 ```typescript
 const branded = Hash.fromHex("0x1c8aff...")
-const hash = Hash.from(branded)  // No conversion
+const hash = Hash(branded)  // No conversion
 ```
 
 **Hex String** - With or without `0x` prefix (must be 64 hex chars):
 ```typescript
-const hash1 = Hash.from("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
-const hash2 = Hash.from("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash1 = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 ```
 
 <Warning title="String Interpretation">
@@ -138,7 +145,7 @@ Use `HashLike` for flexible function parameters:
 
 ```typescript
 function verifyHash(input: HashLike): boolean {
-  const hash = Hash.from(input)
+  const hash = Hash(input)
   return hash.isZero()
 }
 

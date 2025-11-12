@@ -107,7 +107,7 @@ const app = express();
 // Native environment - KZG available
 app.post('/api/compute-kzg', async (req, res) => {
   try {
-    const blob = Blob.from(req.body);
+    const blob = Blob(req.body);
 
     // ✅ Native: Compute KZG operations
     const commitment = Blob.toCommitment(blob);

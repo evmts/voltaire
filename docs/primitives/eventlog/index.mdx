@@ -72,8 +72,9 @@ const matches = EventLog.matchesAddress(log, tokenAddress);
 
 ### Constructors
 
-- [`from(params)`](./from) - Create event log from parameters
-- [`create(params)`](./create) - Alias for from
+- [`EventLog(params)`](./from) - Primary constructor for event logs
+- [`from(params)`](./from) - Alias for EventLog() constructor
+- [`create(params)`](./create) - Alias for EventLog() constructor
 - [`clone(log)`](./clone) - Clone existing log
 
 ### Accessors

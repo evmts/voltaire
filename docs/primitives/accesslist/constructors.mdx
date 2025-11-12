@@ -28,12 +28,12 @@ const list = AccessList.create();
 - Default/empty state
 - Conditional list building
 
-## AccessList.from()
+## AccessList()
 
-Loose constructor accepting items array or RLP bytes.
+Canonical constructor accepting items array or RLP bytes.
 
 ```typescript
-AccessList.from(value: readonly Item[] | Uint8Array): BrandedAccessList
+AccessList(value: readonly Item[] | Uint8Array): BrandedAccessList
 ```
 
 **Parameters:**
@@ -44,19 +44,22 @@ AccessList.from(value: readonly Item[] | Uint8Array): BrandedAccessList
 **Example:**
 ```typescript
 // From items
-const list = AccessList.from([
+const list = AccessList([
   { address: addr1, storageKeys: [key1] },
   { address: addr2, storageKeys: [] }
 ]);
 
 // From RLP bytes
-const list2 = AccessList.from(bytes);
+const list2 = AccessList(bytes);
 ```
 
 **Notes:**
-- Same as factory function: `AccessList(value)`
 - Delegates to `fromBytes` for Uint8Array input
 - No validation - use `assertValid` if needed
+
+### Alias: AccessList.from()
+
+`AccessList.from()` is an alias for `AccessList()` for backward compatibility. Use `AccessList()` directly in new code.
 
 ## AccessList.fromBytes()
 
@@ -97,20 +100,6 @@ const list = AccessList.fromBytes(bytes);
 - Address must be 20 bytes
 - Keys must be list of 32-byte hashes
 
-## Factory Function
-
-```typescript
-AccessList(value: readonly Item[] | Uint8Array): BrandedAccessList
-```
-
-Convenience factory - same as `AccessList.from()`.
-
-**Example:**
-```typescript
-const list = AccessList([
-  { address: token, storageKeys: [slot1, slot2] }
-]);
-```
 
 ## Patterns
 
@@ -134,7 +123,7 @@ const items = [
   { address: router, storageKeys: [] },
   { address: token, storageKeys: [balanceSlot] }
 ];
-const list = AccessList.from(items);
+const list = AccessList(items);
 ```
 
 ### Incremental Building
@@ -170,7 +159,7 @@ function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
 
 ```typescript
 // Lists are readonly, so this creates independent copy
-const clone = AccessList.from(original);
+const clone = AccessList(original);
 ```
 
 ## Best Practices
@@ -182,7 +171,7 @@ const clone = AccessList.from(original);
    list = list.withAddress(addr);
 
    // Avoid
-   let list = AccessList.from([]);
+   let list = AccessList([]);
    ```
 
 2. **Validate untrusted bytes**
@@ -197,18 +186,14 @@ const clone = AccessList.from(original);
 
 3. **Use factory for literal values**
    ```typescript
-   // Concise
    const list = AccessList([
      { address: addr, storageKeys: [key] }
    ]);
-
-   // Verbose
-   const list = AccessList.from([...]);
    ```
 
 4. **Deduplicate after construction**
    ```typescript
-   const list = AccessList.from(items);
+   const list = AccessList(items);
    const deduped = list.deduplicate();
    ```
 
@@ -233,7 +218,7 @@ try {
 ### Validation After Construction
 
 ```typescript
-const list = AccessList.from(externalData);
+const list = AccessList(externalData);
 
 // Validate
 try {

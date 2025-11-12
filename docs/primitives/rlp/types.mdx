@@ -67,8 +67,8 @@ const bytes: BrandedRlp = {
   value: new Uint8Array([1, 2, 3, 4, 5])
 }
 
-// Created via from()
-const data = Rlp.from(new Uint8Array([1, 2, 3]))
+// Created via constructor
+const data = Rlp(new Uint8Array([1, 2, 3]))
 // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
 ```
 
@@ -117,8 +117,8 @@ const nested: BrandedRlp = {
   ]
 }
 
-// Created via from()
-const listData = Rlp.from([
+// Created via constructor
+const listData = Rlp([
   new Uint8Array([1]),
   new Uint8Array([2])
 ])
@@ -426,17 +426,17 @@ function serializeRlp(data: BrandedRlp): string {
 
 ### Creating RLP Data
 
-Use `from()` for automatic type detection:
+Use `Rlp()` constructor for automatic type detection:
 
 ```typescript
 import { Rlp } from '@tevm/voltaire'
 
 // From bytes
-const bytesData = Rlp.from(new Uint8Array([1, 2, 3]))
+const bytesData = Rlp(new Uint8Array([1, 2, 3]))
 // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
 
 // From array (becomes list)
-const listData = Rlp.from([
+const listData = Rlp([
   new Uint8Array([1]),
   new Uint8Array([2])
 ])
@@ -444,7 +444,7 @@ const listData = Rlp.from([
 
 // Already RLP data (pass through)
 const existing = { type: 'bytes', value: new Uint8Array([1]) }
-const same = Rlp.from(existing)
+const same = Rlp(existing)
 // => Returns existing unchanged
 ```
 

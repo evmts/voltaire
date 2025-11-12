@@ -56,7 +56,7 @@ Access through Rlp class static methods:
 ```typescript
 import { Rlp } from '@tevm/voltaire'
 
-const data = Rlp.from(new Uint8Array([1, 2, 3]))
+const data = Rlp(new Uint8Array([1, 2, 3]))
 const encoded = Rlp.encode(data)
 ```
 

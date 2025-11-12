@@ -221,10 +221,14 @@ const hex = toHex(eventHash)
 ```typescript
 import { Hash } from '@tevm/voltaire'
 
-const hash = new Hash("0x1234567890abcdef...")
+const hash = Hash("0x1234567890abcdef...")
 ```
 
 **Bundle:** Includes all Hash methods and dependencies on prototype.
+
+<Note>
+Use `Hash()` constructor instead of `Hash.from()` for Class API. `Hash.from()` remains as an alias.
+</Note>
 
 ## Dependency Table
 
@@ -259,7 +263,8 @@ const hash = new Hash("0x1234567890abcdef...")
 BrandedHash and Hash are fully compatible:
 
 ```typescript
-import { Hash, BrandedHash } from '@tevm/voltaire'
+import { Hash } from '@tevm/voltaire'
+import * as BrandedHash from '@tevm/voltaire/BrandedHash'
 import { toHex, equals } from '@tevm/voltaire/BrandedHash'
 
 // Hash IS a BrandedHash
@@ -267,7 +272,7 @@ const hash = Hash("0x1234567890abcdef...")
 const hex = toHex(hash) // ✓ works
 
 // BrandedHash works with Hash static methods
-const branded: BrandedHash = BrandedHash.from("0x...")
+const branded: BrandedHash.BrandedHash = BrandedHash.from("0x...")
 const display = Hash.format(branded) // ✓ works
 ```
 

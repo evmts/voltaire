@@ -126,7 +126,7 @@ const tx = {
 };
 
 // 1. Hash the transaction (RLP encoded)
-const txHash = Hash.from(keccak256(rlpEncode(tx)));
+const txHash = Hash(keccak256(rlpEncode(tx)));
 
 // 2. Create signature
 const sig = Signature.fromSecp256k1(
@@ -187,7 +187,7 @@ const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
 const prefixedMessage = prefix + message;
 
 // Hash the prefixed message
-const messageHash = Hash.from(keccak256(prefixedMessage));
+const messageHash = Hash(keccak256(prefixedMessage));
 
 // Recover signer
 const sig = Signature.from(signatureBytes);
@@ -200,9 +200,9 @@ const signer = Secp256k1.recoverAddress(sig, messageHash);
 
 ```typescript
 // Recover and verify against known address
-const expectedAddress = Address.from('0x...');
+const expectedAddress = Address('0x...');
 const sig = Signature.from(signatureBytes);
-const messageHash = Hash.from(keccak256(message));
+const messageHash = Hash(keccak256(message));
 
 const recoveredAddress = Secp256k1.recoverAddress(sig, messageHash);
 
@@ -327,7 +327,7 @@ Public key recovery is computationally expensive:
 ```typescript
 // Benchmark (approximate)
 const sig = Signature.fromSecp256k1(r, s, 27);
-const messageHash = Hash.from(keccak256(message));
+const messageHash = Hash(keccak256(message));
 
 console.time('recover');
 const publicKey = Secp256k1.recoverPublicKey(sig, messageHash);
@@ -346,7 +346,7 @@ console.timeEnd('recoverAddress'); // ~0.6-1.2ms (native), ~2.5-6ms (WASM)
 const recoveryCache = new Map<string, Address>();
 
 function cachedRecover(sig: BrandedSignature, messageHash: Hash): Address {
-  const key = Hex.from(Signature.toBytes(sig)) + Hex.from(messageHash);
+  const key = Hex(Signature.toBytes(sig)) + Hex(messageHash);
 
   if (recoveryCache.has(key)) {
     return recoveryCache.get(key)!;

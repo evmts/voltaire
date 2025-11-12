@@ -68,7 +68,7 @@ const unbranded: Item[] = [
 const mixed: BrandedAccessList = unbranded;  // Error!
 
 // Must convert explicitly
-const safe: BrandedAccessList = AccessList.from(unbranded);
+const safe: BrandedAccessList = AccessList(unbranded);
 ```
 
 ### Type Guards
@@ -283,7 +283,7 @@ list.filter(fn);       // array
 2. **Validate unbranded data before use**
    ```typescript
    function accept(items: Item[]): BrandedAccessList {
-     const list = AccessList.from(items);
+     const list = AccessList(items);
      AccessList.assertValid(list);
      return list;
    }

@@ -4,118 +4,139 @@ description: High-performance, type-safe Ethereum primitives and cryptography
 mode: custom
 ---
 
+<style>{`
+  @media (prefers-color-scheme: dark) {
+    #navbar, [id="navbar"], nav {
+      background-color: #280D2E !important;
+    }
+  }
+  .dark #navbar,
+  .dark [id="navbar"],
+  .dark nav {
+    background-color: #280D2E !important;
+  }
+  @media (prefers-color-scheme: light) {
+    .feature-card {
+      background-color: white !important;
+    }
+  }
+  :not(.dark) .feature-card {
+    background-color: white !important;
+  }
+`}</style>
+
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
-  <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-    <span style={{ display: 'block' }}>Simple Ethereum</span>
-    <span style={{ display: 'block', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
-  </h1>
+    <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
+      <span style={{ display: 'block' }}>Simple Ethereum</span>
+      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
+    </h1>
 
-  <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-    A modern, high-performance, wasm-based Ethereum library
-  </p>
+    <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
+      A modern, high-performance, wasm-based Ethereum library
+    </p>
 
-  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
-    <a href="/introduction"
-       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
-       onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(66, 211, 146, 0.3)'; }}
-       onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
-       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
-      Why Voltaire?
-    </a>
-    <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
-       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'var(--text-color, #e0e0e0)', border: '2px solid rgba(255, 255, 255, 0.2)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
-       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
-       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
-       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
-       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
-      View on GitHub
-    </a>
-  </div>
-
-  <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
-    <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #42d392 0%, #647eff 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
-      Copied!
+    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
+      <a href="/introduction"
+         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(230, 162, 60, 0.3)'; }}
+         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+         onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
+        Why Voltaire?
+      </a>
+      <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
+         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+         onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
+         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+         onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
+        View on GitHub
+      </a>
     </div>
-    <div style={{ cursor: 'pointer' }}
-         onMouseDown={(e) => {
-      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
-      if (codeBlock) {
-        codeBlock.style.transition = 'box-shadow 0.1s ease';
-        codeBlock.style.boxShadow = '0 0 0 3px #42d392, 0 0 0 6px #647eff';
-      }
-    }}
-         onMouseUp={(e) => {
-      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
-      if (codeBlock) {
-        codeBlock.style.boxShadow = '';
-      }
-    }}
-         onMouseLeave={(e) => {
-      const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
-      if (codeBlock) {
-        codeBlock.style.boxShadow = '';
-      }
-    }}
-         onClick={(e) => {
-      navigator.clipboard.writeText('claude mcp add --transport http tevm https://voltaire.tevm.app/mcp');
-      const feedback = document.getElementById('copy-feedback');
-      feedback.style.opacity = '1';
-      setTimeout(() => {
-        feedback.style.opacity = '0';
-      }, 500);
-    }}>
+
+    <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
+      <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
+        Copied!
+      </div>
+      <div style={{ cursor: 'pointer' }}
+           onMouseDown={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.transition = 'box-shadow 0.1s ease';
+          codeBlock.style.boxShadow = '0 0 0 3px #E6A23C, 0 0 0 6px #A0522D';
+        }
+      }}
+           onMouseUp={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onMouseLeave={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onClick={(e) => {
+        navigator.clipboard.writeText('claude mcp add --transport http tevm https://voltaire.tevm.app/mcp');
+        const feedback = document.getElementById('copy-feedback');
+        feedback.style.opacity = '1';
+        setTimeout(() => {
+          feedback.style.opacity = '0';
+        }, 500);
+      }}>
 ```bash
 claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
+      </div>
     </div>
-  </div>
 
-  <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🛡️</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Modern Typesafety</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Branded types and AbiType support for best in class robustness and typesafety</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>⚡</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Zig-Wasm-Accelerated</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Zig implementations built to balance speed and bundle-size</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🌲</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Tree-Shakeable</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Import only what you need. Unused code excluded</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🤖</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>LLM-Optimized</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API mirrors Ethereum spec with simple JavaScript data structures. MCP server enables highly productive AI-assisted development</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>🌐</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Multiplatform</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works everywhere: browser, Node.js, Bun, mobile, serverless, Zig, and any language with C-FFI support</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '2rem', color: '#53a9c8', flexShrink: 0 }}>📦</div>
-        <div>
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#53a9c8' }}>Powerful Features</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis in addition to the bread and butter primitives and provider features all Ethereum libraries offer</p>
-        </div>
+    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <a href="/getting-started/branded-types" className="feature-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Branded types and AbiType support for best in class robustness and typesafety</p>
+          </div>
+        </a>
+        <a href="/getting-started/wasm" className="feature-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>⚡</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Zig-Wasm-Accelerated</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Zig implementations built to balance speed and bundle-size</p>
+          </div>
+        </a>
+        <a href="/getting-started/tree-shaking" className="feature-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌲</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Tree-Shakeable</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Import only what you need. Unused code excluded</p>
+          </div>
+        </a>
+        <a href="/getting-started/llm-optimized" className="feature-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🤖</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>LLM-Optimized</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API mirrors Ethereum spec with simple JavaScript data structures. MCP server enables highly productive AI-assisted development</p>
+          </div>
+        </a>
+        <a href="/getting-started/multiplatform" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multiplatform</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works everywhere: browser, Node.js, Bun, mobile, serverless, Zig, and any language with C-FFI support</p>
+          </div>
+        </a>
+        <a href="/getting-started/powerful-features" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📦</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Powerful Features</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis in addition to the bread and butter primitives and provider features all Ethereum libraries offer</p>
+          </div>
+        </a>
       </div>
     </div>
   </div>
-</div>
 

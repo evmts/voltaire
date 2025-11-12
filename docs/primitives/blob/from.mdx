@@ -1,5 +1,5 @@
 ---
-title: Blob.from
+title: Blob() / Blob.from()
 description: Universal constructor from any input (auto-encodes if needed)
 ---
 
@@ -9,10 +9,12 @@ description: Universal constructor from any input (auto-encodes if needed)
 ## Signature
 
 ```typescript
-Blob.from(value: Uint8Array): Blob
+Blob(value: Uint8Array): Blob
 ```
 
 Create blob from Uint8Array. If exactly 131,072 bytes, treats as raw blob. Otherwise, encodes using `fromData()` format (length prefix + data + padding).
+
+**Alias:** `Blob.from()` (deprecated, use `Blob()` instead)
 
 ### Parameters
 
@@ -33,11 +35,11 @@ import { Blob } from '@tevm/voltaire';
 
 // Raw blob (exactly 131,072 bytes)
 const rawBlob = new Uint8Array(131072);
-const blob1 = Blob.from(rawBlob);
+const blob1 = Blob(rawBlob);
 
 // Data to encode (auto-detects and encodes)
 const data = new TextEncoder().encode("Hello");
-const blob2 = Blob.from(data); // Encoded with length prefix
+const blob2 = Blob(data); // Encoded with length prefix
 
 console.log(blob1.length); // 131072
 console.log(blob2.length); // 131072

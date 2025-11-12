@@ -21,7 +21,7 @@ Sort logs by block number (ascending) then log index (ascending). Returns new so
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const logs = [
-  EventLog.from({
+  EventLog({
     address: Address.fromHex('0x...'),
     topics: [Hash.fromHex('0xddf252ad...')],
     data: new Uint8Array([]),

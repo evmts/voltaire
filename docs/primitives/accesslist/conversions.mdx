@@ -22,7 +22,7 @@ AccessList.toBytes(list: BrandedAccessList): Uint8Array
 
 **Example:**
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr1, storageKeys: [key1, key2] },
   { address: addr2, storageKeys: [] }
 ]);
@@ -87,7 +87,7 @@ console.log(list.storageKeyCount());
 ### Round-trip Encoding
 
 ```typescript
-const original = AccessList.from([
+const original = AccessList([
   { address: addr, storageKeys: [key1, key2] }
 ]);
 
@@ -179,7 +179,7 @@ const bytes = empty.toBytes();
 ### Single Address, No Keys
 
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr, storageKeys: [] }
 ]);
 const bytes = list.toBytes();
@@ -189,7 +189,7 @@ const bytes = list.toBytes();
 ### Single Address, Single Key
 
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr, storageKeys: [key] }
 ]);
 const bytes = list.toBytes();
@@ -199,7 +199,7 @@ const bytes = list.toBytes();
 ### Multiple Items
 
 ```typescript
-const list = AccessList.from([
+const list = AccessList([
   { address: addr1, storageKeys: [key1, key2] },
   { address: addr2, storageKeys: [] },
   { address: addr3, storageKeys: [key3] }

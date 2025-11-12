@@ -5,11 +5,24 @@ description: API designed for AI-assisted development with MCP server
 
 API mirrors Ethereum specification with simple data structures. MCP server enables AI-assisted development.
 
+## Smart LLM Detection
+
+When AI assistants like Claude Code or Cursor query our documentation, we automatically detect the request and return optimized **markdown** instead of HTML. This significantly reduces token usage and improves response speed.
+
 ## MCP Server
 
 ```bash
 claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
 ```
+
+### Comprehensive Eval Testing
+
+We maintain a rigorous test suite validating that AI assistants can **1-shot** a comprehensive set of feature requests and code changes using the MCP server. These evals ensure:
+
+- AI can discover and use correct APIs without manual lookup
+- Complex multi-step implementations work end-to-end
+- Type safety and error handling are correctly applied
+- Performance patterns are followed automatically
 
 ## Example Projects
 

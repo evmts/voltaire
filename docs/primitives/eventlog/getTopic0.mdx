@@ -17,7 +17,7 @@ Get topic0 (event signature hash) from log. Returns undefined if topics array is
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [
     Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
@@ -100,7 +100,7 @@ event AnonymousTransfer(
 ```typescript
 import { EventLog } from '@tevm/voltaire';
 
-const anonymousLog = EventLog.from({
+const anonymousLog = EventLog({
   address: contractAddress,
   topics: [
     fromHash,    // topic0 = first indexed param (from)
@@ -204,7 +204,7 @@ If topics array is empty, `getTopic0()` returns `undefined`:
 ```typescript
 import { EventLog, Address } from '@tevm/voltaire';
 
-const emptyLog = EventLog.from({
+const emptyLog = EventLog({
   address: Address.zero(),
   topics: [],
   data: new Uint8Array([]),

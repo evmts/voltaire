@@ -298,7 +298,7 @@ Voltaire follows consistent naming patterns across all types:
 import { Address } from "@tevm/voltaire";
 
 // Create from hex
-const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 
 // EIP-55 checksumming
 const checksummed = addr.toChecksummed();
@@ -308,7 +308,7 @@ console.log(checksummed); // "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"
 const isZero = addr.isZero(); // false
 
 // Calculate contract addresses
-const deployer = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 const contractAddr = deployer.calculateCreateAddress(0n);
 ```
 
@@ -436,7 +436,7 @@ const tx = {
   maxFeePerGas: 30_000_000_000n, // 30 gwei
   maxPriorityFeePerGas: 1_000_000_000n, // 1 gwei
   gasLimit: 21_000n,
-  to: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+  to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
   value: 1_000_000_000_000_000_000n, // 1 ether
   data: new Uint8Array(),
 };
@@ -514,7 +514,7 @@ If you get type errors like "Type 'Uint8Array' is not assignable to type 'Brande
 const addr: BrandedAddress = new Uint8Array(20);
 
 // ✅ Correct
-const addr = Address.from("0x...");
+const addr = Address("0x...");
 // or
 const addr = BrandedAddress.fromHex("0x...");
 ```
@@ -558,7 +558,7 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
 
     // Voltaire
     import { Address } from "@tevm/voltaire";
-    const addr = Address.from("0xa0cf...");
+    const addr = Address("0xa0cf...");
     const checksum = addr.toChecksummed();
     ```
   </Tab>
@@ -624,7 +624,7 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
 
     // Voltaire
     import { Address } from "@tevm/voltaire";
-    const addr = Address.from("0xa0cf...");
+    const addr = Address("0xa0cf...");
     ```
   </Tab>
 
@@ -671,7 +671,7 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
 
     // Voltaire
     import { Address } from "@tevm/voltaire";
-    const addr = Address.from("0xa0cf...");
+    const addr = Address("0xa0cf...");
     const checksum = addr.toChecksummed();
     ```
   </Tab>

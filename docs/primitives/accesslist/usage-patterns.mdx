@@ -38,7 +38,7 @@ const items: Item[] = [
   { address: token1, storageKeys: [balanceSlot] }
 ];
 
-const list = AccessList.from(items).deduplicate();
+const list = AccessList(items).deduplicate();
 ```
 
 ### Conditional Building
@@ -445,7 +445,7 @@ function safeConstruction(data: unknown): BrandedAccessList {
     }
 
     if (Array.isArray(data)) {
-      const list = AccessList.from(data);
+      const list = AccessList(data);
       AccessList.assertValid(list);
       return list;
     }
@@ -490,15 +490,15 @@ function buildWithFallback(
 const fixtures = {
   empty: AccessList.create(),
 
-  singleAddress: AccessList.from([
+  singleAddress: AccessList([
     { address: testAddr1, storageKeys: [] }
   ]),
 
-  withKeys: AccessList.from([
+  withKeys: AccessList([
     { address: testAddr1, storageKeys: [testKey1, testKey2] }
   ]),
 
-  multipleAddresses: AccessList.from([
+  multipleAddresses: AccessList([
     { address: testAddr1, storageKeys: [testKey1] },
     { address: testAddr2, storageKeys: [testKey2] }
   ])

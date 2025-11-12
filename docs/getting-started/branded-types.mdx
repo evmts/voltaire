@@ -102,7 +102,7 @@ Runtime: just `Uint8Array` and `string`. Brand only exists in types. The `unique
 Despite being `Uint8Array`, branded types display formatted in most environments:
 
 ```typescript
-const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
 console.log(address);
 // Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 ```
@@ -116,7 +116,7 @@ This formatting:
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
 
 const checksummed = Address.toChecksummed(address);
 
@@ -134,8 +134,8 @@ import { Address, Bytecode } from '@tevm/voltaire';
 
 function transfer(to: Address, amount: bigint) { }
 
-const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-const bytecode = Bytecode.from("0x60806040");
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+const bytecode = Bytecode("0x60806040");
 
 transfer(bytecode, 100n);
 ```
@@ -169,9 +169,9 @@ Example usage:
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const valid = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const valid = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
-const invalid = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f5");
+const invalid = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f5");
 ```
 
 Validation at construction. Brand ensures type safety throughout codebase.

@@ -270,7 +270,7 @@ Resolve addresses back to primary ENS name:
 ```typescript
 import { Ens, Address } from '@tevm/voltaire';
 
-const addr = Address.from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+const addr = Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 
 // Format: <address>.addr.reverse
 const reverseNode = Ens.namehash(

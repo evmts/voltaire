@@ -119,11 +119,11 @@ const nested = [
 const encoded = Rlp.encode(nested)
 
 // Encode RLP data structure
-const data = Rlp.from(new Uint8Array([1, 2, 3]))
+const data = Rlp(new Uint8Array([1, 2, 3]))
 const encoded = Rlp.encode(data)
 
 // Instance method
-const rlpData = new Rlp(new Uint8Array([1, 2, 3]))
+const rlpData = Rlp(new Uint8Array([1, 2, 3]))
 const encoded = rlpData.encode()
 ```
 </TabItem>
