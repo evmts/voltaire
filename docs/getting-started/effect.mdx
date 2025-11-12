@@ -42,7 +42,7 @@ Additional primitives coming soon - looking for contributors!
 
 ## Example: Address with Effect.ts
 
-The `Address` primitive demonstrates Effect.ts integration. Compare vanilla vs Effect approaches:
+The `AddressSchema` primitive demonstrates Effect.ts integration. Compare vanilla vs Effect approaches:
 
 ### Vanilla TypeScript API
 
@@ -62,12 +62,12 @@ try {
 }
 ```
 
-### Effect.ts API
+### Effect.ts API with Schema
 
 ```typescript
 import * as Effect from "effect/Effect";
 import { AddressSchema, ChecksumAddress } from '@tevm/voltaire/primitives/Address/effect';
-import { Keccak256Layer } from '@tevm/voltaire/primitives/Address/effect-layers';
+import { AddressServicesLive } from '@tevm/voltaire/primitives/Address/effect-layers';
 
 // Create address with typed errors
 const program = Effect.gen(function* () {
@@ -82,11 +82,66 @@ const program = Effect.gen(function* () {
   return checksummed;
 });
 
-// Provide crypto service and run
+// Provide crypto services and run
 const result = await Effect.runPromise(
-  program.pipe(Effect.provide(Keccak256Layer))
+  program.pipe(Effect.provide(AddressServicesLive))
 );
 ```
+
+### Effect.ts API with Branded Types
+
+```typescript
+import { AddressBrand, ChecksumAddressBrand } from '@tevm/voltaire/primitives/Address/effect';
+
+// Refined brand with validation
+const bytes = new Uint8Array(20);
+const addressBrand = AddressBrand(bytes); // Validates 20-byte length
+
+// Nominal brand (no validation)
+const checksumStr = "0x742d35Cc6634c0532925a3b844bc9e7595F251E3";
+const checksumBrand = ChecksumAddressBrand(checksumStr);
+
+// Zero-cost construction from brands
+const schema = AddressSchema.fromBranded(addressBrand);
+const checksumSchema = ChecksumAddress.fromBranded(checksumBrand);
+
+// Access branded values
+const brand = schema.branded; // Type: AddressBrand
+```
+
+## Effect Branded Types
+
+Voltaire primitives provide Effect brands for compile-time type safety:
+
+```typescript
+import * as Brand from "effect/Brand";
+import { AddressBrand, ChecksumAddressBrand } from '@tevm/voltaire/primitives/Address/effect';
+
+// Refined brand - validates at construction
+const validBytes = new Uint8Array(20);
+const address: AddressBrand = AddressBrand(validBytes); // ✓ Passes
+
+const invalidBytes = new Uint8Array(19);
+AddressBrand(invalidBytes); // ✗ Throws: Expected 20 bytes, got 19
+
+// Nominal brand - no runtime validation
+const checksumStr = "0x742d35Cc6634c0532925a3b844bc9e7595F251E3";
+const checksum: ChecksumAddressBrand = ChecksumAddressBrand(checksumStr);
+
+// Type-safe at compile time
+function processAddress(addr: AddressBrand) {
+  // addr is guaranteed to be 20-byte Uint8Array
+}
+
+processAddress(address); // ✓ Type-safe
+processAddress(validBytes); // ✗ Type error: not branded
+```
+
+Effect brands provide:
+- **Zero runtime overhead** - Just type-level tags
+- **Compile-time safety** - Prevents mixing incompatible types
+- **Optional validation** - Refined brands validate, nominal brands don't
+- **Interop** - Works with Effect ecosystem (Schema, Data, Match)
 
 ## Service-Based Architecture
 
@@ -95,16 +150,7 @@ Effect.ts APIs use services for crypto operations, enabling dependency injection
 ```typescript
 import * as Effect from "effect/Effect";
 import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
-import {
-  Keccak256Service,
-  Secp256k1Service,
-  RlpEncoderService
-} from '@tevm/voltaire/primitives/Address/effect-services';
-import {
-  Keccak256Layer,
-  Secp256k1Layer,
-  RlpEncoderLayer
-} from '@tevm/voltaire/primitives/Address/effect-layers';
+import { AddressServicesLive } from '@tevm/voltaire/primitives/Address/effect-layers';
 
 // Program declares service dependencies in types
 const deriveAddress = (privateKey: Uint8Array) =>
@@ -116,13 +162,12 @@ const deriveAddress = (privateKey: Uint8Array) =>
   });
 
 // Type signature shows all dependencies:
-// Effect<ChecksumAddress, FromPrivateKeyErrors, Secp256k1Service | Keccak256Service>
+// Effect<Checksummed, FromPrivateKeyErrors | ToChecksummedErrors, Secp256k1Service | Keccak256Service>
 
-// Provide services at runtime
+// Provide all services at once
 const result = await Effect.runPromise(
   deriveAddress(privateKey).pipe(
-    Effect.provide(Secp256k1Layer),
-    Effect.provide(Keccak256Layer)
+    Effect.provide(AddressServicesLive)
   )
 );
 ```
@@ -162,7 +207,7 @@ Effects compose naturally:
 ```typescript
 import * as Effect from "effect/Effect";
 import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
-import { Keccak256Layer, RlpEncoderLayer } from '@tevm/voltaire/primitives/Address/effect-layers';
+import { AddressServicesLive } from '@tevm/voltaire/primitives/Address/effect-layers';
 
 // Compose multiple operations
 const deployContract = (deployer: Uint8Array, nonce: bigint, initCode: Uint8Array) =>
@@ -180,11 +225,10 @@ const deployContract = (deployer: Uint8Array, nonce: bigint, initCode: Uint8Arra
     return { create: contractAddr, create2: create2Addr };
   });
 
-// Run with all required services
+// Run with all required services (Keccak256 + RlpEncoder)
 const result = await Effect.runPromise(
   deployContract(deployer, 0n, bytecode).pipe(
-    Effect.provide(Keccak256Layer),
-    Effect.provide(RlpEncoderLayer)
+    Effect.provide(AddressServicesLive)
   )
 );
 ```
@@ -195,21 +239,32 @@ const result = await Effect.runPromise(
 
 ```typescript
 import * as Schema from "effect/Schema";
-import { AddressSchema } from '@tevm/voltaire/primitives/Address/effect';
+import { AddressSchema, AddressBrand } from '@tevm/voltaire/primitives/Address/effect';
 
 // Schema automatically validates
-const MySchema = Schema.Struct({
+const TransferSchema = Schema.Struct({
   to: Schema.instanceOf(AddressSchema),
   from: Schema.instanceOf(AddressSchema),
   value: Schema.BigIntFromSelf
 });
 
 // Parse and validate
-const decoded = Schema.decodeUnknownSync(MySchema)({
+const transfer = Schema.decodeUnknownSync(TransferSchema)({
   to: AddressSchema.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
   from: AddressSchema.fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
   value: 1000000000000000000n
 });
+
+// Access underlying branded types
+const toBrand: AddressBrand = transfer.to.branded;
+const fromBrand: AddressBrand = transfer.from.branded;
+
+// Zero-cost construction from brands
+const quickTransfer = {
+  to: AddressSchema.fromBranded(toBrand),
+  from: AddressSchema.fromBranded(fromBrand),
+  value: 2000000000000000000n
+};
 ```
 
 ## Source Code
@@ -219,11 +274,13 @@ See the complete Effect.ts implementation:
 [`src/primitives/Address/effect.ts`](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts)
 
 Key features demonstrated:
-- Effect Schema `Class` with validation
-- Service-based crypto operations (Keccak256, Secp256k1, RLP)
-- Typed error handling with custom error types
-- Composable methods (fromPrivateKey, toChecksummed, calculateCreateAddress, etc.)
-- Effect generators for clean async/error handling
+- **Effect Schema** - `Schema.Class` with automatic validation
+- **Effect Brands** - Refined (`AddressBrand`) and nominal (`ChecksumAddressBrand`) brands
+- **Service-based crypto** - Keccak256, Secp256k1, RLP with dependency injection
+- **Typed errors** - All failure modes explicit in function signatures
+- **Composable methods** - fromPrivateKey, toChecksummed, calculateCreateAddress, etc.
+- **Effect generators** - Clean async/error handling with Effect.gen
+- **Zero-cost interop** - `.branded` getter and `.fromBranded()` for efficient construction
 
 ## Contributing
 
@@ -231,11 +288,13 @@ Key features demonstrated:
 
 Effect.ts is treated as a first-class API alongside the vanilla TypeScript API. Each primitive should have:
 
-1. **Schema Classes** - Extend `Schema.Class` with branded types
-2. **Service Definitions** - Interface for crypto/encoding operations
-3. **Layer Implementations** - Default service implementations
-4. **Error Types** - Tagged errors for each failure mode
-5. **Composable Methods** - Operations that use Effect.gen
+1. **Schema Classes** - Extend `Schema.Class` with validation
+2. **Effect Brands** - Use `Brand.refined()` for validated types, `Brand.nominal()` for nominal types
+3. **Service Definitions** - Interfaces for crypto/encoding operations
+4. **Layer Implementations** - Default service implementations
+5. **Error Types** - Tagged errors for each failure mode
+6. **Composable Methods** - Operations that use Effect.gen
+7. **Brand Interop** - `.branded` getter and `.fromBranded()` static method
 
 Priority primitives for Effect.ts support:
 - **Signature** - Sign/verify with typed errors
