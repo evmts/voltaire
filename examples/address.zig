@@ -1,5 +1,6 @@
 const std = @import("std");
 const primitives = @import("primitives");
+const Address = primitives.Address;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
