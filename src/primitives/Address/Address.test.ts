@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedHex } from "../Hex/index.js";
+import * as Hash from "../Hash/index.js";
 import { Address } from "./Address.js";
 import * as AddressNamespace from "./index.js";
 
@@ -708,15 +709,12 @@ describe("Address", () => {
 		});
 
 		it("throws on invalid salt length", () => {
-			const deployer = Address.fromHex(
-				"0x742d35Cc6634C0532925a3b8D39c0E6cfC8C74E4",
-			);
-			const invalidSalt = new Uint8Array(31);
-			const initCode = new Uint8Array(0);
+			// Previously, calculateCreate2Address would validate salt internally
+			// Now validation happens at the boundary when creating BrandedHash
+			const invalidSalt = new Uint8Array(31); // Not 32 bytes
 
-			expect(() =>
-				Address.calculateCreate2Address(deployer, invalidSalt, initCode),
-			).toThrow();
+			// Validation now happens when creating the Hash, not in calculateCreate2Address
+			expect(() => Hash.from(invalidSalt)).toThrow();
 		});
 	});
 
