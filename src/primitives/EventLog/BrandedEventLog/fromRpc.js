@@ -30,5 +30,5 @@ import * as OxLog from "ox/Log";
  * ```
  */
 export function fromRpc(rpcLog) {
-	return /** @type {BrandedEventLog} */ (OxLog.fromRpc(rpcLog));
+	return /** @type {BrandedEventLog} */ (/** @type {any} */ (OxLog.fromRpc(rpcLog)));
 }

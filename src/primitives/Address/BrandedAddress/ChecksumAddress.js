@@ -5,7 +5,7 @@ import { isValid as isValidAddress } from "./isValid.js";
 import { toHex } from "./toHex.js";
 
 /**
- * @typedef {import('../../Hex/index.js').Sized<20> & { readonly [import('../../../brand.js').brand]: 'Hex'; readonly __variant: 'Address'; readonly __checksummed: true }} Checksummed
+ * @typedef {import('../../Hex/index.js').Sized<20> & { readonly __variant: 'Address'; readonly __checksummed: true }} Checksummed
  */
 
 /**

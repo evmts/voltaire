@@ -1,7 +1,7 @@
 import { toHex } from "./toHex.js";
 
 /**
- * @typedef {import('../../Hex/index.js').Sized<20> & { readonly [import('../../../brand.js').brand]: 'Hex'; readonly __variant: 'Address'; readonly __uppercase: true }} Uppercase
+ * @typedef {import('../../Hex/index.js').Sized<20> & { readonly __variant: 'Address'; readonly __uppercase: true }} Uppercase
  */
 
 /**
