@@ -1,0 +1,247 @@
+---
+title: Branded Types
+description: Modern typesafety with runtime validated types using type-level tags
+---
+
+Branded types provide modern typesafety with runtime validated types without the need for a library like Zod. They use [type-level tags](https://news.ycombinator.com/item?id=40146751) that make structurally identical types distinguishable to TypeScript's type checker.
+
+## The Problem
+
+TypeScript uses structural typing - types with same structure are interchangeable. Template literal types like `0x${string}` don't prevent type errors:
+
+```typescript
+type Address = `0x${string}`;
+type Bytecode = `0x${string}`;
+
+function transfer(to: Address, amount: bigint) {
+  // Send funds to address
+}
+
+const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const bytecode: Bytecode = "0x60806040";
+
+transfer(bytecode, 100n);
+```
+
+This compiles without errors but sends funds to bytecode instead of an address.
+
+## The Solution
+
+Add compile-time-only brand field using symbol. A `BrandedAddress` is a `Uint8Array` with a compile-time-only type tag:
+
+```typescript
+declare const brand: unique symbol
+
+type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
+type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" }
+
+function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
+
+const bytecode: BrandedBytecode = new Uint8Array([0x60, 0x01]) as BrandedBytecode
+verifySignature(bytecode, new Uint8Array(32)) // ✗ Error: Type 'BrandedBytecode' is not assignable to type 'BrandedAddress'
+```
+
+Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
+
+### Generic Brand Type
+
+```typescript
+declare const brand: unique symbol
+
+type Brand<T, Tag> = T & { readonly [brand]: Tag }
+```
+
+Usage:
+
+```typescript
+type BrandedAddress = Brand<Uint8Array, "Address">
+type BrandedBytecode = Brand<Uint8Array, "Bytecode">
+type BrandedHex = Brand<string, "Hex">
+```
+
+### Why Symbols?
+
+Using `unique symbol` ensures:
+1. **No runtime overhead** - symbols don't exist at runtime when used in type-only position
+2. **No name collisions** - symbol property name can't clash with real properties
+3. **Type safety** - TypeScript treats each brand as unique identifier
+
+```typescript
+// Without symbol (DON'T DO THIS)
+type BrandedAddress = Uint8Array & { __brand: "Address" }
+
+// If Uint8Array somehow had __brand property, this would conflict!
+const addr = new Uint8Array(20)
+addr.__brand = "Address" // runtime __brand field conflicts!
+```
+
+### Voltaire's Approach
+
+All primitives use branded types with `__tag`:
+
+```typescript
+// BrandedAddress is Uint8Array with brand
+type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
+
+// BrandedHex is string with brand
+type BrandedHex = string & { readonly __tag: "Hex" }
+
+// Can't mix them up
+function process(addr: BrandedAddress) { /* ... */ }
+const hex: BrandedHex = "0x..." as BrandedHex
+process(hex) // ✗ Error
+```
+
+Runtime: just `Uint8Array` and `string`. Brand only exists in types.
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+
+const checksummed = Address.toChecksummed(address);
+
+const contractAddress = Address.fromCreate2({
+  from: address,
+  salt: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  bytecode: '0x600160010160005260206000f3'
+});
+```
+
+Now the same mistake is caught at compile time:
+
+```typescript
+import { Address, Bytecode } from '@tevm/voltaire';
+
+function transfer(to: Address, amount: bigint) { }
+
+const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+const bytecode = Bytecode.from("0x60806040");
+
+transfer(bytecode, 100n);
+```
+
+## Validation at Construction
+
+Factory functions validate then cast to branded type. `Address.from()` validates inputs at construction, eliminating the need for runtime validation libraries like Zod:
+
+```typescript
+type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
+
+function fromUint8Array(bytes: Uint8Array): BrandedAddress {
+  // Validate
+  if (!Address.isValidAddress(bytes)) {
+    throw new InvalidAddressError()
+  }
+
+  // Return input cast to branded type
+  return bytes as BrandedAddress
+}
+
+const bytes = new Uint8Array(20)
+const addr = fromUint8Array(bytes)
+// addr runtime: same Uint8Array reference
+// addr compile-time: BrandedAddress
+```
+
+Example usage:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const valid = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+const invalid = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f5");
+```
+
+Validation at construction. Brand ensures type safety throughout codebase.
+
+## Type-Safe Hex Variants
+
+Voltaire tracks not just the data type but also hex string casing. String-based types can have variant discriminators for different formats:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const address = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+
+const lowercase = Address.toHex(address);
+
+const checksummed = Address.toChecksummed(address);
+```
+
+Each method returns a precisely typed hex variant:
+- `toHex()` returns `LowercaseHex` - all lowercase
+- `toChecksummed()` returns `ChecksummedHex` - [EIP-55](https://eips.ethereum.org/EIPS/eip-55) mixed case
+
+### Multiple Brand Discriminators
+
+Address hex strings share the same base brand `Symbol("AddressHex")` but use additional discriminators for case variants:
+
+```typescript
+// All variants have __brand = Symbol("AddressHex")
+// Additional discriminators specify exact format
+
+type AddressChecksummed = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  readonly __checksummed: true
+}
+
+type AddressLowercase = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  readonly __lowercase: true
+}
+
+type AddressUppercase = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  readonly __uppercase: true
+}
+
+type AddressHex = string & {
+  readonly __brand: unique symbol  // Symbol("AddressHex")
+  // No discriminator = generic/unknown case format (could be mixed)
+}
+```
+
+TypeScript distinguishes these as separate types despite sharing the same brand symbol:
+
+```typescript
+const checksummed: AddressChecksummed = "0x742d35Cc..." as AddressChecksummed
+const lowercase: AddressLowercase = "0x742d35cc..." as AddressLowercase
+const unknown: AddressHex = "0x742D35cc..." as AddressHex  // Mixed case
+
+function requireChecksummed(addr: AddressChecksummed) { /* ... */ }
+requireChecksummed(checksummed) // ✓ Correct
+requireChecksummed(lowercase)   // ✗ Error: __lowercase !== __checksummed
+requireChecksummed(unknown)     // ✗ Error: no __checksummed discriminator
+```
+
+This allows APIs to require specific formats (e.g., EIP-55 checksummed) while accepting generic hex in other contexts.
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Type Safety" icon="lock">
+    Can't mix Address with Hash or Bytecode. Arguments can't be swapped.
+  </Card>
+  <Card title="Self-Documenting" icon="book">
+    Function signatures clearly show expected types instead of generic Uint8Array.
+  </Card>
+  <Card title="Zero Runtime Cost" icon="gauge">
+    Brand field only exists in TypeScript's type checker. Zero runtime overhead.
+  </Card>
+  <Card title="Validated" icon="shield-check">
+    Input validated at construction. No runtime validation libraries needed.
+  </Card>
+</CardGroup>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Address Primitive" icon="cube" href="/primitives/address">
+    Complete Address API reference
+  </Card>
+  <Card title="Tree-Shaking" icon="tree" href="/getting-started/tree-shaking">
+    How data-first design enables tree-shaking
+  </Card>
+</CardGroup>
