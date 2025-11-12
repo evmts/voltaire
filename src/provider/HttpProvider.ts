@@ -116,7 +116,7 @@ export class HttpProvider implements Provider {
 					};
 				}
 
-				const json = await response.json();
+				const json: any = await response.json();
 
 				if (json.error) {
 					return { error: json.error };
