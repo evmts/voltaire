@@ -1,9 +1,9 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { describe, expect, it } from "vitest";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { CURVE_ORDER } from "./constants.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { isValidSignature } from "./isValidSignature.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { sign } from "./sign.js";
+import { describe, expect, it } from "vitest";
 import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import { CURVE_ORDER } from "./constants.js";
+import { isValidSignature } from "./isValidSignature.js";
+import { sign } from "./sign.js";
 describe("Secp256k1.isValidSignature", () => {
 	describe("valid signatures", () => {
 		it("should return true for valid signature", () => {

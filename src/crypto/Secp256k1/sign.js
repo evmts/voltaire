@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { Hash } from "../../primitives/Hash/index.js";
 import {
 	CryptoError,
 	InvalidPrivateKeyError,
@@ -29,7 +30,6 @@ import {
  * ```
  */
 export function sign(messageHash, privateKey) {
-
 	// Validate private key is not zero
 	const isZero = privateKey.every((byte) => byte === 0);
 	if (isZero) {
@@ -40,25 +40,19 @@ export function sign(messageHash, privateKey) {
 	}
 
 	try {
-		console.log("About to call secp256k1.sign");
 		// Sign with compact format (prehash:false since we already have the hash)
 		const sigCompact = secp256k1.sign(messageHash, privateKey, {
 			prehash: false,
 		});
-		console.log("secp256k1.sign succeeded, sigCompact:", sigCompact);
 
 		// Extract r and s
 		const r = sigCompact.slice(0, 32);
 		const s = sigCompact.slice(32, 64);
-		console.log("r and s extracted");
 
 		// Compute recovery bit by trying all possibilities (0-3)
 		// In practice, only 0-1 are typically needed for secp256k1
-		console.log("About to get public key");
 		const publicKey = secp256k1.getPublicKey(privateKey, false);
-		console.log("Got public key, creating Signature object");
 		const sig = secp256k1.Signature.fromBytes(sigCompact);
-		console.log("Signature object created");
 
 		let recoveryBit = 0;
 		for (let i = 0; i < 4; i++) {
@@ -79,7 +73,7 @@ export function sign(messageHash, privateKey) {
 		// Convert recovery bit to Ethereum v (27 or 28)
 		const v = 27 + recoveryBit;
 
-		return { r, s, v };
+		return { r: Hash.from(r), s: Hash.from(s), v };
 	} catch (error) {
 		throw new CryptoError(`Signing failed: ${error}`, {
 			code: "SECP256K1_SIGN_FAILED",

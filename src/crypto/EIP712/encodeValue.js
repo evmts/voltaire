@@ -6,6 +6,7 @@ import { hashStruct } from "./hashStruct.js";
  * Encode single value to 32 bytes according to EIP-712.
  *
  * Handles primitive types, arrays, strings, bytes, and custom structs.
+ * Addresses must be pre-validated BrandedAddress types.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
@@ -17,7 +18,9 @@ import { hashStruct } from "./hashStruct.js";
  * @example
  * ```javascript
  * import * as EIP712 from './crypto/EIP712/index.js';
+ * import * as Address from '../../primitives/Address/index.js';
  * const encoded = EIP712.encodeValue('uint256', 42n, types);
+ * const addrEncoded = EIP712.encodeValue('address', Address.from('0x...'), types);
  * ```
  */
 export function encodeValue(type, value, types) {
@@ -74,16 +77,12 @@ export function encodeValue(type, value, types) {
 		return result;
 	}
 
-	// address type
+	// address type (must be BrandedAddress - already validated as 20 bytes)
 	if (type === "address") {
-		const addr = /** @type {Uint8Array} */ (value);
-		if (addr.length !== 20) {
-			throw new Eip712EncodingError("Address must be 20 bytes", {
-				code: "EIP712_INVALID_ADDRESS_LENGTH",
-				context: { type, length: addr.length, expected: 20 },
-				docsPath: "/crypto/eip712/encode-value#error-handling",
-			});
-		}
+		const addr =
+			/** @type {import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+				value
+			);
 		result.set(addr, 12); // Right-aligned in 32 bytes
 		return result;
 	}

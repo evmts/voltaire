@@ -233,7 +233,7 @@ describe("Secp256k1.derivePublicKey", () => {
 			for (let i = 1; i <= 10; i++) {
 				const privateKeyBytes = new Uint8Array(32);
 				privateKeyBytes[31] = i;
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+				const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 				publicKeys.push(derivePublicKey(privateKey));
 			}
 

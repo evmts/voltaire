@@ -61,8 +61,9 @@ describe("Secp256k1.Signature methods", () => {
 			const bytes = toBytes(signature);
 
 			expect(bytes.length).toBe(65);
-			expect(bytes.slice(0, 32)).toEqual(signature.r);
-			expect(bytes.slice(32, 64)).toEqual(signature.s);
+			// Compare using Array.from since BrandedHash is Uint8Array
+			expect(Array.from(bytes.slice(0, 32))).toEqual(Array.from(signature.r));
+			expect(Array.from(bytes.slice(32, 64))).toEqual(Array.from(signature.s));
 			expect(bytes[64]).toBe(signature.v);
 		});
 	});
@@ -130,8 +131,8 @@ describe("Secp256k1.Signature methods", () => {
 			const bytes = toBytes(signature);
 			const parsed = fromBytes(bytes);
 
-			expect(parsed.r).toEqual(signature.r);
-			expect(parsed.s).toEqual(signature.s);
+			expect(Array.from(parsed.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsed.s)).toEqual(Array.from(signature.s));
 			expect(parsed.v).toEqual(signature.v);
 		});
 	});
@@ -193,8 +194,11 @@ describe("Secp256k1.Signature methods", () => {
 			const compact = toCompact(signature);
 
 			expect(compact.length).toBe(64);
-			expect(compact.slice(0, 32)).toEqual(signature.r);
-			expect(compact.slice(32, 64)).toEqual(signature.s);
+			// Compare using Array.from since BrandedHash is Uint8Array
+			expect(Array.from(compact.slice(0, 32))).toEqual(Array.from(signature.r));
+			expect(Array.from(compact.slice(32, 64))).toEqual(
+				Array.from(signature.s),
+			);
 		});
 	});
 
@@ -260,8 +264,8 @@ describe("Secp256k1.Signature methods", () => {
 			const compact = toCompact(signature);
 			const parsed = fromCompact(compact, signature.v);
 
-			expect(parsed.r).toEqual(signature.r);
-			expect(parsed.s).toEqual(signature.s);
+			expect(Array.from(parsed.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsed.s)).toEqual(Array.from(signature.s));
 			expect(parsed.v).toEqual(signature.v);
 		});
 	});
@@ -309,13 +313,13 @@ describe("Secp256k1.Signature methods", () => {
 			const fromFull = fromBytes(fullBytes);
 			const fromCompactSig = fromCompact(compact, original.v);
 
-			// All should be equivalent
-			expect(fromFull.r).toEqual(original.r);
-			expect(fromFull.s).toEqual(original.s);
+			// All should be equivalent (use Array.from for BrandedHash comparison)
+			expect(Array.from(fromFull.r)).toEqual(Array.from(original.r));
+			expect(Array.from(fromFull.s)).toEqual(Array.from(original.s));
 			expect(fromFull.v).toEqual(original.v);
 
-			expect(fromCompactSig.r).toEqual(original.r);
-			expect(fromCompactSig.s).toEqual(original.s);
+			expect(Array.from(fromCompactSig.r)).toEqual(Array.from(original.r));
+			expect(Array.from(fromCompactSig.s)).toEqual(Array.from(original.s));
 			expect(fromCompactSig.v).toEqual(original.v);
 		});
 	});
@@ -337,10 +341,10 @@ describe("Secp256k1.Signature methods", () => {
 			const parsedFull = fromBytes(fullBytes);
 			const parsedCompact = fromCompact(compact, 27);
 
-			expect(parsedFull.r).toEqual(signature.r);
-			expect(parsedFull.s).toEqual(signature.s);
-			expect(parsedCompact.r).toEqual(signature.r);
-			expect(parsedCompact.s).toEqual(signature.s);
+			expect(Array.from(parsedFull.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsedFull.s)).toEqual(Array.from(signature.s));
+			expect(Array.from(parsedCompact.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsedCompact.s)).toEqual(Array.from(signature.s));
 		});
 
 		it("should handle all-ones r and s", () => {
@@ -356,10 +360,10 @@ describe("Secp256k1.Signature methods", () => {
 			const parsedFull = fromBytes(fullBytes);
 			const parsedCompact = fromCompact(compact, 27);
 
-			expect(parsedFull.r).toEqual(signature.r);
-			expect(parsedFull.s).toEqual(signature.s);
-			expect(parsedCompact.r).toEqual(signature.r);
-			expect(parsedCompact.s).toEqual(signature.s);
+			expect(Array.from(parsedFull.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsedFull.s)).toEqual(Array.from(signature.s));
+			expect(Array.from(parsedCompact.r)).toEqual(Array.from(signature.r));
+			expect(Array.from(parsedCompact.s)).toEqual(Array.from(signature.s));
 		});
 
 		it("should handle various byte patterns", () => {

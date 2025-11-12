@@ -10,13 +10,15 @@ import { PUBLIC_KEY_SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array} publicKey - 64-byte uncompressed public key
- * @returns {boolean} true if public key is valid, false otherwise
+ * @returns {publicKey is import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} true if public key is valid, false otherwise
  * @throws {never}
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
  * const publicKey = new Uint8Array(64);
- * const valid = Secp256k1.isValidPublicKey(publicKey);
+ * if (Secp256k1.isValidPublicKey(publicKey)) {
+ *   const branded = publicKey; // now BrandedSecp256k1PublicKey
+ * }
  * ```
  */
 export function isValidPublicKey(publicKey) {

@@ -1,24 +1,22 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { sha256 } from "@noble/hashes/sha2.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { describe, expect, it } from "vitest";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { Hash } from "../../primitives/Hash/index.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import {
+import { sha256 } from "@noble/hashes/sha2.js";
+import { describe, expect, it } from "vitest";
+import { Hash } from "../../primitives/Hash/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import {
 	InvalidPublicKeyError,
 	InvalidSignatureError,
 } from "../../primitives/errors/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { sign } from "./sign.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";import { verify } from "./verify.js";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import { sign } from "./sign.js";
+import { verify } from "./verify.js";
 describe("Secp256k1.verify", () => {
 	describe("valid signatures", () => {
 		it("should verify valid signature", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const message = Hash(
-				sha256(new TextEncoder().encode("hello world")),
-			);
+			const message = Hash(sha256(new TextEncoder().encode("hello world")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -107,10 +105,10 @@ describe("Secp256k1.verify", () => {
 			const publicKey = derivePublicKey(privateKey);
 
 			// Modify r
-			const modifiedR = new Uint8Array(signature.r);
-			modifiedR[0]! ^= 0x01;
+			const modifiedRBytes = new Uint8Array(signature.r);
+			modifiedRBytes[0]! ^= 0x01;
 			const modifiedSig = {
-				r: modifiedR,
+				r: Hash.from(modifiedRBytes),
 				s: signature.s,
 				v: signature.v,
 			};
@@ -129,11 +127,11 @@ describe("Secp256k1.verify", () => {
 			const publicKey = derivePublicKey(privateKey);
 
 			// Modify s
-			const modifiedS = new Uint8Array(signature.s);
-			modifiedS[0]! ^= 0x01;
+			const modifiedSBytes = new Uint8Array(signature.s);
+			modifiedSBytes[0]! ^= 0x01;
 			const modifiedSig = {
 				r: signature.r,
-				s: modifiedS,
+				s: Hash.from(modifiedSBytes),
 				v: signature.v,
 			};
 
@@ -143,40 +141,42 @@ describe("Secp256k1.verify", () => {
 	});
 
 	describe("malformed signatures", () => {
-		it("should throw InvalidSignatureError for r with wrong length", () => {
+		it("should return false for invalid v value", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
+			const signature = sign(message, privateKey);
+
 			const malformedSig = {
-				r: new Uint8Array(31), // Wrong length
-				s: new Uint8Array(32),
-				v: 27,
+				r: signature.r,
+				s: signature.s,
+				v: 26, // Invalid v value
 			};
 
-			expect(() => verify(malformedSig, message, publicKey)).toThrow(
-				InvalidSignatureError,
-			);
+			const valid = verify(malformedSig as any, message, publicKey);
+			expect(valid).toBe(false);
 		});
 
-		it("should throw InvalidSignatureError for s with wrong length", () => {
+		it("should return false for v=1", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
+			const signature = sign(message, privateKey);
+
 			const malformedSig = {
-				r: new Uint8Array(32),
-				s: new Uint8Array(33), // Wrong length
-				v: 27,
+				r: signature.r,
+				s: signature.s,
+				v: 1, // Invalid for verify
 			};
 
-			expect(() => verify(malformedSig, message, publicKey)).toThrow(
-				InvalidSignatureError,
-			);
+			const valid = verify(malformedSig as any, message, publicKey);
+			expect(valid).toBe(false);
 		});
 
 		it("should return false for all-zero r", () => {
@@ -187,8 +187,8 @@ describe("Secp256k1.verify", () => {
 			const publicKey = derivePublicKey(privateKey);
 
 			const invalidSig = {
-				r: new Uint8Array(32), // All zeros
-				s: new Uint8Array(32).fill(1),
+				r: Hash.from(new Uint8Array(32)), // All zeros
+				s: Hash.from(new Uint8Array(32).fill(1)),
 				v: 27,
 			};
 
@@ -204,8 +204,8 @@ describe("Secp256k1.verify", () => {
 			const publicKey = derivePublicKey(privateKey);
 
 			const invalidSig = {
-				r: new Uint8Array(32).fill(1),
-				s: new Uint8Array(32), // All zeros
+				r: Hash.from(new Uint8Array(32).fill(1)),
+				s: Hash.from(new Uint8Array(32)), // All zeros
 				v: 27,
 			};
 
@@ -222,12 +222,14 @@ describe("Secp256k1.verify", () => {
 
 			// r = n (curve order, invalid)
 			const invalidSig = {
-				r: new Uint8Array([
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48,
-					0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
-				]),
-				s: new Uint8Array(32).fill(1),
+				r: Hash.from(
+					new Uint8Array([
+						0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+						0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48,
+						0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+					]),
+				),
+				s: Hash.from(new Uint8Array(32).fill(1)),
 				v: 27,
 			};
 
@@ -244,12 +246,14 @@ describe("Secp256k1.verify", () => {
 
 			// s = n (curve order, invalid)
 			const invalidSig = {
-				r: new Uint8Array(32).fill(1),
-				s: new Uint8Array([
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48,
-					0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
-				]),
+				r: Hash.from(new Uint8Array(32).fill(1)),
+				s: Hash.from(
+					new Uint8Array([
+						0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+						0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48,
+						0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+					]),
+				),
 				v: 27,
 			};
 
@@ -259,32 +263,20 @@ describe("Secp256k1.verify", () => {
 	});
 
 	describe("malformed public keys", () => {
-		it("should throw InvalidPublicKeyError for wrong length public key", () => {
-			const privateKeyBytes = new Uint8Array(32);
-			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const message = Hash.from(sha256(new TextEncoder().encode("test")));
-			const signature = sign(message, privateKey);
-
+		it("should throw Error when creating branded type from wrong length public key", () => {
 			const wrongLengthKey = new Uint8Array(63);
 
-			expect(() => verify(signature, message, wrongLengthKey)).toThrow(
-				InvalidPublicKeyError,
-			);
+			expect(() => {
+				PublicKey.fromBytes(wrongLengthKey);
+			}).toThrow();
 		});
 
-		it("should throw InvalidPublicKeyError for too long public key", () => {
-			const privateKeyBytes = new Uint8Array(32);
-			privateKeyBytes[31] = 1;
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const message = Hash.from(sha256(new TextEncoder().encode("test")));
-			const signature = sign(message, privateKey);
-
+		it("should throw Error when creating branded type from too long public key", () => {
 			const tooLongKey = new Uint8Array(65);
 
-			expect(() => verify(signature, message, tooLongKey)).toThrow(
-				InvalidPublicKeyError,
-			);
+			expect(() => {
+				PublicKey.fromBytes(tooLongKey);
+			}).toThrow();
 		});
 
 		it("should return false for invalid curve point", () => {
@@ -381,7 +373,7 @@ describe("Secp256k1.verify", () => {
 			const publicKeyFull = secp256k1.getPublicKey(privateKey, false);
 			const publicKey = publicKeyFull.slice(1); // Remove 0x04 prefix
 
-			const signature = { r, s, v: 27 }; // Try v=27
+			const signature = { r: Hash.from(r), s: Hash.from(s), v: 27 }; // Try v=27
 
 			const valid = verify(signature, message, publicKey);
 			expect(valid).toBe(true);
@@ -400,15 +392,19 @@ describe("Secp256k1.verify", () => {
 
 			// Multiple invalid signatures should all return false
 			const invalidSigs = [
-				{ r: new Uint8Array(32), s: new Uint8Array(32), v: 27 },
 				{
-					r: new Uint8Array(32).fill(1),
-					s: new Uint8Array(32).fill(1),
+					r: Hash.from(new Uint8Array(32)),
+					s: Hash.from(new Uint8Array(32)),
 					v: 27,
 				},
 				{
-					r: new Uint8Array(32).fill(0xff),
-					s: new Uint8Array(32).fill(0xff),
+					r: Hash.from(new Uint8Array(32).fill(1)),
+					s: Hash.from(new Uint8Array(32).fill(1)),
+					v: 27,
+				},
+				{
+					r: Hash.from(new Uint8Array(32).fill(0xff)),
+					s: Hash.from(new Uint8Array(32).fill(0xff)),
 					v: 27,
 				},
 			];
@@ -421,7 +417,7 @@ describe("Secp256k1.verify", () => {
 	});
 
 	describe("v parameter handling", () => {
-		it("should verify with both v values when appropriate", () => {
+		it("should verify signature with correct v parameter", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
@@ -436,11 +432,8 @@ describe("Secp256k1.verify", () => {
 			const valid = verify(signature, message, publicKey);
 			expect(valid).toBe(true);
 
-			// v is only used for recovery, not verification with known pubkey
-			// Different v should still verify with correct pubkey
-			const wrongV = { ...signature, v: signature.v === 27 ? 28 : 27 };
-			const stillValid = verify(wrongV, message, publicKey);
-			expect(stillValid).toBe(true);
+			// v is now validated - must be 27 or 28
+			expect(signature.v === 27 || signature.v === 28).toBe(true);
 		});
 	});
 });

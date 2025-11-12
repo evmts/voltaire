@@ -28,47 +28,25 @@ function concat(...arrays) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components
+ * @param {Object} signature - ECDSA signature components
+ * @param {Uint8Array} signature.r - 32-byte signature component r
+ * @param {Uint8Array} signature.s - 32-byte signature component s
+ * @param {number} signature.v - Recovery id (27/28 or 0/1)
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
- * @returns {Uint8Array} 64-byte uncompressed public key
+ * @returns {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} 64-byte uncompressed public key
  * @throws {InvalidSignatureError} If signature or recovery fails
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
  * import * as Hash from './primitives/Hash/index.js';
  * const messageHash = Hash.keccak256String('Hello');
- * const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+ * const recovered = Secp256k1.recoverPublicKey(
+ *   { r: rBytes, s: sBytes, v: 27 },
+ *   messageHash
+ * );
  * ```
  */
 export function recoverPublicKey(signature, messageHash) {
-	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
-			{
-				code: "INVALID_SIGNATURE_R_LENGTH",
-				context: {
-					actualLength: signature.r.length,
-					expectedLength: SIGNATURE_COMPONENT_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
-			},
-		);
-	}
-
-	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
-			{
-				code: "INVALID_SIGNATURE_S_LENGTH",
-				context: {
-					actualLength: signature.s.length,
-					expectedLength: SIGNATURE_COMPONENT_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
-			},
-		);
-	}
-
 	// Convert Ethereum v (27 or 28) to recovery bit (0 or 1)
 	let recoveryBit;
 	if (signature.v === 27 || signature.v === 28) {
@@ -105,7 +83,9 @@ export function recoverPublicKey(signature, messageHash) {
 		}
 
 		// Return 64 bytes without the 0x04 prefix
-		return uncompressed.slice(1);
+		return /** @type {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} */ (
+			uncompressed.slice(1)
+		);
 	} catch (error) {
 		throw new InvalidSignatureError(`Public key recovery failed: ${error}`, {
 			code: "PUBLIC_KEY_RECOVERY_FAILED",

@@ -2,6 +2,7 @@ import { hexToBytes, randomBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it } from "vitest";
 import type { Domain, TypeDefinitions, TypedData } from "./BrandedEIP712.js";
 import { EIP712 } from "./EIP712.js";
+import * as Address from "../../primitives/Address/BrandedAddress/index.js";
 import {
 	Eip712EncodingError,
 	Eip712Error,
@@ -16,9 +17,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				name: "TestDomain",
 				version: "1",
 				chainId: 1n,
-				verifyingContract: hexToBytes(
-					"CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
-				) as unknown as BrandedAddress,
+				verifyingContract: Address.from(
+					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+				),
 				salt: hexToBytes(
 					"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 				) as unknown as BrandedAddress,
@@ -212,7 +213,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should encode address", () => {
-			const address = new Uint8Array(20).fill(0xaa);
+			const address = Address.from(new Uint8Array(20).fill(0xaa));
 			const encoded = EIP712.encodeValue("address", address, types);
 
 			expect(encoded.length).toBe(32);
@@ -345,11 +346,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const data = {
 				from: {
 					name: "Alice",
-					wallet: new Uint8Array(20).fill(0xaa),
+					wallet: Address.from(new Uint8Array(20).fill(0xaa)),
 				},
 				to: {
 					name: "Bob",
-					wallet: new Uint8Array(20).fill(0xbb),
+					wallet: Address.from(new Uint8Array(20).fill(0xbb)),
 				},
 				contents: "Hello!",
 			};
@@ -424,9 +425,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "MyToken",
 					version: "1",
 					chainId: 1n,
-					verifyingContract: new Uint8Array(20).fill(
-						0xcc,
-					) as unknown as BrandedAddress,
+					verifyingContract: Address.from(new Uint8Array(20).fill(0xcc)),
 				},
 				types: {
 					Permit: [
@@ -439,8 +438,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				},
 				primaryType: "Permit",
 				message: {
-					owner: new Uint8Array(20).fill(0xaa) as unknown as BrandedAddress,
-					spender: new Uint8Array(20).fill(0xbb) as unknown as BrandedAddress,
+					owner: Address.from(new Uint8Array(20).fill(0xaa)),
+					spender: Address.from(new Uint8Array(20).fill(0xbb)),
 					value: 1000000000000000000n, // 1 token
 					nonce: 0n,
 					deadline: 1700000000n,
@@ -458,9 +457,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "Ether Mail",
 					version: "1",
 					chainId: 1n,
-					verifyingContract: new Uint8Array(20).fill(
-						0xdd,
-					) as unknown as BrandedAddress,
+					verifyingContract: Address.from(new Uint8Array(20).fill(0xdd)),
 				},
 				types: {
 					Person: [
@@ -477,11 +474,11 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				message: {
 					from: {
 						name: "Alice",
-						wallet: new Uint8Array(20).fill(0xaa),
+						wallet: Address.from(new Uint8Array(20).fill(0xaa)),
 					},
 					to: {
 						name: "Bob",
-						wallet: new Uint8Array(20).fill(0xbb),
+						wallet: Address.from(new Uint8Array(20).fill(0xbb)),
 					},
 					contents: "Hello, Bob!",
 				},
@@ -1006,9 +1003,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "USD Coin",
 					version: "2",
 					chainId: 1n,
-					verifyingContract: hexToBytes(
-						"A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-					) as unknown as BrandedAddress, // USDC on mainnet
+					verifyingContract: Address.from(
+						"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					), // USDC on mainnet
 				},
 				types: {
 					Permit: [
@@ -1021,8 +1018,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				},
 				primaryType: "Permit",
 				message: {
-					owner: new Uint8Array(20).fill(0xaa),
-					spender: new Uint8Array(20).fill(0xbb),
+					owner: Address.from(new Uint8Array(20).fill(0xaa)),
+					spender: Address.from(new Uint8Array(20).fill(0xbb)),
 					value: 1000000n, // 1 USDC (6 decimals)
 					nonce: 0n,
 					deadline: 1735689600n, // Jan 1, 2025
@@ -1049,9 +1046,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "MetaTransaction",
 					version: "1",
 					chainId: 137n, // Polygon
-					verifyingContract: new Uint8Array(20).fill(
-						0xcc,
-					) as unknown as BrandedAddress,
+					verifyingContract: Address.from(new Uint8Array(20).fill(0xcc)),
 				},
 				types: {
 					MetaTransaction: [
@@ -1063,7 +1058,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				primaryType: "MetaTransaction",
 				message: {
 					nonce: 0n,
-					from: new Uint8Array(20).fill(0xaa) as unknown as BrandedAddress,
+					from: Address.from(new Uint8Array(20).fill(0xaa)),
 					functionSignature: hexToBytes("a9059cbb"), // transfer(address,uint256)
 				},
 			};

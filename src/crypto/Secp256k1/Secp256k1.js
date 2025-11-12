@@ -1,9 +1,11 @@
 // @ts-nocheck
 export * from "./constants.js";
 export * from "./BrandedSignature.js";
+export * from "./BrandedSecp256k1PublicKey.js";
 export * from "./errors.js";
 
 import * as SignatureMethods from "./Signature/index.js";
+import * as PublicKeyMethods from "./PublicKey/index.js";
 import {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
@@ -30,6 +32,7 @@ export {
 };
 
 export const Signature = SignatureMethods;
+export const PublicKey = PublicKeyMethods;
 
 /**
  * @typedef {import('./BrandedSignature.js').BrandedSignature} BrandedSignature
@@ -72,6 +75,7 @@ export const Secp256k1 = {
 	isValidPublicKey,
 	isValidPrivateKey,
 	Signature: SignatureMethods,
+	PublicKey: PublicKeyMethods,
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
 	PUBLIC_KEY_SIZE,

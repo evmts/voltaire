@@ -11,7 +11,7 @@ import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {import('../../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js').BrandedPrivateKey} privateKey - 32-byte private key
- * @returns {Uint8Array} 64-byte uncompressed public key
+ * @returns {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} 64-byte uncompressed public key
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @example
  * ```javascript
@@ -23,7 +23,6 @@ import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
  * ```
  */
 export function derivePublicKey(privateKey) {
-
 	try {
 		// Get public key from private key (uncompressed, 65 bytes with 0x04 prefix)
 		const uncompressed = secp256k1.getPublicKey(privateKey, false);
@@ -37,7 +36,9 @@ export function derivePublicKey(privateKey) {
 		}
 
 		// Return 64 bytes without the 0x04 prefix
-		return uncompressed.slice(1);
+		return /** @type {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} */ (
+			uncompressed.slice(1)
+		);
 	} catch (error) {
 		throw new InvalidPrivateKeyError(`Key derivation failed: ${error}`, {
 			code: "KEY_DERIVATION_FAILED",

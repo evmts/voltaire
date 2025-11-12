@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
+import { Hash } from "../../primitives/Hash/index.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
 import { InvalidPrivateKeyError, P256Error } from "./errors.js";
 
@@ -34,8 +35,8 @@ export function sign(messageHash, privateKey) {
 	try {
 		const sig = p256.sign(messageHash, privateKey);
 		return {
-			r: sig.slice(0, 32),
-			s: sig.slice(32, 64),
+			r: Hash.from(sig.slice(0, 32)),
+			s: Hash.from(sig.slice(32, 64)),
 		};
 	} catch (error) {
 		throw new P256Error(`Signing failed: ${error}`);

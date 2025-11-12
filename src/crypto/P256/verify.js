@@ -8,16 +8,18 @@ import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedP256Signature.js').BrandedP256Signature} signature - ECDSA signature to verify
+ * @param {import('./BrandedP256Signature.js').BrandedP256Signature} signature - ECDSA signature to verify (r and s are BrandedHash)
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
  * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - 64-byte uncompressed public key
  * @returns {boolean} True if signature is valid, false otherwise
  * @throws {InvalidPublicKeyError} If public key format is invalid
- * @throws {InvalidSignatureError} If signature format is invalid
  * @example
  * ```javascript
  * import * as P256 from './crypto/P256/index.js';
- * const valid = P256.verify(signature, messageHash, publicKey);
+ * import * as Hash from './primitives/Hash/index.js';
+ * const r = Hash.from(rBytes);
+ * const s = Hash.from(sBytes);
+ * const valid = P256.verify({ r, s }, messageHash, publicKey);
  * if (valid) console.log('Signature is valid!');
  * ```
  */
@@ -25,18 +27,6 @@ export function verify(signature, messageHash, publicKey) {
 	if (publicKey.length !== PUBLIC_KEY_SIZE) {
 		throw new InvalidPublicKeyError(
 			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
-		);
-	}
-
-	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
-		);
-	}
-
-	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
 		);
 	}
 

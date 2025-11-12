@@ -1,9 +1,6 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import {
-	InvalidPublicKeyError,
-	InvalidSignatureError,
-} from "../../primitives/errors/index.js";
+import { InvalidSignatureError } from "../../primitives/errors/index.js";
 import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 
 /**
@@ -27,61 +24,21 @@ function concat(...arrays) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components
+ * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components (r and s are BrandedHash)
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
- * @param {Uint8Array} publicKey - 64-byte uncompressed public key
+ * @param {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} publicKey - 64-byte uncompressed public key
  * @returns {boolean} true if signature is valid, false otherwise
- * @throws {InvalidPublicKeyError} If public key is invalid
- * @throws {InvalidSignatureError} If signature format is invalid
+ * @throws {InvalidSignatureError} If signature v is invalid
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
- * const valid = Secp256k1.verify(signature, messageHash, publicKey);
+ * import * as Hash from './primitives/Hash/index.js';
+ * const r = Hash.from(rBytes);
+ * const s = Hash.from(sBytes);
+ * const valid = Secp256k1.verify({ r, s, v: 27 }, messageHash, publicKey);
  * ```
  */
 export function verify(signature, messageHash, publicKey) {
-	if (publicKey.length !== PUBLIC_KEY_SIZE) {
-		throw new InvalidPublicKeyError(
-			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
-			{
-				code: "INVALID_PUBLIC_KEY_LENGTH",
-				context: {
-					actualLength: publicKey.length,
-					expectedLength: PUBLIC_KEY_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/verify#error-handling",
-			},
-		);
-	}
-
-	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
-			{
-				code: "INVALID_SIGNATURE_R_LENGTH",
-				context: {
-					actualLength: signature.r.length,
-					expectedLength: SIGNATURE_COMPONENT_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/verify#error-handling",
-			},
-		);
-	}
-
-	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
-		throw new InvalidSignatureError(
-			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
-			{
-				code: "INVALID_SIGNATURE_S_LENGTH",
-				context: {
-					actualLength: signature.s.length,
-					expectedLength: SIGNATURE_COMPONENT_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/verify#error-handling",
-			},
-		);
-	}
-
 	// Validate v parameter (must be 27 or 28)
 	if (signature.v !== 27 && signature.v !== 28) {
 		return false;

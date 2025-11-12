@@ -25,20 +25,18 @@ function bytes32ToBigInt(bytes) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature to validate
+ * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature to validate (r and s are BrandedHash)
  * @returns {boolean} true if signature is valid, false otherwise
  * @throws {never}
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
- * const signature = { r: new Uint8Array(32), s: new Uint8Array(32), v: 27 };
+ * import * as Hash from './primitives/Hash/index.js';
+ * const signature = { r: Hash.from(new Uint8Array(32)), s: Hash.from(new Uint8Array(32)), v: 27 };
  * const valid = Secp256k1.isValidSignature(signature);
  * ```
  */
 export function isValidSignature(signature) {
-	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) return false;
-	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) return false;
-
 	try {
 		const r = bytes32ToBigInt(signature.r);
 		const s = bytes32ToBigInt(signature.s);
