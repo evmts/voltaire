@@ -30,15 +30,25 @@ type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
 function from(value: string | number | Uint8Array): BrandedAddress
 
 // Effect wrapper (new)
-class Address extends Schema.Class<Address>("Address") {
+class AddressSchema extends Schema.Class<AddressSchema>("Address") {
   value: Schema.Uint8ArrayFromSelf // wraps BrandedAddress
-  static from(value: string | number | Uint8Array): Address {
-    return new Address({ value: BrandedAddressImpl.from(value) })
+  static from(value: string | number | Uint8Array): AddressSchema {
+    return new AddressSchema({ value: BrandedAddressImpl.from(value) })
   }
 }
+
+// Effect brands (new)
+type AddressBrand = Uint8Array & Brand.Brand<"Address">
+const AddressBrand = Brand.refined<AddressBrand>(
+  (bytes) => bytes.length === 20,
+  (bytes) => Brand.error(`Expected 20-byte Uint8Array, got ${bytes.length}`)
+)
 ```
 
-**Key principle**: Effect's `value` property holds the existing branded type. All methods delegate to existing implementations.
+**Key principles**:
+1. Effect's `value` property holds the existing branded type. All methods delegate to existing implementations.
+2. Provide Effect brands using `Brand.refined()` (with validation) or `Brand.nominal()` (no validation)
+3. Expose `.branded` getter and `.fromBranded()` for zero-cost interop with Effect brands
 
 ## File Structure
 
@@ -96,31 +106,57 @@ Write comprehensive tests in `effect.test.ts` BEFORE implementation:
 import { describe, it, expect } from "vitest";
 import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
-import { Thing, ThingVariant } from "./effect.js";
+import { ThingSchema, ThingBrand, ThingVariant } from "./effect.js";
 import * as BrandedThing from "./BrandedThing/index.js";
 
 describe("Thing Effect Schema", () => {
-  describe("Thing class", () => {
-    it("creates Thing from input", () => {
-      const thing = Thing.from("input");
+  describe("ThingSchema class", () => {
+    it("creates ThingSchema from input", () => {
+      const thing = ThingSchema.from("input");
       expect(thing.value).toBeInstanceOf(Uint8Array); // or appropriate type
     });
 
-    it("validates Thing schema", () => {
+    it("validates ThingSchema schema", () => {
       const validData = BrandedThing.from("input");
-      const thing = new Thing({ value: validData });
-      expect(thing.toBrandedThing()).toBe(validData);
+      const thing = new ThingSchema({ value: validData });
+      expect(thing.thing).toBe(validData);
     });
 
     it("rejects invalid input", () => {
-      expect(() => new Thing({ value: "invalid" })).toThrow();
+      expect(() => new ThingSchema({ value: "invalid" })).toThrow();
     });
 
     // Test all conversions
     it("converts to other formats", () => {
-      const thing = Thing.from("input");
+      const thing = ThingSchema.from("input");
       expect(thing.toHex()).toBe("expected");
       expect(thing.toVariant()).toBeDefined();
+    });
+  });
+
+  describe("Effect Branded Types", () => {
+    it("creates ThingBrand with validation", () => {
+      const validData = new Uint8Array(20);
+      const brand = ThingBrand(validData);
+      expect(brand).toBe(validData);
+    });
+
+    it("rejects invalid ThingBrand", () => {
+      const invalidData = new Uint8Array(19);
+      expect(() => ThingBrand(invalidData)).toThrow();
+    });
+
+    it("creates ThingSchema from ThingBrand", () => {
+      const data = new Uint8Array(20);
+      const brand = ThingBrand(data);
+      const schema = ThingSchema.fromBranded(brand);
+      expect(schema.branded).toBe(brand);
+    });
+
+    it("exposes branded getter", () => {
+      const thing = ThingSchema.from("input");
+      const brand = thing.branded;
+      expect(brand).toBeInstanceOf(Uint8Array);
     });
   });
 
@@ -128,12 +164,12 @@ describe("Thing Effect Schema", () => {
     it("decodes from unknown", () => {
       const decode = Schema.decodeUnknownSync(ThingFromUnknown);
       const thing = decode("input");
-      expect(thing).toBeInstanceOf(Thing);
+      expect(thing).toBeInstanceOf(ThingSchema);
     });
 
     it("encodes to output", () => {
       const encode = Schema.encodeSync(ThingFromUnknown);
-      const thing = Thing.from("input");
+      const thing = ThingSchema.from("input");
       const output = encode(thing);
       expect(output).toBeDefined();
     });
@@ -142,7 +178,7 @@ describe("Thing Effect Schema", () => {
   describe("Effect integration", () => {
     it("works with Effect.gen", async () => {
       const program = Effect.gen(function* () {
-        const thing = yield* Effect.sync(() => Thing.from("input"));
+        const thing = yield* Effect.sync(() => ThingSchema.from("input"));
         return thing.toHex();
       });
       const result = await Effect.runPromise(program);
@@ -151,7 +187,7 @@ describe("Thing Effect Schema", () => {
 
     it("handles validation errors", async () => {
       const program = Effect.try({
-        try: () => new Thing({ value: "invalid" }),
+        try: () => new ThingSchema({ value: "invalid" }),
         catch: (error) => new Error(`Failed: ${error}`),
       });
       const result = await Effect.runPromise(Effect.either(program));
@@ -164,6 +200,8 @@ describe("Thing Effect Schema", () => {
 **Test coverage requirements**:
 - [ ] All constructors (from, fromHex, fromBytes, etc.)
 - [ ] All conversions (toHex, toChecksummed, etc.)
+- [ ] Effect brands (construction, validation, rejection)
+- [ ] Brand interop (`.branded` getter, `.fromBranded()` method)
 - [ ] Schema validation (valid + invalid inputs)
 - [ ] Schema transforms (decode + encode)
 - [ ] Effect.gen integration
@@ -177,6 +215,8 @@ bun test:run src/primitives/{Name}/effect.test.ts
 # Should fail - that's correct! Now implement to make them pass.
 ```
 
+**Reference**: See `src/primitives/Address/effect.test.ts` for comprehensive test examples including branded types.
+
 ### 3. Implementation
 
 Create `effect.ts` following this template:
@@ -188,15 +228,29 @@ import type { Branded{Name} } from "./Branded{Name}/Branded{Name}.js";
 import * as Branded{Name}Impl from "./Branded{Name}/index.js";
 
 /**
- * Effect Brand for {Name} (wraps existing Branded{Name})
+ * Effect Brand for {Name} - refined brand with validation
+ * Use Brand.refined() for types that need runtime validation
+ * Use Brand.nominal() for types that don't need validation
  */
-export type {Name}Brand = Branded{Name} & Brand.Brand<"{Name}">;
+export type {Name}Brand = {UnderlyingType} & Brand.Brand<"{Name}">;
+
+/**
+ * Effect Brand constructor with validation
+ */
+export const {Name}Brand = Brand.refined<{Name}Brand>(
+  (data): data is {UnderlyingType} & Brand.Brand<"{Name}"> =>
+    Branded{Name}Impl.is(data), // Reuse existing validation
+  (data) =>
+    Brand.error(
+      `Expected valid {name}, got ${/* describe data */}`
+    ),
+);
 
 /**
  * Schema for {Name} from various input types
- * Validates and brands underlying type as {Name}
+ * Uses Effect Brand validation for type safety
  */
-export class {Name} extends Schema.Class<{Name}>("{Name}")({
+export class {Name}Schema extends Schema.Class<{Name}Schema>("{Name}")({
   value: Schema.{UnderlyingType}.pipe(
     Schema.filter((data): data is {UnderlyingType} => {
       return Branded{Name}Impl.is(data); // Use existing validation
@@ -206,26 +260,40 @@ export class {Name} extends Schema.Class<{Name}>("{Name}")({
   ),
 }) {
   /**
-   * Get the underlying Branded{Name}
+   * Get the underlying Branded{Name} (internal Voltaire type)
    */
   get {lowerName}(): Branded{Name} {
     return this.value as Branded{Name};
   }
 
   /**
+   * Get as Effect branded {Name}Brand
+   */
+  get branded(): {Name}Brand {
+    return this.value as {Name}Brand;
+  }
+
+  /**
+   * Create from Effect branded {Name}Brand (zero-cost, no validation)
+   */
+  static fromBranded(brand: {Name}Brand): {Name}Schema {
+    return new {Name}Schema({ value: brand });
+  }
+
+  /**
    * Create from universal input
    */
-  static from(value: InputTypes): {Name} {
+  static from(value: InputTypes): {Name}Schema {
     const data = Branded{Name}Impl.from(value); // Reuse existing
-    return new {Name}({ value: data });
+    return new {Name}Schema({ value: data });
   }
 
   /**
    * Create from specific format
    */
-  static fromHex(hex: string): {Name} {
+  static fromHex(hex: string): {Name}Schema {
     const data = Branded{Name}Impl.fromHex(hex);
-    return new {Name}({ value: data });
+    return new {Name}Schema({ value: data });
   }
 
   // ... other constructors (fromBytes, fromNumber, etc.)
@@ -242,8 +310,8 @@ export class {Name} extends Schema.Class<{Name}>("{Name}")({
   /**
    * Instance methods
    */
-  equals(other: {Name} | Branded{Name}): boolean {
-    const otherData = other instanceof {Name} ? other.{lowerName} : other;
+  equals(other: {Name}Schema | Branded{Name}): boolean {
+    const otherData = other instanceof {Name}Schema ? other.{lowerName} : other;
     return Branded{Name}Impl.equals(this.{lowerName}, otherData);
   }
 
@@ -283,9 +351,9 @@ export class {Name}Variant extends Schema.Class<{Name}Variant>("{Name}Variant")(
  */
 export const {Name}FromHex = Schema.transform(
   Schema.String,
-  Schema.instanceOf({Name}),
+  Schema.instanceOf({Name}Schema),
   {
-    decode: (hex) => {Name}.fromHex(hex),
+    decode: (hex) => {Name}Schema.fromHex(hex),
     encode: (thing) => thing.toHex(),
   },
 );
@@ -297,22 +365,25 @@ export const {Name}FromUnknown = Schema.transform(
     Schema.String,
     Schema.{UnderlyingType},
   ),
-  Schema.instanceOf({Name}),
+  Schema.instanceOf({Name}Schema),
   {
-    decode: (value) => {Name}.from(value),
+    decode: (value) => {Name}Schema.from(value),
     encode: (thing) => thing.{lowerName},
   },
 );
 ```
 
 **Implementation checklist**:
-- [ ] Reuse ALL existing validation (never reimplement)
+- [ ] Create Effect brands with `Brand.refined()` or `Brand.nominal()`
+- [ ] Reuse existing validation in brand predicates
+- [ ] Create Schema.Class named `{Name}Schema` (not just `{Name}`)
+- [ ] Add `.branded` getter returning Effect brand
+- [ ] Add `.fromBranded()` static method for zero-cost construction
 - [ ] Delegate ALL operations to existing `Branded{Name}Impl`
 - [ ] Add JSDoc comments (copy from existing implementations)
-- [ ] Create Schema.Class for main type
 - [ ] Create Schema.Class for variants (if applicable)
 - [ ] Create Schema transforms for common conversions
-- [ ] Expose underlying branded type via getter
+- [ ] Expose underlying branded type via getter (`{lowerName}`)
 - [ ] Support both Effect instances and branded types in methods
 
 ### 4. Verify Tests Pass
@@ -347,10 +418,23 @@ Ensure no MDX syntax errors or broken links.
 ### Pattern 1: Uint8Array-based primitives (Address, Hash, Signature)
 
 ```typescript
-export class Address extends Schema.Class<Address>("Address")({
+// Effect Brand with validation
+export type AddressBrand = Uint8Array & Brand.Brand<"Address">;
+
+export const AddressBrand = Brand.refined<AddressBrand>(
+  (bytes): bytes is Uint8Array & Brand.Brand<"Address"> =>
+    bytes instanceof Uint8Array && bytes.length === 20,
+  (bytes) =>
+    Brand.error(
+      `Expected 20-byte Uint8Array, got ${bytes instanceof Uint8Array ? `${bytes.length} bytes` : typeof bytes}`
+    ),
+);
+
+// Schema Class
+export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
   value: Schema.Uint8ArrayFromSelf.pipe(
     Schema.filter((bytes): bytes is Uint8Array => {
-      return BrandedAddressImpl.is(bytes); // Check length
+      return bytes.length === 20;
     }, {
       message: () => "Invalid address: must be 20 bytes",
     }),
@@ -358,6 +442,14 @@ export class Address extends Schema.Class<Address>("Address")({
 }) {
   get address(): BrandedAddress {
     return this.value as BrandedAddress;
+  }
+
+  get branded(): AddressBrand {
+    return this.value as AddressBrand;
+  }
+
+  static fromBranded(brand: AddressBrand): AddressSchema {
+    return new AddressSchema({ value: brand });
   }
 }
 ```
@@ -367,6 +459,12 @@ export class Address extends Schema.Class<Address>("Address")({
 ### Pattern 2: String-based branded types (Hex variants, ENS)
 
 ```typescript
+// Nominal brand - validation happens elsewhere (via keccak)
+export type ChecksumAddressBrand = string & Brand.Brand<"ChecksumAddress">;
+
+export const ChecksumAddressBrand = Brand.nominal<ChecksumAddressBrand>();
+
+// Schema Class
 export class ChecksumAddress extends Schema.Class<ChecksumAddress>("ChecksumAddress")({
   value: Schema.String.pipe(
     Schema.filter((str): str is string => {
@@ -378,6 +476,14 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>("ChecksumAddr
 }) {
   get checksummed(): Checksummed {
     return this.value as Checksummed;
+  }
+
+  get branded(): ChecksumAddressBrand {
+    return ChecksumAddressBrand(this.value);
+  }
+
+  static fromBranded(brand: ChecksumAddressBrand): ChecksumAddress {
+    return new ChecksumAddress({ value: brand });
   }
 }
 ```
@@ -640,7 +746,7 @@ import * as BrandedAddressImpl from "./BrandedAddress/index.js";
 Implement Effect APIs in this order:
 
 **Tier 1** (foundational, simple):
-1. ✅ Address - DONE (reference implementation)
+1. ✅ Address - DONE (reference implementation with Effect brands)
 2. Hash
 3. Hex
 4. Uint
@@ -696,14 +802,25 @@ bun test:run  # All tests pass
 
 ## Reference Implementation
 
-See `src/primitives/Address/effect.ts` and `src/primitives/Address/effect.test.ts` for complete reference implementation.
+See `src/primitives/Address/effect.ts` and `src/primitives/Address/effect.test.ts` for complete reference implementation with Effect branded types.
 
 Key files to study:
-- `effect.ts` - Schema classes, transforms, delegation to existing code
-- `effect.test.ts` - Comprehensive test coverage
+- `effect.ts` - Schema classes, Effect brands, service integration, delegation to existing code
+- `effect.test.ts` - Comprehensive test coverage including branded type tests
+- `effect-services.ts` - Service definitions (Keccak256, Secp256k1, RlpEncoder)
+- `effect-layers.ts` - Layer implementations for services
+- `effect-errors.ts` - Tagged error types for all failure modes
 - `index.mdx` - Quick Start with Effect tab
 - `conversions.mdx` - Effect examples for conversions
 - `variants.mdx` - ChecksumAddress Effect schema
+
+Key patterns demonstrated:
+- **Refined brands** - `AddressBrand` with `Brand.refined()` and validation
+- **Nominal brands** - `ChecksumAddressBrand` with `Brand.nominal()` (no validation)
+- **Brand interop** - `.branded` getter and `.fromBranded()` static method
+- **Schema classes** - `AddressSchema`, `ChecksumAddress` extending `Schema.Class`
+- **Service injection** - Crypto operations via Effect context
+- **Typed errors** - All failure modes explicit in signatures
 
 ## Questions?
 
@@ -711,8 +828,10 @@ When implementing Effect API, ask:
 
 1. **Does existing validation exist?** → Reuse it, don't reimplement
 2. **What's the underlying type?** → Uint8Array, String, BigInt, or complex?
-3. **Are there variants?** → Create separate Schema.Class for each
-4. **What conversions exist?** → Delegate all to existing implementations
-5. **Does it compose with other primitives?** → Use Schema.instanceOf for nested schemas
+3. **Should brands validate?** → Use `Brand.refined()` if yes, `Brand.nominal()` if no
+4. **Are there variants?** → Create separate Schema.Class and Brand for each
+5. **What conversions exist?** → Delegate all to existing implementations
+6. **Does it compose with other primitives?** → Use Schema.instanceOf for nested schemas
+7. **How to expose brands?** → `.branded` getter and `.fromBranded()` static method
 
 **Remember**: Effect.ts wraps, never replaces. Zero changes to existing code.
