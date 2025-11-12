@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_sendTransaction";
-
-/**
- * Parameters for `eth_sendTransaction`
- *
- * @typedef {Object} Params
- * @property {Quantity} transaction - Transaction object generic to all types
- */
-
-export {};
 /**
  * Result for `eth_sendTransaction`
  *

@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getUncleCountByBlockHash";
-
-/**
- * Parameters for `eth_getUncleCountByBlockHash`
- *
- * @typedef {Object} Params
- * @property {Hash} block hash - 32 byte hex value
- */
-
-export {};
 /**
  * Result for `eth_getUncleCountByBlockHash`
  *

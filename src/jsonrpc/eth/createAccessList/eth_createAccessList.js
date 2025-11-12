@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_createAccessList";
-
-/**
- * Parameters for `eth_createAccessList`
- *
- * @typedef {Object} Params
- * @property {Quantity} transaction - Transaction object generic to all types
- * @property {Quantity} block - Block number or tag
- */
-
-export {};
 /**
  * Result for `eth_createAccessList`
  *

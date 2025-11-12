@@ -24,17 +24,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_feeHistory";
-
-/**
- * Parameters for `eth_feeHistory`
- *
- * @typedef {Object} Params
- * @property {Quantity} blockcount - hex encoded unsigned integer
- * @property {Quantity} newestblock - Block number or tag
- * @property {Quantity} rewardpercentiles - rewardPercentiles
- */
-
-export {};
 /**
  * Result for `eth_feeHistory`
  *

@@ -21,14 +21,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_blobBaseFee";
-
-/**
- * Parameters for `eth_blobBaseFee`
- *
- * @typedef {Object} Params
- */
-
-export {};
 /**
  * Result for `eth_blobBaseFee`
  *

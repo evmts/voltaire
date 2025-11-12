@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_forkchoiceUpdatedV2";
-
-/**
- * Parameters for `engine_forkchoiceUpdatedV2`
- *
- * @typedef {Object} Params
- * @property {Quantity} forkchoice state - Forkchoice state object V1
- * @property {Quantity} payload attributes - Payload attributes object V2
- */
-
-export {};
 /**
  * Result for `engine_forkchoiceUpdatedV2`
  *

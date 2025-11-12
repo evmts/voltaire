@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getCode";
-
-/**
- * Parameters for `eth_getCode`
- *
- * @typedef {Object} Params
- * @property {Address} address - hex encoded address
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_getCode`
  *

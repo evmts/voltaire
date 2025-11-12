@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getBlockByHash";
-
-/**
- * Parameters for `eth_getBlockByHash`
- *
- * @typedef {Object} Params
- * @property {Hash} block hash - 32 byte hex value
- * @property {Quantity} hydrated transactions - hydrated
- */
-
-export {};
 /**
  * Result for `eth_getBlockByHash`
  *

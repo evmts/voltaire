@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_sign";
-
-/**
- * Parameters for `eth_sign`
- *
- * @typedef {Object} Params
- * @property {Address} address - hex encoded address
- * @property {Quantity} message - hex encoded bytes
- */
-
-export {};
 /**
  * Result for `eth_sign`
  *

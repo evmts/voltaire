@@ -18,16 +18,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_simulateV1";
-
-/**
- * Parameters for `eth_simulateV1`
- *
- * @typedef {Object} Params
- * @property {Quantity} payload - Arguments for eth_simulate
- * @property {BlockSpec} block tag - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_simulateV1`
  *

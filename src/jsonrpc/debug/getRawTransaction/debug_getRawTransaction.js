@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "debug_getRawTransaction";
-
-/**
- * Parameters for `debug_getRawTransaction`
- *
- * @typedef {Object} Params
- * @property {Hash} transaction hash - 32 byte hex value
- */
-
-export {};
 /**
  * Result for `debug_getRawTransaction`
  *

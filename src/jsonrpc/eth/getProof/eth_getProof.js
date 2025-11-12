@@ -24,17 +24,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getProof";
-
-/**
- * Parameters for `eth_getProof`
- *
- * @typedef {Object} Params
- * @property {Address} address - hex encoded address
- * @property {Quantity} storagekeys - Storage keys
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_getProof`
  *

@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getBlockByNumber";
-
-/**
- * Parameters for `eth_getBlockByNumber`
- *
- * @typedef {Object} Params
- * @property {Quantity} block - Block number or tag
- * @property {Quantity} hydrated transactions - hydrated
- */
-
-export {};
 /**
  * Result for `eth_getBlockByNumber`
  *

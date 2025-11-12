@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_call";
-
-/**
- * Parameters for `eth_call`
- *
- * @typedef {Object} Params
- * @property {Quantity} transaction - Transaction object generic to all types
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_call`
  *

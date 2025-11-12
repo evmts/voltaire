@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getBlockReceipts";
-
-/**
- * Parameters for `eth_getBlockReceipts`
- *
- * @typedef {Object} Params
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_getBlockReceipts`
  *

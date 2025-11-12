@@ -21,14 +21,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_blockNumber";
-
-/**
- * Parameters for `eth_blockNumber`
- *
- * @typedef {Object} Params
- */
-
-export {};
 /**
  * Result for `eth_blockNumber`
  *

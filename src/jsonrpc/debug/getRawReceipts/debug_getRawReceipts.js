@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "debug_getRawReceipts";
-
-/**
- * Parameters for `debug_getRawReceipts`
- *
- * @typedef {Object} Params
- * @property {Quantity} block - Block number or tag
- */
-
-export {};
 /**
  * Result for `debug_getRawReceipts`
  *

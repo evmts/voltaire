@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_sendRawTransaction";
-
-/**
- * Parameters for `eth_sendRawTransaction`
- *
- * @typedef {Object} Params
- * @property {Quantity} transaction - hex encoded bytes
- */
-
-export {};
 /**
  * Result for `eth_sendRawTransaction`
  *

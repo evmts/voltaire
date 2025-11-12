@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_newFilter";
-
-/**
- * Parameters for `eth_newFilter`
- *
- * @typedef {Object} Params
- * @property {Quantity} filter - filter
- */
-
-export {};
 /**
  * Result for `eth_newFilter`
  *

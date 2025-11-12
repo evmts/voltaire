@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_getPayloadV3";
-
-/**
- * Parameters for `engine_getPayloadV3`
- *
- * @typedef {Object} Params
- * @property {Quantity} payload id - 8 hex encoded bytes
- */
-
-export {};
 /**
  * Result for `engine_getPayloadV3`
  *

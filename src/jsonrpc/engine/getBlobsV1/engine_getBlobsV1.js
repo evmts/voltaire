@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_getBlobsV1";
-
-/**
- * Parameters for `engine_getBlobsV1`
- *
- * @typedef {Object} Params
- * @property {Quantity} blob versioned hashes
- */
-
-export {};
 /**
  * Result for `engine_getBlobsV1`
  *

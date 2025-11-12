@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getLogs";
-
-/**
- * Parameters for `eth_getLogs`
- *
- * @typedef {Object} Params
- * @property {Quantity} filter - filter
- */
-
-export {};
 /**
  * Result for `eth_getLogs`
  *

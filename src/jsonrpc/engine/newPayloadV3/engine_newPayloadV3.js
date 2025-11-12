@@ -24,17 +24,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_newPayloadV3";
-
-/**
- * Parameters for `engine_newPayloadV3`
- *
- * @typedef {Object} Params
- * @property {Quantity} execution payload - Execution payload object V3
- * @property {Quantity} expected blob versioned hashes
- * @property {Hash} root of the parent beacon block - 32 byte hex value
- */
-
-export {};
 /**
  * Result for `engine_newPayloadV3`
  *

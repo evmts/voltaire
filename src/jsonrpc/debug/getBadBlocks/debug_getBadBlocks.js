@@ -21,14 +21,6 @@
 
 /** The JSON-RPC method name */
 export const method = "debug_getBadBlocks";
-
-/**
- * Parameters for `debug_getBadBlocks`
- *
- * @typedef {Object} Params
- */
-
-export {};
 /**
  * Result for `debug_getBadBlocks`
  *

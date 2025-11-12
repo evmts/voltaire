@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getTransactionCount";
-
-/**
- * Parameters for `eth_getTransactionCount`
- *
- * @typedef {Object} Params
- * @property {Address} address - hex encoded address
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_getTransactionCount`
  *

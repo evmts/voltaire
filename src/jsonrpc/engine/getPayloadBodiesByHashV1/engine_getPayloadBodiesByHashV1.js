@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_getPayloadBodiesByHashV1";
-
-/**
- * Parameters for `engine_getPayloadBodiesByHashV1`
- *
- * @typedef {Object} Params
- * @property {Quantity} array of block hashes
- */
-
-export {};
 /**
  * Result for `engine_getPayloadBodiesByHashV1`
  *

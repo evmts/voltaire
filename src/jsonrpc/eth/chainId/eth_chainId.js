@@ -21,14 +21,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_chainId";
-
-/**
- * Parameters for `eth_chainId`
- *
- * @typedef {Object} Params
- */
-
-export {};
 /**
  * Result for `eth_chainId`
  *

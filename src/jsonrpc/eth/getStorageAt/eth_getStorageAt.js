@@ -24,17 +24,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getStorageAt";
-
-/**
- * Parameters for `eth_getStorageAt`
- *
- * @typedef {Object} Params
- * @property {Address} address - hex encoded address
- * @property {Quantity} storage slot - 32 hex encoded bytes
- * @property {BlockSpec} block - Block number, tag, or block hash
- */
-
-export {};
 /**
  * Result for `eth_getStorageAt`
  *

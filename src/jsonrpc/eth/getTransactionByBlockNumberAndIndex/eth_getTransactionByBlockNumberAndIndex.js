@@ -23,16 +23,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getTransactionByBlockNumberAndIndex";
-
-/**
- * Parameters for `eth_getTransactionByBlockNumberAndIndex`
- *
- * @typedef {Object} Params
- * @property {Quantity} block - Block number or tag
- * @property {Quantity} transaction index - hex encoded unsigned integer
- */
-
-export {};
 /**
  * Result for `eth_getTransactionByBlockNumberAndIndex`
  *

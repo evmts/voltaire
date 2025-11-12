@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "engine_newPayloadV2";
-
-/**
- * Parameters for `engine_newPayloadV2`
- *
- * @typedef {Object} Params
- * @property {Quantity} execution payload
- */
-
-export {};
 /**
  * Result for `engine_newPayloadV2`
  *

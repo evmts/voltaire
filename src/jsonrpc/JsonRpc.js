@@ -11,17 +11,3 @@ export * from "./debug/methods.js";
 
 // Export primitive types separately
 export * as types from "./types/index.js";
-
-/**
- * @typedef {import('./engine/methods.js').EngineMethod} EngineMethod
- * @typedef {import('./eth/methods.js').EthMethod} EthMethod
- * @typedef {import('./debug/methods.js').DebugMethod} DebugMethod
- */
-
-/**
- * Union of all JSON-RPC method names
- *
- * @typedef {EngineMethod | EthMethod | DebugMethod} JsonRpcMethod
- */
-
-export {};

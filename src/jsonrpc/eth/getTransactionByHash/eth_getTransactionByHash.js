@@ -22,15 +22,6 @@
 
 /** The JSON-RPC method name */
 export const method = "eth_getTransactionByHash";
-
-/**
- * Parameters for `eth_getTransactionByHash`
- *
- * @typedef {Object} Params
- * @property {Hash} transaction hash - 32 byte hex value
- */
-
-export {};
 /**
  * Result for `eth_getTransactionByHash`
  *
