@@ -3,13 +3,14 @@ export type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 // Import all functions
 import { from } from "./from.js";
+import { fromBytes } from "./fromBytes.js";
 import { sign as _sign } from "./sign.js";
 import { toAddress as _toAddress } from "./toAddress.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toPublicKey as _toPublicKey } from "./toPublicKey.js";
 
 // Export constructors (no wrapper needed)
-export { from };
+export { from, fromBytes };
 
 // Export public wrapper functions
 export function toHex(privateKey: string): string {
@@ -34,6 +35,7 @@ export { _toHex, _toPublicKey, _toAddress, _sign };
 // Export as namespace (convenience)
 export const PrivateKey = {
 	from,
+	fromBytes,
 	toHex,
 	toPublicKey,
 	toAddress,
