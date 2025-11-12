@@ -1,0 +1,164 @@
+---
+title: Provider
+description: Type-safe Ethereum JSON-RPC provider interface with branded primitives
+---
+
+# Provider
+
+A type-safe Ethereum JSON-RPC provider interface that uses branded primitive types and never throws errors.
+
+## Overview
+
+Provider is an interface for interacting with Ethereum nodes via JSON-RPC. Unlike standard EIP-1193 providers, Voltaire's Provider API:
+
+- **Method-based API** - Call methods directly: `provider.eth_blockNumber()`
+- **Branded primitives** - Params use strongly-typed primitives (Address, Hash, Hex, etc.)
+- **Raw responses** - Returns raw JSON-RPC responses without transformation
+- **Never throws** - Errors returned as values, not exceptions
+- **Async generators** - Events consumed via `for await` loops
+
+## Installation
+
+```bash
+npm install @tevm/voltaire
+```
+
+## Quick Start
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Get block number
+const blockNumber = await provider.eth_blockNumber();
+
+// Get balance with branded Address type
+const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const balance = await provider.eth_getBalance(address, 'latest');
+
+// Execute contract call
+const data = Hex.from('0x70a08231...');
+const result = await provider.eth_call({
+  to: address,
+  data: data
+}, 'latest');
+```
+
+## Core API
+
+### Method Calls
+
+Access methods directly on the provider:
+
+```typescript
+// No request wrapper - call methods directly
+const result = await provider.eth_blockNumber();
+
+// With parameters (branded types)
+const balance = await provider.eth_getBalance(address, blockTag);
+
+// With options
+const result = await provider.eth_call(params, options);
+```
+
+### Event Subscriptions
+
+Subscribe to events using async generators:
+
+```typescript
+// Subscribe to new blocks
+for await (const block of provider.events.newHeads()) {
+  console.log('New block:', block.number);
+}
+
+// Subscribe to logs with filter
+for await (const log of provider.events.logs({ address: contractAddress })) {
+  console.log('Event:', log);
+}
+```
+
+## Type Safety
+
+All parameters use branded primitive types:
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Type-safe parameters
+const address: Address.BrandedAddress = Address.from('0x...');
+const hash: Hash.BrandedHash = Hash.from('0x...');
+const data: Hex.BrandedHex = Hex.from('0x...');
+
+// These are caught at compile time
+provider.eth_getBalance('0x...');  // ❌ Error: expects Address
+provider.eth_getBalance(address);  // ✅ Correct
+```
+
+## Error Handling
+
+Provider methods return raw responses and never throw:
+
+```typescript
+// Errors are returned as values
+const result = await provider.eth_call(params);
+
+if (result.error) {
+  console.error('RPC error:', result.error.message);
+} else {
+  console.log('Success:', result.result);
+}
+```
+
+## Key Differences from EIP-1193
+
+| Feature | EIP-1193 | Voltaire Provider |
+|---------|----------|-------------------|
+| Method calls | `request({ method, params })` | `provider.method(params)` |
+| Events | `on(event, listener)` | `events.event()` async generator |
+| Parameters | Plain strings/objects | Branded primitive types |
+| Errors | Throws exceptions | Returns error values |
+| Type safety | Basic | Full inference with branded types |
+
+## Available Methods
+
+Provider supports all 65 Ethereum JSON-RPC methods across three namespaces:
+
+- **[eth Methods](/provider/eth-methods)** - 40 standard Ethereum operations
+- **[debug Methods](/provider/debug-methods)** - 5 debugging methods
+- **[engine Methods](/provider/engine-methods)** - 20 consensus layer methods
+
+## Architecture
+
+```typescript
+interface Provider {
+  // Direct method access (65 methods total)
+  eth_blockNumber(): Promise<Response<Quantity>>;
+  eth_getBalance(address: Address, block: BlockTag): Promise<Response<Quantity>>;
+  eth_call(params: CallParams, options?: RequestOptions): Promise<Response<Hex>>;
+  // ... 62 more methods
+
+  // Event subscriptions
+  events: {
+    newHeads(): AsyncGenerator<Block>;
+    logs(params?: LogFilter): AsyncGenerator<Log>;
+    newPendingTransactions(): AsyncGenerator<Hash>;
+    // ... more events
+  };
+}
+```
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about the method-based API
+- [Events](/provider/events) - Subscribe to blockchain events
+- [Adapters](/provider/adapters) - Convert to EIP-1193 or HTTP
+- [eth Methods](/provider/eth-methods) - Browse all eth namespace methods
+
+## Reference
+
+- [JSON-RPC Types](/jsonrpc) - Underlying type definitions
+- [Primitives](/primitives/address) - Branded type documentation
+- [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) - Standard provider interface

@@ -1,0 +1,513 @@
+---
+title: Events
+description: Subscribe to blockchain events using async generators
+---
+
+# Events
+
+Provider events use async generators for consuming blockchain updates in real-time.
+
+## Overview
+
+Instead of traditional event emitters, Provider uses async generators accessed via `provider.events`:
+
+```typescript
+// Subscribe to new blocks
+for await (const block of provider.events.newHeads()) {
+  console.log('New block:', block.number, block.hash);
+}
+
+// Subscribe to logs
+for await (const log of provider.events.logs({ address: contractAddress })) {
+  console.log('Event:', log.topics[0]);
+}
+```
+
+## Event API
+
+Access events through the `events` property:
+
+```typescript
+interface Provider {
+  events: {
+    newHeads(params?: NewHeadsParams): AsyncGenerator<Block>;
+    logs(params?: LogsParams): AsyncGenerator<Log>;
+    newPendingTransactions(): AsyncGenerator<Hash>;
+    syncing(): AsyncGenerator<SyncStatus>;
+  };
+}
+```
+
+## Available Events
+
+### newHeads
+
+Subscribe to new block headers as they're produced.
+
+```typescript
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+  console.log('Hash:', block.hash);
+  console.log('Timestamp:', block.timestamp);
+  console.log('Transactions:', block.transactions.length);
+}
+```
+
+**Emits:** `Block` - Full block header with transaction hashes
+
+**Usage:**
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Monitor blocks and check for transactions to specific address
+const targetAddress = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+for await (const block of provider.events.newHeads()) {
+  console.log(`Block ${block.number} with ${block.transactions.length} txs`);
+
+  // Could fetch full transactions to check recipients
+  for (const txHash of block.transactions) {
+    const tx = await provider.eth_getTransactionByHash(txHash);
+    if (!tx.error && Address.equals(tx.result.to, targetAddress)) {
+      console.log('Transaction to target address:', txHash);
+    }
+  }
+}
+```
+
+### logs
+
+Subscribe to event logs matching a filter.
+
+```typescript
+for await (const log of provider.events.logs({
+  address: contractAddress,
+  topics: [eventSignature]
+})) {
+  console.log('Log:', log);
+  console.log('Block:', log.blockNumber);
+  console.log('Topics:', log.topics);
+  console.log('Data:', log.data);
+}
+```
+
+**Parameters:**
+
+```typescript
+interface LogsParams {
+  address?: Address | Address[];     // Filter by contract address
+  topics?: (Hash | Hash[] | null)[];  // Filter by topics
+  fromBlock?: BlockTag;              // Start block (default: latest)
+  toBlock?: BlockTag;                // End block (default: latest)
+}
+```
+
+**Emits:** `Log` - Event log entry
+
+**Usage:**
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Subscribe to ERC20 Transfer events
+const tokenAddress = Address.from('0x...');
+const transferSignature = Hash.from(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+for await (const log of provider.events.logs({
+  address: tokenAddress,
+  topics: [transferSignature]
+})) {
+  // Decode transfer event
+  const from = Address.from('0x' + log.topics[1].slice(26));
+  const to = Address.from('0x' + log.topics[2].slice(26));
+  const value = log.data;
+
+  console.log(`Transfer from ${from} to ${to}: ${value}`);
+}
+```
+
+### newPendingTransactions
+
+Subscribe to new transactions entering the mempool.
+
+```typescript
+for await (const txHash of provider.events.newPendingTransactions()) {
+  console.log('Pending tx:', txHash);
+
+  // Fetch full transaction
+  const tx = await provider.eth_getTransactionByHash(txHash);
+  if (!tx.error) {
+    console.log('From:', tx.result.from);
+    console.log('To:', tx.result.to);
+  }
+}
+```
+
+**Emits:** `Hash` - Transaction hash
+
+<Warning>
+Not all providers support pending transaction subscriptions. This feature is commonly available on local development nodes (Hardhat, Anvil) but may be unavailable or rate-limited on public RPC endpoints.
+</Warning>
+
+**Usage:**
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Monitor pending transactions to a specific address
+const targetAddress = Address.from('0x...');
+
+for await (const txHash of provider.events.newPendingTransactions()) {
+  const tx = await provider.eth_getTransactionByHash(txHash);
+
+  if (!tx.error && tx.result.to && Address.equals(tx.result.to, targetAddress)) {
+    console.log('Pending transaction to target:', txHash);
+    console.log('Gas price:', tx.result.gasPrice);
+    console.log('Nonce:', tx.result.nonce);
+  }
+}
+```
+
+### syncing
+
+Subscribe to node synchronization status changes.
+
+```typescript
+for await (const status of provider.events.syncing()) {
+  if (status === false) {
+    console.log('Node is fully synced');
+  } else {
+    console.log('Syncing:', status.currentBlock, '/', status.highestBlock);
+  }
+}
+```
+
+**Emits:** `SyncStatus | false`
+
+```typescript
+interface SyncStatus {
+  startingBlock: Quantity;
+  currentBlock: Quantity;
+  highestBlock: Quantity;
+}
+```
+
+## Async Generator Pattern
+
+### Basic Consumption
+
+```typescript
+// Infinite loop - runs until manually stopped
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+}
+```
+
+### With Break Condition
+
+```typescript
+// Stop after 10 blocks
+let count = 0;
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+
+  count++;
+  if (count >= 10) {
+    break;  // Exit loop and clean up subscription
+  }
+}
+```
+
+### With Timeout
+
+```typescript
+// Monitor for 1 minute
+const timeout = Date.now() + 60000;
+
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+
+  if (Date.now() > timeout) {
+    break;
+  }
+}
+```
+
+### With Error Handling
+
+```typescript
+try {
+  for await (const block of provider.events.newHeads()) {
+    console.log('Block:', block.number);
+  }
+} catch (error) {
+  console.error('Subscription error:', error);
+}
+```
+
+## Manual Control
+
+### Collecting Events
+
+```typescript
+// Collect first 5 blocks
+const blocks: Block[] = [];
+
+for await (const block of provider.events.newHeads()) {
+  blocks.push(block);
+
+  if (blocks.length >= 5) {
+    break;
+  }
+}
+
+console.log('Collected blocks:', blocks);
+```
+
+### Conditional Processing
+
+```typescript
+// Only process blocks with transactions
+for await (const block of provider.events.newHeads()) {
+  if (block.transactions.length === 0) {
+    console.log('Empty block, skipping');
+    continue;
+  }
+
+  console.log('Processing block with', block.transactions.length, 'txs');
+  // ... process transactions
+}
+```
+
+### Parallel Processing
+
+```typescript
+// Start multiple subscriptions
+await Promise.race([
+  // Monitor blocks
+  (async () => {
+    for await (const block of provider.events.newHeads()) {
+      console.log('Block:', block.number);
+    }
+  })(),
+
+  // Monitor logs
+  (async () => {
+    for await (const log of provider.events.logs({ address: contractAddress })) {
+      console.log('Log:', log.topics[0]);
+    }
+  })(),
+
+  // Timeout after 1 minute
+  new Promise(resolve => setTimeout(resolve, 60000))
+]);
+```
+
+## Usage Patterns
+
+### Monitor Contract Events
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+async function monitorContractEvents(
+  contractAddress: Address.BrandedAddress,
+  eventSignature: Hash.BrandedHash
+) {
+  console.log('Monitoring events for', contractAddress);
+
+  for await (const log of provider.events.logs({
+    address: contractAddress,
+    topics: [eventSignature]
+  })) {
+    console.log('Event emitted:');
+    console.log('  Block:', log.blockNumber);
+    console.log('  Transaction:', log.transactionHash);
+    console.log('  Topics:', log.topics);
+    console.log('  Data:', log.data);
+
+    // Decode and process event data
+    // ...
+  }
+}
+```
+
+### Wait for Transaction Confirmation
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+async function waitForConfirmation(
+  txHash: Hash.BrandedHash,
+  confirmations: number = 3
+): Promise<void> {
+  const receipt = await provider.eth_getTransactionReceipt(txHash);
+  if (receipt.error || !receipt.result) {
+    throw new Error('Transaction not found');
+  }
+
+  const targetBlock = BigInt(receipt.result.blockNumber) + BigInt(confirmations);
+
+  for await (const block of provider.events.newHeads()) {
+    if (BigInt(block.number) >= targetBlock) {
+      console.log(`Transaction confirmed with ${confirmations} confirmations`);
+      break;
+    }
+  }
+}
+```
+
+### Block Production Monitoring
+
+```typescript
+async function monitorBlockProduction() {
+  let lastBlock = 0n;
+  let lastTime = Date.now();
+
+  for await (const block of provider.events.newHeads()) {
+    const blockNum = BigInt(block.number);
+    const now = Date.now();
+
+    if (lastBlock > 0n) {
+      const blockTime = (now - lastTime) / 1000;
+      console.log(`Block ${blockNum} in ${blockTime.toFixed(1)}s`);
+
+      if (blockTime > 15) {
+        console.warn('Slow block production!');
+      }
+    }
+
+    lastBlock = blockNum;
+    lastTime = now;
+  }
+}
+```
+
+### Event Aggregation
+
+```typescript
+interface EventStats {
+  totalBlocks: number;
+  totalTransactions: number;
+  totalEvents: number;
+}
+
+async function aggregateEvents(
+  contractAddress: Address.BrandedAddress,
+  duration: number
+): Promise<EventStats> {
+  const stats: EventStats = {
+    totalBlocks: 0,
+    totalTransactions: 0,
+    totalEvents: 0
+  };
+
+  const endTime = Date.now() + duration;
+
+  await Promise.all([
+    // Count blocks
+    (async () => {
+      for await (const block of provider.events.newHeads()) {
+        stats.totalBlocks++;
+        stats.totalTransactions += block.transactions.length;
+
+        if (Date.now() > endTime) break;
+      }
+    })(),
+
+    // Count events
+    (async () => {
+      for await (const log of provider.events.logs({ address: contractAddress })) {
+        stats.totalEvents++;
+
+        if (Date.now() > endTime) break;
+      }
+    })()
+  ]);
+
+  return stats;
+}
+```
+
+## Subscription Management
+
+### Cleanup
+
+Breaking from a `for await` loop automatically cleans up the subscription:
+
+```typescript
+// Subscription is active
+for await (const block of provider.events.newHeads()) {
+  if (shouldStop) {
+    break;  // ← Cleans up subscription automatically
+  }
+}
+// Subscription is now closed
+```
+
+### Multiple Subscriptions
+
+Each call to `provider.events.X()` creates a new subscription:
+
+```typescript
+// Subscription 1
+const subscription1 = provider.events.newHeads();
+
+// Subscription 2 (independent)
+const subscription2 = provider.events.newHeads();
+
+// Both receive events independently
+```
+
+## Transport Considerations
+
+Event subscriptions require bidirectional communication:
+
+- **WebSocket** - ✅ Full support, recommended
+- **HTTP (polling)** - ⚠️ Falls back to polling (less efficient)
+- **IPC** - ✅ Full support
+
+WebSocket is recommended for real-time event subscriptions.
+
+## Type Safety
+
+Event parameters use branded primitive types:
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Type-safe event filtering
+const address = Address.from('0x...');
+const topic = Hash.from('0x...');
+
+for await (const log of provider.events.logs({
+  address: address,  // ✅ Branded Address
+  topics: [topic]    // ✅ Branded Hash
+})) {
+  // log.address is Address
+  // log.topics[0] is Hash
+}
+```
+
+## Key Differences from EIP-1193
+
+| Feature | EIP-1193 | Voltaire Provider |
+|---------|----------|-------------------|
+| API | `provider.on('event', listener)` | `provider.events.event()` |
+| Pattern | Event emitter | Async generator |
+| Cleanup | `provider.removeListener()` | `break` from loop |
+| Backpressure | Manual | Automatic |
+| Type safety | Basic | Full with branded types |
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about method calls
+- [eth Methods](/provider/eth-methods) - Browse all eth methods
+- [Adapters](/provider/adapters) - Convert to EIP-1193 format
+- [Primitives](/primitives/address) - Learn about branded types

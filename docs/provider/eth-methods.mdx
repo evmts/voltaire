@@ -1,0 +1,554 @@
+---
+title: eth Methods
+description: Standard Ethereum JSON-RPC methods (40 methods)
+---
+
+# eth Methods
+
+The `eth` namespace provides 40 standard Ethereum JSON-RPC methods for blocks, transactions, state queries, and more.
+
+## Overview
+
+Access eth methods directly on the provider:
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+// Call eth methods
+const blockNumber = await provider.eth_blockNumber();
+const balance = await provider.eth_getBalance(address, 'latest');
+const tx = await provider.eth_getTransactionByHash(txHash);
+```
+
+## Block Methods
+
+### eth_blockNumber
+
+Get the most recent block number.
+
+```typescript
+const response = await provider.eth_blockNumber();
+// Response<Quantity>
+```
+
+### eth_getBlockByNumber
+
+Get block by number with full transactions or hashes.
+
+```typescript
+const block = await provider.eth_getBlockByNumber('latest', true);
+// Response<Block>
+```
+
+**Parameters:**
+- `blockTag: BlockTag` - Block to query
+- `fullTransactions: boolean` - true for full tx objects, false for hashes
+
+### eth_getBlockByHash
+
+Get block by hash.
+
+```typescript
+const block = await provider.eth_getBlockByHash(blockHash, false);
+// Response<Block>
+```
+
+**Parameters:**
+- `blockHash: Hash` - Block hash
+- `fullTransactions: boolean` - true for full tx objects, false for hashes
+
+### eth_getBlockReceipts
+
+Get all transaction receipts for a block.
+
+```typescript
+const receipts = await provider.eth_getBlockReceipts('latest');
+// Response<TransactionReceipt[]>
+```
+
+### eth_getBlockTransactionCountByHash
+
+Get transaction count in a block by hash.
+
+```typescript
+const count = await provider.eth_getBlockTransactionCountByHash(blockHash);
+// Response<Quantity>
+```
+
+### eth_getBlockTransactionCountByNumber
+
+Get transaction count in a block by number.
+
+```typescript
+const count = await provider.eth_getBlockTransactionCountByNumber('latest');
+// Response<Quantity>
+```
+
+### eth_getUncleCountByBlockHash
+
+Get uncle count for a block by hash.
+
+```typescript
+const count = await provider.eth_getUncleCountByBlockHash(blockHash);
+// Response<Quantity>
+```
+
+### eth_getUncleCountByBlockNumber
+
+Get uncle count for a block by number.
+
+```typescript
+const count = await provider.eth_getUncleCountByBlockNumber('latest');
+// Response<Quantity>
+```
+
+## Transaction Methods
+
+### eth_sendRawTransaction
+
+Submit a signed transaction to the network.
+
+```typescript
+const txHash = await provider.eth_sendRawTransaction(signedTx);
+// Response<Hash>
+```
+
+**Parameters:**
+- `signedTransaction: Hex` - Signed transaction bytes
+
+### eth_sendTransaction
+
+Sign and send a transaction (requires unlocked account).
+
+```typescript
+const txHash = await provider.eth_sendTransaction({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  value: Quantity.from(1000000000000000000n),
+  data: Hex.from('0x...')
+});
+// Response<Hash>
+```
+
+### eth_getTransactionByHash
+
+Get transaction by hash.
+
+```typescript
+const tx = await provider.eth_getTransactionByHash(txHash);
+// Response<Transaction>
+```
+
+### eth_getTransactionByBlockHashAndIndex
+
+Get transaction by block hash and index.
+
+```typescript
+const tx = await provider.eth_getTransactionByBlockHashAndIndex(
+  blockHash,
+  Quantity.from(0)
+);
+// Response<Transaction>
+```
+
+### eth_getTransactionByBlockNumberAndIndex
+
+Get transaction by block number and index.
+
+```typescript
+const tx = await provider.eth_getTransactionByBlockNumberAndIndex(
+  'latest',
+  Quantity.from(0)
+);
+// Response<Transaction>
+```
+
+### eth_getTransactionReceipt
+
+Get transaction receipt (includes logs and status).
+
+```typescript
+const receipt = await provider.eth_getTransactionReceipt(txHash);
+// Response<TransactionReceipt>
+```
+
+### eth_getTransactionCount
+
+Get transaction count (nonce) for an address.
+
+```typescript
+const nonce = await provider.eth_getTransactionCount(address, 'latest');
+// Response<Quantity>
+```
+
+## State Methods
+
+### eth_getBalance
+
+Get ether balance of an address.
+
+```typescript
+const balance = await provider.eth_getBalance(address, 'latest');
+// Response<Quantity>
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `blockTag: BlockTag` - Block to query
+
+### eth_getCode
+
+Get contract bytecode at an address.
+
+```typescript
+const code = await provider.eth_getCode(address, 'latest');
+// Response<Hex>
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `blockTag: BlockTag` - Block to query
+
+### eth_getStorageAt
+
+Get value from a contract storage slot.
+
+```typescript
+const value = await provider.eth_getStorageAt(
+  address,
+  Quantity.from(0),
+  'latest'
+);
+// Response<Hex>
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `position: Quantity` - Storage slot
+- `blockTag: BlockTag` - Block to query
+
+### eth_getProof
+
+Get Merkle proof for account and storage values.
+
+```typescript
+const proof = await provider.eth_getProof(
+  address,
+  [Quantity.from(0), Quantity.from(1)],
+  'latest'
+);
+// Response<Proof>
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `storageKeys: Quantity[]` - Storage slots to prove
+- `blockTag: BlockTag` - Block to query
+
+## Call Methods
+
+### eth_call
+
+Execute a read-only contract call without creating a transaction.
+
+```typescript
+const result = await provider.eth_call({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  data: Hex.from('0x70a08231...')  // balanceOf(address)
+}, 'latest');
+// Response<Hex>
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction parameters
+- `blockTag: BlockTag` - Block to execute against
+
+### eth_estimateGas
+
+Estimate gas required for a transaction.
+
+```typescript
+const gas = await provider.eth_estimateGas({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  value: Quantity.from(1000000000000000000n),
+  data: Hex.from('0x...')
+});
+// Response<Quantity>
+```
+
+### eth_createAccessList
+
+Generate an access list for a transaction.
+
+```typescript
+const accessList = await provider.eth_createAccessList({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  data: Hex.from('0x...')
+}, 'latest');
+// Response<AccessList>
+```
+
+### eth_simulateV1
+
+Simulate multiple transactions (EIP-not-yet-finalized).
+
+```typescript
+const simulation = await provider.eth_simulateV1(params);
+// Response<SimulationResult>
+```
+
+## Log & Filter Methods
+
+### eth_getLogs
+
+Query event logs matching a filter.
+
+```typescript
+const logs = await provider.eth_getLogs({
+  fromBlock: 'earliest',
+  toBlock: 'latest',
+  address: Address.from('0x...'),
+  topics: [Hash.from('0x...')]  // Event signature
+});
+// Response<Log[]>
+```
+
+### eth_newFilter
+
+Create a new log filter.
+
+```typescript
+const filterId = await provider.eth_newFilter({
+  fromBlock: 'latest',
+  toBlock: 'latest',
+  address: Address.from('0x...'),
+  topics: []
+});
+// Response<Quantity>
+```
+
+### eth_newBlockFilter
+
+Create a filter for new blocks.
+
+```typescript
+const filterId = await provider.eth_newBlockFilter();
+// Response<Quantity>
+```
+
+### eth_newPendingTransactionFilter
+
+Create a filter for pending transactions.
+
+```typescript
+const filterId = await provider.eth_newPendingTransactionFilter();
+// Response<Quantity>
+```
+
+### eth_getFilterChanges
+
+Get new entries for a filter since last poll.
+
+```typescript
+const changes = await provider.eth_getFilterChanges(filterId);
+// Response<Log[] | Hash[]>
+```
+
+### eth_getFilterLogs
+
+Get all logs matching a filter.
+
+```typescript
+const logs = await provider.eth_getFilterLogs(filterId);
+// Response<Log[]>
+```
+
+### eth_uninstallFilter
+
+Remove a filter.
+
+```typescript
+const success = await provider.eth_uninstallFilter(filterId);
+// Response<boolean>
+```
+
+## Fee Methods
+
+### eth_gasPrice
+
+Get current gas price.
+
+```typescript
+const gasPrice = await provider.eth_gasPrice();
+// Response<Quantity>
+```
+
+### eth_maxPriorityFeePerGas
+
+Get current max priority fee per gas (EIP-1559).
+
+```typescript
+const priorityFee = await provider.eth_maxPriorityFeePerGas();
+// Response<Quantity>
+```
+
+### eth_feeHistory
+
+Get historical gas fee data.
+
+```typescript
+const history = await provider.eth_feeHistory(
+  Quantity.from(10),  // Block count
+  'latest',           // Newest block
+  [25, 50, 75]       // Percentiles
+);
+// Response<FeeHistory>
+```
+
+### eth_blobBaseFee
+
+Get current blob base fee (EIP-4844).
+
+```typescript
+const blobFee = await provider.eth_blobBaseFee();
+// Response<Quantity>
+```
+
+## Network Methods
+
+### eth_chainId
+
+Get the chain ID.
+
+```typescript
+const chainId = await provider.eth_chainId();
+// Response<Quantity>
+```
+
+### eth_syncing
+
+Get sync status (false if not syncing).
+
+```typescript
+const syncStatus = await provider.eth_syncing();
+// Response<SyncStatus | false>
+```
+
+### eth_coinbase
+
+Get the coinbase address (miner/validator).
+
+```typescript
+const coinbase = await provider.eth_coinbase();
+// Response<Address>
+```
+
+## Account Methods
+
+### eth_accounts
+
+List available accounts (if wallet is connected).
+
+```typescript
+const accounts = await provider.eth_accounts();
+// Response<Address[]>
+```
+
+### eth_sign
+
+Sign data with an account (requires unlocked account).
+
+```typescript
+const signature = await provider.eth_sign(
+  Address.from('0x...'),
+  Hex.from('0x...')
+);
+// Response<Hex>
+```
+
+<Warning>
+`eth_sign` is dangerous and deprecated. Use typed signing methods like EIP-712 instead.
+</Warning>
+
+### eth_signTransaction
+
+Sign a transaction (requires unlocked account).
+
+```typescript
+const signedTx = await provider.eth_signTransaction({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  value: Quantity.from(1000000000000000000n)
+});
+// Response<Hex>
+```
+
+## Usage Patterns
+
+### Check Balance and Nonce
+
+```typescript
+const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+const [balanceRes, nonceRes] = await Promise.all([
+  provider.eth_getBalance(address, 'latest'),
+  provider.eth_getTransactionCount(address, 'latest')
+]);
+
+if (!balanceRes.error && !nonceRes.error) {
+  console.log('Balance:', balanceRes.result);
+  console.log('Nonce:', nonceRes.result);
+}
+```
+
+### Query Contract State
+
+```typescript
+// Get contract code
+const codeRes = await provider.eth_getCode(contractAddress, 'latest');
+
+if (!codeRes.error && codeRes.result !== '0x') {
+  // Contract exists, call a method
+  const result = await provider.eth_call({
+    to: contractAddress,
+    data: Hex.from('0x18160ddd')  // totalSupply()
+  }, 'latest');
+}
+```
+
+### Monitor Transaction
+
+```typescript
+// Submit transaction
+const txHashRes = await provider.eth_sendRawTransaction(signedTx);
+
+if (!txHashRes.error) {
+  // Poll for receipt
+  let receipt = null;
+  while (!receipt) {
+    const receiptRes = await provider.eth_getTransactionReceipt(txHashRes.result);
+    if (!receiptRes.error && receiptRes.result) {
+      receipt = receiptRes.result;
+      console.log('Transaction mined in block:', receipt.blockNumber);
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
+```
+
+## Type Reference
+
+All parameter and return types are defined in the [JSON-RPC types](/jsonrpc/eth) module.
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about the method-based API
+- [debug Methods](/provider/debug-methods) - Debugging methods
+- [engine Methods](/provider/engine-methods) - Consensus layer methods
+- [Events](/provider/events) - Subscribe to blockchain events

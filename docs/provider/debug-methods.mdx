@@ -1,0 +1,369 @@
+---
+title: debug Methods
+description: Debugging and development methods (5 methods)
+---
+
+# debug Methods
+
+The `debug` namespace provides 5 debugging and development methods for transaction tracing and block analysis.
+
+<Warning>
+Debug methods are not part of the standard JSON-RPC spec and may not be available on all nodes. They are typically only enabled on development and testing nodes.
+</Warning>
+
+## Overview
+
+Access debug methods directly on the provider:
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const txHash = Hash.from('0x...');
+
+// Trace transaction execution
+const trace = await provider.debug_traceTransaction(txHash, {
+  tracer: 'callTracer'
+});
+```
+
+## Transaction Tracing
+
+### debug_traceTransaction
+
+Trace the execution of a transaction, returning detailed information about each step.
+
+```typescript
+const trace = await provider.debug_traceTransaction(txHash, {
+  tracer: 'callTracer',
+  timeout: '10s'
+});
+// Response<TransactionTrace>
+```
+
+**Parameters:**
+- `transactionHash: Hash` - Transaction to trace
+- `options?: TraceOptions` - Tracing configuration
+
+**Common Tracers:**
+- `callTracer` - Call tree with gas and value transfers
+- `prestateTracer` - State before transaction execution
+- `4byteTracer` - Count of 4-byte function selectors
+- `opcodeTracer` - Full opcode-level trace
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const txHash = Hash.from('0xabc123...');
+
+// Call tracer - see internal calls
+const callTrace = await provider.debug_traceTransaction(txHash, {
+  tracer: 'callTracer'
+});
+
+if (!callTrace.error) {
+  console.log('Calls:', callTrace.result.calls);
+  console.log('Gas used:', callTrace.result.gasUsed);
+}
+
+// Opcode tracer - detailed execution
+const opcodeTrace = await provider.debug_traceTransaction(txHash, {
+  tracer: 'opcodeTracer',
+  enableMemory: true,
+  enableReturnData: true
+});
+```
+
+### debug_traceBlockByNumber
+
+Trace all transactions in a block by block number.
+
+```typescript
+const traces = await provider.debug_traceBlockByNumber('latest', {
+  tracer: 'callTracer'
+});
+// Response<TransactionTrace[]>
+```
+
+**Parameters:**
+- `blockTag: BlockTag` - Block to trace
+- `options?: TraceOptions` - Tracing configuration
+
+**Example:**
+
+```typescript
+// Trace all transactions in latest block
+const traces = await provider.debug_traceBlockByNumber('latest', {
+  tracer: 'callTracer'
+});
+
+if (!traces.error) {
+  traces.result.forEach((trace, i) => {
+    console.log(`Transaction ${i}:`, trace.result);
+  });
+}
+```
+
+### debug_traceBlockByHash
+
+Trace all transactions in a block by block hash.
+
+```typescript
+const traces = await provider.debug_traceBlockByHash(blockHash, {
+  tracer: 'prestateTracer'
+});
+// Response<TransactionTrace[]>
+```
+
+**Parameters:**
+- `blockHash: Hash` - Block hash to trace
+- `options?: TraceOptions` - Tracing configuration
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const blockHash = Hash.from('0xdef456...');
+
+const traces = await provider.debug_traceBlockByHash(blockHash, {
+  tracer: 'prestateTracer'
+});
+
+if (!traces.error) {
+  console.log('Pre-state:', traces.result[0].result);
+}
+```
+
+### debug_traceCall
+
+Trace a call without creating a transaction (like eth_call with tracing).
+
+```typescript
+const trace = await provider.debug_traceCall({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  data: Hex.from('0x...')
+}, 'latest', {
+  tracer: 'callTracer'
+});
+// Response<TransactionTrace>
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction parameters
+- `blockTag: BlockTag` - Block to execute against
+- `options?: TraceOptions` - Tracing configuration
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Trace a call before submitting
+const trace = await provider.debug_traceCall({
+  from: Address.from('0x742d35...'),
+  to: Address.from('0xcontract...'),
+  data: Hex.from('0xa9059cbb...')  // transfer(address,uint256)
+}, 'latest', {
+  tracer: 'callTracer'
+});
+
+if (!trace.error) {
+  // Inspect internal calls before submitting transaction
+  console.log('Will make calls:', trace.result.calls);
+}
+```
+
+## Block Inspection
+
+### debug_getRawBlock
+
+Get the RLP-encoded raw block data.
+
+```typescript
+const rawBlock = await provider.debug_getRawBlock('latest');
+// Response<Hex>
+```
+
+**Parameters:**
+- `blockTag: BlockTag` - Block to retrieve
+
+**Example:**
+
+```typescript
+// Get raw block bytes
+const rawBlock = await provider.debug_getRawBlock('latest');
+
+if (!rawBlock.error) {
+  console.log('RLP-encoded block:', rawBlock.result);
+  // Can decode with RLP module
+}
+```
+
+## Trace Options
+
+Common options for tracing methods:
+
+```typescript
+interface TraceOptions {
+  // Built-in tracer name
+  tracer?: 'callTracer' | 'prestateTracer' | '4byteTracer' | 'opcodeTracer';
+
+  // Custom JavaScript tracer code
+  tracerConfig?: {
+    onlyTopCall?: boolean;
+    withLog?: boolean;
+  };
+
+  // Timeout for tracing operation
+  timeout?: string;  // e.g., '10s', '1m'
+
+  // Include memory in trace
+  enableMemory?: boolean;
+
+  // Include return data
+  enableReturnData?: boolean;
+
+  // Disable storage
+  disableStorage?: boolean;
+
+  // Disable stack
+  disableStack?: boolean;
+}
+```
+
+## Usage Patterns
+
+### Debug Failed Transaction
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+async function debugFailedTx(txHash: Hash.BrandedHash) {
+  // Get transaction receipt
+  const receipt = await provider.eth_getTransactionReceipt(txHash);
+
+  if (!receipt.error && receipt.result.status === '0x0') {
+    // Transaction reverted, trace it
+    const trace = await provider.debug_traceTransaction(txHash, {
+      tracer: 'callTracer'
+    });
+
+    if (!trace.error) {
+      console.log('Revert reason:', trace.result.error);
+      console.log('Failed at:', trace.result.calls);
+    }
+  }
+}
+```
+
+### Analyze Gas Usage
+
+```typescript
+async function analyzeGas(txHash: Hash.BrandedHash) {
+  const trace = await provider.debug_traceTransaction(txHash, {
+    tracer: 'callTracer'
+  });
+
+  if (!trace.error) {
+    const result = trace.result;
+    console.log('Total gas:', result.gasUsed);
+
+    // Show gas for each call
+    result.calls?.forEach(call => {
+      console.log(`${call.type} to ${call.to}: ${call.gasUsed} gas`);
+    });
+  }
+}
+```
+
+### Test Before Sending
+
+```typescript
+async function testTransaction(params: CallParams) {
+  // Trace the call first
+  const trace = await provider.debug_traceCall(params, 'latest', {
+    tracer: 'callTracer'
+  });
+
+  if (!trace.error) {
+    if (trace.result.error) {
+      console.error('Transaction would fail:', trace.result.error);
+      return false;
+    }
+
+    console.log('Transaction would succeed');
+    console.log('Gas estimate:', trace.result.gasUsed);
+    return true;
+  }
+
+  return false;
+}
+```
+
+### Compare State Changes
+
+```typescript
+async function compareStateChanges(txHash: Hash.BrandedHash) {
+  // Get pre-state
+  const preTrace = await provider.debug_traceTransaction(txHash, {
+    tracer: 'prestateTracer'
+  });
+
+  if (!preTrace.error) {
+    const preState = preTrace.result;
+
+    // Get transaction receipt for post-state
+    const receipt = await provider.eth_getTransactionReceipt(txHash);
+
+    console.log('Accounts modified:', Object.keys(preState));
+  }
+}
+```
+
+## Node Requirements
+
+Debug methods require specific node configuration:
+
+**Geth:**
+```bash
+geth --http --http.api="eth,debug,net,web3"
+```
+
+**Erigon:**
+```bash
+erigon --http --http.api="eth,debug,trace,net,web3"
+```
+
+**Hardhat:**
+```javascript
+// Enabled by default in Hardhat Network
+```
+
+**Anvil:**
+```bash
+anvil --host 0.0.0.0
+# Debug methods enabled by default
+```
+
+## Performance Considerations
+
+- **Tracing is expensive** - Can take several seconds for complex transactions
+- **Use timeouts** - Prevent hanging on long traces
+- **Disable unused features** - `disableMemory`, `disableStack` for faster traces
+- **Production nodes** - Usually disable debug methods for security
+
+## Type Reference
+
+All parameter and return types are defined in the [JSON-RPC types](/jsonrpc/debug) module.
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about the method-based API
+- [eth Methods](/provider/eth-methods) - Standard Ethereum methods
+- [engine Methods](/provider/engine-methods) - Consensus layer methods
+- [Events](/provider/events) - Subscribe to blockchain events

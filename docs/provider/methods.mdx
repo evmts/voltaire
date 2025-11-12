@@ -1,0 +1,300 @@
+---
+title: Method API
+description: Direct method calls with branded primitive types
+---
+
+# Method API
+
+Provider exposes JSON-RPC methods as direct function calls with strongly-typed branded primitive parameters.
+
+## Overview
+
+Instead of using a generic `request()` function, Provider gives you direct access to all 65 JSON-RPC methods:
+
+```typescript
+// Direct method calls
+await provider.eth_blockNumber();
+await provider.eth_getBalance(address, 'latest');
+await provider.debug_traceTransaction(hash, options);
+```
+
+## Method Pattern
+
+All methods follow this pattern:
+
+```typescript
+provider.methodName(params, options?) → Promise<Response<T>>
+```
+
+- **`methodName`** - The JSON-RPC method (e.g., `eth_call`, `eth_getBalance`)
+- **`params`** - Branded primitive types (Address, Hash, Hex, etc.)
+- **`options`** - Optional request configuration
+- **Returns** - Promise resolving to a Response containing result or error
+
+## Parameters
+
+### Branded Primitive Types
+
+All parameters use Voltaire's branded primitive types for compile-time safety:
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
+
+// Construct branded types
+const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const blockHash = Hash.from('0x...');
+const data = Hex.from('0x70a08231...');
+
+// Use in method calls - type-checked at compile time
+const balance = await provider.eth_getBalance(address, 'latest');
+const block = await provider.eth_getBlockByHash(blockHash, true);
+```
+
+### BlockTag Parameter
+
+Many methods accept a `BlockTag` parameter to specify block context:
+
+```typescript
+type BlockTag =
+  | 'latest'      // Most recent block
+  | 'earliest'    // Genesis block
+  | 'pending'     // Pending block
+  | 'safe'        // Safe head block
+  | 'finalized'   // Finalized block
+  | Quantity;     // Specific block number
+
+// Usage
+await provider.eth_getBalance(address, 'latest');
+await provider.eth_getBalance(address, 'finalized');
+await provider.eth_getBalance(address, Quantity.from(18000000n));
+```
+
+### Request Options
+
+Optional configuration for method calls:
+
+```typescript
+interface RequestOptions {
+  timeout?: number;      // Request timeout in ms
+  retry?: number;        // Number of retries
+  retryDelay?: number;   // Delay between retries in ms
+}
+
+// Usage
+const result = await provider.eth_call(params, {
+  timeout: 5000,
+  retry: 3,
+  retryDelay: 1000
+});
+```
+
+## Response Handling
+
+### Response Structure
+
+Methods return a `Response<T>` that contains either a result or error:
+
+```typescript
+type Response<T> =
+  | { result: T; error?: never }
+  | { result?: never; error: RpcError };
+
+interface RpcError {
+  code: number;
+  message: string;
+  data?: unknown;
+}
+```
+
+### Checking Results
+
+Always check for errors before using the result:
+
+```typescript
+const response = await provider.eth_call(params);
+
+if (response.error) {
+  console.error('RPC error:', response.error.code, response.error.message);
+  return;
+}
+
+// Safe to use result
+const result = response.result;
+console.log('Call result:', result);
+```
+
+### Type Inference
+
+Return types are automatically inferred from the method signature:
+
+```typescript
+// TypeScript knows blockNumber is Response<Quantity>
+const blockNumber = await provider.eth_blockNumber();
+
+// TypeScript knows balance is Response<Quantity>
+const balance = await provider.eth_getBalance(address, 'latest');
+
+// TypeScript knows callResult is Response<Hex>
+const callResult = await provider.eth_call(params);
+```
+
+## Common Methods
+
+### Read Operations
+
+```typescript
+// Get block number
+const blockNum = await provider.eth_blockNumber();
+
+// Get balance
+const balance = await provider.eth_getBalance(address, 'latest');
+
+// Get transaction count (nonce)
+const nonce = await provider.eth_getTransactionCount(address, 'latest');
+
+// Get contract code
+const code = await provider.eth_getCode(address, 'latest');
+
+// Get storage slot
+const storage = await provider.eth_getStorageAt(address, slot, 'latest');
+```
+
+### Contract Calls
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Execute read-only contract call
+const result = await provider.eth_call({
+  to: Address.from('0x...'),
+  data: Hex.from('0x70a08231...')  // Function selector + encoded params
+}, 'latest');
+
+// Estimate gas for transaction
+const gasEstimate = await provider.eth_estimateGas({
+  from: Address.from('0x...'),
+  to: Address.from('0x...'),
+  value: Quantity.from(1000000000000000000n),  // 1 ETH in wei
+  data: Hex.from('0x...')
+});
+```
+
+### Transaction Operations
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Submit signed transaction
+const txHash = await provider.eth_sendRawTransaction(
+  Hex.from('0x...')  // Signed transaction bytes
+);
+
+// Get transaction by hash
+const tx = await provider.eth_getTransactionByHash(
+  Hash.from('0x...')
+);
+
+// Get transaction receipt
+const receipt = await provider.eth_getTransactionReceipt(
+  Hash.from('0x...')
+);
+```
+
+### Block Operations
+
+```typescript
+// Get block by number
+const block = await provider.eth_getBlockByNumber('latest', true);
+
+// Get block by hash
+const block = await provider.eth_getBlockByHash(blockHash, false);
+
+// Get uncle count
+const uncleCount = await provider.eth_getUncleCountByBlockNumber('latest');
+```
+
+### Log Queries
+
+```typescript
+// Query logs
+const logs = await provider.eth_getLogs({
+  fromBlock: 'earliest',
+  toBlock: 'latest',
+  address: Address.from('0x...'),
+  topics: [Hash.from('0x...')]
+});
+```
+
+## Method Categories
+
+Methods are organized into three namespaces:
+
+### eth Namespace (40 methods)
+
+Standard Ethereum operations for blocks, transactions, state, filters, and gas estimation.
+
+[Browse eth methods →](/provider/eth-methods)
+
+### debug Namespace (5 methods)
+
+Debugging and development methods for transaction tracing and block analysis.
+
+[Browse debug methods →](/provider/debug-methods)
+
+### engine Namespace (20 methods)
+
+Consensus layer integration methods for the Engine API.
+
+[Browse engine methods →](/provider/engine-methods)
+
+## Error Codes
+
+Common JSON-RPC error codes:
+
+| Code | Message | Description |
+|------|---------|-------------|
+| `-32700` | Parse error | Invalid JSON |
+| `-32600` | Invalid request | Missing required fields |
+| `-32601` | Method not found | Method doesn't exist |
+| `-32602` | Invalid params | Wrong parameter types |
+| `-32603` | Internal error | Server-side error |
+| `3` | Execution reverted | Contract execution failed |
+
+## Type Safety Benefits
+
+Using branded primitives catches errors at compile time:
+
+```typescript
+// ❌ Compile error: string not assignable to Address
+await provider.eth_getBalance('0x742d35...', 'latest');
+
+// ✅ Correct: use branded Address
+await provider.eth_getBalance(Address.from('0x742d35...'), 'latest');
+
+// ❌ Compile error: can't mix Hash and Address
+await provider.eth_getBlockByHash(address, true);
+
+// ✅ Correct: use proper type
+await provider.eth_getBlockByHash(hash, true);
+```
+
+## Best Practices
+
+1. **Always check for errors** before using results
+2. **Use branded types** for all parameters
+3. **Reuse type instances** - don't reconstruct on every call
+4. **Set appropriate timeouts** for long-running operations
+5. **Handle network failures** with retry logic
+
+## Next Steps
+
+- [eth Methods](/provider/eth-methods) - All 40 eth namespace methods
+- [debug Methods](/provider/debug-methods) - All 5 debug namespace methods
+- [engine Methods](/provider/engine-methods) - All 20 engine namespace methods
+- [Events](/provider/events) - Subscribe to blockchain events
+- [Adapters](/provider/adapters) - Convert to other provider formats

@@ -1,0 +1,473 @@
+---
+title: engine Methods
+description: Consensus layer integration methods (20 methods)
+---
+
+# engine Methods
+
+The `engine` namespace provides 20 methods for consensus layer integration via the Engine API.
+
+<Note>
+The Engine API is used for communication between execution layer (EL) and consensus layer (CL) clients in post-merge Ethereum. Most application developers won't interact with these methods directly.
+</Note>
+
+## Overview
+
+Access engine methods directly on the provider:
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Validate payload (consensus layer → execution layer)
+const response = await provider.engine_newPayloadV3(payload);
+
+// Get payload for block production (execution layer → consensus layer)
+const payload = await provider.engine_getPayloadV3(payloadId);
+```
+
+## Engine API Context
+
+The Engine API implements the communication protocol between:
+
+- **Consensus Layer (CL)** - Beacon chain, validators, attestations
+- **Execution Layer (EL)** - Transaction execution, state, EVM
+
+**Key Concepts:**
+- **Payload** - Block execution data (transactions, state root, receipts root)
+- **Forkchoice** - Head, safe, and finalized block hashes
+- **Payload ID** - Identifier for a pending payload being built
+
+## Payload Methods
+
+### engine_newPayloadV1
+
+Verify and execute a payload (pre-Shapella).
+
+```typescript
+const result = await provider.engine_newPayloadV1(payload);
+// Response<PayloadStatus>
+```
+
+### engine_newPayloadV2
+
+Verify and execute a payload (Shapella/Shanghai).
+
+```typescript
+const result = await provider.engine_newPayloadV2(payload);
+// Response<PayloadStatus>
+```
+
+### engine_newPayloadV3
+
+Verify and execute a payload (Cancun - includes blobs).
+
+```typescript
+const result = await provider.engine_newPayloadV3(
+  payload,
+  expectedBlobVersionedHashes,
+  parentBeaconBlockRoot
+);
+// Response<PayloadStatus>
+```
+
+**Parameters:**
+- `payload: ExecutionPayload` - Block execution data
+- `expectedBlobVersionedHashes: Hash[]` - Blob KZG commitments (Cancun)
+- `parentBeaconBlockRoot: Hash` - Parent beacon block root (Cancun)
+
+**Payload Status:**
+- `VALID` - Payload executed successfully
+- `INVALID` - Payload execution failed
+- `SYNCING` - Node is syncing, cannot validate yet
+- `ACCEPTED` - Optimistically accepted (pre-finality)
+
+**Example:**
+
+```typescript
+const result = await provider.engine_newPayloadV3(payload, blobHashes, beaconRoot);
+
+if (!result.error) {
+  switch (result.result.status) {
+    case 'VALID':
+      console.log('Payload valid, hash:', result.result.latestValidHash);
+      break;
+    case 'INVALID':
+      console.error('Invalid payload:', result.result.validationError);
+      break;
+    case 'SYNCING':
+      console.log('Node syncing, try again later');
+      break;
+  }
+}
+```
+
+## Forkchoice Methods
+
+### engine_forkchoiceUpdatedV1
+
+Update forkchoice state and optionally start building a new payload (pre-Shapella).
+
+```typescript
+const result = await provider.engine_forkchoiceUpdatedV1(
+  forkchoiceState,
+  payloadAttributes
+);
+// Response<ForkchoiceUpdateResult>
+```
+
+### engine_forkchoiceUpdatedV2
+
+Update forkchoice state (Shapella/Shanghai).
+
+```typescript
+const result = await provider.engine_forkchoiceUpdatedV2(
+  forkchoiceState,
+  payloadAttributes
+);
+// Response<ForkchoiceUpdateResult>
+```
+
+### engine_forkchoiceUpdatedV3
+
+Update forkchoice state (Cancun).
+
+```typescript
+const result = await provider.engine_forkchoiceUpdatedV3(
+  forkchoiceState,
+  payloadAttributes
+);
+// Response<ForkchoiceUpdateResult>
+```
+
+**Parameters:**
+- `forkchoiceState: ForkchoiceState` - Head, safe, and finalized hashes
+- `payloadAttributes?: PayloadAttributes` - Optional payload building parameters
+
+**Forkchoice State:**
+```typescript
+interface ForkchoiceState {
+  headBlockHash: Hash;       // Current head
+  safeBlockHash: Hash;       // Safe (justified) block
+  finalizedBlockHash: Hash;  // Finalized block
+}
+```
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const forkchoiceState = {
+  headBlockHash: Hash.from('0xabc...'),
+  safeBlockHash: Hash.from('0xdef...'),
+  finalizedBlockHash: Hash.from('0x123...')
+};
+
+// Update forkchoice
+const result = await provider.engine_forkchoiceUpdatedV3(forkchoiceState);
+
+if (!result.error && result.result.payloadStatus.status === 'VALID') {
+  console.log('Forkchoice updated successfully');
+}
+
+// Update forkchoice and start building payload
+const buildResult = await provider.engine_forkchoiceUpdatedV3(
+  forkchoiceState,
+  {
+    timestamp: Quantity.from(Date.now() / 1000),
+    prevRandao: Hash.from('0x...'),
+    suggestedFeeRecipient: Address.from('0x...')
+  }
+);
+
+if (!buildResult.error && buildResult.result.payloadId) {
+  console.log('Started building payload:', buildResult.result.payloadId);
+}
+```
+
+## Payload Building Methods
+
+### engine_getPayloadV1
+
+Retrieve a built payload by ID (pre-Shapella).
+
+```typescript
+const payload = await provider.engine_getPayloadV1(payloadId);
+// Response<ExecutionPayload>
+```
+
+### engine_getPayloadV2
+
+Retrieve a built payload by ID (Shapella/Shanghai).
+
+```typescript
+const payload = await provider.engine_getPayloadV2(payloadId);
+// Response<ExecutionPayloadWithValue>
+```
+
+### engine_getPayloadV3
+
+Retrieve a built payload by ID (Cancun - includes blobs).
+
+```typescript
+const payload = await provider.engine_getPayloadV3(payloadId);
+// Response<ExecutionPayloadWithBlobs>
+```
+
+**Parameters:**
+- `payloadId: Hex` - Payload identifier from forkchoiceUpdated
+
+**Example:**
+
+```typescript
+// Start building payload
+const forkchoiceResult = await provider.engine_forkchoiceUpdatedV3(
+  forkchoiceState,
+  payloadAttributes
+);
+
+if (!forkchoiceResult.error && forkchoiceResult.result.payloadId) {
+  const payloadId = forkchoiceResult.result.payloadId;
+
+  // Wait for payload to build (typically 0-12 seconds)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Retrieve built payload
+  const payloadResult = await provider.engine_getPayloadV3(payloadId);
+
+  if (!payloadResult.error) {
+    console.log('Payload:', payloadResult.result.executionPayload);
+    console.log('Block value:', payloadResult.result.blockValue);
+    console.log('Blobs:', payloadResult.result.blobsBundle);
+  }
+}
+```
+
+## Blob Methods
+
+### engine_getBlobsV1
+
+Retrieve blob sidecars for a list of blob versioned hashes.
+
+```typescript
+const blobs = await provider.engine_getBlobsV1(blobVersionedHashes);
+// Response<BlobAndProof[]>
+```
+
+**Parameters:**
+- `blobVersionedHashes: Hash[]` - KZG commitment hashes
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Get blobs for specific commitments
+const blobHashes = [
+  Hash.from('0x01abc...'),  // Blob versioned hash (sha256(kzg_commitment)[0] = 0x01)
+  Hash.from('0x01def...')
+];
+
+const blobsResult = await provider.engine_getBlobsV1(blobHashes);
+
+if (!blobsResult.error) {
+  blobsResult.result.forEach((blobData, i) => {
+    console.log(`Blob ${i}:`);
+    console.log('  Data:', blobData.blob);
+    console.log('  Commitment:', blobData.commitment);
+    console.log('  Proof:', blobData.proof);
+  });
+}
+```
+
+## Exchange Capabilities
+
+### engine_exchangeCapabilities
+
+Exchange supported Engine API capabilities between CL and EL.
+
+```typescript
+const capabilities = await provider.engine_exchangeCapabilities([
+  'engine_newPayloadV3',
+  'engine_forkchoiceUpdatedV3',
+  'engine_getPayloadV3'
+]);
+// Response<string[]>
+```
+
+**Example:**
+
+```typescript
+// Declare CL capabilities
+const clCapabilities = [
+  'engine_newPayloadV3',
+  'engine_forkchoiceUpdatedV3',
+  'engine_getPayloadV3',
+  'engine_getBlobsV1'
+];
+
+const result = await provider.engine_exchangeCapabilities(clCapabilities);
+
+if (!result.error) {
+  console.log('EL supports:', result.result);
+
+  // Check for specific capability
+  const supportsCancun = result.result.includes('engine_newPayloadV3');
+  console.log('Cancun support:', supportsCancun);
+}
+```
+
+## Transition Methods
+
+### engine_exchangeTransitionConfigurationV1
+
+Exchange transition configuration (for merge preparation).
+
+```typescript
+const config = await provider.engine_exchangeTransitionConfigurationV1({
+  terminalTotalDifficulty: Quantity.from(58750000000000000000000n),
+  terminalBlockHash: Hash.from('0x0000000000000000000000000000000000000000000000000000000000000000'),
+  terminalBlockNumber: Quantity.from(0)
+});
+// Response<TransitionConfiguration>
+```
+
+**Note:** This method was used during the merge transition and is rarely needed in post-merge operations.
+
+## Block Validation Methods
+
+### engine_getPayloadBodiesByHashV1
+
+Get block bodies (transactions only) by block hashes.
+
+```typescript
+const bodies = await provider.engine_getPayloadBodiesByHashV1([
+  Hash.from('0xabc...'),
+  Hash.from('0xdef...')
+]);
+// Response<ExecutionPayloadBody[]>
+```
+
+### engine_getPayloadBodiesByRangeV1
+
+Get block bodies for a range of block numbers.
+
+```typescript
+const bodies = await provider.engine_getPayloadBodiesByRangeV1(
+  Quantity.from(1000000),  // Start block
+  Quantity.from(100)       // Count
+);
+// Response<ExecutionPayloadBody[]>
+```
+
+**Example:**
+
+```typescript
+// Get last 10 block bodies
+const latestBlock = await provider.eth_blockNumber();
+
+if (!latestBlock.error) {
+  const start = latestBlock.result - 10n;
+  const bodies = await provider.engine_getPayloadBodiesByRangeV1(
+    Quantity.from(start),
+    Quantity.from(10)
+  );
+
+  if (!bodies.error) {
+    bodies.result.forEach((body, i) => {
+      console.log(`Block ${start + BigInt(i)}:`, body.transactions.length, 'txs');
+    });
+  }
+}
+```
+
+## Usage Patterns
+
+### Block Production Flow
+
+```typescript
+// 1. CL notifies EL of new forkchoice and requests payload
+const forkchoiceResult = await provider.engine_forkchoiceUpdatedV3(
+  {
+    headBlockHash: newHead,
+    safeBlockHash: safeBlock,
+    finalizedBlockHash: finalizedBlock
+  },
+  {
+    timestamp: Quantity.from(nextSlotTime),
+    prevRandao: randomness,
+    suggestedFeeRecipient: validatorFeeRecipient,
+    withdrawals: withdrawalsList
+  }
+);
+
+// 2. EL returns payload ID
+const payloadId = forkchoiceResult.result.payloadId;
+
+// 3. CL waits for payload to build
+await sleep(4000);  // 4 second block time
+
+// 4. CL retrieves built payload
+const payloadResult = await provider.engine_getPayloadV3(payloadId);
+const payload = payloadResult.result.executionPayload;
+
+// 5. CL proposes block to beacon chain
+// ... beacon chain operations ...
+
+// 6. When block is attested, CL notifies EL to import
+const validationResult = await provider.engine_newPayloadV3(
+  payload,
+  blobVersionedHashes,
+  parentBeaconBlockRoot
+);
+
+// 7. CL updates forkchoice to make new block head
+await provider.engine_forkchoiceUpdatedV3({
+  headBlockHash: payload.blockHash,
+  safeBlockHash: safeBlock,
+  finalizedBlockHash: finalizedBlock
+});
+```
+
+## Version Compatibility
+
+| Method Version | Fork | Key Features |
+|---------------|------|--------------|
+| V1 | Bellatrix (Merge) | Basic Engine API |
+| V2 | Shapella (Shanghai) | Withdrawals support |
+| V3 | Cancun (Dencun) | Blob transactions (EIP-4844) |
+
+Always use the latest version compatible with your target fork.
+
+## Error Handling
+
+Engine API methods return detailed error information:
+
+```typescript
+const result = await provider.engine_newPayloadV3(payload, blobHashes, beaconRoot);
+
+if (result.error) {
+  console.error('RPC error:', result.error.code, result.error.message);
+} else if (result.result.status === 'INVALID') {
+  console.error('Validation error:', result.result.validationError);
+  console.error('Latest valid hash:', result.result.latestValidHash);
+}
+```
+
+## Type Reference
+
+All parameter and return types are defined in the [JSON-RPC types](/jsonrpc/engine) module.
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about the method-based API
+- [eth Methods](/provider/eth-methods) - Standard Ethereum methods
+- [debug Methods](/provider/debug-methods) - Debugging methods
+- [Events](/provider/events) - Subscribe to blockchain events
+
+## Resources
+
+- [Engine API Specification](https://github.com/ethereum/execution-apis/tree/main/src/engine)
+- [Merge Documentation](https://ethereum.org/en/roadmap/merge/)
+- [EIP-4844 (Cancun/Dencun)](https://eips.ethereum.org/EIPS/eip-4844)
