@@ -84,7 +84,7 @@ claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
       </div>
     </div>
 
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
@@ -129,6 +129,59 @@ claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
           </div>
         </a>
       </div>
+    </div>
+
+    <div style={{ maxWidth: '1000px', margin: '5rem auto 0' }}>
+      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Try It Now</h2>
+      <p style={{ fontSize: '1.1rem', color: '#999', textAlign: 'center', marginBottom: '2rem', maxWidth: '700px', margin: '0 auto 2rem' }}>
+        Generate an Ethereum address from a random private key. Click the "Generate Address" button to see Voltaire in action.
+      </p>
+      <iframe
+        id="voltaire-sandbox"
+        style={{ width: '100%', height: '600px', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', overflow: 'hidden' }}
+        title="Voltaire Address Demo"
+        allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+        sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+      ></iframe>
+      <script dangerouslySetInnerHTML={{__html: `
+        (function() {
+          function init() {
+            const iframe = document.getElementById('voltaire-sandbox');
+            if (!iframe) {
+              setTimeout(init, 50);
+              return;
+            }
+
+            const baseUrl = 'https://codesandbox.io/embed/wclsxd?view=editor+%2B+preview&module=%2Fsrc%2Findex.mjs&hidenavigation=1';
+
+            function getTheme() {
+              const storedDarkMode = localStorage.getItem('isDarkMode');
+              return storedDarkMode === 'true' ? 'dark' : 'light';
+            }
+
+            iframe.src = baseUrl + '&theme=' + getTheme();
+
+            const observer = new MutationObserver(() => {
+              const theme = getTheme();
+              const currentTheme = iframe.src.includes('theme=light') ? 'light' : 'dark';
+              if (currentTheme !== theme) {
+                iframe.src = baseUrl + '&theme=' + theme;
+              }
+            });
+
+            observer.observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ['class', 'data-theme']
+            });
+          }
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+          } else {
+            init();
+          }
+        })();
+      `}}></script>
     </div>
   </div>
 
