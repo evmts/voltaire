@@ -31,7 +31,7 @@ descending.forEach((addr) => {});
 const addresses = [
 	Address.zero(),
 	Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-	new Address(0n),
+	Address(0n),
 	Address.fromHex("0xa0Cf798816D4b9b9866b5330EEa46a18382f251e"),
 	Address.fromHex("0x0000000000000000000000000000000000000000"),
 ];
@@ -41,15 +41,15 @@ const nonZero = addresses.filter((addr) => !addr.isZero());
 nonZero.forEach((addr) => {});
 
 const allAddresses = [
-	new Address(10n),
-	new Address(50n),
-	new Address(100n),
-	new Address(200n),
-	new Address(500n),
+	Address(10n),
+	Address(50n),
+	Address(100n),
+	Address(200n),
+	Address(500n),
 ];
 
-const min = new Address(50n);
-const max = new Address(200n);
+const min = Address(50n);
+const max = Address(200n);
 
 const inRange = allAddresses.filter(
 	(addr) => !addr.lessThan(min) && !addr.greaterThan(max),
@@ -117,12 +117,12 @@ for (const [byte, addrs] of grouped.entries()) {
 }
 
 const manyAddresses = [
-	new Address(100n),
-	new Address(500n),
-	new Address(50n),
-	new Address(1000n),
-	new Address(200n),
-	new Address(750n),
+	Address(100n),
+	Address(500n),
+	Address(50n),
+	Address(1000n),
+	Address(200n),
+	Address(750n),
 ];
 
 const topN = 3;

@@ -11,7 +11,7 @@
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // From hex string (most common)
-const hash1 = new Hash(
+const hash1 = Hash(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 );
 

@@ -3,14 +3,13 @@
 
 // SNIPPET:START
 import { Address } from '../../src/primitives/Address/index.js';
-import { Hex } from '../../src/primitives/Hex/index.js';
 
 // Lowercase address (no checksum)
-const lowercaseAddr = '0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed';
+const lowercaseAddr = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed';
 
 // Convert to checksummed format
 const addr = Address.from(lowercaseAddr);
-const checksummed = Hex.fromBytes(addr);
+const checksummed = Address.toChecksummed(addr);
 console.log('Checksummed:', checksummed);
 
 // Verify the checksum is valid
@@ -27,7 +26,7 @@ import { strict as assert } from 'node:assert';
 
 assert.equal(Address.isValidChecksum(checksummed), true);
 assert.equal(checksummed.toLowerCase(), lowercaseAddr.toLowerCase());
-assert.equal(checksummed, '0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed');
+assert.equal(checksummed, '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed');
 
 console.log('✅ All assertions passed');
 process.exit(0);

@@ -10,7 +10,7 @@
 import { Address } from "../../../src/primitives/Address/index.js";
 
 // From hex string (most common)
-const addr1 = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // From number/bigint (takes lower 160 bits)
 const addr2 = Address.fromNumber(69n);
@@ -23,7 +23,7 @@ const addr3 = Address.fromBytes(bytes);
 // Zero address
 const zeroAddr = Address.zero();
 
-const addr = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 const validAddr = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
 const invalidAddr = "0x742d35Cc"; // Too short
@@ -40,6 +40,6 @@ processValue("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 processValue(new Uint8Array(20));
 processValue(new Uint8Array(32)); // Wrong length
 
-const addrA = new Address(100n);
-const addrB = new Address(100n);
-const addrC = new Address(200n);
+const addrA = Address(100n);
+const addrB = Address(100n);
+const addrC = Address(200n);
