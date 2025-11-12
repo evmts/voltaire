@@ -1,0 +1,35 @@
+---
+title: "EIP-55 Checksum Address"
+description: "Convert addresses to EIP-55 checksummed format for safer usage"
+---
+
+Convert addresses to EIP-55 checksummed format for safer usage
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+
+// Lowercase address (no checksum)
+const lowercaseAddr = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed';
+
+// Convert to checksummed format
+const addr = Address.from(lowercaseAddr);
+const checksummed = Address.toChecksummed(addr);
+console.log('Checksummed:', checksummed);
+
+// Verify the checksum is valid
+const isValid = Address.isValidChecksum(checksummed);
+console.log('Is valid checksum:', isValid);
+
+// Mixed case is preserved for checksum
+console.log('Original:', lowercaseAddr);
+console.log('Result:  ', checksummed);
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/addresses/checksum-address.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/addresses/checksum-address.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

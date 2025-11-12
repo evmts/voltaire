@@ -1,0 +1,40 @@
+---
+title: "Compare and Sort Addresses"
+description: "Compare Ethereum addresses for equality and sorting"
+---
+
+Compare Ethereum addresses for equality and sorting
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+
+// Create some addresses
+const addr1 = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3');
+const addr2 = Address.from('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed');
+const addr3 = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'); // Same as addr1
+
+// Check equality (case-insensitive)
+const areEqual = Address.equals(addr1, addr3);
+console.log('addr1 equals addr3:', areEqual);
+
+const notEqual = Address.equals(addr1, addr2);
+console.log('addr1 equals addr2:', notEqual);
+
+// Compare for sorting (lexicographic order)
+const comparison = Address.compare(addr1, addr2);
+console.log('Compare addr1 to addr2:', comparison); // negative if addr1 < addr2
+
+// Sort addresses
+const addresses = [addr2, addr1, addr3];
+const sorted = addresses.sort(Address.compare);
+console.log('Sorted addresses:', sorted.map(a => Address.toChecksummed(a)));
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/addresses/compare-addresses.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/addresses/compare-addresses.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

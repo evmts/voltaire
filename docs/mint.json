@@ -918,6 +918,52 @@
 				"primitives/transaction/fundamentals",
 				"primitives/uint/fundamentals"
 			]
+		},
+		{
+			"group": "Examples",
+			"pages": [
+				{
+					"group": "Getting Started",
+					"pages": [
+						"examples/getting-started/hello-voltaire"
+					]
+				},
+				{
+					"group": "Addresses",
+					"pages": [
+						"examples/addresses/validate-address",
+						"examples/addresses/checksum-address",
+						"examples/addresses/address-from-private-key",
+						"examples/addresses/compare-addresses"
+					]
+				},
+				{
+					"group": "Hex & Bytes",
+					"pages": [
+						"examples/hex-and-bytes/hex-encode-decode",
+						"examples/hex-and-bytes/hex-concatenate"
+					]
+				},
+				{
+					"group": "Hashing",
+					"pages": [
+						"examples/hashing/keccak256-string",
+						"examples/hashing/sha256-hash"
+					]
+				},
+				{
+					"group": "Signing",
+					"pages": [
+						"examples/signing/personal-sign"
+					]
+				},
+				{
+					"group": "RLP Encoding",
+					"pages": [
+						"examples/rlp/rlp-encode-list"
+					]
+				}
+			]
 		}
 	],
 	"footerSocials": {

@@ -1,0 +1,33 @@
+---
+title: "Validate Ethereum Address"
+description: "Check if a string is a valid Ethereum address with EIP-55 checksum validation"
+---
+
+Check if a string is a valid Ethereum address with EIP-55 checksum validation
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+
+// Valid checksummed address
+const validAddr = '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3';
+const isValid = Address.isValid(validAddr);
+console.log(`${validAddr} is valid:`, isValid);
+
+// Invalid checksum
+const invalidChecksum = '0x742d35cc6634c0532925a3b844bc9e7595f251e3';
+const hasValidChecksum = Address.isValidChecksum(invalidChecksum);
+console.log(`${invalidChecksum} has valid checksum:`, hasValidChecksum);
+
+// Not an address
+const notAddress = '0x123';
+console.log(`${notAddress} is valid:`, Address.isValid(notAddress));
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/addresses/validate-address.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/addresses/validate-address.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

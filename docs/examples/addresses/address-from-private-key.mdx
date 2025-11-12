@@ -1,0 +1,34 @@
+---
+title: "Derive Address from Private Key"
+description: "Generate an Ethereum address from a private key using public key derivation"
+---
+
+Generate an Ethereum address from a private key using public key derivation
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Example private key (32 bytes)
+const privateKey = Hex.toBytes('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+
+// Derive address from private key
+const address = Address.fromPrivateKey(privateKey);
+const checksummed = Address.toChecksummed(address);
+console.log('Derived address:', checksummed);
+
+// Try another private key
+const privateKey2 = Hex.toBytes('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d');
+const address2 = Address.fromPrivateKey(privateKey2);
+const checksummed2 = Address.toChecksummed(address2);
+console.log('Another address:', checksummed2);
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/addresses/address-from-private-key.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/addresses/address-from-private-key.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

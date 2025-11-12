@@ -1,0 +1,40 @@
+---
+title: "RLP Encode List"
+description: "Encode a list of values using Recursive Length Prefix (RLP) encoding"
+---
+
+Encode a list of values using Recursive Length Prefix (RLP) encoding
+
+```typescript
+import { Rlp } from '@tevm/voltaire/Rlp';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Encode a simple list of strings
+const list = ['dog', 'cat', 'bird'];
+const encoded = Rlp.encode(list.map(s => new TextEncoder().encode(s)));
+const hexEncoded = Hex.fromBytes(encoded);
+console.log('RLP encoded list:', hexEncoded);
+
+// Encode nested lists
+const nestedList = [
+  new TextEncoder().encode('hello'),
+  [new TextEncoder().encode('world')]
+];
+const encodedNested = Rlp.encode(nestedList);
+const hexNested = Hex.fromBytes(encodedNested);
+console.log('RLP nested list:', hexNested);
+
+// Encode empty list
+const emptyList = Rlp.encode([]);
+const hexEmpty = Hex.fromBytes(emptyList);
+console.log('RLP empty list:', hexEmpty);
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/rlp/rlp-encode-list.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/rlp/rlp-encode-list.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)
