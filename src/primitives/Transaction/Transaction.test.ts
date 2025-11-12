@@ -23,18 +23,33 @@ import type {
 // Test Data Helpers
 // ============================================================================
 
+/**
+ * Helper to create a branded address for testing.
+ * In production, use Address.from() which validates input.
+ * Tests can unsafely cast because we control the input.
+ */
 function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
+	// Safe: we create exactly 20 bytes
 	return addr as BrandedAddress;
 }
 
+/**
+ * Helper to create a branded hash for testing.
+ * In production, use Hash.from() which validates input.
+ * Tests can unsafely cast because we control the input.
+ */
 function createHash(byte: number): BrandedHash {
 	const hash = new Uint8Array(32);
 	hash.fill(byte);
+	// Safe: we create exactly 32 bytes
 	return hash as BrandedHash;
 }
 
+/**
+ * Helper to create raw bytes for test data.
+ */
 function createBytes(length: number, fill = 0): Uint8Array {
 	const bytes = new Uint8Array(length);
 	bytes.fill(fill);

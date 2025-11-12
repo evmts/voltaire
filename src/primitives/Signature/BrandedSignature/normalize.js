@@ -1,3 +1,4 @@
+import { Hash } from "../../Hash/index.js";
 import { COMPONENT_SIZE } from "./constants.js";
 import { fromP256 } from "./fromP256.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
@@ -60,8 +61,8 @@ export function normalize(signature) {
 		// Flip v if present (27 <-> 28)
 		const v =
 			signature.v !== undefined ? (signature.v === 27 ? 28 : 27) : undefined;
-		return fromSecp256k1(r, sNormalized, v);
+		return fromSecp256k1(Hash.from(r), Hash.from(sNormalized), v);
 	}
 
-	return fromP256(r, sNormalized);
+	return fromP256(Hash.from(r), Hash.from(sNormalized));
 }

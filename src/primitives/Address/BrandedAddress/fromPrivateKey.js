@@ -18,7 +18,6 @@ import { fromPublicKey } from "./fromPublicKey.js";
  * ```
  */
 export function fromPrivateKey(privateKey) {
-
 	// Derive 64-byte uncompressed public key
 	let pubkey;
 	try {

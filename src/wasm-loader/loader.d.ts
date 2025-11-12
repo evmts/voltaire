@@ -6,6 +6,11 @@
  * @since 0.0.0
  */
 
+import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
+import type { BrandedPrivateKey } from "../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js";
+import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
+
 /**
  * Load and instantiate the WASM module.
  *
@@ -47,7 +52,7 @@ export function getExports(): any;
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 20-byte address
  */
-export function addressFromHex(hex: string): Uint8Array;
+export function addressFromHex(hex: string): BrandedAddress;
 
 /**
  * Convert address to hex string
@@ -94,7 +99,7 @@ export function addressValidateChecksum(hex: string): boolean;
 export function calculateCreateAddress(
 	sender: Uint8Array,
 	nonce: number,
-): Uint8Array;
+): BrandedAddress;
 
 /**
  * Calculate CREATE2 contract address
@@ -107,7 +112,7 @@ export function calculateCreate2Address(
 	sender: Uint8Array,
 	salt: Uint8Array,
 	initCode: Uint8Array,
-): Uint8Array;
+): BrandedAddress;
 
 // ============================================================================
 // Keccak-256 API
@@ -118,7 +123,7 @@ export function calculateCreate2Address(
  * @param data - Input data
  * @returns 32-byte hash
  */
-export function keccak256(data: Uint8Array): Uint8Array;
+export function keccak256(data: Uint8Array): BrandedHash;
 
 /**
  * Convert hash to hex string
@@ -132,7 +137,7 @@ export function hashToHex(hash: Uint8Array): string;
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 32-byte hash
  */
-export function hashFromHex(hex: string): Uint8Array;
+export function hashFromHex(hex: string): BrandedHash;
 
 /**
  * Compare two hashes for equality (constant-time)
@@ -147,7 +152,7 @@ export function hashEquals(a: Uint8Array, b: Uint8Array): boolean;
  * @param message - Message to hash
  * @returns 32-byte hash
  */
-export function eip191HashMessage(message: Uint8Array): Uint8Array;
+export function eip191HashMessage(message: Uint8Array): BrandedHash;
 
 // ============================================================================
 // Hash Algorithms API
@@ -312,7 +317,7 @@ export function txDetectType(data: Uint8Array): number;
  * Generate a cryptographically secure random private key
  * @returns 32-byte private key
  */
-export function generatePrivateKey(): Uint8Array;
+export function generatePrivateKey(): BrandedPrivateKey;
 
 /**
  * Compress uncompressed secp256k1 public key
@@ -338,7 +343,7 @@ export function secp256k1RecoverPubkey(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): Uint8Array;
+): BrandedSecp256k1PublicKey;
 
 /**
  * Recover Ethereum address from ECDSA signature
@@ -353,14 +358,16 @@ export function secp256k1RecoverAddress(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): Uint8Array;
+): BrandedAddress;
 
 /**
  * Derive public key from private key
  * @param privateKey - 32-byte private key
  * @returns Uncompressed public key (64 bytes)
  */
-export function secp256k1PubkeyFromPrivate(privateKey: Uint8Array): Uint8Array;
+export function secp256k1PubkeyFromPrivate(
+	privateKey: Uint8Array,
+): BrandedSecp256k1PublicKey;
 
 /**
  * Validate ECDSA signature components

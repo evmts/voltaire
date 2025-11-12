@@ -4,6 +4,14 @@
  * Complete transaction encoding/decoding with type inference for all Ethereum transaction types.
  * All types exported at top level for intuitive access.
  *
+ * Uses branded types throughout:
+ * - `BrandedAddress` for `to` fields (20 bytes, validated at Address.from())
+ * - `BrandedHash` for hashes (32 bytes, validated at Hash.from())
+ * - Transaction signature components (r, s) validated at signature creation time
+ *
+ * Validation strategy: Type safety at boundaries. Once you have a BrandedAddress,
+ * internal utilities trust it's 20 bytes. Same for BrandedHash (32 bytes).
+ *
  * Supports:
  * - Legacy (Type 0): Original format with fixed gas price
  * - EIP-2930 (Type 1): Access lists and explicit chain ID
@@ -14,19 +22,29 @@
  * @example
  * ```typescript
  * import * as Transaction from './transaction.js';
+ * import * as Address from '../Address/index.js';
  *
- * // Types
- * const legacy: Transaction.Legacy = { ... };
- * const eip1559: Transaction.EIP1559 = { ... };
+ * // Create branded types at boundaries
+ * const to = Address.from("0x1234..."); // BrandedAddress, validated
+ *
+ * // Types use branded types throughout
+ * const tx: Transaction.Legacy = {
+ *   type: Transaction.Type.Legacy,
+ *   nonce: 0n,
+ *   gasPrice: 20000000000n,
+ *   gasLimit: 21000n,
+ *   to, // BrandedAddress - trusted to be 20 bytes
+ *   value: 1000000000000000000n,
+ *   data: new Uint8Array(),
+ *   v: 27n,
+ *   r: new Uint8Array(32),
+ *   s: new Uint8Array(32),
+ * };
  *
  * // Operations
  * const data = Transaction.serialize(tx);
  * const hash = Transaction.hash(tx);
- * const decoded = Transaction.deserialize(data);
- *
- * // Type-specific operations with this: pattern
- * const hash = Transaction.Legacy.hash.call(legacy);
- * const serialized = Transaction.EIP1559.serialize.call(eip1559);
+ * const sender = Transaction.getSender(tx);
  * ```
  */
 

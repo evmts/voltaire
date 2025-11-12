@@ -11,7 +11,9 @@ export class AddressError extends Data.TaggedError("AddressError")<{
 /**
  * Error thrown when hex format validation fails
  */
-export class InvalidHexFormatError extends Data.TaggedError("InvalidHexFormat")<{
+export class InvalidHexFormatError extends Data.TaggedError(
+	"InvalidHexFormat",
+)<{
 	readonly value: unknown;
 	readonly expected?: string;
 }> {}
@@ -19,7 +21,9 @@ export class InvalidHexFormatError extends Data.TaggedError("InvalidHexFormat")<
 /**
  * Error thrown when hex string contains invalid characters
  */
-export class InvalidHexStringError extends Data.TaggedError("InvalidHexString")<{
+export class InvalidHexStringError extends Data.TaggedError(
+	"InvalidHexString",
+)<{
 	readonly value: string;
 	readonly reason: string;
 }> {}
@@ -27,7 +31,9 @@ export class InvalidHexStringError extends Data.TaggedError("InvalidHexString")<
 /**
  * Error thrown when address length is incorrect
  */
-export class InvalidAddressLengthError extends Data.TaggedError("InvalidAddressLength")<{
+export class InvalidAddressLengthError extends Data.TaggedError(
+	"InvalidAddressLength",
+)<{
 	readonly value: unknown;
 	readonly actualLength: number;
 	readonly expectedLength: number;
@@ -45,7 +51,9 @@ export class InvalidValueError extends Data.TaggedError("InvalidValue")<{
 /**
  * Error thrown when private key is invalid
  */
-export class InvalidPrivateKeyError extends Data.TaggedError("InvalidPrivateKey")<{
+export class InvalidPrivateKeyError extends Data.TaggedError(
+	"InvalidPrivateKey",
+)<{
 	readonly message: string;
 	readonly cause?: unknown;
 }> {}
@@ -62,7 +70,9 @@ export class InvalidChecksumError extends Data.TaggedError("InvalidChecksum")<{
 /**
  * Error thrown when crypto operation fails
  */
-export class CryptoOperationError extends Data.TaggedError("CryptoOperationError")<{
+export class CryptoOperationError extends Data.TaggedError(
+	"CryptoOperationError",
+)<{
 	readonly operation: "keccak256" | "secp256k1" | "rlp_encode";
 	readonly message: string;
 	readonly cause?: unknown;
@@ -99,14 +109,12 @@ export type FromHexErrors =
 /**
  * Errors that can be thrown by Address.fromBytes()
  */
-export type FromBytesErrors =
-	| InvalidAddressLengthError;
+export type FromBytesErrors = InvalidAddressLengthError;
 
 /**
  * Errors that can be thrown by Address.fromNumber()
  */
-export type FromNumberErrors =
-	| InvalidValueError;
+export type FromNumberErrors = InvalidValueError;
 
 /**
  * Errors that can be thrown by Address.fromAbiEncoded()
@@ -118,8 +126,7 @@ export type FromAbiEncodedErrors =
 /**
  * Errors that can be thrown by Address.fromPublicKey()
  */
-export type FromPublicKeyErrors =
-	| CryptoOperationError;
+export type FromPublicKeyErrors = CryptoOperationError;
 
 /**
  * Errors that can be thrown by Address.fromPrivateKey()
@@ -147,8 +154,7 @@ export type CalculateCreate2AddressErrors =
 /**
  * Errors that can be thrown by toChecksummed()
  */
-export type ToChecksummedErrors =
-	| CryptoOperationError;
+export type ToChecksummedErrors = CryptoOperationError;
 
 /**
  * Errors that can be thrown by ChecksumAddress.from()

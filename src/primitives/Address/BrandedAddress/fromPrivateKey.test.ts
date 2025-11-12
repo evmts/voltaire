@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PrivateKey } from "../../primitives/PrivateKey/index.js";import { Address } from "../index.js";
-import { PrivateKey } from "../../primitives/PrivateKey/index.js";import * as AddressNamespace from "./index.js";
-import { PrivateKey } from "../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "../../PrivateKey/BrandedPrivateKey/index.js";
+import { Address } from "../index.js";
+import * as AddressNamespace from "./index.js";
+import { InvalidLengthError } from "../../errors/ValidationError.js";
 describe("fromPrivateKey", () => {
 	describe("valid private keys", () => {
 		it("derives address from 32-byte private key", () => {
@@ -65,25 +66,22 @@ describe("fromPrivateKey", () => {
 	describe("invalid inputs", () => {
 		it("throws on wrong length - too short", () => {
 			const privateKeyBytes = new Uint8Array(31);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
-				AddressNamespace.InvalidAddressLengthError,
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidLengthError,
 			);
 		});
 
 		it("throws on wrong length - too long", () => {
 			const privateKeyBytes = new Uint8Array(33);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
-				AddressNamespace.InvalidAddressLengthError,
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidLengthError,
 			);
 		});
 
 		it("throws on empty array", () => {
 			const privateKeyBytes = new Uint8Array(0);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
-				AddressNamespace.InvalidAddressLengthError,
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidLengthError,
 			);
 		});
 

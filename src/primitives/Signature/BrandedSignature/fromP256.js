@@ -4,40 +4,19 @@ import { InvalidSignatureLengthError } from "./errors.js";
 /**
  * Create Signature from P-256 ECDSA signature
  *
- * @param {Uint8Array} r - r component (32 bytes)
- * @param {Uint8Array} s - s component (32 bytes)
+ * @param {import('../../Hash/index.js').BrandedHash} r - r component (32 bytes, BrandedHash)
+ * @param {import('../../Hash/index.js').BrandedHash} s - s component (32 bytes, BrandedHash)
  * @returns {import('./BrandedSignature.js').BrandedSignature} Signature
- * @throws {InvalidSignatureLengthError} If r or s is not 32 bytes
  *
  * @example
  * ```typescript
+ * import * as Hash from '../../Hash/index.js';
+ * const r = Hash.from(rBytes);
+ * const s = Hash.from(sBytes);
  * const sig = Signature.fromP256(r, s);
  * ```
  */
 export function fromP256(r, s) {
-	if (r.length !== COMPONENT_SIZE) {
-		throw new InvalidSignatureLengthError(
-			`r must be ${COMPONENT_SIZE} bytes, got ${r.length}`,
-			{
-				value: r.length,
-				expected: `${COMPONENT_SIZE} bytes`,
-				context: { component: "r" },
-				docsPath: "/primitives/signature/from-p256#error-handling",
-			},
-		);
-	}
-	if (s.length !== COMPONENT_SIZE) {
-		throw new InvalidSignatureLengthError(
-			`s must be ${COMPONENT_SIZE} bytes, got ${s.length}`,
-			{
-				value: s.length,
-				expected: `${COMPONENT_SIZE} bytes`,
-				context: { component: "s" },
-				docsPath: "/primitives/signature/from-p256#error-handling",
-			},
-		);
-	}
-
 	const result = new Uint8Array(ECDSA_SIZE);
 	result.set(r, 0);
 	result.set(s, COMPONENT_SIZE);

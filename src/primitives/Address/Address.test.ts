@@ -870,9 +870,7 @@ describe("Address", () => {
 		});
 
 		it("throws on negative number", () => {
-			expect(() => Address(-1)).toThrow(
-				AddressNamespace.InvalidValueError,
-			);
+			expect(() => Address(-1)).toThrow(AddressNamespace.InvalidValueError);
 		});
 
 		it("throws on invalid hex string", () => {

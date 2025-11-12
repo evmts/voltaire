@@ -122,8 +122,10 @@ export const AddressServicesTest = Layer.mergeAll(
 	Layer.succeed(
 		Secp256k1Service,
 		Secp256k1Service.of({
-			derivePublicKey: (privateKey) => Effect.succeed(new Uint8Array(64).fill(0xbb)),
-			getPublicKey: (privateKey) => Effect.succeed({ x: 0xccccccccn, y: 0xdddddddddn }),
+			derivePublicKey: (privateKey) =>
+				Effect.succeed(new Uint8Array(64).fill(0xbb)),
+			getPublicKey: (privateKey) =>
+				Effect.succeed({ x: 0xccccccccn, y: 0xdddddddddn }),
 		}),
 	),
 	// Mock RLP encoder

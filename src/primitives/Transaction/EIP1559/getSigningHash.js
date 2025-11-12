@@ -10,10 +10,14 @@ import {
 /**
  * Get signing hash for EIP-1559 transaction.
  *
+ * Computes the Keccak256 hash of the RLP-encoded transaction fields that need
+ * to be signed. The transaction uses BrandedAddress for `to` field, assumed to be
+ * validated (20 bytes). Returns a BrandedHash (32 bytes).
+ *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @param {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} tx - Transaction to get signing hash for
- * @returns {import('../../Hash/index.js').BrandedHash} Signing hash
+ * @param {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} tx - Transaction with BrandedAddress fields
+ * @returns {import('../../Hash/index.js').BrandedHash} Signing hash (32 bytes, branded)
  * @throws {never} Never throws
  * @example
  * ```javascript

@@ -8,6 +8,10 @@
 
 import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
+import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
+import type { BrandedPrivateKey } from "../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js";
+import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
@@ -430,7 +434,7 @@ function checkResult(code: number): void {
  * const address = addressFromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
  * ```
  */
-export function addressFromHex(hex: string): Uint8Array {
+export function addressFromHex(hex: string): BrandedAddress {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -439,7 +443,7 @@ export function addressFromHex(hex: string): Uint8Array {
 
 		const result = exports.primitives_address_from_hex(hexPtr, outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 20);
+		return readBytes(outPtr, 20) as BrandedAddress;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -450,13 +454,12 @@ export function addressFromHex(hex: string): Uint8Array {
  *
  * @see https://voltaire.tevm.sh/primitives/address for documentation
  * @since 0.0.0
- * @param address - 20-byte address
+ * @param address - 20-byte address (BrandedAddress guarantees correctness)
  * @returns Hex string with 0x prefix
- * @throws {Error} If address is invalid length
  * @example
  * ```javascript
  * import { addressToHex } from './wasm-loader/loader.js';
- * const hex = addressToHex(new Uint8Array(20));
+ * const hex = addressToHex(brandedAddress);
  * ```
  */
 export function addressToHex(address: Uint8Array): string {
@@ -480,13 +483,12 @@ export function addressToHex(address: Uint8Array): string {
  *
  * @see https://voltaire.tevm.sh/primitives/address for documentation
  * @since 0.0.0
- * @param address - 20-byte address
+ * @param address - 20-byte address (BrandedAddress guarantees correctness)
  * @returns Checksummed hex string
- * @throws {Error} If address is invalid length
  * @example
  * ```javascript
  * import { addressToChecksumHex } from './wasm-loader/loader.js';
- * const checksummed = addressToChecksumHex(address);
+ * const checksummed = addressToChecksumHex(brandedAddress);
  * ```
  */
 export function addressToChecksumHex(address: Uint8Array): string {
@@ -604,7 +606,7 @@ export function addressValidateChecksum(hex: string): boolean {
 export function calculateCreateAddress(
 	sender: Uint8Array,
 	nonce: number,
-): Uint8Array {
+): BrandedAddress {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -618,7 +620,7 @@ export function calculateCreateAddress(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 20);
+		return readBytes(outPtr, 20) as BrandedAddress;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -644,7 +646,7 @@ export function calculateCreate2Address(
 	sender: Uint8Array,
 	salt: Uint8Array,
 	initCode: Uint8Array,
-): Uint8Array {
+): BrandedAddress {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -664,7 +666,7 @@ export function calculateCreate2Address(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 20);
+		return readBytes(outPtr, 20) as BrandedAddress;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -688,7 +690,7 @@ export function calculateCreate2Address(
  * const hash = keccak256(new Uint8Array([1, 2, 3]));
  * ```
  */
-export function keccak256(data: Uint8Array): Uint8Array {
+export function keccak256(data: Uint8Array): BrandedHash {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -698,7 +700,7 @@ export function keccak256(data: Uint8Array): Uint8Array {
 		writeBytes(data, dataPtr);
 		const result = exports.primitives_keccak256(dataPtr, data.length, outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32);
+		return readBytes(outPtr, 32) as BrandedHash;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -730,7 +732,7 @@ export function hashToHex(hash: Uint8Array): string {
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 32-byte hash
  */
-export function hashFromHex(hex: string): Uint8Array {
+export function hashFromHex(hex: string): BrandedHash {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -739,7 +741,7 @@ export function hashFromHex(hex: string): Uint8Array {
 
 		const result = exports.primitives_hash_from_hex(hexPtr, outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32);
+		return readBytes(outPtr, 32) as BrandedHash;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -771,7 +773,7 @@ export function hashEquals(a: Uint8Array, b: Uint8Array): boolean {
  * @param message - Message to hash
  * @returns 32-byte hash
  */
-export function eip191HashMessage(message: Uint8Array): Uint8Array {
+export function eip191HashMessage(message: Uint8Array): BrandedHash {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -785,7 +787,7 @@ export function eip191HashMessage(message: Uint8Array): Uint8Array {
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 32);
+		return readBytes(outPtr, 32) as BrandedHash;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1485,14 +1487,14 @@ export function txDetectType(data: Uint8Array): number {
  * const privateKey = generatePrivateKey();
  * ```
  */
-export function generatePrivateKey(): Uint8Array {
+export function generatePrivateKey(): BrandedPrivateKey {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
 		const outPtr = malloc(32);
 		const result = exports.primitives_generate_private_key(outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32);
+		return readBytes(outPtr, 32) as BrandedPrivateKey;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1500,14 +1502,10 @@ export function generatePrivateKey(): Uint8Array {
 
 /**
  * Compress uncompressed secp256k1 public key
- * @param uncompressed - 64-byte uncompressed public key (x, y coordinates)
+ * @param uncompressed - 64-byte uncompressed public key (BrandedSecp256k1PublicKey guarantees correctness)
  * @returns 33-byte compressed public key (0x02/0x03 prefix + x coordinate)
  */
 export function compressPublicKey(uncompressed: Uint8Array): Uint8Array {
-	if (uncompressed.length !== 64) {
-		throw new Error("Uncompressed public key must be 64 bytes");
-	}
-
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1626,7 +1624,7 @@ export function secp256k1RecoverPubkey(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): Uint8Array {
+): BrandedSecp256k1PublicKey {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1647,7 +1645,7 @@ export function secp256k1RecoverPubkey(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 64);
+		return readBytes(outPtr, 64) as BrandedSecp256k1PublicKey;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1666,7 +1664,7 @@ export function secp256k1RecoverAddress(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): Uint8Array {
+): BrandedAddress {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1687,7 +1685,7 @@ export function secp256k1RecoverAddress(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 20);
+		return readBytes(outPtr, 20) as BrandedAddress;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1698,7 +1696,9 @@ export function secp256k1RecoverAddress(
  * @param privateKey - 32-byte private key
  * @returns Uncompressed public key (64 bytes)
  */
-export function secp256k1PubkeyFromPrivate(privateKey: Uint8Array): Uint8Array {
+export function secp256k1PubkeyFromPrivate(
+	privateKey: Uint8Array,
+): BrandedSecp256k1PublicKey {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1712,7 +1712,7 @@ export function secp256k1PubkeyFromPrivate(privateKey: Uint8Array): Uint8Array {
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 64);
+		return readBytes(outPtr, 64) as BrandedSecp256k1PublicKey;
 	} finally {
 		memoryOffset = savedOffset;
 	}

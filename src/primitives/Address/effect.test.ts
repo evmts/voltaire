@@ -4,8 +4,10 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
-	Address,
+	AddressBrand,
+	AddressSchema,
 	ChecksumAddress,
+	ChecksumAddressBrand,
 	type AddressFromHex,
 	type AddressFromUnknown,
 } from "./effect.js";
@@ -18,20 +20,20 @@ import {
 	InvalidValueError,
 } from "./effect-errors.js";
 
-describe("Address Effect Schema", () => {
+describe("AddressSchema Effect Schema", () => {
 	// Use lowercase address to avoid checksum validation issues in tests
 	const testAddress = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
 	const testAddressLower = testAddress.toLowerCase();
 
-	describe("Address class", () => {
-		it("creates Address from hex string", async () => {
-			const effect = Address.fromHex(testAddress);
+	describe("AddressSchema class", () => {
+		it("creates AddressSchema from hex string", async () => {
+			const effect = AddressSchema.fromHex(testAddress);
 			const addr = await Effect.runPromise(effect);
 			expect(addr.toHex()).toBe(testAddressLower);
 		});
 
 		it("rejects invalid hex format", async () => {
-			const effect = Address.fromHex("invalid");
+			const effect = AddressSchema.fromHex("invalid");
 			const result = await Effect.runPromise(Effect.either(effect));
 			expect(Either.isLeft(result)).toBe(true);
 			if (Either.isLeft(result)) {
@@ -40,25 +42,25 @@ describe("Address Effect Schema", () => {
 		});
 
 		it("rejects invalid hex string", async () => {
-			const effect = Address.fromHex("0xZZZZ");
+			const effect = AddressSchema.fromHex("0xZZZZ");
 			const result = await Effect.runPromise(Effect.either(effect));
 			expect(Either.isLeft(result)).toBe(true);
 			if (Either.isLeft(result)) {
 				expect(
 					result.left instanceof InvalidHexFormatError ||
-					result.left instanceof InvalidHexStringError,
+						result.left instanceof InvalidHexStringError,
 				).toBe(true);
 			}
 		});
 
-		it("creates Address from number", async () => {
-			const effect = Address.fromNumber(12345n);
+		it("creates AddressSchema from number", async () => {
+			const effect = AddressSchema.fromNumber(12345n);
 			const addr = await Effect.runPromise(effect);
 			expect(addr.toU256()).toBe(12345n);
 		});
 
 		it("rejects negative numbers", async () => {
-			const effect = Address.fromNumber(-1n);
+			const effect = AddressSchema.fromNumber(-1n);
 			const result = await Effect.runPromise(Effect.either(effect));
 			expect(Either.isLeft(result)).toBe(true);
 			if (Either.isLeft(result)) {
@@ -66,17 +68,17 @@ describe("Address Effect Schema", () => {
 			}
 		});
 
-		it("creates Address from bytes", async () => {
+		it("creates AddressSchema from bytes", async () => {
 			const bytes = new Uint8Array(20);
 			bytes[19] = 0x01;
-			const effect = Address.fromBytes(bytes);
+			const effect = AddressSchema.fromBytes(bytes);
 			const addr = await Effect.runPromise(effect);
 			expect(addr.toU256()).toBe(1n);
 		});
 
 		it("rejects invalid byte length", async () => {
 			const bytes = new Uint8Array(19);
-			const effect = Address.fromBytes(bytes);
+			const effect = AddressSchema.fromBytes(bytes);
 			const result = await Effect.runPromise(Effect.either(effect));
 			expect(Either.isLeft(result)).toBe(true);
 			if (Either.isLeft(result)) {
@@ -86,34 +88,34 @@ describe("Address Effect Schema", () => {
 			}
 		});
 
-		it("creates Address from universal input", async () => {
-			const effect1 = Address.from(testAddress);
+		it("creates AddressSchema from universal input", async () => {
+			const effect1 = AddressSchema.from(testAddress);
 			const addr1 = await Effect.runPromise(effect1);
 			expect(addr1.toHex()).toBe(testAddressLower);
 
-			const effect2 = Address.from(12345n);
+			const effect2 = AddressSchema.from(12345n);
 			const addr2 = await Effect.runPromise(effect2);
 			expect(addr2.toU256()).toBe(12345n);
 
-			const effect3 = Address.from(new Uint8Array(20));
+			const effect3 = AddressSchema.from(new Uint8Array(20));
 			const addr3 = await Effect.runPromise(effect3);
 			expect(addr3.isZero()).toBe(true);
 		});
 
-		it("validates Address schema", async () => {
+		it("validates AddressSchema schema", async () => {
 			const validBytes = BrandedAddress.from(testAddress);
-			const addr = new Address({ value: validBytes });
+			const addr = new AddressSchema({ value: validBytes });
 			expect(addr.toHex()).toBe(testAddressLower);
 		});
 
 		it("rejects invalid bytes length in constructor", () => {
 			const invalidBytes = new Uint8Array(19);
-			expect(() => new Address({ value: invalidBytes as any })).toThrow();
+			expect(() => new AddressSchema({ value: invalidBytes as any })).toThrow();
 		});
 
 		it("converts to checksummed address", async () => {
 			const effect = Effect.gen(function* () {
-				const addr = yield* Address.fromHex(testAddress);
+				const addr = yield* AddressSchema.fromHex(testAddress);
 				return yield* addr.toChecksummed();
 			}).pipe(Effect.provide(AddressServicesLive));
 
@@ -123,8 +125,8 @@ describe("Address Effect Schema", () => {
 
 		it("checks equality", async () => {
 			const effect = Effect.gen(function* () {
-				const addr1 = yield* Address.fromHex(testAddress);
-				const addr2 = yield* Address.fromHex(testAddress.toLowerCase());
+				const addr1 = yield* AddressSchema.fromHex(testAddress);
+				const addr2 = yield* AddressSchema.fromHex(testAddress.toLowerCase());
 				return addr1.equals(addr2);
 			});
 
@@ -134,9 +136,9 @@ describe("Address Effect Schema", () => {
 
 		it("compares addresses lexicographically", async () => {
 			const effect = Effect.gen(function* () {
-				const addr1 = yield* Address.from(10n);
-				const addr2 = yield* Address.from(20n);
-				const addr3 = yield* Address.from(10n);
+				const addr1 = yield* AddressSchema.from(10n);
+				const addr2 = yield* AddressSchema.from(20n);
+				const addr3 = yield* AddressSchema.from(10n);
 
 				return {
 					less: addr1.compare(addr2),
@@ -153,7 +155,7 @@ describe("Address Effect Schema", () => {
 
 		it("clones address", async () => {
 			const effect = Effect.gen(function* () {
-				const addr1 = yield* Address.fromHex(testAddress);
+				const addr1 = yield* AddressSchema.fromHex(testAddress);
 				const addr2 = addr1.clone();
 				return {
 					equal: addr1.equals(addr2),
@@ -168,7 +170,7 @@ describe("Address Effect Schema", () => {
 
 		it("calculates CREATE address", async () => {
 			const effect = Effect.gen(function* () {
-				const deployer = yield* Address.fromHex(testAddress);
+				const deployer = yield* AddressSchema.fromHex(testAddress);
 				const created = yield* deployer.calculateCreateAddress(0n);
 				return created;
 			}).pipe(Effect.provide(AddressServicesLive));
@@ -179,7 +181,7 @@ describe("Address Effect Schema", () => {
 
 		it("rejects negative nonce for CREATE address", async () => {
 			const effect = Effect.gen(function* () {
-				const deployer = yield* Address.fromHex(testAddress);
+				const deployer = yield* AddressSchema.fromHex(testAddress);
 				return yield* deployer.calculateCreateAddress(-1n);
 			}).pipe(Effect.provide(AddressServicesLive));
 
@@ -192,7 +194,7 @@ describe("Address Effect Schema", () => {
 
 		it("calculates CREATE2 address", async () => {
 			const effect = Effect.gen(function* () {
-				const deployer = yield* Address.fromHex(testAddress);
+				const deployer = yield* AddressSchema.fromHex(testAddress);
 				const salt = new Uint8Array(32);
 				const initCode = new Uint8Array(0);
 				const created = yield* deployer.calculateCreate2Address(salt, initCode);
@@ -205,7 +207,7 @@ describe("Address Effect Schema", () => {
 
 		it("rejects invalid salt length for CREATE2 address", async () => {
 			const effect = Effect.gen(function* () {
-				const deployer = yield* Address.fromHex(testAddress);
+				const deployer = yield* AddressSchema.fromHex(testAddress);
 				const salt = new Uint8Array(31); // Wrong length
 				const initCode = new Uint8Array(0);
 				return yield* deployer.calculateCreate2Address(salt, initCode);
@@ -219,12 +221,12 @@ describe("Address Effect Schema", () => {
 		});
 
 		it("checks zero address", () => {
-			const zero = Address.zero();
+			const zero = AddressSchema.zero();
 			expect(zero.isZero()).toBe(true);
 		});
 
 		it("creates from public key coordinates", async () => {
-			const effect = Address.fromPublicKey(
+			const effect = AddressSchema.fromPublicKey(
 				0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefn,
 				0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210n,
 			).pipe(Effect.provide(AddressServicesLive));
@@ -237,7 +239,7 @@ describe("Address Effect Schema", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1; // Valid non-zero private key
 
-			const effect = Address.fromPrivateKey(privateKey).pipe(
+			const effect = AddressSchema.fromPrivateKey(privateKey).pipe(
 				Effect.provide(AddressServicesLive),
 			);
 
@@ -248,7 +250,7 @@ describe("Address Effect Schema", () => {
 		it("rejects invalid private key length", async () => {
 			const privateKey = new Uint8Array(31); // Wrong length
 
-			const effect = Address.fromPrivateKey(privateKey).pipe(
+			const effect = AddressSchema.fromPrivateKey(privateKey).pipe(
 				Effect.provide(AddressServicesLive),
 			);
 
@@ -266,7 +268,7 @@ describe("Address Effect Schema", () => {
 				abiEncoded[i] = i - 12;
 			}
 
-			const effect = Address.fromAbiEncoded(abiEncoded);
+			const effect = AddressSchema.fromAbiEncoded(abiEncoded);
 			const addr = await Effect.runPromise(effect);
 			expect(addr.isZero()).toBe(false);
 		});
@@ -274,7 +276,7 @@ describe("Address Effect Schema", () => {
 		it("rejects invalid ABI-encoded length", async () => {
 			const abiEncoded = new Uint8Array(31); // Wrong length
 
-			const effect = Address.fromAbiEncoded(abiEncoded);
+			const effect = AddressSchema.fromAbiEncoded(abiEncoded);
 			const result = await Effect.runPromise(Effect.either(effect));
 			expect(Either.isLeft(result)).toBe(true);
 			if (Either.isLeft(result)) {
@@ -351,7 +353,7 @@ describe("Address Effect Schema", () => {
 	describe("Effect integration", () => {
 		it("works with Effect.gen", async () => {
 			const program = Effect.gen(function* () {
-				const addr = yield* Address.fromHex(testAddress);
+				const addr = yield* AddressSchema.fromHex(testAddress);
 				return addr.toHex();
 			});
 
@@ -361,7 +363,7 @@ describe("Address Effect Schema", () => {
 
 		it("handles validation errors with Effect.try", async () => {
 			const program = Effect.try({
-				try: () => new Address({ value: new Uint8Array(19) as any }),
+				try: () => new AddressSchema({ value: new Uint8Array(19) as any }),
 				catch: (error) => new Error(`Validation failed: ${error}`),
 			});
 
@@ -369,9 +371,9 @@ describe("Address Effect Schema", () => {
 			expect(Either.isLeft(result)).toBe(true);
 		});
 
-		it("chains Address operations with Effect", async () => {
+		it("chains AddressSchema operations with Effect", async () => {
 			const program = Effect.gen(function* () {
-				const addr = yield* Address.fromHex(testAddress);
+				const addr = yield* AddressSchema.fromHex(testAddress);
 				const checksummed = yield* addr.toChecksummed();
 				const checksumAddr = yield* ChecksumAddress.from(checksummed);
 				return checksumAddr.checksummed;
@@ -383,15 +385,15 @@ describe("Address Effect Schema", () => {
 
 		it("validates with Schema.parseSync", () => {
 			const validBytes = BrandedAddress.from(testAddress);
-			const addr = Schema.decodeUnknownSync(Schema.instanceOf(Address))(
-				new Address({ value: validBytes }),
+			const addr = Schema.decodeUnknownSync(Schema.instanceOf(AddressSchema))(
+				new AddressSchema({ value: validBytes }),
 			);
-			expect(addr).toBeInstanceOf(Address);
+			expect(addr).toBeInstanceOf(AddressSchema);
 		});
 
 		it("works with test services (mocked crypto)", async () => {
 			const program = Effect.gen(function* () {
-				const addr = yield* Address.fromPrivateKey(new Uint8Array(32));
+				const addr = yield* AddressSchema.fromPrivateKey(new Uint8Array(32));
 				// With test services, this should return predictable values
 				return addr.isZero();
 			}).pipe(Effect.provide(AddressServicesTest));
@@ -404,7 +406,7 @@ describe("Address Effect Schema", () => {
 
 		it("chains multiple crypto operations", async () => {
 			const program = Effect.gen(function* () {
-				const deployer = yield* Address.fromHex(testAddress);
+				const deployer = yield* AddressSchema.fromHex(testAddress);
 				const created1 = yield* deployer.calculateCreateAddress(0n);
 				const created2 = yield* deployer.calculateCreate2Address(
 					new Uint8Array(32),
@@ -424,7 +426,7 @@ describe("Address Effect Schema", () => {
 
 		it("handles errors in Effect pipeline", async () => {
 			const program = Effect.gen(function* () {
-				const addr = yield* Address.fromHex("invalid");
+				const addr = yield* AddressSchema.fromHex("invalid");
 				// This should never execute
 				return addr.toHex();
 			});
@@ -437,7 +439,7 @@ describe("Address Effect Schema", () => {
 		});
 
 		it("can run synchronously with runSync for non-crypto operations", () => {
-			const effect = Address.fromNumber(12345n);
+			const effect = AddressSchema.fromNumber(12345n);
 			const addr = Effect.runSync(effect);
 			expect(addr.toU256()).toBe(12345n);
 		});
@@ -448,11 +450,11 @@ describe("Address Effect Schema", () => {
 				const results = [];
 
 				// This should succeed
-				const addr1 = yield* Address.fromHex(testAddress);
+				const addr1 = yield* AddressSchema.fromHex(testAddress);
 				results.push("addr1 ok");
 
 				// This should fail
-				const addr2 = yield* Address.fromHex("invalid");
+				const addr2 = yield* AddressSchema.fromHex("invalid");
 				results.push("addr2 ok"); // Should not reach here
 
 				return results;
@@ -471,6 +473,83 @@ describe("Address Effect Schema", () => {
 			// This is the expected behavior - schemas that were synchronous
 			// can't work with Effect-based methods that are asynchronous
 			expect(true).toBe(true);
+		});
+	});
+
+	describe("Effect Branded Types", () => {
+		it("creates AddressBrand with refined validation", () => {
+			const validBytes = new Uint8Array(20);
+			const brand = AddressBrand(validBytes);
+			expect(brand).toBe(validBytes);
+		});
+
+		it("rejects invalid bytes in AddressBrand", () => {
+			const invalidBytes = new Uint8Array(19);
+			expect(() => AddressBrand(invalidBytes)).toThrow();
+		});
+
+		it("creates AddressSchema from AddressBrand", async () => {
+			const bytes = new Uint8Array(20);
+			bytes[19] = 0x42;
+			const brand = AddressBrand(bytes);
+			const schema = AddressSchema.fromBranded(brand);
+			expect(schema.branded).toBe(brand);
+			expect(schema.toU256()).toBe(0x42n);
+		});
+
+		it("exposes branded getter on AddressSchema", async () => {
+			const effect = AddressSchema.fromNumber(12345n);
+			const addr = await Effect.runPromise(effect);
+			const brand = addr.branded;
+			expect(brand).toBeInstanceOf(Uint8Array);
+			expect(brand.length).toBe(20);
+		});
+
+		it("creates ChecksumAddressBrand (nominal)", () => {
+			const checksumStr = "0x742d35Cc6634c0532925a3b844bc9e7595F251E3";
+			const brand = ChecksumAddressBrand(checksumStr);
+			expect(brand).toBe(checksumStr);
+		});
+
+		it("creates ChecksumAddress from ChecksumAddressBrand", () => {
+			const checksumStr = "0x742d35Cc6634c0532925a3b844bc9e7595F251E3";
+			const brand = ChecksumAddressBrand(checksumStr);
+			const schema = ChecksumAddress.fromBranded(brand);
+			expect(schema.checksummed).toBe(checksumStr);
+		});
+
+		it("exposes branded getter on ChecksumAddress", async () => {
+			const effect = ChecksumAddress.from(testAddress).pipe(
+				Effect.provide(AddressServicesLive),
+			);
+			const checksumAddr = await Effect.runPromise(effect);
+			const brand = checksumAddr.branded;
+			expect(typeof brand).toBe("string");
+			expect(brand).toContain("0x742d35Cc");
+		});
+
+		it("branded types are type-safe at compile time", () => {
+			const bytes = new Uint8Array(20);
+			const addressBrand = AddressBrand(bytes);
+
+			// Type-level check: these should be different types
+			const schema = AddressSchema.fromBranded(addressBrand);
+			expect(schema).toBeInstanceOf(AddressSchema);
+		});
+
+		it("can use AddressBrand for type-safe operations", () => {
+			const bytes1 = new Uint8Array(20);
+			bytes1[19] = 1;
+			const bytes2 = new Uint8Array(20);
+			bytes2[19] = 2;
+
+			const brand1 = AddressBrand(bytes1);
+			const brand2 = AddressBrand(bytes2);
+
+			const addr1 = AddressSchema.fromBranded(brand1);
+			const addr2 = AddressSchema.fromBranded(brand2);
+
+			expect(addr1.equals(addr2)).toBe(false);
 		});
 	});
 });

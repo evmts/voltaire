@@ -1,3 +1,4 @@
+import { Hash } from "../../Hash/index.js";
 import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
 import { getChainId } from "./getChainId.js";
 import { getSigningHash } from "./getSigningHash.js";
@@ -29,18 +30,15 @@ export function verifySignature() {
 			v = Number(this.v);
 		}
 
+		// Create BrandedHash for r and s
+		const r = Hash.from(this.r);
+		const s = Hash.from(this.s);
+
 		// Recover public key
-		const publicKey = Secp256k1.recoverPublicKey(
-			{ r: this.r, s: this.s, v },
-			signingHash,
-		);
+		const publicKey = Secp256k1.recoverPublicKey({ r, s, v }, signingHash);
 
 		// Verify signature
-		return Secp256k1.verify(
-			{ r: this.r, s: this.s, v },
-			signingHash,
-			publicKey,
-		);
+		return Secp256k1.verify({ r, s, v }, signingHash, publicKey);
 	} catch {
 		return false;
 	}

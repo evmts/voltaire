@@ -3,12 +3,17 @@ import { getChainId } from "./getChainId.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
- * Get sender address from signature.
+ * Get sender address from transaction signature (Legacy).
+ *
+ * Recovers the sender address from transaction signature components (r, s, v).
+ * Returns a BrandedAddress (20 bytes). Handles both EIP-155 (chainId in v) and
+ * pre-EIP-155 signatures. Assumes transaction uses branded types with validated
+ * signature components.
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
- * @returns {import('../../Address/index.js').BrandedAddress} Sender address recovered from signature
+ * @returns {import('../../Address/index.js').BrandedAddress} Sender address (20 bytes, branded)
  * @throws {Error} If signature recovery fails
  * @example
  * ```javascript

@@ -34,6 +34,9 @@ export function encodeBigintCompact(value: bigint): Uint8Array {
 /**
  * Encode address for RLP (empty bytes for null, 20 bytes otherwise)
  * @internal
+ *
+ * Assumes address is a valid BrandedAddress (20 bytes) or null.
+ * Validation happens at the boundary when creating branded types.
  */
 export function encodeAddress(address: BrandedAddress | null): Uint8Array {
 	if (address === null) {
@@ -45,6 +48,10 @@ export function encodeAddress(address: BrandedAddress | null): Uint8Array {
 /**
  * Decode address from RLP bytes (null for empty, Address otherwise)
  * @internal
+ *
+ * Assumes RLP-decoded bytes have been validated. Validation happens at the boundary
+ * when creating branded types via Address.from().
+ *
  * @throws {InvalidLengthError} If address length is not 0 or 20 bytes
  */
 export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
@@ -60,6 +67,7 @@ export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
 			docsPath: "/primitives/transaction/utils#error-handling",
 		});
 	}
+	// Safe cast: validates length above
 	return bytes as BrandedAddress;
 }
 
@@ -81,6 +89,14 @@ export function decodeBigint(bytes: Uint8Array): bigint {
 /**
  * Recover Address from ECDSA signature
  * @internal
+ *
+ * Recovers a BrandedAddress from a secp256k1 signature and message hash.
+ * Assumes signature components (r, s) and messageHash are valid.
+ * Validation happens at the boundary when creating branded types.
+ *
+ * @param signature Signature components (r, s, v)
+ * @param messageHash BrandedHash (32 bytes) of the signed message
+ * @returns BrandedAddress recovered from the signature
  */
 export function recoverAddress(
 	signature: { r: Uint8Array; s: Uint8Array; v: number },
@@ -101,6 +117,10 @@ export function recoverAddress(
 /**
  * Encode access list for RLP
  * @internal
+ *
+ * Encodes an access list of BrandedAddress and BrandedHash entries for RLP serialization.
+ * Assumes all addresses are valid BrandedAddress (20 bytes) and storage keys are
+ * valid BrandedHash (32 bytes). Validation happens at the boundary.
  */
 export function encodeAccessList(
 	accessList: readonly {
@@ -117,6 +137,11 @@ export function encodeAccessList(
 /**
  * Decode access list from RLP
  * @internal
+ *
+ * Decodes RLP-encoded access list items into BrandedAddress and BrandedHash arrays.
+ * Validates format and length during decoding - this is a boundary between RLP data
+ * and typed primitives.
+ *
  * @throws {InvalidFormatError} If access list format is invalid
  * @throws {InvalidLengthError} If address or storage key length is invalid
  */
@@ -155,6 +180,7 @@ export function decodeAccessList(
 			});
 		}
 
+		// Safe cast: validates length above
 		const address = addressData.value as BrandedAddress;
 		const storageKeys = keysData.value.map((keyData: BrandedRlp) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
@@ -166,6 +192,7 @@ export function decodeAccessList(
 					docsPath: "/primitives/transaction/utils#error-handling",
 				});
 			}
+			// Safe cast: validates length above
 			return keyData.value as BrandedHash;
 		});
 
@@ -176,6 +203,10 @@ export function decodeAccessList(
 /**
  * Encode authorization list for RLP (EIP-7702)
  * @internal
+ *
+ * Encodes an authorization list where each authorization contains a BrandedAddress.
+ * Assumes all addresses are valid BrandedAddress (20 bytes).
+ * Validation happens at the boundary when creating branded types.
  */
 export function encodeAuthorizationList(
 	authList: readonly {
@@ -200,6 +231,11 @@ export function encodeAuthorizationList(
 /**
  * Decode authorization list from RLP (EIP-7702)
  * @internal
+ *
+ * Decodes RLP-encoded authorization items into Authorization objects containing
+ * BrandedAddress values. Validates format and length during decoding - this is
+ * a boundary between RLP data and typed primitives.
+ *
  * @throws {InvalidFormatError} If authorization list format is invalid
  */
 export function decodeAuthorizationList(data: BrandedRlp[]): {
@@ -253,6 +289,7 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 
 		return {
 			chainId: decodeBigint(chainIdData.value),
+			// Safe cast: validates length above (20 bytes)
 			address: addressData.value as BrandedAddress,
 			nonce: decodeBigint(nonceData.value),
 			yParity: yParityData.value[0]!,

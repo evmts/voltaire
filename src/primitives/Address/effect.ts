@@ -1,4 +1,4 @@
-import type * as Brand from "effect/Brand";
+import * as Brand from "effect/Brand";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
@@ -33,24 +33,41 @@ import {
 } from "./effect-services.js";
 
 /**
- * Effect Brand for Address (wraps existing BrandedAddress)
+ * Effect Brand for Address - refined brand that validates 20-byte Uint8Array
  */
-export type AddressBrand = BrandedAddress & Brand.Brand<"Address">;
+export type AddressBrand = Uint8Array & Brand.Brand<"Address">;
 
 /**
- * Effect Brand for ChecksumAddress (wraps existing Checksummed type)
+ * Effect Brand constructor with validation
  */
-export type ChecksumAddressBrand = Checksummed & Brand.Brand<"ChecksumAddress">;
+export const AddressBrand = Brand.refined<AddressBrand>(
+	(bytes): bytes is Uint8Array & Brand.Brand<"Address"> =>
+		bytes instanceof Uint8Array && bytes.length === 20,
+	(bytes) =>
+		Brand.error(
+			`Expected 20-byte Uint8Array, got ${bytes instanceof Uint8Array ? `${bytes.length} bytes` : typeof bytes}`,
+		),
+);
+
+/**
+ * Effect Brand for ChecksumAddress - nominal brand for checksummed string
+ */
+export type ChecksumAddressBrand = string & Brand.Brand<"ChecksumAddress">;
+
+/**
+ * Effect Brand constructor (nominal - validation happens separately via keccak)
+ */
+export const ChecksumAddressBrand = Brand.nominal<ChecksumAddressBrand>();
 
 /**
  * Schema for Address from various input types
- * Validates and brands Uint8Array as Address
+ * Uses Effect Brand validation for type safety
  */
-export class Address extends Schema.Class<Address>("Address")({
+export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
 	value: Schema.Uint8ArrayFromSelf.pipe(
 		Schema.filter(
 			(bytes): bytes is Uint8Array => {
-				return BrandedAddressImpl.is(bytes);
+				return bytes.length === 20;
 			},
 			{
 				message: () => "Invalid address: must be 20 bytes",
@@ -59,10 +76,24 @@ export class Address extends Schema.Class<Address>("Address")({
 	),
 }) {
 	/**
-	 * Get the underlying BrandedAddress
+	 * Get the underlying BrandedAddress (internal Voltaire type)
 	 */
 	get address(): BrandedAddress {
 		return this.value as BrandedAddress;
+	}
+
+	/**
+	 * Get as Effect branded AddressBrand
+	 */
+	get branded(): AddressBrand {
+		return this.value as AddressBrand;
+	}
+
+	/**
+	 * Create from Effect branded AddressBrand (zero-cost, no validation)
+	 */
+	static fromBranded(brand: AddressBrand): AddressSchema {
+		return new AddressSchema({ value: brand });
 	}
 
 	/**
@@ -71,11 +102,11 @@ export class Address extends Schema.Class<Address>("Address")({
 	 */
 	static from(
 		value: number | bigint | string | Uint8Array,
-	): Effect.Effect<Address, FromErrors> {
+	): Effect.Effect<AddressSchema, FromErrors> {
 		return Effect.try({
 			try: () => {
 				const addr = BrandedAddressImpl.from(value);
-				return new Address({ value: addr });
+				return new AddressSchema({ value: addr });
 			},
 			catch: (error) => {
 				// Map native errors to Effect errors
@@ -118,11 +149,11 @@ export class Address extends Schema.Class<Address>("Address")({
 	 * Create from hex string
 	 * @returns Effect that may fail with hex format errors
 	 */
-	static fromHex(value: string): Effect.Effect<Address, FromHexErrors> {
+	static fromHex(value: string): Effect.Effect<AddressSchema, FromHexErrors> {
 		return Effect.try({
 			try: () => {
 				const addr = BrandedAddressImpl.fromHex(value);
-				return new Address({ value: addr });
+				return new AddressSchema({ value: addr });
 			},
 			catch: (error) => {
 				if (error instanceof Error) {
@@ -159,11 +190,13 @@ export class Address extends Schema.Class<Address>("Address")({
 	 * Create from bytes
 	 * @returns Effect that may fail with length errors
 	 */
-	static fromBytes(value: Uint8Array): Effect.Effect<Address, FromBytesErrors> {
+	static fromBytes(
+		value: Uint8Array,
+	): Effect.Effect<AddressSchema, FromBytesErrors> {
 		return Effect.try({
 			try: () => {
 				const addr = BrandedAddressImpl.fromBytes(value);
-				return new Address({ value: addr });
+				return new AddressSchema({ value: addr });
 			},
 			catch: (error) => {
 				return new InvalidAddressLengthError({
@@ -181,17 +214,19 @@ export class Address extends Schema.Class<Address>("Address")({
 	 */
 	static fromNumber(
 		value: number | bigint,
-	): Effect.Effect<Address, FromNumberErrors> {
+	): Effect.Effect<AddressSchema, FromNumberErrors> {
 		return Effect.try({
 			try: () => {
 				const addr = BrandedAddressImpl.fromNumber(value);
-				return new Address({ value: addr });
+				return new AddressSchema({ value: addr });
 			},
 			catch: (error) => {
 				return new InvalidValueError({
 					value,
 					expected: "non-negative number",
-					context: { error: error instanceof Error ? error.message : undefined },
+					context: {
+						error: error instanceof Error ? error.message : undefined,
+					},
 				});
 			},
 		});
@@ -204,7 +239,7 @@ export class Address extends Schema.Class<Address>("Address")({
 	static fromPublicKey(
 		x: bigint,
 		y: bigint,
-	): Effect.Effect<Address, FromPublicKeyErrors, Keccak256Service> {
+	): Effect.Effect<AddressSchema, FromPublicKeyErrors, Keccak256Service> {
 		return Effect.gen(function* () {
 			const keccak = yield* Keccak256Service;
 
@@ -232,7 +267,7 @@ export class Address extends Schema.Class<Address>("Address")({
 
 			// Take last 20 bytes as address
 			const addr = hash.slice(12, 32) as BrandedAddress;
-			return new Address({ value: addr });
+			return new AddressSchema({ value: addr });
 		});
 	}
 
@@ -243,7 +278,7 @@ export class Address extends Schema.Class<Address>("Address")({
 	static fromPrivateKey(
 		value: Uint8Array,
 	): Effect.Effect<
-		Address,
+		AddressSchema,
 		FromPrivateKeyErrors,
 		Secp256k1Service | Keccak256Service
 	> {
@@ -280,7 +315,7 @@ export class Address extends Schema.Class<Address>("Address")({
 
 			// Take last 20 bytes as address
 			const addr = hash.slice(12, 32) as BrandedAddress;
-			return new Address({ value: addr });
+			return new AddressSchema({ value: addr });
 		});
 	}
 
@@ -290,11 +325,11 @@ export class Address extends Schema.Class<Address>("Address")({
 	 */
 	static fromAbiEncoded(
 		value: Uint8Array,
-	): Effect.Effect<Address, FromAbiEncodedErrors> {
+	): Effect.Effect<AddressSchema, FromAbiEncodedErrors> {
 		return Effect.try({
 			try: () => {
 				const addr = BrandedAddressImpl.fromAbiEncoded(value);
-				return new Address({ value: addr });
+				return new AddressSchema({ value: addr });
 			},
 			catch: (error) => {
 				if (value.length !== 32) {
@@ -307,7 +342,9 @@ export class Address extends Schema.Class<Address>("Address")({
 				return new InvalidValueError({
 					value,
 					expected: "32-byte ABI-encoded address",
-					context: { error: error instanceof Error ? error.message : undefined },
+					context: {
+						error: error instanceof Error ? error.message : undefined,
+					},
 				});
 			},
 		});
@@ -316,9 +353,9 @@ export class Address extends Schema.Class<Address>("Address")({
 	/**
 	 * Create zero address (safe, no errors)
 	 */
-	static zero(): Address {
+	static zero(): AddressSchema {
 		const addr = BrandedAddressImpl.zero();
-		return new Address({ value: addr });
+		return new AddressSchema({ value: addr });
 	}
 
 	/**
@@ -332,7 +369,11 @@ export class Address extends Schema.Class<Address>("Address")({
 	 * Convert to checksummed hex string (EIP-55)
 	 * @returns Effect that uses Keccak256Service
 	 */
-	toChecksummed(): Effect.Effect<Checksummed, ToChecksummedErrors, Keccak256Service> {
+	toChecksummed(): Effect.Effect<
+		Checksummed,
+		ToChecksummedErrors,
+		Keccak256Service
+	> {
 		const self = this;
 		return Effect.gen(function* () {
 			const keccak = yield* Keccak256Service;
@@ -341,9 +382,7 @@ export class Address extends Schema.Class<Address>("Address")({
 			const hex = self.toHex().slice(2);
 
 			// Hash the lowercase address
-			const hashBytes = yield* keccak.hash(
-				new TextEncoder().encode(hex),
-			);
+			const hashBytes = yield* keccak.hash(new TextEncoder().encode(hex));
 
 			// Convert hash to hex string
 			let hashHex = "";
@@ -412,9 +451,11 @@ export class Address extends Schema.Class<Address>("Address")({
 	/**
 	 * Compare with another address for equality (safe, no errors)
 	 */
-	equals(other: Address | BrandedAddress): boolean {
+	equals(other: AddressSchema | BrandedAddress): boolean {
 		const otherAddr =
-			other instanceof Address ? other.address : (other as BrandedAddress);
+			other instanceof AddressSchema
+				? other.address
+				: (other as BrandedAddress);
 		return BrandedAddressImpl.equals(this.address, otherAddr);
 	}
 
@@ -422,18 +463,20 @@ export class Address extends Schema.Class<Address>("Address")({
 	 * Compare with another address lexicographically (safe, no errors)
 	 * Returns -1 if this < other, 0 if equal, 1 if this > other
 	 */
-	compare(other: Address | BrandedAddress): number {
+	compare(other: AddressSchema | BrandedAddress): number {
 		const otherAddr =
-			other instanceof Address ? other.address : (other as BrandedAddress);
+			other instanceof AddressSchema
+				? other.address
+				: (other as BrandedAddress);
 		return BrandedAddressImpl.compare(this.address, otherAddr);
 	}
 
 	/**
 	 * Clone the address (safe, no errors)
 	 */
-	clone(): Address {
+	clone(): AddressSchema {
 		const cloned = BrandedAddressImpl.clone(this.address);
-		return new Address({ value: cloned });
+		return new AddressSchema({ value: cloned });
 	}
 
 	/**
@@ -443,7 +486,7 @@ export class Address extends Schema.Class<Address>("Address")({
 	calculateCreateAddress(
 		nonce: bigint,
 	): Effect.Effect<
-		Address,
+		AddressSchema,
 		CalculateCreateAddressErrors,
 		Keccak256Service | RlpEncoderService
 	> {
@@ -463,24 +506,25 @@ export class Address extends Schema.Class<Address>("Address")({
 			const rlp = yield* RlpEncoderService;
 
 			// Encode nonce as minimal bytes (no leading zeros)
-			const nonceBytes = nonce === 0n
-				? new Uint8Array(0)
-				: (() => {
-						let n = nonce;
-						let byteCount = 0;
-						while (n > 0n) {
-							byteCount++;
-							n >>= 8n;
-						}
+			const nonceBytes =
+				nonce === 0n
+					? new Uint8Array(0)
+					: (() => {
+							let n = nonce;
+							let byteCount = 0;
+							while (n > 0n) {
+								byteCount++;
+								n >>= 8n;
+							}
 
-						const bytes = new Uint8Array(byteCount);
-						n = nonce;
-						for (let i = byteCount - 1; i >= 0; i--) {
-							bytes[i] = Number(n & 0xffn);
-							n >>= 8n;
-						}
-						return bytes;
-					})();
+							const bytes = new Uint8Array(byteCount);
+							n = nonce;
+							for (let i = byteCount - 1; i >= 0; i--) {
+								bytes[i] = Number(n & 0xffn);
+								n >>= 8n;
+							}
+							return bytes;
+						})();
 
 			// RLP encode [address, nonce]
 			const encoded = yield* rlp.encode([self.address, nonceBytes]);
@@ -490,7 +534,7 @@ export class Address extends Schema.Class<Address>("Address")({
 
 			// Take last 20 bytes as address
 			const result = hash.slice(12, 32) as BrandedAddress;
-			return new Address({ value: result });
+			return new AddressSchema({ value: result });
 		});
 	}
 
@@ -502,7 +546,7 @@ export class Address extends Schema.Class<Address>("Address")({
 		salt: Uint8Array,
 		initCode: Uint8Array,
 	): Effect.Effect<
-		Address,
+		AddressSchema,
 		CalculateCreate2AddressErrors,
 		Keccak256Service
 	> {
@@ -536,7 +580,7 @@ export class Address extends Schema.Class<Address>("Address")({
 
 			// Take last 20 bytes as address
 			const result = hash.slice(12, 32) as BrandedAddress;
-			return new Address({ value: result });
+			return new AddressSchema({ value: result });
 		});
 	}
 }
@@ -561,10 +605,24 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	),
 }) {
 	/**
-	 * Get the underlying Checksummed string
+	 * Get the underlying Checksummed string (internal Voltaire type)
 	 */
 	get checksummed(): Checksummed {
 		return this.value as Checksummed;
+	}
+
+	/**
+	 * Get as Effect branded ChecksumAddressBrand
+	 */
+	get branded(): ChecksumAddressBrand {
+		return ChecksumAddressBrand(this.value);
+	}
+
+	/**
+	 * Create from Effect branded ChecksumAddressBrand (zero-cost, no validation)
+	 */
+	static fromBranded(brand: ChecksumAddressBrand): ChecksumAddress {
+		return new ChecksumAddress({ value: brand });
 	}
 
 	/**
@@ -573,10 +631,14 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	 */
 	static from(
 		value: number | bigint | string | Uint8Array,
-	): Effect.Effect<ChecksumAddress, ChecksumAddressFromErrors, Keccak256Service> {
+	): Effect.Effect<
+		ChecksumAddress,
+		ChecksumAddressFromErrors,
+		Keccak256Service
+	> {
 		return Effect.gen(function* () {
-			// First convert to Address
-			const addr = yield* Address.from(value);
+			// First convert to AddressSchema
+			const addr = yield* AddressSchema.from(value);
 
 			// Get checksummed version
 			const checksummed = yield* addr.toChecksummed();
@@ -605,9 +667,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	 * Validate a string has valid EIP-55 checksum (uses crypto)
 	 * @returns Effect that uses Keccak256Service
 	 */
-	static isValid(
-		str: string,
-	): Effect.Effect<boolean, never, Keccak256Service> {
+	static isValid(str: string): Effect.Effect<boolean, never, Keccak256Service> {
 		return Effect.gen(function* () {
 			if (!str.startsWith("0x") || str.length !== 42) {
 				return false;
@@ -628,9 +688,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 			const hex = str.slice(2).toLowerCase();
 
 			// Hash the lowercase address
-			const hashBytes = yield* keccak.hash(
-				new TextEncoder().encode(hex),
-			);
+			const hashBytes = yield* keccak.hash(new TextEncoder().encode(hex));
 
 			// Convert hash to hex string
 			let hashHex = "";
@@ -656,11 +714,11 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	}
 
 	/**
-	 * Convert to Address schema instance
+	 * Convert to AddressSchema instance
 	 * @returns Effect that may fail with hex format errors
 	 */
-	toAddress(): Effect.Effect<Address, FromHexErrors> {
-		return Address.fromHex(this.value);
+	toAddress(): Effect.Effect<AddressSchema, FromHexErrors> {
+		return AddressSchema.fromHex(this.value);
 	}
 }
 
@@ -670,7 +728,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
  */
 export const AddressFromHex = Schema.transform(
 	Schema.String,
-	Schema.instanceOf(Address),
+	Schema.instanceOf(AddressSchema),
 	{
 		decode: (hex) => {
 			// This is problematic because Schema transforms are synchronous
@@ -678,7 +736,7 @@ export const AddressFromHex = Schema.transform(
 			// We'll need to use a different approach
 			throw new Error(
 				"AddressFromHex schema cannot be used directly with Effect-based methods. " +
-				"Use Address.fromHex() directly within Effect.gen",
+					"Use AddressSchema.fromHex() directly within Effect.gen",
 			);
 		},
 		encode: (addr) => addr.toHex(),
@@ -698,7 +756,7 @@ export const AddressFromChecksummed = Schema.transform(
 			// but our method returns Effect now
 			throw new Error(
 				"AddressFromChecksummed schema cannot be used directly with Effect-based methods. " +
-				"Use ChecksumAddress.from() directly within Effect.gen",
+					"Use ChecksumAddress.from() directly within Effect.gen",
 			);
 		},
 		encode: (addr) => addr.checksummed,
@@ -706,7 +764,7 @@ export const AddressFromChecksummed = Schema.transform(
 );
 
 /**
- * Schema for universal Address input (number, bigint, hex, bytes)
+ * Schema for universal AddressSchema input (number, bigint, hex, bytes)
  * Note: These schemas need to be used within an Effect context with services provided
  */
 export const AddressFromUnknown = Schema.transform(
@@ -716,14 +774,14 @@ export const AddressFromUnknown = Schema.transform(
 		Schema.String,
 		Schema.Uint8ArrayFromSelf,
 	),
-	Schema.instanceOf(Address),
+	Schema.instanceOf(AddressSchema),
 	{
 		decode: (value) => {
 			// This is problematic because Schema transforms are synchronous
 			// but our method returns Effect now
 			throw new Error(
 				"AddressFromUnknown schema cannot be used directly with Effect-based methods. " +
-				"Use Address.from() directly within Effect.gen",
+					"Use AddressSchema.from() directly within Effect.gen",
 			);
 		},
 		encode: (addr) => addr.address,

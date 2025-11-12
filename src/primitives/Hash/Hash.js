@@ -112,9 +112,6 @@ Object.setPrototypeOf(Hash.prototype, Uint8Array.prototype);
 Hash.prototype.toBytes = function () {
 	return BrandedHash.toBytes(this);
 };
-Hash.prototype.toHex = function () {
-	return BrandedHash.toHex(this);
-};
 Hash.prototype.toString = function () {
 	return BrandedHash.toString(this);
 };
