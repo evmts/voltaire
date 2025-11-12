@@ -453,7 +453,10 @@
 		"test:wasm": "vitest run src/wasm",
 		"test:examples": "bun run test-examples.ts",
 		"test:examples:zig": "zig run examples/test-examples.zig",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"examples:generate": "bun run scripts/generate-example-docs.ts",
+		"examples:test": "bun run scripts/validate-examples.ts",
+		"examples:ci": "bun run examples:test && bun run examples:generate"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",

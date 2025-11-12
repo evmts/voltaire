@@ -1,0 +1,14 @@
+{
+  "group": "Examples",
+  "pages": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        {
+          "title": "Hello Voltaire",
+          "path": "examples/getting-started/hello-voltaire"
+        }
+      ]
+    }
+  ]
+}
