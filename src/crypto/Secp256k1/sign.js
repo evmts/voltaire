@@ -40,19 +40,25 @@ export function sign(messageHash, privateKey) {
 	}
 
 	try {
+		console.log("About to call secp256k1.sign");
 		// Sign with compact format (prehash:false since we already have the hash)
 		const sigCompact = secp256k1.sign(messageHash, privateKey, {
 			prehash: false,
 		});
+		console.log("secp256k1.sign succeeded, sigCompact:", sigCompact);
 
 		// Extract r and s
 		const r = sigCompact.slice(0, 32);
 		const s = sigCompact.slice(32, 64);
+		console.log("r and s extracted");
 
 		// Compute recovery bit by trying all possibilities (0-3)
 		// In practice, only 0-1 are typically needed for secp256k1
+		console.log("About to get public key");
 		const publicKey = secp256k1.getPublicKey(privateKey, false);
+		console.log("Got public key, creating Signature object");
 		const sig = secp256k1.Signature.fromBytes(sigCompact);
+		console.log("Signature object created");
 
 		let recoveryBit = 0;
 		for (let i = 0; i < 4; i++) {
