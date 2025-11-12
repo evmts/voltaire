@@ -1,4 +1,6 @@
 import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
+import type { BrandedBytecode } from "../Bytecode/BrandedBytecode/BrandedBytecode.js";
 import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
@@ -13,7 +15,7 @@ export * from "./BrandedAddress/errors.js";
 export * from "./BrandedAddress/constants.js";
 
 /**
- * Factory function for creating Address instances with prototype chain
+ * Creates Address instances with prototype chain
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
@@ -35,7 +37,7 @@ export function Address(
 	return result;
 }
 
-// Static constructors
+// Alias for Address()
 Address.from = (
 	value: number | bigint | string | Uint8Array,
 ): BrandedAddressType => {
@@ -172,8 +174,8 @@ Address.calculateCreateAddress = (
 
 Address.calculateCreate2Address = (
 	address: BrandedAddressType,
-	salt: Uint8Array,
-	initCode: Uint8Array,
+	salt: BrandedHash,
+	initCode: BrandedBytecode,
 ): BrandedAddressType => {
 	const result = BrandedAddress.calculateCreate2Address(
 		address,

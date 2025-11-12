@@ -487,7 +487,7 @@ export function zero(): BrandedAddress {
 }
 
 /**
- * General-purpose Address.from method
+ * Universal Address factory (Namespace API - use Address() for Class API)
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0

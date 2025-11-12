@@ -9,7 +9,18 @@ export * from "./BrandedHash/constants.js";
  */
 
 /**
- * Factory function for creating Hash instances
+ * Creates a Hash instance from a string or Uint8Array.
+ * Canonical constructor for the Hash Class API.
+ *
+ * @example
+ * ```typescript
+ * // Using constructor (recommended)
+ * const hash = Hash("0x1234...");
+ *
+ * // Namespace API (for functional style)
+ * import * as Hash from './Hash/index.js';
+ * const hash = Hash.from("0x1234...");
+ * ```
  */
 export function Hash(value) {
 	const result = BrandedHash.from(value);
@@ -18,6 +29,10 @@ export function Hash(value) {
 }
 
 // Static constructors
+/**
+ * Alias for Hash() constructor.
+ * Prefer using Hash() directly.
+ */
 Hash.from = (value) => {
 	const result = BrandedHash.from(value);
 	Object.setPrototypeOf(result, Hash.prototype);

@@ -10,10 +10,10 @@ import { getPushSize } from "./getPushSize.js";
  *
  * @example
  * ```typescript
- * const bytecode = Bytecode.from("0x6001");  // PUSH1 0x01
+ * const bytecode = Bytecode("0x6001");  // PUSH1 0x01
  * getNextPc(bytecode, 0);  // 2 (PUSH1 = 1 byte opcode + 1 byte data)
  *
- * const bytecode2 = Bytecode.from("0x01");   // ADD
+ * const bytecode2 = Bytecode("0x01");   // ADD
  * getNextPc(bytecode2, 0); // undefined (would be at EOF)
  * ```
  */

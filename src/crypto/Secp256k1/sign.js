@@ -4,7 +4,6 @@ import {
 	CryptoError,
 	InvalidPrivateKeyError,
 } from "../../primitives/errors/index.js";
-import { PRIVATE_KEY_SIZE } from "./constants.js";
 
 /**
  * Sign a message hash with a private key
@@ -15,7 +14,7 @@ import { PRIVATE_KEY_SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash to sign
- * @param {Uint8Array} privateKey - 32-byte private key
+ * @param {import('../../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js').BrandedPrivateKey} privateKey - 32-byte private key
  * @returns {import('./BrandedSignature.js').BrandedSignature} ECDSA signature with r, s, v components
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {CryptoError} If signing fails
@@ -23,25 +22,13 @@ import { PRIVATE_KEY_SIZE } from "./constants.js";
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
  * import * as Hash from './primitives/Hash/index.js';
+ * import * as PrivateKey from './primitives/PrivateKey/index.js';
  * const messageHash = Hash.keccak256String('Hello!');
- * const privateKey = new Uint8Array(32);
+ * const privateKey = PrivateKey.from(new Uint8Array(32));
  * const signature = Secp256k1.sign(messageHash, privateKey);
  * ```
  */
 export function sign(messageHash, privateKey) {
-	if (privateKey.length !== PRIVATE_KEY_SIZE) {
-		throw new InvalidPrivateKeyError(
-			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
-			{
-				code: "INVALID_PRIVATE_KEY_LENGTH",
-				context: {
-					actualLength: privateKey.length,
-					expectedLength: PRIVATE_KEY_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/sign#error-handling",
-			},
-		);
-	}
 
 	// Validate private key is not zero
 	const isZero = privateKey.every((byte) => byte === 0);

@@ -27,10 +27,12 @@ type HashPrototype = BrandedHash & {
 };
 
 export interface HashConstructor {
+	/** Canonical constructor. Creates a Hash from string or Uint8Array. */
 	(value: string | Uint8Array): BrandedHash;
 	prototype: HashPrototype;
 	ZERO: BrandedHash;
 	SIZE: number;
+	/** @deprecated Alias for Hash(). Prefer using Hash() constructor directly. */
 	from(value: string | Uint8Array): BrandedHash;
 	fromBytes(value: Uint8Array): BrandedHash;
 	fromHex(value: string): BrandedHash;

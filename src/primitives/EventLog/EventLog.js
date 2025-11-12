@@ -47,14 +47,26 @@ export {
  */
 
 /**
- * Factory function for creating EventLog instances
+ * Primary constructor for creating EventLog instances
  *
  * @type {EventLogConstructor}
+ * @example
+ * const log = EventLog({
+ *   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+ *   topics: [Hash.fromHex('0xddf252ad...')],
+ *   data: new Uint8Array([0, 0, 0, 1]),
+ * });
  */
 export function EventLog(params) {
 	return from(params);
 }
 
+/**
+ * Alias for EventLog() constructor
+ *
+ * @param {Parameters<typeof from>[0]} params
+ * @returns {ReturnType<typeof from>}
+ */
 EventLog.from = (params) => from(params);
 EventLog.create = (params) => create(params);
 EventLog.fromRpc = (rpcLog) => fromRpc(rpcLog);

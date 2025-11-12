@@ -7,7 +7,7 @@ import {
 } from "./BrandedAddress/polyfills.js";
 
 /**
- * Factory function for creating Address instances with prototype chain
+ * Creates Address instances with prototype chain
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
@@ -27,9 +27,9 @@ export function Address(value) {
 	return result;
 }
 
-// Static constructors
+// Alias for Address()
 /**
- * Creates an Address from various input types (universal factory)
+ * Alias for Address() constructor
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
@@ -39,9 +39,9 @@ export function Address(value) {
  * @example
  * ```javascript
  * import { Address } from './primitives/Address/Address.js';
- * const addr1 = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
- * const addr2 = Address.from(new Uint8Array(20));
- * const addr3 = Address.from(123n);
+ * const addr1 = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+ * const addr2 = Address(new Uint8Array(20));
+ * const addr3 = Address(123n);
  * ```
  */
 Address.from = (value) => {

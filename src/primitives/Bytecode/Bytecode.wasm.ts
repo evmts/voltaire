@@ -25,7 +25,7 @@ export { from, fromHex } from "./BrandedBytecode/index.js";
  *
  * @example
  * ```typescript
- * const code = Bytecode.from("0x6001...");
+ * const code = Bytecode("0x6001...");
  * const jumpdests = Bytecode.analyzeJumpDestinations(code);
  * ```
  */
@@ -43,7 +43,7 @@ export function analyzeJumpDestinations(bytecode: BrandedBytecode): number[] {
  *
  * @example
  * ```typescript
- * const code = Bytecode.from("0x6001...");
+ * const code = Bytecode("0x6001...");
  * if (Bytecode.isBytecodeBoundary(code, 0)) {
  *   console.log("Valid boundary");
  * }
@@ -65,7 +65,7 @@ export function isBytecodeBoundary(
  *
  * @example
  * ```typescript
- * const code = Bytecode.from("0x5b...");  // 0x5b is JUMPDEST
+ * const code = Bytecode("0x5b...");  // 0x5b is JUMPDEST
  * if (Bytecode.isValidJumpDest(code, 0)) {
  *   console.log("Valid JUMPDEST");
  * }
@@ -87,7 +87,7 @@ export function isValidJumpDest(
  *
  * @example
  * ```typescript
- * const code = Bytecode.from("0x6001...");
+ * const code = Bytecode("0x6001...");
  * Bytecode.validate(code);  // Throws if invalid
  * ```
  */

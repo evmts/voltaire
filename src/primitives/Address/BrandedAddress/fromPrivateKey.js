@@ -1,34 +1,23 @@
-import { PRIVATE_KEY_SIZE } from "../../../crypto/Secp256k1/constants.js";
 // @ts-nocheck
 import { derivePublicKey } from "../../../crypto/Secp256k1/derivePublicKey.js";
-import { InvalidAddressLengthError, InvalidValueError } from "./errors.js";
+import { InvalidValueError } from "./errors.js";
 import { fromPublicKey } from "./fromPublicKey.js";
 
 /**
  * Create Address from secp256k1 private key
  *
- * @param {Uint8Array} privateKey - 32-byte private key
+ * @param {import('../../../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js').BrandedPrivateKey} privateKey - 32-byte private key
  * @returns {import('./BrandedAddress.js').BrandedAddress} Address derived from private key
- * @throws {InvalidAddressLengthError} If private key length is invalid
  * @throws {InvalidValueError} If private key value is invalid
  *
  * @example
  * ```typescript
- * const privateKey = new Uint8Array(32); // Your key
+ * import * as PrivateKey from './primitives/PrivateKey/index.js';
+ * const privateKey = PrivateKey.from(new Uint8Array(32));
  * const addr = Address.fromPrivateKey(privateKey);
  * ```
  */
 export function fromPrivateKey(privateKey) {
-	if (privateKey.length !== PRIVATE_KEY_SIZE) {
-		throw new InvalidAddressLengthError(
-			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
-			{
-				value: privateKey,
-				expected: `${PRIVATE_KEY_SIZE} bytes`,
-				context: { actualLength: privateKey.length },
-			},
-		);
-	}
 
 	// Derive 64-byte uncompressed public key
 	let pubkey;

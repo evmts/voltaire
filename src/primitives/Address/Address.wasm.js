@@ -40,6 +40,7 @@ import {
 
 /**
  * Universal factory for Address - accepts multiple input types
+ * (Namespace API - use Address() for Class API)
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
@@ -605,7 +606,7 @@ export function zero() {
 // ============================================================================
 
 /**
- * Factory function for creating Address instances (WASM implementation)
+ * Creates Address instances (WASM implementation)
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
@@ -623,7 +624,7 @@ export function Address(value) {
 	return from(value);
 }
 
-// Static factory methods
+// Alias for Address()
 Address.from = (value) => from(value);
 
 Address.fromBase64 = (value) => Uint8Array.fromBase64(value);

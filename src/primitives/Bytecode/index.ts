@@ -5,7 +5,16 @@ import * as BrandedBytecode from "./BrandedBytecode/index.js";
 export type { BrandedBytecode } from "./BrandedBytecode/index.js";
 
 /**
- * Factory function for creating Bytecode instances
+ * Create a Bytecode instance from various input types
+ *
+ * Primary constructor - use this for Class API:
+ * ```typescript
+ * import { Bytecode } from '@tevm/voltaire'
+ * const code = Bytecode("0x6001")
+ * ```
+ *
+ * @param {import('./BrandedBytecode/index.js').BytecodeLike} value - Bytecode input
+ * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
  */
 export function Bytecode(value) {
 	const result = BrandedBytecode.from(value);
@@ -13,7 +22,13 @@ export function Bytecode(value) {
 	return result;
 }
 
-// Static constructors
+/**
+ * Alias for Bytecode() constructor
+ *
+ * @deprecated Use `Bytecode(value)` directly instead
+ * @param {import('./BrandedBytecode/index.js').BytecodeLike} value - Bytecode input
+ * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
+ */
 Bytecode.from = (value) => {
 	const result = BrandedBytecode.from(value);
 	Object.setPrototypeOf(result, Bytecode.prototype);

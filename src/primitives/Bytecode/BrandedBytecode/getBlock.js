@@ -12,7 +12,7 @@ const blockCache = new WeakMap();
  *
  * @example
  * ```typescript
- * const bytecode = Bytecode.from(new Uint8Array([0x60, 0x01, 0x00]));
+ * const bytecode = Bytecode(new Uint8Array([0x60, 0x01, 0x00]));
  * const block = Bytecode.getBlock(bytecode, 0);
  * // { index: 0, startPc: 0, endPc: 3, ... }
  * ```

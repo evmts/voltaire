@@ -9,7 +9,7 @@ import { toHex } from "./toHex.js";
  *
  * @example
  * ```typescript
- * const bytecode = BrandedBytecode.from("0x608060...");
+ * const bytecode = BrandedBytecode.fromHex("0x608060...");
  * const abi = toAbi(bytecode);
  * // [
  * //   { type: "function", selector: "0xa9059cbb", stateMutability: "nonpayable", payable: false },

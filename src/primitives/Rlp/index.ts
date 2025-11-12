@@ -9,12 +9,22 @@ export type { BrandedRlp };
 type RlpInput = Uint8Array | BrandedRlp | BrandedRlp[];
 
 /**
- * Factory function for creating RLP instances
+ * Creates an RLP data structure from various inputs
+ * @param value - Uint8Array, BrandedRlp, or array to convert
+ * @returns BrandedRlp data structure
+ * @example
+ * ```typescript
+ * const data = Rlp(new Uint8Array([1, 2, 3]))
+ * ```
  */
 export function Rlp(value: RlpInput) {
 	return BrandedRlpNs.from(value);
 }
 
+/**
+ * Alias for Rlp() constructor
+ * @deprecated Use `Rlp()` constructor instead
+ */
 Rlp.from = (value: RlpInput) => BrandedRlpNs.from(value);
 Rlp.from.prototype = Rlp.prototype;
 

@@ -11,7 +11,26 @@ export type {
 export * from "./BrandedBlob/constants.js";
 
 /**
- * Factory function for creating Blob instances
+ * Creates a Blob instance from various input types.
+ *
+ * Canonical Class API constructor. Supports:
+ * - Raw blob data (131072 bytes)
+ * - Data to encode (auto-encodes with length prefix)
+ *
+ * @param {Uint8Array} value - Uint8Array (either 131072 bytes blob or data to encode)
+ * @returns {Blob} Blob instance
+ * @throws {Error} If data exceeds maximum size
+ *
+ * @example
+ * ```typescript
+ * import { Blob } from './primitives/Blob/index.js';
+ *
+ * // Raw blob
+ * const blob1 = Blob(new Uint8Array(131072));
+ *
+ * // Auto-encode data
+ * const blob2 = Blob(new TextEncoder().encode("Hello"));
+ * ```
  */
 export function Blob(value) {
 	const result = BrandedBlob.from(value);
@@ -19,7 +38,11 @@ export function Blob(value) {
 	return result;
 }
 
-// Static constructors
+/**
+ * Alias for Blob() constructor.
+ *
+ * @deprecated Use `Blob()` constructor instead
+ */
 Blob.from = (value) => {
 	const result = BrandedBlob.from(value);
 	Object.setPrototypeOf(result, Blob.prototype);

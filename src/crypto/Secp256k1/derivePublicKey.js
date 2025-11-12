@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
-import { PRIVATE_KEY_SIZE } from "./constants.js";
 
 /**
  * Derive public key from private key
@@ -11,31 +10,19 @@ import { PRIVATE_KEY_SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {Uint8Array} privateKey - 32-byte private key
+ * @param {import('../../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js').BrandedPrivateKey} privateKey - 32-byte private key
  * @returns {Uint8Array} 64-byte uncompressed public key
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @example
  * ```javascript
  * import * as Secp256k1 from './crypto/Secp256k1/index.js';
- * const privateKey = new Uint8Array(32);
+ * import * as PrivateKey from './primitives/PrivateKey/index.js';
+ * const privateKey = PrivateKey.from(new Uint8Array(32));
  * const publicKey = Secp256k1.derivePublicKey(privateKey);
  * console.log(publicKey.length); // 64
  * ```
  */
 export function derivePublicKey(privateKey) {
-	if (privateKey.length !== PRIVATE_KEY_SIZE) {
-		throw new InvalidPrivateKeyError(
-			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
-			{
-				code: "INVALID_PRIVATE_KEY_LENGTH",
-				context: {
-					actualLength: privateKey.length,
-					expectedLength: PRIVATE_KEY_SIZE,
-				},
-				docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
-			},
-		);
-	}
 
 	try {
 		// Get public key from private key (uncompressed, 65 bytes with 0x04 prefix)

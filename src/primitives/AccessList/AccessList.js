@@ -62,6 +62,8 @@ export {
 /**
  * Factory function for creating AccessList instances (EIP-2930)
  *
+ * Canonical constructor for Class API. Use this for creating AccessList instances.
+ *
  * @see https://voltaire.tevm.sh/primitives/accesslist
  * @since 0.0.0
  * @param {readonly Item[] | Uint8Array} value - Access list items or RLP-encoded bytes
@@ -80,6 +82,10 @@ export function AccessList(value) {
 	return from(value);
 }
 
+/**
+ * Alias for AccessList() constructor
+ * @deprecated Use AccessList() directly
+ */
 AccessList.from = (value) => from(value);
 AccessList.fromBytes = (value) => fromBytes(value);
 

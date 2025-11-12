@@ -3,4 +3,4 @@ export { Hash } from "./Hash.js";
 export * from "./Hash.js";
 
 // Export type definitions
-export type * from "./Hash.ts";
+export type { BrandedHash, HashLike } from "./BrandedHash/BrandedHash.js";

@@ -9,13 +9,28 @@ export const fromBytes = BrandedHex.fromBytes;
 export const toBytes = BrandedHex.toBytes;
 
 /**
- * Factory function for creating Hex instances
+ * Factory function for creating Hex instances (canonical constructor)
+ *
+ * @example
+ * ```ts
+ * import { Hex } from '@voltaire/primitives/Hex';
+ * const hex = Hex('0x1234');
+ * ```
  */
 export function Hex(value) {
 	return BrandedHex.from(value);
 }
 
-// Static constructors
+/**
+ * Alias for Hex() - creates a Hex instance from a value
+ *
+ * @deprecated Use Hex() directly instead
+ * @example
+ * ```ts
+ * import { Hex } from '@voltaire/primitives/Hex';
+ * const hex = Hex('0x1234'); // Preferred
+ * ```
+ */
 Hex.from = (value) => BrandedHex.from(value);
 
 Hex.fromBytes = (value) => BrandedHex.fromBytes(value);
