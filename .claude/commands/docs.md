@@ -26,6 +26,37 @@ You are tasked with updating the Voltaire Mintlify documentation. Follow these p
 
 ---
 
+## KEY FILES
+
+**Core Pages**:
+- **Home page**: `docs/index.mdx` (landing page with hero, features, `mode: custom`)
+- **Introduction**: `docs/introduction.mdx` (why Voltaire, key differentiators, examples)
+- **Getting Started**: `docs/getting-started.mdx` (installation, setup, first steps)
+- **MCP Integration**: `docs/mcp.mdx` (Model Context Protocol integration)
+
+**Configuration**:
+- **Navigation**: `docs/mint.json` (site-wide navigation, theme, colors, settings)
+  - Alternative: `docs/docs.json` (modern format, may be symlink to mint.json)
+  - Contains full navigation structure for all 316+ pages
+
+**Concepts** (foundational patterns):
+- `docs/concepts/branded-types.mdx` (branded type pattern explanation)
+- `docs/concepts/data-first.mdx` (data-first design philosophy)
+- `docs/concepts/api-patterns.mdx` (dual API: Class vs Namespace)
+
+**Content Structure**:
+- **Primitives**: `docs/primitives/{name}/` (23 modules: Address, Bytecode, Abi, etc.)
+  - Each has `index.mdx` (overview) + method-specific pages
+- **Cryptography**: `docs/crypto/{algorithm}/` (17 modules: Keccak256, Secp256k1, etc.)
+- **EVM**: `docs/evm/` (instructions, precompiles)
+- **JSON-RPC**: `docs/jsonrpc/` (provider functionality)
+
+**Meta Documentation**:
+- `docs/CLAUDE.md` (documentation authoring guidelines for Claude)
+- `.claude/commands/docs.md` (this file - slash command context)
+
+---
+
 ## DOCUMENTATION STRUCTURE
 
 ### Directory Layout
