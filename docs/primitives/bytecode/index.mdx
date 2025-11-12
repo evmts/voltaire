@@ -9,7 +9,7 @@ New to bytecode? Start with [Fundamentals](/primitives/bytecode/fundamentals) fo
 
 ## Type Definition
 
-[Branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
 
 ```typescript
 export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
@@ -33,7 +33,7 @@ JavaScript builtins available on all `Uint8Array` instances:
 ## Quick Reference
 
 <Note>
-Bytecode supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/concepts/api-patterns) to understand the differences and choose the right approach for your use case.
+Bytecode supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
 </Note>
 
 <Tabs>

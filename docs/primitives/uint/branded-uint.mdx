@@ -10,7 +10,7 @@ Tree-shakeable functional API for Uint256 operations with optimal bundle size.
 ## Overview
 
 `BrandedUint` is the functional layer underlying the `Uint` class. It provides:
-- **Zero-overhead** [branded type](/concepts/branded-types) wrapping `bigint`
+- **Zero-overhead** [branded type](/getting-started/branded-types) wrapping `bigint`
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking uint as first parameter
 - **Bundle optimization** through selective imports
@@ -25,7 +25,7 @@ export type BrandedUint = bigint & {
 }
 ```
 
-Runtime-validated bigint constrained to `0 <= value <= 2^256-1`. [Brand](/concepts/branded-types) prevents accidental mixing with regular bigints.
+Runtime-validated bigint constrained to `0 <= value <= 2^256-1`. [Brand](/getting-started/branded-types) prevents accidental mixing with regular bigints.
 
 Source: [BrandedUint.ts:1-4](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/BrandedUint.ts#L1-L4)
 

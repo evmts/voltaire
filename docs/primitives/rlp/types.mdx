@@ -26,7 +26,7 @@ export type BrandedRlp =
   | { type: "list"; value: BrandedRlp[] }
 ```
 
-[Branded type](/concepts/branded-types) using discriminated union pattern. The `type` field distinguishes between bytes and list variants.
+[Branded type](/getting-started/branded-types) using discriminated union pattern. The `type` field distinguishes between bytes and list variants.
 
 **Properties:**
 - `type: "bytes" | "list"` - Discriminant field
@@ -701,4 +701,4 @@ Use discriminated unions and type guards together for type-safe RLP data manipul
 - [Encoding](/primitives/rlp/encoding) - Encode typed data to RLP
 - [Decoding](/primitives/rlp/decoding) - Decode RLP to typed structures
 - [Utilities](/primitives/rlp/utilities) - Helper functions for working with types
-- [Branded Types](/concepts/branded-types) - Type branding pattern
+- [Branded Types](/getting-started/branded-types) - Type branding pattern

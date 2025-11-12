@@ -9,7 +9,7 @@ New to blobs? Start with [Fundamentals](/primitives/blob/fundamentals) for guide
 
 ## Type Definition
 
-[Branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing EIP-4844 blob data (exactly 131,072 bytes = 128 KB).
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing EIP-4844 blob data (exactly 131,072 bytes = 128 KB).
 
 ```typescript
 export type BrandedBlob = Uint8Array & { readonly __blob: unique symbol };
@@ -45,7 +45,7 @@ Blob.TARGET_GAS_PER_BLOCK     // 393216 (3 blobs)
 ## Quick Reference
 
 <Note>
-Blob supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/concepts/api-patterns) to understand the differences and choose the right approach for your use case.
+Blob supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
 </Note>
 
 <Tabs>

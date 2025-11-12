@@ -10,7 +10,7 @@ Tree-shakeable functional API for Address operations with optimal bundle size.
 ## Overview
 
 `BrandedAddress` is the functional layer underlying the `Address` class. It provides:
-- **Zero-overhead** [branded type](/concepts/branded-types) wrapping `Uint8Array` (20 bytes)
+- **Zero-overhead** [branded type](/getting-started/branded-types) wrapping `Uint8Array` (20 bytes)
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking address as first parameter
 - **Bundle optimization** through selective imports
@@ -25,7 +25,7 @@ export type BrandedAddress = Uint8Array & {
 }
 ```
 
-Runtime-validated 20-byte `Uint8Array`. [Brand](/concepts/branded-types) prevents accidental mixing with other Uint8Arrays.
+Runtime-validated 20-byte `Uint8Array`. [Brand](/getting-started/branded-types) prevents accidental mixing with other Uint8Arrays.
 
 Defined in: [primitives/Address/BrandedAddress/BrandedAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js)
 

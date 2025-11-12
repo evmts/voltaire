@@ -10,7 +10,7 @@ Tree-shakeable functional API for Hex operations with optimal bundle size.
 ## Overview
 
 `BrandedHex` is the functional layer underlying the `Hex` namespace. It provides:
-- **Zero-overhead** [branded type](/concepts/branded-types) wrapping hex strings with `0x` prefix
+- **Zero-overhead** [branded type](/getting-started/branded-types) wrapping hex strings with `0x` prefix
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking hex as first parameter
 - **Bundle optimization** through selective imports
@@ -32,7 +32,7 @@ export type Sized<TSize extends number = number> = `0x${string}` & {
 export type Bytes<N extends number> = Sized<N>
 ```
 
-Runtime-validated hex string with `0x` prefix. [Brand](/concepts/branded-types) prevents accidental mixing with plain strings. `Sized<N>` adds compile-time size tracking.
+Runtime-validated hex string with `0x` prefix. [Brand](/getting-started/branded-types) prevents accidental mixing with plain strings. `Sized<N>` adds compile-time size tracking.
 
 Defined in: [primitives/Hex/BrandedHex/BrandedHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js)
 

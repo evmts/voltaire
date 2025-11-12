@@ -10,7 +10,7 @@ Tree-shakeable functional API for BloomFilter operations with optimal bundle siz
 ## Overview
 
 `BrandedBloomFilter` is the functional layer underlying the `BloomFilter` class. It provides:
-- **Zero-overhead** [branded type](/concepts/branded-types) wrapping `Uint8Array`
+- **Zero-overhead** [branded type](/getting-started/branded-types) wrapping `Uint8Array`
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking filter as first parameter
 - **Bundle optimization** through selective imports
@@ -27,7 +27,7 @@ export type BrandedBloomFilter = Uint8Array & {
 }
 ```
 
-Runtime-validated `Uint8Array` with bloom filter parameters. [Brand](/concepts/branded-types) prevents accidental mixing with other Uint8Arrays.
+Runtime-validated `Uint8Array` with bloom filter parameters. [Brand](/getting-started/branded-types) prevents accidental mixing with other Uint8Arrays.
 
 Defined in: [primitives/BloomFilter/BrandedBloomFilter/BrandedBloomFilter.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/BrandedBloomFilter.ts)
 
@@ -464,4 +464,4 @@ Only difference is call style and tree-shaking behavior.
 - [Queries](/primitives/bloomfilter/queries) - Membership testing
 - [Conversions](/primitives/bloomfilter/conversions) - Serialization
 - [Algorithm](/primitives/bloomfilter/algorithm) - Understanding bloom filters
-- [Branded Types](/concepts/branded-types) - Zero-overhead type branding
+- [Branded Types](/getting-started/branded-types) - Zero-overhead type branding

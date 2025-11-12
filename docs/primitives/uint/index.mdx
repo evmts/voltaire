@@ -9,7 +9,7 @@ New to unsigned integers? Start with [Fundamentals](/primitives/uint/fundamental
 
 ## Type Definition
 
-[Branded](/concepts/branded-types) [`bigint`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) representing unsigned 256-bit integer (0 to 2^256-1). Supports tree-shakeable namespace methods and class instances with automatic wrapping on overflow.
+[Branded](/getting-started/branded-types) [`bigint`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) representing unsigned 256-bit integer (0 to 2^256-1). Supports tree-shakeable namespace methods and class instances with automatic wrapping on overflow.
 
 ```typescript
 export type BrandedUint = bigint & {
@@ -20,7 +20,7 @@ export type BrandedUint = bigint & {
 ## Quick Reference
 
 <Note>
-Uint supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/concepts/api-patterns) to understand the differences and choose the right approach for your use case.
+Uint supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
 </Note>
 
 <Tabs>
@@ -232,7 +232,7 @@ export type BrandedUint = bigint & {
 }
 ```
 
-[Branded type](/concepts/branded-types) wrapping `bigint`, runtime validated to `0 <= value <= 2^256-1`. Used as underlying type for Uint class and tree-shakeable functions.
+[Branded type](/getting-started/branded-types) wrapping `bigint`, runtime validated to `0 <= value <= 2^256-1`. Used as underlying type for Uint class and tree-shakeable functions.
 
 Source: [BrandedUint.ts:1-4](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/BrandedUint.ts#L1-L4)
 </Tab>
@@ -311,7 +311,7 @@ const hex = toHex(sum);
 - [Fundamentals](/primitives/uint/fundamentals) - Learn unsigned integers and EVM types
 - [Hex](/primitives/hex) - Hex string encoding and decoding
 - [Hash](/primitives/hash) - Keccak256 hashing
-- [Branded Types](/concepts/branded-types) - Zero-overhead type branding pattern
+- [Branded Types](/getting-started/branded-types) - Zero-overhead type branding pattern
 
 ## Specification
 

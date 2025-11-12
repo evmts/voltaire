@@ -15,8 +15,8 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 
 ## Concepts
 
-- [Branded Types](/concepts/branded-types): Type-level tags for nominal typing in TypeScript with zero runtime overhead
-- [Data-First Architecture](/concepts/data-first): Data-first approach with dual API styles (Class and Namespace)
+- [Branded Types](/getting-started/branded-types): Type-level tags for nominal typing in TypeScript with zero runtime overhead
+- [Data-First Architecture](/getting-started/tree-shaking): Data-first approach with dual API styles (Class and Namespace)
 
 ## Core Primitives
 

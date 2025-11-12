@@ -10,7 +10,7 @@ Tree-shakeable functional API for Hash operations with optimal bundle size.
 ## Overview
 
 `BrandedHash` is the functional layer underlying the `Hash` class. It provides:
-- **Zero-overhead** [branded type](/concepts/branded-types) wrapping `Uint8Array` (32 bytes)
+- **Zero-overhead** [branded type](/getting-started/branded-types) wrapping `Uint8Array` (32 bytes)
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking hash as first parameter
 - **Bundle optimization** through selective imports
@@ -25,7 +25,7 @@ export type BrandedHash = Uint8Array & {
 }
 ```
 
-Runtime-validated 32-byte `Uint8Array`. [Brand](/concepts/branded-types) prevents accidental mixing with other Uint8Arrays.
+Runtime-validated 32-byte `Uint8Array`. [Brand](/getting-started/branded-types) prevents accidental mixing with other Uint8Arrays.
 
 Defined in: [primitives/Hash/BrandedHash/BrandedHash.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/BrandedHash.ts)
 

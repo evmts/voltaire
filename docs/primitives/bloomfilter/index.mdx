@@ -9,7 +9,7 @@ New to bloom filters? Start with [Fundamentals](/primitives/bloomfilter/fundamen
 
 ## Type Definition
 
-[Branded](/concepts/branded-types) `Uint8Array` representing a bloom filter with `m` bits and `k` hash functions. Zero-overhead design supports both tree-shakeable namespace methods and class instances. Used extensively in Ethereum for log filtering.
+[Branded](/getting-started/branded-types) `Uint8Array` representing a bloom filter with `m` bits and `k` hash functions. Zero-overhead design supports both tree-shakeable namespace methods and class instances. Used extensively in Ethereum for log filtering.
 
 ```typescript
 export type BrandedBloomFilter = Uint8Array & {

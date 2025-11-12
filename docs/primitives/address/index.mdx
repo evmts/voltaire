@@ -13,7 +13,7 @@ New to Ethereum addresses? Start with [Fundamentals](/primitives/address/fundame
 
 ## Overview
 
-Address is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
+Address is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/getting-started/tree-shaking) used throughout Voltaire.
 
 ```typescript
 export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
@@ -24,7 +24,7 @@ Addresses use EIP-55 mixed-case checksumming for error detection. Voltaire handl
 ## Quick Start
 
 <Note>
-Address supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/concepts/api-patterns) to understand the differences and choose the right approach for your use case.
+Address supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
 </Note>
 
 <Tabs>
