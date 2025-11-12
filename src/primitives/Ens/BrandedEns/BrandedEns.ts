@@ -1,3 +1,5 @@
+import type { brand } from "../../../brand.js";
+
 export type BrandedEns = string & {
-	readonly __tag: "Ens";
+	readonly [brand]: "Ens";
 };

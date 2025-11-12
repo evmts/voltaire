@@ -2,7 +2,6 @@
  * Branded EIP-1559 Transaction type
  *
  * @typedef {object} BrandedTransactionEIP1559
- * @property {readonly "TransactionEIP1559"} __tag - Type brand
  * @property {import('../types.js').Type.EIP1559} type - Transaction type (0x02)
  * @property {bigint} chainId - Chain ID
  * @property {bigint} nonce - Transaction nonce

@@ -1,3 +1,4 @@
+import type { brand } from "../../../brand.js";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { Type } from "../types.js";
 
@@ -5,7 +6,7 @@ import type { Type } from "../types.js";
  * Branded Legacy Transaction type
  */
 export type BrandedTransactionLegacy = {
-	readonly __tag: "TransactionLegacy";
+	readonly [brand]: "TransactionLegacy";
 	type: Type.Legacy;
 	nonce: bigint;
 	gasPrice: bigint;

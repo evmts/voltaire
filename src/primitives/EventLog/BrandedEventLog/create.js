@@ -36,7 +36,6 @@
 export function create(params) {
 	/** @type {any} */
 	const result = {
-		__tag: "EventLog",
 		address: params.address,
 		topics: params.topics,
 		data: params.data,

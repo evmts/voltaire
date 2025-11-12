@@ -42,21 +42,8 @@ export function fromP256(r, s) {
 	result.set(r, 0);
 	result.set(s, COMPONENT_SIZE);
 
-	// Add metadata
-	Object.defineProperties(result, {
-		__tag: {
-			value: "Signature",
-			writable: false,
-			enumerable: false,
-			configurable: false,
-		},
-		algorithm: {
-			value: "p256",
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-	});
+	// Add metadata (algorithm)
+	Object.assign(result, { algorithm: "p256" });
 
 	return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
 		result

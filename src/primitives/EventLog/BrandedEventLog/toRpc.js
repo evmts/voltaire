@@ -30,7 +30,5 @@ import * as OxLog from "ox/Log";
  * ```
  */
 export function toRpc(log) {
-	// Remove brand tag before passing to ox
-	const { __tag, ...logWithoutTag } = log;
-	return OxLog.toRpc(/** @type {any} */ (logWithoutTag));
+	return OxLog.toRpc(/** @type {any} */ (log));
 }

@@ -46,11 +46,6 @@ export function fromHex(hex, m, k) {
 		writable: false,
 		enumerable: true,
 	});
-	Object.defineProperty(bytes, "__tag", {
-		value: "BloomFilter",
-		writable: false,
-		enumerable: false,
-	});
 
 	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
 		bytes

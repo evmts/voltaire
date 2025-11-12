@@ -740,13 +740,13 @@ describe("Signature Fuzz Tests", () => {
 			}
 		});
 
-		it("should handle signatures with modified __tag", () => {
+		it("should handle signatures with algorithm property", () => {
 			const r = new Uint8Array(32).fill(1);
 			const s = new Uint8Array(32).fill(2);
 			const sig = Signature.fromSecp256k1(r, s);
 
-			// Signatures have non-configurable __tag, so modification shouldn't work
-			expect(sig.__tag).toBe("Signature");
+			// Signatures have algorithm property for type checking
+			expect(sig.algorithm).toBe("secp256k1");
 			expect(Signature.is(sig)).toBe(true);
 		});
 

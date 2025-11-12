@@ -71,16 +71,8 @@ export function toAbi(bytecode) {
 		});
 	}
 
-	// Add __tag brand (before freezing)
-	Object.defineProperty(abi, "__tag", {
-		value: "Abi",
-		writable: false,
-		enumerable: false,
-		configurable: false,
-	});
-
-	// Make readonly
-	const brandedAbi = Object.freeze(abi);
-
-	return brandedAbi;
+	// Make readonly and cast to branded type
+	return /** @type {import('./BrandedBytecode.js').BrandedAbi} */ (
+		Object.freeze(abi)
+	);
 }

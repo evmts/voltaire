@@ -1,5 +1,7 @@
+import type { brand } from "../../../brand.js";
+
 export type BrandedBloomFilter = Uint8Array & {
-	readonly __tag: "BloomFilter";
+	readonly [brand]: "BloomFilter";
 	readonly k: number;
 	readonly m: number;
 	toHex(this: BrandedBloomFilter): string;

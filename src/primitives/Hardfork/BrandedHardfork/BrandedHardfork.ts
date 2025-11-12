@@ -1,3 +1,5 @@
+import type { brand } from "../../../brand.js";
+
 /**
  * Branded Hardfork type
  *
@@ -6,5 +8,5 @@
  * gas costs, or adds new features.
  */
 export type BrandedHardfork = string & {
-	readonly __tag: "Hardfork";
+	readonly [brand]: "Hardfork";
 };

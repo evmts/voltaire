@@ -102,11 +102,6 @@ export function combine(...filters) {
 		writable: false,
 		enumerable: true,
 	});
-	Object.defineProperty(result, "__tag", {
-		value: "BloomFilter",
-		writable: false,
-		enumerable: false,
-	});
 
 	return /** @type {import('./BrandedBloomFilter.ts').BrandedBloomFilter} */ (
 		result

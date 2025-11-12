@@ -56,8 +56,7 @@ export {
  * @type {TransactionLegacyConstructor}
  */
 export function TransactionLegacy(tx) {
-	return {
-		__tag: "TransactionLegacy",
+	return /** @type {BrandedTransactionLegacy} */ ({
 		type: Type.Legacy,
 		nonce: tx.nonce,
 		gasPrice: tx.gasPrice,
@@ -68,7 +67,7 @@ export function TransactionLegacy(tx) {
 		v: tx.v,
 		r: tx.r,
 		s: tx.s,
-	};
+	});
 }
 
 // Attach static methods

@@ -30,9 +30,5 @@ import * as OxLog from "ox/Log";
  * ```
  */
 export function fromRpc(rpcLog) {
-	const oxLog = OxLog.fromRpc(rpcLog);
-	// Add brand tag to ox result
-	/** @type {any} */
-	const result = { ...oxLog, __tag: "EventLog" };
-	return /** @type {BrandedEventLog} */ (result);
+	return /** @type {BrandedEventLog} */ (OxLog.fromRpc(rpcLog));
 }

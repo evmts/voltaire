@@ -65,11 +65,6 @@ export function merge(filter1, filter2) {
 		writable: false,
 		enumerable: true,
 	});
-	Object.defineProperty(result, "__tag", {
-		value: "BloomFilter",
-		writable: false,
-		enumerable: false,
-	});
 
 	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
 		result

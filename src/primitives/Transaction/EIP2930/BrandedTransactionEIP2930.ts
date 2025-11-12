@@ -1,3 +1,4 @@
+import type { brand } from "../../../brand.js";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { AccessList, Type } from "../types.js";
 
@@ -5,7 +6,7 @@ import type { AccessList, Type } from "../types.js";
  * Branded EIP-2930 Transaction type
  */
 export type BrandedTransactionEIP2930 = {
-	readonly __tag: "TransactionEIP2930";
+	readonly [brand]: "TransactionEIP2930";
 	type: Type.EIP2930;
 	chainId: bigint;
 	nonce: bigint;

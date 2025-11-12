@@ -1,14 +1,16 @@
+import type { brand } from "../../brand.js";
+
 /**
  * Branded Hex type (unsized)
  */
-export type BrandedHex = `0x${string}` & { readonly __tag: "Hex" };
+export type BrandedHex = `0x${string}` & { readonly [brand]: "Hex" };
 
 /**
  * Sized Hex type with specific byte size
  * @example BrandedHex.Sized<4> = '0x12345678' (4 bytes = 8 hex chars)
  */
 export type Sized<TSize extends number = number> = `0x${string}` & {
-	readonly __tag: "Hex";
+	readonly [brand]: "Hex";
 	readonly size: TSize;
 };
 

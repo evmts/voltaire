@@ -27,21 +27,8 @@ export function fromEd25519(signature) {
 
 	const result = new Uint8Array(signature);
 
-	// Add metadata
-	Object.defineProperties(result, {
-		__tag: {
-			value: "Signature",
-			writable: false,
-			enumerable: false,
-			configurable: false,
-		},
-		algorithm: {
-			value: "ed25519",
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-	});
+	// Add metadata (algorithm)
+	Object.assign(result, { algorithm: "ed25519" });
 
 	return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
 		result

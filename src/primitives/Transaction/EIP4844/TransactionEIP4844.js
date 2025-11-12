@@ -35,7 +35,6 @@ export {
  */
 export function TransactionEIP4844(tx) {
 	return /** @type {BrandedTransactionEIP4844} */ ({
-		__tag: "TransactionEIP4844",
 		type: Type.EIP4844,
 		chainId: tx.chainId,
 		nonce: tx.nonce,

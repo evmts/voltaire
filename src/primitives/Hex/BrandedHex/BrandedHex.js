@@ -1,11 +1,11 @@
 /**
- * @typedef {`0x${string}` & { readonly __tag: "Hex" }} BrandedHex
+ * @typedef {import('./BrandedHex.ts').BrandedHex} BrandedHex
  * Branded Hex type (unsized)
  */
 
 /**
  * @template {number} [TSize=number]
- * @typedef {`0x${string}` & { readonly __tag: "Hex"; readonly size: TSize }} Sized
+ * @typedef {import('./BrandedHex.ts').Sized<TSize>} Sized
  * Sized Hex type with specific byte size
  * @example BrandedHex.Sized<4> = '0x12345678' (4 bytes = 8 hex chars)
  */

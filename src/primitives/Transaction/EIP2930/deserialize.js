@@ -93,8 +93,7 @@ export function deserialize(data) {
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[10])
 		.value;
 
-	return {
-		__tag: "TransactionEIP2930",
+	return /** @type {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} */ ({
 		type: Type.EIP2930,
 		chainId,
 		nonce,
@@ -107,5 +106,5 @@ export function deserialize(data) {
 		yParity,
 		r,
 		s,
-	};
+	});
 }

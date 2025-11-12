@@ -1,5 +1,7 @@
+import type { brand } from "../../../brand.js";
+
 export type BrandedHash = Uint8Array & {
-	readonly __tag: "Hash";
+	readonly [brand]: "Hash";
 };
 
 export const SIZE = 32;

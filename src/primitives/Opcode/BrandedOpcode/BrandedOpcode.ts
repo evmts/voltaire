@@ -1,7 +1,9 @@
+import type { brand } from "../../../brand.js";
+
 /**
  * Branded type for EVM opcodes (number 0x00-0xFF)
  */
-export type BrandedOpcode = number & { readonly __tag: "Opcode" };
+export type BrandedOpcode = number & { readonly [brand]: "Opcode" };
 
 /**
  * Instruction with opcode and optional immediate data

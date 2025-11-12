@@ -1,3 +1,4 @@
+import type { brand } from "../../../brand.js";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 
@@ -26,7 +27,7 @@ export type BrandedEventLog<
 	logIndex?: number;
 	/** Log removed due to chain reorganization */
 	removed?: boolean;
-} & { readonly __tag: "EventLog" };
+} & { readonly [brand]: "EventLog" };
 
 /**
  * Event log filter for querying logs

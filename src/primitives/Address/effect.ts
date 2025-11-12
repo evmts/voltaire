@@ -1,9 +1,9 @@
+import type * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-import * as Brand from "effect/Brand";
 import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
-import * as BrandedAddressImpl from "./BrandedAddress/index.js";
 import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
 import * as ChecksumAddressImpl from "./BrandedAddress/ChecksumAddress.js";
+import * as BrandedAddressImpl from "./BrandedAddress/index.js";
 
 /**
  * Effect Brand for Address (wraps existing BrandedAddress)

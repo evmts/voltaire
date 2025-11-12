@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
 	Address,
-	ChecksumAddress,
 	AddressFromHex,
 	AddressFromUnknown,
+	ChecksumAddress,
 } from "./effect.js";
-import * as BrandedAddress from "./BrandedAddress/index.js";
 
 describe("Address Effect Schema", () => {
 	const testAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";

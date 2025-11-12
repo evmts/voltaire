@@ -49,16 +49,12 @@ export function decodeLog(event, data, topics) {
 			const t0Byte = topic0[i];
 			const expByte = expectedSelector[i];
 			if (t0Byte !== expByte) {
-				const topic0Hex =
-					"0x" +
-					Array.from(topic0)
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join("");
-				const expectedHex =
-					"0x" +
-					Array.from(expectedSelector)
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join("");
+				const topic0Hex = `0x${Array.from(topic0)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("")}`;
+				const expectedHex = `0x${Array.from(expectedSelector)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("")}`;
 				throw new AbiInvalidSelectorError("Event selector mismatch", {
 					value: topic0,
 					expected: expectedHex,

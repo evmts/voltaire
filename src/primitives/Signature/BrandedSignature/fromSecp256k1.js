@@ -43,27 +43,12 @@ export function fromSecp256k1(r, s, v) {
 	result.set(r, 0);
 	result.set(s, COMPONENT_SIZE);
 
-	// Add metadata
-	Object.defineProperties(result, {
-		__tag: {
-			value: "Signature",
-			writable: false,
-			enumerable: false,
-			configurable: false,
-		},
-		algorithm: {
-			value: "secp256k1",
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		v: {
-			value: v,
-			writable: false,
-			enumerable: v !== undefined,
-			configurable: false,
-		},
-	});
+	// Add metadata (algorithm and optional v)
+	if (v !== undefined) {
+		Object.assign(result, { algorithm: "secp256k1", v });
+	} else {
+		Object.assign(result, { algorithm: "secp256k1" });
+	}
 
 	return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
 		result

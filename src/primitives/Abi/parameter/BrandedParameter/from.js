@@ -11,16 +11,8 @@
  * ```
  */
 export function from(param) {
-	// Already branded, return as-is
-	if (param && typeof param === "object" && "__tag" in param) {
-		return /** @type {import('./BrandedParameter.js').BrandedParameter} */ (
-			param
-		);
-	}
-
-	// Brand the parameter object
-	return /** @type {import('./BrandedParameter.js').BrandedParameter} */ ({
-		...param,
-		__tag: "AbiParameter",
-	});
+	// Cast to branded type (brand is compile-time only)
+	return /** @type {import('./BrandedParameter.js').BrandedParameter} */ (
+		param
+	);
 }

@@ -36,11 +36,6 @@ export function create(m, k) {
 		writable: false,
 		enumerable: true,
 	});
-	Object.defineProperty(filter, "__tag", {
-		value: "BloomFilter",
-		writable: false,
-		enumerable: false,
-	});
 	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
 		filter
 	);

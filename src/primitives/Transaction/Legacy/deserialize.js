@@ -80,8 +80,7 @@ export function deserialize(data) {
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[8])
 		.value;
 
-	return {
-		__tag: "TransactionLegacy",
+	return /** @type {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} */ ({
 		type: Type.Legacy,
 		nonce,
 		gasPrice,
@@ -92,5 +91,5 @@ export function deserialize(data) {
 		v,
 		r,
 		s,
-	};
+	});
 }

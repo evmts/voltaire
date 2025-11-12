@@ -2,7 +2,6 @@
  * Transaction EIP-1559 Constructor type
  *
  * @typedef {object} TransactionEIP1559Prototype
- * @property {readonly "TransactionEIP1559"} __tag
  * @property {import('../types.js').Type.EIP1559} type
  * @property {bigint} chainId
  * @property {bigint} nonce

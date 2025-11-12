@@ -1,3 +1,4 @@
+import type { brand } from "../../../brand.js";
 import type { AbiType } from "../../Type.js";
 
 export type BrandedParameter<
@@ -10,5 +11,5 @@ export type BrandedParameter<
 	readonly internalType?: TInternalType;
 	readonly indexed?: boolean;
 	readonly components?: readonly BrandedParameter[];
-	readonly __tag: "AbiParameter";
+	readonly [brand]: "AbiParameter";
 };

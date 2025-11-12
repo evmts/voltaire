@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as Rlp from "./index.js";
-import { MAX_DEPTH } from "./BrandedRlp/constants.js";
 import { RlpDecodingError } from "./BrandedRlp/RlpError.js";
+import { MAX_DEPTH } from "./BrandedRlp/constants.js";
+import * as Rlp from "./index.js";
 
 /**
  * Fuzz tests for RLP encode/decode functions

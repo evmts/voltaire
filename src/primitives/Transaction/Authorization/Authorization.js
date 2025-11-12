@@ -40,15 +40,14 @@ export { getAuthorizer, getSigningHash, verifySignature };
  * ```
  */
 export function Authorization(auth) {
-	return {
-		__tag: "Authorization",
+	return /** @type {BrandedAuthorization} */ ({
 		chainId: auth.chainId,
 		address: auth.address,
 		nonce: auth.nonce,
 		yParity: auth.yParity,
 		r: auth.r,
 		s: auth.s,
-	};
+	});
 }
 
 Authorization.getSigningHash = getSigningHash;

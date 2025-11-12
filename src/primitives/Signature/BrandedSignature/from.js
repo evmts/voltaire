@@ -27,11 +27,13 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  */
 export function from(value) {
 	// If it's already a BrandedSignature, return it
+	const val = /** @type {any} */ (value);
 	if (
-		value &&
-		typeof value === "object" &&
-		"__tag" in value &&
-		value.__tag === "Signature"
+		value instanceof Uint8Array &&
+		"algorithm" in val &&
+		(val.algorithm === "secp256k1" ||
+			val.algorithm === "p256" ||
+			val.algorithm === "ed25519")
 	) {
 		return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
 			value

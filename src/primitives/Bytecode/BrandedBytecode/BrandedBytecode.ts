@@ -1,3 +1,5 @@
+import type { brand } from "../../../brand.js";
+
 /**
  * Branded Bytecode type
  */
@@ -5,7 +7,7 @@
 /**
  * EVM Bytecode (Uint8Array)
  */
-export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
+export type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" };
 
 /**
  * EVM opcode (single byte instruction)
@@ -65,12 +67,12 @@ export type OpcodeMetadata = {
 /**
  * Branded hex string for bytecode
  */
-export type BrandedBytecodeHex = string & { readonly __tag: "BytecodeHex" };
+export type BrandedBytecodeHex = string & { readonly [brand]: "BytecodeHex" };
 
 /**
  * Branded ABI type
  */
-export type BrandedAbi = ReadonlyArray<ABIItem> & { readonly __tag: "Abi" };
+export type BrandedAbi = ReadonlyArray<ABIItem> & { readonly [brand]: "Abi" };
 
 /**
  * ABI item (function or event)

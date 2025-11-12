@@ -12,9 +12,12 @@
  * ```
  */
 export function is(value) {
+	const val = /** @type {any} */ (value);
 	return (
 		value instanceof Uint8Array &&
-		/** @type {any} */ (value).__tag === "Signature" &&
-		"algorithm" in /** @type {any} */ (value)
+		"algorithm" in val &&
+		(val.algorithm === "secp256k1" ||
+			val.algorithm === "p256" ||
+			val.algorithm === "ed25519")
 	);
 }

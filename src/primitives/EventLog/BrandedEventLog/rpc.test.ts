@@ -51,7 +51,7 @@ describe("fromRpc - Valid RPC Log Parsing", () => {
 
 		const log = fromRpc(rpcLog);
 
-		expect(log.__tag).toBe("EventLog");
+		
 		expect(log.address).toBeDefined();
 		expect(log.topics).toHaveLength(3);
 		expect(typeof log.data).toBe("string");
@@ -1446,7 +1446,7 @@ describe("Integration - Real RPC Formats", () => {
 
 		const log = fromRpc(gethLog);
 
-		expect(log.__tag).toBe("EventLog");
+		
 		expect(log.blockNumber).toBe(0x12d685cn);
 	});
 
@@ -1465,7 +1465,7 @@ describe("Integration - Real RPC Formats", () => {
 
 		const log = fromRpc(erigonLog);
 
-		expect(log.__tag).toBe("EventLog");
+		
 	});
 
 	it("handles Alchemy/Infura format variations", () => {
@@ -1501,6 +1501,6 @@ describe("Integration - Real RPC Formats", () => {
 
 		const log = fromRpc(hardhatLog);
 
-		expect(log.__tag).toBe("EventLog");
+		
 	});
 });
