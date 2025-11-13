@@ -18,7 +18,7 @@ import { isValid } from "./isValid.js";
  */
 export function tryFrom(value) {
 	if (isValid(value)) {
-		return value;
+		return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (value);
 	}
 	return null;
 }

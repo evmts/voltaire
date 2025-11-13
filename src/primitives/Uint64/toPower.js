@@ -18,12 +18,12 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function toPower(uint, exp) {
-	if (exp === 0n) return 1n;
+	if (exp === 0n) return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (1n);
 	if (exp === 1n) return uint;
 
 	let result = 1n;
-	let base = uint;
-	let exponent = exp;
+	let base = /** @type {bigint} */ (uint);
+	let exponent = /** @type {bigint} */ (exp);
 
 	while (exponent > 0n) {
 		if (exponent & 1n) {
@@ -33,5 +33,5 @@ export function toPower(uint, exp) {
 		exponent = exponent >> 1n;
 	}
 
-	return result;
+	return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (result);
 }

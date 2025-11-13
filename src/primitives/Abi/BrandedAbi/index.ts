@@ -1,6 +1,14 @@
 // @ts-nocheck
 export * from "./BrandedAbi.js";
 
+// Re-export sub-namespaces
+import { Function } from "../function/Function.js";
+import { Event } from "../event/Event.js";
+import { Error } from "../error/Error.js";
+import * as ConstructorExport from "../constructor/index.js";
+export { Function, Event, Error };
+export { ConstructorExport as Constructor };
+
 import * as ItemNs from "../Item/index.js";
 import * as ConstructorNs from "../constructor/index.js";
 import * as ErrorNs from "../error/index.js";

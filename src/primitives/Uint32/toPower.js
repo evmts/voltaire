@@ -16,12 +16,12 @@
  * ```
  */
 export function toPower(uint, exp) {
-	if (exp === 0) return 1;
+	if (exp === 0) return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (1);
 	if (exp === 1) return uint;
 
 	let result = 1;
-	let base = uint;
-	let exponent = exp;
+	let base = /** @type {number} */ (uint);
+	let exponent = /** @type {number} */ (exp);
 
 	while (exponent > 0) {
 		if (exponent & 1) {
@@ -31,5 +31,5 @@ export function toPower(uint, exp) {
 		exponent = exponent >>> 1;
 	}
 
-	return result;
+	return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (result);
 }

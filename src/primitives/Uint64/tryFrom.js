@@ -20,7 +20,7 @@ export function tryFrom(value) {
 	try {
 		if (typeof value === "bigint") {
 			if (value >= 0n && value <= MAX) {
-				return value;
+				return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (value);
 			}
 		}
 		return null;
