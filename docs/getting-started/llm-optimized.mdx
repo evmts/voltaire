@@ -1,9 +1,162 @@
 ---
 title: LLM-Optimized
-description: API designed for AI-assisted development with MCP server
+description: Built from the ground up to be great for LLMs and humans alike
 ---
 
-API mirrors Ethereum specification with simple data structures. MCP server enables AI-assisted development.
+Voltaire is built from the ground up to be great for LLMs and humans alike.
+
+## Mirrors Official Specifications
+
+Voltaire's API mirrors Ethereum specifications and standards instead of creating bespoke abstractions. This leverages existing knowledge - both for humans and LLMs.
+
+**Why this matters for LLMs:**
+
+In the past, libraries optimized for developers who would use them continuously over time. After months of usage, bespoke APIs became intuitive. This made sense when humans were the only consumers.
+
+LLMs are different. They don't have long-term learning - they only have pre-existing training data. When your API differs from official specs:
+- LLMs can't leverage training data from Ethereum documentation
+- Breaking changes create a larger gap between training data and reality
+- Debugging requires understanding library-specific abstractions
+
+By staying close to specs, we minimize the diff between the LLM's training data and Voltaire's API.
+
+**Example - Contract Calls:**
+
+```typescript
+// Other libraries (bespoke abstraction)
+const result = await contract.read.balanceOf([address]);
+
+// Voltaire (close to JSON-RPC spec)
+const result = await client.request({
+  method: 'eth_call',
+  params: [{
+    to: contractAddress,
+    data: encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [address]
+    })
+  }, 'latest']
+});
+```
+
+Voltaire's approach looks more like the underlying JSON-RPC request. This is intentional - when debugging, there's no missing context.
+
+## Minimal Abstraction
+
+We've found that minimal abstraction close to the spec produces the best LLM results, especially during debugging.
+
+**Everything is explicit and low-level:**
+
+```typescript
+// Explicit retry behavior (you control it)
+let attempt = 0;
+while (attempt < maxRetries) {
+  try {
+    const result = await client.request(params);
+    break;
+  } catch (error) {
+    attempt++;
+    await sleep(retryDelay * attempt);
+  }
+}
+
+// NOT: Hidden retry policies that confuse both humans and LLMs
+```
+
+Even humans struggle to understand hidden retry policies, polling behavior, and automatic retries. We eliminate this confusion by making everything explicit.
+
+## Unix Philosophy
+
+Voltaire focuses on low-level primitives. Everything does one thing well:
+
+```typescript
+import { Address } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { encodeFunctionData } from '@tevm/voltaire/abi';
+```
+
+Each primitive is a building block. No magical encapsulation, no hidden behavior.
+
+## Higher-Level Abstractions
+
+Higher-level abstractions (like smart clients with retry policies) exist in Voltaire, but differently.
+
+**Instead of one-size-fits-all, we provide building blocks to create your own client.**
+
+Think shadcn for Ethereum - the client is rendered in your codebase:
+
+```typescript
+// In your codebase: src/client.ts
+import { createClient } from '@tevm/voltaire/client';
+
+export const client = createClient({
+  transport: http('https://eth.llamarpc.com'),
+  retry: {
+    maxAttempts: 3,
+    delay: 1000
+  }
+});
+```
+
+### Why This Approach?
+
+**1. Context in Your Codebase**
+
+When the client lives in your codebase:
+- LLMs can read the source directly
+- You can add console.logs for debugging
+- Behavior is transparent, not hidden in `node_modules`
+
+Voltaire primitives are so close to specs that source code isn't needed - JSDoc and patterns make them intuitive. But higher-level abstractions benefit enormously from being visible.
+
+**2. Customize to Your Needs**
+
+Common customizations:
+
+```typescript
+// Hard-code your contract
+const myNFT = {
+  address: NFT_ADDRESS,
+  abi: nftAbi
+} as const;
+
+export async function getOwnerOf(tokenId: bigint) {
+  return client.readContract({
+    ...myNFT,
+    functionName: 'ownerOf',
+    args: [tokenId]
+  });
+}
+
+// Custom retry for specific methods
+export async function readWithAggressiveRetry(params: ReadParams) {
+  return retry(
+    () => client.read(params),
+    { maxAttempts: 10, backoff: 'exponential' }
+  );
+}
+
+// Override specific JSON-RPC methods
+export const customClient = createClient({
+  ...baseClient,
+  request: async (params) => {
+    if (params.method === 'eth_call') {
+      return callWithCache(params);
+    }
+    return baseClient.request(params);
+  }
+});
+```
+
+**Common customizations:**
+- Hard-code contracts you use frequently
+- Custom methods like `getOwnerOf()` instead of generic `readContract()`
+- Abstractions across multiple contracts
+- Custom retry policies per method
+- Override specific JSON-RPC methods with caching
+
+This is powerful because your application logic is in your codebase, not abstracted away.
 
 ## Smart LLM Detection
 
