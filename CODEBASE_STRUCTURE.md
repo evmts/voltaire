@@ -83,7 +83,23 @@ Ethereum data types & encoding - mostly TypeScript with Zig implementations
 - Siwe (Sign-in with Ethereum) - 8+ files, SIWE message handling
 - State (Account state) - 8+ files, storage & code state
 - Transaction (Transactions) - 50+ files, includes Legacy, EIP1559, EIP2930, EIP4844, EIP7702 types
-- Uint (Uint256) - 12+ files, 256-bit unsigned integers
+- Uint (Uint256) - 12+ files, 256-bit unsigned integers (legacy, aliased to Uint256)
+- Uint8 - 8-bit unsigned integers (0-255), branded number type
+- Uint16 - 16-bit unsigned integers (0-65535), branded number type
+- Uint32 - 32-bit unsigned integers (0-4294967295), branded number type
+- Uint64 - 64-bit unsigned integers, branded bigint type
+- Uint128 - 128-bit unsigned integers, branded bigint type
+- Uint256 - 256-bit unsigned integers (replaces legacy Uint), branded bigint type
+- Int8 - Signed 8-bit integers (-128 to 127), branded number type with two's complement
+- Int16 - Signed 16-bit integers (-32768 to 32767), branded number type with two's complement
+- Int32 - Signed 32-bit integers, branded number type with two's complement
+- Int128 - Signed 128-bit integers, branded bigint type with two's complement
+- Int256 - Signed 256-bit integers, branded bigint type with two's complement (EVM SIGNEXTEND)
+- Bytes - Generic byte array type, variable-length
+- Bytes1 through Bytes8 - Fixed-size byte arrays (1-8 bytes)
+- Bytes16 - Fixed 16-byte array
+- Bytes32 - Fixed 32-byte array (compatible with Hash)
+- Bytes64 - Fixed 64-byte array
 
 **File Patterns:**
 - `BrandedX/BrandedX.ts` - Branded type definition

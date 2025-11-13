@@ -473,8 +473,43 @@
 					]
 				},
 				{
-					"group": "Uint256",
-					"pages": ["primitives/uint256/index"]
+					"group": "Unsigned Integers",
+					"pages": [
+						"primitives/uint/index",
+						"primitives/uint8/index",
+						"primitives/uint16/index",
+						"primitives/uint32/index",
+						"primitives/uint64/index",
+						"primitives/uint128/index",
+						"primitives/uint256/index"
+					]
+				},
+				{
+					"group": "Signed Integers",
+					"pages": [
+						"primitives/int8/index",
+						"primitives/int16/index",
+						"primitives/int32/index",
+						"primitives/int128/index",
+						"primitives/int256/index"
+					]
+				},
+				{
+					"group": "Bytes Types",
+					"pages": [
+						"primitives/bytes/index",
+						"primitives/bytes/bytes1",
+						"primitives/bytes/bytes2",
+						"primitives/bytes/bytes3",
+						"primitives/bytes/bytes4",
+						"primitives/bytes/bytes5",
+						"primitives/bytes/bytes6",
+						"primitives/bytes/bytes7",
+						"primitives/bytes/bytes8",
+						"primitives/bytes/bytes16",
+						"primitives/bytes/bytes32",
+						"primitives/bytes/bytes64"
+					]
 				}
 			]
 		},
