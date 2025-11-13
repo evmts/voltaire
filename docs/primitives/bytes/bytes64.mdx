@@ -1,0 +1,272 @@
+---
+title: Bytes64
+description: Fixed-size 64-byte (512-bit) values for extended hashes and concatenated data
+---
+
+<Info>
+**Extended Size Type** - Bytes64 provides type-safe handling of 512-bit values, commonly used for concatenated hashes and extended data structures.
+</Info>
+
+## Overview
+
+Bytes64 is a branded `Uint8Array` type representing exactly 64 bytes (512 bits). It provides strict size validation and type safety for large fixed-size byte values.
+
+```typescript
+import * as Bytes64 from '@tevm/voltaire/primitives/Bytes/Bytes64';
+
+// Create from hex
+const bytes = Bytes64.from('0x' + '12'.repeat(64));
+console.log(bytes.length); // 64
+
+// Create zero-filled
+const zeros = Bytes64.zero();
+console.log(Bytes64.isZero(zeros)); // true
+
+// Size is strictly enforced
+Bytes64.from(new Uint8Array(63)); // Error: must be 64 bytes
+```
+
+## Use Cases
+
+**Concatenated Hashes (2x32 bytes)**
+```typescript
+// Combine two 32-byte hashes
+const hash1 = new Uint8Array(32).fill(0xaa);
+const hash2 = new Uint8Array(32).fill(0xbb);
+const combined = new Uint8Array(64);
+combined.set(hash1, 0);
+combined.set(hash2, 32);
+const bytes64 = Bytes64.fromBytes(combined);
+
+console.log(bytes64[0]);  // 0xaa
+console.log(bytes64[32]); // 0xbb
+```
+
+**Extended Hashes**
+```typescript
+// SHA-512, Blake2b-512, etc.
+const extendedHash = Bytes64.fromHex('0x...');
+```
+
+**Public Key Material**
+```typescript
+// Some public keys are 64 bytes (uncompressed)
+const pubkey = Bytes64.fromHex('0x...');
+```
+
+**Signature Components**
+```typescript
+// r + s components concatenated (32 + 32 bytes)
+const signature = Bytes64.fromHex('0x...');
+```
+
+## Type Safety
+
+Bytes64 uses TypeScript branding for compile-time safety:
+
+```typescript
+type BrandedBytes64 = Uint8Array & {
+  readonly [brand]: "Bytes64";
+  readonly size: 64;
+};
+```
+
+This prevents mixing different byte types:
+
+```typescript
+const bytes64 = Bytes64.from('0x' + '12'.repeat(64));
+const bytes32 = Bytes32.from('0x' + '12'.repeat(32));
+
+// Type error: cannot assign Bytes32 to Bytes64
+const wrong: Bytes64.BrandedBytes64 = bytes32;
+```
+
+## Constructors
+
+### from
+Create Bytes64 from hex string or bytes:
+
+```typescript
+// From hex
+const b1 = Bytes64.from('0x' + '12'.repeat(64));
+
+// From bytes
+const b2 = Bytes64.from(new Uint8Array(64));
+```
+
+### fromHex
+Create from hex string with strict validation:
+
+```typescript
+const bytes = Bytes64.fromHex('0x' + 'ab'.repeat(64));
+
+// Without 0x prefix
+const bytes2 = Bytes64.fromHex('12'.repeat(64));
+
+// Throws on wrong length
+Bytes64.fromHex('0x1234'); // Error: must be 128 hex chars
+```
+
+### fromBytes
+Create from Uint8Array with size check:
+
+```typescript
+const arr = new Uint8Array(64);
+const bytes = Bytes64.fromBytes(arr);
+
+// Throws on wrong size
+Bytes64.fromBytes(new Uint8Array(63)); // Error
+```
+
+### zero
+Create zero-filled Bytes64:
+
+```typescript
+const zeros = Bytes64.zero();
+console.log(Bytes64.isZero(zeros)); // true
+```
+
+## Conversions
+
+### toHex
+Convert to hex string:
+
+```typescript
+const bytes = Bytes64.fromBytes(new Uint8Array(64));
+const hex = Bytes64.toHex(bytes);
+console.log(hex.length); // 130 (0x + 128 hex chars)
+```
+
+### toUint8Array
+Convert to raw bytes:
+
+```typescript
+const bytes = Bytes64.from('0x' + '12'.repeat(64));
+const arr = Bytes64.toUint8Array(bytes);
+console.log(arr instanceof Uint8Array); // true
+```
+
+## Operations
+
+### equals
+Check equality:
+
+```typescript
+const a = Bytes64.fromHex('0x' + 'aa'.repeat(64));
+const b = Bytes64.fromHex('0x' + 'aa'.repeat(64));
+console.log(Bytes64.equals(a, b)); // true
+```
+
+### compare
+Compare two values:
+
+```typescript
+const a = Bytes64.fromHex('0x' + '01'.repeat(64));
+const b = Bytes64.fromHex('0x' + '02'.repeat(64));
+console.log(Bytes64.compare(a, b)); // -1 (a < b)
+```
+
+### clone
+Create independent copy:
+
+```typescript
+const original = Bytes64.from('0x' + '12'.repeat(64));
+const copy = Bytes64.clone(original);
+```
+
+### isZero
+Check if all zeros:
+
+```typescript
+const zeros = Bytes64.zero();
+console.log(Bytes64.isZero(zeros)); // true
+
+const nonZero = Bytes64.fromHex('0x' + '00'.repeat(63) + '01');
+console.log(Bytes64.isZero(nonZero)); // false
+```
+
+### size
+Get size (always 64):
+
+```typescript
+const bytes = Bytes64.from('0x' + '12'.repeat(64));
+console.log(Bytes64.size(bytes)); // 64
+```
+
+## Constants
+
+### SIZE
+Bytes64 size in bytes:
+
+```typescript
+console.log(Bytes64.SIZE); // 64
+```
+
+### ZERO
+Zero-filled constant:
+
+```typescript
+console.log(Bytes64.ZERO.length); // 64
+console.log(Bytes64.isZero(Bytes64.ZERO)); // true
+```
+
+## Error Handling
+
+Bytes64 validates size strictly:
+
+```typescript
+try {
+  Bytes64.fromBytes(new Uint8Array(63));
+} catch (error) {
+  console.log(error.code); // "BYTES64_INVALID_LENGTH"
+  console.log(error.message); // "Bytes64 must be 64 bytes, got 63"
+}
+
+try {
+  Bytes64.fromHex('0x1234');
+} catch (error) {
+  console.log(error.code); // "BYTES64_INVALID_HEX_LENGTH"
+  console.log(error.message); // "Bytes64 hex must be 128 characters..."
+}
+```
+
+## Working with Hash Pairs
+
+Common pattern: concatenate two 32-byte hashes:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Two hashes to concatenate
+const hash1 = Hash.keccak256(data1);
+const hash2 = Hash.keccak256(data2);
+
+// Combine into Bytes64
+const combined = new Uint8Array(64);
+combined.set(hash1, 0);   // First 32 bytes
+combined.set(hash2, 32);  // Second 32 bytes
+const bytes64 = Bytes64.fromBytes(combined);
+
+// Access components
+const firstHash = bytes64.slice(0, 32);
+const secondHash = bytes64.slice(32, 64);
+```
+
+## Extended Hash Functions
+
+Some hash functions output 64 bytes:
+
+```typescript
+// SHA-512 (hypothetical)
+const sha512Result = Bytes64.fromHex('0x...');
+
+// Blake2b-512
+const blake2b512Result = Bytes64.fromHex('0x...');
+```
+
+## Related
+
+- [Bytes32](/primitives/bytes/bytes32) - 256-bit fixed-size bytes (most common)
+- [Bytes16](/primitives/bytes/bytes16) - 128-bit fixed-size bytes
+- [Hash](/primitives/hash) - 256-bit cryptographic hashes
+- [Hex](/primitives/hex) - Variable-length hex strings

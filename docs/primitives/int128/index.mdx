@@ -1,0 +1,169 @@
+---
+title: Int128
+description: 128-bit signed integer with two's complement encoding
+---
+
+## Type Definition
+
+Branded `bigint` representing signed 128-bit integer (-2^127 to 2^127-1). Supports two's complement encoding for hex/bytes operations.
+
+```typescript
+export type BrandedInt128 = bigint & {
+  readonly [brand]: "Int128"
+}
+```
+
+## Range
+
+- **MIN**: -2^127 = -170141183460469231731687303715884105728
+- **MAX**: 2^127-1 = 170141183460469231731687303715884105727
+- **Size**: 16 bytes (128 bits)
+
+## Quick Start
+
+```typescript
+import * as Int128 from '@voltaire/primitives/Int128';
+
+// Create from various sources
+const a = Int128.from(-42n);
+const b = Int128.fromHex("0xffffffffffffffffffffffffffffffff"); // -1
+const c = Int128.fromNumber(-100);
+
+// Arithmetic (truncate toward zero)
+Int128.dividedBy(-10n, 3n); // -3n (not -4)
+Int128.modulo(-10n, 3n);     // -1n (sign follows dividend)
+
+// Signed comparison
+Int128.lessThan(-1n, 0n);    // true
+Int128.greaterThan(0n, -1n); // true
+
+// Bitwise (two's complement)
+Int128.shiftRight(-256n, 1); // -128n (arithmetic shift, sign preserved)
+Int128.bitwiseAnd(-1n, 0xffn); // 0xffn
+
+// Two's complement encoding
+Int128.toHex(-1n); // "0xffffffffffffffffffffffffffffffff"
+```
+
+## API Methods
+
+### Constructors
+- `from(value)` - From bigint, number, or string
+- `fromBigInt(value)` - From bigint with validation
+- `fromNumber(value)` - From number (throws if out of range)
+- `fromHex(hex)` - Parse hex (two's complement)
+- `fromBytes(bytes)` - Parse bytes (two's complement, big-endian)
+
+### Conversions
+- `toHex(value)` - To hex (two's complement)
+- `toBytes(value)` - To bytes (16 bytes, two's complement, big-endian)
+- `toBigInt(value)` - To bigint
+- `toNumber(value)` - To number (throws if unsafe)
+- `toString(value)` - To decimal string
+
+### Arithmetic
+- `plus(a, b)` - Add with wrapping
+- `minus(a, b)` - Subtract with wrapping
+- `times(a, b)` - Multiply with wrapping
+- `dividedBy(a, b)` - Divide (truncate toward zero)
+- `modulo(a, b)` - Modulo (sign follows dividend)
+- `abs(value)` - Absolute value (throws on MIN)
+- `negate(value)` - Negate with wrapping
+
+### Comparison
+- `equals(a, b)` - Equality
+- `lessThan(a, b)` - Signed less than
+- `greaterThan(a, b)` - Signed greater than
+- `isZero(value)` - Check if zero
+- `isNegative(value)` - Check if negative
+- `isPositive(value)` - Check if positive
+- `sign(value)` - Sign indicator (-1, 0, 1)
+- `minimum(a, b)` - Minimum value
+- `maximum(a, b)` - Maximum value
+
+### Bitwise
+- `bitwiseAnd(a, b)` - Bitwise AND
+- `bitwiseOr(a, b)` - Bitwise OR
+- `bitwiseXor(a, b)` - Bitwise XOR
+- `bitwiseNot(value)` - Bitwise NOT
+- `shiftLeft(value, shift)` - Left shift
+- `shiftRight(value, shift)` - Arithmetic right shift (sign-preserving)
+
+### Utilities
+- `bitLength(value)` - Significant bit count
+- `leadingZeros(value)` - Leading zero count
+- `popCount(value)` - Set bit count
+- `isValid(value)` - Range validation
+
+## Two's Complement
+
+Int128 uses two's complement for hex/bytes encoding:
+
+```typescript
+// -1 is all bits set
+Int128.toHex(-1n);
+// "0xffffffffffffffffffffffffffffffff"
+
+// MIN has high bit set
+Int128.toHex(Int128.MIN);
+// "0x80000000000000000000000000000000"
+
+// MAX is 0x7f...
+Int128.toHex(Int128.MAX);
+// "0x7fffffffffffffffffffffffffffffff"
+```
+
+## Division Semantics
+
+Division truncates toward zero (not floor):
+
+```typescript
+Int128.dividedBy(-10n, 3n);  // -3n (not -4n)
+Int128.dividedBy(10n, -3n);  // -3n (not -4n)
+
+// Modulo sign follows dividend
+Int128.modulo(-10n, 3n);   // -1n (not 2n)
+Int128.modulo(10n, -3n);   // 1n (not -2n)
+
+// Property: a = (a/b)*b + (a%b)
+```
+
+## Arithmetic Right Shift
+
+`shiftRight` preserves sign (arithmetic shift):
+
+```typescript
+Int128.shiftRight(-256n, 1); // -128n (sign preserved)
+Int128.shiftRight(256n, 1);  // 128n
+Int128.shiftRight(-1n, 8);   // -1n (all bits remain 1)
+```
+
+## Edge Cases
+
+```typescript
+// MIN / -1 overflows (abs(MIN) doesn't fit)
+Int128.dividedBy(Int128.MIN, -1n); // throws
+
+// abs(MIN) overflows
+Int128.abs(Int128.MIN); // throws
+
+// negate(MIN) wraps
+Int128.negate(Int128.MIN); // MIN (wraps around)
+
+// Overflow wraps
+Int128.plus(Int128.MAX, 1n); // MIN
+Int128.minus(Int128.MIN, 1n); // MAX
+```
+
+## Constants
+
+```typescript
+Int128.MIN     // -2^127
+Int128.MAX     // 2^127-1
+Int128.ZERO    // 0n
+Int128.ONE     // 1n
+Int128.NEG_ONE // -1n
+Int128.SIZE    // 16 (bytes)
+Int128.BITS    // 128
+Int128.MODULO  // 2^128
+```

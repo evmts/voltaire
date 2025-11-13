@@ -1,0 +1,290 @@
+---
+title: "Uint8"
+description: "Type-safe 8-bit unsigned integer (0-255) with compile-time branding"
+---
+
+# Uint8
+
+A branded type for 8-bit unsigned integers (range: 0-255) represented as JavaScript numbers with compile-time type safety.
+
+## Overview
+
+`BrandedUint8` provides type-safe operations on 8-bit unsigned integers with:
+- Compile-time type branding for type safety
+- Runtime validation and overflow/underflow checking
+- Zero runtime overhead (just a number internally)
+- Full arithmetic, bitwise, and comparison operations
+
+## Type Definition
+
+```typescript
+import type { brand } from '../../../brand.js';
+
+export type BrandedUint8 = number & { readonly [brand]: "Uint8" };
+```
+
+## Range
+
+- **Minimum**: 0
+- **Maximum**: 255
+- **Size**: 8 bits
+
+## Constants
+
+```typescript
+import * as Uint8 from '@voltaire/primitives/Uint8';
+
+Uint8.MIN;    // 0
+Uint8.MAX;    // 255
+Uint8.ZERO;   // 0
+Uint8.ONE;    // 1
+Uint8.SIZE;   // 8
+```
+
+## Construction
+
+### from
+Create from number or string:
+```typescript
+const a = Uint8.from(100);
+const b = Uint8.from("255");
+const c = Uint8.from("0xff");
+```
+
+### fromNumber
+Create from number:
+```typescript
+const value = Uint8.fromNumber(255);
+```
+
+### fromBigint
+Create from bigint:
+```typescript
+const value = Uint8.fromBigint(255n);
+```
+
+### fromHex
+Create from hex string:
+```typescript
+const a = Uint8.fromHex("0xff");
+const b = Uint8.fromHex("ff");
+```
+
+### fromBytes
+Create from Uint8Array (1 byte):
+```typescript
+const bytes = new Uint8Array([255]);
+const value = Uint8.fromBytes(bytes);
+```
+
+## Conversion
+
+### toNumber
+```typescript
+const num = Uint8.toNumber(Uint8.from(255)); // 255
+```
+
+### toBigint
+```typescript
+const bigintValue = Uint8.toBigint(Uint8.from(255)); // 255n
+```
+
+### toHex
+```typescript
+const hex = Uint8.toHex(Uint8.from(255)); // "0xff"
+const unpadded = Uint8.toHex(Uint8.from(15), false); // "0xf"
+```
+
+### toBytes
+```typescript
+const bytes = Uint8.toBytes(Uint8.from(255)); // Uint8Array([255])
+```
+
+### toString
+```typescript
+const str = Uint8.toString(Uint8.from(255)); // "255"
+```
+
+## Arithmetic
+
+All arithmetic operations validate that results stay within valid range.
+
+### plus
+```typescript
+const sum = Uint8.plus(Uint8.from(100), Uint8.from(50)); // 150
+// Throws on overflow
+```
+
+### minus
+```typescript
+const diff = Uint8.minus(Uint8.from(100), Uint8.from(50)); // 50
+// Throws on underflow
+```
+
+### times
+```typescript
+const product = Uint8.times(Uint8.from(10), Uint8.from(5)); // 50
+// Throws on overflow
+```
+
+### dividedBy
+```typescript
+const quotient = Uint8.dividedBy(Uint8.from(100), Uint8.from(5)); // 20
+// Integer division
+```
+
+### modulo
+```typescript
+const remainder = Uint8.modulo(Uint8.from(100), Uint8.from(7)); // 2
+```
+
+## Comparison
+
+### equals
+```typescript
+Uint8.equals(Uint8.from(100), Uint8.from(100)); // true
+```
+
+### lessThan
+```typescript
+Uint8.lessThan(Uint8.from(50), Uint8.from(100)); // true
+```
+
+### greaterThan
+```typescript
+Uint8.greaterThan(Uint8.from(100), Uint8.from(50)); // true
+```
+
+### isZero
+```typescript
+Uint8.isZero(Uint8.from(0)); // true
+```
+
+### minimum
+```typescript
+const min = Uint8.minimum(Uint8.from(100), Uint8.from(50)); // 50
+```
+
+### maximum
+```typescript
+const max = Uint8.maximum(Uint8.from(100), Uint8.from(50)); // 100
+```
+
+## Bitwise Operations
+
+### bitwiseAnd
+```typescript
+const result = Uint8.bitwiseAnd(Uint8.from(0b11110000), Uint8.from(0b11001100));
+// 0b11000000 = 192
+```
+
+### bitwiseOr
+```typescript
+const result = Uint8.bitwiseOr(Uint8.from(0b11110000), Uint8.from(0b00001111));
+// 0b11111111 = 255
+```
+
+### bitwiseXor
+```typescript
+const result = Uint8.bitwiseXor(Uint8.from(0b11110000), Uint8.from(0b11001100));
+// 0b00111100 = 60
+```
+
+### bitwiseNot
+```typescript
+const result = Uint8.bitwiseNot(Uint8.from(0b11110000));
+// 0b00001111 = 15
+```
+
+### shiftLeft
+```typescript
+const result = Uint8.shiftLeft(Uint8.from(0b00001111), 4);
+// 0b11110000 = 240
+```
+
+### shiftRight
+```typescript
+const result = Uint8.shiftRight(Uint8.from(0b11110000), 4);
+// 0b00001111 = 15
+```
+
+## Bit Analysis
+
+### bitLength
+Get number of bits needed to represent value:
+```typescript
+Uint8.bitLength(Uint8.from(0)); // 0
+Uint8.bitLength(Uint8.from(1)); // 1
+Uint8.bitLength(Uint8.from(255)); // 8
+```
+
+### leadingZeros
+Count leading zero bits:
+```typescript
+Uint8.leadingZeros(Uint8.from(0)); // 8
+Uint8.leadingZeros(Uint8.from(1)); // 7
+Uint8.leadingZeros(Uint8.from(255)); // 0
+```
+
+### popCount
+Count set bits:
+```typescript
+Uint8.popCount(Uint8.from(0)); // 0
+Uint8.popCount(Uint8.from(255)); // 8
+Uint8.popCount(Uint8.from(0b10101010)); // 4
+```
+
+## Validation
+
+### isValid
+```typescript
+Uint8.isValid(100); // true
+Uint8.isValid(255); // true
+Uint8.isValid(256); // false
+Uint8.isValid(-1); // false
+Uint8.isValid(1.5); // false
+```
+
+## Use Cases
+
+- Protocol buffers and binary formats
+- Network packet headers
+- Byte-level data manipulation
+- Image pixel values (RGB components)
+- Hardware register values
+- Compact data structures
+- Checksum and hash algorithms
+
+## Error Handling
+
+All operations throw on invalid inputs:
+- Non-integer values
+- Negative values
+- Values exceeding 255
+- Arithmetic overflow/underflow
+- Division by zero
+
+## Example
+
+```typescript
+import * as Uint8 from '@voltaire/primitives/Uint8';
+
+// RGB color manipulation
+const red = Uint8.from(255);
+const green = Uint8.from(128);
+const blue = Uint8.from(64);
+
+// Combine into single value (simplified)
+const rgb = [
+  Uint8.toBytes(red),
+  Uint8.toBytes(green),
+  Uint8.toBytes(blue)
+].flat();
+
+// Bitwise operations for flags
+const flags = Uint8.from(0b10101010);
+const mask = Uint8.from(0b11110000);
+const masked = Uint8.bitwiseAnd(flags, mask);
+
+console.log(Uint8.toHex(masked)); // "0xa0"
+```

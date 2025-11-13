@@ -1,0 +1,368 @@
+---
+title: Bytes32
+description: The most critical fixed-size type in Ethereum - 256-bit values for storage slots, hashes, and merkle nodes
+---
+
+<Info>
+**Most Important Bytes Type** - Bytes32 is THE fundamental 256-bit type in Ethereum. Used everywhere: storage slots, hashes, merkle trees, and generic 32-byte values.
+</Info>
+
+## Overview
+
+Bytes32 is a branded `Uint8Array` type representing exactly 32 bytes (256 bits). It's the most common fixed-size type in Ethereum and provides strict type safety for 256-bit values.
+
+```typescript
+import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+
+// Storage slot
+const slot = Bytes32.fromNumber(0);
+
+// Merkle node
+const node = Bytes32.fromHex('0x' + 'ab'.repeat(32));
+
+// Convert to/from bigint
+const value = Bytes32.toBigint(slot);
+
+// Extract address (last 20 bytes)
+const addr = Bytes32.toAddress(node);
+```
+
+## Why Bytes32 is Critical
+
+**Ethereum's fundamental 256-bit type:**
+- **Storage slots** - EVM storage uses 32-byte slots
+- **Hashes** - Keccak256 outputs 32 bytes
+- **Merkle trees** - Node values are 32 bytes
+- **Generic values** - Most fixed-size data is 32 bytes
+- **ABI encoding** - Uint256, bytes32, etc. use 32 bytes
+
+```typescript
+// Storage slot access
+const slot = Bytes32.fromNumber(0);
+
+// Hash results (same size as Bytes32)
+const hash = Hash.keccak256(data);
+const bytes = Bytes32.fromBytes(hash);
+
+// Merkle tree nodes
+const left = Bytes32.fromHex('0x...');
+const right = Bytes32.fromHex('0x...');
+```
+
+## Difference from Hash
+
+Both are 32 bytes, but semantic meaning differs:
+
+```typescript
+// Hash = keccak256 output (semantic)
+const hash: BrandedHash = Hash.keccak256(data);
+
+// Bytes32 = generic 32-byte value
+const slot: BrandedBytes32 = Bytes32.fromNumber(0);
+
+// Convert between them
+const hashAsBytes = Bytes32.fromBytes(hash);
+const bytesAsHash = Bytes32.toHash(slot);
+```
+
+**When to use each:**
+- **Hash** - Cryptographic hash outputs (keccak256 results)
+- **Bytes32** - Storage slots, generic 32-byte values, numeric conversions
+
+## Type Safety
+
+Bytes32 uses TypeScript branding:
+
+```typescript
+type BrandedBytes32 = Uint8Array & {
+  readonly [brand]: "Bytes32";
+  readonly size: 32;
+};
+```
+
+Prevents mixing types:
+
+```typescript
+const bytes32 = Bytes32.from(42);
+const bytes16 = Bytes16.from('0x' + '12'.repeat(16));
+
+// Type error: cannot assign Bytes16 to Bytes32
+const wrong: Bytes32.BrandedBytes32 = bytes16;
+```
+
+## Constructors
+
+### from
+Universal constructor accepting multiple types:
+
+```typescript
+// From hex
+const b1 = Bytes32.from('0x' + '12'.repeat(32));
+
+// From bytes
+const b2 = Bytes32.from(new Uint8Array(32));
+
+// From number (padded)
+const b3 = Bytes32.from(42);
+
+// From bigint (padded)
+const b4 = Bytes32.from(123456789012345678901234567890n);
+```
+
+### fromHex
+From hex string with strict validation:
+
+```typescript
+const bytes = Bytes32.fromHex('0x' + 'ab'.repeat(32));
+
+// Without 0x prefix
+const bytes2 = Bytes32.fromHex('12'.repeat(32));
+
+// Throws on wrong length
+Bytes32.fromHex('0x1234'); // Error: must be 64 hex chars
+```
+
+### fromBytes
+From Uint8Array with size check:
+
+```typescript
+const arr = new Uint8Array(32);
+const bytes = Bytes32.fromBytes(arr);
+
+// Throws on wrong size
+Bytes32.fromBytes(new Uint8Array(31)); // Error
+```
+
+### fromNumber
+From number with padding (big-endian):
+
+```typescript
+const slot = Bytes32.fromNumber(0);
+const value = Bytes32.fromNumber(42);
+
+// Padded to 32 bytes
+console.log(value[31]); // 42
+console.log(value[30]); // 0
+```
+
+### fromBigint
+From bigint with padding (big-endian):
+
+```typescript
+const large = Bytes32.fromBigint(123456789012345678901234567890n);
+
+// Roundtrip conversion
+const original = 42n;
+const bytes = Bytes32.fromBigint(original);
+const restored = Bytes32.toBigint(bytes);
+console.log(restored === original); // true
+```
+
+### zero
+Create zero-filled Bytes32:
+
+```typescript
+const zeros = Bytes32.zero();
+console.log(Bytes32.isZero(zeros)); // true
+
+// Useful for default storage slots
+const defaultSlot = Bytes32.zero();
+```
+
+## Conversions
+
+### toHex
+Convert to hex string:
+
+```typescript
+const bytes = Bytes32.fromNumber(255);
+const hex = Bytes32.toHex(bytes);
+console.log(hex); // "0x00...00ff"
+```
+
+### toUint8Array
+Convert to raw bytes:
+
+```typescript
+const bytes = Bytes32.from(42);
+const arr = Bytes32.toUint8Array(bytes);
+console.log(arr instanceof Uint8Array); // true
+```
+
+### toBigint
+Convert to bigint (big-endian):
+
+```typescript
+const bytes = Bytes32.fromNumber(42);
+const value = Bytes32.toBigint(bytes);
+console.log(value); // 42n
+
+// Works with large values
+const large = Bytes32.fromHex('0x' + 'ff'.repeat(32));
+const bigValue = Bytes32.toBigint(large);
+```
+
+### toHash
+Convert to Hash (semantic change):
+
+```typescript
+const slot = Bytes32.fromNumber(0);
+const hash = Bytes32.toHash(slot);
+
+// Same bytes, different type
+console.log(hash.length); // 32
+```
+
+### toAddress
+Extract address from last 20 bytes:
+
+```typescript
+const bytes = new Uint8Array(32);
+// Set last 20 bytes to 0xff
+for (let i = 12; i < 32; i++) {
+  bytes[i] = 0xff;
+}
+const b32 = Bytes32.fromBytes(bytes);
+const addr = Bytes32.toAddress(b32);
+console.log(addr.length); // 20
+
+// Useful for storage slot address extraction
+const storageSlot = Bytes32.fromHex('0x' + '00'.repeat(12) + 'aa'.repeat(20));
+const extractedAddr = Bytes32.toAddress(storageSlot);
+```
+
+## Operations
+
+### equals
+Check equality:
+
+```typescript
+const a = Bytes32.fromNumber(42);
+const b = Bytes32.fromNumber(42);
+console.log(Bytes32.equals(a, b)); // true
+```
+
+### compare
+Compare two values:
+
+```typescript
+const a = Bytes32.fromNumber(1);
+const b = Bytes32.fromNumber(2);
+console.log(Bytes32.compare(a, b)); // -1 (a < b)
+```
+
+### clone
+Create independent copy:
+
+```typescript
+const original = Bytes32.fromNumber(42);
+const copy = Bytes32.clone(original);
+```
+
+### isZero
+Check if all zeros:
+
+```typescript
+const zeros = Bytes32.zero();
+console.log(Bytes32.isZero(zeros)); // true
+
+// Useful for empty storage slots
+const slot = getStorageSlot(address, 0);
+if (Bytes32.isZero(slot)) {
+  console.log('Storage slot is empty');
+}
+```
+
+### size
+Get size (always 32):
+
+```typescript
+const bytes = Bytes32.from(42);
+console.log(Bytes32.size(bytes)); // 32
+```
+
+## Constants
+
+### SIZE
+Bytes32 size in bytes:
+
+```typescript
+console.log(Bytes32.SIZE); // 32
+```
+
+### ZERO
+Zero-filled constant:
+
+```typescript
+console.log(Bytes32.ZERO.length); // 32
+console.log(Bytes32.isZero(Bytes32.ZERO)); // true
+```
+
+## Error Handling
+
+Bytes32 validates size strictly:
+
+```typescript
+try {
+  Bytes32.fromBytes(new Uint8Array(31));
+} catch (error) {
+  console.log(error.code); // "BYTES32_INVALID_LENGTH"
+  console.log(error.message); // "Bytes32 must be 32 bytes, got 31"
+}
+
+try {
+  Bytes32.fromHex('0x1234');
+} catch (error) {
+  console.log(error.code); // "BYTES32_INVALID_HEX_LENGTH"
+  console.log(error.message); // "Bytes32 hex must be 64 characters..."
+}
+```
+
+## Ethereum Use Cases
+
+### Storage Slots
+
+```typescript
+// Slot 0
+const slot0 = Bytes32.fromNumber(0);
+
+// Slot for address mapping
+function mappingSlot(key: Address, slot: number): Bytes32 {
+  const data = concat([key, Bytes32.fromNumber(slot)]);
+  const hash = Hash.keccak256(data);
+  return Bytes32.fromBytes(hash);
+}
+```
+
+### Merkle Trees
+
+```typescript
+// Merkle tree node
+const leftNode = Bytes32.fromHex('0x...');
+const rightNode = Bytes32.fromHex('0x...');
+
+// Compute parent
+const parent = Hash.keccak256(concat([leftNode, rightNode]));
+const parentNode = Bytes32.fromBytes(parent);
+```
+
+### Generic 256-bit Values
+
+```typescript
+// Block hash
+const blockHash = Bytes32.fromHex('0x...');
+
+// Transaction hash
+const txHash = Bytes32.fromHex('0x...');
+
+// State root
+const stateRoot = Bytes32.fromHex('0x...');
+```
+
+## Related
+
+- [Hash](/primitives/hash) - Cryptographic hashes (also 32 bytes)
+- [Bytes16](/primitives/bytes/bytes16) - 128-bit fixed-size bytes
+- [Bytes64](/primitives/bytes/bytes64) - 512-bit fixed-size bytes
+- [Uint](/primitives/uint) - 256-bit unsigned integers
+- [Address](/primitives/address) - 160-bit Ethereum addresses

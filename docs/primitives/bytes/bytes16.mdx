@@ -1,0 +1,222 @@
+---
+title: Bytes16
+description: Fixed-size 16-byte (128-bit) values with strict type safety
+---
+
+<Info>
+**Type-Safe Primitive** - Bytes16 provides compile-time guarantees for 16-byte values like UUIDs and medium hashes.
+</Info>
+
+## Overview
+
+Bytes16 is a branded `Uint8Array` type representing exactly 16 bytes (128 bits). It provides strict size validation and type safety for fixed-size byte values.
+
+```typescript
+import * as Bytes16 from '@tevm/voltaire/primitives/Bytes/Bytes16';
+
+// Create from hex
+const bytes = Bytes16.from('0x' + '12'.repeat(16));
+console.log(bytes.length); // 16
+
+// Create zero-filled
+const zeros = Bytes16.zero();
+console.log(Bytes16.isZero(zeros)); // true
+
+// Size is strictly enforced
+Bytes16.from(new Uint8Array(15)); // Error: must be 16 bytes
+```
+
+## Use Cases
+
+**UUIDs (128-bit)**
+```typescript
+const uuid = Bytes16.fromHex('550e8400e29b41d4a716446655440000');
+```
+
+**Medium Hashes**
+```typescript
+// MD5, RIPEMD-128, etc.
+const hash = Bytes16.fromHex('0x...');
+```
+
+**Fixed-Size Keys**
+```typescript
+const key = Bytes16.fromHex('0x' + 'ab'.repeat(16));
+```
+
+## Type Safety
+
+Bytes16 uses TypeScript branding for compile-time safety:
+
+```typescript
+type BrandedBytes16 = Uint8Array & {
+  readonly [brand]: "Bytes16";
+  readonly size: 16;
+};
+```
+
+This prevents mixing different byte types:
+
+```typescript
+const bytes16 = Bytes16.from('0x' + '12'.repeat(16));
+const bytes32 = Bytes32.from('0x' + '12'.repeat(32));
+
+// Type error: cannot assign Bytes32 to Bytes16
+const wrong: Bytes16.BrandedBytes16 = bytes32;
+```
+
+## Constructors
+
+### from
+Create Bytes16 from hex string or bytes:
+
+```typescript
+// From hex
+const b1 = Bytes16.from('0x' + '12'.repeat(16));
+
+// From bytes
+const b2 = Bytes16.from(new Uint8Array(16));
+```
+
+### fromHex
+Create from hex string with strict validation:
+
+```typescript
+const bytes = Bytes16.fromHex('0x1234567890abcdef1234567890abcdef');
+
+// Without 0x prefix
+const bytes2 = Bytes16.fromHex('ab'.repeat(16));
+
+// Throws on wrong length
+Bytes16.fromHex('0x1234'); // Error: must be 32 hex chars
+```
+
+### fromBytes
+Create from Uint8Array with size check:
+
+```typescript
+const arr = new Uint8Array(16);
+const bytes = Bytes16.fromBytes(arr);
+
+// Throws on wrong size
+Bytes16.fromBytes(new Uint8Array(15)); // Error
+```
+
+### zero
+Create zero-filled Bytes16:
+
+```typescript
+const zeros = Bytes16.zero();
+console.log(Bytes16.isZero(zeros)); // true
+```
+
+## Conversions
+
+### toHex
+Convert to hex string:
+
+```typescript
+const bytes = Bytes16.fromBytes(new Uint8Array(16));
+const hex = Bytes16.toHex(bytes);
+console.log(hex); // "0x00000000000000000000000000000000"
+```
+
+### toUint8Array
+Convert to raw bytes:
+
+```typescript
+const bytes = Bytes16.from('0x' + '12'.repeat(16));
+const arr = Bytes16.toUint8Array(bytes);
+console.log(arr instanceof Uint8Array); // true
+```
+
+## Operations
+
+### equals
+Check equality:
+
+```typescript
+const a = Bytes16.fromHex('0x' + 'aa'.repeat(16));
+const b = Bytes16.fromHex('0x' + 'aa'.repeat(16));
+console.log(Bytes16.equals(a, b)); // true
+```
+
+### compare
+Compare two values:
+
+```typescript
+const a = Bytes16.fromHex('0x' + '01'.repeat(16));
+const b = Bytes16.fromHex('0x' + '02'.repeat(16));
+console.log(Bytes16.compare(a, b)); // -1 (a < b)
+```
+
+### clone
+Create independent copy:
+
+```typescript
+const original = Bytes16.from('0x' + '12'.repeat(16));
+const copy = Bytes16.clone(original);
+```
+
+### isZero
+Check if all zeros:
+
+```typescript
+const zeros = Bytes16.zero();
+console.log(Bytes16.isZero(zeros)); // true
+
+const nonZero = Bytes16.fromHex('0x' + '00'.repeat(15) + '01');
+console.log(Bytes16.isZero(nonZero)); // false
+```
+
+### size
+Get size (always 16):
+
+```typescript
+const bytes = Bytes16.from('0x' + '12'.repeat(16));
+console.log(Bytes16.size(bytes)); // 16
+```
+
+## Constants
+
+### SIZE
+Bytes16 size in bytes:
+
+```typescript
+console.log(Bytes16.SIZE); // 16
+```
+
+### ZERO
+Zero-filled constant:
+
+```typescript
+console.log(Bytes16.ZERO.length); // 16
+console.log(Bytes16.isZero(Bytes16.ZERO)); // true
+```
+
+## Error Handling
+
+Bytes16 validates size strictly:
+
+```typescript
+try {
+  Bytes16.fromBytes(new Uint8Array(15));
+} catch (error) {
+  console.log(error.code); // "BYTES16_INVALID_LENGTH"
+  console.log(error.message); // "Bytes16 must be 16 bytes, got 15"
+}
+
+try {
+  Bytes16.fromHex('0x1234');
+} catch (error) {
+  console.log(error.code); // "BYTES16_INVALID_HEX_LENGTH"
+  console.log(error.message); // "Bytes16 hex must be 32 characters..."
+}
+```
+
+## Related
+
+- [Bytes32](/primitives/bytes/bytes32) - 256-bit fixed-size bytes (most common)
+- [Bytes64](/primitives/bytes/bytes64) - 512-bit fixed-size bytes
+- [Hash](/primitives/hash) - 256-bit cryptographic hashes
+- [Hex](/primitives/hex) - Variable-length hex strings

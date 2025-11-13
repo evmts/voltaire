@@ -1,0 +1,285 @@
+---
+title: Int8
+description: Signed 8-bit integers with two's complement representation
+---
+
+# Int8
+
+Type-safe signed 8-bit integers with two's complement encoding and EVM SDIV/SMOD semantics.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `number` type representing signed 8-bit integers (-128 to 127). Uses two's complement representation for negative values and implements EVM signed division/modulo semantics.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Operations">
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// Create signed integers
+const a = Int8.from(-42)
+const b = Int8.from(10)
+const zero = Int8.from(0)
+
+// Signed arithmetic
+const sum = Int8.plus(a, b)        // -32
+const diff = Int8.minus(a, b)      // -52
+const product = Int8.times(-5, 10) // -50
+
+// Overflow detection
+try {
+  Int8.plus(100, 50)  // Throws: overflow
+} catch (err) {
+  console.error('Overflow detected')
+}
+```
+</Tab>
+<Tab title="Two's Complement">
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// Two's complement conversions
+const negOne = Int8.from(-1)
+Int8.toHex(negOne)    // "0xff" (255 as unsigned)
+
+const min = Int8.from(-128)
+Int8.toHex(min)       // "0x80" (128 as unsigned)
+
+// Hex to signed
+const fromHex = Int8.fromHex("0xFF")
+Int8.toNumber(fromHex)  // -1
+
+// Bytes (two's complement)
+const bytes = Int8.toBytes(Int8.from(-1))
+// Uint8Array([0xff])
+```
+</Tab>
+<Tab title="EVM Semantics">
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// SDIV: truncate toward zero
+Int8.dividedBy(-10, 3)   // -3 (not -4)
+Int8.dividedBy(10, -3)   // -3 (not -4)
+Int8.dividedBy(-10, -3)  // 3
+
+// SMOD: sign follows dividend
+Int8.modulo(-10, 3)      // -1 (not 2)
+Int8.modulo(10, -3)      // 1 (not -2)
+
+// Overflow on INT8_MIN / -1
+try {
+  Int8.dividedBy(-128, -1)  // Result 128 > MAX(127)
+} catch (err) {
+  console.error('Division overflow')
+}
+```
+</Tab>
+<Tab title="Comparison & Sign">
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// Comparison
+Int8.lessThan(-42, 10)     // true
+Int8.greaterThan(-42, 10)  // false
+Int8.equals(-42, -42)      // true
+
+// Sign operations
+Int8.isNegative(-42)  // true
+Int8.isPositive(-42)  // false
+Int8.sign(-42)        // -1
+Int8.sign(0)          // 0
+Int8.sign(42)         // 1
+
+// Absolute value
+Int8.abs(-42)  // 42
+
+// Negate
+Int8.negate(-42)  // 42
+Int8.negate(42)   // -42
+```
+</Tab>
+</Tabs>
+
+## Two's Complement Encoding
+
+Negative values use two's complement representation:
+
+| Decimal | Hex    | Binary     | Notes                  |
+|---------|--------|------------|------------------------|
+| 127     | 0x7F   | 01111111   | INT8_MAX              |
+| 1       | 0x01   | 00000001   | Positive              |
+| 0       | 0x00   | 00000000   | Zero                  |
+| -1      | 0xFF   | 11111111   | All bits set          |
+| -128    | 0x80   | 10000000   | INT8_MIN (sign bit)   |
+
+Bit 7 is the sign bit:
+- 0 = positive (0 to 127)
+- 1 = negative (-128 to -1)
+
+## EVM SDIV/SMOD Semantics
+
+### Signed Division (SDIV)
+
+Truncates toward zero (not toward negative infinity):
+
+```typescript
+// Positive / positive
+Int8.dividedBy(10, 3)    // 3
+
+// Negative / positive (truncate toward zero)
+Int8.dividedBy(-10, 3)   // -3 (not -4)
+
+// Positive / negative
+Int8.dividedBy(10, -3)   // -3 (not -4)
+
+// Negative / negative
+Int8.dividedBy(-10, -3)  // 3
+```
+
+### Signed Modulo (SMOD)
+
+Sign follows the dividend (first operand):
+
+```typescript
+// sign(a mod b) = sign(a)
+Int8.modulo(-10, 3)      // -1 (sign follows -10)
+Int8.modulo(10, -3)      // 1 (sign follows 10)
+Int8.modulo(-10, -3)     // -1 (sign follows -10)
+```
+
+## Overflow Handling
+
+All operations check for overflow:
+
+```typescript
+// Addition overflow
+Int8.plus(100, 50)         // Throws: 150 > MAX(127)
+
+// Subtraction overflow
+Int8.minus(-100, 50)       // Throws: -150 < MIN(-128)
+
+// Multiplication overflow
+Int8.times(20, 10)         // Throws: 200 > MAX(127)
+
+// Division overflow (special case)
+Int8.dividedBy(-128, -1)   // Throws: result 128 > MAX(127)
+
+// abs() overflow
+Int8.abs(-128)             // Throws: result 128 > MAX(127)
+
+// negate() overflow
+Int8.negate(-128)          // Throws: result 128 > MAX(127)
+```
+
+## Arithmetic Right Shift
+
+`shiftRight` preserves the sign bit (arithmetic shift):
+
+```typescript
+// Positive: fills with 0
+Int8.shiftRight(8, 1)    // 4 (0b00001000 → 0b00000100)
+
+// Negative: fills with 1 (preserves sign)
+Int8.shiftRight(-8, 1)   // -4 (0b11111000 → 0b11111100)
+
+// -1 stays -1 (all bits set)
+Int8.shiftRight(-1, 1)   // -1 (0b11111111 → 0b11111111)
+
+// INT8_MIN (-128)
+Int8.shiftRight(-128, 1) // -64 (0b10000000 → 0b11000000)
+```
+
+Contrast with logical right shift (would treat as unsigned).
+
+## Bitwise Operations
+
+Bitwise operations work on two's complement representation:
+
+```typescript
+// AND
+Int8.and(-1, 0x0f)           // 15 (0xFF & 0x0F = 0x0F)
+
+// OR
+Int8.or(0b01010101, 0b00110011)  // 119 (0b01110111)
+
+// XOR
+Int8.xor(0b01010101, 0b00110011) // 102 (0b01100110)
+
+// NOT
+Int8.not(0)   // -1 (0x00 → 0xFF)
+Int8.not(-1)  // 0 (0xFF → 0x00)
+
+// Left shift (wraps to negative)
+Int8.shiftLeft(64, 1)  // -128 (0b01000000 → 0b10000000)
+```
+
+## Constructors
+
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// From number (most common)
+const a = Int8.from(-42)
+const b = Int8.fromNumber(-42)
+
+// From bigint
+const c = Int8.fromBigint(-42n)
+
+// From hex (two's complement)
+const d = Int8.fromHex("0xFF")    // -1
+const e = Int8.fromHex("0x80")    // -128
+
+// From bytes (two's complement)
+const f = Int8.fromBytes(new Uint8Array([0xFF]))  // -1
+```
+
+## Conversions
+
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+const value = Int8.from(-42)
+
+// To number
+Int8.toNumber(value)  // -42
+
+// To bigint
+Int8.toBigint(value)  // -42n
+
+// To hex (two's complement)
+Int8.toHex(value)     // "0xd6" (214 as unsigned)
+
+// To bytes (two's complement)
+Int8.toBytes(value)   // Uint8Array([0xd6])
+
+// To string
+Int8.toString(value)  // "-42"
+```
+
+## Validation
+
+```typescript
+import * as Int8 from '@tevm/voltaire/Int8'
+
+// Check if valid Int8
+Int8.isValid(127)    // true
+Int8.isValid(-128)   // true
+Int8.isValid(128)    // false (out of range)
+Int8.isValid(-129)   // false (out of range)
+Int8.isValid(42.5)   // false (not integer)
+```
+
+## Related
+
+- [Int16](/primitives/int16) - Signed 16-bit integers (-32768 to 32767)
+- [Uint](/primitives/uint) - Unsigned 256-bit integers
+- [Opcode](/primitives/opcode) - EVM instructions (SDIV, SMOD)
+
+## References
+
+- [EVM SDIV](https://evm.codes/#05) - Signed division opcode
+- [EVM SMOD](https://evm.codes/#07) - Signed modulo opcode
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Wikipedia

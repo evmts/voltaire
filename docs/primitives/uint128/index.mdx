@@ -1,0 +1,536 @@
+---
+title: Uint128
+description: 128-bit unsigned integer primitive for large counters and intermediate calculations
+---
+
+# Uint128
+
+<Note>
+  Uint128 is a 128-bit unsigned integer type optimized for large counters, cumulative values, and intermediate calculations that exceed 64-bit range.
+</Note>
+
+## Overview
+
+Uint128 provides a bigint-based implementation for 128-bit unsigned integers with a comprehensive API for arithmetic, bitwise operations, and conversions. It follows Voltaire's branded type pattern for type safety.
+
+### Range
+
+- **Minimum**: `0n`
+- **Maximum**: `340282366920938463463374607431768211455n` (2^128 - 1)
+- **Size**: 16 bytes
+
+### Use Cases
+
+- Large counters and accumulators
+- Cumulative token amounts
+- Intermediate calculations in financial applications
+- State values requiring more than 64 bits
+- Cross-chain identifiers
+
+## Installation
+
+```bash
+bun add @voltaire/primitives
+```
+
+## Basic Usage
+
+```typescript
+import * as Uint128 from '@voltaire/primitives/Uint128';
+
+// Create from various sources
+const a = Uint128.from(100n);
+const b = Uint128.fromHex("0xff");
+const c = Uint128.fromNumber(255);
+
+// Arithmetic with wrapping
+const sum = Uint128.plus(a, b);
+const product = Uint128.times(a, c);
+
+// Comparisons
+if (Uint128.greaterThan(sum, product)) {
+  console.log("Sum is larger");
+}
+
+// Conversions
+const hex = Uint128.toHex(sum);
+const bytes = Uint128.toBytes(sum);
+console.log(`Result: ${Uint128.toString(sum)}`);
+```
+
+## Constants
+
+```typescript
+Uint128.SIZE;  // 16
+Uint128.MAX;   // 340282366920938463463374607431768211455n
+Uint128.MIN;   // 0n
+Uint128.ZERO;  // 0n
+Uint128.ONE;   // 1n
+```
+
+## Constructors
+
+### from
+
+Create Uint128 from bigint, number, or string (decimal or hex).
+
+```typescript
+const a = Uint128.from(100n);
+const b = Uint128.from(255);
+const c = Uint128.from("0xff");
+const d = Uint128.from("1000000000000000000");
+```
+
+**Throws**: Error if value is negative or exceeds MAX.
+
+### fromBigInt
+
+Create from bigint.
+
+```typescript
+const value = Uint128.fromBigInt(12345678901234567890n);
+```
+
+### fromNumber
+
+Create from number (must be integer).
+
+```typescript
+const value = Uint128.fromNumber(255);
+```
+
+**Throws**: Error if not an integer or out of range.
+
+### fromHex
+
+Create from hex string (with or without 0x prefix).
+
+```typescript
+const a = Uint128.fromHex("0xff");
+const b = Uint128.fromHex("ffffffffffffffffffffffffffffffff");
+```
+
+### fromBytes
+
+Create from byte array (big-endian, up to 16 bytes).
+
+```typescript
+const bytes = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255]);
+const value = Uint128.fromBytes(bytes);
+```
+
+**Throws**: Error if length exceeds 16 bytes.
+
+### fromAbiEncoded
+
+Create from ABI-encoded bytes (32 bytes, right-aligned).
+
+```typescript
+const abiBytes = new Uint8Array(32);
+abiBytes[31] = 255;
+const value = Uint128.fromAbiEncoded(abiBytes);
+```
+
+### tryFrom
+
+Try to create Uint128, returns null on failure.
+
+```typescript
+const valid = Uint128.tryFrom(100n);    // 100n
+const invalid = Uint128.tryFrom(-1);    // null
+```
+
+## Conversions
+
+### toBigInt
+
+Convert to bigint.
+
+```typescript
+const bigint = Uint128.toBigInt(value);
+```
+
+### toNumber
+
+Convert to number.
+
+```typescript
+const num = Uint128.toNumber(value);
+```
+
+**Throws**: Error if value exceeds `Number.MAX_SAFE_INTEGER`.
+
+### toHex
+
+Convert to hex string with 0x prefix.
+
+```typescript
+const hex = Uint128.toHex(value);  // "0xff"
+```
+
+### toBytes
+
+Convert to 16-byte array (big-endian).
+
+```typescript
+const bytes = Uint128.toBytes(value);  // Uint8Array[16]
+```
+
+### toAbiEncoded
+
+Convert to 32-byte ABI-encoded value.
+
+```typescript
+const encoded = Uint128.toAbiEncoded(value);  // Uint8Array[32]
+```
+
+### toString
+
+Convert to decimal string.
+
+```typescript
+const str = Uint128.toString(value);  // "255"
+```
+
+## Arithmetic
+
+All arithmetic operations wrap on overflow/underflow.
+
+### plus
+
+Add two values with wrapping.
+
+```typescript
+const sum = Uint128.plus(a, b);
+
+// Wrapping behavior
+const max = Uint128.MAX;
+const wrapped = Uint128.plus(max, Uint128.from(1n));  // 0n
+```
+
+### minus
+
+Subtract with wrapping.
+
+```typescript
+const diff = Uint128.minus(a, b);
+
+// Wrapping on underflow
+const zero = Uint128.from(0n);
+const wrapped = Uint128.minus(zero, Uint128.from(1n));  // MAX
+```
+
+### times
+
+Multiply with wrapping.
+
+```typescript
+const product = Uint128.times(a, b);
+```
+
+### dividedBy
+
+Integer division.
+
+```typescript
+const quotient = Uint128.dividedBy(a, b);
+```
+
+**Throws**: Error on division by zero.
+
+### modulo
+
+Modulo operation.
+
+```typescript
+const remainder = Uint128.modulo(a, b);
+```
+
+**Throws**: Error on modulo by zero.
+
+### toPower
+
+Exponentiation with wrapping.
+
+```typescript
+const result = Uint128.toPower(base, exponent);
+
+// Example
+const base = Uint128.from(2n);
+const exp = Uint128.from(10n);
+const power = Uint128.toPower(base, exp);  // 1024n
+```
+
+## Comparison
+
+### equals / notEquals
+
+```typescript
+const isEqual = Uint128.equals(a, b);
+const notEqual = Uint128.notEquals(a, b);
+```
+
+### lessThan / lessThanOrEqual
+
+```typescript
+const isLess = Uint128.lessThan(a, b);
+const isLessOrEqual = Uint128.lessThanOrEqual(a, b);
+```
+
+### greaterThan / greaterThanOrEqual
+
+```typescript
+const isGreater = Uint128.greaterThan(a, b);
+const isGreaterOrEqual = Uint128.greaterThanOrEqual(a, b);
+```
+
+### minimum / maximum
+
+Get min/max of two values.
+
+```typescript
+const min = Uint128.minimum(a, b);
+const max = Uint128.maximum(a, b);
+```
+
+### min / max
+
+Get min/max from array.
+
+```typescript
+const values = [Uint128.from(100n), Uint128.from(50n), Uint128.from(75n)];
+const minValue = Uint128.min(values);  // 50n
+const maxValue = Uint128.max(values);  // 100n
+```
+
+## Bitwise Operations
+
+### bitwiseAnd / bitwiseOr / bitwiseXor
+
+```typescript
+const andResult = Uint128.bitwiseAnd(a, b);
+const orResult = Uint128.bitwiseOr(a, b);
+const xorResult = Uint128.bitwiseXor(a, b);
+```
+
+### bitwiseNot
+
+```typescript
+const inverted = Uint128.bitwiseNot(a);
+```
+
+### shiftLeft / shiftRight
+
+```typescript
+const shifted = Uint128.shiftLeft(value, 8);   // value << 8
+const shifted = Uint128.shiftRight(value, 8);  // value >> 8
+```
+
+Shifts >= 128 bits return zero.
+
+## Utilities
+
+### isZero
+
+Check if value is zero.
+
+```typescript
+const isZero = Uint128.isZero(value);
+```
+
+### isValid
+
+Check if value is valid Uint128 (0 to MAX).
+
+```typescript
+const valid = Uint128.isValid(100n);   // true
+const invalid = Uint128.isValid(-1);   // false
+```
+
+### bitLength
+
+Get number of bits required to represent value.
+
+```typescript
+const bits = Uint128.bitLength(value);  // 0-128
+```
+
+### leadingZeros
+
+Get number of leading zero bits.
+
+```typescript
+const zeros = Uint128.leadingZeros(value);  // 0-128
+```
+
+### popCount
+
+Count number of set bits (1s).
+
+```typescript
+const count = Uint128.popCount(value);
+```
+
+### clone
+
+Clone a value (no-op for bigint).
+
+```typescript
+const copy = Uint128.clone(value);
+```
+
+## Aggregate Operations
+
+### sum
+
+Sum array of values with wrapping.
+
+```typescript
+const values = [Uint128.from(100n), Uint128.from(50n), Uint128.from(75n)];
+const total = Uint128.sum(values);  // 225n
+```
+
+### product
+
+Multiply array of values with wrapping.
+
+```typescript
+const values = [Uint128.from(10n), Uint128.from(5n), Uint128.from(2n)];
+const result = Uint128.product(values);  // 100n
+```
+
+## Mathematical Functions
+
+### gcd
+
+Calculate greatest common divisor.
+
+```typescript
+const a = Uint128.from(48n);
+const b = Uint128.from(18n);
+const divisor = Uint128.gcd(a, b);  // 6n
+```
+
+### lcm
+
+Calculate least common multiple.
+
+```typescript
+const a = Uint128.from(12n);
+const b = Uint128.from(18n);
+const multiple = Uint128.lcm(a, b);  // 36n
+```
+
+### isPowerOf2
+
+Check if value is a power of 2.
+
+```typescript
+const isPower = Uint128.isPowerOf2(Uint128.from(16n));   // true
+const notPower = Uint128.isPowerOf2(Uint128.from(15n));  // false
+```
+
+## Examples
+
+### Large Counters
+
+```typescript
+// Track cumulative gas used across blocks
+let cumulativeGas = Uint128.from(0n);
+
+for (const block of blocks) {
+  const blockGas = Uint128.from(block.gasUsed);
+  cumulativeGas = Uint128.plus(cumulativeGas, blockGas);
+}
+
+console.log(`Total gas: ${Uint128.toString(cumulativeGas)}`);
+```
+
+### Token Amounts
+
+```typescript
+// Calculate total supply with 18 decimals
+const tokenAmounts = [
+  Uint128.from(1000000000000000000n),  // 1 token
+  Uint128.from(2500000000000000000n),  // 2.5 tokens
+  Uint128.from(500000000000000000n),   // 0.5 tokens
+];
+
+const totalSupply = Uint128.sum(tokenAmounts);
+console.log(`Total: ${Uint128.toString(totalSupply)} wei`);
+```
+
+### Intermediate Calculations
+
+```typescript
+// Calculate compound interest: principal * (1 + rate)^periods
+const principal = Uint128.from(1000000n);
+const rate = Uint128.from(105n);  // 5% as 105/100
+const base = Uint128.from(100n);
+
+// Interest after 10 periods
+const multiplier = Uint128.toPower(rate, Uint128.from(10n));
+const amount = Uint128.times(principal, multiplier);
+const result = Uint128.dividedBy(amount, Uint128.toPower(base, Uint128.from(10n)));
+```
+
+### Bitwise Flags
+
+```typescript
+// 128-bit feature flags
+const FLAG_A = Uint128.from(1n << 0n);
+const FLAG_B = Uint128.from(1n << 1n);
+const FLAG_C = Uint128.from(1n << 127n);
+
+let flags = Uint128.ZERO;
+flags = Uint128.bitwiseOr(flags, FLAG_A);
+flags = Uint128.bitwiseOr(flags, FLAG_C);
+
+// Check flag
+const hasA = !Uint128.isZero(Uint128.bitwiseAnd(flags, FLAG_A));
+const hasB = !Uint128.isZero(Uint128.bitwiseAnd(flags, FLAG_B));
+```
+
+## Performance Notes
+
+- **Implementation**: Pure bigint (no assembly optimization)
+- **Operations**: Arithmetic operations wrap using bitwise AND with MAX
+- **Memory**: 16-byte representation
+- **Best for**: Values exceeding 64-bit range but not requiring full 256 bits
+
+## Type Safety
+
+Uint128 uses branded types to prevent mixing with other numeric types:
+
+```typescript
+import * as Uint128 from '@voltaire/primitives/Uint128';
+import * as Uint64 from '@voltaire/primitives/Uint64';
+
+const a = Uint128.from(100n);
+const b = Uint64.from(50n);
+
+// Type error: cannot mix Uint128 and Uint64
+// const sum = Uint128.plus(a, b);  // ❌
+
+// Convert first
+const converted = Uint128.from(Uint64.toBigInt(b));
+const sum = Uint128.plus(a, converted);  // ✅
+```
+
+## Related
+
+- [Uint256](/primitives/uint) - 256-bit unsigned integers
+- [Uint64](/primitives/uint64) - 64-bit unsigned integers
+- [Hash](/primitives/hash) - 256-bit hash values
+- [Address](/primitives/address) - Ethereum addresses
+
+## Reference
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/primitives/uint128">
+    Complete API documentation
+  </Card>
+  <Card title="Examples" icon="flask" href="/examples/uint128">
+    Usage examples and patterns
+  </Card>
+</CardGroup>

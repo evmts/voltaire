@@ -1,0 +1,289 @@
+---
+title: Int16
+description: Signed 16-bit integers with two's complement representation
+---
+
+# Int16
+
+Type-safe signed 16-bit integers with two's complement encoding and EVM SDIV/SMOD semantics.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `number` type representing signed 16-bit integers (-32768 to 32767). Uses two's complement representation for negative values and implements EVM signed division/modulo semantics.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Operations">
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// Create signed integers
+const a = Int16.from(-1000)
+const b = Int16.from(500)
+const zero = Int16.from(0)
+
+// Signed arithmetic
+const sum = Int16.plus(a, b)        // -500
+const diff = Int16.minus(a, b)      // -1500
+const product = Int16.times(-50, 100) // -5000
+
+// Overflow detection
+try {
+  Int16.plus(20000, 15000)  // Throws: overflow
+} catch (err) {
+  console.error('Overflow detected')
+}
+```
+</Tab>
+<Tab title="Two's Complement">
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// Two's complement conversions
+const negOne = Int16.from(-1)
+Int16.toHex(negOne)    // "0xffff" (65535 as unsigned)
+
+const min = Int16.from(-32768)
+Int16.toHex(min)       // "0x8000" (32768 as unsigned)
+
+// Hex to signed
+const fromHex = Int16.fromHex("0xFFFF")
+Int16.toNumber(fromHex)  // -1
+
+// Bytes (two's complement, big-endian)
+const bytes = Int16.toBytes(Int16.from(-1))
+// Uint8Array([0xff, 0xff])
+
+const value = Int16.fromBytes(new Uint8Array([0x12, 0x34]))
+Int16.toNumber(value)  // 4660 (0x1234)
+```
+</Tab>
+<Tab title="EVM Semantics">
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// SDIV: truncate toward zero
+Int16.dividedBy(-1000, 3)   // -333 (not -334)
+Int16.dividedBy(1000, -3)   // -333 (not -334)
+Int16.dividedBy(-1000, -3)  // 333
+
+// SMOD: sign follows dividend
+Int16.modulo(-1000, 3)      // -1 (not 2)
+Int16.modulo(1000, -3)      // 1 (not -2)
+
+// Overflow on INT16_MIN / -1
+try {
+  Int16.dividedBy(-32768, -1)  // Result 32768 > MAX(32767)
+} catch (err) {
+  console.error('Division overflow')
+}
+```
+</Tab>
+<Tab title="Comparison & Sign">
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// Comparison
+Int16.lessThan(-1000, 500)     // true
+Int16.greaterThan(-1000, 500)  // false
+Int16.equals(-1000, -1000)     // true
+
+// Sign operations
+Int16.isNegative(-1000)  // true
+Int16.isPositive(-1000)  // false
+Int16.sign(-1000)        // -1
+Int16.sign(0)            // 0
+Int16.sign(1000)         // 1
+
+// Absolute value
+Int16.abs(-1000)  // 1000
+
+// Negate
+Int16.negate(-1000)  // 1000
+Int16.negate(1000)   // -1000
+```
+</Tab>
+</Tabs>
+
+## Two's Complement Encoding
+
+Negative values use two's complement representation:
+
+| Decimal | Hex      | Binary             | Notes                  |
+|---------|----------|--------------------|------------------------|
+| 32767   | 0x7FFF   | 0111111111111111   | INT16_MAX             |
+| 1       | 0x0001   | 0000000000000001   | Positive              |
+| 0       | 0x0000   | 0000000000000000   | Zero                  |
+| -1      | 0xFFFF   | 1111111111111111   | All bits set          |
+| -32768  | 0x8000   | 1000000000000000   | INT16_MIN (sign bit)  |
+
+Bit 15 is the sign bit:
+- 0 = positive (0 to 32767)
+- 1 = negative (-32768 to -1)
+
+## EVM SDIV/SMOD Semantics
+
+### Signed Division (SDIV)
+
+Truncates toward zero (not toward negative infinity):
+
+```typescript
+// Positive / positive
+Int16.dividedBy(1000, 3)    // 333
+
+// Negative / positive (truncate toward zero)
+Int16.dividedBy(-1000, 3)   // -333 (not -334)
+
+// Positive / negative
+Int16.dividedBy(1000, -3)   // -333 (not -334)
+
+// Negative / negative
+Int16.dividedBy(-1000, -3)  // 333
+```
+
+### Signed Modulo (SMOD)
+
+Sign follows the dividend (first operand):
+
+```typescript
+// sign(a mod b) = sign(a)
+Int16.modulo(-1000, 3)      // -1 (sign follows -1000)
+Int16.modulo(1000, -3)      // 1 (sign follows 1000)
+Int16.modulo(-1000, -3)     // -1 (sign follows -1000)
+```
+
+## Overflow Handling
+
+All operations check for overflow:
+
+```typescript
+// Addition overflow
+Int16.plus(20000, 15000)       // Throws: 35000 > MAX(32767)
+
+// Subtraction overflow
+Int16.minus(-20000, 15000)     // Throws: -35000 < MIN(-32768)
+
+// Multiplication overflow
+Int16.times(200, 200)          // Throws: 40000 > MAX(32767)
+
+// Division overflow (special case)
+Int16.dividedBy(-32768, -1)    // Throws: result 32768 > MAX(32767)
+
+// abs() overflow
+Int16.abs(-32768)              // Throws: result 32768 > MAX(32767)
+
+// negate() overflow
+Int16.negate(-32768)           // Throws: result 32768 > MAX(32767)
+```
+
+## Arithmetic Right Shift
+
+`shiftRight` preserves the sign bit (arithmetic shift):
+
+```typescript
+// Positive: fills with 0
+Int16.shiftRight(1024, 1)    // 512
+
+// Negative: fills with 1 (preserves sign)
+Int16.shiftRight(-1024, 1)   // -512
+
+// -1 stays -1 (all bits set)
+Int16.shiftRight(-1, 1)      // -1
+
+// INT16_MIN (-32768)
+Int16.shiftRight(-32768, 1)  // -16384
+```
+
+Contrast with logical right shift (would treat as unsigned).
+
+## Bitwise Operations
+
+Bitwise operations work on two's complement representation:
+
+```typescript
+// AND
+Int16.and(-1, 0x0fff)                      // 4095 (0xFFFF & 0x0FFF = 0x0FFF)
+
+// OR
+Int16.or(0b0101010101010101, 0b0011001100110011)  // 30583
+
+// XOR
+Int16.xor(0b0101010101010101, 0b0011001100110011) // 13158
+
+// NOT
+Int16.not(0)   // -1 (0x0000 → 0xFFFF)
+Int16.not(-1)  // 0 (0xFFFF → 0x0000)
+
+// Left shift (wraps to negative)
+Int16.shiftLeft(16384, 1)  // -32768 (0x4000 → 0x8000)
+```
+
+## Constructors
+
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// From number (most common)
+const a = Int16.from(-1000)
+const b = Int16.fromNumber(-1000)
+
+// From bigint
+const c = Int16.fromBigint(-1000n)
+
+// From hex (two's complement)
+const d = Int16.fromHex("0xFFFF")    // -1
+const e = Int16.fromHex("0x8000")    // -32768
+
+// From bytes (two's complement, big-endian)
+const f = Int16.fromBytes(new Uint8Array([0xFF, 0xFF]))  // -1
+const g = Int16.fromBytes(new Uint8Array([0x12, 0x34]))  // 4660
+```
+
+## Conversions
+
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+const value = Int16.from(-1000)
+
+// To number
+Int16.toNumber(value)  // -1000
+
+// To bigint
+Int16.toBigint(value)  // -1000n
+
+// To hex (two's complement)
+Int16.toHex(value)     // "0xfc18" (64536 as unsigned)
+
+// To bytes (two's complement, big-endian)
+Int16.toBytes(value)   // Uint8Array([0xfc, 0x18])
+
+// To string
+Int16.toString(value)  // "-1000"
+```
+
+## Validation
+
+```typescript
+import * as Int16 from '@tevm/voltaire/Int16'
+
+// Check if valid Int16
+Int16.isValid(32767)    // true
+Int16.isValid(-32768)   // true
+Int16.isValid(32768)    // false (out of range)
+Int16.isValid(-32769)   // false (out of range)
+Int16.isValid(42.5)     // false (not integer)
+```
+
+## Related
+
+- [Int8](/primitives/int8) - Signed 8-bit integers (-128 to 127)
+- [Uint](/primitives/uint) - Unsigned 256-bit integers
+- [Opcode](/primitives/opcode) - EVM instructions (SDIV, SMOD)
+
+## References
+
+- [EVM SDIV](https://evm.codes/#05) - Signed division opcode
+- [EVM SMOD](https://evm.codes/#07) - Signed modulo opcode
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Wikipedia
