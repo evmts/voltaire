@@ -36,7 +36,7 @@ In Voltaire, if something has type `BrandedAddress`, you know it was validated a
 
 ## The Solution
 
-Add compile-time-only brand field using symbol. A `BrandedAddress` is a `Uint8Array` with a compile-time-only type tag:
+Add compile-time-only brand field. A `BrandedAddress` is a `Uint8Array` with a compile-time-only type tag:
 
 ```typescript
 declare const brand: unique symbol
@@ -53,6 +53,15 @@ verifySignature(bytecode, Hash("0x1234...")) // ✗ Error: Type 'BrandedBytecode
 ```
 
 Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
+
+<Note>
+**Why Uint8Array instead of string?**
+
+Voltaire uses `Uint8Array` as the underlying type instead of strings because:
+- **Eliminates casing bugs** - No issues with lowercase vs checksummed vs uppercase addresses
+- **Better performance** - Native byte operations without encoding/decoding overhead
+- **Simplest representation** - Follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type at all times
+</Note>
 
 ### Generic Brand Type
 
