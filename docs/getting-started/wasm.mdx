@@ -58,18 +58,46 @@ const lowercase = Hex.toLowercase(hex);
 
 ## Performance
 
-Keccak256 is a prime example where WASM wins on both metrics:
+By default, Voltaire uses JavaScript implementations to maximize compatibility. You can opt into WASM for better performance and smaller bundle sizes when it makes sense for your use case.
 
-| Implementation | Bundle Size | Performance | Recommendation |
-|----------------|-------------|-------------|----------------|
-| JavaScript | Larger | Baseline | Development |
-| WASM | **Smaller** | **3x faster** | ✅ Production |
+<Note>
+**No guarantees** - Default implementations and recommendations may change as we optimize. Always benchmark for your specific use case.
+</Note>
 
-We highly recommend using WASM for:
-- Cryptographic operations
-- EVM bytecode execution
-- RLP encoding with hashing
-- Any performance-critical path
+### Benchmarks
+
+Performance and bundle size comparison across implementations:
+
+| Operation | JS Performance | WASM Performance | JS Bundle | WASM Bundle | Recommendation |
+|-----------|----------------|------------------|-----------|-------------|----------------|
+| **Cryptography** |
+| keccak256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 recover | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 aggregate | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| sha256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| ripemd160 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| **Encoding** |
+| RLP encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| RLP decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| ABI encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| ABI decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| **EVM** |
+| Opcode execution | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| Bytecode analysis | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| **Primitives** |
+| Address checksum | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| Hex encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| Hex decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+
+**General recommendations:**
+- **Cryptographic operations**: WASM typically 2-3x faster with smaller bundles
+- **EVM operations**: WASM for complex bytecode execution
+- **Simple encoding**: JavaScript avoids WASM bridge overhead
+- **String operations**: JavaScript for native performance
 
 ## Zero Configuration
 
