@@ -1,4 +1,7 @@
-import { hashNode } from "./hashNode.js";
+import { HashNode } from "./hashNode.js";
+import { blake3 } from "@noble/hashes/blake3.js";
+
+const hashNode = HashNode({ blake3 });
 
 /**
  * Compute root hash of tree

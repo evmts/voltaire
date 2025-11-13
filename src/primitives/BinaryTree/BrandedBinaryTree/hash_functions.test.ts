@@ -1,7 +1,14 @@
 import { blake3 } from "@noble/hashes/blake3.js";
 import { describe, expect, test } from "vitest";
 import type { LeafNode, Node, StemNode } from "./BrandedBinaryTree.js";
+import { HashLeaf, HashInternal, HashStem, HashNode } from "./index.js";
 import * as BinaryTree from "./index.js";
+
+// Instantiate factories with blake3
+const hashLeaf = HashLeaf({ blake3 });
+const hashInternal = HashInternal({ blake3 });
+const hashStem = HashStem({ blake3 });
+const hashNode = HashNode({ blake3 });
 
 describe("Hash Functions", () => {
 	describe("hashLeaf", () => {
@@ -10,7 +17,7 @@ describe("Hash Functions", () => {
 			value[0] = 0x42;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -20,7 +27,7 @@ describe("Hash Functions", () => {
 			const value = new Uint8Array(0);
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 		});
@@ -30,7 +37,7 @@ describe("Hash Functions", () => {
 			value.fill(0xff);
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -40,7 +47,7 @@ describe("Hash Functions", () => {
 			const value = new Uint8Array(32);
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			// All-zero input should produce non-zero hash
@@ -52,7 +59,7 @@ describe("Hash Functions", () => {
 			value.fill(0xff);
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -67,8 +74,8 @@ describe("Hash Functions", () => {
 			value2[0] = 0x02;
 			const node2: LeafNode = { type: "leaf", value: value2 };
 
-			const hash1 = BinaryTree.hashLeaf(node1);
-			const hash2 = BinaryTree.hashLeaf(node2);
+			const hash1 = hashLeaf(node1);
+			const hash2 = hashLeaf(node2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -78,8 +85,8 @@ describe("Hash Functions", () => {
 			value[15] = 0x99;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash1 = BinaryTree.hashLeaf(node);
-			const hash2 = BinaryTree.hashLeaf(node);
+			const hash1 = hashLeaf(node);
+			const hash2 = hashLeaf(node);
 
 			expect(hash1).toEqual(hash2);
 		});
@@ -89,7 +96,7 @@ describe("Hash Functions", () => {
 			value[10] = 0xab;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -100,7 +107,7 @@ describe("Hash Functions", () => {
 			value[5] = 0x55;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 			const expected = blake3(value);
 
 			expect(hash).toEqual(expected);
@@ -112,7 +119,7 @@ describe("Hash Functions", () => {
 				const value = new Uint8Array(32);
 				value[0] = i;
 				const node: LeafNode = { type: "leaf", value };
-				hashes.push(BinaryTree.hashLeaf(node));
+				hashes.push(hashLeaf(node));
 			}
 
 			// All hashes should be different
@@ -132,8 +139,8 @@ describe("Hash Functions", () => {
 			value2[0] = 0b00000001; // Single bit flip
 			const node2: LeafNode = { type: "leaf", value: value2 };
 
-			const hash1 = BinaryTree.hashLeaf(node1);
-			const hash2 = BinaryTree.hashLeaf(node2);
+			const hash1 = hashLeaf(node1);
+			const hash2 = hashLeaf(node2);
 
 			expect(hash1).not.toEqual(hash2);
 
@@ -159,7 +166,7 @@ describe("Hash Functions", () => {
 			}
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -170,7 +177,7 @@ describe("Hash Functions", () => {
 			value[0] = 0x7f;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -182,7 +189,7 @@ describe("Hash Functions", () => {
 				const value = new Uint8Array(size);
 				value.fill(0xaa);
 				const node: LeafNode = { type: "leaf", value };
-				return BinaryTree.hashLeaf(node);
+				return hashLeaf(node);
 			});
 
 			// All should be different
@@ -199,7 +206,7 @@ describe("Hash Functions", () => {
 			value[20] = 0xcc;
 			const node: LeafNode = { type: "leaf", value };
 
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			// Create tree and insert at different positions
 			let tree1 = BinaryTree.init();
@@ -213,7 +220,7 @@ describe("Hash Functions", () => {
 			tree2 = BinaryTree.insert(tree2, key2, value);
 
 			// Hash should be same regardless of position
-			expect(hash).toEqual(BinaryTree.hashLeaf(node));
+			expect(hash).toEqual(hashLeaf(node));
 		});
 	});
 
@@ -224,7 +231,7 @@ describe("Hash Functions", () => {
 			const values = new Array(256).fill(null);
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -238,7 +245,7 @@ describe("Hash Functions", () => {
 			values[0][0] = 0x42;
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -256,7 +263,7 @@ describe("Hash Functions", () => {
 			values[255][0] = 0x33;
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -273,8 +280,8 @@ describe("Hash Functions", () => {
 			const values2 = new Array(256).fill(null);
 			const node2: StemNode = { type: "stem", stem: stem2, values: values2 };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -292,8 +299,8 @@ describe("Hash Functions", () => {
 			values2[10][0] = 0x02;
 			const node2: StemNode = { type: "stem", stem, values: values2 };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -311,8 +318,8 @@ describe("Hash Functions", () => {
 			values2[1] = value;
 			const node2: StemNode = { type: "stem", stem, values: values2 };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -325,8 +332,8 @@ describe("Hash Functions", () => {
 			values[50][10] = 0xee;
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash1 = BinaryTree.hashStem(node);
-			const hash2 = BinaryTree.hashStem(node);
+			const hash1 = hashStem(node);
+			const hash2 = hashStem(node);
 
 			expect(hash1).toEqual(hash2);
 		});
@@ -336,7 +343,7 @@ describe("Hash Functions", () => {
 			const values = new Array(256).fill(null);
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -351,8 +358,8 @@ describe("Hash Functions", () => {
 			values2[0] = new Uint8Array(32); // Explicit zeros
 			const node2: StemNode = { type: "stem", stem, values: values2 };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			// Both should have zeros at position 0
 			expect(hash1).toEqual(hash2);
@@ -367,7 +374,7 @@ describe("Hash Functions", () => {
 			values[0][0] = 0x56;
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			// Manual computation
 			const data = [...stem];
@@ -393,7 +400,7 @@ describe("Hash Functions", () => {
 			}
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -405,7 +412,7 @@ describe("Hash Functions", () => {
 			const values = new Array(256).fill(null);
 			const node: StemNode = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashStem(node);
+			const hash = hashStem(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -428,8 +435,8 @@ describe("Hash Functions", () => {
 			}
 			const node2: StemNode = { type: "stem", stem, values: values2 };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -444,8 +451,8 @@ describe("Hash Functions", () => {
 			stem2[0] = 0b00000001; // Single bit flip
 			const node2: StemNode = { type: "stem", stem: stem2, values };
 
-			const hash1 = BinaryTree.hashStem(node1);
-			const hash2 = BinaryTree.hashStem(node2);
+			const hash1 = hashStem(node1);
+			const hash2 = hashStem(node2);
 
 			expect(hash1).not.toEqual(hash2);
 
@@ -465,7 +472,7 @@ describe("Hash Functions", () => {
 	describe("hashInternal", () => {
 		test("both children zero returns zero hash", () => {
 			const zero = new Uint8Array(32);
-			const hash = BinaryTree.hashInternal(zero, zero);
+			const hash = hashInternal(zero, zero);
 
 			expect(hash.length).toBe(32);
 			expect(hash.every((b) => b === 0)).toBe(true);
@@ -476,7 +483,7 @@ describe("Hash Functions", () => {
 			left[0] = 0x01;
 			const right = new Uint8Array(32);
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -487,7 +494,7 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0x02;
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -499,7 +506,7 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0x22;
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -511,8 +518,8 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0x44;
 
-			const hash1 = BinaryTree.hashInternal(left, right);
-			const hash2 = BinaryTree.hashInternal(right, left); // Swapped
+			const hash1 = hashInternal(left, right);
+			const hash2 = hashInternal(right, left); // Swapped
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -521,7 +528,7 @@ describe("Hash Functions", () => {
 			const left = new Uint8Array(32);
 			const right = new Uint8Array(32);
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash.every((b) => b === 0)).toBe(true);
 		});
@@ -532,8 +539,8 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[10] = 0xaa;
 
-			const hash1 = BinaryTree.hashInternal(left, right);
-			const hash2 = BinaryTree.hashInternal(left, right);
+			const hash1 = hashInternal(left, right);
+			const hash2 = hashInternal(left, right);
 
 			expect(hash1).toEqual(hash2);
 		});
@@ -544,7 +551,7 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0x77;
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -556,7 +563,7 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0x99;
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			const expected = blake3(new Uint8Array([...left, ...right]));
 
@@ -571,8 +578,8 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0xff;
 
-			const hash1 = BinaryTree.hashInternal(left1, right);
-			const hash2 = BinaryTree.hashInternal(left2, right);
+			const hash1 = hashInternal(left1, right);
+			const hash2 = hashInternal(left2, right);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -585,8 +592,8 @@ describe("Hash Functions", () => {
 			const right2 = new Uint8Array(32);
 			right2[0] = 0x02;
 
-			const hash1 = BinaryTree.hashInternal(left, right1);
-			const hash2 = BinaryTree.hashInternal(left, right2);
+			const hash1 = hashInternal(left, right1);
+			const hash2 = hashInternal(left, right2);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -597,7 +604,7 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right.fill(0xff);
 
-			const hash = BinaryTree.hashInternal(left, right);
+			const hash = hashInternal(left, right);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -607,7 +614,7 @@ describe("Hash Functions", () => {
 	describe("hashNode", () => {
 		test("empty node returns zero hash", () => {
 			const node: Node = { type: "empty" };
-			const hash = BinaryTree.hashNode(node);
+			const hash = hashNode(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.every((b) => b === 0)).toBe(true);
@@ -620,7 +627,7 @@ describe("Hash Functions", () => {
 			right[0] = 0xbb;
 			const node: Node = { type: "internal", left, right };
 
-			const hash = BinaryTree.hashNode(node);
+			const hash = hashNode(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -632,7 +639,7 @@ describe("Hash Functions", () => {
 			const values = new Array(256).fill(null);
 			const node: Node = { type: "stem", stem, values };
 
-			const hash = BinaryTree.hashNode(node);
+			const hash = hashNode(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -643,7 +650,7 @@ describe("Hash Functions", () => {
 			value[0] = 0xdd;
 			const node: Node = { type: "leaf", value };
 
-			const hash = BinaryTree.hashNode(node);
+			const hash = hashNode(node);
 
 			expect(hash.length).toBe(32);
 			expect(hash.some((b) => b !== 0)).toBe(true);
@@ -656,8 +663,8 @@ describe("Hash Functions", () => {
 			right[0] = 0x22;
 
 			const node: Node = { type: "internal", left, right };
-			const hash1 = BinaryTree.hashNode(node);
-			const hash2 = BinaryTree.hashInternal(left, right);
+			const hash1 = hashNode(node);
+			const hash2 = hashInternal(left, right);
 
 			expect(hash1).toEqual(hash2);
 		});
@@ -668,8 +675,8 @@ describe("Hash Functions", () => {
 			const values = new Array(256).fill(null);
 
 			const node: StemNode = { type: "stem", stem, values };
-			const hash1 = BinaryTree.hashNode(node);
-			const hash2 = BinaryTree.hashStem(node);
+			const hash1 = hashNode(node);
+			const hash2 = hashStem(node);
 
 			expect(hash1).toEqual(hash2);
 		});
@@ -679,17 +686,17 @@ describe("Hash Functions", () => {
 			value[0] = 0x44;
 
 			const node: LeafNode = { type: "leaf", value };
-			const hash1 = BinaryTree.hashNode(node);
-			const hash2 = BinaryTree.hashLeaf(node);
+			const hash1 = hashNode(node);
+			const hash2 = hashLeaf(node);
 
 			expect(hash1).toEqual(hash2);
 		});
 
 		test("different node types produce different hashes", () => {
-			const emptyHash = BinaryTree.hashNode({ type: "empty" });
+			const emptyHash = hashNode({ type: "empty" });
 
 			const value = new Uint8Array(32);
-			const leafHash = BinaryTree.hashNode({ type: "leaf", value });
+			const leafHash = hashNode({ type: "leaf", value });
 
 			expect(emptyHash).not.toEqual(leafHash);
 		});
@@ -711,8 +718,8 @@ describe("Hash Functions", () => {
 			];
 
 			for (const node of nodes) {
-				const hash1 = BinaryTree.hashNode(node);
-				const hash2 = BinaryTree.hashNode(node);
+				const hash1 = hashNode(node);
+				const hash2 = hashNode(node);
 				expect(hash1).toEqual(hash2);
 			}
 		});
@@ -721,7 +728,7 @@ describe("Hash Functions", () => {
 			const zero = new Uint8Array(32);
 			const node: Node = { type: "internal", left: zero, right: zero };
 
-			const hash = BinaryTree.hashNode(node);
+			const hash = hashNode(node);
 
 			// Should use empty node optimization
 			expect(hash.every((b) => b === 0)).toBe(true);
@@ -731,10 +738,10 @@ describe("Hash Functions", () => {
 			// Simulate two-level tree
 			const leafValue = new Uint8Array(32);
 			leafValue[0] = 0x99;
-			const leafHash = BinaryTree.hashNode({ type: "leaf", value: leafValue });
+			const leafHash = hashNode({ type: "leaf", value: leafValue });
 
 			const zero = new Uint8Array(32);
-			const internalHash = BinaryTree.hashNode({
+			const internalHash = hashNode({
 				type: "internal",
 				left: leafHash,
 				right: zero,
@@ -749,8 +756,8 @@ describe("Hash Functions", () => {
 			const data = new Uint8Array(32);
 			data.fill(0xee);
 
-			const leafHash = BinaryTree.hashNode({ type: "leaf", value: data });
-			const internalHash = BinaryTree.hashNode({
+			const leafHash = hashNode({ type: "leaf", value: data });
+			const internalHash = hashNode({
 				type: "internal",
 				left: data,
 				right: new Uint8Array(32),
@@ -764,7 +771,7 @@ describe("Hash Functions", () => {
 		test("manual tree root computation matches rootHash", () => {
 			const tree = BinaryTree.init();
 			const rootHash = BinaryTree.rootHash(tree);
-			const manualHash = BinaryTree.hashNode(tree.root);
+			const manualHash = hashNode(tree.root);
 
 			expect(rootHash).toEqual(manualHash);
 		});
@@ -1161,7 +1168,7 @@ describe("Hash Functions", () => {
 			const hash2 = BinaryTree.rootHash(tree);
 
 			// Recompute manually
-			const manualHash = BinaryTree.hashNode(tree.root);
+			const manualHash = hashNode(tree.root);
 
 			expect(hash2).toEqual(manualHash);
 			expect(hash1).not.toEqual(hash2);
@@ -1335,7 +1342,7 @@ describe("Hash Functions", () => {
 			const value = new Uint8Array(32);
 			value[0] = 0x42;
 			const node: LeafNode = { type: "leaf", value };
-			const hash1 = BinaryTree.hashLeaf(node);
+			const hash1 = hashLeaf(node);
 
 			// Try to find different value with same hash
 			let collision = false;
@@ -1345,7 +1352,7 @@ describe("Hash Functions", () => {
 				if (i === 0x42) continue; // Skip original
 
 				const testNode: LeafNode = { type: "leaf", value: testValue };
-				const testHash = BinaryTree.hashLeaf(testNode);
+				const testHash = hashLeaf(testNode);
 
 				if (hash1.every((b, idx) => b === testHash[idx])) {
 					collision = true;
@@ -1366,7 +1373,7 @@ describe("Hash Functions", () => {
 				value[0] = i % 256;
 				value[1] = Math.floor(i / 256);
 				const node: LeafNode = { type: "leaf", value };
-				const hash = BinaryTree.hashLeaf(node);
+				const hash = hashLeaf(node);
 				const hashStr = Array.from(hash)
 					.map((b) => b.toString(16).padStart(2, "0"))
 					.join("");
@@ -1386,13 +1393,13 @@ describe("Hash Functions", () => {
 			const value1 = new Uint8Array(32);
 			value1.fill(0x00);
 			const node1: LeafNode = { type: "leaf", value: value1 };
-			const hash1 = BinaryTree.hashLeaf(node1);
+			const hash1 = hashLeaf(node1);
 
 			const value2 = new Uint8Array(32);
 			value2.fill(0x00);
 			value2[31] = 0x01; // Single bit flip in last byte
 			const node2: LeafNode = { type: "leaf", value: value2 };
-			const hash2 = BinaryTree.hashLeaf(node2);
+			const hash2 = hashLeaf(node2);
 
 			// Count bit differences
 			let bitDiffs = 0;
@@ -1417,7 +1424,7 @@ describe("Hash Functions", () => {
 				const value = new Uint8Array(32);
 				value[bytePos] = 0x01;
 				const node: LeafNode = { type: "leaf", value };
-				hashes.push(BinaryTree.hashLeaf(node));
+				hashes.push(hashLeaf(node));
 			}
 
 			// All hashes should be different
@@ -1436,7 +1443,7 @@ describe("Hash Functions", () => {
 				stem[0] = i;
 				const values = new Array(256).fill(null);
 				const node: StemNode = { type: "stem", stem, values };
-				const hash = BinaryTree.hashStem(node);
+				const hash = hashStem(node);
 				const hashStr = Array.from(hash)
 					.map((b) => b.toString(16).padStart(2, "0"))
 					.join("");
@@ -1453,8 +1460,8 @@ describe("Hash Functions", () => {
 			const right = new Uint8Array(32);
 			right[0] = 0xbb;
 
-			const hash1 = BinaryTree.hashInternal(left, right);
-			const hash2 = BinaryTree.hashInternal(right, left);
+			const hash1 = hashInternal(left, right);
+			const hash2 = hashInternal(right, left);
 
 			expect(hash1).not.toEqual(hash2);
 		});
@@ -1471,7 +1478,7 @@ describe("Hash Functions", () => {
 			for (const value of values) {
 				value.fill(0x99);
 				const node: LeafNode = { type: "leaf", value };
-				const hash = BinaryTree.hashLeaf(node);
+				const hash = hashLeaf(node);
 
 				expect(hash.length).toBe(32);
 			}
@@ -1482,7 +1489,7 @@ describe("Hash Functions", () => {
 			value[15] = 0xde;
 			value[16] = 0xad;
 			const node: LeafNode = { type: "leaf", value };
-			const hash = BinaryTree.hashLeaf(node);
+			const hash = hashLeaf(node);
 
 			// Hash should not contain obvious patterns from input
 			const hashHex = Array.from(hash)
@@ -1502,7 +1509,7 @@ describe("Hash Functions", () => {
 				value[0] = i % 256;
 				value[1] = Math.floor(i / 256);
 				const node: LeafNode = { type: "leaf", value };
-				BinaryTree.hashLeaf(node);
+				hashLeaf(node);
 			}
 
 			const end = performance.now();
@@ -1519,7 +1526,7 @@ describe("Hash Functions", () => {
 
 			const hashes = [];
 			for (let i = 0; i < 100; i++) {
-				hashes.push(BinaryTree.hashLeaf(node));
+				hashes.push(hashLeaf(node));
 			}
 
 			// All should be identical
@@ -1539,7 +1546,7 @@ describe("Hash Functions", () => {
 			const start = performance.now();
 
 			for (const node of nodes) {
-				BinaryTree.hashLeaf(node);
+				hashLeaf(node);
 			}
 
 			const end = performance.now();
@@ -1560,7 +1567,7 @@ describe("Hash Functions", () => {
 			const node: StemNode = { type: "stem", stem, values };
 
 			const start = performance.now();
-			BinaryTree.hashStem(node);
+			hashStem(node);
 			const end = performance.now();
 
 			// Should complete quickly even with 256 values
@@ -1576,7 +1583,7 @@ describe("Hash Functions", () => {
 			const start = performance.now();
 
 			for (let i = 0; i < 10000; i++) {
-				BinaryTree.hashInternal(left, right);
+				hashInternal(left, right);
 			}
 
 			const end = performance.now();

@@ -1,7 +1,10 @@
+import { blake3 } from "@noble/hashes/blake3.js";
 import { InvalidTreeStateError } from "./errors.js";
 import { getStemBit } from "./getStemBit.js";
-import { hashNode } from "./hashNode.js";
+import { HashNode } from "./hashNode.js";
 import { splitKey } from "./splitKey.js";
+
+const hashNode = HashNode({ blake3 });
 
 /**
  * Insert value at key
