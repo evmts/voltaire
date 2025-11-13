@@ -473,8 +473,8 @@
 					]
 				},
 				{
-					"group": "Uint",
-					"pages": ["primitives/uint/index"]
+					"group": "Uint256",
+					"pages": ["primitives/uint256/index"]
 				}
 			]
 		},
@@ -917,7 +917,7 @@
 				"primitives/siwe/fundamentals",
 				"primitives/state/fundamentals",
 				"primitives/transaction/fundamentals",
-				"primitives/uint/fundamentals"
+				"primitives/uint256/fundamentals"
 			]
 		},
 		{
