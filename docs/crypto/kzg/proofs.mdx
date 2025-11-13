@@ -1,18 +1,204 @@
 ---
 title: Proofs
-description: KZG proofs
+description: Computing and verifying KZG proofs for point evaluation
 ---
 
-# Proofs
+# KZG Proofs
 
-Comprehensive KZG proofs documentation for EIP-4844.
+Generate and verify cryptographic proofs that a polynomial evaluates to a specific value at a given point.
 
 ## Overview
 
-[Detailed content on KZG proofs based on EIP-4844 specification]
+KZG proofs enable proving `p(z) = y` where:
+- `p(x)` is the polynomial representing the blob
+- `z` is the evaluation point (32 bytes)
+- `y` is the claimed value (32 bytes)
+- Proof is 48 bytes
+
+## Compute Proof
+
+<Tabs>
+<Tab title="Standard API">
+
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+
+KZG.loadTrustedSetup();
+
+const blob = new Uint8Array(131072);
+const z = new Uint8Array(32); // Evaluation point
+
+// Compute proof
+const { proof, y } = KZG.computeKzgProof(blob, z);
+// proof: Uint8Array (48 bytes)
+// y: Uint8Array (32 bytes) - polynomial evaluation at z
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```typescript
+import { ComputeKzgProof, loadTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+import * as ckzg from 'c-kzg';
+
+loadTrustedSetup();
+
+const computeKzgProof = ComputeKzgProof({
+  computeKzgProof: ckzg.computeKzgProof
+});
+
+const blob = new Uint8Array(131072);
+const z = new Uint8Array(32);
+const { proof, y } = computeKzgProof(blob, z);
+```
+
+**Benefits**: Tree-shakeable, testable with mock c-kzg
+
+</Tab>
+</Tabs>
+
+## Verify Proof
+
+<Tabs>
+<Tab title="Standard API">
+
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+
+const commitment = KZG.blobToKzgCommitment(blob);
+const z = new Uint8Array(32);
+const { proof, y } = KZG.computeKzgProof(blob, z);
+
+// Verify proof
+const valid = KZG.verifyKzgProof(commitment, z, y, proof);
+// Returns: boolean (true if valid, false otherwise)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```typescript
+import {
+  BlobToKzgCommitment,
+  ComputeKzgProof,
+  VerifyKzgProof,
+  loadTrustedSetup
+} from '@tevm/voltaire/crypto/KZG';
+import * as ckzg from 'c-kzg';
+
+loadTrustedSetup();
+
+const blobToKzgCommitment = BlobToKzgCommitment({
+  blobToKzgCommitment: ckzg.blobToKzgCommitment
+});
+const computeKzgProof = ComputeKzgProof({
+  computeKzgProof: ckzg.computeKzgProof
+});
+const verifyKzgProof = VerifyKzgProof({
+  verifyKzgProof: ckzg.verifyKzgProof
+});
+
+const commitment = blobToKzgCommitment(blob);
+const { proof, y } = computeKzgProof(blob, z);
+const valid = verifyKzgProof(commitment, z, y, proof);
+```
+
+</Tab>
+</Tabs>
+
+## Blob Proof Verification
+
+Optimized verification for blob-commitment pairs:
+
+<Tabs>
+<Tab title="Standard API">
+
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+
+const blob = new Uint8Array(131072);
+const commitment = KZG.blobToKzgCommitment(blob);
+const z = new Uint8Array(32);
+const { proof } = KZG.computeKzgProof(blob, z);
+
+// Verify blob proof (optimized)
+const valid = KZG.verifyBlobKzgProof(blob, commitment, proof);
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```typescript
+import { VerifyBlobKzgProof } from '@tevm/voltaire/crypto/KZG';
+import * as ckzg from 'c-kzg';
+
+const verifyBlobKzgProof = VerifyBlobKzgProof({
+  verifyBlobKzgProof: ckzg.verifyBlobKzgProof
+});
+
+const valid = verifyBlobKzgProof(blob, commitment, proof);
+```
+
+</Tab>
+</Tabs>
+
+## Batch Verification
+
+Verify multiple proofs efficiently:
+
+<Tabs>
+<Tab title="Standard API">
+
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => KZG.blobToKzgCommitment(b));
+const proofs = [proof1, proof2, proof3];
+
+// Batch verify (more efficient than individual verification)
+const allValid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+// Returns: boolean (true if ALL proofs valid, false otherwise)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```typescript
+import { VerifyBlobKzgProofBatch } from '@tevm/voltaire/crypto/KZG';
+import * as ckzg from 'c-kzg';
+
+const verifyBatch = VerifyBlobKzgProofBatch({
+  verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch
+});
+
+const allValid = verifyBatch(blobs, commitments, proofs);
+```
+
+</Tab>
+</Tabs>
+
+## Error Handling
+
+```typescript
+try {
+  const { proof, y } = KZG.computeKzgProof(blob, z);
+} catch (error) {
+  if (error instanceof KzgNotInitializedError) {
+    // Trusted setup not loaded
+  } else if (error instanceof KzgInvalidBlobError) {
+    // Invalid blob format
+  } else if (error instanceof KzgError) {
+    // Computation failed
+    console.error('Code:', error.code);
+    console.error('Message:', error.message);
+  }
+}
+```
 
 ## Related
 
 - [KZG Overview](./index)
-- [EIP-4844](./eip-4844)
+- [Commitments](./commitments)
 - [Point Evaluation](./point-evaluation)
+- [EIP-4844](./eip-4844)

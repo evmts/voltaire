@@ -58,6 +58,54 @@ const address = EIP712.recoverAddress(signature, typedData);
 const isValid = EIP712.verifyTypedData(signature, typedData, address);
 ```
 
+## API Styles
+
+Voltaire provides two ways to use EIP-712:
+
+### Standard API (Recommended)
+
+Crypto dependencies auto-injected - simplest for most use cases:
+
+```typescript
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
+
+const hash = EIP712.hashTypedData(typedData);
+const signature = EIP712.signTypedData(typedData, privateKey);
+```
+
+### Factory API (Advanced)
+
+Tree-shakeable with explicit crypto dependencies. Useful for custom crypto implementations or minimal bundle size:
+
+```typescript
+import { HashTypedData, HashDomain, HashStruct, EncodeData,
+         HashType, EncodeValue } from '@tevm/voltaire/crypto/eip712';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/keccak256';
+import { sign as secp256k1Sign } from '@tevm/voltaire/crypto/secp256k1';
+
+// Build from bottom up (handle circular dependencies)
+const hashType = HashType({ keccak256 });
+let hashStruct;
+const encodeValue = EncodeValue({
+  keccak256,
+  hashStruct: (...args) => hashStruct(...args)
+});
+const encodeData = EncodeData({ hashType, encodeValue });
+hashStruct = HashStruct({ keccak256, encodeData });
+
+const hashDomain = HashDomain({ hashStruct });
+const hashTypedData = HashTypedData({ keccak256, hashDomain, hashStruct });
+
+// Use factories
+const hash = hashTypedData(typedData);
+```
+
+**Factory dependencies:**
+- All hash/encode methods: `keccak256`
+- `signTypedData`: `hashTypedData` + `secp256k1.sign`
+- `recoverAddress`: `keccak256` + `secp256k1.recoverPublicKey` + `hashTypedData`
+- `verifyTypedData`: `recoverAddress`
+
 ## API Reference
 
 ### Core Functions

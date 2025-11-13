@@ -1,18 +1,98 @@
 ---
 title: Commitments
-description: KZG commitments
+description: Creating KZG commitments from blobs for EIP-4844
 ---
 
-# Commitments
+# KZG Commitments
 
-Comprehensive KZG commitments documentation for EIP-4844.
+Convert 128 KB blobs into succinct 48-byte commitments using polynomial commitments.
 
 ## Overview
 
-[Detailed content on KZG commitments based on EIP-4844 specification]
+KZG commitments represent a blob as a polynomial commitment on the BLS12-381 curve. The commitment is binding (cannot change blob after commitment) and enables efficient verification.
+
+## API
+
+<Tabs>
+<Tab title="Standard API">
+
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+
+// Load trusted setup (required once)
+KZG.loadTrustedSetup();
+
+// Create blob
+const blob = new Uint8Array(131072); // 128 KB
+// ... fill with data
+
+// Generate commitment
+const commitment = KZG.blobToKzgCommitment(blob);
+// Returns: Uint8Array (48 bytes)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```typescript
+import { BlobToKzgCommitment, loadTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+import * as ckzg from 'c-kzg';
+
+// Load trusted setup
+loadTrustedSetup();
+
+// Create factory with c-kzg dependency injection
+const blobToKzgCommitment = BlobToKzgCommitment({
+  blobToKzgCommitment: ckzg.blobToKzgCommitment
+});
+
+// Use factory
+const blob = new Uint8Array(131072);
+const commitment = blobToKzgCommitment(blob);
+// Returns: Uint8Array (48 bytes)
+```
+
+**Benefits**: Tree-shakeable, testable with mock c-kzg implementations
+
+</Tab>
+</Tabs>
+
+## Blob Format
+
+**Size**: 131,072 bytes (128 KB exactly)
+**Structure**: 4,096 field elements × 32 bytes
+**Constraint**: Each field element must have top byte = 0 (< BLS12-381 modulus)
+
+```typescript
+// Valid blob
+const blob = new Uint8Array(131072);
+for (let i = 0; i < 4096; i++) {
+  blob[i * 32] = 0; // Top byte must be 0
+  // ... fill remaining 31 bytes
+}
+```
+
+## Error Handling
+
+```typescript
+try {
+  const commitment = KZG.blobToKzgCommitment(blob);
+} catch (error) {
+  if (error instanceof KzgNotInitializedError) {
+    // Trusted setup not loaded
+    KZG.loadTrustedSetup();
+  } else if (error instanceof KzgInvalidBlobError) {
+    // Invalid blob format
+    console.error('Blob validation failed:', error.message);
+  } else if (error instanceof KzgError) {
+    // Commitment computation failed
+    console.error('KZG error:', error.message);
+  }
+}
+```
 
 ## Related
 
 - [KZG Overview](./index)
+- [Proofs](./proofs)
 - [EIP-4844](./eip-4844)
-- [Point Evaluation](./point-evaluation)
