@@ -3,7 +3,15 @@ title: Multiplatform
 description: Works everywhere - TypeScript, Zig, and any language with C-FFI
 ---
 
-Works everywhere: TypeScript, Zig, and any language with C-FFI support.
+Voltaire runs everywhere: TypeScript/JavaScript in browsers and Node.js, native Zig, and any language with C-FFI support (Swift, Go, Python, Rust, Kotlin, etc.).
+
+## Implementation Layers
+
+Voltaire provides three levels of API access:
+
+1. **TypeScript/JavaScript** - Primary API with full documentation and type safety
+2. **Zig** - Native implementation with idiomatic Zig API
+3. **C-FFI** - Low-level C interface for any language with foreign function interface support
 
 ## Usage Examples
 
@@ -15,7 +23,28 @@ import { Address } from '@tevm/voltaire';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 console.log(Address.toChecksummed(address));
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ```
+
+Object-oriented TypeScript API with branded types for compile-time safety.
+
+</Tab>
+
+<Tab title="Zig">
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+pub fn main() !void {
+    const address = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+    const checksummed = Address.addressToChecksummed(address);
+    std.debug.print("{s}\n", .{checksummed});
+}
+```
+
+Native Zig implementation with compile-time memory safety and zero-cost abstractions.
 
 </Tab>
 
@@ -40,5 +69,95 @@ if let addr = address {
 }
 ```
 
+C-FFI bindings for iOS and macOS development. Manual memory management required.
+
 </Tab>
 </Tabs>
+
+## Supported Languages
+
+### Officially Supported
+
+**TypeScript/JavaScript**
+- Full API coverage with complete documentation
+- Branded types for compile-time safety
+- Tree-shakeable imports for minimal bundle size
+- Works in Node.js, Deno, Bun, and browsers
+
+**Zig**
+- Native implementation with full API parity
+- Used internally by TypeScript/WASM builds
+- Compile-time memory safety
+- Zero-cost abstractions
+
+### Via C-FFI (Experimental)
+
+Any language with C foreign function interface support can use Voltaire through the C API (`src/c_api.zig`, generated header: `src/primitives.h`):
+
+- **Swift** - iOS/macOS development
+- **Go** - Via cgo
+- **Python** - Via ctypes/cffi
+- **Rust** - Via FFI
+- **Kotlin** - Android/JVM development
+- **C/C++** - Direct integration
+
+<Warning>
+C-FFI bindings require manual memory management. Always call corresponding `_free` functions to prevent leaks.
+</Warning>
+
+## Language Support Wishlist
+
+We're looking for contributors to help build idiomatic, type-safe wrappers for additional languages. While these languages can already use Voltaire via C-FFI, we want to provide ergonomic APIs that feel native to each language.
+
+**Looking for help with:**
+
+<CardGroup cols={2}>
+  <Card title="Go" icon="golang">
+    Native Go bindings via cgo with idiomatic error handling and memory management
+  </Card>
+  <Card title="Python" icon="python">
+    Python bindings via ctypes/cffi with Pythonic API design
+  </Card>
+  <Card title="Rust" icon="rust">
+    Rust bindings via FFI with zero-cost abstractions and ownership semantics
+  </Card>
+  <Card title="Swift" icon="swift">
+    Idiomatic Swift wrapper for C-FFI with automatic memory management
+  </Card>
+  <Card title="Kotlin" icon="code">
+    Kotlin bindings for Android/JVM with coroutine support
+  </Card>
+  <Card title="Other Languages" icon="globe">
+    C#, Ruby, Java, or any language you need
+  </Card>
+</CardGroup>
+
+<Tip>
+Interested in contributing? Check out [src/c_api.zig](https://github.com/evmts/voltaire/blob/main/src/c_api.zig) for the C-FFI interface and [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h) for the generated C header. Join our [Telegram](https://t.me/+ANThR9bHDLAwMjUx) or open an issue on [GitHub](https://github.com/evmts/voltaire/issues).
+</Tip>
+
+## AI-Powered Consistency
+
+Voltaire utilizes advances in AI to maintain consistent API design across multiple programming languages and platforms. Each primitive and function follows the same patterns regardless of language:
+
+- **Naming conventions** - `from*` for constructors, `to*` for conversions
+- **Error handling** - Consistent across languages (Result types, exceptions, or error codes)
+- **Memory management** - Predictable patterns for allocation and deallocation
+- **Documentation** - Comprehensive docs generated from single source of truth
+
+This consistency makes it easy to switch between languages or port code from one platform to another.
+
+## Architecture
+
+**TypeScript → Zig → C-FFI → Any Language**
+
+1. TypeScript/JavaScript uses WASM builds of Zig implementations for performance
+2. Zig provides native implementations with zero dependencies
+3. C-FFI exports Zig functions for language interoperability
+4. Language-specific wrappers provide idiomatic APIs
+
+This architecture ensures:
+- Single source of truth (Zig implementation)
+- Maximum performance (native code or WASM)
+- Universal compatibility (C-FFI)
+- Developer experience (language-specific wrappers)
