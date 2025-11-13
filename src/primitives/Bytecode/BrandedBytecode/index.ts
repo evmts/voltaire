@@ -1,6 +1,8 @@
 // @ts-nocheck
 export * from "./BrandedBytecode.js";
 
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+
 import { analyze } from "./analyze.js";
 import { analyzeBlocks } from "./analyzeBlocks.js";
 import { analyzeGas } from "./analyzeGas.js";
@@ -17,7 +19,7 @@ import { getBlock } from "./getBlock.js";
 import { getNextPc as _getNextPc } from "./getNextPc.js";
 import { getPushSize } from "./getPushSize.js";
 import { hasMetadata } from "./hasMetadata.js";
-import { hash } from "./hash.js";
+import { Hash } from "./hash.js";
 import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
@@ -29,6 +31,12 @@ import { stripMetadata } from "./stripMetadata.js";
 import { toAbi } from "./toAbi.js";
 import { toHex } from "./toHex.js";
 import { validate } from "./validate.js";
+
+// Factory export (tree-shakeable)
+export { Hash } from "./hash.js";
+
+// Wrapper export (convenient, backward compat)
+export const hash = Hash({ keccak256 });
 
 // Export individual functions
 export {
@@ -46,7 +54,6 @@ export {
 	formatInstructions,
 	getBlock,
 	getPushSize,
-	hash,
 	hasMetadata,
 	isPush,
 	isTerminator,

@@ -51,7 +51,5 @@ export function popCount(value) {
  * @returns {boolean}
  */
 export function isValid(value) {
-	return (
-		Number.isInteger(value) && value >= INT8_MIN && value <= INT8_MAX
-	);
+	return Number.isInteger(value) && value >= INT8_MIN && value <= INT8_MAX;
 }

@@ -17,15 +17,11 @@ import { MAX, MIN } from "./constants.js";
  */
 export function fromBigInt(value) {
 	if (value < MIN) {
-		throw new Error(
-			`Int128 value below minimum (${MIN}): ${value}`,
-		);
+		throw new Error(`Int128 value below minimum (${MIN}): ${value}`);
 	}
 
 	if (value > MAX) {
-		throw new Error(
-			`Int128 value exceeds maximum (${MAX}): ${value}`,
-		);
+		throw new Error(`Int128 value exceeds maximum (${MAX}): ${value}`);
 	}
 
 	return value;

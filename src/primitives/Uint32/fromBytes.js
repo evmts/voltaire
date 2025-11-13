@@ -17,7 +17,9 @@ import { SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new Error(`Uint32 bytes must be exactly ${SIZE} bytes, got ${bytes.length}`);
+		throw new Error(
+			`Uint32 bytes must be exactly ${SIZE} bytes, got ${bytes.length}`,
+		);
 	}
 
 	let value = 0;

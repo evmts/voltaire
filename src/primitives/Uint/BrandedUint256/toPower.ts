@@ -16,7 +16,10 @@ import { MAX } from "./constants.js";
  * const result2 = base.toPower(exp); // 256
  * ```
  */
-export function toPower(uint: BrandedUint256, exponent: BrandedUint256): BrandedUint256 {
+export function toPower(
+	uint: BrandedUint256,
+	exponent: BrandedUint256,
+): BrandedUint256 {
 	let result = 1n;
 	let b = uint as bigint;
 	let e = exponent as bigint;

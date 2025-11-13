@@ -47,7 +47,9 @@ export const MAX = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (
  * console.log(MIN); // 0n
  * ```
  */
-export const MIN = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (0n);
+export const MIN = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (
+	0n
+);
 
 /**
  * Zero value
@@ -61,7 +63,8 @@ export const MIN = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (
  * console.log(ZERO); // 0n
  * ```
  */
-export const ZERO = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (0n);
+export const ZERO =
+	/** @type {import('./BrandedUint128.ts').BrandedUint128} */ (0n);
 
 /**
  * One value
@@ -75,4 +78,6 @@ export const ZERO = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ 
  * console.log(ONE); // 1n
  * ```
  */
-export const ONE = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (1n);
+export const ONE = /** @type {import('./BrandedUint128.ts').BrandedUint128} */ (
+	1n
+);

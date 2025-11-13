@@ -16,7 +16,10 @@ import { MAX } from "./constants.js";
  * const result2 = a.shiftLeft(b); // 256
  * ```
  */
-export function shiftLeft(uint: BrandedUint256, bits: BrandedUint256): BrandedUint256 {
+export function shiftLeft(
+	uint: BrandedUint256,
+	bits: BrandedUint256,
+): BrandedUint256 {
 	const shifted = (uint as bigint) << (bits as bigint);
 	return (shifted & (MAX as bigint)) as BrandedUint256;
 }

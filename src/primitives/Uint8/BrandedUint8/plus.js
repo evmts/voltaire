@@ -20,7 +20,9 @@ import { MAX } from "./constants.js";
 export function plus(a, b) {
 	const sum = a + b;
 	if (sum > MAX) {
-		throw new Error(`Uint8 overflow: ${a} + ${b} = ${sum} exceeds maximum (255)`);
+		throw new Error(
+			`Uint8 overflow: ${a} + ${b} = ${sum} exceeds maximum (255)`,
+		);
 	}
 	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (sum);
 }

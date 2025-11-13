@@ -49,7 +49,7 @@ export function xor(a, b) {
  */
 export function not(value) {
 	const unsigned = value < 0 ? value + 256 : value;
-	const result = (~unsigned) & 0xff;
+	const result = ~unsigned & 0xff;
 	const signed = result >= 128 ? result - 256 : result;
 	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (signed);
 }

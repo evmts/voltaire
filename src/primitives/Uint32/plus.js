@@ -18,5 +18,5 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function plus(uint, b) {
-	return ((uint + b) >>> 0);
+	return (uint + b) >>> 0;
 }

@@ -15,5 +15,7 @@ export function isValid(value) {
 
 	const truncated = value | 0;
 
-	return truncated === value && truncated >= -2147483648 && truncated <= 2147483647;
+	return (
+		truncated === value && truncated >= -2147483648 && truncated <= 2147483647
+	);
 }

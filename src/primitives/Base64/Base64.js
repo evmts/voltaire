@@ -20,13 +20,6 @@ import { toBytesUrlSafe } from "./BrandedBase64/toBytesUrlSafe.js";
 import { toString } from "./BrandedBase64/toString.js";
 import { toStringUrlSafe } from "./BrandedBase64/toStringUrlSafe.js";
 
-// Export types
-export type { BrandedBase64, Base64Like } from "./BrandedBase64/BrandedBase64.js";
-export type {
-	BrandedBase64Url,
-	Base64UrlLike,
-} from "./BrandedBase64/BrandedBase64Url.js";
-
 // Export individual functions
 export {
 	// Constructors

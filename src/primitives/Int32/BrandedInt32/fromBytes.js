@@ -7,9 +7,7 @@
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 4) {
-		throw new Error(
-			`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`,
-		);
+		throw new Error(`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`);
 	}
 
 	// Read as unsigned first

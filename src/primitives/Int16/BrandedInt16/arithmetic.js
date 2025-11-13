@@ -102,7 +102,9 @@ export function abs(value) {
 export function negate(value) {
 	// Special case: -INT16_MIN overflows
 	if (value === INT16_MIN) {
-		throw new Error(`Int16: overflow in negation -${INT16_MIN} = ${-INT16_MIN}`);
+		throw new Error(
+			`Int16: overflow in negation -${INT16_MIN} = ${-INT16_MIN}`,
+		);
 	}
 	const result = -value;
 	return /** @type {import('./BrandedInt16.ts').BrandedInt16} */ (result);

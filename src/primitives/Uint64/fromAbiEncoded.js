@@ -16,7 +16,9 @@
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(`Uint64 ABI-encoded bytes must be 32 bytes, got ${bytes.length}`);
+		throw new Error(
+			`Uint64 ABI-encoded bytes must be 32 bytes, got ${bytes.length}`,
+		);
 	}
 
 	let value = 0n;

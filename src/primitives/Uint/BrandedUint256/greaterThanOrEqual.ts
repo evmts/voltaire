@@ -15,6 +15,9 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const isGte2 = a.greaterThanOrEqual(b); // true
  * ```
  */
-export function greaterThanOrEqual(uint: BrandedUint256, b: BrandedUint256): boolean {
+export function greaterThanOrEqual(
+	uint: BrandedUint256,
+	b: BrandedUint256,
+): boolean {
 	return (uint as bigint) >= (b as bigint);
 }

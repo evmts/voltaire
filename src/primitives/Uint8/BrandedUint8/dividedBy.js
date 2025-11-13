@@ -19,5 +19,7 @@ export function dividedBy(a, b) {
 	if (b === 0) {
 		throw new Error("Division by zero");
 	}
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (Math.floor(a / b));
+	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
+		Math.floor(a / b)
+	);
 }

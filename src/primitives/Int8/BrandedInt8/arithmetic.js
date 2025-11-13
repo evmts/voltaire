@@ -37,9 +37,7 @@ export function minus(a, b) {
 export function times(a, b) {
 	const result = a * b;
 	if (result < INT8_MIN || result > INT8_MAX) {
-		throw new Error(
-			`Int8: overflow in multiplication ${a} * ${b} = ${result}`,
-		);
+		throw new Error(`Int8: overflow in multiplication ${a} * ${b} = ${result}`);
 	}
 	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (result);
 }

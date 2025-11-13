@@ -16,7 +16,9 @@
  */
 export function toNumber(uint) {
 	if (uint > BigInt(Number.MAX_SAFE_INTEGER)) {
-		console.warn(`Uint64.toNumber: Value ${uint} exceeds Number.MAX_SAFE_INTEGER, precision may be lost`);
+		console.warn(
+			`Uint64.toNumber: Value ${uint} exceeds Number.MAX_SAFE_INTEGER, precision may be lost`,
+		);
 	}
 	return Number(uint);
 }

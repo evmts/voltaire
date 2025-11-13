@@ -16,5 +16,5 @@
  * ```
  */
 export function minus(uint, b) {
-	return ((uint - b) >>> 0);
+	return (uint - b) >>> 0;
 }

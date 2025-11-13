@@ -15,6 +15,9 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const result2 = a.bitwiseAnd(b); // 0x0f
  * ```
  */
-export function bitwiseAnd(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function bitwiseAnd(
+	uint: BrandedUint256,
+	b: BrandedUint256,
+): BrandedUint256 {
 	return ((uint as bigint) & (b as bigint)) as BrandedUint256;
 }

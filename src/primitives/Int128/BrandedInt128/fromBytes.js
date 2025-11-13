@@ -32,9 +32,7 @@ export function fromBytes(bytes) {
 	const value = unsigned >= highBit ? unsigned - MODULO : unsigned;
 
 	if (value < MIN || value > MAX) {
-		throw new Error(
-			`Int128 value out of range (${MIN} to ${MAX}): ${value}`,
-		);
+		throw new Error(`Int128 value out of range (${MIN} to ${MAX}): ${value}`);
 	}
 
 	return value;

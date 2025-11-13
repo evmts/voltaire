@@ -78,6 +78,15 @@ export * as BrandedBloomFilter from "./BloomFilter/BrandedBloomFilter/index.js";
 // Utilities
 export * as Base64 from "./Base64/index.js";
 export * as BrandedBase64 from "./Base64/BrandedBase64/index.js";
+export * as Bytes from "./Bytes/BrandedBytes/index.js";
+export * as Bytes1 from "./Bytes/Bytes1/index.js";
+export * as Bytes2 from "./Bytes/Bytes2/index.js";
+export * as Bytes3 from "./Bytes/Bytes3/index.js";
+export * as Bytes4 from "./Bytes/Bytes4/index.js";
+export * as Bytes5 from "./Bytes/Bytes5/index.js";
+export * as Bytes6 from "./Bytes/Bytes6/index.js";
+export * as Bytes7 from "./Bytes/Bytes7/index.js";
+export * as Bytes8 from "./Bytes/Bytes8/index.js";
 
 // Errors
 export * from "./errors/index.js";

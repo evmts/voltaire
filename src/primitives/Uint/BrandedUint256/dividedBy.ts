@@ -16,7 +16,10 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const quotient2 = a.dividedBy(b); // 10
  * ```
  */
-export function dividedBy(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function dividedBy(
+	uint: BrandedUint256,
+	b: BrandedUint256,
+): BrandedUint256 {
 	if ((b as bigint) === 0n) {
 		throw new Error("Division by zero");
 	}

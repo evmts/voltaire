@@ -15,6 +15,9 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const min2 = a.minimum(b); // 100
  * ```
  */
-export function minimum(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function minimum(
+	uint: BrandedUint256,
+	b: BrandedUint256,
+): BrandedUint256 {
 	return (uint as bigint) < (b as bigint) ? uint : b;
 }

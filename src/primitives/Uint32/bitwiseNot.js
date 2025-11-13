@@ -14,5 +14,5 @@
  * ```
  */
 export function bitwiseNot(uint) {
-	return (~uint) >>> 0;
+	return ~uint >>> 0;
 }

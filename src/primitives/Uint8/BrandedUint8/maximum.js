@@ -16,5 +16,7 @@
  * ```
  */
 export function maximum(a, b) {
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (a > b ? a : b);
+	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
+		a > b ? a : b
+	);
 }

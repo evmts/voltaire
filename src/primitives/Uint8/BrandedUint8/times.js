@@ -20,7 +20,9 @@ import { MAX } from "./constants.js";
 export function times(a, b) {
 	const product = a * b;
 	if (product > MAX) {
-		throw new Error(`Uint8 overflow: ${a} * ${b} = ${product} exceeds maximum (255)`);
+		throw new Error(
+			`Uint8 overflow: ${a} * ${b} = ${product} exceeds maximum (255)`,
+		);
 	}
 	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (product);
 }

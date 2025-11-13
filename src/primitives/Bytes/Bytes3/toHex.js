@@ -11,6 +11,6 @@
  */
 export function toHex(bytes) {
 	return /** @type {import('../../Hex/index.js').BrandedHex} */ (
-		`0x${bytes[0].toString(16).padStart(2, "0")}`
+		`0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`
 	);
 }

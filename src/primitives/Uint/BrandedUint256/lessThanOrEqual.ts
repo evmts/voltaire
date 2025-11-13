@@ -15,6 +15,9 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const isLte2 = a.lessThanOrEqual(b); // true
  * ```
  */
-export function lessThanOrEqual(uint: BrandedUint256, b: BrandedUint256): boolean {
+export function lessThanOrEqual(
+	uint: BrandedUint256,
+	b: BrandedUint256,
+): boolean {
 	return (uint as bigint) <= (b as bigint);
 }

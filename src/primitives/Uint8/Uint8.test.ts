@@ -360,7 +360,9 @@ describe("Uint8", () => {
 
 	describe("bitwiseAnd", () => {
 		it("should perform bitwise AND", () => {
-			expect(Uint8.bitwiseAnd(Uint8.from(0b11110000), Uint8.from(0b11001100))).toBe(0b11000000);
+			expect(
+				Uint8.bitwiseAnd(Uint8.from(0b11110000), Uint8.from(0b11001100)),
+			).toBe(0b11000000);
 			expect(Uint8.bitwiseAnd(Uint8.from(255), Uint8.from(0))).toBe(0);
 			expect(Uint8.bitwiseAnd(Uint8.from(255), Uint8.from(255))).toBe(255);
 		});
@@ -368,7 +370,9 @@ describe("Uint8", () => {
 
 	describe("bitwiseOr", () => {
 		it("should perform bitwise OR", () => {
-			expect(Uint8.bitwiseOr(Uint8.from(0b11110000), Uint8.from(0b00001111))).toBe(0b11111111);
+			expect(
+				Uint8.bitwiseOr(Uint8.from(0b11110000), Uint8.from(0b00001111)),
+			).toBe(0b11111111);
 			expect(Uint8.bitwiseOr(Uint8.from(0), Uint8.from(0))).toBe(0);
 			expect(Uint8.bitwiseOr(Uint8.from(240), Uint8.from(15))).toBe(255);
 		});
@@ -376,7 +380,9 @@ describe("Uint8", () => {
 
 	describe("bitwiseXor", () => {
 		it("should perform bitwise XOR", () => {
-			expect(Uint8.bitwiseXor(Uint8.from(0b11110000), Uint8.from(0b11001100))).toBe(0b00111100);
+			expect(
+				Uint8.bitwiseXor(Uint8.from(0b11110000), Uint8.from(0b11001100)),
+			).toBe(0b00111100);
 			expect(Uint8.bitwiseXor(Uint8.from(255), Uint8.from(255))).toBe(0);
 			expect(Uint8.bitwiseXor(Uint8.from(255), Uint8.from(0))).toBe(255);
 		});

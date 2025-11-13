@@ -47,7 +47,9 @@ export const MAX = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (
  * console.log(MIN); // 0
  * ```
  */
-export const MIN = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (0);
+export const MIN = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (
+	0
+);
 
 /**
  * Zero value
@@ -61,7 +63,9 @@ export const MIN = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (0)
  * console.log(ZERO); // 0
  * ```
  */
-export const ZERO = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (0);
+export const ZERO = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (
+	0
+);
 
 /**
  * One value
@@ -75,4 +79,6 @@ export const ZERO = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (0
  * console.log(ONE); // 1
  * ```
  */
-export const ONE = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (1);
+export const ONE = /** @type {import('./BrandedUint32.ts').BrandedUint32} */ (
+	1
+);

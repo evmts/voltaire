@@ -49,7 +49,7 @@ export function xor(a, b) {
  */
 export function not(value) {
 	const unsigned = value < 0 ? value + 65536 : value;
-	const result = (~unsigned) & 0xffff;
+	const result = ~unsigned & 0xffff;
 	const signed = result >= 32768 ? result - 65536 : result;
 	return /** @type {import('./BrandedInt16.ts').BrandedInt16} */ (signed);
 }

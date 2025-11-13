@@ -1,25 +1,19 @@
-import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
-import { fromPublicKey } from "../../Address/BrandedAddress/index.js";
-import { hash } from "./hash.js";
+import { Hash } from "./hash.js";
 import { validate } from "./validate.js";
 
 /**
- * Verify authorization signature and recover authority
- *
- * @see https://voltaire.tevm.sh/primitives/authorization
- * @since 0.0.0
- * @param {import("./BrandedAuthorization.js").BrandedAuthorization} auth - Authorization to verify
- * @returns {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} Recovered signer address (authority)
- * @throws {import("./errors.js").ValidationError} if validation fails
- * @example
- * ```javascript
- * import * as Authorization from './primitives/Authorization/index.js';
- * const auth = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n, yParity: 0, r: 0n, s: 0n };
- * const authority = Authorization.verify(auth);
- * console.log(`Authorized by: ${authority}`);
- * ```
+ * Factory: Verify authorization signature and recover authority
+ * @param {Object} deps - Crypto dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: Array<Uint8Array>) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @param {(signature: {r: Uint8Array, s: Uint8Array, v: number}, messageHash: Uint8Array) => Uint8Array} deps.recoverPublicKey - secp256k1 public key recovery
+ * @param {(x: bigint, y: bigint) => import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} deps.addressFromPublicKey - Address derivation from public key
+ * @returns {(auth: import("./BrandedAuthorization.js").BrandedAuthorization) => import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} Function that verifies authorization
  */
-export function verify(auth) {
+export function Verify({ keccak256, rlpEncode, recoverPublicKey, addressFromPublicKey }) {
+	const hash = Hash({ keccak256, rlpEncode });
+
+	return function verify(auth) {
 	// Validate structure first
 	validate(auth);
 
@@ -45,20 +39,9 @@ export function verify(auth) {
 
 	// Recover public key from signature
 	const signature = { r, s, v: auth.yParity };
-	const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+	const publicKey = recoverPublicKey(signature, messageHash);
 
-	// Derive address from public key
-	return addressFromPublicKey(publicKey);
-}
-
-/**
- * Helper to derive address from public key
- * @param {Uint8Array} publicKey - Public key (64 bytes)
- * @returns {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} Address
- */
-function addressFromPublicKey(publicKey) {
-	// Public key is 64 bytes (uncompressed, no prefix)
-	// Extract x and y coordinates
+	// Derive address from public key (64 bytes, extract x and y)
 	let x = 0n;
 	let y = 0n;
 	for (let i = 0; i < 32; i++) {
@@ -69,5 +52,6 @@ function addressFromPublicKey(publicKey) {
 			y = (y << 8n) | BigInt(yByte);
 		}
 	}
-	return fromPublicKey(x, y);
+	return addressFromPublicKey(x, y);
+	};
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import type { BrandedBytecode, Instruction } from "./BrandedBytecode.js";
 import { analyze } from "./analyze.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
@@ -18,7 +19,7 @@ import { formatInstructions } from "./formatInstructions.js";
 import { fromHex } from "./fromHex.js";
 import { getPushSize } from "./getPushSize.js";
 import { hasMetadata } from "./hasMetadata.js";
-import { hash } from "./hash.js";
+import { Hash } from "./hash.js";
 import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
@@ -27,6 +28,8 @@ import { size } from "./size.js";
 import { stripMetadata } from "./stripMetadata.js";
 import { toHex } from "./toHex.js";
 import { validate } from "./validate.js";
+
+const hash = Hash({ keccak256 });
 
 // Helper to brand Uint8Array as BrandedBytecode for tests
 const bc = (arr: Uint8Array): BrandedBytecode => arr as BrandedBytecode;

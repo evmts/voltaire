@@ -62,9 +62,7 @@ export function isPositive(value) {
  * @returns {import('./BrandedInt8.ts').BrandedInt8}
  */
 export function minimum(a, b) {
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (
-		Math.min(a, b)
-	);
+	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (Math.min(a, b));
 }
 
 /**
@@ -74,9 +72,7 @@ export function minimum(a, b) {
  * @returns {import('./BrandedInt8.ts').BrandedInt8}
  */
 export function maximum(a, b) {
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (
-		Math.max(a, b)
-	);
+	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (Math.max(a, b));
 }
 
 /**

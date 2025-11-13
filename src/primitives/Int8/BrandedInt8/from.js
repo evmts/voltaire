@@ -47,9 +47,7 @@ export function fromBigint(value) {
 			`Int8: value ${value} out of range [${INT8_MIN}, ${INT8_MAX}]`,
 		);
 	}
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (
-		Number(value)
-	);
+	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (Number(value));
 }
 
 /**

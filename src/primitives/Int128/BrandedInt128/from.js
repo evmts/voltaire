@@ -36,15 +36,11 @@ export function from(value) {
 	}
 
 	if (bigintValue < MIN) {
-		throw new Error(
-			`Int128 value below minimum (${MIN}): ${bigintValue}`,
-		);
+		throw new Error(`Int128 value below minimum (${MIN}): ${bigintValue}`);
 	}
 
 	if (bigintValue > MAX) {
-		throw new Error(
-			`Int128 value exceeds maximum (${MAX}): ${bigintValue}`,
-		);
+		throw new Error(`Int128 value exceeds maximum (${MAX}): ${bigintValue}`);
 	}
 
 	return bigintValue;

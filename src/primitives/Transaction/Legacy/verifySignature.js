@@ -1,45 +1,62 @@
 import { Hash } from "../../Hash/index.js";
-import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
 import { getChainId } from "./getChainId.js";
-import { getSigningHash } from "./getSigningHash.js";
+import { GetSigningHash } from "./getSigningHash.js";
 
 /**
- * Verify transaction signature.
+ * Factory: Verify transaction signature.
+ *
+ * @param {Object} deps - Crypto dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array) => Uint8Array} deps.secp256k1RecoverPublicKey - secp256k1 public key recovery
+ * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array, publicKey: Uint8Array) => boolean} deps.secp256k1Verify - secp256k1 signature verification
+ * @returns {(tx: import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy) => boolean} Function that verifies signature
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
- * @returns {boolean} True if signature is valid, false otherwise
  * @throws {never} Never throws - returns false on error
  * @example
  * ```javascript
- * import { verifySignature } from './primitives/Transaction/Legacy/verifySignature.js';
+ * import { VerifySignature } from './primitives/Transaction/Legacy/verifySignature.js';
+ * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+ * import { encode as rlpEncode } from '../../Rlp/BrandedRlp/encode.js';
+ * import { recoverPublicKey, verify } from '../../../crypto/Secp256k1/index.js';
+ * const verifySignature = VerifySignature({
+ *   keccak256,
+ *   rlpEncode,
+ *   secp256k1RecoverPublicKey: recoverPublicKey,
+ *   secp256k1Verify: verify
+ * });
  * const isValid = verifySignature.call(tx);
  * ```
  */
-export function verifySignature() {
-	try {
-		const signingHash = getSigningHash.call(this);
+export function VerifySignature({ keccak256, rlpEncode, secp256k1RecoverPublicKey, secp256k1Verify }) {
+	const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
 
-		// Convert v to recovery bit
-		const chainId = getChainId.call(this);
-		let v;
-		if (chainId !== null) {
-			v = Number(this.v - chainId * 2n - 35n);
-		} else {
-			v = Number(this.v);
+	return function verifySignature() {
+		try {
+			const signingHash = getSigningHash.call(this);
+
+			// Convert v to recovery bit
+			const chainId = getChainId.call(this);
+			let v;
+			if (chainId !== null) {
+				v = Number(this.v - chainId * 2n - 35n);
+			} else {
+				v = Number(this.v);
+			}
+
+			// Create BrandedHash for r and s
+			const r = Hash.from(this.r);
+			const s = Hash.from(this.s);
+
+			// Recover public key
+			const publicKey = secp256k1RecoverPublicKey({ r, s, v }, signingHash);
+
+			// Verify signature
+			return secp256k1Verify({ r, s, v }, signingHash, publicKey);
+		} catch {
+			return false;
 		}
-
-		// Create BrandedHash for r and s
-		const r = Hash.from(this.r);
-		const s = Hash.from(this.s);
-
-		// Recover public key
-		const publicKey = Secp256k1.recoverPublicKey({ r, s, v }, signingHash);
-
-		// Verify signature
-		return Secp256k1.verify({ r, s, v }, signingHash, publicKey);
-	} catch {
-		return false;
-	}
+	};
 }
