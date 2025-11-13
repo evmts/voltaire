@@ -4,47 +4,7 @@ description: Generic ABI decoding for any item type
 ---
 
 <Tabs>
-<Tab title="Namespace API">
 
-## `decode(item: AbiItem, data: Hex): unknown[]`
-
-Generic decoding for any ABI item type.
-
-**Parameters:**
-- `item: AbiItem` - ABI item to decode for
-- `data: Hex` - Encoded data to decode
-
-**Returns:** `unknown[]` - Decoded parameter values
-
-**Example:**
-
-```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
-
-const transferFn = {
-  type: "function",
-  name: "transfer",
-  inputs: [
-    { type: "address", name: "to" },
-    { type: "uint256", name: "amount" }
-  ]
-}
-
-const calldata = "0xa9059cbb..."
-
-const [to, amount] = BrandedAbi.decode(transferFn, calldata)
-```
-
-**Defined in:** [primitives/Abi/BrandedAbi/decode.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/decode.js)
-
-</Tab>
-<Tab title="Zig">
-
-## Zig implementation planned
-
-Generic ABI decoding in Zig is planned for a future release. Use TypeScript API for now.
-
-</Tab>
 </Tabs>
 
 ## See Also

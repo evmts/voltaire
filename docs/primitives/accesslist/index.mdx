@@ -20,67 +20,6 @@ export type Item = {
 };
 ```
 
-## Quick Start
-
-<Note>
-AccessList supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
-<Tabs>
-<Tab title="Class API">
-```typescript
-import { AccessList, Address, Hash } from '@tevm/voltaire';
-
-// Create addresses and keys
-const token = Address.fromHex('0x...');
-const balanceSlot = Hash.fromHex('0x...');
-
-// Build access list
-let list = AccessList.create();
-list = list.withAddress(token);
-list = list.withStorageKey(token, balanceSlot);
-
-// Check if beneficial
-if (list.hasSavings()) {
-  transaction.accessList = list;
-}
-
-// Instance methods
-list.gasCost()                  // Total cost
-list.hasSavings()               // Cost < savings?
-list.includesAddress(token)     // Has address?
-list.isEmpty()                  // Is empty?
-```
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-```typescript
-import * as AccessList from '@tevm/voltaire/AccessList';
-import { Address, Hash } from '@tevm/voltaire';
-
-// Create addresses and keys
-const token = Address.fromHex('0x...');
-const balanceSlot = Hash.fromHex('0x...');
-
-// Build access list with functional API
-let list = AccessList.create();
-list = AccessList.withAddress(list, token);
-list = AccessList.withStorageKey(list, token, balanceSlot);
-
-// Check if beneficial
-if (AccessList.hasSavings(list)) {
-  transaction.accessList = list;
-}
-
-// Functional API
-AccessList.gasCost(list)                      // Total cost
-AccessList.hasSavings(list)                   // Cost < savings?
-AccessList.includesAddress(list, token)       // Has address?
-AccessList.isEmpty(list)                      // Is empty?
-```
-</Tab>
-</Tabs>
-
-
 ## API Methods
 
 ### Constructors
@@ -148,19 +87,9 @@ if (list.hasSavings()) {
 }
 ```
 
-## Tree-Shaking
+## Optimization
 
-Import only what you need for optimal bundle size:
-
-```typescript
-// Import specific functions (tree-shakeable)
-import { create, withAddress, gasCost } from '@tevm/voltaire/AccessList';
-
-const list = withAddress(create(), address);
-const cost = gasCost(list);
-
-// Only these 3 functions included in bundle
-```
+AccessList provides efficient APIs for gas analysis and manipulation.
 
 ## Related
 

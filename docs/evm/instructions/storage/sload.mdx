@@ -371,32 +371,6 @@ export function sload(frame, host) {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const Frame = @import("../../Frame/root.zig");
-const Gas = @import("../../../primitives/GasConstants/root.zig");
-
-/// SLOAD (0x54) - Load word from storage
-pub fn sload(frame: *Frame, host: *Host) Frame.EvmError!void {
-    // Consume gas (cold SLOAD = 2100, warm = 100)
-    // TODO: Track cold/warm access state
-    try frame.consumeGas(Gas.ColdSload);
-
-    // Pop key from stack
-    const key = try frame.popStack();
-
-    // Load from storage
-    const value = try host.getStorage(frame.address, key);
-
-    // Push value onto stack
-    try frame.pushStack(value);
-
-    // Increment PC
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

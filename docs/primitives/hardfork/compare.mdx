@@ -4,69 +4,7 @@ description: Three-way comparison of hardforks returning -1, 0, or 1
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.compare(other: BrandedHardfork): -1 | 0 | 1`
-
-Three-way comparison returning -1 (less than), 0 (equal), or 1 (greater than). Uses chronological deployment order.
-
-**Parameters:**
-- `other: BrandedHardfork` - Hardfork to compare against
-
-**Returns:** `-1 | 0 | 1`
-- `-1` if current < other (current is before chronologically)
-- `0` if current === other (same hardfork)
-- `1` if current > other (current is after chronologically)
-
-**Example:**
-
-```typescript
-import { Hardfork, BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("london")
-
-fork.compare(BERLIN)   // 1 (London > Berlin)
-fork.compare(LONDON)   // 0 (London === London)
-fork.compare(CANCUN)   // -1 (London < Cancun)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/compare.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/compare.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `compare(a: BrandedHardfork, b: BrandedHardfork): -1 | 0 | 1`
-
-Three-way comparison returning -1 (less than), 0 (equal), or 1 (greater than). Uses chronological deployment order.
-
-**Parameters:**
-- `a: BrandedHardfork` - First hardfork
-- `b: BrandedHardfork` - Second hardfork
-
-**Returns:** `-1 | 0 | 1`
-- `-1` if a < b (a is before b chronologically)
-- `0` if a === b (same hardfork)
-- `1` if a > b (a is after b chronologically)
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
-
-Hardfork.compare(BERLIN, LONDON)   // -1 (Berlin < London)
-Hardfork.compare(LONDON, LONDON)   // 0 (equal)
-Hardfork.compare(CANCUN, LONDON)   // 1 (Cancun > London)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/compare.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/compare.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Return Values

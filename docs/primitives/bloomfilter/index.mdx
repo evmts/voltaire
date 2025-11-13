@@ -36,32 +36,7 @@ Ethereum block headers contain a 256-byte bloom filter for efficient log filteri
 ## Quick Reference
 
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { BloomFilter } from '@tevm/voltaire';
-
-const filter = BloomFilter.create(2048, 3);
-const item = new TextEncoder().encode("Transfer");
-
-filter.add(item);
-const exists = filter.contains(item);
-const hex = filter.toHex();
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as BloomFilter from '@tevm/voltaire/BloomFilter';
-
-const filter = BloomFilter.create(2048, 3);
-BloomFilter.add(filter, item);
-const exists = BloomFilter.contains(filter, item);
-const hex = BloomFilter.toHex(filter);
-```
-
-</Tab>
 </Tabs>
 
 ## API Methods

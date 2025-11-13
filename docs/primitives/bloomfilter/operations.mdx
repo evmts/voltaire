@@ -67,46 +67,7 @@ filter.add(item)
 Defined in: [BrandedBloomFilter/add.js:3-27](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/add.js#L3-L27)
 
 </Tab>
-<Tab title="Zig">
 
-### `BloomFilter.add(self: *BloomFilter, item: []const u8) void`
-
-Adds item to bloom filter by setting `k` bits based on hash functions. Mutates filter in place.
-
-**Parameters:**
-- `self: *BloomFilter` - Pointer to bloom filter
-- `item: []const u8` - Item to add (arbitrary byte slice)
-
-**Returns:** `void` - Modifies filter in place
-
-**Example:**
-
-```zig
-const std = @import("std");
-const BloomFilter = @import("primitives").BloomFilter;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-var filter = try BloomFilter.init(allocator, 1000, 3);
-defer filter.deinit(allocator);
-
-// Add item
-const item = "Transfer";
-filter.add(item);
-
-// Add multiple items
-filter.add("Approval");
-filter.add("Swap");
-
-// Idempotent - adding same item again has no effect
-filter.add("Transfer");
-```
-
-**Defined in:** [primitives/BloomFilter/bloom_filter.zig:26](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/bloom_filter.zig#L26)
-
-</Tab>
 </Tabs>
 
 ### Adding Multiple Items
@@ -355,22 +316,6 @@ for (const item of items) {
   filter2 = filter2.merge(temp)  // O(n * m/8) - much slower!
 }
 ```
-
-## Tree-Shakeable Usage
-
-```typescript
-import { add, merge } from '@tevm/voltaire/BrandedBloomFilter'
-import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
-
-// Tree-shakeable add
-const filter: BrandedBloomFilter = create(2048, 3)
-add(filter, item)
-
-// Tree-shakeable merge
-const merged = merge(filter1, filter2)
-```
-
-See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for complete functional API.
 
 ## Use Cases
 

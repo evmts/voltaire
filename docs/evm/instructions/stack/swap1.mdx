@@ -198,24 +198,6 @@ export function handler_0x90_SWAP1(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SWAP1 opcode (0x90) - Swap top with 2nd item
-pub fn swap(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const n = opcode - 0x8f;
-    if (frame.stack.items.len <= n) {
-        return error.StackUnderflow;
-    }
-    const top_idx = frame.stack.items.len - 1;
-    const swap_idx = frame.stack.items.len - 1 - n;
-    const temp = frame.stack.items[top_idx];
-    frame.stack.items[top_idx] = frame.stack.items[swap_idx];
-    frame.stack.items[swap_idx] = temp;
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

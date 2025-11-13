@@ -3,9 +3,6 @@ title: Uint.bitwiseAnd
 description: Bitwise AND operation on Uint256 values
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.bitwiseAnd(a: BrandedUint, b: BrandedUint): BrandedUint`
 
 Bitwise AND operation.
@@ -32,41 +29,6 @@ Uint.bitwiseAnd(value, mask)  // 0x0f
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/bitwiseAnd.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseAnd.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `bitwiseAnd(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.bitwiseAnd(Uint.from(12n), Uint.from(10n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/bitwiseAnd.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseAnd.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.bitwiseAnd(a: Uint, b: Uint): Uint`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const a = Uint.init(12);
-const b = Uint.init(10);
-const result = Uint.bitwiseAnd(a, b);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 ## See Also
 

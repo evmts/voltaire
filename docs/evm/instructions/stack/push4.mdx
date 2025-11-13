@@ -109,8 +109,6 @@ All PUSH1-32 instructions cost the same despite different data sizes. Bytecode s
 | PUSH1 | 3 | 2 | Small numbers (0-255) |
 | PUSH4 | 3 | 5 | Function selectors |
 
-
-
 ## Common Usage
 
 ### Function Selectors
@@ -181,19 +179,6 @@ export function handler_0x63_PUSH4(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// PUSH4 opcode (0x63) - Push 4 bytes onto stack
-pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    const push_size = opcode - 0x5f;
-    try frame.consumeGas(GasConstants.GasFastestStep);
-
-    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
-    try frame.pushStack(value);
-    frame.pc += 1 + push_size;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

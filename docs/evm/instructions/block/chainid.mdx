@@ -376,21 +376,6 @@ contract BackwardCompatible {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// CHAINID opcode (0x46) - Get chain ID (EIP-1344, Istanbul+)
-pub fn chainid(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // EIP-1344: CHAINID was introduced in Istanbul hardfork
-    if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(evm.block_context.chain_id);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

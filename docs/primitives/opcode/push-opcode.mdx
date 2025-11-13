@@ -8,23 +8,7 @@ description: Get PUSH opcode for given byte count
 Get PUSH opcode for given byte count.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const push1 = Opcode.pushOpcode(1)   // 0x60 (PUSH1)
-const push2 = Opcode.pushOpcode(2)   // 0x61 (PUSH2)
-const push32 = Opcode.pushOpcode(32) // 0x7F (PUSH32)
-
-// Build PUSH instruction
-function buildPush(value: bigint): Uint8Array {
-  const hex = value.toString(16)
-  const bytes = Hex.toBytes('0x' + hex.padStart(2, '0'))
-  const opcode = Opcode.pushOpcode(bytes.length)
-  return new Uint8Array([opcode, ...bytes])
-}
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { pushOpcode } from '@tevm/voltaire/Opcode'
@@ -32,14 +16,7 @@ import { pushOpcode } from '@tevm/voltaire/Opcode'
 const op = pushOpcode(1)   // 0x60 (PUSH1)
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const push1 = Opcode.pushOpcode(1);   // 0x60
-const push32 = Opcode.pushOpcode(32); // 0x7F
-```
-</Tab>
 </Tabs>
 
 ## Parameters

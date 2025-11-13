@@ -255,18 +255,6 @@ export function mul(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// MUL opcode (0x02) - Multiplication with overflow wrapping
-pub fn mul(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastStep);
-    const a = try frame.popStack();
-    const b = try frame.popStack();
-    try frame.pushStack(a *% b);  // Wrapping multiplication
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

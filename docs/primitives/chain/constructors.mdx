@@ -232,25 +232,6 @@ const eth = processChain(mainnet)
 const quai = processChain(9)
 ```
 
-## Tree-Shakeable Usage
-
-All constructors available as tree-shakeable imports:
-
-```typescript
-import { from, fromId } from '@tevm/voltaire/BrandedChain'
-import { mainnet } from '@tevm/chains'
-
-const chain1 = from(mainnet)
-const chain2 = fromId(9)
-```
-
-**Tree-shaking notes:**
-- `from` is a lightweight identity function (no dependencies)
-- `fromId` includes chain registry lookup
-- Both methods are pure functions with no crypto dependencies
-
-See [BrandedChain](/primitives/chain/branded-chain) for details on tree-shakeable API.
-
 ## Notes
 
 - `from()` is an identity function - returns the same object with prototype set

@@ -526,33 +526,6 @@ export function tload(frame, host) {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const Frame = @import("../../Frame/root.zig");
-const Gas = @import("../../../primitives/GasConstants/root.zig");
-
-/// TLOAD (0x5c) - Load word from transient storage
-pub fn tload(frame: *Frame, host: *Host) Frame.EvmError!void {
-    // TODO: Hardfork check - TLOAD requires Cancun+
-    // if (hardfork < CANCUN) return Frame.EvmError.InvalidOpcode;
-
-    try frame.consumeGas(Gas.TLoad);
-
-    // Pop key from stack
-    const key = try frame.popStack();
-
-    // Load from transient storage (returns 0 if uninitialized)
-    const value = host.getTransientStorage(frame.address, key) orelse 0;
-
-    // Push value onto stack
-    try frame.pushStack(value);
-
-    // Increment PC
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

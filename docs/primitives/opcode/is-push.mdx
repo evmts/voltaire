@@ -8,17 +8,7 @@ description: Check if opcode is PUSH0-PUSH32
 Check if opcode is PUSH0-PUSH32.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.isPush(0x5F)  // true (PUSH0)
-Opcode.isPush(0x60)  // true (PUSH1)
-Opcode.isPush(0x7F)  // true (PUSH32)
-Opcode.isPush(0x01)  // false (ADD)
-Opcode.isPush(0x80)  // false (DUP1)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { isPush, PUSH1, ADD } from '@tevm/voltaire/Opcode'
@@ -27,14 +17,7 @@ isPush(PUSH1)  // true
 isPush(ADD)    // false
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const is_push1 = Opcode.isPush(0x60);  // true
-const is_add = Opcode.isPush(0x01);    // false
-```
-</Tab>
 </Tabs>
 
 ## Parameters

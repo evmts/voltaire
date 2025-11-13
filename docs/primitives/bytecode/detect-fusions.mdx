@@ -246,46 +246,7 @@ for (const inst of code.scan({ detectFusions: true })) {
 ```
 
 </Tab>
-<Tab title="Zig">
 
-Detect fusions during bytecode analysis:
-
-```zig
-const std = @import("std");
-const Bytecode = @import("primitives").Bytecode;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-const code = [_]u8{ 0x60, 0x05, 0x01, 0x5b }; // PUSH1 5, ADD, JUMPDEST
-var bytecode = try Bytecode.init(allocator, &code);
-defer bytecode.deinit();
-
-// Detect fusions
-const fusions = try bytecode.detectFusions(allocator);
-defer allocator.free(fusions);
-
-for (fusions) |fusion| {
-    std.debug.print("Fusion: {} at PC {}, length {}\n", .{
-        fusion.fusion_type,
-        fusion.pc,
-        fusion.length
-    });
-}
-
-// Output:
-// Fusion: push_add_fusion at PC 0, length 2
-```
-
-**API:**
-- `Bytecode.detectFusions(allocator) ![]Fusion` - Detect all fusions
-- `Fusion.fusion_type` - Fusion type (enum)
-- `Fusion.pc` - Program counter
-- `Fusion.length` - Instruction sequence length
-- `Fusion.value` - Immediate value (for PUSH-based fusions)
-
-</Tab>
 </Tabs>
 
 ### Options

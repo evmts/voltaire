@@ -3,7 +3,6 @@ title: Opcode
 description: EVM opcode utilities for bytecode parsing, disassembly, and instruction analysis
 ---
 
-
 # Opcode
 
 EVM opcode utilities for bytecode parsing, disassembly, and instruction analysis.
@@ -19,35 +18,7 @@ Opcode provides comprehensive utilities for working with EVM opcodes (0x00-0xFF)
 ## Quick Start
 
 <Tabs>
-<Tab title="Namespace API (Tree-shakeable)">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-// Check opcode validity
-const valid = Opcode.isValid(0x60)  // true (PUSH1)
-
-// Get opcode name
-const name = Opcode.name(0x60)  // "PUSH1"
-
-// Get opcode info
-const info = Opcode.info(0x60)
-// { gasCost: 3, stackInputs: 0, stackOutputs: 1, name: "PUSH1" }
-
-// Categorization
-Opcode.isPush(0x60)   // true
-Opcode.isDup(0x80)    // true (DUP1)
-Opcode.isSwap(0x90)   // true (SWAP1)
-Opcode.isLog(0xa0)    // true (LOG0)
-
-// Parse bytecode
-const instructions = Opcode.parse(bytecode)
-const assembly = Opcode.disassemble(bytecode)
-
-// Jump analysis
-const jumpDests = Opcode.jumpDests(bytecode)
-const isValidJump = Opcode.isValidJumpDest(bytecode, 0x0042)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import {

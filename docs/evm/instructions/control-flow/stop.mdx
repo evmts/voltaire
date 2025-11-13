@@ -271,15 +271,6 @@ export function handler_0x00_STOP(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// STOP opcode (0x00) - Halts execution
-pub fn stop(frame: *FrameType) FrameType.EvmError!void {
-    frame.stopped = true;
-    return;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

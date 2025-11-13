@@ -4,93 +4,69 @@ description: Derive address from secp256k1 public key
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `Address.fromPublicKey(x: bigint, y: bigint): Address`
+<Tab title="Factory API">
 
-Derives Ethereum address from secp256k1 public key coordinates. Concatenates x and y (32 bytes each), hashes with keccak256, and takes last 20 bytes.
+## `FromPublicKey({ keccak256 })`
 
-**Formula:** `keccak256(x || y)[12:32]`
+Create Address from secp256k1 public key coordinates using factory pattern. Enables tree-shakeable imports without bundling unnecessary crypto.
 
 **Parameters:**
-- `x: bigint` - X coordinate of public key (256 bits)
-- `y: bigint` - Y coordinate of public key (256 bits)
+- `deps.keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
 
-**Returns:** `Address` - Derived address
+**Returns:** `(x: bigint, y: bigint) => BrandedAddress` - Function that creates Address from public key
+
+**Example:**
+
+```typescript
+import { FromPublicKey } from '@tevm/voltaire/Address/BrandedAddress'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+// Create factory with injected crypto
+const fromPublicKey = FromPublicKey({ keccak256 })
+
+// Use it to derive addresses
+const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
+const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
+const addr = fromPublicKey(x, y)
+console.log(addr.length) // 20
+```
+
+**Bundle Size:** Tree-shakeable. Only includes keccak256 if used.
+
+**Use Case:** Optimal for libraries that need to avoid bundling crypto dependencies by default.
+
+</Tab>
+
+<Tab title="Namespace API">
+
+## `Address.fromPublicKey(x, y)`
+
+Create Address from secp256k1 public key coordinates (auto-injected keccak256).
+
+**Parameters:**
+- `x: bigint` - Public key x coordinate
+- `y: bigint` - Public key y coordinate
+
+**Returns:** `BrandedAddress` - Address derived from keccak256(pubkey)[12:32]
 
 **Example:**
 
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-// secp256k1 public key coordinates
 const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
 const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
-
 const addr = Address.fromPublicKey(x, y)
-console.log(addr.toHex())
+console.log(addr.length) // 20
 ```
 
-**Defined in:** [primitives/Address/BrandedAddress/fromPublicKey.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js#L15)
+**Bundle Size:** Includes keccak256 in bundle (~5-10 KB).
+
+**Use Case:** Convenient for applications where bundle size is not a primary concern.
 
 </Tab>
-<Tab title="Namespace API">
 
-## `fromPublicKey(x: bigint, y: bigint): BrandedAddress`
-
-Derives Ethereum address from secp256k1 public key coordinates.
-
-**Parameters:**
-- `x: bigint` - X coordinate of public key (256 bits)
-- `y: bigint` - Y coordinate of public key (256 bits)
-
-**Returns:** `BrandedAddress` - Derived address (20 bytes)
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
-const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
-
-const addr = Address.fromPublicKey(x, y)
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/fromPublicKey.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js#L15)
-
-</Tab>
-<Tab title="Effect.ts">
-
-## `Address.fromPublicKey(x: bigint, y: bigint): Address`
-
-Derives Ethereum address from secp256k1 public key coordinates using Effect.ts Schema validation.
-
-**Parameters:**
-- `x: bigint` - X coordinate of public key (256 bits)
-- `y: bigint` - Y coordinate of public key (256 bits)
-
-**Returns:** `Address` - Effect Schema instance wrapping BrandedAddress
-
-**Example:**
-
-```typescript
-import { Address } from '@tevm/voltaire/effect'
-
-// secp256k1 public key coordinates
-const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
-const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
-
-const addr = Address.fromPublicKey(x, y)
-console.log(addr.toHex())
-
-// Access underlying BrandedAddress
-const brandedAddr = addr.address
-```
-
-**Defined in:** [primitives/Address/effect.ts:76](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L76)
-
-</Tab>
 <Tab title="C">
 
 ## `primitives_keccak256(data, data_len, out_hash)`
@@ -136,48 +112,7 @@ memcpy(addr.bytes, hash.bytes + 12, 20);
 **Defined in:** [primitives.h:139](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L139)
 
 </Tab>
-<Tab title="Zig">
 
-## `Address.fromPublicKey(x: [32]u8, y: [32]u8): !Address`
-
-Derive address from secp256k1 public key coordinates.
-
-**Parameters:**
-- `x: [32]u8` - X coordinate (32 bytes, big-endian)
-- `y: [32]u8` - Y coordinate (32 bytes, big-endian)
-
-**Returns:** `Address` - Derived address
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-const Keccak256 = @import("crypto").Keccak256;
-
-// Public key coordinates (32 bytes each)
-const x: [32]u8 = // ... x coordinate
-const y: [32]u8 = // ... y coordinate
-
-// Concatenate and hash
-var pubkey: [64]u8 = undefined;
-@memcpy(pubkey[0..32], &x);
-@memcpy(pubkey[32..64], &y);
-
-var hasher = Keccak256.init(.{});
-hasher.update(&pubkey);
-var hash: [32]u8 = undefined;
-hasher.final(&hash);
-
-// Take last 20 bytes
-var addr_bytes: [20]u8 = undefined;
-@memcpy(&addr_bytes, hash[12..]);
-const addr = Address{ .bytes = addr_bytes };
-```
-
-**Defined in:** [primitives/Address/address.zig:65](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L65)
-
-</Tab>
 </Tabs>
 
 ## Algorithm
@@ -273,7 +208,11 @@ const addresses = knownPublicKeys.map(pk =>
 
 **Cryptographic dependency:** Uses keccak256 hash function internally.
 
-**Bundle size impact:** When using tree-shakeable imports, including this method adds keccak256 to bundle (~5-10 KB).
+**Bundle size impact:**
+- Factory API (`FromPublicKey`): Tree-shakeable, only includes keccak256 if used
+- Namespace API (`Address.fromPublicKey`): Always includes keccak256 (~5-10 KB)
+
+**Recommendation:** Use Factory API for libraries, Namespace API for applications.
 
 **Alternative:** For performance-critical code, consider using `fromPrivateKey()` directly if you have the private key, as it combines key derivation and address generation.
 

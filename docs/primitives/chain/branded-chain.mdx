@@ -38,41 +38,6 @@ Plain JavaScript object with chain configuration. No special branding beyond Typ
 
 Defined in: [primitives/Chain/ChainType.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts)
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as BrandedChain from '@tevm/voltaire/BrandedChain'
-
-// Namespace usage
-const chain = BrandedChain.fromId(9)
-const flare = BrandedChain.byId[14]
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { fromId, byId } from '@tevm/voltaire/BrandedChain'
-import type { Chain } from '@tevm/voltaire/BrandedChain'
-
-const quai: Chain | undefined = fromId(9)
-const flare = byId[14]
-```
-
-**Bundle impact:** Importing `fromId` or `byId` includes the full chain registry (800+ chains). For minimal bundles, import specific chains:
-
-```typescript
-import { quai9, flr14, injective1776 } from '@tevm/chains'
-
-// Only includes the 3 chains you imported
-console.log(quai9.chainId)      // 9
-console.log(flr14.chainId)      // 14
-console.log(injective1776.chainId) // 1776
-```
-
 ## Available Functions
 
 All Chain functionality available as tree-shakeable functions:

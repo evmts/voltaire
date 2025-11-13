@@ -4,62 +4,7 @@ description: Check if hardfork is strictly greater than target (alias for isAfte
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.gt(target: BrandedHardfork): boolean`
-
-Check if current hardfork is strictly greater than target version (>). Alias for `isAfter`.
-
-**Parameters:**
-- `target: BrandedHardfork` - Version to compare against
-
-**Returns:** `boolean` - True if current > target chronologically
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, LONDON } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("cancun")
-
-fork.gt(LONDON)   // true - Cancun > London
-fork.gt(CANCUN)   // false - Cancun === Cancun (not strictly greater)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/gt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gt.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `gt(a: BrandedHardfork, b: BrandedHardfork): boolean`
-
-Check if first hardfork is strictly greater than second version (>). Alias for `isAfter`.
-
-**Parameters:**
-- `a: BrandedHardfork` - First hardfork
-- `b: BrandedHardfork` - Second hardfork
-
-**Returns:** `boolean` - True if a > b chronologically
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, LONDON } from '@tevm/voltaire'
-
-Hardfork.gt(CANCUN, LONDON)  // true
-Hardfork.gt(LONDON, CANCUN)  // false
-Hardfork.gt(CANCUN, CANCUN)  // false
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/gt.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/gt.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Operator-Style API

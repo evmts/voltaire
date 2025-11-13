@@ -22,63 +22,12 @@ Voltaire takes a **data-first approach** to Ethereum primitives. Core types are 
 These [branded types](/getting-started/branded-types) provide TypeScript safety with minimal runtime overhead. Methods operate on these types rather than encapsulating them in classes.
 
 </Tab>
-<Tab title="Zig">
 
-- **Addresses** → `struct { bytes: [20]u8 }`
-- **Hashes** → `[32]u8`
-- **Bytecode** → `[]const u8` (slice)
-- **Hex strings** → `[]const u8` (slice)
-
-Structs and slices provide zero-cost abstractions. Functions operate on these types using idiomatic Zig patterns.
-
-</Tab>
 </Tabs>
 
-## Dual API Architecture
+## API Architecture
 
-Voltaire provides two complementary API styles for TypeScript:
-
-<Tabs>
-<Tab title="Namespace API (Tree-Shakeable)">
-
-```typescript
-import { fromHex, toChecksummed, isZero } from '@tevm/voltaire/Address';
-
-const addr = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const checksummed = toChecksummed(addr);
-const zero = isZero(addr);
-
-// Bundle includes ONLY: fromHex, toChecksummed, isZero
-// Excluded: calculateCreateAddress, equals, compare, etc.
-```
-
-**Characteristics**:
-- Functional programming style
-- Tree-shakeable (only import what you use)
-- Data-first parameter order
-- Better for bundle size optimization
-
-</Tab>
-<Tab title="Class API">
-
-```typescript
-import { Address } from '@tevm/voltaire';
-
-const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const checksummed = addr.toChecksummed();
-const zero = addr.isZero();
-
-// Bundle includes ALL Address prototype methods
-```
-
-**Characteristics**:
-- Familiar object-oriented syntax
-- Instance methods via prototype chain
-- Methods called with dot notation
-- Internally delegates to Namespace API
-
-</Tab>
-</Tabs>
+Voltaire provides a tree-shakeable API architecture for TypeScript built on data-first principles.
 
 ## How Classes Avoid Coupling
 
@@ -92,26 +41,24 @@ export function Address(value) {
   return result;
 }
 
-// Instance method delegates to functional API
+// Instance method delegates to functional implementation
 Address.prototype.toChecksummed = function() {
   return BrandedAddress.toChecksummed(this);
 };
 
-// Namespace API is the underlying implementation
+// Static method delegates to functional implementation
 Address.toChecksummed = BrandedAddress.toChecksummed;
 ```
 
 This architecture:
 - Keeps data and operations decoupled
-- Single source of truth (Namespace API)
+- Single source of truth in functional implementation
 - Classes are thin wrappers over functional code
-- Enables switching between APIs without logic changes
+- Enables multiple API styles without duplicating logic
 
 ## Bundle Size Impact
 
-For bundle-size sensitive applications, use the Namespace API:
-
-**Comparison**:
+For bundle-size sensitive applications, import only the functions you need:
 
 ```typescript
 // Import specific functions (tree-shakeable)
@@ -121,7 +68,7 @@ const addr = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const checksummed = toChecksummed(addr);
 ```
 
-vs
+Compared to importing the full class:
 
 ```typescript
 // Class API imports entire prototype
@@ -131,23 +78,18 @@ const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const checksummed = addr.toChecksummed();
 ```
 
-**Result**: Namespace API can save 2-5 KB per primitive in production bundles.
+Importing specific functions can save 2-5 KB per primitive in production bundles.
 
 <Tip>
 Importing from `@tevm/voltaire/Address` instead of `@tevm/voltaire` enables tree-shaking. For example, avoiding `toChecksummed()` excludes the entire keccak256 implementation (~50kb).
 </Tip>
 
-## When to Use Each API
+## Tree-Shaking with Class API
 
-### Use Namespace API When
-
-1. **Bundle size critical** - Tree-shaking reduces imports
-2. **Functional style preferred** - Pure functions, no side effects
-3. **Composition patterns** - Building pipelines
-4. **Testing** - Easier to mock individual functions
+The Class API enables tree-shaking by importing only what you need:
 
 ```typescript
-// Functional composition
+// Import specific functions (tree-shakeable)
 import { fromHex, toChecksummed, calculateCreateAddress } from '@tevm/voltaire/Address';
 
 const pipeline = (hex, nonce) =>
@@ -159,26 +101,22 @@ const pipeline = (hex, nonce) =>
   );
 ```
 
-### Use Class API When
-
-1. **OOP familiarity matters** - Team prefers method chaining
-2. **Integration with OOP code** - Matches existing patterns
-3. **Rapid prototyping** - Method discovery via IDE autocomplete
-4. **Method chaining** - Building complex operations
+For method chaining, use the full imports:
 
 ```typescript
 // Method chaining
-const contract = addr
-  .calculateCreateAddress(0n)
-  .toChecksummed();
+import { Address } from '@tevm/voltaire';
+
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const checksummed = addr.toChecksummed();
 ```
 
 ## Performance
 
-Both APIs have identical performance:
+The Class API has negligible performance overhead:
 
-- **Class API**: Prototype lookup adds ~0.5ns per method call (negligible)
-- **Namespace API**: Direct function call, no prototype overhead
+- **Direct function imports**: Best for tree-shaking and bundle size
+- **Class instances**: Prototype lookup adds ~0.5ns per method call (negligible)
 - **Memory**: Class API uses ~100 bytes more per primitive type (prototype chain)
 
 For typical applications, performance differences are unmeasurable. Choose based on code style and bundle size requirements.

@@ -9,7 +9,7 @@ Data-first branded Ether type - `BrandedUint` representing Ether denomination wi
 
 ## Overview
 
-`BrandedEther` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Ether values. Unlike the namespace API (`Ether.*`), BrandedEther uses direct data representation with minimal wrapping.
+`BrandedEther` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Ether values with zero-overhead direct data representation.
 
 ## Type Definition
 
@@ -20,32 +20,6 @@ export type BrandedEther = BrandedUint & { readonly __brand: unique symbol }
 ```
 
 Inherits all `BrandedUint` properties - 32-byte Uint8Array with bigint arithmetic.
-
-## BrandedEther vs Ether
-
-Two APIs for different use cases:
-
-**Ether (namespace)** - Flexible, accepts any input:
-```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-
-Ether.toWei("1")      // Converts string to Ether, then to Wei
-Ether.from(1n)        // Auto-converts any numeric input
-```
-
-**BrandedEther** - Type-safe, requires BrandedEther:
-```typescript
-import * as BrandedEther from '@tevm/voltaire/BrandedEther'
-
-const ether = BrandedEther.from(1n)  // Create BrandedEther
-BrandedEther.toWei(ether)            // Must pass BrandedEther type
-```
-
-Key differences:
-- **Ether namespace**: Auto-converts inputs, wrapper functions
-- **BrandedEther**: Enforces type at compile time, direct data operations
-- **Performance**: BrandedEther avoids wrapper overhead
-- **Use case**: Ether for convenience, BrandedEther for type safety
 
 ## Construction
 
@@ -354,23 +328,16 @@ const exactEther = BrandedWei.toEther(exactWei)  // 1n
 
 For fractional display, work with Wei and format manually (see Fractional Display example above).
 
-## When to Use
+## When to Use BrandedEther
 
-**Use BrandedEther when:**
+Use BrandedEther when:
 - Type safety is critical
 - Working with existing BrandedUint infrastructure
 - Building type-safe APIs
 - Performance-sensitive balance operations
 
-**Use Ether namespace when:**
-- Accepting flexible input formats
-- Building user-facing APIs
-- Convenience over strict types
-- Integration with existing code
-
 ## Related
 
-- [Ether](/primitives/denomination/ether) - Namespace API with auto-conversion
 - [BrandedWei](/primitives/denomination/branded-wei) - Branded Wei type
 - [BrandedGwei](/primitives/denomination/branded-gwei) - Branded Gwei type
 - [BrandedUint](/primitives/uint/branded-uint) - Underlying branded Uint256 type

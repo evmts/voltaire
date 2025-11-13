@@ -257,18 +257,6 @@ function unpackRGB(uint24 color) pure returns (uint8 r, uint8 g, uint8 b) {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// AND opcode (0x16) - Bitwise AND operation
-pub fn op_and(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const a = try frame.popStack();
-    const b = try frame.popStack();
-    try frame.pushStack(a & b);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

@@ -8,63 +8,7 @@ description: Check if transaction has access list
 Check if transaction has an access list.
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function hasAccessList(tx: Any): boolean
-```
-
-**Parameters:**
-- `tx: Any` - Any transaction type
-
-**Returns:** `boolean` - `true` if transaction has access list field, `false` otherwise
-
-**Example:**
-
-```typescript
-import { hasAccessList } from '@tevm/voltaire/Transaction'
-
-// Legacy transaction - no access list
-const legacy: Transaction.Legacy = {
-  type: Transaction.Type.Legacy,
-  // ... fields
-}
-
-console.log(hasAccessList(legacy)) // false
-
-// EIP-2930 transaction - has access list
-const eip2930: Transaction.EIP2930 = {
-  type: Transaction.Type.EIP2930,
-  accessList: [
-    { address: token, storageKeys: [balanceSlot] }
-  ],
-  // ... other fields
-}
-
-console.log(hasAccessList(eip2930)) // true
-
-// EIP-1559 transaction - has access list
-const eip1559: Transaction.EIP1559 = {
-  type: Transaction.Type.EIP1559,
-  accessList: [],  // Empty but present
-  // ... other fields
-}
-
-console.log(hasAccessList(eip1559)) // true
-```
-
-**Source:** [hasAccessList.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/hasAccessList.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## TypeScript only
-
-Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
-
-Use TypeScript API for transaction operations.
-
-</Tab>
 </Tabs>
 
 ## Transaction Types with Access Lists

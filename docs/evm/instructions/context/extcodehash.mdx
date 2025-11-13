@@ -309,42 +309,6 @@ export function extcodehash(
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// EXTCODEHASH opcode (0x3f) - Get hash of account's code
-pub fn extcodehash(frame: *FrameType, host: *Host) FrameType.EvmError!void {
-    const addr_u256 = try frame.popStack();
-
-    // Convert to address
-    var addr: [20]u8 = undefined;
-    var temp = addr_u256;
-    var i: usize = 20;
-    while (i > 0) : (i -= 1) {
-        addr[i - 1] = @truncate(temp & 0xFF);
-        temp >>= 8;
-    }
-
-    try frame.consumeGas(700);
-
-    const code = try host.getCode(&addr);
-
-    if (code.len == 0) {
-        try frame.pushStack(0);
-    } else {
-        const hash = try keccak256(code);
-
-        var hash_u256: u256 = 0;
-        for (hash) |byte| {
-            hash_u256 = (hash_u256 << 8) | byte;
-        }
-
-        try frame.pushStack(hash_u256);
-    }
-
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

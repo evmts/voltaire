@@ -8,20 +8,7 @@ description: Format single instruction as human-readable string
 Format single instruction as human-readable assembly string.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const instruction = {
-  offset: 0,
-  opcode: Opcode.PUSH1,
-  immediate: new Uint8Array([0x80])
-}
-
-const formatted = Opcode.format(instruction)
-// "0000: PUSH1 0x80"
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { format, PUSH1 } from '@tevm/voltaire/Opcode'
@@ -36,30 +23,7 @@ const line = format(instruction)
 // "002A: PUSH1 0xff"
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    const instruction = Opcode.Instruction{
-        .offset = 0,
-        .opcode = 0x60,  // PUSH1
-        .immediate = &[_]u8{0x80},
-    };
-
-    const formatted = try Opcode.format(allocator, instruction);
-    defer allocator.free(formatted);
-
-    std.debug.print("{s}\n", .{formatted});
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

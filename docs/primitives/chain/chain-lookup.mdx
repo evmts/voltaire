@@ -281,32 +281,6 @@ function exploreChainRegistry() {
 exploreChainRegistry()
 ```
 
-## Tree-Shakeable Usage
-
-The byId record is available as a tree-shakeable import:
-
-```typescript
-import { byId, fromId } from '@tevm/voltaire/BrandedChain'
-
-// Direct access
-const quai = byId[9]
-
-// Function-based lookup
-const flare = fromId(14)
-```
-
-**Tree-shaking note:** Importing `byId` or `fromId` includes the full chain registry in your bundle (800+ chains). If bundle size is critical and you only need specific chains, import them directly from @tevm/chains:
-
-```typescript
-import { quai9, flr14 } from '@tevm/chains'
-
-// Only includes the chains you import
-console.log(quai9.chainId)  // 9
-console.log(flr14.chainId)  // 14
-```
-
-See [BrandedChain](/primitives/chain/branded-chain) for details on tree-shakeable API.
-
 ## Related
 
 - [Constructors](/primitives/chain/constructors) - Creating Chain instances

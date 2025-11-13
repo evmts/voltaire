@@ -32,33 +32,9 @@ JavaScript builtins available on all `Uint8Array` instances:
 
 ## Quick Reference
 
-<Note>
-Bytecode supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
 
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { Bytecode } from '@tevm/voltaire';
-
-const code = Bytecode("0x6001600201");
-const analysis = code.analyze();
-const disassembly = code.formatInstructions();
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as Bytecode from '@tevm/voltaire/Bytecode';
-
-const code = Bytecode.fromHex("0x6001600201");
-const analysis = Bytecode.analyze(code);
-const disassembly = Bytecode.formatInstructions(code);
-```
-
-</Tab>
 </Tabs>
 
 ## API Methods

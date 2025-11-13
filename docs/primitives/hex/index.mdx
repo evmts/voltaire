@@ -9,42 +9,13 @@ New to hex encoding? Start with [Fundamentals](/primitives/hex/fundamentals) for
 
 ## Type Definition
 
-[Branded](/getting-started/branded-types) string following the [data-first pattern](/getting-started/tree-shaking) for hexadecimal encoding.
+[Branded](/getting-started/branded-types) string for hexadecimal encoding.
 
 ```typescript
 export type BrandedHex = `0x${string}` & { readonly __tag: "Hex" };
 ```
 
 ## Quick Reference
-
-<Note>
-Hex supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
-<Tabs>
-<Tab title="Class API">
-
-```typescript
-import { Hex } from '@tevm/voltaire';
-
-const hex = Hex("0x1234");
-const bytes = Hex.toBytes(hex);
-const size = Hex.size(hex);
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as Hex from '@tevm/voltaire/Hex';
-
-const hex = Hex.from("0x1234");
-const bytes = Hex.toBytes(hex);
-const size = Hex.size(hex);
-```
-
-</Tab>
-</Tabs>
 
 ## API Methods
 
@@ -88,7 +59,6 @@ const size = Hex.size(hex);
 - [`size(hex)`](./size) - Get byte length
 - [`equals(a, b)`](./equals) - Compare hex equality (case-insensitive)
 - [`clone(hex)`](./clone) - Create a copy of hex string
-
 
 ## Types
 
@@ -143,7 +113,6 @@ See [Hex.from](./from#hexlike-type) for details.
 
 </Tab>
 </Tabs>
-
 
 ## Tree-Shaking
 

@@ -73,49 +73,7 @@ filter.contains(item)  // true
 Defined in: [BrandedBloomFilter/contains.js:3-30](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/contains.js#L3-L30)
 
 </Tab>
-<Tab title="Zig">
 
-### `BloomFilter.contains(self: *const BloomFilter, item: []const u8) bool`
-
-Checks if item might be in the set. Returns `false` if definitely not present, `true` if possibly present.
-
-**Parameters:**
-- `self: *const BloomFilter` - Pointer to bloom filter
-- `item: []const u8` - Item to check (arbitrary byte slice)
-
-**Returns:** `bool`
-- `false` - Item definitely not in set (no false negatives)
-- `true` - Item might be in set (false positives possible)
-
-**Example:**
-
-```zig
-const std = @import("std");
-const BloomFilter = @import("primitives").BloomFilter;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-var filter = try BloomFilter.init(allocator, 1000, 3);
-defer filter.deinit(allocator);
-
-// Add item
-filter.add("foo");
-
-// Check membership
-if (filter.contains("foo")) {
-    // Item might be present (true - definitely added)
-}
-
-if (!filter.contains("bar")) {
-    // Item definitely not present (true - never added)
-}
-```
-
-**Defined in:** [primitives/BloomFilter/bloom_filter.zig:36](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/bloom_filter.zig#L36)
-
-</Tab>
 </Tabs>
 
 ### False Positives vs False Negatives
@@ -441,25 +399,6 @@ class OptimizedFilter {
   }
 }
 ```
-
-## Tree-Shakeable Usage
-
-```typescript
-import { contains, isEmpty } from '@tevm/voltaire/BrandedBloomFilter'
-import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
-
-// Tree-shakeable queries
-const filter: BrandedBloomFilter = create(2048, 3)
-
-const hasItem = contains(filter, item)  // boolean
-const empty = isEmpty(filter)           // boolean
-
-// Functional composition
-const isNonEmptyAndContains = (f: BrandedBloomFilter, item: Uint8Array) =>
-  !isEmpty(f) && contains(f, item)
-```
-
-See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for complete functional API.
 
 ## Understanding False Positive Rates
 

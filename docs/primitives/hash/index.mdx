@@ -13,76 +13,13 @@ Learn cryptographic hash fundamentals, Keccak-256 properties, and Merkle trees i
 
 ## Overview
 
-Hash is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/getting-started/tree-shaking) used throughout Voltaire.
+Hash is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) used throughout Voltaire.
 
 ```typescript
 export type BrandedHash = Uint8Array & { readonly __tag: "Hash" };
 ```
 
 ## Quick Start
-
-<Note>
-Hash supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
-<Tabs>
-<Tab title="Class API">
-
-```typescript
-import { Hash } from '@tevm/voltaire';
-
-// Hash arbitrary data
-const data = new Uint8Array([1, 2, 3, 4]);
-const hash = Hash.keccak256(data);
-console.log(hash.toHex());  // "0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658"
-
-// Hash strings
-const strHash = Hash.keccak256String("hello world");
-
-// Hash hex data
-const hexHash = Hash.keccak256Hex("0x1234");
-
-// Compare hashes
-if (hash.equals(strHash)) {
-  console.log("Hashes match");
-}
-
-// Check for zero hash
-if (hash.isZero()) {
-  console.log("Empty hash");
-}
-```
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-```typescript
-import * as Hash from '@tevm/voltaire/Hash';
-
-// Hash arbitrary data
-const data = new Uint8Array([1, 2, 3, 4]);
-const hash = Hash.keccak256(data);
-console.log(Hash.toHex(hash));  // "0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658"
-
-// Hash strings
-const strHash = Hash.keccak256String("hello world");
-
-// Hash hex data
-const hexHash = Hash.keccak256Hex("0x1234");
-
-// Compare hashes
-if (Hash.equals(hash, strHash)) {
-  console.log("Hashes match");
-}
-
-// Check for zero hash
-if (Hash.isZero(hash)) {
-  console.log("Empty hash");
-}
-```
-
-</Tab>
-</Tabs>
 
 ## Example: Transaction Identifiers
 
@@ -141,7 +78,6 @@ console.log(txHash.equals(verifyHash)); // true
 - [`concat(...hashes)`](./concat) - Concatenate multiple hashes
 - [`merkleRoot(hashes)`](./merkle-root) - Compute Merkle root from hash array
 
-
 ## Types
 
 <Tabs>
@@ -174,26 +110,9 @@ See [Hash.from](./from#hashlike-type) for details.
 </Tab>
 </Tabs>
 
+## Optimization
 
-## Tree-Shaking
-
-Import only what you need for optimal bundle size:
-
-```typescript
-// Import specific functions (tree-shakeable)
-import { keccak256, toHex, equals } from '@tevm/voltaire/BrandedHash';
-
-const hash = keccak256(data);
-const hex = toHex(hash);
-const isEqual = equals(hash, otherHash);
-
-// Only these 3 functions included in bundle
-// Unused functions (random, merkleRoot, etc.) excluded
-```
-
-<Tip title="Bundle Impact">
-Importing from `@tevm/voltaire/BrandedHash` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `keccak256` and `toHex`, Merkle tree computation and random generation are excluded from your bundle.
-</Tip>
+Hash provides optimized APIs for efficient imports. Use the main `@tevm/voltaire` export for convenience or specific imports for advanced use cases.
 
 ## Related
 

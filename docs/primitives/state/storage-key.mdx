@@ -18,16 +18,7 @@ function StorageKey(
 ```
 
 </Tab>
-<Tab title="Zig">
 
-```zig
-pub const StorageKey = struct {
-    address: Address,
-    slot: u256,
-};
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -44,38 +35,7 @@ pub const StorageKey = struct {
 ### Basic Usage
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-
-const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-// Create storage key for slot 0 (total supply)
-const key = State.StorageKey(contractAddr, 0n);
-
-console.log(key.address); // BrandedAddress
-console.log(key.slot);    // 0n
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-const Address = @import("address");
-
-const contract_addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-// Create storage key
-const key = State.StorageKey{
-  .address = contract_addr,
-  .slot = 0,
-};
-```
-
-</Tab>
 </Tabs>
 
 ### Multiple Slots

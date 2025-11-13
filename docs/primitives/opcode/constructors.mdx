@@ -342,18 +342,6 @@ function extractConstants(bytecode: Uint8Array): bigint[] {
 }
 ```
 
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { parse, pushOpcode, jumpDests, PUSH1, PUSH32, ADD } from '@tevm/primitives/Opcode'
-
-const instructions = parse(bytecode)
-const push1 = pushOpcode(1)
-const dests = jumpDests(bytecode)
-```
-
 ## See Also
 
 - [Validation](/primitives/opcode/validation) - Opcode validation and type checking

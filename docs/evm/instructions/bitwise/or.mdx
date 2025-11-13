@@ -258,18 +258,6 @@ function packRGB(uint8 r, uint8 g, uint8 b) pure returns (uint24) {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// OR opcode (0x17) - Bitwise OR operation
-pub fn op_or(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const a = try frame.popStack();
-    const b = try frame.popStack();
-    try frame.pushStack(a | b);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

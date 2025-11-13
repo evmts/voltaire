@@ -276,23 +276,6 @@ export function address(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// ADDRESS opcode (0x30) - Get address of currently executing account
-pub fn address(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasQuickStep);
-
-    // Convert 20-byte address to u256
-    var addr_u256: u256 = 0;
-    for (frame.address) |byte| {
-        addr_u256 = (addr_u256 << 8) | byte;
-    }
-
-    try frame.pushStack(addr_u256);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

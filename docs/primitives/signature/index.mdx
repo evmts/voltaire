@@ -57,35 +57,6 @@ See [Signature Formats](./formats.mdx) for detailed comparison.
 
 ## Quick Reference
 
-<Note>
-Signature supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
-<Tabs>
-<Tab title="Class API">
-
-```typescript
-import { Signature } from '@tevm/voltaire';
-
-const sig = Signature.fromSecp256k1(r, s, 27);
-const canonical = sig.normalize();
-const compact = sig.toCompact();
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as Signature from '@tevm/voltaire/Signature';
-
-const sig = Signature.fromSecp256k1(r, s, 27);
-const canonical = Signature.normalize(sig);
-const compact = Signature.toCompact(sig);
-```
-
-</Tab>
-</Tabs>
-
 ## Quick Start
 
 ```typescript

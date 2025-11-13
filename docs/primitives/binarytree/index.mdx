@@ -35,34 +35,7 @@ Binary State Tree uses four distinct node types for efficient state representati
 ## Quick Reference
 
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { BinaryTree } from '@tevm/voltaire';
-
-const tree = BinaryTree();
-const key = new Uint8Array(32);
-const value = new Uint8Array(32);
-value[0] = 0x42;
-
-const tree2 = BinaryTree.insert(tree, key, value);
-const retrieved = BinaryTree.get(tree2, key);
-const hash = BinaryTree.rootHash(tree2);
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as BinaryTree from '@tevm/voltaire/BinaryTree';
-
-const tree = BinaryTree.init();
-const tree2 = BinaryTree.insert(tree, key, value);
-const retrieved = BinaryTree.get(tree2, key);
-const hash = BinaryTree.rootHash(tree2);
-```
-
-</Tab>
 </Tabs>
 
 ## API Methods

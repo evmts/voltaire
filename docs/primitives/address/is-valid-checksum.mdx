@@ -4,158 +4,36 @@ description: Validate EIP-55 checksummed address
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `Address.isValidChecksum(str: string): boolean`
+<Tab title="TypeScript - Factory">
 
-Check if string has valid EIP-55 checksum. Mixed-case addresses must match keccak256-based checksum encoding.
+## `Address.IsValidChecksum({ keccak256 })`
+
+Factory function that creates a checksum validator with explicit crypto dependency.
 
 **Parameters:**
-- `str: string` - Address string to validate
+- `deps: { keccak256: (data: Uint8Array) => Uint8Array }` - Crypto dependencies
 
-**Returns:** `boolean` - `true` if checksum is valid
+**Returns:** `(str: string) => boolean`
+
+**Bundle size benefit:** Crypto dependencies explicit - only bundled if you import them.
 
 **Example:**
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { IsValidChecksum } from '@tevm/voltaire/Address/BrandedAddress'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
 
-// Valid checksummed addresses
-console.log(Address.isValidChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")) // true
-console.log(Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")) // true
+// Create factory with explicit crypto dependency
+const isValidChecksum = IsValidChecksum({ keccak256 })
 
-// Invalid checksum (wrong casing)
-console.log(Address.isValidChecksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")) // false (should be mixed)
-console.log(Address.isValidChecksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // false (wrong case)
-
-// All lowercase/uppercase passes (no checksum)
-console.log(Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")) // true
-console.log(Address.isValidChecksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // true
+// Validate checksummed addresses
+isValidChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed") // true
+isValidChecksum("0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed") // false
 ```
-
-**Defined in:** [primitives/Address/BrandedAddress/isValidChecksum.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/isValidChecksum.js#L16)
 
 </Tab>
-<Tab title="Namespace API">
 
-## `isValidChecksum(str: string): boolean`
-
-Check if string has valid EIP-55 checksum.
-
-**Parameters:**
-- `str: string` - Address string to validate
-
-**Returns:** `boolean` - `true` if valid
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-const checksummed = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
-
-if (Address.isValidChecksum(checksummed)) {
-  console.log('Checksum valid')
-  const addr = Address.fromHex(checksummed)
-} else {
-  console.warn('Invalid checksum')
-}
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/isValidChecksum.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/isValidChecksum.js#L16)
-
-</Tab>
-<Tab title="Zig">
-
-## `Address.isValidChecksum(str: []const u8): bool`
-
-Validate EIP-55 checksum.
-
-**Parameters:**
-- `str: []const u8` - Address string bytes
-
-**Returns:** `bool` - `true` if valid
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-
-const valid = Address.isValidChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
-try std.testing.expect(valid);
-
-const invalid = Address.isValidChecksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed");
-try std.testing.expect(!invalid);
-```
-
-**Defined in:** [primitives/Address/address.zig:185](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L185)
-
-</Tab>
-<Tab title="Effect.ts API">
-
-## `ChecksumAddress.isValid(str: string): boolean`
-
-Validate EIP-55 checksum using Effect Schema. Static method on ChecksumAddress class.
-
-**Parameters:**
-- `str: string` - Address string to validate
-
-**Returns:** `boolean` - `true` if checksum is valid
-
-**Example:**
-
-```typescript
-import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
-
-// Valid checksummed addresses
-console.log(ChecksumAddress.isValid("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")) // true
-console.log(ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")) // true
-
-// Invalid checksum (wrong casing)
-console.log(ChecksumAddress.isValid("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")) // false
-console.log(ChecksumAddress.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // false (all uppercase = no checksum)
-
-// All lowercase/uppercase passes (no checksum to verify)
-console.log(ChecksumAddress.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")) // true
-console.log(ChecksumAddress.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")) // true
-```
-
-**Schema Usage:**
-
-```typescript
-import { ChecksumAddress, AddressFromChecksummed } from '@tevm/voltaire/Address/effect'
-import * as Schema from 'effect/Schema'
-
-// Parse and validate checksummed address
-const parseChecksum = Schema.decodeSync(AddressFromChecksummed)
-
-try {
-  const addr = parseChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
-  console.log(addr.checksummed) // Valid checksummed string
-} catch (e) {
-  console.error("Invalid checksum")
-}
-
-// Create ChecksumAddress instance
-const checksumAddr = ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-console.log(checksumAddr.checksummed) // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Convert to Address schema
-const addr = checksumAddr.toAddress()
-console.log(addr.toHex())
-```
-
-**Effect Schema Features:**
-- Schema validation with type-safe errors
-- Automatic checksum validation on decode
-- Integration with Effect's error handling
-- Composable with other Effect schemas
-- Type-safe checksummed address guarantees
-
-**Defined in:** [primitives/Address/effect.ts:239](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L239)
-
-</Tab>
 <Tab title="C">
 
 ## `bool primitives_address_validate_checksum(const char* hex)`
@@ -411,7 +289,7 @@ console.log(Address.isValidChecksum(typo))    // false (checksum mismatch)
 
 **Cryptographic operation:** Uses keccak256 hash internally.
 
-**Bundle size impact:** Adds keccak256 to bundle (~5-10 KB) when using tree-shakeable imports.
+**Bundle size impact:** With the factory pattern, keccak256 is only bundled if you explicitly import it. Crypto dependencies are now explicit and tree-shakeable.
 
 **Alternative:** Use `isValid()` if checksum verification not required.
 

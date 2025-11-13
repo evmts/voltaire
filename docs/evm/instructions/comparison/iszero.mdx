@@ -272,18 +272,6 @@ export function handle(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// ISZERO opcode (0x15) - Check if value is zero
-pub fn iszero(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const a = try frame.popStack();
-    const result: u256 = if (a == 0) 1 else 0;
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

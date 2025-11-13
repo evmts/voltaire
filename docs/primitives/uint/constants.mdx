@@ -395,29 +395,3 @@ const MIN_GAS = Uint.from(21000n)      // Minimum transaction gas
 const BLOCK_GAS_LIMIT = Uint.from(30_000_000n)  // Typical block gas limit
 ```
 
-## Tree-Shakeable Usage
-
-All constants available as tree-shakeable imports:
-
-```typescript
-import {
-  MAX,
-  MIN,
-  ZERO,
-  ONE,
-  SIZE
-} from '@tevm/voltaire/BrandedUint'
-
-const maxValue = MAX     // 2^256 - 1
-const minValue = MIN     // 0
-const zero = ZERO        // 0
-const one = ONE          // 1
-const size = SIZE        // 32
-
-// Use in operations
-const sum = value.plus(ONE)
-const isZero = value.equals(ZERO)
-const isMax = value.equals(MAX)
-```
-
-See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

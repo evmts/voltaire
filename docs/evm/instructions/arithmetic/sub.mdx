@@ -259,18 +259,6 @@ export function sub(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SUB opcode (0x03) - Subtraction with underflow wrapping
-pub fn sub(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const top = try frame.popStack();
-    const second = try frame.popStack();
-    try frame.pushStack(top -% second);  // Wrapping subtraction
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

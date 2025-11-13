@@ -296,16 +296,7 @@ export function hash(data: Uint8Array): Uint8Array {
 }
 ```
 
-### Zig Implementation
-Zig implementation provides hardware-accelerated hashing:
-- **SHA-NI**: Uses Intel/AMD SHA extensions for direct hardware acceleration
-- **AVX2**: Vectorized implementation processing multiple blocks in parallel
-- **Constant-time**: Software fallback uses constant-time operations to resist timing attacks
-- **Streaming**: Supports incremental hashing for large data
-
-Located in `src/crypto/sha256_accel.zig`.
-
-### WASM
+#### WASM
 Available via `sha256.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript

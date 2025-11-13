@@ -8,16 +8,7 @@ description: Check if opcode is SWAP1-SWAP16
 Check if opcode is SWAP1-SWAP16.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.isSwap(0x90)  // true (SWAP1)
-Opcode.isSwap(0x9F)  // true (SWAP16)
-Opcode.isSwap(0x80)  // false (DUP1)
-Opcode.isSwap(0xA0)  // false (LOG0)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { isSwap, SWAP1, SWAP16 } from '@tevm/voltaire/Opcode'
@@ -26,14 +17,7 @@ isSwap(SWAP1)   // true
 isSwap(SWAP16)  // true
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const is_swap1 = Opcode.isSwap(0x90);  // true
-const is_dup1 = Opcode.isSwap(0x80);   // false
-```
-</Tab>
 </Tabs>
 
 ## Parameters

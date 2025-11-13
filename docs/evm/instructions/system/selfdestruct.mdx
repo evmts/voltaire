@@ -368,42 +368,7 @@ export function selfdestruct(frame: BrandedFrame): EvmError | null {
 }
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-/// SELFDESTRUCT opcode (0xff)
-pub fn selfdestruct(frame: *FrameType) FrameType.EvmError!void {
-    // Pop recipient
-    const recipient = try frame.popStack();
 
-    // Calculate gas cost
-    const base_cost: u64 = 5000;
-    const is_cold = !frame.isWarmAddress(recipient);
-    const cold_cost: u64 = if (is_cold) 25000 else 0;
-
-    const balance = frame.balance;
-    const recipient_exists = try frame.host.accountExists(recipient);
-    const new_account_cost: u64 = if (balance > 0 and !recipient_exists) 25000 else 0;
-
-    try frame.consumeGas(base_cost + cold_cost + new_account_cost);
-
-    // Transfer balance
-    try frame.host.transfer(frame.address, recipient, balance);
-
-    // EIP-6780 (Cancun): Only delete if created in same transaction
-    if (frame.hardfork >= primitives.Hardfork.Cancun) {
-        if (frame.created_in_transaction) {
-            try frame.host.markForDeletion(frame.address);
-        }
-    } else {
-        // Pre-Cancun: Always mark for deletion
-        try frame.host.markForDeletion(frame.address);
-    }
-
-    // Halt execution
-    frame.stopped = true;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

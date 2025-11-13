@@ -528,27 +528,6 @@ export function handler_0x57_JUMPI(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// JUMPI opcode (0x57) - Conditional jump
-pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasSlowStep);
-    const dest = try frame.popStack();
-    const condition = try frame.popStack();
-
-    if (condition != 0) {
-        const dest_pc = std.math.cast(u32, dest) orelse return error.OutOfBounds;
-
-        // Validate jump destination
-        if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
-
-        frame.pc = dest_pc;
-    } else {
-        frame.pc += 1;
-    }
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

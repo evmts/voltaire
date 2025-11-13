@@ -545,34 +545,6 @@ export function tstore(frame, host) {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const Frame = @import("../../Frame/root.zig");
-const Gas = @import("../../../primitives/GasConstants/root.zig");
-
-/// TSTORE (0x5d) - Save word to transient storage
-pub fn tstore(frame: *Frame, host: *Host) Frame.EvmError!void {
-    // TODO: Hardfork check - TSTORE requires Cancun+
-    // if (hardfork < CANCUN) return Frame.EvmError.InvalidOpcode;
-
-    // EIP-1153: Cannot modify transient storage in static call
-    if (frame.isStatic) return Frame.EvmError.WriteProtection;
-
-    try frame.consumeGas(Gas.TStore);
-
-    // Pop key and value from stack
-    const key = try frame.popStack();
-    const value = try frame.popStack();
-
-    // Store to transient storage
-    try host.setTransientStorage(frame.address, key, value);
-
-    // Increment PC
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

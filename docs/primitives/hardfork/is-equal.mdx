@@ -4,65 +4,7 @@ description: Check if two hardforks are equal (handles aliases)
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.isEqual(other: BrandedHardfork): boolean`
-
-Check if two hardforks are equal. Handles aliases correctly (e.g., "merge" === "paris").
-
-**Parameters:**
-- `other: BrandedHardfork` - Hardfork to compare against
-
-**Returns:** `boolean` - True if hardforks are the same
-
-**Example:**
-
-```typescript
-import { Hardfork, MERGE } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")
-
-fork.isEqual(MERGE)   // true - same hardfork
-fork.isEqual(paris)   // true - "paris" is alias for "merge"
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isEqual.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isEqual.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `isEqual(a: BrandedHardfork, b: BrandedHardfork): boolean`
-
-Check if two hardforks are equal. Handles aliases correctly (e.g., "merge" === "paris").
-
-**Parameters:**
-- `a: BrandedHardfork` - First hardfork
-- `b: BrandedHardfork` - Second hardfork
-
-**Returns:** `boolean` - True if hardforks are the same
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-
-const merge = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")
-const london = Hardfork.fromString("london")
-
-Hardfork.isEqual(merge, paris)   // true - alias
-Hardfork.isEqual(merge, london)  // false - different hardforks
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isEqual.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isEqual.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Alias Handling

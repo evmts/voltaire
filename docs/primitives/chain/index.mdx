@@ -18,47 +18,7 @@ Learn about chain IDs, replay attack prevention, and network identification in t
 ## Quick Start
 
 <Tabs>
-<Tab title="Class API">
-```typescript
-import { Chain } from '@tevm/voltaire'
-import { mainnet, optimism, arbitrum } from '@tevm/chains'
 
-// Construct from chain object (see Constructors)
-const chain = Chain.from(mainnet)
-
-// Lookup by chain ID (see Chain Lookup)
-const quai = Chain.fromId(9)
-const flare = Chain.fromId(14)
-
-// Access via byId record
-const chain1 = Chain.byId[1]  // mainnet
-const chain10 = Chain.byId[10] // optimism
-
-// Access metadata (see Metadata)
-console.log(chain.name)         // "Ethereum Mainnet"
-console.log(chain.chainId)      // 1
-console.log(chain.nativeCurrency.symbol) // "ETH"
-console.log(chain.rpc[0])       // RPC endpoint
-console.log(chain.explorers?.[0].url)    // Explorer URL
-```
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-```typescript
-import { Chain } from '@tevm/voltaire'
-import { mainnet } from '@tevm/chains'
-
-// Tree-shakeable imports minimize bundle size
-const chain = Chain.from(mainnet)
-
-// Lookup by ID
-const quai = Chain.fromId(9)
-
-// Access byId record
-const eth = Chain.byId[1]
-
-// See BrandedChain for complete functional API
-```
-</Tab>
 </Tabs>
 
 ## Types

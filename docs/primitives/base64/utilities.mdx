@@ -62,38 +62,7 @@ Defined in: [primitives/Base64/BrandedBase64/calcEncodedSize.js:7](https://githu
 - Result always multiple of 4
 
 </Tab>
-<Tab title="Zig">
 
-### `base64.calcEncodedSize(data_len: usize) usize`
-
-Calculates size of base64-encoded output given input data length. Useful for pre-allocating buffers before encoding.
-
-**Parameters:**
-- `data_len: usize` - Length of data to encode in bytes
-
-**Returns:** `usize` - Size of base64 output in characters
-
-**Example:**
-
-```zig
-const std = @import("std");
-const base64 = @import("primitives").base64;
-
-// Calculate encoded size
-const data_len: usize = 1024;
-const encoded_size = base64.calcEncodedSize(data_len);
-// encoded_size = 1368
-
-// Verify calculation
-const data = [_]u8{0} ** 1024;
-const encoded = try base64.encode(std.testing.allocator, &data);
-defer std.testing.allocator.free(encoded);
-// encoded.len == encoded_size
-```
-
-**Defined in:** [primitives/base64.zig:37](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L37)
-
-</Tab>
 </Tabs>
 
 ### `Base64.calcDecodedSize(encodedLength)`
@@ -148,36 +117,7 @@ Defined in: [primitives/Base64/BrandedBase64/calcDecodedSize.js:7](https://githu
 - For exact size, must decode and check
 
 </Tab>
-<Tab title="Zig">
 
-Calculates maximum size of decoded output given base64 string length. Returns error if calculation fails.
-
-**Parameters:**
-- `encoded_len: usize` - Length of base64 string in characters
-
-**Returns:** `!usize` - Maximum size of decoded output in bytes
-
-**Example:**
-
-```zig
-const std = @import("std");
-const base64 = @import("primitives").base64;
-
-// Calculate decoded size (note: may error)
-const encoded_len: usize = 20;
-const max_size = try base64.calcDecodedSize(encoded_len);
-
-// Typical usage would directly use decoder
-const encoded = "SGVsbG8sIHdvcmxkIQ==";
-const decoded = try base64.decode(std.testing.allocator, encoded);
-defer std.testing.allocator.free(decoded);
-```
-
-**Note:** In Zig, prefer using `decode` directly rather than pre-calculating size, as the decoder handles allocation internally.
-
-**Defined in:** [primitives/base64.zig:42](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L42)
-
-</Tab>
 </Tabs>
 
 ## Usage Patterns
@@ -436,21 +376,6 @@ console.log(`Encoded: ${encodedSize}`)
 console.log(`Max decoded: ${maxDecodedSize}`)
 console.log(`Max decoded >= original: ${maxDecodedSize >= originalSize}`)
 ```
-
-## Tree-Shakeable Usage
-
-Size calculation utilities available as tree-shakeable imports:
-
-```typescript
-import { calcEncodedSize, calcDecodedSize } from '@tevm/voltaire/BrandedBase64'
-
-const encodedSize = calcEncodedSize(1024)
-const decodedSize = calcDecodedSize(1368)
-```
-
-**Tree-shaking benefit:** Import only the calculations you need. If you only calculate encoding size, decoding size calculation is excluded from bundle.
-
-See [BrandedBase64](/primitives/base64/branded-base64) for details on tree-shakeable API.
 
 ## Performance
 

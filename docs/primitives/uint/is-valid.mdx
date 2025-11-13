@@ -4,59 +4,7 @@ description: Type guard to check if value is valid Uint256
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.isValid(value: unknown): value is BrandedUint`
-
-Type guard to check if value is valid BrandedUint.
-
-**Parameters:**
-- `value: unknown` - Value to check
-
-**Returns:** `value is BrandedUint` - True if valid
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const a = Uint.from(100n)
-Uint.isValid(a)  // true
-
-Uint.isValid(100n)           // false
-Uint.isValid("100")          // false
-Uint.isValid(new Uint8Array(32))  // false (not branded)
-Uint.isValid(null)           // false
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/isValid.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/isValid.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `isValid(value: unknown): value is BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-if (Uint.isValid(value)) {
-  // TypeScript knows value is BrandedUint
-  const hex = Uint.toHex(value)
-}
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/isValid.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/isValid.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## Type validation
-
-Zig uses compile-time type checking - no runtime validation needed.
-
-</Tab>
 </Tabs>
 
 ## See Also

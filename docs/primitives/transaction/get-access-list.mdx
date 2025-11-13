@@ -7,69 +7,6 @@ description: Extract access list from transaction
 
 Extract access list from transaction.
 
-<Tabs>
-<Tab title="Namespace API">
-
-```typescript
-function getAccessList(tx: Any): AccessList
-```
-
-**Parameters:**
-- `tx: Any` - Any transaction type
-
-**Returns:** `AccessList` - Access list array (empty array for Legacy transactions)
-
-**Example:**
-
-```typescript
-import { getAccessList } from '@tevm/voltaire/Transaction'
-
-// EIP-1559 transaction with access list
-const tx: Transaction.EIP1559 = {
-  type: Transaction.Type.EIP1559,
-  accessList: [
-    {
-      address: Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
-      storageKeys: [
-        Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003')
-      ]
-    },
-    {
-      address: Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'),
-      storageKeys: []
-    }
-  ],
-  // ... other fields
-}
-
-const accessList = getAccessList(tx)
-console.log(accessList.length) // 2
-console.log(accessList[0].storageKeys.length) // 1
-
-// Legacy transaction - returns empty array
-const legacy: Transaction.Legacy = {
-  type: Transaction.Type.Legacy,
-  // ... fields
-}
-
-const emptyList = getAccessList(legacy)
-console.log(emptyList.length) // 0
-```
-
-**Source:** [getAccessList.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getAccessList.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## TypeScript only
-
-Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
-
-Use TypeScript API for transaction operations.
-
-</Tab>
-</Tabs>
-
 ## Access List Structure
 
 ```typescript

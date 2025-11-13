@@ -24,27 +24,7 @@ Voltaire provides complete ENS support:
 ## Quick Start
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Ens from '@tevm/voltaire/Ens';
 
-// Normalize ENS name
-const normalized = Ens.normalize("Nick.ETH");
-// Returns: "nick.eth"
-
-// Beautify (preserve emoji)
-const beautified = Ens.beautify("💩.eth");
-
-// Type guard
-if (Ens.is(value)) {
-  // value is BrandedEns
-}
-
-// Convert to/from string
-const branded = Ens.from("vitalik.eth");
-const plain = Ens.toString(branded);
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import {

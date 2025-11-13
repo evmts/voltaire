@@ -5,68 +5,7 @@ icon: code
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `bytecode.prettyPrint(options?: PrettyPrintOptions): string`
-
-Generate beautifully formatted, annotated bytecode disassembly with ANSI colors, block boundaries, jump visualization, gas costs, and stack effects.
-
-Returns multi-line string suitable for terminal output or debugging.
-
-**Parameters:**
-- `options?: PrettyPrintOptions` - Formatting configuration
-
-**Returns:** `string` - Formatted disassembly
-
-**Example:**
-
-```typescript
-import { Bytecode } from '@tevm/voltaire';
-
-const code = Bytecode("0x60016002015b00");
-console.log(code.prettyPrint({
-  colors: true,
-  showGas: true,
-  showStack: true
-}));
-```
-
-**Defined in:** [BrandedBytecode/prettyPrint.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/prettyPrint.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `prettyPrint(code: BrandedBytecode, options?: PrettyPrintOptions): string`
-
-Generate beautifully formatted, annotated bytecode disassembly.
-
-**Parameters:**
-- `code: BrandedBytecode` - Bytecode to disassemble
-- `options?: PrettyPrintOptions` - Formatting configuration
-
-**Returns:** `string` - Formatted disassembly
-
-**Example:**
-
-```typescript
-import * as Bytecode from '@tevm/voltaire/Bytecode';
-
-const code = Bytecode.fromHex("0x60016002015b00");
-const disassembly = Bytecode.prettyPrint(code);
-console.log(disassembly);
-```
-
-**Tree-shakeable import:**
-
-```typescript
-import { prettyPrint } from '@tevm/voltaire/BrandedBytecode';
-
-const output = prettyPrint(code, { colors: true });
-```
-
-**Defined in:** [BrandedBytecode/prettyPrint.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/prettyPrint.js)
-
-</Tab>
 </Tabs>
 
 ## Output Format

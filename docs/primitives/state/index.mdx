@@ -23,40 +23,7 @@ StorageKey combines a 20-byte contract address with a 256-bit storage slot numbe
 ## Quick Reference
 
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { State } from '@tevm/voltaire';
-
-const key = State.StorageKey(contractAddress, 0n);
-const keyStr = key.toString();
-const parsed = State.StorageKey.fromString(keyStr);
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as State from '@tevm/voltaire/State';
-
-const key = State.StorageKey(contractAddress, 0n);
-const keyStr = State.StorageKey.toString(key);
-const parsed = State.StorageKey.fromString(keyStr);
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-
-const key = State.StorageKey{
-  .address = contract_address,
-  .slot = 0,
-};
-```
-
-</Tab>
 </Tabs>
 
 ## API Methods

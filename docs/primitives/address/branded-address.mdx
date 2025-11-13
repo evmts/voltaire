@@ -29,33 +29,6 @@ Runtime-validated 20-byte `Uint8Array`. [Brand](/getting-started/branded-types) 
 
 Defined in: [primitives/Address/BrandedAddress/BrandedAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js)
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-// Namespace usage
-const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const hex = Address.toHex(addr)
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { from, toHex, equals } from '@tevm/voltaire/Address'
-import type { BrandedAddress } from '@tevm/voltaire/Address'
-
-const addr: BrandedAddress = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const hex = toHex(addr)
-const isEqual = equals(addr, otherAddr)
-```
-
-**Bundle impact:** Only `from`, `toHex`, and `equals` included. Methods like `toChecksummed`, `calculateCreateAddress`, `calculateCreate2Address` excluded along with keccak256 and RLP dependencies.
-
 ## Available Functions
 
 All Address functionality available as tree-shakeable functions:

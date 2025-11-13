@@ -8,20 +8,7 @@ Compares two `BrandedStorageKey` instances for structural equality.
 ## Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function equals(a: BrandedStorageKey, b: BrandedStorageKey): boolean
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn equals(a: StorageKey, b: StorageKey) bool
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -38,40 +25,7 @@ pub fn equals(a: StorageKey, b: StorageKey) bool
 ### Basic Comparison
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-
-const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-const key1 = State.StorageKey(addr, 0n);
-const key2 = State.StorageKey(addr, 0n);
-const key3 = State.StorageKey(addr, 1n);
-
-console.log(State.StorageKey.equals(key1, key2)); // true (same address and slot)
-console.log(State.StorageKey.equals(key1, key3)); // false (different slots)
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-const Address = @import("address");
-
-const addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-const key1 = State.StorageKey{ .address = addr, .slot = 0 };
-const key2 = State.StorageKey{ .address = addr, .slot = 0 };
-const key3 = State.StorageKey{ .address = addr, .slot = 1 };
-
-const equal12 = State.equals(key1, key2); // true
-const equal13 = State.equals(key1, key3); // false
-```
-
-</Tab>
 </Tabs>
 
 ### Different Addresses

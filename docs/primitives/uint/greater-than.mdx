@@ -4,61 +4,7 @@ description: Check if first Uint256 is greater than second
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.greaterThan(a: BrandedUint, b: BrandedUint): boolean`
-
-Check if first value is greater than second.
-
-**Parameters:**
-- `a: BrandedUint` - First value
-- `b: BrandedUint` - Second value
-
-**Returns:** `boolean` - True if a > b
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-Uint.greaterThan(Uint.from(200n), Uint.from(100n))  // true
-Uint.greaterThan(Uint.from(100n), Uint.from(200n))  // false
-Uint.greaterThan(Uint.from(100n), Uint.from(100n))  // false
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/greaterThan.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/greaterThan.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `greaterThan(a: BrandedUint, b: BrandedUint): boolean`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.greaterThan(Uint.from(200n), Uint.from(100n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/greaterThan.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/greaterThan.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.greaterThan(a: Uint, b: Uint): bool`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const result = Uint.greaterThan(Uint.init(200), Uint.init(100));
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

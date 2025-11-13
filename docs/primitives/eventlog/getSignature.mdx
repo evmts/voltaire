@@ -4,61 +4,7 @@ description: Alias for getTopic0 - get event signature hash
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.getSignature(): BrandedHash | undefined`
-
-Get event signature hash. Alias for `getTopic0()`.
-
-**Returns:** `BrandedHash | undefined` - Event signature hash, or undefined if no topics
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: Hex.from('0x'),
-});
-
-const signature = log.getSignature();
-console.log(Hash.toHex(signature));
-// '0xddf252ad...'
-```
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `getSignature(log: BrandedEventLog): BrandedHash | undefined`
-
-Get event signature hash. Alias for `getTopic0()`.
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log instance
-
-**Returns:** `BrandedHash | undefined` - Event signature hash, or undefined if no topics
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: Hex.from('0x'),
-});
-
-const signature = EventLog.getSignature(log);
-console.log(Hash.toHex(signature));
-// '0xddf252ad...'
-```
-
-</Tab>
 </Tabs>
 
 ## Usage Notes

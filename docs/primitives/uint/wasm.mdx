@@ -239,18 +239,6 @@ WASM module adds ~2-4KB gzipped for loader + primitive-specific code. Use when p
 - **[Uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint.zig)** - Zig source implementation
 - **[loader.js](https://github.com/evmts/voltaire/blob/main/src/wasm-loader/loader.js)** - Shared WASM loader
 
-## Tree-Shakeable Usage
-
-All WASM methods are tree-shakeable:
-
-```typescript
-// Import only what you need
-import { u256FromHex } from '@tevm/voltaire/Uint256.wasm'
-
-// WASM loader included once
-// Only u256FromHex WASM code included
-```
-
 ## Browser Support
 
 WASM requires WebAssembly support in the JavaScript runtime:

@@ -3,121 +3,9 @@ title: Address.is
 description: Type guard for runtime validation of BrandedAddress values
 ---
 
-<Tabs>
-<Tab title="Namespace API">
+## C FFI
 
-## `is(value: unknown): value is BrandedAddress`
-
-Runtime type guard checking if value is a valid BrandedAddress. Returns true only if value is a Uint8Array with exactly 20 bytes.
-
-**Parameters:**
-- `value: unknown` - Value to check
-
-**Returns:** `value is BrandedAddress` - TypeScript type predicate narrowing to BrandedAddress
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-// Type narrowing
-function processAddress(value: unknown) {
-  if (Address.is(value)) {
-    // TypeScript knows value is BrandedAddress here
-    const hex = Address.toHex(value) // Type-safe
-    console.log(hex)
-  }
-}
-
-// Runtime validation
-const maybeAddr = getSomeValue()
-if (Address.is(maybeAddr)) {
-  // Safe to use Address methods
-  Address.equals(maybeAddr, Address.zero())
-}
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/is.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/is.js#L16)
-
-</Tab>
-<Tab title="Effect.ts API">
-
-## `BrandedAddressImpl.is(bytes: Uint8Array): boolean`
-
-Type guard used internally by Effect Schema. Validates that Uint8Array is exactly 20 bytes for Address schema.
-
-**Parameters:**
-- `bytes: Uint8Array` - Byte array to validate
-
-**Returns:** `boolean` - `true` if valid address
-
-**Example:**
-
-```typescript
-import { Address } from '@tevm/voltaire/Address/effect'
-import * as BrandedAddressImpl from '@tevm/voltaire/Address/BrandedAddress'
-
-// Effect Schema validation
-const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
-
-// Manual validation of underlying bytes
-if (BrandedAddressImpl.is(addr.value)) {
-  // addr.value is BrandedAddress
-  console.log("Valid address bytes")
-}
-
-// Schema filter uses this internally
-import * as Schema from "effect/Schema"
-
-const AddressSchema = Schema.Uint8ArrayFromSelf.pipe(
-  Schema.filter(
-    (bytes): bytes is Uint8Array => {
-      return BrandedAddressImpl.is(bytes)
-    },
-    { message: () => "Invalid address: must be 20 bytes" }
-  )
-)
-```
-
-**Defined in:** [primitives/Address/effect.ts:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L26)
-
-</Tab>
-<Tab title="Zig">
-
-## Type Checking Not Required
-
-Zig addresses use fixed-size arrays `[20]u8` enforced at compile time. No runtime type guard needed.
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-
-// Compile-time size enforcement
-const addr: Address = Address.init([_]u8{0} ** 20); // OK
-// const invalid: Address = Address.init([_]u8{0} ** 19); // Compile error
-
-// Runtime length check for dynamic arrays
-fn isValidAddressBytes(bytes: []const u8) bool {
-    return bytes.len == 20;
-}
-
-test "validate dynamic bytes" {
-    const valid = [_]u8{0} ** 20;
-    const invalid = [_]u8{0} ** 19;
-
-    try std.testing.expect(isValidAddressBytes(&valid));
-    try std.testing.expect(!isValidAddressBytes(&invalid));
-}
-```
-
-**Note:** Zig's type system prevents invalid addresses at compile time. Runtime checks only needed for external data.
-
-</Tab>
-<Tab title="C">
-
-## `primitives_address_is_valid(const PrimitivesAddress* addr): bool`
+### `primitives_address_is_valid(const PrimitivesAddress* addr): bool`
 
 Validate address pointer is non-null (size already enforced by struct).
 
@@ -149,9 +37,6 @@ PrimitivesAddress addr;
 ```
 
 **Note:** C struct definition enforces 20-byte size. Runtime check only validates pointer.
-
-</Tab>
-<Tab title="Type Guard Pattern">
 
 ## TypeScript Type Predicates
 
@@ -185,9 +70,6 @@ function example2(value: unknown) {
 - Catches errors at compile time
 - No runtime overhead (inline check)
 - Works with TypeScript's control flow analysis
-
-</Tab>
-</Tabs>
 
 ## Type Narrowing
 

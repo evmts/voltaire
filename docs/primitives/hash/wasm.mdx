@@ -243,23 +243,6 @@ console.timeEnd('WASM hashing')
 - **[Hash.wasm.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/Hash.wasm.ts)** - TypeScript exports with WASM bindings
 - Zig source implementation (location varies by algorithm)
 
-## Tree-Shakeable Usage
-
-Import only algorithms you need:
-
-```typescript
-import { sha256, ripemd160 } from '@tevm/voltaire/Hash.wasm'
-
-const sha = sha256("hello")
-const ripe = ripemd160("world")
-```
-
-WASM loader only included if you import WASM methods. Using pure JS Hash methods excludes WASM from bundle.
-
-<Note title="Bundle Size">
-WASM module compiled with ReleaseSmall. Size varies by algorithm imported. Only included when importing from `Hash.wasm.ts`.
-</Note>
-
 ## Algorithm Comparison
 
 | Algorithm | Output Size | Use Case |

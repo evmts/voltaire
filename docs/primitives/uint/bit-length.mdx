@@ -3,9 +3,6 @@ title: Uint.bitLength
 description: Get number of bits required to represent Uint256 value
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.bitLength(value: BrandedUint): number`
 
 Get number of bits required to represent value (position of highest set bit + 1).
@@ -29,40 +26,6 @@ Uint.bitLength(Uint.MAX)          // 256
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/bitLength.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitLength.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `bitLength(value: BrandedUint): number`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const length = Uint.bitLength(Uint.from(255n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/bitLength.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitLength.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `uint.bitLength(): u9`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const value = Uint.init(255);
-const length = value.bitLength();  // 8
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 ## See Also
 

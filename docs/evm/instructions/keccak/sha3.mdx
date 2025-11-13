@@ -315,60 +315,6 @@ export function sha3(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SHA3/KECCAK256 opcode (0x20) - Compute Keccak-256 hash
-pub fn sha3(frame: *FrameType) FrameType.EvmError!void {
-    const offset = try frame.popStack();
-    const size = try frame.popStack();
-
-    // Validate and cast to u32
-    const size_u32 = std.math.cast(u32, size) orelse return error.OutOfBounds;
-
-    // Calculate gas costs
-    const words = (size_u32 + 31) / 32;
-    const gas_cost = 30 + words * 6;
-    try frame.consumeGas(gas_cost);
-
-    // Handle empty data
-    if (size == 0) {
-        // keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
-        const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-        try frame.pushStack(empty_hash);
-        frame.pc += 1;
-        return;
-    }
-
-    const offset_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
-
-    // Charge memory expansion and update memory size
-    const end_addr = @as(u64, offset_u32) + @as(u64, size_u32);
-    const mem_cost = frame.memoryExpansionCost(end_addr);
-    try frame.consumeGas(mem_cost);
-
-    const aligned_size = ((end_addr + 31) / 32) * 32;
-    if (@as(u32, @intCast(aligned_size)) > frame.memory_size) {
-        frame.memory_size = @intCast(aligned_size);
-    }
-
-    // Read data from memory
-    const data = try frame.allocator.alloc(u8, size_u32);
-    for (0..size_u32) |i| {
-        data[i] = frame.readMemory(offset_u32 + @as(u32, @intCast(i)));
-    }
-
-    // Compute hash
-    var hash_bytes: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(data, &hash_bytes, .{});
-
-    // Convert to u256 (big-endian)
-    const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
-    try frame.pushStack(hash_u256);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

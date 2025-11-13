@@ -8,71 +8,7 @@ description: Get effective gas price for transaction
 Get effective gas price for transaction.
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function getGasPrice(tx: Any, baseFee?: bigint): bigint
-```
-
-**Parameters:**
-- `tx: Any` - Any transaction type
-- `baseFee?: bigint` - Current base fee per gas (required for EIP-1559/EIP-4844/EIP-7702)
-
-**Returns:** `bigint` - Effective gas price in wei
-
-**Throws:**
-- `Error("Base fee required for EIP-1559 transactions")` - If baseFee not provided for dynamic fee transactions
-
-**Example:**
-
-```typescript
-import { getGasPrice } from '@tevm/voltaire/Transaction'
-
-// Legacy transaction
-const legacy: Transaction.Legacy = {
-  type: Transaction.Type.Legacy,
-  gasPrice: 20000000000n,  // 20 gwei
-  // ... other fields
-}
-
-const legacyPrice = getGasPrice(legacy)
-console.log(legacyPrice) // 20000000000n
-
-// EIP-1559 transaction
-const eip1559: Transaction.EIP1559 = {
-  type: Transaction.Type.EIP1559,
-  maxPriorityFeePerGas: 2000000000n,  // 2 gwei
-  maxFeePerGas: 30000000000n,         // 30 gwei
-  // ... other fields
-}
-
-const baseFee = 15000000000n  // 15 gwei
-const eip1559Price = getGasPrice(eip1559, baseFee)
-console.log(eip1559Price) // 17000000000n (baseFee + priorityFee)
-
-// EIP-2930 transaction
-const eip2930: Transaction.EIP2930 = {
-  type: Transaction.Type.EIP2930,
-  gasPrice: 25000000000n,  // 25 gwei
-  // ... other fields
-}
-
-const eip2930Price = getGasPrice(eip2930)
-console.log(eip2930Price) // 25000000000n
-```
-
-**Source:** [getGasPrice.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getGasPrice.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## TypeScript only
-
-Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
-
-Use TypeScript API for transaction operations.
-
-</Tab>
 </Tabs>
 
 ## Gas Price Calculation

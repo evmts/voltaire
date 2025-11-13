@@ -292,17 +292,6 @@ function isNotMember(uint256 value, uint256 bitmap) pure returns (bool) {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// NOT opcode (0x19) - Bitwise NOT operation
-pub fn op_not(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const a = try frame.popStack();
-    try frame.pushStack(~a);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

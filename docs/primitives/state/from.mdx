@@ -8,20 +8,7 @@ Universal constructor for creating `BrandedStorageKey` from various input types.
 ## Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function from(input: StorageKeyLike): BrandedStorageKey
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn from(input: StorageKeyLike) !StorageKey
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -48,37 +35,7 @@ type StorageKeyLike =
 ### From Object
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-
-// From plain object
-const key = State.from({
-  address: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
-  slot: 0n
-});
-
-console.log(key.address); // BrandedAddress
-console.log(key.slot);    // 0n
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-const Address = @import("address");
-
-// From struct
-const key = try State.from(.{
-  .address = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
-  .slot = 0,
-});
-```
-
-</Tab>
 </Tabs>
 
 ### From Existing StorageKey

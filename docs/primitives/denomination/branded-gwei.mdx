@@ -9,7 +9,7 @@ Data-first branded Gwei type - `BrandedUint` representing Gwei denomination with
 
 ## Overview
 
-`BrandedGwei` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Gwei values. Unlike the namespace API (`Gwei.*`), BrandedGwei uses direct data representation with minimal wrapping.
+`BrandedGwei` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Gwei values with zero-overhead direct data representation.
 
 ## Type Definition
 
@@ -20,32 +20,6 @@ export type BrandedGwei = BrandedUint & { readonly __brand: unique symbol }
 ```
 
 Inherits all `BrandedUint` properties - 32-byte Uint8Array with bigint arithmetic.
-
-## BrandedGwei vs Gwei
-
-Two APIs for different use cases:
-
-**Gwei (namespace)** - Flexible, accepts any input:
-```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-
-Gwei.toWei("50")        // Converts string to Gwei, then to Wei
-Gwei.from(50n)          // Auto-converts any numeric input
-```
-
-**BrandedGwei** - Type-safe, requires BrandedGwei:
-```typescript
-import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
-
-const gwei = BrandedGwei.from(50n)  // Create BrandedGwei
-BrandedGwei.toWei(gwei)             // Must pass BrandedGwei type
-```
-
-Key differences:
-- **Gwei namespace**: Auto-converts inputs, wrapper functions
-- **BrandedGwei**: Enforces type at compile time, direct data operations
-- **Performance**: BrandedGwei avoids wrapper overhead
-- **Use case**: Gwei for convenience, BrandedGwei for type safety
 
 ## Construction
 
@@ -311,23 +285,16 @@ const MED_PRIORITY = BrandedGwei.from(2n)   // 2 Gwei tip
 const HIGH_PRIORITY = BrandedGwei.from(5n)  // 5 Gwei tip
 ```
 
-## When to Use
+## When to Use BrandedGwei
 
-**Use BrandedGwei when:**
+Use BrandedGwei when:
 - Type safety is critical
 - Working with existing BrandedUint infrastructure
 - Building type-safe APIs
 - Performance-sensitive gas calculations
 
-**Use Gwei namespace when:**
-- Accepting flexible input formats
-- Building user-facing APIs
-- Convenience over strict types
-- Integration with existing code
-
 ## Related
 
-- [Gwei](/primitives/denomination/gwei) - Namespace API with auto-conversion
 - [BrandedWei](/primitives/denomination/branded-wei) - Branded Wei type
 - [BrandedEther](/primitives/denomination/branded-ether) - Branded Ether type
 - [BrandedUint](/primitives/uint/branded-uint) - Underlying branded Uint256 type

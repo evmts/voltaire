@@ -47,20 +47,6 @@ const tree = BinaryTree.init()
 ```
 </Tab>
 
-<Tab title="Tree-shakeable">
-```typescript
-import {
-  init,
-  insert,
-  get,
-  rootHash
-} from '@tevm/voltaire/BinaryTree.wasm'
-
-let tree = init()
-tree = insert(tree, key, value)
-const hash = rootHash(tree)
-```
-</Tab>
 </Tabs>
 
 ## Performance
@@ -146,70 +132,11 @@ Methods implemented in Zig and exported via WASM:
 These use pure JavaScript (no WASM benefit):
 - `rootHashHex` - Simple hex conversion (calls WASM rootHash)
 
-## Zig Implementation
-
-Core algorithms implemented in Zig:
-
-```zig
-// binary_tree.zig
-
-/// Binary State Tree (EIP-7864)
-pub const BinaryTree = @This();
-
-/// Hash internal node (left || right)
-pub fn hashInternal(l: [32]u8, r: [32]u8) [32]u8 {
-    // If both children are zero, parent hash is zero
-    const lz = std.mem.allEqual(u8, &l, 0);
-    const rz = std.mem.allEqual(u8, &r, 0);
-    if (lz and rz) return [_]u8{0} ** 32;
-
-    var h: [32]u8 = undefined;
-    var hasher = blake3.init(.{});
-    hasher.update(&l);
-    hasher.update(&r);
-    hasher.final(&h);
-    return h;
-}
-
-/// Insert value at key
-pub fn insert(self: *BinaryTree, k: [32]u8, v: [32]u8) !void {
-    const split = splitKey(k);
-    self.root = try self.insertNode(self.root, split.stem, split.idx, v, 0);
-}
-
-/// Get value at key
-pub fn get(self: *BinaryTree, k: [32]u8) ?[32]u8 {
-    const split = splitKey(k);
-    return self.getNode(self.root, split.stem, split.idx, 0);
-}
-```
-
-Full source: [binary_tree.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig)
-
 ## Files
 
 - **binary_tree.zig** - Zig source implementation with BLAKE3
 - **BinaryTree.wasm.js** - JavaScript exports with WASM bindings (TODO)
 - **BinaryTree.wasm.ts** - TypeScript types and exports (TODO)
-
-## Tree-Shakeable Usage
-
-Import only methods you need:
-
-```typescript
-import { insert, rootHash } from '@tevm/voltaire/BinaryTree.wasm'
-import type { BinaryTree } from '@tevm/voltaire/BrandedBinaryTree'
-
-let tree = { root: { type: 'empty' } }
-tree = insert(tree, key, value)
-const hash = rootHash(tree)
-```
-
-WASM loader only included if you import WASM methods. Using pure JS versions excludes WASM from bundle.
-
-<Note title="Bundle Size">
-WASM module compiled with ReleaseSmall. Expected size ~5-10KB gzipped including BLAKE3. Only included when importing from `BinaryTree.wasm.js` or `BinaryTree.wasm.ts`.
-</Note>
 
 ## Benchmark Comparison
 

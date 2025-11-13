@@ -46,24 +46,7 @@ For complete spec-compliant EVM implementations that use these primitives, see [
 
 ## Architecture
 
-### Zig Implementation
-
-```zig
-const std = @import("std");
-const evm = @import("evm");
-
-pub fn executeInstruction(opcode: u8, stack: *Stack, memory: *Memory) !void {
-    switch (opcode) {
-        0x01 => try evm.instructions.arithmetic.add(stack),
-        0x02 => try evm.instructions.arithmetic.mul(stack),
-        0x10 => try evm.instructions.comparison.lt(stack),
-        // ... 160+ more opcodes
-        else => return error.InvalidOpcode,
-    }
-}
-```
-
-### TypeScript Implementation
+#### TypeScript Implementation
 
 ```typescript
 import * as EVM from '@tevm/voltaire/evm';

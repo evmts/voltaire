@@ -357,37 +357,6 @@ export function signextend(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SIGNEXTEND opcode (0x0b) - Sign extension
-pub fn signextend(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastStep);
-    const byte_index = try frame.popStack();
-    const value = try frame.popStack();
-
-    // If byte_index >= 31, no sign extension needed
-    const result = if (byte_index >= 31) value else blk: {
-        const bit_index = @as(u8, @truncate(byte_index * 8 + 7));
-        const sign_bit = @as(u256, 1) << @as(u8, bit_index);
-        const mask = sign_bit - 1;
-
-        // Check if sign bit is set
-        const is_negative = (value & sign_bit) != 0;
-
-        if (is_negative) {
-            // Sign extend with 1s
-            break :blk value | ~mask;
-        } else {
-            // Zero extend (clear upper bits)
-            break :blk value & mask;
-        }
-    };
-
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

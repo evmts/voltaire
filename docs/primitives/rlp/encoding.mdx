@@ -3,7 +3,6 @@ title: RLP Encoding
 description: Encode bytes, lists, and nested structures using RLP format
 ---
 
-
 # RLP Encoding
 
 Methods for encoding bytes, lists, and nested structures into RLP format.
@@ -75,8 +74,8 @@ Output RLP Bytes:
 
 General-purpose encoding method that accepts bytes, lists, or RLP data structures.
 
-<Tabs>
-<TabItem label="Signature">
+### Signature
+
 ```typescript
 function encode(data: Encodable): Uint8Array
 
@@ -96,8 +95,9 @@ type Encodable =
 - `Error('UnexpectedInput')` - Invalid encodable data type
 
 Source: [encode.js:38-59](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L38-L59)
-</TabItem>
-<TabItem label="Class API">
+
+### Usage
+
 ```typescript
 import { Rlp } from '@tevm/voltaire'
 
@@ -126,25 +126,6 @@ const encoded = Rlp.encode(data)
 const rlpData = Rlp(new Uint8Array([1, 2, 3]))
 const encoded = rlpData.encode()
 ```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { encode } from '@tevm/voltaire/BrandedRlp'
-
-// Encode bytes
-const bytes = new Uint8Array([1, 2, 3])
-const encoded = encode(bytes)
-
-// Encode list
-const list = [new Uint8Array([1]), new Uint8Array([2])]
-const encoded = encode(list)
-
-// Encode nested
-const nested = [bytes, [bytes, bytes]]
-const encoded = encode(nested)
-```
-</TabItem>
-</Tabs>
 
 ### Algorithm
 
@@ -178,8 +159,8 @@ Use `encode` for general-purpose encoding. Use `encodeBytes` or `encodeList` whe
 
 Encodes a byte array according to RLP string rules.
 
-<Tabs>
-<TabItem label="Signature">
+### Signature
+
 ```typescript
 function encodeBytes(bytes: Uint8Array): Uint8Array
 ```
@@ -191,8 +172,9 @@ function encodeBytes(bytes: Uint8Array): Uint8Array
 - `Uint8Array` - RLP-encoded bytes
 
 Source: [encodeBytes.js:32-53](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32-L53)
-</TabItem>
-<TabItem label="Class API">
+
+### Usage
+
 ```typescript
 import { Rlp } from '@tevm/voltaire'
 
@@ -218,17 +200,6 @@ const encoded = Rlp.encodeBytes(long)
 // => Uint8Array([0xb8, 60, ...long])
 // 0xb8 = 0xb7 + 1 (length needs 1 byte)
 ```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { encodeBytes } from '@tevm/voltaire/BrandedRlp'
-
-const bytes = new Uint8Array([1, 2, 3])
-const encoded = encodeBytes(bytes)
-// => Uint8Array([0x83, 1, 2, 3])
-```
-</TabItem>
-</Tabs>
 
 ### String Encoding Rules
 
@@ -308,8 +279,8 @@ The threshold of 56 bytes is chosen because lengths 0-55 fit in a single prefix 
 
 Encodes a list of RLP-encodable items.
 
-<Tabs>
-<TabItem label="Signature">
+### Signature
+
 ```typescript
 function encodeList(items: Encodable[]): Uint8Array
 
@@ -326,8 +297,9 @@ type Encodable =
 - `Uint8Array` - RLP-encoded list
 
 Source: [encodeList.js:33-63](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeList.js#L33-L63)
-</TabItem>
-<TabItem label="Class API">
+
+### Usage
+
 ```typescript
 import { Rlp } from '@tevm/voltaire'
 
@@ -358,17 +330,6 @@ const mixed = [
 ]
 const encoded = Rlp.encodeList(mixed)
 ```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { encodeList } from '@tevm/voltaire/BrandedRlp'
-
-const list = [new Uint8Array([1]), new Uint8Array([2])]
-const encoded = encodeList(list)
-// => Uint8Array([0xc4, 0x01, 0x02])
-```
-</TabItem>
-</Tabs>
 
 ### List Encoding Rules
 
@@ -565,16 +526,16 @@ console.log(`Will need ${size} bytes`)
 const encoded = Rlp.encode(items)
 ```
 
-### Tree-shaking
+### Performance
 
-Use specific encoders when type is known:
+Use specific encoders when type is known for better performance:
 
 ```typescript
-import { encodeBytes, encodeList } from '@tevm/voltaire/BrandedRlp'
+import { Rlp } from '@tevm/voltaire'
 
-// More efficient than using generic encode()
-const bytesEncoded = encodeBytes(new Uint8Array([1, 2, 3]))
-const listEncoded = encodeList([bytes1, bytes2])
+// Generic encoder with type dispatch
+const bytesEncoded = Rlp.encodeBytes(new Uint8Array([1, 2, 3]))
+const listEncoded = Rlp.encodeList([bytes1, bytes2])
 ```
 
 ### Avoiding Re-encoding

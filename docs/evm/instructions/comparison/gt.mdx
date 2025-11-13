@@ -292,19 +292,6 @@ export function handle(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// GT opcode (0x11) - Greater than comparison (unsigned)
-pub fn gt(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const b = try frame.popStack();
-    const a = try frame.popStack();
-    const result: u256 = if (a > b) 1 else 0;
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

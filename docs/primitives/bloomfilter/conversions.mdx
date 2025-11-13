@@ -395,24 +395,6 @@ const item = Hex.from('0x' + '00'.repeat(100)) // 100-byte item
 const h = BloomFilter.hash(item, 0, 2048)  // ~O(100) operations
 ```
 
-## Tree-Shakeable Usage
-
-```typescript
-import { toHex, hash } from '@tevm/voltaire/BrandedBloomFilter'
-import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
-
-// Tree-shakeable conversions
-const filter: BrandedBloomFilter = create(2048, 3)
-const hex = toHex(filter)
-
-// Tree-shakeable hash
-const item = new TextEncoder().encode("Transfer")
-const h0 = hash(item, 0, 2048)
-const h1 = hash(item, 1, 2048)
-```
-
-See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for complete functional API.
-
 ## Related
 
 - [Constructors](/primitives/bloomfilter/constructors) - Creating from hex

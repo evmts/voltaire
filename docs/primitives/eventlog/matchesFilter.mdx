@@ -4,86 +4,7 @@ description: Check if log matches complete filter with address, topics, and bloc
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.matchesFilter(filter: Filter): boolean`
-
-Check if log matches complete filter including address, topics, block range, and block hash.
-
-**Parameters:**
-- `filter: Filter` - Filter object with optional fields:
-  - `address?: BrandedAddress | BrandedAddress[]` - Address or array of addresses
-  - `topics?: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter
-  - `fromBlock?: bigint` - Starting block number (inclusive)
-  - `toBlock?: bigint` - Ending block number (inclusive)
-  - `blockHash?: BrandedHash` - Specific block hash
-
-**Returns:** `boolean` - True if log matches all specified criteria
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
-  data: Hex.from('0x'),
-  blockNumber: 18000000n,
-  blockHash: Hash.fromHex('0xabc...'),
-});
-
-// Complete filter
-const matches = log.matchesFilter({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...'), null, Hash.fromHex('0x000...to')],
-  fromBlock: 17000000n,
-  toBlock: 19000000n,
-});
-console.log(matches); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/matchesFilter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `matchesFilter(log: BrandedEventLog, filter: Filter): boolean`
-
-Check if log matches complete filter including address, topics, block range, and block hash.
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log to check
-- `filter: Filter` - Filter criteria
-
-**Returns:** `boolean` - True if log matches all specified criteria
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
-  data: Hex.from('0x'),
-  blockNumber: 18000000n,
-});
-
-const matches = EventLog.matchesFilter(log, {
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...'), null, Hash.fromHex('0x000...to')],
-  fromBlock: 17000000n,
-  toBlock: 19000000n,
-});
-console.log(matches); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/matchesFilter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
-
-</Tab>
 </Tabs>
 
 ## Filter Fields
@@ -339,7 +260,7 @@ import { EventLog } from '@tevm/voltaire';
 const pendingLog = EventLog.from({
   address: contractAddress,
   topics: [TRANSFER_SIG],
-  data: Hex.from('0x'),
+  data: new Uint8Array([]),
   // No blockNumber, blockHash, etc.
 });
 

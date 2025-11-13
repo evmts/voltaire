@@ -198,26 +198,7 @@ The TypeScript implementation uses **@noble/curves** by Paul Miller, a widely-au
 - Validates all curve points and scalars
 - Low-s normalization for Ethereum compatibility
 
-### Zig Implementation
-
-⚠️ **UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED** ⚠️
-
-The Zig implementation (`src/crypto/secp256k1.zig`) is a **custom elliptic curve cryptography implementation** that has **NOT been security audited**. It is provided for educational/testing purposes only.
-
-**Known risks**:
-- Potential timing attacks in modular arithmetic
-- Unvalidated against known ECC vulnerabilities
-- Custom point arithmetic may have edge case bugs
-- Memory safety not guaranteed under all conditions
-
-**DO NOT USE IN PRODUCTION** without proper security audit and testing.
-
-For production use, prefer:
-1. TypeScript implementation (audited @noble/curves)
-2. Ethereum precompile `ecRecover` for signature recovery
-3. Hardware wallet signing for sensitive operations
-
-## Test Vectors
+### Test Vectors
 
 ### RFC 6979 Deterministic Signatures
 

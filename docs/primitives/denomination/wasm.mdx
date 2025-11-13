@@ -58,59 +58,6 @@ WASM implementations provide significant speedup for:
 Use WASM when processing many denomination conversions (gas calculations, bulk balance conversions). For single operations, JS overhead may outweigh WASM benefits.
 </Tip>
 
-## Zig Implementation
-
-The Zig source implements three denomination types:
-
-```zig
-// denomination.zig
-pub const Wei = struct {
-    value: U256,
-
-    pub fn from_u256(v: U256) Wei
-    pub fn to_u256(self: Wei) U256
-    pub fn to_gwei(self: Wei) Gwei
-    pub fn to_ether(self: Wei) Ether
-    pub fn from_gwei(g: Gwei) Wei
-    pub fn from_ether(e: Ether) Wei
-}
-
-pub const Gwei = struct {
-    value: U256,
-
-    pub fn from_u256(v: U256) Gwei
-    pub fn to_u256(self: Gwei) U256
-    pub fn to_wei(self: Gwei) Wei
-    pub fn to_ether(self: Gwei) Ether
-    pub fn from_wei(w: Wei) Gwei
-    pub fn from_ether(e: Ether) Gwei
-}
-
-pub const Ether = struct {
-    value: U256,
-
-    pub fn from_u256(v: U256) Ether
-    pub fn to_u256(self: Ether) U256
-    pub fn to_wei(self: Ether) Wei
-    pub fn to_gwei(self: Ether) Gwei
-    pub fn from_wei(w: Wei) Ether
-    pub fn from_gwei(g: Gwei) Ether
-}
-```
-
-**Conversion constants:**
-```zig
-pub const WEI_PER_GWEI: U256 = U256.from_u64(1_000_000_000)
-pub const WEI_PER_ETHER: U256 = blk: {
-    var limbs: [4]u64 = .{ 0xde0b6b3a7640000, 0, 0, 0 }
-    break :blk U256.from_limbs(limbs)
-}
-pub const GWEI_PER_ETHER: U256 = U256.from_u64(1_000_000_000)
-```
-
-Defined in: [primitives/Denomination/denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
-Tests: [denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
-
 ## API Reference
 
 WASM implementations match the standard Denomination API. See main documentation:
@@ -307,25 +254,6 @@ Run tests:
 ```bash
 zig build test -Dtest-filter="denomination"
 ```
-
-## Tree-Shakeable Usage
-
-Import only methods you need:
-
-```typescript
-import { from, toWei, toEther } from '@tevm/voltaire/Gwei.wasm'
-import type { Gwei } from '@tevm/voltaire/Gwei'
-
-const gwei: Gwei.Type = from(50n)
-const wei = toWei(gwei)
-const ether = toEther(gwei)
-```
-
-WASM loader only included if you import WASM methods. Using pure JS versions excludes WASM from bundle.
-
-<Note title="Bundle Size">
-WASM module compiled with ReleaseSmall (~2-3KB gzipped). Only included when importing from `.wasm.ts` files. Shared across Wei, Gwei, and Ether modules.
-</Note>
 
 ## Benchmarking
 

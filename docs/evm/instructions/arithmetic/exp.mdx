@@ -352,47 +352,6 @@ export function exp(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// EXP opcode (0x0a) - Exponential operation
-pub fn exp(frame: *FrameType) FrameType.EvmError!void {
-    const base = try frame.popStack();
-    const exponent = try frame.popStack();
-
-    // Calculate dynamic gas cost based on exponent byte length
-    const byte_len = blk: {
-        if (exponent == 0) break :blk 0;
-        var temp_exp = exponent;
-        var len: u64 = 0;
-        while (temp_exp > 0) : (temp_exp >>= 8) {
-            len += 1;
-        }
-        break :blk len;
-    };
-
-    // EIP-160: GAS_EXPONENTIATION_PER_BYTE = 50
-    const EXP_BYTE_COST: u64 = 50;
-    const dynamic_gas = EXP_BYTE_COST * byte_len;
-    try frame.consumeGas(GasConstants.GasSlowStep + dynamic_gas);
-
-    // Compute result using exponentiation by squaring
-    var result: u256 = 1;
-    var b = base;
-    var e = exponent;
-
-    while (e > 0) {
-        if (e & 1 == 1) {
-            result = result *% b;  // Wrapping multiplication
-        }
-        b = b *% b;
-        e >>= 1;
-    }
-
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

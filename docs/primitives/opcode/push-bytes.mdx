@@ -8,17 +8,7 @@ description: Get number of immediate bytes for PUSH opcode
 Get number of immediate bytes for PUSH opcode.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.pushBytes(0x5F)  // 0 (PUSH0 - no immediate data)
-Opcode.pushBytes(0x60)  // 1 (PUSH1)
-Opcode.pushBytes(0x61)  // 2 (PUSH2)
-Opcode.pushBytes(0x7F)  // 32 (PUSH32)
-Opcode.pushBytes(0x01)  // undefined (ADD, not a PUSH)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { pushBytes, PUSH1, PUSH32 } from '@tevm/voltaire/Opcode'
@@ -27,14 +17,7 @@ pushBytes(PUSH1)   // 1
 pushBytes(PUSH32)  // 32
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const bytes1 = Opcode.pushBytes(0x60);   // 1 (PUSH1)
-const bytes32 = Opcode.pushBytes(0x7F);  // 32 (PUSH32)
-```
-</Tab>
 </Tabs>
 
 ## Parameters

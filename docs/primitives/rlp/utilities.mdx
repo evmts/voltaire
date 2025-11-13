@@ -73,24 +73,6 @@ const emptyList = Rlp([])
 // => { type: 'list', value: [] }
 ```
 </TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { from } from '@tevm/voltaire/BrandedRlp'
-
-// From bytes
-const bytes = from(new Uint8Array([1, 2, 3]))
-
-// From array
-const list = from([
-  new Uint8Array([1]),
-  new Uint8Array([2])
-])
-
-// Pass through existing data
-const existing = { type: 'bytes', value: new Uint8Array([1]) }
-const same = from(existing)
-```
-</TabItem>
 </Tabs>
 
 ### Behavior
@@ -217,17 +199,6 @@ console.log(rlpData.getEncodedLength())  // 4
 // Pre-allocate buffer
 const size = Rlp.getEncodedLength(data)
 const buffer = new Uint8Array(size)
-```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { getEncodedLength } from '@tevm/voltaire/BrandedRlp'
-
-const bytes = new Uint8Array([1, 2, 3])
-const length = getEncodedLength(bytes)  // 4
-
-const list = [bytes, bytes]
-const listLength = getEncodedLength(list)  // 8
 ```
 </TabItem>
 </Tabs>
@@ -401,28 +372,6 @@ const rlpData = new Rlp([new Uint8Array([1]), new Uint8Array([2])])
 const flat = rlpData.flatten()
 ```
 </TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { flatten } from '@tevm/voltaire/BrandedRlp'
-
-const nested = {
-  type: 'list',
-  value: [
-    { type: 'bytes', value: new Uint8Array([1]) },
-    {
-      type: 'list',
-      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
-    }
-  ]
-}
-
-const flat = flatten(nested)
-// => [
-//   { type: 'bytes', value: Uint8Array([1]) },
-//   { type: 'bytes', value: Uint8Array([2]) }
-// ]
-```
-</TabItem>
 </Tabs>
 
 ### Algorithm
@@ -590,15 +539,6 @@ console.log(Rlp.equals(nested1, nested2))  // true
 const rlp1 = new Rlp(new Uint8Array([1, 2, 3]))
 const rlp2 = new Rlp(new Uint8Array([1, 2, 3]))
 console.log(rlp1.equals(rlp2))  // true
-```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { equals } from '@tevm/voltaire/BrandedRlp'
-
-const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
-const b = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
-console.log(equals(a, b))  // true
 ```
 </TabItem>
 </Tabs>

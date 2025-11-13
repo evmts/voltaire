@@ -3,9 +3,6 @@ title: Uint.equals
 description: Check if two Uint256 values are equal
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.equals(a: BrandedUint, b: BrandedUint): boolean`
 
 Check if two Uint256 values are equal.
@@ -32,39 +29,6 @@ Uint.equals(Uint.ZERO, Uint.from(0n))  // true
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/equals.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/equals.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `equals(a: BrandedUint, b: BrandedUint): boolean`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const equal = Uint.equals(Uint.from(100n), Uint.from(100n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/equals.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/equals.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.eql(a: Uint, b: Uint): bool`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const equal = Uint.eql(Uint.init(100), Uint.init(100));
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 ## See Also
 

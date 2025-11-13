@@ -263,36 +263,7 @@ const isValid = bn254Pairing(input3); // boolean
 
 ## Implementation Details
 
-### Zig Implementation (Development)
-
-- **Location**: `src/crypto/bn254.zig`, `src/crypto/bn254/`
-- **Size**: 1031 lines of pure Zig code
-- **Purpose**: Development, testing, WASM builds
-- **Features**:
-  - Complete field arithmetic (Fp, Fp2, Fp6, Fp12)
-  - Projective coordinates for G1/G2
-  - Optimal ate pairing with Miller loop
-  - EIP-196/197 wrapper functions
-
-**Components**:
-```zig
-// Field elements (Montgomery form)
-pub const FpMont = @import("bn254/FpMont.zig");
-pub const Fp2Mont = @import("bn254/Fp2Mont.zig");
-pub const Fp12Mont = @import("bn254/Fp12Mont.zig");
-
-// Scalar field
-pub const Fr = @import("bn254/Fr.zig").Fr;
-
-// Curve groups
-pub const G1 = @import("bn254/G1.zig");
-pub const G2 = @import("bn254/G2.zig");
-
-// Pairing
-pub const pairing = @import("bn254/pairing.zig").pairing;
-```
-
-### Rust Implementation (Production - Arkworks)
+#### Rust Implementation (Production - Arkworks)
 
 - **Library**: arkworks (ark-bn254, ark-ec, ark-ff)
 - **FFI**: `src/crypto/bn254_arkworks.zig`

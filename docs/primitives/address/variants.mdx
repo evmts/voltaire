@@ -3,8 +3,6 @@ title: Address Variants
 description: Checksummed, Lowercase, and Uppercase branded address types
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-
 # Address Variants
 
 Branded hex string types representing different address formats with compile-time guarantees.
@@ -22,16 +20,10 @@ Each variant is a [branded](/getting-started/branded-types) hex string type (`st
 
 EIP-55 checksummed address format with mixed casing based on keccak256 hash.
 
-<Aside type="tip">
-Effect.ts provides `ChecksumAddress` schema with automatic EIP-55 validation. See Effect Schema tab in examples below.
-</Aside>
-
 ### `Address.Checksummed.from(addr)`
 
 Create checksummed hex string from Address.
 
-<Tabs>
-<TabItem label="Class/Namespace">
 ```typescript
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
@@ -42,22 +34,6 @@ const checksummed = Address.Checksummed.from(addr)
 // Type is branded Checksummed, not BrandedAddress
 typeof checksummed // "string"
 ```
-</TabItem>
-<TabItem label="Effect Schema">
-```typescript
-import { ChecksumAddress } from '@tevm/voltaire/Address/effect'
-
-// Schema validates EIP-55 checksum automatically
-const checksumAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-
-// Access checksummed string
-checksumAddr.checksummed // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Convert to Address
-const addr = checksumAddr.toAddress()
-```
-</TabItem>
-</Tabs>
 
 **Parameters:**
 - `addr: BrandedAddress` - Address to checksum
@@ -175,26 +151,3 @@ Defined in: [primitives/Address/BrandedAddress/UppercaseAddress.js:20](https://g
 | **Lowercase** | All lower | Canonical storage, comparison | No |
 | **Uppercase** | All upper | Specific protocols | No |
 
-## Tree-Shakeable Usage
-
-All variants available as tree-shakeable namespace imports:
-
-```typescript
-import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
-import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
-import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
-import type { BrandedAddress } from '@tevm/voltaire/Address'
-
-const addr: BrandedAddress = /* ... */
-
-const checksummed = ChecksumAddress.from(addr)
-const lowercase = LowercaseAddress.from(addr)
-const uppercase = UppercaseAddress.from(addr)
-
-// Validation
-ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-```
-
-**Tree-shaking benefit:** When avoiding `ChecksumAddress`, keccak256 implementation is excluded from bundle. Lowercase and Uppercase variants have no crypto dependencies.
-
-See [Address](/primitives/address) for details on tree-shakeable API.

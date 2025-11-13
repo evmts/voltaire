@@ -4,7 +4,6 @@ description: Learn hexadecimal encoding for Ethereum data representation
 sidebarTitle: Hex
 ---
 
-
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Hex API](/primitives/hex/index).
 </Info>
@@ -81,67 +80,7 @@ Result: "Hello"
 Voltaire provides multiple constructors for different data types:
 
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { Hex } from '@tevm/voltaire';
-
-// From hex string (validates format)
-const hex1 = Hex("0x1234");
-const hex2 = Hex("0xabcd");
-
-// From bytes
-const hex3 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
-console.log(hex3); // "0x1234"
-
-// From number
-const hex4 = Hex.fromNumber(255);
-console.log(hex4); // "0xff"
-
-// From bigint (with optional padding)
-const hex5 = Hex.fromBigInt(255n, 32);
-console.log(hex5); // "0x00...ff" (32 bytes)
-
-// From string (UTF-8 encoding)
-const hex6 = Hex.fromString("hello");
-console.log(hex6); // "0x68656c6c6f"
-
-// From boolean
-const hex7 = Hex.fromBoolean(true);
-console.log(hex7); // "0x01"
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as Hex from '@tevm/voltaire/Hex';
-
-// From hex string (validates format)
-const hex1 = Hex.from("0x1234");
-
-// From bytes
-const hex2 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
-console.log(hex2); // "0x1234"
-
-// From number
-const hex3 = Hex.fromNumber(255);
-console.log(hex3); // "0xff"
-
-// From bigint (with optional padding)
-const hex4 = Hex.fromBigInt(255n, 32);
-console.log(hex4); // "0x00...ff" (32 bytes)
-
-// From string (UTF-8 encoding)
-const hex5 = Hex.fromString("hello");
-console.log(hex5); // "0x68656c6c6f"
-
-// From boolean
-const hex6 = Hex.fromBoolean(true);
-console.log(hex6); // "0x01"
-```
-
-</Tab>
 </Tabs>
 
 ## Converting from Hex

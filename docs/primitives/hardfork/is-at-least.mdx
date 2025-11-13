@@ -4,63 +4,7 @@ description: Check if hardfork is at least a target version (greater than or equ
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.isAtLeast(target: BrandedHardfork): boolean`
-
-Check if current hardfork is at least the target version (>=). Uses chronological ordering based on hardfork deployment dates.
-
-**Parameters:**
-- `target: BrandedHardfork` - Minimum required hardfork version
-
-**Returns:** `boolean` - True if current >= target chronologically
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, LONDON, SHANGHAI } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("cancun")
-
-fork.isAtLeast(LONDON)    // true - Cancun >= London
-fork.isAtLeast(SHANGHAI)  // true - Cancun >= Shanghai
-fork.isAtLeast(CANCUN)    // true - Cancun >= Cancun (equal)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isAtLeast.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAtLeast.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `isAtLeast(current: BrandedHardfork, target: BrandedHardfork): boolean`
-
-Check if current hardfork is at least the target version (>=). Uses chronological ordering based on hardfork deployment dates.
-
-**Parameters:**
-- `current: BrandedHardfork` - Current hardfork version
-- `target: BrandedHardfork` - Minimum required hardfork version
-
-**Returns:** `boolean` - True if current >= target chronologically
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, LONDON, SHANGHAI } from '@tevm/voltaire'
-
-Hardfork.isAtLeast(CANCUN, LONDON)    // true - Cancun >= London
-Hardfork.isAtLeast(CANCUN, SHANGHAI)  // true - Cancun >= Shanghai
-Hardfork.isAtLeast(LONDON, CANCUN)    // false - London < Cancun
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isAtLeast.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAtLeast.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Chronological Ordering

@@ -3,7 +3,6 @@ title: "Authorization"
 description: "Authorization"
 ---
 
-
 # Authorization
 
 EIP-7702 authorization implementation enabling EOA code delegation.
@@ -27,33 +26,7 @@ Authorizations (EIP-7702) allow Externally Owned Accounts (EOAs) to temporarily 
 ## Quick Start
 
 <Tabs>
-<Tab title="Namespace API (Tree-shakeable)">
-```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
 
-// Create unsigned authorization
-const unsigned = {
-  chainId: 1n,
-  address: contractAddress,  // Delegate to this contract
-  nonce: 0n
-};
-
-// Sign it
-const privateKey = new Uint8Array(32); // Your key
-const auth = Authorization.sign.call(unsigned, privateKey);
-
-// Validate
-Authorization.validate.call(auth);
-
-// Calculate gas cost
-const gas = Authorization.getGasCost.call(auth, true); // true = empty account
-console.log(`Gas required: ${gas}`);
-
-// Verify signer
-const authority = Authorization.verify.call(auth);
-console.log(`Signed by: ${authority}`);
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import {

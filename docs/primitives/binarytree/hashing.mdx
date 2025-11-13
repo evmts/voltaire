@@ -83,15 +83,7 @@ console.log(hash1.some((b, i) => b !== hash2[i])) // true
 console.log(hash2.some((b, i) => b !== hash3[i])) // true
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { init, insert, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
 
-let tree = init()
-tree = insert(tree, key, value)
-const hash = rootHash(tree)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHash.js:16-18](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHash.js#L16-L18)
@@ -145,13 +137,7 @@ const hex2 = BinaryTree.rootHashHex(tree2)
 console.log(hex1 === hex2) // false (different keys/values)
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { rootHashHex } from '@tevm/voltaire/BrandedBinaryTree'
 
-const hex = rootHashHex(tree)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js#L16-L23)
@@ -270,13 +256,7 @@ const leaf2Hash = BinaryTree.hashLeaf({ type: 'leaf', value: value2 })
 const parentHash = BinaryTree.hashInternal(leaf1Hash, leaf2Hash)
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { hashInternal } from '@tevm/voltaire/BrandedBinaryTree'
 
-const hash = hashInternal(left, right)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashInternal.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashInternal.js#L19-L25)
@@ -350,13 +330,7 @@ const stemNode = { type: 'stem', stem, values }
 const hash = BinaryTree.hashStem(stemNode)
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { hashStem } from '@tevm/voltaire/BrandedBinaryTree'
 
-const hash = hashStem(stemNode)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashStem.js:18-28](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashStem.js#L18-L28)
@@ -412,13 +386,7 @@ const leafNode = { type: 'leaf', value }
 const hash = BinaryTree.hashLeaf(leafNode)
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { hashLeaf } from '@tevm/voltaire/BrandedBinaryTree'
 
-const hash = hashLeaf(leafNode)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js:17-19](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js#L17-L19)

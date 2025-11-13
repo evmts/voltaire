@@ -4,69 +4,7 @@ description: Convert Uint256 to ABI-encoded 32-byte value
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.toAbiEncoded(value: BrandedUint): Uint8Array`
-
-Convert Uint256 to ABI-encoded bytes (32 bytes, big-endian).
-
-**Parameters:**
-- `value: BrandedUint` - Uint256 value
-
-**Returns:** `Uint8Array` - ABI-encoded 32 bytes
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const value = Uint.from(255n)
-const encoded = Uint.toAbiEncoded(value)
-// Uint8Array(32) [0, 0, ..., 0, 255]
-
-// Always 32 bytes
-encoded.length  // 32
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/toAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toAbiEncoded.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `toAbiEncoded(value: BrandedUint): Uint8Array`
-
-Convert to ABI encoding.
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const value = Uint.from(255n)
-const encoded = Uint.toAbiEncoded(value)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/toAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toAbiEncoded.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `uint.toAbiEncoded(): [32]u8`
-
-Convert to ABI-encoded bytes.
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const value = Uint.init(255);
-const encoded = value.toAbiEncoded();
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

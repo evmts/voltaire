@@ -4,66 +4,7 @@ description: Left shift Uint256 value by specified bits
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.shiftLeft(value: BrandedUint, bits: number): BrandedUint`
-
-Left shift value by specified number of bits. Wraps on overflow.
-
-**Parameters:**
-- `value: BrandedUint` - Value to shift
-- `bits: number` - Number of bits to shift left
-
-**Returns:** `BrandedUint` - Shifted result (mod 2^256)
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const a = Uint.from(1n)
-Uint.shiftLeft(a, 8)   // 256 (1 << 8)
-
-const b = Uint.from(15n)
-Uint.shiftLeft(b, 4)   // 240 (15 << 4)
-
-// Wraps on overflow
-Uint.shiftLeft(Uint.from(1n), 256)  // 0 (wraps)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/shiftLeft.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftLeft.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `shiftLeft(value: BrandedUint, bits: number): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.shiftLeft(Uint.from(1n), 8)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/shiftLeft.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftLeft.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.shl(value: Uint, bits: u8): Uint`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const result = Uint.shl(Uint.init(1), 8);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

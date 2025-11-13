@@ -332,15 +332,6 @@ export function handler_0x5b_JUMPDEST(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// JUMPDEST opcode (0x5b) - Jump destination marker
-pub fn jumpdest(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.JumpdestGas);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## JUMPDEST Validation

@@ -332,16 +332,6 @@ export function callvalue(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// CALLVALUE opcode (0x34) - Get deposited value in current call
-pub fn callvalue(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(frame.value);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

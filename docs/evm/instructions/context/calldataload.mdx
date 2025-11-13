@@ -274,32 +274,6 @@ export function calldataload(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// CALLDATALOAD opcode (0x35) - Load 32 bytes from calldata
-pub fn calldataload(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(3);
-
-    const offset = try frame.popStack();
-
-    var result: u256 = 0;
-    if (offset <= std.math.maxInt(u32)) {
-        const off: usize = @intCast(offset);
-        for (0..32) |i| {
-            const idx = off + i;
-            const byte: u8 = if (idx < frame.calldata.len)
-                frame.calldata[idx]
-            else
-                0;
-            result = (result << 8) | byte;
-        }
-    }
-
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

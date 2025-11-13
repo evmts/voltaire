@@ -347,21 +347,6 @@ invalid.forEach(ex => {
 })
 ```
 
-## Tree-Shakeable Usage
-
-Validation methods available as tree-shakeable imports:
-
-```typescript
-import { isValid, isValidUrlSafe } from '@tevm/voltaire/BrandedBase64'
-
-const valid = isValid("SGVsbG8=")              // boolean
-const urlSafeValid = isValidUrlSafe("SGVsbG8")  // boolean
-```
-
-**Tree-shaking benefit:** Import only the validation you need. If you only use standard base64, URL-safe validation is excluded from bundle.
-
-See [BrandedBase64](/primitives/base64/branded-base64) for details on tree-shakeable API.
-
 ## Validation Algorithm
 
 Standard base64 validation:

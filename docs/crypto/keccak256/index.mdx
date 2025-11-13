@@ -347,13 +347,7 @@ export function hash(data: Uint8Array): BrandedHash {
 }
 ```
 
-### Zig Implementation
-Zig implementation uses hardware-accelerated assembly via Rust's keccak-asm crate:
-- **x86-64**: Uses vectorized instructions (AVX2/SHA extensions when available)
-- **ARM**: Uses NEON SIMD instructions
-- **Fallback**: Optimized software implementation
-
-### WASM
+#### WASM
 Available via `keccak256.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript

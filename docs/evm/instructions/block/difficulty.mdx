@@ -305,27 +305,6 @@ contract SecureLottery {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// DIFFICULTY/PREVRANDAO opcode (0x44)
-/// Pre-Merge: returns block difficulty
-/// Post-Merge: returns prevrandao value
-pub fn difficulty(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    try frame.consumeGas(GasConstants.GasQuickStep);
-
-    if (evm.hardfork.isAtLeast(.MERGE)) {
-        // Post-merge: Return PREVRANDAO
-        try frame.pushStack(evm.block_context.block_prevrandao);
-    } else {
-        // Pre-merge: Return difficulty
-        try frame.pushStack(evm.block_context.block_difficulty);
-    }
-
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

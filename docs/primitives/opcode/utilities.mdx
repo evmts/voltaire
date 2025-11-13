@@ -404,30 +404,6 @@ function extractPushValues(bytecode: Uint8Array): Map<number, bigint> {
 }
 ```
 
-## Tree-Shakeable Usage
-
-```typescript
-import {
-  info,
-  getName,
-  getGasCost,
-  getStackEffect,
-  pushBytes,
-  dupPosition,
-  disassemble,
-  format
-} from '@tevm/primitives/Opcode'
-
-const metadata = info(opcode)
-const name = getName(opcode)
-const gas = getGasCost(opcode)
-const stackEffect = getStackEffect(opcode)
-const bytes = pushBytes(opcode)
-const pos = dupPosition(opcode)
-const assembly = disassemble(bytecode)
-const line = format(instruction)
-```
-
 ## See Also
 
 - [Constructors](/primitives/opcode/constructors) - Parsing and constants

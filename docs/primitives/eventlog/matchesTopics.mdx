@@ -4,98 +4,7 @@ description: Check if log matches topic filter with null wildcards and OR logic
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.matchesTopics(topics: readonly (BrandedHash | BrandedHash[] | null)[]): boolean`
-
-Check if log topics match filter. `null` entries match any topic, arrays match any of the hashes (OR logic).
-
-**Parameters:**
-- `topics: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter array
-  - `null` - Matches any topic at that position
-  - `BrandedHash` - Matches that specific hash
-  - `BrandedHash[]` - Matches any hash in array (OR logic)
-
-**Returns:** `boolean` - True if all non-null filter topics match
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
-
-const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [
-    TRANSFER_SIG,
-    Hash.fromHex('0x000...from'),
-    userHash,
-  ],
-  data: Hex.from('0x'),
-});
-
-// Match signature, any from, specific to
-const matches1 = log.matchesTopics([
-  TRANSFER_SIG,  // topic0 must match
-  null,          // topic1 matches any
-  userHash,      // topic2 must match
-]);
-console.log(matches1); // true
-
-// Match signature and any of multiple addresses
-const matches2 = log.matchesTopics([
-  TRANSFER_SIG,
-  null,
-  [userHash, anotherHash, thirdHash], // topic2 matches any of these
-]);
-console.log(matches2); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/matchesTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `matchesTopics(log: BrandedEventLog, topics: readonly (BrandedHash | BrandedHash[] | null)[]): boolean`
-
-Check if log topics match filter. `null` entries match any topic, arrays match any of the hashes (OR logic).
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log to check
-- `topics: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter array
-
-**Returns:** `boolean` - True if all non-null filter topics match
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
-
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [TRANSFER_SIG, Hash.fromHex('0x000...from'), userHash],
-  data: Hex.from('0x'),
-});
-
-// Match signature, any from, specific to
-const matches = EventLog.matchesTopics(log, [
-  TRANSFER_SIG,
-  null,
-  userHash,
-]);
-console.log(matches); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/matchesTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
-
-</Tab>
 </Tabs>
 
 ## Filter Semantics
@@ -173,8 +82,8 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
 const userAddress = Address.fromHex('0xa1b2c3d4...');
-const userHash = Hash.from(
-  Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
+const userHash = Hash.fromBytes(
+  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
 );
 
 // All transfers FROM user
@@ -288,7 +197,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog.from({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash],
-  data: Hex.from('0x'),
+  data: new Uint8Array([]),
 });
 
 // Match by first indexed parameter (NOT signature)
@@ -328,7 +237,7 @@ import { EventLog, Hash } from '@tevm/voltaire';
 const log = EventLog.from({
   address: contractAddress,
   topics: [topic0, topic1, topic2, topic3], // 4 topics
-  data: Hex.from('0x'),
+  data: new Uint8Array([]),
 });
 
 // Match only first 2 topics
@@ -344,7 +253,7 @@ import { EventLog } from '@tevm/voltaire';
 const log = EventLog.from({
   address: contractAddress,
   topics: [], // No topics
-  data: Hex.from('0x'),
+  data: new Uint8Array([]),
 });
 
 // Filter with topics fails

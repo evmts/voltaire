@@ -158,28 +158,7 @@ bytes32 hash = keccak256(abi.encodePacked(
 
 ## Implementation Notes
 
-### Zig Implementation
-
-All block context handlers follow this pattern:
-
-```zig
-pub fn opcode_name(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // Check hardfork availability (if introduced post-Frontier)
-    if (evm.hardfork.isBefore(.REQUIRED_FORK)) return error.InvalidOpcode;
-
-    // Consume gas
-    try frame.consumeGas(GasConstants.GasAmount);
-
-    // Push block context value
-    try frame.pushStack(evm.block_context.field_name);
-
-    frame.pc += 1;
-}
-```
-
-### TypeScript Usage
+#### TypeScript Usage
 
 ```typescript
 import { BlockHandlers } from '@tevm/voltaire/evm/block';

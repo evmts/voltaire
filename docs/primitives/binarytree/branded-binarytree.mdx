@@ -46,35 +46,6 @@ Runtime-validated tree structure. Interface brand ensures type safety with minim
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts)
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as BrandedBinaryTree from '@tevm/voltaire/BrandedBinaryTree'
-
-// Namespace usage
-const tree = BrandedBinaryTree.init()
-const tree2 = BrandedBinaryTree.insert(tree, key, value)
-const hash = BrandedBinaryTree.rootHash(tree2)
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { init, insert, get, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
-import type { BinaryTree } from '@tevm/voltaire/BrandedBinaryTree'
-
-const tree: BinaryTree = init()
-const tree2 = insert(tree, key, value)
-const value = get(tree2, key)
-const hash = rootHash(tree2)
-```
-
-**Bundle impact:** Only `init`, `insert`, `get`, and `rootHash` included. Unused methods like `rootHashHex`, `hashStem`, `hashLeaf` excluded from bundle.
-
 ## Available Functions
 
 All BinaryTree functionality available as tree-shakeable functions:

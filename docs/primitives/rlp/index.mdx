@@ -9,7 +9,7 @@ New to RLP? Start with [Fundamentals](/primitives/rlp/fundamentals) for guided e
 
 ## Type Definition
 
-[Branded](/getting-started/branded-types) data structure for RLP-encoded data following the [data-first pattern](/getting-started/tree-shaking).
+[Branded](/getting-started/branded-types) data structure for RLP-encoded data with type-safe encoding and decoding.
 
 ```typescript
 export type BrandedRlp =
@@ -20,45 +20,6 @@ export type BrandedRlp =
 RLP provides deterministic serialization for transactions, blocks, state tries, and network protocols. It encodes only structure (not types), making it space-efficient and fast.
 
 ## Quick Reference
-
-<Note>
-Rlp supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
-<Tabs>
-<Tab title="Class API">
-
-```typescript
-import { Rlp } from '@tevm/voltaire';
-
-// Encode bytes
-const encoded = Rlp.encode(new Uint8Array([1, 2, 3]));
-
-// Decode RLP data
-const decoded = Rlp.decode(encoded);
-
-// Validate encoding
-Rlp.validate(encoded);
-```
-
-</Tab>
-<Tab title="Namespace API">
-
-```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
-
-// Encode bytes
-const encoded = Rlp.encode(new Uint8Array([1, 2, 3]));
-
-// Decode RLP data
-const decoded = Rlp.decode(encoded);
-
-// Validate encoding
-Rlp.validate(encoded);
-```
-
-</Tab>
-</Tabs>
 
 ## API Methods
 

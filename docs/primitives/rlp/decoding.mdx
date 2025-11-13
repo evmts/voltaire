@@ -3,7 +3,6 @@ title: RLP Decoding
 description: Decode RLP-encoded bytes back to data structures
 ---
 
-
 # RLP Decoding
 
 Decode RLP-encoded bytes back to data structures with comprehensive validation and error handling.
@@ -101,26 +100,6 @@ if (result.data.type === 'bytes') {
 } else {
   console.log('List with', result.data.value.length, 'items')
 }
-```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import { decode } from '@tevm/voltaire/BrandedRlp'
-
-const bytes = new Uint8Array([0x83, 1, 2, 3])
-const result = decode(bytes)
-// => {
-//   data: { type: 'bytes', value: Uint8Array([1, 2, 3]) },
-//   remainder: Uint8Array([])
-// }
-
-// Stream mode
-const stream = new Uint8Array([0x01, 0x02])
-const result = decode(stream, true)
-// => {
-//   data: { type: 'bytes', value: Uint8Array([1]) },
-//   remainder: Uint8Array([2])
-// }
 ```
 </TabItem>
 </Tabs>

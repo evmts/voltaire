@@ -53,40 +53,7 @@ console.log(filter.k)       // 3 hash functions
 Defined in: [BrandedBloomFilter/create.js:3-42](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/create.js#L3-L42)
 
 </Tab>
-<Tab title="Zig">
 
-### `BloomFilter.init(allocator: Allocator, m: usize, k: usize) !BloomFilter`
-
-Initialize new empty bloom filter with specified bit count and hash functions.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for bit array
-- `m: usize` - Number of bits in the filter
-- `k: usize` - Number of hash functions
-
-**Returns:** `!BloomFilter` - Empty bloom filter (all bits zero). Caller owns memory.
-
-**Example:**
-
-```zig
-const std = @import("std");
-const BloomFilter = @import("primitives").BloomFilter;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-// Create bloom filter (1000 bits, 3 hash functions)
-var filter = try BloomFilter.init(allocator, 1000, 3);
-defer filter.deinit(allocator);
-
-// Filter size in bytes: (m + 7) / 8
-// 1000 bits = 125 bytes
-```
-
-**Defined in:** [primitives/BloomFilter/bloom_filter.zig:11](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/bloom_filter.zig#L11)
-
-</Tab>
 </Tabs>
 
 ### Choosing Parameters
@@ -166,23 +133,6 @@ BloomFilter.fromHex("0x1234", 2048, 3)
 ```
 
 Defined in: [BrandedBloomFilter/fromHex.js:3-52](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/fromHex.js#L3-L52)
-
-## Tree-Shakeable Usage
-
-All constructors available as tree-shakeable imports:
-
-```typescript
-import { create, fromHex } from '@tevm/voltaire/BrandedBloomFilter'
-import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
-
-// Create new filter
-const filter: BrandedBloomFilter = create(2048, 3)
-
-// Deserialize from hex
-const restored: BrandedBloomFilter = fromHex(hexString, 2048, 3)
-```
-
-See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for details on tree-shakeable API.
 
 ## Usage Examples
 

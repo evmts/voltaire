@@ -106,9 +106,6 @@ All PUSH1-32 instructions cost the same despite different data sizes. Bytecode s
 | PUSH0 | 2 | 1 | Zero constant (Shanghai+) |
 | PUSH1 | 3 | 2 | Small numbers (0-255) |
 
-
-
-
 ## Common Usage
 
 ### 22-Byte Constants
@@ -175,19 +172,6 @@ export function handler_0x75_PUSH22(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// PUSH22 opcode (0x75) - Push 22 bytes onto stack
-pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    const push_size = opcode - 0x5f;
-    try frame.consumeGas(GasConstants.GasFastestStep);
-
-    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
-    try frame.pushStack(value);
-    frame.pc += 1 + push_size;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

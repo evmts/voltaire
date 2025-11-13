@@ -282,23 +282,6 @@ export function origin(
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// ORIGIN opcode (0x32) - Get execution origination address
-pub fn origin(frame: *FrameType, origin_addr: [20]u8) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasQuickStep);
-
-    // Convert 20-byte address to u256
-    var addr_u256: u256 = 0;
-    for (origin_addr) |byte| {
-        addr_u256 = (addr_u256 << 8) | byte;
-    }
-
-    try frame.pushStack(addr_u256);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

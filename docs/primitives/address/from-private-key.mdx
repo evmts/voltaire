@@ -3,191 +3,42 @@ title: Address.fromPrivateKey
 description: Derive address from secp256k1 private key
 ---
 
-<Tabs>
-<Tab title="Class API">
+## Factory API
 
-## `Address.fromPrivateKey(privateKey: Uint8Array): Address`
+For tree-shakeable, crypto-agnostic implementation, use the factory function:
 
-Derives Ethereum address from secp256k1 private key. First derives public key via elliptic curve multiplication, then computes address from public key coordinates.
+```typescript
+import { FromPrivateKey } from '@tevm/voltaire/Address/BrandedAddress'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { derivePublicKey } from '@tevm/voltaire/crypto/Secp256k1'
+import * as PrivateKey from '@tevm/voltaire/primitives/PrivateKey'
 
-**Formula:** `fromPublicKey(derivePublicKey(privateKey))`
+// Create factory instance with both crypto dependencies
+const fromPrivateKey = FromPrivateKey({ keccak256, derivePublicKey })
 
-**Parameters:**
-- `privateKey: Uint8Array` - 32-byte secp256k1 private key
+// Use the factory
+const privateKey = PrivateKey.from('0x...')
+const address = fromPrivateKey(privateKey)
+```
 
-**Returns:** `Address` - Derived address
+**Note:** This method requires TWO crypto dependencies:
+- `keccak256` - For hashing the public key
+- `derivePublicKey` - For deriving public key from private key
 
-**Example:**
+This allows complete control over which crypto implementations to use (native, WASM, or custom).
+
+## Standard API
+
+The standard API automatically injects crypto dependencies:
 
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-// 32-byte secp256k1 private key
-const privateKey = new Uint8Array([
-  0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
-  // ... 24 more bytes
-])
+const privateKey = new Uint8Array(32)
+// ... set private key bytes ...
 
-const addr = Address.fromPrivateKey(privateKey)
-console.log(addr.toHex())
-
-// Works with hex-encoded keys
-import * as Hex from '@tevm/voltaire/Hex'
-const pkHex = "0x1234567890abcdef..."
-const pk = Hex.toBytes(pkHex)
-const addr2 = Address.fromPrivateKey(pk)
+const address = Address.fromPrivateKey(privateKey)
 ```
-
-**Throws:**
-- `InvalidAddressLengthError` - If private key is not exactly 32 bytes
-- `InvalidValueError` - If private key value is invalid (e.g., zero, out of range)
-
-**Defined in:** [primitives/Address/BrandedAddress/fromPrivateKey.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js#L21)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `fromPrivateKey(privateKey: Uint8Array): BrandedAddress`
-
-Derives Ethereum address from secp256k1 private key.
-
-**Parameters:**
-- `privateKey: Uint8Array` - 32-byte secp256k1 private key
-
-**Returns:** `BrandedAddress` - Derived address (20 bytes)
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-const privateKey = new Uint8Array(32) // Your private key
-const addr = Address.fromPrivateKey(privateKey)
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/fromPrivateKey.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js#L21)
-
-</Tab>
-<Tab title="Effect.ts">
-
-## `Address.fromPrivateKey(value: Uint8Array): Address`
-
-Derives Effect.ts Address Schema instance from secp256k1 private key. First derives public key via elliptic curve multiplication, then computes address.
-
-**Parameters:**
-- `value: Uint8Array` - 32-byte secp256k1 private key
-
-**Returns:** `Address` - Effect Schema instance wrapping BrandedAddress
-
-**Example:**
-
-```typescript
-import { Address } from '@tevm/voltaire/Address/effect'
-
-// From private key
-const privateKey = new Uint8Array(32) // Your private key
-const addr = Address.fromPrivateKey(privateKey)
-
-// Access underlying BrandedAddress
-const branded = addr.address
-
-// Use Schema methods
-const hex = addr.toHex()
-const checksummed = addr.toChecksummed()
-const isZero = addr.isZero()
-
-// Schema validation
-import { Schema } from 'effect'
-const decoded = Schema.decodeUnknownSync(Address)(addr)
-```
-
-**Schema Integration:**
-
-The Effect.ts Address class extends `Schema.Class` and provides full Schema validation:
-
-```typescript
-import { Address } from '@tevm/voltaire/Address/effect'
-import { Schema } from 'effect'
-
-// Define wallet structure with derived address
-class Wallet extends Schema.Class<Wallet>("Wallet")({
-  address: Schema.instanceOf(Address),
-  label: Schema.String
-}) {}
-
-// Derive address from private key with validation
-const privateKey = new Uint8Array(32) // Secure random key
-const addr = Address.fromPrivateKey(privateKey)
-
-const wallet = new Wallet({
-  address: addr,
-  label: "Main wallet"
-})
-```
-
-**Pipeline Usage:**
-
-Combine with Effect pipelines for key derivation workflows:
-
-```typescript
-import { Address } from '@tevm/voltaire/Address/effect'
-import { Effect, pipe } from 'effect'
-
-// Key derivation pipeline
-const deriveWalletAddress = (privateKey: Uint8Array) =>
-  pipe(
-    Effect.sync(() => Address.fromPrivateKey(privateKey)),
-    Effect.map(addr => ({
-      address: addr.toChecksummed(),
-      isDeployed: !addr.isZero()
-    }))
-  )
-```
-
-**Throws:**
-- `InvalidAddressLengthError` - If private key is not exactly 32 bytes
-- `InvalidValueError` - If private key value is invalid (e.g., zero, out of range)
-
-**Defined in:** [primitives/Address/effect.ts:84](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L84)
-
-</Tab>
-<Tab title="Zig">
-
-## `Address.fromPrivateKey(allocator: Allocator, privateKey: [32]u8): !Address`
-
-Derive address from secp256k1 private key.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for intermediate calculations
-- `privateKey: [32]u8` - 32-byte private key
-
-**Returns:** `Address` - Derived address
-
-**Errors:**
-- `InvalidPrivateKey` - Private key is invalid (zero or >= curve order)
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-const Secp256k1 = @import("crypto").Secp256k1;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-// Private key (keep secure!)
-const private_key: [32]u8 = // ... your key
-
-// Derive address
-const addr = try Address.fromPrivateKey(allocator, private_key);
-```
-
-**Defined in:** [primitives/Address/address.zig:85](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L85)
-
-</Tab>
-<Tab title="C">
 
 ## C FFI
 
@@ -224,9 +75,6 @@ uint8_t public_key[64];  // x, y coordinates
 **Alternative:** Use Zig or TypeScript APIs for key derivation, then pass addresses to C code as hex strings or byte arrays.
 
 **Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
-
-</Tab>
-</Tabs>
 
 ## Algorithm
 

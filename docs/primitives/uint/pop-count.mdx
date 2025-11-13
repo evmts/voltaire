@@ -4,63 +4,7 @@ description: Count number of set bits in Uint256 value
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.popCount(value: BrandedUint): number`
-
-Count number of set (1) bits in value.
-
-**Parameters:**
-- `value: BrandedUint` - Value to analyze
-
-**Returns:** `number` - Number of set bits (0-256)
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-Uint.popCount(Uint.ZERO)        // 0
-Uint.popCount(Uint.from(1n))    // 1
-Uint.popCount(Uint.from(3n))    // 2 (0b11)
-Uint.popCount(Uint.from(15n))   // 4 (0b1111)
-Uint.popCount(Uint.MAX)         // 256 (all bits set)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/popCount.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/popCount.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `popCount(value: BrandedUint): number`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const count = Uint.popCount(Uint.from(15n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/popCount.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/popCount.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `uint.popCount(): u9`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const value = Uint.init(15);
-const count = value.popCount();  // 4
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

@@ -3,108 +3,6 @@ title: Rlp.encodeBytes
 description: Encode byte array according to RLP string rules
 ---
 
-<Tabs>
-<Tab title="Class API">
-
-## `Rlp.encodeBytes(bytes: Uint8Array): Uint8Array`
-
-Encodes a byte array according to RLP string rules. Use when you know the input is bytes (not a list).
-
-**Parameters:**
-- `bytes: Uint8Array` - Byte array to encode
-
-**Returns:** `Uint8Array` - RLP-encoded bytes
-
-**Example:**
-
-```typescript
-import { Rlp } from '@tevm/voltaire'
-
-// Single byte < 0x80 (no prefix)
-const single = new Uint8Array([0x7f])
-const encoded = Rlp.encodeBytes(single)
-// => Uint8Array([0x7f])
-
-// Short string (0-55 bytes)
-const short = new Uint8Array([1, 2, 3])
-const encoded = Rlp.encodeBytes(short)
-// => Uint8Array([0x83, 1, 2, 3])
-// 0x83 = 0x80 + 3
-
-// Empty string
-const empty = new Uint8Array([])
-const encoded = Rlp.encodeBytes(empty)
-// => Uint8Array([0x80])
-
-// Long string (56+ bytes)
-const long = new Uint8Array(60).fill(0x42)
-const encoded = Rlp.encodeBytes(long)
-// => Uint8Array([0xb8, 60, ...long])
-// 0xb8 = 0xb7 + 1 (length needs 1 byte)
-```
-
-**Defined in:** [primitives/Rlp/BrandedRlp/encodeBytes.js:32](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `encodeBytes(bytes: Uint8Array): Uint8Array`
-
-Encodes a byte array according to RLP string rules.
-
-**Parameters:**
-- `bytes: Uint8Array` - Byte array to encode
-
-**Returns:** `Uint8Array` - RLP-encoded bytes
-
-**Example:**
-
-```typescript
-import { encodeBytes } from '@tevm/voltaire/BrandedRlp'
-
-const bytes = new Uint8Array([1, 2, 3])
-const encoded = encodeBytes(bytes)
-// => Uint8Array([0x83, 1, 2, 3])
-```
-
-**Defined in:** [primitives/Rlp/BrandedRlp/encodeBytes.js:32](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32)
-
-</Tab>
-<Tab title="Zig">
-
-## `rlp.encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8`
-
-Encode byte slice according to RLP string rules.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for encoded bytes
-- `bytes: []const u8` - Byte slice to encode
-
-**Returns:** `[]u8` - RLP-encoded bytes (caller owns memory)
-
-**Example:**
-
-```zig
-const std = @import("std");
-const rlp = @import("primitives").rlp;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-const bytes = [_]u8{ 1, 2, 3 };
-const encoded = try rlp.encodeBytes(allocator, &bytes);
-defer allocator.free(encoded);
-// encoded = [0x83, 1, 2, 3]
-```
-
-**Memory:** Caller must free returned slice.
-
-**Defined in:** [primitives/rlp/encode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/encode.zig)
-
-</Tab>
-</Tabs>
-
 ## String Encoding Rules
 
 RLP string encoding has three cases based on byte length:
@@ -278,21 +176,16 @@ const tx = [
 
 ### When to Use encodeBytes
 
-Use `encodeBytes` instead of generic `encode` when:
-
-1. **Known type** - You know the input is bytes (not a list)
-2. **Type-specific** - Better tree-shaking (smaller bundle)
-3. **Performance** - Skips type dispatch overhead
+Use `encodeBytes` instead of generic `encode` when you know the input is bytes (not a list), to skip type dispatch overhead.
 
 ```typescript
-import { encodeBytes } from '@tevm/voltaire/BrandedRlp'
+import { Rlp } from '@tevm/voltaire'
 
-// More efficient
-const encoded = encodeBytes(bytes)
+// Direct encoding
+const encoded = Rlp.encodeBytes(bytes)
 
-// vs generic (has dispatch overhead)
-import { encode } from '@tevm/voltaire/BrandedRlp'
-const encoded = encode(bytes)
+// vs generic with dispatch overhead
+const encoded = Rlp.encode(bytes)
 ```
 
 ### Pre-calculate Sizes

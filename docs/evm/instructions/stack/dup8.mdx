@@ -225,21 +225,6 @@ export function handler_0x87_DUP8(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// DUP8 opcode (0x87) - Duplicate 8th stack item
-pub fn dup(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const n = opcode - 0x7f;
-    if (frame.stack.items.len < n) {
-        return error.StackUnderflow;
-    }
-    const value = frame.stack.items[frame.stack.items.len - n];
-    try frame.pushStack(value);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

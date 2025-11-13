@@ -296,19 +296,6 @@ export function mod(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// MOD opcode (0x06) - Modulo operation (mod by zero returns 0)
-pub fn mod(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastStep);
-    const top = try frame.popStack();
-    const second = try frame.popStack();
-    const result = if (second == 0) 0 else top % second;
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

@@ -328,30 +328,6 @@ export function handler_0x5f_PUSH0(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// PUSH0-PUSH32 opcodes (0x5f-0x7f) - Push immediate value onto stack
-/// PUSH0 (0x5f) costs 2 gas, PUSH1-PUSH32 (0x60-0x7f) cost 3 gas
-pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    const push_size = opcode - 0x5f;
-
-    // EIP-3855: PUSH0 was introduced in Shanghai hardfork
-    if (push_size == 0) {
-        const evm = frame.getEvm();
-        if (evm.hardfork.isBefore(.SHANGHAI)) {
-            return error.InvalidOpcode;
-        }
-        try frame.consumeGas(GasConstants.GasQuickStep);
-    } else {
-        try frame.consumeGas(GasConstants.GasFastestStep);
-    }
-
-    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
-    try frame.pushStack(value);
-    frame.pc += 1 + push_size;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

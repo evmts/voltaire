@@ -304,27 +304,7 @@ export function hash(
 }
 ```
 
-### Zig Implementation
-Custom BLAKE2b implementation in `src/crypto/blake2.zig`:
-- Follows RFC 7693 specification
-- Optimized for 64-bit platforms (uses u64 words)
-- Implements mixing function (G function) and compression rounds
-- **UNAUDITED**: Custom cryptographic code without security audit
-- Constant-time operations for side-channel resistance
-- Supports variable output length (1-64 bytes)
-
-Key components:
-- `BLAKE2B_IV`: Initialization vectors (8 × u64)
-- `BLAKE2B_SIGMA`: Message schedule permutations (12 rounds)
-- `unauditedBlake2bG`: Mixing function
-- `unauditedBlake2bRound`: Compression round
-- `unauditedBlake2bCompress`: Full compression function
-
-<Warning title="Unaudited Crypto Warning">
-The Zig BLAKE2b implementation is custom cryptographic code that has NOT been professionally audited. While it follows RFC 7693, it may contain implementation bugs. Use in production at your own risk. The @noble/hashes TypeScript implementation is well-tested and recommended for production use.
-</Warning>
-
-### WASM
+#### WASM
 Available via `Blake2.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript
@@ -523,18 +503,7 @@ export function hash(
 }
 ```
 
-### Zig Implementation
-Custom Blake2b implementation in `src/crypto/blake2.zig`:
-- Follows RFC 7693 specification
-- Optimized for 64-bit platforms
-- **UNAUDITED**: Custom crypto code without security audit
-- Variable output length (1-64 bytes)
-
-<Warning title="Unaudited Warning">
-The Zig Blake2b implementation is custom cryptographic code that has NOT been professionally audited. The @noble/hashes TypeScript implementation is well-tested and recommended for production use.
-</Warning>
-
-## Use Cases
+### Use Cases
 
 ### Zcash
 

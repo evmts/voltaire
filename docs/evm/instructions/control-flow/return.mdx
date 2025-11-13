@@ -477,46 +477,6 @@ function wordAlignedSize(bytes: number): number {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// RETURN opcode (0xf3) - Halt execution and return output data
-pub fn ret(frame: *FrameType) FrameType.EvmError!void {
-    const offset = try frame.popStack();
-    const length = try frame.popStack();
-
-    if (length > 0) {
-        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
-        const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
-
-        // Check overflow
-        const end_offset = off +% len;
-        if (end_offset < off) return error.OutOfBounds;
-
-        // Charge memory expansion
-        const end_bytes = @as(u64, off) + @as(u64, len);
-        const mem_cost = frame.memoryExpansionCost(end_bytes);
-        try frame.consumeGas(mem_cost);
-        const aligned_size = wordAlignedSize(end_bytes);
-        if (aligned_size > frame.memory_size) frame.memory_size = aligned_size;
-
-        frame.output = try frame.allocator.alloc(u8, len);
-        var idx: u32 = 0;
-        while (idx < len) : (idx += 1) {
-            const addr = try add_u32(off, idx);
-            frame.output[idx] = frame.readMemory(addr);
-        }
-    }
-
-    frame.stopped = true;
-    return;
-}
-
-inline fn wordAlignedSize(bytes: u64) u32 {
-    const words = (bytes + 31) / 32;
-    return @intCast(words * 32);
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

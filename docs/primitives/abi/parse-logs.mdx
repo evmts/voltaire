@@ -4,67 +4,7 @@ description: Parse multiple event logs using full ABI
 ---
 
 <Tabs>
-<Tab title="Namespace API">
 
-## `parseLogs(abi: Abi, logs: Log[]): DecodedLog[]`
-
-Parse an array of logs using the full contract ABI, automatically matching events by selector.
-
-**Parameters:**
-- `abi: Abi` - Full contract ABI with event definitions
-- `logs: Log[]` - Array of raw logs from blockchain
-
-**Returns:** `DecodedLog[]` - Array of decoded logs with event data
-
-**Example:**
-
-```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
-
-const abi = [
-  {
-    type: "event",
-    name: "Transfer",
-    inputs: [
-      { type: "address", name: "from", indexed: true },
-      { type: "address", name: "to", indexed: true },
-      { type: "uint256", name: "value" }
-    ]
-  },
-  {
-    type: "event",
-    name: "Approval",
-    inputs: [
-      { type: "address", name: "owner", indexed: true },
-      { type: "address", name: "spender", indexed: true },
-      { type: "uint256", name: "value" }
-    ]
-  }
-]
-
-const logs = await provider.getLogs({
-  address: tokenAddress,
-  fromBlock: 'latest'
-})
-
-const decoded = BrandedAbi.parseLogs(abi, logs)
-
-for (const log of decoded) {
-  console.log(`Event: ${log.eventName}`)
-  console.log("Args:", log.args)
-}
-```
-
-**Defined in:** [primitives/Abi/BrandedAbi/parseLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/parseLogs.js)
-
-</Tab>
-<Tab title="Zig">
-
-## Zig implementation planned
-
-Log parsing in Zig is planned for a future release. Use TypeScript API for now.
-
-</Tab>
 </Tabs>
 
 ## Usage Examples

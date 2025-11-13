@@ -4,7 +4,6 @@ description: Learn EIP-2930 access lists, gas mechanics, and when to use pre-dec
 sidebarTitle: AccessList
 ---
 
-
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [AccessList API](/primitives/accesslist/index).
 </Info>
@@ -82,67 +81,7 @@ This means access lists only save 100 gas per item on the **first access**. They
 ### Creating an Access List
 
 <Tabs>
-<Tab title="Class API">
-```typescript
-import { AccessList, Address, Hash } from '@tevm/voltaire';
 
-// Start with empty list
-let list = AccessList.create();
-
-// Add a contract address
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-list = list.withAddress(token);
-
-// Add storage keys for that address
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
-const allowanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000004');
-
-list = list.withStorageKey(token, balanceSlot);
-list = list.withStorageKey(token, allowanceSlot);
-
-console.log(list);
-// [
-//   {
-//     address: Uint8Array(20) [...],
-//     storageKeys: [
-//       Uint8Array(32) [...],
-//       Uint8Array(32) [...]
-//     ]
-//   }
-// ]
-```
-</Tab>
-<Tab title="Namespace API">
-```typescript
-import * as AccessList from '@tevm/voltaire/AccessList';
-import { Address, Hash } from '@tevm/voltaire';
-
-// Start with empty list
-let list = AccessList.create();
-
-// Add a contract address
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-list = AccessList.withAddress(list, token);
-
-// Add storage keys for that address
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
-const allowanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000004');
-
-list = AccessList.withStorageKey(list, token, balanceSlot);
-list = AccessList.withStorageKey(list, token, allowanceSlot);
-
-console.log(list);
-// [
-//   {
-//     address: Uint8Array(20) [...],
-//     storageKeys: [
-//       Uint8Array(32) [...],
-//       Uint8Array(32) [...]
-//     ]
-//   }
-// ]
-```
-</Tab>
 </Tabs>
 
 ### Adding Multiple Addresses

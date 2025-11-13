@@ -302,17 +302,6 @@ contract TimingAware {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// TIMESTAMP opcode (0x42) - Get block timestamp
-pub fn timestamp(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(evm.block_context.block_timestamp);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

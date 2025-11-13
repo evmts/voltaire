@@ -311,25 +311,6 @@ contract GasAware {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// SELFBALANCE opcode (0x47) - Get balance of currently executing account
-/// (EIP-1884, Istanbul+)
-pub fn selfbalance(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // EIP-1884: SELFBALANCE was introduced in Istanbul hardfork
-    if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasFastStep);
-
-    const balance = evm.get_balance(frame.address);
-    try frame.pushStack(balance);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

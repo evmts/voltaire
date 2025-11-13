@@ -4,66 +4,7 @@ description: Get all hardfork names in chronological order
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `Hardfork.allNames(): string[]`
-
-Get all hardfork names in chronological order (oldest to newest).
-
-**Returns:** `string[]` - Array of hardfork names (lowercase)
-
-**Example:**
-
-```typescript
-import { Hardfork } from '@tevm/voltaire'
-
-const names = Hardfork.allNames()
-// [
-//   "frontier", "homestead", "dao", "tangerinewhistle",
-//   "spuriousdragon", "byzantium", "constantinople",
-//   "petersburg", "istanbul", "muirglacier", "berlin",
-//   "london", "arrowglacier", "grayglacier", "merge",
-//   "shanghai", "cancun", "prague", "osaka"
-// ]
-
-console.log(`Total hardforks: ${names.length}`)  // 19
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/allNames.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allNames.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `allNames(): string[]`
-
-Get all hardfork names in chronological order (oldest to newest).
-
-**Returns:** `string[]` - Array of hardfork names (lowercase)
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-
-const names = Hardfork.allNames()
-// [
-//   "frontier", "homestead", "dao", ...
-// ]
-
-// Iterate over all hardforks
-names.forEach(name => {
-  console.log(name)
-})
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/allNames.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allNames.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Chronological Order

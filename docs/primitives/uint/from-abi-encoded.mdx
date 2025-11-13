@@ -3,9 +3,6 @@ title: Uint.fromAbiEncoded
 description: Create Uint256 from ABI-encoded 32-byte value
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.fromAbiEncoded(bytes: Uint8Array): BrandedUint`
 
 Create Uint256 from ABI-encoded bytes. Requires exactly 32 bytes.
@@ -35,49 +32,6 @@ Uint.fromAbiEncoded(tooLarge)  // Error: must be exactly 32 bytes
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromAbiEncoded.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `fromAbiEncoded(bytes: Uint8Array): BrandedUint`
-
-Create Uint256 from ABI-encoded bytes.
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const encoded = new Uint8Array(32)
-encoded[31] = 0xff
-
-const value = Uint.fromAbiEncoded(encoded)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromAbiEncoded.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.fromAbiEncoded(bytes: *const [32]u8): Uint`
-
-Create from ABI-encoded bytes (exactly 32 bytes).
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-var encoded: [32]u8 = [_]u8{0} ** 32;
-encoded[31] = 0xff;
-
-const value = Uint.fromAbiEncoded(&encoded);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 ## ABI Encoding Format
 

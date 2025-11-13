@@ -8,20 +8,7 @@ Runtime type guard that checks if a value is a valid `BrandedStorageKey`.
 ## Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function is(value: unknown): value is BrandedStorageKey
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn is(value: anytype) bool
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -37,34 +24,7 @@ pub fn is(value: anytype) bool
 ### Basic Type Guard
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-
-const key = State.StorageKey(contractAddr, 0n);
-
-if (State.StorageKey.is(key)) {
-  // TypeScript knows key is BrandedStorageKey
-  console.log(`Address: ${Address.toHex(key.address)}`);
-  console.log(`Slot: ${key.slot}`);
-}
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-
-const key = State.StorageKey{ .address = contract_addr, .slot = 0 };
-
-if (State.is(key)) {
-  std.debug.print("Valid storage key\n", .{});
-}
-```
-
-</Tab>
 </Tabs>
 
 ### Runtime Validation

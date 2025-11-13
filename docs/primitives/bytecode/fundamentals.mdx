@@ -4,7 +4,6 @@ description: Learn EVM bytecode structure, parsing, and analysis
 sidebarTitle: Bytecode
 ---
 
-
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Bytecode API](/primitives/bytecode/index).
 </Info>
@@ -35,23 +34,7 @@ console.log(instructions);
 // Voltaire correctly identifies 0x5b as data, not JUMPDEST
 ```
 </Tab>
-<Tab title="Zig (Correct)">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-// Bytecode: PUSH1 0x5b (0x5b is data, not JUMPDEST opcode)
-const bc = try Bytecode.fromHex(allocator, "0x605b");
-defer bc.deinit(allocator);
-
-const instructions = try bc.parseInstructions(allocator);
-defer allocator.free(instructions);
-
-// instructions[0].opcode == 0x60 (PUSH1)
-// instructions[0].push_data == Uint8Array([0x5b])
-
-// Voltaire correctly identifies 0x5b as data, not JUMPDEST
-```
-</Tab>
 <Tab title="Naive Parsing ❌">
 ```typescript
 // WRONG: Treating every byte as an opcode
@@ -86,20 +69,7 @@ console.log(analysis.jumpDestinations);   // Set<number> of valid JUMPDEST posit
 console.log(analysis.instructions.length); // 3 instructions
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const bc = try Bytecode.fromHex(allocator, "0x6001600201");
-defer bc.deinit(allocator);
-
-const analysis = try bc.analyze(allocator);
-defer analysis.deinit(allocator);
-
-std.debug.print("Valid: {}\n", .{analysis.valid});
-std.debug.print("Instructions: {}\n", .{analysis.instructions.len});
-```
-</Tab>
 </Tabs>
 
 ### What `analyze()` Returns
@@ -139,24 +109,7 @@ console.log(code.isValidJumpDest(5));  // true  (JUMPDEST at position 5)
 console.log(code.isValidJumpDest(2));  // false (PUSH1 data, not JUMPDEST)
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const bc = try Bytecode.fromHex(allocator, "0x5b6001565b60025600"); // Two JUMPDESTs
-defer bc.deinit(allocator);
-
-// Find all valid jump destinations
-const jump_dests = try bc.analyzeJumpDestinations(allocator);
-defer allocator.free(jump_dests);
-// jump_dests contains { 0, 5 }
-
-// Check if specific position is valid jump target
-const valid0 = bc.isValidJumpDest(0);  // true  (JUMPDEST at position 0)
-const valid5 = bc.isValidJumpDest(5);  // true  (JUMPDEST at position 5)
-const valid2 = bc.isValidJumpDest(2);  // false (PUSH1 data, not JUMPDEST)
-```
-</Tab>
 </Tabs>
 
 ## Disassembly
@@ -179,24 +132,7 @@ console.log(disassembly);
 // ]
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const bc = try Bytecode.fromHex(allocator, "0x6001600201");
-defer bc.deinit(allocator);
-
-const disassembly = try bc.formatInstructions(allocator);
-defer allocator.free(disassembly);
-
-for (disassembly) |instr| {
-  std.debug.print("{s}\n", .{instr});
-}
-// PUSH1 0x01
-// PUSH1 0x02
-// ADD
-```
-</Tab>
 </Tabs>
 
 ## Complete Example: ADD Operation
@@ -233,40 +169,7 @@ console.log(`Instructions: ${analysis.instructions.length}`); // Instructions: 9
 console.log(`Size: ${code.size()} bytes`);         // Size: 13 bytes
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-// Deployment + runtime bytecode
-const bc = try Bytecode.fromHex(allocator, "0x6005600301600052602060006000f3");
-defer bc.deinit(allocator);
-
-// Disassemble to understand structure
-const disassembly = try bc.formatInstructions(allocator);
-defer allocator.free(disassembly);
-
-for (disassembly) |instr| {
-  std.debug.print("{s}\n", .{instr});
-}
-// PUSH1 0x05  // Push 5 onto stack
-// PUSH1 0x03  // Push 3 onto stack
-// ADD         // Add top two values (5 + 3 = 8)
-// PUSH1 0x00  // Push memory offset 0
-// MSTORE      // Store 8 at memory[0]
-// PUSH1 0x20  // Push 32 (return size in bytes)
-// PUSH1 0x00  // Push 0 (memory offset to return)
-// PUSH1 0x00  // Push 0 (unused in RETURN context)
-// RETURN      // Return 32 bytes from memory[0]
-
-// Analyze structure
-const analysis = try bc.analyze(allocator);
-defer analysis.deinit(allocator);
-
-std.debug.print("Valid: {}\n", .{analysis.valid});              // Valid: true
-std.debug.print("Instructions: {}\n", .{analysis.instructions.len}); // Instructions: 9
-std.debug.print("Size: {} bytes\n", .{bc.size()});              // Size: 13 bytes
-```
-</Tab>
 </Tabs>
 
 ### Execution Flow
@@ -312,26 +215,7 @@ instructions.forEach(inst => {
 });
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const bc = try Bytecode.fromHex(allocator, "0x6005600301");
-defer bc.deinit(allocator);
-
-const instructions = try bc.parseInstructions(allocator);
-defer allocator.free(instructions);
-
-// Access parsed instructions
-for (instructions) |inst| {
-  std.debug.print("Opcode: 0x{x:0>2} at position {}\n", .{ inst.opcode, inst.position });
-
-  if (inst.push_data) |push_data| {
-    std.debug.print("  PUSH data: 0x{x}\n", .{push_data[0]});
-  }
-}
-```
-</Tab>
 </Tabs>
 
 ## Metadata Detection
@@ -356,26 +240,7 @@ if (deployedCode.hasMetadata()) {
 }
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const deployed_code = try Bytecode.fromHex(allocator, "0x608060...");
-defer deployed_code.deinit(allocator);
-
-// Check for metadata
-if (deployed_code.hasMetadata()) {
-  std.debug.print("Contract includes compiler metadata\n", .{});
-
-  // Strip metadata for comparison
-  const clean_code = try deployed_code.stripMetadata(allocator);
-  defer clean_code.deinit(allocator);
-
-  std.debug.print("Original: {} bytes\n", .{deployed_code.size()});
-  std.debug.print("Stripped: {} bytes\n", .{clean_code.size()});
-}
-```
-</Tab>
 </Tabs>
 
 See [`hasMetadata()`](/primitives/bytecode/hasMetadata) and [`stripMetadata()`](/primitives/bytecode/stripMetadata).
@@ -398,21 +263,7 @@ console.log(`Deployment: ${deploymentCode.size()} bytes`);
 console.log(`Runtime: ${runtimeCode.size()} bytes`);
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const deployment_code = try Bytecode.fromHex(allocator, "0x608060...");
-defer deployment_code.deinit(allocator);
-
-// Extract runtime bytecode (the code stored on-chain)
-const runtime_code = try deployment_code.extractRuntime(allocator);
-defer runtime_code.deinit(allocator);
-
-std.debug.print("Deployment: {} bytes\n", .{deployment_code.size()});
-std.debug.print("Runtime: {} bytes\n", .{runtime_code.size()});
-```
-</Tab>
 </Tabs>
 
 See [`extractRuntime()`](/primitives/bytecode/extractRuntime).
@@ -469,22 +320,7 @@ if (validation.valid) {
 }
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Bytecode = @import("bytecode.zig");
 
-const bc = try Bytecode.fromHex(allocator, "0x6001600201");
-defer bc.deinit(allocator);
-
-const validation = try bc.validate();
-
-if (validation.valid) {
-  std.debug.print("Bytecode is structurally valid\n", .{});
-} else {
-  std.debug.print("Invalid bytecode: {s}\n", .{validation.error});
-}
-```
-</Tab>
 </Tabs>
 
 ## Resources

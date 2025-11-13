@@ -8,24 +8,7 @@ description: Check if byte value is valid EVM opcode
 Check if byte value is a valid EVM opcode.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.isValid(0x00)  // true (STOP)
-Opcode.isValid(0x01)  // true (ADD)
-Opcode.isValid(0x60)  // true (PUSH1)
-Opcode.isValid(0xFF)  // true (SELFDESTRUCT)
-
-// Invalid opcodes
-Opcode.isValid(0x0C)  // false (undefined between SIGNEXTEND and LT)
-Opcode.isValid(0x0D)  // false
-Opcode.isValid(0x0E)  // false
-Opcode.isValid(0x0F)  // false
-Opcode.isValid(0x21)  // false (undefined after KECCAK256)
-Opcode.isValid(0x4B)  // false (undefined after BLOBBASEFEE)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { isValid } from '@tevm/voltaire/Opcode'
@@ -34,21 +17,7 @@ const valid = isValid(0x60)    // true (PUSH1)
 const invalid = isValid(0x0C)  // false
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() void {
-    const valid = Opcode.isValid(0x60);     // true (PUSH1)
-    const invalid = Opcode.isValid(0x0C);   // false
-
-    std.debug.print("0x60 valid: {}\n", .{valid});
-    std.debug.print("0x0C valid: {}\n", .{invalid});
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

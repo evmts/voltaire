@@ -8,20 +8,7 @@ Deserializes string format to `BrandedStorageKey`. Inverse of `toString()`.
 ## Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function fromString(str: string): BrandedStorageKey
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn fromString(str: []const u8) !StorageKey
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -46,32 +33,7 @@ pub fn fromString(str: []const u8) !StorageKey
 ### Basic Usage
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-
-const keyStr = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0";
-const key = State.StorageKey.fromString(keyStr);
-
-console.log(Address.toHex(key.address)); // "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-console.log(key.slot);                    // 0n
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-
-const key_str = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0";
-const key = try State.fromString(key_str);
-
-std.debug.print("Address: 0x{x}\n", .{key.address});
-std.debug.print("Slot: {}\n", .{key.slot});
-```
-
-</Tab>
 </Tabs>
 
 ### Various Formats

@@ -4,65 +4,7 @@ description: Check if hardfork is post-Merge (Proof of Stake consensus)
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.isPostMerge(): boolean`
-
-Check if hardfork is post-Merge (uses Proof of Stake consensus). Active since Merge.
-
-**Returns:** `boolean` - True if hardfork uses Proof of Stake
-
-**Example:**
-
-```typescript
-import { Hardfork, MERGE, LONDON, SHANGHAI, CANCUN } from '@tevm/voltaire'
-
-const merge = Hardfork.fromString("merge")
-
-merge.isPostMerge()     // true - Merge transitioned to PoS
-LONDON.isPostMerge()    // false - London used PoW
-SHANGHAI.isPostMerge()  // true - all post-Merge hardforks
-CANCUN.isPostMerge()    // true
-```
-
-**Convenience alias:** `fork.isPoS()` - Same functionality, shorter name
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isPostMerge.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isPostMerge.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `isPostMerge(fork: BrandedHardfork): boolean`
-
-Check if hardfork is post-Merge (uses Proof of Stake consensus). Active since Merge.
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to check
-
-**Returns:** `boolean` - True if hardfork uses Proof of Stake
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { MERGE, LONDON, SHANGHAI } from '@tevm/voltaire'
-
-Hardfork.isPostMerge(MERGE)     // true
-Hardfork.isPostMerge(LONDON)    // false
-Hardfork.isPostMerge(SHANGHAI)  // true
-
-// Convenience alias
-Hardfork.isPoS(MERGE)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isPostMerge.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isPostMerge.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## The Merge

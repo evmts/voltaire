@@ -304,27 +304,6 @@ export function sdiv(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SDIV opcode (0x05) - Signed integer division
-pub fn sdiv(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastStep);
-    const top = try frame.popStack();
-    const second = try frame.popStack();
-    const top_signed = @as(i256, @bitCast(top));
-    const second_signed = @as(i256, @bitCast(second));
-    const MIN_SIGNED = @as(u256, 1) << 255;
-    const result = if (second == 0)
-        0
-    else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
-        MIN_SIGNED
-    else
-        @as(u256, @bitCast(@divTrunc(top_signed, second_signed)));
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

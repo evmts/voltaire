@@ -330,19 +330,6 @@ function isUtf8Continuation(bytes32 data, uint256 byteIndex) pure returns (bool)
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// BYTE opcode (0x1a) - Extract byte from word
-pub fn byte(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const i = try frame.popStack();
-    const x = try frame.popStack();
-    const result = if (i >= 32) 0 else (x >> @intCast(8 * (31 - i))) & 0xff;
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

@@ -52,43 +52,7 @@ try {
 Defined in: [primitives/Base64/BrandedBase64/decode.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decode.js)
 
 </Tab>
-<Tab title="Zig">
 
-### `base64.decode(allocator: Allocator, encoded: []const u8) ![]u8`
-
-Decodes standard base64 string to bytes. Accepts strings encoded with RFC 4648 alphabet (A-Z, a-z, 0-9, +, /) with padding.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for decoded data
-- `encoded: []const u8` - Base64 string to decode
-
-**Returns:** `![]u8` - Decoded binary data. Caller owns memory.
-
-**Example:**
-
-```zig
-const std = @import("std");
-const base64 = @import("primitives").base64;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-// Decode base64 string
-const encoded = "SGVsbG8=";
-const decoded = try base64.decode(allocator, encoded);
-defer allocator.free(decoded);
-// decoded = [72, 101, 108, 108, 111] ("Hello")
-
-// Decode binary data
-const b64Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-const hash = try base64.decode(allocator, b64Hash);
-defer allocator.free(hash);
-```
-
-**Defined in:** [primitives/base64.zig:28](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L28)
-
-</Tab>
 </Tabs>
 
 ### `Base64.decodeToString(encoded)`
@@ -183,43 +147,7 @@ if (id) {
 Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafe.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafe.js)
 
 </Tab>
-<Tab title="Zig">
 
-### `base64.decodeUrlSafe(allocator: Allocator, encoded: []const u8) ![]u8`
-
-Decodes URL-safe base64 string to bytes. Accepts strings encoded with URL-safe alphabet (A-Z, a-z, 0-9, -, _) without padding.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for decoded data
-- `encoded: []const u8` - URL-safe base64 string (without padding)
-
-**Returns:** `![]u8` - Decoded binary data. Caller owns memory.
-
-**Example:**
-
-```zig
-const std = @import("std");
-const base64 = @import("primitives").base64;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-// Decode URL-safe base64 (no padding)
-const urlSafe = "SGVsbG8";
-const decoded = try base64.decodeUrlSafe(allocator, urlSafe);
-defer allocator.free(decoded);
-// decoded = [72, 101, 108, 108, 111] ("Hello")
-
-// Works with URL-safe characters (-, _)
-const urlSafeData = "AB-_CD";
-const data = try base64.decodeUrlSafe(allocator, urlSafeData);
-defer allocator.free(data);
-```
-
-**Defined in:** [primitives/base64.zig:65](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L65)
-
-</Tab>
 </Tabs>
 
 ### `Base64.decodeUrlSafeToString(encoded)`
@@ -412,28 +340,6 @@ const binaryB64 = "AP/AfwA="
 const binary = Base64.decode(binaryB64)
 // Uint8Array([0, 255, 128, 127, 0])
 ```
-
-## Tree-Shakeable Usage
-
-All decoding methods available as tree-shakeable imports:
-
-```typescript
-import {
-  decode,
-  decodeToString,
-  decodeUrlSafe,
-  decodeUrlSafeToString
-} from '@tevm/voltaire/BrandedBase64'
-
-const bytes = decode("SGVsbG8=")
-const str = decodeToString("SGVsbG8=")
-const urlSafeBytes = decodeUrlSafe("SGVsbG8")
-const urlSafeStr = decodeUrlSafeToString("SGVsbG8")
-```
-
-**Tree-shaking benefit:** Import only the decoding variant you need. If you only use standard decoding, URL-safe decoding code is excluded from bundle.
-
-See [BrandedBase64](/primitives/base64/branded-base64) for details on tree-shakeable API.
 
 ## Decoding Algorithm
 

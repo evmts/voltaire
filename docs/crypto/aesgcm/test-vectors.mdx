@@ -411,37 +411,6 @@ function displayResult(name, actual, expected) {
 }
 ```
 
-## Zig Implementation Tests
-
-The Zig implementation includes comprehensive tests in `/Users/williamcory/voltaire/src/crypto/aes_gcm.zig`:
-
-```zig
-test "aes128-gcm NIST vector: all zeros" {
-    const allocator = std.testing.allocator;
-
-    const key = [_]u8{0} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{0} ** NONCE_SIZE;
-    const plaintext = "";
-    const additional_data = "";
-
-    const ciphertext = try encrypt128(allocator, plaintext, &key, &nonce, additional_data);
-    defer allocator.free(ciphertext);
-
-    // Expected tag from NIST
-    const expected_tag = [_]u8{
-        0x58, 0xe2, 0xfc, 0xce, 0xfa, 0x7e, 0x30, 0x61,
-        0x36, 0x7f, 0x1d, 0x57, 0xa4, 0xe7, 0x45, 0x5a
-    };
-
-    try std.testing.expectEqualSlices(u8, &expected_tag, ciphertext);
-}
-```
-
-Run Zig tests:
-```bash
-zig build test -Dtest-filter=aes
-```
-
 ## References
 
 - [NIST SP 800-38D Test Vectors](https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#GCMVS)

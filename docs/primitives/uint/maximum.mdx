@@ -4,61 +4,7 @@ description: Get maximum of two Uint256 values
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.maximum(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-Get maximum of two values.
-
-**Parameters:**
-- `a: BrandedUint` - First value
-- `b: BrandedUint` - Second value
-
-**Returns:** `BrandedUint` - Larger value
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-Uint.maximum(Uint.from(100n), Uint.from(200n))  // 200
-Uint.maximum(Uint.from(200n), Uint.from(100n))  // 200
-Uint.maximum(Uint.ZERO, Uint.MAX)               // MAX
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/maximum.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/maximum.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `maximum(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const max = Uint.maximum(Uint.from(100n), Uint.from(200n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/maximum.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/maximum.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.max(a: Uint, b: Uint): Uint`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const max = Uint.max(Uint.init(100), Uint.init(200));
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

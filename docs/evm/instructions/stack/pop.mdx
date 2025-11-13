@@ -283,16 +283,6 @@ export function handler_0x50_POP(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// POP opcode (0x50) - Remove top item from stack
-pub fn pop(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    _ = try frame.popStack();
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

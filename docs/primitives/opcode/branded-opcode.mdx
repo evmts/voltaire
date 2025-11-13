@@ -70,38 +70,6 @@ Opcodes are the instructions that make up EVM bytecode:
 - **0xA0-0xAF**: Logging operations
 - **0xF0-0xFF**: System operations
 
-## Namespace API
-
-```typescript
-import * as BrandedOpcode from '@tevm/primitives/Opcode/BrandedOpcode'
-
-// Create opcode
-const opcode = BrandedOpcode.from(0x01) // ADD
-
-// Get opcode info
-const info = BrandedOpcode.getInfo(opcode)
-console.log(info.name)         // "ADD"
-console.log(info.gasCost)      // 3
-console.log(info.stackInputs)  // 2
-console.log(info.stackOutputs) // 1
-
-// Check opcode type
-const isPush = BrandedOpcode.isPush(opcode)
-const isDup = BrandedOpcode.isDup(opcode)
-const isSwap = BrandedOpcode.isSwap(opcode)
-
-// Get PUSH size
-if (isPush) {
-  const pushSize = BrandedOpcode.getPushSize(opcode) // 1-32
-}
-
-// Parse bytecode into instructions
-const instructions = BrandedOpcode.parseInstructions(bytecode)
-for (const instr of instructions) {
-  console.log(`${instr.offset}: ${BrandedOpcode.getName(instr.opcode)}`)
-}
-```
-
 ## Tree-Shaking Benefits
 
 ### Minimal Bundle - Info Only

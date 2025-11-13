@@ -4,66 +4,7 @@ description: Right shift Uint256 value by specified bits
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.shiftRight(value: BrandedUint, bits: number): BrandedUint`
-
-Right shift value by specified number of bits (logical shift).
-
-**Parameters:**
-- `value: BrandedUint` - Value to shift
-- `bits: number` - Number of bits to shift right
-
-**Returns:** `BrandedUint` - Shifted result
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const a = Uint.from(256n)
-Uint.shiftRight(a, 8)  // 1 (256 >> 8)
-
-const b = Uint.from(240n)
-Uint.shiftRight(b, 4)  // 15 (240 >> 4)
-
-// Shifts out all bits
-Uint.shiftRight(Uint.from(255n), 256)  // 0
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/shiftRight.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftRight.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `shiftRight(value: BrandedUint, bits: number): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.shiftRight(Uint.from(256n), 8)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/shiftRight.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftRight.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.shr(value: Uint, bits: u8): Uint`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const result = Uint.shr(Uint.init(256), 8);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 ## See Also

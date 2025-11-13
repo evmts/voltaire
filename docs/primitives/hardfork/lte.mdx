@@ -4,62 +4,7 @@ description: Check if hardfork is less than or equal to target
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.lte(target: BrandedHardfork): boolean`
-
-Check if current hardfork is less than or equal to target version (\<=).
-
-**Parameters:**
-- `target: BrandedHardfork` - Maximum allowed hardfork version
-
-**Returns:** `boolean` - True if current &le; target chronologically
-
-**Example:**
-
-```typescript
-import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("london")
-
-fork.lte(CANCUN)   // true - London <= Cancun
-fork.lte(LONDON)   // true - London <= London (equal)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/lte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/lte.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `lte(a: BrandedHardfork, b: BrandedHardfork): boolean`
-
-Check if first hardfork is less than or equal to second version (&le;).
-
-**Parameters:**
-- `a: BrandedHardfork` - First hardfork
-- `b: BrandedHardfork` - Second hardfork
-
-**Returns:** `boolean` - True if a &le; b chronologically
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { LONDON, CANCUN } from '@tevm/voltaire'
-
-Hardfork.lte(LONDON, CANCUN)  // true
-Hardfork.lte(CANCUN, LONDON)  // false
-Hardfork.lte(LONDON, LONDON)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/lte.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/lte.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Operator-Style API

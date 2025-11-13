@@ -4,42 +4,7 @@ description: Encode single parameter value to ABI format
 ---
 
 <Tabs>
-<Tab title="Namespace API">
 
-## `encode(param: Parameter, value: unknown): Hex`
-
-Encode a single parameter value according to its type definition.
-
-**Parameters:**
-- `param: Parameter` - Parameter definition with type
-- `value: unknown` - Value to encode
-
-**Returns:** `Hex` - ABI-encoded parameter value (32-byte aligned)
-
-**Example:**
-
-```typescript
-import * as Parameter from '@tevm/voltaire/Abi/parameter'
-
-const addressParam = {
-  type: "address",
-  name: "owner"
-}
-
-const encoded = Parameter.encode(addressParam, "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-// Returns 32-byte encoded address
-```
-
-**Defined in:** [primitives/Abi/parameter/BrandedParameter/encode.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/parameter/BrandedParameter/encode.js)
-
-</Tab>
-<Tab title="Zig">
-
-## Zig implementation planned
-
-Parameter encoding in Zig is planned for a future release. Use TypeScript API for now.
-
-</Tab>
 </Tabs>
 
 ## Usage Examples

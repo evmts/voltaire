@@ -4,60 +4,7 @@ description: Convert hardfork to canonical string name
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.toString(): string`
-
-Convert hardfork to canonical string name (lowercase).
-
-**Returns:** `string` - Canonical hardfork name (lowercase)
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, MERGE, PETERSBURG } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("cancun")
-
-fork.toString()  // "cancun"
-
-// Returns canonical names (not aliases)
-MERGE.toString()       // "merge" (not "paris")
-PETERSBURG.toString()  // "petersburg" (not "constantinoplefix")
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/toString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/toString.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `toString(fork: BrandedHardfork): string`
-
-Convert hardfork to canonical string name (lowercase).
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to convert
-
-**Returns:** `string` - Canonical hardfork name (lowercase)
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, MERGE } from '@tevm/voltaire'
-
-Hardfork.toString(CANCUN)  // "cancun"
-Hardfork.toString(MERGE)   // "merge"
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/toString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/toString.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Canonical Names

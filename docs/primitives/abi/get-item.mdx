@@ -4,58 +4,7 @@ description: Find ABI item by name and type from ABI array
 ---
 
 <Tabs>
-<Tab title="Namespace API">
 
-## `getItem(abi: Abi, name: string, type: string): AbiItem | undefined`
-
-Find a specific ABI item by name and type from an ABI array.
-
-**Parameters:**
-- `abi: Abi` - ABI array
-- `name: string` - Item name
-- `type: string` - Item type ("function", "event", "error", "constructor")
-
-**Returns:** `AbiItem | undefined` - Found item or undefined
-
-**Example:**
-
-```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
-
-const abi = [
-  {
-    type: "function",
-    name: "transfer",
-    inputs: [
-      { type: "address", name: "to" },
-      { type: "uint256", name: "amount" }
-    ]
-  },
-  {
-    type: "event",
-    name: "Transfer",
-    inputs: [
-      { type: "address", name: "from", indexed: true },
-      { type: "address", name: "to", indexed: true },
-      { type: "uint256", name: "value" }
-    ]
-  }
-]
-
-const transferFn = BrandedAbi.getItem(abi, "transfer", "function")
-const transferEvent = BrandedAbi.getItem(abi, "Transfer", "event")
-```
-
-**Defined in:** [primitives/Abi/BrandedAbi/getItem.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/getItem.js)
-
-</Tab>
-<Tab title="Zig">
-
-## Zig implementation planned
-
-ABI item lookup in Zig is planned for a future release. Use TypeScript API for now.
-
-</Tab>
 </Tabs>
 
 ## Usage Examples

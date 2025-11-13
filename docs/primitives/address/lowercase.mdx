@@ -31,33 +31,7 @@ The `Lowercase` type is a **branded string**, not a `Uint8Array` like `BrandedAd
 Create lowercase hex string from Address.
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
-import { Address } from '@tevm/voltaire'
-
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
-const lowercase = LowercaseAddress.from(addr)
-// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
-```
-
-</Tab>
-<Tab title="Class API">
-
-```typescript
-import { Address } from '@tevm/voltaire'
-
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
-const lowercase = Address.Lowercase.from(addr)
-// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
-
-// Also available via toLowercase()
-const lower = addr.toLowercase()
-// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
-```
-
-</Tab>
 </Tabs>
 
 **Parameters:**
@@ -278,30 +252,6 @@ class CachedAddress {
   }
 }
 ```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-// Option 1: Import namespace
-import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
-import type { BrandedAddress } from '@tevm/voltaire/Address'
-
-const addr: BrandedAddress = /* ... */
-const lowercase = LowercaseAddress.from(addr)
-```
-
-```typescript
-// Option 2: Import function directly
-import { from as lowercaseFrom } from '@tevm/voltaire/Address/LowercaseAddress'
-import type { BrandedAddress } from '@tevm/voltaire/Address'
-
-const addr: BrandedAddress = /* ... */
-const lowercase = lowercaseFrom(addr)
-```
-
-**Bundle size:** Minimal - no cryptographic dependencies (unlike `ChecksumAddress` which requires keccak256)
 
 ## Type Safety
 

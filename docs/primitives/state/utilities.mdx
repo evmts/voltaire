@@ -12,20 +12,7 @@ Computes a hash code for a storage key, useful for hash-based data structures.
 ### Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function hashCode(key: BrandedStorageKey): number
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn hashCode(key: StorageKey) u64
-```
-
-</Tab>
 </Tabs>
 
 ### Parameters
@@ -39,48 +26,7 @@ pub fn hashCode(key: StorageKey) u64
 ### Examples
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-
-const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-const key1 = State.StorageKey(addr, 0n);
-const key2 = State.StorageKey(addr, 0n);
-const key3 = State.StorageKey(addr, 1n);
-
-// Same key produces same hash
-console.log(State.StorageKey.hashCode(key1) === State.StorageKey.hashCode(key2)); // true
-
-// Different keys (usually) produce different hashes
-console.log(State.StorageKey.hashCode(key1) === State.StorageKey.hashCode(key3)); // false
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-const Address = @import("address");
-
-const addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-const key1 = State.StorageKey{ .address = addr, .slot = 0 };
-const key2 = State.StorageKey{ .address = addr, .slot = 0 };
-const key3 = State.StorageKey{ .address = addr, .slot = 1 };
-
-// Same key produces same hash
-const hash1 = State.hashCode(key1);
-const hash2 = State.hashCode(key2);
-const hash3 = State.hashCode(key3);
-
-std.debug.print("Hash1 == Hash2: {}\n", .{hash1 == hash2}); // true
-std.debug.print("Hash1 == Hash3: {}\n", .{hash1 == hash3}); // false
-```
-
-</Tab>
 </Tabs>
 
 ### Use Cases

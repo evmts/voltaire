@@ -341,32 +341,6 @@ function toSigned256(value: bigint): bigint {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SGT opcode (0x13) - Signed greater than comparison
-pub fn sgt(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const b = try frame.popStack();
-    const a = try frame.popStack();
-
-    // Convert to signed
-    const a_signed = toSigned256(a);
-    const b_signed = toSigned256(b);
-
-    const result: u256 = if (a_signed > b_signed) 1 else 0;
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-
-/// Convert unsigned to signed two's complement
-fn toSigned256(value: u256) i256 {
-    if (value >= (1 << 255)) {
-        return @bitCast(value) -% @bitCast(@as(u256, 1) << 256);
-    }
-    return @intCast(value);
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

@@ -4,73 +4,7 @@ description: Deep clone event log including topics and data
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.clone(): EventLog`
-
-Deep clone event log, creating independent copies of topics array and data.
-
-**Returns:** `EventLog` - Deep cloned log
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-const original = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: Hex.from('0x010203'),
-  blockNumber: 18000000n,
-});
-
-const cloned = original.clone();
-
-// Modifications to clone don't affect original
-cloned.data[0] = 99;
-console.log(original.data[0]); // 1 (unchanged)
-console.log(cloned.data[0]); // 99
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `clone(log: BrandedEventLog): BrandedEventLog`
-
-Deep clone event log, creating independent copies of topics array and data.
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log to clone
-
-**Returns:** `BrandedEventLog` - Deep cloned log
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-const original = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: Hex.from('0x010203'),
-  blockNumber: 18000000n,
-});
-
-const cloned = EventLog.clone(original);
-
-// Modifications to clone don't affect original
-cloned.data[0] = 99;
-console.log(original.data[0]); // 1 (unchanged)
-console.log(cloned.data[0]); // 99
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
-
-</Tab>
 </Tabs>
 
 ## Clone Behavior
@@ -87,7 +21,7 @@ import { EventLog } from '@tevm/voltaire';
 const original = EventLog.from({
   address: contractAddress,
   topics: [topic0, topic1],
-  data: Hex.from('0x010203'),
+  data: new Uint8Array([1, 2, 3]),
   blockNumber: 100n,
 });
 

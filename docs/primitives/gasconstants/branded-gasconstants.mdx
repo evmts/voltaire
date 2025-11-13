@@ -18,37 +18,6 @@ Tree-shakeable functional API for EVM gas cost calculations with optimal bundle 
 
 Primary benefit: Import only what you need, minimize bundle size.
 
-## Namespace API
-
-```typescript
-import * as BrandedGasConstants from '@tevm/primitives/GasConstants/BrandedGasConstants'
-
-// Calculate gas costs
-const keccakCost = BrandedGasConstants.calculateKeccak256Cost(dataSize)
-const sstoreCost = BrandedGasConstants.calculateSstoreCost(hardfork, currentValue, newValue)
-const logCost = BrandedGasConstants.calculateLogCost(dataSize, topicCount)
-const callCost = BrandedGasConstants.calculateCallCost(hardfork, isWarm)
-const memoryCost = BrandedGasConstants.calculateMemoryExpansionCost(newSize, currentSize)
-const createCost = BrandedGasConstants.calculateCreateCost(hardfork, codeSize)
-const intrinsicGas = BrandedGasConstants.calculateTxIntrinsicGas(hardfork, tx)
-
-// Check EIP support
-const hasEIP2929 = BrandedGasConstants.hasEIP2929(hardfork)
-const hasEIP3529 = BrandedGasConstants.hasEIP3529(hardfork)
-const hasEIP3860 = BrandedGasConstants.hasEIP3860(hardfork)
-const hasEIP1153 = BrandedGasConstants.hasEIP1153(hardfork)
-const hasEIP4844 = BrandedGasConstants.hasEIP4844(hardfork)
-
-// Get costs for specific hardforks
-const coldSloadCost = BrandedGasConstants.getColdSloadCost(hardfork)
-const coldAccountCost = BrandedGasConstants.getColdAccountAccessCost(hardfork)
-
-// Calculate refunds
-const sstoreRefund = BrandedGasConstants.getSstoreRefund(hardfork, currentValue, newValue)
-const selfdestructRefund = BrandedGasConstants.getSelfdestructRefund(hardfork)
-const maxRefund = BrandedGasConstants.calculateMaxRefund(gasUsed, hardfork)
-```
-
 ## Sub-Namespace: Precompile
 
 ```typescript

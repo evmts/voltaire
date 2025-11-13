@@ -199,14 +199,7 @@ const transferCostUrgent = Uint.times(
 
 Two APIs for different use cases:
 
-### Namespace API (Flexible)
-Accepts any input, auto-converts:
-```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-Wei.toGwei("1000000000")  // Auto-converts string → Wei → Gwei
-```
-
-### Branded API (Type-safe)
+#### Branded API (Type-safe)
 Requires branded types, compile-time safety:
 ```typescript
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'

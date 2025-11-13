@@ -4,77 +4,7 @@ description: Get indexed parameters (topic1-topic3)
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.getIndexedTopics(): readonly BrandedHash[]`
-
-Get indexed parameters (topic1-topic3), excluding topic0 event signature.
-
-**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-// Transfer(address indexed from, address indexed to, uint256 value)
-const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [
-    Hash.fromHex('0xddf252ad...'), // event signature
-    Hash.fromHex('0x000...from'),  // from address
-    Hash.fromHex('0x000...to'),    // to address
-  ],
-  data: Hex.from('0x00000001'), // value (not indexed)
-});
-
-const indexed = log.getIndexedTopics();
-console.log(indexed.length); // 2
-console.log(Hash.toHex(indexed[0])); // from address
-console.log(Hash.toHex(indexed[1])); // to address
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `getIndexedTopics(log: BrandedEventLog): readonly BrandedHash[]`
-
-Get indexed parameters (topic1-topic3), excluding topic0 event signature.
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log instance
-
-**Returns:** `readonly BrandedHash[]` - Read-only array of indexed topic hashes
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-// Transfer(address indexed from, address indexed to, uint256 value)
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [
-    Hash.fromHex('0xddf252ad...'), // event signature
-    Hash.fromHex('0x000...from'),  // from address
-    Hash.fromHex('0x000...to'),    // to address
-  ],
-  data: Hex.from('0x00000001'), // value (not indexed)
-});
-
-const indexed = EventLog.getIndexedTopics(log);
-console.log(indexed.length); // 2
-console.log(Hash.toHex(indexed[0])); // from address
-console.log(Hash.toHex(indexed[1])); // to address
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
-
-</Tab>
 </Tabs>
 
 ## Indexed Parameter Limits
@@ -200,7 +130,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog.from({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash], // All indexed params
-  data: Hex.from('0x'),
+  data: new Uint8Array([]),
 });
 
 // getIndexedTopics returns topic1-topic3 (NOT all params)

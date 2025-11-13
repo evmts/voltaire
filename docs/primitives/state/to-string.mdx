@@ -8,20 +8,7 @@ Serializes `BrandedStorageKey` to string format for use as JavaScript Map keys o
 ## Signature
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function toString(key: BrandedStorageKey): string
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-pub fn toString(buffer: []u8, key: StorageKey) ![]const u8
-```
-
-</Tab>
 </Tabs>
 
 ## Parameters
@@ -46,36 +33,7 @@ pub fn toString(buffer: []u8, key: StorageKey) ![]const u8
 ### Basic Usage
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-
-const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const key = State.StorageKey(contractAddr, 0n);
-
-const keyStr = State.StorageKey.toString(key);
-console.log(keyStr);
-// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0"
-```
-
-</Tab>
-<Tab title="Zig">
-
-```zig
-const State = @import("state");
-const Address = @import("address");
-
-const contract_addr = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const key = State.StorageKey{ .address = contract_addr, .slot = 0 };
-
-var buffer: [128]u8 = undefined;
-const key_str = try State.toString(&buffer, key);
-std.debug.print("Key: {s}\n", .{key_str});
-```
-
-</Tab>
 </Tabs>
 
 ### Various Slot Numbers

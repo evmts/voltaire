@@ -281,17 +281,6 @@ contract EIP1559Aware {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// GASLIMIT opcode (0x45) - Get block gas limit
-pub fn gaslimit(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(@as(u256, evm.block_context.block_gas_limit));
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

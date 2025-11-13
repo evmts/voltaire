@@ -4,7 +4,6 @@ description: Learn EIP-4844 blobs, proto-danksharding, and KZG commitments
 sidebarTitle: Blob
 ---
 
-
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Blob API](/primitives/blob/index).
 </Info>
@@ -102,24 +101,7 @@ try {
 ```
 
 </Tab>
-<Tab title="Zig">
 
-```zig
-const Blob = @import("primitives").Blob;
-
-// Encode data into blob
-const data = "L2 batch transactions";
-const blob = try Blob.fromData(allocator, data);
-defer blob.deinit(allocator);
-
-// Extract data
-const decoded = try blob.toData(allocator);
-defer allocator.free(decoded);
-
-std.debug.print("Decoded: {s}\n", .{decoded});
-```
-
-</Tab>
 </Tabs>
 
 ## KZG Commitments
@@ -154,28 +136,7 @@ console.log(`Valid: ${isValid}`); // true
 ```
 
 </Tab>
-<Tab title="Zig">
 
-```zig
-const Blob = @import("primitives").Blob;
-
-const blob = try Blob.fromData(allocator, data);
-defer blob.deinit(allocator);
-
-// Compute KZG commitment
-const commitment = try blob.toCommitment(allocator);
-defer commitment.deinit(allocator);
-
-// Generate proof
-const proof = try blob.toProof(allocator);
-defer proof.deinit(allocator);
-
-// Verify proof
-const is_valid = try Blob.verify(blob, commitment, proof);
-std.debug.print("Valid: {}\n", .{is_valid});
-```
-
-</Tab>
 </Tabs>
 
 ### Versioned Hashes
@@ -354,46 +315,7 @@ console.log(`Matches original: ${Blob.equals(reconstructed, largeBatch)}`);
 ```
 
 </Tab>
-<Tab title="Zig">
 
-```zig
-const Blob = @import("primitives").Blob;
-
-// Large data
-var large_batch: [300_000]u8 = undefined;
-// ... fill with data ...
-
-// Split into blobs
-const blobs = try Blob.splitData(allocator, &large_batch);
-defer {
-    for (blobs) |blob| blob.deinit(allocator);
-    allocator.free(blobs);
-}
-
-std.debug.print("Created {} blobs\n", .{blobs.len});
-
-// Generate commitments and proofs
-var commitments = try allocator.alloc(Blob.Commitment, blobs.len);
-defer allocator.free(commitments);
-
-var proofs = try allocator.alloc(Blob.Proof, blobs.len);
-defer allocator.free(proofs);
-
-for (blobs, 0..) |blob, i| {
-    commitments[i] = try blob.toCommitment(allocator);
-    proofs[i] = try blob.toProof(allocator);
-}
-
-// Batch verify
-const all_valid = try Blob.verifyBatch(blobs, commitments, proofs);
-std.debug.print("All valid: {}\n", .{all_valid});
-
-// Reconstruct
-const reconstructed = try Blob.joinData(allocator, blobs);
-defer allocator.free(reconstructed);
-```
-
-</Tab>
 </Tabs>
 
 ## Blob Gas Market

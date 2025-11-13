@@ -341,49 +341,6 @@ bytes32 previousHash = blockhash(block.number - 1);
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// BLOCKHASH opcode (0x40) - Get hash of recent block
-pub fn blockhash(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // GAS_BLOCK_HASH = 20 (GasExtStep)
-    try frame.consumeGas(GasConstants.GasExtStep);
-
-    const block_number = try frame.popStack();
-    const current_block = evm.block_context.block_number;
-
-    // Return 0 if:
-    // 1. Requested block >= current block
-    // 2. Requested block is more than 256 blocks old
-    const max_block_number = block_number + 256;
-    if (block_number >= current_block or current_block > max_block_number) {
-        // Out of range - return zero
-        try frame.pushStack(0);
-    } else {
-        // In range - get hash from block_hashes array
-        // Access with negative index: block_hashes[-(current - target)]
-        const index: usize = @intCast(current_block - block_number);
-
-        if (index > 0 and index <= evm.block_context.block_hashes.len) {
-            const actual_index = evm.block_context.block_hashes.len - index;
-            const block_hash = evm.block_context.block_hashes[actual_index];
-
-            // Convert 32-byte hash to u256
-            var hash_value: u256 = 0;
-            for (block_hash) |byte| {
-                hash_value = (hash_value << 8) | byte;
-            }
-            try frame.pushStack(hash_value);
-        } else {
-            // Hash not available - return zero
-            try frame.pushStack(0);
-        }
-    }
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

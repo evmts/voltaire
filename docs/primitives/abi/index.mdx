@@ -13,121 +13,12 @@ Start with [ABI Fundamentals](/primitives/abi/fundamentals) to learn about funct
 
 ## Overview
 
-[Branded](/getting-started/branded-types) array of ABI items (functions, events, errors, constructors). Zero-overhead design supports both tree-shakeable namespace methods and class instances, following the same pattern as [Address](/primitives/address).
+Branded array of ABI items (functions, events, errors, constructors). Zero-overhead design supports both tree-shakeable methods and class instances, following the same pattern as [Address](/primitives/address).
 
 ## Quick Start
 
 <Tabs>
-<Tab title="Class API">
-```typescript
-import { Abi, Function, Event, AbiError } from '@tevm/voltaire'
 
-// Create ABI items using classes
-const transferFn = new Function({
-  name: "transfer",
-  stateMutability: "nonpayable",
-  inputs: [
-    { type: "address", name: "to" },
-    { type: "uint256", name: "amount" }
-  ],
-  outputs: [{ type: "bool" }]
-})
-
-// Encode function call with instance methods
-const calldata = transferFn.encodeParams([
-  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-  1000n
-])
-
-// Get function selector
-const selector = transferFn.getSelector()  // 4 bytes
-
-// Decode return value
-const result = transferFn.decodeResult(returnData)  // [true]
-
-// Create Event instance
-const transferEvent = new Event({
-  name: "Transfer",
-  inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value", indexed: false }
-  ]
-})
-
-// Decode event log
-const decoded = transferEvent.decodeLog(logData, logTopics)
-// { from: "0x...", to: "0x...", value: 1000n }
-
-// Create Error instance
-const insufficientBalance = new AbiError({
-  name: "InsufficientBalance",
-  inputs: [
-    { type: "uint256", name: "balance" },
-    { type: "uint256", name: "required" }
-  ]
-})
-
-// Encode error
-const errorData = insufficientBalance.encodeParams([100n, 1000n])
-```
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-```typescript
-import { Function, Event, AbiError } from '@tevm/voltaire'
-
-// Define function (plain object)
-const transferFn = {
-  type: "function",
-  name: "transfer",
-  stateMutability: "nonpayable",
-  inputs: [
-    { type: "address", name: "to" },
-    { type: "uint256", name: "amount" }
-  ],
-  outputs: [{ type: "bool" }]
-}
-
-// Use namespace methods (tree-shakeable)
-const calldata = Function.encodeParams(transferFn, [
-  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-  1000n
-])
-
-const selector = Function.getSelector(transferFn)  // 4 bytes
-const result = Function.decodeResult(transferFn, returnData)  // [true]
-
-// Event namespace methods
-const transferEvent = {
-  type: "event",
-  name: "Transfer",
-  inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value", indexed: false }
-  ]
-}
-
-const decoded = Event.decodeLog(transferEvent, logData, logTopics)
-const topics = Event.encodeTopics(transferEvent, {
-  from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-})
-
-// Error namespace methods
-const insufficientBalance = {
-  type: "error",
-  name: "InsufficientBalance",
-  inputs: [
-    { type: "uint256", name: "balance" },
-    { type: "uint256", name: "required" }
-  ]
-}
-
-const errorData = AbiError.encodeParams(insufficientBalance, [100n, 1000n])
-
-// See BrandedAbi for complete functional API
-```
-</Tab>
 </Tabs>
 
 ## Types
@@ -387,10 +278,6 @@ import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
 // Tree-shakeable functional API
 import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
 ```
-
-<Tip title="Need maximum bundle size optimization?">
-For advanced users who need minimal bundle size and maximum tree-shaking benefits, see the [BrandedAbi functional API](/primitives/abi/branded-abi). The class API is recommended for most use cases.
-</Tip>
 
 ## Sub-Namespaces
 

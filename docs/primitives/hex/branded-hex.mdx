@@ -36,33 +36,6 @@ Runtime-validated hex string with `0x` prefix. [Brand](/getting-started/branded-
 
 Defined in: [primitives/Hex/BrandedHex/BrandedHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js)
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as BrandedHex from '@tevm/voltaire/BrandedHex'
-
-// Namespace usage
-const hex = BrandedHex.from("0x1234")
-const bytes = BrandedHex.toBytes(hex)
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { from, toBytes, concat } from '@tevm/voltaire/BrandedHex'
-import type { BrandedHex } from '@tevm/voltaire/BrandedHex'
-
-const hex: BrandedHex = from("0x1234")
-const bytes = toBytes(hex)
-const combined = concat(hex, from("0x5678"))
-```
-
-**Bundle impact:** Only `from`, `toBytes`, and `concat` included. Unused functions excluded from bundle.
-
 ## Available Functions
 
 All Hex functionality available as tree-shakeable functions:

@@ -466,48 +466,6 @@ export function sstore(frame, host) {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const Frame = @import("../../Frame/root.zig");
-const Gas = @import("../../../primitives/GasConstants/root.zig");
-
-/// SSTORE (0x55) - Save word to storage
-pub fn sstore(frame: *Frame, host: *Host) Frame.EvmError!void {
-    // EIP-214: Cannot modify state in static call
-    if (frame.isStatic) return Frame.EvmError.WriteProtection;
-
-    // Pop key and value from stack
-    const key = try frame.popStack();
-    const value = try frame.popStack();
-
-    // TODO: EIP-2200 sentry check (requires >= 2300 gas remaining)
-    // if (frame.gasRemaining < 2300) return Frame.EvmError.OutOfGas;
-
-    // Get current value for gas calculation
-    const currentValue = try host.getStorage(frame.address, key);
-
-    // Compute gas cost based on current and new value
-    // TODO: Track original value for complex gas metering
-    const gasCost = if (currentValue == 0 and value != 0)
-        Gas.SstoreSet   // 20000 - new entry
-    else
-        Gas.SstoreReset; // 5000 - modify/clear
-
-    try frame.consumeGas(gasCost);
-
-    // TODO: Apply refunds for clearing
-    if (value == 0 and currentValue != 0) {
-        frame.refunds += Gas.SstoreRefund;  // 4800
-    }
-
-    // Store value
-    try host.setStorage(frame.address, key, value);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

@@ -291,16 +291,6 @@ export function handler_0x58_PC(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// PC opcode (0x58) - Get program counter
-pub fn pc(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(frame.pc);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

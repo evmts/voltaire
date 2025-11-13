@@ -4,174 +4,33 @@ description: Calculate CREATE contract address from deployer and nonce
 ---
 
 <Tabs>
-<Tab title="Class API">
-
-## `address.calculateCreateAddress(nonce: bigint): Address`
-
-Calculate CREATE contract address using sender address and transaction nonce. Contract deployed with CREATE opcode has deterministic address based on deployer and nonce.
-
-**Formula:** `keccak256(rlp([sender, nonce]))[12:32]`
-
-**Parameters:**
-- `nonce: bigint` - Transaction nonce (must be ≥ 0)
-
-**Returns:** `Address` - Calculated contract address
-
-**Example:**
-
+<Tab title="Wrapper API">
 ```typescript
 import { Address } from '@tevm/voltaire'
 
+// Auto-injected keccak256 and RLP encoder
 const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-
-// First contract deployed (nonce 0)
-const contract1 = deployer.calculateCreateAddress(0n)
-console.log(contract1.toHex())
-
-// Second contract (nonce 1)
-const contract2 = deployer.calculateCreateAddress(1n)
-console.log(contract2.toHex())
-
-// Addresses are different for each nonce
-console.log(contract1.equals(contract2)) // false
-```
-
-**Throws:**
-- `InvalidValueError` - If nonce is negative
-
-**Defined in:** [primitives/Address/BrandedAddress/calculateCreateAddress.js:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js#L49)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `calculateCreateAddress(address: BrandedAddress, nonce: bigint): BrandedAddress`
-
-Calculate CREATE contract address.
-
-**Parameters:**
-- `address: BrandedAddress` - Deployer address
-- `nonce: bigint` - Transaction nonce
-
-**Returns:** `BrandedAddress` - Calculated contract address
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const contractAddr = Address.calculateCreateAddress(deployer, 0n)
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/calculateCreateAddress.js:49](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js#L49)
-
-</Tab>
-<Tab title="Effect.ts API">
-
-## `address.calculateCreateAddress(nonce: bigint): Address`
-
-Calculate CREATE contract address using Effect.ts Schema Address class.
-
-**Parameters:**
-- `nonce: bigint` - Transaction nonce (must be ≥ 0)
-
-**Returns:** `Address` - New Address schema instance with calculated contract address
-
-**Example:**
-
-```typescript
-import { Address } from '@tevm/voltaire/effect'
-import { Effect } from 'effect'
-
-// Direct usage
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const contract = deployer.calculateCreateAddress(0n)
+const contract = Address.calculateCreateAddress(deployer, 0n)
 console.log(contract.toHex())
-
-// Within Effect.gen
-const program = Effect.gen(function* () {
-  const deployer = yield* Effect.sync(() =>
-    Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-  )
-
-  const contract = yield* Effect.sync(() =>
-    deployer.calculateCreateAddress(0n)
-  )
-
-  return contract.toHex()
-})
-
-const result = await Effect.runPromise(program)
-console.log(result) // Contract address
 ```
+</Tab>
 
-**Schema validation:**
-
+<Tab title="Factory API">
 ```typescript
-import { Address } from '@tevm/voltaire/effect'
-import * as Schema from 'effect/Schema'
+import { CalculateCreateAddress } from '@tevm/voltaire/primitives/Address/BrandedAddress'
+import { hash } from '@tevm/voltaire/crypto/Keccak256'
+import { encode } from '@tevm/voltaire/primitives/Rlp/BrandedRlp'
 
-// Validate contract calculation in pipeline
-const ValidContract = Schema.Struct({
-  deployer: Schema.instanceOf(Address),
-  nonce: Schema.BigIntFromSelf,
-  contract: Schema.instanceOf(Address)
+// Inject dependencies (tree-shakeable)
+const calculateCreateAddress = CalculateCreateAddress({
+  keccak256: hash,
+  rlpEncode: encode
 })
 
-const data = {
-  deployer: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  nonce: 0n,
-  contract: deployer.calculateCreateAddress(0n)
-}
-
-const validated = Schema.decodeUnknownSync(ValidContract)(data)
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const contract = calculateCreateAddress(deployer, 0n)
+console.log(Address.toHex(contract))
 ```
-
-**Defined in:** [primitives/Address/effect.ts:191](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L191)
-
-</Tab>
-<Tab title="Zig">
-
-## `Address.calculateCreateAddress(allocator: Allocator, sender: Address, nonce: u64): !Address`
-
-Calculate CREATE contract address. Requires allocator for RLP encoding.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator
-- `sender: Address` - Deployer address
-- `nonce: u64` - Transaction nonce
-
-**Returns:** `Address` - Calculated contract address
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
-const contract = try Address.calculateCreateAddress(allocator, deployer, 0);
-
-std.debug.print("Contract: {}\n", .{contract});
-```
-
-**Defined in:** [primitives/Address/address.zig:382](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L382)
-
-</Tab>
-<Tab title="C API">
-
-## C API Not Available
-
-CREATE address calculation is not exposed in the C API. Use TypeScript, Effect.ts, or Zig implementations directly.
-
-<Tip>
-The C API focuses on core primitives. For contract address derivation requiring RLP encoding and keccak256, use higher-level TypeScript or Zig APIs.
-</Tip>
-
 </Tab>
 </Tabs>
 
@@ -310,6 +169,12 @@ function verifyContractOrigin(
 - keccak256 hash
 
 **Bundle size impact:** Adds keccak256 + RLP encoder (~10-15 KB total)
+
+**Dependencies:**
+- **keccak256** - Hash function for address derivation
+- **rlpEncode** - RLP encoding for `[address, nonce]` list
+
+Use Factory API for tree-shakeable builds that inject these dependencies explicitly.
 
 ## Error Handling
 

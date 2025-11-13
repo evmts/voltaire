@@ -315,29 +315,6 @@ function getArraySlot(uint256 baseSlot, uint256 index) pure returns (uint256) {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// SHL opcode (0x1b) - Shift left operation (EIP-145)
-pub fn shl(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    // EIP-145: SHL opcode was introduced in Constantinople hardfork
-    if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    // Pop shift (TOS), then value
-    const shift = try frame.popStack();
-    const value = try frame.popStack();
-    // For shifts >= 256, result is always 0
-    // Otherwise, shift left and wrap to 256 bits
-    const result = if (shift >= 256)
-        0
-    else
-        value << @as(u8, @intCast(shift));
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

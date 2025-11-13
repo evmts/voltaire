@@ -4,63 +4,7 @@ description: Check if hardfork is before a target version (strictly less than)
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.isBefore(target: BrandedHardfork): boolean`
-
-Check if current hardfork is before the target version (strictly less than). Returns false if versions are equal.
-
-**Parameters:**
-- `target: BrandedHardfork` - Version to compare against
-
-**Returns:** `boolean` - True if current < target chronologically
-
-**Example:**
-
-```typescript
-import { Hardfork, BERLIN, LONDON, CANCUN } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("berlin")
-
-fork.isBefore(LONDON)   // true - Berlin < London
-fork.isBefore(CANCUN)   // true - Berlin < Cancun
-fork.isBefore(BERLIN)   // false - Berlin === Berlin (not strictly before)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isBefore.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isBefore.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `isBefore(current: BrandedHardfork, target: BrandedHardfork): boolean`
-
-Check if current hardfork is before the target version (strictly less than). Returns false if versions are equal.
-
-**Parameters:**
-- `current: BrandedHardfork` - Current hardfork version
-- `target: BrandedHardfork` - Version to compare against
-
-**Returns:** `boolean` - True if current < target chronologically
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { BERLIN, LONDON } from '@tevm/voltaire'
-
-Hardfork.isBefore(BERLIN, LONDON)  // true - Berlin < London
-Hardfork.isBefore(LONDON, BERLIN)  // false - London > Berlin
-Hardfork.isBefore(BERLIN, BERLIN)  // false - Equal (not strictly before)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isBefore.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isBefore.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Usage Patterns

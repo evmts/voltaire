@@ -8,23 +8,7 @@ description: Check if offset is valid JUMPDEST in EVM bytecode
 Check if offset is a valid JUMPDEST in bytecode.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const bytecode = new Uint8Array([
-  0x60, 0x04,     // PUSH1 0x04
-  0x56,           // JUMP
-  0x5B,           // JUMPDEST (offset 3)
-  0x00            // STOP
-])
-
-Opcode.isValidJumpDest(bytecode, 3)  // true (valid JUMPDEST)
-Opcode.isValidJumpDest(bytecode, 0)  // false (PUSH1, not JUMPDEST)
-Opcode.isValidJumpDest(bytecode, 1)  // false (inside PUSH data)
-Opcode.isValidJumpDest(bytecode, 99) // false (out of bounds)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { isValidJumpDest } from '@tevm/voltaire/Opcode'
@@ -32,14 +16,7 @@ import { isValidJumpDest } from '@tevm/voltaire/Opcode'
 const valid = isValidJumpDest(bytecode, 3)  // true
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const bytecode = [_]u8{ 0x60, 0x04, 0x56, 0x5B, 0x00 };
-const valid = Opcode.isValidJumpDest(&bytecode, 3);  // true
-```
-</Tab>
 </Tabs>
 
 ## Parameters

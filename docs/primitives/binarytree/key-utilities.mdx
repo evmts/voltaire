@@ -51,37 +51,7 @@ key = [0,0,0,0,0,0,0,0,0,0,0,0, a0,a1,a2,...,a19]
 ```
 
 </Tab>
-<Tab title="Zig">
 
-### `BinaryTree.addressToKey(addr: [20]u8) [32]u8`
-
-Convert 20-byte Ethereum address to 32-byte tree key by prepending 12 zero bytes.
-
-**Parameters:**
-- `addr: [20]u8` - 20-byte Ethereum address
-
-**Returns:** `[32]u8` - 32-byte key (12 zero bytes + 20 address bytes)
-
-**Example:**
-
-```zig
-const std = @import("std");
-const BinaryTree = @import("primitives").BinaryTree;
-
-// Convert address to key
-var address: [20]u8 = undefined;
-address[0] = 0x74;
-address[1] = 0x2d;
-@memset(address[2..], 0);
-
-const key = BinaryTree.addressToKey(address);
-// key[0..12] are zeros
-// key[12..32] contains address bytes
-```
-
-**Defined in:** [primitives/BinaryTree/binary_tree.zig:51](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig#L51)
-
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/addressToKey.js#L17-L22)
@@ -181,13 +151,7 @@ try {
 }
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { splitKey } from '@tevm/voltaire/BrandedBinaryTree'
 
-const { stem, idx } = splitKey(key)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/splitKey.js#L19-L25)
@@ -292,13 +256,7 @@ console.log(BinaryTree.getStemBit(stem, 248)) // 0 (out of range)
 console.log(BinaryTree.getStemBit(stem, 999)) // 0 (out of range)
 ```
 </Tab>
-<Tab title="Tree-shakeable">
-```typescript
-import { getStemBit } from '@tevm/voltaire/BrandedBinaryTree'
 
-const bit = getStemBit(stem, position)
-```
-</Tab>
 </Tabs>
 
 Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/getStemBit.js#L16-L23)

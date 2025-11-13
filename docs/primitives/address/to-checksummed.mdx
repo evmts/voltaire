@@ -4,116 +4,38 @@ description: Convert address to EIP-55 checksummed hex string
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `address.toChecksummed(): BrandedChecksummedHex`
+<Tab title="TypeScript - Factory">
 
-Converts address to EIP-55 checksummed hex string. Uses keccak256 hash to determine character casing for integrity verification.
+## `Address.ToChecksummed({ keccak256 })`
 
-**Returns:** `BrandedChecksummedHex` - Mixed-case hex string with checksum encoding
+Factory function that creates an address-to-checksum converter with explicit crypto dependency.
+
+**Parameters:**
+- `deps: { keccak256: (data: Uint8Array) => Uint8Array }` - Crypto dependencies
+
+**Returns:** `(address: BrandedAddress) => Checksummed`
+
+**Bundle size benefit:** Crypto dependencies explicit - only bundled if you import them.
 
 **Example:**
 
 ```typescript
+import { ToChecksummed } from '@tevm/voltaire/Address/BrandedAddress'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
 import { Address } from '@tevm/voltaire'
 
+// Create factory with explicit crypto dependency
+const toChecksummed = ToChecksummed({ keccak256 })
+
+// Convert address to checksummed string
 const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-console.log(addr.toChecksummed())
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Verify checksum is valid
-const checksummed = addr.toChecksummed()
-console.log(Address.isValidChecksum(checksummed)) // true
-```
-
-**Defined in:** [primitives/Address/BrandedAddress/toChecksummed.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js#L15)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `toChecksummed(address: BrandedAddress): BrandedChecksummedHex`
-
-Converts address to EIP-55 checksummed hex string.
-
-**Parameters:**
-- `address: BrandedAddress` - Address to convert
-
-**Returns:** `BrandedChecksummedHex` - Checksummed hex string
-
-**Example:**
-
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-const checksummed = Address.toChecksummed(addr)
-console.log(checksummed)
+const checksummed = toChecksummed(addr)
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ```
 
-**Defined in:** [primitives/Address/BrandedAddress/toChecksummed.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js#L15)
-
 </Tab>
-<Tab title="Effect.ts">
 
-## `address.toChecksummed(): Checksummed`
-
-Convert address to EIP-55 checksummed hex string using Effect.ts Schema API.
-
-**Returns:** `Checksummed` - Branded checksummed hex string
-
-**Example:**
-
-```typescript
-import { Address } from '@tevm/voltaire/effect'
-
-const addr = Address.from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-const checksummed = addr.toChecksummed()
-console.log(checksummed)
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Type-safe checksummed address
-import { ChecksumAddress } from '@tevm/voltaire/effect'
-const checkAddr = ChecksumAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-console.log(checkAddr.checksummed)
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-```
-
-**Defined in:** [primitives/Address/effect.ts:115](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/effect.ts#L115)
-
-</Tab>
-<Tab title="Zig">
-
-## `address.toChecksummed(allocator: Allocator): ![]u8`
-
-Convert address to EIP-55 checksummed hex string. Caller owns returned memory.
-
-**Parameters:**
-- `allocator: Allocator` - Memory allocator for hex string
-
-**Returns:** `[]u8` - Checksummed hex string (caller owns memory)
-
-**Example:**
-
-```zig
-const std = @import("std");
-const Address = @import("primitives").Address;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-defer _ = gpa.deinit();
-const allocator = gpa.allocator();
-
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") catch unreachable;
-const checksummed = try addr.toChecksummed(allocator);
-defer allocator.free(checksummed);
-
-std.debug.print("{s}\n", .{checksummed});
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-```
-
-**Defined in:** [primitives/Address/address.zig:145](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L145)
-
-</Tab>
 <Tab title="C">
 
 ## `int primitives_address_to_checksum_hex(const PrimitivesAddress* address, uint8_t* buf)`
@@ -268,9 +190,13 @@ async function requestPayment(recipient: Address, amount: bigint) {
 
 ## Cryptographic Dependencies
 
-**Uses keccak256 internally** - When using tree-shakeable imports, including this method adds keccak256 to bundle (~5-10 KB).
+<Tip>
+With the factory pattern, keccak256 is only bundled if you explicitly import it. Crypto dependencies are now explicit and tree-shakeable.
+</Tip>
 
-For minimal bundle size, use `toHex()` instead if checksums aren't required.
+**Uses keccak256 internally** - Import keccak256 hash function and pass to factory.
+
+For minimal bundle size without crypto, use `toHex()` instead if checksums aren't required.
 
 ## Performance
 

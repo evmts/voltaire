@@ -17,32 +17,6 @@ Tree-shakeable functional API for Base64 operations with optimal bundle size.
 
 Primary benefit: Import only the encoding/decoding variants you need, reducing bundle size when not using all features.
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as BrandedBase64 from '@tevm/voltaire/BrandedBase64'
-
-// Namespace usage
-const encoded = BrandedBase64.encode(data)
-const decoded = BrandedBase64.decode(encoded)
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { encode, decode } from '@tevm/voltaire/BrandedBase64'
-
-const data = new Uint8Array([72, 101, 108, 108, 111])
-const encoded = encode(data)    // "SGVsbG8="
-const decoded = decode(encoded) // Uint8Array([72, 101, 108, 108, 111])
-```
-
-**Bundle impact:** Only `encode` and `decode` included. URL-safe encoding/decoding methods excluded.
-
 ## Available Functions
 
 All Base64 functionality available as tree-shakeable functions:

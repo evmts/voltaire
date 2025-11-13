@@ -224,24 +224,6 @@ export function handler_0x94_SWAP5(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// SWAP5 opcode (0x94) - Swap top with 6th item
-pub fn swap(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const n = opcode - 0x8f;
-    if (frame.stack.items.len <= n) {
-        return error.StackUnderflow;
-    }
-    const top_idx = frame.stack.items.len - 1;
-    const swap_idx = frame.stack.items.len - 1 - n;
-    const temp = frame.stack.items[top_idx];
-    frame.stack.items[top_idx] = frame.stack.items[swap_idx];
-    frame.stack.items[swap_idx] = temp;
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

@@ -8,16 +8,7 @@ description: Check if opcode is DUP1-DUP16
 Check if opcode is DUP1-DUP16.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.isDup(0x80)  // true (DUP1)
-Opcode.isDup(0x8F)  // true (DUP16)
-Opcode.isDup(0x60)  // false (PUSH1)
-Opcode.isDup(0x90)  // false (SWAP1)
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { isDup, DUP1, DUP16 } from '@tevm/voltaire/Opcode'
@@ -26,14 +17,7 @@ isDup(DUP1)   // true
 isDup(DUP16)  // true
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Opcode = @import("primitives").opcode;
 
-const is_dup1 = Opcode.isDup(0x80);   // true
-const is_push1 = Opcode.isDup(0x60);  // false
-```
-</Tab>
 </Tabs>
 
 ## Parameters

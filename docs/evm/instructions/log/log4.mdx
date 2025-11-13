@@ -540,66 +540,6 @@ export function handler_0xa4_LOG4(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// LOG4 opcode (0xa4) - Emit log with 4 indexed topics (maximum)
-pub fn log4(frame: *FrameType) FrameType.EvmError!void {
-    if (frame.is_static) return error.StaticCallViolation;
-
-    const offset = try frame.popStack();
-    const length = try frame.popStack();
-    const topic0 = try frame.popStack();
-    const topic1 = try frame.popStack();
-    const topic2 = try frame.popStack();
-    const topic3 = try frame.popStack();
-
-    const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
-    const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
-
-    // Gas: 375 base + 375 per topic (4 topics = 1500) + 8 per data byte
-    const log_cost = 375 + 1500 + @as(u64, length_u32) * 8;
-    try frame.consumeGas(log_cost);
-
-    if (length_u32 > 0) {
-        const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
-        const mem_cost = frame.memoryExpansionCost(end_bytes);
-        try frame.consumeGas(mem_cost);
-        const aligned = wordAlignedSize(end_bytes);
-        if (aligned > frame.memory_size) frame.memory_size = aligned;
-    }
-
-    const evm = frame.getEvm();
-
-    // Read data
-    var data_slice: []u8 = &[_]u8{};
-    if (length_u32 > 0) {
-        const alloc = evm.arena.allocator();
-        const buf = try alloc.alloc(u8, length_u32);
-        var idx: u32 = 0;
-        while (idx < length_u32) : (idx += 1) {
-            buf[idx] = frame.readMemory(off_u32 + idx);
-        }
-        data_slice = buf;
-    }
-
-    // Create and append log with 4 topics
-    var topics_buf = try evm.arena.allocator().alloc(u256, 4);
-    topics_buf[0] = topic0;
-    topics_buf[1] = topic1;
-    topics_buf[2] = topic2;
-    topics_buf[3] = topic3;
-
-    const log_entry = call_result.Log{
-        .address = frame.address,
-        .topics = topics_buf,
-        .data = data_slice,
-    };
-
-    try evm.logs.append(evm.arena.allocator(), log_entry);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

@@ -335,30 +335,6 @@ export function balance(
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// BALANCE opcode (0x31) - Get balance of an account
-pub fn balance(frame: *FrameType, host: *Host) FrameType.EvmError!void {
-    const addr_u256 = try frame.popStack();
-
-    // Convert u256 to 20-byte address (take lower 160 bits)
-    var addr: [20]u8 = undefined;
-    var temp = addr_u256;
-    var i: usize = 20;
-    while (i > 0) : (i -= 1) {
-        addr[i - 1] = @truncate(temp & 0xFF);
-        temp >>= 8;
-    }
-
-    // Charge gas (simplified to 700)
-    try frame.consumeGas(700);
-
-    const balance = try host.getBalance(&addr);
-    try frame.pushStack(balance);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

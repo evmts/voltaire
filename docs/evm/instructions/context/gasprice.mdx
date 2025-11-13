@@ -166,16 +166,6 @@ export function gasprice(
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// GASPRICE opcode (0x3a) - Get transaction gas price
-pub fn gasprice(frame: *FrameType, gas_price: u256) FrameType.EvmError!void {
-    try frame.consumeGas(2);
-    try frame.pushStack(gas_price);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## References

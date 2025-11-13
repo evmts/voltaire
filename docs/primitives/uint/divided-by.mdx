@@ -3,9 +3,6 @@ title: Uint.dividedBy
 description: Divide Uint256 values with floor division
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.dividedBy(a: BrandedUint, b: BrandedUint): BrandedUint`
 
 Divide Uint256 values. Floor division (rounds down).
@@ -35,43 +32,6 @@ Uint.dividedBy(a, Uint.ZERO)  // Error
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/dividedBy.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/dividedBy.ts#L19)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `dividedBy(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const quotient = Uint.dividedBy(Uint.from(100n), Uint.from(10n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/dividedBy.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/dividedBy.ts#L19)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.div(a: Uint, b: Uint): !Uint`
-
-Floor division (throws on zero).
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const a = Uint.init(100);
-const b = Uint.init(10);
-const quotient = try Uint.div(a, b);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 <Warning title="Division by Zero">
 Throws error if divisor is zero.

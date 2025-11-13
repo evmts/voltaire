@@ -402,41 +402,6 @@ uint256 constant BLOB_SIZE = 128 * 1024; // 128 KB per blob
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)
-pub fn blobhash(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // EIP-4844: BLOBHASH was introduced in Cancun hardfork
-    if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const index = try frame.popStack();
-
-    // Return the blob hash at the given index, or 0 if out of bounds
-    const hash_value = if (std.math.cast(usize, index)) |index_usize| blk: {
-        if (index_usize < evm.blob_versioned_hashes.len) {
-            // Convert the 32-byte blob hash to u256
-            const blob_hash = evm.blob_versioned_hashes[index_usize];
-            var value: u256 = 0;
-            for (blob_hash) |byte| {
-                value = (value << 8) | byte;
-            }
-            break :blk value;
-        } else {
-            break :blk 0;
-        }
-    } else blk: {
-        // Index too large to represent as usize
-        break :blk 0;
-    };
-
-    try frame.pushStack(hash_value);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

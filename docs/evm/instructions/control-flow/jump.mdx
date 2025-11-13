@@ -377,21 +377,6 @@ export function handler_0x56_JUMP(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// JUMP opcode (0x56) - Unconditional jump
-pub fn jump(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasMidStep);
-    const dest = try frame.popStack();
-    const dest_pc = std.math.cast(u32, dest) orelse return error.OutOfBounds;
-
-    // Validate jump destination
-    if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
-
-    frame.pc = dest_pc;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

@@ -282,17 +282,6 @@ uint256 futureBlock = block.number + 1_000_000_000;
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// NUMBER opcode (0x43) - Get block number
-pub fn number(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(evm.block_context.block_number);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

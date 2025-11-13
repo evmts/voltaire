@@ -165,22 +165,6 @@ const hash: Hash = someAddress;     // ❌ Type error
 - **Serialization** — Natural JSON serialization (no classes to unwrap)
 - **Interop** — Works seamlessly with other libraries
 
-### Namespaced Methods
-
-Methods are organized in namespaces that match the type they operate on:
-
-```typescript
-import { BrandedAddress } from "@tevm/voltaire/Address";
-
-// Methods are namespaced by type
-const addr = BrandedAddress.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const hex = BrandedAddress.toHex(addr);
-const checksummed = BrandedAddress.toChecksummed(addr);
-const isZero = BrandedAddress.isZero(addr);
-```
-
-**Tree-Shaking:** Only the specific functions you import are bundled.
-
 ## Class API Pattern
 
 For familiar OOP ergonomics, Voltaire provides class wrappers:
@@ -205,65 +189,7 @@ Address.zero();
 
 **Under the Hood:** Class instances are just branded Uint8Arrays with methods attached to the prototype. Zero overhead.
 
-## Choosing an API Style
-
-<Tabs>
-  <Tab title="Class API">
-
-**Use when:**
-- You prefer OOP patterns
-- You want familiar method chaining
-- Bundle size isn't critical
-- You're prototyping quickly
-
-```typescript
-import { Address, Hash, Uint } from "@tevm/voltaire";
-
-const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = addr.toChecksummed();
-
-const a = Uint.from(100n);
-const b = Uint.from(200n);
-const sum = Uint.plus(a, b);
-```
-
-  </Tab>
-  <Tab title="Branded Types">
-
-**Use when:**
-- Bundle size matters (tree-shaking)
-- You want zero runtime overhead
-- You need maximum performance
-- You're building a library
-
-```typescript
-import { BrandedAddress } from "@tevm/voltaire/Address";
-import { BrandedUint } from "@tevm/voltaire/Uint";
-
-const addr = BrandedAddress.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = BrandedAddress.toChecksummed(addr);
-
-const a = BrandedUint.from(100n);
-const b = BrandedUint.from(200n);
-const sum = BrandedUint.plus(a, b);
-```
-
-  </Tab>
-</Tabs>
-
-**You can mix both styles** — they operate on the same data:
-
-```typescript
-import { Address } from "@tevm/voltaire";
-import { BrandedAddress } from "@tevm/voltaire/Address";
-
-const addr1 = Address("0x...");
-const addr2 = BrandedAddress.fromHex("0x...");
-
-// Both work together
-BrandedAddress.equals(addr1, addr2); // ✅ Works
-addr1.equals(addr2);                  // ✅ Works
-```
+The Class API provides all you need for most use cases with familiar OOP patterns.
 
 ## Method Naming Convention
 
@@ -710,16 +636,6 @@ Understand the branded type pattern for type safety.
 Optimize performance with Zig-compiled WASM modules.
 
 [View benchmarks →](/wasm/)
-
-### API Overview
-Learn universal patterns and design philosophy.
-
-[Read overview →](/overview/)
-
-### Zig API
-Use Voltaire in native Zig applications.
-
-[View Zig docs →](/zig/)
 
 ## Design Principles
 

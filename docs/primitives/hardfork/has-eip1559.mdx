@@ -4,65 +4,7 @@ description: Check if EIP-1559 base fee mechanism is available
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.hasEIP1559(): boolean`
-
-Check if EIP-1559 base fee mechanism is available in this hardfork. Active since London.
-
-**Returns:** `boolean` - True if EIP-1559 is supported
-
-**Example:**
-
-```typescript
-import { Hardfork, LONDON, BERLIN, CANCUN } from '@tevm/voltaire'
-
-const london = Hardfork.fromString("london")
-const berlin = Hardfork.fromString("berlin")
-
-london.hasEIP1559()   // true - London introduced EIP-1559
-berlin.hasEIP1559()   // false - Berlin pre-dates EIP-1559
-CANCUN.hasEIP1559()   // true - all post-London hardforks
-```
-
-**Convenience alias:** `fork.supportsEIP1559()` - Same functionality, different naming style
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1559.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1559.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `hasEIP1559(fork: BrandedHardfork): boolean`
-
-Check if EIP-1559 base fee mechanism is available in this hardfork. Active since London.
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to check
-
-**Returns:** `boolean` - True if EIP-1559 is supported
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { LONDON, BERLIN, CANCUN } from '@tevm/voltaire'
-
-Hardfork.hasEIP1559(LONDON)   // true
-Hardfork.hasEIP1559(BERLIN)   // false
-Hardfork.hasEIP1559(CANCUN)   // true
-
-// Convenience alias
-Hardfork.supportsEIP1559(LONDON)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1559.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1559.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## EIP-1559 Features

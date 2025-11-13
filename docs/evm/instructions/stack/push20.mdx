@@ -109,7 +109,6 @@ All PUSH1-32 instructions cost the same despite different data sizes. Bytecode s
 
 | PUSH20 | 3 | 21 | Address literals |
 
-
 ## Common Usage
 
 ### Address Constants
@@ -179,19 +178,6 @@ export function handler_0x73_PUSH20(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// PUSH20 opcode (0x73) - Push 20 bytes onto stack
-pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
-    const push_size = opcode - 0x5f;
-    try frame.consumeGas(GasConstants.GasFastestStep);
-
-    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
-    try frame.pushStack(value);
-    frame.pc += 1 + push_size;
-}
-```
-</Tab>
 </Tabs>
 
 ## Edge Cases

@@ -4,62 +4,7 @@ description: Check if transient storage opcodes (TLOAD/TSTORE) are available
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.hasEIP1153(): boolean`
-
-Check if transient storage opcodes (TLOAD/TSTORE) are available in this hardfork. Active since Cancun.
-
-**Returns:** `boolean` - True if EIP-1153 is supported
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, SHANGHAI } from '@tevm/voltaire'
-
-const cancun = Hardfork.fromString("cancun")
-
-cancun.hasEIP1153()     // true - Cancun introduced transient storage
-SHANGHAI.hasEIP1153()   // false - Shanghai pre-dates transient storage
-```
-
-**Convenience alias:** `fork.supportsTransientStorage()` - Same functionality, different naming style
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1153.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1153.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `hasEIP1153(fork: BrandedHardfork): boolean`
-
-Check if transient storage opcodes (TLOAD/TSTORE) are available in this hardfork. Active since Cancun.
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to check
-
-**Returns:** `boolean` - True if EIP-1153 is supported
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, SHANGHAI } from '@tevm/voltaire'
-
-Hardfork.hasEIP1153(CANCUN)     // true
-Hardfork.hasEIP1153(SHANGHAI)   // false
-
-// Convenience alias
-Hardfork.supportsTransientStorage(CANCUN)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP1153.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP1153.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## EIP-1153 Features

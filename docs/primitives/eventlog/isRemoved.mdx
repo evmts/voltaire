@@ -4,67 +4,7 @@ description: Check if log was removed due to chain reorganization
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `eventLog.isRemoved(): boolean`
-
-Check if log was removed due to chain reorganization.
-
-**Returns:** `boolean` - True if `log.removed === true`
-
-**Example:**
-
-```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
-
-const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')],
-  data: Hex.from('0x'),
-  blockNumber: 18000000n,
-  removed: true, // Marked as removed due to reorg
-});
-
-const removed = log.isRemoved();
-console.log(removed); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `isRemoved(log: BrandedEventLog): boolean`
-
-Check if log was removed due to chain reorganization.
-
-**Parameters:**
-- `log: BrandedEventLog` - Event log to check
-
-**Returns:** `boolean` - True if `log.removed === true`
-
-**Example:**
-
-```typescript
-import * as EventLog from '@tevm/voltaire/EventLog';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')],
-  data: Hex.from('0x'),
-  blockNumber: 18000000n,
-  removed: true,
-});
-
-const removed = EventLog.isRemoved(log);
-console.log(removed); // true
-```
-
-**Defined in:** [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
-
-</Tab>
 </Tabs>
 
 ## Chain Reorganizations
@@ -253,8 +193,8 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const log = EventLog.from({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')],
-  data: Hex.from('0x'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
   // No removed field
 });
 

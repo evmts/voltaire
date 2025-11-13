@@ -391,32 +391,6 @@ function findUnreachableCode(bytecode: Uint8Array): Set<number> {
 }
 ```
 
-## Tree-Shakeable Usage
-
-Import only validation functions needed:
-
-```typescript
-import {
-  isValid,
-  isValidJumpDest,
-  isPush,
-  isDup,
-  isSwap,
-  isLog,
-  isJump,
-  isTerminating
-} from '@tevm/primitives/Opcode'
-
-const valid = isValid(0x60)
-const validJump = isValidJumpDest(bytecode, offset)
-const push = isPush(opcode)
-const dup = isDup(opcode)
-const swap = isSwap(opcode)
-const log = isLog(opcode)
-const jump = isJump(opcode)
-const terminates = isTerminating(opcode)
-```
-
 ## See Also
 
 - [Constructors](/primitives/opcode/constructors) - Parsing bytecode

@@ -8,34 +8,7 @@ description: Parse EVM bytecode into array of instructions with offsets and imme
 Parse bytecode into array of instructions with offsets and immediates.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const bytecode = new Uint8Array([
-  0x60, 0x80,           // PUSH1 0x80
-  0x60, 0x40,           // PUSH1 0x40
-  0x52,                 // MSTORE
-  0x60, 0x04,           // PUSH1 0x04
-  0x36,                 // CALLDATASIZE
-  0x10,                 // LT
-  0x61, 0x00, 0x49,     // PUSH2 0x0049
-  0x57,                 // JUMPI
-])
-
-const instructions = Opcode.parse(bytecode)
-// [
-//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x80]) },
-//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x40]) },
-//   { offset: 4, opcode: 0x52 },
-//   { offset: 5, opcode: 0x60, immediate: Uint8Array([0x04]) },
-//   { offset: 7, opcode: 0x36 },
-//   { offset: 8, opcode: 0x10 },
-//   { offset: 9, opcode: 0x61, immediate: Uint8Array([0x00, 0x49]) },
-//   { offset: 12, opcode: 0x57 }
-// ]
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { parse } from '@tevm/voltaire/Opcode'
@@ -54,32 +27,7 @@ const instructions = parse(bytecode)
 // ]
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    const bytecode = [_]u8{
-        0x60, 0x80,  // PUSH1 0x80
-        0x60, 0x40,  // PUSH1 0x40
-        0x52,        // MSTORE
-    };
-
-    var instructions = try Opcode.parse(allocator, &bytecode);
-    defer instructions.deinit(allocator);
-
-    for (instructions.items) |inst| {
-        std.debug.print("Offset: {}, Opcode: 0x{x}\n", .{ inst.offset, inst.opcode });
-    }
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

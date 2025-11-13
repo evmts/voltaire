@@ -29,35 +29,6 @@ Runtime-validated 32-byte `Uint8Array`. [Brand](/getting-started/branded-types) 
 
 Defined in: [primitives/Hash/BrandedHash/BrandedHash.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/BrandedHash.ts)
 
-## Namespace API
-
-All functions exported as both individual exports and namespace:
-
-```typescript
-import * as BrandedHash from '@tevm/voltaire/BrandedHash'
-
-// Namespace usage
-const hash = BrandedHash.from("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-const hex = BrandedHash.toHex(hash)
-const dataHash = BrandedHash.keccak256(data)
-```
-
-## Tree-Shakeable Usage
-
-Import only what you need:
-
-```typescript
-import { from, toHex, equals, keccak256String } from '@tevm/voltaire/BrandedHash'
-import type { BrandedHash } from '@tevm/voltaire/BrandedHash'
-
-const hash: BrandedHash = from("0x1234567890abcdef...")
-const hex = toHex(hash)
-const isEqual = equals(hash, otherHash)
-const eventHash = keccak256String("Transfer(address,address,uint256)")
-```
-
-**Bundle impact:** Only `from`, `toHex`, `equals`, and `keccak256String` included. Methods like `random`, `clone`, `slice` excluded unless imported.
-
 ## Available Functions
 
 All Hash functionality available as tree-shakeable functions:

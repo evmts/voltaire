@@ -4,69 +4,7 @@ description: Remove Solidity compiler metadata from bytecode
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `bytecode.stripMetadata(): Bytecode`
-
-Remove Solidity metadata from bytecode.
-
-**Returns:** `Bytecode` - Bytecode with metadata removed
-
-**Example:**
-
-```typescript
-import { Bytecode } from '@tevm/voltaire'
-
-const deployed = Bytecode.fromHex(deployedBytecode)
-const stripped = deployed.stripMetadata()
-
-// Compare sizes
-console.log(`Original: ${deployed.size()} bytes`)
-console.log(`Stripped: ${stripped.size()} bytes`)
-```
-
-**Defined in:** [primitives/Bytecode/BrandedBytecode/stripMetadata.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/stripMetadata.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `stripMetadata(bytecode: BrandedBytecode): BrandedBytecode`
-
-Remove Solidity metadata from bytecode.
-
-**Parameters:**
-- `bytecode: BrandedBytecode` - Bytecode to strip
-
-**Returns:** `BrandedBytecode` - Bytecode with metadata removed
-
-**Example:**
-
-```typescript
-import * as Bytecode from '@tevm/voltaire/Bytecode'
-
-const deployed = Bytecode.fromHex(deployedBytecode)
-const stripped = Bytecode.stripMetadata(deployed)
-
-// Compare sizes
-console.log(`Original: ${size(deployed)} bytes`)
-console.log(`Stripped: ${size(stripped)} bytes`)
-```
-
-**Defined in:** [primitives/Bytecode/BrandedBytecode/stripMetadata.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/stripMetadata.js)
-
-</Tab>
-<Tab title="Zig">
-
-## `stripMetadata(bytecode: Bytecode) Bytecode`
-
-TypeScript implementation only. Complex string formatting not yet ported to Zig.
-
-```zig
-// TypeScript implementation only
-// Complex string formatting not yet ported to Zig
-```
-
-</Tab>
 <Tab title="C">
 
 ## `bytecode_strip_metadata(bytecode_t bytecode) bytecode_t`

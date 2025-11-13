@@ -4,69 +4,7 @@ description: Add two Uint256 values with wrapping overflow
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.plus(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-Add two Uint256 values. Wraps on overflow (mod 2^256).
-
-**Parameters:**
-- `a: BrandedUint` - First value
-- `b: BrandedUint` - Second value
-
-**Returns:** `BrandedUint` - Sum (mod 2^256)
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const a = Uint.from(100n)
-const b = Uint.from(50n)
-Uint.plus(a, b)  // 150
-
-// Overflow wraps
-Uint.plus(Uint.MAX, Uint.ONE)  // 0 (wraps)
-Uint.plus(Uint.MAX, Uint.from(2n))  // 1
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/plus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/plus.ts#L19)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `plus(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const sum = Uint.plus(Uint.from(100n), Uint.from(50n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/plus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/plus.ts#L19)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.add(a: Uint, b: Uint): Uint`
-
-Wrapping addition.
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const a = Uint.init(100);
-const b = Uint.init(50);
-const sum = Uint.add(a, b);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 <Warning title="Wrapping Behavior">

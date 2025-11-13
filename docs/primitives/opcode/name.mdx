@@ -8,22 +8,7 @@ description: Get EVM opcode mnemonic name
 Get opcode mnemonic name.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-Opcode.name(0x00)  // "STOP"
-Opcode.name(0x01)  // "ADD"
-Opcode.name(0x60)  // "PUSH1"
-Opcode.name(0x7F)  // "PUSH32"
-Opcode.name(0xFF)  // "SELFDESTRUCT"
-
-// Using constants
-Opcode.name(Opcode.SSTORE)  // "SSTORE"
-Opcode.name(Opcode.JUMP)    // "JUMP"
-Opcode.name(Opcode.CALL)    // "CALL"
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { name, ADD, PUSH1, SLOAD } from '@tevm/voltaire/Opcode'
@@ -33,21 +18,7 @@ name(PUSH1)  // "PUSH1"
 name(SLOAD)  // "SLOAD"
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() void {
-    const name_add = Opcode.name(0x01);
-    std.debug.print("{s}\n", .{name_add});  // "ADD"
-
-    const name_push1 = Opcode.name(0x60);
-    std.debug.print("{s}\n", .{name_push1});  // "PUSH1"
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

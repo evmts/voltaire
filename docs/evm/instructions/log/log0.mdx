@@ -364,60 +364,6 @@ export function handler_0xa0_LOG0(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// LOG0 opcode (0xa0) - Emit log with no indexed topics
-pub fn log0(frame: *FrameType) FrameType.EvmError!void {
-    // EIP-214: LOG cannot be used in static call context
-    if (frame.is_static) return error.StaticCallViolation;
-
-    const topic_count: u8 = 0;
-    const offset = try frame.popStack();
-    const length = try frame.popStack();
-
-    // Cast to u32 (check bounds)
-    const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
-    const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
-
-    // Calculate gas cost: 375 base + 8 per byte data
-    const log_cost = 375 + @as(u64, length_u32) * 8;
-    try frame.consumeGas(log_cost);
-
-    // Memory expansion
-    if (length_u32 > 0) {
-        const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
-        const mem_cost = frame.memoryExpansionCost(end_bytes);
-        try frame.consumeGas(mem_cost);
-        const aligned = wordAlignedSize(end_bytes);
-        if (aligned > frame.memory_size) frame.memory_size = aligned;
-    }
-
-    const evm = frame.getEvm();
-
-    // Read data from memory
-    var data_slice: []u8 = &[_]u8{};
-    if (length_u32 > 0) {
-        const alloc = evm.arena.allocator();
-        const buf = try alloc.alloc(u8, length_u32);
-        var idx: u32 = 0;
-        while (idx < length_u32) : (idx += 1) {
-            buf[idx] = frame.readMemory(off_u32 + idx);
-        }
-        data_slice = buf;
-    }
-
-    // Create log entry
-    const log_entry = call_result.Log{
-        .address = frame.address,
-        .topics = &[_]u256{},
-        .data = data_slice,
-    };
-
-    try evm.logs.append(evm.arena.allocator(), log_entry);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

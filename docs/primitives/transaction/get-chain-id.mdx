@@ -8,65 +8,7 @@ description: Extract chain ID from transaction
 Extract chain ID from transaction.
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function getChainId(tx: Any): bigint | undefined
-```
-
-**Parameters:**
-- `tx: Any` - Any transaction type
-
-**Returns:** `bigint | undefined` - Chain ID if present, undefined for pre-EIP-155 legacy transactions
-
-**Example:**
-
-```typescript
-import { getChainId } from '@tevm/voltaire/Transaction'
-
-// EIP-1559 transaction
-const eip1559: Transaction.EIP1559 = {
-  type: Transaction.Type.EIP1559,
-  chainId: 1n,
-  // ... other fields
-}
-
-const chainId = getChainId(eip1559)
-console.log(chainId) // 1n
-
-// Legacy transaction with EIP-155
-const legacy: Transaction.Legacy = {
-  type: Transaction.Type.Legacy,
-  v: 37n,  // chainId = (37 - 35) / 2 = 1
-  // ... other fields
-}
-
-const legacyChainId = getChainId(legacy)
-console.log(legacyChainId) // 1n
-
-// Pre-EIP-155 legacy transaction
-const preEip155: Transaction.Legacy = {
-  type: Transaction.Type.Legacy,
-  v: 27n,  // No chain ID
-  // ... other fields
-}
-
-const noChainId = getChainId(preEip155)
-console.log(noChainId) // undefined
-```
-
-**Source:** [getChainId.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getChainId.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## TypeScript only
-
-Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
-
-Use TypeScript API for transaction operations.
-
-</Tab>
 </Tabs>
 
 ## Chain ID Extraction

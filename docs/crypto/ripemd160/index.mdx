@@ -245,19 +245,7 @@ export function hash(data: Uint8Array | string): Uint8Array {
 }
 ```
 
-### Zig Implementation
-Custom implementation in `src/crypto/ripemd160.zig`:
-- Follows Bitcoin Core RIPEMD160 reference implementation
-- Uses standard RIPEMD160 initial values and operations
-- **UNAUDITED**: Custom cryptographic code without security audit
-- Constant-time operations for side-channel resistance
-- Supports streaming/incremental hashing
-
-<Warning title="Unaudited Crypto Warning">
-The Zig RIPEMD160 implementation is custom cryptographic code that has NOT been professionally audited. It follows the Bitcoin Core reference but may contain implementation bugs. Use in production at your own risk.
-</Warning>
-
-### WASM
+#### WASM
 Available via `ripemd160.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript

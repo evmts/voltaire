@@ -314,18 +314,6 @@ function clearBits(uint256 value, uint256 mask) pure returns (uint256) {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// XOR opcode (0x18) - Bitwise XOR operation
-pub fn op_xor(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasFastestStep);
-    const a = try frame.popStack();
-    const b = try frame.popStack();
-    try frame.pushStack(a ^ b);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

@@ -4,68 +4,7 @@ description: Raise Uint256 to power with wrapping overflow
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `Uint.toPower(base: BrandedUint, exponent: BrandedUint): BrandedUint`
-
-Raise to power. Wraps on overflow (mod 2^256).
-
-**Parameters:**
-- `base: BrandedUint` - Base value
-- `exponent: BrandedUint` - Exponent
-
-**Returns:** `BrandedUint` - Result (mod 2^256)
-
-**Example:**
-
-```typescript
-import { Uint } from '@tevm/voltaire'
-
-const base = Uint.from(2n)
-const exp = Uint.from(8n)
-Uint.toPower(base, exp)  // 256 (2^8)
-
-// Large exponents wrap
-Uint.toPower(Uint.from(2n), Uint.from(256n))  // 0 (wraps)
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/toPower.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toPower.ts#L19)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `toPower(base: BrandedUint, exponent: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.toPower(Uint.from(2n), Uint.from(8n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/toPower.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toPower.ts#L19)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.pow(base: Uint, exponent: Uint): Uint`
-
-Wrapping exponentiation.
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const base = Uint.init(2);
-const exp = Uint.init(8);
-const result = Uint.pow(base, exp);
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
 </Tabs>
 
 <Warning title="Wrapping Behavior">

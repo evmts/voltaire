@@ -8,24 +8,7 @@ description: Find all valid JUMPDEST positions in EVM bytecode
 Find all valid JUMPDEST positions in bytecode.
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const bytecode = new Uint8Array([
-  0x60, 0x04,     // PUSH1 0x04
-  0x56,           // JUMP
-  0x5B,           // JUMPDEST (offset 3)
-  0x60, 0x01,     // PUSH1 0x01
-  0x60, 0x02,     // PUSH1 0x02
-  0x01,           // ADD
-  0x00            // STOP
-])
-
-const dests = Opcode.jumpDests(bytecode)
-// Set([3]) - JUMPDEST at offset 3
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { jumpDests } from '@tevm/voltaire/Opcode'
@@ -34,33 +17,7 @@ const dests = jumpDests(bytecode)
 console.log(Array.from(dests))  // [3]
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    const bytecode = [_]u8{
-        0x60, 0x04,  // PUSH1 0x04
-        0x56,        // JUMP
-        0x5B,        // JUMPDEST
-    };
-
-    var dests = try Opcode.jumpDests(allocator, &bytecode);
-    defer dests.deinit();
-
-    var it = dests.iterator();
-    while (it.next()) |offset| {
-        std.debug.print("JUMPDEST at: {}\n", .{offset});
-    }
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

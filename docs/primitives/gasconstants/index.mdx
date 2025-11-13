@@ -24,33 +24,7 @@ GasConstants provides comprehensive gas cost definitions and calculations for EV
 ## Quick Start
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
 
-// Direct constants
-GasConstants.QuickStep      // 2n
-GasConstants.FastestStep    // 3n
-GasConstants.Sload          // 100n
-GasConstants.ColdSload      // 2100n
-
-// Calculations
-const keccakCost = GasConstants.calculateKeccak256Cost(64n);  // 42n
-const memExpansion = GasConstants.calculateMemoryExpansionCost(0n, 128n);
-const sstoreResult = GasConstants.calculateSstoreCost(false, 0n, 100n);
-const callResult = GasConstants.calculateCallCost(true, false, false, 100000n);
-
-// Hardfork utilities
-GasConstants.hasEIP2929('berlin');              // true
-GasConstants.getColdSloadCost('istanbul');      // 100n (pre-EIP-2929)
-GasConstants.getColdSloadCost('berlin');        // 2100n (post-EIP-2929)
-
-// Precompiles
-GasConstants.Precompile.EcRecover;                          // 3000n
-GasConstants.Precompile.calculateSha256Cost(64n);           // 84n
-GasConstants.Precompile.getEcAddCost('istanbul');           // 150n
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import {

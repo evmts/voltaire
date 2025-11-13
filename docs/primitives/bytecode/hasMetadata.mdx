@@ -4,67 +4,7 @@ description: Check if bytecode contains Solidity compiler metadata
 ---
 
 <Tabs>
-<Tab title="Class API (recommended)">
 
-## `bytecode.hasMetadata(): boolean`
-
-Check if bytecode contains Solidity compiler metadata.
-
-**Returns:** `boolean` - `true` if metadata is present
-
-**Example:**
-
-```typescript
-import { Bytecode } from '@tevm/voltaire'
-
-const deployed = Bytecode.fromHex(deployedBytecode)
-if (deployed.hasMetadata()) {
-  console.log("Contains Solidity metadata")
-  const stripped = deployed.stripMetadata()
-}
-```
-
-**Defined in:** [primitives/Bytecode/BrandedBytecode/hasMetadata.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hasMetadata.js)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `hasMetadata(bytecode: BrandedBytecode): boolean`
-
-Check if bytecode contains Solidity compiler metadata.
-
-**Parameters:**
-- `bytecode: BrandedBytecode` - Bytecode to check
-
-**Returns:** `boolean` - `true` if metadata is present
-
-**Example:**
-
-```typescript
-import * as Bytecode from '@tevm/voltaire/Bytecode'
-
-const deployed = Bytecode.fromHex(deployedBytecode)
-if (hasMetadata(deployed)) {
-  console.log("Contains Solidity metadata")
-  const stripped = Bytecode.stripMetadata(deployed)
-}
-```
-
-**Defined in:** [primitives/Bytecode/BrandedBytecode/hasMetadata.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hasMetadata.js)
-
-</Tab>
-<Tab title="Zig">
-
-## `hasMetadata(bytecode: Bytecode) bool`
-
-TypeScript implementation only. Complex string formatting not yet ported to Zig.
-
-```zig
-// TypeScript implementation only
-// Complex string formatting not yet ported to Zig
-```
-
-</Tab>
 <Tab title="C">
 
 ## `bytecode_has_metadata(bytecode_t bytecode) bool`

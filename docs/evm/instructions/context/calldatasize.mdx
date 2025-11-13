@@ -131,15 +131,6 @@ export function calldatasize(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-pub fn calldatasize(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(2);
-    try frame.pushStack(frame.calldata.len);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## References

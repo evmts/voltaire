@@ -13,7 +13,7 @@ New to Ethereum addresses? Start with [Fundamentals](/primitives/address/fundame
 
 ## Overview
 
-Address is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/getting-started/tree-shaking) used throughout Voltaire.
+Address is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following data-first principles used throughout Voltaire.
 
 ```typescript
 export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
@@ -35,67 +35,8 @@ This makes debugging more readable than raw byte arrays while maintaining the pe
 
 ## Quick Start
 
-<Note>
-Address supports both **Class API** (instance methods) and **Namespace API** (functional style). See [API Patterns](/getting-started/tree-shaking) to understand the differences and choose the right approach for your use case.
-</Note>
-
 <Tabs>
-<Tab title="Class API">
 
-```typescript
-import { Address } from '@tevm/voltaire';
-
-// Create from hex string (most common)
-const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-// Validate input
-if (!Address.isValid("0xinvalid")) {
-  throw new Error("Invalid address");
-}
-
-// Convert to different formats
-addr.toHex();         // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
-addr.toChecksummed(); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-addr.toShortHex();    // "0x742d…1e3e"
-
-// Compare addresses
-addr.equals(addr2);   // false
-addr.isZero();        // false
-
-// Calculate contract addresses
-const contractAddr = addr.calculateCreateAddress(0n);  // CREATE
-const create2Addr = addr.calculateCreate2Address(salt, initCode);  // CREATE2
-```
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-```typescript
-import * as Address from '@tevm/voltaire/Address';
-
-// Create from hex string (most common)
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-// Validate input
-if (!Address.isValid("0xinvalid")) {
-  throw new Error("Invalid address");
-}
-
-// Convert to different formats
-Address.toHex(addr);         // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
-Address.toChecksummed(addr); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-Address.toShortHex(addr);    // "0x742d…1e3e"
-
-// Compare addresses
-Address.equals(addr, addr2); // false
-Address.isZero(addr);        // false
-
-// Calculate contract addresses
-const contractAddr = Address.calculateCreateAddress(addr, 0n);  // CREATE
-const create2Addr = Address.calculateCreate2Address(addr, salt, initCode);  // CREATE2
-```
-
-</Tab>
 </Tabs>
 
 ## Practical Examples
@@ -147,97 +88,7 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 ### Complete API
 
 <Tabs>
-<Tab title="Class API">
 
-**Constructors:**
-- `Address(value)` - Universal constructor from any input
-- `Address.fromHex(hex)` - Parse hex string (with or without 0x prefix)
-- `Address.fromBytes(bytes)` - Create from Uint8Array (must be 20 bytes)
-- `Address.fromNumber(value)` - Create from bigint or number
-- `Address.fromPublicKey(x, y)` - Derive from secp256k1 public key
-- `Address.fromPrivateKey(privateKey)` - Derive from private key
-- `Address.fromAbiEncoded(bytes)` - Decode from ABI-encoded bytes (32 bytes, left-padded)
-- `Address.fromBase64(b64)` - Parse base64 string
-- `Address.of(...items)` - Create from byte values
-- `Address.zero()` - Create zero address (0x0000...0000)
-
-**Conversions:**
-- `address.toHex()` - Convert to lowercase hex string with 0x prefix
-- `address.toChecksummed()` - Convert to EIP-55 mixed-case checksummed hex
-- `address.toLowercase()` - Convert to lowercase hex string
-- `address.toUppercase()` - Convert to uppercase hex string (no 0x)
-- `address.toU256()` - Convert to 256-bit unsigned integer
-- `address.toAbiEncoded()` - Encode as 32-byte left-padded buffer
-- `address.toShortHex()` - Format for display (0x742d…1e3e)
-- `address.toBytes()` - Return raw Uint8Array
-
-**Validation:**
-- `Address.isValid(value)` - Check if value can be converted to address
-- `Address.isValidChecksum(hex)` - Verify EIP-55 checksum (case-sensitive)
-- `Address.is(value)` - Type guard for BrandedAddress
-
-**Comparisons:**
-- `address.equals(other)` - Check equality
-- `address.compare(other)` - Compare for sorting (-1, 0, 1)
-- `address.lessThan(other)` - Check if less than
-- `address.greaterThan(other)` - Check if greater than
-- `address.isZero()` - Check if zero address
-
-**Contract Addresses:**
-- `address.calculateCreateAddress(nonce)` - Calculate CREATE deployment address
-- `address.calculateCreate2Address(salt, initCode)` - Calculate CREATE2 deployment address
-
-**Utilities:**
-- `address.clone()` - Create copy
-- `Address.sortAddresses(addresses)` - Sort addresses ascending
-- `Address.deduplicateAddresses(addresses)` - Remove duplicates
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-**Constructors:**
-- `from(value)` - Universal constructor from any input
-- `fromHex(hex)` - Parse hex string (with or without 0x prefix)
-- `fromBytes(bytes)` - Create from Uint8Array (must be 20 bytes)
-- `fromNumber(value)` - Create from bigint or number
-- `fromPublicKey(x, y)` - Derive from secp256k1 public key
-- `fromPrivateKey(privateKey)` - Derive from private key
-- `fromAbiEncoded(bytes)` - Decode from ABI-encoded bytes (32 bytes, left-padded)
-- `fromBase64(b64)` - Parse base64 string
-- `zero()` - Create zero address (0x0000...0000)
-
-**Conversions:**
-- `toHex(address)` - Convert to lowercase hex string with 0x prefix
-- `toChecksummed(address)` - Convert to EIP-55 mixed-case checksummed hex
-- `toLowercase(address)` - Convert to lowercase hex string
-- `toUppercase(address)` - Convert to uppercase hex string (no 0x)
-- `toU256(address)` - Convert to 256-bit unsigned integer
-- `toAbiEncoded(address)` - Encode as 32-byte left-padded buffer
-- `toShortHex(address)` - Format for display (0x742d…1e3e)
-- `toBytes(address)` - Return raw Uint8Array
-
-**Validation:**
-- `isValid(value)` - Check if value can be converted to address
-- `isValidChecksum(hex)` - Verify EIP-55 checksum (case-sensitive)
-- `is(value)` - Type guard for BrandedAddress
-
-**Comparisons:**
-- `equals(a, b)` - Check equality
-- `compare(a, b)` - Compare for sorting (-1, 0, 1)
-- `lessThan(a, b)` - Check if less than
-- `greaterThan(a, b)` - Check if greater than
-- `isZero(address)` - Check if zero address
-
-**Contract Addresses:**
-- `calculateCreateAddress(address, nonce)` - Calculate CREATE deployment address
-- `calculateCreate2Address(address, salt, initCode)` - Calculate CREATE2 deployment address
-
-**Utilities:**
-- `clone(address)` - Create copy
-- `sortAddresses(addresses)` - Sort addresses ascending
-- `deduplicateAddresses(addresses)` - Remove duplicates
-
-</Tab>
 </Tabs>
 
 ## Types

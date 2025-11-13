@@ -19,20 +19,7 @@ interface BaseInstruction {
 }
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-pub const Instruction = struct {
-    /// Program counter (position of opcode)
-    pc: u32,
-    /// Opcode byte
-    opcode: u8,
-    /// Instruction size (1 for non-PUSH, 1 + push_size for PUSH)
-    size: u8,
-    /// Immediate value for PUSH instructions (null for non-PUSH)
-    push_value: ?u256,
-};
-```
-</Tab>
+
 </Tabs>
 
 ## Instruction Categories

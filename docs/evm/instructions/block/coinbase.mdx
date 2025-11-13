@@ -313,21 +313,6 @@ contract CrossChainSafe {
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// COINBASE opcode (0x41) - Get block coinbase address
-pub fn coinbase(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-    try frame.consumeGas(GasConstants.GasQuickStep);
-
-    // Convert 20-byte address to u256
-    const coinbase_u256 = primitives.Address.toU256(evm.block_context.block_coinbase);
-
-    try frame.pushStack(coinbase_u256);
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

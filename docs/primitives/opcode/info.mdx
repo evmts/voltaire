@@ -8,35 +8,7 @@ description: Get complete opcode metadata including gas cost, stack effects, and
 Get complete opcode metadata (gas cost, stack I/O, name).
 
 <Tabs>
-<Tab title="Namespace API">
-```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
 
-const info = Opcode.info(Opcode.ADD)
-// {
-//   gasCost: 3,
-//   stackInputs: 2,
-//   stackOutputs: 1,
-//   name: "ADD"
-// }
-
-const pushInfo = Opcode.info(Opcode.PUSH1)
-// {
-//   gasCost: 3,
-//   stackInputs: 0,
-//   stackOutputs: 1,
-//   name: "PUSH1"
-// }
-
-const sstoreInfo = Opcode.info(Opcode.SSTORE)
-// {
-//   gasCost: 100,        // Base cost, actual varies
-//   stackInputs: 2,      // slot, value
-//   stackOutputs: 0,
-//   name: "SSTORE"
-// }
-```
-</Tab>
 <Tab title="Functional API">
 ```typescript
 import { info, ADD, SLOAD } from '@tevm/voltaire/Opcode'
@@ -51,21 +23,7 @@ const sloadInfo = info(SLOAD)
 console.log(sloadInfo.gasCost)    // 100 (base, can be 2100 for cold)
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Opcode = primitives.opcode;
 
-pub fn main() !void {
-    const add_info = Opcode.info(0x01);  // ADD
-    std.debug.print("Name: {s}\n", .{add_info.name});
-    std.debug.print("Gas: {}\n", .{add_info.gasCost});
-    std.debug.print("Stack In: {}\n", .{add_info.stackInputs});
-    std.debug.print("Stack Out: {}\n", .{add_info.stackOutputs});
-}
-```
-</Tab>
 </Tabs>
 
 ## Parameters

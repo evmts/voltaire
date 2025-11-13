@@ -349,22 +349,6 @@ Maximum change per block: ±12.5%
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// BASEFEE opcode (0x48) - Get base fee per gas (EIP-3198, London+)
-pub fn basefee(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // EIP-3198: BASEFEE was introduced in London hardfork
-    if (evm.hardfork.isBefore(.LONDON)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasQuickStep);
-    try frame.pushStack(evm.block_context.block_base_fee);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

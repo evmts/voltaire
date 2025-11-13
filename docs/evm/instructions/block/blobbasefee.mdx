@@ -381,24 +381,6 @@ function fake_exponential(
 ## Implementation
 
 <Tabs>
-<Tab title="Zig">
-```zig
-/// BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)
-pub fn blobbasefee(frame: *FrameType) FrameType.EvmError!void {
-    const evm = frame.getEvm();
-
-    // EIP-7516: BLOBBASEFEE was introduced in Cancun hardfork
-    if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
-
-    try frame.consumeGas(GasConstants.GasQuickStep);
-
-    // blob_base_fee is pre-calculated from excess_blob_gas in BlockContext
-    try frame.pushStack(evm.block_context.blob_base_fee);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 
 <Tab title="TypeScript">
 ```typescript

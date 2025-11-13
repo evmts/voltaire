@@ -4,63 +4,7 @@ description: Check if hardfork is after a target version (strictly greater than)
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.isAfter(target: BrandedHardfork): boolean`
-
-Check if current hardfork is after the target version (strictly greater than). Returns false if versions are equal.
-
-**Parameters:**
-- `target: BrandedHardfork` - Version to compare against
-
-**Returns:** `boolean` - True if current > target chronologically
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, SHANGHAI, LONDON } from '@tevm/voltaire'
-
-const fork = Hardfork.fromString("cancun")
-
-fork.isAfter(SHANGHAI)  // true - Cancun > Shanghai
-fork.isAfter(LONDON)    // true - Cancun > London
-fork.isAfter(CANCUN)    // false - Cancun === Cancun (not strictly after)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isAfter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAfter.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `isAfter(current: BrandedHardfork, target: BrandedHardfork): boolean`
-
-Check if current hardfork is after the target version (strictly greater than). Returns false if versions are equal.
-
-**Parameters:**
-- `current: BrandedHardfork` - Current hardfork version
-- `target: BrandedHardfork` - Version to compare against
-
-**Returns:** `boolean` - True if current > target chronologically
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, SHANGHAI } from '@tevm/voltaire'
-
-Hardfork.isAfter(CANCUN, SHANGHAI)    // true - Cancun > Shanghai
-Hardfork.isAfter(SHANGHAI, CANCUN)    // false - Shanghai < Cancun
-Hardfork.isAfter(CANCUN, CANCUN)      // false - Equal (not strictly after)
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/isAfter.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/isAfter.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Usage Patterns

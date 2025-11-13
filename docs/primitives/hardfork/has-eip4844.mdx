@@ -4,64 +4,7 @@ description: Check if blob transactions (proto-danksharding) are available
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.hasEIP4844(): boolean`
-
-Check if blob transactions (proto-danksharding) are available in this hardfork. Active since Cancun.
-
-**Returns:** `boolean` - True if EIP-4844 is supported
-
-**Example:**
-
-```typescript
-import { Hardfork, CANCUN, SHANGHAI, PRAGUE } from '@tevm/voltaire'
-
-const cancun = Hardfork.fromString("cancun")
-
-cancun.hasEIP4844()     // true - Cancun introduced blobs
-SHANGHAI.hasEIP4844()   // false - Shanghai pre-dates blobs
-PRAGUE.hasEIP4844()     // true - all post-Cancun hardforks
-```
-
-**Convenience alias:** `fork.supportsBlobs()` - Same functionality, different naming style
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP4844.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP4844.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `hasEIP4844(fork: BrandedHardfork): boolean`
-
-Check if blob transactions (proto-danksharding) are available in this hardfork. Active since Cancun.
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to check
-
-**Returns:** `boolean` - True if EIP-4844 is supported
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { CANCUN, SHANGHAI, PRAGUE } from '@tevm/voltaire'
-
-Hardfork.hasEIP4844(CANCUN)     // true
-Hardfork.hasEIP4844(SHANGHAI)   // false
-Hardfork.hasEIP4844(PRAGUE)     // true
-
-// Convenience alias
-Hardfork.supportsBlobs(CANCUN)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP4844.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP4844.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## EIP-4844 Features

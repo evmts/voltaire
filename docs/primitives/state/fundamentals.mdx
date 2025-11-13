@@ -4,7 +4,6 @@ description: Learn Ethereum state structure, Merkle Patricia Tries, and state ve
 sidebarTitle: State
 ---
 
-
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [State API](/primitives/state/index).
 </Info>
@@ -83,31 +82,7 @@ const contractAccount = {
 // - Nonce tracks created contracts (CREATE/CREATE2)
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const State = @import("state");
-const Address = @import("address");
-const Hash = @import("hash");
 
-// EOA account
-const eoa_address = try Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const eoa_account = .{
-  .balance = 1000000000000000000,  // 1 ETH in wei
-  .nonce = 42,                      // Transaction count
-  .storage_root = try Hash.from("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
-  .code_hash = try Hash.from("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"),
-};
-
-// Contract account
-const contract_address = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const contract_account = .{
-  .balance = 0,
-  .nonce = 1,
-  .storage_root = try Hash.from("0x..."),
-  .code_hash = try Hash.from("0x..."),
-};
-```
-</Tab>
 </Tabs>
 
 ## Storage State
@@ -136,29 +111,7 @@ const balanceSlot = computeMappingSlot(userAddress, balancesBaseSlot);
 const userBalanceKey = State.StorageKey(usdcAddress, balanceSlot);
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const State = @import("state");
-const Address = @import("address");
 
-// USDC contract storage
-const usdc_address = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-// Storage slot 0: total supply
-const slot0 = State.StorageKey{
-  .address = usdc_address,
-  .slot = 0,
-};
-
-// User balance slot (computed via keccak256)
-const user_address = try Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const balance_slot = computeMappingSlot(user_address, 1);
-const user_balance_key = State.StorageKey{
-  .address = usdc_address,
-  .slot = balance_slot,
-};
-```
-</Tab>
 </Tabs>
 
 ### Solidity Storage Layout
@@ -264,21 +217,7 @@ const afterTransfer = Hash.from("0xbbb...");
 console.log(Hash.equals(beforeTransfer, afterTransfer)); // false
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Hash = @import("hash");
 
-// Block state root
-const block_state_root = try Hash.from("0x123abc...");
-
-// State root changes with any state modification
-const before_transfer = try Hash.from("0xaaa...");
-// ... execute transfer ...
-const after_transfer = try Hash.from("0xbbb...");
-
-const changed = !Hash.equals(before_transfer, after_transfer); // true
-```
-</Tab>
 </Tabs>
 
 ## Storage Key Operations
@@ -322,26 +261,7 @@ if (State.StorageKey.is(key1)) {
 }
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const State = @import("state");
-const Address = @import("address");
 
-const contract = try Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-
-// Create storage keys
-const key1 = State.StorageKey{ .address = contract, .slot = 0 };
-const key2 = State.StorageKey{ .address = contract, .slot = 1 };
-
-// Compare keys
-const equal = State.StorageKey.equals(key1, key2); // false
-
-// Serialize (conceptual - Zig uses different approach)
-var buffer: [128]u8 = undefined;
-const key_str = try State.StorageKey.toString(&buffer, key1);
-std.debug.print("Key: {s}\n", .{key_str});
-```
-</Tab>
 </Tabs>
 
 ## State Transitions
@@ -418,42 +338,7 @@ const newRoot = computeStateRoot(stateAfter);
 console.log(`State root changed: ${!Hash.equals(oldRoot, newRoot)}`); // true
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Address = @import("address");
-const Hash = @import("hash");
 
-// State transition
-const sender = try Address.from("0xAlice...");
-const receiver = try Address.from("0xBob...");
-const amount = 1_000_000_000_000_000_000; // 1 ETH
-
-// Before state
-var state_before = StateMap.init(allocator);
-defer state_before.deinit();
-
-try state_before.put(sender, .{
-  .balance = 2_000_000_000_000_000_000,
-  .nonce = 5,
-  .storage_root = empty_storage_root,
-  .code_hash = empty_code_hash,
-});
-
-// Apply transaction (modifies state in place)
-try applyTransaction(&state_before, .{
-  .from = sender,
-  .to = receiver,
-  .value = amount,
-  .gas_price = 20_000_000_000,
-  .gas_limit = 21000,
-});
-
-// State root changes
-const old_root = try computeStateRoot(state_before);
-const new_root = try computeStateRoot(state_after);
-const changed = !Hash.equals(old_root, new_root); // true
-```
-</Tab>
 </Tabs>
 
 ### Contract Storage Changes
@@ -538,46 +423,7 @@ const isValid = verifyAccountProof(
 console.log(`Proof valid: ${isValid}`);
 ```
 </Tab>
-<Tab title="Zig">
-```zig
-const Hash = @import("hash");
-const Keccak256 = @import("crypto").Keccak256;
-const Rlp = @import("rlp");
 
-// Verify account proof
-fn verifyAccountProof(
-  state_root: Hash,
-  account_address: Address,
-  account_data: Account,
-  proof: []const []const u8,
-) !bool {
-  // 1. RLP encode account
-  const account_rlp = try Rlp.encode(allocator, .{
-    account_data.nonce,
-    account_data.balance,
-    account_data.storage_root,
-    account_data.code_hash,
-  });
-  defer allocator.free(account_rlp);
-
-  var current_hash = try Keccak256.hash(account_rlp);
-
-  // 2. Walk up trie
-  for (proof) |proof_node| {
-    const combined = try std.mem.concat(allocator, u8, &[_][]const u8{
-      proof_node,
-      &current_hash,
-    });
-    defer allocator.free(combined);
-
-    current_hash = try Keccak256.hash(combined);
-  }
-
-  // 3. Verify against state root
-  return Hash.equals(state_root, current_hash);
-}
-```
-</Tab>
 </Tabs>
 
 ## Common Use Cases

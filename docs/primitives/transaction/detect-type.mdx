@@ -8,63 +8,7 @@ description: Detect transaction type from serialized bytes
 Detect transaction type from serialized bytes.
 
 <Tabs>
-<Tab title="Namespace API">
 
-```typescript
-function detectType(data: Uint8Array): Transaction.Type
-```
-
-**Parameters:**
-- `data: Uint8Array` - Serialized transaction bytes
-
-**Returns:** `Transaction.Type` - Transaction type (0x00-0x04)
-
-**Throws:**
-- `Error("Empty transaction data")` - If data is empty
-- `Error("Unknown transaction type")` - If type byte is invalid
-
-**Example:**
-
-```typescript
-import { detectType, Type } from '@tevm/voltaire/Transaction'
-
-// EIP-1559 transaction (type 0x02)
-const eip1559Data = new Uint8Array([0x02, 0xf8, 0x6c, ...])
-const type1 = detectType(eip1559Data)
-console.log(type1 === Type.EIP1559) // true
-console.log(type1) // 2
-
-// Legacy transaction (starts with 0xc0-0xff, RLP list marker)
-const legacyData = new Uint8Array([0xf8, 0x6c, ...])
-const type2 = detectType(legacyData)
-console.log(type2 === Type.Legacy) // true
-console.log(type2) // 0
-
-// EIP-4844 blob transaction (type 0x03)
-const blobData = new Uint8Array([0x03, 0xf9, ...])
-const type3 = detectType(blobData)
-console.log(type3 === Type.EIP4844) // true
-console.log(type3) // 3
-
-// EIP-7702 authorization transaction (type 0x04)
-const authData = new Uint8Array([0x04, 0xf8, ...])
-const type4 = detectType(authData)
-console.log(type4 === Type.EIP7702) // true
-console.log(type4) // 4
-```
-
-**Source:** [detectType.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/detectType.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## TypeScript only
-
-Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
-
-Use TypeScript API for transaction operations.
-
-</Tab>
 </Tabs>
 
 ## Type Detection Logic

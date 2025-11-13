@@ -375,28 +375,6 @@ export function mstore8(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// MSTORE8 opcode (0x53) - Save byte to memory
-pub fn mstore8(frame: *FrameType) FrameType.EvmError!void {
-    const offset = try frame.popStack();
-    const value = try frame.popStack();
-
-    const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
-
-    // Calculate memory expansion (for 1 byte)
-    const end_bytes: u64 = @as(u64, off) + 1;
-    const mem_cost = frame.memoryExpansionCost(end_bytes);
-    try frame.consumeGas(GasConstants.GasFastestStep + mem_cost);
-
-    // Write single byte (truncate to u8)
-    const byte_value = @as(u8, @truncate(value));
-    try frame.writeMemory(off, byte_value);
-
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

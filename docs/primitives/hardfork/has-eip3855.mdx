@@ -4,64 +4,7 @@ description: Check if PUSH0 opcode is available
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `fork.hasEIP3855(): boolean`
-
-Check if PUSH0 opcode is available in this hardfork. Active since Shanghai.
-
-**Returns:** `boolean` - True if PUSH0 is supported
-
-**Example:**
-
-```typescript
-import { Hardfork, SHANGHAI, MERGE, CANCUN } from '@tevm/voltaire'
-
-const shanghai = Hardfork.fromString("shanghai")
-
-shanghai.hasEIP3855()  // true - Shanghai introduced PUSH0
-MERGE.hasEIP3855()     // false - Merge pre-dates PUSH0
-CANCUN.hasEIP3855()    // true - all post-Shanghai hardforks
-```
-
-**Convenience alias:** `fork.supportsPUSH0()` - Same functionality, different naming style
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP3855.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP3855.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `hasEIP3855(fork: BrandedHardfork): boolean`
-
-Check if PUSH0 opcode is available in this hardfork. Active since Shanghai.
-
-**Parameters:**
-- `fork: BrandedHardfork` - Hardfork to check
-
-**Returns:** `boolean` - True if PUSH0 is supported
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-import { SHANGHAI, MERGE, CANCUN } from '@tevm/voltaire'
-
-Hardfork.hasEIP3855(SHANGHAI)  // true
-Hardfork.hasEIP3855(MERGE)     // false
-Hardfork.hasEIP3855(CANCUN)    // true
-
-// Convenience alias
-Hardfork.supportsPUSH0(SHANGHAI)  // true
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/hasEIP3855.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/hasEIP3855.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## EIP-3855 Features

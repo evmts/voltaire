@@ -268,28 +268,6 @@ export function addmod(frame: BrandedFrame): EvmError | null {
 ```
 </Tab>
 
-<Tab title="Zig">
-```zig
-/// ADDMOD opcode (0x08) - Addition modulo n
-pub fn addmod(frame: *FrameType) FrameType.EvmError!void {
-    try frame.consumeGas(GasConstants.GasMidStep);
-    const a = try frame.popStack();
-    const b = try frame.popStack();
-    const n = try frame.popStack();
-
-    const result = if (n == 0) 0 else blk: {
-        // Use u512 to avoid overflow
-        const a_wide = @as(u512, a);
-        const b_wide = @as(u512, b);
-        const n_wide = @as(u512, n);
-        break :blk @as(u256, @truncate((a_wide + b_wide) % n_wide));
-    };
-
-    try frame.pushStack(result);
-    frame.pc += 1;
-}
-```
-</Tab>
 </Tabs>
 
 ## Testing

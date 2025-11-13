@@ -4,65 +4,7 @@ description: Get all hardfork constants in chronological order
 ---
 
 <Tabs>
-<Tab title="Class API">
 
-## `Hardfork.allIds(): BrandedHardfork[]`
-
-Get all hardfork constants in chronological order (oldest to newest).
-
-**Returns:** `BrandedHardfork[]` - Array of hardfork constants
-
-**Example:**
-
-```typescript
-import { Hardfork, FRONTIER, OSAKA } from '@tevm/voltaire'
-
-const ids = Hardfork.allIds()
-// [FRONTIER, HOMESTEAD, DAO, ..., CANCUN, PRAGUE, OSAKA]
-
-console.log(`Total hardforks: ${ids.length}`)  // 19
-
-// First and last
-console.log(Hardfork.toString(ids[0]))   // "frontier"
-console.log(Hardfork.toString(ids[18]))  // "osaka"
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/allIds.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allIds.js)
-
-</Tab>
-<Tab title="Namespace API">
-
-## `allIds(): BrandedHardfork[]`
-
-Get all hardfork constants in chronological order (oldest to newest).
-
-**Returns:** `BrandedHardfork[]` - Array of hardfork constants
-
-**Example:**
-
-```typescript
-import * as Hardfork from '@tevm/voltaire/Hardfork'
-
-const ids = Hardfork.allIds()
-
-// Iterate over all hardforks
-for (const fork of ids) {
-  console.log(
-    `${Hardfork.toString(fork)}: ` +
-    `EIP-1559=${fork.hasEIP1559()}, ` +
-    `Blobs=${fork.hasEIP4844()}`
-  )
-}
-```
-
-**Defined in:** [primitives/Hardfork/BrandedHardfork/allIds.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hardfork/BrandedHardfork/allIds.js)
-
-</Tab>
-<Tab title="Zig">
-
-TypeScript only - Hardfork is a string-based primitive optimized for JavaScript/TypeScript. WASM overhead makes this slower than native JS string comparison.
-
-</Tab>
 </Tabs>
 
 ## Chronological Order

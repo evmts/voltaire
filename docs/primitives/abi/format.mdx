@@ -4,47 +4,7 @@ description: Format ABI item to human-readable signature string
 ---
 
 <Tabs>
-<Tab title="Namespace API">
 
-## `format(item: AbiItem): string`
-
-Format an ABI item (function, event, error, constructor) into a human-readable signature string with parameter names.
-
-**Parameters:**
-- `item: AbiItem` - Any ABI item (function, event, error, or constructor)
-
-**Returns:** `string` - Formatted signature with parameter names
-
-**Example:**
-
-```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
-
-const transferFn = {
-  type: "function",
-  name: "transfer",
-  inputs: [
-    { type: "address", name: "to" },
-    { type: "uint256", name: "amount" }
-  ],
-  outputs: [{ type: "bool" }]
-}
-
-const formatted = BrandedAbi.format(transferFn)
-console.log(formatted)
-// "function transfer(address to, uint256 amount) returns (bool)"
-```
-
-**Defined in:** [primitives/Abi/BrandedAbi/format.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/BrandedAbi/format.js)
-
-</Tab>
-<Tab title="Zig">
-
-## Zig implementation planned
-
-ABI formatting in Zig is planned for a future release. Use TypeScript API for now.
-
-</Tab>
 </Tabs>
 
 ## Usage Examples

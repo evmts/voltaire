@@ -3,9 +3,6 @@ title: Uint.bitwiseXor
 description: Bitwise XOR operation on Uint256 values
 ---
 
-<Tabs>
-<Tab title="Class API (recommended)">
-
 ## `Uint.bitwiseXor(a: BrandedUint, b: BrandedUint): BrandedUint`
 
 Bitwise XOR (exclusive OR) operation.
@@ -27,39 +24,6 @@ Uint.bitwiseXor(a, b)  // 0b0110 (6)
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint/bitwiseXor.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseXor.ts)
-
-</Tab>
-<Tab title="Namespace API (Tree-shakeable)">
-
-## `bitwiseXor(a: BrandedUint, b: BrandedUint): BrandedUint`
-
-**Example:**
-
-```typescript
-import * as Uint from '@tevm/voltaire/Uint'
-
-const result = Uint.bitwiseXor(Uint.from(12n), Uint.from(10n))
-```
-
-**Defined in:** [primitives/Uint/BrandedUint/bitwiseXor.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseXor.ts)
-
-</Tab>
-<Tab title="Zig">
-
-## `Uint.bitwiseXor(a: Uint, b: Uint): Uint`
-
-**Example:**
-
-```zig
-const Uint = @import("primitives").Uint;
-
-const result = Uint.bitwiseXor(Uint.init(12), Uint.init(10));
-```
-
-**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
-
-</Tab>
-</Tabs>
 
 ## See Also
 
