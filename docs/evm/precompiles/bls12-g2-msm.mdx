@@ -94,24 +94,21 @@ import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 const numPairs = 3;
 const input = new Uint8Array(288 * numPairs);
 
-// First pair
-const point1 = new Uint8Array(256); // G2 point
-const scalar1 = new Uint8Array(32); // Scalar
-scalar1[31] = 2;
+// First pair: (point at infinity, 2)
+const point1 = new Uint8Array(256); // All zeros = point at infinity
+const scalar1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000002');
 input.set(point1, 0);
 input.set(scalar1, 256);
 
-// Second pair
-const point2 = new Uint8Array(256);
-const scalar2 = new Uint8Array(32);
-scalar2[31] = 3;
+// Second pair: (point at infinity, 3)
+const point2 = new Uint8Array(256); // All zeros
+const scalar2 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000003');
 input.set(point2, 288);
 input.set(scalar2, 544);
 
-// Third pair
-const point3 = new Uint8Array(256);
-const scalar3 = new Uint8Array(32);
-scalar3[31] = 5;
+// Third pair: (point at infinity, 5)
+const point3 = new Uint8Array(256); // All zeros
+const scalar3 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000005');
 input.set(point3, 576);
 input.set(scalar3, 832);
 

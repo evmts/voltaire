@@ -91,15 +91,19 @@ const numPairs = 2;
 const input = new Uint8Array(384 * numPairs);
 
 // Pair 1: (pubkey, H(msg))
-// G1 point: pubkey (128 bytes)
+// G1 point: pubkey (128 bytes) - would be actual public key in production
+const pubkeyG1Point = new Uint8Array(128);
+// G2 point: H(msg) (256 bytes) - would be hash-to-curve result in production
+const hashToG2Point = new Uint8Array(256);
 input.set(pubkeyG1Point, 0);
-// G2 point: H(msg) (256 bytes)
 input.set(hashToG2Point, 128);
 
 // Pair 2: (-G1_generator, signature)
-// G1 point: negated generator (128 bytes)
+// G1 point: negated generator (128 bytes) - would be computed negation in production
+const negatedG1Generator = new Uint8Array(128);
+// G2 point: signature (256 bytes) - would be actual signature in production
+const signatureG2Point = new Uint8Array(256);
 input.set(negatedG1Generator, 384);
-// G2 point: signature (256 bytes)
 input.set(signatureG2Point, 512);
 
 const gasNeeded = 115000n + 23000n * 2n;

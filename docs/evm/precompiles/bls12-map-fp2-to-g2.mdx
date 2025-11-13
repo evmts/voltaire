@@ -102,13 +102,15 @@ function hashToG2Point(message: Uint8Array): Uint8Array {
   const hash1 = Keccak256.hash(message);
   const hash2 = Keccak256.hash(hash1);
 
-  // Create two Fp2 elements
+  // Create two Fp2 elements (128 bytes each: c0 + c1)
   const u0 = new Uint8Array(128);
-  u0.set(hash1, 64 - 32); // c0 component
-  // c1 component stays zero for simplification
+  const u0c0 = Bytes64.from(hash1); // c0 component from hash
+  u0.set(u0c0, 0);
+  // c1 component stays zero for simplification (bytes 64-127)
 
   const u1 = new Uint8Array(128);
-  u1.set(hash2, 64 - 32); // c0 component
+  const u1c0 = Bytes64.from(hash2); // c0 component from hash
+  u1.set(u1c0, 0);
 
   // Step 2: Map both to G2
   const q0Result = execute(

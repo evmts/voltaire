@@ -6,7 +6,7 @@ icon: plug
 
 The Voltaire MCP server exposes Voltaire tools and APIs via the [Model Context Protocol](https://modelcontextprotocol.io). Register it with Claude, Codex, or Cursor to access Voltaire features from your IDE or CLI assistant.
 
-**Endpoint:** `https://voltaire.tevm.app/mcp`
+**Endpoint:** `https://voltaire.tevm.sh/mcp`
 
 ## Adding the MCP Server
 
@@ -16,13 +16,13 @@ The Voltaire MCP server exposes Voltaire tools and APIs via the [Model Context P
 Claude provides a simple one-line command to register MCP servers.
 
 ```bash
-claude mcp add --transport http tevm https://voltaire.tevm.app/mcp
+claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
 ```
 
 **Parameters:**
 - `--transport http` - Use HTTP-based MCP
 - `tevm` - Logical name for the server
-- `https://voltaire.tevm.app/mcp` - Voltaire MCP endpoint
+- `https://voltaire.tevm.sh/mcp` - Voltaire MCP endpoint
 
 **Verify installation:**
 
@@ -33,7 +33,7 @@ claude mcp list
 Expected output:
 
 ```
-tevm  (http)  https://voltaire.tevm.app/mcp
+tevm  (http)  https://voltaire.tevm.sh/mcp
 ```
 
 </Tab>
@@ -52,7 +52,7 @@ nano ~/.codex/config.toml
 
 ```toml
 [mcp_servers.tevm]
-url = "https://voltaire.tevm.app/mcp"
+url = "https://voltaire.tevm.sh/mcp"
 
 [features]
 rmcp_client = true
@@ -81,7 +81,7 @@ Create `.cursor/mcp.json` in your project root:
 {
   "mcpServers": {
     "tevm": {
-      "url": "https://voltaire.tevm.app/mcp"
+      "url": "https://voltaire.tevm.sh/mcp"
     }
   }
 }
@@ -95,7 +95,7 @@ Edit or create `~/.cursor/mcp.json` for all projects:
 {
   "mcpServers": {
     "tevm": {
-      "url": "https://voltaire.tevm.app/mcp"
+      "url": "https://voltaire.tevm.sh/mcp"
     }
   }
 }
@@ -121,7 +121,7 @@ Once connected, AI assistants can:
 ## Troubleshooting
 
 <Accordion title="Server not appearing in MCP list">
-- Verify the endpoint URL is correct: `https://voltaire.tevm.app/mcp`
+- Verify the endpoint URL is correct: `https://voltaire.tevm.sh/mcp`
 - Check your internet connection
 - Restart the AI assistant or IDE
 - For Cursor, ensure the JSON syntax is valid
@@ -135,7 +135,7 @@ Once connected, AI assistants can:
 
 <Accordion title="Connection timeout">
 - The MCP server may be temporarily unavailable
-- Check [status.voltaire.tevm.app](https://status.voltaire.tevm.app) (if available)
+- Check [status.voltaire.tevm.sh](https://status.voltaire.tevm.sh) (if available)
 - Try again in a few minutes
 </Accordion>
 

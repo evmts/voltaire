@@ -49,11 +49,11 @@ Total output length: 64 bytes
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
-// Multiply G1 point by scalar
-const x = new Uint8Array(32); // point x-coordinate
-const y = new Uint8Array(32); // point y-coordinate
-const scalar = new Uint8Array(32); // scalar value
-scalar[31] = 5; // multiply by 5
+// Multiply BN254 G1 generator point by scalar
+// Generator point: (1, 2)
+const x = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
+const y = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000002');
+const scalar = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000005'); // multiply by 5
 
 const input = new Uint8Array(96);
 input.set(x, 0);

@@ -1983,7 +1983,7 @@ Mintlify is AI-native with several built-in AI capabilities:
 **Model Context Protocol** - Third-party AI tool integration:
 - Allows Claude, ChatGPT, and other AI tools to access docs
 - Enables AI-assisted development with your docs as context
-- Voltaire provides MCP server at https://voltaire.tevm.app/mcp
+- Voltaire provides MCP server at https://voltaire.tevm.sh/mcp
 
 **AI Optimization Best Practices (2025)**:
 - Structure content for both human and LLM readers

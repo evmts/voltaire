@@ -71,8 +71,9 @@ import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 const numPairs = 4;
 const input = new Uint8Array(192 * numPairs);
 
-// Set G1 and G2 points from proof
-// ... (fill in actual proof values)
+// Each pair: 64-byte G1 point + 128-byte G2 point
+// Points would come from actual zkSNARK proof - using placeholders for structure
+// In production, these would be computed values from the proof and verification key
 
 const gasNeeded = 45000n + 34000n * BigInt(numPairs);
 

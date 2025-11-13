@@ -67,12 +67,10 @@ Total output length: 256 bytes
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
-// Add two G2 points
-const point1 = new Uint8Array(256); // First G2 point (256 bytes)
-// ... set point1 coordinates (x.c0, x.c1, y.c0, y.c1)
-
-const point2 = new Uint8Array(256); // Second G2 point (256 bytes)
-// ... set point2 coordinates
+// Add two G2 points (each 256 bytes: 4x 64-byte Fp2 components)
+// Point at infinity for both (valid operation: O + O = O)
+const point1 = new Uint8Array(256); // All zeros = point at infinity
+const point2 = new Uint8Array(256); // All zeros = point at infinity
 
 const input = new Uint8Array(512);
 input.set(point1, 0);

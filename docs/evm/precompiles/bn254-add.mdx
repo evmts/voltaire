@@ -52,11 +52,13 @@ Total output length: 64 bytes
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
-// Add two G1 points
-const x1 = new Uint8Array(32); // point 1 x-coordinate
-const y1 = new Uint8Array(32); // point 1 y-coordinate
-const x2 = new Uint8Array(32); // point 2 x-coordinate
-const y2 = new Uint8Array(32); // point 2 y-coordinate
+// Add two G1 points on BN254 curve
+// Point 1: Generator (1, 2)
+const x1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
+const y1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000002');
+// Point 2: Generator (1, 2) - will compute 2*G
+const x2 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
+const y2 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000002');
 
 const input = new Uint8Array(128);
 input.set(x1, 0);
@@ -124,9 +126,9 @@ Invalid points cause the precompile to fail, returning error.
 
 ```typescript
 // Test 1: Identity + Identity = Identity
-const input1 = new Uint8Array(128); // All zeros
+const input1 = new Uint8Array(128); // All zeros (point at infinity)
 // Expected: (0, 0)
-const expected1 = new Uint8Array(64);
+const expected1 = new Uint8Array(64); // All zeros
 
 // Test 2: Generator + Generator = 2*Generator (from geth tests)
 const input2 = new Uint8Array(128);

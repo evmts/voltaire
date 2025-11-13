@@ -66,11 +66,12 @@ import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Verify KZG proof for blob data
-const versionedHash = new Uint8Array(32); // From blob transaction
-const z = new Uint8Array(32);             // Random evaluation point
-const y = new Uint8Array(32);             // Claimed value at z
-const commitment = new Uint8Array(48);    // KZG commitment to blob
-const proof = new Uint8Array(48);         // KZG opening proof
+const versionedHash = Bytes32.from('0x01...'); // From blob transaction (version 0x01 + SHA256(commitment))
+const z = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000000'); // Random evaluation point
+const y = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000000'); // Claimed value at z
+// Commitment and proof would be actual BLS12-381 G1 points from KZG ceremony
+const commitment = new Uint8Array(48); // 48-byte BLS12-381 G1 point
+const proof = new Uint8Array(48);      // 48-byte KZG opening proof
 
 const input = new Uint8Array(192);
 input.set(versionedHash, 0);
@@ -271,13 +272,18 @@ input1[96] = 0xc0; // Infinity flag for commitment
 // Proof: point at infinity
 input1[144] = 0xc0; // Infinity flag for proof
 
-// z and y are zero (default)
+// z and y are zero (default) - using Bytes32 for clarity
+const z1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000000');
+const y1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000000');
+input1.set(z1, 32);
+input1.set(y1, 64);
 
 // Compute versioned hash: SHA256(commitment) with version byte 0x01
 const commitmentBytes = input1.slice(96, 144);
 const hash1 = sha256(commitmentBytes);
 hash1[0] = 0x01; // Version byte
-input1.set(hash1, 0); // Set versioned_hash
+const versionedHash1 = Bytes32.from(hash1);
+input1.set(versionedHash1, 0);
 
 const result1 = execute(PrecompileAddress.POINT_EVALUATION, input1, 60000n, Hardfork.CANCUN);
 // result1.success === true

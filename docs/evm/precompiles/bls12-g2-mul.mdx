@@ -65,11 +65,10 @@ import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Multiply G2 point by scalar
-const point = new Uint8Array(256); // G2 point (256 bytes)
-// ... set point coordinates (x.c0, x.c1, y.c0, y.c1)
+// Using point at infinity (valid edge case: O * k = O)
+const point = new Uint8Array(256); // All zeros = point at infinity
 
-const scalar = new Uint8Array(32); // Scalar value
-scalar[31] = 5; // multiply by 5
+const scalar = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000005'); // multiply by 5
 
 const input = new Uint8Array(288);
 input.set(point, 0);
