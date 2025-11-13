@@ -256,6 +256,28 @@ const leaf2Hash = BinaryTree.hashLeaf({ type: 'leaf', value: value2 })
 const parentHash = BinaryTree.hashInternal(leaf1Hash, leaf2Hash)
 ```
 </Tab>
+<Tab title="Factory API">
+
+## `HashInternal({ blake3 })(left, right): Uint8Array`
+
+Tree-shakeable factory with explicit blake3 dependency.
+
+**Dependencies:**
+- `blake3: (data: Uint8Array) => Uint8Array` - BLAKE3 hash function
+
+**Example:**
+
+```typescript
+import { HashInternal } from '@tevm/voltaire/BinaryTree'
+import { blake3 } from '@noble/hashes/blake3'
+
+const hashInternal = HashInternal({ blake3 })
+const hash = hashInternal(leftHash, rightHash)
+```
+
+**Bundle size:** BLAKE3 only included if imported.
+
+</Tab>
 
 </Tabs>
 
@@ -330,6 +352,28 @@ const stemNode = { type: 'stem', stem, values }
 const hash = BinaryTree.hashStem(stemNode)
 ```
 </Tab>
+<Tab title="Factory API">
+
+## `HashStem({ blake3 })(node): Uint8Array`
+
+Tree-shakeable factory with explicit blake3 dependency.
+
+**Dependencies:**
+- `blake3: (data: Uint8Array) => Uint8Array` - BLAKE3 hash function
+
+**Example:**
+
+```typescript
+import { HashStem } from '@tevm/voltaire/BinaryTree'
+import { blake3 } from '@noble/hashes/blake3'
+
+const hashStem = HashStem({ blake3 })
+const hash = hashStem(stemNode)
+```
+
+**Bundle size:** BLAKE3 only included if imported.
+
+</Tab>
 
 </Tabs>
 
@@ -385,6 +429,28 @@ value[31] = 0xAA
 const leafNode = { type: 'leaf', value }
 const hash = BinaryTree.hashLeaf(leafNode)
 ```
+</Tab>
+<Tab title="Factory API">
+
+## `HashLeaf({ blake3 })(node): Uint8Array`
+
+Tree-shakeable factory with explicit blake3 dependency.
+
+**Dependencies:**
+- `blake3: (data: Uint8Array) => Uint8Array` - BLAKE3 hash function
+
+**Example:**
+
+```typescript
+import { HashLeaf } from '@tevm/voltaire/BinaryTree'
+import { blake3 } from '@noble/hashes/blake3'
+
+const hashLeaf = HashLeaf({ blake3 })
+const hash = hashLeaf(leafNode)
+```
+
+**Bundle size:** BLAKE3 only included if imported.
+
 </Tab>
 
 </Tabs>
