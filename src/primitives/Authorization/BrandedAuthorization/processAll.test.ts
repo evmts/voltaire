@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedAuthorization } from "./BrandedAuthorization.js";
 import { processAll } from "./processAll.js";
-import { sign } from "./sign.js";
+import { sign } from "./index.js";
 
 // ============================================================================
 // Test Helpers
