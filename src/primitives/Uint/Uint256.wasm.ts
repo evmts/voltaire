@@ -8,7 +8,7 @@ import {
 	UintInvalidLengthError,
 	UintNegativeError,
 	UintOverflowError,
-} from "./BrandedUint/errors.js";
+} from "./BrandedUint256/errors.js";
 
 /**
  * Convert hex string to U256 (32-byte big-endian)

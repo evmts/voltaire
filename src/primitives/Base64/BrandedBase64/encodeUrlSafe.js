@@ -17,5 +17,5 @@ import * as OxBase64 from "ox/Base64";
  * ```
  */
 export function encodeUrlSafe(data) {
-	return OxBase64.fromBytes(data, { url: true });
+	return OxBase64.fromBytes(data, { url: true }).replace(/=/g, "");
 }
