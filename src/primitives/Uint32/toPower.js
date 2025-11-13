@@ -16,7 +16,8 @@
  * ```
  */
 export function toPower(uint, exp) {
-	if (exp === 0) return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (1);
+	if (exp === 0)
+		return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (1);
 	if (exp === 1) return uint;
 
 	let result = 1;

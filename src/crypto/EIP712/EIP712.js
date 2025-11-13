@@ -1,33 +1,89 @@
 // @ts-nocheck
 export * from "./errors.js";
 export * from "./BrandedEIP712.js";
-import { hash as domainHash } from "./Domain/hash.js";
 
-import { encodeData } from "./encodeData.js";
+// Import crypto dependencies
+import { hash as keccak256 } from "../Keccak256/hash.js";
+import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
+import { recoverPublicKey as secp256k1RecoverPublicKey } from "../Secp256k1/recoverPublicKey.js";
+
+// Import factories
+import { Hash as HashDomain } from "./Domain/hash.js";
+import { EncodeData } from "./encodeData.js";
 import { encodeType } from "./encodeType.js";
-import { encodeValue } from "./encodeValue.js";
+import { EncodeValue } from "./encodeValue.js";
 import { format } from "./format.js";
-import { hashStruct } from "./hashStruct.js";
-import { hashType } from "./hashType.js";
-import { hashTypedData } from "./hashTypedData.js";
-import { recoverAddress } from "./recoverAddress.js";
-import { signTypedData } from "./signTypedData.js";
+import { HashStruct } from "./hashStruct.js";
+import { HashType } from "./hashType.js";
+import { HashTypedData } from "./hashTypedData.js";
+import { RecoverAddress } from "./recoverAddress.js";
+import { SignTypedData } from "./signTypedData.js";
 import { validate } from "./validate.js";
-import { verifyTypedData } from "./verifyTypedData.js";
+import { VerifyTypedData } from "./verifyTypedData.js";
 
-// Export individual functions
+// Export factories (tree-shakeable)
 export {
+	HashDomain,
+	EncodeData,
 	encodeType,
-	hashType,
-	encodeValue,
-	encodeData,
-	hashStruct,
-	hashTypedData,
-	signTypedData,
-	recoverAddress,
-	verifyTypedData,
+	EncodeValue,
 	format,
+	HashStruct,
+	HashType,
+	HashTypedData,
+	RecoverAddress,
+	SignTypedData,
 	validate,
+	VerifyTypedData,
+};
+
+// Create interdependent instances (bottom-up)
+const hashType = HashType({ keccak256 });
+
+// Circular dependency: encodeValue needs hashStruct, hashStruct needs encodeData, encodeData needs encodeValue
+// Solution: Create them in order with forward references
+let hashStruct;
+const encodeValue = EncodeValue({
+	keccak256,
+	hashStruct: (...args) => hashStruct(...args),
+});
+
+const encodeData = EncodeData({ hashType, encodeValue });
+hashStruct = HashStruct({ keccak256, encodeData });
+
+const hashDomain = HashDomain({ hashStruct });
+const hashTypedData = HashTypedData({ keccak256, hashDomain, hashStruct });
+
+// Adapter for secp256k1 recoverPublicKey to match factory signature
+const recoverPublicKey = (compactSig, hash, recoveryBit) => {
+	const signature = {
+		r: compactSig.slice(0, 32),
+		s: compactSig.slice(32, 64),
+		v: recoveryBit, // Use raw recovery bit (0 or 1)
+	};
+	return secp256k1RecoverPublicKey(signature, hash);
+};
+
+const recoverAddress = RecoverAddress({
+	keccak256,
+	recoverPublicKey,
+	hashTypedData,
+});
+
+const signTypedData = SignTypedData({ hashTypedData, sign: secp256k1Sign });
+const verifyTypedData = VerifyTypedData({ recoverAddress });
+
+// Export convenience wrappers with auto-injected crypto
+export {
+	encodeData,
+	encodeValue,
+	hashDomain,
+	hashStruct,
+	hashType,
+	hashTypedData,
+	recoverAddress,
+	signTypedData,
+	verifyTypedData,
 };
 
 /**
@@ -88,8 +144,20 @@ export {
  * ```
  */
 export const EIP712 = {
+	// Factories (for custom crypto)
+	HashDomain,
+	EncodeData,
+	EncodeValue,
+	HashStruct,
+	HashType,
+	HashTypedData,
+	RecoverAddress,
+	SignTypedData,
+	VerifyTypedData,
+
+	// Convenience methods (with auto-injected crypto)
 	Domain: {
-		hash: domainHash,
+		hash: hashDomain,
 	},
 	encodeType,
 	hashType,

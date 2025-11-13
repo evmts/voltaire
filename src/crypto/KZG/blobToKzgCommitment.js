@@ -18,7 +18,9 @@ import { validateBlob } from "./validateBlob.js";
  * const commitment = blobToKzgCommitment(blob)
  * ```
  */
-export function BlobToKzgCommitment({ blobToKzgCommitment: ckzgBlobToKzgCommitment }) {
+export function BlobToKzgCommitment({
+	blobToKzgCommitment: ckzgBlobToKzgCommitment,
+}) {
 	return function blobToKzgCommitment(blob) {
 		if (!getInitialized()) {
 			throw new KzgNotInitializedError();

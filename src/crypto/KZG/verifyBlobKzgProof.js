@@ -19,7 +19,9 @@ import { validateBlob } from "./validateBlob.js";
  * const valid = verifyBlobKzgProof(blob, commitment, proof)
  * ```
  */
-export function VerifyBlobKzgProof({ verifyBlobKzgProof: ckzgVerifyBlobKzgProof }) {
+export function VerifyBlobKzgProof({
+	verifyBlobKzgProof: ckzgVerifyBlobKzgProof,
+}) {
 	return function verifyBlobKzgProof(blob, commitment, proof) {
 		if (!getInitialized()) {
 			throw new KzgNotInitializedError();

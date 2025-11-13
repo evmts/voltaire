@@ -339,10 +339,9 @@ describe("KZG Validation - Edge Cases", () => {
 			const commitments: Uint8Array[] = [];
 			const proofs: Uint8Array[] = [];
 
-			// Behavior: empty batch should return true or handle gracefully
-			expect(() =>
-				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
-			).toThrow(KzgError);
+			// Behavior: empty batch should return true (trivially valid)
+			const result = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+			expect(result).toBe(true);
 		});
 
 		it("should verify single valid triplet", () => {

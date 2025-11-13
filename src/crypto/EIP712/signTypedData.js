@@ -1,28 +1,34 @@
-import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
 import { Eip712Error } from "./errors.js";
-import { hashTypedData } from "./hashTypedData.js";
 
 /**
- * Sign EIP-712 typed data with ECDSA private key.
+ * Factory: Sign EIP-712 typed data with ECDSA private key.
  *
  * Produces a signature that can be verified against the signer's address.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedEIP712.js').TypedData} typedData - Typed data to sign
- * @param {Uint8Array} privateKey - 32-byte secp256k1 private key
- * @returns {import('./BrandedEIP712.js').Signature} ECDSA signature with r, s, v components
+ * @param {Object} deps - Crypto dependencies
+ * @param {(typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Hash/index.js').BrandedHash} deps.hashTypedData - Hash typed data function
+ * @param {(hash: Uint8Array, privateKey: Uint8Array) => import('./BrandedEIP712.js').Signature} deps.sign - Secp256k1 sign function
+ * @returns {(typedData: import('./BrandedEIP712.js').TypedData, privateKey: Uint8Array) => import('./BrandedEIP712.js').Signature} Function that signs typed data
  * @throws {Eip712Error} If private key length is invalid or signing fails
  * @example
  * ```javascript
- * import * as EIP712 from './crypto/EIP712/index.js';
- * const privateKey = new Uint8Array(32); // Your private key
- * const signature = EIP712.signTypedData(typedData, privateKey);
+ * import { SignTypedData } from './crypto/EIP712/signTypedData.js';
+ * import { HashTypedData } from './hashTypedData.js';
+ * import { sign } from '../Secp256k1/sign.js';
+ * import { hash as keccak256 } from '../Keccak256/hash.js';
+ * const hashTypedData = HashTypedData({ keccak256, hashDomain, hashStruct });
+ * const signTypedData = SignTypedData({ hashTypedData, sign });
+ * const privateKey = new Uint8Array(32);
+ * const signature = signTypedData(typedData, privateKey);
  * ```
  */
-export function signTypedData(typedData, privateKey) {
-	const hash = hashTypedData(typedData);
+export function SignTypedData({ hashTypedData, sign }) {
+	return function signTypedData(typedData, privateKey) {
+		const hash = hashTypedData(typedData);
 
-	// Use Secp256k1.sign which handles recovery bit calculation
-	return secp256k1Sign(hash, privateKey);
+		// Use Secp256k1.sign which handles recovery bit calculation
+		return sign(hash, privateKey);
+	};
 }

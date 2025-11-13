@@ -18,7 +18,8 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function toPower(uint, exp) {
-	if (exp === 0n) return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (1n);
+	if (exp === 0n)
+		return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (1n);
 	if (exp === 1n) return uint;
 
 	let result = 1n;

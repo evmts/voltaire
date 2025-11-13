@@ -29,44 +29,44 @@ import {
  */
 export function EncodeData({ hashType, encodeValue }) {
 	return function encodeData(primaryType, data, types) {
-	const typeProps = types[primaryType];
-	if (!typeProps) {
-		throw new Eip712TypeNotFoundError(`Type '${primaryType}' not found`, {
-			code: "EIP712_TYPE_NOT_FOUND",
-			context: { primaryType, availableTypes: Object.keys(types) },
-			docsPath: "/crypto/eip712/encode-data#error-handling",
-		});
-	}
-
-	// Type hash + encoded values
-	const typeHash = hashType(primaryType, types);
-	/** @type {Uint8Array[]} */
-	const encodedValues = [typeHash];
-
-	for (const prop of typeProps) {
-		const value = data[prop.name];
-		if (value === undefined) {
-			throw new Eip712InvalidMessageError(
-				`Missing field '${prop.name}' in message`,
-				{
-					code: "EIP712_MISSING_FIELD",
-					context: { field: prop.name, type: primaryType, data },
-					docsPath: "/crypto/eip712/encode-data#error-handling",
-				},
-			);
+		const typeProps = types[primaryType];
+		if (!typeProps) {
+			throw new Eip712TypeNotFoundError(`Type '${primaryType}' not found`, {
+				code: "EIP712_TYPE_NOT_FOUND",
+				context: { primaryType, availableTypes: Object.keys(types) },
+				docsPath: "/crypto/eip712/encode-data#error-handling",
+			});
 		}
-		encodedValues.push(encodeValue(prop.type, value, types));
-	}
 
-	// Concatenate all
-	const totalLength = encodedValues.reduce((sum, v) => sum + v.length, 0);
-	const result = new Uint8Array(totalLength);
-	let offset = 0;
-	for (const encoded of encodedValues) {
-		result.set(encoded, offset);
-		offset += encoded.length;
-	}
+		// Type hash + encoded values
+		const typeHash = hashType(primaryType, types);
+		/** @type {Uint8Array[]} */
+		const encodedValues = [typeHash];
 
-	return result;
+		for (const prop of typeProps) {
+			const value = data[prop.name];
+			if (value === undefined) {
+				throw new Eip712InvalidMessageError(
+					`Missing field '${prop.name}' in message`,
+					{
+						code: "EIP712_MISSING_FIELD",
+						context: { field: prop.name, type: primaryType, data },
+						docsPath: "/crypto/eip712/encode-data#error-handling",
+					},
+				);
+			}
+			encodedValues.push(encodeValue(prop.type, value, types));
+		}
+
+		// Concatenate all
+		const totalLength = encodedValues.reduce((sum, v) => sum + v.length, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const encoded of encodedValues) {
+			result.set(encoded, offset);
+			offset += encoded.length;
+		}
+
+		return result;
 	};
 }

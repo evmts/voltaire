@@ -33,33 +33,33 @@ const DOMAIN_FIELD_TYPES = {
  */
 export function Hash({ hashStruct }) {
 	return function hash(domain) {
-	// Filter domain to only included fields
-	/** @type {Record<string, any>} */
-	const filteredDomain = {};
-	/** @type {Array<{name: string, type: string}>} */
-	const domainFields = [];
+		// Filter domain to only included fields
+		/** @type {Record<string, any>} */
+		const filteredDomain = {};
+		/** @type {Array<{name: string, type: string}>} */
+		const domainFields = [];
 
-	// Build type definition with only present fields
-	for (const key of Object.keys(domain)) {
-		const value = /** @type {Record<string, any>} */ (domain)[key];
-		if (value !== undefined) {
-			filteredDomain[key] = value;
-			const fieldDef = DOMAIN_FIELD_TYPES[key];
-			if (fieldDef) {
-				domainFields.push(fieldDef);
+		// Build type definition with only present fields
+		for (const key of Object.keys(domain)) {
+			const value = /** @type {Record<string, any>} */ (domain)[key];
+			if (value !== undefined) {
+				filteredDomain[key] = value;
+				const fieldDef = DOMAIN_FIELD_TYPES[key];
+				if (fieldDef) {
+					domainFields.push(fieldDef);
+				}
 			}
 		}
-	}
 
-	/** @type {import('../BrandedEIP712.js').TypeDefinitions} */
-	const domainTypes = {
-		EIP712Domain: domainFields,
-	};
+		/** @type {import('../BrandedEIP712.js').TypeDefinitions} */
+		const domainTypes = {
+			EIP712Domain: domainFields,
+		};
 
-	return hashStruct(
-		"EIP712Domain",
-		/** @type {import('../BrandedEIP712.js').Message} */ (filteredDomain),
-		domainTypes,
-	);
+		return hashStruct(
+			"EIP712Domain",
+			/** @type {import('../BrandedEIP712.js').Message} */ (filteredDomain),
+			domainTypes,
+		);
 	};
 }
