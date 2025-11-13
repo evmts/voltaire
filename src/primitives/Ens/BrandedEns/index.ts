@@ -2,13 +2,21 @@
 export * from "./errors.js";
 export * from "./BrandedEns.js";
 
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { beautify as _beautify } from "./beautify.js";
 import { from } from "./from.js";
 import { is } from "./is.js";
-import { labelhash as _labelhash } from "./labelhash.js";
-import { namehash as _namehash } from "./namehash.js";
+import { Labelhash } from "./labelhash.js";
+import { Namehash } from "./namehash.js";
 import { normalize as _normalize } from "./normalize.js";
 import { toString } from "./toString.js";
+
+// Factory exports (tree-shakeable)
+export { Labelhash, Namehash };
+
+// Internal method exports
+const _namehash = Namehash({ keccak256 });
+const _labelhash = Labelhash({ keccak256 });
 
 // Internal exports
 export { from, _normalize, _beautify, _namehash, _labelhash, is, toString };

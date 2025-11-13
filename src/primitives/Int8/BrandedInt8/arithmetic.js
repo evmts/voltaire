@@ -102,6 +102,10 @@ export function negate(value) {
 	if (value === INT8_MIN) {
 		throw new Error(`Int8: overflow in negation -${INT8_MIN} = ${-INT8_MIN}`);
 	}
+	// Special case: avoid -0
+	if (value === 0) {
+		return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (0);
+	}
 	const result = -value;
 	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (result);
 }

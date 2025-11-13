@@ -1,30 +1,25 @@
-import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
-import { fromPublicKey } from "../../Address/BrandedAddress/index.js";
+import { Hash } from "./hash.js";
 import { equals } from "./equals.js";
-import { hash } from "./hash.js";
 
 /**
- * Create signed authorization from unsigned
- *
- * @see https://voltaire.tevm.sh/primitives/authorization
- * @since 0.0.0
- * @param {{chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}} unsigned - Unsigned authorization
- * @param {Uint8Array} privateKey - Private key (32 bytes) for signing
- * @returns {import("./BrandedAuthorization.js").BrandedAuthorization} Signed authorization
- * @throws {Error} If signing fails
- * @example
- * ```javascript
- * import * as Authorization from './primitives/Authorization/index.js';
- * const unsigned = { chainId: 1n, address: '0x742d35Cc...', nonce: 0n };
- * const auth = Authorization.sign(unsigned, privateKey);
- * ```
+ * Factory: Create signed authorization from unsigned
+ * @param {Object} deps - Crypto dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: Array<Uint8Array>) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @param {(messageHash: Uint8Array, privateKey: Uint8Array) => {r: Uint8Array, s: Uint8Array, v: number}} deps.sign - secp256k1 sign function
+ * @param {(signature: {r: Uint8Array, s: Uint8Array, v: number}, messageHash: Uint8Array) => Uint8Array} deps.recoverPublicKey - secp256k1 public key recovery
+ * @param {(x: bigint, y: bigint) => import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} deps.addressFromPublicKey - Address derivation from public key
+ * @returns {(unsigned: {chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}, privateKey: Uint8Array) => import("./BrandedAuthorization.js").BrandedAuthorization} Function that signs authorization
  */
-export function sign(unsigned, privateKey) {
+export function Sign({ keccak256, rlpEncode, sign: secp256k1Sign, recoverPublicKey, addressFromPublicKey }) {
+	const hash = Hash({ keccak256, rlpEncode });
+
+	return function sign(unsigned, privateKey) {
 	// Hash the unsigned authorization
 	const messageHash = hash(unsigned);
 
 	// Sign with secp256k1
-	const sig = Secp256k1.sign(messageHash, privateKey);
+	const sig = secp256k1Sign(messageHash, privateKey);
 
 	// Extract r, s, yParity from signature
 	// Signature is { r, s, v }
@@ -46,8 +41,19 @@ export function sign(unsigned, privateKey) {
 	// Recover yParity by trying both values
 	let yParity = 0;
 	try {
-		const recovered = Secp256k1.recoverPublicKey({ r, s, v: 0 }, messageHash);
-		const recoveredAddress = addressFromPublicKey(recovered);
+		const recovered = recoverPublicKey({ r, s, v: 0 }, messageHash);
+		// Derive address from recovered public key
+		let x = 0n;
+		let y = 0n;
+		for (let i = 0; i < 32; i++) {
+			const xByte = recovered[i];
+			const yByte = recovered[32 + i];
+			if (xByte !== undefined && yByte !== undefined) {
+				x = (x << 8n) | BigInt(xByte);
+				y = (y << 8n) | BigInt(yByte);
+			}
+		}
+		const recoveredAddress = addressFromPublicKey(x, y);
 		if (!equals(recoveredAddress, unsigned.address)) {
 			yParity = 1;
 		}
@@ -63,25 +69,5 @@ export function sign(unsigned, privateKey) {
 		r: rBigint,
 		s: sBigint,
 	};
-}
-
-/**
- * Helper to derive address from public key
- * @param {Uint8Array} publicKey - Public key (64 bytes)
- * @returns {import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress} Address
- */
-function addressFromPublicKey(publicKey) {
-	// Public key is 64 bytes (uncompressed, no prefix)
-	// Extract x and y coordinates
-	let x = 0n;
-	let y = 0n;
-	for (let i = 0; i < 32; i++) {
-		const xByte = publicKey[i];
-		const yByte = publicKey[32 + i];
-		if (xByte !== undefined && yByte !== undefined) {
-			x = (x << 8n) | BigInt(xByte);
-			y = (y << 8n) | BigInt(yByte);
-		}
-	}
-	return fromPublicKey(x, y);
+	};
 }

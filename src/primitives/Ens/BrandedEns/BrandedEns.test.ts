@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import * as Hex from "../../Hex/index.js";
+import { Labelhash, Namehash } from "./index.js";
 import * as Ens from "./index.js";
+
+// Instantiate factory functions
+const namehash = Namehash({ keccak256 });
+const labelhash = Labelhash({ keccak256 });
 
 describe("Ens", () => {
 	describe("normalize", () => {
@@ -74,8 +80,15 @@ describe("Ens", () => {
 	});
 
 	describe("namehash", () => {
-		it("should compute namehash for domain", () => {
+		it("should compute namehash for domain (wrapper API)", () => {
 			const result = Ens.namehash("vitalik.eth");
+			expect(Hex.fromBytes(result)).toBe(
+				"0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835",
+			);
+		});
+
+		it("should compute namehash for domain (factory API)", () => {
+			const result = namehash(Ens.from("vitalik.eth"));
 			expect(Hex.fromBytes(result)).toBe(
 				"0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835",
 			);
@@ -94,11 +107,25 @@ describe("Ens", () => {
 				"0x0000000000000000000000000000000000000000000000000000000000000000",
 			);
 		});
+
+		it("should compute namehash for empty name (factory API)", () => {
+			const result = namehash(Ens.from(""));
+			expect(Hex.fromBytes(result)).toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
+		});
 	});
 
 	describe("labelhash", () => {
-		it("should compute labelhash for label", () => {
+		it("should compute labelhash for label (wrapper API)", () => {
 			const result = Ens.labelhash("vitalik");
+			expect(Hex.fromBytes(result)).toBe(
+				"0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc",
+			);
+		});
+
+		it("should compute labelhash for label (factory API)", () => {
+			const result = labelhash(Ens.from("vitalik"));
 			expect(Hex.fromBytes(result)).toBe(
 				"0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc",
 			);

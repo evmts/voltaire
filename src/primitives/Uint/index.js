@@ -1,1 +1,1 @@
-export * from "./BrandedUint/index.js";
+export * from "./BrandedUint256/index.js";

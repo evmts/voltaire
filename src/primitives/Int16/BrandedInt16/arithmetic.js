@@ -106,6 +106,10 @@ export function negate(value) {
 			`Int16: overflow in negation -${INT16_MIN} = ${-INT16_MIN}`,
 		);
 	}
+	// Special case: avoid -0
+	if (value === 0) {
+		return /** @type {import('./BrandedInt16.ts').BrandedInt16} */ (0);
+	}
 	const result = -value;
 	return /** @type {import('./BrandedInt16.ts').BrandedInt16} */ (result);
 }
