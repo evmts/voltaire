@@ -5,6 +5,50 @@ description: Compute Keccak-256 hash of UTF-8 encoded string
 
 <Tabs>
 
+<Tab title="Standard API">
+
+## `Hash.keccak256String(str: string): BrandedHash`
+
+Compute Keccak-256 hash of UTF-8 encoded string.
+
+**Parameters:**
+- `str: string` - String to hash (UTF-8 encoded)
+
+**Returns:** `BrandedHash` - 32-byte hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256String('Transfer(address,address,uint256)')
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Keccak256String({ keccak256 })(str: string): BrandedHash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { Keccak256String } from '@tevm/voltaire/Hash'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const hashString = Keccak256String({ keccak256 })
+const hash = hashString('Transfer(address,address,uint256)')
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
 </Tabs>
 
 ## Implementation

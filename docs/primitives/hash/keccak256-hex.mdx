@@ -5,6 +5,52 @@ description: Compute Keccak-256 hash of hex-encoded data
 
 <Tabs>
 
+<Tab title="Standard API">
+
+## `Hash.keccak256Hex(hex: string): BrandedHash`
+
+Compute Keccak-256 hash of hex-encoded data.
+
+**Parameters:**
+- `hex: string` - Hex string to hash (with or without 0x prefix)
+
+**Returns:** `BrandedHash` - 32-byte hash
+
+**Throws:** `InvalidFormatError` - If hex string has odd length
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const hash = Hash.keccak256Hex('0x1234abcd')
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Keccak256Hex({ keccak256 })(hex: string): BrandedHash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { Keccak256Hex } from '@tevm/voltaire/Hash'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const hashHex = Keccak256Hex({ keccak256 })
+const hash = hashHex('0x1234abcd')
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
 </Tabs>
 
 ## Implementation

@@ -5,6 +5,55 @@ description: Calculate Merkle root of hash array using Keccak-256
 
 <Tabs>
 
+<Tab title="Standard API">
+
+## `Hash.merkleRoot(hashes: BrandedHash[]): BrandedHash`
+
+Calculate Merkle root of hash array using Keccak-256.
+
+**Parameters:**
+- `hashes: BrandedHash[]` - Array of hashes (leaf nodes)
+
+**Returns:** `BrandedHash` - Merkle root hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const leaves = [
+  Hash.keccak256(data1),
+  Hash.keccak256(data2),
+  Hash.keccak256(data3)
+]
+const root = Hash.merkleRoot(leaves)
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `MerkleRoot({ keccak256 })(hashes: BrandedHash[]): BrandedHash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { MerkleRoot } from '@tevm/voltaire/Hash'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const getMerkleRoot = MerkleRoot({ keccak256 })
+const root = getMerkleRoot([hash1, hash2, hash3])
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
 </Tabs>
 
 ## Algorithm

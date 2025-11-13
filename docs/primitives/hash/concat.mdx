@@ -5,6 +5,52 @@ description: Concatenate multiple hashes and hash the result
 
 <Tabs>
 
+<Tab title="Standard API">
+
+## `Hash.concat(...hashes: BrandedHash[]): BrandedHash`
+
+Concatenate multiple hashes and hash the result.
+
+**Parameters:**
+- `...hashes: BrandedHash[]` - Hashes to concatenate
+
+**Returns:** `BrandedHash` - Hash of concatenated hashes
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const h1 = Hash.keccak256(data1)
+const h2 = Hash.keccak256(data2)
+const combined = Hash.concat(h1, h2)
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Concat({ keccak256 })(...hashes: BrandedHash[]): BrandedHash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { Concat } from '@tevm/voltaire/Hash'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const concatHashes = Concat({ keccak256 })
+const combined = concatHashes(hash1, hash2)
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
 </Tabs>
 
 ## Implementation

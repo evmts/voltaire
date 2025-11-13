@@ -5,6 +5,51 @@ description: Compute Keccak-256 hash of byte data
 
 <Tabs>
 
+<Tab title="Standard API">
+
+## `Hash.keccak256(data: Uint8Array): BrandedHash`
+
+Compute Keccak-256 hash of byte data.
+
+**Parameters:**
+- `data: Uint8Array` - Data to hash (0 bytes to unlimited)
+
+**Returns:** `BrandedHash` - 32-byte hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const data = new Uint8Array([1, 2, 3, 4])
+const hash = Hash.keccak256(data)
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Keccak256({ keccak256 })(data: Uint8Array): BrandedHash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Hash'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const hashData = Keccak256({ keccak256 })
+const hash = hashData(new Uint8Array([1, 2, 3, 4]))
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
 </Tabs>
 
 ## Keccak-256 vs SHA3-256
