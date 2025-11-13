@@ -1,4 +1,4 @@
-import * as BrandedAbi from "./BrandedAbi/index.js";
+import { BrandedAbi } from "./BrandedAbi/index.js";
 
 /**
  * Factory function for creating Abi instances

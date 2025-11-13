@@ -2,8 +2,10 @@
 export * from "./BrandedEvent.js";
 
 // Import crypto dependencies
-import { keccak256 as keccak256Impl } from "../../../Hash/BrandedHash/keccak256.js";
-import { keccak256String as keccak256StringImpl } from "../../../Hash/BrandedHash/keccak256String.js";
+import {
+	keccak256 as keccak256Impl,
+	keccak256String as keccak256StringImpl,
+} from "../../../Hash/BrandedHash/index.js";
 
 import { decodeLog } from "./decodeLog.js";
 import { EncodeTopics } from "./encodeTopics.js";

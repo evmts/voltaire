@@ -1,5 +1,4 @@
 import { BITS, MODULO } from "./constants.js";
-import { fromBigInt } from "./fromBigInt.js";
 
 /**
  * Shift Int256 left with wrapping
@@ -33,5 +32,7 @@ export function shiftLeft(value, shift) {
 	const shifted = (unsigned << shiftAmount) & (MODULO - 1n);
 
 	// Convert back to signed
-	return fromBigInt(shifted >= MODULO / 2n ? shifted - MODULO : shifted);
+	return /** @type {import("./BrandedInt256.js").BrandedInt256} */ (
+		shifted >= MODULO / 2n ? shifted - MODULO : shifted
+	);
 }

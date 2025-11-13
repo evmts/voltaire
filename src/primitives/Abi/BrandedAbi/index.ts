@@ -1,13 +1,6 @@
 // @ts-nocheck
 export * from "./BrandedAbi.js";
 
-// Re-export sub-namespaces
-export * as Function from "../function/index.js";
-export * as Event from "../event/index.js";
-export * as Error from "../error/index.js";
-export * as Constructor from "../constructor/index.js";
-export * as Item from "../Item/index.js";
-
 import * as ItemNs from "../Item/index.js";
 import * as ConstructorNs from "../constructor/index.js";
 import * as ErrorNs from "../error/index.js";
@@ -70,9 +63,9 @@ export const BrandedAbi = {
 	decode,
 	decodeData,
 	parseLogs,
-	Function: FunctionNs,
-	Event: EventNs,
-	Error: ErrorNs,
+	Function: FunctionNs.Function,
+	Event: EventNs.Event,
+	Error: ErrorNs.Error,
 	Constructor: ConstructorNs,
 	Item: ItemNs,
 };

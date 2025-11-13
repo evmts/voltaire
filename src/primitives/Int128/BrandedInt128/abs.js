@@ -20,5 +20,7 @@ export function abs(value) {
 		throw new Error("Int128 overflow: abs(MIN)");
 	}
 
-	return value < 0n ? -value : value;
+	return /** @type {import('./BrandedInt128.js').BrandedInt128} */ (
+		value < 0n ? -value : value
+	);
 }

@@ -11,7 +11,7 @@ import { equals } from "../primitives/Hash/BrandedHash/equals.js";
 import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
 import { isZero } from "../primitives/Hash/BrandedHash/isZero.js";
 import { keccak256 } from "../primitives/Hash/BrandedHash/keccak256.js";
-import { keccak256String } from "../primitives/Hash/BrandedHash/keccak256String.js";
+import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
 import {
 	type Domain,
 	EIP712,

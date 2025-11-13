@@ -3,7 +3,7 @@ import { MIN } from "./constants.js";
 /**
  * Absolute value of Int256
  *
- * @see https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ * @see https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
  * @since 0.0.0
  * @param {import('./BrandedInt256.js').BrandedInt256} value - Input value
  * @returns {import('./BrandedInt256.js').BrandedInt256} Absolute value
@@ -20,5 +20,7 @@ export function abs(value) {
 		throw new Error("Int256 overflow: abs(MIN)");
 	}
 
-	return value < 0n ? -value : value;
+	return /** @type {import('./BrandedInt256.js').BrandedInt256} */ (
+		value < 0n ? -value : value
+	);
 }

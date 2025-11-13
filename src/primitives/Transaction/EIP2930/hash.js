@@ -1,4 +1,5 @@
 import { serialize } from "./serialize.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 
 /**
  * Factory: Compute transaction hash.
@@ -23,3 +24,6 @@ export function Hash({ keccak256 }) {
 		return keccak256(serialize(tx));
 	};
 }
+
+// Default export with crypto injected
+export const hash = Hash({ keccak256 });

@@ -1,5 +1,4 @@
 import { MODULO } from "./constants.js";
-import { fromBigInt } from "./fromBigInt.js";
 
 /**
  * Bitwise NOT of Int128 value
@@ -23,5 +22,7 @@ export function bitwiseNot(value) {
 	const result = ~unsigned & mask;
 
 	// Convert back to signed
-	return fromBigInt(result >= MODULO / 2n ? result - MODULO : result);
+	return /** @type {import("./BrandedInt128.js").BrandedInt128} */ (
+		result >= MODULO / 2n ? result - MODULO : result
+	);
 }

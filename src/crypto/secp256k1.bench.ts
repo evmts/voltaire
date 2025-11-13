@@ -11,7 +11,7 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import { keccak256String } from "../primitives/Hash/BrandedHash/keccak256String.js";
+import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";

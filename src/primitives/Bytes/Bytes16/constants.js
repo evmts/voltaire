@@ -7,9 +7,10 @@ export const SIZE = 16;
  * Zero Bytes16 constant (16 zero bytes)
  * @type {import('./BrandedBytes16.ts').BrandedBytes16}
  */
-export const ZERO = /** @type {import('./BrandedBytes16.ts').BrandedBytes16} */ (
-	new Uint8Array(SIZE)
-);
+export const ZERO =
+	/** @type {import('./BrandedBytes16.ts').BrandedBytes16} */ (
+		new Uint8Array(SIZE)
+	);
 
 /**
  * @typedef {import('./BrandedBytes16.ts').BrandedBytes16} BrandedBytes16

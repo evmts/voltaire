@@ -1,5 +1,7 @@
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 
 /**
  * Factory: Get signing hash for Legacy transaction.
@@ -57,3 +59,6 @@ export function GetSigningHash({ keccak256, rlpEncode }) {
 		return keccak256(rlpEncode(fields));
 	};
 }
+
+// Default export with crypto injected
+export const getSigningHash = GetSigningHash({ keccak256, rlpEncode });

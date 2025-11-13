@@ -1,6 +1,12 @@
 import { Hash } from "../../Hash/index.js";
 import { getChainId } from "./getChainId.js";
 import { GetSigningHash } from "./getSigningHash.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
+import {
+	recoverPublicKey as secp256k1RecoverPublicKey,
+	verify as secp256k1Verify,
+} from "../../../crypto/Secp256k1/index.js";
 
 /**
  * Factory: Verify transaction signature.
@@ -65,3 +71,11 @@ export function VerifySignature({
 		}
 	};
 }
+
+// Default export with crypto injected
+export const verifySignature = VerifySignature({
+	keccak256,
+	rlpEncode,
+	secp256k1RecoverPublicKey,
+	secp256k1Verify,
+});

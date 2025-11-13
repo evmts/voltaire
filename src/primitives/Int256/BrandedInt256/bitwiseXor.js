@@ -1,5 +1,4 @@
 import { MODULO } from "./constants.js";
-import { fromBigInt } from "./fromBigInt.js";
 
 /**
  * Bitwise XOR of Int256 values
@@ -25,5 +24,7 @@ export function bitwiseXor(a, b) {
 	const result = ua ^ ub;
 
 	// Convert back to signed
-	return fromBigInt(result >= MODULO / 2n ? result - MODULO : result);
+	return /** @type {import("./BrandedInt256.js").BrandedInt256} */ (
+		result >= MODULO / 2n ? result - MODULO : result
+	);
 }

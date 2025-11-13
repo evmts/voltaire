@@ -9,9 +9,10 @@ export const SIZE = 32;
  * Zero Bytes32 constant (32 zero bytes)
  * @type {import('./BrandedBytes32.ts').BrandedBytes32}
  */
-export const ZERO = /** @type {import('./BrandedBytes32.ts').BrandedBytes32} */ (
-	new Uint8Array(SIZE)
-);
+export const ZERO =
+	/** @type {import('./BrandedBytes32.ts').BrandedBytes32} */ (
+		new Uint8Array(SIZE)
+	);
 
 /**
  * @typedef {import('./BrandedBytes32.ts').BrandedBytes32} BrandedBytes32

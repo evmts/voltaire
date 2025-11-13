@@ -16,17 +16,19 @@ export function fromBytes(bytes) {
 		value = (value << 8) | (bytes[i] ?? 0);
 	}
 
-	// Sign extend if necessary
-	if (bytes.length > 0) {
+	// For full 4 bytes, use unsigned right shift then bitwise OR for proper sign conversion
+	if (bytes.length === 4) {
+		value = value | 0;
+	} else if (bytes.length > 0) {
+		// Sign extend if necessary for partial bytes
 		const signBit = bytes.length * 8 - 1;
 		if (value & (1 << signBit)) {
 			// Negative number - extend sign
 			value = value | (~0 << (bytes.length * 8));
 		}
+		// Truncate to 32-bit signed
+		value = value | 0;
 	}
-
-	// Truncate to 32-bit signed
-	value = value | 0;
 
 	return /** @type {import('./BrandedInt32.js').BrandedInt32} */ (value);
 }

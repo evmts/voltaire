@@ -1,3 +1,5 @@
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import { Type } from "../types.js";
 import {
 	encodeAccessList,
@@ -50,3 +52,6 @@ export function GetSigningHash({ keccak256, rlpEncode }) {
 		return keccak256(result);
 	};
 }
+
+// Default export with crypto injected
+export const getSigningHash = GetSigningHash({ keccak256, rlpEncode });

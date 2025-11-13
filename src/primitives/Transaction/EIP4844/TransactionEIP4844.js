@@ -14,12 +14,20 @@ import { VerifySignature } from "./verifySignature.js";
 // Import crypto dependencies
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
-import { recoverPublicKey as secp256k1RecoverPublicKey, verify as secp256k1Verify } from "../../../crypto/Secp256k1/index.js";
+import {
+	recoverPublicKey as secp256k1RecoverPublicKey,
+	verify as secp256k1Verify,
+} from "../../../crypto/Secp256k1/index.js";
 
 // Create instantiated methods with crypto
 const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
 const hash = Hash({ keccak256 });
-const verifySignature = VerifySignature({ keccak256, rlpEncode, secp256k1RecoverPublicKey, secp256k1Verify });
+const verifySignature = VerifySignature({
+	keccak256,
+	rlpEncode,
+	secp256k1RecoverPublicKey,
+	secp256k1Verify,
+});
 
 // Re-export factories for tree-shaking
 export { Hash, GetSigningHash, VerifySignature };

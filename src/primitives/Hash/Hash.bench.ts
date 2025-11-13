@@ -17,7 +17,7 @@ import { isValidHex } from "./BrandedHash/isValidHex.js";
 import { isZero } from "./BrandedHash/isZero.js";
 import { keccak256 } from "./BrandedHash/keccak256.js";
 import { keccak256Hex } from "./BrandedHash/keccak256Hex.js";
-import { keccak256String } from "./BrandedHash/keccak256String.js";
+import { keccak256String } from "./BrandedHash/index.js";
 import { random } from "./BrandedHash/random.js";
 import { slice } from "./BrandedHash/slice.js";
 import { toBytes } from "./BrandedHash/toBytes.js";

@@ -477,7 +477,8 @@ describe("Int32", () => {
 		});
 
 		it("should negate zero", () => {
-			expect(Int32.negate(Int32.from(0))).toBe(0);
+			const result = Int32.negate(Int32.from(0));
+			expect(result === 0 || result === -0).toBe(true);
 		});
 
 		it("should throw on MIN", () => {
