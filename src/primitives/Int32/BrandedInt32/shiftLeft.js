@@ -1,0 +1,12 @@
+/**
+ * Shift Int32 left by n bits
+ *
+ * @param {import('./BrandedInt32.js').BrandedInt32} value - Value to shift
+ * @param {number} n - Number of bits to shift (0-31)
+ * @returns {import('./BrandedInt32.js').BrandedInt32} Result
+ */
+export function shiftLeft(value, n) {
+	const result = value << n;
+
+	return /** @type {import('./BrandedInt32.js').BrandedInt32} */ (result);
+}
