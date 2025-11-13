@@ -3,48 +3,296 @@ title: Powerful Features
 description: Unique features beyond standard Ethereum libraries
 ---
 
-Voltaire provides unique features such as EVM execution and bytecode analysis in addition to the bread and butter primitives and provider features all Ethereum libraries offer.
+Voltaire provides all standard features including primitive types (Address, Hash, Transaction, etc.), JSON-RPC provider, and cryptography. But we also offer **unique features not found in any other TypeScript-based Ethereum library**.
 
-## Unique Features
+## EVM Execution
 
-### EVM Execution
+Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate gas, and debug contracts without network calls.
 
-Execute EVM bytecode and simulate transactions.
+**Why this is powerful:**
+- **Zero latency** - Execute instantly without network round-trips
+- **Deep inspection** - Step through opcodes, inspect memory and stack
+- **Programmable hooks** - Run callbacks on every instruction
+- **Local simulation** - Test contract interactions before sending transactions
+
+### Simulate Transactions
+
+```typescript
+import { createEvm } from '@tevm/voltaire/evm';
+import { Address } from '@tevm/voltaire/primitives';
+
+const evm = createEvm({
+  fork: {
+    url: 'https://eth.llamarpc.com',
+    blockNumber: 18_000_000n
+  }
+});
+
+// Simulate a transfer before sending
+const result = await evm.call({
+  to: Address('0x...token'),
+  data: encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [recipient, amount]
+  }),
+  from: sender
+});
+
+if (result.executionGasUsed > gasLimit) {
+  console.warn('Transaction will run out of gas!');
+}
+```
+
+### Optimistic UI Updates
+
+```typescript
+// Show users expected outcome before confirmation
+const simulatedBalance = await evm.call({
+  to: tokenAddress,
+  data: encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [userAddress]
+  })
+});
+
+// Update UI immediately with simulated result
+updateBalanceDisplay(decodeResult(simulatedBalance.returnValue));
+
+// Then send actual transaction
+await wallet.sendTransaction(tx);
+```
+
+### Step Through Execution
+
+```typescript
+import { createEvm } from '@tevm/voltaire/evm';
+
+const evm = createEvm();
+
+// Hook into every opcode
+evm.on('step', (step) => {
+  console.log(`Opcode: ${step.opcode}`);
+  console.log(`Gas: ${step.gasLeft}`);
+  console.log(`Stack: ${step.stack}`);
+  console.log(`Memory: ${step.memory}`);
+});
+
+// Execute and debug
+await evm.call({
+  to: contractAddress,
+  data: calldata
+});
+```
+
+### Mock Contracts with JavaScript
+
+```typescript
+// Mock external contracts for testing
+evm.setAccountCode(
+  externalContractAddress,
+  Bytecode('0x...')
+);
+
+// Or inject JavaScript behavior
+evm.injectContract(oracleAddress, {
+  async call(data) {
+    // Mock oracle response
+    return encodeAbiParameters(
+      [{ type: 'uint256' }],
+      [currentPrice]
+    );
+  }
+});
+```
 
 <Card title="EVM Documentation" icon="bolt" href="/evm">
   Complete EVM execution primitives and precompiles
 </Card>
 
-### Bytecode Analysis
+## Bytecode Analysis
 
-Analyze EVM bytecode for jump destinations, instructions, and metadata.
+Parse and analyze EVM bytecode without executing it. Essential for security analysis, optimization, and tooling.
+
+**Why this is powerful:**
+- **Static analysis** - Understand contracts without execution
+- **Security auditing** - Find suspicious patterns and vulnerabilities
+- **Gas optimization** - Identify inefficient bytecode
+- **Decompilation** - Reverse engineer unverified contracts
+
+### Parse Instructions
+
+```typescript
+import { Bytecode } from '@tevm/voltaire/primitives';
+
+const bytecode = Bytecode('0x608060405234801561001057600080fd5b50...');
+
+const instructions = Bytecode.parseInstructions(bytecode);
+
+for (const instruction of instructions) {
+  console.log(`${instruction.pc}: ${instruction.opcode.name}`);
+  if (instruction.pushData) {
+    console.log(`  Push: 0x${instruction.pushData.toString(16)}`);
+  }
+}
+// Output:
+// 0: PUSH1 80
+// 2: PUSH1 40
+// 4: MSTORE
+// 5: CALLVALUE
+// ...
+```
+
+### Analyze Jump Destinations
+
+```typescript
+const analysis = Bytecode.analyze(bytecode);
+
+// All valid jump destinations
+console.log('Jump destinations:', analysis.jumpDestinations);
+
+// Check if location is valid JUMPDEST
+const isValid = Bytecode.isValidJumpDest(bytecode, 0x123);
+
+// Gas usage analysis
+console.log('Total gas cost:', analysis.gasAnalysis.totalCost);
+console.log('Max stack depth:', analysis.stackAnalysis.maxDepth);
+```
+
+### Detect Patterns
+
+```typescript
+// Find function selectors
+const selectors = new Set<string>();
+
+for (const instruction of instructions) {
+  if (instruction.opcode.name === 'PUSH4') {
+    // Potential function selector
+    selectors.add(instruction.pushData.toString(16));
+  }
+}
+
+console.log('Function selectors:', selectors);
+
+// Detect proxy patterns
+const hasDelegate = instructions.some(
+  instr => instr.opcode.name === 'DELEGATECALL'
+);
+if (hasDelegate) {
+  console.log('⚠️ Proxy contract detected');
+}
+```
+
+### Strip Metadata
+
+```typescript
+// Remove Solidity metadata from bytecode
+const hasMetadata = Bytecode.hasMetadata(bytecode);
+
+if (hasMetadata) {
+  const stripped = Bytecode.stripMetadata(bytecode);
+  console.log('Reduced size:',
+    bytecode.length - stripped.length,
+    'bytes'
+  );
+}
+```
+
+### Format for Debugging
+
+```typescript
+// Pretty-print bytecode with annotations
+const formatted = Bytecode.prettyPrint(bytecode);
+console.log(formatted);
+// Output:
+// 0x0000: PUSH1 0x80
+// 0x0002: PUSH1 0x40
+// 0x0004: MSTORE      ; Store 0x80 at memory[0x40]
+// 0x0005: CALLVALUE
+// 0x0006: DUP1
+// 0x0007: ISZERO
+// 0x0008: PUSH2 0x0010
+// 0x000b: JUMPI       ; Jump to 0x0010 if callvalue == 0
+// ...
+```
+
+### Extract Runtime Code
+
+```typescript
+// Separate creation code from runtime code
+const runtime = Bytecode.extractRuntime(creationBytecode);
+
+// Get code hash (for CREATE2)
+const codeHash = Bytecode.hash(runtime);
+console.log('Runtime code hash:', codeHash);
+```
 
 <Card title="Bytecode Analysis" icon="magnifying-glass" href="/primitives/bytecode/analyze">
-  Parse instructions and find jump destinations
+  Complete bytecode analysis documentation
 </Card>
 
-## Standard Features
+## Fork Any Network
 
-### Primitives
+Create local forks of any Ethereum network for testing and simulation:
 
-Typesafe primitives for Address, Transaction, Hash, Hex, and more.
+```typescript
+import { createEvm } from '@tevm/voltaire/evm';
 
-<Card title="Primitives" icon="cube" href="/primitives/address">
-  Complete primitives documentation
-</Card>
+// Fork mainnet at specific block
+const mainnetFork = createEvm({
+  fork: {
+    url: 'https://eth.llamarpc.com',
+    blockNumber: 18_000_000n
+  }
+});
 
-### JSON-RPC Provider
+// Test against real state
+const balance = await mainnetFork.call({
+  to: Address('0x...'),
+  data: encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [someAddress]
+  })
+});
 
-Customizable JSON-RPC provider interface.
+// Modify state locally
+await mainnetFork.setBalance(testAddress, parseEther('1000'));
+```
 
-<Card title="JSON-RPC" icon="network-wired" href="/jsonrpc">
-  Provider functionality
-</Card>
+**Use cases:**
+- **Integration testing** - Test against real contract state
+- **Gas estimation** - Accurate estimates using network state
+- **Transaction simulation** - Preview effects before sending
+- **Security research** - Analyze historical exploits
 
-### Cryptography
+## Local-First Development
 
-High-performance cryptographic operations.
+Everything runs in-memory. No external services, no API keys, no rate limits:
 
-<Card title="Cryptography" icon="lock" href="/crypto/keccak256">
-  Cryptographic primitives
-</Card>
+```typescript
+// All execution is local and instant
+const evm = createEvm();
+
+// Deploy contracts
+await evm.deploy({
+  bytecode: contractBytecode,
+  abi: contractAbi
+});
+
+// Call contracts
+await evm.call({ to, data });
+
+// Inspect state
+const storage = await evm.getStorageAt(address, slot);
+const code = await evm.getCode(address);
+const balance = await evm.getBalance(address);
+```
+
+**Benefits:**
+- **No network latency** - Sub-millisecond execution
+- **Complete privacy** - Sensitive data never leaves your machine
+- **Unlimited requests** - No rate limiting
+- **Offline development** - Work without internet
+- **Deterministic testing** - Reproducible results every time
