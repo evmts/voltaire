@@ -30,7 +30,7 @@ For production, use:
 ✅ **Correct:**
 ```typescript
 // Browser
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // Node.js

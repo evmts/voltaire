@@ -114,7 +114,7 @@ Total:    [264 bits] → 24 words
 import { sha256 } from '@tevm/voltaire/crypto/sha256';
 
 // Example: Calculate checksum for 128-bit entropy
-const entropy = new Uint8Array(16).fill(0);
+const entropy = Bytes16().fill(0);
 
 // 1. Hash entropy
 const hash = sha256.hash(entropy);

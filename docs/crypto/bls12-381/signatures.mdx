@@ -104,7 +104,7 @@ async function verifyBLSSignature(
   pairingInput.set(negatedMessage, 384);
   pairingInput.set(publicKey, 512);
 
-  const output = new Uint8Array(32);
+  const output = Bytes32();
   await bls12_381.pairing(pairingInput, output);
 
   return output[31] === 0x01;
@@ -265,7 +265,7 @@ async function batchVerifySignatures(
     pairingInput.set(publicKeys[i], offset + 128);
   }
 
-  const output = new Uint8Array(32);
+  const output = Bytes32();
   await bls12_381.pairing(pairingInput, output);
 
   return output[31] === 0x01;

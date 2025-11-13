@@ -291,7 +291,7 @@ Combine random and counter:
 class HybridNonceGenerator {
   constructor() {
     // Generate random prefix once
-    this.prefix = crypto.getRandomValues(new Uint8Array(4));
+    this.prefix = crypto.getRandomValues(Bytes4());
     this.counter = 0n;
   }
 
@@ -456,7 +456,7 @@ import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function encryptWallet(privateKey, password) {
   // Derive key from password
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = crypto.getRandomValues(Bytes16());
   const key = await AesGcm.deriveKey(password, salt, 600000, 256);
 
   // Encrypt private key

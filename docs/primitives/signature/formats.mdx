@@ -38,7 +38,7 @@ With Recovery ID (65 bytes):
 import { Signature } from '@tevm/voltaire';
 
 // Create from compact (64 bytes)
-const compact64 = new Uint8Array(64);
+const compact64 = Bytes64();
 compact64.set(rBytes, 0);
 compact64.set(sBytes, 32);
 const sig1 = Signature.fromCompact(compact64, 'secp256k1');

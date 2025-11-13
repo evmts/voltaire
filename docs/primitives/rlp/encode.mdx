@@ -68,10 +68,10 @@ const txData = [
   new Uint8Array([0x52, 0x08]),               // gas: 21000
   new Uint8Array(20).fill(0x01),              // to (address)
   new Uint8Array([0x00]),                    // value: 0
-  new Uint8Array([]),                         // data: empty
+  Bytes(),                         // data: empty
   new Uint8Array([0x1b]),                    // v: 27
-  new Uint8Array(32).fill(0x02),              // r: signature r
-  new Uint8Array(32).fill(0x03)               // s: signature s
+  Bytes32().fill(0x02),              // r: signature r
+  Bytes32().fill(0x03)               // s: signature s
 ]
 
 const encoded = Rlp.encode(txData)
@@ -87,19 +87,19 @@ import { Rlp } from '@tevm/voltaire'
 
 // Simplified block header
 const header = [
-  new Uint8Array(32).fill(0x01),  // parentHash
-  new Uint8Array(32).fill(0x02),  // uncleHash
+  Bytes32().fill(0x01),  // parentHash
+  Bytes32().fill(0x02),  // uncleHash
   new Uint8Array(20).fill(0x03),  // coinbase (miner address)
-  new Uint8Array(32).fill(0x04),  // stateRoot
-  new Uint8Array(32).fill(0x05),  // transactionsRoot
-  new Uint8Array(32).fill(0x06),  // receiptsRoot
+  Bytes32().fill(0x04),  // stateRoot
+  Bytes32().fill(0x05),  // transactionsRoot
+  Bytes32().fill(0x06),  // receiptsRoot
   new Uint8Array(256).fill(0x00), // logsBloom
   new Uint8Array([0x01]),         // difficulty
   new Uint8Array([0x01]),         // number
   new Uint8Array([0x5f, 0x5e, 0x100]), // gasLimit
   new Uint8Array([0x00]),         // gasUsed
-  new Uint8Array(4),              // timestamp
-  new Uint8Array([])              // extraData
+  Bytes4(),              // timestamp
+  Bytes()              // extraData
 ]
 
 const encoded = Rlp.encode(header)
@@ -132,8 +132,8 @@ const proof: StorageProof = {
   key: new Uint8Array([0x01, 0x02]),
   value: new Uint8Array([0x03, 0x04]),
   proof: [
-    new Uint8Array(32).fill(0x05),
-    new Uint8Array(32).fill(0x06)
+    Bytes32().fill(0x05),
+    Bytes32().fill(0x06)
   ]
 }
 
@@ -160,7 +160,7 @@ For byte arrays 0-55 bytes, prefix with `0x80 + length`:
 
 ```typescript
 // Empty bytes
-const empty = new Uint8Array([])
+const empty = Bytes()
 const encoded = Rlp.encode(empty)
 // => Uint8Array([0x80])
 

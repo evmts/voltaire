@@ -75,7 +75,7 @@ async function computePairing(
   input.set(g1Point, 0);
   input.set(g2Point, 128);
 
-  const output = new Uint8Array(32);
+  const output = Bytes32();
   await bls12_381.pairing(input, output);
 
   // Note: Precompile returns pairing CHECK (result == 1)
@@ -104,7 +104,7 @@ async function multiPairingCheck(
     input.set(pairs[i].g2, offset + 128);
   }
 
-  const output = new Uint8Array(32);
+  const output = Bytes32();
   await bls12_381.pairing(input, output);
 
   return output[31] === 0x01;

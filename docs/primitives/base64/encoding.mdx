@@ -35,7 +35,7 @@ const encoded2 = Base64.encode(binary)
 **Example:**
 ```typescript
 // Encode transaction hash
-const hash = new Uint8Array(32) // 32-byte hash
+const hash = Bytes32() // 32-byte hash
 const b64Hash = Base64.encode(hash)
 console.log(b64Hash.length) // 44 characters (32 * 4/3 rounded up)
 ```
@@ -116,7 +116,7 @@ const filename = `cache-${encoded}.dat`
 **Example:**
 ```typescript
 // Encode token for URL
-const tokenBytes = new Uint8Array(16) // 16-byte random token
+const tokenBytes = Bytes16() // 16-byte random token
 crypto.getRandomValues(tokenBytes)
 const token = Base64.encodeUrlSafe(tokenBytes)
 

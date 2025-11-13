@@ -62,7 +62,7 @@ import { handler_0xf3_RETURN } from '@tevm/voltaire/evm/control';
 // Return 32 bytes from memory offset 0
 const frame = createFrame({
   stack: [32n, 0n],  // length=32, offset=0
-  memory: new Uint8Array(64),
+  memory: Bytes64(),
   gasRemaining: 1000n
 });
 
@@ -489,7 +489,7 @@ import { handler_0xf3_RETURN } from './0xf3_RETURN.js';
 
 describe('RETURN (0xf3)', () => {
   it('returns data from memory', () => {
-    const memory = new Uint8Array(64);
+    const memory = Bytes64();
     memory[0] = 0x42;
     memory[1] = 0x43;
 

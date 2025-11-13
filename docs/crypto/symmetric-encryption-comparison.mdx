@@ -279,7 +279,7 @@ const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
 // Use ChaCha20-Poly1305 on mobile devices
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
 
-const key = crypto.getRandomValues(new Uint8Array(32));
+const key = crypto.getRandomValues(Bytes32());
 const nonce = crypto.getRandomValues(new Uint8Array(12));
 const ciphertext = chacha20poly1305(key, nonce).encrypt(plaintext);
 ```
@@ -329,7 +329,7 @@ const ciphertext = chacha20poly1305(key, nonce).encrypt(plaintext);
 **Server/Desktop:** AES-GCM
 ```typescript
 // Wallet encryption with AES-256-GCM
-const salt = crypto.getRandomValues(new Uint8Array(16));
+const salt = crypto.getRandomValues(Bytes16());
 const key = await AesGcm.deriveKey(password, salt, 600000, 256);
 const nonce = AesGcm.generateNonce();
 const encryptedPrivateKey = await AesGcm.encrypt(privateKey, key, nonce);
@@ -412,7 +412,7 @@ const ct = await AesGcm.encrypt(pt, key, nonce);
 // After (ChaCha20-Poly1305)
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
 
-const key = crypto.getRandomValues(new Uint8Array(32));  // 32 bytes
+const key = crypto.getRandomValues(Bytes32());  // 32 bytes
 const nonce = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes
 const ct = chacha20poly1305(key, nonce).encrypt(pt);
 ```

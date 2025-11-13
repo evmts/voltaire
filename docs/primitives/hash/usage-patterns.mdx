@@ -215,7 +215,7 @@ function calculateMerkleRoot(leaves: BrandedHash[]): BrandedHash {
     for (let i = 0; i < level.length; i += 2) {
       if (i + 1 < level.length) {
         // Hash pair
-        const combined = new Uint8Array(64);
+        const combined = Bytes64();
         combined.set(level[i], 0);
         combined.set(level[i + 1], 32);
         nextLevel.push(Hash.keccak256(combined));
@@ -269,7 +269,7 @@ function generateMerkleProof(
         }
 
         // Hash pair
-        const combined = new Uint8Array(64);
+        const combined = Bytes64();
         combined.set(left, 0);
         combined.set(right, 32);
         nextLevel.push(Hash.keccak256(combined));
@@ -298,7 +298,7 @@ function verifyMerkleProof(
   let index = proof.index;
 
   for (const sibling of proof.proof) {
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
 
     if (index % 2 === 0) {
       // We're on left, sibling on right
@@ -328,11 +328,11 @@ function calculateMappingSlot(
   mappingSlot: number,
   key: BrandedHash
 ): BrandedHash {
-  const slotBytes = new Uint8Array(32);
+  const slotBytes = Bytes32();
   const dataView = new DataView(slotBytes.buffer);
   dataView.setUint32(28, mappingSlot, false);  // Big-endian
 
-  const combined = new Uint8Array(64);
+  const combined = Bytes64();
   combined.set(key, 0);
   combined.set(slotBytes, 32);
 
@@ -367,7 +367,7 @@ function generateRandomHashes(count: number): BrandedHash[] {
 
 // Generate deterministic random hash (for testing)
 function deterministicHash(seed: number): BrandedHash {
-  const seedBytes = new Uint8Array(32);
+  const seedBytes = Bytes32();
   const view = new DataView(seedBytes.buffer);
   view.setUint32(0, seed, false);
 
@@ -422,7 +422,7 @@ const TEST_HASHES = {
 
 // Generate test hash from index
 function testHash(index: number): BrandedHash {
-  const bytes = new Uint8Array(32);
+  const bytes = Bytes32();
   bytes[0] = index & 0xff;
   bytes[1] = (index >> 8) & 0xff;
   return Hash(bytes);

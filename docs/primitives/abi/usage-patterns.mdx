@@ -334,7 +334,7 @@ const encoded = Abi.encode([bytesType], [data]);
 
 // Fixed bytes
 const bytes32Type = { type: "bytes32" };
-const hash = new Uint8Array(32);
+const hash = Bytes32();
 const encoded = Abi.encode([bytes32Type], [hash]);
 ```
 

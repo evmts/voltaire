@@ -375,7 +375,7 @@ import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function storeExtendedKey(xprv: string, password: string) {
   // Derive encryption key from password
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = crypto.getRandomValues(Bytes16());
   const key = await deriveKeyFromPassword(password, salt);
 
   // Encrypt xprv

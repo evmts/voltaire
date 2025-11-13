@@ -97,12 +97,12 @@ const large = Uint(10n ** 20n);  // ✅ Correct
 import { Uint } from '@tevm/voltaire';
 
 // From Uint8Array (32 bytes, big-endian)
-const bytes = new Uint8Array(32);
+const bytes = Bytes32();
 bytes[31] = 0xff;  // Last byte = 255
 const value = Uint(bytes);
 
 // ABI-encoded format (same as bytes for uint256)
-const abiEncoded = new Uint8Array(32);
+const abiEncoded = Bytes32();
 const decoded = Uint(abiEncoded);
 ```
 </Tab>

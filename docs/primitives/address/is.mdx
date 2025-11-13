@@ -225,7 +225,7 @@ Address.is(Address.zero())               // true
 **What it rejects:**
 ```typescript
 Address.is(new Uint8Array(19))           // false (wrong length)
-Address.is(new Uint8Array(32))           // false (wrong length)
+Address.is(Bytes32())           // false (wrong length)
 Address.is("0x742d35...")               // false (string)
 Address.is(42n)                          // false (bigint)
 Address.is(null)                         // false (null)

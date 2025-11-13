@@ -65,7 +65,7 @@ const same = Rlp(existing)
 // => Returns existing unchanged
 
 // Empty bytes
-const empty = Rlp(new Uint8Array([]))
+const empty = Rlp(Bytes())
 // => { type: 'bytes', value: Uint8Array([]) }
 
 // Empty list
@@ -170,7 +170,7 @@ const short = new Uint8Array([1, 2, 3])
 console.log(Rlp.getEncodedLength(short))  // 4 (prefix + 3 bytes)
 
 // Empty string
-const empty = new Uint8Array([])
+const empty = Bytes()
 console.log(Rlp.getEncodedLength(empty))  // 1 (just prefix 0x80)
 
 // Long string

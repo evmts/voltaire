@@ -146,7 +146,7 @@ import { Address } from '@tevm/voltaire'
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1'
 
 // Start with private key
-const privateKey = new Uint8Array(32)
+const privateKey = Bytes32()
 // ... fill with secure random bytes
 
 // Derive public key from private key

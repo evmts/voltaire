@@ -363,8 +363,8 @@ async function initializeSignalSession(
 
   return {
     rootKey,
-    sendingChain: new Uint8Array(32),
-    receivingChain: new Uint8Array(32),
+    sendingChain: Bytes32(),
+    receivingChain: Bytes32(),
   };
 }
 ```

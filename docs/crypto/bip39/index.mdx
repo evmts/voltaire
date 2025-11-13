@@ -71,7 +71,7 @@ const mnemonic = Bip39.generateMnemonic();
 Converts raw entropy to mnemonic phrase.
 
 ```typescript
-const entropy = crypto.getRandomValues(new Uint8Array(32)); // 256 bits
+const entropy = crypto.getRandomValues(Bytes32()); // 256 bits
 const mnemonic = Bip39.entropyToMnemonic(entropy);
 ```
 
@@ -357,7 +357,7 @@ const badEntropy = new Uint8Array(20); // 160 bits, but wrong
 Bip39.entropyToMnemonic(badEntropy); // Error
 
 // Correct
-const goodEntropy = new Uint8Array(32); // 256 bits
+const goodEntropy = Bytes32(); // 256 bits
 Bip39.entropyToMnemonic(goodEntropy); // Valid 24-word mnemonic
 ```
 

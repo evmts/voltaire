@@ -260,7 +260,7 @@ import { EventLog } from '@tevm/voltaire';
 const pendingLog = EventLog({
   address: contractAddress,
   topics: [TRANSFER_SIG],
-  data: new Uint8Array([]),
+  data: Bytes(),
   // No blockNumber, blockHash, etc.
 });
 

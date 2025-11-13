@@ -62,7 +62,7 @@ interface AccountData {
 }
 
 function packAccountData(data: AccountData): Uint8Array {
-  const packed = new Uint8Array(32)
+  const packed = Bytes32()
 
   // Version (1 byte)
   packed[0] = data.version
@@ -73,7 +73,7 @@ function packAccountData(data: AccountData): Uint8Array {
   packed[3] = data.codeSize & 0xFF
 
   // Nonce (8 bytes, 64-bit big-endian)
-  const nonceBytes = new Uint8Array(8)
+  const nonceBytes = Bytes8()
   new DataView(nonceBytes.buffer).setBigUint64(0, data.nonce, false)
   packed.set(nonceBytes, 4)
 
@@ -228,7 +228,7 @@ function writeStorage(
 }
 
 // Usage
-const storageValue = new Uint8Array(32)
+const storageValue = Bytes32()
 storageValue[31] = 0x42
 
 tree = writeStorage(tree, address, 0, storageValue)
@@ -279,9 +279,9 @@ function batchWriteStorage(
 
 // Usage
 const updates = new Map([
-  [0, new Uint8Array(32)],
-  [1, new Uint8Array(32)],
-  [2, new Uint8Array(32)]
+  [0, Bytes32()],
+  [1, Bytes32()],
+  [2, Bytes32()]
 ])
 
 tree = batchWriteStorage(tree, address, updates)
@@ -768,7 +768,7 @@ const addr2 = new Uint8Array(20)
 state.createAccount(addr1, 1000n)
 state.createAccount(addr2, 2000n)
 
-state.setStorage(addr1, 0, new Uint8Array(32))
+state.setStorage(addr1, 0, Bytes32())
 
 console.log('State root:', state.stateRoot())
 console.log('Address 1 balance:', state.getBalance(addr1))

@@ -194,7 +194,7 @@ console.log(unique.length); // 2
 ```typescript
 // Predict CREATE2 address before deployment
 const factory = Address("0x...");
-const salt = new Uint8Array(32);
+const salt = Bytes32();
 const initCode = compileContract(); // bytecode
 
 // Calculate address deterministically

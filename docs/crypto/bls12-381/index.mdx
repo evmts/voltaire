@@ -94,7 +94,7 @@ await bls12_381.g2Mul(g2Input, g2Output);
 
 // Pairing check (signature verification)
 const pairingInput = new Uint8Array([...g1Point1, new Uint8Array(80), ...g2Point, new Uint8Array(224)]);  // Pairs
-const pairingOutput = new Uint8Array(32);
+const pairingOutput = Bytes32();
 await bls12_381.pairing(pairingInput, pairingOutput);
 
 // Result: pairingOutput[31] === 0x01 means verification passed

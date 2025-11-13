@@ -39,8 +39,8 @@ const legacy: Transaction.Legacy = {
   value: 1_000_000_000_000_000_000n,  // 1 ETH
   data: new Uint8Array(),
   v: 27n,  // Signature v (pre-EIP-155: 27 or 28)
-  r: new Uint8Array(32),  // Signature r component
-  s: new Uint8Array(32),  // Signature s component
+  r: Bytes32(),  // Signature r component
+  s: Bytes32(),  // Signature s component
 };
 
 // Serialize to bytes for broadcasting
@@ -77,13 +77,13 @@ const eip2930: Transaction.EIP2930 = {
     {
       address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
       storageKeys: [
-        new Uint8Array(32),  // Storage slot to access
+        Bytes32(),  // Storage slot to access
       ],
     },
   ],
   yParity: 0,  // Signature parity (0 or 1, replaces v)
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 const serialized = Transaction.serialize(eip2930);
@@ -117,8 +117,8 @@ const eip1559: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // Calculate effective gas price given current base fee
@@ -187,8 +187,8 @@ const eip4844: Transaction.EIP4844 = {
     Hash('0x01...'),  // KZG commitment hash for blob 2
   ],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // Calculate blob gas cost
@@ -245,13 +245,13 @@ const eip7702: Transaction.EIP7702 = {
       address: Address('0x...'),  // Contract to delegate to
       nonce: 0n,  // EOA nonce at time of signing
       yParity: 0,
-      r: new Uint8Array(32),
-      s: new Uint8Array(32),
+      r: Bytes32(),
+      s: Bytes32(),
     },
   ],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 const serialized = Transaction.serialize(eip7702);
@@ -323,8 +323,8 @@ const tx: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,  // Placeholder, will be overwritten
-  r: new Uint8Array(32),  // Placeholder
-  s: new Uint8Array(32),  // Placeholder
+  r: Bytes32(),  // Placeholder
+  s: Bytes32(),  // Placeholder
 };
 
 // 2. SIGNING HASH - Compute what gets signed
@@ -333,7 +333,7 @@ console.log(signingHash);
 // Uint8Array(32) - keccak256 hash
 
 // 3. SIGNING - Sign with private key
-const privateKey = new Uint8Array(32);  // Your private key
+const privateKey = Bytes32();  // Your private key
 const signature = Secp256k1.sign(signingHash, privateKey);
 
 // Update transaction with signature
@@ -381,8 +381,8 @@ const tx: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // What gets signed (excludes signature fields)
@@ -423,8 +423,8 @@ const tx: Transaction.Legacy = {
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   v: 27n,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // Extract chain ID from v (EIP-155)
@@ -598,8 +598,8 @@ const tx: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // 1. Check transaction is signed
@@ -721,15 +721,15 @@ const unsigned: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // Get signing hash
 const hash = Transaction.getSigningHash(unsigned);
 
 // Sign with private key
-const privateKey = new Uint8Array(32);  // Your private key
+const privateKey = Bytes32();  // Your private key
 const signature = Secp256k1.sign(hash, privateKey);
 
 // Create signed transaction
@@ -825,8 +825,8 @@ const tx: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 };
 
 // Serialize to bytes

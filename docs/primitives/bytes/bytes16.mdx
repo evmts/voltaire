@@ -75,7 +75,7 @@ Create Bytes16 from hex string or bytes:
 const b1 = Bytes16('0x' + '12'.repeat(16));
 
 // From bytes
-const b2 = Bytes16(new Uint8Array(16));
+const b2 = Bytes16(Bytes16());
 ```
 
 ### fromHex
@@ -95,7 +95,7 @@ Bytes16('0x1234'); // Error: must be 32 hex chars
 Create from Uint8Array with size check:
 
 ```typescript
-const arr = new Uint8Array(16);
+const arr = Bytes16();
 const bytes = Bytes16(arr);
 
 // Throws on wrong size
@@ -116,7 +116,7 @@ console.log(Bytes16.isZero(zeros)); // true
 Convert to hex string:
 
 ```typescript
-const bytes = Bytes16(new Uint8Array(16));
+const bytes = Bytes16(Bytes16());
 const hex = Bytes16.toHex(bytes);
 console.log(hex); // "0x00000000000000000000000000000000"
 ```

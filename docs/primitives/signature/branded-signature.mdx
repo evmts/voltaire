@@ -268,7 +268,7 @@ function verify(sig: BrandedSignature) {
 ### Plain Uint8Array
 
 ```typescript
-const plain = new Uint8Array(64);
+const plain = Bytes64();
 
 // Disadvantages:
 console.log(plain.algorithm); // undefined (unknown algorithm)

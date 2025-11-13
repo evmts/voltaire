@@ -164,7 +164,7 @@ function verifyCommitment(
 
 // Usage
 const secret = new TextEncoder().encode("my secret")
-const salt = crypto.getRandomValues(new Uint8Array(32))
+const salt = crypto.getRandomValues(Bytes32())
 const commitment = createCommitment(secret, salt)
 
 // Later, reveal

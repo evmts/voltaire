@@ -38,8 +38,8 @@ Rlp.equals(a, d)
 // => false
 
 // Empty bytes
-const empty1 = { type: 'bytes', value: new Uint8Array([]) }
-const empty2 = { type: 'bytes', value: new Uint8Array([]) }
+const empty1 = { type: 'bytes', value: Bytes() }
+const empty2 = { type: 'bytes', value: Bytes() }
 Rlp.equals(empty1, empty2)
 // => true
 ```

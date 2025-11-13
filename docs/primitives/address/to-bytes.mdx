@@ -176,7 +176,7 @@ import { Address } from '@tevm/voltaire'
 
 function encodeAddress(addr: Address): Uint8Array {
   // ABI encodes addresses as 32 bytes (left-padded)
-  const encoded = new Uint8Array(32)
+  const encoded = Bytes32()
   encoded.set(addr.toBytes(), 12) // Last 20 bytes
   return encoded
 }

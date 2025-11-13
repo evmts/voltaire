@@ -55,7 +55,7 @@ function toEIP2098(sig: BrandedSignature): Uint8Array {
   const yParity = v === 27 ? 0 : 1;
 
   // Create compact signature
-  const compact = new Uint8Array(64);
+  const compact = Bytes64();
   compact.set(r, 0);
   compact.set(s, 32);
 
@@ -97,7 +97,7 @@ function fromEIP2098(compact: Uint8Array): BrandedSignature {
 }
 
 // Example
-const compact = new Uint8Array(64); // From contract or API
+const compact = Bytes64(); // From contract or API
 const sig = fromEIP2098(compact);
 console.log(Signature.getV(sig)); // 27 or 28
 ```
@@ -268,7 +268,7 @@ class EIP2098 {
     }
 
     const yParity = v === 27 ? 0 : 1;
-    const compact = new Uint8Array(64);
+    const compact = Bytes64();
 
     compact.set(r, 0);
     compact.set(s, 32);
@@ -490,7 +490,7 @@ const standard = new Uint8Array(65); // r + s + v
 console.log(standard.length); // 65 bytes
 
 // EIP-2098 compact
-const compact = new Uint8Array(64); // r + s'
+const compact = Bytes64(); // r + s'
 console.log(compact.length); // 64 bytes
 
 // Savings

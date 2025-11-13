@@ -75,7 +75,7 @@ import { keccak256 } from '@tevm/voltaire/crypto';
 import { Address } from '@tevm/voltaire/primitives';
 
 // Init code: returns single byte 0x42
-const initCode = new Uint8Array([
+const initCode = Bytecode([
   0x60, 0x42,        // PUSH1 0x42
   0x60, 0x00,        // PUSH1 0x00
   0x52,              // MSTORE
@@ -149,7 +149,7 @@ function predictCreate2Address(
 // Example usage
 const creator = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const salt = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
-const initCode = new Uint8Array([/* bytecode */]);
+const initCode = Bytecode();
 
 const predicted = predictCreate2Address(creator, salt, initCode);
 console.log("Contract will deploy to:", Address.toHex(predicted));

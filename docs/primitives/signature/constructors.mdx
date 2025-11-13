@@ -304,7 +304,7 @@ const compact = Hex.toBytes("0x1234...5678"); // 64 bytes
 const sig = Signature.fromCompact(compact, 'secp256k1');
 
 // Ed25519 from compact
-const ed25519Compact = new Uint8Array(64);
+const ed25519Compact = Bytes64();
 const sig2 = Signature.fromCompact(ed25519Compact, 'ed25519');
 
 // Algorithm determines interpretation

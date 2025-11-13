@@ -71,7 +71,7 @@ const commitment = blob.toCommitment();
 const hash = sha256(commitment);
 
 // Create versioned hash: 0x01 + hash[1:32]
-const versionedHash = new Uint8Array(32);
+const versionedHash = Bytes32();
 versionedHash[0] = 0x01; // KZG version
 versionedHash.set(hash.slice(1), 1);
 

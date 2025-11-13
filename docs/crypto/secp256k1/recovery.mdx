@@ -41,7 +41,7 @@ import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Sign message
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 const messageHash = Hash.keccak256String('Recover my key!');
 const signature = Secp256k1.sign(messageHash, privateKey);
@@ -179,8 +179,8 @@ const tx = {
   value: 1000000000000000000n,
   data: new Uint8Array(),
   v: 27,
-  r: new Uint8Array(32), // from transaction
-  s: new Uint8Array(32), // from transaction
+  r: Bytes32(), // from transaction
+  s: Bytes32(), // from transaction
 };
 
 // Recover sender public key
@@ -315,7 +315,7 @@ try {
 ### Basic Recovery
 
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 42;
 
 const messageHash = Hash.keccak256String("test recovery");
@@ -380,7 +380,7 @@ assert(Address.equals(recoveredAddress, expectedAddress));
 ```typescript
 // Invalid r (all zeros)
 const invalidR = {
-  r: new Uint8Array(32),
+  r: Bytes32(),
   s: signature.s,
   v: 27,
 };
@@ -389,7 +389,7 @@ expect(() => Secp256k1.recoverPublicKey(invalidR, messageHash)).toThrow();
 // Invalid s (too large)
 const invalidS = {
   r: signature.r,
-  s: new Uint8Array(32).fill(0xff),
+  s: Bytes32().fill(0xff),
   v: 27,
 };
 expect(() => Secp256k1.recoverPublicKey(invalidS, messageHash)).toThrow();

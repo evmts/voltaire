@@ -45,7 +45,7 @@ Derive the 64-byte uncompressed public key from a private key.
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 // Generate random private key
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // Derive public key
@@ -69,14 +69,14 @@ Check if a byte array is a valid secp256k1 private key.
 
 **Example:**
 ```typescript
-const validKey = new Uint8Array(32);
+const validKey = Bytes32();
 validKey[31] = 1;
 console.log(Secp256k1.isValidPrivateKey(validKey)); // true
 
-const zeroKey = new Uint8Array(32); // All zeros
+const zeroKey = Bytes32(); // All zeros
 console.log(Secp256k1.isValidPrivateKey(zeroKey)); // false
 
-const shortKey = new Uint8Array(16); // Too short
+const shortKey = Bytes16(); // Too short
 console.log(Secp256k1.isValidPrivateKey(shortKey)); // false
 ```
 
@@ -93,13 +93,13 @@ Check if a byte array is a valid secp256k1 public key.
 
 **Example:**
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 console.log(Secp256k1.isValidPublicKey(publicKey)); // true
 
-const invalidKey = new Uint8Array(64); // Not on curve
+const invalidKey = Bytes64(); // Not on curve
 console.log(Secp256k1.isValidPublicKey(invalidKey)); // false
 ```
 
@@ -180,7 +180,7 @@ import * as Address from '@tevm/voltaire/primitives/Address';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // 1. Derive public key
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
@@ -202,14 +202,14 @@ console.log(Address.toHex(address)); // 0x...
 
 **Correct:**
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey); // CSPRNG
 ```
 
 **Incorrect:**
 ```typescript
 // NEVER do this - predictable keys, trivial to crack
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 for (let i = 0; i < 32; i++) {
   privateKey[i] = Math.floor(Math.random() * 256); // ❌ NOT secure
 }
@@ -274,7 +274,7 @@ Q = Q + (R & mask); // Conditional without branching
 
 ```typescript
 // Private key = 1
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 
 // Public key should be generator point G
@@ -298,7 +298,7 @@ assert(actualY === expectedY);
 ### Deterministic Derivation
 
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 42;
 
 // Derive twice
@@ -312,9 +312,9 @@ assert(publicKey1.every((byte, i) => byte === publicKey2[i]));
 ### Different Keys = Different Public Keys
 
 ```typescript
-const key1 = new Uint8Array(32);
+const key1 = Bytes32();
 key1[31] = 1;
-const key2 = new Uint8Array(32);
+const key2 = Bytes32();
 key2[31] = 2;
 
 const pub1 = Secp256k1.derivePublicKey(key1);
@@ -328,7 +328,7 @@ assert(!pub1.every((byte, i) => byte === pub2[i]));
 
 ```typescript
 // Minimum valid key (1)
-const minKey = new Uint8Array(32);
+const minKey = Bytes32();
 minKey[31] = 1;
 const pub1 = Secp256k1.derivePublicKey(minKey); // Valid
 
@@ -342,7 +342,7 @@ const maxKey = new Uint8Array([
 const pub2 = Secp256k1.derivePublicKey(maxKey); // Valid
 
 // Zero key (invalid)
-const zeroKey = new Uint8Array(32);
+const zeroKey = Bytes32();
 expect(() => Secp256k1.derivePublicKey(zeroKey)).toThrow();
 
 // Key = n (invalid)

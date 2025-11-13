@@ -270,7 +270,7 @@ function deriveAddress(privateKey: Uint8Array): string {
 }
 
 // Usage
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 const address = deriveAddress(privateKey);
 console.log(address); // 0x...
@@ -447,7 +447,7 @@ async function batchVerify(
 ```typescript
 // Never use in production - test keys only
 function generateTestKey(seed: number): Uint8Array {
-  const privateKey = new Uint8Array(32);
+  const privateKey = Bytes32();
   const seedBytes = new Uint8Array(new BigUint64Array([BigInt(seed)]).buffer);
   const hash = Hash.keccak256(seedBytes);
   privateKey.set(hash);

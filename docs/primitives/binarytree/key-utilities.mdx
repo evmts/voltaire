@@ -65,7 +65,7 @@ Split 32-byte key into 31-byte stem (tree path) and 1-byte subindex (value selec
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const key = new Uint8Array(32)
+const key = Bytes32()
 key[0] = 0xAA
 key[30] = 0xBB
 key[31] = 0x42  // Subindex
@@ -98,7 +98,7 @@ key[31]     → idx (1 byte, 0-255)
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const key = new Uint8Array(32)
+const key = Bytes32()
 key[31] = 5  // Subindex 5
 
 const { stem, idx } = BinaryTree.splitKey(key)
@@ -111,7 +111,7 @@ console.log(stem.length) // 31
 import { BinaryTree } from '@tevm/voltaire'
 
 // Insert uses splitKey internally
-const key = new Uint8Array(32)
+const key = Bytes32()
 const { stem, idx } = BinaryTree.splitKey(key)
 
 // Stem determines tree path
@@ -450,7 +450,7 @@ for (let depth = 0; depth < 10; depth++) {
 
 // 6. Insert into tree
 let tree = BinaryTree.init()
-const value = new Uint8Array(32)
+const value = Bytes32()
 tree = BinaryTree.insert(tree, accountDataKey, value)
 
 // 7. Retrieve

@@ -272,12 +272,12 @@ const BLS_MODULUS =
   52435875175126190479447740508185965837690552500527637822603658699938581184513n;
 
 // Valid field element
-const validElement = new Uint8Array(32);
+const validElement = Bytes32();
 validElement[31] = 0x01; // Small value
 // OK: 1 < BLS_MODULUS
 
 // Invalid field element
-const invalidElement = new Uint8Array(32);
+const invalidElement = Bytes32();
 invalidElement.fill(0xff); // Large value
 // Error: 0xfff...fff > BLS_MODULUS
 ```

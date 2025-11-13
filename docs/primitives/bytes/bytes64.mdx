@@ -31,9 +31,9 @@ Bytes64(new Uint8Array(63)); // Error: must be 64 bytes
 **Concatenated Hashes (2x32 bytes)**
 ```typescript
 // Combine two 32-byte hashes
-const hash1 = new Uint8Array(32).fill(0xaa);
-const hash2 = new Uint8Array(32).fill(0xbb);
-const combined = new Uint8Array(64);
+const hash1 = Bytes32().fill(0xaa);
+const hash2 = Bytes32().fill(0xbb);
+const combined = Bytes64();
 combined.set(hash1, 0);
 combined.set(hash2, 32);
 const bytes64 = Bytes64(combined);
@@ -91,7 +91,7 @@ Create Bytes64 from hex string or bytes:
 const b1 = Bytes64('0x' + '12'.repeat(64));
 
 // From bytes
-const b2 = Bytes64(new Uint8Array(64));
+const b2 = Bytes64(Bytes64());
 ```
 
 ### fromHex
@@ -111,7 +111,7 @@ Bytes64('0x1234'); // Error: must be 128 hex chars
 Create from Uint8Array with size check:
 
 ```typescript
-const arr = new Uint8Array(64);
+const arr = Bytes64();
 const bytes = Bytes64(arr);
 
 // Throws on wrong size
@@ -132,7 +132,7 @@ console.log(Bytes64.isZero(zeros)); // true
 Convert to hex string:
 
 ```typescript
-const bytes = Bytes64(new Uint8Array(64));
+const bytes = Bytes64(Bytes64());
 const hex = Bytes64.toHex(bytes);
 console.log(hex.length); // 130 (0x + 128 hex chars)
 ```
@@ -242,7 +242,7 @@ const hash1 = Hash.keccak256(data1);
 const hash2 = Hash.keccak256(data2);
 
 // Combine into Bytes64
-const combined = new Uint8Array(64);
+const combined = Bytes64();
 combined.set(hash1, 0);   // First 32 bytes
 combined.set(hash2, 32);  // Second 32 bytes
 const bytes64 = Bytes64(combined);

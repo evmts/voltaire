@@ -74,7 +74,7 @@ const frame = createFrame({
   blockContext: {
     block_number: 18_000_000n,
     block_hashes: [
-      new Uint8Array(32).fill(0xaa), // block 17,999,999
+      Bytes32().fill(0xaa), // block 17,999,999
       // ... more hashes
     ]
   }

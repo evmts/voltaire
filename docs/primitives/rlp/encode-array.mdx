@@ -69,10 +69,10 @@ const tx: LegacyTx = {
   gasLimit: 21000n,
   to: new Uint8Array(20).fill(0x01),
   value: 1000000000000000000n,
-  data: new Uint8Array([]),
+  data: Bytes(),
   v: 27n,
-  r: new Uint8Array(32).fill(0x02),
-  s: new Uint8Array(32).fill(0x03)
+  r: Bytes32().fill(0x02),
+  s: Bytes32().fill(0x03)
 }
 
 const encoded = encodeLegacyTx(tx)
@@ -148,8 +148,8 @@ function encodeLog(log: Log): Uint8Array {
 const log: Log = {
   address: new Uint8Array(20).fill(0x01),
   topics: [
-    new Uint8Array(32).fill(0x02),
-    new Uint8Array(32).fill(0x03)
+    Bytes32().fill(0x02),
+    Bytes32().fill(0x03)
   ],
   data: new Uint8Array([0x04, 0x05, 0x06])
 }

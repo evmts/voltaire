@@ -61,7 +61,7 @@ await bls12_381.g2Add(input, output);
 
 ```typescript
 const point = new Uint8Array(256);
-const scalar = new Uint8Array(32);
+const scalar = Bytes32();
 
 const input = new Uint8Array(288);
 input.set(point, 0);

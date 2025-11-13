@@ -193,7 +193,7 @@ hash.includes(0xff) // false
 Test if all bytes match condition:
 
 ```typescript
-const zeroHash = Hash(new Uint8Array(32))
+const zeroHash = Hash(Bytes32())
 zeroHash.every(b => b === 0) // true
 
 const hash = Hash.random()
@@ -220,7 +220,7 @@ zeroHash.some(b => b !== 0) // false
 Fill bytes with value (mutates):
 
 ```typescript
-const hash = Hash(new Uint8Array(32))
+const hash = Hash(Bytes32())
 
 // Fill entire hash with 0xff
 hash.fill(0xff)
@@ -237,7 +237,7 @@ hash.fill(0xbb, 10)
 Copy bytes from another array (mutates):
 
 ```typescript
-const hash = Hash(new Uint8Array(32))
+const hash = Hash(Bytes32())
 
 // Copy 4 bytes at start
 const bytes = new Uint8Array([0x11, 0x22, 0x33, 0x44])

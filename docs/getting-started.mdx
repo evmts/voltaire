@@ -59,7 +59,7 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
     console.log("Message hash:", messageHash);
 
     // Generate a keypair (using crypto.getRandomValues or similar)
-    const privateKey = crypto.getRandomValues(new Uint8Array(32));
+    const privateKey = crypto.getRandomValues(Bytes32());
     const publicKey = Secp256k1.derivePublicKey(privateKey);
 
     // Sign the hash
@@ -85,7 +85,7 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
     document.body.innerHTML += `<p>Hash: ${messageHash}</p>`;
 
     // Generate a keypair (using crypto.getRandomValues or similar)
-    const privateKey = crypto.getRandomValues(new Uint8Array(32));
+    const privateKey = crypto.getRandomValues(Bytes32());
     const publicKey = Secp256k1.derivePublicKey(privateKey);
 
     // Sign and verify

@@ -139,7 +139,7 @@ const pausedKey = State.StorageKey(contractAddress, 4n);
 
 // Mappings: slot = keccak256(abi.encode(key, baseSlot))
 function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
-  const encoded = new Uint8Array(64);
+  const encoded = Bytes64();
   encoded.set(new Uint8Array(32 - key.length).fill(0), 0); // Padding
   encoded.set(key, 32 - key.length);
   encoded.set(encodeBigInt(baseSlot, 32), 32);

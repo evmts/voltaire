@@ -122,7 +122,7 @@ Byte strings of 0-55 bytes: `[0x80 + length, ...bytes]`
 import * as Rlp from '@tevm/voltaire/Rlp';
 
 // Empty string
-const empty = Rlp.encode(new Uint8Array([]));
+const empty = Rlp.encode(Bytes());
 console.log([...empty]); // [0x80]
 // 0x80 = 0x80 + 0 (length is 0)
 
@@ -354,7 +354,7 @@ RLP treats numbers as byte strings - you must convert to bytes first:
 import * as Rlp from '@tevm/voltaire/Rlp';
 
 // Zero encodes as empty byte string (NOT 0x00)
-const zero = Rlp.encode(new Uint8Array([]));
+const zero = Rlp.encode(Bytes());
 console.log([...zero]); // [0x80]
 
 // Small number (< 256)
@@ -483,10 +483,10 @@ const to = new Uint8Array([
   0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf0, 0xbe, 0xb2
 ]); // 20-byte address
 const value = new Uint8Array([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00]); // 1 ETH
-const data = new Uint8Array([]);                         // Empty
+const data = Bytes();                         // Empty
 const v = new Uint8Array([0x1b]);                        // Chain ID encoding
-const r = new Uint8Array(32);                            // Signature r (placeholder)
-const s = new Uint8Array(32);                            // Signature s (placeholder)
+const r = Bytes32();                            // Signature r (placeholder)
+const s = Bytes32();                            // Signature s (placeholder)
 
 // Encode as RLP list
 const encoded = Rlp.encode([nonce, gasPrice, gasLimit, to, value, data, v, r, s]);

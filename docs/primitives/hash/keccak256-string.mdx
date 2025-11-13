@@ -200,7 +200,7 @@ function encodeFunctionCall(signature: string, params: Uint8Array): Uint8Array {
 }
 
 // Encode transfer(address,uint256) call
-const params = new Uint8Array(64) // ABI-encoded parameters
+const params = Bytes64() // ABI-encoded parameters
 const calldata = encodeFunctionCall("transfer(address,uint256)", params)
 ```
 

@@ -33,7 +33,7 @@ await BLS12381.bls12_381.g1Add([...g1Point1, ...g1Point2], g1Output);
 
 // G2 operations (public keys)
 const g2Point1 = new Uint8Array(256);
-const g2Scalar = new Uint8Array(32);
+const g2Scalar = Bytes32();
 const g2Output = new Uint8Array(256);
 await BLS12381.bls12_381.g2Mul([...g2Point1, ...g2Scalar], g2Output);
 
@@ -41,7 +41,7 @@ await BLS12381.bls12_381.g2Mul([...g2Point1, ...g2Scalar], g2Output);
 const g1_128 = new Uint8Array(128);
 const g2_256 = new Uint8Array(256);
 const pairingInput = new Uint8Array([...g1_128, ...g2_256]); // 384 bytes per pair
-const pairingOutput = new Uint8Array(32);
+const pairingOutput = Bytes32();
 await BLS12381.bls12_381.pairing(pairingInput, pairingOutput);
 ```
 
@@ -181,7 +181,7 @@ await bls12_381.g2Msm(input, output);
 // Compute pairing(s) and check if product equals 1
 const pairs = 2; // Number of (G1, G2) pairs
 const input = new Uint8Array(384 * pairs);
-const output = new Uint8Array(32);
+const output = Bytes32();
 
 // Each pair: 384 bytes
 // - G1 point: 128 bytes (x || y, each 64 bytes padded)
@@ -222,7 +222,7 @@ async function verifyBLSSignature(
   input.set(negatedMessage, 384);  // Pair 2: -H(msg), pubkey
   input.set(publicKey, 512);
 
-  const output = new Uint8Array(32);
+  const output = Bytes32();
   await bls12_381.pairing(input, output);
 
   return output[31] === 0x01;
@@ -237,7 +237,7 @@ async function verifyBLSSignature(
 import { bls12_381 } from '@tevm/voltaire/crypto';
 
 // Hash to curve: map Fp element to G1 point
-const fpElement = new Uint8Array(64); // Padded field element
+const fpElement = Bytes64(); // Padded field element
 const g1Point = new Uint8Array(128);
 
 await bls12_381.mapFpToG1(fpElement, g1Point);

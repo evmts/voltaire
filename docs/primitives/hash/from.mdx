@@ -24,7 +24,7 @@ type HashLike =
 
 **Uint8Array** - Raw byte arrays (must be 32 bytes):
 ```typescript
-const bytes = new Uint8Array(32)
+const bytes = Bytes32()
 const hash = Hash(bytes)
 ```
 
@@ -56,7 +56,7 @@ function verifyHash(input: HashLike): boolean {
 
 // All valid calls
 verifyHash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
-verifyHash(new Uint8Array(32))
+verifyHash(Bytes32())
 verifyHash(Hash("0x1c8aff..."))
 ```
 

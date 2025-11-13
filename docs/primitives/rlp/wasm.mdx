@@ -64,7 +64,7 @@ const short = RlpWasm.encodeBytes(new Uint8Array([1, 2, 3]))
 // => Uint8Array([0x83, 1, 2, 3])
 
 // Empty bytes
-const empty = RlpWasm.encodeBytes(new Uint8Array([]))
+const empty = RlpWasm.encodeBytes(Bytes())
 // => Uint8Array([0x80])
 
 // Long string (56+ bytes)
@@ -136,13 +136,13 @@ Source: [Rlp.wasm.ts:23-28](https://github.com/evmts/voltaire/blob/main/src/prim
 import * as RlpWasm from '@tevm/voltaire/Rlp.wasm'
 
 // Encode u256 value
-const value = new Uint8Array(32)
+const value = Bytes32()
 value[31] = 0x42  // Value = 66
 const encoded = RlpWasm.encodeUint(value)
 
 // Must be exactly 32 bytes
 try {
-  RlpWasm.encodeUint(new Uint8Array(16))  // Wrong size
+  RlpWasm.encodeUint(Bytes16())  // Wrong size
 } catch (error) {
   console.error('Value must be 32 bytes (u256)')
 }
@@ -398,10 +398,10 @@ const encoded = Rlp.encodeList([bytes1, bytes2])
 **32-byte constraint for uint:**
 ```typescript
 // Must be exactly 32 bytes
-const value = new Uint8Array(32)
+const value = Bytes32()
 RlpWasm.encodeUint(value)  // OK
 
-const wrong = new Uint8Array(16)
+const wrong = Bytes16()
 RlpWasm.encodeUint(wrong)  // Error
 ```
 

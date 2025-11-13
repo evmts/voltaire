@@ -36,8 +36,8 @@ async function createTransfer(
     data: new Uint8Array(),
     accessList: [],
     yParity: 0,
-    r: new Uint8Array(32),
-    s: new Uint8Array(32),
+    r: Bytes32(),
+    s: Bytes32(),
   }
 }
 ```
@@ -71,8 +71,8 @@ async function createDeployment(
     data: bytecode,
     accessList: [],
     yParity: 0,
-    r: new Uint8Array(32),
-    s: new Uint8Array(32),
+    r: Bytes32(),
+    s: Bytes32(),
   }
 }
 ```
@@ -108,8 +108,8 @@ async function createContractCall(
     data,
     accessList: accessListResult.accessList,
     yParity: 0,
-    r: new Uint8Array(32),
-    s: new Uint8Array(32),
+    r: Bytes32(),
+    s: Bytes32(),
   }
 }
 ```

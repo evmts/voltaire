@@ -197,7 +197,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash],
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 // Match by first indexed parameter (NOT signature)
@@ -237,7 +237,7 @@ import { EventLog, Hash } from '@tevm/voltaire';
 const log = EventLog({
   address: contractAddress,
   topics: [topic0, topic1, topic2, topic3], // 4 topics
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 // Match only first 2 topics
@@ -253,7 +253,7 @@ import { EventLog } from '@tevm/voltaire';
 const log = EventLog({
   address: contractAddress,
   topics: [], // No topics
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 // Filter with topics fails

@@ -127,7 +127,7 @@ const decrypted = await AesGcm.decrypt(extractedCiphertext, key, extractedNonce)
 **CRITICAL:** Nonce must be exactly 12 bytes (96 bits)
 
 ```typescript
-const wrongNonce = new Uint8Array(16); // Wrong size!
+const wrongNonce = Bytes16(); // Wrong size!
 
 try {
   await AesGcm.decrypt(ciphertext, key, wrongNonce);

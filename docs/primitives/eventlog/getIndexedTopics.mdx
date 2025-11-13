@@ -130,7 +130,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash], // All indexed params
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 // getIndexedTopics returns topic1-topic3 (NOT all params)

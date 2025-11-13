@@ -76,7 +76,7 @@ const push1 = Opcode.format({
 const push32 = Opcode.format({
   offset: 100,
   opcode: Opcode.PUSH32,
-  immediate: new Uint8Array(32).fill(0xFF)
+  immediate: Bytes32().fill(0xFF)
 })
 // "0064: PUSH32 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 ```

@@ -226,7 +226,7 @@ function buildMerkleTree(addresses: Address[]): Uint8Array {
 
     for (let i = 0; i < level.length; i += 2) {
       if (i + 1 < level.length) {
-        const combined = new Uint8Array(64)
+        const combined = Bytes64()
         combined.set(level[i], 0)
         combined.set(level[i + 1], 32)
         nextLevel.push(keccak256(combined))

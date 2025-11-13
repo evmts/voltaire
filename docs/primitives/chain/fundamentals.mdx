@@ -93,7 +93,7 @@ Chain IDs are signed into transactions, making them network-specific:
 import { Transaction } from '@tevm/voltaire';
 import { secp256k1 } from '@tevm/voltaire/crypto';
 
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 
 // Create transaction for specific network
 const tx = Transaction.fromEIP1559({

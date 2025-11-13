@@ -235,7 +235,7 @@ class NonceCounter {
 **3. Hybrid (random + counter):**
 ```typescript
 // 4 bytes random prefix + 8 bytes counter
-const prefix = crypto.getRandomValues(new Uint8Array(4));
+const prefix = crypto.getRandomValues(Bytes4());
 const counter = 0n;
 
 function generateNonce() {
@@ -367,7 +367,7 @@ Encrypt private keys with user password:
 // @noble/ciphers - Pure TypeScript
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
 
-const key = new Uint8Array(32);
+const key = Bytes32();
 crypto.getRandomValues(key);
 
 const nonce = new Uint8Array(12);

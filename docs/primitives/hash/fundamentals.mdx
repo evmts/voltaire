@@ -254,7 +254,7 @@ function buildMerkleTree(hashes: Hash[]): Hash {
   for (let i = 0; i < hashes.length; i += 2) {
     if (i + 1 < hashes.length) {
       // Hash pair together
-      const combined = new Uint8Array(64);
+      const combined = Bytes64();
       combined.set(hashes[i], 0);
       combined.set(hashes[i + 1], 32);
       nextLevel.push(Hash.keccak256(combined));
@@ -287,7 +287,7 @@ function verifyMerkleProof(
   let idx = index;
 
   for (const sibling of proof) {
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
 
     // Hash in correct order based on position
     if (idx % 2 === 0) {
@@ -351,7 +351,7 @@ Ethereum addresses are derived from public key hashes:
 import { Hash } from '@tevm/voltaire';
 
 // 64-byte uncompressed public key (without 0x04 prefix)
-const publicKey = new Uint8Array(64); // ... actual key bytes
+const publicKey = Bytes64(); // ... actual key bytes
 
 // Hash and take last 20 bytes
 const hash = Hash.keccak256(publicKey);

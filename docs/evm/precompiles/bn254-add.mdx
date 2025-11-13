@@ -128,7 +128,7 @@ Invalid points cause the precompile to fail, returning error.
 // Test 1: Identity + Identity = Identity
 const input1 = new Uint8Array(128); // All zeros (point at infinity)
 // Expected: (0, 0)
-const expected1 = new Uint8Array(64); // All zeros
+const expected1 = Bytes64(); // All zeros
 
 // Test 2: Generator + Generator = 2*Generator (from geth tests)
 const input2 = new Uint8Array(128);

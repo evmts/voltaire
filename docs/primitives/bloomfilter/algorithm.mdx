@@ -279,7 +279,7 @@ function hash(item: Uint8Array, seed: number, m: number): number {
 ```typescript
 // Ethereum production approach (not used in this library)
 function ethereumHash(item: Uint8Array, seed: number, m: number): number {
-  const seedBytes = new Uint8Array(4);
+  const seedBytes = Bytes4();
   new DataView(seedBytes.buffer).setUint32(0, seed, false);
   const input = Hex.toBytes(Hex.concat(Hex(item), Hex(seedBytes)));
   const hash = keccak256(input);

@@ -486,7 +486,7 @@ class SmartAccount {
 
   private get ownerKey(): Uint8Array {
     // Get owner's private key (from secure storage)
-    return new Uint8Array(32);
+    return Bytes32();
   }
 }
 

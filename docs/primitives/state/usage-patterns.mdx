@@ -41,14 +41,14 @@ import { Keccak256 } from '@tevm/crypto';
 
 function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
   // Solidity: keccak256(abi.encode(key, baseSlot))
-  const encoded = new Uint8Array(64);
+  const encoded = Bytes64();
 
   // Pad key to 32 bytes
   encoded.set(new Uint8Array(32 - key.length).fill(0), 0);
   encoded.set(key, 32 - key.length);
 
   // Encode baseSlot as 32 bytes
-  const slotBytes = new Uint8Array(32);
+  const slotBytes = Bytes32();
   const view = new DataView(slotBytes.buffer);
   view.setBigUint64(24, baseSlot, false);
   encoded.set(slotBytes, 32);

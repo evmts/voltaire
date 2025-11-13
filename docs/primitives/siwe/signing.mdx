@@ -124,7 +124,7 @@ const message = Siwe.create({ ... });
 const hash = Siwe.getMessageHash(message);
 
 // Sign with private key
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 const signature = Secp256k1.sign(hash, privateKey);
 ```
 

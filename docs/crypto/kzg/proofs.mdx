@@ -26,7 +26,7 @@ import { KZG } from '@tevm/voltaire/crypto/KZG';
 KZG.loadTrustedSetup();
 
 const blob = new Uint8Array(131072);
-const z = new Uint8Array(32); // Evaluation point
+const z = Bytes32(); // Evaluation point
 
 // Compute proof
 const { proof, y } = KZG.computeKzgProof(blob, z);
@@ -48,7 +48,7 @@ const computeKzgProof = ComputeKzgProof({
 });
 
 const blob = new Uint8Array(131072);
-const z = new Uint8Array(32);
+const z = Bytes32();
 const { proof, y } = computeKzgProof(blob, z);
 ```
 
@@ -66,7 +66,7 @@ const { proof, y } = computeKzgProof(blob, z);
 import { KZG } from '@tevm/voltaire/crypto/KZG';
 
 const commitment = KZG.blobToKzgCommitment(blob);
-const z = new Uint8Array(32);
+const z = Bytes32();
 const { proof, y } = KZG.computeKzgProof(blob, z);
 
 // Verify proof
@@ -118,7 +118,7 @@ import { KZG } from '@tevm/voltaire/crypto/KZG';
 
 const blob = new Uint8Array(131072);
 const commitment = KZG.blobToKzgCommitment(blob);
-const z = new Uint8Array(32);
+const z = Bytes32();
 const { proof } = KZG.computeKzgProof(blob, z);
 
 // Verify blob proof (optimized)

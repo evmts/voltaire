@@ -129,7 +129,7 @@ const fn = {
   inputs: [{ type: "bytes32", name: "hash" }]
 };
 
-const hash = new Uint8Array(32).fill(0xaa);
+const hash = Bytes32().fill(0xaa);
 const encoded = Function.encodeParams(fn, [hash]);
 // 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 //   ^-- Exactly 32 bytes, right-aligned

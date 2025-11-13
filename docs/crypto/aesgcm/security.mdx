@@ -140,7 +140,7 @@ for (let i = 0; i < 12; i++) {
 localStorage.setItem('key', JSON.stringify(keyBytes));
 
 // RIGHT - Encrypt key with password
-const salt = crypto.getRandomValues(new Uint8Array(16));
+const salt = crypto.getRandomValues(Bytes16());
 const passwordKey = await AesGcm.deriveKey(password, salt, 600000, 256);
 const encryptedKey = await AesGcm.encrypt(keyBytes, passwordKey, nonce);
 

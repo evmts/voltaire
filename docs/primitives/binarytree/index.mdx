@@ -129,16 +129,16 @@ const tree = BinaryTree.init();
 console.log(tree.root.type); // 'empty'
 
 // Insert values
-const key1 = new Uint8Array(32);
-const value1 = new Uint8Array(32);
+const key1 = Bytes32();
+const value1 = Bytes32();
 value1[0] = 0x42;
 
 const tree2 = BinaryTree.insert(tree, key1, value1);
 
 // Insert more values
-const key2 = new Uint8Array(32);
+const key2 = Bytes32();
 key2[0] = 0x01;
-const value2 = new Uint8Array(32);
+const value2 = Bytes32();
 value2[0] = 0xff;
 
 const tree3 = BinaryTree.insert(tree2, key2, value2);
@@ -152,7 +152,7 @@ const retrieved = BinaryTree.get(tree3, key1);
 console.log(retrieved); // Uint8Array [0x42, 0, 0, ...]
 
 // Check for missing keys
-const missing = BinaryTree.get(tree3, new Uint8Array(32));
+const missing = BinaryTree.get(tree3, Bytes32());
 console.log(missing); // null
 ```
 
@@ -187,7 +187,7 @@ console.log(stem.length); // 31 bytes
 console.log(idx); // 0-255
 
 // Store account data
-const accountValue = new Uint8Array(32);
+const accountValue = Bytes32();
 const tree5 = BinaryTree.insert(tree, treeKey, accountValue);
 ```
 

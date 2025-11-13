@@ -37,7 +37,7 @@ Where `p` is a large prime number (2^256 - 2^32 - 977).
 import { Secp256k1 } from '@tevm/voltaire/crypto';
 
 // Private key (32 bytes of entropy)
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // Derive public key from private key
@@ -94,7 +94,7 @@ const message = new TextEncoder().encode("Transfer 10 ETH");
 const messageHash = Hash(keccak256(message));
 
 // 2. Sign with private key
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 crypto.getRandomValues(privateKey); // For demo only - use secure key management
 
 const sig = Secp256k1.sign(messageHash, privateKey);
@@ -156,7 +156,7 @@ import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
 // === SIGNING (Sender Side) ===
 
 // 1. Prepare private key (in practice, load from secure storage)
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey); // Demo only
 
 // 2. Derive public information

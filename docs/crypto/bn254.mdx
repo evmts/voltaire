@@ -248,12 +248,12 @@ import { bn254Add, bn254Mul, bn254Pairing } from '@tevm/voltaire/crypto/bn254';
 
 // ECADD (0x06): Add two G1 points
 const input1 = new Uint8Array(128); // p1_x || p1_y || p2_x || p2_y
-const output1 = new Uint8Array(64);
+const output1 = Bytes64();
 bn254Add(input1, output1); // result_x || result_y
 
 // ECMUL (0x07): Scalar multiply G1 point
 const input2 = new Uint8Array(96); // p_x || p_y || scalar
-const output2 = new Uint8Array(64);
+const output2 = Bytes64();
 bn254Mul(input2, output2);
 
 // ECPAIRING (0x08): Pairing check

@@ -70,7 +70,7 @@ Rlp.validate(new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)]))
 // => false (length has leading zeros)
 
 // Empty input
-Rlp.validate(new Uint8Array([]))
+Rlp.validate(Bytes())
 // => false
 
 // Extra data
@@ -269,7 +269,7 @@ if (Rlp.validate(networkData)) {
 import { Rlp } from '@tevm/voltaire'
 
 // Safe for any input
-const result1 = Rlp.validate(new Uint8Array([]))
+const result1 = Rlp.validate(Bytes())
 // => false (no throw)
 
 const result2 = Rlp.validate(new Uint8Array([0xff, 0xff, 0xff]))
@@ -277,7 +277,7 @@ const result2 = Rlp.validate(new Uint8Array([0xff, 0xff, 0xff]))
 
 // Compare to decode (throws on invalid)
 try {
-  Rlp.decode(new Uint8Array([]))
+  Rlp.decode(Bytes())
 } catch (error) {
   console.error('Decode threw:', error)
 }

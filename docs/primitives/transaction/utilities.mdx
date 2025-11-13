@@ -231,16 +231,16 @@ import { isSigned, getSender } from '@tevm/voltaire/Transaction'
 
 const signedTx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
-  r: new Uint8Array(32).fill(1),
-  s: new Uint8Array(32).fill(2),
+  r: Bytes32().fill(1),
+  s: Bytes32().fill(2),
   // ...
 }
 isSigned(signedTx)  // true
 
 const unsignedTx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
-  r: new Uint8Array(32),  // All zeros
-  s: new Uint8Array(32),  // All zeros
+  r: Bytes32(),  // All zeros
+  s: Bytes32(),  // All zeros
   // ...
 }
 isSigned(unsignedTx)  // false

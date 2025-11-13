@@ -89,7 +89,7 @@ This is the secp256k1 generator point G.
 
 **Verification:**
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 
 const publicKey = Secp256k1.derivePublicKey(privateKey);
@@ -280,7 +280,7 @@ assert(Secp256k1.verify(normalized, hash, publicKey) === true);
 
 ```typescript
 // Zero key
-const zeroKey = new Uint8Array(32);
+const zeroKey = Bytes32();
 expect(() => Secp256k1.sign(hash, zeroKey)).toThrow('InvalidPrivateKeyError');
 
 // Key = n (curve order)
@@ -288,11 +288,11 @@ const nKey = hexToBytes('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8
 expect(() => Secp256k1.sign(hash, nKey)).toThrow('InvalidPrivateKeyError');
 
 // Key > n
-const tooBigKey = new Uint8Array(32).fill(0xff);
+const tooBigKey = Bytes32().fill(0xff);
 expect(() => Secp256k1.sign(hash, tooBigKey)).toThrow('InvalidPrivateKeyError');
 
 // Wrong length
-const shortKey = new Uint8Array(16);
+const shortKey = Bytes16();
 expect(() => Secp256k1.sign(hash, shortKey)).toThrow('InvalidPrivateKeyError');
 ```
 
@@ -300,19 +300,19 @@ expect(() => Secp256k1.sign(hash, shortKey)).toThrow('InvalidPrivateKeyError');
 
 ```typescript
 // r = 0
-const zeroR = { r: new Uint8Array(32), s: validS, v: 27 };
+const zeroR = { r: Bytes32(), s: validS, v: 27 };
 assert(Secp256k1.verify(zeroR, hash, publicKey) === false);
 
 // s = 0
-const zeroS = { r: validR, s: new Uint8Array(32), v: 27 };
+const zeroS = { r: validR, s: Bytes32(), v: 27 };
 assert(Secp256k1.verify(zeroS, hash, publicKey) === false);
 
 // r >= n
-const bigR = { r: new Uint8Array(32).fill(0xff), s: validS, v: 27 };
+const bigR = { r: Bytes32().fill(0xff), s: validS, v: 27 };
 assert(Secp256k1.verify(bigR, hash, publicKey) === false);
 
 // s >= n
-const bigS = { r: validR, s: new Uint8Array(32).fill(0xff), v: 27 };
+const bigS = { r: validR, s: Bytes32().fill(0xff), v: 27 };
 assert(Secp256k1.verify(bigS, hash, publicKey) === false);
 ```
 
@@ -320,15 +320,15 @@ assert(Secp256k1.verify(bigS, hash, publicKey) === false);
 
 ```typescript
 // Point not on curve
-const invalidPoint = new Uint8Array(64).fill(0x01);
+const invalidPoint = Bytes64().fill(0x01);
 expect(() => Secp256k1.verify(sig, hash, invalidPoint)).toThrow('InvalidPublicKeyError');
 
 // Wrong length
-const shortKey = new Uint8Array(32);
+const shortKey = Bytes32();
 expect(() => Secp256k1.verify(sig, hash, shortKey)).toThrow('InvalidPublicKeyError');
 
 // Point at infinity
-const infinity = new Uint8Array(64);
+const infinity = Bytes64();
 expect(() => Secp256k1.verify(sig, hash, infinity)).toThrow('InvalidPublicKeyError');
 ```
 
@@ -342,8 +342,8 @@ Test that our TypeScript implementation (using @noble/curves) matches OpenSSL re
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { execSync } from 'child_process';
 
-const privateKey = crypto.getRandomValues(new Uint8Array(32));
-const messageHash = crypto.getRandomValues(new Uint8Array(32));
+const privateKey = crypto.getRandomValues(Bytes32());
+const messageHash = crypto.getRandomValues(Bytes32());
 
 // Sign with @noble
 const nobleSig = secp256k1.sign(messageHash, privateKey);

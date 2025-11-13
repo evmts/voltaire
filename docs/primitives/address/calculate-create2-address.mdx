@@ -9,8 +9,8 @@ description: Calculate CREATE2 contract address from deployer, salt, and init co
 import { Address } from '@tevm/voltaire'
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const salt = new Uint8Array(32) // 32-byte salt
-const initCode = new Uint8Array([0x60, 0x80]) // Contract bytecode
+const salt = Bytes32() // 32-byte salt
+const initCode = Bytecode([0x60, 0x80]) // Contract bytecode
 
 const contractAddr = Address.calculateCreate2Address(deployer, salt, initCode)
 console.log(contractAddr.toHex())
@@ -27,8 +27,8 @@ import * as Address from '@tevm/voltaire/Address'
 const calculateCreate2Address = CalculateCreate2Address({ keccak256 })
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const salt = new Uint8Array(32) // 32-byte salt
-const initCode = new Uint8Array([0x60, 0x80]) // Contract bytecode
+const salt = Bytes32() // 32-byte salt
+const initCode = Bytecode([0x60, 0x80]) // Contract bytecode
 
 const contractAddr = calculateCreate2Address(deployer, salt, initCode)
 console.log(Address.toHex(contractAddr))
@@ -64,7 +64,7 @@ const salt = 42n
 
 **Uint8Array salt:** Must be exactly 32 bytes:
 ```typescript
-const salt = new Uint8Array(32)
+const salt = Bytes32()
 salt[0] = 0x12
 salt[31] = 0x34
 ```
@@ -205,7 +205,7 @@ class ProxyFactory {
   }
 
   private encodeSalt(owner: Address, salt: bigint): Uint8Array {
-    const saltBytes = new Uint8Array(32)
+    const saltBytes = Bytes32()
     // First 20 bytes: owner
     saltBytes.set(owner, 0)
     // Last 12 bytes: salt
@@ -249,11 +249,11 @@ CREATE2 was introduced in [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) to
 import { Address } from '@tevm/voltaire'
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const initCode = new Uint8Array([0x60, 0x80])
+const initCode = Bytecode([0x60, 0x80])
 
 // Valid salts
 const addr1 = deployer.calculateCreate2Address(42n, initCode) // ✓
-const addr2 = deployer.calculateCreate2Address(new Uint8Array(32), initCode) // ✓
+const addr2 = deployer.calculateCreate2Address(Bytes32(), initCode) // ✓
 
 // Invalid: negative salt
 try {
@@ -264,7 +264,7 @@ try {
 
 // Invalid: wrong salt length
 try {
-  deployer.calculateCreate2Address(new Uint8Array(16), initCode)
+  deployer.calculateCreate2Address(Bytes16(), initCode)
 } catch (e) {
   console.error(e) // Error: Salt must be 32 bytes
 }

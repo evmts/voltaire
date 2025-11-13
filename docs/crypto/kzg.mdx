@@ -39,7 +39,7 @@ const blob = KZG.createEmptyBlob();
 const commitment = await KZG.blobToKzgCommitment(blob);
 
 // 4. Prove evaluation at point z
-const z = new Uint8Array(32); // Evaluation point
+const z = Bytes32(); // Evaluation point
 const { proof, y } = await KZG.computeKzgProof(blob, z);
 
 // 5. Verify proof
@@ -200,7 +200,7 @@ const commitment = await blobToKzgCommitment(blob);
 import { computeKzgProof } from '@tevm/voltaire/crypto/KZG';
 
 // Prove p(z) = y
-const z = new Uint8Array(32); // Evaluation point (field element)
+const z = Bytes32(); // Evaluation point (field element)
 const { proof, y } = await computeKzgProof(blob, z);
 
 // proof: Uint8Array(48) - G1 point proving evaluation
@@ -311,7 +311,7 @@ import { keccak256 } from '@tevm/voltaire/crypto';
 function computeVersionedHash(commitment: Uint8Array): Uint8Array {
   // SHA256 hash of commitment with version prefix
   const hash = keccak256(commitment);
-  const versionedHash = new Uint8Array(32);
+  const versionedHash = Bytes32();
   versionedHash[0] = 0x01; // Version byte
   versionedHash.set(hash.slice(1), 1);
   return versionedHash;

@@ -92,7 +92,7 @@ import { Keccak256 } from '@tevm/voltaire';
 
 // Hash left and right child hashes together
 function hashParent(left: Uint8Array, right: Uint8Array): Uint8Array {
-  const combined = new Uint8Array(64);
+  const combined = Bytes64();
   combined.set(left, 0);
   combined.set(right, 32);
   return Keccak256.hash(combined);
@@ -125,7 +125,7 @@ function buildTree(hashes: Uint8Array[]): Uint8Array {
   for (let i = 0; i < hashes.length; i += 2) {
     const left = hashes[i];
     const right = hashes[i + 1];
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
     combined.set(left, 0);
     combined.set(right, 32);
     nextLevel.push(Keccak256.hash(combined));
@@ -186,7 +186,7 @@ function generateProof(
     // Build next level
     const nextLevel: Uint8Array[] = [];
     for (let i = 0; i < level.length; i += 2) {
-      const combined = new Uint8Array(64);
+      const combined = Bytes64();
       combined.set(level[i], 0);
       combined.set(level[i + 1], 32);
       nextLevel.push(Keccak256.hash(combined));
@@ -226,7 +226,7 @@ function verifyProof(
   let hash = Keccak256.hash(leaf);
 
   for (let i = 0; i < proof.length; i++) {
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
     if (path[i] === 0) {
       // Leaf is on left
       combined.set(hash, 0);
@@ -271,7 +271,7 @@ function buildMerkleRoot(hashes: Uint8Array[]): Uint8Array {
 
   const nextLevel: Uint8Array[] = [];
   for (let i = 0; i < hashes.length; i += 2) {
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
     combined.set(hashes[i], 0);
     combined.set(hashes[i + 1], 32);
     nextLevel.push(Keccak256.hash(combined));
@@ -323,9 +323,9 @@ If leaf count is not a power of 2, trees need padding. SSZ uses precomputed zero
 ```typescript
 // Precompute zero hashes for each depth
 function computeZeroHashes(depth: number): Uint8Array[] {
-  const zeros: Uint8Array[] = [new Uint8Array(32)];
+  const zeros: Uint8Array[] = [Bytes32()];
   for (let i = 1; i <= depth; i++) {
-    const combined = new Uint8Array(64);
+    const combined = Bytes64();
     combined.set(zeros[i - 1], 0);
     combined.set(zeros[i - 1], 32);
     zeros.push(Keccak256.hash(combined));

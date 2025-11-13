@@ -27,7 +27,7 @@ const mnemonic24 = Bip39.generateMnemonic(256);
 
 ```typescript
 // Custom entropy (must be 16-32 bytes)
-const entropy = crypto.getRandomValues(new Uint8Array(32)); // 256 bits
+const entropy = crypto.getRandomValues(Bytes32()); // 256 bits
 const mnemonic = Bip39.entropyToMnemonic(entropy);
 
 console.log(mnemonic.split(' ').length); // 24 words
@@ -78,7 +78,7 @@ For each 11-bit group:
 
 ```typescript
 // 128-bit entropy
-const entropy = new Uint8Array(16).fill(0x00);
+const entropy = Bytes16().fill(0x00);
 
 // Binary representation
 // 00000000 00000000 ... (128 bits of zeros)
@@ -103,7 +103,7 @@ const result = Bip39.entropyToMnemonic(entropy);
 
 ```typescript
 // Cryptographically secure random
-const entropy = crypto.getRandomValues(new Uint8Array(32));
+const entropy = crypto.getRandomValues(Bytes32());
 const mnemonic = Bip39.entropyToMnemonic(entropy);
 ```
 
@@ -159,14 +159,14 @@ const entropy2 = Bip39.getEntropyBits(24); // 256
 const mnemonic = Bip39.generateMnemonic(256);
 
 // ❌ INSECURE - Never use Math.random()
-const badEntropy = new Uint8Array(32);
+const badEntropy = Bytes32();
 for (let i = 0; i < 32; i++) {
   badEntropy[i] = Math.floor(Math.random() * 256); // PREDICTABLE!
 }
 
 // ❌ INSECURE - Never use timestamp-based entropy
 const timestamp = Date.now();
-const weakEntropy = new Uint8Array(32).fill(timestamp & 0xFF);
+const weakEntropy = Bytes32().fill(timestamp & 0xFF);
 ```
 
 ### Entropy Size Recommendations
@@ -194,7 +194,7 @@ const productionWallet = Bip39.generateMnemonic(256);
 Same entropy always produces same mnemonic:
 
 ```typescript
-const entropy = new Uint8Array(16).fill(0x42);
+const entropy = Bytes16().fill(0x42);
 
 const mnemonic1 = Bip39.entropyToMnemonic(entropy);
 const mnemonic2 = Bip39.entropyToMnemonic(entropy);
@@ -249,7 +249,7 @@ function diceToEntropy(rolls: number[]): Uint8Array {
   }
 
   // Take first 256 bits
-  const entropy = new Uint8Array(32);
+  const entropy = Bytes32();
   for (let i = 0; i < 32; i++) {
     entropy[i] = parseInt(binary.slice(i * 8, i * 8 + 8), 2);
   }
@@ -293,23 +293,23 @@ const invalidEntropy = new Uint8Array(20);
 // Use 16, 20, 24, 28, or 32 bytes
 
 // ✅ Valid
-const validEntropy = new Uint8Array(32); // 256 bits
+const validEntropy = Bytes32(); // 256 bits
 ```
 
 ### Non-Random Entropy
 
 ```typescript
 // ❌ DANGEROUS - Sequential pattern
-const sequential = new Uint8Array(32);
+const sequential = Bytes32();
 for (let i = 0; i < 32; i++) {
   sequential[i] = i;
 }
 
 // ❌ DANGEROUS - All same value
-const constant = new Uint8Array(32).fill(0xFF);
+const constant = Bytes32().fill(0xFF);
 
 // ✅ SECURE - Cryptographic randomness
-const secure = crypto.getRandomValues(new Uint8Array(32));
+const secure = crypto.getRandomValues(Bytes32());
 ```
 
 ## Implementation Details

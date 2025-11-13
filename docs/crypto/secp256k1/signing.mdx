@@ -43,7 +43,7 @@ Sign a 32-byte message hash with deterministic ECDSA.
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 const message = Hash.keccak256String('Hello, Ethereum!');
@@ -162,7 +162,7 @@ Timing attacks can leak private keys through:
 
 ```typescript
 // Private key = 1
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 
 // Message hash (SHA-256 of "hello world")
@@ -183,7 +183,7 @@ assert(sig1.v === sig2.v);
 ### Different Messages
 
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 
 const msg1 = Hash.keccak256String("message 1");
@@ -200,7 +200,7 @@ assert(!sig1.r.every((byte, i) => byte === sig2.r[i]));
 
 ```typescript
 // Minimum valid private key
-const minKey = new Uint8Array(32);
+const minKey = Bytes32();
 minKey[31] = 1;
 const sig1 = Secp256k1.sign(messageHash, minKey); // Valid
 
@@ -214,7 +214,7 @@ const maxKey = new Uint8Array([
 const sig2 = Secp256k1.sign(messageHash, maxKey); // Valid
 
 // Zero key (invalid)
-const zeroKey = new Uint8Array(32);
+const zeroKey = Bytes32();
 expect(() => Secp256k1.sign(messageHash, zeroKey)).toThrow();
 
 // Key >= n (invalid)

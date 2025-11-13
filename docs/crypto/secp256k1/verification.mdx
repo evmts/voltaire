@@ -41,7 +41,7 @@ import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Sign message
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 const messageHash = Hash.keccak256String('Verify me!');
 const signature = Secp256k1.sign(messageHash, privateKey);
@@ -53,7 +53,7 @@ const isValid = Secp256k1.verify(signature, messageHash, publicKey);
 console.log(isValid); // true
 
 // Verify with wrong public key
-const wrongKey = new Uint8Array(64);
+const wrongKey = Bytes64();
 const invalid = Secp256k1.verify(signature, messageHash, wrongKey);
 console.log(invalid); // false
 ```
@@ -211,7 +211,7 @@ if (publicKey.length === 65 && publicKey[0] === 0x04) {
 ### Basic Verification
 
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 42;
 
 const messageHash = Hash.keccak256String("test message");
@@ -226,7 +226,7 @@ assert(Secp256k1.verify(signature, messageHash, publicKey) === true);
 
 ```typescript
 // Different private key
-const wrongPrivateKey = new Uint8Array(32);
+const wrongPrivateKey = Bytes32();
 wrongPrivateKey[31] = 99;
 const wrongPublicKey = Secp256k1.derivePublicKey(wrongPrivateKey);
 
@@ -271,7 +271,7 @@ assert(Secp256k1.verify(malleatedSig, messageHash, publicKey) === false);
 ```typescript
 // r = 0 (invalid)
 const invalidR = {
-  r: new Uint8Array(32), // All zeros
+  r: Bytes32(), // All zeros
   s: signature.s,
   v: 27,
 };
@@ -280,7 +280,7 @@ assert(Secp256k1.verify(invalidR, messageHash, publicKey) === false);
 // s >= n (invalid)
 const invalidS = {
   r: signature.r,
-  s: new Uint8Array(32).fill(0xff), // All 0xff > n
+  s: Bytes32().fill(0xff), // All 0xff > n
   v: 27,
 };
 assert(Secp256k1.verify(invalidS, messageHash, publicKey) === false);

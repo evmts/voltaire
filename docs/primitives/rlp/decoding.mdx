@@ -436,7 +436,7 @@ import { Rlp } from '@tevm/voltaire'
 
 // Empty input
 try {
-  Rlp.decode(new Uint8Array([]))
+  Rlp.decode(Bytes())
 } catch (error) {
   console.error('InputTooShort: Cannot decode empty input')
 }

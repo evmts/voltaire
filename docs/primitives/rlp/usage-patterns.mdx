@@ -35,7 +35,7 @@ interface Transaction {
 
 // Convert bigint to minimal big-endian bytes
 function bigintToBytes(value: bigint): Uint8Array {
-  if (value === 0n) return new Uint8Array([])
+  if (value === 0n) return Bytes()
 
   const hex = value.toString(16)
   const padded = hex.length % 2 ? '0' + hex : hex
@@ -72,10 +72,10 @@ const tx: Transaction = {
   gasLimit: 21000n,
   to: new Uint8Array(20).fill(0x01),
   value: 1_000_000_000_000_000_000n,  // 1 ETH
-  data: new Uint8Array([]),
+  data: Bytes(),
   v: 27n,
-  r: new Uint8Array(32).fill(0x02),
-  s: new Uint8Array(32).fill(0x03)
+  r: Bytes32().fill(0x02),
+  s: Bytes32().fill(0x03)
 }
 
 const encoded = encodeTransaction(tx)
@@ -102,8 +102,8 @@ function getSigningHash(tx: Omit<Transaction, 'v' | 'r' | 's'>): Uint8Array {
     bigintToBytes(tx.value),
     tx.data,
     bigintToBytes(chainId),
-    new Uint8Array([]),  // Empty r
-    new Uint8Array([])   // Empty s
+    Bytes(),  // Empty r
+    Bytes()   // Empty s
   ]
 
   const encoded = Rlp.encode(fields)
@@ -359,7 +359,7 @@ function encodeBranchNode(branches: Uint8Array[], value?: Uint8Array): Uint8Arra
     throw new Error('Branch node must have 16 branches')
   }
 
-  const fields = [...branches, value || new Uint8Array([])]
+  const fields = [...branches, value || Bytes()]
   return Rlp.encode(fields)
 }
 ```
@@ -577,10 +577,10 @@ test('transaction round-trip encoding', () => {
     gasLimit: 21000n,
     to: new Uint8Array(20).fill(0x01),
     value: 1_000_000_000_000_000_000n,
-    data: new Uint8Array([]),
+    data: Bytes(),
     v: 27n,
-    r: new Uint8Array(32).fill(0x02),
-    s: new Uint8Array(32).fill(0x03)
+    r: Bytes32().fill(0x02),
+    s: Bytes32().fill(0x03)
   }
 
   // Encode

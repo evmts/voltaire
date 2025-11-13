@@ -38,7 +38,7 @@ For strings of 0-55 bytes, prefix with `0x80 + length`:
 import { Rlp } from '@tevm/voltaire'
 
 // Empty string
-const empty = new Uint8Array([])
+const empty = Bytes()
 const encoded = Rlp.encodeBytes(empty)
 // => Uint8Array([0x80])
 // 0x80 = 0x80 + 0
@@ -109,7 +109,7 @@ const encodedAddress = Rlp.encodeBytes(address)
 // 0x94 = 0x80 + 20
 
 // Encode signature r (32 bytes)
-const r = new Uint8Array(32).fill(0x02)
+const r = Bytes32().fill(0x02)
 const encodedR = Rlp.encodeBytes(r)
 // => Uint8Array([0xa0, ...r])
 // 0xa0 = 0x80 + 32
@@ -154,7 +154,7 @@ Encode empty byte arrays:
 import { Rlp } from '@tevm/voltaire'
 
 // Empty transaction data field
-const empty = new Uint8Array([])
+const empty = Bytes()
 const encoded = Rlp.encodeBytes(empty)
 // => Uint8Array([0x80])
 
@@ -165,7 +165,7 @@ const tx = [
   gasLimit,
   to,
   value,
-  Rlp.encodeBytes(new Uint8Array([])),  // Empty data
+  Rlp.encodeBytes(Bytes()),  // Empty data
   v,
   r,
   s

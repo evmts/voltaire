@@ -153,7 +153,7 @@ import * as GasConstants from '@tevm/voltaire/GasConstants';
 
 // Simple ETH transfer (no data)
 const simpleTransfer = GasConstants.calculateTxIntrinsicGas(
-  new Uint8Array([]),  // Empty calldata
+  Bytes(),  // Empty calldata
   false                // Not a contract creation
 );
 console.log(simpleTransfer); // 21000n
@@ -161,8 +161,8 @@ console.log(simpleTransfer); // 21000n
 // ERC-20 transfer with calldata
 const transferCalldata = new Uint8Array([
   0xa9, 0x05, 0x9c, 0xbb,  // transfer(address,uint256) selector (4 non-zero)
-  ...new Uint8Array(32),    // address padded (12 zero + 20 non-zero)
-  ...new Uint8Array(32)     // uint256 amount (likely has zeros)
+  ...Bytes32(),    // address padded (12 zero + 20 non-zero)
+  ...Bytes32()     // uint256 amount (likely has zeros)
 ]);
 
 const erc20Transfer = GasConstants.calculateTxIntrinsicGas(
@@ -254,8 +254,8 @@ import * as GasConstants from '@tevm/voltaire/GasConstants';
 function estimateERC20Transfer(): bigint {
   // 1. Intrinsic gas (21000 + calldata)
   const selector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]); // 4 non-zero
-  const address = new Uint8Array(32); // 12 zero + 20 non-zero = assume 20 non-zero
-  const amount = new Uint8Array(32);  // Assume 28 zero + 4 non-zero
+  const address = Bytes32(); // 12 zero + 20 non-zero = assume 20 non-zero
+  const amount = Bytes32();  // Assume 28 zero + 4 non-zero
 
   const calldata = new Uint8Array(68);
   calldata.set(selector, 0);

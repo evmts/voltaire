@@ -17,7 +17,7 @@ Empty plaintext, no AAD:
 import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 // Test Case 1: Empty plaintext, zero key/nonce
-const key = await AesGcm.importKey(new Uint8Array(16).fill(0)); // All zeros
+const key = await AesGcm.importKey(Bytes16().fill(0)); // All zeros
 const nonce = new Uint8Array(12).fill(0); // All zeros
 const plaintext = new Uint8Array(0); // Empty
 const aad = new Uint8Array(0); // No AAD
@@ -39,9 +39,9 @@ console.log('Ciphertext matches:', arrayEquals(ciphertext, expectedTag));
 
 ```typescript
 // Test Case 2: 16-byte plaintext
-const key = await AesGcm.importKey(new Uint8Array(16).fill(0));
+const key = await AesGcm.importKey(Bytes16().fill(0));
 const nonce = new Uint8Array(12).fill(0);
-const plaintext = new Uint8Array(16).fill(0);
+const plaintext = Bytes16().fill(0);
 const aad = new Uint8Array(0);
 
 const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
@@ -111,7 +111,7 @@ Empty plaintext, 32-byte key:
 
 ```typescript
 // Test Case 1: Empty plaintext, zero key/nonce (256-bit)
-const key = await AesGcm.importKey(new Uint8Array(32).fill(0)); // All zeros
+const key = await AesGcm.importKey(Bytes32().fill(0)); // All zeros
 const nonce = new Uint8Array(12).fill(0);
 const plaintext = new Uint8Array(0);
 const aad = new Uint8Array(0);
@@ -133,9 +133,9 @@ console.log('Tag matches:', arrayEquals(ciphertext, expectedTag));
 
 ```typescript
 // Test Case 2: 16-byte plaintext (256-bit key)
-const key = await AesGcm.importKey(new Uint8Array(32).fill(0));
+const key = await AesGcm.importKey(Bytes32().fill(0));
 const nonce = new Uint8Array(12).fill(0);
-const plaintext = new Uint8Array(16).fill(0);
+const plaintext = Bytes16().fill(0);
 const aad = new Uint8Array(0);
 
 const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
@@ -175,7 +175,7 @@ console.log('Success:', arrayEquals(decrypted, plaintext));
 
 ```typescript
 // All-ones key (256-bit)
-const key = await AesGcm.importKey(new Uint8Array(32).fill(0xFF));
+const key = await AesGcm.importKey(Bytes32().fill(0xFF));
 const nonce = new Uint8Array(12).fill(0xFF);
 const plaintext = new TextEncoder().encode('All ones test');
 
@@ -304,7 +304,7 @@ try {
 
 ```typescript
 const key = await AesGcm.generateKey(256);
-const wrongNonce = new Uint8Array(16); // Should be 12
+const wrongNonce = Bytes16(); // Should be 12
 const plaintext = new TextEncoder().encode('Test');
 
 try {

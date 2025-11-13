@@ -63,7 +63,7 @@ Length: 32 bytes
 import { blobhash } from '@tevm/voltaire/evm/block';
 import { createFrame } from '@tevm/voltaire/evm/Frame';
 
-const blobHash0 = new Uint8Array(32);
+const blobHash0 = Bytes32();
 blobHash0[0] = 0x01; // Version byte
 // ... rest of hash
 

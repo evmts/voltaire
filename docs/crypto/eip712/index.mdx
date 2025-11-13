@@ -50,7 +50,7 @@ const typedData = {
 const hash = EIP712.hashTypedData(typedData);
 
 // Sign with private key
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 const signature = EIP712.signTypedData(typedData, privateKey);
 
 // Verify signature

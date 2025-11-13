@@ -100,7 +100,7 @@ Universal constructor accepting multiple types:
 const b1 = Bytes32('0x' + '12'.repeat(32));
 
 // From bytes
-const b2 = Bytes32(new Uint8Array(32));
+const b2 = Bytes32(Bytes32());
 
 // From number (padded)
 const b3 = Bytes32(42);
@@ -126,7 +126,7 @@ Bytes32('0x1234'); // Error: must be 64 hex chars
 From Uint8Array with size check:
 
 ```typescript
-const arr = new Uint8Array(32);
+const arr = Bytes32();
 const bytes = Bytes32(arr);
 
 // Throws on wrong size
@@ -217,7 +217,7 @@ console.log(hash.length); // 32
 Extract address from last 20 bytes:
 
 ```typescript
-const bytes = new Uint8Array(32);
+const bytes = Bytes32();
 // Set last 20 bytes to 0xff
 for (let i = 12; i < 32; i++) {
   bytes[i] = 0xff;

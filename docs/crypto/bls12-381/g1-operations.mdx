@@ -64,7 +64,7 @@ Multiply G1 point by scalar:
 
 ```typescript
 const point = new Uint8Array(128);
-const scalar = new Uint8Array(32); // Fr element
+const scalar = Bytes32(); // Fr element
 
 const input = new Uint8Array(160);
 input.set(point, 0);

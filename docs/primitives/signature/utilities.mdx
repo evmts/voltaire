@@ -292,7 +292,7 @@ function is(value: unknown): value is BrandedSignature
 const sig = Signature.fromSecp256k1(r, s, 27);
 console.log(Signature.is(sig)); // true
 
-const bytes = new Uint8Array(64);
+const bytes = Bytes64();
 console.log(Signature.is(bytes)); // false
 
 const obj = { algorithm: 'secp256k1' };

@@ -114,10 +114,10 @@ const txData = [
   new Uint8Array([0x52, 0x08]),               // gas
   new Uint8Array(20).fill(0x01),              // to (address)
   new Uint8Array([0x00]),                    // value
-  new Uint8Array([]),                         // data
+  Bytes(),                         // data
   new Uint8Array([0x1b]),                    // v
-  new Uint8Array(32).fill(0x02),              // r
-  new Uint8Array(32).fill(0x03)               // s
+  Bytes32().fill(0x02),              // r
+  Bytes32().fill(0x03)               // s
 ]
 
 const encoded = Rlp.encodeList(txData)
@@ -133,19 +133,19 @@ import { Rlp } from '@tevm/voltaire'
 
 // Simplified block header
 const header = [
-  new Uint8Array(32).fill(0x01),  // parentHash
-  new Uint8Array(32).fill(0x02),  // uncleHash
+  Bytes32().fill(0x01),  // parentHash
+  Bytes32().fill(0x02),  // uncleHash
   new Uint8Array(20).fill(0x03),  // coinbase
-  new Uint8Array(32).fill(0x04),  // stateRoot
-  new Uint8Array(32).fill(0x05),  // transactionsRoot
-  new Uint8Array(32).fill(0x06),  // receiptsRoot
+  Bytes32().fill(0x04),  // stateRoot
+  Bytes32().fill(0x05),  // transactionsRoot
+  Bytes32().fill(0x06),  // receiptsRoot
   new Uint8Array(256).fill(0x00), // logsBloom
   new Uint8Array([0x01]),         // difficulty
   new Uint8Array([0x01]),         // number
   new Uint8Array([0x5f, 0x5e, 0x100]), // gasLimit
   new Uint8Array([0x00]),         // gasUsed
-  new Uint8Array(4),              // timestamp
-  new Uint8Array([])              // extraData
+  Bytes4(),              // timestamp
+  Bytes()              // extraData
 ]
 
 const encoded = Rlp.encodeList(header)
@@ -192,10 +192,10 @@ Encode Merkle proof as list of hashes:
 import { Rlp } from '@tevm/voltaire'
 
 const proof = [
-  new Uint8Array(32).fill(0x01),  // Node 1
-  new Uint8Array(32).fill(0x02),  // Node 2
-  new Uint8Array(32).fill(0x03),  // Node 3
-  new Uint8Array(32).fill(0x04)   // Node 4
+  Bytes32().fill(0x01),  // Node 1
+  Bytes32().fill(0x02),  // Node 2
+  Bytes32().fill(0x03),  // Node 3
+  Bytes32().fill(0x04)   // Node 4
 ]
 
 const encoded = Rlp.encodeList(proof)

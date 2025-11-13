@@ -61,7 +61,7 @@ const g1a = Hex.toBytes('0x00000000000000000000000000000000000000000000000000000
 const g1b = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
                         '0000000000000000000000000000000000000000000000000000000000000002');
 const input = new Uint8Array([...g1a, ...g1b]);
-const output = new Uint8Array(64);
+const output = Bytes64();
 await bn254.g1Add(input, output);
 
 // G1 scalar multiplication
@@ -69,7 +69,7 @@ const point = Hex.toBytes('0x000000000000000000000000000000000000000000000000000
                           '0000000000000000000000000000000000000000000000000000000000000002');
 const scalar = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000003');
 const mulInput = new Uint8Array([...point, ...scalar]);
-const mulOutput = new Uint8Array(64);
+const mulOutput = Bytes64();
 await bn254.g1Mul(mulInput, mulOutput);
 
 // Pairing check (zkSNARK verification)

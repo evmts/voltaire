@@ -40,7 +40,7 @@ async function isTransactionConfirmed(txHash: string): Promise<boolean> {
 ```typescript
 const hashes = [
   Hash.keccak256String("hello"),
-  Hash(new Uint8Array(32)), // zero hash
+  Hash(Bytes32()), // zero hash
   Hash.keccak256String("world"),
   Hash.ZERO,
 ]
@@ -187,7 +187,7 @@ async function waitForConfirmation(txHash: Hash): Promise<Receipt> {
 Compare with `Hash.ZERO` constant for clarity:
 
 ```typescript
-const zeroHash = Hash(new Uint8Array(32))
+const zeroHash = Hash(Bytes32())
 
 // Both equivalent
 zeroHash.isZero() // true
@@ -269,4 +269,4 @@ function processTransaction(tx: Transaction): void {
 
 - [equals](/primitives/hash/equals) - Compare two hashes (uses constant-time)
 - [ZERO constant](/primitives/hash/constants) - Zero hash constant
-- [fromBytes](/primitives/hash/from-bytes) - Create zero hash from new Uint8Array(32)
+- [fromBytes](/primitives/hash/from-bytes) - Create zero hash from Bytes32()

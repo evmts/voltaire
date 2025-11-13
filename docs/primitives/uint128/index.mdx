@@ -126,7 +126,7 @@ const value = Uint128(bytes);
 Create from ABI-encoded bytes (32 bytes, right-aligned).
 
 ```typescript
-const abiBytes = new Uint8Array(32);
+const abiBytes = Bytes32();
 abiBytes[31] = 255;
 const value = Uint128(abiBytes);
 ```

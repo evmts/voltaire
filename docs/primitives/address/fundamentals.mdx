@@ -42,7 +42,7 @@ import { Keccak256 } from '@tevm/voltaire/crypto';
 import { Address } from '@tevm/voltaire';
 
 // 1. Start with 32-byte private key
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // 2. Derive 64-byte uncompressed public key (32-byte x + 32-byte y coordinates)
@@ -67,7 +67,7 @@ console.log(`Address: 0x${[...address].map(b => b.toString(16).padStart(2, '0'))
 import { Address } from '@tevm/voltaire';
 
 // From private key (derives public key internally)
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 const addr = Address(privateKey);
@@ -195,11 +195,11 @@ import { Keccak256 } from '@tevm/voltaire/crypto';
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // 32-byte salt (can be any value)
-const salt = new Uint8Array(32);
+const salt = Bytes32();
 salt[31] = 1; // Salt = 0x0000...0001
 
 // Contract bytecode (initialization code)
-const initCode = new Uint8Array([
+const initCode = Bytecode([
   0x60, 0x80, 0x60, 0x40, 0x52, // PUSH1 0x80 PUSH1 0x40 MSTORE
   // ... rest of bytecode
 ]);
@@ -275,7 +275,7 @@ const deployCode = Bytecode("0x69602a60005260206000f3600052600a6016f3");
 // PUSH10 0x602a60005260206000f3 PUSH1 0x00 MSTORE PUSH1 0x0a PUSH1 0x16 RETURN
 
 // Choose salt for deterministic address
-const salt = new Uint8Array(32);
+const salt = Bytes32();
 // Using zero salt for simplicity
 
 // Predict address before deployment

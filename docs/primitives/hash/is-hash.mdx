@@ -21,7 +21,7 @@ function isHash(value: unknown): value is BrandedHash {
 
 **Must be Uint8Array:**
 ```typescript
-Hash.isHash(new Uint8Array(32)) // true
+Hash.isHash(Bytes32()) // true
 Hash.isHash([0, 1, 2, ...]) // false (array, not Uint8Array)
 Hash.isHash("0x1234...") // false (string)
 Hash.isHash(null) // false
@@ -30,7 +30,7 @@ Hash.isHash(undefined) // false
 
 **Must be exactly 32 bytes:**
 ```typescript
-Hash.isHash(new Uint8Array(32)) // true
+Hash.isHash(Bytes32()) // true
 Hash.isHash(new Uint8Array(31)) // false (too short)
 Hash.isHash(new Uint8Array(33)) // false (too long)
 Hash.isHash(new Uint8Array(0)) // false (empty)
@@ -174,7 +174,7 @@ function normalizeHash(input: HashOrString): BrandedHash {
 const mixed: unknown[] = [
   Hash.random(),
   "not a hash",
-  new Uint8Array(32),
+  Bytes32(),
   null,
   Hash.keccak256String("hello"),
   123

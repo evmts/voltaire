@@ -48,7 +48,7 @@ import {
 
 const hash1 = from("0x1234567890abcdef...")
 const hash2 = fromHex("0x1234567890abcdef...")
-const hash3 = fromBytes(new Uint8Array(32))
+const hash3 = fromBytes(Bytes32())
 const dataHash = keccak256(data)
 const stringHash = keccak256String("hello")
 const hexHash = keccak256Hex("0x1234")

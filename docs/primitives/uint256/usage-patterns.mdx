@@ -18,7 +18,7 @@ import * as Uint from '@tevm/voltaire/Uint';
 const a = Uint(100n);
 const b = Uint(255);
 const c = Uint("0xff");
-const d = Uint(new Uint8Array(32));
+const d = Uint(Bytes32());
 
 // Safe construction with validation
 function safeConstruct(value: unknown): BrandedUint256 | null {

@@ -44,7 +44,7 @@ const unsigned = {
 };
 
 // Sign it
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 const auth = sign.call(unsigned, privateKey);
 
 // Validate

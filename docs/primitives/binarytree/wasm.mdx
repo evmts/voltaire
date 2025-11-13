@@ -248,7 +248,7 @@ for (const address of addresses) {
   // Insert account data (subindex 0)
   const accountKey = baseKey.slice()
   accountKey[31] = 0
-  const accountData = new Uint8Array(32)
+  const accountData = Bytes32()
   // ... set account data
   tree = BinaryTree.insert(tree, accountKey, accountData)
 
@@ -256,7 +256,7 @@ for (const address of addresses) {
   for (let slot = 0; slot < 10; slot++) {
     const storageKey = baseKey.slice()
     storageKey[31] = 1 + slot
-    const storageValue = new Uint8Array(32)
+    const storageValue = Bytes32()
     // ... set storage value
     tree = BinaryTree.insert(tree, storageKey, storageValue)
   }

@@ -627,8 +627,8 @@ function verifyTimedSignature(
 function createMockSignature(
   algorithm: SignatureAlgorithm = 'secp256k1'
 ): BrandedSignature {
-  const r = crypto.getRandomValues(new Uint8Array(32));
-  const s = crypto.getRandomValues(new Uint8Array(32));
+  const r = crypto.getRandomValues(Bytes32());
+  const s = crypto.getRandomValues(Bytes32());
 
   switch (algorithm) {
     case 'secp256k1':
@@ -636,7 +636,7 @@ function createMockSignature(
     case 'p256':
       return Signature.fromP256(r, s);
     case 'ed25519':
-      const sig = crypto.getRandomValues(new Uint8Array(64));
+      const sig = crypto.getRandomValues(Bytes64());
       return Signature.fromEd25519(sig);
   }
 }

@@ -177,8 +177,8 @@ const unsignedTx: Transaction.EIP1559 = {
   data: new Uint8Array(),
   accessList: [],
   yParity: 0,
-  r: new Uint8Array(32),
-  s: new Uint8Array(32),
+  r: Bytes32(),
+  s: Bytes32(),
 }
 
 // 2. Get signing hash

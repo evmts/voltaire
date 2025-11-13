@@ -309,7 +309,7 @@ console.log(hash.every((byte, i) => byte === expected[i])); // true
 
 **Verification:**
 ```typescript
-const hash = SHA256.hash(new Uint8Array(32)); // 32 zeros
+const hash = SHA256.hash(Bytes32()); // 32 zeros
 const expected = new Uint8Array([
   0x66, 0x68, 0x7a, 0xad, 0xf8, 0x62, 0xbd, 0x77,
   0x6c, 0x8f, 0xc1, 0x8b, 0x8e, 0x9f, 0x8e, 0x20,
@@ -332,7 +332,7 @@ console.log(hash.every((byte, i) => byte === expected[i])); // true
 
 **Verification:**
 ```typescript
-const hash = SHA256.hash(new Uint8Array(32).fill(0xFF));
+const hash = SHA256.hash(Bytes32().fill(0xFF));
 const expected = new Uint8Array([
   0x04, 0xcb, 0xb3, 0xc1, 0x5f, 0x97, 0x1a, 0x6e,
   0x1f, 0x6c, 0x8e, 0x0c, 0x6f, 0x57, 0xce, 0x0e,

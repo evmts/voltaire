@@ -70,7 +70,7 @@ import { handler_0xfd_REVERT } from '@tevm/voltaire/evm/control';
 // Revert with error message
 const frame = createFrame({
   stack: [32n, 0n],  // length=32, offset=0
-  memory: new Uint8Array(64),
+  memory: Bytes64(),
   gasRemaining: 1000n,
   evm: { hardfork: Hardfork.BYZANTIUM }
 });
@@ -457,7 +457,7 @@ import { handler_0xfd_REVERT } from './0xfd_REVERT.js';
 
 describe('REVERT (0xfd)', () => {
   it('reverts with error data', () => {
-    const memory = new Uint8Array(64);
+    const memory = Bytes64();
     memory[0] = 0x42;
     memory[1] = 0x43;
 

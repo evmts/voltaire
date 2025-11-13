@@ -358,7 +358,7 @@ function signMessage(secretKey: bigint, messageHash: Uint8Array): Uint8Array {
   input.set(messageHash, 0); // G2 point (256 bytes)
 
   // Encode scalar at offset 256
-  const scalarBytes = new Uint8Array(32);
+  const scalarBytes = Bytes32();
   for (let i = 0; i < 32; i++) {
     scalarBytes[31 - i] = Number((secretKey >> BigInt(i * 8)) & 0xFFn);
   }
@@ -397,7 +397,7 @@ function derivePublicKey(secretKey: bigint): Uint8Array {
   input.set(g1Generator, 0);
 
   // Encode scalar
-  const scalarBytes = new Uint8Array(32);
+  const scalarBytes = Bytes32();
   for (let i = 0; i < 32; i++) {
     scalarBytes[31 - i] = Number((secretKey >> BigInt(i * 8)) & 0xFFn);
   }

@@ -29,7 +29,7 @@ import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Sign a message hash
 const messageHash = Hash.keccak256String('Hello, P256!');
-const privateKey = new Uint8Array(32); // Your 32-byte private key
+const privateKey = Bytes32(); // Your 32-byte private key
 const signature = P256.sign(messageHash, privateKey);
 
 // Verify signature
@@ -37,7 +37,7 @@ const publicKey = P256.derivePublicKey(privateKey);
 const isValid = P256.verify(signature, messageHash, publicKey);
 
 // ECDH key exchange (Diffie-Hellman)
-const myPrivateKey = new Uint8Array(32);
+const myPrivateKey = Bytes32();
 const theirPublicKey = P256.derivePublicKey(theirPrivateKey);
 const sharedSecret = P256.ecdh(myPrivateKey, theirPublicKey);
 ```
@@ -111,11 +111,11 @@ Perform Elliptic Curve Diffie-Hellman key exchange. Computes a shared secret tha
 
 ```typescript
 // Alice's side
-const alicePrivate = crypto.getRandomValues(new Uint8Array(32));
+const alicePrivate = crypto.getRandomValues(Bytes32());
 const alicePublic = P256.derivePublicKey(alicePrivate);
 
 // Bob's side
-const bobPrivate = crypto.getRandomValues(new Uint8Array(32));
+const bobPrivate = crypto.getRandomValues(Bytes32());
 const bobPublic = P256.derivePublicKey(bobPrivate);
 
 // Both compute the same shared secret
@@ -237,7 +237,7 @@ assert(publicKey.slice(0, 32).every((byte, i) => byte === expectedX[i]));
 ### Deterministic Signatures (RFC 6979)
 
 ```typescript
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey[31] = 1;
 
 const messageHash = Hash.sha256(new TextEncoder().encode('test'));
@@ -255,13 +255,13 @@ assert(sig1.s.every((byte, i) => byte === sig2.s[i]));
 
 ```typescript
 // Alice generates keypair
-const aliceSeed = new Uint8Array(32);
+const aliceSeed = Bytes32();
 aliceSeed[0] = 0xaa;
 const alicePrivate = aliceSeed;
 const alicePublic = P256.derivePublicKey(alicePrivate);
 
 // Bob generates keypair
-const bobSeed = new Uint8Array(32);
+const bobSeed = Bytes32();
 bobSeed[0] = 0xbb;
 const bobPrivate = bobSeed;
 const bobPublic = P256.derivePublicKey(bobPrivate);

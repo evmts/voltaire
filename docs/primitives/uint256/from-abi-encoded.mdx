@@ -18,7 +18,7 @@ Create Uint256 from ABI-encoded bytes. Requires exactly 32 bytes.
 import { Uint } from '@tevm/voltaire'
 
 // ABI-encoded uint256 (always 32 bytes)
-const encoded = new Uint8Array(32)
+const encoded = Bytes32()
 encoded[31] = 0xff  // Last byte = 255
 
 const value = Uint(encoded)  // 255
@@ -53,19 +53,19 @@ ABI-Encoded uint256 (32 bytes):
 ```typescript
 // Value: 255 (0xff)
 // ABI: [0x00, 0x00, ..., 0x00, 0xff]
-const bytes1 = new Uint8Array(32)
+const bytes1 = Bytes32()
 bytes1[31] = 0xff
 Uint(bytes1)  // 255
 
 // Value: 256 (0x0100)
 // ABI: [0x00, 0x00, ..., 0x01, 0x00]
-const bytes2 = new Uint8Array(32)
+const bytes2 = Bytes32()
 bytes2[30] = 0x01
 Uint(bytes2)  // 256
 
 // Value: 0
 // ABI: [0x00, 0x00, ..., 0x00, 0x00]
-const bytes3 = new Uint8Array(32)
+const bytes3 = Bytes32()
 Uint(bytes3)  // 0
 ```
 
@@ -76,11 +76,11 @@ Unlike `fromBytes` (1-32 bytes), `fromAbiEncoded` requires **exactly 32 bytes**:
 ```typescript
 // fromBytes - flexible (1-32 bytes)
 Uint(new Uint8Array([0xff]))        // OK
-Uint(new Uint8Array(32))            // OK
+Uint(Bytes32())            // OK
 
 // fromAbiEncoded - strict (exactly 32 bytes)
 Uint(new Uint8Array([0xff]))   // Error: wrong size
-Uint(new Uint8Array(32))       // OK
+Uint(Bytes32())       // OK
 ```
 
 ### Why Strict?

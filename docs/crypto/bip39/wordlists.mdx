@@ -219,7 +219,7 @@ const mnemonicCZ = Bip39.generateMnemonic(256, czech);
 ### Same Entropy, Different Languages
 
 ```typescript
-const entropy = new Uint8Array(32).fill(0);
+const entropy = Bytes32().fill(0);
 
 import { wordlist as english } from '@scure/bip39/wordlists/english.js';
 import { wordlist as spanish } from '@scure/bip39/wordlists/spanish.js';

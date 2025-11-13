@@ -219,7 +219,7 @@ Deterministic point generation for distributed key generation:
 
 ```typescript
 function generateCommitment(coefficientIndex: number): Uint8Array {
-  const input = new Uint8Array(64);
+  const input = Bytes64();
   new DataView(input.buffer).setBigUint64(56, BigInt(coefficientIndex), false);
 
   const result = execute(
@@ -307,7 +307,7 @@ const DST = "MY_PROTOCOL_V1_HASH_TO_G1";
 
 ### Zero Element
 ```typescript
-const input = new Uint8Array(64); // All zeros
+const input = Bytes64(); // All zeros
 const result = execute(
   PrecompileAddress.BLS12_MAP_FP_TO_G1,
   input,
@@ -321,7 +321,7 @@ console.log('Mapped point:', result.output);
 ### Maximum Field Element
 ```typescript
 // p-1 is maximum valid input
-const input = new Uint8Array(64);
+const input = Bytes64();
 input.set([
   0x1a, 0x01, 0x11, 0xea, 0x39, 0x7f, 0xe6, 0x9a,
   0x4b, 0x1b, 0xa7, 0xb6, 0x43, 0x4b, 0xac, 0xd7,
@@ -342,7 +342,7 @@ const result = execute(
 
 ### Determinism Test
 ```typescript
-const input = new Uint8Array(64);
+const input = Bytes64();
 input[63] = 42;
 
 const result1 = execute(PrecompileAddress.BLS12_MAP_FP_TO_G1, input, 5500n, Hardfork.PRAGUE);

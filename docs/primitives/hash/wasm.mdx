@@ -209,7 +209,7 @@ import { solidityKeccak256 } from '@tevm/voltaire/Hash.wasm'
 
 // Equivalent to Solidity: keccak256(abi.encodePacked(address, uint256))
 function solidityPackedHash(address: Uint8Array, value: bigint): Uint8Array {
-  const valueBytes = new Uint8Array(32)
+  const valueBytes = Bytes32()
   let v = value
   for (let i = 31; `i >= 0`; i--) {
     valueBytes[i] = Number(v & 0xFFn)

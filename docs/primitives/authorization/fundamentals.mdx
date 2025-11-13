@@ -129,7 +129,7 @@ const unsigned = {
 EOA owner signs with their private key:
 
 ```typescript
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 
 const auth = Authorization.sign.call(unsigned, privateKey);
 
@@ -197,7 +197,7 @@ import * as Authorization from '@tevm/voltaire/Authorization';
 // User's EOA: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2
 // Sponsor contract: 0x1234567890123456789012345678901234567890
 
-const userPrivateKey = new Uint8Array(32); // User's key
+const userPrivateKey = Bytes32(); // User's key
 const userNonce = 0n; // Current nonce from chain
 
 // User delegates to sponsor contract

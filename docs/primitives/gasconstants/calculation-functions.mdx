@@ -423,11 +423,11 @@ total = base + dataCost
 
 ```typescript
 // Empty calldata
-const cost1 = calculateTxIntrinsicGas(new Uint8Array([]), false);
+const cost1 = calculateTxIntrinsicGas(Bytes(), false);
 // 21000n
 
 // Contract creation with empty calldata
-const cost2 = calculateTxIntrinsicGas(new Uint8Array([]), true);
+const cost2 = calculateTxIntrinsicGas(Bytes(), true);
 // 53000n
 
 // Simple transfer: [0, 1, 2, 0, 0]

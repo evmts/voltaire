@@ -29,7 +29,7 @@ Rlp.getEncodedLength(high)
 import { Rlp } from '@tevm/voltaire'
 
 // Empty bytes: [0x80]
-const empty = new Uint8Array([])
+const empty = Bytes()
 Rlp.getEncodedLength(empty)
 // => 1 (just prefix)
 
@@ -234,9 +234,9 @@ function calculateProofSize(proof: Uint8Array[]): number {
 }
 
 const proof = [
-  new Uint8Array(32).fill(0x01),  // Node 1
-  new Uint8Array(32).fill(0x02),  // Node 2
-  new Uint8Array(32).fill(0x03)   // Node 3
+  Bytes32().fill(0x01),  // Node 1
+  Bytes32().fill(0x02),  // Node 2
+  Bytes32().fill(0x03)   // Node 3
 ]
 
 const size = calculateProofSize(proof)

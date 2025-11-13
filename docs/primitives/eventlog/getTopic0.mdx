@@ -43,7 +43,7 @@ const anonymousLog = EventLog({
     toHash,      // topic1 = second indexed param (to)
     tokenIdHash, // topic2 = third indexed param (tokenId)
   ],
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 const topic0 = anonymousLog.getTopic0();
@@ -143,7 +143,7 @@ import { EventLog, Address } from '@tevm/voltaire';
 const emptyLog = EventLog({
   address: Address.zero(),
   topics: [],
-  data: new Uint8Array([]),
+  data: Bytes(),
 });
 
 const topic0 = emptyLog.getTopic0();

@@ -187,7 +187,7 @@ const unsigned: Authorization.Unsigned = {
 };
 
 // Sign it
-const privateKey = new Uint8Array(32); // Your private key
+const privateKey = Bytes32(); // Your private key
 const auth = Authorization.sign.call(unsigned, privateKey);
 
 // Verify it's signed

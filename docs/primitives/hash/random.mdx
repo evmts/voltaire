@@ -14,7 +14,7 @@ Uses Web Crypto API's `crypto.getRandomValues()`:
 ```typescript
 function random(): BrandedHash {
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    const bytes = new Uint8Array(32)
+    const bytes = Bytes32()
     crypto.getRandomValues(bytes)
     return bytes as BrandedHash
   }

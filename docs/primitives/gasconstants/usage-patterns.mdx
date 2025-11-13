@@ -16,7 +16,7 @@ import * as GasConstants from './GasConstants/index.js';
 function estimateSimpleTransfer(to: Address): bigint {
   // Empty calldata, no contract creation
   const intrinsic = GasConstants.calculateTxIntrinsicGas(
-    new Uint8Array([]),
+    Bytes(),
     false
   );
   return intrinsic;  // 21000n

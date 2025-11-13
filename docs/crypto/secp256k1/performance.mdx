@@ -32,7 +32,7 @@ import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { performance } from 'perf_hooks';
 
 // Public key derivation: 1000 iterations
-const privateKey = crypto.getRandomValues(new Uint8Array(32));
+const privateKey = crypto.getRandomValues(Bytes32());
 const start = performance.now();
 for (let i = 0; i < 1000; i++) {
   secp256k1.getPublicKey(privateKey);

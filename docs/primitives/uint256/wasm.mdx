@@ -52,7 +52,7 @@ Convert 32-byte U256 value to hex string.
 ```typescript
 import { u256ToHex } from '@tevm/voltaire/Uint256.wasm'
 
-const bytes = new Uint8Array(32)
+const bytes = Bytes32()
 bytes[31] = 0xff
 
 const hex = u256ToHex(bytes)  // "0x00000...00ff"
@@ -108,7 +108,7 @@ Convert 32-byte U256 value to bigint.
 ```typescript
 import { u256ToBigInt } from '@tevm/voltaire/Uint256.wasm'
 
-const bytes = new Uint8Array(32)
+const bytes = Bytes32()
 bytes[31] = 0xff
 
 const bigint = u256ToBigInt(bytes)  // 255n

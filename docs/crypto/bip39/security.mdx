@@ -63,7 +63,7 @@ const entropy256 = Math.pow(2, 256);
 
 ```typescript
 // ✅ SECURE - Web Crypto API
-const secure = crypto.getRandomValues(new Uint8Array(32));
+const secure = crypto.getRandomValues(Bytes32());
 const mnemonic = Bip39.entropyToMnemonic(secure);
 
 // ✅ SECURE - Node.js crypto
@@ -71,7 +71,7 @@ import { randomBytes } from 'crypto';
 const nodeEntropy = randomBytes(32);
 
 // ❌ INSECURE - Never use Math.random()
-const insecure = new Uint8Array(32);
+const insecure = Bytes32();
 for (let i = 0; i < 32; i++) {
   insecure[i] = Math.floor(Math.random() * 256); // PREDICTABLE!
 }
@@ -200,7 +200,7 @@ async function encryptMnemonic(
   // Derive key from password
   const encoder = new TextEncoder();
   const passwordBytes = encoder.encode(password);
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = crypto.getRandomValues(Bytes16());
 
   const keyMaterial = await crypto.subtle.importKey(
     'raw',

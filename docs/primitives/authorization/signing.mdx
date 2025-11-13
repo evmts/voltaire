@@ -148,7 +148,7 @@ const unsigned: Authorization.Unsigned = {
   nonce: 0n
 };
 
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 // ... fill with your private key
 
 const auth = Authorization.sign(unsigned, privateKey);
@@ -206,7 +206,7 @@ const unsigned: Authorization.Unsigned = {
   nonce: 0n
 };
 
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 // ... your private key
 
 const auth = sign(unsigned, privateKey);
@@ -453,7 +453,7 @@ const sigHash = Authorization.hash.call(unsigned);
 console.log(`Signing hash: ${sigHash}`);
 
 // 3. Sign with private key
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 // ... your private key
 const auth = Authorization.sign.call(unsigned, privateKey);
 
@@ -701,7 +701,7 @@ verify:   ~8,000 ops/sec   (includes public key recovery)
 import { Authorization, Address } from '@tevm/voltaire';
 
 // Create test private key
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32();
 privateKey.fill(1);
 
 const myAddress = Address(privateKey);

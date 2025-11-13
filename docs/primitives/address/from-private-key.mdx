@@ -34,7 +34,7 @@ The standard API automatically injects crypto dependencies:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const privateKey = new Uint8Array(32)
+const privateKey = Bytes32()
 // ... set private key bytes ...
 
 const address = Address(privateKey)
@@ -147,7 +147,7 @@ Generate new Ethereum accounts:
 import { Address } from '@tevm/voltaire'
 
 function generateAccount() {
-  const privateKey = new Uint8Array(32)
+  const privateKey = Bytes32()
   crypto.getRandomValues(privateKey)
 
   const address = Address(privateKey)
@@ -224,7 +224,7 @@ import { Address } from '@tevm/voltaire'
 
 // Wrong length
 try {
-  const shortKey = new Uint8Array(16)
+  const shortKey = Bytes16()
   Address(shortKey)
 } catch (e) {
   console.error(e) // InvalidAddressLengthError: must be 32 bytes
@@ -232,7 +232,7 @@ try {
 
 // Invalid value (all zeros)
 try {
-  const zeroKey = new Uint8Array(32)
+  const zeroKey = Bytes32()
   Address(zeroKey)
 } catch (e) {
   console.error(e) // InvalidValueError: Invalid private key
@@ -240,7 +240,7 @@ try {
 
 // Out of range
 try {
-  const invalidKey = new Uint8Array(32).fill(0xFF)
+  const invalidKey = Bytes32().fill(0xFF)
   Address(invalidKey)
 } catch (e) {
   console.error(e) // InvalidValueError: Invalid private key

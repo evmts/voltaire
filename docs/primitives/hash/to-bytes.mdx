@@ -48,7 +48,7 @@ const combinedHash = Hash.keccak256(combined)
 import { sign } from '@noble/secp256k1'
 
 const messageHash = Hash.keccak256String("Hello, Ethereum!")
-const privateKey = new Uint8Array(32) // Private key bytes
+const privateKey = Bytes32() // Private key bytes
 
 // Many crypto libraries expect Uint8Array
 const signature = await sign(messageHash.toBytes(), privateKey)
@@ -72,7 +72,7 @@ function hashPair(left: Hash, right: Hash): Hash {
 // Compute Solidity mapping storage slot
 function computeStorageSlot(key: Hash, baseSlot: bigint): Hash {
   const keyBytes = key.toBytes()
-  const slotBytes = new Uint8Array(32)
+  const slotBytes = Bytes32()
 
   // Encode baseSlot as big-endian uint256
   let slot = baseSlot

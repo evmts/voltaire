@@ -31,8 +31,8 @@ console.log(emptyHash.every(b => b === 0)) // true (all zeros)
 
 // Tree with data
 let tree = BinaryTree.init()
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Bytes32()
+const value = Bytes32()
 value[0] = 0x42
 
 tree = BinaryTree.insert(tree, key, value)
@@ -54,8 +54,8 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree = BinaryTree.init()
 
 // Insert values
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Bytes32()
+const value = Bytes32()
 tree = BinaryTree.insert(tree, key, value)
 
 // Calculate root hash
@@ -96,8 +96,8 @@ Convert root hash to hex string with `0x` prefix.
 import { BinaryTree } from '@tevm/voltaire'
 
 let tree = BinaryTree.init()
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Bytes32()
+const value = Bytes32()
 tree = BinaryTree.insert(tree, key, value)
 
 const hex = BinaryTree.rootHashHex(tree)
@@ -168,15 +168,15 @@ console.log(stemHash.length) // 32
 // Internal node
 const internalNode = {
   type: 'internal',
-  left: new Uint8Array(32),
-  right: new Uint8Array(32)
+  left: Bytes32(),
+  right: Bytes32()
 }
 const internalHash = BinaryTree.hashNode(internalNode)
 
 // Leaf node
 const leafNode = {
   type: 'leaf',
-  value: new Uint8Array(32)
+  value: Bytes32()
 }
 const leafHash = BinaryTree.hashNode(leafNode)
 ```
@@ -203,18 +203,18 @@ Hash internal node from left and right child hashes. If both children are zero, 
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const left = new Uint8Array(32)
+const left = Bytes32()
 left[0] = 0x01
 
-const right = new Uint8Array(32)
+const right = Bytes32()
 right[0] = 0x02
 
 const hash = BinaryTree.hashInternal(left, right)
 console.log(hash.length) // 32
 
 // Both zero case
-const zeroLeft = new Uint8Array(32)
-const zeroRight = new Uint8Array(32)
+const zeroLeft = Bytes32()
+const zeroRight = Bytes32()
 const zeroHash = BinaryTree.hashInternal(zeroLeft, zeroRight)
 console.log(zeroHash.every(b => b === 0)) // true
 ```
@@ -238,8 +238,8 @@ else:
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const leftHash = new Uint8Array(32)
-const rightHash = new Uint8Array(32)
+const leftHash = Bytes32()
+const rightHash = Bytes32()
 
 const parentHash = BinaryTree.hashInternal(leftHash, rightHash)
 ```
@@ -292,7 +292,7 @@ import { BinaryTree } from '@tevm/voltaire'
 
 const stem = new Uint8Array(31)
 const values = new Array(256).fill(null)
-values[0] = new Uint8Array(32)
+values[0] = Bytes32()
 values[0][0] = 0x42
 
 const stemNode = { type: 'stem', stem, values }
@@ -330,8 +330,8 @@ const stemNode = {
 }
 
 // Set some values
-stemNode.values[0] = new Uint8Array(32)
-stemNode.values[5] = new Uint8Array(32)
+stemNode.values[0] = Bytes32()
+stemNode.values[5] = Bytes32()
 
 const hash = BinaryTree.hashStem(stemNode)
 ```
@@ -343,7 +343,7 @@ import { BinaryTree } from '@tevm/voltaire'
 // Create stem with all 256 values set
 const stem = new Uint8Array(31)
 const values = Array({ length: 256 }, (_, i) => {
-  const v = new Uint8Array(32)
+  const v = Bytes32()
   v[0] = i
   return v
 })
@@ -386,7 +386,7 @@ Hash leaf node value directly with BLAKE3.
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const value = new Uint8Array(32)
+const value = Bytes32()
 value[0] = 0x42
 
 const leafNode = { type: 'leaf', value }
@@ -411,7 +411,7 @@ import { BinaryTree } from '@tevm/voltaire'
 
 const leafNode = {
   type: 'leaf',
-  value: new Uint8Array(32)
+  value: Bytes32()
 }
 
 const hash = BinaryTree.hashLeaf(leafNode)
@@ -421,7 +421,7 @@ const hash = BinaryTree.hashLeaf(leafNode)
 ```typescript
 import { BinaryTree } from '@tevm/voltaire'
 
-const value = new Uint8Array(32)
+const value = Bytes32()
 // Set value bytes
 value[0] = 0xFF
 value[31] = 0xAA
@@ -469,8 +469,8 @@ import { BinaryTree } from '@tevm/voltaire'
 const tree1 = BinaryTree.init()
 const tree2 = BinaryTree.init()
 
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Bytes32()
+const value = Bytes32()
 
 const result1 = BinaryTree.insert(tree1, key, value)
 const result2 = BinaryTree.insert(tree2, key, value)
@@ -492,11 +492,11 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree1 = BinaryTree.init()
 let tree2 = BinaryTree.init()
 
-const key = new Uint8Array(32)
-const value1 = new Uint8Array(32)
+const key = Bytes32()
+const value1 = Bytes32()
 value1[0] = 0x01
 
-const value2 = new Uint8Array(32)
+const value2 = Bytes32()
 value2[0] = 0x02
 
 tree1 = BinaryTree.insert(tree1, key, value1)
@@ -522,8 +522,8 @@ const emptyHash = BinaryTree.hashNode(emptyNode)
 console.log(emptyHash.every(b => b === 0)) // true
 
 // Internal node with two zero children is also zero
-const zeroLeft = new Uint8Array(32)
-const zeroRight = new Uint8Array(32)
+const zeroLeft = Bytes32()
+const zeroRight = Bytes32()
 const internalHash = BinaryTree.hashInternal(zeroLeft, zeroRight)
 console.log(internalHash.every(b => b === 0)) // true
 ```

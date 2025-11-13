@@ -56,7 +56,7 @@ function merkleRoot(leaves: Uint8Array[]): Uint8Array {
     for (let i = 0; i < level.length; i += 2) {
       const left = level[i];
       const right = level[i + 1] || left;
-      const combined = new Uint8Array(64);
+      const combined = Bytes64();
       combined.set(left, 0);
       combined.set(right, 32);
       next.push(SHA256.hash(combined));

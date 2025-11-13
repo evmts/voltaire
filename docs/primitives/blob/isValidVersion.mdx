@@ -108,14 +108,14 @@ if (!validateBlobVersionedHashes(tx.blobVersionedHashes)) {
 import { Blob } from '@tevm/voltaire';
 
 // Wrong length
-const tooShort = new Uint8Array(16);
+const tooShort = Bytes16();
 console.log(Blob.isValidVersion(tooShort)); // false
 
-const tooLong = new Uint8Array(64);
+const tooLong = Bytes64();
 console.log(Blob.isValidVersion(tooLong)); // false
 
 // Wrong version
-const wrongVersion = new Uint8Array(32);
+const wrongVersion = Bytes32();
 wrongVersion[0] = 0x02; // Unsupported
 console.log(Blob.isValidVersion(wrongVersion)); // false
 
@@ -123,7 +123,7 @@ wrongVersion[0] = 0x00; // Invalid
 console.log(Blob.isValidVersion(wrongVersion)); // false
 
 // Correct
-const correct = new Uint8Array(32);
+const correct = Bytes32();
 correct[0] = 0x01; // KZG version
 console.log(Blob.isValidVersion(correct)); // true
 ```
