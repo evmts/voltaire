@@ -192,4 +192,135 @@ describe("Base64", () => {
 			}
 		});
 	});
+
+	describe("Branded Types", () => {
+		describe("from", () => {
+			it("should create BrandedBase64 from valid string", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				expect(b64).toBe("SGVsbG8=");
+				expect(Base64.isValid(b64)).toBe(true);
+			});
+
+			it("should create BrandedBase64 from bytes", () => {
+				const data = new Uint8Array([72, 101, 108, 108, 111]);
+				const b64 = Base64.from(data);
+				expect(b64).toBe("SGVsbG8=");
+			});
+
+			it("should throw on invalid string", () => {
+				expect(() => Base64.from("!!!")).toThrow(TypeError);
+				expect(() => Base64.from("SGVsbG8")).toThrow(TypeError);
+			});
+		});
+
+		describe("fromUrlSafe", () => {
+			it("should create BrandedBase64Url from valid string", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				expect(b64url).toBe("SGVsbG8");
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+			});
+
+			it("should create BrandedBase64Url from bytes", () => {
+				const data = new Uint8Array([72, 101, 108, 108, 111]);
+				const b64url = Base64.fromUrlSafe(data);
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+			});
+
+			it("should throw on invalid string", () => {
+				expect(() => Base64.fromUrlSafe("SGVsbG8=")).toThrow(TypeError);
+				expect(() => Base64.fromUrlSafe("+++")).toThrow(TypeError);
+			});
+		});
+
+		describe("toBytes", () => {
+			it("should convert BrandedBase64 to bytes", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const bytes = Base64.toBytes(b64);
+				expect(bytes).toEqual(new Uint8Array([72, 101, 108, 108, 111]));
+			});
+		});
+
+		describe("toBytesUrlSafe", () => {
+			it("should convert BrandedBase64Url to bytes", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const bytes = Base64.toBytesUrlSafe(b64url);
+				expect(bytes).toEqual(new Uint8Array([72, 101, 108, 108, 111]));
+			});
+		});
+
+		describe("toString", () => {
+			it("should strip branding", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const str = Base64.toString(b64);
+				expect(str).toBe("SGVsbG8=");
+				expect(typeof str).toBe("string");
+			});
+		});
+
+		describe("toStringUrlSafe", () => {
+			it("should strip branding", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const str = Base64.toStringUrlSafe(b64url);
+				expect(str).toBe("SGVsbG8");
+				expect(typeof str).toBe("string");
+			});
+		});
+
+		describe("toBase64Url", () => {
+			it("should convert Base64 to Base64Url", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const b64url = Base64.toBase64Url(b64);
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+				expect(b64url).not.toContain("=");
+			});
+		});
+
+		describe("toBase64", () => {
+			it("should convert Base64Url to Base64", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const b64 = Base64.toBase64(b64url);
+				expect(Base64.isValid(b64)).toBe(true);
+				expect(b64).toBe("SGVsbG8=");
+			});
+		});
+
+		describe("Round-trip with branded types", () => {
+			it("should preserve data through Base64 branded round-trip", () => {
+				const original = new Uint8Array([1, 2, 3, 4, 5]);
+				const b64 = Base64.from(original);
+				const bytes = Base64.toBytes(b64);
+				expect(bytes).toEqual(original);
+			});
+
+			it("should preserve data through Base64Url branded round-trip", () => {
+				const original = new Uint8Array([255, 254, 253]);
+				const b64url = Base64.fromUrlSafe(original);
+				const bytes = Base64.toBytesUrlSafe(b64url);
+				expect(bytes).toEqual(original);
+			});
+
+			it("should convert between Base64 and Base64Url", () => {
+				const original = new Uint8Array([1, 2, 3, 4, 5]);
+				const b64 = Base64.from(original);
+				const b64url = Base64.toBase64Url(b64);
+				const b64Again = Base64.toBase64(b64url);
+				const bytes = Base64.toBytes(b64Again);
+				expect(bytes).toEqual(original);
+			});
+		});
+
+		describe("Type safety", () => {
+			it("should work with already branded values", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const b64Again = Base64.from(b64);
+				expect(b64Again).toBe(b64);
+			});
+
+			it("should work with already branded URL-safe values", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const b64urlAgain = Base64.fromUrlSafe(b64url);
+				expect(b64urlAgain).toBe(b64url);
+			});
+		});
+	});
 });

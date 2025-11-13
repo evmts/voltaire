@@ -1,4 +1,4 @@
-import type { BrandedUint } from "../../Uint/BrandedUint/BrandedUint.js";
+import type { BrandedUint256 } from "../../Uint/BrandedUint256/BrandedUint256.js";
 import type { BrandedEther } from "./BrandedEther.js";
 
 /**
@@ -16,6 +16,6 @@ import type { BrandedEther } from "./BrandedEther.js";
  * // u256 = 1n (as Uint256)
  * ```
  */
-export function toU256(ether: BrandedEther): BrandedUint {
-	return ether as BrandedUint;
+export function toU256(ether: BrandedEther): BrandedUint256 {
+	return ether as BrandedUint256;
 }

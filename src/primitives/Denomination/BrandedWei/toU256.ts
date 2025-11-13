@@ -1,4 +1,4 @@
-import type { BrandedUint } from "../../Uint/BrandedUint/BrandedUint.js";
+import type { BrandedUint256 } from "../../Uint/BrandedUint256/BrandedUint256.js";
 import type { BrandedWei } from "./BrandedWei.js";
 
 /**
@@ -16,6 +16,6 @@ import type { BrandedWei } from "./BrandedWei.js";
  * // u256 = 1000000000n (as Uint256)
  * ```
  */
-export function toU256(wei: BrandedWei): BrandedUint {
-	return wei as BrandedUint;
+export function toU256(wei: BrandedWei): BrandedUint256 {
+	return wei as BrandedUint256;
 }
