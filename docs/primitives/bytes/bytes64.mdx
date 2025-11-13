@@ -15,7 +15,7 @@ Bytes64 is a branded `Uint8Array` type representing exactly 64 bytes (512 bits).
 import * as Bytes64 from '@tevm/voltaire/primitives/Bytes/Bytes64';
 
 // Create from hex
-const bytes = Bytes64.from('0x' + '12'.repeat(64));
+const bytes = Bytes64('0x' + '12'.repeat(64));
 console.log(bytes.length); // 64
 
 // Create zero-filled
@@ -23,7 +23,7 @@ const zeros = Bytes64.zero();
 console.log(Bytes64.isZero(zeros)); // true
 
 // Size is strictly enforced
-Bytes64.from(new Uint8Array(63)); // Error: must be 64 bytes
+Bytes64(new Uint8Array(63)); // Error: must be 64 bytes
 ```
 
 ## Use Cases
@@ -36,7 +36,7 @@ const hash2 = new Uint8Array(32).fill(0xbb);
 const combined = new Uint8Array(64);
 combined.set(hash1, 0);
 combined.set(hash2, 32);
-const bytes64 = Bytes64.fromBytes(combined);
+const bytes64 = Bytes64(combined);
 
 console.log(bytes64[0]);  // 0xaa
 console.log(bytes64[32]); // 0xbb
@@ -45,19 +45,19 @@ console.log(bytes64[32]); // 0xbb
 **Extended Hashes**
 ```typescript
 // SHA-512, Blake2b-512, etc.
-const extendedHash = Bytes64.fromHex('0x...');
+const extendedHash = Bytes64('0x...');
 ```
 
 **Public Key Material**
 ```typescript
 // Some public keys are 64 bytes (uncompressed)
-const pubkey = Bytes64.fromHex('0x...');
+const pubkey = Bytes64('0x...');
 ```
 
 **Signature Components**
 ```typescript
 // r + s components concatenated (32 + 32 bytes)
-const signature = Bytes64.fromHex('0x...');
+const signature = Bytes64('0x...');
 ```
 
 ## Type Safety
@@ -74,8 +74,8 @@ type BrandedBytes64 = Uint8Array & {
 This prevents mixing different byte types:
 
 ```typescript
-const bytes64 = Bytes64.from('0x' + '12'.repeat(64));
-const bytes32 = Bytes32.from('0x' + '12'.repeat(32));
+const bytes64 = Bytes64('0x' + '12'.repeat(64));
+const bytes32 = Bytes32('0x' + '12'.repeat(32));
 
 // Type error: cannot assign Bytes32 to Bytes64
 const wrong: Bytes64.BrandedBytes64 = bytes32;
@@ -88,23 +88,23 @@ Create Bytes64 from hex string or bytes:
 
 ```typescript
 // From hex
-const b1 = Bytes64.from('0x' + '12'.repeat(64));
+const b1 = Bytes64('0x' + '12'.repeat(64));
 
 // From bytes
-const b2 = Bytes64.from(new Uint8Array(64));
+const b2 = Bytes64(new Uint8Array(64));
 ```
 
 ### fromHex
 Create from hex string with strict validation:
 
 ```typescript
-const bytes = Bytes64.fromHex('0x' + 'ab'.repeat(64));
+const bytes = Bytes64('0x' + 'ab'.repeat(64));
 
 // Without 0x prefix
-const bytes2 = Bytes64.fromHex('12'.repeat(64));
+const bytes2 = Bytes64('12'.repeat(64));
 
 // Throws on wrong length
-Bytes64.fromHex('0x1234'); // Error: must be 128 hex chars
+Bytes64('0x1234'); // Error: must be 128 hex chars
 ```
 
 ### fromBytes
@@ -112,10 +112,10 @@ Create from Uint8Array with size check:
 
 ```typescript
 const arr = new Uint8Array(64);
-const bytes = Bytes64.fromBytes(arr);
+const bytes = Bytes64(arr);
 
 // Throws on wrong size
-Bytes64.fromBytes(new Uint8Array(63)); // Error
+Bytes64(new Uint8Array(63)); // Error
 ```
 
 ### zero
@@ -132,7 +132,7 @@ console.log(Bytes64.isZero(zeros)); // true
 Convert to hex string:
 
 ```typescript
-const bytes = Bytes64.fromBytes(new Uint8Array(64));
+const bytes = Bytes64(new Uint8Array(64));
 const hex = Bytes64.toHex(bytes);
 console.log(hex.length); // 130 (0x + 128 hex chars)
 ```
@@ -141,7 +141,7 @@ console.log(hex.length); // 130 (0x + 128 hex chars)
 Convert to raw bytes:
 
 ```typescript
-const bytes = Bytes64.from('0x' + '12'.repeat(64));
+const bytes = Bytes64('0x' + '12'.repeat(64));
 const arr = Bytes64.toUint8Array(bytes);
 console.log(arr instanceof Uint8Array); // true
 ```
@@ -152,8 +152,8 @@ console.log(arr instanceof Uint8Array); // true
 Check equality:
 
 ```typescript
-const a = Bytes64.fromHex('0x' + 'aa'.repeat(64));
-const b = Bytes64.fromHex('0x' + 'aa'.repeat(64));
+const a = Bytes64('0x' + 'aa'.repeat(64));
+const b = Bytes64('0x' + 'aa'.repeat(64));
 console.log(Bytes64.equals(a, b)); // true
 ```
 
@@ -161,8 +161,8 @@ console.log(Bytes64.equals(a, b)); // true
 Compare two values:
 
 ```typescript
-const a = Bytes64.fromHex('0x' + '01'.repeat(64));
-const b = Bytes64.fromHex('0x' + '02'.repeat(64));
+const a = Bytes64('0x' + '01'.repeat(64));
+const b = Bytes64('0x' + '02'.repeat(64));
 console.log(Bytes64.compare(a, b)); // -1 (a < b)
 ```
 
@@ -170,7 +170,7 @@ console.log(Bytes64.compare(a, b)); // -1 (a < b)
 Create independent copy:
 
 ```typescript
-const original = Bytes64.from('0x' + '12'.repeat(64));
+const original = Bytes64('0x' + '12'.repeat(64));
 const copy = Bytes64.clone(original);
 ```
 
@@ -181,7 +181,7 @@ Check if all zeros:
 const zeros = Bytes64.zero();
 console.log(Bytes64.isZero(zeros)); // true
 
-const nonZero = Bytes64.fromHex('0x' + '00'.repeat(63) + '01');
+const nonZero = Bytes64('0x' + '00'.repeat(63) + '01');
 console.log(Bytes64.isZero(nonZero)); // false
 ```
 
@@ -189,7 +189,7 @@ console.log(Bytes64.isZero(nonZero)); // false
 Get size (always 64):
 
 ```typescript
-const bytes = Bytes64.from('0x' + '12'.repeat(64));
+const bytes = Bytes64('0x' + '12'.repeat(64));
 console.log(Bytes64.size(bytes)); // 64
 ```
 
@@ -216,14 +216,14 @@ Bytes64 validates size strictly:
 
 ```typescript
 try {
-  Bytes64.fromBytes(new Uint8Array(63));
+  Bytes64(new Uint8Array(63));
 } catch (error) {
   console.log(error.code); // "BYTES64_INVALID_LENGTH"
   console.log(error.message); // "Bytes64 must be 64 bytes, got 63"
 }
 
 try {
-  Bytes64.fromHex('0x1234');
+  Bytes64('0x1234');
 } catch (error) {
   console.log(error.code); // "BYTES64_INVALID_HEX_LENGTH"
   console.log(error.message); // "Bytes64 hex must be 128 characters..."
@@ -245,7 +245,7 @@ const hash2 = Hash.keccak256(data2);
 const combined = new Uint8Array(64);
 combined.set(hash1, 0);   // First 32 bytes
 combined.set(hash2, 32);  // Second 32 bytes
-const bytes64 = Bytes64.fromBytes(combined);
+const bytes64 = Bytes64(combined);
 
 // Access components
 const firstHash = bytes64.slice(0, 32);
@@ -258,10 +258,10 @@ Some hash functions output 64 bytes:
 
 ```typescript
 // SHA-512 (hypothetical)
-const sha512Result = Bytes64.fromHex('0x...');
+const sha512Result = Bytes64('0x...');
 
 // Blake2b-512
-const blake2b512Result = Bytes64.fromHex('0x...');
+const blake2b512Result = Bytes64('0x...');
 ```
 
 ## Related

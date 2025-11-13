@@ -333,7 +333,7 @@ function extractConstants(bytecode: Uint8Array): bigint[] {
 
   for (const inst of instructions) {
     if (inst.immediate && Opcode.isPush(inst.opcode)) {
-      const value = BigInt(Hex.fromBytes(inst.immediate))
+      const value = BigInt(Hex(inst.immediate))
       constants.push(value)
     }
   }

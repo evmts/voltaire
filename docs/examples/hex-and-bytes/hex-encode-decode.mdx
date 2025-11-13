@@ -10,7 +10,7 @@ import { Hex } from '@tevm/voltaire/Hex';
 
 // Encode bytes to hex string
 const bytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello" in bytes
-const hexString = Hex.fromBytes(bytes);
+const hexString = Hex(bytes);
 console.log('Hex from bytes:', hexString);
 
 // Decode hex string back to bytes

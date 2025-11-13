@@ -21,17 +21,17 @@ function validateUserInput(input: string): BrandedAddress {
   }
 
   // Parse and return
-  return Address.from(input);
+  return Address(input);
 }
 
 // Safe construction
 function safeFromAddress(input: unknown): BrandedAddress | null {
   try {
     if (typeof input === 'string') {
-      return Address.from(input);
+      return Address(input);
     }
     if (input instanceof Uint8Array && input.length === 20) {
-      return Address.fromBytes(input);
+      return Address(input);
     }
     return null;
   } catch {
@@ -47,15 +47,15 @@ function safeFromAddress(input: unknown): BrandedAddress | null {
 function requireChecksummed(addr: string): BrandedAddress {
   if (!Address.isValidChecksum(addr)) {
     throw new Error(
-      `Address checksum invalid. Expected: ${Address.toChecksummed(Address.from(addr))}`
+      `Address checksum invalid. Expected: ${Address.toChecksummed(Address(addr))}`
     );
   }
-  return Address.from(addr);
+  return Address(addr);
 }
 
 // Auto-correct checksum
 function normalizeAddress(addr: string): string {
-  const parsed = Address.from(addr);
+  const parsed = Address(addr);
   return Address.toChecksummed(parsed);
 }
 ```
@@ -293,9 +293,9 @@ function removeZeroAddresses(addresses: BrandedAddress[]): BrandedAddress[] {
 // Common addresses
 const KNOWN_ADDRESSES = {
   zero: Address.zero(),
-  weth: Address.from("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-  usdc: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
-  dai: Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+  weth: Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+  usdc: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  dai: Address("0x6B175474E89094C44Da98b954EedeAC495271d0F")
 };
 
 function isKnownAddress(addr: BrandedAddress): string | null {
@@ -314,9 +314,9 @@ function isKnownAddress(addr: BrandedAddress): string | null {
 
 ```typescript
 const TEST_ADDRESSES = {
-  alice: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  bob: Address.from("0x1234567890123456789012345678901234567890"),
-  carol: Address.from("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+  alice: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  bob: Address("0x1234567890123456789012345678901234567890"),
+  carol: Address("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
 };
 
 // Generate test address from seed
@@ -324,7 +324,7 @@ function testAddress(seed: number): BrandedAddress {
   const bytes = new Uint8Array(20);
   bytes[0] = seed & 0xff;
   bytes[1] = (seed >> 8) & 0xff;
-  return Address.fromBytes(bytes);
+  return Address(bytes);
 }
 ```
 
@@ -333,14 +333,14 @@ function testAddress(seed: number): BrandedAddress {
 ```typescript
 // Generate sequential test addresses
 function generateTestAddresses(count: number): BrandedAddress[] {
-  return Array.from({ length: count }, (_, i) => testAddress(i));
+  return Array({ length: count }, (_, i) => testAddress(i));
 }
 
 // Random test address
 function randomTestAddress(): BrandedAddress {
   const bytes = new Uint8Array(20);
   crypto.getRandomValues(bytes);
-  return Address.fromBytes(bytes);
+  return Address(bytes);
 }
 ```
 

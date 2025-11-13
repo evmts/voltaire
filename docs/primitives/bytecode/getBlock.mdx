@@ -71,7 +71,7 @@ See [analyzeBlocks](/primitives/bytecode/analyze-blocks) for full type details.
 ### Debug Specific Instruction
 
 ```typescript
-const code = Bytecode.fromHex(contractBytecode);
+const code = Bytecode(contractBytecode);
 
 // Find which block contains an instruction
 const targetPc = 142;
@@ -89,7 +89,7 @@ if (block) {
 ### Trace Execution Path
 
 ```typescript
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 
 // Trace execution path from entry
 function tracePath(startPc: number, maxSteps: number = 100): number[] {
@@ -140,7 +140,7 @@ if (isValidJumpTarget(code, jumpTarget)) {
 ### Gas Profiling by Block
 
 ```typescript
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 
 // Profile gas costs of blocks containing specific opcodes
 const blocks = code.analyzeBlocks();
@@ -225,7 +225,7 @@ console.log(block1.index === block2?.index); // true
 ### Invalid Bytecode
 
 ```typescript
-const invalid = Bytecode.fromHex("0xFF"); // INVALID opcode
+const invalid = Bytecode("0xFF"); // INVALID opcode
 
 const block = code.getBlock(0);
 if (block) {

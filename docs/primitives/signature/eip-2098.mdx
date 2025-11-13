@@ -327,7 +327,7 @@ const signature = await ethereum.request({
 });
 
 // Parse signature (65 bytes: r + s + v)
-const sig = Signature.from(Hex.toBytes(signature));
+const sig = Signature(Hex.toBytes(signature));
 
 // Convert to EIP-2098 compact
 const compact = EIP2098.toCompact(sig);

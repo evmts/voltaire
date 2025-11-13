@@ -203,7 +203,7 @@ Complexity: O(n) where n is number of leaves
 
 ```typescript
 console.time('merkleRoot-1000')
-const leaves = Array.from({ length: 1000 }, (_, i) =>
+const leaves = Array({ length: 1000 }, (_, i) =>
   Hash.keccak256String(`tx${i}`)
 )
 Hash.merkleRoot(leaves)

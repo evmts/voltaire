@@ -18,14 +18,14 @@ Check if two Uint256 values are equal.
 ```typescript
 import { Uint } from '@tevm/voltaire'
 
-const a = Uint.from(100n)
-const b = Uint.from(100n)
+const a = Uint(100n)
+const b = Uint(100n)
 Uint.equals(a, b)  // true
 
-const c = Uint.from(200n)
+const c = Uint(200n)
 Uint.equals(a, c)  // false
 
-Uint.equals(Uint.ZERO, Uint.from(0n))  // true
+Uint.equals(Uint.ZERO, Uint(0n))  // true
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint256/equals.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/equals.ts)

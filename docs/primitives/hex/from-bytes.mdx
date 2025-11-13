@@ -13,7 +13,7 @@ All output uses lowercase hex digits:
 
 ```typescript
 const bytes = new Uint8Array([0xAB, 0xCD, 0xEF])
-const hex = Hex.fromBytes(bytes)
+const hex = Hex(bytes)
 // "0xabcdef" (lowercase)
 ```
 
@@ -35,21 +35,21 @@ import { Keccak256 } from '@tevm/voltaire/Keccak256'
 
 const data = new Uint8Array([1, 2, 3])
 const hash = Keccak256.hash(data)
-const hex = Hex.fromBytes(hash)
+const hex = Hex(hash)
 ```
 
 **Display Binary Data:**
 ```typescript
 const signature = new Uint8Array(65)  // 65-byte signature
 crypto.getRandomValues(signature)
-const hexSig = Hex.fromBytes(signature)
+const hexSig = Hex(signature)
 console.log(hexSig)  // "0x..."
 ```
 
 **Serialize for RPC:**
 ```typescript
 const rlpEncoded = RLP.encode(transaction)
-const hexData = Hex.fromBytes(rlpEncoded)
+const hexData = Hex(rlpEncoded)
 // Send hexData to JSON-RPC
 ```
 

@@ -90,10 +90,10 @@ import { BloomFilter } from '@tevm/voltaire'
 
 // From block header logsBloom field
 const logsBloom = "0x000000000000000000000000..."  // 512 hex chars (256 bytes)
-const filter = BloomFilter.fromHex(logsBloom, 2048, 3)
+const filter = BloomFilter(logsBloom, 2048, 3)
 
 // Works with or without 0x prefix
-const filter2 = BloomFilter.fromHex(
+const filter2 = BloomFilter(
   "000000000000000000000000...",  // No prefix
   2048,
   3
@@ -103,7 +103,7 @@ const filter2 = BloomFilter.fromHex(
 const original = BloomFilter.create(2048, 3)
 original.add(new TextEncoder().encode("Transfer"))
 const hex = original.toHex()
-const restored = BloomFilter.fromHex(hex, 2048, 3)
+const restored = BloomFilter(hex, 2048, 3)
 console.log(restored.contains(new TextEncoder().encode("Transfer")))  // true
 ```
 
@@ -128,7 +128,7 @@ console.log(restored.contains(new TextEncoder().encode("Transfer")))  // true
 // m = 512  → 64 bytes  → 128 hex chars
 
 // This will throw (wrong length):
-BloomFilter.fromHex("0x1234", 2048, 3)
+BloomFilter("0x1234", 2048, 3)
 // InvalidBloomFilterLengthError: Expected 512 hex chars, got 4
 ```
 
@@ -163,10 +163,10 @@ interface BlockHeader {
 
 async function loadBlockFilter(block: BlockHeader) {
   // Parse bloom filter from block
-  const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+  const filter = BloomFilter(block.logsBloom, 2048, 3)
 
   // Check for relevant logs
-  const addressBytes = Address.from("0x...").bytes
+  const addressBytes = Address("0x...").bytes
   if (filter.contains(addressBytes)) {
     // Block might contain logs from this address
     return fetchLogs(block.number)
@@ -210,7 +210,7 @@ function saveAndRestore() {
 
   // Later: restore from storage
   const saved = await db.loadFilter()
-  const restored = BloomFilter.fromHex(saved.hex, saved.m, saved.k)
+  const restored = BloomFilter(saved.hex, saved.m, saved.k)
 
   // Verify restoration
   console.log(restored.contains(new TextEncoder().encode("event1")))  // true

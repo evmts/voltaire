@@ -14,7 +14,7 @@ Filter addresses above a threshold:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const MIN_ADDRESS = Address.fromHex("0x0000000000000000000000000000000000001000")
+const MIN_ADDRESS = Address("0x0000000000000000000000000000000000001000")
 
 function filterHighAddresses(addresses: Address[]): Address[] {
   return addresses.filter(addr => addr.greaterThan(MIN_ADDRESS))
@@ -36,9 +36,9 @@ function isInRange(
   return address.greaterThan(min) && !address.greaterThan(max)
 }
 
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const minRange = Address.from(1000n)
-const maxRange = Address.from(2000n)
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const minRange = Address(1000n)
+const maxRange = Address(2000n)
 
 console.log(isInRange(addr, minRange, maxRange))
 ```
@@ -80,10 +80,10 @@ function paginateAddresses(
 
 // Usage
 const allAddresses = [
-  Address.from(100n),
-  Address.from(200n),
-  Address.from(300n),
-  Address.from(400n),
+  Address(100n),
+  Address(200n),
+  Address(300n),
+  Address(400n),
 ]
 
 const page1 = paginateAddresses(allAddresses, { limit: 2 })
@@ -113,22 +113,22 @@ const SHARDS: Shard[] = [
   {
     id: 0,
     minAddress: Address.zero(),
-    maxAddress: Address.fromHex("0x3fffffffffffffffffffffffffffffffffffffff")
+    maxAddress: Address("0x3fffffffffffffffffffffffffffffffffffffff")
   },
   {
     id: 1,
-    minAddress: Address.fromHex("0x4000000000000000000000000000000000000000"),
-    maxAddress: Address.fromHex("0x7fffffffffffffffffffffffffffffffffffffff")
+    minAddress: Address("0x4000000000000000000000000000000000000000"),
+    maxAddress: Address("0x7fffffffffffffffffffffffffffffffffffffff")
   },
   {
     id: 2,
-    minAddress: Address.fromHex("0x8000000000000000000000000000000000000000"),
-    maxAddress: Address.fromHex("0xbfffffffffffffffffffffffffffffffffffffff")
+    minAddress: Address("0x8000000000000000000000000000000000000000"),
+    maxAddress: Address("0xbfffffffffffffffffffffffffffffffffffffff")
   },
   {
     id: 3,
-    minAddress: Address.fromHex("0xc000000000000000000000000000000000000000"),
-    maxAddress: Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+    minAddress: Address("0xc000000000000000000000000000000000000000"),
+    maxAddress: Address("0xffffffffffffffffffffffffffffffffffffffff")
   },
 ]
 
@@ -161,9 +161,9 @@ function findMaxAddress(addresses: Address[]): Address | undefined {
 }
 
 const addresses = [
-  Address.from(50n),
-  Address.from(200n),
-  Address.from(100n),
+  Address(50n),
+  Address(200n),
+  Address(100n),
 ]
 
 const max = findMaxAddress(addresses)
@@ -203,9 +203,9 @@ class SortedAddressList {
 }
 
 const list = new SortedAddressList()
-list.insert(Address.from(100n))
-list.insert(Address.from(50n))
-list.insert(Address.from(200n))
+list.insert(Address(100n))
+list.insert(Address(50n))
+list.insert(Address(200n))
 
 console.log(list.toArray()) // [50n, 100n, 200n] in sorted order
 ```
@@ -225,9 +225,9 @@ console.log(list.toArray()) // [50n, 100n, 200n] in sorted order
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const a1 = Address.fromHex("0x0000000000000000000000000000000000000001")
-const a2 = Address.fromHex("0x0000000000000000000000000000000000000002")
-const a3 = Address.fromHex("0x1000000000000000000000000000000000000000")
+const a1 = Address("0x0000000000000000000000000000000000000001")
+const a2 = Address("0x0000000000000000000000000000000000000002")
+const a3 = Address("0x1000000000000000000000000000000000000000")
 
 console.log(a2.greaterThan(a1)) // true  (2 > 1)
 console.log(a3.greaterThan(a2)) // true  (0x10... > 0x00...)
@@ -242,8 +242,8 @@ console.log(a1.greaterThan(a1)) // false (equal)
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr1 = Address.from(100n)
-const addr2 = Address.from(50n)
+const addr1 = Address(100n)
+const addr2 = Address(50n)
 
 // These are equivalent:
 addr1.greaterThan(addr2)         // true
@@ -266,7 +266,7 @@ addr1.equals(addr2)      === (addr1.compare(addr2) === 0) // false
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const threshold = Address.from(1000n)
+const threshold = Address(1000n)
 
 // Less efficient (repeated comparisons)
 for (const addr of addresses) {

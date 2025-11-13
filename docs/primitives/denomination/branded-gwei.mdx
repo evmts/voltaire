@@ -30,10 +30,10 @@ Create BrandedGwei from numeric input.
 ```typescript
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const gwei1 = BrandedGwei.from(50n)      // 50 Gwei gas price
-const gwei2 = BrandedGwei.from(21)       // 21 Gwei
-const gwei3 = BrandedGwei.from("100")    // String input
-const gwei4 = BrandedGwei.from("0x32")   // Hex input (50 Gwei)
+const gwei1 = BrandedGwei(50n)      // 50 Gwei gas price
+const gwei2 = BrandedGwei(21)       // 21 Gwei
+const gwei3 = BrandedGwei("100")    // String input
+const gwei4 = BrandedGwei("0x32")   // Hex input (50 Gwei)
 ```
 
 **Parameters:**
@@ -49,11 +49,11 @@ Convert BrandedWei to BrandedGwei (divide by 10^9).
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const wei = BrandedWei.from(50_000_000_000n)
+const wei = BrandedWei(50_000_000_000n)
 const gwei = BrandedGwei.fromWei(wei)  // 50n Gwei
 
 // Fractional values truncate
-const wei2 = BrandedWei.from(50_000_000_001n)
+const wei2 = BrandedWei(50_000_000_001n)
 const gwei2 = BrandedGwei.fromWei(wei2)  // 50n (truncates)
 ```
 
@@ -72,7 +72,7 @@ Convert BrandedEther to BrandedGwei (multiply by 10^9).
 import * as BrandedEther from '@tevm/voltaire/BrandedEther'
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const ether = BrandedEther.from(1n)
+const ether = BrandedEther(1n)
 const gwei = BrandedGwei.fromEther(ether)  // 1_000_000_000n Gwei
 ```
 
@@ -92,10 +92,10 @@ Convert BrandedGwei to BrandedWei (multiply by 10^9).
 ```typescript
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const gwei = BrandedGwei.from(50n)
+const gwei = BrandedGwei(50n)
 const wei = BrandedGwei.toWei(gwei)  // BrandedWei(50_000_000_000n)
 
-const gwei2 = BrandedGwei.from(21n)
+const gwei2 = BrandedGwei(21n)
 const wei2 = BrandedGwei.toWei(gwei2)  // BrandedWei(21_000_000_000n)
 ```
 
@@ -113,11 +113,11 @@ Convert BrandedGwei to BrandedEther (divide by 10^9).
 ```typescript
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const gwei = BrandedGwei.from(1_000_000_000n)
+const gwei = BrandedGwei(1_000_000_000n)
 const ether = BrandedGwei.toEther(gwei)  // BrandedEther(1n)
 
 // Fractional values truncate
-const gwei2 = BrandedGwei.from(500_000_000n)  // 0.5 ETH
+const gwei2 = BrandedGwei(500_000_000n)  // 0.5 ETH
 const ether2 = BrandedGwei.toEther(gwei2)  // BrandedEther(0n) - truncates
 ```
 
@@ -138,11 +138,11 @@ Convert BrandedGwei to raw BrandedUint (removes denomination branding).
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedUint from '@tevm/voltaire/BrandedUint'
 
-const gwei = BrandedGwei.from(50n)
+const gwei = BrandedGwei(50n)
 const u256 = BrandedGwei.toU256(gwei)  // BrandedUint (no denomination)
 
 // Can use with BrandedUint operations
-const doubled = BrandedUint.times(u256, BrandedUint.from(2n))
+const doubled = BrandedUint.times(u256, BrandedUint(2n))
 ```
 
 **Parameters:**
@@ -171,17 +171,17 @@ import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedUint from '@tevm/voltaire/BrandedUint'
 
 // Gas price from RPC (often in Gwei)
-const gasPriceGwei = BrandedGwei.from(50n)
+const gasPriceGwei = BrandedGwei(50n)
 
 // Convert to Wei for transaction
 const gasPriceWei = BrandedGwei.toWei(gasPriceGwei)
 
 // Calculate total cost
-const gasUsed = BrandedUint.from(21_000n)
+const gasUsed = BrandedUint(21_000n)
 const gasPriceU256 = BrandedWei.toU256(gasPriceWei)
 
 const totalCost = BrandedUint.times(gasPriceU256, gasUsed)
-console.log(`Total: ${BrandedWei.from(totalCost)} Wei`)
+console.log(`Total: ${BrandedWei(totalCost)} Wei`)
 ```
 
 ### Priority Fee Calculation
@@ -190,15 +190,15 @@ console.log(`Total: ${BrandedWei.from(totalCost)} Wei`)
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedUint from '@tevm/voltaire/BrandedUint'
 
-const baseFee = BrandedGwei.from(30n)
-const priorityFee = BrandedGwei.from(2n)
+const baseFee = BrandedGwei(30n)
+const priorityFee = BrandedGwei(2n)
 
 // Convert to Uint256 for addition
 const baseU256 = BrandedGwei.toU256(baseFee)
 const priorityU256 = BrandedGwei.toU256(priorityFee)
 
 const maxFeeU256 = BrandedUint.plus(baseU256, priorityU256)
-const maxFeeGwei = BrandedGwei.from(maxFeeU256)  // 32n Gwei
+const maxFeeGwei = BrandedGwei(maxFeeU256)  // 32n Gwei
 
 console.log(`Max fee: ${maxFeeGwei} Gwei`)
 ```
@@ -211,13 +211,13 @@ import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedEther from '@tevm/voltaire/BrandedEther'
 
 // Start with Gwei (common for gas prices)
-const gwei = BrandedGwei.from(50n)
+const gwei = BrandedGwei(50n)
 
 // Convert to Wei (for calculations)
 const wei = BrandedGwei.toWei(gwei)  // 50_000_000_000n
 
 // Convert to Ether (for display, requires full Ether)
-const largeGwei = BrandedGwei.from(1_000_000_000n)  // 1 ETH
+const largeGwei = BrandedGwei(1_000_000_000n)  // 1 ETH
 const ether = BrandedGwei.toEther(largeGwei)  // 1n
 ```
 
@@ -228,7 +228,7 @@ import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
 // RPC returns Wei
-const gasPriceWei = BrandedWei.from(50_000_000_000n)
+const gasPriceWei = BrandedWei(50_000_000_000n)
 
 // Convert to Gwei for user display
 const gasPriceGwei = BrandedWei.toGwei(gasPriceWei)
@@ -244,8 +244,8 @@ BrandedGwei prevents mixing denominations at compile time:
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const gwei = BrandedGwei.from(50n)
-const wei = BrandedWei.from(50_000_000_000n)
+const gwei = BrandedGwei(50n)
+const wei = BrandedWei(50_000_000_000n)
 
 // ✗ Type error - incompatible brands
 BrandedGwei.toWei(wei)
@@ -274,15 +274,15 @@ For gas price calculations in tight loops, prefer BrandedGwei over Gwei namespac
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
 // Gas price levels
-const LOW_GAS = BrandedGwei.from(10n)      // 10 Gwei - cheap
-const NORMAL_GAS = BrandedGwei.from(30n)   // 30 Gwei - normal
-const HIGH_GAS = BrandedGwei.from(100n)    // 100 Gwei - fast
-const URGENT_GAS = BrandedGwei.from(200n)  // 200 Gwei - urgent
+const LOW_GAS = BrandedGwei(10n)      // 10 Gwei - cheap
+const NORMAL_GAS = BrandedGwei(30n)   // 30 Gwei - normal
+const HIGH_GAS = BrandedGwei(100n)    // 100 Gwei - fast
+const URGENT_GAS = BrandedGwei(200n)  // 200 Gwei - urgent
 
 // Priority fees (EIP-1559)
-const LOW_PRIORITY = BrandedGwei.from(1n)   // 1 Gwei tip
-const MED_PRIORITY = BrandedGwei.from(2n)   // 2 Gwei tip
-const HIGH_PRIORITY = BrandedGwei.from(5n)  // 5 Gwei tip
+const LOW_PRIORITY = BrandedGwei(1n)   // 1 Gwei tip
+const MED_PRIORITY = BrandedGwei(2n)   // 2 Gwei tip
+const HIGH_PRIORITY = BrandedGwei(5n)  // 5 Gwei tip
 ```
 
 ## When to Use BrandedGwei

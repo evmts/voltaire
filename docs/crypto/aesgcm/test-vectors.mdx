@@ -385,7 +385,7 @@ function hexToBytes(hex) {
 
 // Convert Uint8Array to hex string
 function bytesToHex(bytes) {
-  return Array.from(bytes)
+  return Array(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }

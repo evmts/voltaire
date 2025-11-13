@@ -38,7 +38,7 @@ function createNetworkConfig(options: {
   }
 
   // Parse and create config
-  const hardfork = Hardfork.fromString(hardforkStr)!;
+  const hardfork = Hardfork(hardforkStr)!;
 
   return {
     chainId: options.chainId,
@@ -61,7 +61,7 @@ const mainnetConfig = createNetworkConfig({
 function getHardforkFromEnv(): BrandedHardfork {
   const env = process.env.ETHEREUM_HARDFORK ?? "prague";
 
-  const fork = Hardfork.fromString(env);
+  const fork = Hardfork(env);
   if (!fork) {
     throw new Error(
       `Invalid ETHEREUM_HARDFORK: ${env}. ` +
@@ -90,13 +90,13 @@ function validateConfig(config: Config): {
   minimumHardfork: BrandedHardfork;
 } {
   // Validate hardfork
-  const fork = Hardfork.fromString(config.hardfork);
+  const fork = Hardfork(config.hardfork);
   if (!fork) {
     throw new Error(`Invalid hardfork: ${config.hardfork}`);
   }
 
   // Validate minimum if specified
-  let minFork = Hardfork.fromString(config.minimumHardfork ?? "london");
+  let minFork = Hardfork(config.minimumHardfork ?? "london");
   if (!minFork) {
     throw new Error(`Invalid minimumHardfork: ${config.minimumHardfork}`);
   }
@@ -693,7 +693,7 @@ testMatrix.forEach(({ fork, describe, features }) => {
 ### 1. Always Validate Input
 
 ```typescript
-const fork = Hardfork.fromString(userInput);
+const fork = Hardfork(userInput);
 if (!fork) {
   throw new Error("Invalid hardfork");
 }
@@ -719,8 +719,8 @@ storage.set("hardfork", normalized);
 ### 4. Handle Aliases
 
 ```typescript
-const fork1 = Hardfork.fromString("merge");
-const fork2 = Hardfork.fromString("paris");
+const fork1 = Hardfork("merge");
+const fork2 = Hardfork("paris");
 console.log(Hardfork.isEqual(fork1, fork2));  // true
 ```
 

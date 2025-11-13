@@ -15,20 +15,20 @@ Hex strings represent unsigned integers in hexadecimal (base 16).
 
 ```typescript
 // Lowercase
-Uint.fromHex("0xdeadbeef")
+Uint("0xdeadbeef")
 
 // Uppercase
-Uint.fromHex("0xDEADBEEF")
+Uint("0xDEADBEEF")
 
 // Mixed case
-Uint.fromHex("0xDeAdBeEf")
+Uint("0xDeAdBeEf")
 
 // Without prefix
-Uint.fromHex("deadbeef")
+Uint("deadbeef")
 
 // Leading zeros allowed
-Uint.fromHex("0x00ff")
-Uint.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001")
+Uint("0x00ff")
+Uint("0x0000000000000000000000000000000000000000000000000000000000000001")
 ```
 
 ### Prefix Handling
@@ -36,8 +36,8 @@ Uint.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001
 The `0x` prefix is **optional**:
 
 ```typescript
-Uint.fromHex("ff")      // 255
-Uint.fromHex("0xff")    // 255
+Uint("ff")      // 255
+Uint("0xff")    // 255
 // Both produce identical results
 ```
 
@@ -48,10 +48,10 @@ Always use `0x` prefix to make hex strings unambiguous, especially when debuggin
 ### Case Insensitivity
 
 ```typescript
-Uint.fromHex("0xabcdef")  // Same as
-Uint.fromHex("0xABCDEF")  // Same as
-Uint.fromHex("0xAbCdEf")  // Same as
-Uint.fromHex("abcdef")    // Same
+Uint("0xabcdef")  // Same as
+Uint("0xABCDEF")  // Same as
+Uint("0xAbCdEf")  // Same as
+Uint("abcdef")    // Same
 ```
 
 ## Length and Range
@@ -63,11 +63,11 @@ Hex strings for Uint256 can have **up to 64 hex digits** (not including `0x` pre
 ```typescript
 // 64 hex digits = 256 bits
 const max = "0x" + "f".repeat(64)
-Uint.fromHex(max)  // MAX (2^256 - 1)
+Uint(max)  // MAX (2^256 - 1)
 
 // 65 hex digits - exceeds maximum
 const tooLarge = "0x1" + "0".repeat(64)
-Uint.fromHex(tooLarge)  // Error: exceeds 2^256 - 1
+Uint(tooLarge)  // Error: exceeds 2^256 - 1
 ```
 
 ### Minimum Length
@@ -75,10 +75,10 @@ Uint.fromHex(tooLarge)  // Error: exceeds 2^256 - 1
 No minimum - leading zeros are implicit:
 
 ```typescript
-Uint.fromHex("0x0")      // 0
-Uint.fromHex("0x1")      // 1
-Uint.fromHex("0xff")     // 255
-Uint.fromHex("0x100")    // 256
+Uint("0x0")      // 0
+Uint("0x1")      // 1
+Uint("0xff")     // 255
+Uint("0x100")    // 256
 ```
 
 ## Common Values
@@ -86,29 +86,29 @@ Uint.fromHex("0x100")    // 256
 ### Powers of 2
 
 ```typescript
-Uint.fromHex("0x1")        // 1 (2^0)
-Uint.fromHex("0x2")        // 2 (2^1)
-Uint.fromHex("0x4")        // 4 (2^2)
-Uint.fromHex("0x8")        // 8 (2^3)
-Uint.fromHex("0x10")       // 16 (2^4)
-Uint.fromHex("0x100")      // 256 (2^8)
-Uint.fromHex("0x10000")    // 65536 (2^16)
+Uint("0x1")        // 1 (2^0)
+Uint("0x2")        // 2 (2^1)
+Uint("0x4")        // 4 (2^2)
+Uint("0x8")        // 8 (2^3)
+Uint("0x10")       // 16 (2^4)
+Uint("0x100")      // 256 (2^8)
+Uint("0x10000")    // 65536 (2^16)
 ```
 
 ### Common Ethereum Values
 
 ```typescript
 // 1 wei
-Uint.fromHex("0x1")
+Uint("0x1")
 
 // 1 gwei (10^9 wei)
-Uint.fromHex("0x3b9aca00")
+Uint("0x3b9aca00")
 
 // 1 ether (10^18 wei)
-Uint.fromHex("0xde0b6b3a7640000")
+Uint("0xde0b6b3a7640000")
 
 // Max uint256
-Uint.fromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+Uint("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 ```
 
 ## Error Handling
@@ -116,9 +116,9 @@ Uint.fromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ### Invalid Characters
 
 ```typescript
-Uint.fromHex("0xGG")       // Error: invalid hex character 'G'
-Uint.fromHex("0x12xy")     // Error: invalid hex character 'x'
-Uint.fromHex("0x 123")     // Error: invalid hex character ' '
+Uint("0xGG")       // Error: invalid hex character 'G'
+Uint("0x12xy")     // Error: invalid hex character 'x'
+Uint("0x 123")     // Error: invalid hex character ' '
 ```
 
 ### Overflow
@@ -126,19 +126,19 @@ Uint.fromHex("0x 123")     // Error: invalid hex character ' '
 ```typescript
 // Exceeds 2^256 - 1
 const overflow = "0x1" + "0".repeat(64)
-Uint.fromHex(overflow)  // Error: exceeds maximum
+Uint(overflow)  // Error: exceeds maximum
 
 // Just at max
 const max = "0x" + "f".repeat(64)
-Uint.fromHex(max)  // OK: exactly 2^256 - 1
+Uint(max)  // OK: exactly 2^256 - 1
 ```
 
 ### Empty String
 
 ```typescript
-Uint.fromHex("")         // Error: invalid format
-Uint.fromHex("0x")       // Error: invalid format
-Uint.fromHex("  ")       // Error: invalid format
+Uint("")         // Error: invalid format
+Uint("0x")       // Error: invalid format
+Uint("  ")       // Error: invalid format
 ```
 
 ## Usage Patterns
@@ -148,15 +148,15 @@ Uint.fromHex("  ")       // Error: invalid format
 ```typescript
 // Transaction value from RPC
 const txValueHex = "0xde0b6b3a7640000"
-const txValue = Uint.fromHex(txValueHex)
+const txValue = Uint(txValueHex)
 
 // Block number
 const blockNumberHex = "0x10d4f"
-const blockNumber = Uint.fromHex(blockNumberHex)
+const blockNumber = Uint(blockNumberHex)
 
 // Gas price
 const gasPriceHex = "0x3b9aca00"
-const gasPrice = Uint.fromHex(gasPriceHex)
+const gasPrice = Uint(gasPriceHex)
 ```
 
 ### Converting from Other Primitives
@@ -165,12 +165,12 @@ const gasPrice = Uint.fromHex(gasPriceHex)
 import { Hash, Address } from '@tevm/voltaire'
 
 // Hash to Uint
-const hash = Hash.fromHex("0x1234...")
-const hashAsUint = Uint.fromBytes(hash)  // Or: Uint.fromHex(Hash.toHex(hash))
+const hash = Hash("0x1234...")
+const hashAsUint = Uint(hash)  // Or: Uint(Hash.toHex(hash))
 
 // Address to Uint
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const addrAsUint = Uint.fromBytes(addr)
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addrAsUint = Uint(addr)
 ```
 
 ### Safe Parsing
@@ -178,7 +178,7 @@ const addrAsUint = Uint.fromBytes(addr)
 ```typescript
 function parseHexSafe(hex: string): BrandedUint256 | null {
   try {
-    return Uint.fromHex(hex)
+    return Uint(hex)
   } catch {
     return null
   }

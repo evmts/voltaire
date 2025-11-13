@@ -19,7 +19,7 @@ console.log('Concatenated:', combined);
 
 // Can also concatenate with bytes converted to hex
 const bytes = new Uint8Array([0x01, 0x02, 0x03]);
-const hexFromBytes = Hex.fromBytes(bytes);
+const hexFromBytes = Hex(bytes);
 const withBytes = Hex.concat(hex1, hexFromBytes);
 console.log('With bytes:', withBytes);
 

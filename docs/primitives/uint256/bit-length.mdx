@@ -17,11 +17,11 @@ Get number of bits required to represent value (position of highest set bit + 1)
 ```typescript
 import { Uint } from '@tevm/voltaire'
 
-Uint.bitLength(Uint.from(0n))     // 0
-Uint.bitLength(Uint.from(1n))     // 1
-Uint.bitLength(Uint.from(2n))     // 2
-Uint.bitLength(Uint.from(255n))   // 8
-Uint.bitLength(Uint.from(256n))   // 9
+Uint.bitLength(Uint(0n))     // 0
+Uint.bitLength(Uint(1n))     // 1
+Uint.bitLength(Uint(2n))     // 2
+Uint.bitLength(Uint(255n))   // 8
+Uint.bitLength(Uint(256n))   // 9
 Uint.bitLength(Uint.MAX)          // 256
 ```
 

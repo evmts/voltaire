@@ -259,8 +259,8 @@ const addr1 = Address.of(
   0x95, 0xf2, 0x51, 0xe3
 )
 
-const addr2 = Address.fromBytes(bytes)
-const addr3 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr2 = Address(bytes)
+const addr3 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 console.log(addr1.equals(addr2)) // true
 console.log(addr1.equals(addr3)) // true

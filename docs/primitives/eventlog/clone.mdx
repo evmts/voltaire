@@ -18,7 +18,7 @@ description: Deep clone event log including topics and data
 ```typescript
 import { EventLog } from '@tevm/voltaire';
 
-const original = EventLog.from({
+const original = EventLog({
   address: contractAddress,
   topics: [topic0, topic1],
   data: new Uint8Array([1, 2, 3]),
@@ -46,7 +46,7 @@ console.log(original.blockNumber === cloned.blockNumber); // true
 ```typescript
 import { EventLog } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: contractAddress,
   topics: [eventSignature],
   data: eventData,
@@ -90,7 +90,7 @@ function processLog(log: EventLog) {
   return result;
 }
 
-const original = EventLog.from({ /* ... */ });
+const original = EventLog({ /* ... */ });
 const result = processLog(original);
 // original is unchanged
 ```

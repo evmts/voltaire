@@ -42,7 +42,7 @@ async function getTransferLogs(
     topics: [topic0]
   });
 
-  return logs.map(log => EventLog.from(log));
+  return logs.map(log => EventLog(log));
 }
 ```
 
@@ -66,7 +66,7 @@ async function getTransfersFrom(
     topics: [topic0, topic1]  // topic0 = event sig, topic1 = from
   });
 
-  return logs.map(log => EventLog.from(log));
+  return logs.map(log => EventLog(log));
 }
 
 // Filter by multiple addresses (OR condition)
@@ -85,7 +85,7 @@ async function getTransfersFromMultiple(
     topics: [topic0, topics1]  // Multiple options for topic1
   });
 
-  return logs.map(log => EventLog.from(log));
+  return logs.map(log => EventLog(log));
 }
 ```
 
@@ -344,7 +344,7 @@ async function monitorTransfers(
   };
 
   provider.on(filter, (rawLog) => {
-    const log = EventLog.from(rawLog);
+    const log = EventLog(rawLog);
     callback(log);
   });
 
@@ -480,7 +480,7 @@ function createTestLog(overrides?: Partial<EventLog>): BrandedEventLog {
 
 // Create batch of test logs
 function createTestLogs(count: number): BrandedEventLog[] {
-  return Array.from({ length: count }, (_, i) =>
+  return Array({ length: count }, (_, i) =>
     createTestLog({
       blockNumber: 100 + i,
       logIndex: i

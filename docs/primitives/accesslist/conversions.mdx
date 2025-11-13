@@ -52,7 +52,7 @@ const bytes = list.toBytes();
 Decode RLP bytes to access list.
 
 ```typescript
-AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
+AccessList(bytes: Uint8Array): BrandedAccessList
 ```
 
 **Parameters:**
@@ -69,7 +69,7 @@ AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
 **Example:**
 ```typescript
 const bytes = tx.accessListBytes;
-const list = AccessList.fromBytes(bytes);
+const list = AccessList(bytes);
 
 // Use decoded list
 console.log(list.addressCount());
@@ -92,7 +92,7 @@ const original = AccessList([
 ]);
 
 const bytes = original.toBytes();
-const decoded = AccessList.fromBytes(bytes);
+const decoded = AccessList(bytes);
 
 // Should be equivalent
 console.assert(original.length === decoded.length);
@@ -110,7 +110,7 @@ const tx = {
 
 // Decode from transaction
 const receivedTx = await provider.getTransaction(txHash);
-const accessList = AccessList.fromBytes(receivedTx.accessList);
+const accessList = AccessList(receivedTx.accessList);
 ```
 
 ### Safe Decoding
@@ -118,7 +118,7 @@ const accessList = AccessList.fromBytes(receivedTx.accessList);
 ```typescript
 function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
   try {
-    const list = AccessList.fromBytes(bytes);
+    const list = AccessList(bytes);
     AccessList.assertValid(list);
     return list;
   } catch (err) {
@@ -132,13 +132,13 @@ function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
 
 ```typescript
 // Store in database
-const serialized = Buffer.from(list.toBytes()).toString('hex');
+const serialized = Buffer(list.toBytes()).toString('hex');
 await db.store('access_list', serialized);
 
 // Retrieve from database
 const stored = await db.get('access_list');
-const bytes = Buffer.from(stored, 'hex');
-const list = AccessList.fromBytes(bytes);
+const bytes = Buffer(stored, 'hex');
+const list = AccessList(bytes);
 ```
 
 ### Network Transmission
@@ -150,7 +150,7 @@ await socket.send(bytes);
 
 // Receive from network
 const received = await socket.receive();
-const list = AccessList.fromBytes(received);
+const list = AccessList(received);
 ```
 
 ### Compare Encoded Size
@@ -271,7 +271,7 @@ try {
 
 ```typescript
 try {
-  const list = AccessList.fromBytes(bytes);
+  const list = AccessList(bytes);
 } catch (err) {
   if (err.message.includes('expected list')) {
     // Invalid RLP structure
@@ -288,7 +288,7 @@ try {
 ### Validation After Decoding
 
 ```typescript
-const list = AccessList.fromBytes(bytes);
+const list = AccessList(bytes);
 
 // Additional validation
 try {
@@ -309,7 +309,7 @@ try {
 
 2. **Always validate after decoding**
    ```typescript
-   const list = AccessList.fromBytes(bytes);
+   const list = AccessList(bytes);
    AccessList.assertValid(list);
    ```
 

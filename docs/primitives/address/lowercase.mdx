@@ -61,7 +61,7 @@ interface AccountRecord {
 
 function saveAccount(address: Address, balance: bigint, nonce: number) {
   const record: AccountRecord = {
-    address: LowercaseAddress.from(address),  // Canonical format
+    address: LowercaseAddress(address),  // Canonical format
     balance,
     nonce
   }
@@ -73,7 +73,7 @@ function saveAccount(address: Address, balance: bigint, nonce: number) {
 function getAccount(address: Address): AccountRecord {
   return db.query(
     'SELECT * FROM accounts WHERE address = ?',
-    [LowercaseAddress.from(address)]
+    [LowercaseAddress(address)]
   )
 }
 ```
@@ -87,12 +87,12 @@ import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import { Address } from '@tevm/voltaire'
 
 function isSameAddress(a: Address, b: Address): boolean {
-  return LowercaseAddress.from(a) === LowercaseAddress.from(b)
+  return LowercaseAddress(a) === LowercaseAddress(b)
 }
 
 // Usage
-const addr1 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
-const addr2 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr1 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr2 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 isSameAddress(addr1, addr2)  // true
 ```
@@ -112,16 +112,16 @@ import { Address } from '@tevm/voltaire'
 const balances = new Map<string, bigint>()
 
 function setBalance(address: Address, balance: bigint) {
-  balances.set(LowercaseAddress.from(address), balance)
+  balances.set(LowercaseAddress(address), balance)
 }
 
 function getBalance(address: Address): bigint {
-  return balances.get(LowercaseAddress.from(address)) ?? 0n
+  return balances.get(LowercaseAddress(address)) ?? 0n
 }
 
 // Works regardless of input case
-const addr1 = Address.fromHex("0x742D35CC...")
-const addr2 = Address.fromHex("0x742d35cc...")
+const addr1 = Address("0x742D35CC...")
+const addr2 = Address("0x742d35cc...")
 
 setBalance(addr1, 1000n)
 getBalance(addr2)  // 1000n - same key
@@ -143,8 +143,8 @@ interface Transaction {
 
 function serializeTransaction(from: Address, to: Address, value: bigint): string {
   const tx: Transaction = {
-    from: LowercaseAddress.from(from),
-    to: LowercaseAddress.from(to),
+    from: LowercaseAddress(from),
+    to: LowercaseAddress(to),
     value: value.toString()
   }
 
@@ -168,14 +168,14 @@ function serializeTransaction(from: Address, to: Address, value: bigint): string
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Lowercase
-Address.Lowercase.from(addr)
+Address.Lowercase(addr)
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 
 // Checksummed (EIP-55)
-Address.Checksummed.from(addr)
+Address.Checksummed(addr)
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
@@ -187,9 +187,9 @@ Address.Checksummed.from(addr)
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
-const lowercase = LowercaseAddress.from(addr)
+const lowercase = LowercaseAddress(addr)
 const hex = Address.toHex(addr)
 
 lowercase === hex  // true
@@ -220,13 +220,13 @@ import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Fast: string.toLowerCase() only
-const lowercase = LowercaseAddress.from(addr)
+const lowercase = LowercaseAddress(addr)
 
 // Slower: keccak256 hash computation
-const checksummed = ChecksumAddress.from(addr)
+const checksummed = ChecksumAddress(addr)
 ```
 
 **Time complexity:** O(n) where n = 40 characters (constant)
@@ -246,7 +246,7 @@ class CachedAddress {
 
   toLowercase(): Lowercase {
     if (!this._lowercaseCache) {
-      this._lowercaseCache = LowercaseAddress.from(this.address)
+      this._lowercaseCache = LowercaseAddress(this.address)
     }
     return this._lowercaseCache
   }
@@ -284,8 +284,8 @@ Output always matches lowercase hex pattern:
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-const lowercase = LowercaseAddress.from(addr)
+const addr = Address("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+const lowercase = LowercaseAddress(addr)
 
 // Validate format
 /^0x[0-9a-f]{40}$/.test(lowercase)  // true
@@ -301,11 +301,11 @@ Multiple conversions produce same result:
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
-const lower1 = LowercaseAddress.from(addr)
-const addr2 = Address.fromHex(lower1)
-const lower2 = LowercaseAddress.from(addr2)
+const lower1 = LowercaseAddress(addr)
+const addr2 = Address(lower1)
+const lower2 = LowercaseAddress(addr2)
 
 lower1 === lower2  // true
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"

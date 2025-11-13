@@ -496,7 +496,7 @@ function parseSignatureSafe(
 
     // Try parsing as object
     if (typeof data === 'object' && data !== null) {
-      return Signature.from(data);
+      return Signature(data);
     }
 
     return null;
@@ -556,7 +556,7 @@ class SignatureTracker {
   private usedSignatures = new Set<string>();
 
   private getSignatureHash(sig: BrandedSignature): string {
-    return Hex.fromBytes(Hash.keccak256(Signature.toBytes(sig)));
+    return Hex(Hash.keccak256(Signature.toBytes(sig)));
   }
 
   async verify(

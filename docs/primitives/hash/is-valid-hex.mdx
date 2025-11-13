@@ -81,7 +81,7 @@ function parseUserHash(input: string): Hash {
   if (!Hash.isValidHex(input)) {
     throw new Error("Invalid hash format")
   }
-  return Hash.fromHex(input)
+  return Hash(input)
 }
 
 // Usage
@@ -140,7 +140,7 @@ function safeParseHash(hex: string): Hash | null {
   if (!Hash.isValidHex(hex)) {
     return null
   }
-  return Hash.fromHex(hex)
+  return Hash(hex)
 }
 
 // Usage
@@ -184,7 +184,7 @@ function getTransactionFromUrl(url: URL): Hash {
     throw new Error("Invalid or missing transaction hash in URL")
   }
 
-  return Hash.fromHex(txHash)
+  return Hash(txHash)
 }
 ```
 
@@ -224,19 +224,19 @@ const validHexes = inputs.filter(Hash.isValidHex)
 ```typescript
 // ❌ Double validation (slow)
 if (Hash.isValidHex(input)) {
-  const hash = Hash.fromHex(input) // Validates again
+  const hash = Hash(input) // Validates again
 }
 
 // ✅ Better: let fromHex validate
 try {
-  const hash = Hash.fromHex(input)
+  const hash = Hash(input)
 } catch (e) {
   console.error("Invalid hash:", e.message)
 }
 
 // ✅ Use isValidHex when error is expected
 if (Hash.isValidHex(input)) {
-  const hash = Hash.fromHex(input)
+  const hash = Hash(input)
 } else {
   // Handle invalid input without exception
   showErrorMessage("Invalid hash format")

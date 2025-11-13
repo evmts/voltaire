@@ -243,7 +243,7 @@ const hash = Hash("0x1234567890abcdef...")
 const hex = toHex(hash) // ✓ works
 
 // BrandedHash works with Hash static methods
-const branded: BrandedHash.BrandedHash = BrandedHash.from("0x...")
+const branded: BrandedHash.BrandedHash = BrandedHash("0x...")
 const display = Hash.format(branded) // ✓ works
 ```
 

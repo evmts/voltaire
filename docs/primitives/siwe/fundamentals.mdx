@@ -113,7 +113,7 @@ const { nonce } = await fetch('/auth/nonce').then(r => r.json());
 // 2. Create SIWE message
 const message = Siwe.create({
   domain: window.location.host,
-  address: Address.fromHex(userAddress),
+  address: Address(userAddress),
   uri: window.location.origin,
   chainId: await provider.getChainId(),
   statement: "Sign in to Example App",
@@ -207,7 +207,7 @@ import { Siwe, Address } from '@tevm/voltaire';
 
 const message = Siwe.create({
   domain: "example.com",
-  address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  address: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
   uri: "https://example.com",
   chainId: 1,
 });
@@ -312,7 +312,7 @@ const address = await provider.getAddress();
 // Create login message
 const message = Siwe.create({
   domain: "dapp.example.com",
-  address: Address.fromHex(address),
+  address: Address(address),
   uri: "https://dapp.example.com",
   chainId: 1,
   statement: "Sign in to access your dashboard",

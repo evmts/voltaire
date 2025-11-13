@@ -118,7 +118,7 @@ Validate network supports EIP-1559:
 import { Hardfork, LONDON } from '@tevm/voltaire'
 
 function validateEIP1559Support(config: NetworkConfig) {
-  const fork = Hardfork.fromString(config.hardfork)
+  const fork = Hardfork(config.hardfork)
 
   if (!fork.hasEIP1559()) {
     throw new Error(

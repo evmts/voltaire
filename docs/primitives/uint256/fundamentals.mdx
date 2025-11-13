@@ -25,7 +25,7 @@ The EVM supports unsigned integers from 8 to 256 bits in 8-bit increments:
 import { Uint } from '@tevm/voltaire';
 
 // Voltaire provides uint256 (256-bit) by default
-const value = Uint.from(100n);  // uint256
+const value = Uint(100n);  // uint256
 
 // Other sizes require masking:
 // uint8:   0 to 2^8-1   (255)
@@ -52,8 +52,8 @@ Most Ethereum operations use `uint256` (32 bytes) because:
 import { Uint } from '@tevm/voltaire';
 
 // Direct construction (recommended for known values)
-const amount = Uint.from(1000000000000000000n);  // 1 ETH in wei
-const small = Uint.from(42n);
+const amount = Uint(1000000000000000000n);  // 1 ETH in wei
+const small = Uint(42n);
 const zero = Uint.ZERO;  // Constant for 0
 const one = Uint.ONE;    // Constant for 1
 
@@ -66,13 +66,13 @@ const value = Uint(100n);
 import { Uint } from '@tevm/voltaire';
 
 // Parse hex strings
-const fromHex = Uint.fromHex("0xff");         // 255
-const padded = Uint.fromHex("0x00000064");    // 100
-const large = Uint.fromHex("0x" + "ff".repeat(32));  // MAX
+const fromHex = Uint("0xff");         // 255
+const padded = Uint("0x00000064");    // 100
+const large = Uint("0x" + "ff".repeat(32));  // MAX
 
 // Hex strings can be padded or unpadded
-const a = Uint.fromHex("0x1");
-const b = Uint.fromHex("0x0001");
+const a = Uint("0x1");
+const b = Uint("0x0001");
 console.log(a.equals(b));  // true
 ```
 </Tab>
@@ -81,15 +81,15 @@ console.log(a.equals(b));  // true
 import { Uint } from '@tevm/voltaire';
 
 // From JavaScript numbers (safe up to Number.MAX_SAFE_INTEGER)
-const count = Uint.fromNumber(42);
-const timestamp = Uint.fromNumber(Date.now());
+const count = Uint(42);
+const timestamp = Uint(Date.now());
 
 // WARNING: JavaScript numbers lose precision above 2^53-1
-const safe = Uint.fromNumber(Number.MAX_SAFE_INTEGER);      // ✅ Safe
-// const unsafe = Uint.fromNumber(1e20);                    // ❌ Precision loss
+const safe = Uint(Number.MAX_SAFE_INTEGER);      // ✅ Safe
+// const unsafe = Uint(1e20);                    // ❌ Precision loss
 
 // Use bigint for large values
-const large = Uint.from(10n ** 20n);  // ✅ Correct
+const large = Uint(10n ** 20n);  // ✅ Correct
 ```
 </Tab>
 <Tab title="From Bytes">
@@ -99,11 +99,11 @@ import { Uint } from '@tevm/voltaire';
 // From Uint8Array (32 bytes, big-endian)
 const bytes = new Uint8Array(32);
 bytes[31] = 0xff;  // Last byte = 255
-const value = Uint.fromBytes(bytes);
+const value = Uint(bytes);
 
 // ABI-encoded format (same as bytes for uint256)
 const abiEncoded = new Uint8Array(32);
-const decoded = Uint.fromAbiEncoded(abiEncoded);
+const decoded = Uint(abiEncoded);
 ```
 </Tab>
 </Tabs>
@@ -116,7 +116,7 @@ The EVM stores unsigned integers in **big-endian** format: most significant byte
 import { Uint } from '@tevm/voltaire';
 
 // Example: 255 (0xff) in big-endian
-const value = Uint.from(255n);
+const value = Uint(255n);
 const bytes = value.toBytes();
 
 console.log(bytes.length);  // 32 bytes
@@ -141,8 +141,8 @@ All arithmetic wraps on overflow (mod 2^256), matching EVM behavior:
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const a = Uint.from(100n);
-const b = Uint.from(50n);
+const a = Uint(100n);
+const b = Uint(50n);
 
 // Addition
 const sum = a.plus(b);                    // 150
@@ -165,7 +165,7 @@ const remainder = a.modulo(b);            // 0
 console.log(remainder.toBigInt());        // 0n
 
 // Exponentiation
-const power = Uint.from(2n).toPower(Uint.from(8n));  // 256
+const power = Uint(2n).toPower(Uint(8n));  // 256
 console.log(power.toBigInt());            // 256n
 ```
 </Tab>
@@ -184,7 +184,7 @@ const underflow = zero.minus(Uint.ONE);
 console.log(underflow.equals(Uint.MAX));  // true (wraps to MAX)
 
 // Multiplication overflow
-const large = Uint.from(2n ** 200n);
+const large = Uint(2n ** 200n);
 const product = large.times(large);  // Result is (2^400 mod 2^256)
 console.log(product.lessThan(Uint.MAX));  // true (wrapped)
 
@@ -205,8 +205,8 @@ function safeAdd(a: Uint, b: Uint): Uint | null {
   return a.plus(b);
 }
 
-const a = Uint.MAX.minus(Uint.from(10n));
-const b = Uint.from(20n);
+const a = Uint.MAX.minus(Uint(10n));
+const b = Uint(20n);
 
 const result = safeAdd(a, b);
 console.log(result === null);  // true (would overflow)
@@ -224,9 +224,9 @@ console.log(result === null);  // true (would overflow)
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const a = Uint.from(100n);
-const b = Uint.from(100n);
-const c = Uint.from(200n);
+const a = Uint(100n);
+const b = Uint(100n);
+const c = Uint(200n);
 
 // Equality
 console.log(a.equals(b));         // true
@@ -241,8 +241,8 @@ console.log(a.isZero());          // false
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const a = Uint.from(100n);
-const b = Uint.from(200n);
+const a = Uint(100n);
+const b = Uint(200n);
 
 // Less than
 console.log(a.lessThan(b));           // true
@@ -261,9 +261,9 @@ import { Uint } from '@tevm/voltaire';
 
 // Sort array of uints
 const values = [
-  Uint.from(300n),
-  Uint.from(100n),
-  Uint.from(200n),
+  Uint(300n),
+  Uint(100n),
+  Uint(200n),
 ];
 
 values.sort((a, b) => {
@@ -285,8 +285,8 @@ console.log(values.map(v => v.toBigInt()));
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const a = Uint.fromHex("0xff00");  // 0xff00
-const b = Uint.fromHex("0x00ff");  // 0x00ff
+const a = Uint("0xff00");  // 0xff00
+const b = Uint("0x00ff");  // 0x00ff
 
 // Bitwise AND
 const and = a.bitwiseAnd(b);
@@ -309,7 +309,7 @@ console.log(not.toHex().slice(0, 10));  // "0x000000..." (inverted bits)
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.from(1n);
+const value = Uint(1n);
 
 // Left shift (multiply by powers of 2)
 const shifted = value.shiftLeft(8);
@@ -320,7 +320,7 @@ const original = shifted.shiftRight(8);
 console.log(original.toBigInt());  // 1n
 
 // Overflow wrapping on left shift
-const large = Uint.from(2n ** 250n);
+const large = Uint(2n ** 250n);
 const overflow = large.shiftLeft(10);  // Wraps (keeps lower 256 bits)
 ```
 </Tab>
@@ -328,7 +328,7 @@ const overflow = large.shiftLeft(10);  // Wraps (keeps lower 256 bits)
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.fromHex("0xff00ff");
+const value = Uint("0xff00ff");
 
 // Count bits
 console.log(value.bitLength());    // Number of bits needed (24)
@@ -336,7 +336,7 @@ console.log(value.leadingZeros()); // Leading zero bits (232)
 console.log(value.popCount());     // Number of 1 bits (16)
 
 // Extract specific bits using masks
-const mask = Uint.fromHex("0xff");
+const mask = Uint("0xff");
 const lowerByte = value.bitwiseAnd(mask);
 console.log(lowerByte.toHex(false));  // "0xff"
 ```
@@ -352,18 +352,18 @@ import { Uint } from '@tevm/voltaire';
 
 // Simulate uint8 (0-255)
 function toUint8(value: Uint): Uint {
-  const mask = Uint.from(0xFFn);
+  const mask = Uint(0xFFn);
   return value.bitwiseAnd(mask);
 }
 
 // Simulate uint16 (0-65535)
 function toUint16(value: Uint): Uint {
-  const mask = Uint.from(0xFFFFn);
+  const mask = Uint(0xFFFFn);
   return value.bitwiseAnd(mask);
 }
 
 // Usage
-const large = Uint.from(1000n);
+const large = Uint(1000n);
 const u8 = toUint8(large);
 console.log(u8.toBigInt());  // 232n (1000 mod 256)
 
@@ -380,7 +380,7 @@ import { Uint } from '@tevm/voltaire';
 
 // ERC20 token with 18 decimals
 const tokenDecimals = 18n;
-const amount = Uint.from(1000n * 10n ** tokenDecimals);  // 1000 tokens
+const amount = Uint(1000n * 10n ** tokenDecimals);  // 1000 tokens
 
 // Convert to display value
 function toDisplayValue(amount: Uint, decimals: bigint): string {
@@ -403,7 +403,7 @@ const weiPerEther = 10n ** 18n;
 
 // Convert ether to wei
 function etherToWei(ether: bigint): Uint {
-  return Uint.from(ether * weiPerEther);
+  return Uint(ether * weiPerEther);
 }
 
 // Convert wei to ether
@@ -427,8 +427,8 @@ function calculateGasCost(gasLimit: Uint, gasPrice: Uint): Uint {
   return gasLimit.times(gasPrice);
 }
 
-const gasLimit = Uint.from(21000n);     // Standard transfer
-const gasPrice = Uint.from(50n * 10n ** 9n);  // 50 gwei
+const gasLimit = Uint(21000n);     // Standard transfer
+const gasPrice = Uint(50n * 10n ** 9n);  // 50 gwei
 
 const cost = calculateGasCost(gasLimit, gasPrice);
 console.log(cost.toBigInt());  // 1050000000000000n (0.00105 ETH)
@@ -438,7 +438,7 @@ function canAfford(balance: Uint, cost: Uint): boolean {
   return balance.greaterThanOrEqual(cost);
 }
 
-const balance = Uint.from(10n ** 18n);  // 1 ETH
+const balance = Uint(10n ** 18n);  // 1 ETH
 console.log(canAfford(balance, cost));  // true
 ```
 </Tab>
@@ -447,16 +447,16 @@ console.log(canAfford(balance, cost));  // true
 import { Uint } from '@tevm/voltaire';
 
 // Block timestamps (Unix time in seconds)
-const now = Uint.fromNumber(Math.floor(Date.now() / 1000));
+const now = Uint(Math.floor(Date.now() / 1000));
 
 // Check if timestamp is in future
 function isFuture(timestamp: Uint): boolean {
-  const currentTime = Uint.fromNumber(Math.floor(Date.now() / 1000));
+  const currentTime = Uint(Math.floor(Date.now() / 1000));
   return timestamp.greaterThan(currentTime);
 }
 
 // Add duration (e.g., 1 day)
-const oneDay = Uint.from(86400n);  // 60 * 60 * 24
+const oneDay = Uint(86400n);  // 60 * 60 * 24
 const tomorrow = now.plus(oneDay);
 
 console.log(isFuture(tomorrow));  // true
@@ -472,26 +472,26 @@ console.log(isFuture(tomorrow));  // true
 import { Uint } from '@tevm/voltaire';
 
 // ❌ WRONG: Precision loss with large numbers
-const wrong = Uint.fromNumber(1e20);
+const wrong = Uint(1e20);
 console.log(wrong.toBigInt());  // Incorrect value (precision lost)
 
 // ✅ CORRECT: Use bigint for large values
-const correct = Uint.from(10n ** 20n);
+const correct = Uint(10n ** 20n);
 console.log(correct.toBigInt());  // Exact value
 
 // Safe conversions
-const safeNumber = Uint.from(1000n).toNumber();  // 1000 (safe)
+const safeNumber = Uint(1000n).toNumber();  // 1000 (safe)
 
 // Throws if exceeds safe integer range
 try {
-  const large = Uint.from(2n ** 100n);
+  const large = Uint(2n ** 100n);
   large.toNumber();  // Throws: value exceeds Number.MAX_SAFE_INTEGER
 } catch (e) {
   console.error('Value too large for JavaScript number');
 }
 
 // Always use toBigInt() for large values
-const large = Uint.from(2n ** 100n);
+const large = Uint(2n ** 100n);
 const bigint = large.toBigInt();  // Safe
 ```
 
@@ -502,7 +502,7 @@ const bigint = large.toBigInt();  // Safe
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.from(100n);
+const value = Uint(100n);
 
 // Padded (32 bytes, 64 hex chars + 0x prefix)
 console.log(value.toHex());
@@ -519,7 +519,7 @@ console.log(value.toHex(false));
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.from(42n);
+const value = Uint(42n);
 
 // To bigint (always safe)
 console.log(value.toBigInt());  // 42n
@@ -528,7 +528,7 @@ console.log(value.toBigInt());  // 42n
 console.log(value.toNumber());  // 42
 
 // Check if safe first
-const large = Uint.from(2n ** 100n);
+const large = Uint(2n ** 100n);
 try {
   large.toNumber();
 } catch (e) {
@@ -540,7 +540,7 @@ try {
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.from(255n);
+const value = Uint(255n);
 
 // To Uint8Array (32 bytes, big-endian)
 const bytes = value.toBytes();
@@ -556,7 +556,7 @@ console.log(abiEncoded.length);  // 32
 ```typescript
 import { Uint } from '@tevm/voltaire';
 
-const value = Uint.from(255n);
+const value = Uint(255n);
 
 // Decimal (default)
 console.log(value.toString());     // "255"

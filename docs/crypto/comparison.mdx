@@ -249,7 +249,7 @@ import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 // User authenticates with Face ID/Touch ID
 const credential = await navigator.credentials.create({
   publicKey: {
-    challenge: Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    challenge: Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001'),
     rp: { name: 'My DApp' },
     user: { id: userId, name: 'alice@example.com', displayName: 'Alice' },
     pubKeyCredParams: [{ alg: -7, type: 'public-key' }], // ES256 (P-256)

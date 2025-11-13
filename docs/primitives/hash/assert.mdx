@@ -64,7 +64,7 @@ async function handleGetTransaction(req: Request, res: Response) {
   const { hash } = req.params
 
   try {
-    const hashBytes = Hash.fromHex(hash)
+    const hashBytes = Hash(hash)
     Hash.assert(hashBytes, "Invalid transaction hash format")
 
     const tx = await getTransaction(hashBytes)

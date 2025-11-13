@@ -152,7 +152,7 @@ async function sendHash(ws: WebSocket, hash: Hash) {
 
 ws.onmessage = (event) => {
   const bytes = new Uint8Array(event.data)
-  const hash = Hash.fromBytes(bytes)
+  const hash = Hash(bytes)
 }
 ```
 

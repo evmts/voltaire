@@ -441,9 +441,9 @@ function queryBlockRange(
 
 // Example: Find all blocks with Transfer events
 const blocks = [
-  { number: 100, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
-  { number: 101, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
-  { number: 102, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
+  { number: 100, bloom: BloomFilter("0x...", 2048, 3) },
+  { number: 101, bloom: BloomFilter("0x...", 2048, 3) },
+  { number: 102, bloom: BloomFilter("0x...", 2048, 3) },
   // ... thousands more
 ];
 
@@ -658,8 +658,8 @@ class TransferIndex {
     const matchingBlocks: number[] = [];
 
     // Pad address to 32 bytes (as it appears in topics)
-    const paddedAddress = Hash.from(
-      Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
+    const paddedAddress = Hash(
+      Hex.concat(Hex('0x000000000000000000000000'), Address.toHex(userAddress))
     );
 
     for (const [blockNumber, bloom] of this.blockBlooms.entries()) {

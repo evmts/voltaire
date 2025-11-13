@@ -21,7 +21,7 @@ console.log(encoded);  // "AQIDBAU="
 
 // Encode hex to Base64
 import * as Hex from '@tevm/voltaire/Hex';
-const hexData = Hex.from("0x48656c6c6f");  // "Hello"
+const hexData = Hex("0x48656c6c6f");  // "Hello"
 const base64 = Base64.encode(Hex.toBytes(hexData));
 console.log(base64);  // "SGVsbG8="
 ```
@@ -46,10 +46,10 @@ const encoded = encodeString("Hello, Ethereum!");
 ```typescript
 // Decode to bytes
 const decoded = Base64.decode(encoded);
-console.log(Array.from(decoded));  // [1, 2, 3, 4, 5]
+console.log(Array(decoded));  // [1, 2, 3, 4, 5]
 
 // Decode to hex
-const hex = Hex.fromBytes(decoded);
+const hex = Hex(decoded);
 console.log(Hex.toHex(hex));  // "0x0102030405"
 ```
 
@@ -79,7 +79,7 @@ function safeDecode(input: string): Uint8Array | null {
   }
 
   try {
-    return Base64.decode(Base64.from(input));
+    return Base64.decode(Base64(input));
   } catch (err) {
     console.error("Decoding failed:", err);
     return null;
@@ -104,7 +104,7 @@ function normalizeBase64(input: string): BrandedBase64 {
     throw new Error("Invalid Base64 format");
   }
 
-  return Base64.from(cleaned);
+  return Base64(cleaned);
 }
 ```
 
@@ -133,8 +133,8 @@ function parsePayload(payload: APIPayload): {
   signature: Uint8Array;
 } {
   return {
-    data: Base64.decode(Base64.from(payload.data)),
-    signature: Base64.decode(Base64.from(payload.signature))
+    data: Base64.decode(Base64(payload.data)),
+    signature: Base64.decode(Base64(payload.signature))
   };
 }
 ```
@@ -160,7 +160,7 @@ function fromURLSafe(urlSafe: string): BrandedBase64 {
   const padding = (4 - (standard.length % 4)) % 4;
   standard += '='.repeat(padding);
 
-  return Base64.from(standard);
+  return Base64(standard);
 }
 ```
 
@@ -186,7 +186,7 @@ async function loadBinaryData(
   const encoded = await db.get(key);
   if (!encoded) return null;
 
-  return Base64.decode(Base64.from(encoded));
+  return Base64.decode(Base64(encoded));
 }
 ```
 
@@ -214,8 +214,8 @@ function loadConfig(config: Config): {
   salt: Uint8Array;
 } {
   return {
-    privateKey: Base64.decode(Base64.from(config.privateKey)),
-    salt: Base64.decode(Base64.from(config.salt))
+    privateKey: Base64.decode(Base64(config.privateKey)),
+    salt: Base64.decode(Base64(config.salt))
   };
 }
 ```

@@ -32,7 +32,7 @@ if (CANCUN.isAfter(LONDON)) {
 ```typescript
 import { Hardfork, CANCUN } from '@tevm/voltaire'
 
-const fork = Hardfork.fromString(config.hardfork)
+const fork = Hardfork(config.hardfork)
 
 if (fork.gt(CANCUN)) {
   console.warn("Running unknown post-Cancun hardfork")

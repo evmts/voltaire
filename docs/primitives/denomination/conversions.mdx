@@ -29,11 +29,11 @@ Each denomination type provides conversion methods to other units. All conversio
 ```typescript
 import * as Wei from '@tevm/voltaire/Wei'
 
-const wei = Wei.from(50_000_000_000n)
+const wei = Wei(50_000_000_000n)
 const gwei = Wei.toGwei(wei)  // 50n
 
 // Fractional Gwei truncates
-const wei2 = Wei.from(50_000_000_001n)
+const wei2 = Wei(50_000_000_001n)
 const gwei2 = Wei.toGwei(wei2)  // 50n (not 50.000000001)
 ```
 
@@ -43,11 +43,11 @@ const gwei2 = Wei.toGwei(wei2)  // 50n (not 50.000000001)
 ```typescript
 import * as Wei from '@tevm/voltaire/Wei'
 
-const wei = Wei.from(1_000_000_000_000_000_000n)
+const wei = Wei(1_000_000_000_000_000_000n)
 const ether = Wei.toEther(wei)  // 1n
 
 // Fractional Ether truncates
-const wei2 = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH
+const wei2 = Wei(500_000_000_000_000_000n)  // 0.5 ETH
 const ether2 = Wei.toEther(wei2)  // 0n
 ```
 
@@ -60,11 +60,11 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Ether from '@tevm/voltaire/Ether'
 
 // From Gwei
-const gwei = Gwei.from(50n)
+const gwei = Gwei(50n)
 const wei1 = Wei.fromGwei(gwei)  // 50_000_000_000n
 
 // From Ether
-const ether = Ether.from(1n)
+const ether = Ether(1n)
 const wei2 = Wei.fromEther(ether)  // 1_000_000_000_000_000_000n
 ```
 </Tab>
@@ -77,11 +77,11 @@ const wei2 = Wei.fromEther(ether)  // 1_000_000_000_000_000_000n
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gwei = Gwei.from(50n)
+const gwei = Gwei(50n)
 const wei = Gwei.toWei(gwei)  // 50_000_000_000n
 
 // No truncation (multiplication)
-const gwei2 = Gwei.from(1n)
+const gwei2 = Gwei(1n)
 const wei2 = Gwei.toWei(gwei2)  // 1_000_000_000n
 ```
 
@@ -91,11 +91,11 @@ const wei2 = Gwei.toWei(gwei2)  // 1_000_000_000n
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gwei = Gwei.from(1_000_000_000n)
+const gwei = Gwei(1_000_000_000n)
 const ether = Gwei.toEther(gwei)  // 1n
 
 // Fractional Ether truncates
-const gwei2 = Gwei.from(500_000_000n)  // 0.5 ETH
+const gwei2 = Gwei(500_000_000n)  // 0.5 ETH
 const ether2 = Gwei.toEther(gwei2)  // 0n
 ```
 
@@ -108,11 +108,11 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Ether from '@tevm/voltaire/Ether'
 
 // From Wei (division)
-const wei = Wei.from(50_000_000_000n)
+const wei = Wei(50_000_000_000n)
 const gwei1 = Gwei.fromWei(wei)  // 50n
 
 // From Ether (multiplication)
-const ether = Ether.from(1n)
+const ether = Ether(1n)
 const gwei2 = Gwei.fromEther(ether)  // 1_000_000_000n
 ```
 </Tab>
@@ -125,11 +125,11 @@ const gwei2 = Gwei.fromEther(ether)  // 1_000_000_000n
 ```typescript
 import * as Ether from '@tevm/voltaire/Ether'
 
-const ether = Ether.from(1n)
+const ether = Ether(1n)
 const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n
 
 // No truncation (multiplication)
-const ether2 = Ether.from(5n)
+const ether2 = Ether(5n)
 const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n
 ```
 
@@ -139,11 +139,11 @@ const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n
 ```typescript
 import * as Ether from '@tevm/voltaire/Ether'
 
-const ether = Ether.from(1n)
+const ether = Ether(1n)
 const gwei = Ether.toGwei(ether)  // 1_000_000_000n
 
 // No truncation (multiplication)
-const ether2 = Ether.from(2n)
+const ether2 = Ether(2n)
 const gwei2 = Ether.toGwei(ether2)  // 2_000_000_000n
 ```
 
@@ -156,11 +156,11 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 // From Wei (division, truncates)
-const wei = Wei.from(1_000_000_000_000_000_000n)
+const wei = Wei(1_000_000_000_000_000_000n)
 const ether1 = Ether.fromWei(wei)  // 1n
 
 // From Gwei (division, truncates)
-const gwei = Gwei.from(1_000_000_000n)
+const gwei = Gwei(1_000_000_000n)
 const ether2 = Ether.fromGwei(gwei)  // 1n
 ```
 </Tab>
@@ -176,17 +176,17 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // Gas price in Gwei (user-friendly)
-const gasPriceGwei = Gwei.from(50n)
+const gasPriceGwei = Gwei(50n)
 
 // Convert to Wei for calculation
 const gasPriceWei = Gwei.toWei(gasPriceGwei)
 
 // Calculate total: gasPrice * gasUsed
-const gasUsed = Uint.from(21_000n)
+const gasUsed = Uint(21_000n)
 const txCostWei = Uint.times(gasPriceWei, gasUsed)
 
 // Convert to Ether for display
-const txCostEther = Wei.toEther(Wei.from(txCostWei))
+const txCostEther = Wei.toEther(Wei(txCostWei))
 ```
 
 ### Balance Display
@@ -196,11 +196,11 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // Balance from RPC (Wei)
-const balanceWei = Wei.from(1_234_567_890_123_456_789n)
+const balanceWei = Wei(1_234_567_890_123_456_789n)
 
 // Convert to Ether for display (with fractional part)
 const balanceU256 = Wei.toU256(balanceWei)
-const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+const weiPerEther = Uint(1_000_000_000_000_000_000n)
 
 const wholePart = Uint.dividedBy(balanceU256, weiPerEther)
 const fractionalPart = Uint.modulo(balanceU256, weiPerEther)
@@ -217,7 +217,7 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Wei from '@tevm/voltaire/Wei'
 
 // Start with Ether
-const ether = Ether.from(1n)
+const ether = Ether(1n)
 
 // Convert through Gwei to Wei
 const gwei = Ether.toGwei(ether)      // 1_000_000_000n
@@ -234,8 +234,8 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const balance = Wei.from(100_000_000_000n)  // 100 Gwei in Wei
-const threshold = Gwei.from(50n)             // 50 Gwei
+const balance = Wei(100_000_000_000n)  // 100 Gwei in Wei
+const threshold = Gwei(50n)             // 50 Gwei
 
 // Convert to same unit for comparison
 const thresholdWei = Gwei.toWei(threshold)
@@ -260,17 +260,17 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 // Example 1: Wei → Gwei truncation
-const wei1 = Wei.from(1_500_000_000n)  // 1.5 Gwei
+const wei1 = Wei(1_500_000_000n)  // 1.5 Gwei
 const gwei1 = Wei.toGwei(wei1)          // 1n (truncates to 1)
 
-const wei2 = Wei.from(1_999_999_999n)  // 1.999... Gwei
+const wei2 = Wei(1_999_999_999n)  // 1.999... Gwei
 const gwei2 = Wei.toGwei(wei2)          // 1n (truncates to 1)
 
 // Example 2: Gwei → Ether truncation
-const gwei3 = Gwei.from(500_000_000n)  // 0.5 Ether
+const gwei3 = Gwei(500_000_000n)  // 0.5 Ether
 const ether1 = Gwei.toEther(gwei3)      // 0n (truncates to 0)
 
-const gwei4 = Gwei.from(999_999_999n)  // 0.999... Ether
+const gwei4 = Gwei(999_999_999n)  // 0.999... Ether
 const ether2 = Gwei.toEther(gwei4)      // 0n (truncates to 0)
 ```
 
@@ -282,19 +282,19 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // ✗ Loses precision
-const gwei = Gwei.from(50n)
+const gwei = Gwei(50n)
 const ether = Gwei.toEther(gwei)  // 0n
 const wei = Ether.toWei(ether)     // 0n (lost data)
 
 // ✓ Preserves precision - work in smallest unit
-const gwei = Gwei.from(50n)
+const gwei = Gwei(50n)
 const wei = Gwei.toWei(gwei)  // 50_000_000_000n
 
 // Perform calculations in Wei
-const doubled = Uint.times(wei, Uint.from(2n))  // 100_000_000_000n
+const doubled = Uint.times(wei, Uint(2n))  // 100_000_000_000n
 
 // Convert to display unit only at the end
-const result = Wei.toGwei(Wei.from(doubled))  // 100n
+const result = Wei.toGwei(Wei(doubled))  // 100n
 ```
 
 ## Round-Trip Safety
@@ -307,12 +307,12 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Ether from '@tevm/voltaire/Ether'
 
 // Gwei → Wei → Gwei
-const gwei1 = Gwei.from(50n)
+const gwei1 = Gwei(50n)
 const wei1 = Gwei.toWei(gwei1)
 const gwei1Back = Wei.toGwei(wei1)  // 50n ✓
 
 // Ether → Wei → Ether
-const ether1 = Ether.from(1n)
+const ether1 = Ether(1n)
 const wei2 = Ether.toWei(ether1)
 const ether1Back = Wei.toEther(wei2)  // 1n ✓
 ```
@@ -324,12 +324,12 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 // Wei → Gwei → Wei (loses fractional Gwei)
-const wei1 = Wei.from(1_500_000_000n)  // 1.5 Gwei
+const wei1 = Wei(1_500_000_000n)  // 1.5 Gwei
 const gwei1 = Wei.toGwei(wei1)          // 1n (truncates)
 const wei1Back = Gwei.toWei(gwei1)      // 1_000_000_000n ✗ (lost 0.5 Gwei)
 
 // Gwei → Ether → Gwei (loses fractional Ether)
-const gwei2 = Gwei.from(500_000_000n)  // 0.5 Ether
+const gwei2 = Gwei(500_000_000n)  // 0.5 Ether
 const ether1 = Gwei.toEther(gwei2)      // 0n (truncates)
 const gwei2Back = Ether.toGwei(ether1)  // 0n ✗ (lost all)
 ```
@@ -344,15 +344,15 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // ✓ Good - convert to Wei first
-const value = Ether.from(1n)
+const value = Ether(1n)
 const valueWei = Ether.toWei(value)
-const fee = Wei.from(21_000_000_000_000_000n)
+const fee = Wei(21_000_000_000_000_000n)
 
 const total = Uint.plus(valueWei, fee)
 
 // ✗ Bad - mixing units
-const value = Ether.from(1n)
-const fee = Wei.from(21_000_000_000_000_000n)
+const value = Ether(1n)
+const fee = Wei(21_000_000_000_000_000n)
 // Cannot add different types
 ```
 
@@ -368,15 +368,15 @@ function calculateGasCost(
   gasUsed: bigint
 ): Wei.Type {
   const gasPriceWei = Gwei.toWei(gasPrice)
-  const cost = Uint.times(gasPriceWei, Uint.from(gasUsed))
-  return Wei.from(cost)
+  const cost = Uint.times(gasPriceWei, Uint(gasUsed))
+  return Wei(cost)
 }
 
 // Compiler prevents passing wrong unit
-const price = Gwei.from(50n)
+const price = Gwei(50n)
 const cost = calculateGasCost(price, 21_000n)  // ✓
 
-const wei = Wei.from(50_000_000_000n)
+const wei = Wei(50_000_000_000n)
 // calculateGasCost(wei, 21_000n)  // ✗ Type error
 ```
 
@@ -386,12 +386,12 @@ const wei = Wei.from(50_000_000_000n)
 import * as Wei from '@tevm/voltaire/Wei'
 
 // Gas prices in Gwei (more readable)
-const gasPrice = Wei.from(50_000_000_000n)
+const gasPrice = Wei(50_000_000_000n)
 console.log(`Gas: ${Wei.toGwei(gasPrice)} Gwei`)  // "Gas: 50 Gwei"
 // Better than "Gas: 50000000000 Wei"
 
 // Balances in Ether (user-friendly)
-const balance = Wei.from(1_000_000_000_000_000_000n)
+const balance = Wei(1_000_000_000_000_000_000n)
 console.log(`Balance: ${Wei.toEther(balance)} ETH`)  // "Balance: 1 ETH"
 // Better than "Balance: 1000000000000000000 Wei"
 ```
@@ -415,7 +415,7 @@ import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
 import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
 import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
 
-const gwei = GweiWasm.from(50n)
+const gwei = GweiWasm(50n)
 const wei = GweiWasm.toWei(gwei)
 const ether = WeiWasm.toEther(wei)
 ```

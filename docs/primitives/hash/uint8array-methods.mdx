@@ -70,7 +70,7 @@ Select bytes matching condition:
 const hash = Hash.random()
 
 // Find non-zero bytes
-const nonZero = Array.from(hash).filter(b => b !== 0)
+const nonZero = Array(hash).filter(b => b !== 0)
 console.log(`${nonZero.length} non-zero bytes`)
 ```
 
@@ -154,7 +154,7 @@ const index = hash.findIndex(b => b === 0xff)
 Find last matching byte:
 
 ```typescript
-const hash = Hash.fromHex("0x000000000000000000000000000000000000000000000000000000000000003e")
+const hash = Hash("0x000000000000000000000000000000000000000000000000000000000000003e")
 
 // Find last non-zero byte
 const lastNonZero = hash.findLast(b => b !== 0) // 0x3e
@@ -193,7 +193,7 @@ hash.includes(0xff) // false
 Test if all bytes match condition:
 
 ```typescript
-const zeroHash = Hash.fromBytes(new Uint8Array(32))
+const zeroHash = Hash(new Uint8Array(32))
 zeroHash.every(b => b === 0) // true
 
 const hash = Hash.random()
@@ -206,7 +206,7 @@ hash.every(b => b < 128) // maybe
 Test if any byte matches condition:
 
 ```typescript
-const hash = Hash.fromHex("0x000000000000000000000000000000000000000000000000000000000000003e")
+const hash = Hash("0x000000000000000000000000000000000000000000000000000000000000003e")
 hash.some(b => b !== 0) // true (has non-zero bytes)
 
 const zeroHash = Hash.ZERO
@@ -220,7 +220,7 @@ zeroHash.some(b => b !== 0) // false
 Fill bytes with value (mutates):
 
 ```typescript
-const hash = Hash.fromBytes(new Uint8Array(32))
+const hash = Hash(new Uint8Array(32))
 
 // Fill entire hash with 0xff
 hash.fill(0xff)
@@ -237,7 +237,7 @@ hash.fill(0xbb, 10)
 Copy bytes from another array (mutates):
 
 ```typescript
-const hash = Hash.fromBytes(new Uint8Array(32))
+const hash = Hash(new Uint8Array(32))
 
 // Copy 4 bytes at start
 const bytes = new Uint8Array([0x11, 0x22, 0x33, 0x44])
@@ -378,7 +378,7 @@ hash.byteLength   // 32
 // Get first 4 bytes as function selector
 const hash = Hash.keccak256String("transfer(address,uint256)")
 const selector = hash.slice(0, 4)
-console.log(Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join(''))
+console.log(Array(selector).map(b => b.toString(16).padStart(2, '0')).join(''))
 // "a9059cbb"
 ```
 
@@ -394,7 +394,7 @@ function countLeadingZeros(hash: Hash): number {
   return count
 }
 
-const hash = Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000045")
+const hash = Hash("0x0000000000000000000000000000000000000000000000000000000000000045")
 countLeadingZeros(hash) // 31
 ```
 
@@ -431,7 +431,7 @@ function byteFrequency(hash: Hash): Map<number, number> {
 
 const hash = Hash.random()
 const freq = byteFrequency(hash)
-console.log(`Most common byte: ${Array.from(freq.entries()).sort((a, b) => b[1] - a[1])[0][0]}`)
+console.log(`Most common byte: ${Array(freq.entries()).sort((a, b) => b[1] - a[1])[0][0]}`)
 ```
 
 ### Check Hash Entropy

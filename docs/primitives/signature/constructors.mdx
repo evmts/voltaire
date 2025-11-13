@@ -55,10 +55,10 @@ BrandedSignature with appropriate algorithm metadata.
 
 ```typescript
 // From compact bytes (defaults to secp256k1)
-const sig1 = Signature.from(bytes64);
+const sig1 = Signature(bytes64);
 
 // From ECDSA components
-const sig2 = Signature.from({
+const sig2 = Signature({
   r: rBytes,
   s: sBytes,
   v: 27,
@@ -66,20 +66,20 @@ const sig2 = Signature.from({
 });
 
 // From P-256 components
-const sig3 = Signature.from({
+const sig3 = Signature({
   r: rBytes,
   s: sBytes,
   algorithm: 'p256'
 });
 
 // From Ed25519
-const sig4 = Signature.from({
+const sig4 = Signature({
   signature: ed25519Bytes,
   algorithm: 'ed25519'
 });
 
 // Idempotent
-const sig5 = Signature.from(sig1);
+const sig5 = Signature(sig1);
 console.log(sig5 === sig1); // true
 ```
 
@@ -456,7 +456,7 @@ const sig2 = Signature.fromCompact(bytes, 'secp256k1');
 const sig3 = Signature.fromDER(der, 'secp256k1', 27);
 
 // Variable: depends on input type
-const sig4 = Signature.from(input);
+const sig4 = Signature(input);
 ```
 
 ## Error Handling
@@ -479,7 +479,7 @@ try {
 }
 
 try {
-  const sig = Signature.from(unknownInput);
+  const sig = Signature(unknownInput);
 } catch (err) {
   if (err instanceof InvalidSignatureFormatError) {
     console.error('Unsupported format:', err.message);

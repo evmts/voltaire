@@ -87,7 +87,7 @@ for (const log of sorted) {
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 
 // Filter then sort
 const transfers = EventLog.filterLogs(allLogs, {

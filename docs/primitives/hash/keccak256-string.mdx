@@ -89,14 +89,14 @@ interface Log {
 
 function isTransferEvent(log: Log): boolean {
   const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
-  const topic0 = Hash.fromHex(log.topics[0])
+  const topic0 = Hash(log.topics[0])
   return topic0.equals(transferSig)
 }
 
 function filterTransferEvents(logs: Log[]): Log[] {
   const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
   return logs.filter(log => {
-    const topic0 = Hash.fromHex(log.topics[0])
+    const topic0 = Hash(log.topics[0])
     return topic0.equals(transferSig)
   })
 }
@@ -226,7 +226,7 @@ const messageHash = hashPersonalMessage("Hello, Ethereum!")
 function computeContractAddress(sender: Address, nonce: bigint): Address {
   const rlpEncoded = Rlp.encode([sender, nonce])
   const hash = Hash.keccak256(rlpEncoded)
-  return Address.fromBytes(hash.slice(12)) // Last 20 bytes
+  return Address(hash.slice(12)) // Last 20 bytes
 }
 ```
 
@@ -282,7 +282,7 @@ const CACHED_SIGNATURES = {
 
 // Use cached value
 function isTransferEvent(log: Log): boolean {
-  const topic0 = Hash.fromHex(log.topics[0])
+  const topic0 = Hash(log.topics[0])
   return topic0.equals(CACHED_SIGNATURES.transfer)
 }
 ```

@@ -81,7 +81,7 @@ import { Address } from '@tevm/voltaire/primitives';
 
 const frame = createFrame({
   gasRemaining: 1000000n,
-  address: Address.from("0x1234..."),
+  address: Address("0x1234..."),
 });
 
 // Calldata: function selector for "transfer(address,uint256)"
@@ -119,7 +119,7 @@ import { Address } from '@tevm/voltaire/primitives';
 // Send 1 ETH to address with empty calldata
 const frame = createFrame({
   gasRemaining: 1000000n,
-  address: Address.from("0x1234..."),
+  address: Address("0x1234..."),
 });
 
 // Stack: [gas=50000, address, value=1 ETH, inOffset=0, inLength=0, outOffset=0, outLength=0]

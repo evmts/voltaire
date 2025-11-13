@@ -92,7 +92,7 @@ import * as State from '@tevm/voltaire/State';
 import * as Address from '@tevm/voltaire/Address';
 
 // Create storage key
-const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const contractAddr = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const key = State.StorageKey(contractAddr, 0n);
 
 // Use in storage maps
@@ -115,7 +115,7 @@ const keyStr = State.StorageKey.toString(key);
 // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e:42"
 
 // Parse from string
-const parsed = State.StorageKey.fromString(keyStr);
+const parsed = State.StorageKey(keyStr);
 // { address: BrandedAddress(...), slot: 42n }
 
 // Round-trip conversion
@@ -130,14 +130,14 @@ import * as Address from '@tevm/voltaire/Address';
 import { Keccak256 } from '@tevm/crypto';
 
 // USDC contract
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 // Storage slot 0: total supply
 const totalSupplyKey = State.StorageKey(usdcAddress, 0n);
 
 // Mapping storage: balanceOf[userAddress]
 // Slot = keccak256(abi.encode(userAddress, balanceSlot))
-const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const balanceSlot = 1n;
 
 // Compute mapping slot (Solidity storage layout)
@@ -145,7 +145,7 @@ const mappingSlotBytes = new Uint8Array(64);
 mappingSlotBytes.set(userAddress, 0);          // First 32 bytes (padded address)
 mappingSlotBytes.set(encodeBigInt(balanceSlot, 32), 32); // Last 32 bytes
 
-const computedSlot = BigInt('0x' + Buffer.from(
+const computedSlot = BigInt('0x' + Buffer(
   Keccak256.hash(mappingSlotBytes)
 ).toString('hex'));
 
@@ -170,7 +170,7 @@ stateDb.set(State.StorageKey.toString(daiKey), 5000000000n);
 
 // Query by contract
 for (const [keyStr, value] of stateDb.entries()) {
-  const key = State.StorageKey.fromString(keyStr);
+  const key = State.StorageKey(keyStr);
   if (Address.equals(key.address, usdcAddress)) {
     console.log(`USDC slot ${key.slot}: ${value}`);
   }

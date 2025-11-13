@@ -330,7 +330,7 @@ const info = decodeExtendedKey(xprv);
 console.log({
   version: info.version.toString(16), // 0488ade4
   depth: info.depth,                   // 0 (master)
-  fingerprint: Array.from(info.fingerprint).map(b => b.toString(16)),
+  fingerprint: Array(info.fingerprint).map(b => b.toString(16)),
   childNumber: info.childNumber,       // 0
   chainCodeLength: info.chainCode.length, // 32
   keyLength: info.key.length,          // 33
@@ -498,7 +498,7 @@ const xpub = await getXpubFromConfig();
 const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
 
 // Generate addresses without private keys
-const addresses = Array.from({ length: 10 }, (_, i) =>
+const addresses = Array({ length: 10 }, (_, i) =>
   deriveAddress(HDWallet.deriveChild(watchOnly, i))
 );
 ```

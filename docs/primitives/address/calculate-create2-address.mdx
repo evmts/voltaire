@@ -8,7 +8,7 @@ description: Calculate CREATE2 contract address from deployer, salt, and init co
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const salt = new Uint8Array(32) // 32-byte salt
 const initCode = new Uint8Array([0x60, 0x80]) // Contract bytecode
 
@@ -26,7 +26,7 @@ import * as Address from '@tevm/voltaire/Address'
 // Create function with injected dependencies
 const calculateCreate2Address = CalculateCreate2Address({ keccak256 })
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const salt = new Uint8Array(32) // 32-byte salt
 const initCode = new Uint8Array([0x60, 0x80]) // Contract bytecode
 
@@ -82,7 +82,7 @@ import { Address } from '@tevm/voltaire'
 import * as Hex from '@tevm/voltaire/Hex'
 
 // Deployer (could be factory contract)
-const factory = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const factory = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Contract bytecode (initialization code)
 const initCode = Hex.toBytes(
@@ -126,7 +126,7 @@ Deploy to same address across different chains:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const factory = Address.fromHex("0x...")
+const factory = Address("0x...")
 const salt = 42n
 const initCode = // ... bytecode
 
@@ -248,7 +248,7 @@ CREATE2 was introduced in [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) to
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const initCode = new Uint8Array([0x60, 0x80])
 
 // Valid salts

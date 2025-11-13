@@ -31,14 +31,14 @@ class EventWatcher {
 
   async processBlock(blockNum: number): Promise<Log[]> {
     const block = await provider.getBlock(blockNum)
-    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const filter = BloomFilter(block.logsBloom, 2048, 3)
 
     // Quick bloom check
-    const hasWatchedAddress = Array.from(this.watching).some(addr =>
-      filter.contains(Address.from(addr))
+    const hasWatchedAddress = Array(this.watching).some(addr =>
+      filter.contains(Address(addr))
     )
 
-    const hasWatchedEvent = Array.from(this.eventTopics.values()).some(topic =>
+    const hasWatchedEvent = Array(this.eventTopics.values()).some(topic =>
       filter.contains(topic)
     )
 
@@ -56,7 +56,7 @@ class EventWatcher {
       this.watching.has(log.address.toLowerCase()) ||
       log.topics.some(t => {
         const topicBytes = Hex.toBytes(t)
-        return Array.from(this.eventTopics.values()).some(watched =>
+        return Array(this.eventTopics.values()).some(watched =>
           topicBytes.every((byte, i) => byte === watched[i])
         )
       })
@@ -88,7 +88,7 @@ class EventAggregator {
   }>()
 
   addContract(address: string, events: Record<string, string>) {
-    const addr = Address.from(address)
+    const addr = Address(address)
     const eventMap = new Map<string, Uint8Array>()
 
     for (const [name, sig] of Object.entries(events)) {
@@ -116,10 +116,10 @@ class EventAggregator {
     // Scan blocks
     for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
       const block = await provider.getBlock(blockNum)
-      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+      const filter = BloomFilter(block.logsBloom, 2048, 3)
 
       // Check which contracts might have events
-      const candidates = Array.from(this.contracts.entries()).filter(
+      const candidates = Array(this.contracts.entries()).filter(
         ([_, { address }]) => filter.contains(address)
       )
 
@@ -178,7 +178,7 @@ class HierarchicalFilter {
   async indexRange(startBlock: number, endBlock: number) {
     for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
       const block = await provider.getBlock(blockNum)
-      const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+      const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
 
       // Merge into coarse filter
       this.coarseFilter = this.coarseFilter.merge(blockFilter)
@@ -189,7 +189,7 @@ class HierarchicalFilter {
   }
 
   async findLogs(address: string): Promise<Log[]> {
-    const addr = Address.from(address)
+    const addr = Address(address)
 
     // Step 1: Check coarse filter
     if (!this.coarseFilter.contains(addr)) {
@@ -244,7 +244,7 @@ class TemporalBloomIndex {
     }
 
     // Merge block filter
-    const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
     this.hourlyFilters.set(hourKey, hourFilter.merge(blockFilter))
   }
 
@@ -253,7 +253,7 @@ class TemporalBloomIndex {
     startTime: Date,
     endTime: Date
   ): Promise<number[]> {
-    const addr = Address.from(address)
+    const addr = Address(address)
     const candidateBlocks: number[] = []
 
     // Get relevant hour keys
@@ -324,7 +324,7 @@ class LRUBloomCache {
 
     // Fetch and cache
     const block = await provider.getBlock(blockNum)
-    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const filter = BloomFilter(block.logsBloom, 2048, 3)
 
     // Evict oldest if at capacity
     if (this.cache.size >= this.maxSize) {
@@ -400,7 +400,7 @@ class PersistentBloomStorage {
         'utf-8'
       )
       const data = JSON.parse(content)
-      return BloomFilter.fromHex(data.hex, data.m, data.k)
+      return BloomFilter(data.hex, data.m, data.k)
     } catch {
       return null
     }
@@ -409,7 +409,7 @@ class PersistentBloomStorage {
   async indexRange(startBlock: number, endBlock: number): Promise<void> {
     for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
       const block = await provider.getBlock(blockNum)
-      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+      const filter = BloomFilter(block.logsBloom, 2048, 3)
       await this.saveFilter(blockNum, filter)
     }
   }
@@ -419,7 +419,7 @@ class PersistentBloomStorage {
     endBlock: number,
     address: string
   ): Promise<number[]> {
-    const addr = Address.from(address)
+    const addr = Address(address)
     const matches: number[] = []
 
     for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
@@ -456,7 +456,7 @@ async function scanRangeParallel(
   address: string,
   concurrency: number = 10
 ): Promise<Log[]> {
-  const addr = Address.from(address)
+  const addr = Address(address)
   const allLogs: Log[] = []
 
   // Split range into chunks
@@ -474,7 +474,7 @@ async function scanRangeParallel(
 
       for (let blockNum = start; blockNum <= end; blockNum++) {
         const block = await provider.getBlock(blockNum)
-        const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+        const filter = BloomFilter(block.logsBloom, 2048, 3)
 
         if (filter.contains(addr)) {
           const logs = await provider.getLogs({
@@ -523,7 +523,7 @@ class AdaptiveBatchScanner {
     endBlock: number,
     address: string
   ): Promise<Log[]> {
-    const addr = Address.from(address)
+    const addr = Address(address)
     const allLogs: Log[] = []
 
     for (let i = startBlock; i <= endBlock; i += this.batchSize) {
@@ -550,7 +550,7 @@ class AdaptiveBatchScanner {
 
     for (let blockNum = start; blockNum <= end; blockNum++) {
       const block = await provider.getBlock(blockNum)
-      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+      const filter = BloomFilter(block.logsBloom, 2048, 3)
 
       if (filter.contains(address)) {
         hits++
@@ -613,13 +613,13 @@ class BloomValidator {
     })
 
     // Parse block bloom
-    const blockBloom = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const blockBloom = BloomFilter(block.logsBloom, 2048, 3)
 
     // Rebuild bloom from logs
     const rebuiltBloom = BloomFilter.create(2048, 3)
     for (const log of logs) {
       // Add address
-      rebuiltBloom.add(Address.from(log.address))
+      rebuiltBloom.add(Address(log.address))
 
       // Add topics
       for (const topic of log.topics) {
@@ -633,7 +633,7 @@ class BloomValidator {
 
       // Check each log item
       for (const log of logs) {
-        const addr = Address.from(log.address)
+        const addr = Address(log.address)
         if (!blockBloom.contains(addr)) {
           errors.push(`Missing address: ${log.address}`)
         }
@@ -681,14 +681,14 @@ async function measureFalsePositiveRate(
   endBlock: number,
   address: string
 ): Promise<number> {
-  const addr = Address.from(address)
+  const addr = Address(address)
   let bloomPositives = 0
   let actualPositives = 0
   let falsePositives = 0
 
   for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
     const block = await provider.getBlock(blockNum)
-    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const filter = BloomFilter(block.logsBloom, 2048, 3)
 
     if (filter.contains(addr)) {
       bloomPositives++

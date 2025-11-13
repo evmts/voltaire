@@ -257,7 +257,7 @@ function validateUserInput(input: string): { valid: boolean; error?: string; add
   const hasMixedCase = trimmed !== trimmed.toLowerCase() && trimmed !== trimmed.toUpperCase()
   if (hasMixedCase && !ChecksumAddress.isValid(trimmed)) {
     // Provide correct checksummed version
-    const addr = Address.fromHex(trimmed)
+    const addr = Address(trimmed)
     const correct = addr.toChecksummed()
     return {
       valid: false,
@@ -265,7 +265,7 @@ function validateUserInput(input: string): { valid: boolean; error?: string; add
     }
   }
 
-  const address = Address.fromHex(trimmed)
+  const address = Address(trimmed)
   return { valid: true, address }
 }
 
@@ -292,7 +292,7 @@ async function generateAddressQR(address: Address): Promise<string> {
 }
 
 // Usage
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 const qrDataUrl = await generateAddressQR(addr)
 ```
 
@@ -341,7 +341,7 @@ function loadAddress(key: string): Address | null {
     return null
   }
 
-  return Address.fromHex(stored)
+  return Address(stored)
 }
 ```
 
@@ -350,7 +350,7 @@ function loadAddress(key: string): Address | null {
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
 // Lowercase (toHex)
 addr.toHex()
@@ -365,7 +365,7 @@ addr.toUppercase()
 // "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"
 
 // All represent the same address
-Address.fromHex(addr.toHex()).equals(Address.fromHex(addr.toChecksummed()))
+Address(addr.toHex()).equals(Address(addr.toChecksummed()))
 // true
 ```
 
@@ -375,7 +375,7 @@ Address.fromHex(addr.toHex()).equals(Address.fromHex(addr.toChecksummed()))
 import { Address } from '@tevm/voltaire'
 
 // Input address (lowercase)
-const addr = Address.fromHex("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 
 // Generate checksummed output
 console.log(addr.toChecksummed())

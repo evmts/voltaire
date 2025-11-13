@@ -15,17 +15,17 @@ Chain reorganizations occur when a different chain becomes canonical, invalidati
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Original log (in canonical chain)
-const log = EventLog.from({
+const log = EventLog({
   address: tokenAddress,
   topics: [TRANSFER_SIG, fromHash, toHash],
   data: valueData,
   blockNumber: 18000000n,
-  blockHash: Hash.fromHex('0xabc...'),
+  blockHash: Hash('0xabc...'),
   removed: false,
 });
 
 // After reorg, RPC marks log as removed
-const updatedLog = EventLog.from({
+const updatedLog = EventLog({
   ...log,
   removed: true,
 });
@@ -191,9 +191,9 @@ Logs without `removed` field default to active (not removed):
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const log = EventLog.from({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
+const log = EventLog({
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash('0xddf252ad...')],
   data: new Uint8Array([]),
   // No removed field
 });
@@ -218,8 +218,8 @@ const rpcLog = {
   removed: true, // Set by RPC after reorg
 };
 
-const log = EventLog.from({
-  address: Address.fromHex(rpcLog.address),
+const log = EventLog({
+  address: Address(rpcLog.address),
   topics: rpcLog.topics.map(Hash.fromHex),
   data: Hex.toBytes(rpcLog.data),
   blockNumber: BigInt(rpcLog.blockNumber),

@@ -142,7 +142,7 @@ const plainNumber = 0x01
 executeOpcode(plainNumber) // Type error!
 
 // Must use constructor
-const opcode = Opcode.from(0x01)
+const opcode = Opcode(0x01)
 executeOpcode(opcode) // OK
 ```
 
@@ -154,9 +154,9 @@ executeOpcode(opcode) // OK
 import * as BrandedOpcode from '@tevm/primitives/Opcode/BrandedOpcode'
 
 // From number
-const add = BrandedOpcode.from(0x01)
-const push1 = BrandedOpcode.from(0x60)
-const sstore = BrandedOpcode.from(0x55)
+const add = BrandedOpcode(0x01)
+const push1 = BrandedOpcode(0x60)
+const sstore = BrandedOpcode(0x55)
 
 // From name
 const addByName = BrandedOpcode.fromName('ADD')
@@ -168,7 +168,7 @@ const push1ByName = BrandedOpcode.fromName('PUSH1')
 ```typescript
 import { getInfo } from '@tevm/primitives/Opcode/BrandedOpcode'
 
-const add = BrandedOpcode.from(0x01)
+const add = BrandedOpcode(0x01)
 const info = getInfo(add)
 
 console.log(info.name)          // "ADD"
@@ -182,7 +182,7 @@ console.log(info.stackOutputs)  // 1 (pushes 1 item)
 ```typescript
 import { isPush, isDup, isSwap, isLog } from '@tevm/primitives/Opcode/BrandedOpcode'
 
-const opcode = BrandedOpcode.from(0x60)
+const opcode = BrandedOpcode(0x60)
 
 if (isPush(opcode)) {
   console.log('PUSH operation')
@@ -222,7 +222,7 @@ const instructions = parseInstructions(bytecode)
 for (const instr of instructions) {
   console.log(`${instr.offset}: ${BrandedOpcode.getName(instr.opcode)}`)
   if (instr.immediate) {
-    console.log(`  Data: ${Hex.fromBytes(instr.immediate)}`)
+    console.log(`  Data: ${Hex(instr.immediate)}`)
   }
 }
 
@@ -277,7 +277,7 @@ function disassemble(bytecode: Uint8Array): string {
     const hex = instr.opcode.toString(16).padStart(2, '0')
 
     if (instr.immediate) {
-      const data = Hex.fromBytes(instr.immediate)
+      const data = Hex(instr.immediate)
       lines.push(`${instr.offset.toString().padStart(6)}: ${hex} ${name} ${data}`)
     } else {
       lines.push(`${instr.offset.toString().padStart(6)}: ${hex} ${name}`)
@@ -335,7 +335,7 @@ type BrandedOpcode = number & { readonly __tag: "Opcode" };
 
 function execute(opcode: BrandedOpcode) { ... }
 
-const opcode = Opcode.from(0x01)
+const opcode = Opcode(0x01)
 execute(opcode)    // OK
 
 const number = 0x01
@@ -355,7 +355,7 @@ function analyzeOpcode(opcode: number): Info { ... }
 ### Zero Runtime Cost
 
 ```typescript
-const opcode: BrandedOpcode = Opcode.from(0x01)
+const opcode: BrandedOpcode = Opcode(0x01)
 // opcode is plain number at runtime
 console.log(opcode) // 1
 console.log(opcode.__tag) // undefined (brand doesn't exist at runtime)

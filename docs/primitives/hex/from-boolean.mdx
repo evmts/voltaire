@@ -12,8 +12,8 @@ description: Convert boolean to single-byte hex value
 Always returns a single byte (2 hex characters):
 
 ```typescript
-Hex.fromBoolean(true)   // "0x01" (not "0x1")
-Hex.fromBoolean(false)  // "0x00" (not "0x0")
+Hex(true)   // "0x01" (not "0x1")
+Hex(false)  // "0x00" (not "0x0")
 ```
 
 ## Ethereum Boolean Convention
@@ -40,7 +40,7 @@ Hex.toBoolean("0x00")  // false
 const isActive = true
 const calldata = concat([
   functionSelector,
-  Hex.fromBoolean(isActive).padLeft(32)  // ABI encodes bool as uint256
+  Hex(isActive).padLeft(32)  // ABI encodes bool as uint256
 ])
 ```
 
@@ -50,8 +50,8 @@ const isPaused = false
 const isUpgraded = true
 
 const flags = {
-  paused: Hex.fromBoolean(isPaused),
-  upgraded: Hex.fromBoolean(isUpgraded)
+  paused: Hex(isPaused),
+  upgraded: Hex(isUpgraded)
 }
 ```
 
@@ -66,14 +66,14 @@ const bitmap = permissions.map(Hex.fromBoolean).join('')
 **Conditional Values:**
 ```typescript
 const hasPermission = checkPermission(user)
-const statusByte = Hex.fromBoolean(hasPermission)
+const statusByte = Hex(hasPermission)
 // Include in transaction data
 ```
 
 **Testing/Assertions:**
 ```typescript
 const result = executeTransaction()
-const success = Hex.fromBoolean(result.success)
+const success = Hex(result.success)
 assert(success === "0x01", "Transaction failed")
 ```
 
@@ -84,7 +84,7 @@ Convert boolean to hex and back:
 ```typescript
 // Boolean → Hex
 const value = true
-const hex = Hex.fromBoolean(value)  // "0x01"
+const hex = Hex(value)  // "0x01"
 
 // Hex → Boolean
 const decoded = Hex.toBoolean(hex)  // true

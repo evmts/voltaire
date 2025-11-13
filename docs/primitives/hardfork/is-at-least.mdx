@@ -26,7 +26,7 @@ Check minimum version requirements:
 ```typescript
 import { Hardfork, LONDON } from '@tevm/voltaire'
 
-const fork = Hardfork.fromString(config.hardfork)
+const fork = Hardfork(config.hardfork)
 
 if (!fork.isAtLeast(LONDON)) {
   throw new Error("EIP-1559 requires London or later")

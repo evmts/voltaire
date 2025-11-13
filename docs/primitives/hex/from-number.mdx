@@ -13,8 +13,8 @@ Valid input range: `0` to `Number.MAX_SAFE_INTEGER` (2^53 - 1)
 
 ```typescript
 // Valid
-Hex.fromNumber(0)                      // "0x0"
-Hex.fromNumber(Number.MAX_SAFE_INTEGER)  // "0x1fffffffffffff"
+Hex(0)                      // "0x0"
+Hex(Number.MAX_SAFE_INTEGER)  // "0x1fffffffffffff"
 
 // For larger values, use fromBigInt
 const large = 2n ** 256n - 1n
@@ -27,16 +27,16 @@ The `size` parameter specifies the **byte length** of the output:
 
 ```typescript
 // No padding (minimal representation)
-Hex.fromNumber(255)      // "0xff" (1 byte)
+Hex(255)      // "0xff" (1 byte)
 
 // 2-byte padding
-Hex.fromNumber(255, 2)   // "0x00ff"
+Hex(255, 2)   // "0x00ff"
 
 // 4-byte padding (uint32)
-Hex.fromNumber(255, 4)   // "0x000000ff"
+Hex(255, 4)   // "0x000000ff"
 
 // 32-byte padding (uint256)
-Hex.fromNumber(255, 32)  // "0x00...ff" (64 hex chars)
+Hex(255, 32)  // "0x00...ff" (64 hex chars)
 ```
 
 ## Common Use Cases
@@ -44,26 +44,26 @@ Hex.fromNumber(255, 32)  // "0x00...ff" (64 hex chars)
 **Transaction Values:**
 ```typescript
 const gasPrice = 20_000_000_000  // 20 gwei
-const hex = Hex.fromNumber(gasPrice)  // "0x4a817c800"
+const hex = Hex(gasPrice)  // "0x4a817c800"
 ```
 
 **Block Numbers:**
 ```typescript
 const blockNumber = 18_000_000
-const hex = Hex.fromNumber(blockNumber)  // "0x112a880"
+const hex = Hex(blockNumber)  // "0x112a880"
 ```
 
 **Fixed-Size Fields:**
 ```typescript
 // Chain ID (uint256)
 const chainId = 1  // Ethereum mainnet
-const hex = Hex.fromNumber(chainId, 32)  // 32-byte padded
+const hex = Hex(chainId, 32)  // 32-byte padded
 ```
 
 **Array Indices:**
 ```typescript
 const index = 42
-const hex = Hex.fromNumber(index, 32)  // For storage slot calculation
+const hex = Hex(index, 32)  // For storage slot calculation
 ```
 
 ## Performance

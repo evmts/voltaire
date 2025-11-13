@@ -12,8 +12,8 @@ description: Convert Uint256 to JavaScript BigInt
 ### Arithmetic Operations
 
 ```typescript
-const a = Uint.from(100n)
-const b = Uint.from(50n)
+const a = Uint(100n)
+const b = Uint(50n)
 
 // Use BigInt for operations not supported by Uint
 const bigIntA = Uint.toBigInt(a)
@@ -21,13 +21,13 @@ const bigIntB = Uint.toBigInt(b)
 
 // Custom operation
 const result = bigIntA ** 2n + bigIntB
-const resultUint = Uint.from(result)
+const resultUint = Uint(result)
 ```
 
 ### Comparison with BigInt
 
 ```typescript
-const value = Uint.from(1000n)
+const value = Uint(1000n)
 const bigint = Uint.toBigInt(value)
 
 if (bigint > 500n) {
@@ -38,7 +38,7 @@ if (bigint > 500n) {
 ### JSON Serialization
 
 ```typescript
-const value = Uint.from(12345n)
+const value = Uint(12345n)
 
 // BigInt not supported in JSON.stringify
 const json = JSON.stringify({

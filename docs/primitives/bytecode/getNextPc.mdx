@@ -65,7 +65,7 @@ Next PC = Current PC + 1 + N (where N = push width)
 **Example:**
 
 ```typescript
-const code = Bytecode.fromHex("0x7F" + "FF".repeat(32) + "01");
+const code = Bytecode("0x7F" + "FF".repeat(32) + "01");
 // PUSH32 (0x7F) + 32 bytes data + ADD (0x01)
 
 console.log(code.getNextPc(0));  // 33 (skip PUSH32 + 32 bytes)
@@ -77,7 +77,7 @@ console.log(code.getNextPc(33)); // 34 (ADD is 1 byte)
 ### Manual Iteration
 
 ```typescript
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 
 let pc = 0;
 while (pc !== undefined && pc < code.size()) {
@@ -154,7 +154,7 @@ console.log(isInstructionStart(code, 2));  // true (next instruction)
 ### Disassembly with PC Tracking
 
 ```typescript
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 const disassembly: string[] = [];
 
 let pc = 0;
@@ -224,7 +224,7 @@ console.log(`PC coverage: ${coverage.toFixed(1)}%`);
 ### At End of Bytecode
 
 ```typescript
-const code = Bytecode.fromHex("0x00"); // STOP
+const code = Bytecode("0x00"); // STOP
 const nextPc = code.getNextPc(0);
 
 console.log(nextPc); // undefined (no next instruction)
@@ -241,7 +241,7 @@ console.log(nextPc); // undefined (PC out of bounds)
 
 ```typescript
 // Malformed bytecode: PUSH2 with only 1 byte of data
-const malformed = Bytecode.fromHex("0x6100"); // PUSH2 0x00 (missing 1 byte)
+const malformed = Bytecode("0x6100"); // PUSH2 0x00 (missing 1 byte)
 
 const nextPc = code.getNextPc(0);
 // Implementation dependent: may return PC past end or undefined

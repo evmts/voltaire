@@ -22,13 +22,13 @@ function getNetworkName(chainId: BrandedChain): string {
 
 // Check if mainnet
 function isMainnet(chainId: BrandedChain): boolean {
-  return Chain.equals(chainId, Chain.from(1));
+  return Chain.equals(chainId, Chain(1));
 }
 
 // Check if testnet
 function isTestnet(chainId: BrandedChain): boolean {
   const testnets = [5, 11155111, 17000]; // Goerli, Sepolia, Holesky
-  return testnets.some(id => Chain.equals(chainId, Chain.from(id)));
+  return testnets.some(id => Chain.equals(chainId, Chain(id)));
 }
 ```
 
@@ -46,7 +46,7 @@ const SUPPORTED_CHAINS = [
 
 function isSupportedChain(chainId: BrandedChain): boolean {
   return SUPPORTED_CHAINS.some(id =>
-    Chain.equals(chainId, Chain.from(id))
+    Chain.equals(chainId, Chain(id))
   );
 }
 
@@ -76,12 +76,12 @@ function getProviderConfig(chainId: BrandedChain): ProviderConfig {
   const configs: Record<number, ProviderConfig> = {
     1: {
       rpcUrl: "https://eth.llamarpc.com",
-      chainId: Chain.from(1),
+      chainId: Chain(1),
       name: "Ethereum Mainnet"
     },
     137: {
       rpcUrl: "https://polygon.llamarpc.com",
-      chainId: Chain.from(137),
+      chainId: Chain(137),
       name: "Polygon"
     },
     // ... more chains
@@ -102,7 +102,7 @@ async function createProvider(chainId: BrandedChain): Promise<Provider> {
 
   // Verify chain ID
   const actualChainId = await provider.getChainId();
-  if (!Chain.equals(Chain.from(actualChainId), chainId)) {
+  if (!Chain.equals(Chain(actualChainId), chainId)) {
     throw new Error(
       `Chain ID mismatch. Expected: ${chainId}, Got: ${actualChainId}`
     );
@@ -160,7 +160,7 @@ function buildTransaction(
   // Chain-specific gas settings
   const gasSettings = getGasSettings(chainId);
 
-  return Transaction.from({
+  return Transaction({
     chainId,
     to: params.to,
     value: params.value,
@@ -178,7 +178,7 @@ function getGasSettings(chainId: BrandedChain): {
   // Use EIP-1559 for chains that support it
   const eip1559Chains = [1, 10, 137, 8453, 42161];
 
-  if (eip1559Chains.some(id => Chain.equals(chainId, Chain.from(id)))) {
+  if (eip1559Chains.some(id => Chain.equals(chainId, Chain(id)))) {
     return {
       maxFeePerGas: 50_000_000_000n,
       maxPriorityFeePerGas: 2_000_000_000n
@@ -239,14 +239,14 @@ function validateChainId(input: string | number): BrandedChain {
     throw new Error(`Chain ID out of range: ${chainId}`);
   }
 
-  return Chain.from(chainId);
+  return Chain(chainId);
 }
 
 // Safe chain ID parsing
 function safeParseChainId(input: unknown): BrandedChain | null {
   try {
     if (typeof input === 'number') {
-      return Chain.from(input);
+      return Chain(input);
     }
     if (typeof input === 'string') {
       return validateChainId(input);
@@ -308,7 +308,7 @@ function getChainSelector(): Array<{
   icon: string;
 }> {
   return SUPPORTED_CHAINS.map(id => {
-    const chainId = Chain.from(id);
+    const chainId = Chain(id);
     const metadata = Chain.getMetadata(chainId);
 
     return {
@@ -327,10 +327,10 @@ function getChainSelector(): Array<{
 ```typescript
 // Test chains
 const TEST_CHAINS = {
-  mainnet: Chain.from(1),
-  sepolia: Chain.from(11155111),
-  hardhat: Chain.from(31337),
-  ganache: Chain.from(1337)
+  mainnet: Chain(1),
+  sepolia: Chain(11155111),
+  hardhat: Chain(31337),
+  ganache: Chain(1337)
 };
 
 // Use in tests
@@ -346,7 +346,7 @@ function setupTestProvider(network: keyof typeof TEST_CHAINS): Provider {
 // Mock chain metadata for tests
 function mockChainMetadata(chainId: number) {
   return {
-    chainId: Chain.from(chainId),
+    chainId: Chain(chainId),
     name: `Test Chain ${chainId}`,
     nativeCurrency: {
       name: "Test Ether",

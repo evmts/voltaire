@@ -312,7 +312,7 @@ Bitcoin addresses combine SHA256 and RIPEMD160:
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Simplified Bitcoin P2PKH address derivation
-const publicKey = Hex.from('0x04' + '1234...'); // 65-byte uncompressed secp256k1 public key
+const publicKey = Hex('0x04' + '1234...'); // 65-byte uncompressed secp256k1 public key
 const sha256Hash = SHA256.hash(publicKey);
 const ripemd160Hash = Ripemd160.hash(sha256Hash);
 // Then Base58Check encode with version byte
@@ -342,9 +342,9 @@ function merkleRoot(leaves: Uint8Array[]): Uint8Array {
     for (let i = 0; i < hashes.length; i += 2) {
       const left = hashes[i];
       const right = hashes[i + 1] || left; // Duplicate if odd
-      const combined = Hex.from('0x' +
-        Array.from(left).map(b => b.toString(16).padStart(2, '0')).join('') +
-        Array.from(right).map(b => b.toString(16).padStart(2, '0')).join('')
+      const combined = Hex('0x' +
+        Array(left).map(b => b.toString(16).padStart(2, '0')).join('') +
+        Array(right).map(b => b.toString(16).padStart(2, '0')).join('')
       );
       nextLevel.push(SHA256.hash(combined));
     }

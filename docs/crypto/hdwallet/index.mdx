@@ -478,7 +478,7 @@ class MultiAccountWallet {
   }
 
   getAccountAddresses(accountIndex, count = 5) {
-    return Array.from({ length: count }, (_, i) =>
+    return Array({ length: count }, (_, i) =>
       this.getAccount(accountIndex, i)
     );
   }

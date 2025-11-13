@@ -15,18 +15,18 @@ The input must be exactly 20 bytes. Any other length throws an error:
 import { Address } from '@tevm/voltaire'
 
 // Valid: 20 bytes
-const addr = Address.fromBytes(new Uint8Array(20)) // ✓
+const addr = Address(new Uint8Array(20)) // ✓
 
 // Invalid: too short
 try {
-  Address.fromBytes(new Uint8Array(19))
+  Address(new Uint8Array(19))
 } catch (e) {
   console.error(e) // InvalidAddressLengthError
 }
 
 // Invalid: too long
 try {
-  Address.fromBytes(new Uint8Array(21))
+  Address(new Uint8Array(21))
 } catch (e) {
   console.error(e) // InvalidAddressLengthError
 }
@@ -41,7 +41,7 @@ try {
 
 ```typescript
 const original = new Uint8Array(20)
-const addr = Address.fromBytes(original)
+const addr = Address(original)
 
 // Modifying original doesn't affect address
 original[0] = 0xFF
@@ -61,7 +61,7 @@ console.log(addr[0]) // Still 0x00
 // ABI-encoded addresses are left-padded to 32 bytes
 const abiEncoded = new Uint8Array(32)
 // Last 20 bytes are the address
-const addr = Address.fromBytes(abiEncoded.slice(12, 32))
+const addr = Address(abiEncoded.slice(12, 32))
 ```
 
 ### Reading from Buffer
@@ -71,7 +71,7 @@ const addr = Address.fromBytes(abiEncoded.slice(12, 32))
 const buffer = new Uint8Array(100)
 const offset = 40
 
-const addr = Address.fromBytes(buffer.slice(offset, offset + 20))
+const addr = Address(buffer.slice(offset, offset + 20))
 ```
 
 ### Converting from Hash
@@ -81,7 +81,7 @@ import { keccak256 } from '@tevm/voltaire/crypto'
 
 // Take last 20 bytes of keccak256 hash
 const hash = keccak256(data) // 32 bytes
-const addr = Address.fromBytes(hash.slice(12, 32))
+const addr = Address(hash.slice(12, 32))
 ```
 
 ## Performance

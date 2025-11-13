@@ -18,11 +18,11 @@ const transferFn = {
   type: "function",
   name: "transfer",
   inputs: [
-    Parameter.from("address", "to"),
-    Parameter.from("uint256", "amount")
+    Parameter("address", "to"),
+    Parameter("uint256", "amount")
   ],
   outputs: [
-    Parameter.from("bool", "success")
+    Parameter("bool", "success")
   ]
 }
 ```
@@ -33,12 +33,12 @@ const transferFn = {
 import * as Parameter from '@tevm/voltaire/Abi/parameter'
 
 // Array types
-const addressesParam = Parameter.from("address[]", "recipients")
-const fixedArrayParam = Parameter.from("uint256[3]", "values")
+const addressesParam = Parameter("address[]", "recipients")
+const fixedArrayParam = Parameter("uint256[3]", "values")
 
 // Bytes types
-const bytesParam = Parameter.from("bytes", "data")
-const bytes32Param = Parameter.from("bytes32", "hash")
+const bytesParam = Parameter("bytes", "data")
+const bytes32Param = Parameter("bytes32", "hash")
 ```
 
 ## See Also

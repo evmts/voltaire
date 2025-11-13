@@ -66,7 +66,7 @@ const list2 = AccessList(bytes);
 Decode RLP bytes to access list.
 
 ```typescript
-AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
+AccessList(bytes: Uint8Array): BrandedAccessList
 ```
 
 **Parameters:**
@@ -81,8 +81,8 @@ AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
 
 **Example:**
 ```typescript
-const bytes = Hex.from('0xc0'); // RLP-encoded empty list
-const list = AccessList.fromBytes(Hex.toBytes(bytes));
+const bytes = Hex('0xc0'); // RLP-encoded empty list
+const list = AccessList(Hex.toBytes(bytes));
 ```
 
 **RLP Structure:**
@@ -112,7 +112,7 @@ let list = AccessList.create();
 
 ```typescript
 // Decode from RLP
-const list = AccessList.fromBytes(tx.accessListBytes);
+const list = AccessList(tx.accessListBytes);
 ```
 
 ### From Items Array
@@ -145,7 +145,7 @@ list = list.withStorageKey(addr1, key2);
 ```typescript
 function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
   try {
-    const list = AccessList.fromBytes(bytes);
+    const list = AccessList(bytes);
     AccessList.assertValid(list);
     return list;
   } catch {
@@ -176,7 +176,7 @@ const clone = AccessList(original);
 2. **Validate untrusted bytes**
    ```typescript
    try {
-     const list = AccessList.fromBytes(userBytes);
+     const list = AccessList(userBytes);
      AccessList.assertValid(list);
    } catch (err) {
      // Handle invalid data
@@ -202,7 +202,7 @@ const clone = AccessList(original);
 
 ```typescript
 try {
-  const list = AccessList.fromBytes(bytes);
+  const list = AccessList(bytes);
 } catch (err) {
   if (err.message.includes('expected list')) {
     // Invalid RLP structure

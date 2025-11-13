@@ -22,7 +22,7 @@ Because Address is a `Uint8Array` subclass, you get full access to:
 ### Array Operations
 
 ```typescript
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Get first 4 bytes
 addr.slice(0, 4) // Uint8Array [0x74, 0x2d, 0x35, 0xcc]
@@ -34,7 +34,7 @@ addr.slice(-4) // Uint8Array [0x5f, 0x51, 0xe3, 0xe]
 ### Iteration
 
 ```typescript
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Iterate bytes
 for (const byte of addr) {
@@ -50,7 +50,7 @@ for (const [i, byte] of addr.entries()) {
 ### Search
 
 ```typescript
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Find first non-zero byte
 const firstNonZero = addr.find(b => b !== 0) // 0x74
@@ -66,7 +66,7 @@ addr.includes(0xff) // false
 const zeroAddr = Address.zero()
 zeroAddr.every(b => b === 0) // true (all bytes are zero)
 
-const addr = Address.fromHex("0x000000000000000000000000000000000000003e")
+const addr = Address("0x000000000000000000000000000000000000003e")
 addr.some(b => b !== 0) // true (has non-zero bytes)
 ```
 

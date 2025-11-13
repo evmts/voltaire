@@ -164,7 +164,7 @@ ids.forEach(fork => {
 // allNames - requires parsing
 const names = Hardfork.allNames()
 names.forEach(name => {
-  const fork = Hardfork.fromString(name)
+  const fork = Hardfork(name)
   console.log(fork.hasEIP1559())  // ⚠️ Must parse first
 })
 ```

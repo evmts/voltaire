@@ -204,13 +204,13 @@ async function submitTransaction(
 
   // Submit to network
   await provider.send('eth_sendRawTransaction', [
-    Hex.fromBytes(serialized)
+    Hex(serialized)
   ])
 
   // Wait for confirmation
   let receipt = null
   while (!receipt) {
-    receipt = await provider.getTransactionReceipt(Hex.fromBytes(txHash))
+    receipt = await provider.getTransactionReceipt(Hex(txHash))
     if (!receipt) {
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
@@ -228,12 +228,12 @@ async function submitWithRetry(
   maxRetries = 3
 ): Promise<string> {
   const serialized = serialize(tx)
-  const txHash = Hex.fromBytes(hash(tx))
+  const txHash = Hex(hash(tx))
 
   for (let i = 0; i < maxRetries; i++) {
     try {
       await provider.send('eth_sendRawTransaction', [
-        Hex.fromBytes(serialized)
+        Hex(serialized)
       ])
       return txHash
     } catch (error) {
@@ -358,7 +358,7 @@ class TransactionPool {
   private byNonce = new Map<string, Map<bigint, Transaction.Any>>()
 
   add(tx: Transaction.Any, baseFee: bigint): void {
-    const txHash = Hex.fromBytes(hash(tx))
+    const txHash = Hex(hash(tx))
     const sender = Address.toHex(getSender(tx))
 
     // Store by hash
@@ -386,14 +386,14 @@ class TransactionPool {
   }
 
   getAll(): Transaction.Any[] {
-    return Array.from(this.pending.values())
+    return Array(this.pending.values())
   }
 
   getPending(sender: BrandedAddress): Transaction.Any[] {
     const senderNonces = this.byNonce.get(Address.toHex(sender))
     if (!senderNonces) return []
 
-    return Array.from(senderNonces.values())
+    return Array(senderNonces.values())
       .sort((a, b) => Number(a.nonce - b.nonce))
   }
 }
@@ -452,11 +452,11 @@ async function safeSubmitTransaction(
 
     // Serialize
     const serialized = serialize(tx)
-    const txHash = Hex.fromBytes(hash(tx))
+    const txHash = Hex(hash(tx))
 
     // Submit
     await provider.send('eth_sendRawTransaction', [
-      Hex.fromBytes(serialized)
+      Hex(serialized)
     ])
 
     return { success: true, txHash }

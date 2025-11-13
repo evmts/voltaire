@@ -25,7 +25,7 @@ const typedData = {
     name: 'MyDApp',
     version: '1',
     chainId: 1n,
-    verifyingContract: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+    verifyingContract: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
   },
   types: {
     Person: [
@@ -40,8 +40,8 @@ const typedData = {
   },
   primaryType: 'Mail',
   message: {
-    from: { name: 'Alice', wallet: Address.fromHex('0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826') },
-    to: { name: 'Bob', wallet: Address.fromHex('0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB') },
+    from: { name: 'Alice', wallet: Address('0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826') },
+    to: { name: 'Bob', wallet: Address('0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB') },
     contents: 'Hello, Bob!'
   }
 };

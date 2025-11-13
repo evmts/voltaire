@@ -16,8 +16,8 @@ WASM uses the same TypeScript implementation - comparison happens in JavaScript 
 ```typescript
 import { Address } from '@tevm/voltaire/wasm'
 
-const addr1 = Address.from(1n)
-const addr2 = Address.from(2n)
+const addr1 = Address(1n)
+const addr2 = Address(2n)
 
 // Same API as native
 console.log(Address.lessThan(addr1, addr2)) // true
@@ -45,9 +45,9 @@ console.log(addr1.lessThan(addr2)) // true
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const a1 = Address.fromHex("0x0000000000000000000000000000000000000001")
-const a2 = Address.fromHex("0x0000000000000000000000000000000000000002")
-const a3 = Address.fromHex("0x1000000000000000000000000000000000000000")
+const a1 = Address("0x0000000000000000000000000000000000000001")
+const a2 = Address("0x0000000000000000000000000000000000000002")
+const a3 = Address("0x1000000000000000000000000000000000000000")
 
 console.log(a1.lessThan(a2)) // true
 console.log(a2.lessThan(a3)) // true
@@ -65,9 +65,9 @@ Sort addresses in ascending order:
 import { Address } from '@tevm/voltaire'
 
 const addresses = [
-  Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff"),
-  Address.fromHex("0x0000000000000000000000000000000000000001"),
-  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address("0xffffffffffffffffffffffffffffffffffffffff"),
+  Address("0x0000000000000000000000000000000000000001"),
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
 ]
 
 // Sort using lessThan
@@ -97,17 +97,17 @@ function getAddressesInRange(
 }
 
 const allAddresses = [
-  Address.from(5n),
-  Address.from(15n),
-  Address.from(25n),
+  Address(5n),
+  Address(15n),
+  Address(25n),
 ]
 
 const inRange = getAddressesInRange(
   allAddresses,
-  Address.from(10n),
-  Address.from(20n)
+  Address(10n),
+  Address(20n)
 )
-// Returns: [Address.from(15n)]
+// Returns: [Address(15n)]
 ```
 
 ### Binary Search
@@ -137,13 +137,13 @@ function binarySearch(sorted: Address[], target: Address): number {
 }
 
 const sorted = [
-  Address.from(1n),
-  Address.from(5n),
-  Address.from(10n),
-  Address.from(50n),
+  Address(1n),
+  Address(5n),
+  Address(10n),
+  Address(50n),
 ]
 
-const index = binarySearch(sorted, Address.from(10n))
+const index = binarySearch(sorted, Address(10n))
 console.log(index) // 2
 ```
 
@@ -280,8 +280,8 @@ if (cmp < 0) {
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const a = Address.from(10n)
-const b = Address.from(20n)
+const a = Address(10n)
+const b = Address(20n)
 
 // These are equivalent
 a.lessThan(b)           === (a.compare(b) < 0)

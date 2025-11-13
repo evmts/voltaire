@@ -145,9 +145,9 @@ const passwordKey = await AesGcm.deriveKey(password, salt, 600000, 256);
 const encryptedKey = await AesGcm.encrypt(keyBytes, passwordKey, nonce);
 
 localStorage.setItem('encryptedKey', JSON.stringify({
-  salt: Array.from(salt),
-  nonce: Array.from(nonce),
-  ciphertext: Array.from(encryptedKey)
+  salt: Array(salt),
+  nonce: Array(nonce),
+  ciphertext: Array(encryptedKey)
 }));
 ```
 

@@ -173,7 +173,7 @@ function parseStorageKeys(json: string): BrandedStorageKey[] {
   for (const item of parsed) {
     if (typeof item === 'string') {
       // Parse from string format
-      const key = State.StorageKey.fromString(item);
+      const key = State.StorageKey(item);
       keys.push(key);
     } else if (State.StorageKey.is(item)) {
       // Already a StorageKey (shouldn't happen from JSON.parse, but type-safe)

@@ -41,7 +41,7 @@ Returns the bytecode length of the account at the given address. Returns 0 for:
 ```typescript
 import { extcodesize } from '@tevm/voltaire/evm/context';
 
-const contractAddr = Address.from('0x...');
+const contractAddr = Address('0x...');
 const frame = createFrame({ stack: [BigInt(contractAddr)] });
 
 const err = extcodesize(frame, host);

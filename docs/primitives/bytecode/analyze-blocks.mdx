@@ -111,7 +111,7 @@ Blocks are **maximal sequences**: cannot be extended without violating single en
 // JUMPDEST, DUP1, ADD         [Block 1: PC 5-8, fallthrough]
 // JUMPDEST, STOP              [Block 2: PC 8-10, stop]
 
-const code = Bytecode.fromHex("0x60016002015b80015b00");
+const code = Bytecode("0x60016002015b80015b00");
 const blocks = code.analyzeBlocks();
 
 console.log(blocks.length); // 3
@@ -248,7 +248,7 @@ blocks.forEach(block => {
 
 ```typescript
 // PUSH1 1, PUSH1 2, ADD, STOP
-const code = Bytecode.fromHex("0x6001600201005");
+const code = Bytecode("0x6001600201005");
 const blocks = code.analyzeBlocks();
 
 console.log(blocks.length); // 1 block (no branches)
@@ -260,7 +260,7 @@ console.log(blocks[0].successors); // []
 
 ```typescript
 // PUSH1 1, PUSH1 5, JUMPI, PUSH1 2, JUMPDEST, STOP
-const code = Bytecode.fromHex("0x600160055760025b00");
+const code = Bytecode("0x600160055760025b00");
 const blocks = code.analyzeBlocks({ buildCFG: true });
 
 console.log(blocks.length); // 3 blocks
@@ -288,7 +288,7 @@ blocks.forEach(block => {
 
 ```typescript
 // Solidity function dispatcher creates fan-out CFG
-const code = Bytecode.fromHex(contractBytecode);
+const code = Bytecode(contractBytecode);
 const blocks = code.analyzeBlocks({ buildCFG: true });
 
 // Find dispatcher block (many successors)
@@ -427,7 +427,7 @@ const blocks = code.analyzeBlocks({ buildCFG: true });
 const dominators = computeDominators(blocks);
 
 dominators.forEach((doms, blockIdx) => {
-  console.log(`Block ${blockIdx} dominated by: ${Array.from(doms).join(', ')}`);
+  console.log(`Block ${blockIdx} dominated by: ${Array(doms).join(', ')}`);
 });
 ```
 

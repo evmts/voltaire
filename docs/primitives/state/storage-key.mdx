@@ -44,7 +44,7 @@ function StorageKey(
 import * as State from '@tevm/voltaire/State';
 import * as Address from '@tevm/voltaire/Address';
 
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 // Storage layout
 const totalSupplyKey = State.StorageKey(usdcAddress, 0n);  // Slot 0
@@ -89,11 +89,11 @@ function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
   encoded.set(encodeBigInt(baseSlot, 32), 32);
 
   const hash = Keccak256.hash(encoded);
-  return BigInt('0x' + Buffer.from(hash).toString('hex'));
+  return BigInt('0x' + Buffer(hash).toString('hex'));
 }
 
-const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const tokenAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // balances mapping at slot 1
 const userBalanceSlot = computeMappingSlot(userAddress, 1n);

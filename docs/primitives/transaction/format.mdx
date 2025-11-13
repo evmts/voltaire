@@ -90,7 +90,7 @@ function debugTransaction(tx: Transaction.Any) {
 
   console.group('Transaction Debug')
   console.log('Description:', description)
-  console.log('Hash:', Hex.fromBytes(txHash))
+  console.log('Hash:', Hex(txHash))
   console.log('Type:', tx.type)
   console.log('Gas Limit:', tx.gasLimit)
   console.groupEnd()
@@ -110,7 +110,7 @@ interface TransactionRecord {
 
 function recordTransaction(tx: Transaction.Any): TransactionRecord {
   return {
-    hash: Hex.fromBytes(hash(tx)),
+    hash: Hex(hash(tx)),
     description: format(tx),
     timestamp: Date.now()
   }
@@ -184,7 +184,7 @@ function customFormat(tx: Transaction.Any): string {
     ` | Value: ${tx.value / 10n**18n} ETH` : ''
 
   const data = tx.data.length > 0 ?
-    ` | Data: ${Hex.fromBytes(tx.data).slice(0, 10)}...` : ''
+    ` | Data: ${Hex(tx.data).slice(0, 10)}...` : ''
 
   return `[${type}] To: ${to} | Nonce: ${tx.nonce}${value}${data}`
 }

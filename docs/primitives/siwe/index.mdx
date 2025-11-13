@@ -250,7 +250,7 @@ import { Siwe, Address } from '@tevm/voltaire';
 // Create message
 const message = Siwe.create({
   domain: "example.com",
-  address: Address.fromHex("0x..."),
+  address: Address("0x..."),
   uri: "https://example.com/login",
   chainId: 1,
   statement: "Sign in to Example App",

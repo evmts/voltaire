@@ -146,7 +146,7 @@ Very fast - delegates to platform's secure random number generator. Suitable for
 
 ```typescript
 // Generate 100 random 32-byte values
-const randoms = Array.from({ length: 100 }, () => Hex.random(32))
+const randoms = Array({ length: 100 }, () => Hex.random(32))
 // Fast enough for most use cases
 ```
 

@@ -75,7 +75,7 @@ function setHash(hex: string) {
 
 **Determine Padding Needed:**
 ```typescript
-const hex = Hex.fromNumber(255)
+const hex = Hex(255)
 const currentSize = Hex.size(hex)  // 1
 const targetSize = 32
 
@@ -114,7 +114,7 @@ const parts: string[] = []
 let totalSize = 0
 
 for (const part of data) {
-  const hex = Hex.fromBytes(part)
+  const hex = Hex(part)
   totalSize += Hex.size(hex)
   parts.push(hex)
 

@@ -266,7 +266,7 @@ function deriveAddress(privateKey: Uint8Array): string {
   const addressBytes = hash.slice(12);
 
   // 4. Format as hex string
-  return Address.toHex(Address.from(addressBytes));
+  return Address.toHex(Address(addressBytes));
 }
 
 // Usage

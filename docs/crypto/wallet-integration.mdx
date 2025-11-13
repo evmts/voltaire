@@ -58,7 +58,7 @@ const passphrase = ''; // or 'your secret passphrase'
 const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
 
 console.log('Seed length:', seed.length); // 64 bytes
-console.log('Seed (hex):', Array.from(seed).map(b => b.toString(16).padStart(2, '0')).join(''));
+console.log('Seed (hex):', Array(seed).map(b => b.toString(16).padStart(2, '0')).join(''));
 
 // Different passphrases = different seeds
 const seedWithPass = await Bip39.mnemonicToSeed(mnemonic, 'my secret');
@@ -137,7 +137,7 @@ function deriveEthereumAddress(hdKey: ExtendedKey): string {
   const addressBytes = hash.slice(-20);
 
   // 6. Convert to checksummed hex address
-  const address = Address.from(addressBytes);
+  const address = Address(addressBytes);
 
   return Address.toHex(address);
 }
@@ -541,7 +541,7 @@ async function testFullWorkflow() {
   // Expected seed (hex)
   const expectedSeed = '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4';
 
-  const actualSeed = Array.from(seed)
+  const actualSeed = Array(seed)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 

@@ -241,7 +241,7 @@ interface Transaction {
 const defaultTx: Transaction = {
   value: Uint.ZERO,
   nonce: Uint.ZERO,
-  gasLimit: Uint.from(21000n)
+  gasLimit: Uint(21000n)
 }
 
 // Optional values with defaults
@@ -257,9 +257,9 @@ function transfer(
 
 ```typescript
 // Create bit masks using constants
-const mask8bit = Uint.from(0xffn)          // 8-bit mask
-const mask16bit = Uint.from(0xffffn)       // 16-bit mask
-const mask32bit = Uint.from(0xffffffffn)   // 32-bit mask
+const mask8bit = Uint(0xffn)          // 8-bit mask
+const mask16bit = Uint(0xffffn)       // 16-bit mask
+const mask32bit = Uint(0xffffffffn)   // 32-bit mask
 
 // Or create dynamically
 function createMask(bits: number): BrandedUint256 {
@@ -307,7 +307,7 @@ const pow2_128 = Uint.ONE.shiftLeft(128) // 2^128
 const pow2_255 = Uint.ONE.shiftLeft(255) // 2^255 (largest power of 2 in uint256)
 
 // Half of MAX
-const halfMax = Uint.MAX.dividedBy(Uint.from(2n))
+const halfMax = Uint.MAX.dividedBy(Uint(2n))
 // Or equivalently
 const halfMax2 = Uint.ONE.shiftLeft(255)  // 2^255
 ```
@@ -316,8 +316,8 @@ const halfMax2 = Uint.ONE.shiftLeft(255)  // 2^255
 
 ```typescript
 // Common scaling factors for fixed-point math
-const WAD = Uint.from(10n ** 18n)  // 18 decimals (like ether)
-const RAY = Uint.from(10n ** 27n)  // 27 decimals (high precision)
+const WAD = Uint(10n ** 18n)  // 18 decimals (like ether)
+const RAY = Uint(10n ** 27n)  // 27 decimals (high precision)
 
 function wadMul(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
   return a.times(b).dividedBy(WAD)
@@ -328,8 +328,8 @@ function wadDiv(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
 }
 
 // Example: 2.5 * 1.5 = 3.75
-const a = Uint.from(25n * 10n ** 17n)  // 2.5 WAD
-const b = Uint.from(15n * 10n ** 17n)  // 1.5 WAD
+const a = Uint(25n * 10n ** 17n)  // 2.5 WAD
+const b = Uint(15n * 10n ** 17n)  // 1.5 WAD
 const result = wadMul(a, b)             // 3.75 WAD
 ```
 
@@ -346,9 +346,9 @@ const ones = Array(10).fill(Uint.ONE)
 const maxValues = Array(10).fill(Uint.MAX)
 
 // Initialize array with sequence
-const sequence = Array.from(
+const sequence = Array(
   { length: 10 },
-  (_, i) => Uint.from(BigInt(i))
+  (_, i) => Uint(BigInt(i))
 )
 // [0n, 1n, 2n, ..., 9n]
 ```
@@ -365,10 +365,10 @@ function testBoundaries(fn: (value: BrandedUint256) => BrandedUint256) {
   console.log("ONE:", fn(Uint.ONE))
 
   // Test with small value
-  console.log("Small:", fn(Uint.from(100n)))
+  console.log("Small:", fn(Uint(100n)))
 
   // Test with large value
-  console.log("Large:", fn(Uint.MAX.dividedBy(Uint.from(2n))))
+  console.log("Large:", fn(Uint.MAX.dividedBy(Uint(2n))))
 
   // Test with MAX
   console.log("MAX:", fn(Uint.MAX))
@@ -379,19 +379,19 @@ function testBoundaries(fn: (value: BrandedUint256) => BrandedUint256) {
 
 ```typescript
 // Derive common mathematical bounds
-const UINT8_MAX = Uint.from((2n ** 8n) - 1n)    // 255
-const UINT16_MAX = Uint.from((2n ** 16n) - 1n)  // 65535
-const UINT32_MAX = Uint.from((2n ** 32n) - 1n)  // 4294967295
-const UINT64_MAX = Uint.from((2n ** 64n) - 1n)  // 18446744073709551615
-const UINT128_MAX = Uint.from((2n ** 128n) - 1n) // 2^128 - 1
+const UINT8_MAX = Uint((2n ** 8n) - 1n)    // 255
+const UINT16_MAX = Uint((2n ** 16n) - 1n)  // 65535
+const UINT32_MAX = Uint((2n ** 32n) - 1n)  // 4294967295
+const UINT64_MAX = Uint((2n ** 64n) - 1n)  // 18446744073709551615
+const UINT128_MAX = Uint((2n ** 128n) - 1n) // 2^128 - 1
 const UINT256_MAX = Uint.MAX                     // 2^256 - 1
 
 // Common Ethereum values
-const GWEI = Uint.from(10n ** 9n)      // 1 gwei = 10^9 wei
-const ETHER = Uint.from(10n ** 18n)    // 1 ether = 10^18 wei
+const GWEI = Uint(10n ** 9n)      // 1 gwei = 10^9 wei
+const ETHER = Uint(10n ** 18n)    // 1 ether = 10^18 wei
 
 // Gas limits
-const MIN_GAS = Uint.from(21000n)      // Minimum transaction gas
-const BLOCK_GAS_LIMIT = Uint.from(30_000_000n)  // Typical block gas limit
+const MIN_GAS = Uint(21000n)      // Minimum transaction gas
+const BLOCK_GAS_LIMIT = Uint(30_000_000n)  // Typical block gas limit
 ```
 

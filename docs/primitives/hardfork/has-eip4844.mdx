@@ -164,7 +164,7 @@ Validate blob transaction support:
 import { Hardfork, CANCUN } from '@tevm/voltaire'
 
 function validateBlobSupport(config: NetworkConfig) {
-  const fork = Hardfork.fromString(config.hardfork)
+  const fork = Hardfork(config.hardfork)
 
   if (!fork.hasEIP4844()) {
     throw new Error(

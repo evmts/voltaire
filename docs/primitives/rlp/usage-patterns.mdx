@@ -143,7 +143,7 @@ function decodeTransaction(bytes: Uint8Array): Transaction {
   // Helper to convert bytes to bigint
   function bytesToBigint(bytes: Uint8Array): bigint {
     if (bytes.length === 0) return 0n
-    return BigInt('0x' + Array.from(bytes)
+    return BigInt('0x' + Array(bytes)
       .map(b => b.toString(16).padStart(2, '0'))
       .join(''))
   }

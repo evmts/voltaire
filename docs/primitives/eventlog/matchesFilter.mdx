@@ -39,8 +39,8 @@ Array with null wildcards and OR logic:
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userHash = Hash.fromHex('0x000...user');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const userHash = Hash('0x000...user');
 
 const matches = log.matchesFilter({
   topics: [
@@ -74,7 +74,7 @@ Exact block match:
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const blockHash = Hash.fromHex('0xabc...');
+const blockHash = Hash('0xabc...');
 
 const matches = log.matchesFilter({
   blockHash: blockHash,
@@ -106,15 +106,15 @@ const matches = log.matchesFilter({
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userHash = Hash.fromHex('0x000...user');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const userHash = Hash('0x000...user');
 
 // Equivalent to eth_getLogs filter
 const filtered = allLogs.filter(log =>
   log.matchesFilter({
     address: [
-      Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
-      Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+      Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+      Address('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
     ],
     topics: [
       TRANSFER_SIG,      // Transfer events
@@ -168,12 +168,12 @@ const range = log.matchesFilter({
 
 // Option 2: Block hash (more precise)
 const hash = log.matchesFilter({
-  blockHash: Hash.fromHex('0xabc...'),
+  blockHash: Hash('0xabc...'),
 });
 
 // Don't mix: blockHash takes precedence
 const mixed = log.matchesFilter({
-  blockHash: Hash.fromHex('0xabc...'),
+  blockHash: Hash('0xabc...'),
   fromBlock: 18000000n,  // Ignored
   toBlock: 18500000n,    // Ignored
 });
@@ -257,7 +257,7 @@ Filter checks only apply if log has required fields:
 ```typescript
 import { EventLog } from '@tevm/voltaire';
 
-const pendingLog = EventLog.from({
+const pendingLog = EventLog({
   address: contractAddress,
   topics: [TRANSFER_SIG],
   data: new Uint8Array([]),
@@ -273,7 +273,7 @@ console.log(matches1); // true (block filters skipped)
 
 // Block hash filter ignored (no blockHash)
 const matches2 = pendingLog.matchesFilter({
-  blockHash: Hash.fromHex('0xabc...'),
+  blockHash: Hash('0xabc...'),
 });
 console.log(matches2); // true (block hash filter skipped)
 ```

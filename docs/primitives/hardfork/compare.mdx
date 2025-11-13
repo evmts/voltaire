@@ -124,8 +124,8 @@ Correctly handles aliases:
 ```typescript
 import { Hardfork } from '@tevm/voltaire'
 
-const merge = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")
+const merge = Hardfork("merge")
+const paris = Hardfork("paris")
 
 Hardfork.compare(merge, paris)  // 0 (same hardfork)
 ```

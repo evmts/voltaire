@@ -25,8 +25,8 @@ Use through the `Uint` class:
 import { Uint } from '@tevm/voltaire'
 
 // Create Uint
-const a = Uint.from(100n)
-const b = Uint.fromHex("0xff")
+const a = Uint(100n)
+const b = Uint("0xff")
 
 // Arithmetic
 const sum = Uint.plus(a, b)

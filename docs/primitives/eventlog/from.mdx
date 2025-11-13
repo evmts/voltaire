@@ -31,12 +31,12 @@ const rpcLog = {
 };
 
 const log = EventLog({
-  address: Address.fromHex(rpcLog.address),
+  address: Address(rpcLog.address),
   topics: rpcLog.topics.map(Hash.fromHex),
   data: Hex.toBytes(rpcLog.data),
   blockNumber: BigInt(rpcLog.blockNumber),
-  blockHash: Hash.fromHex(rpcLog.blockHash),
-  transactionHash: Hash.fromHex(rpcLog.transactionHash),
+  blockHash: Hash(rpcLog.blockHash),
+  transactionHash: Hash(rpcLog.transactionHash),
   transactionIndex: Number(rpcLog.transactionIndex),
   logIndex: Number(rpcLog.logIndex),
   removed: rpcLog.removed,
@@ -51,8 +51,8 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 // Minimal log with required fields only
 const testLog = EventLog({
   address: Address.zero(),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: Hex.from('0x'),
+  topics: [Hash('0xddf252ad...')],
+  data: Hex('0x'),
 });
 
 console.log(testLog.blockNumber); // undefined
@@ -65,16 +65,16 @@ console.log(testLog.removed); // undefined (defaults to false)
 import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
 
 const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [
-    Hash.fromHex('0xddf252ad...'), // Transfer signature
-    Hash.fromHex('0x000...from'),  // from address
-    Hash.fromHex('0x000...to'),    // to address
+    Hash('0xddf252ad...'), // Transfer signature
+    Hash('0x000...from'),  // from address
+    Hash('0x000...to'),    // to address
   ],
   data: Hex.toBytes('0x0000...0001'), // value
   blockNumber: 18000000n,
-  blockHash: Hash.fromHex('0xabc...'),
-  transactionHash: Hash.fromHex('0xdef...'),
+  blockHash: Hash('0xabc...'),
+  transactionHash: Hash('0xdef...'),
   transactionIndex: 10,
   logIndex: 5,
   removed: false,
@@ -90,12 +90,12 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 const anonymousLog = EventLog({
   address: contractAddress,
   topics: [
-    Hash.fromHex('0x000...param1'),
-    Hash.fromHex('0x000...param2'),
-    Hash.fromHex('0x000...param3'),
-    Hash.fromHex('0x000...param4'),
+    Hash('0x000...param1'),
+    Hash('0x000...param2'),
+    Hash('0x000...param3'),
+    Hash('0x000...param4'),
   ],
-  data: Hex.from('0x'),
+  data: Hex('0x'),
 });
 
 // getTopic0 returns first indexed parameter (not signature)

@@ -81,7 +81,7 @@ const iv = [
 iv.forEach((val, i) => view.setBigUint64(4 + i * 8, val, true));
 
 // Set message block m (128 bytes, example data)
-const message = Hex.from('0x48656c6c6f20426c616b6532622100' + '00'.repeat(115));
+const message = Hex('0x48656c6c6f20426c616b6532622100' + '00'.repeat(115));
 input.set(message, 68);
 
 // Set offset counters t (little-endian u64s)
@@ -232,7 +232,7 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Vector 1: Empty message hash
 // Hash of empty string with Blake2b should produce specific known output
-const input1 = Hex.from(
+const input1 = Hex(
   '0x0000000c' + // rounds = 12
   '6a09e667f2bcc948bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1' + // h (IV XOR params)
   '510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179' +
@@ -247,7 +247,7 @@ const result1 = execute(PrecompileAddress.BLAKE2F, input1, 20n, Hardfork.CANCUN)
 
 // Vector 2: "abc" message hash
 // Standard test vector - hash of "abc"
-const input2 = Hex.from(
+const input2 = Hex(
   '0x0000000c' + // rounds = 12
   '6a09e667f2bcc948bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1' + // h (IV XOR params)
   '510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179' +
@@ -264,7 +264,7 @@ const result2 = execute(PrecompileAddress.BLAKE2F, input2, 20n, Hardfork.CANCUN)
 
 // Vector 3: Variable rounds (1 round only)
 // Tests gas calculation - should cost 1 gas
-const input3 = Hex.from(
+const input3 = Hex(
   '0x00000001' + // rounds = 1
   '6a09e667f2bcc948bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1' + // h
   '510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179' +
@@ -278,7 +278,7 @@ const result3 = execute(PrecompileAddress.BLAKE2F, input3, 10n, Hardfork.CANCUN)
 
 // Vector 4: Maximum rounds
 // Tests high round counts (Zcash uses higher round counts)
-const input4 = Hex.from(
+const input4 = Hex(
   '0x00002710' + // rounds = 10000
   '6a09e667f2bcc948bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1' + // h
   '510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179' +

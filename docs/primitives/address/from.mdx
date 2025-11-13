@@ -68,25 +68,25 @@ type AddressLike =
 
 **Number** - Converted to 20-byte representation:
 ```typescript
-const addr = Address.from(69)
+const addr = Address(69)
 // 0x0000000000000000000000000000000000000045
 ```
 
 **Bigint** - Takes lower 160 bits:
 ```typescript
-const addr = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+const addr = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
 ```
 
 **String** - Hex string with or without `0x` prefix:
 ```typescript
-const addr1 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const addr2 = Address.from("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 ```
 
 **Uint8Array** - Must be exactly 20 bytes:
 ```typescript
 const bytes = new Uint8Array(20)
-const addr = Address.from(bytes)
+const addr = Address(bytes)
 ```
 
 <Warning title="String Interpretation">

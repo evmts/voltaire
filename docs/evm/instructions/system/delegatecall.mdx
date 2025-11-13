@@ -75,13 +75,13 @@ import { Address } from '@tevm/voltaire/primitives';
 
 const frame = createFrame({
   gasRemaining: 1000000n,
-  address: Address.from("0x1234..."),
-  caller: Address.from("0x5678..."),
+  address: Address("0x1234..."),
+  caller: Address("0x5678..."),
   value: 1_000_000_000_000_000_000n  // 1 ETH from original call
 });
 
 // Call library function
-const libraryAddress = Address.from("0xLibrary...");
+const libraryAddress = Address("0xLibrary...");
 const calldata = new Uint8Array([/* function selector + params */]);
 
 // Write calldata to memory

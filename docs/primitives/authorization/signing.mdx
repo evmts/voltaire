@@ -444,7 +444,7 @@ import { Authorization, Address } from '@tevm/voltaire';
 // 1. Create unsigned authorization
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   nonce: 0n
 };
 
@@ -466,7 +466,7 @@ const authority = Authorization.verify.call(auth);
 console.log(`Signed by: ${authority}`);
 
 // 6. Confirm it's your account
-const myAddress = Address.fromPrivateKey(privateKey);
+const myAddress = Address(privateKey);
 console.log(`Match: ${Address.equals(authority, myAddress)}`);
 ```
 
@@ -501,7 +501,7 @@ async function createAuthorization(
   privateKey: Uint8Array
 ): Promise<Authorization.Item> {
   // Get current account nonce
-  const myAddress = Address.fromPrivateKey(privateKey);
+  const myAddress = Address(privateKey);
   const nonce = await getAccountNonce(myAddress);
 
   const unsigned = { chainId, address: delegateTo, nonce };
@@ -704,12 +704,12 @@ import { Authorization, Address } from '@tevm/voltaire';
 const privateKey = new Uint8Array(32);
 privateKey.fill(1);
 
-const myAddress = Address.fromPrivateKey(privateKey);
+const myAddress = Address(privateKey);
 
 // Create unsigned
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   nonce: 0n
 };
 

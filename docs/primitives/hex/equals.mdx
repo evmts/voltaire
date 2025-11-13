@@ -88,7 +88,7 @@ function uniqueHashes(hashes: string[]): string[] {
 **Assert Equality in Tests:**
 ```typescript
 test("keccak256 produces expected hash", () => {
-  const data = Hex.fromString("hello")
+  const data = Hex("hello")
   const hash = keccak256(data)
   const expected = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
 

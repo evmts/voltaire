@@ -33,7 +33,7 @@ Always use `equals()` for security-critical hash comparisons. Never use `===` or
 ### Verifying Computed Hashes
 
 ```typescript
-const expectedHash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const expectedHash = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 const computedHash = Hash.keccak256String("hello")
 
 if (computedHash.equals(expectedHash)) {
@@ -49,7 +49,7 @@ if (computedHash.equals(expectedHash)) {
 const transferSignature = Hash.keccak256String("Transfer(address,address,uint256)")
 
 function isTransferEvent(log: Log): boolean {
-  const topic0 = Hash.fromHex(log.topics[0])
+  const topic0 = Hash(log.topics[0])
   return topic0.equals(transferSignature)
 }
 
@@ -64,7 +64,7 @@ function filterTransferEvents(logs: Log[]): Log[] {
 async function verifyTransaction(txHash: string, expectedData: Uint8Array) {
   const tx = await provider.getTransaction(txHash)
   const computedHash = Hash.keccak256(expectedData)
-  const actualHash = Hash.fromHex(tx.hash)
+  const actualHash = Hash(tx.hash)
 
   if (!actualHash.equals(computedHash)) {
     throw new Error("Transaction data mismatch")
@@ -193,13 +193,13 @@ function safeEquals(hash1: Hash, hash2: Hash): boolean {
 
 ```typescript
 // Attacker can determine hash byte-by-byte through timing
-const target = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const target = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // Attacker tries different values
-const guess1 = Hash.fromHex("0x1c0000000000000000000000000000000000000000000000000000000000000000")
+const guess1 = Hash("0x1c0000000000000000000000000000000000000000000000000000000000000000")
 const time1 = measureTime(() => vulnerableEquals(target, guess1)) // Fast (fails at byte 1)
 
-const guess2 = Hash.fromHex("0x1c8a00000000000000000000000000000000000000000000000000000000000000")
+const guess2 = Hash("0x1c8a00000000000000000000000000000000000000000000000000000000000000")
 const time2 = measureTime(() => vulnerableEquals(target, guess2)) // Slower (fails at byte 2)
 
 // Attacker learns hash byte-by-byte through timing differences
@@ -208,13 +208,13 @@ const time2 = measureTime(() => vulnerableEquals(target, guess2)) // Slower (fai
 ### Constant-Time Guarantee
 
 ```typescript
-const target = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const target = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // All comparisons take same time
-const guess1 = Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
+const guess1 = Hash("0x0000000000000000000000000000000000000000000000000000000000000000")
 const time1 = measureTime(() => target.equals(guess1)) // ~50ns
 
-const guess2 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const guess2 = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 const time2 = measureTime(() => target.equals(guess2)) // ~50ns
 
 // No timing difference regardless of how many bytes match

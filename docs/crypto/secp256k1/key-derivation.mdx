@@ -188,7 +188,7 @@ const publicKey = Secp256k1.derivePublicKey(privateKey);
 const hash = Hash.keccak256(publicKey);
 
 // 3. Take last 20 bytes as address
-const address = Address.from(hash.slice(12));
+const address = Address(hash.slice(12));
 console.log(Address.toHex(address)); // 0x...
 ```
 

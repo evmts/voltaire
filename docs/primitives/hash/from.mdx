@@ -30,7 +30,7 @@ const hash = Hash(bytes)
 
 **BrandedHash** - Branded hash (passed through):
 ```typescript
-const branded = Hash.fromHex("0x1c8aff...")
+const branded = Hash("0x1c8aff...")
 const hash = Hash(branded)  // No conversion
 ```
 
@@ -57,7 +57,7 @@ function verifyHash(input: HashLike): boolean {
 // All valid calls
 verifyHash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 verifyHash(new Uint8Array(32))
-verifyHash(Hash.fromHex("0x1c8aff..."))
+verifyHash(Hash("0x1c8aff..."))
 ```
 
 ### Performance

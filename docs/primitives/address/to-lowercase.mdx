@@ -27,7 +27,7 @@ description: Convert address to lowercase hex string
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
 const lower = addr.toLowercase()
 const hex = addr.toHex()
@@ -58,7 +58,7 @@ console.log(lower === hex)  // true
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 console.log(addr.toLowercase())
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
@@ -87,7 +87,7 @@ console.log(addr.toChecksummed())
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0xAbCdEf1234567890")
+const addr = Address("0xAbCdEf1234567890")
 
 console.log(addr.toLowercase())
 // "0xabcdef1234567890..."
@@ -145,8 +145,8 @@ function isSameAddress(a: Address, b: Address): boolean {
 }
 
 // Usage
-const addr1 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
-const addr2 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr1 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr2 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 console.log(isSameAddress(addr1, addr2))  // true
 ```
@@ -176,8 +176,8 @@ function getBalance(address: Address): bigint {
 }
 
 // Works regardless of input case
-const addr1 = Address.fromHex("0x742D35CC...")
-const addr2 = Address.fromHex("0x742d35cc...")
+const addr1 = Address("0x742D35CC...")
+const addr2 = Address("0x742d35cc...")
 
 setBalance(addr1, 1000n)
 console.log(getBalance(addr2))  // 1000n - same key
@@ -208,8 +208,8 @@ function serializeTransaction(from: Address, to: Address, value: bigint): string
 
 // Output always has consistent casing
 const json = serializeTransaction(
-  Address.fromHex("0x742D35CC..."),
-  Address.fromHex("0x5AAEB605..."),
+  Address("0x742D35CC..."),
+  Address("0x5AAEB605..."),
   1000000000000000000n
 )
 ```
@@ -278,7 +278,7 @@ function processLowercase(addr: Lowercase) {
   console.log(`Processing: ${addr}`)
 }
 
-const addr = Address.fromHex("0x742D35CC...")
+const addr = Address("0x742D35CC...")
 
 // Type error - addr.toHex() returns BrandedHex, not Lowercase
 processLowercase(addr.toHex())  // ❌ Type error
@@ -296,10 +296,10 @@ Calling `toLowercase()` multiple times produces same result:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
 const lower1 = addr.toLowercase()
-const addr2 = Address.fromHex(lower1)
+const addr2 = Address(lower1)
 const lower2 = addr2.toLowercase()
 
 console.log(lower1 === lower2)  // true
@@ -313,7 +313,7 @@ Output always matches lowercase hex pattern:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+const addr = Address("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 const lower = addr.toLowercase()
 
 // Validate format

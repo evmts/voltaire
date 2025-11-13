@@ -201,8 +201,8 @@ const decrypted = await AesGcm.decrypt(extractedCiphertext, key, extractedNonce)
 ```typescript
 // Store as JSON (less efficient, more readable)
 const encrypted = {
-  nonce: Array.from(nonce),
-  ciphertext: Array.from(ciphertext),
+  nonce: Array(nonce),
+  ciphertext: Array(ciphertext),
   algorithm: 'AES-256-GCM',
   timestamp: Date.now()
 };
@@ -465,9 +465,9 @@ async function encryptWallet(privateKey, password) {
 
   // Return encrypted wallet
   return {
-    salt: Array.from(salt),
-    nonce: Array.from(nonce),
-    ciphertext: Array.from(ciphertext),
+    salt: Array(salt),
+    nonce: Array(nonce),
+    ciphertext: Array(ciphertext),
     algorithm: 'AES-256-GCM',
     pbkdf2Iterations: 600000
   };
@@ -506,8 +506,8 @@ class EncryptedField {
     const ciphertext = await AesGcm.encrypt(plaintext, this.key, nonce);
 
     return {
-      nonce: Array.from(nonce),
-      ciphertext: Array.from(ciphertext)
+      nonce: Array(nonce),
+      ciphertext: Array(ciphertext)
     };
   }
 

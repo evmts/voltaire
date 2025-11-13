@@ -232,7 +232,7 @@ function hashBatch(items: string[]): Uint8Array[] {
 }
 
 // Compare performance
-const items = Array.from({ length: 1000 }, (_, i) => `item${i}`)
+const items = Array({ length: 1000 }, (_, i) => `item${i}`)
 console.time('WASM hashing')
 const hashes = hashBatch(items)
 console.timeEnd('WASM hashing')

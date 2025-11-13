@@ -163,7 +163,7 @@ const sig = Signature.fromSecp256k1(r, s, 27);
 const compact = Signature.toCompact(sig);
 
 const serialized = {
-  compact: Array.from(compact),
+  compact: Array(compact),
   v: sig.v, // Store recovery ID separately
 };
 
@@ -397,7 +397,7 @@ const der = Signature.toDER(sig); // O(n) + encoding
 ```typescript
 function serializeSignature(sig: BrandedSignature): object {
   return {
-    bytes: Array.from(Signature.toBytes(sig)),
+    bytes: Array(Signature.toBytes(sig)),
     algorithm: sig.algorithm,
     v: sig.v,
   };

@@ -54,9 +54,9 @@ import * as Uint from '@tevm/voltaire/Uint'
 const mainnet = Chain.fromId(1)!
 
 // EIP-1559: baseFee + priorityFee
-const baseFee = Gwei.from(30n)     // Set by protocol
-const priorityFee = Gwei.from(2n)  // User sets (tip)
-const maxFee = Gwei.from(50n)      // User sets max
+const baseFee = Gwei(30n)     // Set by protocol
+const priorityFee = Gwei(2n)  // User sets (tip)
+const maxFee = Gwei(50n)      // User sets max
 
 // Cost for 21,000 gas transfer
 const effectivePrice = Uint.plus(
@@ -64,9 +64,9 @@ const effectivePrice = Uint.plus(
   Gwei.toU256(priorityFee)
 )
 
-const costWei = Uint.times(effectivePrice, Uint.from(21_000n))
-const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
-const costEther = Wei.toEther(Wei.from(costWei))
+const costWei = Uint.times(effectivePrice, Uint(21_000n))
+const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
+const costEther = Wei.toEther(Wei(costWei))
 
 console.log(`Network: ${mainnet.name}`)
 console.log(`Cost: ${costGwei} Gwei = ${costEther} ETH`)
@@ -93,16 +93,16 @@ import * as Uint from '@tevm/voltaire/Uint'
 const arbitrum = Chain.fromId(42161)!
 
 // L2 gas prices much lower
-const gasPrice = Gwei.from(1n)  // Usually 0.1-1 Gwei
+const gasPrice = Gwei(1n)  // Usually 0.1-1 Gwei
 
 // Transfer costs very little
 const costWei = Uint.times(
   Gwei.toWei(gasPrice),
-  Uint.from(21_000n)
+  Uint(21_000n)
 )
 
-const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
-const costEther = Wei.toEther(Wei.from(costWei))
+const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
+const costEther = Wei.toEther(Wei(costWei))
 
 console.log(`Network: ${arbitrum.name}`)
 console.log(`Cost: ${costGwei} Gwei = ${costEther} ETH (very cheap!)`)
@@ -130,15 +130,15 @@ import * as Uint from '@tevm/voltaire/Uint'
 const polygon = Chain.fromId(137)!
 
 // Polygon has low but higher than L2s
-const gasPrice = Gwei.from(30n)  // 20-100 Gwei range
+const gasPrice = Gwei(30n)  // 20-100 Gwei range
 
 const costWei = Uint.times(
   Gwei.toWei(gasPrice),
-  Uint.from(21_000n)
+  Uint(21_000n)
 )
 
-const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
-const costEther = Wei.toEther(Wei.from(costWei))
+const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
+const costEther = Wei.toEther(Wei(costWei))
 
 // But uses MATIC, not ETH
 console.log(`Network: ${polygon.name}`)
@@ -200,8 +200,8 @@ function calculateTransferCost(
   const chain = Chain.fromId(chainId)
   if (!chain) return null
 
-  const gasPriceWei = Gwei.toWei(Gwei.from(gasPriceGwei))
-  const costWei = Uint.times(gasPriceWei, Uint.from(21_000n))
+  const gasPriceWei = Gwei.toWei(Gwei(gasPriceGwei))
+  const costWei = Uint.times(gasPriceWei, Uint(21_000n))
   const costEth = Number(costWei) / 1e18
   const costUsd = costEth * 2000  // Assuming $2000/ETH
 
@@ -259,8 +259,8 @@ function calculateSwapCost(
   const chain = Chain.fromId(chainId)
   if (!chain) return null
 
-  const gasPriceWei = Gwei.toWei(Gwei.from(gasPriceGwei))
-  const costWei = Uint.times(gasPriceWei, Uint.from(150_000n))
+  const gasPriceWei = Gwei.toWei(Gwei(gasPriceGwei))
+  const costWei = Uint.times(gasPriceWei, Uint(150_000n))
   const costEth = Number(costWei) / 1e18
   const costUsd = costEth * 2000
 
@@ -474,18 +474,18 @@ function estimateFees(
 
   const calculateCost = (gas: bigint) => {
     const costWei = Uint.times(
-      Gwei.toWei(Gwei.from(baseGasPrice)),
-      Uint.from(gas)
+      Gwei.toWei(Gwei(baseGasPrice)),
+      Uint(gas)
     )
     return {
       eth: (Number(costWei) / 1e18).toFixed(6),
-      gwei: Uint.dividedBy(costWei, Uint.from(1_000_000_000n)).toString()
+      gwei: Uint.dividedBy(costWei, Uint(1_000_000_000n)).toString()
     }
   }
 
   return {
     network: chain.name,
-    baseGasPrice: Gwei.from(baseGasPrice),
+    baseGasPrice: Gwei(baseGasPrice),
     transferCost: calculateCost(21_000n),
     swapCost: calculateCost(150_000n)
   }

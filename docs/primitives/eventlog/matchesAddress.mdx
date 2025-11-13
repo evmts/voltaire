@@ -16,7 +16,7 @@ Checks exact address equality using constant-time comparison:
 ```typescript
 import { EventLog, Address } from '@tevm/voltaire';
 
-const usdcAddress = Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
+const usdcAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
 
 // Filter logs from USDC contract
 const usdcLogs = allLogs.filter(log => log.matchesAddress(usdcAddress));
@@ -32,9 +32,9 @@ Matches if log address equals ANY of the filter addresses:
 import { EventLog, Address } from '@tevm/voltaire';
 
 const stablecoins = [
-  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
-  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
-  Address.fromHex('0xdAC17F958D2ee523a2206206994597C13D831ec7'), // USDT
+  Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address('0xdAC17F958D2ee523a2206206994597C13D831ec7'), // USDT
 ];
 
 // Filter logs from any stablecoin
@@ -52,7 +52,7 @@ console.log(`Found ${stablecoinLogs.length} stablecoin logs`);
 ```typescript
 import { EventLog, Address } from '@tevm/voltaire';
 
-const wethAddress = Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
+const wethAddress = Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
 
 // Get all WETH logs
 const wethLogs = allLogs.filter(log => log.matchesAddress(wethAddress));
@@ -71,9 +71,9 @@ import { EventLog, Address } from '@tevm/voltaire';
 
 // Monitor multiple DEX contracts
 const dexContracts = [
-  Address.fromHex('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'), // Uniswap V2
-  Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564'), // Uniswap V3
-  Address.fromHex('0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F'), // Sushiswap
+  Address('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'), // Uniswap V2
+  Address('0xE592427A0AEce92De3Edee1F18E0157C05861564'), // Uniswap V3
+  Address('0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F'), // Sushiswap
 ];
 
 const dexLogs = allLogs.filter(log => log.matchesAddress(dexContracts));
@@ -88,10 +88,10 @@ import { EventLog, Address } from '@tevm/voltaire';
 
 // User's token portfolio
 const portfolio = [
-  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
-  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
-  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
-  Address.fromHex('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
+  Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+  Address('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
 ];
 
 // Get all events from portfolio tokens
@@ -115,7 +115,7 @@ console.log('Events per token:', byContract.size);
 ```typescript
 import { EventLog, Address } from '@tevm/voltaire';
 
-const excludedContract = Address.fromHex('0x...');
+const excludedContract = Address('0x...');
 
 // Filter OUT logs from specific contract
 const filtered = allLogs.filter(log => !log.matchesAddress(excludedContract));
@@ -126,7 +126,7 @@ const filtered = allLogs.filter(log => !log.matchesAddress(excludedContract));
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 const tokens = [usdcAddress, daiAddress, wethAddress];
 
 // Transfer events from any of these tokens

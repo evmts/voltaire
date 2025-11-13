@@ -74,7 +74,7 @@ Authorization(chain={chainId}, to={address}, nonce={nonce})
 ```typescript
 import { Authorization, Address } from '@tevm/voltaire';
 
-const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
 
 // Unsigned
 const unsigned = { chainId: 1n, address: addr, nonce: 0n };

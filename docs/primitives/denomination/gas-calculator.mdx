@@ -18,16 +18,16 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const gasPrice = Gwei.from(20n)      // 20 Gwei
+const gasPrice = Gwei(20n)      // 20 Gwei
 const gasUsed = 21_000n              // Standard transfer
 
 // Calculate cost
 const gasPriceWei = Gwei.toWei(gasPrice)
-const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
-const costEther = Wei.toEther(Wei.from(costWei))
+const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
+const costEther = Wei.toEther(Wei(costWei))
 
 console.log(`Cost: ${costWei} Wei`)    // 420,000,000,000,000 Wei
-console.log(`Cost: ${Gwei.from(Uint.dividedBy(costWei, Uint.from(1_000_000_000n)))} Gwei`)  // 420,000 Gwei
+console.log(`Cost: ${Gwei(Uint.dividedBy(costWei, Uint(1_000_000_000n)))} Gwei`)  // 420,000 Gwei
 console.log(`Cost: ${costEther} ETH`)  // 0 ETH (truncates)
 ```
 
@@ -43,11 +43,11 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const gasPrice = Gwei.from(50n)      // 50 Gwei
+const gasPrice = Gwei(50n)      // 50 Gwei
 const gasUsed = 21_000n              // Standard transfer
 
 const gasPriceWei = Gwei.toWei(gasPrice)
-const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
 console.log(`Cost: ${costWei} Wei`)    // 1,050,000,000,000,000 Wei
 console.log(`Cost: 1,050,000 Gwei`)    // 1,050,000 Gwei
@@ -66,11 +66,11 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const gasPrice = Gwei.from(200n)     // 200 Gwei (urgent)
+const gasPrice = Gwei(200n)     // 200 Gwei (urgent)
 const gasUsed = 21_000n              // Standard transfer
 
 const gasPriceWei = Gwei.toWei(gasPrice)
-const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
 console.log(`Cost: ${costWei} Wei`)    // 4,200,000,000,000,000 Wei
 console.log(`Cost: 4,200,000 Gwei`)    // 4,200,000 Gwei
@@ -101,11 +101,11 @@ function calculateTokenTransferCost(gasPriceGwei: Gwei.Type): {
   const gasUsed = 65_000n  // ERC-20 transfer
 
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
-  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
   // Convert to different units
-  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
-  const costEther = Wei.toEther(Wei.from(costWei))
+  const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
+  const costEther = Wei.toEther(Wei(costWei))
 
   return {
     wei: costWei,
@@ -115,9 +115,9 @@ function calculateTokenTransferCost(gasPriceGwei: Gwei.Type): {
 }
 
 // Cost comparison
-const slow = calculateTokenTransferCost(Gwei.from(20n))
-const standard = calculateTokenTransferCost(Gwei.from(50n))
-const fast = calculateTokenTransferCost(Gwei.from(200n))
+const slow = calculateTokenTransferCost(Gwei(20n))
+const standard = calculateTokenTransferCost(Gwei(50n))
+const fast = calculateTokenTransferCost(Gwei(200n))
 
 console.log('Slow:', slow)        // 1,300,000 Gwei = 0.0013 ETH
 console.log('Standard:', standard) // 3,250,000 Gwei = 0.00325 ETH
@@ -139,10 +139,10 @@ function calculateSwapCost(gasPriceGwei: Gwei.Type): {
   const gasUsed = 150_000n  // Complex DEX swap
 
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
-  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
-  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
-  const costEther = Wei.toEther(Wei.from(costWei))
+  const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
+  const costEther = Wei.toEther(Wei(costWei))
 
   return {
     wei: costWei,
@@ -152,9 +152,9 @@ function calculateSwapCost(gasPriceGwei: Gwei.Type): {
 }
 
 // Cost comparison
-const slow = calculateSwapCost(Gwei.from(20n))
-const standard = calculateSwapCost(Gwei.from(50n))
-const fast = calculateSwapCost(Gwei.from(200n))
+const slow = calculateSwapCost(Gwei(20n))
+const standard = calculateSwapCost(Gwei(50n))
+const fast = calculateSwapCost(Gwei(200n))
 
 console.log('Slow:', slow)        // 3,000,000 Gwei = 0.003 ETH
 console.log('Standard:', standard) // 7,500,000 Gwei = 0.0075 ETH
@@ -195,31 +195,31 @@ function calculateEIP1559(
 ): EIP1559Cost {
   // Minimum cost (base fee only)
   const baseFeeWei = Gwei.toWei(baseFeePerGas)
-  const minCostWei = Uint.times(baseFeeWei, Uint.from(gasLimit))
+  const minCostWei = Uint.times(baseFeeWei, Uint(gasLimit))
 
   // Maximum cost (max fee)
   const maxFeeWei = Gwei.toWei(maxFeePerGas)
-  const maxCostWei = Uint.times(maxFeeWei, Uint.from(gasLimit))
+  const maxCostWei = Uint.times(maxFeeWei, Uint(gasLimit))
 
   // Estimated cost (base + priority)
   const priorityFeeWei = Gwei.toWei(maxPriorityFeePerGas)
   const effectiveFeeWei = Uint.plus(baseFeeWei, priorityFeeWei)
-  const estimatedCostWei = Uint.times(effectiveFeeWei, Uint.from(gasLimit))
+  const estimatedCostWei = Uint.times(effectiveFeeWei, Uint(gasLimit))
 
   return {
     minCost: {
       wei: minCostWei,
-      gwei: Uint.dividedBy(minCostWei, Uint.from(1_000_000_000n)),
+      gwei: Uint.dividedBy(minCostWei, Uint(1_000_000_000n)),
       ether: Number(minCostWei) / 1e18
     },
     maxCost: {
       wei: maxCostWei,
-      gwei: Uint.dividedBy(maxCostWei, Uint.from(1_000_000_000n)),
+      gwei: Uint.dividedBy(maxCostWei, Uint(1_000_000_000n)),
       ether: Number(maxCostWei) / 1e18
     },
     estimatedCost: {
       wei: estimatedCostWei,
-      gwei: Uint.dividedBy(estimatedCostWei, Uint.from(1_000_000_000n)),
+      gwei: Uint.dividedBy(estimatedCostWei, Uint(1_000_000_000n)),
       ether: Number(estimatedCostWei) / 1e18
     }
   }
@@ -227,9 +227,9 @@ function calculateEIP1559(
 
 // Example: Normal Ethereum conditions
 const cost = calculateEIP1559(
-  Gwei.from(30n),  // baseFee
-  Gwei.from(2n),   // priorityFee
-  Gwei.from(50n),  // maxFee
+  Gwei(30n),  // baseFee
+  Gwei(2n),   // priorityFee
+  Gwei(50n),  // maxFee
   21_000n          // gasLimit
 )
 
@@ -257,7 +257,7 @@ function gasCostUSD(
   ethPriceUsd: number  // e.g., 2000.50
 ): number {
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
-  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
   // Convert Wei to ETH (as decimal)
   const costEth = Number(costWei) / 1e18
@@ -267,7 +267,7 @@ function gasCostUSD(
 
 // Example: 50 Gwei gas price, 21,000 gas, ETH = $2,000
 const costUsd = gasCostUSD(
-  Gwei.from(50n),
+  Gwei(50n),
   21_000n,
   2000
 )
@@ -295,8 +295,8 @@ function analyzeCost(
   ethPriceUsd: number
 ): TransactionCost {
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
-  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
-  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+  const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
+  const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
   const costEth = Number(costWei) / 1e18
   const costUsd = costEth * ethPriceUsd
 
@@ -320,7 +320,7 @@ const ethPrice = 2000  // $2000 per ETH
 
 console.log('Transfer costs (21,000 gas):')
 scenarios.forEach(({ price, desc }) => {
-  const cost = analyzeCost(Gwei.from(BigInt(price)), 21_000n, ethPrice)
+  const cost = analyzeCost(Gwei(BigInt(price)), 21_000n, ethPrice)
   console.log(`${desc}: ${cost.gwei} Gwei = ${cost.ether} = ${cost.usd}`)
 })
 ```
@@ -341,8 +341,8 @@ function costMatrix(
 
   for (const gwei of gasPrices) {
     for (const eth of ethPrices) {
-      const gasPriceWei = Gwei.toWei(Gwei.from(gwei))
-      const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+      const gasPriceWei = Gwei.toWei(Gwei(gwei))
+      const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
       const costUsd = (Number(costWei) / 1e18) * eth
 
       costs.set(`${gwei}gwei_${eth}usd`, costUsd)
@@ -358,7 +358,7 @@ const ethPrices = [1000, 2000, 3000, 5000]
 const costs = costMatrix(gasPrices, ethPrices)
 
 // Show cost ranges
-console.table(Array.from(costs.entries()).map(([key, value]) => ({
+console.table(Array(costs.entries()).map(([key, value]) => ({
   scenario: key,
   cost: `$${value.toFixed(2)}`
 })))
@@ -381,10 +381,10 @@ function getGasRecommendation(baseFeeGwei: number): {
   instant: Gwei.Type
 } {
   return {
-    safe: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 1.2))),
-    standard: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 1.5))),
-    fast: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 2))),
-    instant: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 3)))
+    safe: Gwei(BigInt(Math.ceil(baseFeeGwei * 1.2))),
+    standard: Gwei(BigInt(Math.ceil(baseFeeGwei * 1.5))),
+    fast: Gwei(BigInt(Math.ceil(baseFeeGwei * 2))),
+    instant: Gwei(BigInt(Math.ceil(baseFeeGwei * 3)))
   }
 }
 

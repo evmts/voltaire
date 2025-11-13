@@ -182,8 +182,8 @@ addr.isZero();          // false
 addr.equals(other);     // boolean
 
 // Static methods
-Address.fromHex("0x...");
-Address.fromBytes(bytes);
+Address("0x...");
+Address(bytes);
 Address.zero();
 ```
 
@@ -244,7 +244,7 @@ const contractAddr = deployer.calculateCreateAddress(0n);
 import { Keccak256, Hash } from "@tevm/voltaire";
 
 // Hash data
-const data = Hex.from("0x010203");
+const data = Hex("0x010203");
 const hash = Keccak256.hash(data);
 
 // Convert to hex
@@ -261,9 +261,9 @@ Hash.equals(hash, hash2); // true
 import { Uint } from "@tevm/voltaire";
 
 // Create from various formats
-const a = Uint.from(100n);
-const b = Uint.from("0xff");
-const c = Uint.fromHex("0x200");
+const a = Uint(100n);
+const b = Uint("0xff");
+const c = Uint("0x200");
 
 // Arithmetic (wrapping on overflow)
 const sum = Uint.plus(a, b);      // 100 + 255 = 355
@@ -293,7 +293,7 @@ const tx: Transaction.EIP1559 = {
   gasLimit: 21000n,
   to: recipientAddress,
   value: 1000000000000000000n,
-  data: Hex.from("0x"),
+  data: Hex("0x"),
   accessList: [],
   r: signature.r,
   s: signature.s,
@@ -307,7 +307,7 @@ const serialized = Transaction.serialize(tx);
 const txHash = Transaction.hash(tx);
 
 // Recover sender
-const sender = Transaction.from(tx);
+const sender = Transaction(tx);
 ```
 
 ## Type Safety
@@ -327,7 +327,7 @@ function processHash(hash: BrandedHash) {
 }
 
 // Type errors prevent mistakes
-const addr = Address.fromHex("0x...");
+const addr = Address("0x...");
 const hash = Keccak256.hash(data);
 
 processAddress(addr);  // ✅ OK
@@ -364,7 +364,7 @@ const tx = {
   gasLimit: 21_000n,
   to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
   value: 1_000_000_000_000_000_000n, // 1 ether
-  data: Hex.from("0x"),
+  data: Hex("0x"),
 };
 ```
 
@@ -442,7 +442,7 @@ const addr: BrandedAddress = new Uint8Array(20);
 // ✅ Correct
 const addr = Address("0x...");
 // or
-const addr = BrandedAddress.fromHex("0x...");
+const addr = BrandedAddress("0x...");
 ```
 
 #### WASM initialization errors
@@ -530,8 +530,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { Transaction } from "@tevm/voltaire";
     const signed = Transaction.sign({
       type: 2,
-      to: Address.from("0x..."),
-      value: Uint.from("1 ether"),
+      to: Address("0x..."),
+      value: Uint("1 ether"),
       // ...
     }, privateKey);
     const serialized = Transaction.serialize(signed);

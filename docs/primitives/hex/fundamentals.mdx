@@ -262,7 +262,7 @@ import { Hex, Bytecode } from '@tevm/voltaire';
 const code = Hex("0x6080604052...");
 
 // Convert to bytecode for analysis
-const bytecode = Bytecode.fromHex(code);
+const bytecode = Bytecode(code);
 
 // Get size
 console.log(`Code size: ${Hex.size(code)} bytes`);
@@ -277,7 +277,7 @@ import { Hex } from '@tevm/voltaire';
 
 // Encode function selector
 const functionSig = "balanceOf(address)";
-const selectorHex = Hex.fromString(functionSig).slice(0, 4);
+const selectorHex = Hex(functionSig).slice(0, 4);
 
 // Encode parameter
 const addressParam = Hex.pad(address, 32);

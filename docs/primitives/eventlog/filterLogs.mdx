@@ -14,10 +14,10 @@ description: Filter array of logs by complete filter criteria
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userAddress = Address.fromHex('0xa1b2c3d4...');
-const userHash = Hash.from(
-  Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const userAddress = Address('0xa1b2c3d4...');
+const userHash = Hash(
+  Hex.concat(Hex('0x000000000000000000000000'), Address.toHex(userAddress))
 );
 
 // All incoming transfers to user
@@ -57,13 +57,13 @@ console.log(`Outgoing: ${outgoing.length} transfers`);
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 
 const tokens = [
-  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
-  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
-  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
-  Address.fromHex('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
+  Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+  Address('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'), // WBTC
 ];
 
 // All Transfer events from these tokens
@@ -92,9 +92,9 @@ console.log(`Tokens with activity: ${byToken.size}`);
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
-const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const APPROVAL_SIG = Hash('0x8c5be1e5...');
+const SWAP_SIG = Hash('0xd78ad95f...');
 
 // Transfer, Approval, or Swap events
 const filtered = EventLog.filterLogs(allLogs, {
@@ -130,7 +130,7 @@ console.log(`Swaps: ${swaps.length}`);
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 
 // Process in 100k block chunks
 const chunkSize = 100000n;
@@ -159,7 +159,7 @@ for (let from = startBlock; from < endBlock; from += chunkSize) {
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const blockHash = Hash.fromHex('0xabc...');
+const blockHash = Hash('0xabc...');
 
 // All logs in specific block
 const blockLogs = EventLog.filterLogs(allLogs, {
@@ -174,8 +174,8 @@ console.log(`Block contains ${blockLogs.length} logs`);
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const APPROVAL_SIG = Hash('0x8c5be1e5...');
 
 // Stage 1: Filter by contract
 const tokenLogs = EventLog.filterLogs(allLogs, {

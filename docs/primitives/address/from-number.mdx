@@ -19,13 +19,13 @@ import { Address } from '@tevm/voltaire'
 
 // Value fits in 160 bits - no truncation
 const fits = 0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n
-const addr1 = Address.fromNumber(fits)
+const addr1 = Address(fits)
 console.log(addr1.toHex())
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 
 // Value larger than 160 bits - truncates
 const large = 0x1234567890abcdef742d35Cc6634C0532925a3b844Bc9e7595f251e3n
-const addr2 = Address.fromNumber(large)
+const addr2 = Address(large)
 console.log(addr2.toHex())
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3" (same as addr1)
 ```
@@ -39,8 +39,8 @@ Generate sequential addresses for testing:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const testAddresses = Array.from({ length: 10 }, (_, i) =>
-  Address.fromNumber(i + 1)
+const testAddresses = Array({ length: 10 }, (_, i) =>
+  Address(i + 1)
 )
 
 testAddresses.forEach((addr, i) => {
@@ -57,10 +57,10 @@ import { Address } from '@tevm/voltaire'
 
 function nextAddress(addr: Address): Address {
   const n = addr.toU256()
-  return Address.fromNumber(n + 1n)
+  return Address(n + 1n)
 }
 
-const addr = Address.fromNumber(100n)
+const addr = Address(100n)
 const next = nextAddress(addr)
 console.log(addr.toHex())  // "0x...0064"
 console.log(next.toHex())  // "0x...0065"
@@ -75,7 +75,7 @@ import { Address } from '@tevm/voltaire'
 
 // Numeric to address
 const num = 0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n
-const addr = Address.fromNumber(num)
+const addr = Address(num)
 
 // Address to numeric
 const backToNum = addr.toU256()
@@ -90,12 +90,12 @@ Create predictable test addresses:
 import { Address } from '@tevm/voltaire'
 
 const TEST_ADDRESSES = {
-  ZERO: Address.fromNumber(0n),
-  ONE: Address.fromNumber(1n),
-  MAX: Address.fromNumber((1n << 160n) - 1n),
-  ALICE: Address.fromNumber(100n),
-  BOB: Address.fromNumber(200n),
-  CHARLIE: Address.fromNumber(300n),
+  ZERO: Address(0n),
+  ONE: Address(1n),
+  MAX: Address((1n << 160n) - 1n),
+  ALICE: Address(100n),
+  BOB: Address(200n),
+  CHARLIE: Address(300n),
 }
 ```
 
@@ -103,14 +103,14 @@ const TEST_ADDRESSES = {
 
 **Number (JavaScript):** Safe for values up to 2^53 - 1:
 ```typescript
-Address.fromNumber(69)              // ✓ Safe
-Address.fromNumber(Number.MAX_SAFE_INTEGER) // ✓ Safe (2^53 - 1)
-Address.fromNumber(Number.MAX_VALUE)         // ⚠ May lose precision
+Address(69)              // ✓ Safe
+Address(Number.MAX_SAFE_INTEGER) // ✓ Safe (2^53 - 1)
+Address(Number.MAX_VALUE)         // ⚠ May lose precision
 ```
 
 **Bigint:** Required for larger values:
 ```typescript
-Address.fromNumber(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n) // ✓ Safe
+Address(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n) // ✓ Safe
 ```
 
 **Recommendation:** Use bigint for address-sized values (160 bits).
@@ -121,19 +121,19 @@ Address.fromNumber(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n) // ✓ Safe
 import { Address } from '@tevm/voltaire'
 
 // Valid values
-console.log(Address.fromNumber(0n))    // ✓ Zero address
-console.log(Address.fromNumber(69n))   // ✓ Small value
-console.log(Address.fromNumber((1n << 160n) - 1n)) // ✓ Max address
+console.log(Address(0n))    // ✓ Zero address
+console.log(Address(69n))   // ✓ Small value
+console.log(Address((1n << 160n) - 1n)) // ✓ Max address
 
 // Invalid: negative
 try {
-  Address.fromNumber(-1n)
+  Address(-1n)
 } catch (e) {
   console.error(e) // InvalidValueError: Address value cannot be negative
 }
 
 try {
-  Address.fromNumber(-69)
+  Address(-69)
 } catch (e) {
   console.error(e) // InvalidValueError: Address value cannot be negative
 }
@@ -150,7 +150,7 @@ import { Address } from '@tevm/voltaire'
 const hash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn
 
 // Takes lower 160 bits
-const addr = Address.fromNumber(hash)
+const addr = Address(hash)
 
 // Higher bits discarded
 console.log(addr.toHex())
@@ -166,10 +166,10 @@ import { Address } from '@tevm/voltaire'
 const value = 69n
 
 // All produce same address
-const addr1 = Address.fromNumber(value)
-const addr2 = Address.from(value)
-const addr3 = Address.fromHex("0x0000000000000000000000000000000000000045")
-const addr4 = Address.fromBytes(new Uint8Array([0, 0, ..., 0x45]))
+const addr1 = Address(value)
+const addr2 = Address(value)
+const addr3 = Address("0x0000000000000000000000000000000000000045")
+const addr4 = Address(new Uint8Array([0, 0, ..., 0x45]))
 
 console.log(addr1.equals(addr2)) // true
 console.log(addr1.equals(addr3)) // true

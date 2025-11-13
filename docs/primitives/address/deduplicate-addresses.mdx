@@ -113,9 +113,9 @@ def deduplicate_addresses_optimized(addresses: list[Address]) -> list[Address]:
 ```typescript
 import * as Address from '@tevm/voltaire/Address'
 
-const addr1a = Address.fromHex("0x0000000000000000000000000000000000000001")
-const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002")
-const addr1b = Address.fromHex("0x0000000000000000000000000000000000000001")
+const addr1a = Address("0x0000000000000000000000000000000000000001")
+const addr2 = Address("0x0000000000000000000000000000000000000002")
+const addr1b = Address("0x0000000000000000000000000000000000000001")
 
 const unique = Address.deduplicateAddresses([addr1a, addr2, addr1b])
 
@@ -141,9 +141,9 @@ console.log(unique !== original) // true
 import * as Address from '@tevm/voltaire/Address'
 
 // Different case representations of same address
-const lowercase = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-const checksummed = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const uppercase = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+const lowercase = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const uppercase = Address("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
 
 const unique = Address.deduplicateAddresses([lowercase, checksummed, uppercase])
 // Returns [lowercase] - all three are equal
@@ -212,9 +212,9 @@ class Allowlist {
 
 // Usage
 const allowlist = new Allowlist([
-  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  Address.fromHex("0x0000000000000000000000000000000000000001"),
-  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"), // Duplicate
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address("0x0000000000000000000000000000000000000001"),
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"), // Duplicate
 ])
 
 console.log(allowlist.unique.length) // 2
@@ -285,11 +285,11 @@ function getUniqueTokenHolders(logs: EventLog[]): BrandedAddress[] {
     // Transfer(address indexed from, address indexed to, uint256 value)
     if (log.topics.length >= 3) {
       // topics[1] is 'from' address (32 bytes, last 20 are address)
-      const from = Address.fromAbiEncoded(log.topics[1]!)
+      const from = Address(log.topics[1]!)
       holders.push(from)
 
       // topics[2] is 'to' address
-      const to = Address.fromAbiEncoded(log.topics[2]!)
+      const to = Address(log.topics[2]!)
       holders.push(to)
     }
   }
@@ -489,7 +489,7 @@ function deduplicateWithMap(
     }
   }
 
-  return Array.from(seen.values())
+  return Array(seen.values())
 }
 ```
 

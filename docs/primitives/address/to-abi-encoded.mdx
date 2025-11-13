@@ -47,11 +47,11 @@ import { Address } from '@tevm/voltaire'
 import * as Hex from '@tevm/voltaire/Hex'
 
 // Create contract call data
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const encoded = addr.toAbiEncoded()
 
 // Function: balanceOf(address) returns (uint256)
-const selector = Hex.fromString("0x70a08231") // balanceOf selector
+const selector = Hex("0x70a08231") // balanceOf selector
 const calldata = new Uint8Array(36)
 calldata.set(selector, 0)
 calldata.set(encoded, 4)
@@ -66,14 +66,14 @@ console.log(Hex.toString(calldata))
 import { Address } from '@tevm/voltaire'
 
 // Original address
-const original = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const original = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Encode to ABI format (32 bytes)
 const encoded = original.toAbiEncoded()
 console.log(encoded.length) // 32
 
 // Decode back to address (20 bytes)
-const decoded = Address.fromAbiEncoded(encoded)
+const decoded = Address(encoded)
 console.log(original.equals(decoded)) // true
 console.log(decoded.toHex())
 // 0x742d35cc6634c0532925a3b844bc9e7595f251e3
@@ -86,9 +86,9 @@ import { Address } from '@tevm/voltaire'
 
 // Create array of addresses
 const addresses = [
-  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3"),
-  Address.fromHex("0x1234567890123456789012345678901234567890"),
-  Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+  Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3"),
+  Address("0x1234567890123456789012345678901234567890"),
+  Address("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
 ]
 
 // Encode each to ABI format
@@ -109,7 +109,7 @@ console.log(abiData.length) // 96
 import { Address } from '@tevm/voltaire'
 
 // Prepare return data for contract
-const owner = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const owner = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const returnData = owner.toAbiEncoded()
 
 // Return data is ready for EVM
@@ -130,7 +130,7 @@ console.log(returnData.slice(0, 12).every(b => b === 0)) // First 12 bytes are z
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Fast - single allocation + memcpy
 const encoded = addr.toAbiEncoded()
@@ -145,7 +145,7 @@ const encoded = addr.toAbiEncoded()
 import { Address } from '@tevm/voltaire'
 
 // No validation needed - address is already valid
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const encoded = addr.toAbiEncoded()
 
 // Encoding always succeeds for valid addresses

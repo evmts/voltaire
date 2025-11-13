@@ -145,10 +145,10 @@ for (const inst of code.scan()) {
 
 ```typescript
 // Materialize all instructions
-const instructions = Array.from(code.scan());
+const instructions = Array(code.scan());
 
 // Or with options
-const withGas = Array.from(code.scan({ withGas: true }));
+const withGas = Array(code.scan({ withGas: true }));
 ```
 
 ## Performance
@@ -168,7 +168,7 @@ For large bytecode (10KB+), use `scan()` instead of `parseInstructions()` which 
 `scan()` correctly handles PUSH immediate data:
 
 ```typescript
-const code = Bytecode.fromHex("0x60016002605b"); // PUSH1 1, PUSH1 2, PUSH1 0x5b
+const code = Bytecode("0x60016002605b"); // PUSH1 1, PUSH1 2, PUSH1 0x5b
 
 for (const inst of code.scan()) {
   console.log(inst);
@@ -185,7 +185,7 @@ for (const inst of code.scan()) {
 When `detectFusions: true` (default), multi-instruction patterns are detected:
 
 ```typescript
-const code = Bytecode.fromHex("0x60016001015b");
+const code = Bytecode("0x60016001015b");
 // PUSH1 1, PUSH1 1, ADD, JUMPDEST
 
 for (const inst of code.scan({ detectFusions: true })) {

@@ -32,11 +32,11 @@ Create Ether from numeric value.
 ```typescript
 import * as Ether from '@tevm/voltaire/Ether'
 
-const ether1 = Ether.from(1n)       // 1 ETH
-const ether2 = Ether.from(10n)      // 10 ETH
-const ether3 = Ether.from(0n)       // 0 ETH
-const ether4 = Ether.from("5")      // String input
-const ether5 = Ether.from(2)        // Number input
+const ether1 = Ether(1n)       // 1 ETH
+const ether2 = Ether(10n)      // 10 ETH
+const ether3 = Ether(0n)       // 0 ETH
+const ether4 = Ether("5")      // String input
+const ether5 = Ether(2)        // Number input
 ```
 
 **Parameters:**
@@ -58,11 +58,11 @@ Convert Wei to Ether (divide by 10^18).
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Ether from '@tevm/voltaire/Ether'
 
-const wei = Wei.from(1_000_000_000_000_000_000n)  // 1 quintillion Wei
+const wei = Wei(1_000_000_000_000_000_000n)  // 1 quintillion Wei
 const ether = Ether.fromWei(wei)  // 1n Ether
 
 // Fractional values truncate
-const wei2 = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH in Wei
+const wei2 = Wei(500_000_000_000_000_000n)  // 0.5 ETH in Wei
 const ether2 = Ether.fromWei(wei2)  // 0n (truncates)
 ```
 
@@ -83,11 +83,11 @@ Convert Gwei to Ether (divide by 10^9).
 import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Ether from '@tevm/voltaire/Ether'
 
-const gwei = Gwei.from(1_000_000_000n)  // 1 billion Gwei
+const gwei = Gwei(1_000_000_000n)  // 1 billion Gwei
 const ether = Ether.fromGwei(gwei)  // 1n Ether
 
 // Fractional values truncate
-const gwei2 = Gwei.from(500_000_000n)  // 0.5 ETH in Gwei
+const gwei2 = Gwei(500_000_000n)  // 0.5 ETH in Gwei
 const ether2 = Ether.fromGwei(gwei2)  // 0n (truncates)
 ```
 
@@ -109,10 +109,10 @@ Convert Ether to Wei (multiply by 10^18).
 ```typescript
 import * as Ether from '@tevm/voltaire/Ether'
 
-const ether = Ether.from(1n)  // 1 ETH
+const ether = Ether(1n)  // 1 ETH
 const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n Wei
 
-const ether2 = Ether.from(5n)  // 5 ETH
+const ether2 = Ether(5n)  // 5 ETH
 const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n Wei
 ```
 
@@ -132,7 +132,7 @@ Convert Ether to Gwei (multiply by 10^9).
 ```typescript
 import * as Ether from '@tevm/voltaire/Ether'
 
-const ether = Ether.from(1n)  // 1 ETH
+const ether = Ether(1n)  // 1 ETH
 const gwei = Ether.toGwei(ether)  // 1_000_000_000n Gwei
 ```
 
@@ -155,11 +155,11 @@ Convert Ether to raw Uint256 (removes branding).
 import * as Ether from '@tevm/voltaire/Ether'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const ether = Ether.from(10n)
+const ether = Ether(10n)
 const u256 = Ether.toU256(ether)  // Uint.Type (unbranded)
 
 // Can now use with Uint operations
-const doubled = Uint.times(u256, Uint.from(2n))
+const doubled = Uint.times(u256, Uint(2n))
 ```
 
 **Parameters:**
@@ -180,7 +180,7 @@ import * as Ether from '@tevm/voltaire/Ether'
 import * as Wei from '@tevm/voltaire/Wei'
 
 // Get balance from RPC (returns Wei)
-const balanceWei = Wei.from(5_250_000_000_000_000_000n)
+const balanceWei = Wei(5_250_000_000_000_000_000n)
 
 // Convert to Ether for display
 const balanceEther = Wei.toEther(balanceWei)  // 5n Ether
@@ -195,7 +195,7 @@ console.log(`Balance: ${balanceEther} ETH`)
 import * as Ether from '@tevm/voltaire/Ether'
 
 // User wants to send 2 ETH
-const valueEther = Ether.from(2n)
+const valueEther = Ether(2n)
 
 // Transaction requires Wei
 const valueWei = Ether.toWei(valueEther)
@@ -213,8 +213,8 @@ import * as Ether from '@tevm/voltaire/Ether'
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const minimumEther = Ether.from(1n)  // Require at least 1 ETH
-const balanceWei = Wei.from(2_500_000_000_000_000_000n)  // 2.5 ETH in Wei
+const minimumEther = Ether(1n)  // Require at least 1 ETH
+const balanceWei = Wei(2_500_000_000_000_000_000n)  // 2.5 ETH in Wei
 
 // Convert to same unit for comparison
 const minimumWei = Ether.toWei(minimumEther)
@@ -234,9 +234,9 @@ import * as Uint from '@tevm/voltaire/Uint'
 
 // Multiple balances
 const balances = [
-  Ether.from(1n),
-  Ether.from(5n),
-  Ether.from(10n),
+  Ether(1n),
+  Ether(5n),
+  Ether(10n),
 ]
 
 // Sum (convert to Uint for arithmetic)
@@ -244,8 +244,8 @@ const total = balances.reduce((sum, balance) => {
   const sumU256 = Ether.toU256(sum)
   const balanceU256 = Ether.toU256(balance)
   const newSum = Uint.plus(sumU256, balanceU256)
-  return Ether.from(newSum)
-}, Ether.from(0n))
+  return Ether(newSum)
+}, Ether(0n))
 
 console.log(`Total: ${total} ETH`)  // 16 ETH
 ```
@@ -257,9 +257,9 @@ import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // Balance has fractional Ether
-const balanceWei = Wei.from(1_250_000_000_000_000_000n)  // 1.25 ETH
+const balanceWei = Wei(1_250_000_000_000_000_000n)  // 1.25 ETH
 
-const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+const weiPerEther = Uint(1_000_000_000_000_000_000n)
 const balanceU256 = Wei.toU256(balanceWei)
 
 const wholePart = Uint.dividedBy(balanceU256, weiPerEther)  // 1n
@@ -286,14 +286,14 @@ const GWEI_PER_ETHER = 1_000_000_000n  // 10^9
 import * as Ether from '@tevm/voltaire/Ether'
 
 // Standard amounts
-const ZERO = Ether.from(0n)
-const ONE = Ether.from(1n)
-const TEN = Ether.from(10n)
-const HUNDRED = Ether.from(100n)
+const ZERO = Ether(0n)
+const ONE = Ether(1n)
+const TEN = Ether(10n)
+const HUNDRED = Ether(100n)
 
 // Minimum balances for contracts
-const MIN_ACCOUNT_BALANCE = Ether.from(1n)
-const MIN_STAKING = Ether.from(32n)  // Validator stake
+const MIN_ACCOUNT_BALANCE = Ether(1n)
+const MIN_STAKING = Ether(32n)  // Validator stake
 ```
 
 ## Type Safety
@@ -304,8 +304,8 @@ Ether type prevents mixing with other denominations:
 import * as Ether from '@tevm/voltaire/Ether'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const balance = Ether.from(10n)
-const gasPrice = Gwei.from(50n)
+const balance = Ether(10n)
+const gasPrice = Gwei(50n)
 
 // ✗ Type error - cannot mix Ether and Gwei
 const total = balance + gasPrice
@@ -324,11 +324,11 @@ import * as Ether from '@tevm/voltaire/Ether'
 import * as Wei from '@tevm/voltaire/Wei'
 
 // ✗ Fractional Ether lost
-const ether = Ether.from(1n)  // Can only represent whole Ether
-const halfEther = Ether.from(0.5)  // ✗ Not possible
+const ether = Ether(1n)  // Can only represent whole Ether
+const halfEther = Ether(0.5)  // ✗ Not possible
 
 // ✓ Use Wei for fractional values
-const halfEtherWei = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH
+const halfEtherWei = Wei(500_000_000_000_000_000n)  // 0.5 ETH
 
 // Convert back to Ether when needed
 const ether = Wei.toEther(halfEtherWei)  // 0n (truncates)
@@ -342,7 +342,7 @@ const ether = Wei.toEther(halfEtherWei)  // 0n (truncates)
 import * as Wei from '@tevm/voltaire/Wei'
 
 // Store in Wei
-const balanceWei = Wei.from(1_234_567_890_123_456_789n)
+const balanceWei = Wei(1_234_567_890_123_456_789n)
 
 // Display formatted Ether
 function formatEther(wei: Wei.Type): string {
@@ -363,7 +363,7 @@ Ether conversions available in WebAssembly for performance:
 ```typescript
 import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
 
-const ether = EtherWasm.from(10n)
+const ether = EtherWasm(10n)
 const wei = EtherWasm.toWei(ether)
 ```
 

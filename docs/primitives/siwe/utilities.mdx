@@ -140,7 +140,7 @@ await redis.del(`nonce:${message.nonce}`);  // Single use
 
 ```typescript
 // Generate multiple nonces
-const nonces = Array.from(
+const nonces = Array(
   { length: 100 },
   () => Siwe.generateNonce()
 );

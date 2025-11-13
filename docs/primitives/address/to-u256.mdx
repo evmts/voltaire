@@ -42,7 +42,7 @@ import { Address } from '@tevm/voltaire'
 
 // Address bytes (hex): 0x0000000000000000000000000000000000000045
 // As integer: 69n
-const addr = Address.fromNumber(69n)
+const addr = Address(69n)
 console.log(addr.toU256())
 // 69n
 
@@ -59,14 +59,14 @@ console.log(addr.toU256())
 import { Address } from '@tevm/voltaire'
 
 const original = 0x742d35cc6634c0532925a3b844bc9e7595f251e3n
-const addr = Address.fromNumber(original)
+const addr = Address(original)
 const converted = addr.toU256()
 
 console.log(converted === original)
 // true
 
 // Round trip
-const addr2 = Address.fromNumber(converted)
+const addr2 = Address(converted)
 console.log(addr.equals(addr2))
 // true
 ```
@@ -78,8 +78,8 @@ console.log(addr.equals(addr2))
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001")
-const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002")
+const addr1 = Address("0x0000000000000000000000000000000000000001")
+const addr2 = Address("0x0000000000000000000000000000000000000002")
 
 const value1 = addr1.toU256()
 const value2 = addr2.toU256()
@@ -96,9 +96,9 @@ if (value1 < value2) {
 import { Address } from '@tevm/voltaire'
 
 const addresses = [
-  Address.fromHex("0x0000000000000000000000000000000000000003"),
-  Address.fromHex("0x0000000000000000000000000000000000000001"),
-  Address.fromHex("0x0000000000000000000000000000000000000002"),
+  Address("0x0000000000000000000000000000000000000003"),
+  Address("0x0000000000000000000000000000000000000001"),
+  Address("0x0000000000000000000000000000000000000002"),
 ]
 
 const sorted = addresses.sort((a, b) => {
@@ -122,7 +122,7 @@ Some contracts treat addresses as uint160 or uint256 for numeric operations:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const value = addr.toU256()
 
 // Pass to contract expecting uint256
@@ -138,7 +138,7 @@ const calldata = encodeFunctionData({
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x0000000000000000000000000000000000000045")
+const addr = Address("0x0000000000000000000000000000000000000045")
 const value = addr.toU256()
 
 // Check if address is in specific numeric range
@@ -155,7 +155,7 @@ if (value >= MIN_ADDR && value <= MAX_ADDR) {
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x0000000000000000000000000000000000000100")
+const addr = Address("0x0000000000000000000000000000000000000100")
 const value = addr.toU256()
 
 // Perform arithmetic
@@ -164,8 +164,8 @@ const decremented = value - 1n
 const doubled = value * 2n
 
 // Convert back to addresses
-const nextAddr = Address.fromNumber(incremented)
-const prevAddr = Address.fromNumber(decremented)
+const nextAddr = Address(incremented)
+const prevAddr = Address(decremented)
 
 console.log(nextAddr.toHex())
 // "0x0000000000000000000000000000000000000101"
@@ -179,20 +179,20 @@ console.log(prevAddr.toHex())
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr1 = Address.fromHex("0x00000000000000000000000000000000000000ff")
-const addr2 = Address.fromHex("0x000000000000000000000000000000000000ff00")
+const addr1 = Address("0x00000000000000000000000000000000000000ff")
+const addr2 = Address("0x000000000000000000000000000000000000ff00")
 
 const value1 = addr1.toU256()
 const value2 = addr2.toU256()
 
 // Bitwise OR
 const combined = value1 | value2
-console.log(Address.fromNumber(combined).toHex())
+console.log(Address(combined).toHex())
 // "0x000000000000000000000000000000000000ffff"
 
 // Bitwise AND
 const intersection = value1 & value2
-console.log(Address.fromNumber(intersection).toHex())
+console.log(Address(intersection).toHex())
 // "0x0000000000000000000000000000000000000000"
 ```
 
@@ -227,12 +227,12 @@ import { Address } from '@tevm/voltaire'
 // Maximum address value: 2^160 - 1
 const MAX_ADDRESS_VALUE = (1n << 160n) - 1n
 
-const maxAddr = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+const maxAddr = Address("0xffffffffffffffffffffffffffffffffffffffff")
 console.log(maxAddr.toU256() === MAX_ADDRESS_VALUE)
 // true
 
 // Leading zeros are preserved in address but not in bigint
-const small = Address.fromHex("0x0000000000000000000000000000000000000001")
+const small = Address("0x0000000000000000000000000000000000000001")
 console.log(small.toU256())
 // 1n (not 0x0000000000000000000000000000000000000001n)
 ```
@@ -244,7 +244,7 @@ TypeScript enforces proper typing:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const value: bigint = addr.toU256()  // Type-safe
 
 // Compiler error: Type 'bigint' is not assignable to type 'string'
@@ -256,7 +256,7 @@ const value: bigint = addr.toU256()  // Type-safe
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x0000000000000000000000000000000000000045")
+const addr = Address("0x0000000000000000000000000000000000000045")
 
 // To bigint (toU256)
 console.log(addr.toU256())

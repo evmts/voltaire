@@ -31,7 +31,7 @@ import type { Provider } from '@tevm/voltaire/provider';
 const provider: Provider = /* ... */;
 
 // Convert to EIP-1193
-const eip1193 = Eip1193Provider.from(provider);
+const eip1193 = Eip1193Provider(provider);
 
 // Now compatible with standard libraries
 await eip1193.request({ method: 'eth_blockNumber', params: [] });
@@ -65,7 +65,7 @@ const balance = await eip1193.request({
 });
 
 // Internally converts to:
-// provider.eth_getBalance(Address.from('0x742d35...'), 'latest')
+// provider.eth_getBalance(Address('0x742d35...'), 'latest')
 ```
 
 ### Event Handling
@@ -95,7 +95,7 @@ Use the adapter with libraries that expect EIP-1193 providers:
 import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
 import { createWalletClient, custom } from 'viem';
 
-const eip1193 = Eip1193Provider.from(voltaireProvider);
+const eip1193 = Eip1193Provider(voltaireProvider);
 
 // Use with viem
 const client = createWalletClient({
@@ -122,7 +122,7 @@ import type { Provider } from '@tevm/voltaire/provider';
 const provider: Provider = /* ... */;
 
 // Create HTTP handler
-const handler = HttpHandler.from(provider);
+const handler = HttpHandler(provider);
 
 // Receives HTTP requests, calls provider methods, returns HTTP responses
 ```
@@ -186,7 +186,7 @@ Use with HTTP servers:
 import { createServer } from 'node:http';
 import { HttpHandler } from '@tevm/voltaire/provider/adapters';
 
-const handler = HttpHandler.from(provider);
+const handler = HttpHandler(provider);
 
 const server = createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/') {
@@ -295,7 +295,7 @@ export class WebSocketProvider implements Provider {
     const response = await this.request('eth_blockNumber', []);
     return response.error
       ? { error: response.error }
-      : { result: Quantity.from(response.result) };
+      : { result: Quantity(response.result) };
   }
 
   async eth_getBalance(
@@ -308,7 +308,7 @@ export class WebSocketProvider implements Provider {
     ]);
     return response.error
       ? { error: response.error }
-      : { result: Quantity.from(response.result) };
+      : { result: Quantity(response.result) };
   }
 
   // ... implement remaining methods
@@ -455,7 +455,7 @@ export class MockProvider implements Provider {
   private balances = new Map<string, bigint>();
 
   async eth_blockNumber(): Promise<Response<Quantity>> {
-    return { result: Quantity.from(this.blockNumber) };
+    return { result: Quantity(this.blockNumber) };
   }
 
   async eth_getBalance(
@@ -464,7 +464,7 @@ export class MockProvider implements Provider {
   ): Promise<Response<Quantity>> {
     const key = Address.toHex(address);
     const balance = this.balances.get(key) ?? 0n;
-    return { result: Quantity.from(balance) };
+    return { result: Quantity(balance) };
   }
 
   // Test helper methods
@@ -486,7 +486,7 @@ Adapters preserve type safety with branded primitives:
 
 ```typescript
 // Voltaire Provider - type safe
-const address = Address.from('0x...');
+const address = Address('0x...');
 await provider.eth_getBalance(address, 'latest');
 
 // EIP-1193 adapter - converts automatically

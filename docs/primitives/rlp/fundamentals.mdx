@@ -218,7 +218,7 @@ import * as Rlp from '@tevm/voltaire/Rlp';
 
 // List with 60 single-byte items
 const longList = Rlp.encode(
-  Array.from({ length: 60 }, (_, i) => new Uint8Array([i]))
+  Array({ length: 60 }, (_, i) => new Uint8Array([i]))
 );
 console.log(longList[0]); // 0xf8 (0xf7 + 1)
 console.log(longList[1]); // 60 (payload length)
@@ -226,7 +226,7 @@ console.log(longList.length); // 62 (prefix + length + 60 bytes)
 
 // List of 30 two-byte strings (total payload: 30 * 3 = 90 bytes)
 const manyStrings = Rlp.encode(
-  Array.from({ length: 30 }, () => new Uint8Array([0x42, 0x43]))
+  Array({ length: 30 }, () => new Uint8Array([0x42, 0x43]))
 );
 console.log(manyStrings[0]); // 0xf8 (0xf7 + 1)
 console.log(manyStrings[1]); // 90 (payload length)
@@ -666,7 +666,7 @@ console.log([...canonical]); // [0x42] ✅
 import * as Rlp from '@tevm/voltaire/Rlp';
 import * as Address from '@tevm/voltaire/Address';
 
-const address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 
 // Encode address (20 bytes)
 const encoded = Rlp.encode(address);
@@ -686,7 +686,7 @@ if (decoded.data.type === 'bytes') {
 import * as Rlp from '@tevm/voltaire/Rlp';
 import * as Hash from '@tevm/voltaire/Hash';
 
-const hash = Hash.fromHex("0x1234...");
+const hash = Hash("0x1234...");
 
 // Encode hash (32 bytes)
 const encoded = Rlp.encode(hash);

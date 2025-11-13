@@ -49,7 +49,7 @@ import { createFrame } from '@tevm/voltaire/evm/Frame';
 import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Immediate caller address
-const callerAddr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const callerAddr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
 const frame = createFrame({
   caller: callerAddr,
   stack: []
@@ -323,7 +323,7 @@ export function caller(frame: BrandedFrame): EvmError | null {
 
 ```typescript
 // Caller can be a contract address
-const contractCaller = Address.from('0xContractAddress...');
+const contractCaller = Address('0xContractAddress...');
 const frame = createFrame({ caller: contractCaller });
 
 caller(frame);

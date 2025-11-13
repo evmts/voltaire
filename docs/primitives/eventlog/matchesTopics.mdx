@@ -16,7 +16,7 @@ description: Check if log matches topic filter with null wildcards and OR logic
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 
 // Match Transfer events with any from/to addresses
 const matches = log.matchesTopics([
@@ -33,8 +33,8 @@ Specific hash must match exactly at that position:
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const userHash = Hash('0x000000000000000000000000a1b2c3d4...');
 
 // Match Transfer events TO specific user
 const matches = log.matchesTopics([
@@ -51,8 +51,8 @@ Matches if log topic equals ANY hash in the array:
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const APPROVAL_SIG = Hash('0x8c5be1e5...');
 
 // Match Transfer OR Approval events
 const matches = log.matchesTopics([
@@ -80,9 +80,9 @@ console.log(matches); // true
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Transfer(address indexed from, address indexed to, uint256 value)
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const userAddress = Address.fromHex('0xa1b2c3d4...');
-const userHash = Hash.fromBytes(
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const userAddress = Address('0xa1b2c3d4...');
+const userHash = Hash(
   new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
 );
 
@@ -112,9 +112,9 @@ console.log(`Total: ${userTransfers.length}`);
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
-const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const APPROVAL_SIG = Hash('0x8c5be1e5...');
+const SWAP_SIG = Hash('0xd78ad95f...');
 
 // Match any of these event types
 const relevantLogs = allLogs.filter(log =>
@@ -129,13 +129,13 @@ console.log(`Found ${relevantLogs.length} relevant events`);
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
 
 // Addresses in the group
 const groupHashes = [
-  Hash.fromHex('0x000...addr1'),
-  Hash.fromHex('0x000...addr2'),
-  Hash.fromHex('0x000...addr3'),
+  Hash('0x000...addr1'),
+  Hash('0x000...addr2'),
+  Hash('0x000...addr3'),
 ];
 
 // Transfers between any group members
@@ -156,8 +156,8 @@ console.log(`Intra-group transfers: ${intraGroupTransfers.length}`);
 import { EventLog, Hash } from '@tevm/voltaire';
 
 // Uniswap V2 Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)
-const SWAP_SIG = Hash.fromHex('0xd78ad95f...');
-const routerHash = Hash.fromHex('0x000...router');
+const SWAP_SIG = Hash('0xd78ad95f...');
+const routerHash = Hash('0x000...router');
 
 // Swaps initiated by router
 const routerSwaps = allLogs.filter(log =>
@@ -171,8 +171,8 @@ const routerSwaps = allLogs.filter(log =>
 import { EventLog, Hash } from '@tevm/voltaire';
 
 // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const zeroHash = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000000');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const zeroHash = Hash('0x0000000000000000000000000000000000000000000000000000000000000000');
 
 // NFT mints (from zero address)
 const mints = allLogs.filter(log =>
@@ -194,7 +194,7 @@ console.log(`Burns: ${burns.length}`);
 import { EventLog } from '@tevm/voltaire';
 
 // Anonymous events: topic0 is first indexed param, not signature
-const anonymousLog = EventLog.from({
+const anonymousLog = EventLog({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash],
   data: new Uint8Array([]),
@@ -215,10 +215,10 @@ const matches = anonymousLog.matchesTopics([
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const user1Hash = Hash.fromHex('0x000...user1');
-const user2Hash = Hash.fromHex('0x000...user2');
-const user3Hash = Hash.fromHex('0x000...user3');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const user1Hash = Hash('0x000...user1');
+const user2Hash = Hash('0x000...user2');
+const user3Hash = Hash('0x000...user3');
 
 // (from:user1 AND to:user2) OR (from:user2 AND to:user3)
 const complexFilter = allLogs.filter(log =>
@@ -234,7 +234,7 @@ Filter can have fewer topics than log:
 ```typescript
 import { EventLog, Hash } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: contractAddress,
   topics: [topic0, topic1, topic2, topic3], // 4 topics
   data: new Uint8Array([]),
@@ -250,14 +250,14 @@ console.log(matches); // true (remaining topics ignored)
 ```typescript
 import { EventLog } from '@tevm/voltaire';
 
-const log = EventLog.from({
+const log = EventLog({
   address: contractAddress,
   topics: [], // No topics
   data: new Uint8Array([]),
 });
 
 // Filter with topics fails
-const matches1 = log.matchesTopics([Hash.fromHex('0x...')]);
+const matches1 = log.matchesTopics([Hash('0x...')]);
 console.log(matches1); // false
 
 // Empty filter matches

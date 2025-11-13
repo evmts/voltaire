@@ -15,7 +15,7 @@ Access eth methods directly on the provider:
 import { Provider } from '@tevm/voltaire/provider';
 import * as Address from '@tevm/voltaire/primitives/Address';
 
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
 // Call eth methods
 const blockNumber = await provider.eth_blockNumber();
@@ -125,10 +125,10 @@ Sign and send a transaction (requires unlocked account).
 
 ```typescript
 const txHash = await provider.eth_sendTransaction({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  value: Quantity.from(1000000000000000000n),
-  data: Hex.from('0x...')
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n),
+  data: Hex('0x...')
 });
 // Response<Hash>
 ```
@@ -149,7 +149,7 @@ Get transaction by block hash and index.
 ```typescript
 const tx = await provider.eth_getTransactionByBlockHashAndIndex(
   blockHash,
-  Quantity.from(0)
+  Quantity(0)
 );
 // Response<Transaction>
 ```
@@ -161,7 +161,7 @@ Get transaction by block number and index.
 ```typescript
 const tx = await provider.eth_getTransactionByBlockNumberAndIndex(
   'latest',
-  Quantity.from(0)
+  Quantity(0)
 );
 // Response<Transaction>
 ```
@@ -219,7 +219,7 @@ Get value from a contract storage slot.
 ```typescript
 const value = await provider.eth_getStorageAt(
   address,
-  Quantity.from(0),
+  Quantity(0),
   'latest'
 );
 // Response<Hex>
@@ -237,7 +237,7 @@ Get Merkle proof for account and storage values.
 ```typescript
 const proof = await provider.eth_getProof(
   address,
-  [Quantity.from(0), Quantity.from(1)],
+  [Quantity(0), Quantity(1)],
   'latest'
 );
 // Response<Proof>
@@ -256,9 +256,9 @@ Execute a read-only contract call without creating a transaction.
 
 ```typescript
 const result = await provider.eth_call({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  data: Hex.from('0x70a08231...')  // balanceOf(address)
+  from: Address('0x...'),
+  to: Address('0x...'),
+  data: Hex('0x70a08231...')  // balanceOf(address)
 }, 'latest');
 // Response<Hex>
 ```
@@ -273,10 +273,10 @@ Estimate gas required for a transaction.
 
 ```typescript
 const gas = await provider.eth_estimateGas({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  value: Quantity.from(1000000000000000000n),
-  data: Hex.from('0x...')
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n),
+  data: Hex('0x...')
 });
 // Response<Quantity>
 ```
@@ -287,9 +287,9 @@ Generate an access list for a transaction.
 
 ```typescript
 const accessList = await provider.eth_createAccessList({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  data: Hex.from('0x...')
+  from: Address('0x...'),
+  to: Address('0x...'),
+  data: Hex('0x...')
 }, 'latest');
 // Response<AccessList>
 ```
@@ -313,8 +313,8 @@ Query event logs matching a filter.
 const logs = await provider.eth_getLogs({
   fromBlock: 'earliest',
   toBlock: 'latest',
-  address: Address.from('0x...'),
-  topics: [Hash.from('0x...')]  // Event signature
+  address: Address('0x...'),
+  topics: [Hash('0x...')]  // Event signature
 });
 // Response<Log[]>
 ```
@@ -327,7 +327,7 @@ Create a new log filter.
 const filterId = await provider.eth_newFilter({
   fromBlock: 'latest',
   toBlock: 'latest',
-  address: Address.from('0x...'),
+  address: Address('0x...'),
   topics: []
 });
 // Response<Quantity>
@@ -404,7 +404,7 @@ Get historical gas fee data.
 
 ```typescript
 const history = await provider.eth_feeHistory(
-  Quantity.from(10),  // Block count
+  Quantity(10),  // Block count
   'latest',           // Newest block
   [25, 50, 75]       // Percentiles
 );
@@ -466,8 +466,8 @@ Sign data with an account (requires unlocked account).
 
 ```typescript
 const signature = await provider.eth_sign(
-  Address.from('0x...'),
-  Hex.from('0x...')
+  Address('0x...'),
+  Hex('0x...')
 );
 // Response<Hex>
 ```
@@ -482,9 +482,9 @@ Sign a transaction (requires unlocked account).
 
 ```typescript
 const signedTx = await provider.eth_signTransaction({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  value: Quantity.from(1000000000000000000n)
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n)
 });
 // Response<Hex>
 ```
@@ -494,7 +494,7 @@ const signedTx = await provider.eth_signTransaction({
 ### Check Balance and Nonce
 
 ```typescript
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
 const [balanceRes, nonceRes] = await Promise.all([
   provider.eth_getBalance(address, 'latest'),
@@ -517,7 +517,7 @@ if (!codeRes.error && codeRes.result !== '0x') {
   // Contract exists, call a method
   const result = await provider.eth_call({
     to: contractAddress,
-    data: Hex.from('0x18160ddd')  // totalSupply()
+    data: Hex('0x18160ddd')  // totalSupply()
   }, 'latest');
 }
 ```

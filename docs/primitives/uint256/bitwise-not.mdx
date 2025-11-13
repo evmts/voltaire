@@ -17,7 +17,7 @@ Bitwise NOT (complement) operation - flips all bits.
 ```typescript
 import { Uint } from '@tevm/voltaire'
 
-const a = Uint.from(0xfn)
+const a = Uint(0xfn)
 Uint.bitwiseNot(a)  // 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0
 
 Uint.bitwiseNot(Uint.ZERO)  // MAX

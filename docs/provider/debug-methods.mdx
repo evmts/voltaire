@@ -19,7 +19,7 @@ Access debug methods directly on the provider:
 import { Provider } from '@tevm/voltaire/provider';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
-const txHash = Hash.from('0x...');
+const txHash = Hash('0x...');
 
 // Trace transaction execution
 const trace = await provider.debug_traceTransaction(txHash, {
@@ -56,7 +56,7 @@ const trace = await provider.debug_traceTransaction(txHash, {
 ```typescript
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
-const txHash = Hash.from('0xabc123...');
+const txHash = Hash('0xabc123...');
 
 // Call tracer - see internal calls
 const callTrace = await provider.debug_traceTransaction(txHash, {
@@ -126,7 +126,7 @@ const traces = await provider.debug_traceBlockByHash(blockHash, {
 ```typescript
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
-const blockHash = Hash.from('0xdef456...');
+const blockHash = Hash('0xdef456...');
 
 const traces = await provider.debug_traceBlockByHash(blockHash, {
   tracer: 'prestateTracer'
@@ -143,9 +143,9 @@ Trace a call without creating a transaction (like eth_call with tracing).
 
 ```typescript
 const trace = await provider.debug_traceCall({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  data: Hex.from('0x...')
+  from: Address('0x...'),
+  to: Address('0x...'),
+  data: Hex('0x...')
 }, 'latest', {
   tracer: 'callTracer'
 });
@@ -165,9 +165,9 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Trace a call before submitting
 const trace = await provider.debug_traceCall({
-  from: Address.from('0x742d35...'),
-  to: Address.from('0xcontract...'),
-  data: Hex.from('0xa9059cbb...')  // transfer(address,uint256)
+  from: Address('0x742d35...'),
+  to: Address('0xcontract...'),
+  data: Hex('0xa9059cbb...')  // transfer(address,uint256)
 }, 'latest', {
   tracer: 'callTracer'
 });

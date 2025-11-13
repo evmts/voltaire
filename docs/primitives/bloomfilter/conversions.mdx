@@ -94,7 +94,7 @@ await storage.save({
 
 // Later: deserialize from hex
 const data = await storage.load()
-const restored = BloomFilter.fromHex(data.logsBloom, data.m, data.k)
+const restored = BloomFilter(data.logsBloom, data.m, data.k)
 
 // Verify restoration
 console.log(restored.contains(new TextEncoder().encode("event1")))  // true
@@ -114,7 +114,7 @@ interface BlockHeader {
 
 // Parse block bloom filter
 function parseBlockBloom(block: BlockHeader): BloomFilter {
-  return BloomFilter.fromHex(block.logsBloom, 2048, 3)
+  return BloomFilter(block.logsBloom, 2048, 3)
 }
 
 // Create block header bloom filter
@@ -123,7 +123,7 @@ function createBlockBloom(logs: Log[]): string {
 
   for (const log of logs) {
     // Add address
-    filter.add(Address.from(log.address))
+    filter.add(Address(log.address))
 
     // Add topics
     for (const topic of log.topics) {
@@ -241,7 +241,7 @@ function testHashDistribution(
 }
 
 // Generate test items
-const testItems = Array.from({ length: 1000 }, (_, i) =>
+const testItems = Array({ length: 1000 }, (_, i) =>
   new TextEncoder().encode(`item-${i}`)
 )
 
@@ -251,7 +251,7 @@ console.log(`Unique hash values: ${dist.size} / 1000`)
 // Expected: ~950-1000 (high uniqueness)
 
 // Check collisions
-const collisions = Array.from(dist.values()).filter(count => count > 1).length
+const collisions = Array(dist.values()).filter(count => count > 1).length
 console.log(`Hash collisions: ${collisions}`)
 // Expected: Low collision rate
 ```
@@ -282,7 +282,7 @@ async function saveFilter(filter: BloomFilter, itemCount: number) {
 // Load filter
 async function loadFilter(id: number): Promise<BloomFilter> {
   const data = await db.filters.findById(id)
-  return BloomFilter.fromHex(data.hex, data.m, data.k)
+  return BloomFilter(data.hex, data.m, data.k)
 }
 ```
 
@@ -302,7 +302,7 @@ class SerializableBloomFilter {
   }
 
   static fromJSON(json: any): BloomFilter {
-    return BloomFilter.fromHex(json.hex, json.m, json.k)
+    return BloomFilter(json.hex, json.m, json.k)
   }
 }
 
@@ -350,7 +350,7 @@ ws.on("message", (data: string) => {
   const message: BloomFilterMessage = JSON.parse(data)
 
   if (message.type === "bloom_filter") {
-    const filter = BloomFilter.fromHex(
+    const filter = BloomFilter(
       message.data,
       message.params.m,
       message.params.k
@@ -385,7 +385,7 @@ const hex = filter.toHex()  // ~O(256) operations
 // Time complexity: O(n) where n is item length
 // Space complexity: O(1)
 
-const item = Hex.from('0x' + '00'.repeat(100)) // 100-byte item
+const item = Hex('0x' + '00'.repeat(100)) // 100-byte item
 
 // hash() performs:
 // - 100 byte reads

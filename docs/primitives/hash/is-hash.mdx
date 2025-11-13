@@ -116,7 +116,7 @@ function handleUserInput(input: unknown) {
   if (typeof input === 'string') {
     // Try parsing as hex
     if (Hash.isValidHex(input)) {
-      return Hash.fromHex(input)
+      return Hash(input)
     }
     throw new Error("Invalid hex string")
   }
@@ -163,7 +163,7 @@ function normalizeHash(input: HashOrString): BrandedHash {
     return input
   } else {
     // input is string
-    return Hash.fromHex(input)
+    return Hash(input)
   }
 }
 ```

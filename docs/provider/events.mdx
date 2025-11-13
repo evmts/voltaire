@@ -61,7 +61,7 @@ for await (const block of provider.events.newHeads()) {
 import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Monitor blocks and check for transactions to specific address
-const targetAddress = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const targetAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
 for await (const block of provider.events.newHeads()) {
   console.log(`Block ${block.number} with ${block.transactions.length} txs`);
@@ -112,8 +112,8 @@ import * as Address from '@tevm/voltaire/primitives/Address';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Subscribe to ERC20 Transfer events
-const tokenAddress = Address.from('0x...');
-const transferSignature = Hash.from(
+const tokenAddress = Address('0x...');
+const transferSignature = Hash(
   '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 );
 
@@ -122,8 +122,8 @@ for await (const log of provider.events.logs({
   topics: [transferSignature]
 })) {
   // Decode transfer event
-  const from = Address.from('0x' + log.topics[1].slice(26));
-  const to = Address.from('0x' + log.topics[2].slice(26));
+  const from = Address('0x' + log.topics[1].slice(26));
+  const to = Address('0x' + log.topics[2].slice(26));
   const value = log.data;
 
   console.log(`Transfer from ${from} to ${to}: ${value}`);
@@ -159,7 +159,7 @@ Not all providers support pending transaction subscriptions. This feature is com
 import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Monitor pending transactions to a specific address
-const targetAddress = Address.from('0x...');
+const targetAddress = Address('0x...');
 
 for await (const txHash of provider.events.newPendingTransactions()) {
   const tx = await provider.eth_getTransactionByHash(txHash);
@@ -483,8 +483,8 @@ import * as Address from '@tevm/voltaire/primitives/Address';
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Type-safe event filtering
-const address = Address.from('0x...');
-const topic = Hash.from('0x...');
+const address = Address('0x...');
+const topic = Hash('0x...');
 
 for await (const log of provider.events.logs({
   address: address,  // ✅ Branded Address

@@ -19,9 +19,9 @@ Type-safe signed 8-bit integers with two's complement encoding and EVM SDIV/SMOD
 import * as Int8 from '@tevm/voltaire/Int8'
 
 // Create signed integers
-const a = Int8.from(-42)
-const b = Int8.from(10)
-const zero = Int8.from(0)
+const a = Int8(-42)
+const b = Int8(10)
+const zero = Int8(0)
 
 // Signed arithmetic
 const sum = Int8.plus(a, b)        // -32
@@ -41,18 +41,18 @@ try {
 import * as Int8 from '@tevm/voltaire/Int8'
 
 // Two's complement conversions
-const negOne = Int8.from(-1)
+const negOne = Int8(-1)
 Int8.toHex(negOne)    // "0xff" (255 as unsigned)
 
-const min = Int8.from(-128)
+const min = Int8(-128)
 Int8.toHex(min)       // "0x80" (128 as unsigned)
 
 // Hex to signed
-const fromHex = Int8.fromHex("0xFF")
+const fromHex = Int8("0xFF")
 Int8.toNumber(fromHex)  // -1
 
 // Bytes (two's complement)
-const bytes = Int8.toBytes(Int8.from(-1))
+const bytes = Int8.toBytes(Int8(-1))
 // Uint8Array([0xff])
 ```
 </Tab>
@@ -222,18 +222,18 @@ Int8.shiftLeft(64, 1)  // -128 (0b01000000 → 0b10000000)
 import * as Int8 from '@tevm/voltaire/Int8'
 
 // From number (most common)
-const a = Int8.from(-42)
-const b = Int8.fromNumber(-42)
+const a = Int8(-42)
+const b = Int8(-42)
 
 // From bigint
-const c = Int8.fromBigint(-42n)
+const c = Int8(-42n)
 
 // From hex (two's complement)
-const d = Int8.fromHex("0xFF")    // -1
-const e = Int8.fromHex("0x80")    // -128
+const d = Int8("0xFF")    // -1
+const e = Int8("0x80")    // -128
 
 // From bytes (two's complement)
-const f = Int8.fromBytes(new Uint8Array([0xFF]))  // -1
+const f = Int8(new Uint8Array([0xFF]))  // -1
 ```
 
 ## Conversions
@@ -241,7 +241,7 @@ const f = Int8.fromBytes(new Uint8Array([0xFF]))  // -1
 ```typescript
 import * as Int8 from '@tevm/voltaire/Int8'
 
-const value = Int8.from(-42)
+const value = Int8(-42)
 
 // To number
 Int8.toNumber(value)  // -42

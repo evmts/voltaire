@@ -68,7 +68,7 @@ async function signMessage(address: string, nonce: string) {
   // Create SIWE message
   const message = Siwe.create({
     domain: window.location.host,
-    address: Address.fromHex(address),
+    address: Address(address),
     uri: window.location.origin,
     chainId,
     statement: 'Sign in to Example App',

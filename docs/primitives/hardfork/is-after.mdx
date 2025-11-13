@@ -16,7 +16,7 @@ Check for newer versions:
 ```typescript
 import { Hardfork, CANCUN } from '@tevm/voltaire'
 
-const fork = Hardfork.fromString(config.hardfork)
+const fork = Hardfork(config.hardfork)
 
 if (fork.isAfter(CANCUN)) {
   console.log("Running post-Cancun hardfork with unknown features")

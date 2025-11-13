@@ -83,7 +83,7 @@ import { CALLCODE } from '@tevm/voltaire/evm/system';
 // DON'T USE - deprecated opcode
 const frame = createFrame({
   gasRemaining: 1000000n,
-  address: Address.from("0x1234..."),
+  address: Address("0x1234..."),
 });
 
 // Stack: [gas=100000, address, value=0, inOffset=0, inLength=0, outOffset=0, outLength=0]

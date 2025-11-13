@@ -95,7 +95,7 @@ function generateFeatureMatrix() {
   const names = Hardfork.allNames()
 
   return names.map(name => {
-    const fork = Hardfork.fromString(name)
+    const fork = Hardfork(name)
     return {
       name,
       eip1559: fork.hasEIP1559(),

@@ -175,7 +175,7 @@ interface RSVSignature {
 import { Signature } from '@tevm/voltaire';
 
 // Create from RSV object
-const sig = Signature.from({
+const sig = Signature({
   r: rBytes,
   s: sBytes,
   v: 27,
@@ -310,7 +310,7 @@ const tx = {
 };
 
 // Convert to signature
-const sig = Signature.from({
+const sig = Signature({
   r: Hex.toBytes(tx.r),
   s: Hex.toBytes(tx.s),
   v: tx.v,
@@ -347,7 +347,7 @@ const apiResponse = {
 };
 
 // Parse to signature
-const sig = Signature.from({
+const sig = Signature({
   r: Hex.toBytes(apiResponse.signature.r),
   s: Hex.toBytes(apiResponse.signature.s),
   v: apiResponse.signature.v,

@@ -12,7 +12,7 @@ Ethereum hardforks are protocol upgrades that change EVM behavior, gas costs, or
 ```typescript
 import { Hardfork } from '@tevm/voltaire';
 
-const fork = Hardfork.fromString("cancun");
+const fork = Hardfork("cancun");
 if (Hardfork.hasEIP4844(fork)) {
   // Blob transactions available
 }
@@ -45,8 +45,8 @@ Hardfork.isPostMerge(fork)  // Proof of Stake (Merge+)
 
 **String Parsing:**
 ```typescript
-Hardfork.fromString("cancun")        // Case-insensitive
-Hardfork.fromString("paris")         // Alias → MERGE
+Hardfork("cancun")        // Case-insensitive
+Hardfork("paris")         // Alias → MERGE
 Hardfork.toString(fork)              // Normalized name
 ```
 
@@ -104,7 +104,7 @@ Hardfork.DEFAULT  // PRAGUE
 ```typescript
 import { Hardfork, CANCUN, LONDON } from '@tevm/voltaire';
 
-const fork = Hardfork.fromString("cancun");
+const fork = Hardfork("cancun");
 
 // Check minimum version
 if (Hardfork.isAtLeast(fork, LONDON)) {
@@ -121,7 +121,7 @@ if (Hardfork.hasEIP4844(fork)) {
 
 ```typescript
 function getNetworkCapabilities(hardfork: string) {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   return {
@@ -205,7 +205,7 @@ No WASM implementation - pure TypeScript is optimal for these operations. WASM o
 
 2. **Validate user input**
    ```typescript
-   const fork = Hardfork.fromString(userInput);
+   const fork = Hardfork(userInput);
    if (!fork) throw new Error("Invalid hardfork");
    ```
 

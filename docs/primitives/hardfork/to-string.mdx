@@ -14,8 +14,8 @@ Returns canonical name (not aliases):
 ```typescript
 import { Hardfork } from '@tevm/voltaire'
 
-const merge = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")  // Alias
+const merge = Hardfork("merge")
+const paris = Hardfork("paris")  // Alias
 
 Hardfork.toString(merge)   // "merge"
 Hardfork.toString(paris)   // "merge" (canonical, not "paris")
@@ -80,7 +80,7 @@ function saveConfig(fork: BrandedHardfork) {
 // Load and parse
 function loadConfig() {
   const data = JSON.parse(localStorage.getItem("config"))
-  return Hardfork.fromString(data.hardfork)
+  return Hardfork(data.hardfork)
 }
 ```
 
@@ -184,9 +184,9 @@ function saveHardforkBad(input: string) {
 ```typescript
 import { Hardfork } from '@tevm/voltaire'
 
-const fork = Hardfork.fromString("cancun")
+const fork = Hardfork("cancun")
 const name = Hardfork.toString(fork)
-const fork2 = Hardfork.fromString(name)
+const fork2 = Hardfork(name)
 
 fork.isEqual(fork2)  // true - round trip works
 ```

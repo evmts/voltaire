@@ -66,8 +66,8 @@ export type Item = {
 import { AccessList, Address, Hash } from '@tevm/voltaire';
 
 // Create addresses and storage keys
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
 
 // Build access list
 let list = AccessList.create();

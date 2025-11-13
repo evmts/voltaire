@@ -15,7 +15,7 @@ Bytes16 is a branded `Uint8Array` type representing exactly 16 bytes (128 bits).
 import * as Bytes16 from '@tevm/voltaire/primitives/Bytes/Bytes16';
 
 // Create from hex
-const bytes = Bytes16.from('0x' + '12'.repeat(16));
+const bytes = Bytes16('0x' + '12'.repeat(16));
 console.log(bytes.length); // 16
 
 // Create zero-filled
@@ -23,25 +23,25 @@ const zeros = Bytes16.zero();
 console.log(Bytes16.isZero(zeros)); // true
 
 // Size is strictly enforced
-Bytes16.from(new Uint8Array(15)); // Error: must be 16 bytes
+Bytes16(new Uint8Array(15)); // Error: must be 16 bytes
 ```
 
 ## Use Cases
 
 **UUIDs (128-bit)**
 ```typescript
-const uuid = Bytes16.fromHex('550e8400e29b41d4a716446655440000');
+const uuid = Bytes16('550e8400e29b41d4a716446655440000');
 ```
 
 **Medium Hashes**
 ```typescript
 // MD5, RIPEMD-128, etc.
-const hash = Bytes16.fromHex('0x...');
+const hash = Bytes16('0x...');
 ```
 
 **Fixed-Size Keys**
 ```typescript
-const key = Bytes16.fromHex('0x' + 'ab'.repeat(16));
+const key = Bytes16('0x' + 'ab'.repeat(16));
 ```
 
 ## Type Safety
@@ -58,8 +58,8 @@ type BrandedBytes16 = Uint8Array & {
 This prevents mixing different byte types:
 
 ```typescript
-const bytes16 = Bytes16.from('0x' + '12'.repeat(16));
-const bytes32 = Bytes32.from('0x' + '12'.repeat(32));
+const bytes16 = Bytes16('0x' + '12'.repeat(16));
+const bytes32 = Bytes32('0x' + '12'.repeat(32));
 
 // Type error: cannot assign Bytes32 to Bytes16
 const wrong: Bytes16.BrandedBytes16 = bytes32;
@@ -72,23 +72,23 @@ Create Bytes16 from hex string or bytes:
 
 ```typescript
 // From hex
-const b1 = Bytes16.from('0x' + '12'.repeat(16));
+const b1 = Bytes16('0x' + '12'.repeat(16));
 
 // From bytes
-const b2 = Bytes16.from(new Uint8Array(16));
+const b2 = Bytes16(new Uint8Array(16));
 ```
 
 ### fromHex
 Create from hex string with strict validation:
 
 ```typescript
-const bytes = Bytes16.fromHex('0x1234567890abcdef1234567890abcdef');
+const bytes = Bytes16('0x1234567890abcdef1234567890abcdef');
 
 // Without 0x prefix
-const bytes2 = Bytes16.fromHex('ab'.repeat(16));
+const bytes2 = Bytes16('ab'.repeat(16));
 
 // Throws on wrong length
-Bytes16.fromHex('0x1234'); // Error: must be 32 hex chars
+Bytes16('0x1234'); // Error: must be 32 hex chars
 ```
 
 ### fromBytes
@@ -96,10 +96,10 @@ Create from Uint8Array with size check:
 
 ```typescript
 const arr = new Uint8Array(16);
-const bytes = Bytes16.fromBytes(arr);
+const bytes = Bytes16(arr);
 
 // Throws on wrong size
-Bytes16.fromBytes(new Uint8Array(15)); // Error
+Bytes16(new Uint8Array(15)); // Error
 ```
 
 ### zero
@@ -116,7 +116,7 @@ console.log(Bytes16.isZero(zeros)); // true
 Convert to hex string:
 
 ```typescript
-const bytes = Bytes16.fromBytes(new Uint8Array(16));
+const bytes = Bytes16(new Uint8Array(16));
 const hex = Bytes16.toHex(bytes);
 console.log(hex); // "0x00000000000000000000000000000000"
 ```
@@ -125,7 +125,7 @@ console.log(hex); // "0x00000000000000000000000000000000"
 Convert to raw bytes:
 
 ```typescript
-const bytes = Bytes16.from('0x' + '12'.repeat(16));
+const bytes = Bytes16('0x' + '12'.repeat(16));
 const arr = Bytes16.toUint8Array(bytes);
 console.log(arr instanceof Uint8Array); // true
 ```
@@ -136,8 +136,8 @@ console.log(arr instanceof Uint8Array); // true
 Check equality:
 
 ```typescript
-const a = Bytes16.fromHex('0x' + 'aa'.repeat(16));
-const b = Bytes16.fromHex('0x' + 'aa'.repeat(16));
+const a = Bytes16('0x' + 'aa'.repeat(16));
+const b = Bytes16('0x' + 'aa'.repeat(16));
 console.log(Bytes16.equals(a, b)); // true
 ```
 
@@ -145,8 +145,8 @@ console.log(Bytes16.equals(a, b)); // true
 Compare two values:
 
 ```typescript
-const a = Bytes16.fromHex('0x' + '01'.repeat(16));
-const b = Bytes16.fromHex('0x' + '02'.repeat(16));
+const a = Bytes16('0x' + '01'.repeat(16));
+const b = Bytes16('0x' + '02'.repeat(16));
 console.log(Bytes16.compare(a, b)); // -1 (a < b)
 ```
 
@@ -154,7 +154,7 @@ console.log(Bytes16.compare(a, b)); // -1 (a < b)
 Create independent copy:
 
 ```typescript
-const original = Bytes16.from('0x' + '12'.repeat(16));
+const original = Bytes16('0x' + '12'.repeat(16));
 const copy = Bytes16.clone(original);
 ```
 
@@ -165,7 +165,7 @@ Check if all zeros:
 const zeros = Bytes16.zero();
 console.log(Bytes16.isZero(zeros)); // true
 
-const nonZero = Bytes16.fromHex('0x' + '00'.repeat(15) + '01');
+const nonZero = Bytes16('0x' + '00'.repeat(15) + '01');
 console.log(Bytes16.isZero(nonZero)); // false
 ```
 
@@ -173,7 +173,7 @@ console.log(Bytes16.isZero(nonZero)); // false
 Get size (always 16):
 
 ```typescript
-const bytes = Bytes16.from('0x' + '12'.repeat(16));
+const bytes = Bytes16('0x' + '12'.repeat(16));
 console.log(Bytes16.size(bytes)); // 16
 ```
 
@@ -200,14 +200,14 @@ Bytes16 validates size strictly:
 
 ```typescript
 try {
-  Bytes16.fromBytes(new Uint8Array(15));
+  Bytes16(new Uint8Array(15));
 } catch (error) {
   console.log(error.code); // "BYTES16_INVALID_LENGTH"
   console.log(error.message); // "Bytes16 must be 16 bytes, got 15"
 }
 
 try {
-  Bytes16.fromHex('0x1234');
+  Bytes16('0x1234');
 } catch (error) {
   console.log(error.code); // "BYTES16_INVALID_HEX_LENGTH"
   console.log(error.message); // "Bytes16 hex must be 32 characters..."

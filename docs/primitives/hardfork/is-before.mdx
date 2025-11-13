@@ -16,7 +16,7 @@ Exclude features not yet available:
 ```typescript
 import { Hardfork, LONDON } from '@tevm/voltaire'
 
-const fork = Hardfork.fromString(config.hardfork)
+const fork = Hardfork(config.hardfork)
 
 if (fork.isBefore(LONDON)) {
   // Use legacy transaction format (no EIP-1559)

@@ -97,15 +97,15 @@ import * as Hash from '@tevm/voltaire/primitives/Hash';
 // Test 1: Empty input
 const input1 = new Uint8Array(0);
 // Expected: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-const expected1 = Hash.from('0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+const expected1 = Hash('0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 
 // Test 2: "abc"
 const input2 = new TextEncoder().encode("abc");
 // Expected: ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-const expected2 = Hash.from('0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+const expected2 = Hash('0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
 
 // Test 3: Large input (1000 bytes of zeros)
-const input3 = Hex.from('0x' + '00'.repeat(1000));
+const input3 = Hex('0x' + '00'.repeat(1000));
 // Gas: 60 + 12 * ceil(1000/32) = 60 + 12*32 = 444
 ```
 

@@ -32,11 +32,11 @@ Create Gwei from numeric value.
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gwei1 = Gwei.from(50n)    // 50 Gwei (typical gas price)
-const gwei2 = Gwei.from(100n)   // 100 Gwei (high gas price)
-const gwei3 = Gwei.from(1n)     // 1 Gwei (low gas price)
-const gwei4 = Gwei.from("21")   // String input
-const gwei5 = Gwei.from(42)     // Number input
+const gwei1 = Gwei(50n)    // 50 Gwei (typical gas price)
+const gwei2 = Gwei(100n)   // 100 Gwei (high gas price)
+const gwei3 = Gwei(1n)     // 1 Gwei (low gas price)
+const gwei4 = Gwei("21")   // String input
+const gwei5 = Gwei(42)     // Number input
 ```
 
 **Parameters:**
@@ -58,11 +58,11 @@ Convert Wei to Gwei (divide by 10^9).
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const wei = Wei.from(50_000_000_000n)  // 50 billion Wei
+const wei = Wei(50_000_000_000n)  // 50 billion Wei
 const gwei = Gwei.fromWei(wei)  // 50n Gwei
 
 // Fractional values truncate
-const wei2 = Wei.from(50_000_000_001n)
+const wei2 = Wei(50_000_000_001n)
 const gwei2 = Gwei.fromWei(wei2)  // 50n (truncates)
 ```
 
@@ -83,7 +83,7 @@ Convert Ether to Gwei (multiply by 10^9).
 import * as Ether from '@tevm/voltaire/Ether'
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const ether = Ether.from(1n)  // 1 Ether
+const ether = Ether(1n)  // 1 Ether
 const gwei = Gwei.fromEther(ether)  // 1_000_000_000n Gwei
 ```
 
@@ -105,7 +105,7 @@ Convert Gwei to Wei (multiply by 10^9).
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gwei = Gwei.from(50n)  // 50 Gwei gas price
+const gwei = Gwei(50n)  // 50 Gwei gas price
 const wei = Gwei.toWei(gwei)  // 50_000_000_000n Wei
 ```
 
@@ -125,11 +125,11 @@ Convert Gwei to Ether (divide by 10^9).
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gwei = Gwei.from(1_000_000_000n)  // 1 billion Gwei
+const gwei = Gwei(1_000_000_000n)  // 1 billion Gwei
 const ether = Gwei.toEther(gwei)  // 1n Ether
 
 // Fractional values truncate
-const gwei2 = Gwei.from(500_000_000n)  // 0.5 Ether in Gwei
+const gwei2 = Gwei(500_000_000n)  // 0.5 Ether in Gwei
 const ether2 = Gwei.toEther(gwei2)  // 0n (truncates)
 ```
 
@@ -152,11 +152,11 @@ Convert Gwei to raw Uint256 (removes branding).
 import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const gwei = Gwei.from(50n)
+const gwei = Gwei(50n)
 const u256 = Gwei.toU256(gwei)  // Uint.Type (unbranded)
 
 // Can now use with Uint operations
-const doubled = Uint.times(u256, Uint.from(2n))
+const doubled = Uint.times(u256, Uint(2n))
 ```
 
 **Parameters:**
@@ -177,12 +177,12 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // Current gas prices (in Gwei)
-const lowGasPrice = Gwei.from(10n)     // Low priority
-const normalGasPrice = Gwei.from(30n)  // Normal priority
-const highGasPrice = Gwei.from(50n)    // High priority
+const lowGasPrice = Gwei(10n)     // Low priority
+const normalGasPrice = Gwei(30n)  // Normal priority
+const highGasPrice = Gwei(50n)    // High priority
 
 // Calculate transaction cost
-const gasUsed = Uint.from(21_000n)
+const gasUsed = Uint(21_000n)
 const gasPriceWei = Gwei.toWei(highGasPrice)
 const txCost = Uint.times(gasPriceWei, gasUsed)
 
@@ -195,9 +195,9 @@ console.log(`Cost: ${txCost} Wei`)
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 // EIP-1559 parameters
-const baseFee = Gwei.from(30n)          // Base fee per gas
-const maxPriorityFee = Gwei.from(2n)    // Tip for miner
-const maxFeePerGas = Gwei.from(50n)     // Max willing to pay
+const baseFee = Gwei(30n)          // Base fee per gas
+const maxPriorityFee = Gwei(2n)    // Tip for miner
+const maxFeePerGas = Gwei(50n)     // Max willing to pay
 
 const tx = {
   type: 2,
@@ -207,7 +207,7 @@ const tx = {
 }
 
 // Actual fee paid = min(maxFeePerGas, baseFee + maxPriorityFee)
-const actualFee = Gwei.from(32n)  // 30 + 2
+const actualFee = Gwei(32n)  // 30 + 2
 ```
 
 ### Gas Price Comparison
@@ -216,9 +216,9 @@ const actualFee = Gwei.from(32n)  // 30 + 2
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 const prices = [
-  Gwei.from(15n),
-  Gwei.from(25n),
-  Gwei.from(40n),
+  Gwei(15n),
+  Gwei(25n),
+  Gwei(40n),
 ]
 
 // Find minimum (convert to Uint for comparison)
@@ -244,13 +244,13 @@ interface GasPrices {
 }
 
 const current: GasPrices = {
-  fast: Gwei.from(50n),
-  standard: Gwei.from(30n),
-  slow: Gwei.from(15n),
+  fast: Gwei(50n),
+  standard: Gwei(30n),
+  slow: Gwei(15n),
 }
 
 // Calculate cost difference
-const gasUsed = Uint.from(21_000n)
+const gasUsed = Uint(21_000n)
 const fastCost = Uint.times(Gwei.toWei(current.fast), gasUsed)
 const slowCost = Uint.times(Gwei.toWei(current.slow), gasUsed)
 const savings = Uint.minus(fastCost, slowCost)
@@ -274,16 +274,16 @@ const GWEI_PER_ETHER = 1_000_000_000n  // 10^9
 import * as Gwei from '@tevm/voltaire/Gwei'
 
 // Historical gas price ranges
-const VERY_LOW = Gwei.from(1n)      // Network idle
-const LOW = Gwei.from(10n)          // Low activity
-const NORMAL = Gwei.from(30n)       // Normal activity
-const HIGH = Gwei.from(50n)         // High activity
-const EXTREME = Gwei.from(100n)     // Network congestion
+const VERY_LOW = Gwei(1n)      // Network idle
+const LOW = Gwei(10n)          // Low activity
+const NORMAL = Gwei(30n)       // Normal activity
+const HIGH = Gwei(50n)         // High activity
+const EXTREME = Gwei(100n)     // Network congestion
 
 // EIP-1559 parameters
-const PRIORITY_FEE_LOW = Gwei.from(1n)
-const PRIORITY_FEE_NORMAL = Gwei.from(2n)
-const PRIORITY_FEE_HIGH = Gwei.from(3n)
+const PRIORITY_FEE_LOW = Gwei(1n)
+const PRIORITY_FEE_NORMAL = Gwei(2n)
+const PRIORITY_FEE_HIGH = Gwei(3n)
 ```
 
 ## Type Safety
@@ -295,8 +295,8 @@ import * as Gwei from '@tevm/voltaire/Gwei'
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
-const gasPrice = Gwei.from(50n)
-const gasUsed = Uint.from(21_000n)
+const gasPrice = Gwei(50n)
+const gasUsed = Uint(21_000n)
 
 // ✗ Type error - cannot multiply Gwei directly
 const cost = Uint.times(gasPrice, gasUsed)
@@ -313,7 +313,7 @@ Gwei is human-readable for gas prices:
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei'
 
-const gasPrice = Gwei.from(42n)
+const gasPrice = Gwei(42n)
 console.log(`Gas Price: ${gasPrice} Gwei`)  // "Gas Price: 42 Gwei"
 
 // More readable than Wei
@@ -328,7 +328,7 @@ Gwei conversions available in WebAssembly for performance:
 ```typescript
 import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
 
-const gwei = GweiWasm.from(50n)
+const gwei = GweiWasm(50n)
 const wei = GweiWasm.toWei(gwei)
 ```
 

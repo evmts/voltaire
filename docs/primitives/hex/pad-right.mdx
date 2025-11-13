@@ -41,7 +41,7 @@ Hex.padRight("0x1234", 4)
 ```typescript
 // Solidity string stored as: length + data (right-padded to 32-byte chunks)
 const str = "hello"
-const data = Hex.fromString(str)
+const data = Hex(str)
 const paddedData = Hex.padRight(data, 32)
 // "0x68656c6c6f000000000000000000000000000000000000000000000000000000"
 ```
@@ -49,15 +49,15 @@ const paddedData = Hex.padRight(data, 32)
 **Bytes Storage:**
 ```typescript
 // Dynamic bytes in storage (right-padded)
-const bytes = Hex.from("0x123456")
+const bytes = Hex("0x123456")
 const stored = Hex.padRight(bytes, 32)
 ```
 
 **String Comparison:**
 ```typescript
 // Normalize string lengths for comparison
-const str1 = Hex.fromString("abc")
-const str2 = Hex.fromString("def")
+const str1 = Hex("abc")
+const str2 = Hex("def")
 
 const normalized1 = Hex.padRight(str1, 32)
 const normalized2 = Hex.padRight(str2, 32)
@@ -68,7 +68,7 @@ const normalized2 = Hex.padRight(str2, 32)
 **Bitmap Construction:**
 ```typescript
 // Build bitmap with trailing space
-const flags = Hex.fromBoolean(true) // "0x01"
+const flags = Hex(true) // "0x01"
 const bitmap = Hex.padRight(flags, 4)  // "0x01000000" (32-bit bitmap)
 ```
 

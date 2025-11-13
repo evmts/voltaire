@@ -458,7 +458,7 @@ for (const inst of code.scan({ detectFusions: true })) {
 }
 
 // Sort by total gas
-const sorted = Array.from(gasProfile.entries())
+const sorted = Array(gasProfile.entries())
   .sort((a, b) => b[1].totalGas - a[1].totalGas);
 
 console.log('Gas profile:');
@@ -594,7 +594,7 @@ function detectCustomPatterns(code: BrandedBytecode): IRInstruction[] {
   const ir: IRInstruction[] = [];
 
   // Collect instructions first for lookahead
-  const instructions = Array.from(code.scan({ detectFusions: true }));
+  const instructions = Array(code.scan({ detectFusions: true }));
 
   for (let i = 0; i < instructions.length; i++) {
     const inst = instructions[i];

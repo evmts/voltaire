@@ -211,7 +211,7 @@ Hash outputs are uniformly distributed across the output space.
 
 ```typescript
 // Each byte value (0-255) should appear with equal probability
-const hashes = Array.from({ length: 10000 }, (_, i) =>
+const hashes = Array({ length: 10000 }, (_, i) =>
   SHA256.hash(new Uint8Array([i >> 8, i & 0xFF]))
 );
 

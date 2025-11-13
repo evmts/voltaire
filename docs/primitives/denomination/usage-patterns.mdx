@@ -24,13 +24,13 @@ function calculateGasCost(
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
 
   // Calculate: gasPrice * gasUsed
-  const cost = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const cost = Uint.times(gasPriceWei, Uint(gasUsed))
 
-  return Wei.from(cost)
+  return Wei(cost)
 }
 
 // Example usage
-const gasPrice = Gwei.from(50n)  // 50 Gwei
+const gasPrice = Gwei(50n)  // 50 Gwei
 const gasUsed = 21_000n           // Standard transfer
 const cost = calculateGasCost(gasPrice, gasUsed)
 
@@ -58,26 +58,26 @@ function calculateEIP1559Cost(params: EIP1559Params): {
 } {
   // Max possible cost
   const maxFeeWei = Gwei.toWei(params.maxFeePerGas)
-  const maxCostU256 = Uint.times(maxFeeWei, Uint.from(params.gasLimit))
+  const maxCostU256 = Uint.times(maxFeeWei, Uint(params.gasLimit))
 
   // Estimated actual cost: baseFee + priorityFee
   const baseFeeU256 = Gwei.toU256(params.baseFeePerGas)
   const priorityFeeU256 = Gwei.toU256(params.maxPriorityFeePerGas)
   const effectiveFee = Uint.plus(baseFeeU256, priorityFeeU256)
-  const effectiveFeeWei = Gwei.toWei(Gwei.from(effectiveFee))
-  const estimatedCostU256 = Uint.times(effectiveFeeWei, Uint.from(params.gasLimit))
+  const effectiveFeeWei = Gwei.toWei(Gwei(effectiveFee))
+  const estimatedCostU256 = Uint.times(effectiveFeeWei, Uint(params.gasLimit))
 
   return {
-    maxCost: Wei.from(maxCostU256),
-    estimatedCost: Wei.from(estimatedCostU256)
+    maxCost: Wei(maxCostU256),
+    estimatedCost: Wei(estimatedCostU256)
   }
 }
 
 // Example usage
 const params: EIP1559Params = {
-  baseFeePerGas: Gwei.from(30n),
-  maxPriorityFeePerGas: Gwei.from(2n),
-  maxFeePerGas: Gwei.from(50n),
+  baseFeePerGas: Gwei(30n),
+  maxPriorityFeePerGas: Gwei(2n),
+  maxFeePerGas: Gwei(50n),
   gasLimit: 21_000n
 }
 
@@ -125,12 +125,12 @@ function selectGasPrice(
 
 // Example usage
 const prices: GasPrices = {
-  fast: Gwei.from(100n),
-  standard: Gwei.from(50n),
-  slow: Gwei.from(20n)
+  fast: Gwei(100n),
+  standard: Gwei(50n),
+  slow: Gwei(20n)
 }
 
-const maxPrice = Gwei.from(60n)
+const maxPrice = Gwei(60n)
 const selected = selectGasPrice(prices, maxPrice)
 
 if (selected) {
@@ -157,8 +157,8 @@ function parseEtherInput(input: string): Wei.Type {
   const fractionalPadded = fractional.padEnd(18, '0').slice(0, 18)
   const fractionalBigInt = BigInt(fractionalPadded)
 
-  const wholeWei = Ether.toWei(Ether.from(wholeBigInt))
-  const totalWei = Wei.from(Wei.toU256(wholeWei) + fractionalBigInt)
+  const wholeWei = Ether.toWei(Ether(wholeBigInt))
+  const totalWei = Wei(Wei.toU256(wholeWei) + fractionalBigInt)
 
   return totalWei
 }
@@ -199,9 +199,9 @@ function hasSufficientBalance(
 }
 
 // Example usage
-const balance = Wei.from(2_000_000_000_000_000_000n)  // 2 ETH
-const value = Ether.toWei(Ether.from(1n))              // 1 ETH
-const gasCost = Wei.from(50_000_000_000_000n)         // 0.00005 ETH
+const balance = Wei(2_000_000_000_000_000_000n)  // 2 ETH
+const value = Ether.toWei(Ether(1n))              // 1 ETH
+const gasCost = Wei(50_000_000_000_000n)         // 0.00005 ETH
 
 if (hasSufficientBalance(balance, value, gasCost)) {
   console.log('Sufficient balance')
@@ -220,7 +220,7 @@ import * as Uint from '@tevm/voltaire/Uint'
 
 function formatWeiAsEther(wei: Wei.Type, decimals: number = 18): string {
   const weiU256 = Wei.toU256(wei)
-  const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+  const weiPerEther = Uint(1_000_000_000_000_000_000n)
 
   // Split into whole and fractional parts
   const wholePart = Uint.dividedBy(weiU256, weiPerEther)
@@ -237,7 +237,7 @@ function formatWeiAsEther(wei: Wei.Type, decimals: number = 18): string {
 }
 
 // Example usage
-const balance = Wei.from(1_234_567_890_123_456_789n)
+const balance = Wei(1_234_567_890_123_456_789n)
 
 console.log(formatWeiAsEther(balance, 18))  // "1.234567890123456789"
 console.log(formatWeiAsEther(balance, 6))   // "1.234567"
@@ -269,9 +269,9 @@ function formatBalance(wei: Wei.Type): string {
 }
 
 // Example usage
-console.log(formatBalance(Wei.from(1_000_000_000_000_000_000n)))  // "1 ETH"
-console.log(formatBalance(Wei.from(50_000_000_000n)))             // "50 Gwei"
-console.log(formatBalance(Wei.from(1_000n)))                      // "1000 Wei"
+console.log(formatBalance(Wei(1_000_000_000_000_000_000n)))  // "1 ETH"
+console.log(formatBalance(Wei(50_000_000_000n)))             // "50 Gwei"
+console.log(formatBalance(Wei(1_000n)))                      // "1000 Wei"
 ```
 
 ### Compact Display
@@ -282,7 +282,7 @@ import * as Uint from '@tevm/voltaire/Uint'
 
 function formatCompact(wei: Wei.Type): string {
   const weiU256 = Wei.toU256(wei)
-  const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+  const weiPerEther = Uint(1_000_000_000_000_000_000n)
 
   const wholePart = Uint.dividedBy(weiU256, weiPerEther)
   const fractionalPart = Uint.modulo(weiU256, weiPerEther)
@@ -299,9 +299,9 @@ function formatCompact(wei: Wei.Type): string {
 }
 
 // Example usage
-console.log(formatCompact(Wei.from(1_000_000_000_000_000_000n)))  // "1 ETH"
-console.log(formatCompact(Wei.from(1_234_000_000_000_000_000n)))  // "1.2340 ETH"
-console.log(formatCompact(Wei.from(500_000_000_000_000_000n)))    // "0.5000 ETH"
+console.log(formatCompact(Wei(1_000_000_000_000_000_000n)))  // "1 ETH"
+console.log(formatCompact(Wei(1_234_000_000_000_000_000n)))  // "1.2340 ETH"
+console.log(formatCompact(Wei(500_000_000_000_000_000n)))    // "0.5000 ETH"
 ```
 
 ## Arithmetic Operations
@@ -316,12 +316,12 @@ function addWei(a: Wei.Type, b: Wei.Type): Wei.Type {
   const aU256 = Wei.toU256(a)
   const bU256 = Wei.toU256(b)
   const sum = Uint.plus(aU256, bU256)
-  return Wei.from(sum)
+  return Wei(sum)
 }
 
 // Example usage
-const balance1 = Wei.from(1_000_000_000_000_000_000n)  // 1 ETH
-const balance2 = Wei.from(500_000_000_000_000_000n)     // 0.5 ETH
+const balance1 = Wei(1_000_000_000_000_000_000n)  // 1 ETH
+const balance2 = Wei(500_000_000_000_000_000n)     // 0.5 ETH
 const total = addWei(balance1, balance2)                 // 1.5 ETH
 
 console.log(`Total: ${total} Wei`)
@@ -338,21 +338,21 @@ function calculatePercentage(
   percentage: bigint  // Basis points (100 = 1%)
 ): Wei.Type {
   const amountU256 = Wei.toU256(amount)
-  const percentageU256 = Uint.from(percentage)
-  const basis = Uint.from(10_000n)  // 100% = 10,000 basis points
+  const percentageU256 = Uint(percentage)
+  const basis = Uint(10_000n)  // 100% = 10,000 basis points
 
   const result = Uint.dividedBy(
     Uint.times(amountU256, percentageU256),
     basis
   )
 
-  return Wei.from(result)
+  return Wei(result)
 }
 
 // Example usage
-const amount = Wei.from(1_000_000_000_000_000_000n)  // 1 ETH
+const amount = Wei(1_000_000_000_000_000_000n)  // 1 ETH
 const fee = calculatePercentage(amount, 250n)         // 2.5% fee
-const remaining = Wei.from(
+const remaining = Wei(
   Uint.minus(Wei.toU256(amount), Wei.toU256(fee))
 )
 
@@ -372,24 +372,24 @@ function splitEqually(
   parts: number
 ): Wei.Type[] {
   const totalU256 = Wei.toU256(total)
-  const partsU256 = Uint.from(BigInt(parts))
+  const partsU256 = Uint(BigInt(parts))
 
   const share = Uint.dividedBy(totalU256, partsU256)
   const remainder = Uint.modulo(totalU256, partsU256)
 
   // Create array of equal shares
-  const shares = Array(parts).fill(Wei.from(share))
+  const shares = Array(parts).fill(Wei(share))
 
   // Add remainder to first share
   if (remainder > 0n) {
-    shares[0] = Wei.from(Uint.plus(share, remainder))
+    shares[0] = Wei(Uint.plus(share, remainder))
   }
 
   return shares
 }
 
 // Example usage
-const total = Wei.from(1_000_000_000_000_000_000n)  // 1 ETH
+const total = Wei(1_000_000_000_000_000_000n)  // 1 ETH
 const shares = splitEqually(total, 3)
 
 shares.forEach((share, i) => {
@@ -411,7 +411,7 @@ function weiToUSD(
   ethPriceUsd: number  // ETH price in USD (e.g., 2000.50)
 ): number {
   const weiU256 = Wei.toU256(wei)
-  const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+  const weiPerEther = Uint(1_000_000_000_000_000_000n)
 
   // Convert to Ether (as number for USD calculation)
   const ether = Number(Uint.dividedBy(weiU256, weiPerEther))
@@ -423,7 +423,7 @@ function weiToUSD(
 }
 
 // Example usage
-const balance = Wei.from(1_500_000_000_000_000_000n)  // 1.5 ETH
+const balance = Wei(1_500_000_000_000_000_000n)  // 1.5 ETH
 const ethPrice = 2000.50  // $2000.50 per ETH
 
 const usdValue = weiToUSD(balance, ethPrice)
@@ -444,17 +444,17 @@ function gasCostUSD(
 ): number {
   // Calculate gas cost in Wei
   const gasPriceWei = Gwei.toWei(gasPriceGwei)
-  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
 
   // Convert to USD
-  const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+  const weiPerEther = Uint(1_000_000_000_000_000_000n)
   const costEther = Number(costWei) / Number(weiPerEther)
 
   return costEther * ethPriceUsd
 }
 
 // Example usage
-const gasPrice = Gwei.from(50n)  // 50 Gwei
+const gasPrice = Gwei(50n)  // 50 Gwei
 const gasUsed = 21_000n
 const ethPrice = 2000.50
 
@@ -485,9 +485,9 @@ function isWithinRange(
 }
 
 // Example usage
-const value = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH
-const min = Ether.from(0n)
-const max = Ether.from(1n)
+const value = Wei(500_000_000_000_000_000n)  // 0.5 ETH
+const min = Ether(0n)
+const max = Ether(1n)
 
 if (isWithinRange(value, min, max)) {
   console.log('Value within range')
@@ -499,7 +499,7 @@ if (isWithinRange(value, min, max)) {
 ```typescript
 import * as Wei from '@tevm/voltaire/Wei'
 
-const DUST_THRESHOLD = Wei.from(1_000_000_000_000n)  // 0.000001 ETH
+const DUST_THRESHOLD = Wei(1_000_000_000_000n)  // 0.000001 ETH
 
 function isDust(amount: Wei.Type): boolean {
   const amountU256 = Wei.toU256(amount)
@@ -508,7 +508,7 @@ function isDust(amount: Wei.Type): boolean {
 }
 
 // Example usage
-const amount = Wei.from(100n)
+const amount = Wei(100n)
 if (isDust(amount)) {
   console.log('Amount is dust - may not be worth sending')
 }

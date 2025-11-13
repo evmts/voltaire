@@ -158,7 +158,7 @@ Check transient storage support:
 import { Hardfork, CANCUN } from '@tevm/voltaire'
 
 function validateTransientStorage(config: NetworkConfig) {
-  const fork = Hardfork.fromString(config.hardfork)
+  const fork = Hardfork(config.hardfork)
 
   if (fork.hasEIP1153()) {
     console.log("Transient storage available - use for reentrancy locks")

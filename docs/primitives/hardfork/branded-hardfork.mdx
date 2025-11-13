@@ -152,7 +152,7 @@ if (isBrandedHardfork(input)) {
 
 ```typescript
 // Safe - validated first
-const fork = Hardfork.fromString("cancun");
+const fork = Hardfork("cancun");
 if (fork) {
   // fork is BrandedHardfork
 }
@@ -220,7 +220,7 @@ console.log(fork.includes("c")); // true
 
 ```typescript
 // Good - validated and branded
-const fork = Hardfork.fromString(userInput);
+const fork = Hardfork(userInput);
 if (!fork) throw new Error("Invalid hardfork");
 
 // Bad - unsafe assertion
@@ -235,7 +235,7 @@ function handleApiRequest(req: Request): Response {
   const hardforkStr = req.body.hardfork;
 
   // Validate and brand
-  const fork = Hardfork.fromString(hardforkStr);
+  const fork = Hardfork(hardforkStr);
   if (!fork) {
     return badRequest("Invalid hardfork");
   }

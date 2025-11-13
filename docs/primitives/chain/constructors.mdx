@@ -39,11 +39,11 @@ Creates Chain instance from chain configuration object. Identity function that s
 ```typescript
 import { mainnet, optimism, arbitrum, base } from '@tevm/chains'
 
-const chain = Chain.from(mainnet)
+const chain = Chain(mainnet)
 console.log(chain.name)      // "Ethereum Mainnet"
 console.log(chain.chainId)   // 1
 
-const op = Chain.from(optimism)
+const op = Chain(optimism)
 console.log(op.name)         // "OP Mainnet"
 console.log(op.chainId)      // 10
 ```
@@ -111,7 +111,7 @@ import { Chain } from '@tevm/voltaire'
 import { mainnet, optimism } from '@tevm/chains'
 
 // From chain object
-const eth = Chain.from(mainnet)
+const eth = Chain(mainnet)
 console.log(eth.nativeCurrency.symbol) // "ETH"
 
 // From chain ID
@@ -221,7 +221,7 @@ function processChain(chainOrId: Chain | number): Chain {
     return chain
   }
 
-  return Chain.from(chainOrId)
+  return Chain(chainOrId)
 }
 
 // Works with chain objects

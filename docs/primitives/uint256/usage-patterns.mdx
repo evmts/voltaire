@@ -15,22 +15,22 @@ Practical patterns for arithmetic, validation, and working with Uint256 values.
 import * as Uint from '@tevm/voltaire/Uint';
 
 // From various sources
-const a = Uint.from(100n);
-const b = Uint.fromNumber(255);
-const c = Uint.fromHex("0xff");
-const d = Uint.fromBytes(new Uint8Array(32));
+const a = Uint(100n);
+const b = Uint(255);
+const c = Uint("0xff");
+const d = Uint(new Uint8Array(32));
 
 // Safe construction with validation
 function safeConstruct(value: unknown): BrandedUint256 | null {
   try {
     if (typeof value === 'bigint') {
-      return Uint.from(value);
+      return Uint(value);
     }
     if (typeof value === 'number') {
-      return Uint.fromNumber(value);
+      return Uint(value);
     }
     if (typeof value === 'string') {
-      return Uint.fromHex(value);
+      return Uint(value);
     }
     return null;
   } catch {
@@ -52,7 +52,7 @@ function requireUint(value: bigint): BrandedUint256 {
   if (!Uint.isValid(value)) {
     throw new Error(`Value out of range: ${value}`);
   }
-  return Uint.from(value);
+  return Uint(value);
 }
 
 // Try construct with fallback
@@ -96,7 +96,7 @@ function divide(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
 ```typescript
 // Check for overflow before operation
 function checkedAdd(a: BrandedUint256, b: BrandedUint256): BrandedUint256 | null {
-  const MAX = Uint.from(2n ** 256n - 1n);
+  const MAX = Uint(2n ** 256n - 1n);
   const remaining = Uint.minus(MAX, a);
 
   if (Uint.greaterThan(b, remaining)) {
@@ -109,10 +109,10 @@ function checkedAdd(a: BrandedUint256, b: BrandedUint256): BrandedUint256 | null
 // Safe multiplication check
 function checkedMultiply(a: BrandedUint256, b: BrandedUint256): BrandedUint256 | null {
   if (Uint.isZero(a) || Uint.isZero(b)) {
-    return Uint.from(0n);
+    return Uint(0n);
   }
 
-  const MAX = Uint.from(2n ** 256n - 1n);
+  const MAX = Uint(2n ** 256n - 1n);
   const maxB = Uint.dividedBy(MAX, a);
 
   if (Uint.greaterThan(b, maxB)) {
@@ -128,8 +128,8 @@ function checkedMultiply(a: BrandedUint256, b: BrandedUint256): BrandedUint256 |
 ```typescript
 // Calculate percentage
 function percentage(value: BrandedUint256, percent: number): BrandedUint256 {
-  const multiplied = Uint.times(value, Uint.fromNumber(percent));
-  return Uint.dividedBy(multiplied, Uint.fromNumber(100));
+  const multiplied = Uint.times(value, Uint(percent));
+  return Uint.dividedBy(multiplied, Uint(100));
 }
 
 // Calculate compound interest (simplified)
@@ -157,8 +157,8 @@ function weightedAverage(
     throw new Error("Mismatched array lengths");
   }
 
-  let sum = Uint.from(0n);
-  let totalWeight = Uint.from(0n);
+  let sum = Uint(0n);
+  let totalWeight = Uint(0n);
 
   for (let i = 0; i < values.length; i++) {
     const weighted = Uint.times(values[i], weights[i]);
@@ -177,20 +177,20 @@ function weightedAverage(
 ```typescript
 // Set specific bit
 function setBit(value: BrandedUint256, bitIndex: number): BrandedUint256 {
-  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  const mask = Uint.shiftLeft(Uint(1n), bitIndex);
   return Uint.bitwiseOr(value, mask);
 }
 
 // Clear specific bit
 function clearBit(value: BrandedUint256, bitIndex: number): BrandedUint256 {
-  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  const mask = Uint.shiftLeft(Uint(1n), bitIndex);
   const inverted = Uint.bitwiseNot(mask);
   return Uint.bitwiseAnd(value, inverted);
 }
 
 // Test bit
 function testBit(value: BrandedUint256, bitIndex: number): boolean {
-  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  const mask = Uint.shiftLeft(Uint(1n), bitIndex);
   const result = Uint.bitwiseAnd(value, mask);
   return !Uint.isZero(result);
 }
@@ -212,8 +212,8 @@ function extractBitField(
 ): BrandedUint256 {
   // Create mask with 'length' bits set
   const mask = Uint.minus(
-    Uint.shiftLeft(Uint.from(1n), length),
-    Uint.from(1n)
+    Uint.shiftLeft(Uint(1n), length),
+    Uint(1n)
   );
 
   // Shift and mask
@@ -230,8 +230,8 @@ function insertBitField(
 ): BrandedUint256 {
   // Create mask
   const mask = Uint.minus(
-    Uint.shiftLeft(Uint.from(1n), length),
-    Uint.from(1n)
+    Uint.shiftLeft(Uint(1n), length),
+    Uint(1n)
   );
 
   // Clear target bits
@@ -313,7 +313,7 @@ function clamp(
 ```typescript
 // Convert to number if safe
 function toNumberOrNull(value: BrandedUint256): number | null {
-  const MAX_SAFE = Uint.fromNumber(Number.MAX_SAFE_INTEGER);
+  const MAX_SAFE = Uint(Number.MAX_SAFE_INTEGER);
 
   if (Uint.greaterThan(value, MAX_SAFE)) {
     return null;
@@ -324,7 +324,7 @@ function toNumberOrNull(value: BrandedUint256): number | null {
 
 // Convert with warning
 function toNumberWithWarning(value: BrandedUint256): number {
-  const MAX_SAFE = Uint.fromNumber(Number.MAX_SAFE_INTEGER);
+  const MAX_SAFE = Uint(Number.MAX_SAFE_INTEGER);
 
   if (Uint.greaterThan(value, MAX_SAFE)) {
     console.warn(
@@ -370,7 +370,7 @@ function fromDecimals(amount: string, decimals: number): BrandedUint256 {
   const paddedFraction = fraction.padEnd(decimals, '0').slice(0, decimals);
   const combined = whole + paddedFraction;
 
-  return Uint.from(BigInt(combined));
+  return Uint(BigInt(combined));
 }
 
 // Convert to token decimals
@@ -400,8 +400,8 @@ function calculateTransferWithFee(
   const feeNumerator = Math.floor(feePercent * 100);
 
   const fee = Uint.dividedBy(
-    Uint.times(amount, Uint.fromNumber(feeNumerator)),
-    Uint.fromNumber(FEE_DENOMINATOR)
+    Uint.times(amount, Uint(feeNumerator)),
+    Uint(FEE_DENOMINATOR)
   );
 
   const net = Uint.minus(amount, fee);
@@ -442,28 +442,28 @@ function calculatePriceImpact(
 
 ```typescript
 const TEST_UINTS = {
-  zero: Uint.from(0n),
-  one: Uint.from(1n),
-  max: Uint.from(2n ** 256n - 1n),
-  halfMax: Uint.from(2n ** 255n),
-  maxSafeInt: Uint.fromNumber(Number.MAX_SAFE_INTEGER)
+  zero: Uint(0n),
+  one: Uint(1n),
+  max: Uint(2n ** 256n - 1n),
+  halfMax: Uint(2n ** 255n),
+  maxSafeInt: Uint(Number.MAX_SAFE_INTEGER)
 };
 
 // Generate test values
 function testUint(value: number): BrandedUint256 {
-  return Uint.fromNumber(value);
+  return Uint(value);
 }
 
 // Generate power of 2
 function powerOf2(exponent: number): BrandedUint256 {
-  return Uint.from(2n ** BigInt(exponent));
+  return Uint(2n ** BigInt(exponent));
 }
 
 // Generate sequential values
 function generateTestUints(count: number, start: number = 0): BrandedUint256[] {
-  return Array.from(
+  return Array(
     { length: count },
-    (_, i) => Uint.fromNumber(start + i)
+    (_, i) => Uint(start + i)
   );
 }
 ```

@@ -29,7 +29,7 @@ import { Address } from '@tevm/voltaire'
 const toChecksummed = ToChecksummed({ keccak256 })
 
 // Convert address to checksummed string
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 const checksummed = toChecksummed(addr)
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ```
@@ -104,7 +104,7 @@ for i in 0..39:
 import { Address } from '@tevm/voltaire'
 
 // Input address (lowercase)
-const addr = Address.fromHex("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 
 // Checksummed output
 console.log(addr.toChecksummed())
@@ -142,7 +142,7 @@ Users can manually verify addresses by comparing checksums:
 import { Address } from '@tevm/voltaire'
 
 const expected = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
-const addr = Address.fromHex(expected)
+const addr = Address(expected)
 
 // Verify checksum matches
 if (addr.toChecksummed() === expected) {
@@ -235,7 +235,7 @@ function parseChecksummedAddress(input: string): Address {
     throw new Error('Invalid address checksum')
   }
 
-  return Address.fromHex(input)
+  return Address(input)
 }
 ```
 
@@ -244,7 +244,7 @@ function parseChecksummedAddress(input: string): Address {
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
 // Lowercase (toHex)
 console.log(addr.toHex())
@@ -255,7 +255,7 @@ console.log(addr.toChecksummed())
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
 // Both represent the same address
-console.log(Address.fromHex(addr.toHex()).equals(Address.fromHex(addr.toChecksummed())))
+console.log(Address(addr.toHex()).equals(Address(addr.toChecksummed())))
 // true
 ```
 

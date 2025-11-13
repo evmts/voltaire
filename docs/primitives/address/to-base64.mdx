@@ -35,7 +35,7 @@ Base64 encoding produces more compact JSON vs hex:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Hex: 42 chars (with 0x prefix)
 const hexJson = { address: addr.toHex() }
@@ -57,9 +57,9 @@ import { Address } from '@tevm/voltaire'
 
 // Store multiple addresses
 const addresses = [
-  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  Address.fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
-  Address.fromHex("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+  Address("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
 ]
 
 // Encode for storage
@@ -67,7 +67,7 @@ const encoded = addresses.map(addr => addr.toBase64())
 // ["dC01zGY0wFMpJaO4RLyedZXyUeM=", "2NprviaUr53u2eA+U0FdN6qWBEU=", ...]
 
 // Later, restore from storage
-const restored = encoded.map(b64 => Address.fromBase64(b64))
+const restored = encoded.map(b64 => Address(b64))
 ```
 
 ### Binary Protocols
@@ -90,8 +90,8 @@ await sendMessage(JSON.stringify(message))
 
 // Receiver decodes addresses
 const decoded = JSON.parse(received)
-const fromAddr = Address.fromBase64(decoded.from)
-const toAddr = Address.fromBase64(decoded.to)
+const fromAddr = Address(decoded.from)
+const toAddr = Address(decoded.to)
 ```
 
 ### URL-safe Encoding
@@ -101,7 +101,7 @@ Base64 is URL-safe when used with proper encoding:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = addr.toBase64()
 
 // Safe in URL query params (no special chars except =)
@@ -127,7 +127,7 @@ const url = `https://api.example.com/address?id=${encodeURIComponent(b64)}`
 import { Address } from '@tevm/voltaire'
 
 // Works identically in Node.js and browser
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = addr.toBase64()
 // Same result on all platforms
 ```
@@ -151,9 +151,9 @@ For performance-critical code, prefer `toHex()` or `toBytes()`.
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const original = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = original.toBase64()
-const decoded = Address.fromBase64(b64)
+const decoded = Address(b64)
 
 console.log(Address.equals(original, decoded)) // true
 console.log(original.toHex() === decoded.toHex()) // true
@@ -165,13 +165,13 @@ console.log(original.toHex() === decoded.toHex()) // true
 import { Address } from '@tevm/voltaire'
 
 // Start with number
-const addr1 = Address.fromNumber(0x742d35Cc)
+const addr1 = Address(0x742d35Cc)
 
 // Convert through base64
 const b64 = addr1.toBase64()
 
 // Restore and verify
-const addr2 = Address.fromBase64(b64)
+const addr2 = Address(b64)
 console.log(addr1.toHex() === addr2.toHex()) // true
 ```
 
@@ -182,11 +182,11 @@ import { Address } from '@tevm/voltaire'
 
 // Checksummed input
 const checksummed = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-const addr = Address.fromHex(checksummed)
+const addr = Address(checksummed)
 
 // Base64 doesn't preserve checksum (binary encoding)
 const b64 = addr.toBase64()
-const restored = Address.fromBase64(b64)
+const restored = Address(b64)
 
 // Re-checksum after restoring
 console.log(restored.toChecksummed())
@@ -220,7 +220,7 @@ Base64 encoding never fails for valid addresses:
 import { Address } from '@tevm/voltaire'
 
 // Always succeeds for valid addresses
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = addr.toBase64() // Never throws
 
 // Zero address encodes successfully
@@ -229,7 +229,7 @@ console.log(zero.toBase64())
 // "AAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 // Max address encodes successfully
-const max = Address.fromBytes(new Uint8Array(20).fill(0xFF))
+const max = Address(new Uint8Array(20).fill(0xFF))
 console.log(max.toBase64())
 // "//////////////////////////8="
 ```

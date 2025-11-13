@@ -115,7 +115,7 @@ Reconstructed ABIs use generic `bytes` types since exact parameter structures ca
 
 ```typescript
 const bytecode = await provider.getCode(mysteryContract);
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 const abi = code.toAbi();
 
 // Find all view functions
@@ -139,10 +139,10 @@ const result = await provider.call({
 
 ```typescript
 // Compare deployed bytecode ABI with expected
-const deployed = Bytecode.fromHex(await provider.getCode(address));
+const deployed = Bytecode(await provider.getCode(address));
 const deployedAbi = deployed.toAbi();
 
-const expected = Bytecode.fromHex(compiledBytecode);
+const expected = Bytecode(compiledBytecode);
 const expectedAbi = expected.toAbi();
 
 // Check if function selectors match
@@ -170,7 +170,7 @@ if (missing.length > 0) {
 ### Detect Proxy Contracts
 
 ```typescript
-const code = Bytecode.fromHex(proxyBytecode);
+const code = Bytecode(proxyBytecode);
 const abi = code.toAbi();
 
 // Proxy contracts typically have very few functions
@@ -195,7 +195,7 @@ if (functionCount < 5) {
 
 ```typescript
 // Contract source lost but bytecode deployed
-const code = Bytecode.fromHex(lostContractBytecode);
+const code = Bytecode(lostContractBytecode);
 const reconstructedAbi = code.toAbi();
 
 // Save reconstructed ABI
@@ -227,8 +227,8 @@ reconstructedAbi.forEach(item => {
 ### Compare Contract Versions
 
 ```typescript
-const v1 = Bytecode.fromHex(contractV1Bytecode);
-const v2 = Bytecode.fromHex(contractV2Bytecode);
+const v1 = Bytecode(contractV1Bytecode);
+const v2 = Bytecode(contractV2Bytecode);
 
 const abiV1 = v1.toAbi();
 const abiV2 = v2.toAbi();
@@ -325,7 +325,7 @@ Reconstructed ABIs are compatible with Abi module methods:
 ```typescript
 import * as Abi from '@tevm/voltaire/Abi';
 
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 const abi = code.toAbi();
 
 // Use with Abi module
@@ -398,7 +398,7 @@ const augmentedAbi = abi.map(item => {
 ### Detect Compiler Version
 
 ```typescript
-const code = Bytecode.fromHex(bytecode);
+const code = Bytecode(bytecode);
 const abi = code.toAbi();
 
 // Heuristics based on patterns
@@ -422,7 +422,7 @@ if (hasPush0) {
 
 ```typescript
 // Deployment bytecode includes init code + runtime code
-const deployBytecode = Bytecode.fromHex(deploymentBytecode);
+const deployBytecode = Bytecode(deploymentBytecode);
 const deployAbi = deployBytecode.toAbi();
 
 // Extract runtime code

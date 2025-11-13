@@ -125,7 +125,7 @@ Validate PUSH0 support:
 import { Hardfork, SHANGHAI } from '@tevm/voltaire'
 
 function validatePUSH0Support(config: NetworkConfig) {
-  const fork = Hardfork.fromString(config.hardfork)
+  const fork = Hardfork(config.hardfork)
 
   if (fork.hasEIP3855()) {
     console.log("PUSH0 optimization available")

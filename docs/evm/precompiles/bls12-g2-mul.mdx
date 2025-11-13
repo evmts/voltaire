@@ -68,7 +68,7 @@ import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 // Using point at infinity (valid edge case: O * k = O)
 const point = new Uint8Array(256); // All zeros = point at infinity
 
-const scalar = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000005'); // multiply by 5
+const scalar = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000005'); // multiply by 5
 
 const input = new Uint8Array(288);
 input.set(point, 0);

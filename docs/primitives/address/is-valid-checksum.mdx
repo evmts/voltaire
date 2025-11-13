@@ -140,7 +140,7 @@ function parseStrictAddress(input: string): Address {
     throw new Error('Invalid or missing EIP-55 checksum')
   }
 
-  return Address.fromHex(input)
+  return Address(input)
 }
 ```
 
@@ -160,7 +160,7 @@ function parseAddressWithWarning(input: string): Address {
     console.warn('Address has invalid checksum. Double-check the address.')
   }
 
-  return Address.fromHex(input)
+  return Address(input)
 }
 ```
 
@@ -203,7 +203,7 @@ function normalizeAddress(input: string): string {
     throw new Error('Invalid address')
   }
 
-  const addr = Address.fromHex(input)
+  const addr = Address(input)
   return addr.toChecksummed() // Always return checksummed
 }
 
@@ -227,7 +227,7 @@ The checksum is computed as follows:
 import { Address } from '@tevm/voltaire'
 
 const lowercase = "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"
-const addr = Address.fromHex(lowercase)
+const addr = Address(lowercase)
 
 // Generate checksummed version
 const checksummed = addr.toChecksummed()
@@ -307,14 +307,14 @@ if (!Address.isValidChecksum(input)) {
   console.warn('Invalid checksum')
 }
 
-const addr = Address.fromHex(input)
+const addr = Address(input)
 ```
 
 **Parse then validate:**
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex(input)
+const addr = Address(input)
 
 // Check if input had valid checksum
 if (!Address.isValidChecksum(input)) {

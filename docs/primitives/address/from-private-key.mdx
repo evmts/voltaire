@@ -17,7 +17,7 @@ import * as PrivateKey from '@tevm/voltaire/primitives/PrivateKey'
 const fromPrivateKey = FromPrivateKey({ keccak256, derivePublicKey })
 
 // Use the factory
-const privateKey = PrivateKey.from('0x...')
+const privateKey = PrivateKey('0x...')
 const address = fromPrivateKey(privateKey)
 ```
 
@@ -37,7 +37,7 @@ import { Address } from '@tevm/voltaire'
 const privateKey = new Uint8Array(32)
 // ... set private key bytes ...
 
-const address = Address.fromPrivateKey(privateKey)
+const address = Address(privateKey)
 ```
 
 ## C FFI
@@ -128,10 +128,10 @@ import { randomBytes } from 'crypto' // Node.js
 const privateKey = randomBytes(32)
 
 // Derive address
-const addr = Address.fromPrivateKey(privateKey)
+const addr = Address(privateKey)
 
 console.log('Address:', addr.toChecksummed())
-console.log('Private key:', Buffer.from(privateKey).toString('hex'))
+console.log('Private key:', Buffer(privateKey).toString('hex'))
 
 // Store private key securely (encrypted)
 // Store address publicly (for receiving funds)
@@ -150,11 +150,11 @@ function generateAccount() {
   const privateKey = new Uint8Array(32)
   crypto.getRandomValues(privateKey)
 
-  const address = Address.fromPrivateKey(privateKey)
+  const address = Address(privateKey)
 
   return {
     address: address.toChecksummed(),
-    privateKey: Buffer.from(privateKey).toString('hex')
+    privateKey: Buffer(privateKey).toString('hex')
   }
 }
 
@@ -178,7 +178,7 @@ function importPrivateKey(keyHex: string) {
   }
 
   const privateKey = Hex.toBytes(`0x${cleanHex}`)
-  const address = Address.fromPrivateKey(privateKey)
+  const address = Address(privateKey)
 
   return address
 }
@@ -197,7 +197,7 @@ function deriveAddresses(masterSeed: Uint8Array, count: number) {
 
   for (let i = 0; i < count; i++) {
     const childKey = deriveChildKey(masterSeed, i) // BIP32/BIP44
-    const address = Address.fromPrivateKey(childKey)
+    const address = Address(childKey)
     addresses.push(address.toChecksummed())
   }
 
@@ -225,7 +225,7 @@ import { Address } from '@tevm/voltaire'
 // Wrong length
 try {
   const shortKey = new Uint8Array(16)
-  Address.fromPrivateKey(shortKey)
+  Address(shortKey)
 } catch (e) {
   console.error(e) // InvalidAddressLengthError: must be 32 bytes
 }
@@ -233,7 +233,7 @@ try {
 // Invalid value (all zeros)
 try {
   const zeroKey = new Uint8Array(32)
-  Address.fromPrivateKey(zeroKey)
+  Address(zeroKey)
 } catch (e) {
   console.error(e) // InvalidValueError: Invalid private key
 }
@@ -241,7 +241,7 @@ try {
 // Out of range
 try {
   const invalidKey = new Uint8Array(32).fill(0xFF)
-  Address.fromPrivateKey(invalidKey)
+  Address(invalidKey)
 } catch (e) {
   console.error(e) // InvalidValueError: Invalid private key
 }

@@ -86,7 +86,7 @@ function hashToG1Point(message: Uint8Array): Uint8Array {
   const hash = Keccak256.hash(message);
 
   // Pad to 64 bytes (field element size)
-  const fpElement = Bytes64.from(hash); // Automatically handles padding
+  const fpElement = Bytes64(hash); // Automatically handles padding
 
   // Step 2: Map to G1 using precompile
   const result = execute(

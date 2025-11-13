@@ -24,11 +24,11 @@ Denominations are units of value in Ethereum. All values are internally stored a
 import * as Wei from '@tevm/voltaire/Wei';
 
 // Wei is the smallest unit (1 Wei = 10^-18 Ether)
-const oneWei = Wei.from(1n);
-const oneEtherInWei = Wei.from(1_000_000_000_000_000_000n);
+const oneWei = Wei(1n);
+const oneEtherInWei = Wei(1_000_000_000_000_000_000n);
 
 // Used for precise calculations
-const gasPrice = Wei.from(50_000_000_000n);  // 50 Gwei in Wei
+const gasPrice = Wei(50_000_000_000n);  // 50 Gwei in Wei
 ```
 
 **Use Wei for**: Internal calculations, smart contract values, precision
@@ -38,8 +38,8 @@ const gasPrice = Wei.from(50_000_000_000n);  // 50 Gwei in Wei
 import * as Gwei from '@tevm/voltaire/Gwei';
 
 // Gwei (gigawei) = 1 billion Wei (10^9)
-const oneGwei = Gwei.from(1n);  // 1_000_000_000 Wei
-const gasPrice = Gwei.from(50n);  // 50 Gwei
+const oneGwei = Gwei(1n);  // 1_000_000_000 Wei
+const gasPrice = Gwei(50n);  // 50 Gwei
 
 // Convert to Wei for calculations
 const gasPriceWei = Gwei.toWei(gasPrice);  // 50_000_000_000n Wei
@@ -52,8 +52,8 @@ const gasPriceWei = Gwei.toWei(gasPrice);  // 50_000_000_000n Wei
 import * as Ether from '@tevm/voltaire/Ether';
 
 // Ether = 1 quintillion Wei (10^18)
-const oneEther = Ether.from(1n);  // 1_000_000_000_000_000_000 Wei
-const balance = Ether.from(5n);    // 5 ETH
+const oneEther = Ether(1n);  // 1_000_000_000_000_000_000 Wei
+const balance = Ether(5n);    // 5 ETH
 
 // Convert to Wei for transactions
 const valueWei = Ether.toWei(balance);  // 5_000_000_000_000_000_000n Wei
@@ -109,7 +109,7 @@ import * as Ether from '@tevm/voltaire/Ether';
 import * as Gwei from '@tevm/voltaire/Gwei';
 import * as Wei from '@tevm/voltaire/Wei';
 
-const ethAmount = Ether.from(1n);  // 1 ETH
+const ethAmount = Ether(1n);  // 1 ETH
 
 // Ether to Gwei
 const gweiAmount = Ether.toGwei(ethAmount);  // 1_000_000_000n Gwei
@@ -127,7 +127,7 @@ console.log(`1 ETH = ${gweiAmount} Gwei = ${weiAmount} Wei`);
 ```typescript
 import * as Wei from '@tevm/voltaire/Wei';
 
-const weiAmount = Wei.from(1_500_000_000_000_000_000n);  // 1.5 ETH in Wei
+const weiAmount = Wei(1_500_000_000_000_000_000n);  // 1.5 ETH in Wei
 
 // Wei to Gwei
 const gweiAmount = Wei.toGwei(weiAmount);   // 1_500_000_000n Gwei
@@ -144,7 +144,7 @@ console.log(`${weiAmount} Wei = ${gweiAmount} Gwei = ${ethAmount} ETH`);
 ```typescript
 import * as Gwei from '@tevm/voltaire/Gwei';
 
-const gasPrice = Gwei.from(50n);  // 50 Gwei
+const gasPrice = Gwei(50n);  // 50 Gwei
 
 // Gwei to Wei (multiply by 10^9)
 const weiValue = Gwei.toWei(gasPrice);      // 50_000_000_000n Wei
@@ -153,7 +153,7 @@ const weiValue = Gwei.toWei(gasPrice);      // 50_000_000_000n Wei
 const ethValue = Gwei.toEther(gasPrice);    // 0n Ether (< 1 billion Gwei)
 
 // Need at least 1 billion Gwei for 1 Ether
-const oneEthInGwei = Gwei.from(1_000_000_000n);
+const oneEthInGwei = Gwei(1_000_000_000n);
 const ethResult = Gwei.toEther(oneEthInGwei);  // 1n Ether
 ```
 </Tab>
@@ -170,20 +170,20 @@ import * as Ether from '@tevm/voltaire/Ether';
 import * as Uint from '@tevm/voltaire/Uint';
 
 // Gas price from network (commonly displayed in Gwei)
-const gasPriceGwei = Gwei.from(50n);  // 50 Gwei
+const gasPriceGwei = Gwei(50n);  // 50 Gwei
 
 // Convert to Wei for calculation
 const gasPriceWei = Gwei.toWei(gasPriceGwei);  // 50_000_000_000n Wei
 
 // Simple transfer uses 21,000 gas
-const gasUsed = Uint.from(21_000n);
+const gasUsed = Uint(21_000n);
 
 // Calculate total cost: gasPrice × gasUsed
 const txCostWei = Uint.times(gasPriceWei, gasUsed);
 // Result: 1_050_000_000_000_000n Wei (0.00105 ETH)
 
 // Convert to Ether for display
-const txCostEther = Wei.toEther(Wei.from(txCostWei));
+const txCostEther = Wei.toEther(Wei(txCostWei));
 console.log(`Transaction cost: ${txCostEther} ETH`);
 ```
 
@@ -195,13 +195,13 @@ console.log(`Transaction cost: ${txCostEther} ETH`);
 import * as Gwei from '@tevm/voltaire/Gwei';
 import * as Uint from '@tevm/voltaire/Uint';
 
-const gasUsed = Uint.from(21_000n);
+const gasUsed = Uint(21_000n);
 
 // Calculate costs at different gas prices
 const prices = [20n, 50n, 100n, 200n];  // Gwei
 
 prices.forEach(price => {
-  const gasPriceGwei = Gwei.from(price);
+  const gasPriceGwei = Gwei(price);
   const gasPriceWei = Gwei.toWei(gasPriceGwei);
   const costWei = Uint.times(gasPriceWei, gasUsed);
 
@@ -222,15 +222,15 @@ import * as Wei from '@tevm/voltaire/Wei';
 import * as Uint from '@tevm/voltaire/Uint';
 
 // EIP-1559 transaction with priority fee
-const baseFee = Gwei.from(40n);      // 40 Gwei
-const priorityFee = Gwei.from(2n);   // 2 Gwei tip
+const baseFee = Gwei(40n);      // 40 Gwei
+const priorityFee = Gwei(2n);   // 2 Gwei tip
 
 // Total gas price
 const totalPriceGwei = Uint.plus(baseFee, priorityFee);  // 42 Gwei
-const totalPriceWei = Gwei.toWei(Gwei.from(totalPriceGwei));
+const totalPriceWei = Gwei.toWei(Gwei(totalPriceGwei));
 
 // Complex contract interaction
-const gasUsed = Uint.from(150_000n);
+const gasUsed = Uint(150_000n);
 
 // Total cost
 const txCostWei = Uint.times(totalPriceWei, gasUsed);
@@ -247,7 +247,7 @@ When displaying values to users, convert to appropriate units:
 import * as Wei from '@tevm/voltaire/Wei';
 import * as Ether from '@tevm/voltaire/Ether';
 
-const balance = Wei.from(1_234_567_890_123_456_789n);
+const balance = Wei(1_234_567_890_123_456_789n);
 
 // Convert to Ether for user display
 const ethBalance = Wei.toEther(balance);  // 1n Ether
@@ -270,7 +270,7 @@ import * as Ether from '@tevm/voltaire/Ether';
 import * as Wei from '@tevm/voltaire/Wei';
 
 // User sees balance in Ether
-const userBalance = Ether.from(5n);  // 5 ETH
+const userBalance = Ether(5n);  // 5 ETH
 
 // Convert to Wei for transaction
 const valueWei = Ether.toWei(userBalance);  // 5_000_000_000_000_000_000n
@@ -287,7 +287,7 @@ import * as Wei from '@tevm/voltaire/Wei';
 import * as Gwei from '@tevm/voltaire/Gwei';
 
 // Gas price from RPC (in Wei)
-const gasPriceWei = Wei.from(50_000_000_000n);
+const gasPriceWei = Wei(50_000_000_000n);
 
 // Convert to Gwei for user display
 const gasPriceGwei = Wei.toGwei(gasPriceWei);  // 50n Gwei
@@ -301,8 +301,8 @@ import * as Wei from '@tevm/voltaire/Wei';
 import * as Uint from '@tevm/voltaire/Uint';
 
 // Always use Wei for precise calculations
-const amount1 = Wei.from(1_000_000_000_000_000_000n);  // 1 ETH
-const amount2 = Wei.from(500_000_000_000_000_000n);    // 0.5 ETH
+const amount1 = Wei(1_000_000_000_000_000_000n);  // 1 ETH
+const amount2 = Wei(500_000_000_000_000_000n);    // 0.5 ETH
 
 // Add amounts (in Wei)
 const total = Uint.plus(amount1, amount2);
@@ -323,16 +323,16 @@ const total = Uint.plus(amount1, amount2);
 import * as Wei from '@tevm/voltaire/Wei';
 
 // ✅ Correct: Use bigint for precise values
-const correct = Wei.from(1_000_000_000_000_000_000n);
+const correct = Wei(1_000_000_000_000_000_000n);
 
 // ❌ Wrong: JavaScript numbers lose precision beyond 2^53
-const wrong = Wei.from(1000000000000000000);  // Precision loss!
+const wrong = Wei(1000000000000000000);  // Precision loss!
 
 // ✅ Use bigint literals (n suffix)
 const gasPrice = 50_000_000_000n;
 
 // ✅ Convert from string if needed
-const amount = Wei.from("1000000000000000000");
+const amount = Wei("1000000000000000000");
 ```
 </Tab>
 <Tab title="Integer Division">
@@ -341,13 +341,13 @@ import * as Wei from '@tevm/voltaire/Wei';
 import * as Ether from '@tevm/voltaire/Ether';
 
 // Integer division truncates (rounds down)
-const halfEther = Wei.from(500_000_000_000_000_000n);  // 0.5 ETH
+const halfEther = Wei(500_000_000_000_000_000n);  // 0.5 ETH
 
 const ethAmount = Wei.toEther(halfEther);  // 0n (truncated)
 
 // To preserve fractions, stay in Wei
 const doubleHalfEther = halfEther * 2n;  // 1_000_000_000_000_000_000n
-const result = Wei.toEther(Wei.from(doubleHalfEther));  // 1n Ether ✓
+const result = Wei.toEther(Wei(doubleHalfEther));  // 1n Ether ✓
 ```
 </Tab>
 <Tab title="Avoid Floating Point">
@@ -376,8 +376,8 @@ import * as Wei from '@tevm/voltaire/Wei';
 import * as Gwei from '@tevm/voltaire/Gwei';
 import * as Uint from '@tevm/voltaire/Uint';
 
-const gasPrice = Gwei.from(50n);
-const gasUsed = Uint.from(21_000n);
+const gasPrice = Gwei(50n);
+const gasUsed = Uint(21_000n);
 
 // ❌ Type error - cannot mix Gwei and Uint
 const costWrong = Uint.times(gasPrice, gasUsed);

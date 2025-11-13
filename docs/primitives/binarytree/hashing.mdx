@@ -342,7 +342,7 @@ import { BinaryTree } from '@tevm/voltaire'
 
 // Create stem with all 256 values set
 const stem = new Uint8Array(31)
-const values = Array.from({ length: 256 }, (_, i) => {
+const values = Array({ length: 256 }, (_, i) => {
   const v = new Uint8Array(32)
   v[0] = i
   return v

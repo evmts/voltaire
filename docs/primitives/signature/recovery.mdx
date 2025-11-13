@@ -169,7 +169,7 @@ const message = {
 const messageHash = EIP712.hash({ domain, types, message });
 
 // Parse signature from user
-const sig = Signature.from(signatureBytes);
+const sig = Signature(signatureBytes);
 
 // Recover signer address
 const signer = Secp256k1.recoverAddress(sig, messageHash);
@@ -190,7 +190,7 @@ const prefixedMessage = prefix + message;
 const messageHash = Hash(keccak256(prefixedMessage));
 
 // Recover signer
-const sig = Signature.from(signatureBytes);
+const sig = Signature(signatureBytes);
 const signer = Secp256k1.recoverAddress(sig, messageHash);
 ```
 
@@ -201,7 +201,7 @@ const signer = Secp256k1.recoverAddress(sig, messageHash);
 ```typescript
 // Recover and verify against known address
 const expectedAddress = Address('0x...');
-const sig = Signature.from(signatureBytes);
+const sig = Signature(signatureBytes);
 const messageHash = Hash(keccak256(message));
 
 const recoveredAddress = Secp256k1.recoverAddress(sig, messageHash);

@@ -27,7 +27,7 @@ async function createMessage(address: string, nonce: string) {
 
   return Siwe.create({
     domain: window.location.host,
-    address: Address.fromHex(address),
+    address: Address(address),
     uri: window.location.origin,
     chainId: Number(chainId),
     statement: 'Sign in to Example App',
@@ -235,7 +235,7 @@ async function authenticateMultiChain(address: string) {
     supportedChains.map(async (chainId) => {
       return Siwe.create({
         domain: window.location.host,
-        address: Address.fromHex(address),
+        address: Address(address),
         uri: window.location.origin,
         chainId,
         nonce,

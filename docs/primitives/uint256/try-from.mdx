@@ -121,7 +121,7 @@ Uint.tryFrom(Infinity)     // undefined
 ```typescript
 function parse(input: string): BrandedUint256 | null {
   try {
-    return Uint.from(input)
+    return Uint(input)
   } catch (error) {
     console.error("Parse failed:", error)
     return null
@@ -204,7 +204,7 @@ function validateAndParse(input: string): BrandedUint256 {
     throw new Error("Value must be non-zero")
   }
 
-  const max = Uint.from(2n ** 128n)
+  const max = Uint(2n ** 128n)
   if (value.greaterThan(max)) {
     throw new Error("Value too large")
   }

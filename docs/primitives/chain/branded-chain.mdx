@@ -78,7 +78,7 @@ from(chain)
 fromId(id)
 
 // vs Chain class: uses static methods
-Chain.from(chain)
+Chain(chain)
 Chain.fromId(id)
 ```
 
@@ -348,7 +348,7 @@ import { fromId } from '@tevm/voltaire/BrandedChain'
 import { quai9 } from '@tevm/chains'
 
 // BrandedChain functions work with Chain class
-const chain1 = Chain.from(quai9)
+const chain1 = Chain(quai9)
 const chain2 = fromId(9)
 
 // Both are plain objects with same structure

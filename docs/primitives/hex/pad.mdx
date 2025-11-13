@@ -57,7 +57,7 @@ Hex.pad("0xff", 32)
 
 const value = Hex.fromBigInt(1000n)
 const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
-const flag = Hex.fromBoolean(true)
+const flag = Hex(true)
 
 // All parameters must be 32 bytes for ABI encoding
 const encodedValue = Hex.pad(value, 32)
@@ -70,7 +70,7 @@ const calldata = Hex.concat(selector, encodedValue, encodedAddress, encodedFlag)
 **Storage Keys:**
 ```typescript
 // Storage slots are uint256 (32 bytes)
-const slot = Hex.fromNumber(5)
+const slot = Hex(5)
 const paddedSlot = Hex.pad(slot, 32)
 const value = await provider.getStorageAt(address, paddedSlot)
 ```
@@ -78,8 +78,8 @@ const value = await provider.getStorageAt(address, paddedSlot)
 **Fixed-Size Fields:**
 ```typescript
 // Ensure consistent size for hashing
-const chainId = Hex.pad(Hex.fromNumber(1), 32)
-const nonce = Hex.pad(Hex.fromNumber(42), 32)
+const chainId = Hex.pad(Hex(1), 32)
+const nonce = Hex.pad(Hex(42), 32)
 ```
 
 ## Already Correct Size

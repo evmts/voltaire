@@ -96,7 +96,7 @@ Address cannot be zero address (0x0000...0000).
 ```typescript
 // Valid
 const auth = {
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   ...
 };
 
@@ -430,7 +430,7 @@ import { Authorization, Address } from '@tevm/voltaire';
 
 const validAuth: Authorization.Item = {
   chainId: 1n,
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   nonce: 0n,
   yParity: 0,
   r: 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefn,

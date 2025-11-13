@@ -42,10 +42,10 @@ const calldata = Hex.concat(selector, paddedRecipient, amount)
 
 **Combine Transaction Components:**
 ```typescript
-const chainId = Hex.fromNumber(1, 32)
-const nonce = Hex.fromNumber(42, 32)
+const chainId = Hex(1, 32)
+const nonce = Hex(42, 32)
 const gasPrice = Hex.fromBigInt(20000000000n, 32)
-const gasLimit = Hex.fromNumber(21000, 32)
+const gasLimit = Hex(21000, 32)
 const to = Hex.pad("0x742d35Cc6634C0532925a3b844Bc9e7595f12345", 32)
 const value = Hex.fromBigInt(1000000000000000000n, 32)
 const data = "0x"
@@ -58,7 +58,7 @@ const rawTx = Hex.concat(chainId, nonce, gasPrice, gasLimit, to, value, data)
 ```typescript
 // Mapping storage key: keccak256(key . slot)
 const mappingKey = Hex.pad("0x742d35Cc6634C0532925a3b844Bc9e7595f12345", 32)
-const slot = Hex.fromNumber(5, 32)
+const slot = Hex(5, 32)
 const storageKey = keccak256(Hex.concat(mappingKey, slot))
 ```
 
@@ -66,7 +66,7 @@ const storageKey = keccak256(Hex.concat(mappingKey, slot))
 ```typescript
 const r = signature.r  // 32 bytes
 const s = signature.s  // 32 bytes
-const v = Hex.fromNumber(signature.v, 1)  // 1 byte
+const v = Hex(signature.v, 1)  // 1 byte
 
 const fullSignature = Hex.concat(r, s, v)  // 65 bytes total
 ```

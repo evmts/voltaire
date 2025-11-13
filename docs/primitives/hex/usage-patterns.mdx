@@ -15,20 +15,20 @@ Practical patterns for hex string manipulation, validation, and conversion.
 import * as Hex from '@tevm/voltaire/Hex';
 
 // From number
-const numHex = Hex.fromNumber(255);  // "0xff"
+const numHex = Hex(255);  // "0xff"
 
 // From bigint
-const bigintHex = Hex.fromBigint(1000000n);  // "0xf4240"
+const bigintHex = Hex(1000000n);  // "0xf4240"
 
 // From boolean
-const boolHex = Hex.fromBoolean(true);  // "0x01"
+const boolHex = Hex(true);  // "0x01"
 
 // From string
-const strHex = Hex.fromString("Hello");  // "0x48656c6c6f"
+const strHex = Hex("Hello");  // "0x48656c6c6f"
 
 // From bytes
 const bytes = new Uint8Array([1, 2, 3]);
-const bytesHex = Hex.fromBytes(bytes);  // "0x010203"
+const bytesHex = Hex(bytes);  // "0x010203"
 ```
 
 ### Universal Constructor
@@ -37,15 +37,15 @@ const bytesHex = Hex.fromBytes(bytes);  // "0x010203"
 // Accept multiple input types
 function toHex(input: string | number | bigint | boolean | Uint8Array): BrandedHex {
   if (typeof input === 'string') {
-    return Hex.from(input);
+    return Hex(input);
   } else if (typeof input === 'number') {
-    return Hex.fromNumber(input);
+    return Hex(input);
   } else if (typeof input === 'bigint') {
-    return Hex.fromBigint(input);
+    return Hex(input);
   } else if (typeof input === 'boolean') {
-    return Hex.fromBoolean(input);
+    return Hex(input);
   } else {
-    return Hex.fromBytes(input);
+    return Hex(input);
   }
 }
 ```
@@ -65,14 +65,14 @@ function requireHex(input: string): BrandedHex {
   if (!Hex.isHex(input)) {
     throw new Error(`Invalid hex: ${input}`);
   }
-  return Hex.from(input);
+  return Hex(input);
 }
 
 // Safe parsing
 function safeParseHex(input: unknown): BrandedHex | null {
   try {
     if (typeof input === 'string') {
-      return Hex.from(input);
+      return Hex(input);
     }
     return null;
   } catch {
@@ -100,12 +100,12 @@ function assertSize(hex: BrandedHex, size: number): void {
 
 // Validate address size (20 bytes)
 function isAddressHex(hex: string): boolean {
-  return Hex.isHex(hex) && Hex.isSized(Hex.from(hex), 20);
+  return Hex.isHex(hex) && Hex.isSized(Hex(hex), 20);
 }
 
 // Validate hash size (32 bytes)
 function isHashHex(hex: string): boolean {
-  return Hex.isHex(hex) && Hex.isSized(Hex.from(hex), 32);
+  return Hex.isHex(hex) && Hex.isSized(Hex(hex), 32);
 }
 ```
 
@@ -226,9 +226,9 @@ function getFunctionSelector(calldata: BrandedHex): BrandedHex {
 ```typescript
 // Concatenate multiple hex strings
 const combined = Hex.concat(
-  Hex.from("0x01"),
-  Hex.from("0x02"),
-  Hex.from("0x03")
+  Hex("0x01"),
+  Hex("0x02"),
+  Hex("0x03")
 );  // "0x010203"
 
 // Build calldata
@@ -245,8 +245,8 @@ function buildCalldata(
 ```typescript
 // XOR two hex strings
 const xored = Hex.xor(
-  Hex.from("0x00ff"),
-  Hex.from("0xff00")
+  Hex("0x00ff"),
+  Hex("0xff00")
 );  // "0xffff"
 
 // XOR mask
@@ -265,7 +265,7 @@ function encodeFunctionCall(
   selector: string,
   ...params: BrandedHex[]
 ): BrandedHex {
-  const selectorHex = Hex.from(selector);
+  const selectorHex = Hex(selector);
   const paddedParams = params.map(p => Hex.pad(p, 32));
   return Hex.concat(selectorHex, ...paddedParams);
 }
@@ -273,8 +273,8 @@ function encodeFunctionCall(
 // Example: transfer(address,uint256)
 const transferCall = encodeFunctionCall(
   "0xa9059cbb",  // transfer selector
-  Hex.pad(Hex.fromBytes(recipientAddress), 32),
-  Hex.pad(Hex.fromBigint(1000n), 32)
+  Hex.pad(Hex(recipientAddress), 32),
+  Hex.pad(Hex(1000n), 32)
 );
 ```
 
@@ -314,8 +314,8 @@ function encodePacked(...values: BrandedHex[]): BrandedHex {
 
 // Example: encodePacked(address, uint8)
 const packed = encodePacked(
-  Hex.fromBytes(address),      // 20 bytes
-  Hex.fromNumber(255)           // 1 byte
+  Hex(address),      // 20 bytes
+  Hex(255)           // 1 byte
 );  // 21 bytes total
 ```
 
@@ -401,7 +401,7 @@ function findDuplicateHex(hexes: BrandedHex[]): BrandedHex[] {
 function testHex(size: number): BrandedHex {
   const bytes = new Uint8Array(size);
   crypto.getRandomValues(bytes);
-  return Hex.fromBytes(bytes);
+  return Hex(bytes);
 }
 
 // Generate sequential test hex
@@ -410,17 +410,17 @@ function testHexSequential(size: number, seed: number = 0): BrandedHex {
   for (let i = 0; i < size; i++) {
     bytes[i] = (seed + i) % 256;
   }
-  return Hex.fromBytes(bytes);
+  return Hex(bytes);
 }
 
 // Common test values
 const TEST_HEX = {
-  empty: Hex.from("0x"),
-  zero: Hex.from("0x00"),
-  one: Hex.from("0x01"),
-  max8: Hex.from("0xff"),
-  max16: Hex.from("0xffff"),
-  max32: Hex.from("0x" + "ff".repeat(32))
+  empty: Hex("0x"),
+  zero: Hex("0x00"),
+  one: Hex("0x01"),
+  max8: Hex("0xff"),
+  max16: Hex("0xffff"),
+  max32: Hex("0x" + "ff".repeat(32))
 };
 ```
 

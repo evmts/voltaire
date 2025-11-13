@@ -70,7 +70,7 @@ import { Address } from '@tevm/voltaire';
 const privateKey = new Uint8Array(32);
 crypto.getRandomValues(privateKey);
 
-const addr = Address.fromPrivateKey(privateKey);
+const addr = Address(privateKey);
 console.log(addr.toChecksummed());
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
@@ -113,7 +113,7 @@ const hash = Keccak256.hash(new TextEncoder().encode(address));
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
 
 // Generate checksummed representation
 const checksummed = addr.toChecksummed();
@@ -164,7 +164,7 @@ address = keccak256(rlp([sender, nonce]))[12:]
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // First contract deployment (nonce = 0)
 const contract1 = deployer.calculateCreateAddress(0n);
@@ -192,7 +192,7 @@ address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:]
 import { Address } from '@tevm/voltaire';
 import { Keccak256 } from '@tevm/voltaire/crypto';
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // 32-byte salt (can be any value)
 const salt = new Uint8Array(32);
@@ -264,14 +264,14 @@ import { Address } from '@tevm/voltaire';
 import { Bytecode } from '@tevm/voltaire';
 
 // Factory contract that deploys via CREATE2
-const factory = Address.fromHex("0x0000000000FFe8B47B3e2130213B802212439497");
+const factory = Address("0x0000000000FFe8B47B3e2130213B802212439497");
 
 // Simple contract bytecode (returns 42)
-const runtimeCode = Bytecode.fromHex("0x602a60005260206000f3");
+const runtimeCode = Bytecode("0x602a60005260206000f3");
 // PUSH1 0x2a PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
 
 // Deployment code wraps runtime code
-const deployCode = Bytecode.fromHex("0x69602a60005260206000f3600052600a6016f3");
+const deployCode = Bytecode("0x69602a60005260206000f3600052600a6016f3");
 // PUSH10 0x602a60005260206000f3 PUSH1 0x00 MSTORE PUSH1 0x0a PUSH1 0x16 RETURN
 
 // Choose salt for deterministic address
@@ -305,7 +305,7 @@ console.log(zero.toHex());
 // "0x0000000000000000000000000000000000000000"
 
 // Check if address is zero
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 console.log(addr.isZero()); // false
 console.log(zero.isZero()); // true
 
@@ -319,16 +319,16 @@ Addresses `0x01` through `0x0a` (and beyond) are reserved for precompiled contra
 
 ```typescript
 // Precompile addresses
-const ecRecover  = Address.fromHex("0x0000000000000000000000000000000000000001"); // ECRecover
-const sha256     = Address.fromHex("0x0000000000000000000000000000000000000002"); // SHA-256
-const ripemd160  = Address.fromHex("0x0000000000000000000000000000000000000003"); // RIPEMD-160
-const identity   = Address.fromHex("0x0000000000000000000000000000000000000004"); // Identity
-const modexp     = Address.fromHex("0x0000000000000000000000000000000000000005"); // ModExp
-const ecAdd      = Address.fromHex("0x0000000000000000000000000000000000000006"); // BN254 Add
-const ecMul      = Address.fromHex("0x0000000000000000000000000000000000000007"); // BN254 Mul
-const ecPairing  = Address.fromHex("0x0000000000000000000000000000000000000008"); // BN254 Pairing
-const blake2f    = Address.fromHex("0x0000000000000000000000000000000000000009"); // Blake2f
-const pointEval  = Address.fromHex("0x000000000000000000000000000000000000000a"); // KZG Point Evaluation
+const ecRecover  = Address("0x0000000000000000000000000000000000000001"); // ECRecover
+const sha256     = Address("0x0000000000000000000000000000000000000002"); // SHA-256
+const ripemd160  = Address("0x0000000000000000000000000000000000000003"); // RIPEMD-160
+const identity   = Address("0x0000000000000000000000000000000000000004"); // Identity
+const modexp     = Address("0x0000000000000000000000000000000000000005"); // ModExp
+const ecAdd      = Address("0x0000000000000000000000000000000000000006"); // BN254 Add
+const ecMul      = Address("0x0000000000000000000000000000000000000007"); // BN254 Mul
+const ecPairing  = Address("0x0000000000000000000000000000000000000008"); // BN254 Pairing
+const blake2f    = Address("0x0000000000000000000000000000000000000009"); // Blake2f
+const pointEval  = Address("0x000000000000000000000000000000000000000a"); // KZG Point Evaluation
 ```
 
 See [Precompiles](/precompiles) for detailed documentation.
@@ -348,7 +348,7 @@ function parseUserAddress(input: string): Address {
     throw new Error(`Invalid address format: ${input}`);
   }
 
-  const addr = Address.fromHex(input);
+  const addr = Address(input);
 
   // Optionally verify checksum if mixed-case
   if (input.match(/[a-f].*[A-F]|[A-F].*[a-f]/)) { // Has both cases
@@ -374,14 +374,14 @@ try {
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E"); // Different case
+const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr2 = Address("0x742D35CC6634C0532925A3B844BC9E7595F51E3E"); // Different case
 
 // Equality (case-insensitive)
 console.log(addr1.equals(addr2)); // true (same bytes)
 
 // Ordering
-const addr3 = Address.fromHex("0x0000000000000000000000000000000000000001");
+const addr3 = Address("0x0000000000000000000000000000000000000001");
 console.log(addr3.lessThan(addr1)); // true
 console.log(addr1.greaterThan(addr3)); // true
 
@@ -398,9 +398,9 @@ console.log(sorted.map(a => a.toHex()));
 import { Address } from '@tevm/voltaire';
 
 const addresses = [
-  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
-  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"), // Duplicate (different case)
-  Address.fromHex("0x0000000000000000000000000000000000000001"),
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"), // Duplicate (different case)
+  Address("0x0000000000000000000000000000000000000001"),
 ];
 
 const unique = Address.deduplicateAddresses(addresses);

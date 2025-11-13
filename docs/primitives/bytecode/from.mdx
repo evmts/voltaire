@@ -30,7 +30,7 @@ const code = Bytecode(bytes)
 
 **BrandedBytecode** - Branded bytecode (passed through):
 ```typescript
-const branded = Bytecode.fromHex("0x6001")
+const branded = Bytecode("0x6001")
 const code = Bytecode(branded)  // No conversion
 ```
 
@@ -57,7 +57,7 @@ function analyzeBytecode(input: BytecodeLike): Analysis {
 // All valid calls
 analyzeBytecode("0x6001")
 analyzeBytecode(new Uint8Array([0x60, 0x01]))
-analyzeBytecode(Bytecode.fromHex("0x6001"))
+analyzeBytecode(Bytecode("0x6001"))
 ```
 
 ### Performance

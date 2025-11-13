@@ -51,7 +51,7 @@ The standard `Hex` API automatically uses WASM when available:
 import { Hex } from '@tevm/voltaire'
 
 // These use WASM internally if loaded
-const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34]))
+const hex = Hex(new Uint8Array([0x12, 0x34]))
 const bytes = Hex.toBytes(hex)
 ```
 
@@ -102,10 +102,10 @@ WASM module loads automatically on first use:
 import { Hex } from '@tevm/voltaire'
 
 // First call triggers WASM load (async)
-const hex = Hex.fromBytes(bytes)
+const hex = Hex(bytes)
 
 // Subsequent calls use loaded WASM
-const hex2 = Hex.fromBytes(bytes2)
+const hex2 = Hex(bytes2)
 ```
 
 ### Manual Preloading
@@ -118,7 +118,7 @@ await loader.initialize()
 
 // Now WASM is ready
 import { Hex } from '@tevm/voltaire'
-const hex = Hex.fromBytes(bytes)  // Uses WASM immediately
+const hex = Hex(bytes)  // Uses WASM immediately
 ```
 
 ## Performance Characteristics
@@ -172,7 +172,7 @@ WASM works in Node.js 8.0+:
 ```javascript
 // Node.js
 import { Hex } from '@tevm/voltaire'
-const hex = Hex.fromBytes(bytes)  // Uses WASM
+const hex = Hex(bytes)  // Uses WASM
 ```
 
 ### Deno
@@ -180,7 +180,7 @@ const hex = Hex.fromBytes(bytes)  // Uses WASM
 ```typescript
 // Deno
 import { Hex } from 'npm:@tevm/voltaire'
-const hex = Hex.fromBytes(bytes)  // Uses WASM
+const hex = Hex(bytes)  // Uses WASM
 ```
 
 ### Bun
@@ -188,7 +188,7 @@ const hex = Hex.fromBytes(bytes)  // Uses WASM
 ```typescript
 // Bun
 import { Hex } from '@tevm/voltaire'
-const hex = Hex.fromBytes(bytes)  // Uses WASM
+const hex = Hex(bytes)  // Uses WASM
 ```
 
 ## Fallback Behavior
@@ -199,7 +199,7 @@ If WASM fails to load, operations automatically fall back to JavaScript:
 import { Hex } from '@tevm/voltaire'
 
 // Always works - WASM or JavaScript
-const hex = Hex.fromBytes(bytes)
+const hex = Hex(bytes)
 ```
 
 Fallback happens when:

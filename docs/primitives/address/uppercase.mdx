@@ -33,7 +33,7 @@ import { Address } from '@tevm/voltaire'
 
 // Legacy API requires uppercase
 async function registerWithOldSystem(address: Address) {
-  const upper = Address.Uppercase.from(address)
+  const upper = Address.Uppercase(address)
   await fetch('/legacy/register', {
     method: 'POST',
     body: JSON.stringify({ address: upper })
@@ -46,10 +46,10 @@ async function registerWithOldSystem(address: Address) {
 import { Address } from '@tevm/voltaire'
 
 function formatForDisplay(address: Address): string {
-  return Address.Uppercase.from(address)
+  return Address.Uppercase(address)
 }
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 console.log(formatForDisplay(addr))
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 ```
@@ -59,10 +59,10 @@ console.log(formatForDisplay(addr))
 import { Address } from '@tevm/voltaire'
 
 // Fast - simple string transformation
-const upper = Address.Uppercase.from(address)
+const upper = Address.Uppercase(address)
 
 // Slower - requires keccak256 hash
-const checksum = Address.Checksummed.from(address)
+const checksum = Address.Checksummed(address)
 ```
 
 ## Methods
@@ -91,14 +91,14 @@ Create uppercase hex string from Address.
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Uppercase - all caps, no validation
-const upper = Address.Uppercase.from(addr)
+const upper = Address.Uppercase(addr)
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 
 // Checksummed - mixed case based on keccak256
-const checksum = Address.Checksummed.from(addr)
+const checksum = Address.Checksummed(addr)
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
@@ -115,14 +115,14 @@ const checksum = Address.Checksummed.from(addr)
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
 // Lowercase - standard Ethereum format
-const lower = Address.Lowercase.from(addr)
+const lower = Address.Lowercase(addr)
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 
 // Uppercase - legacy/display format
-const upper = Address.Uppercase.from(addr)
+const upper = Address.Uppercase(addr)
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 ```
 
@@ -142,7 +142,7 @@ import { Address } from '@tevm/voltaire'
 class LegacyAPIClient {
   async register(address: Address) {
     // Legacy system expects uppercase
-    const upper = Address.Uppercase.from(address)
+    const upper = Address.Uppercase(address)
 
     return fetch('https://legacy.example.com/register', {
       method: 'POST',
@@ -165,7 +165,7 @@ import { Address } from '@tevm/voltaire'
 class AddressFormatter {
   // Consistent uppercase display
   static format(address: Address): string {
-    return Address.Uppercase.from(address)
+    return Address.Uppercase(address)
   }
 
   // React component example
@@ -174,7 +174,7 @@ class AddressFormatter {
   }
 }
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 console.log(AddressFormatter.format(addr))
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 ```
@@ -192,7 +192,7 @@ function exportAddressesCSV(
 ): string {
   const header = "Address,Balance\n"
   const rows = addresses.map((addr, i) => {
-    const upper = Address.Uppercase.from(addr)
+    const upper = Address.Uppercase(addr)
     return `${upper},${balances[i]}`
   }).join("\n")
 
@@ -215,13 +215,13 @@ import { Address } from '@tevm/voltaire'
 // Note: For address comparison, use equals() instead
 function normalizeAddressSet(addresses: Address[]): Set<string> {
   return new Set(
-    addresses.map(addr => Address.Uppercase.from(addr))
+    addresses.map(addr => Address.Uppercase(addr))
   )
 }
 
 const addrs = [
-  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3"),
-  Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3"),
+  Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3"),
+  Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3"),
 ]
 
 const normalized = normalizeAddressSet(addrs)
@@ -244,14 +244,14 @@ console.log(normalized.size) // 1 (same address)
 import { Address } from '@tevm/voltaire'
 
 // Mixed case input
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
-const upper = Address.Uppercase.from(addr)
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+const upper = Address.Uppercase(addr)
 console.log(upper)
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 
 // Already uppercase - returns same format
-const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
-const upper2 = Address.Uppercase.from(addr2)
+const addr2 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const upper2 = Address.Uppercase(addr2)
 console.log(upper2)
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 ```
@@ -263,12 +263,12 @@ Converting to uppercase multiple times produces the same result:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
-const upper1 = Address.Uppercase.from(addr)
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const upper1 = Address.Uppercase(addr)
 
 // Convert back to Address and to uppercase again
-const addr2 = Address.fromHex(upper1)
-const upper2 = Address.Uppercase.from(addr2)
+const addr2 = Address(upper1)
+const upper2 = Address.Uppercase(addr2)
 
 console.log(upper1 === upper2) // true
 ```
@@ -278,24 +278,24 @@ console.log(upper1 === upper2) // true
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Lowercase (canonical)
-console.log(Address.Lowercase.from(addr))
+console.log(Address.Lowercase(addr))
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 
 // Uppercase
-console.log(Address.Uppercase.from(addr))
+console.log(Address.Uppercase(addr))
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 
 // Checksummed (EIP-55)
-console.log(Address.Checksummed.from(addr))
+console.log(Address.Checksummed(addr))
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 
 // All represent the same address
-const fromLower = Address.fromHex(Address.Lowercase.from(addr))
-const fromUpper = Address.fromHex(Address.Uppercase.from(addr))
-const fromChecksum = Address.fromHex(Address.Checksummed.from(addr))
+const fromLower = Address(Address.Lowercase(addr))
+const fromUpper = Address(Address.Uppercase(addr))
+const fromChecksum = Address(Address.Checksummed(addr))
 
 console.log(fromLower.equals(fromUpper)) // true
 console.log(fromUpper.equals(fromChecksum)) // true
@@ -308,17 +308,17 @@ import { Address } from '@tevm/voltaire'
 
 // Zero address
 const zero = Address.zero()
-console.log(Address.Uppercase.from(zero))
+console.log(Address.Uppercase(zero))
 // "0x0000000000000000000000000000000000000000"
 
 // Max address
-const max = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
-console.log(Address.Uppercase.from(max))
+const max = Address("0xffffffffffffffffffffffffffffffffffffffff")
+console.log(Address.Uppercase(max))
 // "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 
 // All numeric (no alpha characters to uppercase)
-const numeric = Address.fromNumber(420n)
-console.log(Address.Uppercase.from(numeric))
+const numeric = Address(420n)
+console.log(Address.Uppercase(numeric))
 // "0x00000000000000000000000000000000000001A4"
 ```
 

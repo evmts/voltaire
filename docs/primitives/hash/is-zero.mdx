@@ -30,7 +30,7 @@ async function isTransactionConfirmed(txHash: string): Promise<boolean> {
   const receipt = await provider.getTransactionReceipt(txHash)
 
   // Zero block hash indicates pending transaction
-  const blockHash = Hash.fromHex(receipt.blockHash)
+  const blockHash = Hash(receipt.blockHash)
   return !blockHash.isZero()
 }
 ```
@@ -40,7 +40,7 @@ async function isTransactionConfirmed(txHash: string): Promise<boolean> {
 ```typescript
 const hashes = [
   Hash.keccak256String("hello"),
-  Hash.fromBytes(new Uint8Array(32)), // zero hash
+  Hash(new Uint8Array(32)), // zero hash
   Hash.keccak256String("world"),
   Hash.ZERO,
 ]
@@ -61,7 +61,7 @@ function validateHash(hash: Hash): void {
 
 // Usage
 try {
-  const userHash = Hash.fromHex(userInput)
+  const userHash = Hash(userInput)
   validateHash(userHash)
 } catch (e) {
   console.error("Invalid hash:", e.message)
@@ -169,7 +169,7 @@ interface Receipt {
 async function waitForConfirmation(txHash: Hash): Promise<Receipt> {
   while (true) {
     const receipt = await provider.getTransactionReceipt(txHash)
-    const blockHash = Hash.fromHex(receipt.blockHash)
+    const blockHash = Hash(receipt.blockHash)
 
     if (!blockHash.isZero()) {
       // Transaction confirmed
@@ -187,7 +187,7 @@ async function waitForConfirmation(txHash: Hash): Promise<Receipt> {
 Compare with `Hash.ZERO` constant for clarity:
 
 ```typescript
-const zeroHash = Hash.fromBytes(new Uint8Array(32))
+const zeroHash = Hash(new Uint8Array(32))
 
 // Both equivalent
 zeroHash.isZero() // true

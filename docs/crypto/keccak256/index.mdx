@@ -58,7 +58,7 @@ const topic = Keccak256.topic('Transfer(address,address,uint256)');
 // Calculate contract address (CREATE)
 import { Address } from '@tevm/voltaire/primitives/Address';
 
-const deployerAddress = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const deployerAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
 const contractAddr = Keccak256.contractAddress(deployerAddress, nonce);
 // Uint8Array(20) [contract address]
@@ -67,8 +67,8 @@ const contractAddr = Keccak256.contractAddress(deployerAddress, nonce);
 import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
 
-const salt = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
-const initCode = Bytecode.from('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
+const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
+const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
 const create2Addr = Keccak256.create2Address(deployerAddress, salt, initCode);
 // Uint8Array(20) [deterministic contract address]
 ```
@@ -231,7 +231,7 @@ Uses CREATE formula: `address = keccak256(rlp([sender, nonce]))[12:]`
 ```typescript
 import { Address } from '@tevm/voltaire/primitives/Address';
 
-const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
 const contractAddr = Keccak256.contractAddress(deployer, nonce);
 ```
@@ -259,9 +259,9 @@ import { Address } from '@tevm/voltaire/primitives/Address';
 import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
 
-const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const salt = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
-const initCode = Bytecode.from('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
+const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
 const create2Addr = Keccak256.create2Address(deployer, salt, initCode);
 ```
 

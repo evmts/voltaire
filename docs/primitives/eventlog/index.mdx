@@ -134,13 +134,13 @@ Constructor parameters.
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Transfer(address indexed from, address indexed to, uint256 value)
-const TRANSFER_SIG = Hash.fromHex(
+const TRANSFER_SIG = Hash(
   '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 );
 
 // Filter transfers to specific user
-const userAddress = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
-const userAddressHash = Hash.fromBytes(
+const userAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
+const userAddressHash = Hash(
   new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
 );
 
@@ -173,14 +173,14 @@ for (const log of sorted) {
 ```typescript
 import { EventLog, Address, Hash } from '@tevm/voltaire';
 
-const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
-const APPROVAL_SIG = Hash.fromHex('0x8c5be1e5...');
+const TRANSFER_SIG = Hash('0xddf252ad...');
+const APPROVAL_SIG = Hash('0x8c5be1e5...');
 
 // Monitor multiple ERC-20 tokens
 const tokens = [
-  Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
-  Address.fromHex('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
-  Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
+  Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
+  Address('0x6B175474E89094C44Da98b954EedeAC495271d0F'), // DAI
+  Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'), // WETH
 ];
 
 // Get all Transfer and Approval events

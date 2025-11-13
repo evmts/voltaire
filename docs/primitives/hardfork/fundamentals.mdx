@@ -75,7 +75,7 @@ Hardfork.CANCUN   // Type 3: EIP-4844 blob transactions
 Hardfork.MERGE    // Proof of Stake (The Merge)
 
 // Check feature availability
-const fork = Hardfork.fromString("cancun");
+const fork = Hardfork("cancun");
 console.log(Hardfork.hasEIP1559(fork));  // true - base fee available
 console.log(Hardfork.hasEIP3855(fork));  // true - PUSH0 available
 console.log(Hardfork.hasEIP4844(fork));  // true - blobs available
@@ -100,7 +100,7 @@ const cancunTimestamp = 1710338135;    // March 13, 2024
 
 // Version comparison for feature gating
 function getGasCostMultiplier(hardfork: string, blockNumber: number): number {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   // Berlin changed access list gas pricing
@@ -123,7 +123,7 @@ Use version comparison to gate features based on hardfork:
 import { Hardfork } from '@tevm/voltaire';
 
 function validateTransaction(tx: any, networkHardfork: string) {
-  const fork = Hardfork.fromString(networkHardfork);
+  const fork = Hardfork(networkHardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   // Type 0/1: All hardforks
@@ -169,8 +169,8 @@ Compare feature availability across hardforks:
 import { Hardfork } from '@tevm/voltaire';
 
 function compareFeatures(forkA: string, forkB: string) {
-  const a = Hardfork.fromString(forkA);
-  const b = Hardfork.fromString(forkB);
+  const a = Hardfork(forkA);
+  const b = Hardfork(forkB);
   if (!a || !b) throw new Error("Invalid hardfork");
 
   return {
@@ -219,7 +219,7 @@ Common features tied to specific hardforks:
 import { Hardfork } from '@tevm/voltaire';
 
 function calculateMaxFee(hardfork: string, baseFee: bigint, priorityFee: bigint): bigint {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   if (Hardfork.hasEIP1559(fork)) {
@@ -241,7 +241,7 @@ console.log(calculateMaxFee("cancun", 15n, 3n));   // 18n
 import { Hardfork } from '@tevm/voltaire';
 
 function supportsOptimizedBytecode(hardfork: string): boolean {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   // PUSH0 (0x5f) allows cheaper zero-pushing
@@ -259,7 +259,7 @@ console.log(supportsOptimizedBytecode("cancun"));   // true
 import { Hardfork } from '@tevm/voltaire';
 
 function supportsBlobTransactions(hardfork: string): boolean {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   // EIP-4844 blob transactions for L2 data availability
@@ -276,7 +276,7 @@ console.log(supportsBlobTransactions("cancun"));   // true
 import { Hardfork } from '@tevm/voltaire';
 
 function supportsTransientStorage(hardfork: string): boolean {
-  const fork = Hardfork.fromString(hardfork);
+  const fork = Hardfork(hardfork);
   if (!fork) throw new Error("Invalid hardfork");
 
   // TLOAD/TSTORE opcodes for cheaper temporary storage

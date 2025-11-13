@@ -86,7 +86,7 @@ const initCode = new Uint8Array([
 
 const frame = createFrame({
   gasRemaining: 1000000n,
-  address: Address.from("0x1234..."),
+  address: Address("0x1234..."),
 });
 
 // Write init code to memory
@@ -143,11 +143,11 @@ function predictCreate2Address(
 
   // 3. Hash and extract address
   const hash = keccak256(preimage);
-  return Address.fromBytes(hash.slice(12));
+  return Address(hash.slice(12));
 }
 
 // Example usage
-const creator = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const creator = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const salt = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
 const initCode = new Uint8Array([/* bytecode */]);
 

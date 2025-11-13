@@ -102,7 +102,7 @@ interface GasAnalysisOptions {
 ### Basic Gas Estimation
 
 ```typescript
-const code = Bytecode.fromHex("0x600160020160805260206080f3");
+const code = Bytecode("0x600160020160805260206080f3");
 // PUSH1 1, PUSH1 2, ADD, PUSH1 0x80, MSTORE, PUSH1 0x20, PUSH1 0x80, RETURN
 
 const analysis = code.analyzeGas();
@@ -205,7 +205,7 @@ const analysis = code.analyzeGas({
 Calculate initcode gas (2 gas per 32-byte word):
 
 ```typescript
-const deploymentCode = Bytecode.fromHex("0x608060405234801561001057600080fd5b...");
+const deploymentCode = Bytecode("0x608060405234801561001057600080fd5b...");
 
 const initcodeGas = Bytecode.calculateInitcodeGas(deploymentCode.size());
 console.log(`Initcode gas: ${initcodeGas}`);
@@ -308,7 +308,7 @@ analysis.byInstruction.forEach(inst => {
   opcodeGas.set(inst.opcode, (opcodeGas.get(inst.opcode) || 0) + inst.gas);
 });
 
-const sorted = Array.from(opcodeGas.entries())
+const sorted = Array(opcodeGas.entries())
   .sort((a, b) => b[1] - a[1]);
 
 console.log("\nGas by opcode:");

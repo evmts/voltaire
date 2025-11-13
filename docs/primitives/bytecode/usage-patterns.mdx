@@ -21,7 +21,7 @@ async function analyzeContract(
 ): Promise<void> {
   // Fetch bytecode
   const code = await provider.getCode(address);
-  const bytecode = Bytecode.fromHex(code);
+  const bytecode = Bytecode(code);
 
   // Analyze structure
   const analysis = Bytecode.analyze(bytecode);
@@ -318,7 +318,7 @@ function findFunctionSelectors(bytecode: BrandedBytecode): Set<string> {
 
     if (block.opcode.code === 0x63) {  // PUSH4
       const selector = bytecode.slice(pc + 1, pc + 5);
-      selectors.add(Hex.fromBytes(selector));
+      selectors.add(Hex(selector));
     }
 
     pc = Bytecode.getNextPc(bytecode, pc);

@@ -76,7 +76,7 @@ const frame = createFrame({
 });
 
 // Write error data to memory
-const errorMsg = Buffer.from("Insufficient balance");
+const errorMsg = Buffer("Insufficient balance");
 frame.memory.set(errorMsg, 0);
 
 const err = handler_0xfd_REVERT(frame);

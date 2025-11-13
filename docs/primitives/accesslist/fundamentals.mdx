@@ -91,9 +91,9 @@ import { AccessList, Address } from '@tevm/voltaire';
 let list = AccessList.create();
 
 // Add multiple contracts
-const router = Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564');
-const factory = Address.fromHex('0x1F98431c8aD98523631AE4a59f267346ea31F984');
-const pool = Address.fromHex('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8');
+const router = Address('0xE592427A0AEce92De3Edee1F18E0157C05861564');
+const factory = Address('0x1F98431c8aD98523631AE4a59f267346ea31F984');
+const pool = Address('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8');
 
 list = list.withAddress(router);
 list = list.withAddress(factory);
@@ -108,8 +108,8 @@ console.log(`Total items: ${list.storageKeyCount()}`); // 0 (no keys yet)
 ```typescript
 import { AccessList, Address, Hash } from '@tevm/voltaire';
 
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
 
 let list = AccessList.create();
 list = list.withAddress(token);
@@ -135,12 +135,12 @@ Here's a real-world example analyzing whether an access list saves gas:
 import { AccessList, Address, Hash } from '@tevm/voltaire';
 
 // Uniswap V3 swap accessing USDC and WETH
-const router = Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564');
-const usdc = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-const weth = Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
+const router = Address('0xE592427A0AEce92De3Edee1F18E0157C05861564');
+const usdc = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const weth = Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
 
 // Storage slots for balances (simplified)
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
 
 // Build access list
 let list = AccessList.create();
@@ -179,8 +179,8 @@ Access lists become beneficial when you access the same slots **multiple times**
 ```typescript
 import { AccessList, Address, Hash } from '@tevm/voltaire';
 
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
-const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
 
 let list = AccessList.create();
 list = list.withAddress(token);
@@ -295,21 +295,21 @@ function getBalanceSlot(user: Address): Hash {
   // keccak256(abi.encodePacked(user, slot))
   const slot = 0n;
   const userBytes = Address.toBytes(user);
-  const padding = Hex.from('0x000000000000000000000000'); // 12 bytes padding
-  const slotBytes = Uint.toBytes(Uint.fromBigint(slot, 32));
+  const padding = Hex('0x000000000000000000000000'); // 12 bytes padding
+  const slotBytes = Uint.toBytes(Uint(slot, 32));
 
   const encoded = Hex.toBytes(
     Hex.concat(
-      Hex.fromBytes(userBytes),
+      Hex(userBytes),
       padding,
-      Hex.fromBytes(slotBytes)
+      Hex(slotBytes)
     )
   );
 
-  return Hash.fromBytes(keccak256(encoded));
+  return Hash(keccak256(encoded));
 }
 
-const user = Address.fromHex('0x...');
+const user = Address('0x...');
 const balanceSlot = getBalanceSlot(user);
 ```
 
@@ -322,7 +322,7 @@ Always deduplicate before using an access list:
 ```typescript
 import { AccessList, Address } from '@tevm/voltaire';
 
-const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
 
 let list = AccessList.create();
 list = list.withAddress(token);
@@ -347,10 +347,10 @@ Combine multiple access lists for complex operations:
 import { AccessList, Address } from '@tevm/voltaire';
 
 const tokenList = AccessList.create()
-  .withAddress(Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e'));
+  .withAddress(Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e'));
 
 const poolList = AccessList.create()
-  .withAddress(Address.fromHex('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8'));
+  .withAddress(Address('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8'));
 
 const combined = AccessList.merge(tokenList, poolList);
 console.log(combined.addressCount()); // 2

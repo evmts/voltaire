@@ -14,8 +14,8 @@ description: Check if two hardforks are equal (handles aliases)
 ```typescript
 import { Hardfork } from '@tevm/voltaire'
 
-const merge = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")
+const merge = Hardfork("merge")
+const paris = Hardfork("paris")
 
 // Both refer to same hardfork
 merge.isEqual(paris)  // true
@@ -38,7 +38,7 @@ Compare user input against expected version:
 import { Hardfork, CANCUN } from '@tevm/voltaire'
 
 function validateConfig(config: Config) {
-  const fork = Hardfork.fromString(config.hardfork)
+  const fork = Hardfork(config.hardfork)
 
   if (!fork.isEqual(CANCUN)) {
     throw new Error(`Expected Cancun, got ${Hardfork.toString(fork)}`)
@@ -54,8 +54,8 @@ Check if networks use same hardfork:
 import { Hardfork } from '@tevm/voltaire'
 
 function networksCompatible(net1: Network, net2: Network): boolean {
-  const fork1 = Hardfork.fromString(net1.hardfork)
-  const fork2 = Hardfork.fromString(net2.hardfork)
+  const fork1 = Hardfork(net1.hardfork)
+  const fork2 = Hardfork(net2.hardfork)
 
   return fork1.isEqual(fork2)
 }
@@ -87,8 +87,8 @@ function getConsensusInfo(fork: BrandedHardfork) {
 ```typescript
 import { Hardfork } from '@tevm/voltaire'
 
-const merge = Hardfork.fromString("merge")
-const paris = Hardfork.fromString("paris")
+const merge = Hardfork("merge")
+const paris = Hardfork("paris")
 
 // Bad - fails with aliases
 merge === paris  // false (different strings)
@@ -105,7 +105,7 @@ For storing or comparing, normalize to canonical name:
 import { Hardfork } from '@tevm/voltaire'
 
 function normalizeHardfork(input: string): string {
-  const fork = Hardfork.fromString(input)
+  const fork = Hardfork(input)
   return Hardfork.toString(fork)
 }
 

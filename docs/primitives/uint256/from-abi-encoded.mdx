@@ -21,14 +21,14 @@ import { Uint } from '@tevm/voltaire'
 const encoded = new Uint8Array(32)
 encoded[31] = 0xff  // Last byte = 255
 
-const value = Uint.fromAbiEncoded(encoded)  // 255
+const value = Uint(encoded)  // 255
 
 // Throws if wrong size
 const wrong = new Uint8Array(20)
-Uint.fromAbiEncoded(wrong)  // Error: must be exactly 32 bytes
+Uint(wrong)  // Error: must be exactly 32 bytes
 
 const tooLarge = new Uint8Array(33)
-Uint.fromAbiEncoded(tooLarge)  // Error: must be exactly 32 bytes
+Uint(tooLarge)  // Error: must be exactly 32 bytes
 ```
 
 **Defined in:** [primitives/Uint/BrandedUint256/fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/fromAbiEncoded.ts)
@@ -55,18 +55,18 @@ ABI-Encoded uint256 (32 bytes):
 // ABI: [0x00, 0x00, ..., 0x00, 0xff]
 const bytes1 = new Uint8Array(32)
 bytes1[31] = 0xff
-Uint.fromAbiEncoded(bytes1)  // 255
+Uint(bytes1)  // 255
 
 // Value: 256 (0x0100)
 // ABI: [0x00, 0x00, ..., 0x01, 0x00]
 const bytes2 = new Uint8Array(32)
 bytes2[30] = 0x01
-Uint.fromAbiEncoded(bytes2)  // 256
+Uint(bytes2)  // 256
 
 // Value: 0
 // ABI: [0x00, 0x00, ..., 0x00, 0x00]
 const bytes3 = new Uint8Array(32)
-Uint.fromAbiEncoded(bytes3)  // 0
+Uint(bytes3)  // 0
 ```
 
 ## Strict Length Requirement
@@ -75,12 +75,12 @@ Unlike `fromBytes` (1-32 bytes), `fromAbiEncoded` requires **exactly 32 bytes**:
 
 ```typescript
 // fromBytes - flexible (1-32 bytes)
-Uint.fromBytes(new Uint8Array([0xff]))        // OK
-Uint.fromBytes(new Uint8Array(32))            // OK
+Uint(new Uint8Array([0xff]))        // OK
+Uint(new Uint8Array(32))            // OK
 
 // fromAbiEncoded - strict (exactly 32 bytes)
-Uint.fromAbiEncoded(new Uint8Array([0xff]))   // Error: wrong size
-Uint.fromAbiEncoded(new Uint8Array(32))       // OK
+Uint(new Uint8Array([0xff]))   // Error: wrong size
+Uint(new Uint8Array(32))       // OK
 ```
 
 ### Why Strict?
@@ -103,7 +103,7 @@ function example(uint256 x) public { }
 // Decode uint256 return value
 const returnData = "0x000000000000000000000000000000000000000000000000000000000000007b"
 const bytes = Hex.toBytes(returnData)
-const value = Uint.fromAbiEncoded(bytes)  // 123
+const value = Uint(bytes)  // 123
 ```
 
 ### Event Log Data
@@ -112,13 +112,13 @@ const value = Uint.fromAbiEncoded(bytes)  // 123
 // Decode uint256 from event log
 import { EventLog } from '@tevm/voltaire'
 
-const log = EventLog.from({
+const log = EventLog({
   topics: [...],
   data: "0x000000000000000000000000000000000000000000000000000000000000007b"
 })
 
 const dataBytes = Hex.toBytes(log.data)
-const amount = Uint.fromAbiEncoded(dataBytes)  // 123
+const amount = Uint(dataBytes)  // 123
 ```
 
 ### Multiple uint256 Values
@@ -132,10 +132,10 @@ const encoded = "0x" +
 const bytes = Hex.toBytes(encoded)
 
 // Extract first uint256 (bytes 0-31)
-const first = Uint.fromAbiEncoded(bytes.slice(0, 32))  // 123
+const first = Uint(bytes.slice(0, 32))  // 123
 
 // Extract second uint256 (bytes 32-63)
-const second = Uint.fromAbiEncoded(bytes.slice(32, 64))  // 255
+const second = Uint(bytes.slice(32, 64))  // 255
 ```
 
 ## Usage Patterns
@@ -154,7 +154,7 @@ class AbiDecoder {
       throw new Error("Insufficient data for uint256")
     }
     this.offset += 32
-    return Uint.fromAbiEncoded(bytes)
+    return Uint(bytes)
   }
 }
 
@@ -176,7 +176,7 @@ async function getBalance(address: string): Promise<BrandedUint256> {
   })
 
   const bytes = Hex.toBytes(result)
-  return Uint.fromAbiEncoded(bytes)
+  return Uint(bytes)
 }
 ```
 
@@ -187,7 +187,7 @@ function decodeUint256Safe(bytes: Uint8Array): BrandedUint256 | null {
   if (bytes.length !== 32) {
     return null  // Wrong size
   }
-  return Uint.fromAbiEncoded(bytes)
+  return Uint(bytes)
 }
 ```
 

@@ -152,7 +152,7 @@ if (!filter.isEmpty()) {
 
 ```typescript
 // Create filter from block header
-const blockFilter = BloomFilter.fromHex(block.logsBloom, BITS, DEFAULT_HASH_COUNT);
+const blockFilter = BloomFilter(block.logsBloom, BITS, DEFAULT_HASH_COUNT);
 
 // Check if block might contain logs for topic
 const transferTopic = keccak256("Transfer(address,address,uint256)");
@@ -171,8 +171,8 @@ if (blockFilter.contains(transferTopic)) {
 
 ```typescript
 // Combine filters from multiple blocks
-const filter1 = BloomFilter.fromHex(block1.logsBloom, BITS, DEFAULT_HASH_COUNT);
-const filter2 = BloomFilter.fromHex(block2.logsBloom, BITS, DEFAULT_HASH_COUNT);
+const filter1 = BloomFilter(block1.logsBloom, BITS, DEFAULT_HASH_COUNT);
+const filter2 = BloomFilter(block2.logsBloom, BITS, DEFAULT_HASH_COUNT);
 
 // Merge via bitwise OR
 const merged = BloomFilter.merge(filter1, filter2);
@@ -220,7 +220,7 @@ const hex = filter.toHex();
 localStorage.setItem('eventFilter', hex);
 
 // Restore from storage
-const restored = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
+const restored = BloomFilter(hex, BITS, DEFAULT_HASH_COUNT);
 ```
 
 ## Tree-Shaking

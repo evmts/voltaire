@@ -44,9 +44,9 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 import * as Quantity from '@tevm/voltaire/primitives/Quantity';
 
 // Construct branded types
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-const blockHash = Hash.from('0x...');
-const data = Hex.from('0x70a08231...');
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const blockHash = Hash('0x...');
+const data = Hex('0x70a08231...');
 
 // Use in method calls - type-checked at compile time
 const balance = await provider.eth_getBalance(address, 'latest');
@@ -69,7 +69,7 @@ type BlockTag =
 // Usage
 await provider.eth_getBalance(address, 'latest');
 await provider.eth_getBalance(address, 'finalized');
-await provider.eth_getBalance(address, Quantity.from(18000000n));
+await provider.eth_getBalance(address, Quantity(18000000n));
 ```
 
 ### Request Options
@@ -170,16 +170,16 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Execute read-only contract call
 const result = await provider.eth_call({
-  to: Address.from('0x...'),
-  data: Hex.from('0x70a08231...')  // Function selector + encoded params
+  to: Address('0x...'),
+  data: Hex('0x70a08231...')  // Function selector + encoded params
 }, 'latest');
 
 // Estimate gas for transaction
 const gasEstimate = await provider.eth_estimateGas({
-  from: Address.from('0x...'),
-  to: Address.from('0x...'),
-  value: Quantity.from(1000000000000000000n),  // 1 ETH in wei
-  data: Hex.from('0x...')
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n),  // 1 ETH in wei
+  data: Hex('0x...')
 });
 ```
 
@@ -191,17 +191,17 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Submit signed transaction
 const txHash = await provider.eth_sendRawTransaction(
-  Hex.from('0x...')  // Signed transaction bytes
+  Hex('0x...')  // Signed transaction bytes
 );
 
 // Get transaction by hash
 const tx = await provider.eth_getTransactionByHash(
-  Hash.from('0x...')
+  Hash('0x...')
 );
 
 // Get transaction receipt
 const receipt = await provider.eth_getTransactionReceipt(
-  Hash.from('0x...')
+  Hash('0x...')
 );
 ```
 
@@ -225,8 +225,8 @@ const uncleCount = await provider.eth_getUncleCountByBlockNumber('latest');
 const logs = await provider.eth_getLogs({
   fromBlock: 'earliest',
   toBlock: 'latest',
-  address: Address.from('0x...'),
-  topics: [Hash.from('0x...')]
+  address: Address('0x...'),
+  topics: [Hash('0x...')]
 });
 ```
 
@@ -274,7 +274,7 @@ Using branded primitives catches errors at compile time:
 await provider.eth_getBalance('0x742d35...', 'latest');
 
 // ✅ Correct: use branded Address
-await provider.eth_getBalance(Address.from('0x742d35...'), 'latest');
+await provider.eth_getBalance(Address('0x742d35...'), 'latest');
 
 // ❌ Compile error: can't mix Hash and Address
 await provider.eth_getBlockByHash(address, true);

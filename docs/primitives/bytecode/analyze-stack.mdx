@@ -106,7 +106,7 @@ interface StackAnalysisOptions {
 ### Basic Validation
 
 ```typescript
-const code = Bytecode.fromHex("0x6001600201");
+const code = Bytecode("0x6001600201");
 // PUSH1 1, PUSH1 2, ADD
 
 const analysis = code.analyzeStack();
@@ -124,7 +124,7 @@ console.log(`Issues: ${analysis.issues.length}`);
 ### Detect Underflows
 
 ```typescript
-const code = Bytecode.fromHex("0x01");
+const code = Bytecode("0x01");
 // ADD (requires 2 items, but stack is empty)
 
 const analysis = code.analyzeStack();
@@ -156,7 +156,7 @@ for (let i = 0; i < 1025; i++) {
   code += "5f"; // PUSH0
 }
 
-const bytecode = Bytecode.fromHex(code);
+const bytecode = Bytecode(code);
 const analysis = bytecode.analyzeStack();
 
 if (!analysis.valid) {
@@ -177,7 +177,7 @@ if (!analysis.valid) {
 ### Block-Level Requirements
 
 ```typescript
-const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+const code = Bytecode("0x60016002015b80016003015b00");
 // Block 0: PUSH1 1, PUSH1 2, ADD
 // Block 1 (JUMPDEST): DUP1, ADD, PUSH1 3, ADD
 // Block 2 (JUMPDEST): STOP
@@ -213,7 +213,7 @@ analysis.byBlock.forEach(block => {
 ### Path Analysis
 
 ```typescript
-const code = Bytecode.fromHex("0x60016002600360045760065b5b00");
+const code = Bytecode("0x60016002600360045760065b5b00");
 // PUSH1 1, PUSH1 2, PUSH1 3, PUSH1 4, JUMPI, PUSH1 6, JUMPDEST, JUMPDEST, STOP
 
 const analysis = code.analyzeStack({
@@ -236,7 +236,7 @@ Useful for analyzing contract fragments:
 
 ```typescript
 // Fragment assumes 3 items already on stack
-const fragment = Bytecode.fromHex("0x910190016300");
+const fragment = Bytecode("0x910190016300");
 // SWAP2, ADD, SWAP1, ADD, PUSH4 0, (expects 3 items initially)
 
 const analysis = fragment.analyzeStack({
@@ -265,7 +265,7 @@ Stack effects come from [Opcode.getStackEffect()](/primitives/opcode/getStackEff
 ### Cumulative Tracking
 
 ```typescript
-const code = Bytecode.fromHex("0x60016002016080016090");
+const code = Bytecode("0x60016002016080016090");
 // PUSH1 1 (+1), PUSH1 2 (+1), ADD (-1), PUSH1 0x80 (+1), ADD (-1), PUSH1 0x90 (+1)
 // Net: +1+1-1+1-1+1 = +2
 
@@ -298,7 +298,7 @@ if (!analysis.valid) {
 - **SWAP1-SWAP16**: Requires 2-17 items on stack
 
 ```typescript
-const code = Bytecode.fromHex("0x8F");
+const code = Bytecode("0x8F");
 // DUP16 (requires 16 items on stack)
 
 const analysis = code.analyzeStack();
@@ -330,17 +330,17 @@ const dup1Effect = Opcode.getStackEffect('DUP1');
 
 ```typescript
 // Pattern 1: Using result of failed operation
-const code1 = Bytecode.fromHex("0x6001600002");
+const code1 = Bytecode("0x6001600002");
 // PUSH1 1, PUSH1 0, MUL (result: 0, but valid)
 // Pattern: OK
 
 // Pattern 2: Missing PUSH
-const code2 = Bytecode.fromHex("0x016002");
+const code2 = Bytecode("0x016002");
 // ADD (needs 2, has 0), PUSH1 2
 // Pattern: UNDERFLOW at PC 0
 
 // Pattern 3: Wrong jump entry
-const code3 = Bytecode.fromHex("0x60055660015b01");
+const code3 = Bytecode("0x60055660015b01");
 // PUSH1 5, JUMP to JUMPDEST (expects empty stack, but has 1 item)
 // PUSH1 1, JUMPDEST, ADD (needs 2, has 1)
 // Pattern: UNDERFLOW at ADD
@@ -349,7 +349,7 @@ const code3 = Bytecode.fromHex("0x60055660015b01");
 ### Inconsistent Paths
 
 ```typescript
-const code = Bytecode.fromHex("0x6001600460065760025b01");
+const code = Bytecode("0x6001600460065760025b01");
 // PUSH1 1, PUSH1 4, PUSH1 6, JUMPI
 // Path 1 (jump): Stack depth 1 at target
 // PUSH1 2: Stack depth 2
@@ -437,7 +437,7 @@ instructions.forEach(inst => {
 });
 
 console.log("\nBlocks with excessive DUPs (consider local variables):");
-Array.from(dupCounts.entries())
+Array(dupCounts.entries())
   .filter(([_, count]) => count > 5)
   .forEach(([block, count]) => {
     console.log(`Block ${block}: ${count} DUPs`);

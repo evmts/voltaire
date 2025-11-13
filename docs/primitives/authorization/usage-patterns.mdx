@@ -22,7 +22,7 @@ async function createSponsoredAuth(
   sponsorContract: Address,
   chainId: bigint
 ): Promise<Authorization.Item> {
-  const userAddress = Address.fromPrivateKey(userPrivateKey);
+  const userAddress = Address(userPrivateKey);
   const nonce = await getAccountNonce(userAddress);
 
   const unsigned: Authorization.Unsigned = {
@@ -80,7 +80,7 @@ async function sponsorMultipleUsers(
 
   // Create batch transaction
   const tx = {
-    from: Address.fromPrivateKey(relayerPrivateKey),
+    from: Address(relayerPrivateKey),
     to: batchSponsorContract,
     data: encodeBatchActions(userAuths.map(u => u.action)),
     authorizationList: authList,
@@ -113,7 +113,7 @@ async function executeBatchOps(
   privateKey: Uint8Array,
   chainId: bigint
 ): Promise<TxHash> {
-  const myAddress = Address.fromPrivateKey(privateKey);
+  const myAddress = Address(privateKey);
   const nonce = await getAccountNonce(myAddress);
 
   // Create authorization delegating to batch executor
@@ -160,7 +160,7 @@ async function batchSwap(
   swaps: Swap[],
   privateKey: Uint8Array
 ): Promise<TxHash> {
-  const myAddress = Address.fromPrivateKey(privateKey);
+  const myAddress = Address(privateKey);
   const nonce = await getAccountNonce(myAddress);
 
   // Delegate to swap aggregator
@@ -326,7 +326,7 @@ async function transferWithLimit(
   amount: bigint,
   privateKey: Uint8Array
 ): Promise<TxHash> {
-  const myAddress = Address.fromPrivateKey(privateKey);
+  const myAddress = Address(privateKey);
   const nonce = await getAccountNonce(myAddress);
 
   // Delegate to spending limit contract
@@ -369,7 +369,7 @@ async function multiSigTransfer(
   // Each signer creates authorization
   const auths = await Promise.all(
     signers.map(async (privateKey) => {
-      const address = Address.fromPrivateKey(privateKey);
+      const address = Address(privateKey);
       const nonce = await getAccountNonce(address);
 
       return Authorization.sign.call({
@@ -409,14 +409,14 @@ class SessionKeyManager {
 
     // Deploy session contract with permissions
     const sessionContract = await deploySessionContract({
-      masterAddress: Address.fromPrivateKey(masterKey),
-      sessionKey: Address.fromPrivateKey(sessionKey),
+      masterAddress: Address(masterKey),
+      sessionKey: Address(sessionKey),
       expiresAt: Date.now() + sessionDuration,
       permissions
     });
 
     // Create authorization
-    const masterAddress = Address.fromPrivateKey(masterKey);
+    const masterAddress = Address(masterKey);
     const nonce = await getAccountNonce(masterAddress);
 
     const auth = Authorization.sign.call({
@@ -508,12 +508,12 @@ class AuthorizationPool {
   }
 
   async processAll(): Promise<Authorization.DelegationDesignation[]> {
-    const authList = Array.from(this.auths.values());
+    const authList = Array(this.auths.values());
     return Authorization.processAll.call(authList);
   }
 
   async estimateGas(): Promise<bigint> {
-    const authList = Array.from(this.auths.values());
+    const authList = Array(this.auths.values());
     const emptyCount = await countEmptyAccounts(authList);
     return Authorization.calculateGasCost.call(authList, emptyCount);
   }
@@ -560,7 +560,7 @@ async function signWithRetry(
   for (let i = 0; i < maxRetries; i++) {
     try {
       // Update nonce
-      const address = Address.fromPrivateKey(privateKey);
+      const address = Address(privateKey);
       unsigned.nonce = await getAccountNonce(address);
 
       // Sign
@@ -609,7 +609,7 @@ class AuthorizationStrategy {
 
     // Direct execution (no delegation)
     return sendTransaction({
-      from: Address.fromPrivateKey(privateKey),
+      from: Address(privateKey),
       data: action
     });
   }
@@ -619,7 +619,7 @@ class AuthorizationStrategy {
     contract: Address,
     privateKey: Uint8Array
   ): Promise<TxHash> {
-    const address = Address.fromPrivateKey(privateKey);
+    const address = Address(privateKey);
     const nonce = await getAccountNonce(address);
 
     const auth = Authorization.sign.call({

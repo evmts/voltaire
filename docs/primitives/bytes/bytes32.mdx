@@ -15,10 +15,10 @@ Bytes32 is a branded `Uint8Array` type representing exactly 32 bytes (256 bits).
 import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
 
 // Storage slot
-const slot = Bytes32.fromNumber(0);
+const slot = Bytes32(0);
 
 // Merkle node
-const node = Bytes32.fromHex('0x' + 'ab'.repeat(32));
+const node = Bytes32('0x' + 'ab'.repeat(32));
 
 // Convert to/from bigint
 const value = Bytes32.toBigint(slot);
@@ -38,15 +38,15 @@ const addr = Bytes32.toAddress(node);
 
 ```typescript
 // Storage slot access
-const slot = Bytes32.fromNumber(0);
+const slot = Bytes32(0);
 
 // Hash results (same size as Bytes32)
 const hash = Hash.keccak256(data);
-const bytes = Bytes32.fromBytes(hash);
+const bytes = Bytes32(hash);
 
 // Merkle tree nodes
-const left = Bytes32.fromHex('0x...');
-const right = Bytes32.fromHex('0x...');
+const left = Bytes32('0x...');
+const right = Bytes32('0x...');
 ```
 
 ## Difference from Hash
@@ -58,10 +58,10 @@ Both are 32 bytes, but semantic meaning differs:
 const hash: BrandedHash = Hash.keccak256(data);
 
 // Bytes32 = generic 32-byte value
-const slot: BrandedBytes32 = Bytes32.fromNumber(0);
+const slot: BrandedBytes32 = Bytes32(0);
 
 // Convert between them
-const hashAsBytes = Bytes32.fromBytes(hash);
+const hashAsBytes = Bytes32(hash);
 const bytesAsHash = Bytes32.toHash(slot);
 ```
 
@@ -83,8 +83,8 @@ type BrandedBytes32 = Uint8Array & {
 Prevents mixing types:
 
 ```typescript
-const bytes32 = Bytes32.from(42);
-const bytes16 = Bytes16.from('0x' + '12'.repeat(16));
+const bytes32 = Bytes32(42);
+const bytes16 = Bytes16('0x' + '12'.repeat(16));
 
 // Type error: cannot assign Bytes16 to Bytes32
 const wrong: Bytes32.BrandedBytes32 = bytes16;
@@ -97,29 +97,29 @@ Universal constructor accepting multiple types:
 
 ```typescript
 // From hex
-const b1 = Bytes32.from('0x' + '12'.repeat(32));
+const b1 = Bytes32('0x' + '12'.repeat(32));
 
 // From bytes
-const b2 = Bytes32.from(new Uint8Array(32));
+const b2 = Bytes32(new Uint8Array(32));
 
 // From number (padded)
-const b3 = Bytes32.from(42);
+const b3 = Bytes32(42);
 
 // From bigint (padded)
-const b4 = Bytes32.from(123456789012345678901234567890n);
+const b4 = Bytes32(123456789012345678901234567890n);
 ```
 
 ### fromHex
 From hex string with strict validation:
 
 ```typescript
-const bytes = Bytes32.fromHex('0x' + 'ab'.repeat(32));
+const bytes = Bytes32('0x' + 'ab'.repeat(32));
 
 // Without 0x prefix
-const bytes2 = Bytes32.fromHex('12'.repeat(32));
+const bytes2 = Bytes32('12'.repeat(32));
 
 // Throws on wrong length
-Bytes32.fromHex('0x1234'); // Error: must be 64 hex chars
+Bytes32('0x1234'); // Error: must be 64 hex chars
 ```
 
 ### fromBytes
@@ -127,18 +127,18 @@ From Uint8Array with size check:
 
 ```typescript
 const arr = new Uint8Array(32);
-const bytes = Bytes32.fromBytes(arr);
+const bytes = Bytes32(arr);
 
 // Throws on wrong size
-Bytes32.fromBytes(new Uint8Array(31)); // Error
+Bytes32(new Uint8Array(31)); // Error
 ```
 
 ### fromNumber
 From number with padding (big-endian):
 
 ```typescript
-const slot = Bytes32.fromNumber(0);
-const value = Bytes32.fromNumber(42);
+const slot = Bytes32(0);
+const value = Bytes32(42);
 
 // Padded to 32 bytes
 console.log(value[31]); // 42
@@ -149,11 +149,11 @@ console.log(value[30]); // 0
 From bigint with padding (big-endian):
 
 ```typescript
-const large = Bytes32.fromBigint(123456789012345678901234567890n);
+const large = Bytes32(123456789012345678901234567890n);
 
 // Roundtrip conversion
 const original = 42n;
-const bytes = Bytes32.fromBigint(original);
+const bytes = Bytes32(original);
 const restored = Bytes32.toBigint(bytes);
 console.log(restored === original); // true
 ```
@@ -175,7 +175,7 @@ const defaultSlot = Bytes32.zero();
 Convert to hex string:
 
 ```typescript
-const bytes = Bytes32.fromNumber(255);
+const bytes = Bytes32(255);
 const hex = Bytes32.toHex(bytes);
 console.log(hex); // "0x00...00ff"
 ```
@@ -184,7 +184,7 @@ console.log(hex); // "0x00...00ff"
 Convert to raw bytes:
 
 ```typescript
-const bytes = Bytes32.from(42);
+const bytes = Bytes32(42);
 const arr = Bytes32.toUint8Array(bytes);
 console.log(arr instanceof Uint8Array); // true
 ```
@@ -193,12 +193,12 @@ console.log(arr instanceof Uint8Array); // true
 Convert to bigint (big-endian):
 
 ```typescript
-const bytes = Bytes32.fromNumber(42);
+const bytes = Bytes32(42);
 const value = Bytes32.toBigint(bytes);
 console.log(value); // 42n
 
 // Works with large values
-const large = Bytes32.fromHex('0x' + 'ff'.repeat(32));
+const large = Bytes32('0x' + 'ff'.repeat(32));
 const bigValue = Bytes32.toBigint(large);
 ```
 
@@ -206,7 +206,7 @@ const bigValue = Bytes32.toBigint(large);
 Convert to Hash (semantic change):
 
 ```typescript
-const slot = Bytes32.fromNumber(0);
+const slot = Bytes32(0);
 const hash = Bytes32.toHash(slot);
 
 // Same bytes, different type
@@ -222,12 +222,12 @@ const bytes = new Uint8Array(32);
 for (let i = 12; i < 32; i++) {
   bytes[i] = 0xff;
 }
-const b32 = Bytes32.fromBytes(bytes);
+const b32 = Bytes32(bytes);
 const addr = Bytes32.toAddress(b32);
 console.log(addr.length); // 20
 
 // Useful for storage slot address extraction
-const storageSlot = Bytes32.fromHex('0x' + '00'.repeat(12) + 'aa'.repeat(20));
+const storageSlot = Bytes32('0x' + '00'.repeat(12) + 'aa'.repeat(20));
 const extractedAddr = Bytes32.toAddress(storageSlot);
 ```
 
@@ -237,8 +237,8 @@ const extractedAddr = Bytes32.toAddress(storageSlot);
 Check equality:
 
 ```typescript
-const a = Bytes32.fromNumber(42);
-const b = Bytes32.fromNumber(42);
+const a = Bytes32(42);
+const b = Bytes32(42);
 console.log(Bytes32.equals(a, b)); // true
 ```
 
@@ -246,8 +246,8 @@ console.log(Bytes32.equals(a, b)); // true
 Compare two values:
 
 ```typescript
-const a = Bytes32.fromNumber(1);
-const b = Bytes32.fromNumber(2);
+const a = Bytes32(1);
+const b = Bytes32(2);
 console.log(Bytes32.compare(a, b)); // -1 (a < b)
 ```
 
@@ -255,7 +255,7 @@ console.log(Bytes32.compare(a, b)); // -1 (a < b)
 Create independent copy:
 
 ```typescript
-const original = Bytes32.fromNumber(42);
+const original = Bytes32(42);
 const copy = Bytes32.clone(original);
 ```
 
@@ -277,7 +277,7 @@ if (Bytes32.isZero(slot)) {
 Get size (always 32):
 
 ```typescript
-const bytes = Bytes32.from(42);
+const bytes = Bytes32(42);
 console.log(Bytes32.size(bytes)); // 32
 ```
 
@@ -304,14 +304,14 @@ Bytes32 validates size strictly:
 
 ```typescript
 try {
-  Bytes32.fromBytes(new Uint8Array(31));
+  Bytes32(new Uint8Array(31));
 } catch (error) {
   console.log(error.code); // "BYTES32_INVALID_LENGTH"
   console.log(error.message); // "Bytes32 must be 32 bytes, got 31"
 }
 
 try {
-  Bytes32.fromHex('0x1234');
+  Bytes32('0x1234');
 } catch (error) {
   console.log(error.code); // "BYTES32_INVALID_HEX_LENGTH"
   console.log(error.message); // "Bytes32 hex must be 64 characters..."
@@ -324,13 +324,13 @@ try {
 
 ```typescript
 // Slot 0
-const slot0 = Bytes32.fromNumber(0);
+const slot0 = Bytes32(0);
 
 // Slot for address mapping
 function mappingSlot(key: Address, slot: number): Bytes32 {
-  const data = concat([key, Bytes32.fromNumber(slot)]);
+  const data = concat([key, Bytes32(slot)]);
   const hash = Hash.keccak256(data);
-  return Bytes32.fromBytes(hash);
+  return Bytes32(hash);
 }
 ```
 
@@ -338,25 +338,25 @@ function mappingSlot(key: Address, slot: number): Bytes32 {
 
 ```typescript
 // Merkle tree node
-const leftNode = Bytes32.fromHex('0x...');
-const rightNode = Bytes32.fromHex('0x...');
+const leftNode = Bytes32('0x...');
+const rightNode = Bytes32('0x...');
 
 // Compute parent
 const parent = Hash.keccak256(concat([leftNode, rightNode]));
-const parentNode = Bytes32.fromBytes(parent);
+const parentNode = Bytes32(parent);
 ```
 
 ### Generic 256-bit Values
 
 ```typescript
 // Block hash
-const blockHash = Bytes32.fromHex('0x...');
+const blockHash = Bytes32('0x...');
 
 // Transaction hash
-const txHash = Bytes32.fromHex('0x...');
+const txHash = Bytes32('0x...');
 
 // State root
-const stateRoot = Bytes32.fromHex('0x...');
+const stateRoot = Bytes32('0x...');
 ```
 
 ## Related

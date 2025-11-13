@@ -117,11 +117,11 @@ function process(value: AddressOrHash) {
 import * as Address from '@tevm/voltaire/Address'
 
 const mixed: unknown[] = [
-  Address.from(69n),
+  Address(69n),
   "not an address",
   Address.zero(),
   42,
-  Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
 ]
 
 // Filter to only addresses
@@ -163,7 +163,7 @@ import * as Address from '@tevm/voltaire/Address'
 
 function parseUserInput(input: string): BrandedAddress {
   try {
-    const addr = Address.fromHex(input)
+    const addr = Address(input)
 
     if (!Address.is(addr)) {
       throw new Error("Invalid address format")
@@ -218,7 +218,7 @@ export function is(value) {
 **What it accepts:**
 ```typescript
 Address.is(new Uint8Array(20))           // true
-Address.is(Address.from(69n))            // true
+Address.is(Address(69n))            // true
 Address.is(Address.zero())               // true
 ```
 
@@ -248,11 +248,11 @@ function normalize(value: unknown): BrandedAddress {
   }
 
   if (typeof value === 'string') {
-    return Address.fromHex(value)
+    return Address(value)
   }
 
   if (typeof value === 'bigint' || typeof value === 'number') {
-    return Address.fromNumber(value)
+    return Address(value)
   }
 
   throw new Error("Cannot convert to address")
@@ -320,7 +320,7 @@ Address.is("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")      // false (string)
 
 `is` validates BrandedAddress type:
 ```typescript
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
 Address.is(addr)      // true (BrandedAddress)
 Address.isValid(addr) // false (not string)
 ```
@@ -335,8 +335,8 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // false
 
 `is` doesn't validate checksum:
 ```typescript
-const lower = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-const checksum = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+const lower = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksum = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
 Address.is(lower)    // true (valid BrandedAddress)
 Address.is(checksum) // true (valid BrandedAddress)
 ```

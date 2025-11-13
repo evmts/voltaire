@@ -17,12 +17,12 @@ import * as Address from '@tevm/voltaire/Address';
 const storage = new Map<string, bigint>();
 
 // USDC contract
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const usdcTotalSupply = State.StorageKey(usdcAddress, 0n);
 storage.set(State.StorageKey.toString(usdcTotalSupply), 1000000000n);
 
 // DAI contract
-const daiAddress = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F");
+const daiAddress = Address("0x6B175474E89094C44Da98b954EedeAC495271d0F");
 const daiTotalSupply = State.StorageKey(daiAddress, 0n);
 storage.set(State.StorageKey.toString(daiTotalSupply), 5000000000n);
 
@@ -54,12 +54,12 @@ function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
   encoded.set(slotBytes, 32);
 
   const hash = Keccak256.hash(encoded);
-  return BigInt('0x' + Buffer.from(hash).toString('hex'));
+  return BigInt('0x' + Buffer(hash).toString('hex'));
 }
 
 // Example: balances[userAddress] in ERC-20
-const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const tokenAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 const balancesBaseSlot = 1n; // Slot where balances mapping is declared
 const userBalanceSlot = computeMappingSlot(userAddress, balancesBaseSlot);
@@ -112,7 +112,7 @@ class StorageTracker {
     for (const [keyStr, afterValue] of this.current) {
       const beforeValue = this.original.get(keyStr) ?? 0n;
       if (beforeValue !== afterValue) {
-        const key = State.StorageKey.fromString(keyStr);
+        const key = State.StorageKey(keyStr);
         changes.push({ key, before: beforeValue, after: afterValue });
       }
     }
@@ -152,7 +152,7 @@ class StateManager {
     const result = new Map<bigint, bigint>();
 
     for (const [keyStr, value] of this.storage) {
-      const key = State.StorageKey.fromString(keyStr);
+      const key = State.StorageKey(keyStr);
       if (Address.equals(key.address, address)) {
         result.set(key.slot, value);
       }
@@ -165,7 +165,7 @@ class StateManager {
     const toDelete: string[] = [];
 
     for (const keyStr of this.storage.keys()) {
-      const key = State.StorageKey.fromString(keyStr);
+      const key = State.StorageKey(keyStr);
       if (Address.equals(key.address, address)) {
         toDelete.push(keyStr);
       }
@@ -189,7 +189,7 @@ async function saveState(
   storage: Map<string, bigint>,
   filePath: string
 ): Promise<void> {
-  const entries = Array.from(storage.entries()).map(([key, value]) => ({
+  const entries = Array(storage.entries()).map(([key, value]) => ({
     key,
     value: value.toString()
   }));
@@ -237,7 +237,7 @@ function diffStorage(
   // Find added and modified
   for (const [keyStr, afterValue] of after) {
     const beforeValue = before.get(keyStr);
-    const key = State.StorageKey.fromString(keyStr);
+    const key = State.StorageKey(keyStr);
 
     if (beforeValue === undefined) {
       added.push({ key, value: afterValue });
@@ -249,7 +249,7 @@ function diffStorage(
   // Find deleted
   for (const [keyStr, beforeValue] of before) {
     if (!after.has(keyStr)) {
-      const key = State.StorageKey.fromString(keyStr);
+      const key = State.StorageKey(keyStr);
       deleted.push({ key, value: beforeValue });
     }
   }

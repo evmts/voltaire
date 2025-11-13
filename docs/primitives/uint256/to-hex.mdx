@@ -12,25 +12,25 @@ description: Convert Uint256 to hex string with 0x prefix
 Hex strings are **minimal** - no unnecessary leading zeros:
 
 ```typescript
-Uint.toHex(Uint.from(0n))      // "0x0"
-Uint.toHex(Uint.from(1n))      // "0x1"
-Uint.toHex(Uint.from(15n))     // "0xf"
-Uint.toHex(Uint.from(16n))     // "0x10"
-Uint.toHex(Uint.from(255n))    // "0xff"
-Uint.toHex(Uint.from(256n))    // "0x100"
+Uint.toHex(Uint(0n))      // "0x0"
+Uint.toHex(Uint(1n))      // "0x1"
+Uint.toHex(Uint(15n))     // "0xf"
+Uint.toHex(Uint(16n))     // "0x10"
+Uint.toHex(Uint(255n))    // "0xff"
+Uint.toHex(Uint(256n))    // "0x100"
 ```
 
 ### Always Lowercase
 
 ```typescript
-Uint.toHex(Uint.from(0xdeadbeefn))  // "0xdeadbeef"
+Uint.toHex(Uint(0xdeadbeefn))  // "0xdeadbeef"
 ```
 
 ### Always Has 0x Prefix
 
 ```typescript
 // Never returns without prefix
-Uint.toHex(Uint.from(255n))  // "0xff" (not "ff")
+Uint.toHex(Uint(255n))  // "0xff" (not "ff")
 ```
 
 ## Usage Patterns
@@ -38,7 +38,7 @@ Uint.toHex(Uint.from(255n))  // "0xff" (not "ff")
 ### Logging and Debugging
 
 ```typescript
-const value = Uint.from(12345n)
+const value = Uint(12345n)
 console.log(`Value: ${Uint.toHex(value)}`)  // "Value: 0x3039"
 ```
 
@@ -46,7 +46,7 @@ console.log(`Value: ${Uint.toHex(value)}`)  // "Value: 0x3039"
 
 ```typescript
 // Format for JSON-RPC
-const balance = Uint.from(1000000000000000000n)
+const balance = Uint(1000000000000000000n)
 const rpcValue = Uint.toHex(balance)  // "0xde0b6b3a7640000"
 
 await eth_sendTransaction({
@@ -57,7 +57,7 @@ await eth_sendTransaction({
 ### Storage Keys
 
 ```typescript
-const slot = Uint.from(5n)
+const slot = Uint(5n)
 const key = Uint.toHex(slot)  // "0x5"
 ```
 

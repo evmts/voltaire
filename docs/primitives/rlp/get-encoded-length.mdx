@@ -95,12 +95,12 @@ Rlp.getEncodedLength(strings)
 import { Rlp } from '@tevm/voltaire'
 
 // List with 60 bytes total: [0xf8, 60, ...]
-const items = Array.from({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
+const items = Array({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
 Rlp.getEncodedLength(items)
 // => 62 (1 prefix + 1 length + 60 bytes)
 
 // List with 256 bytes total: [0xf9, 0x01, 0x00, ...]
-const large = Array.from({ length: 128 }, () => new Uint8Array([0x01, 0x02]))
+const large = Array({ length: 128 }, () => new Uint8Array([0x01, 0x02]))
 Rlp.getEncodedLength(large)
 // => 259 (1 prefix + 2 length + 256 bytes)
 ```

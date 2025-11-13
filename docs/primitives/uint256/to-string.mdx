@@ -12,13 +12,13 @@ description: Convert Uint256 to string with configurable radix
 ### Decimal (base 10)
 
 ```typescript
-Uint.toString(Uint.from(12345n))  // "12345"
+Uint.toString(Uint(12345n))  // "12345"
 ```
 
 ### Hexadecimal (base 16)
 
 ```typescript
-Uint.toString(Uint.from(255n), 16)  // "ff" (no 0x prefix)
+Uint.toString(Uint(255n), 16)  // "ff" (no 0x prefix)
 ```
 
 <Tip>
@@ -28,13 +28,13 @@ For hex with `0x` prefix, use `toHex()` instead.
 ### Binary (base 2)
 
 ```typescript
-Uint.toString(Uint.from(15n), 2)  // "1111"
+Uint.toString(Uint(15n), 2)  // "1111"
 ```
 
 ### Octal (base 8)
 
 ```typescript
-Uint.toString(Uint.from(64n), 8)  // "100"
+Uint.toString(Uint(64n), 8)  // "100"
 ```
 
 ## See Also

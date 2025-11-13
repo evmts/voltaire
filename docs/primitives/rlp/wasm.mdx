@@ -89,7 +89,7 @@ import { Rlp } from '@tevm/voltaire'
 import * as RlpWasm from '@tevm/voltaire/Rlp.wasm'
 
 // Benchmark encoding 10,000 byte arrays
-const items = Array.from({ length: 10000 }, () =>
+const items = Array({ length: 10000 }, () =>
   new Uint8Array(100).fill(0x42)
 )
 
@@ -150,7 +150,7 @@ try {
 // Use with Uint module
 import { Uint } from '@tevm/voltaire'
 
-const num = Uint.from(1000n)
+const num = Uint(1000n)
 const bytes = Uint.toBytes(num)
 const encoded = RlpWasm.encodeUint(bytes)
 ```
@@ -224,7 +224,7 @@ const hex = RlpWasm.toHex(encoded)
 const bytes = new Uint8Array([1, 2, 3])
 const encoded = RlpWasm.encodeBytes(bytes)
 const hex = RlpWasm.toHex(encoded)
-const restored = RlpWasm.fromHex(hex)
+const restored = RlpWasm(hex)
 // restored equals encoded
 ```
 
@@ -241,16 +241,16 @@ Convert hex string to RLP bytes (accepts with or without 0x prefix).
 import * as RlpWasm from '@tevm/voltaire/Rlp.wasm'
 
 // With 0x prefix
-const bytes = RlpWasm.fromHex("0x83010203")
+const bytes = RlpWasm("0x83010203")
 // => Uint8Array([0x83, 1, 2, 3])
 
 // Without 0x prefix
-const bytes = RlpWasm.fromHex("83010203")
+const bytes = RlpWasm("83010203")
 // => Uint8Array([0x83, 1, 2, 3])
 
 // Decode from hex
 const hex = "0x83010203"
-const encoded = RlpWasm.fromHex(hex)
+const encoded = RlpWasm(hex)
 // Now can decode with Rlp.decode()
 ```
 

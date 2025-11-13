@@ -46,63 +46,63 @@ Uint16.SIZE;   // 16
 ### from
 Create from number or string:
 ```typescript
-const a = Uint16.from(30000);
-const b = Uint16.from("65535");
-const c = Uint16.from("0xffff");
+const a = Uint16(30000);
+const b = Uint16("65535");
+const c = Uint16("0xffff");
 ```
 
 ### fromNumber
 Create from number:
 ```typescript
-const value = Uint16.fromNumber(65535);
+const value = Uint16(65535);
 ```
 
 ### fromBigint
 Create from bigint:
 ```typescript
-const value = Uint16.fromBigint(65535n);
+const value = Uint16(65535n);
 ```
 
 ### fromHex
 Create from hex string:
 ```typescript
-const a = Uint16.fromHex("0xffff");
-const b = Uint16.fromHex("ffff");
+const a = Uint16("0xffff");
+const b = Uint16("ffff");
 ```
 
 ### fromBytes
 Create from Uint8Array (2 bytes, big-endian):
 ```typescript
 const bytes = new Uint8Array([0xff, 0xff]);
-const value = Uint16.fromBytes(bytes); // 65535
+const value = Uint16(bytes); // 65535
 ```
 
 ## Conversion
 
 ### toNumber
 ```typescript
-const num = Uint16.toNumber(Uint16.from(65535)); // 65535
+const num = Uint16.toNumber(Uint16(65535)); // 65535
 ```
 
 ### toBigint
 ```typescript
-const bigintValue = Uint16.toBigint(Uint16.from(65535)); // 65535n
+const bigintValue = Uint16.toBigint(Uint16(65535)); // 65535n
 ```
 
 ### toHex
 ```typescript
-const hex = Uint16.toHex(Uint16.from(65535)); // "0xffff"
-const unpadded = Uint16.toHex(Uint16.from(15), false); // "0xf"
+const hex = Uint16.toHex(Uint16(65535)); // "0xffff"
+const unpadded = Uint16.toHex(Uint16(15), false); // "0xf"
 ```
 
 ### toBytes
 ```typescript
-const bytes = Uint16.toBytes(Uint16.from(65535)); // Uint8Array([255, 255])
+const bytes = Uint16.toBytes(Uint16(65535)); // Uint8Array([255, 255])
 ```
 
 ### toString
 ```typescript
-const str = Uint16.toString(Uint16.from(65535)); // "65535"
+const str = Uint16.toString(Uint16(65535)); // "65535"
 ```
 
 ## Arithmetic
@@ -111,63 +111,63 @@ All arithmetic operations validate that results stay within valid range.
 
 ### plus
 ```typescript
-const sum = Uint16.plus(Uint16.from(30000), Uint16.from(20000)); // 50000
+const sum = Uint16.plus(Uint16(30000), Uint16(20000)); // 50000
 // Throws on overflow
 ```
 
 ### minus
 ```typescript
-const diff = Uint16.minus(Uint16.from(30000), Uint16.from(20000)); // 10000
+const diff = Uint16.minus(Uint16(30000), Uint16(20000)); // 10000
 // Throws on underflow
 ```
 
 ### times
 ```typescript
-const product = Uint16.times(Uint16.from(100), Uint16.from(500)); // 50000
+const product = Uint16.times(Uint16(100), Uint16(500)); // 50000
 // Throws on overflow
 ```
 
 ### dividedBy
 ```typescript
-const quotient = Uint16.dividedBy(Uint16.from(10000), Uint16.from(100)); // 100
+const quotient = Uint16.dividedBy(Uint16(10000), Uint16(100)); // 100
 // Integer division
 ```
 
 ### modulo
 ```typescript
-const remainder = Uint16.modulo(Uint16.from(10007), Uint16.from(1000)); // 7
+const remainder = Uint16.modulo(Uint16(10007), Uint16(1000)); // 7
 ```
 
 ## Comparison
 
 ### equals
 ```typescript
-Uint16.equals(Uint16.from(30000), Uint16.from(30000)); // true
+Uint16.equals(Uint16(30000), Uint16(30000)); // true
 ```
 
 ### lessThan
 ```typescript
-Uint16.lessThan(Uint16.from(10000), Uint16.from(30000)); // true
+Uint16.lessThan(Uint16(10000), Uint16(30000)); // true
 ```
 
 ### greaterThan
 ```typescript
-Uint16.greaterThan(Uint16.from(30000), Uint16.from(10000)); // true
+Uint16.greaterThan(Uint16(30000), Uint16(10000)); // true
 ```
 
 ### isZero
 ```typescript
-Uint16.isZero(Uint16.from(0)); // true
+Uint16.isZero(Uint16(0)); // true
 ```
 
 ### minimum
 ```typescript
-const min = Uint16.minimum(Uint16.from(30000), Uint16.from(10000)); // 10000
+const min = Uint16.minimum(Uint16(30000), Uint16(10000)); // 10000
 ```
 
 ### maximum
 ```typescript
-const max = Uint16.maximum(Uint16.from(30000), Uint16.from(10000)); // 30000
+const max = Uint16.maximum(Uint16(30000), Uint16(10000)); // 30000
 ```
 
 ## Bitwise Operations
@@ -175,8 +175,8 @@ const max = Uint16.maximum(Uint16.from(30000), Uint16.from(10000)); // 30000
 ### bitwiseAnd
 ```typescript
 const result = Uint16.bitwiseAnd(
-  Uint16.from(0b1111111100000000),
-  Uint16.from(0b1111000011110000)
+  Uint16(0b1111111100000000),
+  Uint16(0b1111000011110000)
 );
 // 0b1111000000000000 = 61440
 ```
@@ -184,8 +184,8 @@ const result = Uint16.bitwiseAnd(
 ### bitwiseOr
 ```typescript
 const result = Uint16.bitwiseOr(
-  Uint16.from(0b1111111100000000),
-  Uint16.from(0b0000000011111111)
+  Uint16(0b1111111100000000),
+  Uint16(0b0000000011111111)
 );
 // 0b1111111111111111 = 65535
 ```
@@ -193,27 +193,27 @@ const result = Uint16.bitwiseOr(
 ### bitwiseXor
 ```typescript
 const result = Uint16.bitwiseXor(
-  Uint16.from(0b1111111100000000),
-  Uint16.from(0b1111000011110000)
+  Uint16(0b1111111100000000),
+  Uint16(0b1111000011110000)
 );
 // 0b0000111111110000 = 4080
 ```
 
 ### bitwiseNot
 ```typescript
-const result = Uint16.bitwiseNot(Uint16.from(0b1111111100000000));
+const result = Uint16.bitwiseNot(Uint16(0b1111111100000000));
 // 0b0000000011111111 = 255
 ```
 
 ### shiftLeft
 ```typescript
-const result = Uint16.shiftLeft(Uint16.from(0b0000000011111111), 8);
+const result = Uint16.shiftLeft(Uint16(0b0000000011111111), 8);
 // 0b1111111100000000 = 65280
 ```
 
 ### shiftRight
 ```typescript
-const result = Uint16.shiftRight(Uint16.from(0b1111111100000000), 8);
+const result = Uint16.shiftRight(Uint16(0b1111111100000000), 8);
 // 0b0000000011111111 = 255
 ```
 
@@ -222,25 +222,25 @@ const result = Uint16.shiftRight(Uint16.from(0b1111111100000000), 8);
 ### bitLength
 Get number of bits needed to represent value:
 ```typescript
-Uint16.bitLength(Uint16.from(0)); // 0
-Uint16.bitLength(Uint16.from(1)); // 1
-Uint16.bitLength(Uint16.from(65535)); // 16
+Uint16.bitLength(Uint16(0)); // 0
+Uint16.bitLength(Uint16(1)); // 1
+Uint16.bitLength(Uint16(65535)); // 16
 ```
 
 ### leadingZeros
 Count leading zero bits:
 ```typescript
-Uint16.leadingZeros(Uint16.from(0)); // 16
-Uint16.leadingZeros(Uint16.from(1)); // 15
-Uint16.leadingZeros(Uint16.from(65535)); // 0
+Uint16.leadingZeros(Uint16(0)); // 16
+Uint16.leadingZeros(Uint16(1)); // 15
+Uint16.leadingZeros(Uint16(65535)); // 0
 ```
 
 ### popCount
 Count set bits:
 ```typescript
-Uint16.popCount(Uint16.from(0)); // 0
-Uint16.popCount(Uint16.from(65535)); // 16
-Uint16.popCount(Uint16.from(0b1010101010101010)); // 8
+Uint16.popCount(Uint16(0)); // 0
+Uint16.popCount(Uint16(65535)); // 16
+Uint16.popCount(Uint16(0b1010101010101010)); // 8
 ```
 
 ## Validation
@@ -280,21 +280,21 @@ All operations throw on invalid inputs:
 import * as Uint16 from '@voltaire/primitives/Uint16';
 
 // Network port manipulation
-const httpPort = Uint16.from(80);
-const httpsPort = Uint16.from(443);
-const customPort = Uint16.from(8080);
+const httpPort = Uint16(80);
+const httpsPort = Uint16(443);
+const customPort = Uint16(8080);
 
 // Convert to bytes for network transmission
 const portBytes = Uint16.toBytes(customPort);
 console.log(portBytes); // Uint8Array([31, 144])
 
 // Parse from bytes
-const parsedPort = Uint16.fromBytes(portBytes);
+const parsedPort = Uint16(portBytes);
 console.log(Uint16.toNumber(parsedPort)); // 8080
 
 // Bitwise operations for flags
-const flags = Uint16.from(0b1010101010101010);
-const mask = Uint16.from(0b1111111100000000);
+const flags = Uint16(0b1010101010101010);
+const mask = Uint16(0b1111111100000000);
 const masked = Uint16.bitwiseAnd(flags, mask);
 
 console.log(Uint16.toHex(masked)); // "0xaa00"

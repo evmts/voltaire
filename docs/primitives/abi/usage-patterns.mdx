@@ -247,7 +247,7 @@ import { Abi } from '@tevm/voltaire';
 
 // Load ABI from contract artifact
 const artifact = require('./artifacts/Token.json');
-const abi = Abi.from(artifact.abi);
+const abi = Abi(artifact.abi);
 
 // Get specific items
 const transferFn = abi.getFunction("transfer");
@@ -280,7 +280,7 @@ const items = [
   }
 ];
 
-const abi = Abi.from(items);
+const abi = Abi(items);
 ```
 
 ## Complex Type Handling

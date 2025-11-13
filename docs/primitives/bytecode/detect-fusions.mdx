@@ -295,7 +295,7 @@ for (const inst of code.scan({ detectFusions: true })) {
 }
 
 console.log('Fusion patterns detected:');
-Array.from(fusionCounts.entries())
+Array(fusionCounts.entries())
   .sort((a, b) => b[1] - a[1])
   .forEach(([type, count]) => {
     console.log(`  ${type}: ${count}x`);
@@ -427,7 +427,7 @@ for (const inst of code.scan({ detectFusions: true })) {
 }
 
 // Sort by total gas impact
-const sorted = Array.from(patterns.entries())
+const sorted = Array(patterns.entries())
   .map(([type, { count, gasCost }]) => ({
     type,
     count,
@@ -518,7 +518,7 @@ function detectCustomPattern(code: BrandedBytecode): CustomPattern[] {
   const patterns: CustomPattern[] = [];
 
   // Collect instructions for lookahead
-  const instructions = Array.from(code.scan({ detectFusions: true }));
+  const instructions = Array(code.scan({ detectFusions: true }));
 
   for (let i = 0; i < instructions.length; i++) {
     const inst1 = instructions[i];

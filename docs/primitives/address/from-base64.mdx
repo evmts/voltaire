@@ -35,14 +35,14 @@ import { Address } from '@tevm/voltaire'
 
 // Invalid characters
 try {
-  Address.fromBase64("invalid@chars!")
+  Address("invalid@chars!")
 } catch (e) {
   console.error(e) // Error: Invalid base64 string
 }
 
 // Whitespace not allowed
 try {
-  Address.fromBase64("dC01 zGY0 wFMp")
+  Address("dC01 zGY0 wFMp")
 } catch (e) {
   console.error(e) // Error: Invalid base64 string
 }
@@ -52,17 +52,17 @@ try {
 
 ```typescript
 // Too short (19 bytes)
-const short = Buffer.from(new Uint8Array(19)).toString('base64')
+const short = Buffer(new Uint8Array(19)).toString('base64')
 try {
-  Address.fromBase64(short)
+  Address(short)
 } catch (e) {
   console.error(e) // InvalidAddressLengthError
 }
 
 // Too long (21 bytes)
-const long = Buffer.from(new Uint8Array(21)).toString('base64')
+const long = Buffer(new Uint8Array(21)).toString('base64')
 try {
-  Address.fromBase64(long)
+  Address(long)
 } catch (e) {
   console.error(e) // InvalidAddressLengthError
 }
@@ -85,7 +85,7 @@ try {
 import { Address } from '@tevm/voltaire'
 
 // Works in both Node.js and browser
-const addr = Address.fromBase64("dC01zGY0wFMpJaO4RLyedZXyUeM=")
+const addr = Address("dC01zGY0wFMpJaO4RLyedZXyUeM=")
 console.log(addr.toHex())
 ```
 
@@ -98,7 +98,7 @@ console.log(addr.toHex())
 const response = await fetch('/api/contract')
 const data = await response.json()
 
-const contractAddr = Address.fromBase64(data.address)
+const contractAddr = Address(data.address)
 console.log(contractAddr.toChecksummed())
 ```
 
@@ -106,11 +106,11 @@ console.log(contractAddr.toChecksummed())
 
 ```typescript
 // Store addresses as base64 (more compact than hex)
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const base64 = addr.toBase64()
 
 // Later, restore from base64
-const restored = Address.fromBase64(base64)
+const restored = Address(base64)
 console.log(Address.equals(addr, restored)) // true
 ```
 
@@ -119,7 +119,7 @@ console.log(Address.equals(addr, restored)) // true
 ```typescript
 // Receive base64-encoded address from binary protocol
 const message = receiveMessage() // Returns { address: "dC01..." }
-const addr = Address.fromBase64(message.address)
+const addr = Address(message.address)
 
 // Process address
 if (addr.isZero()) {
@@ -134,7 +134,7 @@ Use try-catch for robust base64 validation:
 ```typescript
 function tryDecodeAddress(b64: string): Address | null {
   try {
-    return Address.fromBase64(b64)
+    return Address(b64)
   } catch (e) {
     console.error('Invalid base64 address:', e.message)
     return null
@@ -162,14 +162,14 @@ For performance-critical code, prefer `fromHex` or `fromBytes`.
 import { Address } from '@tevm/voltaire'
 
 // Create address
-const original = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 // Encode to base64
 const b64 = original.toBase64()
 // "dC01zGY0wFMpJaO4RLyedZXyUeM="
 
 // Decode back
-const decoded = Address.fromBase64(b64)
+const decoded = Address(b64)
 
 // Verify round-trip
 console.log(Address.equals(original, decoded)) // true

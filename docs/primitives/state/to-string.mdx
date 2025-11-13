@@ -41,7 +41,7 @@ Serializes `BrandedStorageKey` to string format for use as JavaScript Map keys o
 ```typescript
 import * as State from '@tevm/voltaire/State';
 
-const addr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const addr = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 // Slot 0
 const key0 = State.StorageKey(addr, 0n);
@@ -91,7 +91,7 @@ async function saveStorage(
   storage: Map<BrandedStorageKey, bigint>,
   filePath: string
 ): Promise<void> {
-  const entries = Array.from(storage.entries()).map(([key, value]) => ({
+  const entries = Array(storage.entries()).map(([key, value]) => ({
     key: State.StorageKey.toString(key),
     value: value.toString()
   }));
@@ -176,7 +176,7 @@ const originalKey = State.StorageKey(contractAddr, 42n);
 const keyStr = State.StorageKey.toString(originalKey);
 
 // Deserialize
-const parsedKey = State.StorageKey.fromString(keyStr);
+const parsedKey = State.StorageKey(keyStr);
 
 // Verify equality
 console.log(State.StorageKey.equals(originalKey, parsedKey)); // true

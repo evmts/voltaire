@@ -12,12 +12,12 @@ import { Hex } from '@tevm/voltaire/Hex';
 // Hash a simple string
 const message = 'Hello, World!';
 const hash = Keccak256.hashString(message);
-const hexHash = Hex.fromBytes(hash);
+const hexHash = Hex(hash);
 console.log('Keccak256 hash:', hexHash);
 
 // Hash an empty string
 const emptyHash = Keccak256.hashString('');
-const emptyHexHash = Hex.fromBytes(emptyHash);
+const emptyHexHash = Hex(emptyHash);
 console.log('Empty string hash:', emptyHexHash);
 
 // Hash is always 32 bytes (256 bits)

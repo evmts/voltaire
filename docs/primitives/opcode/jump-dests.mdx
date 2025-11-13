@@ -14,7 +14,7 @@ Find all valid JUMPDEST positions in bytecode.
 import { jumpDests } from '@tevm/voltaire/Opcode'
 
 const dests = jumpDests(bytecode)
-console.log(Array.from(dests))  // [3]
+console.log(Array(dests))  // [3]
 ```
 </Tab>
 

@@ -49,7 +49,7 @@ const returnData = new Uint8Array([
   0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf2, 0x51, 0xe3
 ])
 
-const addr = Address.fromAbiEncoded(returnData)
+const addr = Address(returnData)
 console.log(addr.toChecksummed())
 ```
 
@@ -58,14 +58,14 @@ console.log(addr.toChecksummed())
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const original = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const original = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Encode to ABI format
 const encoded = original.toAbiEncoded()
 console.log(encoded.length) // 32
 
 // Decode back
-const decoded = Address.fromAbiEncoded(encoded)
+const decoded = Address(encoded)
 console.log(original.equals(decoded)) // true
 ```
 
@@ -78,10 +78,10 @@ import { Address } from '@tevm/voltaire'
 const abiData = new Uint8Array(64)
 
 // First address at bytes 0-31
-const addr1 = Address.fromAbiEncoded(abiData.slice(0, 32))
+const addr1 = Address(abiData.slice(0, 32))
 
 // Second address at bytes 32-63
-const addr2 = Address.fromAbiEncoded(abiData.slice(32, 64))
+const addr2 = Address(abiData.slice(32, 64))
 ```
 
 ## Error Handling
@@ -92,14 +92,14 @@ import { Address } from '@tevm/voltaire'
 // Wrong length - throws error
 try {
   const tooShort = new Uint8Array(20)
-  Address.fromAbiEncoded(tooShort)
+  Address(tooShort)
 } catch (e) {
   console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 20"
 }
 
 try {
   const tooLong = new Uint8Array(33)
-  Address.fromAbiEncoded(tooLong)
+  Address(tooLong)
 } catch (e) {
   console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 33"
 }

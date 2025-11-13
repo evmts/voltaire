@@ -213,7 +213,7 @@ For lists with total payload >= 56 bytes, use long form: `[0xf7 + length_of_leng
 
 ```typescript
 // Create list with 60 bytes total payload
-const items = Array.from({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
+const items = Array({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
 const encoded = Rlp.encode(items)
 // First bytes: [0xf8, 60, ...]
 // 0xf8 = 0xf7 + 1 (length needs 1 byte)

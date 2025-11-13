@@ -210,9 +210,9 @@ function showCostScale(gasUsed: bigint) {
   console.log('─'.repeat(50))
 
   prices.forEach(gwei => {
-    const gasPriceWei = Gwei.toWei(Gwei.from(BigInt(gwei)))
-    const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
-    const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+    const gasPriceWei = Gwei.toWei(Gwei(BigInt(gwei)))
+    const costWei = Uint.times(gasPriceWei, Uint(gasUsed))
+    const costGwei = Uint.dividedBy(costWei, Uint(1_000_000_000n))
     const costEther = Number(costWei) / 1e18
 
     console.log(`${gwei.toString().padStart(3)} Gwei: ${costGwei} Gwei = ${costEther.toFixed(6)} ETH`)
@@ -264,17 +264,17 @@ import * as Ether from '@tevm/voltaire/Ether'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // How much in Wei?
-const weiCapacity = Uint.from(2n ** 256n - 1n)  // Max Uint256
+const weiCapacity = Uint(2n ** 256n - 1n)  // Max Uint256
 // = 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935 Wei
 // = 115,792,089,237 Billion Billion Ether
 // Enough for everyone on Earth to have 14+ Ether
 
 // Practical limits
-const dappBudget = Ether.from(1_000_000n)          // 1M Ether (huge budget)
+const dappBudget = Ether(1_000_000n)          // 1M Ether (huge budget)
 const dappBudgetWei = Ether.toWei(dappBudget)      // 1e24 Wei
 
 const liquidEthereum = 120_000_000n                // All ETH ever (approx)
-const liquidWei = Ether.toWei(Ether.from(liquidEthereum))  // All Wei in existence
+const liquidWei = Ether.toWei(Ether(liquidEthereum))  // All Wei in existence
 ```
 
 ## Conversion Reference Table

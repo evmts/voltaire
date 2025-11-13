@@ -80,7 +80,7 @@ function createTransaction(
 ```typescript
 // Generate random test hashes
 function generateTestHashes(count: number): Hash[] {
-  return Array.from({ length: count }, () => Hash.random())
+  return Array({ length: count }, () => Hash.random())
 }
 
 // Generate random Merkle tree leaves
@@ -252,7 +252,7 @@ Hash.random()
 Hash.keccak256(data)
 
 // Hex parsing (slower, ~50-100ns)
-Hash.fromHex("0x1234...")
+Hash("0x1234...")
 ```
 
 ## Collision Probability

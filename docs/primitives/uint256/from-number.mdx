@@ -24,13 +24,13 @@ For larger values, use **BigInt** instead.
 Number.MAX_SAFE_INTEGER  // 9007199254740991 (2^53 - 1)
 
 // Safe values
-Uint.fromNumber(0)                        // OK
-Uint.fromNumber(1000000)                  // OK
-Uint.fromNumber(Number.MAX_SAFE_INTEGER)  // OK
+Uint(0)                        // OK
+Uint(1000000)                  // OK
+Uint(Number.MAX_SAFE_INTEGER)  // OK
 
 // Unsafe values (loss of precision)
-Uint.fromNumber(Number.MAX_SAFE_INTEGER + 1)  // Unreliable
-Uint.fromNumber(10 ** 18)                     // Unreliable (exceeds safe range)
+Uint(Number.MAX_SAFE_INTEGER + 1)  // Unreliable
+Uint(10 ** 18)                     // Unreliable (exceeds safe range)
 ```
 
 ### Use BigInt for Large Values
@@ -38,14 +38,14 @@ Uint.fromNumber(10 ** 18)                     // Unreliable (exceeds safe range)
 ```typescript
 // Don't do this (unsafe)
 const largeNumber = 1000000000000000000  // 10^18
-Uint.fromNumber(largeNumber)  // May lose precision!
+Uint(largeNumber)  // May lose precision!
 
 // Do this instead (safe)
 const largeBigInt = 1000000000000000000n
 Uint.fromBigInt(largeBigInt)  // Accurate
 
 // Or use string
-Uint.from("1000000000000000000")  // Accurate
+Uint("1000000000000000000")  // Accurate
 ```
 
 ## Validation
@@ -54,33 +54,33 @@ Uint.from("1000000000000000000")  // Accurate
 
 ```typescript
 // Must be integer
-Uint.fromNumber(100)    // OK
-Uint.fromNumber(0)      // OK
+Uint(100)    // OK
+Uint(0)      // OK
 
 // Decimal values throw
-Uint.fromNumber(3.14)   // Error: Must be integer
-Uint.fromNumber(1.5)    // Error: Must be integer
-Uint.fromNumber(100.1)  // Error: Must be integer
+Uint(3.14)   // Error: Must be integer
+Uint(1.5)    // Error: Must be integer
+Uint(100.1)  // Error: Must be integer
 ```
 
 ### Special Values
 
 ```typescript
 // Invalid numbers throw
-Uint.fromNumber(NaN)       // Error: Invalid value
-Uint.fromNumber(Infinity)  // Error: Invalid value
-Uint.fromNumber(-Infinity) // Error: Invalid value
+Uint(NaN)       // Error: Invalid value
+Uint(Infinity)  // Error: Invalid value
+Uint(-Infinity) // Error: Invalid value
 ```
 
 ### Negative Values
 
 ```typescript
 // Must be non-negative
-Uint.fromNumber(0)    // OK
-Uint.fromNumber(1)    // OK
+Uint(0)    // OK
+Uint(1)    // OK
 
-Uint.fromNumber(-1)   // Error: Cannot be negative
-Uint.fromNumber(-100) // Error: Cannot be negative
+Uint(-1)   // Error: Cannot be negative
+Uint(-100) // Error: Cannot be negative
 ```
 
 ## Usage Patterns
@@ -89,23 +89,23 @@ Uint.fromNumber(-100) // Error: Cannot be negative
 
 ```typescript
 // Good for small constants
-const ZERO = Uint.fromNumber(0)
-const ONE = Uint.fromNumber(1)
-const TEN = Uint.fromNumber(10)
-const HUNDRED = Uint.fromNumber(100)
+const ZERO = Uint(0)
+const ONE = Uint(1)
+const TEN = Uint(10)
+const HUNDRED = Uint(100)
 ```
 
 ### Array Indices
 
 ```typescript
 function getElement(index: number): BrandedUint256 {
-  return Uint.fromNumber(index)
+  return Uint(index)
 }
 
 // Converting array index to Uint
 const items = [1, 2, 3, 4, 5]
 items.forEach((_, index) => {
-  const indexAsUint = Uint.fromNumber(index)
+  const indexAsUint = Uint(index)
   // ...
 })
 ```
@@ -119,7 +119,7 @@ function processNumber(n: number): void {
     throw new Error("Invalid number")
   }
 
-  const uint = Uint.fromNumber(n)
+  const uint = Uint(n)
   // Use uint...
 }
 ```
@@ -130,13 +130,13 @@ function processNumber(n: number): void {
 
 ```typescript
 // Bad: Loses precision
-const weiAmount = Uint.fromNumber(1000000000000000000)  // 10^18
+const weiAmount = Uint(1000000000000000000)  // 10^18
 
 // Good: Accurate
 const weiAmount = Uint.fromBigInt(1000000000000000000n)
 
 // Good: From string
-const weiAmount = Uint.from("1000000000000000000")
+const weiAmount = Uint("1000000000000000000")
 ```
 
 ### Check Safe Integer Range
@@ -149,7 +149,7 @@ function safeFromNumber(n: number): BrandedUint256 {
   if (n < 0) {
     throw new Error("Number must be non-negative")
   }
-  return Uint.fromNumber(n)
+  return Uint(n)
 }
 ```
 

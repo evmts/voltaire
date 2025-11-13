@@ -295,7 +295,7 @@ const json = JSON.stringify(sig);
 
 // Need custom serialization for metadata
 const serialized = JSON.stringify({
-  bytes: Array.from(sig),
+  bytes: Array(sig),
   algorithm: sig.algorithm,
   v: sig.v,
 });

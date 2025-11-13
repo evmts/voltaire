@@ -51,7 +51,7 @@ import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Bitcoin P2PKH address derivation (simplified)
-const publicKey = Hex.from('0x04' + '9876...'); // 65-byte uncompressed secp256k1 public key
+const publicKey = Hex('0x04' + '9876...'); // 65-byte uncompressed secp256k1 public key
 
 // Step 1: SHA256 hash of public key
 const sha256Hash = SHA256.hash(publicKey);

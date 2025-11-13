@@ -159,9 +159,9 @@ interface ForkchoiceState {
 import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 const forkchoiceState = {
-  headBlockHash: Hash.from('0xabc...'),
-  safeBlockHash: Hash.from('0xdef...'),
-  finalizedBlockHash: Hash.from('0x123...')
+  headBlockHash: Hash('0xabc...'),
+  safeBlockHash: Hash('0xdef...'),
+  finalizedBlockHash: Hash('0x123...')
 };
 
 // Update forkchoice
@@ -175,9 +175,9 @@ if (!result.error && result.result.payloadStatus.status === 'VALID') {
 const buildResult = await provider.engine_forkchoiceUpdatedV3(
   forkchoiceState,
   {
-    timestamp: Quantity.from(Date.now() / 1000),
-    prevRandao: Hash.from('0x...'),
-    suggestedFeeRecipient: Address.from('0x...')
+    timestamp: Quantity(Date.now() / 1000),
+    prevRandao: Hash('0x...'),
+    suggestedFeeRecipient: Address('0x...')
   }
 );
 
@@ -265,8 +265,8 @@ import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Get blobs for specific commitments
 const blobHashes = [
-  Hash.from('0x01abc...'),  // Blob versioned hash (sha256(kzg_commitment)[0] = 0x01)
-  Hash.from('0x01def...')
+  Hash('0x01abc...'),  // Blob versioned hash (sha256(kzg_commitment)[0] = 0x01)
+  Hash('0x01def...')
 ];
 
 const blobsResult = await provider.engine_getBlobsV1(blobHashes);
@@ -326,9 +326,9 @@ Exchange transition configuration (for merge preparation).
 
 ```typescript
 const config = await provider.engine_exchangeTransitionConfigurationV1({
-  terminalTotalDifficulty: Quantity.from(58750000000000000000000n),
-  terminalBlockHash: Hash.from('0x0000000000000000000000000000000000000000000000000000000000000000'),
-  terminalBlockNumber: Quantity.from(0)
+  terminalTotalDifficulty: Quantity(58750000000000000000000n),
+  terminalBlockHash: Hash('0x0000000000000000000000000000000000000000000000000000000000000000'),
+  terminalBlockNumber: Quantity(0)
 });
 // Response<TransitionConfiguration>
 ```
@@ -343,8 +343,8 @@ Get block bodies (transactions only) by block hashes.
 
 ```typescript
 const bodies = await provider.engine_getPayloadBodiesByHashV1([
-  Hash.from('0xabc...'),
-  Hash.from('0xdef...')
+  Hash('0xabc...'),
+  Hash('0xdef...')
 ]);
 // Response<ExecutionPayloadBody[]>
 ```
@@ -355,8 +355,8 @@ Get block bodies for a range of block numbers.
 
 ```typescript
 const bodies = await provider.engine_getPayloadBodiesByRangeV1(
-  Quantity.from(1000000),  // Start block
-  Quantity.from(100)       // Count
+  Quantity(1000000),  // Start block
+  Quantity(100)       // Count
 );
 // Response<ExecutionPayloadBody[]>
 ```
@@ -370,8 +370,8 @@ const latestBlock = await provider.eth_blockNumber();
 if (!latestBlock.error) {
   const start = latestBlock.result - 10n;
   const bodies = await provider.engine_getPayloadBodiesByRangeV1(
-    Quantity.from(start),
-    Quantity.from(10)
+    Quantity(start),
+    Quantity(10)
   );
 
   if (!bodies.error) {
@@ -395,7 +395,7 @@ const forkchoiceResult = await provider.engine_forkchoiceUpdatedV3(
     finalizedBlockHash: finalizedBlock
   },
   {
-    timestamp: Quantity.from(nextSlotTime),
+    timestamp: Quantity(nextSlotTime),
     prevRandao: randomness,
     suggestedFeeRecipient: validatorFeeRecipient,
     withdrawals: withdrawalsList

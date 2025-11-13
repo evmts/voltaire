@@ -19,9 +19,9 @@ Type-safe signed 16-bit integers with two's complement encoding and EVM SDIV/SMO
 import * as Int16 from '@tevm/voltaire/Int16'
 
 // Create signed integers
-const a = Int16.from(-1000)
-const b = Int16.from(500)
-const zero = Int16.from(0)
+const a = Int16(-1000)
+const b = Int16(500)
+const zero = Int16(0)
 
 // Signed arithmetic
 const sum = Int16.plus(a, b)        // -500
@@ -41,21 +41,21 @@ try {
 import * as Int16 from '@tevm/voltaire/Int16'
 
 // Two's complement conversions
-const negOne = Int16.from(-1)
+const negOne = Int16(-1)
 Int16.toHex(negOne)    // "0xffff" (65535 as unsigned)
 
-const min = Int16.from(-32768)
+const min = Int16(-32768)
 Int16.toHex(min)       // "0x8000" (32768 as unsigned)
 
 // Hex to signed
-const fromHex = Int16.fromHex("0xFFFF")
+const fromHex = Int16("0xFFFF")
 Int16.toNumber(fromHex)  // -1
 
 // Bytes (two's complement, big-endian)
-const bytes = Int16.toBytes(Int16.from(-1))
+const bytes = Int16.toBytes(Int16(-1))
 // Uint8Array([0xff, 0xff])
 
-const value = Int16.fromBytes(new Uint8Array([0x12, 0x34]))
+const value = Int16(new Uint8Array([0x12, 0x34]))
 Int16.toNumber(value)  // 4660 (0x1234)
 ```
 </Tab>
@@ -225,19 +225,19 @@ Int16.shiftLeft(16384, 1)  // -32768 (0x4000 → 0x8000)
 import * as Int16 from '@tevm/voltaire/Int16'
 
 // From number (most common)
-const a = Int16.from(-1000)
-const b = Int16.fromNumber(-1000)
+const a = Int16(-1000)
+const b = Int16(-1000)
 
 // From bigint
-const c = Int16.fromBigint(-1000n)
+const c = Int16(-1000n)
 
 // From hex (two's complement)
-const d = Int16.fromHex("0xFFFF")    // -1
-const e = Int16.fromHex("0x8000")    // -32768
+const d = Int16("0xFFFF")    // -1
+const e = Int16("0x8000")    // -32768
 
 // From bytes (two's complement, big-endian)
-const f = Int16.fromBytes(new Uint8Array([0xFF, 0xFF]))  // -1
-const g = Int16.fromBytes(new Uint8Array([0x12, 0x34]))  // 4660
+const f = Int16(new Uint8Array([0xFF, 0xFF]))  // -1
+const g = Int16(new Uint8Array([0x12, 0x34]))  // 4660
 ```
 
 ## Conversions
@@ -245,7 +245,7 @@ const g = Int16.fromBytes(new Uint8Array([0x12, 0x34]))  // 4660
 ```typescript
 import * as Int16 from '@tevm/voltaire/Int16'
 
-const value = Int16.from(-1000)
+const value = Int16(-1000)
 
 // To number
 Int16.toNumber(value)  // -1000

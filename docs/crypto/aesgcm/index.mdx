@@ -74,7 +74,7 @@ Derives key from password using PBKDF2-HMAC-SHA256.
 ```typescript
 // Generate salt (store with encrypted data)
 import * as Hex from '@tevm/voltaire/primitives/Hex';
-const salt = Hex.from('0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d');
+const salt = Hex('0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d');
 
 // Derive key from password
 const key = await AesGcm.deriveKey(
@@ -97,7 +97,7 @@ Imports raw key bytes as CryptoKey.
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Import 32-byte key (256-bit)
-const rawKey = Hex.from('0xf8e9a72d4c3b1a6e7d5f2c8b9e1a4d7f3c6b9e2a5d8f1c4b7e0a3d6f9c2b5e8a');
+const rawKey = Hex('0xf8e9a72d4c3b1a6e7d5f2c8b9e1a4d7f3c6b9e2a5d8f1c4b7e0a3d6f9c2b5e8a');
 
 const key = await AesGcm.importKey(rawKey);
 ```
@@ -265,7 +265,7 @@ class NonceCounter {
   next() {
     const counterHex = this.counter.toString(16).padStart(24, '0');
     this.counter++;
-    return Hex.from('0x' + counterHex);
+    return Hex('0x' + counterHex);
   }
 }
 
@@ -318,7 +318,7 @@ import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 async function encryptWithPassword(plaintext, password) {
   // 1. Generate random salt
   import * as Hex from '@tevm/voltaire/primitives/Hex';
-  const salt = Hex.from('0x3e4d5c6b7a8910293847566574839201');
+  const salt = Hex('0x3e4d5c6b7a8910293847566574839201');
 
   // 2. Derive key from password
   const key = await AesGcm.deriveKey(password, salt, 100000, 256);
@@ -372,7 +372,7 @@ const keyBase64 = btoa(String.fromCharCode(...keyBytes));
 // ENCRYPTION_KEY=rK7J...
 
 // Load and use
-const storedKeyBytes = Uint8Array.from(
+const storedKeyBytes = Uint8Array(
   atob(process.env.ENCRYPTION_KEY),
   c => c.charCodeAt(0)
 );
@@ -385,7 +385,7 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Encrypt master key with user password
 async function storeEncryptedKey(masterKey, userPassword) {
-  const salt = Hex.from('0x7f8e9d0c1b2a3948576e8d9c0b1a2938');
+  const salt = Hex('0x7f8e9d0c1b2a3948576e8d9c0b1a2938');
   const passwordKey = await AesGcm.deriveKey(userPassword, salt, 100000, 256);
 
   const masterKeyBytes = await AesGcm.exportKey(masterKey);
@@ -394,9 +394,9 @@ async function storeEncryptedKey(masterKey, userPassword) {
 
   // Store in localStorage
   localStorage.setItem('encryptedKey', JSON.stringify({
-    salt: Array.from(salt),
-    nonce: Array.from(nonce),
-    ciphertext: Array.from(encryptedKey)
+    salt: Array(salt),
+    nonce: Array(nonce),
+    ciphertext: Array(encryptedKey)
   }));
 }
 
@@ -498,7 +498,7 @@ const key = await AesGcm.deriveKey(password, salt, 600000, 256);
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const salt = Hex.from('0xa7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2');
+const salt = Hex('0xa7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2');
 ```
 
 **4. Key rotation:** Periodically generate new keys
@@ -597,7 +597,7 @@ const key = await AesGcm.deriveKey(password, salt, 100000, 256);
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 async function encryptFile(fileData, password) {
-  const salt = Hex.from('0x9e8d7c6b5a4938271605948372615049');
+  const salt = Hex('0x9e8d7c6b5a4938271605948372615049');
   const key = await AesGcm.deriveKey(password, salt, 600000, 256);
   const nonce = AesGcm.generateNonce();
 
@@ -636,8 +636,8 @@ class EncryptedDatabase {
     const ciphertext = await AesGcm.encrypt(plaintext, this.key, nonce);
 
     return {
-      nonce: Array.from(nonce),
-      ciphertext: Array.from(ciphertext)
+      nonce: Array(nonce),
+      ciphertext: Array(ciphertext)
     };
   }
 

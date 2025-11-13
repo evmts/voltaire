@@ -108,7 +108,7 @@ if (hash.toHex() === expectedHex) {
 }
 
 // Or better: use equals for constant-time comparison
-const expectedHash = Hash.fromHex(expectedHex)
+const expectedHash = Hash(expectedHex)
 if (hash.equals(expectedHash)) {
   console.log("Hash matches!")
 }

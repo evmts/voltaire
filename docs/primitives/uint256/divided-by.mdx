@@ -18,13 +18,13 @@ Divide Uint256 values. Floor division (rounds down).
 ```typescript
 import { Uint } from '@tevm/voltaire'
 
-const a = Uint.from(100n)
-const b = Uint.from(10n)
+const a = Uint(100n)
+const b = Uint(10n)
 Uint.dividedBy(a, b)  // 10
 
 // Floor division
-const c = Uint.from(7n)
-const d = Uint.from(2n)
+const c = Uint(7n)
+const d = Uint(2n)
 Uint.dividedBy(c, d)  // 3 (not 3.5)
 
 // Division by zero throws

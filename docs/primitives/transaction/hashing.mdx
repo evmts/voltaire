@@ -149,7 +149,7 @@ class TransactionPool {
   private txs = new Map<string, Transaction.Any>()
 
   add(tx: Transaction.Any) {
-    const txHash = Hex.fromBytes(hash(tx))
+    const txHash = Hex(hash(tx))
     this.txs.set(txHash, tx)
   }
 
@@ -197,7 +197,7 @@ const signedTx = {
 
 // 5. Compute final transaction hash
 const txHash = hash(signedTx)
-console.log('Transaction hash:', Hex.fromBytes(txHash))
+console.log('Transaction hash:', Hex(txHash))
 ```
 
 ### Signature Verification

@@ -25,9 +25,9 @@ export type BrandedInt128 = bigint & {
 import * as Int128 from '@voltaire/primitives/Int128';
 
 // Create from various sources
-const a = Int128.from(-42n);
-const b = Int128.fromHex("0xffffffffffffffffffffffffffffffff"); // -1
-const c = Int128.fromNumber(-100);
+const a = Int128(-42n);
+const b = Int128("0xffffffffffffffffffffffffffffffff"); // -1
+const c = Int128(-100);
 
 // Arithmetic (truncate toward zero)
 Int128.dividedBy(-10n, 3n); // -3n (not -4)

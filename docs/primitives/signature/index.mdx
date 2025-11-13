@@ -70,7 +70,7 @@ const sig = Signature.fromSecp256k1(
 );
 
 // Or use universal constructor
-const sig2 = Signature.from({
+const sig2 = Signature({
   r: rBytes,
   s: sBytes,
   v: 27,
@@ -240,7 +240,7 @@ import { Signature, Hex } from '@tevm/voltaire';
 const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
 
 // Universal constructor
-const sig2 = Signature.from({ r: rBytes, s: sBytes, v: 27 });
+const sig2 = Signature({ r: rBytes, s: sBytes, v: 27 });
 
 // Check algorithm
 console.log(Signature.getAlgorithm(sig)); // "secp256k1"

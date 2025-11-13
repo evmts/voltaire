@@ -72,7 +72,7 @@ Generate deterministic X25519 keypair from a 32-byte seed.
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const seed = Hex.from('0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
+const seed = Hex('0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
 const { secretKey, publicKey } = X25519.keypairFromSeed(seed);
 
 // Same seed always produces same keypair
@@ -286,7 +286,7 @@ assert(k.every((byte, i) => byte === expected[i]));
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Same seed always produces same keypair
-const seed = Hex.from('0x4200000000000000000000000000000000000000000000000000000000000000');
+const seed = Hex('0x4200000000000000000000000000000000000000000000000000000000000000');
 
 const keypair1 = X25519.keypairFromSeed(seed);
 const keypair2 = X25519.keypairFromSeed(seed);

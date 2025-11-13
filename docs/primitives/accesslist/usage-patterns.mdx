@@ -114,8 +114,8 @@ function buildSwapAccessList(
   const balanceSlot0 = calculateBalanceSlot(token0, user);
   const balanceSlot1 = calculateBalanceSlot(token1, user);
   const allowanceSlot0 = calculateAllowanceSlot(token0, user, router);
-  const reserve0Slot = Hash.fromHex('0x08');  // reserves slot
-  const reserve1Slot = Hash.fromHex('0x08');
+  const reserve0Slot = Hash('0x08');  // reserves slot
+  const reserve1Slot = Hash('0x08');
 
   let list = AccessList.create();
 
@@ -234,7 +234,7 @@ async function detectAccessList(
   ]);
 
   // Convert to our format
-  const list = AccessList.fromBytes(detected.accessList);
+  const list = AccessList(detected.accessList);
 
   // Validate and optimize
   AccessList.assertValid(list);
@@ -439,7 +439,7 @@ function safeConstruction(data: unknown): BrandedAccessList {
   try {
     // Try to construct
     if (data instanceof Uint8Array) {
-      const list = AccessList.fromBytes(data);
+      const list = AccessList(data);
       AccessList.assertValid(list);
       return list;
     }

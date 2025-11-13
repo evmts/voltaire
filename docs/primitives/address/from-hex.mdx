@@ -78,21 +78,21 @@ import { Address } from '@tevm/voltaire'
 
 // Missing 0x prefix
 try {
-  Address.fromHex("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+  Address("742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 } catch (e) {
   console.error(e) // InvalidHexFormatError
 }
 
 // Wrong length
 try {
-  Address.fromHex("0x742d35")
+  Address("0x742d35")
 } catch (e) {
   console.error(e) // InvalidHexFormatError
 }
 
 // Invalid characters
 try {
-  Address.fromHex("0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+  Address("0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
 } catch (e) {
   console.error(e) // InvalidHexStringError
 }
@@ -106,7 +106,7 @@ Use `Address.isValid()` to check before parsing:
 const input = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
 if (Address.isValid(input)) {
-  const addr = Address.fromHex(input)
+  const addr = Address(input)
   console.log(addr.toHex())
 } else {
   console.error("Invalid address format")
@@ -121,11 +121,11 @@ if (Address.isValid(input)) {
 const checksummed = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 
 if (Address.isValidChecksum(checksummed)) {
-  const addr = Address.fromHex(checksummed)
+  const addr = Address(checksummed)
   console.log("Checksum valid")
 } else {
   console.warn("Invalid checksum, but parsing anyway")
-  const addr = Address.fromHex(checksummed)
+  const addr = Address(checksummed)
 }
 ```
 

@@ -104,12 +104,12 @@ function hashToG2Point(message: Uint8Array): Uint8Array {
 
   // Create two Fp2 elements (128 bytes each: c0 + c1)
   const u0 = new Uint8Array(128);
-  const u0c0 = Bytes64.from(hash1); // c0 component from hash
+  const u0c0 = Bytes64(hash1); // c0 component from hash
   u0.set(u0c0, 0);
   // c1 component stays zero for simplification (bytes 64-127)
 
   const u1 = new Uint8Array(128);
-  const u1c0 = Bytes64.from(hash2); // c0 component from hash
+  const u1c0 = Bytes64(hash2); // c0 component from hash
   u1.set(u1c0, 0);
 
   // Step 2: Map both to G2

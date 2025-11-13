@@ -36,7 +36,7 @@ function parseUserAddress(input: string): Address {
     throw new Error('Invalid address format')
   }
 
-  return Address.fromHex(input)
+  return Address(input)
 }
 
 // Safe to parse
@@ -108,7 +108,7 @@ app.post('/transfer', (req, res) => {
     })
   }
 
-  const recipient = Address.fromHex(to)
+  const recipient = Address(to)
   // Process transfer...
 })
 ```
@@ -184,13 +184,13 @@ import { Address } from '@tevm/voltaire'
 
 // Efficient: validate before parsing
 if (Address.isValid(input)) {
-  const addr = Address.fromHex(input)
+  const addr = Address(input)
   // Process addr...
 }
 
 // Inefficient: use try/catch for validation
 try {
-  const addr = Address.fromHex(input)
+  const addr = Address(input)
   // Process addr...
 } catch (e) {
   // Handle invalid format
@@ -209,7 +209,7 @@ function processInput(input: string | Address) {
     if (!Address.isValid(input)) {
       throw new Error('Invalid address string')
     }
-    return Address.fromHex(input)
+    return Address(input)
   }
 
   return input // Already an Address

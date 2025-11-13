@@ -13,13 +13,13 @@ import { Hex } from '@tevm/voltaire/Hex';
 const privateKey = Hex.toBytes('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
 
 // Derive address from private key
-const address = Address.fromPrivateKey(privateKey);
+const address = Address(privateKey);
 const checksummed = Address.toChecksummed(address);
 console.log('Derived address:', checksummed);
 
 // Try another private key
 const privateKey2 = Hex.toBytes('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d');
-const address2 = Address.fromPrivateKey(privateKey2);
+const address2 = Address(privateKey2);
 const checksummed2 = Address.toChecksummed(address2);
 console.log('Another address:', checksummed2);
 ```

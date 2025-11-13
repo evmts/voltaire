@@ -90,7 +90,7 @@ function partitionKeys(
   keys: BrandedStorageKey[],
   partitionCount: number
 ): BrandedStorageKey[][] {
-  const partitions: BrandedStorageKey[][] = Array.from(
+  const partitions: BrandedStorageKey[][] = Array(
     { length: partitionCount },
     () => []
   );

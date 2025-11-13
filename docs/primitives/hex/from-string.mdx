@@ -13,30 +13,30 @@ Uses standard `TextEncoder` for UTF-8 encoding:
 
 **ASCII (1 byte per character):**
 ```typescript
-Hex.fromString("hello")
+Hex("hello")
 // "0x68656c6c6f"
 // h=0x68, e=0x65, l=0x6c, l=0x6c, o=0x6f
 ```
 
 **Latin-1 Extended (1-2 bytes):**
 ```typescript
-Hex.fromString("café")
+Hex("café")
 // "0x636166c3a9"
 // c=0x63, a=0x61, f=0x66, é=0xc3a9 (2 bytes)
 ```
 
 **Emoji (2-4 bytes):**
 ```typescript
-Hex.fromString("🔥")
+Hex("🔥")
 // "0xf09f94a5" (4 bytes)
 
-Hex.fromString("👍")
+Hex("👍")
 // "0xf09f918d" (4 bytes)
 ```
 
 **CJK Characters (3 bytes):**
 ```typescript
-Hex.fromString("テスト")
+Hex("テスト")
 // "0xe38386e382b9e38388"
 // テ=0xe38386, ス=0xe382b9, ト=0xe38388
 ```
@@ -46,33 +46,33 @@ Hex.fromString("テスト")
 **Human-Readable Messages:**
 ```typescript
 const message = "Transfer 1 ETH to Alice"
-const hex = Hex.fromString(message)
+const hex = Hex(message)
 // Include in transaction data
 ```
 
 **Error Messages:**
 ```typescript
 const error = "Insufficient balance"
-const errorData = Hex.fromString(error)
+const errorData = Hex(error)
 ```
 
 **Contract Function Signatures:**
 ```typescript
 // Function signature: "transfer(address,uint256)"
-const sig = Hex.fromString("transfer(address,uint256)")
+const sig = Hex("transfer(address,uint256)")
 // Then hash with keccak256 for selector
 ```
 
 **Custom Data Encoding:**
 ```typescript
 const metadata = JSON.stringify({ name: "NFT", id: 1 })
-const encoded = Hex.fromString(metadata)
+const encoded = Hex(metadata)
 ```
 
 **ENS Labels:**
 ```typescript
 const label = "myname"
-const labelBytes = Hex.fromString(label)
+const labelBytes = Hex(label)
 // Hash for ENS registration
 ```
 
@@ -83,7 +83,7 @@ Convert string to hex and back:
 ```typescript
 // String → Hex
 const original = "Hello, World! 🌍"
-const hex = Hex.fromString(original)
+const hex = Hex(original)
 // "0x48656c6c6f2c20576f726c642120f09f8c8d"
 
 // Hex → String

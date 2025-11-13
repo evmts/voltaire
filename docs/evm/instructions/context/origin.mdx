@@ -49,7 +49,7 @@ import { createFrame } from '@tevm/voltaire/evm/Frame';
 import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Transaction originated by this EOA
-const originAddr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const originAddr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
 const frame = createFrame({ stack: [] });
 
 const err = origin(frame, originAddr);
@@ -312,7 +312,7 @@ console.log(err); // { type: "OutOfGas" }
 // Theoretically invalid (can't sign transaction)
 // but handled by EVM
 const frame = createFrame({});
-const err = origin(frame, Address.from('0x0000000000000000000000000000000000000000'));
+const err = origin(frame, Address('0x0000000000000000000000000000000000000000'));
 
 console.log(frame.stack[0]); // 0n
 ```

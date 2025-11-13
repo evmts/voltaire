@@ -39,9 +39,9 @@ bun add @voltaire/primitives
 import * as Uint128 from '@voltaire/primitives/Uint128';
 
 // Create from various sources
-const a = Uint128.from(100n);
-const b = Uint128.fromHex("0xff");
-const c = Uint128.fromNumber(255);
+const a = Uint128(100n);
+const b = Uint128("0xff");
+const c = Uint128(255);
 
 // Arithmetic with wrapping
 const sum = Uint128.plus(a, b);
@@ -75,10 +75,10 @@ Uint128.ONE;   // 1n
 Create Uint128 from bigint, number, or string (decimal or hex).
 
 ```typescript
-const a = Uint128.from(100n);
-const b = Uint128.from(255);
-const c = Uint128.from("0xff");
-const d = Uint128.from("1000000000000000000");
+const a = Uint128(100n);
+const b = Uint128(255);
+const c = Uint128("0xff");
+const d = Uint128("1000000000000000000");
 ```
 
 **Throws**: Error if value is negative or exceeds MAX.
@@ -96,7 +96,7 @@ const value = Uint128.fromBigInt(12345678901234567890n);
 Create from number (must be integer).
 
 ```typescript
-const value = Uint128.fromNumber(255);
+const value = Uint128(255);
 ```
 
 **Throws**: Error if not an integer or out of range.
@@ -106,8 +106,8 @@ const value = Uint128.fromNumber(255);
 Create from hex string (with or without 0x prefix).
 
 ```typescript
-const a = Uint128.fromHex("0xff");
-const b = Uint128.fromHex("ffffffffffffffffffffffffffffffff");
+const a = Uint128("0xff");
+const b = Uint128("ffffffffffffffffffffffffffffffff");
 ```
 
 ### fromBytes
@@ -116,7 +116,7 @@ Create from byte array (big-endian, up to 16 bytes).
 
 ```typescript
 const bytes = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255]);
-const value = Uint128.fromBytes(bytes);
+const value = Uint128(bytes);
 ```
 
 **Throws**: Error if length exceeds 16 bytes.
@@ -128,7 +128,7 @@ Create from ABI-encoded bytes (32 bytes, right-aligned).
 ```typescript
 const abiBytes = new Uint8Array(32);
 abiBytes[31] = 255;
-const value = Uint128.fromAbiEncoded(abiBytes);
+const value = Uint128(abiBytes);
 ```
 
 ### tryFrom
@@ -205,7 +205,7 @@ const sum = Uint128.plus(a, b);
 
 // Wrapping behavior
 const max = Uint128.MAX;
-const wrapped = Uint128.plus(max, Uint128.from(1n));  // 0n
+const wrapped = Uint128.plus(max, Uint128(1n));  // 0n
 ```
 
 ### minus
@@ -216,8 +216,8 @@ Subtract with wrapping.
 const diff = Uint128.minus(a, b);
 
 // Wrapping on underflow
-const zero = Uint128.from(0n);
-const wrapped = Uint128.minus(zero, Uint128.from(1n));  // MAX
+const zero = Uint128(0n);
+const wrapped = Uint128.minus(zero, Uint128(1n));  // MAX
 ```
 
 ### times
@@ -256,8 +256,8 @@ Exponentiation with wrapping.
 const result = Uint128.toPower(base, exponent);
 
 // Example
-const base = Uint128.from(2n);
-const exp = Uint128.from(10n);
+const base = Uint128(2n);
+const exp = Uint128(10n);
 const power = Uint128.toPower(base, exp);  // 1024n
 ```
 
@@ -298,7 +298,7 @@ const max = Uint128.maximum(a, b);
 Get min/max from array.
 
 ```typescript
-const values = [Uint128.from(100n), Uint128.from(50n), Uint128.from(75n)];
+const values = [Uint128(100n), Uint128(50n), Uint128(75n)];
 const minValue = Uint128.min(values);  // 50n
 const maxValue = Uint128.max(values);  // 100n
 ```
@@ -386,7 +386,7 @@ const copy = Uint128.clone(value);
 Sum array of values with wrapping.
 
 ```typescript
-const values = [Uint128.from(100n), Uint128.from(50n), Uint128.from(75n)];
+const values = [Uint128(100n), Uint128(50n), Uint128(75n)];
 const total = Uint128.sum(values);  // 225n
 ```
 
@@ -395,7 +395,7 @@ const total = Uint128.sum(values);  // 225n
 Multiply array of values with wrapping.
 
 ```typescript
-const values = [Uint128.from(10n), Uint128.from(5n), Uint128.from(2n)];
+const values = [Uint128(10n), Uint128(5n), Uint128(2n)];
 const result = Uint128.product(values);  // 100n
 ```
 
@@ -406,8 +406,8 @@ const result = Uint128.product(values);  // 100n
 Calculate greatest common divisor.
 
 ```typescript
-const a = Uint128.from(48n);
-const b = Uint128.from(18n);
+const a = Uint128(48n);
+const b = Uint128(18n);
 const divisor = Uint128.gcd(a, b);  // 6n
 ```
 
@@ -416,8 +416,8 @@ const divisor = Uint128.gcd(a, b);  // 6n
 Calculate least common multiple.
 
 ```typescript
-const a = Uint128.from(12n);
-const b = Uint128.from(18n);
+const a = Uint128(12n);
+const b = Uint128(18n);
 const multiple = Uint128.lcm(a, b);  // 36n
 ```
 
@@ -426,8 +426,8 @@ const multiple = Uint128.lcm(a, b);  // 36n
 Check if value is a power of 2.
 
 ```typescript
-const isPower = Uint128.isPowerOf2(Uint128.from(16n));   // true
-const notPower = Uint128.isPowerOf2(Uint128.from(15n));  // false
+const isPower = Uint128.isPowerOf2(Uint128(16n));   // true
+const notPower = Uint128.isPowerOf2(Uint128(15n));  // false
 ```
 
 ## Examples
@@ -436,10 +436,10 @@ const notPower = Uint128.isPowerOf2(Uint128.from(15n));  // false
 
 ```typescript
 // Track cumulative gas used across blocks
-let cumulativeGas = Uint128.from(0n);
+let cumulativeGas = Uint128(0n);
 
 for (const block of blocks) {
-  const blockGas = Uint128.from(block.gasUsed);
+  const blockGas = Uint128(block.gasUsed);
   cumulativeGas = Uint128.plus(cumulativeGas, blockGas);
 }
 
@@ -451,9 +451,9 @@ console.log(`Total gas: ${Uint128.toString(cumulativeGas)}`);
 ```typescript
 // Calculate total supply with 18 decimals
 const tokenAmounts = [
-  Uint128.from(1000000000000000000n),  // 1 token
-  Uint128.from(2500000000000000000n),  // 2.5 tokens
-  Uint128.from(500000000000000000n),   // 0.5 tokens
+  Uint128(1000000000000000000n),  // 1 token
+  Uint128(2500000000000000000n),  // 2.5 tokens
+  Uint128(500000000000000000n),   // 0.5 tokens
 ];
 
 const totalSupply = Uint128.sum(tokenAmounts);
@@ -464,23 +464,23 @@ console.log(`Total: ${Uint128.toString(totalSupply)} wei`);
 
 ```typescript
 // Calculate compound interest: principal * (1 + rate)^periods
-const principal = Uint128.from(1000000n);
-const rate = Uint128.from(105n);  // 5% as 105/100
-const base = Uint128.from(100n);
+const principal = Uint128(1000000n);
+const rate = Uint128(105n);  // 5% as 105/100
+const base = Uint128(100n);
 
 // Interest after 10 periods
-const multiplier = Uint128.toPower(rate, Uint128.from(10n));
+const multiplier = Uint128.toPower(rate, Uint128(10n));
 const amount = Uint128.times(principal, multiplier);
-const result = Uint128.dividedBy(amount, Uint128.toPower(base, Uint128.from(10n)));
+const result = Uint128.dividedBy(amount, Uint128.toPower(base, Uint128(10n)));
 ```
 
 ### Bitwise Flags
 
 ```typescript
 // 128-bit feature flags
-const FLAG_A = Uint128.from(1n << 0n);
-const FLAG_B = Uint128.from(1n << 1n);
-const FLAG_C = Uint128.from(1n << 127n);
+const FLAG_A = Uint128(1n << 0n);
+const FLAG_B = Uint128(1n << 1n);
+const FLAG_C = Uint128(1n << 127n);
 
 let flags = Uint128.ZERO;
 flags = Uint128.bitwiseOr(flags, FLAG_A);
@@ -506,14 +506,14 @@ Uint128 uses branded types to prevent mixing with other numeric types:
 import * as Uint128 from '@voltaire/primitives/Uint128';
 import * as Uint64 from '@voltaire/primitives/Uint64';
 
-const a = Uint128.from(100n);
-const b = Uint64.from(50n);
+const a = Uint128(100n);
+const b = Uint64(50n);
 
 // Type error: cannot mix Uint128 and Uint64
 // const sum = Uint128.plus(a, b);  // ❌
 
 // Convert first
-const converted = Uint128.from(Uint64.toBigInt(b));
+const converted = Uint128(Uint64.toBigInt(b));
 const sum = Uint128.plus(a, converted);  // ✅
 ```
 

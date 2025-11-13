@@ -18,16 +18,16 @@ Hash hex strings must follow specific format requirements:
 
 ```typescript
 // Valid (64 hex chars)
-Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+Hash("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // Valid (0x + 64 hex chars)
-Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // Invalid (too short)
-Hash.fromHex("0x1c8aff") // Error: wrong length
+Hash("0x1c8aff") // Error: wrong length
 
 // Invalid (too long)
-Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac800") // Error
+Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac800") // Error
 ```
 
 ### Characters
@@ -36,16 +36,16 @@ Only valid hex characters allowed: `0-9`, `a-f`, `A-F`
 
 ```typescript
 // Valid (lowercase)
-Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 // Valid (uppercase)
-Hash.fromHex("0x1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8")
+Hash("0x1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8")
 
 // Valid (mixed case)
-Hash.fromHex("0x1C8aFf950685c2ED4bc3174F3472287b56d9517B9c948127319a09A7a36deAC8")
+Hash("0x1C8aFf950685c2ED4bc3174F3472287b56d9517B9c948127319a09A7a36deAC8")
 
 // Invalid (contains 'g')
-Hash.fromHex("0x1c8agg950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // Error
+Hash("0x1c8agg950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // Error
 ```
 
 ### Prefix Optional
@@ -54,8 +54,8 @@ The `0x` prefix is optional but recommended for clarity:
 
 ```typescript
 // Both produce identical hashes
-const hash1 = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
-const hash2 = Hash.fromHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash1 = Hash("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const hash2 = Hash("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
 
 console.log(hash1.equals(hash2)) // true
 ```
@@ -70,7 +70,7 @@ function parseHashInput(input: string): Hash {
   if (!Hash.isValidHex(input)) {
     throw new Error("Invalid hash format")
   }
-  return Hash.fromHex(input)
+  return Hash(input)
 }
 ```
 
@@ -86,8 +86,8 @@ async function fetchTransaction(id: string) {
   const response: ApiResponse = await fetch(`/api/tx/${id}`).then(r => r.json())
 
   return {
-    txHash: Hash.fromHex(response.txHash),
-    blockHash: Hash.fromHex(response.blockHash)
+    txHash: Hash(response.txHash),
+    blockHash: Hash(response.blockHash)
   }
 }
 ```
@@ -102,7 +102,7 @@ interface Log {
 
 function parseLog(log: Log) {
   return {
-    topics: log.topics.map(topic => Hash.fromHex(topic)),
+    topics: log.topics.map(topic => Hash(topic)),
     data: log.data
   }
 }
@@ -115,10 +115,10 @@ async function getReceipt(txHash: string) {
   const receipt = await provider.getTransactionReceipt(txHash)
 
   return {
-    transactionHash: Hash.fromHex(receipt.transactionHash),
-    blockHash: Hash.fromHex(receipt.blockHash),
-    from: Address.fromHex(receipt.from),
-    to: Address.fromHex(receipt.to)
+    transactionHash: Hash(receipt.transactionHash),
+    blockHash: Hash(receipt.blockHash),
+    from: Address(receipt.from),
+    to: Address(receipt.to)
   }
 }
 ```
@@ -132,14 +132,14 @@ async function getReceipt(txHash: string) {
 ```typescript
 // Fast path: avoid double validation
 if (Hash.isValidHex(input)) {
-  const hash = Hash.fromHex(input) // No validation error
+  const hash = Hash(input) // No validation error
 } else {
   // Handle invalid input
 }
 
 // Slow path: validation happens twice
 try {
-  const hash = Hash.fromHex(input)
+  const hash = Hash(input)
 } catch (e) {
   // Handle error
 }

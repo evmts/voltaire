@@ -30,10 +30,10 @@ Create BrandedWei from numeric input.
 ```typescript
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const wei1 = BrandedWei.from(1_000_000_000n)              // 1 Gwei in Wei
-const wei2 = BrandedWei.from(1_000_000_000_000_000_000n)  // 1 Ether in Wei
-const wei3 = BrandedWei.from("1000000000000000000")       // String input
-const wei4 = BrandedWei.from(42)                          // Number input
+const wei1 = BrandedWei(1_000_000_000n)              // 1 Gwei in Wei
+const wei2 = BrandedWei(1_000_000_000_000_000_000n)  // 1 Ether in Wei
+const wei3 = BrandedWei("1000000000000000000")       // String input
+const wei4 = BrandedWei(42)                          // Number input
 ```
 
 **Parameters:**
@@ -49,7 +49,7 @@ Convert BrandedGwei to BrandedWei (multiply by 10^9).
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const gwei = BrandedGwei.from(50n)
+const gwei = BrandedGwei(50n)
 const wei = BrandedWei.fromGwei(gwei)  // 50_000_000_000n Wei
 ```
 
@@ -68,7 +68,7 @@ Convert BrandedEther to BrandedWei (multiply by 10^18).
 import * as BrandedEther from '@tevm/voltaire/BrandedEther'
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const ether = BrandedEther.from(1n)
+const ether = BrandedEther(1n)
 const wei = BrandedWei.fromEther(ether)  // 1_000_000_000_000_000_000n Wei
 ```
 
@@ -88,11 +88,11 @@ Convert BrandedWei to BrandedGwei (divide by 10^9).
 ```typescript
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const wei = BrandedWei.from(50_000_000_000n)
+const wei = BrandedWei(50_000_000_000n)
 const gwei = BrandedWei.toGwei(wei)  // BrandedGwei(50n)
 
 // Fractional values truncate
-const wei2 = BrandedWei.from(50_000_000_001n)
+const wei2 = BrandedWei(50_000_000_001n)
 const gwei2 = BrandedWei.toGwei(wei2)  // BrandedGwei(50n) - truncates
 ```
 
@@ -110,11 +110,11 @@ Convert BrandedWei to BrandedEther (divide by 10^18).
 ```typescript
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 
-const wei = BrandedWei.from(1_000_000_000_000_000_000n)
+const wei = BrandedWei(1_000_000_000_000_000_000n)
 const ether = BrandedWei.toEther(wei)  // BrandedEther(1n)
 
 // Fractional values truncate
-const wei2 = BrandedWei.from(500_000_000_000_000_000n)  // 0.5 ETH
+const wei2 = BrandedWei(500_000_000_000_000_000n)  // 0.5 ETH
 const ether2 = BrandedWei.toEther(wei2)  // BrandedEther(0n) - truncates
 ```
 
@@ -135,11 +135,11 @@ Convert BrandedWei to raw BrandedUint (removes denomination branding).
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedUint from '@tevm/voltaire/BrandedUint'
 
-const wei = BrandedWei.from(1_000_000_000n)
+const wei = BrandedWei(1_000_000_000n)
 const u256 = BrandedWei.toU256(wei)  // BrandedUint (no denomination)
 
 // Can use with BrandedUint operations
-const doubled = BrandedUint.times(u256, BrandedUint.from(2n))
+const doubled = BrandedUint.times(u256, BrandedUint(2n))
 ```
 
 **Parameters:**
@@ -167,15 +167,15 @@ import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedUint from '@tevm/voltaire/BrandedUint'
 
-const gasPrice = BrandedGwei.from(50n)  // 50 Gwei
-const gasUsed = BrandedUint.from(21_000n)
+const gasPrice = BrandedGwei(50n)  // 50 Gwei
+const gasUsed = BrandedUint(21_000n)
 
 // Convert to Wei for calculation
 const gasPriceWei = BrandedGwei.toWei(gasPrice)
 const gasPriceU256 = BrandedWei.toU256(gasPriceWei)
 
 const totalCost = BrandedUint.times(gasPriceU256, gasUsed)
-const totalCostWei = BrandedWei.from(totalCost)
+const totalCostWei = BrandedWei(totalCost)
 
 console.log(`Cost: ${totalCostWei} Wei`)
 ```
@@ -186,7 +186,7 @@ console.log(`Cost: ${totalCostWei} Wei`)
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedEther from '@tevm/voltaire/BrandedEther'
 
-const valueEther = BrandedEther.from(1n)  // 1 ETH
+const valueEther = BrandedEther(1n)  // 1 ETH
 const valueWei = BrandedEther.toWei(valueEther)
 
 const tx = {
@@ -203,7 +203,7 @@ import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 import * as BrandedEther from '@tevm/voltaire/BrandedEther'
 
 // Start with Ether
-const ether = BrandedEther.from(1n)
+const ether = BrandedEther(1n)
 
 // Convert to Wei
 const wei = BrandedEther.toWei(ether)  // 1_000_000_000_000_000_000n
@@ -223,8 +223,8 @@ BrandedWei prevents mixing denominations at compile time:
 import * as BrandedWei from '@tevm/voltaire/BrandedWei'
 import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
 
-const wei = BrandedWei.from(1_000_000_000n)
-const gwei = BrandedGwei.from(1n)
+const wei = BrandedWei(1_000_000_000n)
+const gwei = BrandedGwei(1n)
 
 // ✗ Type error - incompatible brands
 BrandedWei.toGwei(gwei)

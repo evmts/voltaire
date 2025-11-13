@@ -55,12 +55,12 @@ console.log(upper)
 import { Address } from '@tevm/voltaire'
 
 // Lowercase input
-const lower = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const lower = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 console.log(lower.toUppercase())
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3" (uppercase)
 
 // Mixed case input (EIP-55 checksummed)
-const checksummed = Address.fromHex("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+const checksummed = Address("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
 console.log(checksummed.toUppercase())
 // "0x5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED" (uppercase)
 ```
@@ -72,9 +72,9 @@ Converting to uppercase multiple times produces the same result:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const upper1 = addr.toUppercase()
-const addr2 = Address.fromHex(upper1)
+const addr2 = Address(upper1)
 const upper2 = addr2.toUppercase()
 
 console.log(upper1 === upper2) // true
@@ -94,7 +94,7 @@ function formatAddressDisplay(address: Address): string {
   return address.toUppercase()
 }
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 console.log(formatAddressDisplay(addr))
 // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
 ```
@@ -106,8 +106,8 @@ Normalize before comparison (though `equals()` is preferred):
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr1 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
-const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr1 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr2 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
 // String comparison (not recommended - use equals() instead)
 if (addr1.toUppercase() === addr2.toUppercase()) {
@@ -187,7 +187,7 @@ class CachedAddress {
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
 
 // Lowercase (toHex / toLowercase)
 console.log(addr.toHex())
@@ -205,9 +205,9 @@ console.log(addr.toChecksummed())
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 
 // All represent the same address
-const fromLower = Address.fromHex(addr.toLowercase())
-const fromUpper = Address.fromHex(addr.toUppercase())
-const fromChecksum = Address.fromHex(addr.toChecksummed())
+const fromLower = Address(addr.toLowercase())
+const fromUpper = Address(addr.toUppercase())
+const fromChecksum = Address(addr.toChecksummed())
 
 console.log(fromLower.equals(fromUpper)) // true
 console.log(fromUpper.equals(fromChecksum)) // true
@@ -222,7 +222,7 @@ Unlike `toChecksummed()`, uppercase format:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 // Uppercase - all caps
 console.log(addr.toUppercase())
@@ -293,12 +293,12 @@ console.log(zero.toUppercase())
 // "0x0000000000000000000000000000000000000000"
 
 // Max address
-const max = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff")
+const max = Address("0xffffffffffffffffffffffffffffffffffffffff")
 console.log(max.toUppercase())
 // "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 
 // Numeric address
-const numeric = Address.fromNumber(69n)
+const numeric = Address(69n)
 console.log(numeric.toUppercase())
 // "0x0000000000000000000000000000000000000045"
 ```

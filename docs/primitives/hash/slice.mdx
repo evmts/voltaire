@@ -27,7 +27,7 @@ const transferSelector = getFunctionSelector("transfer(address,uint256)")
 // Derive address from hash (last 20 bytes)
 function hashToAddress(hash: Hash): Address {
   const addressBytes = hash.slice(12, 32) // Last 20 bytes
-  return Address.fromBytes(addressBytes)
+  return Address(addressBytes)
 }
 ```
 

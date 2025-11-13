@@ -160,10 +160,10 @@ All of these produce the zero address:
 import { Address } from '@tevm/voltaire'
 
 const zero1 = Address.zero()
-const zero2 = Address.from(0n)
-const zero3 = Address.from(0)
-const zero4 = Address.fromHex("0x0000000000000000000000000000000000000000")
-const zero5 = Address.fromBytes(new Uint8Array(20))
+const zero2 = Address(0n)
+const zero3 = Address(0)
+const zero4 = Address("0x0000000000000000000000000000000000000000")
+const zero5 = Address(new Uint8Array(20))
 
 // All are equal
 console.log(zero1.equals(zero2)) // true
@@ -181,7 +181,7 @@ Use `isZero()` method to check if an address is zero:
 ```typescript
 import { Address } from '@tevm/voltaire'
 
-const addr = Address.fromHex("0x0000000000000000000000000000000000000000")
+const addr = Address("0x0000000000000000000000000000000000000000")
 
 if (addr.isZero()) {
   console.log("Address is zero")

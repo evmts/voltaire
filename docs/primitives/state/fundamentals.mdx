@@ -46,12 +46,12 @@ import * as Address from '@tevm/voltaire/Address';
 import * as Hash from '@tevm/voltaire/Hash';
 
 // EOA example (user wallet)
-const eoaAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const eoaAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const eoaAccount = {
   balance: 1000000000000000000n,  // 1 ETH in wei
   nonce: 42n,                      // Has sent 42 transactions
-  storageRoot: Hash.from("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),  // Empty storage
-  codeHash: Hash.from("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")     // Empty code
+  storageRoot: Hash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),  // Empty storage
+  codeHash: Hash("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")     // Empty code
 };
 
 // EOAs have:
@@ -67,12 +67,12 @@ import * as Address from '@tevm/voltaire/Address';
 import * as Hash from '@tevm/voltaire/Hash';
 
 // Contract account (USDC on mainnet)
-const contractAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const contractAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const contractAccount = {
   balance: 0n,                     // Contract has no ETH
   nonce: 1n,                       // Has created 1 contract (proxy pattern)
-  storageRoot: Hash.from("0x..."), // Root of storage trie with token balances, allowances
-  codeHash: Hash.from("0x...")     // Keccak256 hash of deployed bytecode
+  storageRoot: Hash("0x..."), // Root of storage trie with token balances, allowances
+  codeHash: Hash("0x...")     // Keccak256 hash of deployed bytecode
 };
 
 // Contracts have:
@@ -95,7 +95,7 @@ import * as State from '@tevm/voltaire/State';
 import * as Address from '@tevm/voltaire/Address';
 
 // USDC contract storage example
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 // Storage slot 0: total supply (simple variable)
 const slot0 = State.StorageKey(usdcAddress, 0n);
@@ -105,7 +105,7 @@ const balancesBaseSlot = 1n;
 
 // To access balances[userAddress], compute:
 // slot = keccak256(abi.encode(userAddress, balancesBaseSlot))
-const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const balanceSlot = computeMappingSlot(userAddress, balancesBaseSlot);
 const userBalanceKey = State.StorageKey(usdcAddress, balanceSlot);
 ```
@@ -145,7 +145,7 @@ function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
   encoded.set(encodeBigInt(baseSlot, 32), 32);
 
   const hash = Keccak256.hash(encoded);
-  return BigInt('0x' + Buffer.from(hash).toString('hex'));
+  return BigInt('0x' + Buffer(hash).toString('hex'));
 }
 
 // balances[userAddress]
@@ -199,7 +199,7 @@ The **state root** is a single 32-byte hash proving the entire world state:
 import * as Hash from '@tevm/voltaire/Hash';
 
 // Every block header includes state root
-const blockStateRoot = Hash.from("0x123abc..."); // 32 bytes
+const blockStateRoot = Hash("0x123abc..."); // 32 bytes
 
 // Changing ANY account data changes the state root
 // This enables:
@@ -208,9 +208,9 @@ const blockStateRoot = Hash.from("0x123abc..."); // 32 bytes
 // - Fraud proofs for rollups
 
 // Example: Transfer changes state root
-const beforeTransfer = Hash.from("0xaaa...");
+const beforeTransfer = Hash("0xaaa...");
 // ... execute transfer transaction ...
-const afterTransfer = Hash.from("0xbbb...");
+const afterTransfer = Hash("0xbbb...");
 
 // State root changed because sender/receiver balances changed
 console.log(Hash.equals(beforeTransfer, afterTransfer)); // false
@@ -229,7 +229,7 @@ Voltaire provides utilities for working with storage keys:
 import * as State from '@tevm/voltaire/State';
 import * as Address from '@tevm/voltaire/Address';
 
-const contract = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const contract = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
 // Create storage keys
 const key1 = State.StorageKey(contract, 0n);
@@ -250,7 +250,7 @@ console.log(State.StorageKey.toString(key1));
 
 // Deserialize from string
 const keyStr = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42";
-const parsed = State.StorageKey.fromString(keyStr);
+const parsed = State.StorageKey(keyStr);
 console.log(Address.toHex(parsed.address)); // "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 console.log(parsed.slot);                    // 42n
 
@@ -274,8 +274,8 @@ import * as Address from '@tevm/voltaire/Address';
 import * as Hash from '@tevm/voltaire/Hash';
 
 // State transition example: ETH transfer
-const sender = Address.from("0xAlice...");
-const receiver = Address.from("0xBob...");
+const sender = Address("0xAlice...");
+const receiver = Address("0xBob...");
 const amount = 1000000000000000000n; // 1 ETH
 const gasPrice = 20000000000n; // 20 gwei
 const gasUsed = 21000n;
@@ -348,7 +348,7 @@ Storage changes also trigger state root updates:
 import * as State from '@tevm/voltaire/State';
 
 // SSTORE operation changes storage
-const contractAddr = Address.from("0xContract...");
+const contractAddr = Address("0xContract...");
 const storageKey = State.StorageKey(contractAddr, 0n);
 
 // Before: slot 0 = 100
@@ -403,7 +403,7 @@ function verifyAccountProof(
   }
 
   // 3. Final hash should equal state root
-  return Hash.equals(Hash.from(currentHash), stateRoot);
+  return Hash.equals(Hash(currentHash), stateRoot);
 }
 
 // Example usage
@@ -415,7 +415,7 @@ const proof = [
 
 const isValid = verifyAccountProof(
   blockStateRoot,
-  Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
   eoaAccount,
   proof
 );
@@ -449,7 +449,7 @@ async function verifyBalance(
     })
   }).then(r => r.json());
 
-  const stateRoot = Hash.from(header.result.stateRoot);
+  const stateRoot = Hash(header.result.stateRoot);
 
   // 2. Request account proof from full node (EIP-1186)
   const proof = await fetch(`${rpcUrl}/eth_getProof`, {

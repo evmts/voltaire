@@ -46,7 +46,7 @@ import * as State from '@tevm/voltaire/State';
 const originalKey = State.StorageKey(contractAddr, 42n);
 
 // Identity operation (returns same structure)
-const key = State.from(originalKey);
+const key = State(originalKey);
 
 console.log(State.StorageKey.equals(originalKey, key)); // true
 ```
@@ -58,7 +58,7 @@ import * as State from '@tevm/voltaire/State';
 
 try {
   // Invalid: missing slot
-  const key = State.from({
+  const key = State({
     address: contractAddr
     // TypeScript error: Property 'slot' is missing
   });
@@ -68,7 +68,7 @@ try {
 
 try {
   // Invalid: slot must be bigint
-  const key = State.from({
+  const key = State({
     address: contractAddr,
     slot: 42 // TypeScript error: Type 'number' is not assignable to type 'bigint'
   });
@@ -86,16 +86,16 @@ import * as State from '@tevm/voltaire/State';
 import * as Address from '@tevm/voltaire/Address';
 
 // ✅ Valid inputs
-State.from({ address: contractAddr, slot: 0n });
-State.from(existingStorageKey);
+State({ address: contractAddr, slot: 0n });
+State(existingStorageKey);
 
 // ❌ Invalid inputs (compile-time errors)
-State.from({ address: "0x...", slot: 0n }); // address must be BrandedAddress
-State.from({ address: contractAddr });       // missing slot
-State.from({ address: contractAddr, slot: 0 }); // slot must be bigint
-State.from({ slot: 0n });                    // missing address
-State.from("string");                        // not StorageKeyLike
-State.from(123);                             // not StorageKeyLike
+State({ address: "0x...", slot: 0n }); // address must be BrandedAddress
+State({ address: contractAddr });       // missing slot
+State({ address: contractAddr, slot: 0 }); // slot must be bigint
+State({ slot: 0n });                    // missing address
+State("string");                        // not StorageKeyLike
+State(123);                             // not StorageKeyLike
 ```
 
 ## Use Cases
@@ -110,7 +110,7 @@ function getStorageValue(
   keyInput: StorageKeyLike,
   storage: Map<string, bigint>
 ): bigint | undefined {
-  const key = State.from(keyInput);
+  const key = State(keyInput);
   const keyStr = State.StorageKey.toString(key);
   return storage.get(keyStr);
 }
@@ -135,12 +135,12 @@ class StateManager {
   private storage = new Map<string, bigint>();
 
   set(keyInput: StorageKeyLike, value: bigint): void {
-    const key = State.from(keyInput);
+    const key = State(keyInput);
     this.storage.set(State.StorageKey.toString(key), value);
   }
 
   get(keyInput: StorageKeyLike): bigint | undefined {
-    const key = State.from(keyInput);
+    const key = State(keyInput);
     return this.storage.get(State.StorageKey.toString(key));
   }
 }

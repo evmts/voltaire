@@ -107,10 +107,10 @@ console.log(filter.contains(mightCollide))  // false or true (false positive)
 import { BloomFilter, Address } from '@tevm/voltaire'
 
 // Load block bloom filter
-const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
 
 // Check if block might contain address
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 if (blockFilter.contains(address)) {
   // Block might contain logs from this address
   // Fetch actual logs to confirm
@@ -196,7 +196,7 @@ function processFilter(filter: BloomFilter) {
 }
 
 // Check if block has any logs
-const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
 if (blockFilter.isEmpty()) {
   console.log("Block has no logs")
   return []  // Skip log fetching
@@ -223,14 +223,14 @@ async function findRelevantBlocks(
   endBlock: number,
   address: string
 ): Promise<number[]> {
-  const addr = Address.from(address)
+  const addr = Address(address)
   const relevantBlocks: number[] = []
 
   for (let i = startBlock; i <= endBlock; i++) {
     const block = await fetchBlock(i)
 
     // Skip empty blocks
-    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const filter = BloomFilter(block.logsBloom, 2048, 3)
     if (filter.isEmpty()) continue
 
     // Check if block might contain address
@@ -263,11 +263,11 @@ function containsAll(
 }
 
 // Usage
-const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
 const watchlist = [
-  Address.from("0x..."),
-  Address.from("0x..."),
-  Address.from("0x...")
+  Address("0x..."),
+  Address("0x..."),
+  Address("0x...")
 ]
 
 if (containsAny(blockFilter, watchlist)) {
@@ -327,7 +327,7 @@ function containsEither(
 const transferTopic = keccak256(
   new TextEncoder().encode("Transfer(address,address,uint256)")
 )
-const targetAddress = Address.from("0x...")
+const targetAddress = Address("0x...")
 
 if (containsBoth(blockFilter, targetAddress, transferTopic)) {
   // Block might contain Transfer events from this address

@@ -43,7 +43,7 @@ More efficient than EXTCODESIZE + EXTCODECOPY + KECCAK256 for code verification.
 ```typescript
 import { extcodehash } from '@tevm/voltaire/evm/context';
 
-const contractAddr = Address.from('0x...');
+const contractAddr = Address('0x...');
 const frame = createFrame({ stack: [BigInt(contractAddr)] });
 
 const err = extcodehash(frame, host);
@@ -317,7 +317,7 @@ export function extcodehash(
 
 ```typescript
 // EOA has no code
-const eoaAddr = Address.from('0xUserEOA...');
+const eoaAddr = Address('0xUserEOA...');
 const frame = createFrame({ stack: [BigInt(eoaAddr)] });
 
 extcodehash(frame, host);
@@ -328,7 +328,7 @@ console.log(frame.stack[0]); // 0n
 
 ```typescript
 // Random address
-const randomAddr = Address.from('0x9999999999999999999999999999999999999999');
+const randomAddr = Address('0x9999999999999999999999999999999999999999');
 const frame = createFrame({ stack: [BigInt(randomAddr)] });
 
 extcodehash(frame, host);
@@ -340,7 +340,7 @@ console.log(frame.stack[0]); // 0n
 Some contracts may have zero-length code (rare):
 
 ```typescript
-const emptyCodeAddr = Address.from('0x...');
+const emptyCodeAddr = Address('0x...');
 extcodehash(frame, { getCode: () => new Uint8Array(0) });
 console.log(frame.stack[0]); // 0n
 ```

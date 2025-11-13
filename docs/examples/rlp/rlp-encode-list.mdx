@@ -12,7 +12,7 @@ import { Hex } from '@tevm/voltaire/Hex';
 // Encode a simple list of strings
 const list = ['dog', 'cat', 'bird'];
 const encoded = Rlp.encode(list.map(s => new TextEncoder().encode(s)));
-const hexEncoded = Hex.fromBytes(encoded);
+const hexEncoded = Hex(encoded);
 console.log('RLP encoded list:', hexEncoded);
 
 // Encode nested lists
@@ -21,12 +21,12 @@ const nestedList = [
   [new TextEncoder().encode('world')]
 ];
 const encodedNested = Rlp.encode(nestedList);
-const hexNested = Hex.fromBytes(encodedNested);
+const hexNested = Hex(encodedNested);
 console.log('RLP nested list:', hexNested);
 
 // Encode empty list
 const emptyList = Rlp.encode([]);
-const hexEmpty = Hex.fromBytes(emptyList);
+const hexEmpty = Hex(emptyList);
 console.log('RLP empty list:', hexEmpty);
 ```
 

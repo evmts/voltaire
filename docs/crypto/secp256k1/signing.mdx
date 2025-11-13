@@ -166,7 +166,7 @@ const privateKey = new Uint8Array(32);
 privateKey[31] = 1;
 
 // Message hash (SHA-256 of "hello world")
-const messageHash = Hash.fromBytes(
+const messageHash = Hash(
   sha256(new TextEncoder().encode("hello world"))
 );
 

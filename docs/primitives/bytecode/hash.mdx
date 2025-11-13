@@ -21,7 +21,7 @@ Compute keccak256 hash of bytecode (with auto-injected crypto).
 ```typescript
 import * as Bytecode from '@tevm/voltaire/Bytecode'
 
-const code = Bytecode.fromHex('0x6001')
+const code = Bytecode('0x6001')
 const hash = Bytecode.hash(code)
 // Uint8Array(32) [...]
 ```

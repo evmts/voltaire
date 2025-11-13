@@ -27,8 +27,8 @@ Use through the `Rlp` class or imported functions:
 import { Rlp } from '@tevm/voltaire'
 
 // Create RLP data
-const bytes = Rlp.from(new Uint8Array([1, 2, 3]))
-const list = Rlp.from([new Uint8Array([1]), new Uint8Array([2])])
+const bytes = Rlp(new Uint8Array([1, 2, 3]))
+const list = Rlp([new Uint8Array([1]), new Uint8Array([2])])
 
 // Check type
 const isBytes = bytes.type === 'bytes'

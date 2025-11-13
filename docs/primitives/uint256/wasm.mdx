@@ -161,10 +161,10 @@ import { u256FromHex, u256ToBigInt } from '@tevm/voltaire/Uint256.wasm'
 const hex = "0xff"
 const bytes = u256FromHex(hex)
 const bigint = u256ToBigInt(bytes)
-const uint = Uint.from(bigint)
+const uint = Uint(bigint)
 
 // Or use built-in fromHex
-const uint2 = Uint.fromHex(hex)  // Equivalent, uses JS implementation
+const uint2 = Uint(hex)  // Equivalent, uses JS implementation
 ```
 
 ### Performance Testing
@@ -188,7 +188,7 @@ console.timeEnd("WASM")
 // JS version
 console.time("JS")
 for (let i = 0; i < iterations; i++) {
-  const uint = Uint.fromHex(testHex)
+  const uint = Uint(testHex)
   const hex = uint.toHex()
 }
 console.timeEnd("JS")

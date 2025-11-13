@@ -35,7 +35,7 @@ const legacy: Transaction.Legacy = {
   nonce: 0n,
   gasPrice: 20_000_000_000n,  // 20 gwei fixed price
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,  // 1 ETH
   data: new Uint8Array(),
   v: 27n,  // Signature v (pre-EIP-155: 27 or 28)
@@ -70,12 +70,12 @@ const eip2930: Transaction.EIP2930 = {
   nonce: 0n,
   gasPrice: 20_000_000_000n,
   gasLimit: 30_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 0n,
   data: new Uint8Array(),
   accessList: [
     {
-      address: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+      address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
       storageKeys: [
         new Uint8Array(32),  // Storage slot to access
       ],
@@ -112,7 +112,7 @@ const eip1559: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei tip to miner
   maxFeePerGas: 30_000_000_000n,  // 30 gwei max willing to pay
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   accessList: [],
@@ -177,14 +177,14 @@ const eip4844: Transaction.EIP4844 = {
   maxPriorityFeePerGas: 1_000_000_000n,
   maxFeePerGas: 20_000_000_000n,
   gasLimit: 100_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),  // Must be contract
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),  // Must be contract
   value: 0n,
   data: new Uint8Array(),
   accessList: [],
   maxFeePerBlobGas: 1_000_000_000n,  // Max willing to pay per blob gas
   blobVersionedHashes: [
-    Hash.from('0x01...'),  // KZG commitment hash for blob 1
-    Hash.from('0x01...'),  // KZG commitment hash for blob 2
+    Hash('0x01...'),  // KZG commitment hash for blob 1
+    Hash('0x01...'),  // KZG commitment hash for blob 2
   ],
   yParity: 0,
   r: new Uint8Array(32),
@@ -235,14 +235,14 @@ const eip7702: Transaction.EIP7702 = {
   maxPriorityFeePerGas: 1_000_000_000n,
   maxFeePerGas: 20_000_000_000n,
   gasLimit: 100_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 0n,
   data: new Uint8Array(),
   accessList: [],
   authorizationList: [
     {
       chainId: 1n,
-      address: Address.from('0x...'),  // Contract to delegate to
+      address: Address('0x...'),  // Contract to delegate to
       nonce: 0n,  // EOA nonce at time of signing
       yParity: 0,
       r: new Uint8Array(32),
@@ -318,7 +318,7 @@ const tx: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei
   maxFeePerGas: 30_000_000_000n,  // 30 gwei
   gasLimit: 21_000n,  // Standard ETH transfer
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,  // 1 ETH
   data: new Uint8Array(),
   accessList: [],
@@ -376,7 +376,7 @@ const tx: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,
   maxFeePerGas: 30_000_000_000n,
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   accessList: [],
@@ -419,7 +419,7 @@ const tx: Transaction.Legacy = {
   nonce: 0n,
   gasPrice: 20_000_000_000n,
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   v: 27n,
@@ -593,7 +593,7 @@ const tx: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,
   maxFeePerGas: 30_000_000_000n,
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   accessList: [],
@@ -716,7 +716,7 @@ const unsigned: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,
   maxFeePerGas: 30_000_000_000n,
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   accessList: [],
@@ -820,7 +820,7 @@ const tx: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2_000_000_000n,
   maxFeePerGas: 30_000_000_000n,
   gasLimit: 21_000n,
-  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  to: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   value: 1_000_000_000_000_000_000n,
   data: new Uint8Array(),
   accessList: [],
@@ -831,7 +831,7 @@ const tx: Transaction.EIP1559 = {
 
 // Serialize to bytes
 const serialized = Transaction.serialize(tx);
-console.log(Hex.fromBytes(serialized));
+console.log(Hex(serialized));
 // "0x02f8..."
 
 // Deserialize back to transaction

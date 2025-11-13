@@ -95,7 +95,7 @@ Convert boolean to hex and back:
 ```typescript
 // Boolean → Hex
 const value = true
-const hex = Hex.fromBoolean(value)  // "0x01"
+const hex = Hex(value)  // "0x01"
 
 // Hex → Boolean
 const decoded = Hex.toBoolean(hex)  // true
@@ -112,7 +112,7 @@ In Solidity ABI encoding, booleans are encoded as uint256:
 const isActive = true
 
 // ABI encodes bool as uint256 (32 bytes)
-const encoded = Hex.fromBoolean(isActive).padLeft(32)
+const encoded = Hex(isActive).padLeft(32)
 // "0x0000000000000000000000000000000000000000000000000000000000000001"
 
 // Decode return value

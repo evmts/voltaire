@@ -96,19 +96,19 @@ const input = new Uint8Array(288 * numPairs);
 
 // First pair: (point at infinity, 2)
 const point1 = new Uint8Array(256); // All zeros = point at infinity
-const scalar1 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000002');
+const scalar1 = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000002');
 input.set(point1, 0);
 input.set(scalar1, 256);
 
 // Second pair: (point at infinity, 3)
 const point2 = new Uint8Array(256); // All zeros
-const scalar2 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000003');
+const scalar2 = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000003');
 input.set(point2, 288);
 input.set(scalar2, 544);
 
 // Third pair: (point at infinity, 5)
 const point3 = new Uint8Array(256); // All zeros
-const scalar3 = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000005');
+const scalar3 = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000005');
 input.set(point3, 576);
 input.set(scalar3, 832);
 

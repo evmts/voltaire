@@ -68,7 +68,7 @@ import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Compute 2^3 mod 5 = 8 mod 5 = 3
-const input = Hex.from(
+const input = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000001' + // base_length = 1
   '0000000000000000000000000000000000000000000000000000000000000001' + // exponent_length = 1
@@ -126,11 +126,11 @@ const expLen = 3;  // Common public exponent: 65537
 const modLen = 256;
 
 // Example RSA-2048 input (signature verification)
-const base = Hex.from('0x' + 'ab'.repeat(256)); // Signature (256 bytes)
-const exponent = Hex.from('0x010001'); // Public exponent 65537 (3 bytes)
-const modulus = Hex.from('0x' + 'cd'.repeat(256)); // RSA modulus (256 bytes)
+const base = Hex('0x' + 'ab'.repeat(256)); // Signature (256 bytes)
+const exponent = Hex('0x010001'); // Public exponent 65537 (3 bytes)
+const modulus = Hex('0x' + 'cd'.repeat(256)); // RSA modulus (256 bytes)
 
-const input = Hex.from(
+const input = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000100' + // base_length = 256
   '0000000000000000000000000000000000000000000000000000000000000003' + // exponent_length = 3
@@ -175,7 +175,7 @@ This made RSA verification practical for many use cases.
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Test 1: 2^3 mod 5 = 3
-const input1 = Hex.from(
+const input1 = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000001' + // base_len = 1
   '0000000000000000000000000000000000000000000000000000000000000001' + // exp_len = 1
@@ -185,7 +185,7 @@ const input1 = Hex.from(
 // Expected: 0x03
 
 // Test 2: 3^1 mod 5 = 3
-const input2 = Hex.from(
+const input2 = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000001' +
   '0000000000000000000000000000000000000000000000000000000000000001' +
@@ -195,7 +195,7 @@ const input2 = Hex.from(
 // Expected: 0x03
 
 // Test 3: 5^0 mod 7 = 1 (zero exponent)
-const input3 = Hex.from(
+const input3 = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000001' +
   '0000000000000000000000000000000000000000000000000000000000000001' +
@@ -205,7 +205,7 @@ const input3 = Hex.from(
 // Expected: 0x01
 
 // Test 4: Zero modulus error
-const input4 = Hex.from(
+const input4 = Hex(
   '0x' +
   '0000000000000000000000000000000000000000000000000000000000000001' +
   '0000000000000000000000000000000000000000000000000000000000000001' +

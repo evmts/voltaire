@@ -13,7 +13,7 @@ description: Create Hash from raw 32-byte Uint8Array
 
 ```typescript
 const bytes = new Uint8Array(32)
-const hash = Hash.fromBytes(bytes)
+const hash = Hash(bytes)
 
 // hash IS bytes (same object)
 console.log(hash === bytes) // false (different types)
@@ -33,7 +33,7 @@ console.log(hash[0]) // 0xff
 ```typescript
 // If you need to mutate input later, clone first
 const bytes = new Uint8Array(32)
-const hash = Hash.fromBytes(bytes).clone()
+const hash = Hash(bytes).clone()
 
 bytes[0] = 0xff // Doesn't affect hash
 console.log(hash[0]) // 0x00
@@ -45,18 +45,18 @@ console.log(hash[0]) // 0x00
 
 ```typescript
 const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-const hash = Hash.fromBytes(randomBytes)
+const hash = Hash(randomBytes)
 ```
 
 ### From ArrayBuffer
 
 ```typescript
 const buffer = new ArrayBuffer(32)
-const hash = Hash.fromBytes(new Uint8Array(buffer))
+const hash = Hash(new Uint8Array(buffer))
 
 // Or from offset
 const bigBuffer = new ArrayBuffer(64)
-const hash2 = Hash.fromBytes(new Uint8Array(bigBuffer, 0, 32))
+const hash2 = Hash(new Uint8Array(bigBuffer, 0, 32))
 ```
 
 ### From TypedArray
@@ -64,7 +64,7 @@ const hash2 = Hash.fromBytes(new Uint8Array(bigBuffer, 0, 32))
 ```typescript
 // From other typed arrays (ensure 32 bytes)
 const u32Array = new Uint32Array(8) // 8 × 4 = 32 bytes
-const hash = Hash.fromBytes(new Uint8Array(u32Array.buffer))
+const hash = Hash(new Uint8Array(u32Array.buffer))
 ```
 
 ### From Slice
@@ -72,7 +72,7 @@ const hash = Hash.fromBytes(new Uint8Array(u32Array.buffer))
 ```typescript
 const bigArray = new Uint8Array(64)
 const slice = bigArray.slice(0, 32)
-const hash = Hash.fromBytes(slice)
+const hash = Hash(slice)
 ```
 
 ### From Concatenation
@@ -81,7 +81,7 @@ const hash = Hash.fromBytes(slice)
 const part1 = new Uint8Array(16)
 const part2 = new Uint8Array(16)
 const combined = new Uint8Array([...part1, ...part2])
-const hash = Hash.fromBytes(combined)
+const hash = Hash(combined)
 ```
 
 ## Validation
@@ -90,20 +90,20 @@ const hash = Hash.fromBytes(combined)
 
 ```typescript
 // All valid (32 bytes)
-Hash.fromBytes(new Uint8Array(32)) // All zeros
-Hash.fromBytes(new Uint8Array([0xff, ...new Array(31).fill(0)])) // Any values
+Hash(new Uint8Array(32)) // All zeros
+Hash(new Uint8Array([0xff, ...new Array(31).fill(0)])) // Any values
 
 // Invalid (wrong length)
-Hash.fromBytes(new Uint8Array(31)) // Error: wrong length
-Hash.fromBytes(new Uint8Array(33)) // Error: wrong length
-Hash.fromBytes(new Uint8Array(0)) // Error: wrong length
+Hash(new Uint8Array(31)) // Error: wrong length
+Hash(new Uint8Array(33)) // Error: wrong length
+Hash(new Uint8Array(0)) // Error: wrong length
 ```
 
 For type-safe validation, use `isHash` or `assert`:
 
 ```typescript
 const bytes = new Uint8Array(32)
-const hash = Hash.fromBytes(bytes)
+const hash = Hash(bytes)
 
 if (Hash.isHash(hash)) {
   // Type guard - hash is BrandedHash
@@ -121,7 +121,7 @@ import { keccak256 } from '@noble/hashes/sha3'
 
 const data = new Uint8Array([1, 2, 3, 4])
 const hashBytes = keccak256(data) // Uint8Array(32)
-const hash = Hash.fromBytes(hashBytes)
+const hash = Hash(hashBytes)
 ```
 
 ### From RLP Decoding
@@ -129,7 +129,7 @@ const hash = Hash.fromBytes(hashBytes)
 ```typescript
 const rlpData = Rlp.decode(encoded)
 const hashBytes = rlpData[0] // Assume first field is hash
-const hash = Hash.fromBytes(hashBytes)
+const hash = Hash(hashBytes)
 ```
 
 ### From Buffer Slice
@@ -138,7 +138,7 @@ const hash = Hash.fromBytes(hashBytes)
 // Extract hash from larger buffer
 const response = new Uint8Array(100)
 const hashBytes = response.slice(0, 32)
-const hash = Hash.fromBytes(hashBytes)
+const hash = Hash(hashBytes)
 ```
 
 ### From Fixed Array
@@ -152,7 +152,7 @@ const GENESIS_HASH = new Uint8Array([
   0x9a, 0xec, 0x8c, 0x0d, 0xb1, 0xcb, 0x8f, 0xa3
 ])
 
-const genesisHash = Hash.fromBytes(GENESIS_HASH)
+const genesisHash = Hash(GENESIS_HASH)
 ```
 
 ## Performance
@@ -165,11 +165,11 @@ const genesisHash = Hash.fromBytes(GENESIS_HASH)
 ```typescript
 // Fastest - zero-copy
 const bytes = new Uint8Array(32)
-const hash1 = Hash.fromBytes(bytes) // ~1ns
+const hash1 = Hash(bytes) // ~1ns
 
 // Slower - hex parsing
 const hex = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
-const hash2 = Hash.fromHex(hex) // ~50ns
+const hash2 = Hash(hex) // ~50ns
 
 // Slowest - hashing
 const data = new Uint8Array([1, 2, 3])

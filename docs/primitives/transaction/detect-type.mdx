@@ -173,7 +173,7 @@ class NetworkMonitor {
       eip1559: this.stats.get(Type.EIP1559) || 0,
       eip4844: this.stats.get(Type.EIP4844) || 0,
       eip7702: this.stats.get(Type.EIP7702) || 0,
-      total: Array.from(this.stats.values()).reduce((a, b) => a + b, 0)
+      total: Array(this.stats.values()).reduce((a, b) => a + b, 0)
     }
   }
 }

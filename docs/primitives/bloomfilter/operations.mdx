@@ -22,7 +22,7 @@ import { BloomFilter } from '@tevm/voltaire'
 const filter = BloomFilter.create(2048, 3)
 
 // Add Ethereum address
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 filter.add(address)
 
 // Add event topic hash
@@ -85,7 +85,7 @@ const addresses = [
 ]
 
 for (const addr of addresses) {
-  filter.add(Address.from(addr))
+  filter.add(Address(addr))
 }
 
 // Add multiple event topics
@@ -232,7 +232,7 @@ function mergeBlockRange(startBlock: number, endBlock: number): BloomFilter {
 
 // Usage: Check if address appears in block range
 const rangeFilter = await mergeBlockRange(1000, 1100)
-const address = Address.from("0x...")
+const address = Address("0x...")
 
 if (rangeFilter.contains(address)) {
   // Address might appear in blocks 1000-1100
@@ -247,9 +247,9 @@ import { BloomFilter } from '@tevm/voltaire'
 
 // Merge array of filters using reduce
 const filters: BloomFilter[] = [
-  BloomFilter.fromHex(block1.logsBloom, 2048, 3),
-  BloomFilter.fromHex(block2.logsBloom, 2048, 3),
-  BloomFilter.fromHex(block3.logsBloom, 2048, 3)
+  BloomFilter(block1.logsBloom, 2048, 3),
+  BloomFilter(block2.logsBloom, 2048, 3),
+  BloomFilter(block3.logsBloom, 2048, 3)
 ]
 
 const combined = filters.reduce(
@@ -332,7 +332,7 @@ class LogAggregator {
 
   addLog(log: Log) {
     // Add address
-    this.filter.add(Address.from(log.address))
+    this.filter.add(Address(log.address))
 
     // Add topics
     for (const topic of log.topics) {
@@ -341,7 +341,7 @@ class LogAggregator {
   }
 
   mightContainAddress(address: string): boolean {
-    return this.filter.contains(Address.from(address))
+    return this.filter.contains(Address(address))
   }
 }
 ```
@@ -358,7 +358,7 @@ async function buildRangeFilter(
 
   for (let blockNum = start; blockNum <= end; blockNum++) {
     const block = await fetchBlock(blockNum)
-    const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
     rangeFilter = rangeFilter.merge(blockFilter)
   }
 

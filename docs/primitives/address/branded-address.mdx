@@ -146,9 +146,9 @@ import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
 
-const checksummed = ChecksumAddress.from(addr) // uses keccak256
-const lowercase = LowercaseAddress.from(addr)
-const uppercase = UppercaseAddress.from(addr)
+const checksummed = ChecksumAddress(addr) // uses keccak256
+const lowercase = LowercaseAddress(addr)
+const uppercase = UppercaseAddress(addr)
 
 ChecksumAddress.isValid("0x742d35Cc...") // uses keccak256
 ```

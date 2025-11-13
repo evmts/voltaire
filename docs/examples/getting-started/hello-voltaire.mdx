@@ -13,7 +13,7 @@ import { Hex } from '@tevm/voltaire/Hex';
 const hash = Keccak256.hashString('Hello, Voltaire!');
 
 // The hash is returned as a Uint8Array - convert to hex
-const hexHash = Hex.fromBytes(hash);
+const hexHash = Hex(hash);
 console.log('Hash:', hexHash);
 ```
 

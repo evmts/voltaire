@@ -26,8 +26,8 @@ const messageHash = Keccak256.hash(prefixedMessage);
 
 // Sign the hash
 const signature = Secp256k1.sign(messageHash, privateKey);
-console.log('Signature (r):', Hex.fromBytes(signature.r));
-console.log('Signature (s):', Hex.fromBytes(signature.s));
+console.log('Signature (r):', Hex(signature.r));
+console.log('Signature (s):', Hex(signature.s));
 console.log('Signature (v):', signature.v);
 ```
 

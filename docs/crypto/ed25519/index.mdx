@@ -24,7 +24,7 @@ import * as Ed25519 from '@tevm/voltaire/crypto/Ed25519';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Generate keypair from seed
-const seed = Hex.from('0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60');
+const seed = Hex('0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60');
 const keypair = Ed25519.keypairFromSeed(seed);
 
 // Sign a message (any length)
@@ -56,7 +56,7 @@ Generate deterministic Ed25519 keypair from a 32-byte seed.
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const seed = Hex.from('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
+const seed = Hex('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 ```
 
@@ -264,7 +264,7 @@ assert(Ed25519.verify(signature, message, publicKey));
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Ed25519 is deterministic - same message + key = same signature
-const seed = Hex.from('0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890');
+const seed = Hex('0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 
 const message = new TextEncoder().encode('test');
@@ -281,11 +281,11 @@ assert(sig1.every((byte, i) => byte === sig2[i]));
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const seed = Hex.from('0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
+const seed = Hex('0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 
 // Empty message
-const emptyMsg = Hex.from('0x');
+const emptyMsg = Hex('0x');
 const sig0 = Ed25519.sign(emptyMsg, secretKey);
 assert(Ed25519.verify(sig0, emptyMsg, publicKey));
 

@@ -451,8 +451,8 @@ function formatSignature(sig: BrandedSignature): string {
 
   return [
     `Algorithm: ${sig.algorithm}`,
-    `r: 0x${Hex.fromBytes(r)}`,
-    `s: 0x${Hex.fromBytes(s)}`,
+    `r: 0x${Hex(r)}`,
+    `s: 0x${Hex(s)}`,
     v !== undefined ? `v: ${v}` : null,
   ].filter(Boolean).join('\n');
 }
