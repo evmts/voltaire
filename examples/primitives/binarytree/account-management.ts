@@ -117,7 +117,9 @@ if (currentPacked) {
 const storageKey = aliceKey.slice();
 storageKey[31] = 1; // Subindex 1 = storage slot 0
 
-const storageValue = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000042");
+const storageValue = Bytes32.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000042",
+);
 
 tree = BinaryTree.insert(tree, storageKey, storageValue);
 
@@ -125,7 +127,9 @@ for (let slot = 0; slot < 5; slot++) {
 	const slotKey = aliceKey.slice();
 	slotKey[31] = 1 + slot; // Slots 0-4 at subindices 1-5
 
-	const slotValue = Bytes32.from(`0x${(0x10 + slot).toString(16).padStart(64, "0")}`);
+	const slotValue = Bytes32.from(
+		`0x${(0x10 + slot).toString(16).padStart(64, "0")}`,
+	);
 
 	tree = BinaryTree.insert(tree, slotKey, slotValue);
 }

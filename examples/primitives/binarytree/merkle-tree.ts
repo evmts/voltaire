@@ -13,31 +13,43 @@ import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 // Helper to create test data
 function createTestData(accountNumber: number): Uint8Array {
-	return Bytes32.from(`0x${accountNumber.toString(16).padStart(2, "0")}01${"00".repeat(30)}`);
+	return Bytes32.from(
+		`0x${accountNumber.toString(16).padStart(2, "0")}01${"00".repeat(30)}`,
+	);
 }
 
 let tree = BinaryTree();
 const initialHash = BinaryTree.rootHashHex(tree);
-const aliceKey = Bytes32.from("0x000000000000000000000001000000000000000000000000000000000000000");
+const aliceKey = Bytes32.from(
+	"0x000000000000000000000001000000000000000000000000000000000000000",
+);
 
 const aliceData = createTestData(1);
 tree = BinaryTree.insert(tree, aliceKey, aliceData);
 
 const stateRoot1 = BinaryTree.rootHashHex(tree);
-const aliceStorageKey = Bytes32.from("0x000000000000000000000001000000000000000000000000000000000000001");
+const aliceStorageKey = Bytes32.from(
+	"0x000000000000000000000001000000000000000000000000000000000000001",
+);
 
-const storageValue = Bytes32.from("0x00000000000000000000000000000000000000000000000000000000000000aa");
+const storageValue = Bytes32.from(
+	"0x00000000000000000000000000000000000000000000000000000000000000aa",
+);
 
 tree = BinaryTree.insert(tree, aliceStorageKey, storageValue);
 
 const stateRoot2 = BinaryTree.rootHashHex(tree);
-const bobKey = Bytes32.from("0x000000000000000000000002000000000000000000000000000000000000000");
+const bobKey = Bytes32.from(
+	"0x000000000000000000000002000000000000000000000000000000000000000",
+);
 
 const bobData = createTestData(2);
 tree = BinaryTree.insert(tree, bobKey, bobData);
 
 const stateRoot3 = BinaryTree.rootHashHex(tree);
-const carolKey = Bytes32.from("0x0000000000000000000000ff000000000000000000000000000000000000000");
+const carolKey = Bytes32.from(
+	"0x0000000000000000000000ff000000000000000000000000000000000000000",
+);
 
 const carolData = createTestData(3);
 tree = BinaryTree.insert(tree, carolKey, carolData);

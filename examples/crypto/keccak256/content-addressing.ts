@@ -55,13 +55,9 @@ if (retrieved) {
 }
 
 // Simulate contract bytecode
-const contractCode1 = Bytecode(
-	"0x6080604052348015610000f57600080fd",
-);
+const contractCode1 = Bytecode("0x6080604052348015610000f57600080fd");
 
-const contractCode2 = Bytecode(
-	"0x608060405234801561001057600080fd",
-); // Slightly different
+const contractCode2 = Bytecode("0x608060405234801561001057600080fd"); // Slightly different
 
 const codeHash1 = Keccak256.hash(contractCode1);
 const codeHash2 = Keccak256.hash(contractCode2);
@@ -71,7 +67,9 @@ const pngHeader = Hex("0x89504e47");
 const pngData = Hex("0x0d0a1a0a");
 const contentBytes = Hex(
 	"0x" +
-		Array.from({ length: 100 }, (_, i) => (i % 256).toString(16).padStart(2, "0")).join(""),
+		Array.from({ length: 100 }, (_, i) =>
+			(i % 256).toString(16).padStart(2, "0"),
+		).join(""),
 );
 
 const fileChunks = [pngHeader, pngData, contentBytes];

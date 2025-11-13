@@ -63,7 +63,8 @@ const abcHash = Buffer.from(abcResult.output).toString("hex");
 const sizes = [0, 1, 32, 33, 64, 100, 1000];
 
 for (const size of sizes) {
-	const input = size > 0 ? crypto.getRandomValues(new Uint8Array(size)) : new Uint8Array(0);
+	const input =
+		size > 0 ? crypto.getRandomValues(new Uint8Array(size)) : new Uint8Array(0);
 	const w = Math.ceil(size / 32);
 	const gas = 60n + 12n * BigInt(w);
 	const perByte = size > 0 ? Number(gas) / size : 0;

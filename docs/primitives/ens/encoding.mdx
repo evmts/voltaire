@@ -1,21 +1,119 @@
 ---
-title: "encoding"
-description: "ENS encoding documentation"
+title: "ENS Encoding"
+description: "ENS name hashing and encoding operations (namehash, labelhash)"
 ---
 
-# encoding
+# ENS Encoding
 
-Documentation for ENS encoding.
+Cryptographic operations for ENS names implementing EIP-137 name hashing.
 
-<Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
-</Note>
+## Functions
 
-## Overview
+### namehash(name)
 
-ENS operations for encoding.
+Compute ENS namehash for a given name.
+
+**Algorithm:** `namehash(name) = keccak256(namehash(parent) ‖ labelhash(label))`
+
+Empty string has hash of 32 zero bytes.
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { namehash } from '@tevm/voltaire/Ens';
+
+const hash = namehash("vitalik.eth");
+// Returns: "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+
+// Empty name returns root hash
+const root = namehash("");
+// Returns: "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+// Subdomain support
+const subhash = namehash("sub.vitalik.eth");
+```
+</Tab>
+
+<Tab title="Factory API">
+```typescript
+import { Namehash } from '@tevm/voltaire/Ens';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+const namehash = Namehash({ keccak256 });
+
+const hash = namehash("vitalik.eth");
+// Returns: "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+```
+
+**Tree-shakeable:** Crypto only included if you import it.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+</Tab>
+
+</Tabs>
+
+### labelhash(label)
+
+Compute ENS labelhash for a single label.
+
+**Algorithm:** `labelhash(label) = keccak256(label)`
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { labelhash } from '@tevm/voltaire/Ens';
+
+const hash = labelhash("vitalik");
+// Returns: "0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc"
+
+const ethHash = labelhash("eth");
+```
+</Tab>
+
+<Tab title="Factory API">
+```typescript
+import { Labelhash } from '@tevm/voltaire/Ens';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+const labelhash = Labelhash({ keccak256 });
+
+const hash = labelhash("vitalik");
+// Returns: "0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc"
+```
+
+**Tree-shakeable:** Crypto only included if you import it.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+</Tab>
+
+</Tabs>
+
+## Algorithm Details
+
+### Namehash Recursion
+
+```typescript
+namehash('') = 0x0000000000000000000000000000000000000000000000000000000000000000
+namehash('eth') = keccak256(namehash('') ‖ labelhash('eth'))
+namehash('vitalik.eth') = keccak256(namehash('eth') ‖ labelhash('vitalik'))
+```
+
+Process labels in **reverse order** (right-to-left).
+
+### Bundle Size
+
+Factory pattern enables tree-shaking:
+- Functional API: ~15KB (includes keccak256)
+- Factory API with custom crypto: Depends on your keccak256 implementation
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
 - [ENS Normalization](/primitives/ens/normalization)
+- [EIP-137](https://eips.ethereum.org/EIPS/eip-137) - ENS name hash specification

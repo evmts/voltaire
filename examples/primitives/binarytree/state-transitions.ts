@@ -124,7 +124,9 @@ if (aliceData && bobData) {
 }
 
 // Contract address (simplified)
-const contractAddress = Address.from("0xff00000000000000000000000000000000000000");
+const contractAddress = Address.from(
+	"0xff00000000000000000000000000000000000000",
+);
 const contractKey = BinaryTree.addressToKey(contractAddress);
 contractKey[31] = 0;
 
@@ -153,7 +155,9 @@ if (aliceData2) {
 const storageKey = BinaryTree.addressToKey(contractAddress);
 storageKey[31] = 1; // Storage slot 0 at subindex 1
 
-const storageValue = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000042");
+const storageValue = Bytes32.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000042",
+);
 
 state = BinaryTree.insert(state, storageKey, storageValue);
 
