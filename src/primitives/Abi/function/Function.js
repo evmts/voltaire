@@ -40,3 +40,6 @@ Function.encodeParams = BrandedFunction.encodeParams;
 Function.decodeParams = BrandedFunction.decodeParams;
 Function.encodeResult = BrandedFunction.encodeResult;
 Function.decodeResult = BrandedFunction.decodeResult;
+
+// Factories
+Function.GetSelector = BrandedFunction.GetSelector;

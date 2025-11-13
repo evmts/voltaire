@@ -1,6 +1,6 @@
 import { decodeParameters } from "../../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
-import { getSelector } from "./getSelector.js";
+import { getSelector } from "./index.js";
 
 /**
  * Decode error parameters from encoded data

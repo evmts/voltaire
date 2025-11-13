@@ -18,6 +18,7 @@ export function Hash({ keccak256 }) {
 	 * ```
 	 */
 	return function hash(code) {
+		// @ts-expect-error - keccak256 returns Uint8Array, branded as Hash by return type
 		return keccak256(code);
 	};
 }

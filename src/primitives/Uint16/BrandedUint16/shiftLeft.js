@@ -17,5 +17,7 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function shiftLeft(uint, shift) {
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ ((uint << shift) & MAX);
+	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (
+		(uint << shift) & MAX
+	);
 }

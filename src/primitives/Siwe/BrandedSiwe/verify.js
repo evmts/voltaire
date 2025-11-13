@@ -9,7 +9,11 @@ import { validate } from "./validate.js";
  * @param {(x: bigint, y: bigint) => Uint8Array} deps.addressFromPublicKey - Address derivation from public key
  * @returns {(message: import('./BrandedMessage.js').BrandedMessage, signature: import('./BrandedMessage.js').Signature) => boolean} Function that verifies SIWE signatures
  */
-export function Verify({ keccak256, secp256k1RecoverPublicKey, addressFromPublicKey }) {
+export function Verify({
+	keccak256,
+	secp256k1RecoverPublicKey,
+	addressFromPublicKey,
+}) {
 	const getMessageHash = GetMessageHash({ keccak256 });
 
 	/**

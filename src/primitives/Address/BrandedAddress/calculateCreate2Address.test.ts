@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { Address } from "../index.js";
-import { Hash } from "../../Hash/index.js";
-import { Bytecode } from "../../Bytecode/index.js";
-import { CalculateCreate2Address } from "./calculateCreate2Address.js";
 import { hash } from "../../../crypto/Keccak256/hash.js";
+import { Bytecode } from "../../Bytecode/index.js";
+import { Hash } from "../../Hash/index.js";
+import { Address } from "../index.js";
+import { CalculateCreate2Address } from "./calculateCreate2Address.js";
 
 const calculateCreate2Address = CalculateCreate2Address({ keccak256: hash });
 

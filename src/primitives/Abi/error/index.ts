@@ -13,7 +13,4 @@ export { Error } from "./Error.js";
 export const AbiError = AbiErrorImpl as unknown as AbiErrorConstructor;
 
 // Export namespace methods
-export { getSignature } from "./BrandedError/getSignature.js";
-export { getSelector } from "./BrandedError/getSelector.js";
-export { encodeParams } from "./BrandedError/encodeParams.js";
-export { decodeParams } from "./BrandedError/decodeParams.js";
+export { getSignature, getSelector, encodeParams, decodeParams, GetSelector } from "./BrandedError/index.js";

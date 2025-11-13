@@ -10,12 +10,12 @@ import * as Address from "../../Address/BrandedAddress/index.js";
 import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 import type { BrandedMessage, Signature } from "./BrandedMessage.js";
 import { format } from "./format.js";
-import { getMessageHash } from "./getMessageHash.js";
 import * as Siwe from "./index.js";
 import { parse } from "./parse.js";
 import { validate } from "./validate.js";
-import { verify } from "./verify.js";
-import { verifyMessage } from "./verifyMessage.js";
+
+// Import wrappers from index (these have crypto auto-injected)
+const { getMessageHash, verify, verifyMessage } = Siwe;
 
 // ============================================================================
 // Test Utilities

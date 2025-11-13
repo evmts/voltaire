@@ -30,7 +30,12 @@ import { GetSigningHash } from "./getSigningHash.js";
  * const isValid = verifySignature.call(tx);
  * ```
  */
-export function VerifySignature({ keccak256, rlpEncode, secp256k1RecoverPublicKey, secp256k1Verify }) {
+export function VerifySignature({
+	keccak256,
+	rlpEncode,
+	secp256k1RecoverPublicKey,
+	secp256k1Verify,
+}) {
 	const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
 
 	return function verifySignature() {

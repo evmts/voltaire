@@ -289,7 +289,7 @@ describe("Uint8", () => {
 		it("should compute modulo", () => {
 			expect(Uint8.modulo(Uint8.from(10), Uint8.from(3))).toBe(1);
 			expect(Uint8.modulo(Uint8.from(100), Uint8.from(7))).toBe(2);
-			expect(Uint8.modulo(Uint8.from(255), Uint8.from(256))).toBe(255);
+			expect(Uint8.modulo(Uint8.from(255), Uint8.from(200))).toBe(55);
 		});
 
 		it("should throw on division by zero", () => {

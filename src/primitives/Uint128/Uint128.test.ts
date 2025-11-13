@@ -53,7 +53,7 @@ describe("Uint128 - from", () => {
 
 	it("should reject values exceeding MAX", () => {
 		expect(() => Uint128.from(Uint128.MAX + 1n)).toThrow("exceeds maximum");
-		expect(() => Uint128.from((1n << 128n))).toThrow("exceeds maximum");
+		expect(() => Uint128.from(1n << 128n)).toThrow("exceeds maximum");
 	});
 
 	it("should reject non-integer numbers", () => {
@@ -109,7 +109,9 @@ describe("Uint128 - fromBytes", () => {
 	});
 
 	it("should handle big-endian", () => {
-		const bytes = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]);
+		const bytes = new Uint8Array([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+		]);
 		expect(Uint128.fromBytes(bytes)).toBe(256n);
 	});
 
@@ -134,8 +136,12 @@ describe("Uint128 - fromAbiEncoded", () => {
 	});
 
 	it("should reject non-32 byte input", () => {
-		expect(() => Uint128.fromAbiEncoded(new Uint8Array(16))).toThrow("must be 32 bytes");
-		expect(() => Uint128.fromAbiEncoded(new Uint8Array(33))).toThrow("must be 32 bytes");
+		expect(() => Uint128.fromAbiEncoded(new Uint8Array(16))).toThrow(
+			"must be 32 bytes",
+		);
+		expect(() => Uint128.fromAbiEncoded(new Uint8Array(33))).toThrow(
+			"must be 32 bytes",
+		);
 	});
 });
 
@@ -167,7 +173,9 @@ describe("Uint128 - toNumber", () => {
 
 	it("should throw on overflow", () => {
 		const large = Uint128.from(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
-		expect(() => Uint128.toNumber(large)).toThrow("exceeds Number.MAX_SAFE_INTEGER");
+		expect(() => Uint128.toNumber(large)).toThrow(
+			"exceeds Number.MAX_SAFE_INTEGER",
+		);
 	});
 
 	it("should handle MAX_SAFE_INTEGER", () => {
@@ -183,7 +191,9 @@ describe("Uint128 - toHex", () => {
 	});
 
 	it("should handle large values", () => {
-		expect(Uint128.toHex(Uint128.MAX)).toBe("0xffffffffffffffffffffffffffffffff");
+		expect(Uint128.toHex(Uint128.MAX)).toBe(
+			"0xffffffffffffffffffffffffffffffff",
+		);
 	});
 });
 
@@ -240,7 +250,9 @@ describe("Uint128 - toString", () => {
 	it("should convert to decimal string", () => {
 		expect(Uint128.toString(Uint128.from(100n))).toBe("100");
 		expect(Uint128.toString(Uint128.from(0n))).toBe("0");
-		expect(Uint128.toString(Uint128.MAX)).toBe("340282366920938463463374607431768211455");
+		expect(Uint128.toString(Uint128.MAX)).toBe(
+			"340282366920938463463374607431768211455",
+		);
 	});
 });
 
@@ -728,11 +740,7 @@ describe("Uint128 - clone", () => {
 
 describe("Uint128 - sum", () => {
 	it("should sum array", () => {
-		const values = [
-			Uint128.from(100n),
-			Uint128.from(50n),
-			Uint128.from(75n),
-		];
+		const values = [Uint128.from(100n), Uint128.from(50n), Uint128.from(75n)];
 		expect(Uint128.sum(values)).toBe(225n);
 	});
 
@@ -748,11 +756,7 @@ describe("Uint128 - sum", () => {
 
 describe("Uint128 - product", () => {
 	it("should multiply array", () => {
-		const values = [
-			Uint128.from(10n),
-			Uint128.from(5n),
-			Uint128.from(2n),
-		];
+		const values = [Uint128.from(10n), Uint128.from(5n), Uint128.from(2n)];
 		expect(Uint128.product(values)).toBe(100n);
 	});
 
@@ -846,7 +850,7 @@ describe("Uint128 - Boundary Tests", () => {
 	});
 
 	it("should reject values beyond MAX", () => {
-		expect(() => Uint128.from((1n << 128n))).toThrow();
+		expect(() => Uint128.from(1n << 128n)).toThrow();
 		expect(() => Uint128.from(Uint128.MAX + 1n)).toThrow();
 	});
 

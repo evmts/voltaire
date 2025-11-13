@@ -1,6 +1,6 @@
+import { dividedBy } from "./dividedBy.js";
 import { gcd } from "./gcd.js";
 import { times } from "./times.js";
-import { dividedBy } from "./dividedBy.js";
 
 /**
  * Calculate least common multiple

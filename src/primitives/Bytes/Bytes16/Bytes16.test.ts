@@ -44,7 +44,7 @@ describe("Bytes16", () => {
 
 	describe("fromHex", () => {
 		it("should create Bytes16 from valid hex with 0x prefix", () => {
-			const hex = "0x" + "12".repeat(16);
+			const hex = `0x${"12".repeat(16)}`;
 			const result = Bytes16.fromHex(hex);
 			expect(result.length).toBe(16);
 			expect(result[0]).toBe(0x12);
@@ -62,13 +62,13 @@ describe("Bytes16", () => {
 			expect(() => Bytes16.fromHex("0x1234")).toThrow(
 				"Bytes16 hex must be 32 characters",
 			);
-			expect(() => Bytes16.fromHex("0x" + "12".repeat(17))).toThrow(
+			expect(() => Bytes16.fromHex(`0x${"12".repeat(17)}`)).toThrow(
 				"Bytes16 hex must be 32 characters",
 			);
 		});
 
 		it("should throw on invalid hex characters", () => {
-			expect(() => Bytes16.fromHex("0x" + "zz".repeat(16))).toThrow(
+			expect(() => Bytes16.fromHex(`0x${"zz".repeat(16)}`)).toThrow(
 				"Invalid hex string",
 			);
 		});
@@ -83,7 +83,7 @@ describe("Bytes16", () => {
 
 	describe("from", () => {
 		it("should create from hex string", () => {
-			const hex = "0x" + "aa".repeat(16);
+			const hex = `0x${"aa".repeat(16)}`;
 			const result = Bytes16.from(hex);
 			expect(result.length).toBe(16);
 			expect(result[0]).toBe(0xaa);

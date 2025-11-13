@@ -31,4 +31,7 @@ export const Event = {
 	getSelector: BrandedEvent.getSelector,
 	encodeTopics: BrandedEvent.encodeTopics,
 	decodeLog: BrandedEvent.decodeLog,
+	// Factories
+	GetSelector: BrandedEvent.GetSelector,
+	EncodeTopics: BrandedEvent.EncodeTopics,
 };

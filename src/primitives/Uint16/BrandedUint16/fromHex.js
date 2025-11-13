@@ -16,7 +16,8 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function fromHex(hex) {
-	const cleanHex = hex.startsWith("0x") || hex.startsWith("0X") ? hex : `0x${hex}`;
+	const cleanHex =
+		hex.startsWith("0x") || hex.startsWith("0X") ? hex : `0x${hex}`;
 	const value = Number.parseInt(cleanHex, 16);
 
 	if (Number.isNaN(value)) {

@@ -4,21 +4,21 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
-	AddressBrand,
-	AddressSchema,
-	ChecksumAddress,
-	ChecksumAddressBrand,
-	type AddressFromHex,
-	type AddressFromUnknown,
-} from "./effect.js";
-import { AddressServicesLive, AddressServicesTest } from "./effect-layers.js";
-import {
 	InvalidAddressLengthError,
 	InvalidChecksumError,
 	InvalidHexFormatError,
 	InvalidHexStringError,
 	InvalidValueError,
 } from "./effect-errors.js";
+import { AddressServicesLive, AddressServicesTest } from "./effect-layers.js";
+import {
+	AddressBrand,
+	type AddressFromHex,
+	type AddressFromUnknown,
+	AddressSchema,
+	ChecksumAddress,
+	ChecksumAddressBrand,
+} from "./effect.js";
 
 describe("AddressSchema Effect Schema", () => {
 	// Use lowercase address to avoid checksum validation issues in tests

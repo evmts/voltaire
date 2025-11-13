@@ -10,6 +10,14 @@ export type {
 } from "./BrandedBlob.js";
 export * from "./BrandedBlob/constants.js";
 
+// Re-export factory functions for tree-shaking
+export {
+	ToVersionedHash,
+	ToCommitment,
+	ToProof,
+	Verify,
+} from "./BrandedBlob/index.js";
+
 /**
  * Creates a Blob instance from various input types.
  *

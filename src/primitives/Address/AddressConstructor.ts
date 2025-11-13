@@ -1,6 +1,4 @@
 import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
-import type { calculateCreate2Address } from "./BrandedAddress/index.js";
-import type { calculateCreateAddress } from "./BrandedAddress/index.js";
 import type { compare } from "./BrandedAddress/compare.js";
 import type { SIZE } from "./BrandedAddress/constants.js";
 import type { equals } from "./BrandedAddress/equals.js";
@@ -8,8 +6,10 @@ import { from } from "./BrandedAddress/from.js";
 import { fromAbiEncoded } from "./BrandedAddress/fromAbiEncoded.js";
 import { fromHex } from "./BrandedAddress/fromHex.js";
 import { fromNumber } from "./BrandedAddress/fromNumber.js";
-import { fromPublicKey } from "./BrandedAddress/index.js";
 import type { greaterThan } from "./BrandedAddress/greaterThan.js";
+import type { calculateCreate2Address } from "./BrandedAddress/index.js";
+import type { calculateCreateAddress } from "./BrandedAddress/index.js";
+import { fromPublicKey } from "./BrandedAddress/index.js";
 import type { is } from "./BrandedAddress/is.js";
 import type { isValid } from "./BrandedAddress/isValid.js";
 import type { isValidChecksum } from "./BrandedAddress/isValidChecksum.js";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Address } from "./index.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { encode as rlpEncode } from "../Rlp/BrandedRlp/encode.js";
+import { Address } from "./index.js";
 
 describe("Address Class API - Conditional Crypto Methods", () => {
 	// ==========================================================================

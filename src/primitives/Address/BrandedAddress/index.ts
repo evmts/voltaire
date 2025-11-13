@@ -20,12 +20,12 @@ export { FromPrivateKey } from "./fromPrivateKey.js";
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { derivePublicKey } from "../../../crypto/Secp256k1/derivePublicKey.js";
 import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
-import { ToChecksummed as ToChecksummedFactory } from "./toChecksummed.js";
-import { IsValidChecksum as IsValidChecksumFactory } from "./isValidChecksum.js";
-import { CalculateCreateAddress as CalculateCreateAddressFactory } from "./calculateCreateAddress.js";
 import { CalculateCreate2Address as CalculateCreate2AddressFactory } from "./calculateCreate2Address.js";
-import { FromPublicKey as FromPublicKeyFactory } from "./fromPublicKey.js";
+import { CalculateCreateAddress as CalculateCreateAddressFactory } from "./calculateCreateAddress.js";
 import { FromPrivateKey as FromPrivateKeyFactory } from "./fromPrivateKey.js";
+import { FromPublicKey as FromPublicKeyFactory } from "./fromPublicKey.js";
+import { IsValidChecksum as IsValidChecksumFactory } from "./isValidChecksum.js";
+import { ToChecksummed as ToChecksummedFactory } from "./toChecksummed.js";
 
 /**
  * Convert Address to EIP-55 checksummed hex string (with auto-injected keccak256)

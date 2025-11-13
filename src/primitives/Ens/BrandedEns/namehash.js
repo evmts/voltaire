@@ -1,10 +1,8 @@
-import { fromBytes } from "../../Hex/fromBytes.js";
-
 /**
  * Factory: Create ENS namehash function with explicit crypto dependency
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(name: import('./BrandedEns.js').BrandedEns) => import('../../Hex/BrandedHex/BrandedHex.js').BrandedHex} Function that computes ENS namehash
+ * @returns {(name: import('./BrandedEns.js').BrandedEns) => Uint8Array} Function that computes ENS namehash
  */
 export function Namehash({ keccak256 }) {
 	/**
@@ -14,7 +12,7 @@ export function Namehash({ keccak256 }) {
 	 * Empty string has hash of 32 zero bytes.
 	 *
 	 * @param {import('./BrandedEns.js').BrandedEns} name - ENS name
-	 * @returns {import('../../Hex/BrandedHex/BrandedHex.js').BrandedHex} - ENS namehash as hex string
+	 * @returns {Uint8Array} - ENS namehash as bytes
 	 */
 	return function namehash(name) {
 		// Start with root hash (32 zero bytes)
@@ -23,7 +21,7 @@ export function Namehash({ keccak256 }) {
 
 		// Empty string returns root hash
 		if (!name || name.length === 0) {
-			return fromBytes(hash);
+			return hash;
 		}
 
 		// Split into labels and process in reverse order
@@ -43,6 +41,6 @@ export function Namehash({ keccak256 }) {
 			hash = new Uint8Array(keccak256(combined));
 		}
 
-		return fromBytes(hash);
+		return hash;
 	};
 }

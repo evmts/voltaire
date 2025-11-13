@@ -1,6 +1,6 @@
-import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
 import type { BrandedBytecode } from "../Bytecode/BrandedBytecode/BrandedBytecode.js";
+import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
+import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
 import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
@@ -47,8 +47,8 @@ export interface BaseAddress extends BrandedAddressType {
 export interface AddressWithKeccak extends BaseAddress {
 	toChecksummed(): string;
 	calculateCreate2Address(
-		salt: Uint8Array,
-		initCode: Uint8Array,
+		salt: BrandedHash,
+		initCode: BrandedBytecode,
 	): BrandedAddressType;
 }
 
@@ -397,8 +397,8 @@ Address.prototype.calculateCreateAddress = function (
 	return result;
 };
 Address.prototype.calculateCreate2Address = function (
-	salt: Uint8Array,
-	initCode: Uint8Array,
+	salt: BrandedHash,
+	initCode: BrandedBytecode,
 ): BrandedAddressType {
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {

@@ -20,7 +20,9 @@ import { MAX } from "./constants.js";
 export function times(a, b) {
 	const product = a * b;
 	if (product > MAX) {
-		throw new Error(`Uint16 overflow: ${a} * ${b} = ${product} exceeds maximum (65535)`);
+		throw new Error(
+			`Uint16 overflow: ${a} * ${b} = ${product} exceeds maximum (65535)`,
+		);
 	}
 	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (product);
 }

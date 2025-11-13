@@ -19,12 +19,44 @@ import { isValid } from "./isValid.js";
 import { isValidVersion } from "./isValidVersion.js";
 import { joinData } from "./joinData.js";
 import { splitData } from "./splitData.js";
-import { toCommitment } from "./toCommitment.js";
 import { toData } from "./toData.js";
-import { toProof } from "./toProof.js";
-import { toVersionedHash } from "./toVersionedHash.js";
-import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
+
+// Import crypto dependencies
+import { hash as sha256 } from "../../../crypto/SHA256/hash.js";
+
+// Import factories
+export { ToVersionedHash } from "./toVersionedHash.js";
+export { ToCommitment } from "./toCommitment.js";
+export { ToProof } from "./toProof.js";
+export { Verify } from "./verify.js";
+
+import { ToCommitment } from "./toCommitment.js";
+import { ToProof } from "./toProof.js";
+// Create wrappers with stubbed KZG functions (until c-kzg-4844 is integrated)
+import { ToVersionedHash } from "./toVersionedHash.js";
+import { Verify } from "./verify.js";
+
+// Stub KZG functions (will throw until c-kzg-4844 is integrated)
+const stubBlobToKzgCommitment = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+const stubComputeBlobKzgProof = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+const stubVerifyBlobKzgProof = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+
+// Create wrapper functions with crypto auto-injected
+export const toVersionedHash = ToVersionedHash({ sha256 });
+export const toCommitment = ToCommitment({
+	blobToKzgCommitment: stubBlobToKzgCommitment,
+});
+export const toProof = ToProof({
+	computeBlobKzgProof: stubComputeBlobKzgProof,
+});
+export const verify = Verify({ verifyBlobKzgProof: stubVerifyBlobKzgProof });
 
 // Export individual functions
 export {
@@ -32,10 +64,6 @@ export {
 	fromData,
 	isValid,
 	toData,
-	toCommitment,
-	toProof,
-	toVersionedHash,
-	verify,
 	verifyBatch,
 	isValidVersion,
 	calculateGas,

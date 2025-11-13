@@ -44,7 +44,7 @@ describe("Bytes32", () => {
 
 	describe("fromHex", () => {
 		it("should create Bytes32 from valid hex with 0x prefix", () => {
-			const hex = "0x" + "12".repeat(32);
+			const hex = `0x${"12".repeat(32)}`;
 			const result = Bytes32.fromHex(hex);
 			expect(result.length).toBe(32);
 			expect(result[0]).toBe(0x12);
@@ -62,19 +62,19 @@ describe("Bytes32", () => {
 			expect(() => Bytes32.fromHex("0x1234")).toThrow(
 				"Bytes32 hex must be 64 characters",
 			);
-			expect(() => Bytes32.fromHex("0x" + "12".repeat(33))).toThrow(
+			expect(() => Bytes32.fromHex(`0x${"12".repeat(33)}`)).toThrow(
 				"Bytes32 hex must be 64 characters",
 			);
 		});
 
 		it("should throw on invalid hex characters", () => {
-			expect(() => Bytes32.fromHex("0x" + "zz".repeat(32))).toThrow(
+			expect(() => Bytes32.fromHex(`0x${"zz".repeat(32)}`)).toThrow(
 				"Invalid hex string",
 			);
 		});
 
 		it("should handle mixed case hex", () => {
-			const hex = "0x" + "AbCdEf0123456789".repeat(4);
+			const hex = `0x${"AbCdEf0123456789".repeat(4)}`;
 			const result = Bytes32.fromHex(hex);
 			expect(result[0]).toBe(0xab);
 			expect(result[1]).toBe(0xcd);
@@ -142,7 +142,7 @@ describe("Bytes32", () => {
 
 	describe("from", () => {
 		it("should create from hex string", () => {
-			const hex = "0x" + "aa".repeat(32);
+			const hex = `0x${"aa".repeat(32)}`;
 			const result = Bytes32.from(hex);
 			expect(result.length).toBe(32);
 			expect(result[0]).toBe(0xaa);
@@ -433,8 +433,8 @@ describe("Bytes32", () => {
 		});
 
 		it("should handle merkle tree node", () => {
-			const node1 = Bytes32.fromHex("0x" + "aa".repeat(32));
-			const node2 = Bytes32.fromHex("0x" + "bb".repeat(32));
+			const node1 = Bytes32.fromHex(`0x${"aa".repeat(32)}`);
+			const node2 = Bytes32.fromHex(`0x${"bb".repeat(32)}`);
 			expect(Bytes32.equals(node1, node2)).toBe(false);
 		});
 	});

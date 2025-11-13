@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { IsValidChecksum } from "./isValidChecksum.js";
 import { hash } from "../../../crypto/Keccak256/hash.js";
+import { IsValidChecksum } from "./isValidChecksum.js";
 
 describe("isValidChecksum", () => {
 	describe("valid checksummed addresses", () => {

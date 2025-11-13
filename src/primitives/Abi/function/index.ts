@@ -15,5 +15,8 @@ export const decodeParams = Function.decodeParams;
 export const encodeResult = Function.encodeResult;
 export const decodeResult = Function.decodeResult;
 
+// Export factories
+export const GetSelector = Function.GetSelector;
+
 // Also export the Function factory itself
 export { Function };

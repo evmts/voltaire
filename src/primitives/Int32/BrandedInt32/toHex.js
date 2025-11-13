@@ -8,5 +8,5 @@ export function toHex(value) {
 	// Convert to unsigned 32-bit
 	const unsigned = value >>> 0;
 
-	return "0x" + unsigned.toString(16).padStart(8, "0");
+	return `0x${unsigned.toString(16).padStart(8, "0")}`;
 }

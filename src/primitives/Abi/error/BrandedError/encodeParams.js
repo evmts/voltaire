@@ -1,5 +1,5 @@
 import { encodeParameters } from "../../Encoding.js";
-import { getSelector } from "./getSelector.js";
+import { getSelector } from "./index.js";
 
 /**
  * Encode error parameters with selector prefix

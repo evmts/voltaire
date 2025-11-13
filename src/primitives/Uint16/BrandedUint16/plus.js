@@ -20,7 +20,9 @@ import { MAX } from "./constants.js";
 export function plus(a, b) {
 	const sum = a + b;
 	if (sum > MAX) {
-		throw new Error(`Uint16 overflow: ${a} + ${b} = ${sum} exceeds maximum (65535)`);
+		throw new Error(
+			`Uint16 overflow: ${a} + ${b} = ${sum} exceeds maximum (65535)`,
+		);
 	}
 	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (sum);
 }

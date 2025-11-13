@@ -1,5 +1,5 @@
-import { Hash } from "../../Hash/index.js";
 import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
+import { Hash } from "../../Hash/index.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**

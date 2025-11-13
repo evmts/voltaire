@@ -57,17 +57,17 @@ export {
 
 // Public wrappers (auto-convert inputs)
 import type { BrandedInt8 } from "./BrandedInt8.ts";
-import {
-	from,
-	fromNumber as _fromNumber,
-	fromBigint as _fromBigint,
-	fromHex as _fromHex,
-	fromBytes as _fromBytes,
-} from "./from.js";
-import * as conv from "./conversions.js";
 import * as arith from "./arithmetic.js";
-import * as cmp from "./comparison.js";
 import * as bit from "./bitwise.js";
+import * as cmp from "./comparison.js";
+import * as conv from "./conversions.js";
+import {
+	fromBigint as _fromBigint,
+	fromBytes as _fromBytes,
+	fromHex as _fromHex,
+	fromNumber as _fromNumber,
+	from,
+} from "./from.js";
 import * as util from "./utilities.js";
 
 export type Int8Input = number | bigint | string | BrandedInt8;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedHex } from "../Hex/index.js";
 import * as Hash from "../Hash/index.js";
+import type { BrandedHex } from "../Hex/index.js";
 import { Address } from "./Address.js";
 import * as AddressNamespace from "./index.js";
 

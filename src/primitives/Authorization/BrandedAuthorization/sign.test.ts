@@ -3,8 +3,25 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { recoverPublicKey } from "../../../crypto/Secp256k1/recoverPublicKey.js";
+import { sign as secp256k1Sign } from "../../../crypto/Secp256k1/sign.js";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import { sign } from "./sign.js";
+import { FromPublicKey } from "../../Address/BrandedAddress/fromPublicKey.js";
+import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
+import { Sign } from "./sign.js";
+
+// Create address factory
+const addressFromPublicKey = FromPublicKey({ keccak256 });
+
+// Instantiate factory
+const sign = Sign({
+	keccak256,
+	rlpEncode,
+	sign: secp256k1Sign,
+	recoverPublicKey,
+	addressFromPublicKey,
+});
 
 // ============================================================================
 // Test Helpers

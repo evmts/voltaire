@@ -47,12 +47,16 @@ describe("Int128 - Two's Complement Encoding", () => {
 	it("fromHex: handles positive values", () => {
 		expect(Int128.fromHex("0x00")).toBe(0n);
 		expect(Int128.fromHex("0x7f")).toBe(127n);
-		expect(Int128.fromHex("0x7fffffffffffffffffffffffffffffff")).toBe(Int128.MAX);
+		expect(Int128.fromHex("0x7fffffffffffffffffffffffffffffff")).toBe(
+			Int128.MAX,
+		);
 	});
 
 	it("fromHex: handles negative values (two's complement)", () => {
 		expect(Int128.fromHex("0xffffffffffffffffffffffffffffffff")).toBe(-1n);
-		expect(Int128.fromHex("0x80000000000000000000000000000000")).toBe(Int128.MIN);
+		expect(Int128.fromHex("0x80000000000000000000000000000000")).toBe(
+			Int128.MIN,
+		);
 		expect(Int128.fromHex("0xff")).toBe(255n); // Positive (no high bit in 128-bit context)
 	});
 

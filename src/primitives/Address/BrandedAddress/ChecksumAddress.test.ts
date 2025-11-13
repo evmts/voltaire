@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { hash } from "../../../crypto/Keccak256/hash.js";
 import { Address } from "../index.js";
 import * as ChecksumAddress from "./ChecksumAddress.js";
-import { hash } from "../../../crypto/Keccak256/hash.js";
 
 describe("ChecksumAddress", () => {
 	describe("From", () => {

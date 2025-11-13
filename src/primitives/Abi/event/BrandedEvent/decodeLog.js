@@ -4,7 +4,7 @@ import {
 	isDynamicType,
 } from "../../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
-import { getSelector } from "./getSelector.js";
+import { getSelector } from "./index.js";
 
 /**
  * Decode event log data and topics into event arguments

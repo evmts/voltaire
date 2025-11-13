@@ -17,5 +17,5 @@
  */
 export function bitLength(uint) {
 	if (uint === 0) return 0;
-	return 8 - Math.clz32(uint) - 24;
+	return 32 - Math.clz32(uint);
 }

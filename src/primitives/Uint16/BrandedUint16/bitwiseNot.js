@@ -16,5 +16,7 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function bitwiseNot(uint) {
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ ((~uint) & MAX);
+	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (
+		~uint & MAX
+	);
 }

@@ -1,4 +1,4 @@
-import { INT16_MIN, INT16_MAX } from "./BrandedInt16.ts";
+import { INT16_MAX, INT16_MIN } from "./BrandedInt16.ts";
 
 /**
  * Get bit length (number of bits needed to represent value)

@@ -2,7 +2,4 @@
 export * from "./BrandedEvent/BrandedEvent.js";
 export { Event } from "./Event.js";
 
-export { getSignature } from "./BrandedEvent/getSignature.js";
-export { getSelector } from "./BrandedEvent/getSelector.js";
-export { encodeTopics } from "./BrandedEvent/encodeTopics.js";
-export { decodeLog } from "./BrandedEvent/decodeLog.js";
+export { getSignature, getSelector, encodeTopics, decodeLog, GetSelector, EncodeTopics } from "./BrandedEvent/index.js";

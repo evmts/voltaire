@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { hash } from "../../../crypto/Keccak256/hash.js";
 import { Address } from "../index.js";
 import { ToChecksummed } from "./toChecksummed.js";
-import { hash } from "../../../crypto/Keccak256/hash.js";
 
 describe("toChecksummed", () => {
 	describe("EIP-55 test vectors", () => {

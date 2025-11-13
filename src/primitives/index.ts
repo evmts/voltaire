@@ -26,8 +26,23 @@ export * as BrandedHash from "./Hash/BrandedHash/index.js";
 export * from "./Hex/index.js";
 export * as BrandedHex from "./Hex/BrandedHex/index.js";
 
-// Numeric types
+// Numeric types - Unsigned integers
 export * as Uint from "./Uint/index.js";
+export * as Uint8 from "./Uint8/index.js";
+export * as Uint16 from "./Uint16/index.js";
+export * as Uint32 from "./Uint32/index.js";
+export * as Uint64 from "./Uint64/index.js";
+export * as Uint128 from "./Uint128/index.js";
+export * as Uint256 from "./Uint/index.js"; // Alias for backward compatibility
+
+// Numeric types - Signed integers
+export * as Int8 from "./Int8/index.js";
+export * as Int16 from "./Int16/index.js";
+export * as Int32 from "./Int32/index.js";
+export * as Int128 from "./Int128/index.js";
+export * as Int256 from "./Int256/index.js";
+
+// Denomination
 export * as Denomination from "./Denomination/index.js";
 
 // Encoding
@@ -75,9 +90,11 @@ export * as BrandedBinaryTree from "./BinaryTree/BrandedBinaryTree/index.js";
 export { BloomFilter } from "./BloomFilter/index.js";
 export * as BrandedBloomFilter from "./BloomFilter/BrandedBloomFilter/index.js";
 
-// Utilities
+// Utilities - Base64
 export * as Base64 from "./Base64/index.js";
 export * as BrandedBase64 from "./Base64/BrandedBase64/index.js";
+
+// Utilities - Bytes types
 export * as Bytes from "./Bytes/BrandedBytes/index.js";
 export * as Bytes1 from "./Bytes/Bytes1/index.js";
 export * as Bytes2 from "./Bytes/Bytes2/index.js";
@@ -87,6 +104,9 @@ export * as Bytes5 from "./Bytes/Bytes5/index.js";
 export * as Bytes6 from "./Bytes/Bytes6/index.js";
 export * as Bytes7 from "./Bytes/Bytes7/index.js";
 export * as Bytes8 from "./Bytes/Bytes8/index.js";
+export * as Bytes16 from "./Bytes/Bytes16/index.js";
+export * as Bytes32 from "./Bytes/Bytes32/index.js";
+export * as Bytes64 from "./Bytes/Bytes64/index.js";
 
 // Errors
 export * from "./errors/index.js";

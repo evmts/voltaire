@@ -3,7 +3,7 @@ import {
 	FunctionDecodingError,
 	FunctionInvalidSelectorError,
 } from "./errors.js";
-import { getSelector } from "./getSelector.js";
+import { getSelector } from "./index.js";
 
 /**
  * Decode function call data (verify selector and decode parameters)

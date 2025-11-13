@@ -4,8 +4,8 @@ export * from "./BrandedSignature.js";
 export * from "./BrandedSecp256k1PublicKey.js";
 export * from "./errors.js";
 
-import * as SignatureMethods from "./Signature/index.js";
 import * as PublicKeyMethods from "./PublicKey/index.js";
+import * as SignatureMethods from "./Signature/index.js";
 import {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,

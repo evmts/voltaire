@@ -44,7 +44,7 @@ describe("Bytes64", () => {
 
 	describe("fromHex", () => {
 		it("should create Bytes64 from valid hex with 0x prefix", () => {
-			const hex = "0x" + "12".repeat(64);
+			const hex = `0x${"12".repeat(64)}`;
 			const result = Bytes64.fromHex(hex);
 			expect(result.length).toBe(64);
 			expect(result[0]).toBe(0x12);
@@ -62,19 +62,19 @@ describe("Bytes64", () => {
 			expect(() => Bytes64.fromHex("0x1234")).toThrow(
 				"Bytes64 hex must be 128 characters",
 			);
-			expect(() => Bytes64.fromHex("0x" + "12".repeat(65))).toThrow(
+			expect(() => Bytes64.fromHex(`0x${"12".repeat(65)}`)).toThrow(
 				"Bytes64 hex must be 128 characters",
 			);
 		});
 
 		it("should throw on invalid hex characters", () => {
-			expect(() => Bytes64.fromHex("0x" + "zz".repeat(64))).toThrow(
+			expect(() => Bytes64.fromHex(`0x${"zz".repeat(64)}`)).toThrow(
 				"Invalid hex string",
 			);
 		});
 
 		it("should handle mixed case hex", () => {
-			const hex = "0x" + "AbCdEf0123456789".repeat(8);
+			const hex = `0x${"AbCdEf0123456789".repeat(8)}`;
 			const result = Bytes64.fromHex(hex);
 			expect(result[0]).toBe(0xab);
 			expect(result[1]).toBe(0xcd);
@@ -83,7 +83,7 @@ describe("Bytes64", () => {
 
 	describe("from", () => {
 		it("should create from hex string", () => {
-			const hex = "0x" + "aa".repeat(64);
+			const hex = `0x${"aa".repeat(64)}`;
 			const result = Bytes64.from(hex);
 			expect(result.length).toBe(64);
 			expect(result[0]).toBe(0xaa);

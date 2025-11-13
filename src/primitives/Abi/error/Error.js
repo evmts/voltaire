@@ -27,4 +27,6 @@ export const Error = {
 	getSelector: BrandedError.getSelector,
 	encodeParams: BrandedError.encodeParams,
 	decodeParams: BrandedError.decodeParams,
+	// Factory
+	GetSelector: BrandedError.GetSelector,
 };

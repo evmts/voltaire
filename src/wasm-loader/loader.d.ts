@@ -6,10 +6,10 @@
  * @since 0.0.0
  */
 
+import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
 import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
 import type { BrandedPrivateKey } from "../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js";
-import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
 
 /**
  * Load and instantiate the WASM module.

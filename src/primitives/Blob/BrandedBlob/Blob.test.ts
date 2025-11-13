@@ -21,12 +21,34 @@ import { isValid } from "./isValid.js";
 import { isValidVersion } from "./isValidVersion.js";
 import { joinData } from "./joinData.js";
 import { splitData } from "./splitData.js";
-import { toCommitment } from "./toCommitment.js";
 import { toData } from "./toData.js";
-import { toProof } from "./toProof.js";
-import { toVersionedHash } from "./toVersionedHash.js";
-import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
+
+import { hash as sha256 } from "../../../crypto/SHA256/hash.js";
+import { ToCommitment } from "./toCommitment.js";
+import { ToProof } from "./toProof.js";
+// Import factories and crypto dependencies
+import { ToVersionedHash } from "./toVersionedHash.js";
+import { Verify } from "./verify.js";
+
+// Stub KZG functions (until c-kzg-4844 is integrated)
+const stubBlobToKzgCommitment = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+const stubComputeBlobKzgProof = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+const stubVerifyBlobKzgProof = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
+
+// Instantiate functions from factories
+const toVersionedHash = ToVersionedHash({ sha256 });
+const toCommitment = ToCommitment({
+	blobToKzgCommitment: stubBlobToKzgCommitment,
+});
+const toProof = ToProof({ computeBlobKzgProof: stubComputeBlobKzgProof });
+const verify = Verify({ verifyBlobKzgProof: stubVerifyBlobKzgProof });
 
 // ============================================================================
 // Type Guard Tests

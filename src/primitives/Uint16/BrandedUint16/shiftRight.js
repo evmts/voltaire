@@ -15,5 +15,7 @@
  * ```
  */
 export function shiftRight(uint, shift) {
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (uint >>> shift);
+	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (
+		uint >>> shift
+	);
 }

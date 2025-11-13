@@ -1,4 +1,4 @@
-import { verify } from "./verify.js";
+import { verify } from "./index.js";
 
 /**
  * Process authorization and return delegation designation

@@ -1,4 +1,4 @@
-import { INT8_MIN, INT8_MAX } from "./BrandedInt8.ts";
+import { INT8_MAX, INT8_MIN } from "./BrandedInt8.ts";
 
 /**
  * Get bit length (number of bits needed to represent value)
