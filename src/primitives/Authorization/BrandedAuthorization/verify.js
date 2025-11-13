@@ -1,5 +1,5 @@
 import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
-import { fromPublicKey } from "../../Address/BrandedAddress/fromPublicKey.js";
+import { fromPublicKey } from "../../Address/BrandedAddress/index.js";
 import { hash } from "./hash.js";
 import { validate } from "./validate.js";
 

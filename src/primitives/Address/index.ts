@@ -15,6 +15,51 @@ export * from "./BrandedAddress/errors.js";
 export * from "./BrandedAddress/constants.js";
 
 /**
+ * Crypto dependencies for Address operations
+ */
+export interface AddressCrypto {
+	keccak256?: (data: Uint8Array) => Uint8Array;
+	rlpEncode?: (items: unknown[]) => Uint8Array;
+}
+
+/**
+ * Base Address type without crypto-dependent methods
+ */
+export interface BaseAddress extends BrandedAddressType {
+	toHex(): string;
+	toLowercase(): string;
+	toUppercase(): string;
+	toU256(): bigint;
+	toAbiEncoded(): Uint8Array;
+	toShortHex(startLength?: number, endLength?: number): string;
+	isZero(): boolean;
+	equals(other: BrandedAddressType): boolean;
+	toBytes(): Uint8Array;
+	clone(): BrandedAddressType;
+	compare(other: BrandedAddressType): number;
+	lessThan(other: BrandedAddressType): boolean;
+	greaterThan(other: BrandedAddressType): boolean;
+}
+
+/**
+ * Address with keccak256 support (enables checksum methods)
+ */
+export interface AddressWithKeccak extends BaseAddress {
+	toChecksummed(): string;
+	calculateCreate2Address(
+		salt: Uint8Array,
+		initCode: Uint8Array,
+	): BrandedAddressType;
+}
+
+/**
+ * Address with full crypto support (enables all contract address methods)
+ */
+export interface AddressWithFullCrypto extends AddressWithKeccak {
+	calculateCreateAddress(nonce: bigint): BrandedAddressType;
+}
+
+/**
  * Creates Address instances with prototype chain
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
@@ -26,14 +71,55 @@ export * from "./BrandedAddress/constants.js";
  * ```typescript
  * import { Address } from './primitives/Address/index.js';
  * const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
- * console.log(addr.toChecksummed());
+ * console.log(addr.toHex());
  * ```
  */
 export function Address(
 	value: number | bigint | string | Uint8Array,
+): BaseAddress;
+
+/**
+ * Creates Address with keccak256 support
+ *
+ * @param value - Value to convert
+ * @param crypto - Crypto dependencies with keccak256
+ * @returns Address with checksum methods
+ */
+export function Address(
+	value: number | bigint | string | Uint8Array,
+	crypto: { keccak256: (data: Uint8Array) => Uint8Array },
+): AddressWithKeccak;
+
+/**
+ * Creates Address with full crypto support
+ *
+ * @param value - Value to convert
+ * @param crypto - Crypto dependencies with keccak256 and rlpEncode
+ * @returns Address with all contract address methods
+ */
+export function Address(
+	value: number | bigint | string | Uint8Array,
+	crypto: {
+		keccak256: (data: Uint8Array) => Uint8Array;
+		rlpEncode: (items: unknown[]) => Uint8Array;
+	},
+): AddressWithFullCrypto;
+
+export function Address(
+	value: number | bigint | string | Uint8Array,
+	crypto?: AddressCrypto,
 ): BrandedAddressType {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
+	// Store crypto deps on instance
+	if (crypto) {
+		Object.defineProperty(result, "_crypto", {
+			value: crypto,
+			writable: false,
+			enumerable: false,
+			configurable: false,
+		});
+	}
 	return result;
 }
 
@@ -201,7 +287,14 @@ Address.prototype.toHex = function () {
 Address.prototype.setFromHex =
 	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
 Address.prototype.toChecksummed = function () {
-	return BrandedAddress.toChecksummed(this);
+	const crypto = (this as any)._crypto;
+	if (!crypto?.keccak256) {
+		throw new Error(
+			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable toChecksummed()",
+		);
+	}
+	const factory = BrandedAddress.ToChecksummed({ keccak256: crypto.keccak256 });
+	return factory(this as BrandedAddressType);
 };
 Address.prototype.toLowercase = function () {
 	return BrandedAddress.toLowercase(this);
@@ -239,27 +332,95 @@ Address.prototype.toBytes = function (): Uint8Array {
 Address.prototype.clone = function (): BrandedAddressType {
 	const result = BrandedAddress.clone(this as BrandedAddressType);
 	Object.setPrototypeOf(result, Address.prototype);
+	const crypto = (this as any)._crypto;
+	if (crypto) {
+		Object.defineProperty(result, "_crypto", {
+			value: crypto,
+			writable: false,
+			enumerable: false,
+			configurable: false,
+		});
+	}
 	return result;
 };
 Address.prototype.calculateCreateAddress = function (
 	nonce: bigint,
 ): BrandedAddressType {
-	const result = BrandedAddress.calculateCreateAddress(
-		this as BrandedAddressType,
-		nonce,
-	);
+	const crypto = (this as any)._crypto;
+	if (!crypto?.keccak256) {
+		throw new Error(
+			"keccak256 not provided to Address constructor. Pass { keccak256, rlpEncode } to enable calculateCreateAddress()",
+		);
+	}
+	if (!crypto?.rlpEncode) {
+		throw new Error(
+			"rlpEncode not provided to Address constructor. Pass { keccak256, rlpEncode } to enable calculateCreateAddress()",
+		);
+	}
+	// Manual implementation using crypto deps
+	const { InvalidValueError } = BrandedAddress;
+	if (nonce < 0n) {
+		throw new InvalidValueError("Nonce cannot be negative", {
+			value: nonce,
+		});
+	}
+
+	// Encode nonce
+	function encodeNonce(num: bigint): Uint8Array {
+		if (num === 0n) return new Uint8Array(0);
+		let n = num;
+		let byteCount = 0;
+		while (n > 0n) {
+			byteCount++;
+			n >>= 8n;
+		}
+		const bytes = new Uint8Array(byteCount);
+		n = num;
+		for (let i = byteCount - 1; i >= 0; i--) {
+			bytes[i] = Number(n & 0xffn);
+			n >>= 8n;
+		}
+		return bytes;
+	}
+
+	const nonceBytes = encodeNonce(nonce);
+	const encoded = crypto.rlpEncode([this, nonceBytes]);
+	const hash = crypto.keccak256(encoded);
+	const result = hash.slice(12) as BrandedAddressType;
 	Object.setPrototypeOf(result, Address.prototype);
+	Object.defineProperty(result, "_crypto", {
+		value: crypto,
+		writable: false,
+		enumerable: false,
+		configurable: false,
+	});
 	return result;
 };
 Address.prototype.calculateCreate2Address = function (
 	salt: Uint8Array,
 	initCode: Uint8Array,
 ): BrandedAddressType {
-	const result = BrandedAddress.calculateCreate2Address(
-		this as BrandedAddressType,
-		salt,
-		initCode,
-	);
+	const crypto = (this as any)._crypto;
+	if (!crypto?.keccak256) {
+		throw new Error(
+			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable calculateCreate2Address()",
+		);
+	}
+	// Manual implementation using crypto deps
+	const initCodeHash = crypto.keccak256(initCode);
+	const data = new Uint8Array(1 + 20 + 32 + 32);
+	data[0] = 0xff;
+	data.set(this as BrandedAddressType, 1);
+	data.set(salt, 21);
+	data.set(initCodeHash, 53);
+	const hash = crypto.keccak256(data);
+	const result = hash.slice(12) as BrandedAddressType;
 	Object.setPrototypeOf(result, Address.prototype);
+	Object.defineProperty(result, "_crypto", {
+		value: crypto,
+		writable: false,
+		enumerable: false,
+		configurable: false,
+	});
 	return result;
 };

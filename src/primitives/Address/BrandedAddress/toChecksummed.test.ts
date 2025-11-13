@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../index.js";
-import { toChecksummed } from "./toChecksummed.js";
+import { ToChecksummed } from "./toChecksummed.js";
+import { hash } from "../../../crypto/Keccak256/hash.js";
 
 describe("toChecksummed", () => {
 	describe("EIP-55 test vectors", () => {
 		it("produces valid checksummed address for known vector 1", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			// EIP-55 test vector
 			const addr = Address.fromHex(
 				"0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
@@ -14,6 +16,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("produces valid checksummed address for known vector 2", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359",
 			);
@@ -22,6 +25,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("produces valid checksummed address for known vector 3", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb",
 			);
@@ -30,6 +34,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("produces valid checksummed address for known vector 4", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb",
 			);
@@ -40,6 +45,7 @@ describe("toChecksummed", () => {
 
 	describe("lowercase input", () => {
 		it("converts all lowercase to mixed case", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
@@ -52,6 +58,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("produces consistent output for same input", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
@@ -63,6 +70,7 @@ describe("toChecksummed", () => {
 
 	describe("uppercase input", () => {
 		it("converts all uppercase to mixed case", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742D35CC6634C0532925A3B844BC9E7595F251E3",
 			);
@@ -73,6 +81,7 @@ describe("toChecksummed", () => {
 
 	describe("mixed case input", () => {
 		it("normalizes mixed case to correct checksum", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 			);
@@ -83,6 +92,7 @@ describe("toChecksummed", () => {
 
 	describe("output format", () => {
 		it("starts with 0x prefix", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
@@ -91,6 +101,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("is 42 characters long", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
@@ -99,6 +110,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("contains only hex characters", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
@@ -107,6 +119,7 @@ describe("toChecksummed", () => {
 		});
 
 		it("has mixed case output", () => {
+			const toChecksummed = ToChecksummed({ keccak256: hash });
 			const addr = Address.fromHex(
 				"0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
 			);
@@ -116,11 +129,5 @@ describe("toChecksummed", () => {
 			const hasUpper = /[A-F]/.test(checksummed);
 			expect(hasLower && hasUpper).toBe(true);
 		});
-	});
-
-	it("works with Address namespace method", () => {
-		const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-		const checksummed = Address.toChecksummed(addr);
-		expect(checksummed).toMatch(/^0x[0-9a-fA-F]{40}$/);
 	});
 });

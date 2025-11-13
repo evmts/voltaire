@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../index.js";
-import { fromPublicKey } from "./fromPublicKey.js";
+import { FromPublicKey } from "./fromPublicKey.js";
+import { hash } from "../../../crypto/Keccak256/hash.js";
+
+const fromPublicKey = FromPublicKey({ keccak256: hash });
 
 describe("fromPublicKey", () => {
 	describe("valid public key coordinates", () => {

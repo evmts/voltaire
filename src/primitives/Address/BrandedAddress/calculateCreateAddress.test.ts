@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../index.js";
-import { calculateCreateAddress } from "./calculateCreateAddress.js";
+import { hash } from "../../../crypto/Keccak256/hash.js";
+import { encode } from "../../Rlp/BrandedRlp/encode.js";
+import { CalculateCreateAddress } from "./calculateCreateAddress.js";
 import * as AddressNamespace from "./index.js";
+
+const calculateCreateAddress = CalculateCreateAddress({
+	keccak256: hash,
+	rlpEncode: encode,
+});
 
 describe("calculateCreateAddress", () => {
 	describe("known CREATE test vectors", () => {

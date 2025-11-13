@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { Address } from "../index.js";
 import { Hash } from "../../Hash/index.js";
 import { Bytecode } from "../../Bytecode/index.js";
-import { calculateCreate2Address } from "./calculateCreate2Address.js";
+import { CalculateCreate2Address } from "./calculateCreate2Address.js";
+import { hash } from "../../../crypto/Keccak256/hash.js";
+
+const calculateCreate2Address = CalculateCreate2Address({ keccak256: hash });
 
 describe("calculateCreate2Address", () => {
 	describe("known CREATE2 test vectors", () => {

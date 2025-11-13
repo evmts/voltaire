@@ -3,8 +3,12 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
 import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
-import * as ChecksumAddressImpl from "./BrandedAddress/ChecksumAddress.js";
+import { IsValid as IsValidChecksumFactory } from "./BrandedAddress/ChecksumAddress.js";
+import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import * as BrandedAddressImpl from "./BrandedAddress/index.js";
+
+// Create isValidChecksum function for Schema validation (synchronous)
+const isValidChecksum = IsValidChecksumFactory({ keccak256 });
 import {
 	type CalculateCreate2AddressErrors,
 	type CalculateCreateAddressErrors,
@@ -595,7 +599,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	value: Schema.String.pipe(
 		Schema.filter(
 			(str): str is string => {
-				return ChecksumAddressImpl.isValid(str);
+				return isValidChecksum(str);
 			},
 			{
 				message: () =>

@@ -1,5 +1,3 @@
-import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import { InvalidValueError } from "./errors.js";
 
 /**
@@ -32,34 +30,55 @@ function encodeNonce(num) {
 }
 
 /**
- * Calculate CREATE contract address
+ * Factory for CREATE contract address calculation with injected dependencies
  *
- * address = keccak256(rlp([sender, nonce]))[12:32]
- *
- * @param {import('./BrandedAddress.js').BrandedAddress} address - Sender address
- * @param {bigint} nonce - Transaction nonce
- * @returns {import('./BrandedAddress.js').BrandedAddress} Calculated contract address
- * @throws {InvalidValueError} If nonce is negative
+ * @param {Object} deps - Dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(items: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @returns {(address: import('./BrandedAddress.js').BrandedAddress, nonce: bigint) => import('./BrandedAddress.js').BrandedAddress}
  *
  * @example
  * ```typescript
- * const contractAddr = Address.calculateCreateAddress(deployerAddr, 5n);
+ * import { hash } from '../../../crypto/Keccak256/hash.js'
+ * import { encode } from '../../Rlp/BrandedRlp/encode.js'
+ * const calculateCreateAddress = CalculateCreateAddress({
+ *   keccak256: hash,
+ *   rlpEncode: encode
+ * })
+ * const contractAddr = calculateCreateAddress(deployerAddr, 5n);
  * ```
  */
-export function calculateCreateAddress(address, nonce) {
-	if (nonce < 0n) {
-		throw new InvalidValueError("Nonce cannot be negative", {
-			value: nonce,
-		});
-	}
+export function CalculateCreateAddress({ keccak256, rlpEncode }) {
+	/**
+	 * Calculate CREATE contract address
+	 *
+	 * address = keccak256(rlp([sender, nonce]))[12:32]
+	 *
+	 * @param {import('./BrandedAddress.js').BrandedAddress} address - Sender address
+	 * @param {bigint} nonce - Transaction nonce
+	 * @returns {import('./BrandedAddress.js').BrandedAddress} Calculated contract address
+	 * @throws {InvalidValueError} If nonce is negative
+	 *
+	 * @example
+	 * ```typescript
+	 * const contractAddr = calculateCreateAddress(deployerAddr, 5n);
+	 * ```
+	 */
+	return function calculateCreateAddress(address, nonce) {
+		if (nonce < 0n) {
+			throw new InvalidValueError("Nonce cannot be negative", {
+				value: nonce,
+			});
+		}
 
-	// RLP encode [address, nonce]
-	const nonceBytes = encodeNonce(nonce);
-	const encoded = rlpEncode([address, nonceBytes]);
+		// RLP encode [address, nonce]
+		const nonceBytes = encodeNonce(nonce);
+		const encoded = rlpEncode([address, nonceBytes]);
 
-	// Hash and take last 20 bytes
-	const hash = keccak256(encoded);
-	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
-		hash.slice(12)
-	);
+		// Hash and take last 20 bytes
+		const hash = keccak256(encoded);
+		return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+			hash.slice(12)
+		);
+	};
 }

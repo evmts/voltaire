@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
+import { hash } from "../../../crypto/Keccak256/hash.js";
+import { derivePublicKey } from "../../../crypto/Secp256k1/derivePublicKey.js";
 import { PrivateKey } from "../../PrivateKey/BrandedPrivateKey/index.js";
 import { Address } from "../index.js";
 import * as AddressNamespace from "./index.js";
 import { InvalidLengthError } from "../../errors/ValidationError.js";
+
+// Create factory instance with crypto dependencies
+const fromPrivateKey = AddressNamespace.FromPrivateKey({
+	keccak256: hash,
+	derivePublicKey,
+});
 describe("fromPrivateKey", () => {
 	describe("valid private keys", () => {
 		it("derives address from 32-byte private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
@@ -18,7 +26,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(1);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(hex).toMatch(/^0x[0-9a-f]{40}$/);
 			expect(addr.length).toBe(20);
@@ -30,7 +38,7 @@ describe("fromPrivateKey", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i + 1;
 			}
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
@@ -39,8 +47,8 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 0xcd;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr1 = Address.fromPrivateKey(privateKey);
-			const addr2 = Address.fromPrivateKey(privateKey);
+			const addr1 = fromPrivateKey(privateKey);
+			const addr2 = fromPrivateKey(privateKey);
 			expect(Address.equals(addr1, addr2)).toBe(true);
 		});
 
@@ -49,8 +57,8 @@ describe("fromPrivateKey", () => {
 			privateKey1[31] = 1;
 			const privateKey2 = new Uint8Array(32);
 			privateKey2[31] = 2;
-			const addr1 = Address.fromPrivateKey(privateKey1);
-			const addr2 = Address.fromPrivateKey(privateKey2);
+			const addr1 = fromPrivateKey(privateKey1);
+			const addr2 = fromPrivateKey(privateKey2);
 			expect(Address.equals(addr1, addr2)).toBe(false);
 		});
 
@@ -58,7 +66,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(Address.isZero(addr)).toBe(false);
 		});
 	});
@@ -88,7 +96,7 @@ describe("fromPrivateKey", () => {
 		it("throws on zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
+			expect(() => fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});
@@ -97,7 +105,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(0xff);
-			expect(() => Address.fromPrivateKey(privateKey)).toThrow(
+			expect(() => fromPrivateKey(privateKey)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});
@@ -108,7 +116,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
@@ -123,7 +131,7 @@ describe("fromPrivateKey", () => {
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			];
 			privateKey.set(orderMinus1);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
 		});
@@ -134,7 +142,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			expect(Address.is(addr)).toBe(true);
 		});
 
@@ -142,7 +150,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(hex).toMatch(/^0x[0-9a-f]{40}$/);
 		});
@@ -151,7 +159,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 42;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const addr = Address.fromPrivateKey(privateKey);
+			const addr = fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(Address.isValid(hex)).toBe(true);
 		});
