@@ -31,7 +31,7 @@ for (let i = 0; i < 32; i++) {
 	const xor = originalHash[i] ^ modifiedHash[i];
 	differentBits += xor.toString(2).split("1").length - 1;
 }
-const sampleData = Hex("0x" + "ab".repeat(100));
+const sampleData = Hex(`0x${"ab".repeat(100)}`);
 
 const checksum = Blake2.hashHex(sampleData, 16); // Fast 16-byte checksum
 const addressHash = Blake2.hashHex(sampleData, 20); // Address-sized (like RIPEMD160)

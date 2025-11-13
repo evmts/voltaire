@@ -8,8 +8,8 @@
  * - Understanding key structure
  */
 
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
 import { Address } from "../../../src/primitives/Address/index.js";
+import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
 import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 const address = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");

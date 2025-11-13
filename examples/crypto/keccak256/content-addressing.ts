@@ -1,6 +1,6 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Hex } from "../../../src/primitives/Hex/index.js";
 
 const content1 = "Hello, World!";
 const content2 = "Hello, World!";
@@ -66,10 +66,9 @@ const codeHash2 = Keccak256.hash(contractCode2);
 const pngHeader = Hex("0x89504e47");
 const pngData = Hex("0x0d0a1a0a");
 const contentBytes = Hex(
-	"0x" +
-		Array.from({ length: 100 }, (_, i) =>
-			(i % 256).toString(16).padStart(2, "0"),
-		).join(""),
+	`0x${Array.from({ length: 100 }, (_, i) =>
+		(i % 256).toString(16).padStart(2, "0"),
+	).join("")}`,
 );
 
 const fileChunks = [pngHeader, pngData, contentBytes];
@@ -133,7 +132,7 @@ const largeFile = Hex.fromBytes(largeFileBytes);
 // Create chunks as hex strings
 const chunks: string[] = [];
 for (let i = 0; i < largeFileSize * 2; i += chunkSize * 2) {
-	chunks.push(("0x" + largeFile.slice(2 + i, 2 + i + chunkSize * 2)) as any);
+	chunks.push(`0x${largeFile.slice(2 + i, 2 + i + chunkSize * 2)}` as any);
 }
 
 // Hash each chunk

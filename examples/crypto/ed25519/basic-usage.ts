@@ -48,8 +48,8 @@ const long = new Uint8Array(10000).fill(0xab);
 const sigLong = Ed25519.sign(long, keypair.secretKey);
 
 // Invalid keys - these would fail validation but showing the pattern
-const invalidShort = Hex("0x" + "ab".repeat(16));
-const invalidLong = Hex("0x" + "ab".repeat(64));
+const invalidShort = Hex(`0x${"ab".repeat(16)}`);
+const invalidLong = Hex(`0x${"ab".repeat(64)}`);
 
 const derivedPublicKey = Ed25519.derivePublicKey(keypair.secretKey);
 

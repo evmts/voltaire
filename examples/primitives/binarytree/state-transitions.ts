@@ -8,8 +8,8 @@
  * - Immutable state transitions
  */
 
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
 import { Address } from "../../../src/primitives/Address/index.js";
+import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
 import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 // Helper types

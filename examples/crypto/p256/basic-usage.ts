@@ -43,13 +43,13 @@ const validPrivateBytes = new Uint8Array(32).fill(1);
 const validPrivate = Hex.fromBytes(validPrivateBytes);
 
 // Invalid private key (all zeros)
-const zeroKey = Hex("0x" + "00".repeat(32));
+const zeroKey = Hex(`0x${"00".repeat(32)}`);
 
 // Invalid private key (wrong length)
-const shortKey = Hex("0x" + "ab".repeat(16));
+const shortKey = Hex(`0x${"ab".repeat(16)}`);
 
 // Invalid public key (wrong length)
-const invalidPubKey = Hex("0x" + "ab".repeat(32));
+const invalidPubKey = Hex(`0x${"ab".repeat(32)}`);
 
 const privateKey2Bytes = new Uint8Array(32);
 crypto.getRandomValues(privateKey2Bytes);

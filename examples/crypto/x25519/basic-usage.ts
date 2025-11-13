@@ -33,8 +33,8 @@ const validSecretKey = aliceKeypair.secretKey;
 const validPublicKey = aliceKeypair.publicKey;
 
 // Invalid keys - these would fail validation
-const invalidShort = Hex("0x" + "ab".repeat(16));
-const invalidLong = Hex("0x" + "ab".repeat(64));
+const invalidShort = Hex(`0x${"ab".repeat(16)}`);
+const invalidLong = Hex(`0x${"ab".repeat(64)}`);
 
 const secretKey = X25519.generateSecretKey();
 const derivedPublicKey = X25519.derivePublicKey(secretKey);
