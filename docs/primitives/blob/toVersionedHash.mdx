@@ -5,6 +5,43 @@ description: Compute versioned hash (0x01 + SHA256 of commitment)
 
 <Tabs>
 
+<Tab title="Standard API">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const commitment = new Uint8Array(48); // From toCommitment()
+const versionedHash = Blob.toVersionedHash(commitment);
+
+console.log(versionedHash.length); // 32
+console.log(versionedHash[0]); // 0x01 (KZG version)
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `ToVersionedHash({ sha256 })(commitment): VersionedHash`
+
+Tree-shakeable factory pattern with explicit SHA256 dependency.
+
+**Dependencies:**
+- `sha256: (data: Uint8Array) => Uint8Array` - SHA256 hash function
+
+**Example:**
+
+```typescript
+import { ToVersionedHash } from '@tevm/voltaire/Blob'
+import { hash as sha256 } from '@tevm/voltaire/crypto/SHA256'
+
+const toVersionedHash = ToVersionedHash({ sha256 })
+const versionedHash = toVersionedHash(commitment)
+```
+
+**Bundle size:** SHA256 only included if you import it explicitly.
+
+</Tab>
+
 </Tabs>
 
 ## Versioned Hash Format

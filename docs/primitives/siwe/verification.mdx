@@ -11,6 +11,9 @@ Signature verification for SIWE messages.
 
 Verify SIWE message signature matches claimed address.
 
+<Tabs>
+<Tab title="Wrapper API">
+
 ### Signature
 
 ```typescript
@@ -156,6 +159,9 @@ Returns `false` for:
 ## verifyMessage
 
 Combined validation and signature verification.
+
+<Tabs>
+<Tab title="Wrapper API">
 
 ### Signature
 
@@ -312,7 +318,96 @@ async function authenticateWithSiwe(
 
 **Optimization:** Always validates first to avoid wasting cycles on invalid messages
 
-### See Also
+</Tab>
+</Tabs>
+
+---
+
+## Factory API
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+### Verify Factory
+
+```typescript
+function Verify({
+  keccak256,
+  secp256k1RecoverPublicKey,
+  addressFromPublicKey
+}): (message: BrandedMessage, signature: Signature) => boolean
+```
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+- `secp256k1RecoverPublicKey: (sig: {r, s, v}, hash: Uint8Array) => Uint8Array` - secp256k1 public key recovery
+- `addressFromPublicKey: (x: bigint, y: bigint) => Uint8Array` - Address derivation from public key
+
+**Example:**
+
+```typescript
+import { Verify } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { recoverPublicKey as secp256k1RecoverPublicKey } from '@tevm/voltaire/crypto/Secp256k1'
+import { FromPublicKey } from '@tevm/voltaire/Address'
+
+const addressFromPublicKey = FromPublicKey({ keccak256 })
+const verify = Verify({ keccak256, secp256k1RecoverPublicKey, addressFromPublicKey })
+
+const valid = verify(message, signature)
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+### VerifyMessage Factory
+
+```typescript
+function VerifyMessage({
+  keccak256,
+  secp256k1RecoverPublicKey,
+  addressFromPublicKey
+}): (message: BrandedMessage, signature: Signature, options?: {now?: Date}) => ValidationResult
+```
+
+Same dependencies as `Verify`.
+
+**Example:**
+
+```typescript
+import { VerifyMessage } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { recoverPublicKey as secp256k1RecoverPublicKey } from '@tevm/voltaire/crypto/Secp256k1'
+import { FromPublicKey } from '@tevm/voltaire/Address'
+
+const addressFromPublicKey = FromPublicKey({ keccak256 })
+const verifyMessage = VerifyMessage({ keccak256, secp256k1RecoverPublicKey, addressFromPublicKey })
+
+const result = verifyMessage(message, signature, { now: new Date() })
+```
+
+### GetMessageHash Factory
+
+```typescript
+function GetMessageHash({
+  keccak256
+}): (message: BrandedMessage) => Uint8Array
+```
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Example:**
+
+```typescript
+import { GetMessageHash } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+
+const getMessageHash = GetMessageHash({ keccak256 })
+const hash = getMessageHash(message)
+```
+
+---
+
+## See Also
 
 - [Siwe.validate](/primitives/siwe/validation) - Message validation
 - [Siwe.getMessageHash](/primitives/siwe/signing) - Hash generation

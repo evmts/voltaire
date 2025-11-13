@@ -5,6 +5,48 @@ description: Generate 48-byte KZG proof for blob
 
 <Tabs>
 
+<Tab title="Standard API">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob, commitment);
+
+console.log(proof.length); // 48
+console.log(Blob.Proof.isValid(proof)); // true
+```
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `ToProof({ computeBlobKzgProof })(blob, commitment): Proof`
+
+Tree-shakeable factory pattern with explicit KZG dependency.
+
+**Dependencies:**
+- `computeBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array) => Uint8Array` - KZG proof function from c-kzg-4844
+
+**Example:**
+
+```typescript
+import { ToProof } from '@tevm/voltaire/Blob'
+import { computeBlobKzgProof } from 'c-kzg'
+
+const toProof = ToProof({ computeBlobKzgProof })
+const proof = toProof(blob, commitment)
+```
+
+**Bundle size:** KZG crypto only included if you import it explicitly.
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
 </Tabs>
 
 ## See Also

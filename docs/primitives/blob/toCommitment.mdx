@@ -5,6 +5,47 @@ description: Compute 48-byte KZG commitment for blob
 
 <Tabs>
 
+<Tab title="Standard API">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+
+console.log(commitment.length); // 48
+console.log(Blob.Commitment.isValid(commitment)); // true
+```
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `ToCommitment({ blobToKzgCommitment })(blob): Commitment`
+
+Tree-shakeable factory pattern with explicit KZG dependency.
+
+**Dependencies:**
+- `blobToKzgCommitment: (blob: Uint8Array) => Uint8Array` - KZG commitment function from c-kzg-4844
+
+**Example:**
+
+```typescript
+import { ToCommitment } from '@tevm/voltaire/Blob'
+import { blobToKzgCommitment } from 'c-kzg'
+
+const toCommitment = ToCommitment({ blobToKzgCommitment })
+const commitment = toCommitment(blob)
+```
+
+**Bundle size:** KZG crypto only included if you import it explicitly.
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
 </Tabs>
 
 ## KZG Commitment Scheme

@@ -5,6 +5,48 @@ description: Verify KZG proof for blob and commitment
 
 <Tabs>
 
+<Tab title="Standard API">
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob, commitment);
+
+const isValid = Blob.verify(blob, commitment, proof);
+console.log(isValid); // true
+```
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Verify({ verifyBlobKzgProof })(blob, commitment, proof): boolean`
+
+Tree-shakeable factory pattern with explicit KZG dependency.
+
+**Dependencies:**
+- `verifyBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array) => boolean` - KZG verification function from c-kzg-4844
+
+**Example:**
+
+```typescript
+import { Verify } from '@tevm/voltaire/Blob'
+import { verifyBlobKzgProof } from 'c-kzg'
+
+const verify = Verify({ verifyBlobKzgProof })
+const isValid = verify(blob, commitment, proof)
+```
+
+**Bundle size:** KZG crypto only included if you import it explicitly.
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
 </Tabs>
 
 ## Verification Process

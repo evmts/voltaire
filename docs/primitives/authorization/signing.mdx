@@ -11,8 +11,17 @@ Authorization hashing, signing, and signature verification.
 
 Calculate signing hash for unsigned authorization.
 
+**Formula:** `keccak256(MAGIC_BYTE || rlp([chainId, address, nonce]))`
+
+Where:
+- `MAGIC_BYTE` = `0x05` (EIP-7702 identifier)
+- RLP encoding uses compact representation (no leading zeros)
+
+<Tabs>
+<Tab title="Namespace API">
+
 ```typescript
-Authorization.hash.call(unsigned: Authorization.Unsigned): Hash
+Authorization.hash(unsigned: Authorization.Unsigned): Hash
 ```
 
 **Parameters:**
@@ -20,13 +29,7 @@ Authorization.hash.call(unsigned: Authorization.Unsigned): Hash
 
 **Returns:** 32-byte hash to sign
 
-**Formula:** `keccak256(MAGIC_BYTE || rlp([chainId, address, nonce]))`
-
-Where:
-- `MAGIC_BYTE` = `0x05` (EIP-7702 identifier)
-- RLP encoding uses compact representation (no leading zeros)
-
-### Usage
+**Example:**
 
 ```typescript
 import { Authorization } from '@tevm/voltaire';
@@ -37,11 +40,46 @@ const unsigned: Authorization.Unsigned = {
   nonce: 0n
 };
 
-const sigHash = Authorization.hash.call(unsigned);
+const sigHash = Authorization.hash(unsigned);
 console.log(`Hash to sign: ${sigHash}`);
-
-// Sign this hash with secp256k1 private key
 ```
+
+</Tab>
+
+<Tab title="Factory API">
+
+```typescript
+Authorization.Hash({ keccak256, rlpEncode })(unsigned: Authorization.Unsigned): Hash
+```
+
+Tree-shakeable factory with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+- `rlpEncode: (data: Array<Uint8Array>) => Uint8Array` - RLP encode function
+
+**Example:**
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
+
+const hash = Authorization.Hash({ keccak256, rlpEncode });
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+const sigHash = hash(unsigned);
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+</Tabs>
 
 ### Implementation Details
 
@@ -77,8 +115,17 @@ EIP-7702 uses 0x05 to:
 
 Create signed authorization from unsigned authorization.
 
+**Process:**
+1. Hash unsigned authorization
+2. Sign hash with secp256k1
+3. Recover yParity by attempting recovery
+4. Return Authorization.Item with signature
+
+<Tabs>
+<Tab title="Namespace API">
+
 ```typescript
-Authorization.sign.call(
+Authorization.sign(
   unsigned: Authorization.Unsigned,
   privateKey: Uint8Array
 ): Authorization.Item
@@ -90,13 +137,7 @@ Authorization.sign.call(
 
 **Returns:** Signed Authorization.Item
 
-**Process:**
-1. Hash unsigned authorization
-2. Sign hash with secp256k1
-3. Recover yParity by attempting recovery
-4. Return Authorization.Item with signature
-
-### Usage
+**Example:**
 
 ```typescript
 import { Authorization } from '@tevm/voltaire';
@@ -110,13 +151,71 @@ const unsigned: Authorization.Unsigned = {
 const privateKey = new Uint8Array(32);
 // ... fill with your private key
 
-const auth = Authorization.sign.call(unsigned, privateKey);
+const auth = Authorization.sign(unsigned, privateKey);
 
 console.log(`Signature:`);
 console.log(`  r: ${auth.r}`);
 console.log(`  s: ${auth.s}`);
 console.log(`  v: ${auth.yParity}`);
 ```
+
+</Tab>
+
+<Tab title="Factory API">
+
+```typescript
+Authorization.Sign({
+  keccak256,
+  rlpEncode,
+  sign,
+  recoverPublicKey,
+  addressFromPublicKey
+})(unsigned: Authorization.Unsigned, privateKey: Uint8Array): Authorization.Item
+```
+
+Tree-shakeable factory with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+- `rlpEncode: (data: Array<Uint8Array>) => Uint8Array` - RLP encode function
+- `sign: (messageHash: Uint8Array, privateKey: Uint8Array) => {r, s, v}` - secp256k1 sign
+- `recoverPublicKey: (signature, messageHash) => Uint8Array` - secp256k1 recovery
+- `addressFromPublicKey: (x: bigint, y: bigint) => Address` - Address derivation
+
+**Example:**
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
+import { sign as secp256k1Sign } from '@tevm/voltaire/crypto/Secp256k1';
+import { recoverPublicKey } from '@tevm/voltaire/crypto/Secp256k1';
+import { fromPublicKey as addressFromPublicKey } from '@tevm/voltaire/Address';
+
+const sign = Authorization.Sign({
+  keccak256,
+  rlpEncode,
+  sign: secp256k1Sign,
+  recoverPublicKey,
+  addressFromPublicKey
+});
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+const privateKey = new Uint8Array(32);
+// ... your private key
+
+const auth = sign(unsigned, privateKey);
+```
+
+**Bundle size:** Only includes imported crypto dependencies.
+
+</Tab>
+</Tabs>
 
 ### Implementation Details
 
@@ -177,8 +276,17 @@ secp256k1 signing is deterministic (RFC 6979):
 
 Recover authority (signer) from authorization signature.
 
+**Process:**
+1. Validate authorization structure
+2. Hash unsigned portion
+3. Recover public key from signature
+4. Derive address from public key
+
+<Tabs>
+<Tab title="Namespace API">
+
 ```typescript
-Authorization.verify.call(auth: Authorization.Item): Address
+Authorization.verify(auth: Authorization.Item): Address
 ```
 
 **Parameters:**
@@ -188,13 +296,7 @@ Authorization.verify.call(auth: Authorization.Item): Address
 
 **Throws:** `ValidationError` if validation fails or recovery fails
 
-**Process:**
-1. Validate authorization structure
-2. Hash unsigned portion
-3. Recover public key from signature
-4. Derive address from public key
-
-### Usage
+**Example:**
 
 ```typescript
 import { Authorization } from '@tevm/voltaire';
@@ -209,7 +311,7 @@ const auth: Authorization.Item = {
 };
 
 try {
-  const authority = Authorization.verify.call(auth);
+  const authority = Authorization.verify(auth);
   console.log(`Authorized by: ${authority}`);
 
   // Verify it's the expected signer
@@ -220,6 +322,65 @@ try {
   console.error(`Verification failed: ${e}`);
 }
 ```
+
+</Tab>
+
+<Tab title="Factory API">
+
+```typescript
+Authorization.Verify({
+  keccak256,
+  rlpEncode,
+  recoverPublicKey,
+  addressFromPublicKey
+})(auth: Authorization.Item): Address
+```
+
+Tree-shakeable factory with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+- `rlpEncode: (data: Array<Uint8Array>) => Uint8Array` - RLP encode function
+- `recoverPublicKey: (signature, messageHash) => Uint8Array` - secp256k1 recovery
+- `addressFromPublicKey: (x: bigint, y: bigint) => Address` - Address derivation
+
+**Example:**
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
+import { recoverPublicKey } from '@tevm/voltaire/crypto/Secp256k1';
+import { fromPublicKey as addressFromPublicKey } from '@tevm/voltaire/Address';
+
+const verify = Authorization.Verify({
+  keccak256,
+  rlpEncode,
+  recoverPublicKey,
+  addressFromPublicKey
+});
+
+const auth: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123...n,
+  s: 0x456...n
+};
+
+try {
+  const authority = verify(auth);
+  console.log(`Authorized by: ${authority}`);
+} catch (e) {
+  console.error(`Verification failed: ${e}`);
+}
+```
+
+**Bundle size:** Only includes imported crypto dependencies.
+
+</Tab>
+</Tabs>
 
 ### Implementation Details
 
