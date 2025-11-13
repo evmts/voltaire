@@ -1,0 +1,31 @@
+---
+title: Uint.bitwiseOr
+description: Bitwise OR operation on Uint256 values
+---
+
+## `Uint.bitwiseOr(a: BrandedUint256, b: BrandedUint256): BrandedUint256`
+
+Bitwise OR operation.
+
+**Parameters:**
+- `a: BrandedUint256` - First value
+- `b: BrandedUint256` - Second value
+
+**Returns:** `BrandedUint256` - Bitwise OR result
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0b1100n)
+const b = Uint.from(0b1010n)
+Uint.bitwiseOr(a, b)  // 0b1110 (14)
+```
+
+**Defined in:** [primitives/Uint/BrandedUint256/bitwiseOr.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/bitwiseOr.ts)
+
+## See Also
+
+- [bitwiseAnd](/primitives/uint256/bitwise-and) - Bitwise AND
+- [Bitwise operations](/primitives/uint256/bitwise) - Full bitwise reference

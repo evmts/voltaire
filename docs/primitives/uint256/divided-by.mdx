@@ -1,0 +1,43 @@
+---
+title: Uint.dividedBy
+description: Divide Uint256 values with floor division
+---
+
+## `Uint.dividedBy(a: BrandedUint256, b: BrandedUint256): BrandedUint256`
+
+Divide Uint256 values. Floor division (rounds down).
+
+**Parameters:**
+- `a: BrandedUint256` - Dividend
+- `b: BrandedUint256` - Divisor
+
+**Returns:** `BrandedUint256` - Quotient (floor division)
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(100n)
+const b = Uint.from(10n)
+Uint.dividedBy(a, b)  // 10
+
+// Floor division
+const c = Uint.from(7n)
+const d = Uint.from(2n)
+Uint.dividedBy(c, d)  // 3 (not 3.5)
+
+// Division by zero throws
+Uint.dividedBy(a, Uint.ZERO)  // Error
+```
+
+**Defined in:** [primitives/Uint/BrandedUint256/dividedBy.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/dividedBy.ts#L19)
+
+<Warning title="Division by Zero">
+Throws error if divisor is zero.
+</Warning>
+
+## See Also
+
+- [modulo](/primitives/uint256/modulo) - Remainder
+- [Arithmetic operations](/primitives/uint256/arithmetic) - Full arithmetic reference

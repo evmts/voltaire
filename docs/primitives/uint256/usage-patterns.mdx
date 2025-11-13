@@ -1,0 +1,477 @@
+---
+title: "Usage Patterns"
+description: "Common patterns for working with 256-bit unsigned integers"
+---
+
+# Usage Patterns
+
+Practical patterns for arithmetic, validation, and working with Uint256 values.
+
+## Construction and Validation
+
+### Safe Construction
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint';
+
+// From various sources
+const a = Uint.from(100n);
+const b = Uint.fromNumber(255);
+const c = Uint.fromHex("0xff");
+const d = Uint.fromBytes(new Uint8Array(32));
+
+// Safe construction with validation
+function safeConstruct(value: unknown): BrandedUint256 | null {
+  try {
+    if (typeof value === 'bigint') {
+      return Uint.from(value);
+    }
+    if (typeof value === 'number') {
+      return Uint.fromNumber(value);
+    }
+    if (typeof value === 'string') {
+      return Uint.fromHex(value);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Validation
+
+```typescript
+// Check if valid uint256
+function isValidUint(value: bigint): boolean {
+  return Uint.isValid(value);
+}
+
+// Require valid with error
+function requireUint(value: bigint): BrandedUint256 {
+  if (!Uint.isValid(value)) {
+    throw new Error(`Value out of range: ${value}`);
+  }
+  return Uint.from(value);
+}
+
+// Try construct with fallback
+function tryConstruct(value: bigint, fallback: BrandedUint256): BrandedUint256 {
+  const result = Uint.tryFrom(value);
+  return result ?? fallback;
+}
+```
+
+## Arithmetic Operations
+
+### Safe Arithmetic
+
+```typescript
+// Addition with overflow wrapping
+function add(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+  return Uint.plus(a, b);  // Wraps on overflow
+}
+
+// Subtraction with underflow wrapping
+function subtract(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+  return Uint.minus(a, b);  // Wraps on underflow
+}
+
+// Multiplication with overflow wrapping
+function multiply(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+  return Uint.times(a, b);
+}
+
+// Division (throws on divide by zero)
+function divide(a: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+  if (Uint.isZero(b)) {
+    throw new Error("Division by zero");
+  }
+  return Uint.dividedBy(a, b);
+}
+```
+
+### Checked Arithmetic
+
+```typescript
+// Check for overflow before operation
+function checkedAdd(a: BrandedUint256, b: BrandedUint256): BrandedUint256 | null {
+  const MAX = Uint.from(2n ** 256n - 1n);
+  const remaining = Uint.minus(MAX, a);
+
+  if (Uint.greaterThan(b, remaining)) {
+    return null;  // Would overflow
+  }
+
+  return Uint.plus(a, b);
+}
+
+// Safe multiplication check
+function checkedMultiply(a: BrandedUint256, b: BrandedUint256): BrandedUint256 | null {
+  if (Uint.isZero(a) || Uint.isZero(b)) {
+    return Uint.from(0n);
+  }
+
+  const MAX = Uint.from(2n ** 256n - 1n);
+  const maxB = Uint.dividedBy(MAX, a);
+
+  if (Uint.greaterThan(b, maxB)) {
+    return null;  // Would overflow
+  }
+
+  return Uint.times(a, b);
+}
+```
+
+### Complex Calculations
+
+```typescript
+// Calculate percentage
+function percentage(value: BrandedUint256, percent: number): BrandedUint256 {
+  const multiplied = Uint.times(value, Uint.fromNumber(percent));
+  return Uint.dividedBy(multiplied, Uint.fromNumber(100));
+}
+
+// Calculate compound interest (simplified)
+function compoundInterest(
+  principal: BrandedUint256,
+  rate: number,  // Percent per period
+  periods: number
+): BrandedUint256 {
+  let result = principal;
+
+  for (let i = 0; i < periods; i++) {
+    const interest = percentage(result, rate);
+    result = Uint.plus(result, interest);
+  }
+
+  return result;
+}
+
+// Weighted average
+function weightedAverage(
+  values: BrandedUint256[],
+  weights: BrandedUint256[]
+): BrandedUint256 {
+  if (values.length !== weights.length) {
+    throw new Error("Mismatched array lengths");
+  }
+
+  let sum = Uint.from(0n);
+  let totalWeight = Uint.from(0n);
+
+  for (let i = 0; i < values.length; i++) {
+    const weighted = Uint.times(values[i], weights[i]);
+    sum = Uint.plus(sum, weighted);
+    totalWeight = Uint.plus(totalWeight, weights[i]);
+  }
+
+  return Uint.dividedBy(sum, totalWeight);
+}
+```
+
+## Bitwise Operations
+
+### Bit Manipulation
+
+```typescript
+// Set specific bit
+function setBit(value: BrandedUint256, bitIndex: number): BrandedUint256 {
+  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  return Uint.bitwiseOr(value, mask);
+}
+
+// Clear specific bit
+function clearBit(value: BrandedUint256, bitIndex: number): BrandedUint256 {
+  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  const inverted = Uint.bitwiseNot(mask);
+  return Uint.bitwiseAnd(value, inverted);
+}
+
+// Test bit
+function testBit(value: BrandedUint256, bitIndex: number): boolean {
+  const mask = Uint.shiftLeft(Uint.from(1n), bitIndex);
+  const result = Uint.bitwiseAnd(value, mask);
+  return !Uint.isZero(result);
+}
+
+// Count set bits (population count)
+function countSetBits(value: BrandedUint256): number {
+  return Uint.popCount(value);
+}
+```
+
+### Bit Fields
+
+```typescript
+// Extract bit field
+function extractBitField(
+  value: BrandedUint256,
+  start: number,
+  length: number
+): BrandedUint256 {
+  // Create mask with 'length' bits set
+  const mask = Uint.minus(
+    Uint.shiftLeft(Uint.from(1n), length),
+    Uint.from(1n)
+  );
+
+  // Shift and mask
+  const shifted = Uint.shiftRight(value, start);
+  return Uint.bitwiseAnd(shifted, mask);
+}
+
+// Insert bit field
+function insertBitField(
+  value: BrandedUint256,
+  field: BrandedUint256,
+  start: number,
+  length: number
+): BrandedUint256 {
+  // Create mask
+  const mask = Uint.minus(
+    Uint.shiftLeft(Uint.from(1n), length),
+    Uint.from(1n)
+  );
+
+  // Clear target bits
+  const shiftedMask = Uint.shiftLeft(mask, start);
+  const invertedMask = Uint.bitwiseNot(shiftedMask);
+  const cleared = Uint.bitwiseAnd(value, invertedMask);
+
+  // Insert new bits
+  const maskedField = Uint.bitwiseAnd(field, mask);
+  const shiftedField = Uint.shiftLeft(maskedField, start);
+
+  return Uint.bitwiseOr(cleared, shiftedField);
+}
+```
+
+## Comparisons
+
+### Ordering
+
+```typescript
+// Compare values
+function compare(a: BrandedUint256, b: BrandedUint256): number {
+  if (Uint.lessThan(a, b)) return -1;
+  if (Uint.greaterThan(a, b)) return 1;
+  return 0;
+}
+
+// Sort array
+function sortUints(values: BrandedUint256[]): BrandedUint256[] {
+  return [...values].sort(compare);
+}
+
+// Find min/max
+function findMinMax(values: BrandedUint256[]): {
+  min: BrandedUint256;
+  max: BrandedUint256;
+} | null {
+  if (values.length === 0) return null;
+
+  let min = values[0];
+  let max = values[0];
+
+  for (const value of values) {
+    min = Uint.minimum(min, value);
+    max = Uint.maximum(max, value);
+  }
+
+  return { min, max };
+}
+```
+
+### Range Checking
+
+```typescript
+// Check if in range
+function inRange(
+  value: BrandedUint256,
+  min: BrandedUint256,
+  max: BrandedUint256
+): boolean {
+  return Uint.greaterThanOrEqual(value, min) &&
+         Uint.lessThanOrEqual(value, max);
+}
+
+// Clamp to range
+function clamp(
+  value: BrandedUint256,
+  min: BrandedUint256,
+  max: BrandedUint256
+): BrandedUint256 {
+  return Uint.minimum(Uint.maximum(value, min), max);
+}
+```
+
+## Conversion Patterns
+
+### Safe Number Conversion
+
+```typescript
+// Convert to number if safe
+function toNumberOrNull(value: BrandedUint256): number | null {
+  const MAX_SAFE = Uint.fromNumber(Number.MAX_SAFE_INTEGER);
+
+  if (Uint.greaterThan(value, MAX_SAFE)) {
+    return null;
+  }
+
+  return Uint.toNumber(value);
+}
+
+// Convert with warning
+function toNumberWithWarning(value: BrandedUint256): number {
+  const MAX_SAFE = Uint.fromNumber(Number.MAX_SAFE_INTEGER);
+
+  if (Uint.greaterThan(value, MAX_SAFE)) {
+    console.warn(
+      `Value ${Uint.toString(value)} exceeds MAX_SAFE_INTEGER. ` +
+      `Precision may be lost.`
+    );
+  }
+
+  return Uint.toNumber(value);
+}
+```
+
+### Hex Conversion
+
+```typescript
+// To padded hex (always 32 bytes)
+function toPaddedHex(value: BrandedUint256): string {
+  return Uint.toHex(value);  // "0x0000...0064"
+}
+
+// To minimal hex (no leading zeros)
+function toMinimalHex(value: BrandedUint256): string {
+  return Uint.toHex(value, false);  // "0x64"
+}
+
+// To fixed-width hex
+function toFixedHex(value: BrandedUint256, bytes: number): string {
+  const hex = Uint.toHex(value, false);
+  const withoutPrefix = hex.slice(2);
+  const padded = withoutPrefix.padStart(bytes * 2, '0');
+  return '0x' + padded;
+}
+```
+
+## Token Amount Handling
+
+### Decimal Conversion
+
+```typescript
+// Convert from token decimals
+function fromDecimals(amount: string, decimals: number): BrandedUint256 {
+  const [whole, fraction = ''] = amount.split('.');
+  const paddedFraction = fraction.padEnd(decimals, '0').slice(0, decimals);
+  const combined = whole + paddedFraction;
+
+  return Uint.from(BigInt(combined));
+}
+
+// Convert to token decimals
+function toDecimals(amount: BrandedUint256, decimals: number): string {
+  const str = Uint.toString(amount);
+  const padded = str.padStart(decimals + 1, '0');
+
+  const whole = padded.slice(0, -decimals) || '0';
+  const fraction = padded.slice(-decimals);
+
+  // Remove trailing zeros from fraction
+  const trimmedFraction = fraction.replace(/0+$/, '');
+
+  return trimmedFraction ? `${whole}.${trimmedFraction}` : whole;
+}
+```
+
+### Token Math
+
+```typescript
+// Calculate token transfer with fee
+function calculateTransferWithFee(
+  amount: BrandedUint256,
+  feePercent: number  // e.g., 0.3 for 0.3%
+): { net: BrandedUint256; fee: BrandedUint256 } {
+  const FEE_DENOMINATOR = 10000;
+  const feeNumerator = Math.floor(feePercent * 100);
+
+  const fee = Uint.dividedBy(
+    Uint.times(amount, Uint.fromNumber(feeNumerator)),
+    Uint.fromNumber(FEE_DENOMINATOR)
+  );
+
+  const net = Uint.minus(amount, fee);
+
+  return { net, fee };
+}
+
+// Calculate price impact
+function calculatePriceImpact(
+  inputAmount: BrandedUint256,
+  inputReserve: BrandedUint256,
+  outputReserve: BrandedUint256
+): number {
+  // Simplified constant product formula
+  const k = Uint.times(inputReserve, outputReserve);
+  const newInputReserve = Uint.plus(inputReserve, inputAmount);
+  const newOutputReserve = Uint.dividedBy(k, newInputReserve);
+
+  const outputAmount = Uint.minus(outputReserve, newOutputReserve);
+
+  // Calculate impact as percentage
+  const idealOutput = Uint.dividedBy(
+    Uint.times(inputAmount, outputReserve),
+    inputReserve
+  );
+
+  const impact = Uint.minus(idealOutput, outputAmount);
+  const impactPercent = Number(Uint.toBigInt(impact)) /
+                        Number(Uint.toBigInt(idealOutput)) * 100;
+
+  return impactPercent;
+}
+```
+
+## Testing Utilities
+
+### Test Values
+
+```typescript
+const TEST_UINTS = {
+  zero: Uint.from(0n),
+  one: Uint.from(1n),
+  max: Uint.from(2n ** 256n - 1n),
+  halfMax: Uint.from(2n ** 255n),
+  maxSafeInt: Uint.fromNumber(Number.MAX_SAFE_INTEGER)
+};
+
+// Generate test values
+function testUint(value: number): BrandedUint256 {
+  return Uint.fromNumber(value);
+}
+
+// Generate power of 2
+function powerOf2(exponent: number): BrandedUint256 {
+  return Uint.from(2n ** BigInt(exponent));
+}
+
+// Generate sequential values
+function generateTestUints(count: number, start: number = 0): BrandedUint256[] {
+  return Array.from(
+    { length: count },
+    (_, i) => Uint.fromNumber(start + i)
+  );
+}
+```
+
+## Related
+
+- [Arithmetic](/primitives/uint256/arithmetic) - Arithmetic operations
+- [Bitwise](/primitives/uint256/bitwise) - Bitwise operations
+- [Comparisons](/primitives/uint256/comparisons) - Comparison methods
+- [Conversions](/primitives/uint256/conversions) - Type conversion
+- [Fundamentals](/primitives/uint256/fundamentals) - Uint256 basics

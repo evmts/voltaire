@@ -1,0 +1,32 @@
+---
+title: Uint.bitwiseNot
+description: Bitwise NOT operation on Uint256 value
+---
+
+## `Uint.bitwiseNot(value: BrandedUint256): BrandedUint256`
+
+Bitwise NOT (complement) operation - flips all bits.
+
+**Parameters:**
+- `value: BrandedUint256` - Value to invert
+
+**Returns:** `BrandedUint256` - Bitwise NOT result
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0xfn)
+Uint.bitwiseNot(a)  // 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0
+
+Uint.bitwiseNot(Uint.ZERO)  // MAX
+Uint.bitwiseNot(Uint.MAX)   // ZERO
+```
+
+**Defined in:** [primitives/Uint/BrandedUint256/bitwiseNot.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/bitwiseNot.ts)
+
+## See Also
+
+- [bitwiseAnd](/primitives/uint256/bitwise-and) - Bitwise AND
+- [Bitwise operations](/primitives/uint256/bitwise) - Full bitwise reference

@@ -1,0 +1,210 @@
+---
+title: Uint.fromHex
+description: Create Uint256 from hex string with or without 0x prefix
+---
+
+<Tabs>
+
+</Tabs>
+
+## Hex String Format
+
+Hex strings represent unsigned integers in hexadecimal (base 16).
+
+### Valid Formats
+
+```typescript
+// Lowercase
+Uint.fromHex("0xdeadbeef")
+
+// Uppercase
+Uint.fromHex("0xDEADBEEF")
+
+// Mixed case
+Uint.fromHex("0xDeAdBeEf")
+
+// Without prefix
+Uint.fromHex("deadbeef")
+
+// Leading zeros allowed
+Uint.fromHex("0x00ff")
+Uint.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001")
+```
+
+### Prefix Handling
+
+The `0x` prefix is **optional**:
+
+```typescript
+Uint.fromHex("ff")      // 255
+Uint.fromHex("0xff")    // 255
+// Both produce identical results
+```
+
+<Tip>
+Always use `0x` prefix to make hex strings unambiguous, especially when debugging.
+</Tip>
+
+### Case Insensitivity
+
+```typescript
+Uint.fromHex("0xabcdef")  // Same as
+Uint.fromHex("0xABCDEF")  // Same as
+Uint.fromHex("0xAbCdEf")  // Same as
+Uint.fromHex("abcdef")    // Same
+```
+
+## Length and Range
+
+### Maximum Length
+
+Hex strings for Uint256 can have **up to 64 hex digits** (not including `0x` prefix):
+
+```typescript
+// 64 hex digits = 256 bits
+const max = "0x" + "f".repeat(64)
+Uint.fromHex(max)  // MAX (2^256 - 1)
+
+// 65 hex digits - exceeds maximum
+const tooLarge = "0x1" + "0".repeat(64)
+Uint.fromHex(tooLarge)  // Error: exceeds 2^256 - 1
+```
+
+### Minimum Length
+
+No minimum - leading zeros are implicit:
+
+```typescript
+Uint.fromHex("0x0")      // 0
+Uint.fromHex("0x1")      // 1
+Uint.fromHex("0xff")     // 255
+Uint.fromHex("0x100")    // 256
+```
+
+## Common Values
+
+### Powers of 2
+
+```typescript
+Uint.fromHex("0x1")        // 1 (2^0)
+Uint.fromHex("0x2")        // 2 (2^1)
+Uint.fromHex("0x4")        // 4 (2^2)
+Uint.fromHex("0x8")        // 8 (2^3)
+Uint.fromHex("0x10")       // 16 (2^4)
+Uint.fromHex("0x100")      // 256 (2^8)
+Uint.fromHex("0x10000")    // 65536 (2^16)
+```
+
+### Common Ethereum Values
+
+```typescript
+// 1 wei
+Uint.fromHex("0x1")
+
+// 1 gwei (10^9 wei)
+Uint.fromHex("0x3b9aca00")
+
+// 1 ether (10^18 wei)
+Uint.fromHex("0xde0b6b3a7640000")
+
+// Max uint256
+Uint.fromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+```
+
+## Error Handling
+
+### Invalid Characters
+
+```typescript
+Uint.fromHex("0xGG")       // Error: invalid hex character 'G'
+Uint.fromHex("0x12xy")     // Error: invalid hex character 'x'
+Uint.fromHex("0x 123")     // Error: invalid hex character ' '
+```
+
+### Overflow
+
+```typescript
+// Exceeds 2^256 - 1
+const overflow = "0x1" + "0".repeat(64)
+Uint.fromHex(overflow)  // Error: exceeds maximum
+
+// Just at max
+const max = "0x" + "f".repeat(64)
+Uint.fromHex(max)  // OK: exactly 2^256 - 1
+```
+
+### Empty String
+
+```typescript
+Uint.fromHex("")         // Error: invalid format
+Uint.fromHex("0x")       // Error: invalid format
+Uint.fromHex("  ")       // Error: invalid format
+```
+
+## Usage Patterns
+
+### Parsing Ethereum Data
+
+```typescript
+// Transaction value from RPC
+const txValueHex = "0xde0b6b3a7640000"
+const txValue = Uint.fromHex(txValueHex)
+
+// Block number
+const blockNumberHex = "0x10d4f"
+const blockNumber = Uint.fromHex(blockNumberHex)
+
+// Gas price
+const gasPriceHex = "0x3b9aca00"
+const gasPrice = Uint.fromHex(gasPriceHex)
+```
+
+### Converting from Other Primitives
+
+```typescript
+import { Hash, Address } from '@tevm/voltaire'
+
+// Hash to Uint
+const hash = Hash.fromHex("0x1234...")
+const hashAsUint = Uint.fromBytes(hash)  // Or: Uint.fromHex(Hash.toHex(hash))
+
+// Address to Uint
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addrAsUint = Uint.fromBytes(addr)
+```
+
+### Safe Parsing
+
+```typescript
+function parseHexSafe(hex: string): BrandedUint256 | null {
+  try {
+    return Uint.fromHex(hex)
+  } catch {
+    return null
+  }
+}
+
+// Usage
+const value = parseHexSafe(userInput)
+if (value === null) {
+  console.error("Invalid hex input")
+}
+```
+
+## Performance
+
+Hex parsing requires:
+1. Character validation (each char must be 0-9, a-f, A-F)
+2. Conversion to bytes
+3. BigInt construction
+
+For **performance-critical code**, prefer:
+- `fromBytes` if you already have Uint8Array
+- `from(bigint)` if you already have BigInt
+
+## See Also
+
+- [from](/primitives/uint256/from) - Universal constructor
+- [toHex](/primitives/uint256/to-hex) - Convert to hex string
+- [fromBytes](/primitives/uint256/from-bytes) - From byte array
+- [Hex primitive](/primitives/hex) - Hex string utilities

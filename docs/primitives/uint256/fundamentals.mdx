@@ -1,0 +1,591 @@
+---
+title: Uint Fundamentals
+description: Learn unsigned integers, EVM types, and arithmetic operations
+sidebarTitle: Uint
+---
+
+<Info>
+**Conceptual Guide** - For API reference and method documentation, see [Uint API](/primitives/uint256/index).
+</Info>
+Unsigned integers are non-negative whole numbers used throughout Ethereum for amounts, balances, timestamps, and more. This guide teaches uint fundamentals using Voltaire.
+
+## What Are Unsigned Integers?
+
+An unsigned integer is a whole number (0, 1, 2, 3, ...) with no negative values. The EVM uses unsigned integers for:
+- Token amounts and balances
+- Gas prices and limits
+- Block numbers and timestamps
+- Nonces and counters
+- Storage slot indices
+
+## EVM Integer Types
+
+The EVM supports unsigned integers from 8 to 256 bits in 8-bit increments:
+
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Voltaire provides uint256 (256-bit) by default
+const value = Uint.from(100n);  // uint256
+
+// Other sizes require masking:
+// uint8:   0 to 2^8-1   (255)
+// uint16:  0 to 2^16-1  (65535)
+// uint32:  0 to 2^32-1  (4294967295)
+// uint64:  0 to 2^64-1  (18446744073709551615)
+// uint128: 0 to 2^128-1 (340282366920938463463374607431768211455)
+// uint256: 0 to 2^256-1 (largest - 115792089237316195423570985008687907853269984665640564039457584007913129639935)
+```
+
+### Why uint256?
+
+Most Ethereum operations use `uint256` (32 bytes) because:
+- EVM stack operates on 256-bit words
+- Efficient for large numbers (token amounts, wei)
+- Storage slots are 32 bytes
+- Cryptographic operations use 256-bit values
+
+## Creating Uints
+
+<Tabs>
+<Tab title="From Bigint">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Direct construction (recommended for known values)
+const amount = Uint.from(1000000000000000000n);  // 1 ETH in wei
+const small = Uint.from(42n);
+const zero = Uint.ZERO;  // Constant for 0
+const one = Uint.ONE;    // Constant for 1
+
+// Constructor (same as from)
+const value = Uint(100n);
+```
+</Tab>
+<Tab title="From Hex">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Parse hex strings
+const fromHex = Uint.fromHex("0xff");         // 255
+const padded = Uint.fromHex("0x00000064");    // 100
+const large = Uint.fromHex("0x" + "ff".repeat(32));  // MAX
+
+// Hex strings can be padded or unpadded
+const a = Uint.fromHex("0x1");
+const b = Uint.fromHex("0x0001");
+console.log(a.equals(b));  // true
+```
+</Tab>
+<Tab title="From Number">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// From JavaScript numbers (safe up to Number.MAX_SAFE_INTEGER)
+const count = Uint.fromNumber(42);
+const timestamp = Uint.fromNumber(Date.now());
+
+// WARNING: JavaScript numbers lose precision above 2^53-1
+const safe = Uint.fromNumber(Number.MAX_SAFE_INTEGER);      // ✅ Safe
+// const unsafe = Uint.fromNumber(1e20);                    // ❌ Precision loss
+
+// Use bigint for large values
+const large = Uint.from(10n ** 20n);  // ✅ Correct
+```
+</Tab>
+<Tab title="From Bytes">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// From Uint8Array (32 bytes, big-endian)
+const bytes = new Uint8Array(32);
+bytes[31] = 0xff;  // Last byte = 255
+const value = Uint.fromBytes(bytes);
+
+// ABI-encoded format (same as bytes for uint256)
+const abiEncoded = new Uint8Array(32);
+const decoded = Uint.fromAbiEncoded(abiEncoded);
+```
+</Tab>
+</Tabs>
+
+## Big-Endian Encoding
+
+The EVM stores unsigned integers in **big-endian** format: most significant byte first.
+
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Example: 255 (0xff) in big-endian
+const value = Uint.from(255n);
+const bytes = value.toBytes();
+
+console.log(bytes.length);  // 32 bytes
+console.log(bytes[0]);      // 0 (most significant)
+console.log(bytes[31]);     // 255 (least significant)
+
+// Hex representation shows big-endian
+console.log(value.toHex());
+// "0x00000000000000000000000000000000000000000000000000000000000000ff"
+//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ zeros
+//                                                                    ^^ value
+```
+
+This matches EVM memory/storage layout and ABI encoding.
+
+## Arithmetic Operations
+
+All arithmetic wraps on overflow (mod 2^256), matching EVM behavior:
+
+<Tabs>
+<Tab title="Basic Arithmetic">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const a = Uint.from(100n);
+const b = Uint.from(50n);
+
+// Addition
+const sum = a.plus(b);                    // 150
+console.log(sum.toBigInt());              // 150n
+
+// Subtraction
+const diff = a.minus(b);                  // 50
+console.log(diff.toBigInt());             // 50n
+
+// Multiplication
+const product = a.times(b);               // 5000
+console.log(product.toBigInt());          // 5000n
+
+// Division (throws on divide by zero)
+const quotient = a.dividedBy(b);          // 2
+console.log(quotient.toBigInt());         // 2n
+
+// Modulo
+const remainder = a.modulo(b);            // 0
+console.log(remainder.toBigInt());        // 0n
+
+// Exponentiation
+const power = Uint.from(2n).toPower(Uint.from(8n));  // 256
+console.log(power.toBigInt());            // 256n
+```
+</Tab>
+<Tab title="Overflow Wrapping">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Addition overflow wraps around
+const max = Uint.MAX;  // 2^256 - 1
+const overflow = max.plus(Uint.ONE);
+console.log(overflow.equals(Uint.ZERO));  // true (wraps to 0)
+
+// Subtraction underflow wraps around
+const zero = Uint.ZERO;
+const underflow = zero.minus(Uint.ONE);
+console.log(underflow.equals(Uint.MAX));  // true (wraps to MAX)
+
+// Multiplication overflow
+const large = Uint.from(2n ** 200n);
+const product = large.times(large);  // Result is (2^400 mod 2^256)
+console.log(product.lessThan(Uint.MAX));  // true (wrapped)
+
+// This matches Solidity unchecked arithmetic
+```
+</Tab>
+<Tab title="Safe Arithmetic">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Check before operations to avoid wrapping
+function safeAdd(a: Uint, b: Uint): Uint | null {
+  // Check if a + b > MAX
+  const remaining = Uint.MAX.minus(a);
+  if (b.greaterThan(remaining)) {
+    return null;  // Would overflow
+  }
+  return a.plus(b);
+}
+
+const a = Uint.MAX.minus(Uint.from(10n));
+const b = Uint.from(20n);
+
+const result = safeAdd(a, b);
+console.log(result === null);  // true (would overflow)
+
+// Solidity equivalent: SafeMath library (pre-0.8.0)
+// Solidity 0.8.0+ reverts on overflow by default
+```
+</Tab>
+</Tabs>
+
+## Comparisons
+
+<Tabs>
+<Tab title="Equality">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const a = Uint.from(100n);
+const b = Uint.from(100n);
+const c = Uint.from(200n);
+
+// Equality
+console.log(a.equals(b));         // true
+console.log(a.notEquals(c));      // true
+
+// Special checks
+console.log(Uint.ZERO.isZero());  // true
+console.log(a.isZero());          // false
+```
+</Tab>
+<Tab title="Ordering">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const a = Uint.from(100n);
+const b = Uint.from(200n);
+
+// Less than
+console.log(a.lessThan(b));           // true
+console.log(a.lessThanOrEqual(b));    // true
+console.log(a.lessThanOrEqual(a));    // true
+
+// Greater than
+console.log(b.greaterThan(a));        // true
+console.log(b.greaterThanOrEqual(a)); // true
+console.log(b.greaterThanOrEqual(b)); // true
+```
+</Tab>
+<Tab title="Sorting">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Sort array of uints
+const values = [
+  Uint.from(300n),
+  Uint.from(100n),
+  Uint.from(200n),
+];
+
+values.sort((a, b) => {
+  if (a.lessThan(b)) return -1;
+  if (a.greaterThan(b)) return 1;
+  return 0;
+});
+
+console.log(values.map(v => v.toBigInt()));
+// [100n, 200n, 300n]
+```
+</Tab>
+</Tabs>
+
+## Bitwise Operations
+
+<Tabs>
+<Tab title="Logical Operations">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const a = Uint.fromHex("0xff00");  // 0xff00
+const b = Uint.fromHex("0x00ff");  // 0x00ff
+
+// Bitwise AND
+const and = a.bitwiseAnd(b);
+console.log(and.toHex(false));  // "0x0"
+
+// Bitwise OR
+const or = a.bitwiseOr(b);
+console.log(or.toHex(false));   // "0xffff"
+
+// Bitwise XOR
+const xor = a.bitwiseXor(b);
+console.log(xor.toHex(false));  // "0xffff"
+
+// Bitwise NOT
+const not = a.bitwiseNot();
+console.log(not.toHex().slice(0, 10));  // "0x000000..." (inverted bits)
+```
+</Tab>
+<Tab title="Bit Shifts">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.from(1n);
+
+// Left shift (multiply by powers of 2)
+const shifted = value.shiftLeft(8);
+console.log(shifted.toBigInt());  // 256n (2^8)
+
+// Right shift (divide by powers of 2)
+const original = shifted.shiftRight(8);
+console.log(original.toBigInt());  // 1n
+
+// Overflow wrapping on left shift
+const large = Uint.from(2n ** 250n);
+const overflow = large.shiftLeft(10);  // Wraps (keeps lower 256 bits)
+```
+</Tab>
+<Tab title="Bit Manipulation">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.fromHex("0xff00ff");
+
+// Count bits
+console.log(value.bitLength());    // Number of bits needed (24)
+console.log(value.leadingZeros()); // Leading zero bits (232)
+console.log(value.popCount());     // Number of 1 bits (16)
+
+// Extract specific bits using masks
+const mask = Uint.fromHex("0xff");
+const lowerByte = value.bitwiseAnd(mask);
+console.log(lowerByte.toHex(false));  // "0xff"
+```
+</Tab>
+</Tabs>
+
+## Size Variants and Padding
+
+While Voltaire focuses on uint256, you can work with smaller sizes:
+
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Simulate uint8 (0-255)
+function toUint8(value: Uint): Uint {
+  const mask = Uint.from(0xFFn);
+  return value.bitwiseAnd(mask);
+}
+
+// Simulate uint16 (0-65535)
+function toUint16(value: Uint): Uint {
+  const mask = Uint.from(0xFFFFn);
+  return value.bitwiseAnd(mask);
+}
+
+// Usage
+const large = Uint.from(1000n);
+const u8 = toUint8(large);
+console.log(u8.toBigInt());  // 232n (1000 mod 256)
+
+const u16 = toUint16(large);
+console.log(u16.toBigInt()); // 1000n (fits in uint16)
+```
+
+## Common Use Cases
+
+<Tabs>
+<Tab title="Token Amounts">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// ERC20 token with 18 decimals
+const tokenDecimals = 18n;
+const amount = Uint.from(1000n * 10n ** tokenDecimals);  // 1000 tokens
+
+// Convert to display value
+function toDisplayValue(amount: Uint, decimals: bigint): string {
+  const value = amount.toBigInt();
+  const divisor = 10n ** decimals;
+  const whole = value / divisor;
+  const fraction = value % divisor;
+  return `${whole}.${fraction.toString().padStart(Number(decimals), '0')}`;
+}
+
+console.log(toDisplayValue(amount, tokenDecimals));  // "1000.000000000000000000"
+```
+</Tab>
+<Tab title="Wei/Ether Conversions">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// 1 ether = 10^18 wei
+const weiPerEther = 10n ** 18n;
+
+// Convert ether to wei
+function etherToWei(ether: bigint): Uint {
+  return Uint.from(ether * weiPerEther);
+}
+
+// Convert wei to ether
+function weiToEther(wei: Uint): bigint {
+  return wei.toBigInt() / weiPerEther;
+}
+
+const twoEther = etherToWei(2n);
+console.log(twoEther.toBigInt());  // 2000000000000000000n
+
+const backToEther = weiToEther(twoEther);
+console.log(backToEther);  // 2n
+```
+</Tab>
+<Tab title="Gas Calculations">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Calculate transaction cost
+function calculateGasCost(gasLimit: Uint, gasPrice: Uint): Uint {
+  return gasLimit.times(gasPrice);
+}
+
+const gasLimit = Uint.from(21000n);     // Standard transfer
+const gasPrice = Uint.from(50n * 10n ** 9n);  // 50 gwei
+
+const cost = calculateGasCost(gasLimit, gasPrice);
+console.log(cost.toBigInt());  // 1050000000000000n (0.00105 ETH)
+
+// Check if wallet has enough balance
+function canAfford(balance: Uint, cost: Uint): boolean {
+  return balance.greaterThanOrEqual(cost);
+}
+
+const balance = Uint.from(10n ** 18n);  // 1 ETH
+console.log(canAfford(balance, cost));  // true
+```
+</Tab>
+<Tab title="Timestamps">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// Block timestamps (Unix time in seconds)
+const now = Uint.fromNumber(Math.floor(Date.now() / 1000));
+
+// Check if timestamp is in future
+function isFuture(timestamp: Uint): boolean {
+  const currentTime = Uint.fromNumber(Math.floor(Date.now() / 1000));
+  return timestamp.greaterThan(currentTime);
+}
+
+// Add duration (e.g., 1 day)
+const oneDay = Uint.from(86400n);  // 60 * 60 * 24
+const tomorrow = now.plus(oneDay);
+
+console.log(isFuture(tomorrow));  // true
+```
+</Tab>
+</Tabs>
+
+## JavaScript Number Limitations
+
+**CRITICAL**: JavaScript numbers are 64-bit floats, only precise up to 2^53-1 (9,007,199,254,740,991).
+
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+// ❌ WRONG: Precision loss with large numbers
+const wrong = Uint.fromNumber(1e20);
+console.log(wrong.toBigInt());  // Incorrect value (precision lost)
+
+// ✅ CORRECT: Use bigint for large values
+const correct = Uint.from(10n ** 20n);
+console.log(correct.toBigInt());  // Exact value
+
+// Safe conversions
+const safeNumber = Uint.from(1000n).toNumber();  // 1000 (safe)
+
+// Throws if exceeds safe integer range
+try {
+  const large = Uint.from(2n ** 100n);
+  large.toNumber();  // Throws: value exceeds Number.MAX_SAFE_INTEGER
+} catch (e) {
+  console.error('Value too large for JavaScript number');
+}
+
+// Always use toBigInt() for large values
+const large = Uint.from(2n ** 100n);
+const bigint = large.toBigInt();  // Safe
+```
+
+## Conversions
+
+<Tabs>
+<Tab title="To Hex">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.from(100n);
+
+// Padded (32 bytes, 64 hex chars + 0x prefix)
+console.log(value.toHex());
+// "0x0000000000000000000000000000000000000000000000000000000000000064"
+
+// Unpadded (minimal hex)
+console.log(value.toHex(false));
+// "0x64"
+
+// Always includes 0x prefix
+```
+</Tab>
+<Tab title="To Number/BigInt">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.from(42n);
+
+// To bigint (always safe)
+console.log(value.toBigInt());  // 42n
+
+// To number (throws if too large)
+console.log(value.toNumber());  // 42
+
+// Check if safe first
+const large = Uint.from(2n ** 100n);
+try {
+  large.toNumber();
+} catch (e) {
+  console.log('Use toBigInt() instead');
+}
+```
+</Tab>
+<Tab title="To Bytes">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.from(255n);
+
+// To Uint8Array (32 bytes, big-endian)
+const bytes = value.toBytes();
+console.log(bytes.length);  // 32
+console.log(bytes[31]);     // 255 (least significant)
+
+// ABI encoding (same as toBytes for uint256)
+const abiEncoded = value.toAbiEncoded();
+console.log(abiEncoded.length);  // 32
+```
+</Tab>
+<Tab title="To String">
+```typescript
+import { Uint } from '@tevm/voltaire';
+
+const value = Uint.from(255n);
+
+// Decimal (default)
+console.log(value.toString());     // "255"
+console.log(value.toString(10));   // "255"
+
+// Hexadecimal (without 0x prefix)
+console.log(value.toString(16));   // "ff"
+
+// Binary
+console.log(value.toString(2));    // "11111111"
+
+// Octal
+console.log(value.toString(8));    // "377"
+```
+</Tab>
+</Tabs>
+
+## Resources
+
+- **[Solidity Types](https://docs.soliditylang.org/en/latest/types.html#integers)** - Solidity unsigned integer documentation
+- **[EVM Integer Opcodes](https://www.evm.codes/#add)** - ADD, MUL, DIV, MOD, EXP, etc.
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal arithmetic specifications (Section 9.1)
+- **[MDN BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt)** - JavaScript BigInt reference
+
+## Next Steps
+
+- [Overview](/primitives/uint256) - Type definition and API reference
+- [Arithmetic](/primitives/uint256/arithmetic) - Detailed arithmetic operations
+- [Bitwise](/primitives/uint256/bitwise) - Bitwise operations and bit manipulation
+- [Comparisons](/primitives/uint256/comparisons) - Equality and ordering
+- [Conversions](/primitives/uint256/conversions) - Format conversions

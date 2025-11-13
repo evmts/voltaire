@@ -1,0 +1,160 @@
+---
+title: Uint.fromNumber
+description: Create Uint256 from JavaScript number
+---
+
+<Tabs>
+
+</Tabs>
+
+## Number Limitations
+
+JavaScript numbers are **64-bit floating point** (IEEE 754 double precision):
+
+<Warning title="Safe Integer Range">
+Only use numbers within safe integer range: -2^53 + 1 to 2^53 - 1
+
+For larger values, use **BigInt** instead.
+</Warning>
+
+### Safe Integer Range
+
+```typescript
+// Maximum safe integer
+Number.MAX_SAFE_INTEGER  // 9007199254740991 (2^53 - 1)
+
+// Safe values
+Uint.fromNumber(0)                        // OK
+Uint.fromNumber(1000000)                  // OK
+Uint.fromNumber(Number.MAX_SAFE_INTEGER)  // OK
+
+// Unsafe values (loss of precision)
+Uint.fromNumber(Number.MAX_SAFE_INTEGER + 1)  // Unreliable
+Uint.fromNumber(10 ** 18)                     // Unreliable (exceeds safe range)
+```
+
+### Use BigInt for Large Values
+
+```typescript
+// Don't do this (unsafe)
+const largeNumber = 1000000000000000000  // 10^18
+Uint.fromNumber(largeNumber)  // May lose precision!
+
+// Do this instead (safe)
+const largeBigInt = 1000000000000000000n
+Uint.fromBigInt(largeBigInt)  // Accurate
+
+// Or use string
+Uint.from("1000000000000000000")  // Accurate
+```
+
+## Validation
+
+### Integer Check
+
+```typescript
+// Must be integer
+Uint.fromNumber(100)    // OK
+Uint.fromNumber(0)      // OK
+
+// Decimal values throw
+Uint.fromNumber(3.14)   // Error: Must be integer
+Uint.fromNumber(1.5)    // Error: Must be integer
+Uint.fromNumber(100.1)  // Error: Must be integer
+```
+
+### Special Values
+
+```typescript
+// Invalid numbers throw
+Uint.fromNumber(NaN)       // Error: Invalid value
+Uint.fromNumber(Infinity)  // Error: Invalid value
+Uint.fromNumber(-Infinity) // Error: Invalid value
+```
+
+### Negative Values
+
+```typescript
+// Must be non-negative
+Uint.fromNumber(0)    // OK
+Uint.fromNumber(1)    // OK
+
+Uint.fromNumber(-1)   // Error: Cannot be negative
+Uint.fromNumber(-100) // Error: Cannot be negative
+```
+
+## Usage Patterns
+
+### Small Constants
+
+```typescript
+// Good for small constants
+const ZERO = Uint.fromNumber(0)
+const ONE = Uint.fromNumber(1)
+const TEN = Uint.fromNumber(10)
+const HUNDRED = Uint.fromNumber(100)
+```
+
+### Array Indices
+
+```typescript
+function getElement(index: number): BrandedUint256 {
+  return Uint.fromNumber(index)
+}
+
+// Converting array index to Uint
+const items = [1, 2, 3, 4, 5]
+items.forEach((_, index) => {
+  const indexAsUint = Uint.fromNumber(index)
+  // ...
+})
+```
+
+### Type Conversion
+
+```typescript
+// When you have number but need Uint
+function processNumber(n: number): void {
+  if (n < 0 || !Number.isInteger(n)) {
+    throw new Error("Invalid number")
+  }
+
+  const uint = Uint.fromNumber(n)
+  // Use uint...
+}
+```
+
+## Best Practices
+
+### Prefer BigInt for Ethereum Values
+
+```typescript
+// Bad: Loses precision
+const weiAmount = Uint.fromNumber(1000000000000000000)  // 10^18
+
+// Good: Accurate
+const weiAmount = Uint.fromBigInt(1000000000000000000n)
+
+// Good: From string
+const weiAmount = Uint.from("1000000000000000000")
+```
+
+### Check Safe Integer Range
+
+```typescript
+function safeFromNumber(n: number): BrandedUint256 {
+  if (!Number.isSafeInteger(n)) {
+    throw new Error("Number exceeds safe integer range - use BigInt")
+  }
+  if (n < 0) {
+    throw new Error("Number must be non-negative")
+  }
+  return Uint.fromNumber(n)
+}
+```
+
+## See Also
+
+- [from](/primitives/uint256/from) - Universal constructor
+- [fromBigInt](/primitives/uint256/from-bigint) - From BigInt (for large values)
+- [toNumber](/primitives/uint256/to-number) - Convert to number
