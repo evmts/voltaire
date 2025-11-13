@@ -1,6 +1,7 @@
 ---
 title: Voltaire
 description: High-performance, type-safe Ethereum primitives and cryptography
+mode: "custom"
 ---
 
 <style>{`
@@ -89,7 +90,7 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Branded types make all ethereum values runtime validated and typesafe</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>TypeScript branded types make all ethereum values runtime validated and typesafe</p>
           </div>
         </a>
         <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -118,6 +119,13 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Powerful Features</h3>
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis in addition to the bread and butter primitives and provider features all Ethereum libraries offer</p>
+          </div>
+        </a>
+        <a href="/getting-started/multiplatform" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Native TypeScript and Zig implementations with C-FFI exports for use in any programming language</p>
           </div>
         </a>
       </div>
