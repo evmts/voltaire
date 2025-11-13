@@ -54,71 +54,61 @@ verifySignature(bytecode, Hash("0x1234...")) // ✗ Error: Type 'BrandedBytecode
 
 Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
 
-<Note>
-**Why Uint8Array instead of string?**
+## Casing Bugs
 
-Voltaire uses `Uint8Array` as the underlying type instead of strings because:
-- **Eliminates casing bugs** - No issues with lowercase vs checksummed vs uppercase addresses
-- **Better performance** - Native byte operations without encoding/decoding overhead
-- **Simplest representation** - Follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type at all times
+String-based addresses suffer from casing inconsistencies:
+
+```typescript
+const addr1 = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase
+const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"; // checksummed
+const addr3 = "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"; // uppercase
+
+// All represent same address but !== in JavaScript
+addr1 === addr2; // false
+```
+
+This leads to bugs when comparing addresses, using them as map keys, or validating signatures. Voltaire eliminates this entire class of bugs by using `Uint8Array` as the underlying type.
+
+Even when using hex strings, Voltaire maintains type safety through branded variants:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+
+// Each returns a branded hex string type
+const checksummed = Address.toChecksummed(address); // ChecksumAddress
+const lowercase = Address.toLowercase(address);     // LowercaseAddress
+const uppercase = Address.toUppercase(address);     // UppercaseAddress
+const hex = Address.toHex(address);                 // Hex
+
+// Type-safe even with strings
+function verify(addr: ChecksumAddress) { }
+verify(lowercase); // ✗ Error: Type 'LowercaseAddress' is not assignable to 'ChecksumAddress'
+```
+
+<Note>
+In addition to eliminating casing bugs, `Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type.
 </Note>
 
-### Generic Brand Type
+## Voltaire's Approach
+
+All primitives use a shared `unique symbol` with string literal tags:
 
 ```typescript
 declare const brand: unique symbol
 
-type Brand<T, Tag> = T & { readonly [brand]: Tag }
-```
-
-Usage:
-
-```typescript
-type BrandedAddress = Brand<Uint8Array, "Address">
-type BrandedBytecode = Brand<Uint8Array, "Bytecode">
-type BrandedHex = Brand<string, "Hex">
-```
-
-### Why Symbols?
-
-Using `unique symbol` ensures:
-1. **No runtime overhead** - symbols don't exist at runtime when used in type-only position
-2. **No name collisions** - symbol property name can't clash with real properties
-3. **Type safety** - TypeScript treats each brand as unique identifier
-
-```typescript
-// Without symbol (DON'T DO THIS)
-type BrandedAddress = Uint8Array & { __brand: "Address" }
-
-// If Uint8Array somehow had __brand property, this would conflict!
-// Using symbol prevents any runtime property conflicts
-```
-
-### Voltaire's Approach
-
-All primitives use a shared `unique symbol` with string literal tags for type branding:
-
-```typescript
-// Global brand symbol (declared once in src/brand.ts)
-declare const brand: unique symbol
-
-// BrandedAddress is Uint8Array with brand
 type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
-
-// BrandedHex is string with brand
 type BrandedHex = string & { readonly [brand]: "Hex" }
 
-// Can't mix them up
 function process(addr: BrandedAddress) { /* ... */ }
 const hex: BrandedHex = "0x..." as BrandedHex
 process(hex) // ✗ Error
 ```
 
-Runtime: just `Uint8Array` and `string`. Brand only exists in types. The `unique symbol` ensures no name collisions while string literal tags identify each type.
+## Console Formatting
 
-### Console Formatting
-
-Despite being `Uint8Array`, branded types display formatted in most environments:
+In Node, Bun, and browsers, branded types display formatted:
 
 ```typescript
 const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
@@ -126,38 +116,7 @@ console.log(address);
 // Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 ```
 
-This formatting:
-- Makes debugging more readable than raw byte arrays
-- Shows the branded type name (Address, Hash, Bytecode, etc.)
-- Displays data as hex string for easy inspection
-- Maintains full `Uint8Array` performance and compatibility
-
-```typescript
-import { Address } from '@tevm/voltaire';
-
-const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-
-const checksummed = Address.toChecksummed(address);
-
-const contractAddress = Address.fromCreate2({
-  from: address,
-  salt: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  bytecode: '0x600160010160005260206000f3'
-});
-```
-
-Now the same mistake is caught at compile time:
-
-```typescript
-import { Address, Bytecode } from '@tevm/voltaire';
-
-function transfer(to: Address, amount: bigint) { }
-
-const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-const bytecode = Bytecode("0x60806040");
-
-transfer(bytecode, 100n);
-```
+This makes debugging more readable while maintaining full `Uint8Array` performance.
 
 ## Validation at Construction
 
