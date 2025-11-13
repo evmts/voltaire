@@ -27,6 +27,17 @@ export * from "./constants.js";
 export * from "./BrandedBlob.js";
 export * from "./BrandedKzgCommitment.js";
 export * from "./BrandedKzgProof.js";
+
+// Export factory functions (tree-shakeable)
+export {
+	BlobToKzgCommitment,
+	ComputeKzgProof,
+	VerifyKzgProof,
+	VerifyBlobKzgProof,
+	VerifyBlobKzgProofBatch,
+} from "./KZG.js";
+
+// Export utility functions and wrappers
 export {
 	loadTrustedSetup,
 	freeTrustedSetup,

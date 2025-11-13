@@ -2,19 +2,21 @@
 export * from "./errors.ts";
 export * from "./constants.js";
 
-import { blobToKzgCommitment } from "./blobToKzgCommitment.js";
-import { computeKzgProof } from "./computeKzgProof.js";
+// Export factory functions
+export { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
+export { ComputeKzgProof } from "./computeKzgProof.js";
+export { VerifyKzgProof } from "./verifyKzgProof.js";
+export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
+export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
+
+// Export utility functions (no factory needed)
 import { createEmptyBlob } from "./createEmptyBlob.js";
 import { freeTrustedSetup } from "./freeTrustedSetup.js";
 import { generateRandomBlob } from "./generateRandomBlob.js";
 import { isInitialized } from "./isInitialized.js";
 import { loadTrustedSetup } from "./loadTrustedSetup.js";
 import { validateBlob } from "./validateBlob.js";
-import { verifyBlobKzgProof } from "./verifyBlobKzgProof.js";
-import { verifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
-import { verifyKzgProof } from "./verifyKzgProof.js";
 
-// Export individual functions
 export {
 	loadTrustedSetup,
 	freeTrustedSetup,
@@ -22,12 +24,60 @@ export {
 	validateBlob,
 	createEmptyBlob,
 	generateRandomBlob,
-	blobToKzgCommitment,
-	computeKzgProof,
-	verifyKzgProof,
-	verifyBlobKzgProof,
-	verifyBlobKzgProofBatch,
 };
+
+// Export backward-compatible wrappers with auto-injected c-kzg
+import * as ckzg from "c-kzg";
+import { BlobToKzgCommitment as BlobToKzgCommitmentFactory } from "./blobToKzgCommitment.js";
+import { ComputeKzgProof as ComputeKzgProofFactory } from "./computeKzgProof.js";
+import { VerifyBlobKzgProof as VerifyBlobKzgProofFactory } from "./verifyBlobKzgProof.js";
+import { VerifyBlobKzgProofBatch as VerifyBlobKzgProofBatchFactory } from "./verifyBlobKzgProofBatch.js";
+import { VerifyKzgProof as VerifyKzgProofFactory } from "./verifyKzgProof.js";
+
+/**
+ * Convert blob to KZG commitment (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `BlobToKzgCommitment({ blobToKzgCommitment })` factory
+ */
+export const blobToKzgCommitment = BlobToKzgCommitmentFactory({
+	blobToKzgCommitment: ckzg.blobToKzgCommitment,
+});
+
+/**
+ * Compute KZG proof for blob at evaluation point (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `ComputeKzgProof({ computeKzgProof })` factory
+ */
+export const computeKzgProof = ComputeKzgProofFactory({
+	computeKzgProof: ckzg.computeKzgProof,
+});
+
+/**
+ * Verify KZG proof (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `VerifyKzgProof({ verifyKzgProof })` factory
+ */
+export const verifyKzgProof = VerifyKzgProofFactory({
+	verifyKzgProof: ckzg.verifyKzgProof,
+});
+
+/**
+ * Verify blob KZG proof (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `VerifyBlobKzgProof({ verifyBlobKzgProof })` factory
+ */
+export const verifyBlobKzgProof = VerifyBlobKzgProofFactory({
+	verifyBlobKzgProof: ckzg.verifyBlobKzgProof,
+});
+
+/**
+ * Verify batch of blob KZG proofs (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `VerifyBlobKzgProofBatch({ verifyBlobKzgProofBatch })` factory
+ */
+export const verifyBlobKzgProofBatch = VerifyBlobKzgProofBatchFactory({
+	verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch,
+});
 
 /**
  * KZG Commitments for EIP-4844

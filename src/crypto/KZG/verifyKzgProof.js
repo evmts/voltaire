@@ -1,4 +1,3 @@
-import * as ckzg from "c-kzg";
 import {
 	BYTES_PER_COMMITMENT,
 	BYTES_PER_FIELD_ELEMENT,
@@ -8,29 +7,23 @@ import { KzgError, KzgNotInitializedError } from "./errors.js";
 import { getInitialized } from "./loadTrustedSetup.js";
 
 /**
- * Verify KZG proof
+ * Factory: Verify KZG proof
  *
- * Verifies that commitment C corresponds to polynomial P where P(z) = y.
+ * @param {Object} deps - Crypto dependencies
+ * @param {(commitment: Uint8Array, z: Uint8Array, y: Uint8Array, proof: Uint8Array) => boolean} deps.verifyKzgProof - c-kzg verifyKzgProof function
+ * @returns {(commitment: Uint8Array, z: Uint8Array, y: Uint8Array, proof: Uint8Array) => boolean} Function that verifies KZG proof
  *
- * @see https://voltaire.tevm.sh/crypto for crypto documentation
- * @since 0.0.0
- * @param {Uint8Array} commitment - KZG commitment (48 bytes)
- * @param {Uint8Array} z - Evaluation point (32 bytes)
- * @param {Uint8Array} y - Claimed evaluation result (32 bytes)
- * @param {Uint8Array} proof - KZG proof (48 bytes)
- * @returns {boolean} true if proof is valid, false otherwise
- * @throws {KzgNotInitializedError} If trusted setup not loaded
- * @throws {KzgError} If verification fails due to invalid inputs
  * @example
- * ```javascript
- * import { verifyKzgProof } from './crypto/KZG/index.js';
- * const valid = verifyKzgProof(commitment, z, y, proof);
- * if (!valid) {
- *   throw new Error('Invalid proof');
- * }
+ * ```typescript
+ * import { VerifyKzgProof } from '@tevm/voltaire/crypto/KZG'
+ * import * as ckzg from 'c-kzg'
+ *
+ * const verifyKzgProof = VerifyKzgProof({ verifyKzgProof: ckzg.verifyKzgProof })
+ * const valid = verifyKzgProof(commitment, z, y, proof)
  * ```
  */
-export function verifyKzgProof(commitment, z, y, proof) {
+export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
+	return function verifyKzgProof(commitment, z, y, proof) {
 	if (!getInitialized()) {
 		throw new KzgNotInitializedError();
 	}
@@ -95,21 +88,22 @@ export function verifyKzgProof(commitment, z, y, proof) {
 			},
 		);
 	}
-	try {
-		return ckzg.verifyKzgProof(commitment, z, y, proof);
-	} catch (error) {
-		// If verification fails due to bad args/invalid proof, return false
-		// rather than throwing (this is a verification failure, not an error)
-		if (error instanceof Error && error.message.includes("C_KZG_BADARGS")) {
-			return false;
+		try {
+			return ckzgVerifyKzgProof(commitment, z, y, proof);
+		} catch (error) {
+			// If verification fails due to bad args/invalid proof, return false
+			// rather than throwing (this is a verification failure, not an error)
+			if (error instanceof Error && error.message.includes("C_KZG_BADARGS")) {
+				return false;
+			}
+			throw new KzgError(
+				`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
+				{
+					code: "KZG_VERIFICATION_FAILED",
+					docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+					cause: error instanceof Error ? error : undefined,
+				},
+			);
 		}
-		throw new KzgError(
-			`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				code: "KZG_VERIFICATION_FAILED",
-				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
-				cause: error instanceof Error ? error : undefined,
-			},
-		);
-	}
+	};
 }

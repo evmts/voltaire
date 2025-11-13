@@ -1,29 +1,34 @@
-import { encodeValue } from "./encodeValue.js";
 import {
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
 } from "./errors.js";
-import { hashType } from "./hashType.js";
 
 /**
- * Encode struct data according to EIP-712.
+ * Factory: Encode struct data according to EIP-712.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {string} primaryType - Type name to encode
- * @param {import('./BrandedEIP712.js').Message} data - Message data to encode
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions mapping
- * @returns {Uint8Array} Encoded data bytes (type hash concatenated with encoded values)
+ * @param {Object} deps - Crypto dependencies
+ * @param {(primaryType: string, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').BrandedHash} deps.hashType - Hash type function
+ * @param {(type: string, value: import('./BrandedEIP712.js').MessageValue, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} deps.encodeValue - Encode value function
+ * @returns {(primaryType: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} Function that encodes data
  * @throws {Eip712TypeNotFoundError} If primaryType is not found in types
  * @throws {Eip712InvalidMessageError} If required field is missing from data
  * @example
  * ```javascript
- * import * as EIP712 from './crypto/EIP712/index.js';
+ * import { EncodeData } from './crypto/EIP712/encodeData.js';
+ * import { HashType } from './hashType.js';
+ * import { EncodeValue } from './encodeValue.js';
+ * import { hash as keccak256 } from '../Keccak256/hash.js';
+ * const hashType = HashType({ keccak256 });
+ * const encodeValue = EncodeValue({ keccak256, hashStruct });
+ * const encodeData = EncodeData({ hashType, encodeValue });
  * const types = { Person: [{ name: 'name', type: 'string' }, { name: 'wallet', type: 'address' }] };
- * const encoded = EIP712.encodeData('Person', { name: 'Alice', wallet: '0x...' }, types);
+ * const encoded = encodeData('Person', { name: 'Alice', wallet: '0x...' }, types);
  * ```
  */
-export function encodeData(primaryType, data, types) {
+export function EncodeData({ hashType, encodeValue }) {
+	return function encodeData(primaryType, data, types) {
 	const typeProps = types[primaryType];
 	if (!typeProps) {
 		throw new Eip712TypeNotFoundError(`Type '${primaryType}' not found`, {
@@ -63,4 +68,5 @@ export function encodeData(primaryType, data, types) {
 	}
 
 	return result;
+	};
 }

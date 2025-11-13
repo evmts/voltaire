@@ -1,29 +1,30 @@
-import { keccak_256 } from "@noble/hashes/sha3.js";
 import { Eip712EncodingError } from "./errors.js";
-import { hashStruct } from "./hashStruct.js";
 
 /**
- * Encode single value to 32 bytes according to EIP-712.
+ * Factory: Encode single value to 32 bytes according to EIP-712.
  *
  * Handles primitive types, arrays, strings, bytes, and custom structs.
  * Addresses must be pre-validated BrandedAddress types.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {string} type - Solidity type string (e.g., 'uint256', 'address', 'string', 'bytes32', custom type)
- * @param {import('./BrandedEIP712.js').MessageValue} value - Value to encode
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions for custom types
- * @returns {Uint8Array} 32-byte encoded value (or hash for dynamic types)
+ * @param {Object} deps - Crypto dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(type: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').BrandedHash} deps.hashStruct - Hash struct function
+ * @returns {(type: string, value: import('./BrandedEIP712.js').MessageValue, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} Function that encodes value
  * @throws {Eip712EncodingError} If type is unsupported or value format is invalid
  * @example
  * ```javascript
- * import * as EIP712 from './crypto/EIP712/index.js';
- * import * as Address from '../../primitives/Address/index.js';
- * const encoded = EIP712.encodeValue('uint256', 42n, types);
- * const addrEncoded = EIP712.encodeValue('address', Address.from('0x...'), types);
+ * import { EncodeValue } from './crypto/EIP712/encodeValue.js';
+ * import { hash as keccak256 } from '../Keccak256/hash.js';
+ * import { HashStruct } from './hashStruct.js';
+ * const hashStruct = HashStruct({ keccak256, encodeData });
+ * const encodeValue = EncodeValue({ keccak256, hashStruct });
+ * const encoded = encodeValue('uint256', 42n, types);
  * ```
  */
-export function encodeValue(type, value, types) {
+export function EncodeValue({ keccak256, hashStruct }) {
+	return function encodeValue(type, value, types) {
 	const result = new Uint8Array(32);
 
 	// array types (hash the array encoding) - CHECK BEFORE uint/int to avoid matching "uint256[]"
@@ -45,7 +46,7 @@ export function encodeValue(type, value, types) {
 			concatenated.set(elem, offset);
 			offset += elem.length;
 		}
-		const hash = keccak_256(concatenated);
+		const hash = keccak256(concatenated);
 		return hash;
 	}
 
@@ -97,14 +98,14 @@ export function encodeValue(type, value, types) {
 	if (type === "string") {
 		const str = /** @type {string} */ (value);
 		const encoded = new TextEncoder().encode(str);
-		const hash = keccak_256(encoded);
+		const hash = keccak256(encoded);
 		return hash;
 	}
 
 	// bytes type (dynamic - hash)
 	if (type === "bytes") {
 		const bytes = /** @type {Uint8Array} */ (value);
-		const hash = keccak_256(bytes);
+		const hash = keccak256(bytes);
 		return hash;
 	}
 
@@ -141,4 +142,5 @@ export function encodeValue(type, value, types) {
 		context: { type, availableTypes: Object.keys(types) },
 		docsPath: "/crypto/eip712/encode-value#error-handling",
 	});
+	};
 }

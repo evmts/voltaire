@@ -1,28 +1,31 @@
-import { keccak_256 } from "@noble/hashes/sha3.js";
 import { encodeType } from "./encodeType.js";
 
 /**
- * Hash type string according to EIP-712.
+ * Factory: Hash type string according to EIP-712.
  *
  * Computes keccak256 of the encoded type string.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {string} primaryType - Primary type name to hash
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions mapping
- * @returns {import('../../primitives/Hash/index.js').BrandedHash} 32-byte type hash
+ * @param {Object} deps - Crypto dependencies
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @returns {(primaryType: string, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').BrandedHash} Function that hashes type string
  * @throws {Eip712TypeNotFoundError} If type is not found
  * @example
  * ```javascript
- * import * as EIP712 from './crypto/EIP712/index.js';
+ * import { HashType } from './crypto/EIP712/hashType.js';
+ * import { hash as keccak256 } from '../Keccak256/hash.js';
+ * const hashType = HashType({ keccak256 });
  * const types = { Mail: [{ name: 'contents', type: 'string' }] };
- * const typeHash = EIP712.hashType('Mail', types);
+ * const typeHash = hashType('Mail', types);
  * ```
  */
-export function hashType(primaryType, types) {
-	const encoded = encodeType(primaryType, types);
-	const encodedBytes = new TextEncoder().encode(encoded);
-	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
-		keccak_256(encodedBytes)
-	);
+export function HashType({ keccak256 }) {
+	return function hashType(primaryType, types) {
+		const encoded = encodeType(primaryType, types);
+		const encodedBytes = new TextEncoder().encode(encoded);
+		return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+			keccak256(encodedBytes)
+		);
+	};
 }
