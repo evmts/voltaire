@@ -20,7 +20,7 @@ export function bitwiseNot(value) {
 	const unsigned = value < 0n ? value + MODULO : value;
 
 	const mask = MODULO - 1n;
-	const result = (~unsigned) & mask;
+	const result = ~unsigned & mask;
 
 	// Convert back to signed
 	return fromBigInt(result >= MODULO / 2n ? result - MODULO : result);

@@ -23,15 +23,11 @@ export function fromNumber(value) {
 	const bigintValue = BigInt(value);
 
 	if (bigintValue < MIN) {
-		throw new Error(
-			`Int256 value below minimum (${MIN}): ${bigintValue}`,
-		);
+		throw new Error(`Int256 value below minimum (${MIN}): ${bigintValue}`);
 	}
 
 	if (bigintValue > MAX) {
-		throw new Error(
-			`Int256 value exceeds maximum (${MAX}): ${bigintValue}`,
-		);
+		throw new Error(`Int256 value exceeds maximum (${MAX}): ${bigintValue}`);
 	}
 
 	return bigintValue;

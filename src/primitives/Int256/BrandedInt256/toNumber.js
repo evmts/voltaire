@@ -15,15 +15,11 @@
  */
 export function toNumber(value) {
 	if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-		throw new Error(
-			`Int256 value exceeds Number.MAX_SAFE_INTEGER: ${value}`,
-		);
+		throw new Error(`Int256 value exceeds Number.MAX_SAFE_INTEGER: ${value}`);
 	}
 
 	if (value < BigInt(Number.MIN_SAFE_INTEGER)) {
-		throw new Error(
-			`Int256 value below Number.MIN_SAFE_INTEGER: ${value}`,
-		);
+		throw new Error(`Int256 value below Number.MIN_SAFE_INTEGER: ${value}`);
 	}
 
 	return Number(value);
