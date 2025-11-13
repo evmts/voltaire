@@ -1,6 +1,11 @@
-// Export all from BrandedUint
-export * from "./BrandedUint/index.js";
+// Export all from BrandedUint256
+export * from "./BrandedUint256/index.js";
+export { BrandedUint256 as Uint256 } from "./BrandedUint256/index.js";
 
 // Export type definitions
 export type { UintConstructor } from "./UintConstructor.js";
-export type { BrandedUint as Type } from "./BrandedUint/BrandedUint.js";
+export type {
+	BrandedUint256 as Type,
+	BrandedUint256,
+	BrandedUint,
+} from "./BrandedUint256/BrandedUint256.js";

@@ -7,7 +7,7 @@ import * as OxBase64 from "ox/Base64";
  * without padding
  *
  * @param {Uint8Array} data - Bytes to encode
- * @returns {string} URL-safe base64 string
+ * @returns {import('./BrandedBase64Url.js').BrandedBase64Url} URL-safe base64 string
  *
  * @example
  * ```typescript
