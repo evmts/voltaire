@@ -120,42 +120,43 @@ This makes debugging more readable while maintaining full `Uint8Array` performan
 
 ## Validation at Construction
 
-Factory functions validate then cast to branded type. `Address.from()` validates inputs at construction, eliminating the need for runtime validation libraries like Zod:
-
-```typescript
-declare const brand: unique symbol
-type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
-
-function fromUint8Array(bytes: Uint8Array): BrandedAddress {
-  // Validate
-  if (!Address.isValidAddress(bytes)) {
-    throw new InvalidAddressError()
-  }
-
-  // Return input cast to branded type
-  return bytes as BrandedAddress
-}
-
-// Create from various inputs - all validated at construction
-const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const addr2 = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en)
-// addr runtime: Uint8Array with 20 bytes
-// addr compile-time: BrandedAddress (type-safe)
-```
-
-Example usage:
+Factory functions validate inputs at construction, eliminating the need for runtime validation libraries like Zod:
 
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-const valid = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-const invalid = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f5");
+// Valid inputs - all validated at construction
+const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr2 = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
 ```
 
-Validation at construction. Brand ensures type safety throughout codebase.
+<Warning>
+**If you see a branded type, it's validated.**
 
-## Benefits
+Any value with type `BrandedAddress` has been validated to be a correct, valid address. No additional runtime checks needed.
+</Warning>
+
+All invalid inputs throw validation errors:
+
+```typescript
+// Invalid hex characters
+Address("0xnot_valid_hex");
+// Error: Invalid hex character
+
+// Wrong length (too short)
+Address("0x123");
+// Error: Invalid address length
+
+// Wrong byte length
+Address(new Uint8Array(10));
+// Error: Address must be exactly 20 bytes
+
+// Invalid checksum
+Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3E"); // Invalid EIP-55
+// Error: Invalid checksum
+```
+
+## Benefits of Branded Types
 
 <CardGroup cols={2}>
   <Card title="Type Safety" icon="lock">
@@ -177,5 +178,8 @@ Validation at construction. Brand ensures type safety throughout codebase.
 <CardGroup cols={2}>
   <Card title="Address Primitive" icon="cube" href="/primitives/address">
     Complete Address API reference
+  </Card>
+  <Card title="TypeScript Branding" icon="book-open" href="https://prosopo.io/blog/typescript-branding/">
+    In-depth guide to branded types (Prosopo)
   </Card>
 </CardGroup>
