@@ -50,13 +50,20 @@ Returns 32 zero bytes if signature is invalid.
 ```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Prepare input (hash || v || r || s)
-const hash = new Uint8Array(32); // keccak256 of message
-const v = new Uint8Array(32); // v = 27 or 28 (last byte)
-v[31] = 27;
-const r = new Uint8Array(32); // signature r
-const s = new Uint8Array(32); // signature s
+// Message hash (keccak256 of signed data)
+const hash = Hex.from('0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad');
+
+// v = 27 (padded to 32 bytes)
+const v = Hex.from('0x000000000000000000000000000000000000000000000000000000000000001b');
+
+// Signature r component
+const r = Hex.from('0x9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac8038825608');
+
+// Signature s component
+const s = Hex.from('0x4f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada');
 
 const input = new Uint8Array(128);
 input.set(hash, 0);
@@ -118,20 +125,21 @@ EIP-2 solved this by requiring `s ≤ secp256k1_n/2`, where secp256k1_n = `0xFFF
 ## Test Vectors
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Valid signature recovery
-const hash = new Uint8Array(32).fill(0x47);
-const v = new Uint8Array(32); v[31] = 28;
-const r = new Uint8Array(32).fill(0x69);
-const s = new Uint8Array(32).fill(0x7a);
+const hash = Hex.from('0x4747474747474747474747474747474747474747474747474747474747474747');
+const v = Hex.from('0x000000000000000000000000000000000000000000000000000000000000001c');
+const r = Hex.from('0x6969696969696969696969696969696969696969696969696969696969696969');
+const s = Hex.from('0x7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a');
 // Should recover valid address
 
 // Invalid: s too high (EIP-2 violation)
-const s_high = new Uint8Array(32);
-s_high[0] = 0x80; // > secp256k1_n/2
+const s_high = Hex.from('0x8000000000000000000000000000000000000000000000000000000000000000');
 // Should return zero address
 
 // Invalid: v out of range
-const v_invalid = new Uint8Array(32); v_invalid[31] = 29;
+const v_invalid = Hex.from('0x000000000000000000000000000000000000000000000000000000000000001d');
 // Should return zero address
 ```
 

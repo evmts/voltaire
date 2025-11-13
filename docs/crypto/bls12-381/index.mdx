@@ -79,17 +79,21 @@ e(P1, Q1) · e(P2, Q2) · ... · e(Pn, Qn) = 1
 import { bls12_381 } from '@tevm/voltaire/crypto';
 
 // G1 point addition (signatures)
-const g1Input = new Uint8Array(256);  // Two 128-byte G1 points
+const g1Point1 = Hex.toBytes('0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb');
+const g1Point2 = Hex.toBytes('0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1');
+const g1Input = new Uint8Array([...g1Point1, new Uint8Array(80), ...g1Point2, new Uint8Array(80)]);  // 256 bytes padded
 const g1Output = new Uint8Array(128);
 await bls12_381.g1Add(g1Input, g1Output);
 
 // G2 scalar multiplication (public keys)
-const g2Input = new Uint8Array(288);  // 256-byte G2 point + 32-byte scalar
+const g2Point = Hex.toBytes('0x024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8');
+const scalar = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000002');
+const g2Input = new Uint8Array([...g2Point, new Uint8Array(224), ...scalar]);  // 288 bytes
 const g2Output = new Uint8Array(256);
 await bls12_381.g2Mul(g2Input, g2Output);
 
 // Pairing check (signature verification)
-const pairingInput = new Uint8Array(768);  // Two (G1, G2) pairs
+const pairingInput = new Uint8Array([...g1Point1, new Uint8Array(80), ...g2Point, new Uint8Array(224)]);  // Pairs
 const pairingOutput = new Uint8Array(32);
 await bls12_381.pairing(pairingInput, pairingOutput);
 

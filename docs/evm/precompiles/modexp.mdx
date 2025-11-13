@@ -65,22 +65,18 @@ Returns empty output if `modulus_length = 0`.
 ```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Compute 2^3 mod 5 = 8 mod 5 = 3
-const input = new Uint8Array(99);
-
-// base_length = 1
-input[31] = 1;
-// exponent_length = 1
-input[63] = 1;
-// modulus_length = 1
-input[95] = 1;
-// base = 2
-input[96] = 2;
-// exponent = 3
-input[97] = 3;
-// modulus = 5
-input[98] = 5;
+const input = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000001' + // base_length = 1
+  '0000000000000000000000000000000000000000000000000000000000000001' + // exponent_length = 1
+  '0000000000000000000000000000000000000000000000000000000000000001' + // modulus_length = 1
+  '02' + // base = 2
+  '03' + // exponent = 3
+  '05'   // modulus = 5
+);
 
 const result = execute(
   PrecompileAddress.MODEXP,
@@ -122,21 +118,27 @@ if (result.success) {
 ## RSA Verification Example
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // RSA-2048 verification (256-byte values)
 const baseLen = 256;
 const expLen = 3;  // Common public exponent: 65537
 const modLen = 256;
 
-const input = new Uint8Array(96 + baseLen + expLen + modLen);
+// Example RSA-2048 input (signature verification)
+const base = Hex.from('0x' + 'ab'.repeat(256)); // Signature (256 bytes)
+const exponent = Hex.from('0x010001'); // Public exponent 65537 (3 bytes)
+const modulus = Hex.from('0x' + 'cd'.repeat(256)); // RSA modulus (256 bytes)
 
-// Set lengths
-const view = new DataView(input.buffer);
-view.setBigUint64(24, BigInt(baseLen), false);
-view.setBigUint64(56, BigInt(expLen), false);
-view.setBigUint64(88, BigInt(modLen), false);
-
-// Set base (signature), exponent (public key), modulus
-// ... (set actual RSA values)
+const input = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000100' + // base_length = 256
+  '0000000000000000000000000000000000000000000000000000000000000003' + // exponent_length = 3
+  '0000000000000000000000000000000000000000000000000000000000000100' + // modulus_length = 256
+  Hex.toHex(base).slice(2) +
+  Hex.toHex(exponent).slice(2) +
+  Hex.toHex(modulus).slice(2)
+);
 
 const result = execute(
   PrecompileAddress.MODEXP,
@@ -170,44 +172,46 @@ This made RSA verification practical for many use cases.
 ## Test Vectors
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Test 1: 2^3 mod 5 = 3
-const input1 = new Uint8Array(99);
-input1[31] = 1;  // base_len = 1
-input1[63] = 1;  // exp_len = 1
-input1[95] = 1;  // mod_len = 1
-input1[96] = 2;  // base = 2
-input1[97] = 3;  // exp = 3
-input1[98] = 5;  // mod = 5
+const input1 = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000001' + // base_len = 1
+  '0000000000000000000000000000000000000000000000000000000000000001' + // exp_len = 1
+  '0000000000000000000000000000000000000000000000000000000000000001' + // mod_len = 1
+  '02' + '03' + '05' // base=2, exp=3, mod=5
+);
 // Expected: 0x03
 
 // Test 2: 3^1 mod 5 = 3
-const input2 = new Uint8Array(99);
-input2[31] = 1;  // base_len = 1
-input2[63] = 1;  // exp_len = 1
-input2[95] = 1;  // mod_len = 1
-input2[96] = 3;  // base = 3
-input2[97] = 1;  // exp = 1
-input2[98] = 5;  // mod = 5
+const input2 = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '03' + '01' + '05' // base=3, exp=1, mod=5
+);
 // Expected: 0x03
 
 // Test 3: 5^0 mod 7 = 1 (zero exponent)
-const input3 = new Uint8Array(99);
-input3[31] = 1;  // base_len = 1
-input3[63] = 1;  // exp_len = 1
-input3[95] = 1;  // mod_len = 1
-input3[96] = 5;  // base = 5
-input3[97] = 0;  // exp = 0
-input3[98] = 7;  // mod = 7
+const input3 = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '05' + '00' + '07' // base=5, exp=0, mod=7
+);
 // Expected: 0x01
 
 // Test 4: Zero modulus error
-const input4 = new Uint8Array(99);
-input4[31] = 1;
-input4[63] = 1;
-input4[95] = 1;
-input4[96] = 2;
-input4[97] = 3;
-input4[98] = 0;  // mod = 0
+const input4 = Hex.from(
+  '0x' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '0000000000000000000000000000000000000000000000000000000000000001' +
+  '02' + '03' + '00' // base=2, exp=3, mod=0
+);
 // Expected: Error (division by zero)
 ```
 

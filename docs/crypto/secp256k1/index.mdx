@@ -24,7 +24,7 @@ import * as Hash from '@tevm/voltaire/primitives/Hash';
 
 // Sign a message hash
 const messageHash = Hash.keccak256String('Hello, Ethereum!');
-const privateKey = new Uint8Array(32); // Your 32-byte private key
+const privateKey = Hex.toBytes('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Verify signature
@@ -223,8 +223,7 @@ For production use, prefer:
 
 ```typescript
 // Private key = 1
-const privateKey = new Uint8Array(32);
-privateKey[31] = 1;
+const privateKey = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001');
 
 // Message hash (SHA-256 of "hello world")
 const messageHash = sha256("hello world");
@@ -242,8 +241,7 @@ assert(sig1.v === sig2.v);
 ### Signature Recovery
 
 ```typescript
-const privateKey = new Uint8Array(32);
-privateKey[31] = 42;
+const privateKey = Hex.toBytes('0x000000000000000000000000000000000000000000000000000000000000002a');
 const messageHash = sha256("test recovery");
 
 // Sign message
@@ -261,30 +259,19 @@ assert(publicKey.every((byte, i) => byte === recovered[i]));
 
 ```typescript
 // Minimum valid private key (1)
-const minKey = new Uint8Array(32);
-minKey[31] = 1;
+const minKey = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001');
 const sig1 = Secp256k1.sign(messageHash, minKey); // Valid
 
 // Maximum valid private key (n-1)
-const maxKey = new Uint8Array([
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
-  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
-]);
+const maxKey = Hex.toBytes('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140');
 const sig2 = Secp256k1.sign(messageHash, maxKey); // Valid
 
 // Zero private key (invalid)
-const zeroKey = new Uint8Array(32);
+const zeroKey = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000000');
 expect(() => Secp256k1.sign(messageHash, zeroKey)).toThrow(); // Throws
 
 // Private key >= n (invalid)
-const invalidKey = new Uint8Array([
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
-  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
-]);
+const invalidKey = Hex.toBytes('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
 expect(() => Secp256k1.sign(messageHash, invalidKey)).toThrow(); // Throws
 ```
 
@@ -341,7 +328,7 @@ const tx = {
   gasLimit: 21000n,
   to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
   value: 1000000000000000000n,
-  data: new Uint8Array(),
+  data: Hex.toBytes('0x'),
 };
 
 // Hash transaction (RLP-encoded)

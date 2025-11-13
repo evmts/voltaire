@@ -91,28 +91,21 @@ if (result.success) {
 ## Test Vectors
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
 // Test 1: Empty input
 const input1 = new Uint8Array(0);
 // Expected: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-const expected1 = new Uint8Array([
-  0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
-  0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
-  0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
-  0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55,
-]);
+const expected1 = Hash.from('0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 
 // Test 2: "abc"
 const input2 = new TextEncoder().encode("abc");
 // Expected: ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
-const expected2 = new Uint8Array([
-  0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
-  0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
-  0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
-  0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
-]);
+const expected2 = Hash.from('0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
 
 // Test 3: Large input (1000 bytes of zeros)
-const input3 = new Uint8Array(1000);
+const input3 = Hex.from('0x' + '00'.repeat(1000));
 // Gas: 60 + 12 * ceil(1000/32) = 60 + 12*32 = 444
 ```
 
