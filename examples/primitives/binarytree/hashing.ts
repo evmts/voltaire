@@ -9,16 +9,14 @@
  */
 
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 const emptyTree = BinaryTree();
 const emptyHash = BinaryTree.rootHash(emptyTree);
 const emptyHashHex = BinaryTree.rootHashHex(emptyTree);
 
-const key1 = new Uint8Array(32);
-key1[31] = 0;
-
-const value1 = new Uint8Array(32);
-value1[0] = 0x42;
+const key1 = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000000");
+const value1 = Bytes32.from("0x4200000000000000000000000000000000000000000000000000000000000000");
 
 const tree1 = BinaryTree.insert(emptyTree, key1, value1);
 const hash1 = BinaryTree.rootHash(tree1);
@@ -28,11 +26,8 @@ let currentTree = tree1;
 const hashes = [hashHex1];
 
 for (let i = 1; i < 4; i++) {
-	const key = new Uint8Array(32);
-	key[31] = i;
-
-	const value = new Uint8Array(32);
-	value[0] = 0x10 + i;
+	const key = Bytes32.from(`0x${i.toString(16).padStart(64, "0")}`);
+	const value = Bytes32.from(`0x${(0x10 + i).toString(16).padStart(2, "0")}${"00".repeat(31)}`);
 
 	currentTree = BinaryTree.insert(currentTree, key, value);
 	const newHash = BinaryTree.rootHashHex(currentTree);
@@ -49,11 +44,8 @@ const insertData = [
 ];
 
 for (const { key: keyBytes, value: valueByte } of insertData) {
-	const key = new Uint8Array(32);
-	key[31] = keyBytes[0];
-
-	const value = new Uint8Array(32);
-	value[0] = valueByte;
+	const key = Bytes32.from(`0x${keyBytes[0].toString(16).padStart(64, "0")}`);
+	const value = Bytes32.from(`0x${valueByte.toString(16).padStart(2, "0")}${"00".repeat(31)}`);
 
 	tree2a = BinaryTree.insert(tree2a, key, value);
 	tree2b = BinaryTree.insert(tree2b, key, value);
@@ -66,18 +58,14 @@ let tree3a = BinaryTree();
 let tree3b = BinaryTree();
 
 // Tree A: value 0xFF at subindex 0
-const keyA = new Uint8Array(32);
-keyA[31] = 0;
-const valueA = new Uint8Array(32);
-valueA[0] = 0xff;
+const keyA = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000000");
+const valueA = Bytes32.from("0xff00000000000000000000000000000000000000000000000000000000000000");
 
 tree3a = BinaryTree.insert(tree3a, keyA, valueA);
 
 // Tree B: value 0xFE at subindex 0
-const keyB = new Uint8Array(32);
-keyB[31] = 0;
-const valueB = new Uint8Array(32);
-valueB[0] = 0xfe;
+const keyB = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000000");
+const valueB = Bytes32.from("0xfe00000000000000000000000000000000000000000000000000000000000000");
 
 tree3b = BinaryTree.insert(tree3b, keyB, valueB);
 
@@ -87,23 +75,15 @@ const hash3b = BinaryTree.rootHashHex(tree3b);
 let tree4 = BinaryTree();
 
 // Insert with stem starting with 0x00
-const key4a = new Uint8Array(32);
-key4a[0] = 0x00;
-key4a[31] = 0;
-
-const value4a = new Uint8Array(32);
-value4a[0] = 0xaa;
+const key4a = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000000");
+const value4a = Bytes32.from("0xaa00000000000000000000000000000000000000000000000000000000000000");
 
 tree4 = BinaryTree.insert(tree4, key4a, value4a);
 const hashAfterFirst = BinaryTree.rootHashHex(tree4);
 
 // Insert with stem starting with 0xFF (will create internal node)
-const key4b = new Uint8Array(32);
-key4b[0] = 0xff;
-key4b[31] = 0;
-
-const value4b = new Uint8Array(32);
-value4b[0] = 0xbb;
+const key4b = Bytes32.from("0xff00000000000000000000000000000000000000000000000000000000000000");
+const value4b = Bytes32.from("0xbb00000000000000000000000000000000000000000000000000000000000000");
 
 tree4 = BinaryTree.insert(tree4, key4b, value4b);
 const hashAfterSecond = BinaryTree.rootHashHex(tree4);
@@ -116,10 +96,8 @@ let tree6 = BinaryTree();
 
 // Build initial state
 for (let i = 0; i < 3; i++) {
-	const key = new Uint8Array(32);
-	key[31] = i;
-	const value = new Uint8Array(32);
-	value[0] = 0x10 + i;
+	const key = Bytes32.from(`0x${i.toString(16).padStart(64, "0")}`);
+	const value = Bytes32.from(`0x${(0x10 + i).toString(16).padStart(2, "0")}${"00".repeat(31)}`);
 	tree6 = BinaryTree.insert(tree6, key, value);
 }
 
@@ -128,10 +106,8 @@ const committedHash = BinaryTree.rootHashHex(tree6);
 // Rebuild same state
 let tree6verify = BinaryTree();
 for (let i = 0; i < 3; i++) {
-	const key = new Uint8Array(32);
-	key[31] = i;
-	const value = new Uint8Array(32);
-	value[0] = 0x10 + i;
+	const key = Bytes32.from(`0x${i.toString(16).padStart(64, "0")}`);
+	const value = Bytes32.from(`0x${(0x10 + i).toString(16).padStart(2, "0")}${"00".repeat(31)}`);
 	tree6verify = BinaryTree.insert(tree6verify, key, value);
 }
 
@@ -141,10 +117,8 @@ const collisionHashes = new Set<string>();
 
 for (let i = 0; i < 10; i++) {
 	let tree = BinaryTree();
-	const key = new Uint8Array(32);
-	key[31] = i;
-	const value = new Uint8Array(32);
-	value[0] = i;
+	const key = Bytes32.from(`0x${i.toString(16).padStart(64, "0")}`);
+	const value = Bytes32.from(`0x${i.toString(16).padStart(2, "0")}${"00".repeat(31)}`);
 	tree = BinaryTree.insert(tree, key, value);
 	collisionHashes.add(BinaryTree.rootHashHex(tree));
 }

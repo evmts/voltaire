@@ -1,27 +1,29 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
-const chunk1 = new Uint8Array([1, 2, 3]);
-const chunk2 = new Uint8Array([4, 5, 6]);
-const chunk3 = new Uint8Array([7, 8, 9]);
+const chunk1 = Hex("0x010203");
+const chunk2 = Hex("0x040506");
+const chunk3 = Hex("0x070809");
 
 // Hash chunks separately
 const multiHash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 // Compare to concatenating first
-const concatenated = new Uint8Array([...chunk1, ...chunk2, ...chunk3]);
-const singleHash = Keccak256.hash(concatenated);
+const concatenated = Hex.concat([chunk1, chunk2, chunk3]);
+const singleHash = Keccak256.hashHex(concatenated);
 
 // Simulate ABI encoding: function selector + parameters
-const selector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]); // transfer(address,uint256)
+const selector = Hex("0xa9059cbb"); // transfer(address,uint256)
 
 // Parameter 1: address (padded to 32 bytes)
-const addressParam = new Uint8Array(32);
-addressParam.set(Hex.toBytes("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"), 12);
+const addressParam = Hex(
+	"0x000000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+);
 
 // Parameter 2: uint256 amount
-const amountParam = new Uint8Array(32);
-amountParam.set([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 24); // 1 ether in wei
+const amountParam = Hex(
+	"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+); // 1 ether in wei
 
 // Hash the complete calldata
 const calldataHash = Keccak256.hashMultiple([
@@ -61,19 +63,25 @@ const messageLength = new TextEncoder().encode(message.length.toString());
 const eip191Hash = Keccak256.hashMultiple([prefix, messageLength, message]);
 
 // Encode array: [1, 2, 3, 4, 5]
-const arrayLength = new Uint8Array(32);
-arrayLength[31] = 5; // Length = 5
+const arrayLength = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000005",
+); // Length = 5
 
-const element1 = new Uint8Array(32);
-element1[31] = 1;
-const element2 = new Uint8Array(32);
-element2[31] = 2;
-const element3 = new Uint8Array(32);
-element3[31] = 3;
-const element4 = new Uint8Array(32);
-element4[31] = 4;
-const element5 = new Uint8Array(32);
-element5[31] = 5;
+const element1 = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000001",
+);
+const element2 = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000002",
+);
+const element3 = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000003",
+);
+const element4 = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000004",
+);
+const element5 = Hex(
+	"0x0000000000000000000000000000000000000000000000000000000000000005",
+);
 
 const arrayHash = Keccak256.hashMultiple([
 	arrayLength,
@@ -86,28 +94,21 @@ const arrayHash = Keccak256.hashMultiple([
 
 // Create many small chunks
 const numChunks = 100;
-const smallChunks: Uint8Array[] = [];
-let totalSize = 0;
+const smallChunks: string[] = [];
 
 for (let i = 0; i < numChunks; i++) {
-	const chunk = new Uint8Array(16);
-	crypto.getRandomValues(chunk);
-	smallChunks.push(chunk);
-	totalSize += chunk.length;
+	const chunkBytes = new Uint8Array(16);
+	crypto.getRandomValues(chunkBytes);
+	smallChunks.push(Hex.fromBytes(chunkBytes));
 }
 
 // Method 1: hashMultiple
 const start1 = performance.now();
-const hash1 = Keccak256.hashMultiple(smallChunks);
+const hash1 = Keccak256.hashMultiple(smallChunks as any);
 const time1 = performance.now() - start1;
 
 // Method 2: Concatenate then hash
 const start2 = performance.now();
-const combined = new Uint8Array(totalSize);
-let offset = 0;
-for (const chunk of smallChunks) {
-	combined.set(chunk, offset);
-	offset += chunk.length;
-}
-const hash2 = Keccak256.hash(combined);
+const combined = Hex.concat(smallChunks as any);
+const hash2 = Keccak256.hashHex(combined);
 const time2 = performance.now() - start2;

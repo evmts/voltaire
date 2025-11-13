@@ -14,8 +14,9 @@ import * as Address from "../../../src/primitives/Address/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 // Generate private key for examples
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKeyBytes = new Uint8Array(32);
+crypto.getRandomValues(privateKeyBytes);
+const privateKey = Hex.fromBytes(privateKeyBytes);
 
 const simpleTypedData = {
 	domain: {

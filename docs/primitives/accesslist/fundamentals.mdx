@@ -356,10 +356,17 @@ import { Hash, Address } from '@tevm/voltaire';
 function getBalanceSlot(user: Address): Hash {
   // keccak256(abi.encodePacked(user, slot))
   const slot = 0n;
-  const encoded = new Uint8Array(64);
-  encoded.set(user, 0);           // 20 bytes: user address
-  encoded.set([...new Uint8Array(12)], 20); // 12 bytes: padding
-  encoded.set(numberToBytes(slot, 32), 32); // 32 bytes: slot number
+  const userBytes = Address.toBytes(user);
+  const padding = Hex.from('0x000000000000000000000000'); // 12 bytes padding
+  const slotBytes = Uint.toBytes(Uint.fromBigint(slot, 32));
+
+  const encoded = Hex.toBytes(
+    Hex.concat(
+      Hex.fromBytes(userBytes),
+      padding,
+      Hex.fromBytes(slotBytes)
+    )
+  );
 
   return Hash.fromBytes(keccak256(encoded));
 }

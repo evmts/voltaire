@@ -4,29 +4,24 @@ import {
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
 } from "../../../src/primitives/BloomFilter/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 
-// Simulate Ethereum address (20 bytes)
-function createAddress(name: string): Uint8Array {
-	const encoder = new TextEncoder();
-	const bytes = encoder.encode(name);
-	const address = new Uint8Array(20);
-	address.set(bytes.slice(0, Math.min(20, bytes.length)));
-	return address;
+// Create realistic Ethereum addresses
+function createAddress(hexSuffix: string): ReturnType<typeof Address.from> {
+	return Address.from(`0x${hexSuffix.padStart(40, "0")}`);
 }
 
-// Simulate event topic hash (32 bytes)
-function createTopic(signature: string): Uint8Array {
-	const encoder = new TextEncoder();
-	const bytes = encoder.encode(signature);
-	const topic = new Uint8Array(32);
-	topic.set(bytes.slice(0, Math.min(32, bytes.length)));
-	return topic;
+// Create realistic event topic hashes
+function createTopic(signature: string): ReturnType<typeof Hash.from> {
+	return Keccak256.hash(signature);
 }
 
 // Simulate an Ethereum log
 interface Log {
-	address: Uint8Array;
-	topics: Uint8Array[];
+	address: ReturnType<typeof Address.from>;
+	topics: ReturnType<typeof Hash.from>[];
 	data: string;
 }
 
@@ -48,8 +43,8 @@ function buildBlockBloom(logs: Log[]): typeof BloomFilter.prototype {
 }
 
 // Create some simulated logs
-const usdcAddress = createAddress("USDC");
-const daiAddress = createAddress("DAI");
+const usdcAddress = createAddress("A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // Real USDC
+const daiAddress = createAddress("6B175474E89094C44Da98b954EedeAC495271d0F"); // Real DAI
 const transferTopic = createTopic("Transfer(address,address,uint256)");
 const approvalTopic = createTopic("Approval(address,address,uint256)");
 
@@ -116,7 +111,7 @@ const blocksScanned = candidateBlocks.length;
 const blocksSkipped = totalBlocks - blocksScanned;
 const rangeBloom = block1000Bloom.merge(block1001Bloom).merge(block1002Bloom);
 
-const wethAddress = createAddress("WETH");
+const wethAddress = createAddress("C02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"); // Real WETH
 if (!rangeBloom.contains(wethAddress)) {
 } else {
 }

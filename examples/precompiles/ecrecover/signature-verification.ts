@@ -17,8 +17,7 @@ import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
 
 // Simulate a signed message scenario
-const signerKey = new Uint8Array(32);
-crypto.getRandomValues(signerKey);
+const signerKey = crypto.getRandomValues(new Uint8Array(32));
 const signerPubKey = Secp256k1.derivePublicKey(signerKey);
 const signerAddress = keccak256(signerPubKey).slice(12);
 const authMessage = "I authorize this action at timestamp 1234567890";
@@ -110,8 +109,7 @@ const validRecovered = validResult.output.slice(12, 32);
 const validMatch = validRecovered.every((byte, i) => byte === signerAddress[i]);
 
 // Create a different signer
-const wrongKey = new Uint8Array(32);
-crypto.getRandomValues(wrongKey);
+const wrongKey = crypto.getRandomValues(new Uint8Array(32));
 const wrongPubKey = Secp256k1.derivePublicKey(wrongKey);
 const wrongAddress = keccak256(wrongPubKey).slice(12);
 

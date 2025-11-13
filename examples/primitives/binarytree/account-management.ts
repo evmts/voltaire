@@ -9,6 +9,8 @@
  */
 
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 // AccountData packing/unpacking utilities
 interface AccountData {
@@ -61,10 +63,7 @@ function unpackAccountData(packed: Uint8Array): AccountData {
 // Initialize tree
 let tree = BinaryTree();
 
-const aliceAddress = new Uint8Array(20);
-aliceAddress[0] = 0xf3;
-aliceAddress[1] = 0x9f;
-// ... rest of address
+const aliceAddress = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"); // Known test address
 
 const aliceKey = BinaryTree.addressToKey(aliceAddress);
 
@@ -118,8 +117,7 @@ if (currentPacked) {
 const storageKey = aliceKey.slice();
 storageKey[31] = 1; // Subindex 1 = storage slot 0
 
-const storageValue = new Uint8Array(32);
-storageValue[31] = 0x42;
+const storageValue = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000042");
 
 tree = BinaryTree.insert(tree, storageKey, storageValue);
 
@@ -127,16 +125,12 @@ for (let slot = 0; slot < 5; slot++) {
 	const slotKey = aliceKey.slice();
 	slotKey[31] = 1 + slot; // Slots 0-4 at subindices 1-5
 
-	const slotValue = new Uint8Array(32);
-	slotValue[31] = 0x10 + slot;
+	const slotValue = Bytes32.from(`0x${(0x10 + slot).toString(16).padStart(64, "0")}`);
 
 	tree = BinaryTree.insert(tree, slotKey, slotValue);
 }
 
-const bobAddress = new Uint8Array(20);
-bobAddress[0] = 0x70;
-bobAddress[1] = 0x99;
-// ... rest of address
+const bobAddress = Address.from("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"); // Known test address
 
 const bobKey = BinaryTree.addressToKey(bobAddress);
 const bobAccountKey = bobKey.slice();

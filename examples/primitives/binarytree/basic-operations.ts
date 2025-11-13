@@ -9,41 +9,33 @@
  */
 
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-const tree = BinaryTree();
-const key1 = new Uint8Array(32);
-key1[31] = 5; // Subindex 5
+import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
-const value1 = new Uint8Array(32);
-value1[0] = 0x42;
+const tree = BinaryTree();
+
+// Keys and values are 32-byte arrays
+const key1 = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000005");
+const value1 = Bytes32.from("0x4200000000000000000000000000000000000000000000000000000000000000");
 
 let tree2 = BinaryTree.insert(tree, key1, value1);
 const retrieved = BinaryTree.get(tree2, key1);
 if (retrieved) {
 } else {
 }
-const key2 = new Uint8Array(32);
-key2[31] = 10; // Different subindex
-
-const value2 = new Uint8Array(32);
-value2[0] = 0x99;
+const key2 = Bytes32.from("0x000000000000000000000000000000000000000000000000000000000000000a");
+const value2 = Bytes32.from("0x9900000000000000000000000000000000000000000000000000000000000000");
 
 tree2 = BinaryTree.insert(tree2, key2, value2);
 const val1 = BinaryTree.get(tree2, key1);
 const val2 = BinaryTree.get(tree2, key2);
-const key3 = new Uint8Array(32);
-key3[0] = 0xff; // Different stem (first byte differs)
-key3[31] = 0;
-
-const value3 = new Uint8Array(32);
-value3[0] = 0xab;
+const key3 = Bytes32.from("0xff00000000000000000000000000000000000000000000000000000000000000");
+const value3 = Bytes32.from("0xab00000000000000000000000000000000000000000000000000000000000000");
 
 const tree3 = BinaryTree.insert(tree2, key3, value3);
-const nonExistentKey = new Uint8Array(32);
-nonExistentKey[31] = 99;
+const nonExistentKey = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000063");
 
 const notFound = BinaryTree.get(tree3, nonExistentKey);
-const updatedValue = new Uint8Array(32);
-updatedValue[0] = 0xff;
+const updatedValue = Bytes32.from("0xff00000000000000000000000000000000000000000000000000000000000000");
 
 const tree4 = BinaryTree.insert(tree3, key1, updatedValue);
 const updated = BinaryTree.get(tree4, key1);

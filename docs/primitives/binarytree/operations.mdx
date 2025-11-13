@@ -22,18 +22,18 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree = BinaryTree.init()
 
 // Insert first value
-const key1 = new Uint8Array(32)
+const key1 = Hash.from('0x' + '00'.repeat(32))
 key1[31] = 5  // Subindex 5
-const value1 = new Uint8Array(32)
+const value1 = Hash.from('0x' + '00'.repeat(32))
 value1[0] = 0x42
 
 tree = BinaryTree.insert(tree, key1, value1)
 console.log(tree.root.type) // 'stem'
 
 // Insert second value (same stem)
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[31] = 10  // Subindex 10
-const value2 = new Uint8Array(32)
+const value2 = Hash.from('0x' + '00'.repeat(32))
 value2[0] = 0x99
 
 tree = BinaryTree.insert(tree, key2, value2)
@@ -117,14 +117,14 @@ When inserting keys with same 31-byte stem, values stored in single stem node:
 let tree = BinaryTree.init()
 
 // All keys have same stem (first 31 bytes are zero)
-const stem = new Uint8Array(31) // All zeros
+const stem = Hex.from('0x' + '00'.repeat(31)) // All zeros
 
 for (let subindex = 0; subindex < 256; subindex++) {
-  const key = new Uint8Array(32)
+  const key = Hash.from('0x' + '00'.repeat(32))
   key.set(stem, 0)
   key[31] = subindex
 
-  const value = new Uint8Array(32)
+  const value = Hash.from('0x' + '00'.repeat(32))
   value[0] = subindex
 
   tree = BinaryTree.insert(tree, key, value)
@@ -146,16 +146,16 @@ When inserting keys with different stems, tree branches into internal nodes:
 let tree = BinaryTree.init()
 
 // First key (stem all zeros)
-const key1 = new Uint8Array(32)
+const key1 = Hash.from('0x' + '00'.repeat(32))
 key1[31] = 0
-tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key1, Hash.from('0x' + '00'.repeat(32)))
 console.log(tree.root.type) // 'stem'
 
 // Second key (different stem)
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[0] = 0xFF  // Different stem
 key2[31] = 0
-tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key2, Hash.from('0x' + '00'.repeat(32)))
 console.log(tree.root.type) // 'internal' (branched)
 ```
 
@@ -165,21 +165,21 @@ When two different stems inserted, tree splits into internal nodes based on stem
 
 ```typescript
 // Example: Inserting two stems that differ at bit 0
-const stem1 = new Uint8Array(31)
+const stem1 = Hex.from('0x' + '00'.repeat(31))
 stem1[0] = 0b00000000  // Bit 0 = 0
 
-const stem2 = new Uint8Array(31)
+const stem2 = Hex.from('0x' + '00'.repeat(31))
 stem2[0] = 0b10000000  // Bit 0 = 1
 
 let tree = BinaryTree.init()
 
-const key1 = new Uint8Array(32)
+const key1 = Hash.from('0x' + '00'.repeat(32))
 key1.set(stem1, 0)
-tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key1, Hash.from('0x' + '00'.repeat(32)))
 
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2.set(stem2, 0)
-tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key2, Hash.from('0x' + '00'.repeat(32)))
 
 // Creates internal node
 console.log(tree.root.type) // 'internal'
@@ -202,10 +202,10 @@ import { BinaryTree } from '@tevm/voltaire'
 
 let tree = BinaryTree.init()
 
-const key = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
 key[31] = 5
 
-const value = new Uint8Array(32)
+const value = Hash.from('0x' + '00'.repeat(32))
 value[0] = 0x42
 
 tree = BinaryTree.insert(tree, key, value)
@@ -215,7 +215,7 @@ const retrieved = BinaryTree.get(tree, key)
 console.log(retrieved) // Uint8Array [0x42, 0, 0, ...]
 
 // Get non-existent value
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[31] = 99
 console.log(BinaryTree.get(tree, key2)) // null
 ```
@@ -234,8 +234,8 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree = BinaryTree.init()
 
 // Insert
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
+const value = Hash.from('0x' + '00'.repeat(32))
 value[0] = 0xFF
 tree = BinaryTree.insert(tree, key, value)
 
@@ -249,7 +249,7 @@ console.log(result?.[0]) // 0xFF
 import { BinaryTree } from '@tevm/voltaire'
 
 const tree = BinaryTree.init()
-const key = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
 
 const value = BinaryTree.get(tree, key)
 if (value === null) {
@@ -264,8 +264,8 @@ if (value === null) {
 import { init, insert, get } from '@tevm/voltaire/BrandedBinaryTree'
 
 let tree = init()
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
+const value = Hash.from('0x' + '00'.repeat(32))
 
 tree = insert(tree, key, value)
 const retrieved = get(tree, key)
@@ -284,10 +284,10 @@ Get operation on stem node checks stem equality and returns value at subindex:
 ```typescript
 let tree = BinaryTree.init()
 
-const key = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
 key[31] = 42  // Subindex 42
 
-const value = new Uint8Array(32)
+const value = Hash.from('0x' + '00'.repeat(32))
 value[0] = 0xAB
 
 tree = BinaryTree.insert(tree, key, value)
@@ -297,7 +297,7 @@ const result1 = BinaryTree.get(tree, key)
 console.log(result1?.[0]) // 0xAB
 
 // Lookup with same stem, different subindex
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[31] = 99  // Different subindex
 const result2 = BinaryTree.get(tree, key2)
 console.log(result2) // null (subindex not set)
@@ -312,14 +312,14 @@ Current implementation simplified for stem nodes. Full traversal through interna
 let tree = BinaryTree.init()
 
 // Insert keys with different stems (creates internal nodes)
-const key1 = new Uint8Array(32)
+const key1 = Hash.from('0x' + '00'.repeat(32))
 key1[0] = 0x00
 
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[0] = 0xFF
 
-tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
-tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key1, Hash.from('0x' + '00'.repeat(32)))
+tree = BinaryTree.insert(tree, key2, Hash.from('0x' + '00'.repeat(32)))
 
 // Get currently returns null for internal node traversal
 // (Simplified implementation)
@@ -336,18 +336,18 @@ Update existing value by re-inserting at same key:
 ```typescript
 let tree = BinaryTree.init()
 
-const key = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
 key[31] = 5
 
 // Insert initial value
-const value1 = new Uint8Array(32)
+const value1 = Hash.from('0x' + '00'.repeat(32))
 value1[0] = 0x01
 tree = BinaryTree.insert(tree, key, value1)
 
 console.log(BinaryTree.get(tree, key)?.[0]) // 0x01
 
 // Update value
-const value2 = new Uint8Array(32)
+const value2 = Hash.from('0x' + '00'.repeat(32))
 value2[0] = 0x02
 tree = BinaryTree.insert(tree, key, value2)
 
@@ -376,8 +376,8 @@ function batchInsert(
 let tree = BinaryTree.init()
 
 const entries = [
-  { key: new Uint8Array(32), value: new Uint8Array(32) },
-  { key: new Uint8Array(32), value: new Uint8Array(32) },
+  { key: Hash.from('0x' + '00'.repeat(32)), value: Hash.from('0x' + '00'.repeat(32)) },
+  { key: Hash.from('0x' + '00'.repeat(32)), value: Hash.from('0x' + '00'.repeat(32)) },
   // ... more entries
 ]
 
@@ -403,7 +403,7 @@ const accountKey = BinaryTree.addressToKey(address)
 const basicDataKey = accountKey.slice()
 basicDataKey[31] = 0
 
-const accountData = new Uint8Array(32)
+const accountData = Hash.from('0x' + '00'.repeat(32))
 accountData[0] = 1  // version
 // ... set other fields
 
@@ -413,7 +413,7 @@ tree = BinaryTree.insert(tree, basicDataKey, accountData)
 const storageKey = accountKey.slice()
 storageKey[31] = 1  // Storage slot 0 at subindex 1
 
-const storageValue = new Uint8Array(32)
+const storageValue = Hash.from('0x' + '00'.repeat(32))
 // ... set storage value
 
 tree = BinaryTree.insert(tree, storageKey, storageValue)
@@ -429,8 +429,8 @@ All operations preserve immutability:
 
 ```typescript
 const tree1 = BinaryTree.init()
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
+const value = Hash.from('0x' + '00'.repeat(32))
 
 // Insert returns new tree
 const tree2 = BinaryTree.insert(tree1, key, value)

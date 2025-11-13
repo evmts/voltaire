@@ -28,7 +28,7 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
   blockNumber: 18000000n,
   blockHash: Hash.fromHex('0xabc...'),
 });
@@ -68,7 +68,7 @@ import * as Hash from '@tevm/voltaire/Hash';
 const log = EventLog.from({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [Hash.fromHex('0xddf252ad...'), Hash.fromHex('0x000...from'), Hash.fromHex('0x000...to')],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
   blockNumber: 18000000n,
 });
 
@@ -339,7 +339,7 @@ import { EventLog } from '@tevm/voltaire';
 const pendingLog = EventLog.from({
   address: contractAddress,
   topics: [TRANSFER_SIG],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
   // No blockNumber, blockHash, etc.
 });
 

@@ -81,8 +81,8 @@ AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
 
 **Example:**
 ```typescript
-const bytes = new Uint8Array([...]); // RLP bytes
-const list = AccessList.fromBytes(bytes);
+const bytes = Hex.from('0xc0'); // RLP-encoded empty list
+const list = AccessList.fromBytes(Hex.toBytes(bytes));
 ```
 
 **RLP Structure:**

@@ -23,7 +23,7 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Single address
@@ -66,7 +66,7 @@ import * as Hash from '@tevm/voltaire/Hash';
 const log = EventLog.from({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Single address

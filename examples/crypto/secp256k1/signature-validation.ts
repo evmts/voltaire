@@ -13,9 +13,10 @@ import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
 
 // Generate test keypair
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
-const publicKey = Secp256k1.derivePublicKey(privateKey);
+const privateKeyBytes = new Uint8Array(32);
+crypto.getRandomValues(privateKeyBytes);
+const privateKey = `0x${Buffer.from(privateKeyBytes).toString("hex")}`;
+const publicKey = Secp256k1.derivePublicKey(privateKey as any);
 
 // Create valid signature
 const message = "Test message";
@@ -29,7 +30,7 @@ const isValid = Secp256k1.isValidSignature(validSignature);
 // Verify signature
 const verifies = Secp256k1.verify(validSignature, messageHash, publicKey);
 const invalidR = {
-	r: new Uint8Array(32), // All zeros
+	r: new Uint8Array(32) as any, // All zeros
 	s: validSignature.s,
 	v: validSignature.v,
 };
@@ -41,7 +42,7 @@ try {
 } catch (error) {}
 const invalidS = {
 	r: validSignature.r,
-	s: new Uint8Array(32).fill(0xff), // All 0xFF > curve order
+	s: new Uint8Array(32).fill(0xff) as any, // All 0xFF > curve order
 	v: validSignature.v,
 };
 
@@ -51,7 +52,7 @@ try {
 	const sVerifies = Secp256k1.verify(invalidS, messageHash, publicKey);
 } catch (error) {}
 const wrongLengthR = {
-	r: new Uint8Array(16), // Too short
+	r: new Uint8Array(16) as any, // Too short
 	s: validSignature.s,
 	v: validSignature.v,
 };

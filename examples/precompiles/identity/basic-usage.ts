@@ -48,8 +48,7 @@ for (const size of sizes) {
 	const gas = 15n + 3n * BigInt(w);
 	const perByte = size > 0 ? Number(gas) / size : 0;
 }
-const largeData = new Uint8Array(1024);
-crypto.getRandomValues(largeData);
+const largeData = crypto.getRandomValues(new Uint8Array(1024));
 
 const largeWords = Math.ceil(largeData.length / 32);
 const largeGas = 15n + 3n * BigInt(largeWords);
@@ -81,7 +80,7 @@ const forwarded = execute(
 	forwardGas,
 	Hardfork.CANCUN,
 );
-const testData = new Uint8Array(100);
+const testData = crypto.getRandomValues(new Uint8Array(100));
 const insufficientGas = 10n; // Need 15 + 3*4 = 27
 
 const oogResult = execute(

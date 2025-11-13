@@ -23,7 +23,7 @@ const log = EventLog({
     Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
     Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const topic0 = log.getTopic0();
@@ -58,7 +58,7 @@ const log = EventLog.from({
     Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
     Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12'),
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const topic0 = EventLog.getTopic0(log);
@@ -107,7 +107,7 @@ const anonymousLog = EventLog({
     toHash,      // topic1 = second indexed param (to)
     tokenIdHash, // topic2 = third indexed param (tokenId)
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const topic0 = anonymousLog.getTopic0();
@@ -207,7 +207,7 @@ import { EventLog, Address } from '@tevm/voltaire';
 const emptyLog = EventLog({
   address: Address.zero(),
   topics: [],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const topic0 = emptyLog.getTopic0();

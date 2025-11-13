@@ -35,9 +35,10 @@ function createTransactionMessage(tx: {
 }
 
 // Generate keypair
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
-const publicKey = Secp256k1.derivePublicKey(privateKey);
+const privateKeyBytes = new Uint8Array(32);
+crypto.getRandomValues(privateKeyBytes);
+const privateKey = `0x${Buffer.from(privateKeyBytes).toString("hex")}`;
+const publicKey = Secp256k1.derivePublicKey(privateKey as any);
 const signerAddress = deriveAddress(publicKey);
 
 // Create unsigned transaction

@@ -385,7 +385,7 @@ const hex = filter.toHex()  // ~O(256) operations
 // Time complexity: O(n) where n is item length
 // Space complexity: O(1)
 
-const item = new Uint8Array(100)  // 100-byte item
+const item = Hex.from('0x' + '00'.repeat(100)) // 100-byte item
 
 // hash() performs:
 // - 100 byte reads

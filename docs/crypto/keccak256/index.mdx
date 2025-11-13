@@ -26,9 +26,10 @@ The implementation uses @noble/hashes in TypeScript and hardware-accelerated ass
 <Tab title="Basic Hashing">
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash bytes
-const data = new Uint8Array([1, 2, 3, 4, 5]);
+const data = Hex.toBytes('0x0102030405');
 const hash = Keccak256.hash(data);
 // Uint8Array(32) [...]
 
@@ -55,12 +56,17 @@ const topic = Keccak256.topic('Transfer(address,address,uint256)');
 // Uint8Array(32) [full 32-byte hash]
 
 // Calculate contract address (CREATE)
+import { Address } from '@tevm/voltaire/primitives/Address';
+
 const deployerAddress = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
 const contractAddr = Keccak256.contractAddress(deployerAddress, nonce);
 // Uint8Array(20) [contract address]
 
 // Calculate contract address (CREATE2)
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+
 const salt = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode.from('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
 const create2Addr = Keccak256.create2Address(deployerAddress, salt, initCode);
@@ -71,14 +77,15 @@ const create2Addr = Keccak256.create2Address(deployerAddress, salt, initCode);
 <Tab title="Multiple Chunks">
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash multiple data chunks (equivalent to concatenating them first)
-const chunk1 = new Uint8Array([1, 2, 3]);
-const chunk2 = new Uint8Array([4, 5, 6]);
-const chunk3 = new Uint8Array([7, 8, 9]);
+const chunk1 = Hex.toBytes('0x010203');
+const chunk2 = Hex.toBytes('0x040506');
+const chunk3 = Hex.toBytes('0x070809');
 
 const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
-// Same as: Keccak256.hash(new Uint8Array([1,2,3,4,5,6,7,8,9]))
+// Same as: Keccak256.hash(Hex.toBytes('0x010203040506070809'))
 ```
 </Tab>
 </Tabs>
@@ -96,7 +103,9 @@ Hash arbitrary bytes with Keccak-256.
 
 **Example:**
 ```typescript
-const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+
+const hash = Keccak256.hash(Hex.toBytes('0x010203'));
 console.log(hash.length); // 32
 ```
 
@@ -152,10 +161,12 @@ Equivalent to hashing the concatenation of all chunks, but can be more efficient
 
 **Example:**
 ```typescript
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+
 const hash = Keccak256.hashMultiple([
-  new Uint8Array([1, 2]),
-  new Uint8Array([3, 4]),
-  new Uint8Array([5, 6])
+  Hex.toBytes('0x0102'),
+  Hex.toBytes('0x0304'),
+  Hex.toBytes('0x0506')
 ]);
 ```
 
@@ -218,6 +229,8 @@ Uses CREATE formula: `address = keccak256(rlp([sender, nonce]))[12:]`
 
 **Example:**
 ```typescript
+import { Address } from '@tevm/voltaire/primitives/Address';
+
 const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
 const contractAddr = Keccak256.contractAddress(deployer, nonce);
@@ -242,6 +255,10 @@ This allows deterministic contract addresses independent of nonce.
 
 **Example:**
 ```typescript
+import { Address } from '@tevm/voltaire/primitives/Address';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+
 const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode.from('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');

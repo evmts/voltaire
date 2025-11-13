@@ -3,8 +3,9 @@ import * as Hash from "../../../src/primitives/Hash/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 // In production, use crypto.getRandomValues()
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKeyBytes = new Uint8Array(32);
+crypto.getRandomValues(privateKeyBytes);
+const privateKey = Hex.fromBytes(privateKeyBytes);
 
 const publicKey = P256.derivePublicKey(privateKey);
 
@@ -38,20 +39,22 @@ messages.forEach((msg, i) => {
 });
 
 // Valid private key
-const validPrivate = new Uint8Array(32).fill(1);
+const validPrivateBytes = new Uint8Array(32).fill(1);
+const validPrivate = Hex.fromBytes(validPrivateBytes);
 
 // Invalid private key (all zeros)
-const zeroKey = new Uint8Array(32);
+const zeroKey = Hex("0x" + "00".repeat(32));
 
 // Invalid private key (wrong length)
-const shortKey = new Uint8Array(16);
+const shortKey = Hex("0x" + "ab".repeat(16));
 
 // Invalid public key (wrong length)
-const invalidPubKey = new Uint8Array(32);
+const invalidPubKey = Hex("0x" + "ab".repeat(32));
 
-const privateKey2 = new Uint8Array(32);
-crypto.getRandomValues(privateKey2);
-const publicKey2 = P256.derivePublicKey(privateKey2);
+const privateKey2Bytes = new Uint8Array(32);
+crypto.getRandomValues(privateKey2Bytes);
+const privateKey2 = Hex.fromBytes(privateKey2Bytes);
+const publicKey2 = P256.derivePublicKey(privateKey2 as any);
 
 const testMsg = "shared message";
 const testMsgHash = Hash.keccak256String(testMsg);

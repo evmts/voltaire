@@ -37,8 +37,10 @@ type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" }
 
 function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
 
-const bytecode: BrandedBytecode = new Uint8Array([0x60, 0x01]) as BrandedBytecode
-verifySignature(bytecode, new Uint8Array(32)) // ✗ Error: Type 'BrandedBytecode' is not assignable to type 'BrandedAddress'
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytecode = Bytecode.from("0x6001")
+
+verifySignature(bytecode, Hash.from("0x1234...")) // ✗ Error: Type 'BrandedBytecode' is not assignable to type 'BrandedAddress'
 ```
 
 Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
@@ -71,8 +73,7 @@ Using `unique symbol` ensures:
 type BrandedAddress = Uint8Array & { __brand: "Address" }
 
 // If Uint8Array somehow had __brand property, this would conflict!
-const addr = new Uint8Array(20)
-addr.__brand = "Address" // runtime __brand field conflicts!
+// Using symbol prevents any runtime property conflicts
 ```
 
 ### Voltaire's Approach
@@ -158,10 +159,11 @@ function fromUint8Array(bytes: Uint8Array): BrandedAddress {
   return bytes as BrandedAddress
 }
 
-const bytes = new Uint8Array(20)
-const addr = fromUint8Array(bytes)
-// addr runtime: same Uint8Array reference
-// addr compile-time: BrandedAddress
+// Create from various inputs - all validated at construction
+const addr1 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en)
+// addr runtime: Uint8Array with 20 bytes
+// addr compile-time: BrandedAddress (type-safe)
 ```
 
 Example usage:

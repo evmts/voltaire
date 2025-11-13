@@ -25,7 +25,7 @@ const log = EventLog({
     Hash.fromHex('0x000...from'),  // from address
     Hash.fromHex('0x000...to'),    // to address
   ],
-  data: new Uint8Array([0, 0, 0, 1]), // value (not indexed)
+  data: Hex.from('0x00000001'), // value (not indexed)
 });
 
 const indexed = log.getIndexedTopics();
@@ -63,7 +63,7 @@ const log = EventLog.from({
     Hash.fromHex('0x000...from'),  // from address
     Hash.fromHex('0x000...to'),    // to address
   ],
-  data: new Uint8Array([0, 0, 0, 1]), // value (not indexed)
+  data: Hex.from('0x00000001'), // value (not indexed)
 });
 
 const indexed = EventLog.getIndexedTopics(log);
@@ -200,7 +200,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog.from({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash], // All indexed params
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // getIndexedTopics returns topic1-topic3 (NOT all params)

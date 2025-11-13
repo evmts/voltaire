@@ -86,7 +86,7 @@ for (let i = 0; i < inputs.length; i++) {
 	}
 }
 for (let i = 0; i < hashes.length; i++) {}
-const testData = new Uint8Array(100);
+const testData = crypto.getRandomValues(new Uint8Array(100));
 const insufficientGas = 500n; // Need 600 + 120*4 = 1080
 
 const oogResult = execute(

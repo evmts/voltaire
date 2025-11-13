@@ -1,7 +1,8 @@
 import { Ripemd160 } from "../../../src/crypto/Ripemd160/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
-const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash = Ripemd160.hash(data);
+
+const data = Hex("0x0102030405");
+const hash = Ripemd160.hashHex(data);
 const message = "hello";
 const messageHash = Ripemd160.hashString(message);
 const emptyHash = Ripemd160.hashString("");

@@ -33,9 +33,10 @@ Used in:
 <Tab title="Basic Hashing">
 ```typescript
 import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Hash bytes with default 64-byte output
-const data = new Uint8Array([1, 2, 3, 4, 5]);
+const data = Hex.from('0x0102030405');
 const hash = Blake2.hash(data);
 // Uint8Array(64) [...]
 
@@ -70,8 +71,9 @@ const directHash = Blake2.hash('hello world', 48);
 <Tab title="Variable Output">
 ```typescript
 import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const data = new Uint8Array([1, 2, 3]);
+const data = Hex.from('0x010203');
 
 // Different output lengths for different use cases
 const hash1 = Blake2.hash(data, 1);   // 1 byte (minimal)
@@ -104,12 +106,14 @@ Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hash
 
 **Example:**
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Default 64-byte output
-const hash64 = Blake2.hash(new Uint8Array([1, 2, 3]));
+const hash64 = Blake2.hash(Hex.from('0x010203'));
 console.log(hash64.length); // 64
 
 // 32-byte output (BLAKE2b-256)
-const hash32 = Blake2.hash(new Uint8Array([1, 2, 3]), 32);
+const hash32 = Blake2.hash(Hex.from('0x010203'), 32);
 console.log(hash32.length); // 32
 
 // String input

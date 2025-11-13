@@ -32,16 +32,18 @@ const secretsMatch = Hex.fromBytes(aliceShared) === Hex.fromBytes(bobShared);
 const validSecretKey = aliceKeypair.secretKey;
 const validPublicKey = aliceKeypair.publicKey;
 
-const invalidShort = new Uint8Array(16);
-const invalidLong = new Uint8Array(64);
+// Invalid keys - these would fail validation
+const invalidShort = Hex("0x" + "ab".repeat(16));
+const invalidLong = Hex("0x" + "ab".repeat(64));
 
 const secretKey = X25519.generateSecretKey();
 const derivedPublicKey = X25519.derivePublicKey(secretKey);
 
 const isValid = X25519.validatePublicKey(derivedPublicKey);
 
-const seed = new Uint8Array(32);
-crypto.getRandomValues(seed);
+const seedBytes = new Uint8Array(32);
+crypto.getRandomValues(seedBytes);
+const seed = Hex.fromBytes(seedBytes);
 
 const keypair1 = X25519.keypairFromSeed(seed);
 const keypair2 = X25519.keypairFromSeed(seed);

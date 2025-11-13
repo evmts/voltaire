@@ -42,8 +42,7 @@ function createModExpInput(
 const rsaSize = 256;
 
 // Simulate signature (normally this is the signed message hash)
-const signature = new Uint8Array(rsaSize);
-crypto.getRandomValues(signature);
+const signature = crypto.getRandomValues(new Uint8Array(rsaSize));
 signature[0] = 0x00; // Ensure it's less than modulus
 
 // Common RSA public exponent: 65537 (0x010001)
@@ -53,8 +52,7 @@ exponent[1] = 0x00;
 exponent[2] = 0x01;
 
 // Simulate RSA modulus (public key)
-const modulus = new Uint8Array(rsaSize);
-crypto.getRandomValues(modulus);
+const modulus = crypto.getRandomValues(new Uint8Array(rsaSize));
 modulus[0] |= 0x80; // Ensure high bit is set (full 2048 bits)
 
 const rsaInput = createModExpInput(signature, exponent, modulus);
@@ -77,8 +75,7 @@ const rsaSizes = [
 ];
 
 for (const size of rsaSizes) {
-	const sig = new Uint8Array(size.bytes);
-	crypto.getRandomValues(sig);
+	const sig = crypto.getRandomValues(new Uint8Array(size.bytes));
 	sig[0] = 0x00;
 
 	const exp = new Uint8Array(3);
@@ -86,8 +83,7 @@ for (const size of rsaSizes) {
 	exp[1] = 0x00;
 	exp[2] = 0x01;
 
-	const mod = new Uint8Array(size.bytes);
-	crypto.getRandomValues(mod);
+	const mod = crypto.getRandomValues(new Uint8Array(size.bytes));
 	mod[0] |= 0x80;
 
 	const input = createModExpInput(sig, exp, mod);

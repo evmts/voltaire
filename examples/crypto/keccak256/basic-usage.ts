@@ -1,7 +1,8 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
-const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash = Keccak256.hash(data);
+
+const data = Hex("0x0102030405");
+const hash = Keccak256.hashHex(data);
 const message = "hello";
 const messageHash = Keccak256.hashString(message);
 

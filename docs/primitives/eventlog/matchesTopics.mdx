@@ -33,7 +33,7 @@ const log = EventLog({
     Hash.fromHex('0x000...from'),
     userHash,
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Match signature, any from, specific to
@@ -81,7 +81,7 @@ const userHash = Hash.fromHex('0x000000000000000000000000a1b2c3d4...');
 const log = EventLog.from({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
   topics: [TRANSFER_SIG, Hash.fromHex('0x000...from'), userHash],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Match signature, any from, specific to
@@ -173,8 +173,8 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
 const userAddress = Address.fromHex('0xa1b2c3d4...');
-const userHash = Hash.fromBytes(
-  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+const userHash = Hash.from(
+  Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
 );
 
 // All transfers FROM user
@@ -288,7 +288,7 @@ import { EventLog } from '@tevm/voltaire';
 const anonymousLog = EventLog.from({
   address: contractAddress,
   topics: [param1Hash, param2Hash, param3Hash],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Match by first indexed parameter (NOT signature)
@@ -328,7 +328,7 @@ import { EventLog, Hash } from '@tevm/voltaire';
 const log = EventLog.from({
   address: contractAddress,
   topics: [topic0, topic1, topic2, topic3], // 4 topics
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Match only first 2 topics
@@ -344,7 +344,7 @@ import { EventLog } from '@tevm/voltaire';
 const log = EventLog.from({
   address: contractAddress,
   topics: [], // No topics
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // Filter with topics fails

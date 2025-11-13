@@ -73,7 +73,8 @@ Derives key from password using PBKDF2-HMAC-SHA256.
 
 ```typescript
 // Generate salt (store with encrypted data)
-const salt = crypto.getRandomValues(new Uint8Array(16));
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+const salt = Hex.from('0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d');
 
 // Derive key from password
 const key = await AesGcm.deriveKey(
@@ -93,9 +94,10 @@ const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
 Imports raw key bytes as CryptoKey.
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Import 32-byte key (256-bit)
-const rawKey = new Uint8Array(32);
-crypto.getRandomValues(rawKey);
+const rawKey = Hex.from('0xf8e9a72d4c3b1a6e7d5f2c8b9e1a4d7f3c6b9e2a5d8f1c4b7e0a3d6f9c2b5e8a');
 
 const key = await AesGcm.importKey(rawKey);
 ```
@@ -253,17 +255,17 @@ With random nonces (12 bytes), collision probability:
 
 ```typescript
 // Counter-based nonce (for high-volume scenarios)
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 class NonceCounter {
   constructor() {
     this.counter = 0n;
   }
 
   next() {
-    const nonce = new Uint8Array(12);
-    const view = new DataView(nonce.buffer);
-    view.setBigUint64(0, this.counter, false);
+    const counterHex = this.counter.toString(16).padStart(24, '0');
     this.counter++;
-    return nonce;
+    return Hex.from('0x' + counterHex);
   }
 }
 
@@ -315,7 +317,8 @@ import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function encryptWithPassword(plaintext, password) {
   // 1. Generate random salt
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  import * as Hex from '@tevm/voltaire/primitives/Hex';
+  const salt = Hex.from('0x3e4d5c6b7a8910293847566574839201');
 
   // 2. Derive key from password
   const key = await AesGcm.deriveKey(password, salt, 100000, 256);
@@ -378,9 +381,11 @@ const storedKey = await AesGcm.importKey(storedKeyBytes);
 
 **2. Browser (encrypted with password)**
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Encrypt master key with user password
 async function storeEncryptedKey(masterKey, userPassword) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = Hex.from('0x7f8e9d0c1b2a3948576e8d9c0b1a2938');
   const passwordKey = await AesGcm.deriveKey(userPassword, salt, 100000, 256);
 
   const masterKeyBytes = await AesGcm.exportKey(masterKey);
@@ -435,11 +440,8 @@ const ct2 = await AesGcm.encrypt(msg2, key, nonce); // BREAKS SECURITY!
 // CORRECT - Uses crypto.getRandomValues()
 const nonce = AesGcm.generateNonce();
 
-// WRONG - Never do this
-const badNonce = new Uint8Array(12);
-for (let i = 0; i < 12; i++) {
-  badNonce[i] = Math.floor(Math.random() * 256); // Predictable!
-}
+// WRONG - Never use Math.random() for cryptographic values
+// Math.random() is predictable and NOT cryptographically secure!
 ```
 
 **3. Verify authentication tag (automatic)**
@@ -494,7 +496,9 @@ const key = await AesGcm.deriveKey(password, salt, 600000, 256);
 
 **3. Salt randomness:** Use 16+ byte random salt
 ```typescript
-const salt = crypto.getRandomValues(new Uint8Array(16));
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+const salt = Hex.from('0xa7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2');
 ```
 
 **4. Key rotation:** Periodically generate new keys
@@ -590,8 +594,10 @@ const key = await AesGcm.deriveKey(password, salt, 100000, 256);
 ### File Encryption
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 async function encryptFile(fileData, password) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = Hex.from('0x9e8d7c6b5a4938271605948372615049');
   const key = await AesGcm.deriveKey(password, salt, 600000, 256);
   const nonce = AesGcm.generateNonce();
 

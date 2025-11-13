@@ -318,8 +318,10 @@ const hash = Sha256Wasm.hash(data);
 ### Bitcoin Address Derivation
 Bitcoin addresses combine SHA256 and RIPEMD160:
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Simplified Bitcoin P2PKH address derivation
-const publicKey = new Uint8Array(65); // Uncompressed public key
+const publicKey = Hex.from('0x04' + '1234...'); // 65-byte uncompressed secp256k1 public key
 const sha256Hash = SHA256.hash(publicKey);
 const ripemd160Hash = Ripemd160.hash(sha256Hash);
 // Then Base58Check encode with version byte
@@ -336,6 +338,9 @@ function doubleSha256(data: Uint8Array): Uint8Array {
 ### Merkle Trees
 Build authenticated data structures:
 ```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 function merkleRoot(leaves: Uint8Array[]): Uint8Array {
   if (leaves.length === 0) throw new Error("No leaves");
   if (leaves.length === 1) return leaves[0];
@@ -346,9 +351,10 @@ function merkleRoot(leaves: Uint8Array[]): Uint8Array {
     for (let i = 0; i < hashes.length; i += 2) {
       const left = hashes[i];
       const right = hashes[i + 1] || left; // Duplicate if odd
-      const combined = new Uint8Array(64);
-      combined.set(left, 0);
-      combined.set(right, 32);
+      const combined = Hex.from('0x' +
+        Array.from(left).map(b => b.toString(16).padStart(2, '0')).join('') +
+        Array.from(right).map(b => b.toString(16).padStart(2, '0')).join('')
+      );
       nextLevel.push(SHA256.hash(combined));
     }
     hashes.length = 0;

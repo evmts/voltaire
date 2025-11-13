@@ -33,8 +33,8 @@ console.log(tree.root) // { type: 'empty' }
 const tree = BinaryTree()
 
 // Insert values to build tree
-const key = new Uint8Array(32)
-const value = new Uint8Array(32)
+const key = Hash.from('0x' + '00'.repeat(32))
+const value = Hash.from('0x' + '00'.repeat(32))
 value[0] = 0x42
 
 const tree2 = BinaryTree.insert(tree, key, value)
@@ -149,28 +149,28 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree = BinaryTree.init()
 
 // Insert first value (creates stem node)
-const key1 = new Uint8Array(32)
+const key1 = Hash.from('0x' + '00'.repeat(32))
 key1[31] = 0  // subindex 0
-const value1 = new Uint8Array(32)
+const value1 = Hash.from('0x' + '00'.repeat(32))
 value1[0] = 0x01
 
 tree = BinaryTree.insert(tree, key1, value1)
 console.log(tree.root.type) // 'stem'
 
 // Insert second value (same stem, different subindex)
-const key2 = new Uint8Array(32)
+const key2 = Hash.from('0x' + '00'.repeat(32))
 key2[31] = 1  // subindex 1
-const value2 = new Uint8Array(32)
+const value2 = Hash.from('0x' + '00'.repeat(32))
 value2[0] = 0x02
 
 tree = BinaryTree.insert(tree, key2, value2)
 console.log(tree.root.type) // Still 'stem' (same 31-byte stem)
 
 // Insert with different stem (creates internal nodes)
-const key3 = new Uint8Array(32)
+const key3 = Hash.from('0x' + '00'.repeat(32))
 key3[0] = 0xFF  // Different stem
 key3[31] = 0
-const value3 = new Uint8Array(32)
+const value3 = Hash.from('0x' + '00'.repeat(32))
 value3[0] = 0x03
 
 tree = BinaryTree.insert(tree, key3, value3)
@@ -210,7 +210,7 @@ import { BinaryTree } from '@tevm/voltaire'
 let tree = BinaryTree.init()
 
 // Account address to key
-const address = new Uint8Array(20)
+const address = Address.zero()
 // ... set address bytes
 const accountKey = BinaryTree.addressToKey(address)
 
@@ -219,7 +219,7 @@ const basicDataKey = accountKey.slice()
 basicDataKey[31] = 0  // Subindex 0 for AccountData
 
 // Pack AccountData (28 bytes)
-const accountData = new Uint8Array(32)
+const accountData = Hash.from('0x' + '00'.repeat(32))
 accountData[0] = 1    // version
 // accountData[1-3]: code size (3 bytes)
 // accountData[4-11]: nonce (8 bytes)

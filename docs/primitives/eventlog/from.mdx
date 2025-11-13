@@ -151,7 +151,7 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 const testLog = EventLog({
   address: Address.zero(),
   topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 console.log(testLog.blockNumber); // undefined
@@ -194,7 +194,7 @@ const anonymousLog = EventLog({
     Hash.fromHex('0x000...param3'),
     Hash.fromHex('0x000...param4'),
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 // getTopic0 returns first indexed parameter (not signature)

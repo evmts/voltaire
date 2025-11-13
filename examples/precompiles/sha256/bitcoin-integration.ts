@@ -147,7 +147,7 @@ const totalMerkleGas =
 	root_first.gasUsed +
 	merkleRoot.gasUsed;
 
-const largeData = new Uint8Array(1000);
+const largeData = crypto.getRandomValues(new Uint8Array(1000));
 const sha256Words = Math.ceil(1000 / 32);
 const sha256Gas = 60n + 12n * BigInt(sha256Words);
 const keccak256Gas = 30n + 6n * BigInt(sha256Words); // Keccak256 formula

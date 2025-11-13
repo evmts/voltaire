@@ -56,21 +56,30 @@ r = 2188824287183927522224640574525727508854836440041603434369820418657580849561
 import { bn254 } from '@tevm/voltaire/crypto';
 
 // G1 point addition
-const g1a = new Uint8Array(64); // x||y
-const g1b = new Uint8Array(64);
+const g1a = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
+                        '0000000000000000000000000000000000000000000000000000000000000002');
+const g1b = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
+                        '0000000000000000000000000000000000000000000000000000000000000002');
 const input = new Uint8Array([...g1a, ...g1b]);
 const output = new Uint8Array(64);
 await bn254.g1Add(input, output);
 
 // G1 scalar multiplication
-const point = new Uint8Array(64);
-const scalar = new Uint8Array(32);
+const point = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
+                          '0000000000000000000000000000000000000000000000000000000000000002');
+const scalar = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000003');
 const mulInput = new Uint8Array([...point, ...scalar]);
 const mulOutput = new Uint8Array(64);
 await bn254.g1Mul(mulInput, mulOutput);
 
 // Pairing check (zkSNARK verification)
-const pairs = new Uint8Array(192 * n); // n pairs × 192 bytes
+const g1Point = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
+                            '0000000000000000000000000000000000000000000000000000000000000002');
+const g2Point = Hex.toBytes('0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2' +
+                            '1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed' +
+                            '090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b' +
+                            '12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa');
+const pairs = new Uint8Array([...g1Point, ...g2Point]); // Single pair
 const success = await bn254.pairingCheck(pairs);
 ```
 

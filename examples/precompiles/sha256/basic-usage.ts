@@ -63,12 +63,12 @@ const abcHash = Buffer.from(abcResult.output).toString("hex");
 const sizes = [0, 1, 32, 33, 64, 100, 1000];
 
 for (const size of sizes) {
-	const input = new Uint8Array(size);
+	const input = size > 0 ? crypto.getRandomValues(new Uint8Array(size)) : new Uint8Array(0);
 	const w = Math.ceil(size / 32);
 	const gas = 60n + 12n * BigInt(w);
 	const perByte = size > 0 ? Number(gas) / size : 0;
 }
-const testData = new Uint8Array(100);
+const testData = crypto.getRandomValues(new Uint8Array(100));
 const insufficientGas = 50n; // Need 60 + 12*4 = 108
 
 const oogResult = execute(
@@ -77,8 +77,7 @@ const oogResult = execute(
 	insufficientGas,
 	Hardfork.CANCUN,
 );
-const largeInput = new Uint8Array(10000);
-crypto.getRandomValues(largeInput);
+const largeInput = crypto.getRandomValues(new Uint8Array(10000));
 
 const largeWords = Math.ceil(largeInput.length / 32);
 const largeGas = 60n + 12n * BigInt(largeWords);

@@ -318,7 +318,7 @@ const contractAddr = deployer.calculateCreateAddress(0n);
 import { Keccak256, Hash } from "@tevm/voltaire";
 
 // Hash data
-const data = new Uint8Array([1, 2, 3]);
+const data = Hex.from("0x010203");
 const hash = Keccak256.hash(data);
 
 // Convert to hex
@@ -367,7 +367,7 @@ const tx: Transaction.EIP1559 = {
   gasLimit: 21000n,
   to: recipientAddress,
   value: 1000000000000000000n,
-  data: new Uint8Array(),
+  data: Hex.from("0x"),
   accessList: [],
   r: signature.r,
   s: signature.s,
@@ -438,7 +438,7 @@ const tx = {
   gasLimit: 21_000n,
   to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
   value: 1_000_000_000_000_000_000n, // 1 ether
-  data: new Uint8Array(),
+  data: Hex.from("0x"),
 };
 ```
 
@@ -510,7 +510,7 @@ Check your `tsconfig.json` has `"moduleResolution": "bundler"` or `"node16"`.
 If you get type errors like "Type 'Uint8Array' is not assignable to type 'BrandedAddress'", you need to construct the branded type properly:
 
 ```typescript
-// ❌ Won't work
+// ❌ Won't work - raw Uint8Array doesn't have the brand
 const addr: BrandedAddress = new Uint8Array(20);
 
 // ✅ Correct

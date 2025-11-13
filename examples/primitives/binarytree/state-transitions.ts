@@ -9,6 +9,8 @@
  */
 
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
 // Helper types
 interface AccountState {
@@ -73,8 +75,7 @@ let state = BinaryTree();
 captureSnapshot(state, 0, "Genesis - empty state");
 
 // Alice
-const aliceAddress = new Uint8Array(20);
-aliceAddress[0] = 0x01;
+const aliceAddress = Address.from("0x0100000000000000000000000000000000000000");
 const aliceKey = BinaryTree.addressToKey(aliceAddress);
 aliceKey[31] = 0; // Account data at subindex 0
 
@@ -86,8 +87,7 @@ const aliceState: AccountState = {
 state = BinaryTree.insert(state, aliceKey, packAccountState(aliceState));
 
 // Bob
-const bobAddress = new Uint8Array(20);
-bobAddress[0] = 0x02;
+const bobAddress = Address.from("0x0200000000000000000000000000000000000000");
 const bobKey = BinaryTree.addressToKey(bobAddress);
 bobKey[31] = 0;
 
@@ -124,8 +124,7 @@ if (aliceData && bobData) {
 }
 
 // Contract address (simplified)
-const contractAddress = new Uint8Array(20);
-contractAddress[0] = 0xff;
+const contractAddress = Address.from("0xff00000000000000000000000000000000000000");
 const contractKey = BinaryTree.addressToKey(contractAddress);
 contractKey[31] = 0;
 
@@ -154,8 +153,7 @@ if (aliceData2) {
 const storageKey = BinaryTree.addressToKey(contractAddress);
 storageKey[31] = 1; // Storage slot 0 at subindex 1
 
-const storageValue = new Uint8Array(32);
-storageValue[31] = 0x42;
+const storageValue = Bytes32.from("0x0000000000000000000000000000000000000000000000000000000000000042");
 
 state = BinaryTree.insert(state, storageKey, storageValue);
 

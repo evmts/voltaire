@@ -1,8 +1,9 @@
 import { Blake2 } from "../../../src/crypto/Blake2/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
-const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash64 = Blake2.hash(data);
-const hash32 = Blake2.hash(data, 32);
+
+const data = Hex("0x0102030405");
+const hash64 = Blake2.hashHex(data);
+const hash32 = Blake2.hashHex(data, 32);
 const message = "hello";
 const messageHash = Blake2.hashString(message);
 const input = "test";
@@ -30,9 +31,9 @@ for (let i = 0; i < 32; i++) {
 	const xor = originalHash[i] ^ modifiedHash[i];
 	differentBits += xor.toString(2).split("1").length - 1;
 }
-const sampleData = new Uint8Array(100).fill(0xab);
+const sampleData = Hex("0x" + "ab".repeat(100));
 
-const checksum = Blake2.hash(sampleData, 16); // Fast 16-byte checksum
-const addressHash = Blake2.hash(sampleData, 20); // Address-sized (like RIPEMD160)
-const standardHash = Blake2.hash(sampleData, 32); // Standard 32-byte (like SHA-256)
-const maxHash = Blake2.hash(sampleData, 64); // Maximum security
+const checksum = Blake2.hashHex(sampleData, 16); // Fast 16-byte checksum
+const addressHash = Blake2.hashHex(sampleData, 20); // Address-sized (like RIPEMD160)
+const standardHash = Blake2.hashHex(sampleData, 32); // Standard 32-byte (like SHA-256)
+const maxHash = Blake2.hashHex(sampleData, 64); // Maximum security

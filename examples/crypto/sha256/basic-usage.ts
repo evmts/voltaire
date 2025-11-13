@@ -9,8 +9,10 @@
  */
 
 import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
-const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash1 = SHA256.hash(data);
+import { Hex } from "../../../src/primitives/Hex/index.js";
+
+const data = Hex("0x0102030405");
+const hash1 = SHA256.hashHex(data);
 const message = "hello world";
 const hash2 = SHA256.hashString(message);
 
@@ -28,14 +30,14 @@ const expectedEmpty =
 	"0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 const emoji = SHA256.hashString("🚀");
 const chinese = SHA256.hashString("你好");
-const input = new Uint8Array([42, 42, 42]);
-const hashA = SHA256.hash(input);
-const hashB = SHA256.hash(input);
-const hashC = SHA256.hash(input);
-const input1 = new Uint8Array([1, 2, 3, 4, 5]);
-const input2 = new Uint8Array([1, 2, 3, 4, 6]); // Last byte different
-const hashInput1 = SHA256.hash(input1);
-const hashInput2 = SHA256.hash(input2);
+const input = Hex("0x2a2a2a");
+const hashA = SHA256.hashHex(input);
+const hashB = SHA256.hashHex(input);
+const hashC = SHA256.hashHex(input);
+const input1 = Hex("0x0102030405");
+const input2 = Hex("0x0102030406"); // Last byte different
+const hashInput1 = SHA256.hashHex(input1);
+const hashInput2 = SHA256.hashHex(input2);
 
 // Count differing bits
 let differingBits = 0;

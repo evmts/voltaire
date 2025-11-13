@@ -1,5 +1,6 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
 
 const content1 = "Hello, World!";
 const content2 = "Hello, World!";
@@ -54,55 +55,34 @@ if (retrieved) {
 }
 
 // Simulate contract bytecode
-const contractCode1 = new Uint8Array([
-	0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15, 0x61, 0x00, 0x0f, 0x57, 0x60,
-	0x00, 0x80, 0xfd,
-]);
+const contractCode1 = Bytecode(
+	"0x6080604052348015610000f57600080fd",
+);
 
-const contractCode2 = new Uint8Array([
-	0x60,
-	0x80,
-	0x60,
-	0x40,
-	0x52,
-	0x34,
-	0x80,
-	0x15,
-	0x61,
-	0x00,
-	0x10,
-	0x57,
-	0x60,
-	0x00,
-	0x80,
-	0xfd, // Slightly different
-]);
+const contractCode2 = Bytecode(
+	"0x608060405234801561001057600080fd",
+); // Slightly different
 
 const codeHash1 = Keccak256.hash(contractCode1);
 const codeHash2 = Keccak256.hash(contractCode2);
 
 // Simulate downloading a file in chunks
-const fileChunks = [
-	new Uint8Array([0x89, 0x50, 0x4e, 0x47]), // PNG header
-	new Uint8Array([0x0d, 0x0a, 0x1a, 0x0a]),
-	new Uint8Array(Array.from({ length: 100 }, (_, i) => i % 256)),
-];
+const pngHeader = Hex("0x89504e47");
+const pngData = Hex("0x0d0a1a0a");
+const contentBytes = Hex(
+	"0x" +
+		Array.from({ length: 100 }, (_, i) => (i % 256).toString(16).padStart(2, "0")).join(""),
+);
+
+const fileChunks = [pngHeader, pngData, contentBytes];
 
 // Compute hash before "sending"
-const originalFile = new Uint8Array([
-	...fileChunks[0],
-	...fileChunks[1],
-	...fileChunks[2],
-]);
-const expectedHash = Keccak256.hash(originalFile);
+const originalFile = Hex.concat([...fileChunks]);
+const expectedHash = Keccak256.hashHex(originalFile);
 
 // Simulate receiving and verifying
-const receivedFile = new Uint8Array([
-	...fileChunks[0],
-	...fileChunks[1],
-	...fileChunks[2],
-]);
-const receivedHash = Keccak256.hash(receivedFile);
+const receivedFile = Hex.concat([...fileChunks]);
+const receivedHash = Keccak256.hashHex(receivedFile);
 
 // Simulate corruption
 receivedFile[50] ^= 0xff; // Flip bits
@@ -148,22 +128,20 @@ const commit3Hash = hashCommit(commit3);
 // Split large file into chunks and build DAG
 const chunkSize = 256;
 const largeFileSize = 1024;
-const largeFile = new Uint8Array(largeFileSize);
-crypto.getRandomValues(largeFile);
+const largeFileBytes = new Uint8Array(largeFileSize);
+crypto.getRandomValues(largeFileBytes);
+const largeFile = Hex.fromBytes(largeFileBytes);
 
-// Create chunks
-const chunks: Uint8Array[] = [];
-for (let i = 0; i < largeFileSize; i += chunkSize) {
-	chunks.push(largeFile.slice(i, i + chunkSize));
+// Create chunks as hex strings
+const chunks: string[] = [];
+for (let i = 0; i < largeFileSize * 2; i += chunkSize * 2) {
+	chunks.push(("0x" + largeFile.slice(2 + i, 2 + i + chunkSize * 2)) as any);
 }
 
 // Hash each chunk
-const chunkHashes = chunks.map((chunk) => Keccak256.hash(chunk));
+const chunkHashes = chunks.map((chunk) => Keccak256.hashHex(chunk as any));
 for (let i = 0; i < chunkHashes.length; i++) {}
 
 // Build root hash from all chunk hashes
-const allChunkHashes = new Uint8Array(chunkHashes.length * 32);
-for (let i = 0; i < chunkHashes.length; i++) {
-	allChunkHashes.set(chunkHashes[i], i * 32);
-}
-const rootHash = Keccak256.hash(allChunkHashes);
+const allChunkHashes = Hex.concat(chunkHashes as any);
+const rootHash = Keccak256.hashHex(allChunkHashes);

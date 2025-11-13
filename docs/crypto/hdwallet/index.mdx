@@ -576,11 +576,8 @@ const secure = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
 **Weak Seed Generation**
 
 ```typescript
-// ❌ NEVER use weak randomness
-const weakSeed = new Uint8Array(64);
-for (let i = 0; i < 64; i++) {
-  weakSeed[i] = Math.floor(Math.random() * 256); // Predictable!
-}
+// ❌ NEVER use weak randomness like Math.random()
+// Math.random() is NOT cryptographically secure!
 
 // ✅ Use cryptographically secure generation
 const mnemonic = Bip39.generateMnemonic(256); // Uses crypto.getRandomValues()

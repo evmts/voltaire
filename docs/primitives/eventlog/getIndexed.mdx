@@ -24,7 +24,7 @@ const log = EventLog({
     Hash.fromHex('0x000...from'),  // indexed param 1
     Hash.fromHex('0x000...to'),    // indexed param 2
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const indexed = log.getIndexed();
@@ -57,7 +57,7 @@ const log = EventLog.from({
     Hash.fromHex('0x000...from'),  // indexed param 1
     Hash.fromHex('0x000...to'),    // indexed param 2
   ],
-  data: new Uint8Array([]),
+  data: Hex.from('0x'),
 });
 
 const indexed = EventLog.getIndexed(log);

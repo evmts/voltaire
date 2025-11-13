@@ -660,8 +660,9 @@ class TransferIndex {
     const matchingBlocks: number[] = [];
 
     // Pad address to 32 bytes (as it appears in topics)
-    const paddedAddress = new Uint8Array(32);
-    paddedAddress.set(userAddress, 12); // Address at offset 12
+    const paddedAddress = Hash.from(
+      Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
+    );
 
     for (const [blockNumber, bloom] of this.blockBlooms.entries()) {
       if (bloom.contains(this.transferTopic) && bloom.contains(paddedAddress)) {

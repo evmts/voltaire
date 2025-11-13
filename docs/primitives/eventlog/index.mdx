@@ -39,8 +39,8 @@ import { EventLog } from '@tevm/voltaire';
 
 const log = EventLog({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([0, 0, 0, 1]),
+  topics: [Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')],
+  data: Hex.from('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'),
 });
 
 const signature = log.getTopic0();
@@ -56,8 +56,8 @@ import * as EventLog from '@tevm/voltaire/EventLog';
 
 const log = EventLog.from({
   address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([0, 0, 0, 1]),
+  topics: [Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')],
+  data: Hex.from('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'),
 });
 
 const signature = EventLog.getTopic0(log);
@@ -183,8 +183,8 @@ const TRANSFER_SIG = Hash.fromHex(
 
 // Filter transfers to specific user
 const userAddress = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
-const userAddressHash = Hash.fromBytes(
-  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+const userAddressHash = Hash.from(
+  '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb2'
 );
 
 const transfersToUser = EventLog.filterLogs(allLogs, {

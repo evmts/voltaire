@@ -21,9 +21,10 @@ Ed25519 is a modern elliptic curve signature scheme using the Edwards curve form
 
 ```typescript
 import * as Ed25519 from '@tevm/voltaire/crypto/Ed25519';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Generate keypair from seed
-const seed = crypto.getRandomValues(new Uint8Array(32));
+const seed = Hex.from('0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60');
 const keypair = Ed25519.keypairFromSeed(seed);
 
 // Sign a message (any length)
@@ -53,7 +54,9 @@ Generate deterministic Ed25519 keypair from a 32-byte seed.
 - `InvalidSeedError` - Seed wrong length
 
 ```typescript
-const seed = crypto.getRandomValues(new Uint8Array(32));
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+const seed = Hex.from('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 ```
 
@@ -262,8 +265,10 @@ assert(Ed25519.verify(signature, message, publicKey));
 ### Deterministic Signatures
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
 // Ed25519 is deterministic - same message + key = same signature
-const seed = crypto.getRandomValues(new Uint8Array(32));
+const seed = Hex.from('0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 
 const message = new TextEncoder().encode('test');
@@ -278,21 +283,25 @@ assert(sig1.every((byte, i) => byte === sig2[i]));
 ### Message Length Flexibility
 
 ```typescript
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+const seed = Hex.from('0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
 
 // Empty message
-const sig0 = Ed25519.sign(new Uint8Array(0), secretKey);
-assert(Ed25519.verify(sig0, new Uint8Array(0), publicKey));
+const emptyMsg = Hex.from('0x');
+const sig0 = Ed25519.sign(emptyMsg, secretKey);
+assert(Ed25519.verify(sig0, emptyMsg, publicKey));
 
 // Short message
 const msg1 = new TextEncoder().encode('Hi');
 const sig1 = Ed25519.sign(msg1, secretKey);
 assert(Ed25519.verify(sig1, msg1, publicKey));
 
-// Long message (1 MB)
-const msg2 = new Uint8Array(1024 * 1024);
-const sig2 = Ed25519.sign(msg2, secretKey);
-assert(Ed25519.verify(sig2, msg2, publicKey));
+// Long message (1 MB) - for illustration, represented as hex
+const largeData = new TextEncoder().encode('a'.repeat(1024 * 1024));
+const sig2 = Ed25519.sign(largeData, secretKey);
+assert(Ed25519.verify(sig2, largeData, publicKey));
 ```
 
 ## Implementation Details

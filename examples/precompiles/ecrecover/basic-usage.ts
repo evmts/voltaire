@@ -20,8 +20,7 @@ import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
 
 // Generate a keypair and sign a message
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKey = crypto.getRandomValues(new Uint8Array(32));
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 // Derive expected address from public key

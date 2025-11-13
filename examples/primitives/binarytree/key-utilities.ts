@@ -9,33 +9,25 @@
  */
 
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
 
-const address = new Uint8Array(20);
-address[0] = 0xf3;
-address[1] = 0x9f;
-address[2] = 0xd6;
-address[19] = 0x66;
+const address = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 
 const key = BinaryTree.addressToKey(address);
 
-const testKey = new Uint8Array(32);
-for (let i = 0; i < 31; i++) {
-	testKey[i] = 0xaa;
-}
-testKey[31] = 0x42; // Subindex
+const testKey = Bytes32.from("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa42");
 
 const { stem, idx } = BinaryTree.splitKey(testKey);
 
-const stemExample = new Uint8Array(31);
-stemExample[0] = 0b10101010; // Binary: 1-0-1-0-1-0-1-0
+const stemExample = Bytes32.from("0xaa00000000000000000000000000000000000000000000000000000000000000").slice(0, 31);
 
 for (let pos = 0; pos < 8; pos++) {
 	const bit = BinaryTree.getStemBit(stemExample, pos);
 	const direction = bit === 0 ? "left" : "right";
 }
 
-const pathStem = new Uint8Array(31);
-pathStem[0] = 0b11000000; // First two bits: 1, 1
+const pathStem = Bytes32.from("0xc000000000000000000000000000000000000000000000000000000000000000").slice(0, 31);
 
 const path = [];
 for (let depth = 0; depth < 5; depth++) {
@@ -43,11 +35,8 @@ for (let depth = 0; depth < 5; depth++) {
 	path.push(bit === 0 ? "L" : "R");
 }
 
-const addr1 = new Uint8Array(20);
-addr1[0] = 0x00; // First bit of stem will be 0
-
-const addr2 = new Uint8Array(20);
-addr2[0] = 0x80; // First bit of stem will be 1
+const addr1 = Address.from("0x0000000000000000000000000000000000000000");
+const addr2 = Address.from("0x8000000000000000000000000000000000000000");
 
 const key1 = BinaryTree.addressToKey(addr1);
 const key2 = BinaryTree.addressToKey(addr2);
@@ -73,15 +62,11 @@ for (const { idx, desc } of subindexMap) {
 	keyForIdx[31] = idx;
 }
 
-const exampleKey = new Uint8Array(32);
-exampleKey[12] = 0xab; // Address start
-exampleKey[13] = 0xcd;
-exampleKey[31] = 5; // Subindex
+const exampleKey = Bytes32.from("0x000000000000000000000000abcd00000000000000000000000000000000005");
 
 const { stem: exStem, idx: exIdx } = BinaryTree.splitKey(exampleKey);
 
-const navStem = new Uint8Array(31);
-navStem[0] = 0b10110100;
+const navStem = Bytes32.from("0xb400000000000000000000000000000000000000000000000000000000000000").slice(0, 31);
 
 let indent = "          ";
 for (let depth = 0; depth < 4; depth++) {

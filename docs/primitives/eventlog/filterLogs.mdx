@@ -89,8 +89,8 @@ import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
 const userAddress = Address.fromHex('0xa1b2c3d4...');
-const userHash = Hash.fromBytes(
-  new Uint8Array([...new Uint8Array(12).fill(0), ...userAddress])
+const userHash = Hash.from(
+  Hex.concat(Hex.from('0x000000000000000000000000'), Address.toHex(userAddress))
 );
 
 // All incoming transfers to user
