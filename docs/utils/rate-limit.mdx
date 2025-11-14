@@ -1,0 +1,419 @@
+---
+title: "Rate Limiting"
+description: "Throttle, debounce, and rate-limit function calls for optimal API usage"
+---
+
+# Rate Limiting
+
+Utilities for rate limiting, throttling, and debouncing function calls. Essential for managing API rate limits, preventing request spam, and optimizing performance in Ethereum applications.
+
+## Overview
+
+Three approaches to rate limiting:
+
+- **Throttle**: Execute at most once per time period (first call wins)
+- **Debounce**: Execute only after calls have stopped (last call wins)
+- **RateLimiter**: Token bucket algorithm with queuing (all calls eventually execute)
+
+## Throttle
+
+Execute a function at most once per specified wait time.
+
+### Basic Usage
+
+```typescript
+import { throttle } from 'voltaire/utils';
+
+const getBalance = throttle(
+  (address: string) => provider.eth_getBalance(address),
+  1000 // Max once per second
+);
+
+// Multiple rapid calls - only first executes
+getBalance('0x123...'); // Executes immediately
+getBalance('0x456...'); // Ignored (within 1s)
+getBalance('0x789...'); // Ignored (within 1s)
+```
+
+### Event Handlers
+
+Throttle rapid UI events:
+
+```typescript
+const handleBlockUpdate = throttle(
+  async (blockNumber: bigint) => {
+    const block = await provider.eth_getBlockByNumber(blockNumber);
+    updateUI(block);
+  },
+  500
+);
+
+provider.on('block', handleBlockUpdate);
+```
+
+### API Reference
+
+```typescript
+function throttle<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => TReturn,
+  wait: number
+): (...args: TArgs) => TReturn | undefined
+```
+
+## Debounce
+
+Execute a function only after calls have stopped for specified wait time.
+
+### Basic Usage
+
+```typescript
+import { debounce } from 'voltaire/utils';
+
+const searchBlocks = debounce(
+  (query: string) => provider.eth_getBlockByNumber(query),
+  500 // Wait 500ms after last keystroke
+);
+
+// Rapid calls - only last executes after 500ms
+searchBlocks('latest');  // Cancelled
+searchBlocks('pending'); // Cancelled
+searchBlocks('0x123');   // Executes after 500ms
+```
+
+### Cancel Debounced Calls
+
+```typescript
+const debouncedFn = debounce(expensiveOperation, 1000);
+
+// Call multiple times
+debouncedFn();
+debouncedFn();
+
+// Cancel pending execution
+debouncedFn.cancel();
+```
+
+### Form Input
+
+Debounce search or validation:
+
+```typescript
+const validateAddress = debounce(
+  async (address: string) => {
+    const code = await provider.eth_getCode(address);
+    setIsContract(code.length > 2);
+  },
+  300
+);
+
+// In React/Vue
+<input onChange={(e) => validateAddress(e.target.value)} />
+```
+
+### API Reference
+
+```typescript
+function debounce<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => TReturn,
+  wait: number
+): ((...args: TArgs) => void) & { cancel: () => void }
+```
+
+## RateLimiter
+
+Token bucket rate limiter with queuing, rejection, or dropping strategies.
+
+### Basic Usage
+
+```typescript
+import { RateLimiter } from 'voltaire/utils';
+
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000,
+  strategy: 'queue'
+});
+
+// Execute with rate limit
+const blockNumber = await limiter.execute(
+  () => provider.eth_blockNumber()
+);
+```
+
+### Configuration
+
+```typescript
+interface RateLimiterOptions {
+  maxRequests: number;    // Max requests per interval
+  interval: number;       // Interval in milliseconds
+  strategy?: 'queue' | 'reject' | 'drop';
+}
+```
+
+**Strategies:**
+- **queue** (default): Queue requests until capacity available
+- **reject**: Throw error when limit exceeded
+- **drop**: Silently drop requests when limit exceeded
+
+### Wrap Functions
+
+Create rate-limited versions of functions:
+
+```typescript
+const limiter = new RateLimiter({
+  maxRequests: 5,
+  interval: 1000
+});
+
+const getBalance = limiter.wrap(
+  (address: string) => provider.eth_getBalance(address)
+);
+
+// Use like normal function - rate limiting automatic
+const balance1 = await getBalance('0x123...');
+const balance2 = await getBalance('0x456...');
+```
+
+### Queue Strategy
+
+Queue requests when limit exceeded:
+
+```typescript
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000,
+  strategy: 'queue'
+});
+
+// All requests queued and executed in order
+const results = await Promise.all(
+  addresses.map(addr =>
+    limiter.execute(() => provider.eth_getBalance(addr))
+  )
+);
+```
+
+### Reject Strategy
+
+Fail fast when limit exceeded:
+
+```typescript
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000,
+  strategy: 'reject'
+});
+
+try {
+  await limiter.execute(() => provider.eth_blockNumber());
+} catch (error) {
+  // Error: Rate limit exceeded: 10 requests per 1000ms
+}
+```
+
+### Drop Strategy
+
+Silently drop requests when limit exceeded:
+
+```typescript
+const limiter = new RateLimiter({
+  maxRequests: 5,
+  interval: 1000,
+  strategy: 'drop'
+});
+
+// Requests beyond limit return undefined
+const result = await limiter.execute(
+  () => provider.eth_blockNumber()
+);
+
+if (result === undefined) {
+  console.log('Request dropped due to rate limit');
+}
+```
+
+## Real-World Examples
+
+### Public RPC Rate Limiting
+
+Respect public RPC rate limits:
+
+```typescript
+import { RateLimiter } from 'voltaire/utils';
+
+// Infura: 10 requests/second
+const infuraLimiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000,
+  strategy: 'queue'
+});
+
+// Alchemy: 25 requests/second (free tier)
+const alchemyLimiter = new RateLimiter({
+  maxRequests: 25,
+  interval: 1000,
+  strategy: 'queue'
+});
+
+// Wrap provider methods
+const provider = new HttpProvider('https://eth.llamarpc.com');
+const getBalance = infuraLimiter.wrap(
+  (addr: string) => provider.eth_getBalance(addr)
+);
+```
+
+### Multiple Rate Limits
+
+Different limits for different endpoints:
+
+```typescript
+// Read operations: 50/second
+const readLimiter = new RateLimiter({
+  maxRequests: 50,
+  interval: 1000
+});
+
+// Write operations: 10/second
+const writeLimiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000
+});
+
+// Use appropriate limiter
+const balance = await readLimiter.execute(
+  () => provider.eth_getBalance(address)
+);
+
+const txHash = await writeLimiter.execute(
+  () => provider.eth_sendRawTransaction(signedTx)
+);
+```
+
+### Monitoring
+
+Track rate limiter state:
+
+```typescript
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000
+});
+
+// Check available tokens
+console.log(`Available: ${limiter.getTokens()}`);
+
+// Check queue length
+console.log(`Queued: ${limiter.getQueueLength()}`);
+
+// Clear queue if needed
+limiter.clearQueue();
+```
+
+### Burst Handling
+
+Allow bursts then rate limit:
+
+```typescript
+// Allow 100 requests initially (burst)
+// Then 10/second sustained
+const limiter = new RateLimiter({
+  maxRequests: 100,
+  interval: 10000 // 10 seconds
+});
+
+// First 100 requests execute immediately
+// Then rate limited to 10/second
+```
+
+## Comparison
+
+| Utility | Use Case | Behavior |
+|---------|----------|----------|
+| **throttle** | Event handlers, UI updates | First call wins, others ignored |
+| **debounce** | Search, validation | Last call wins after pause |
+| **RateLimiter** | API rate limits | All calls execute (queued) |
+
+## Best Practices
+
+### Choose the Right Tool
+
+- **Throttle**: When only first call matters (UI updates)
+- **Debounce**: When only last call matters (search, validation)
+- **RateLimiter**: When all calls must execute (API requests)
+
+### Public RPC Limits
+
+Common public RPC rate limits:
+
+- **Infura**: 10 req/sec (free), 100 req/sec (paid)
+- **Alchemy**: 25 req/sec (free), 300 req/sec (growth)
+- **QuickNode**: Varies by plan
+- **Public endpoints**: Often 1-5 req/sec
+
+Always rate limit public RPC calls.
+
+### Batch + Rate Limit
+
+Combine with batching for optimal throughput:
+
+```typescript
+import { RateLimiter, BatchQueue } from 'voltaire/utils';
+
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000
+});
+
+const queue = new BatchQueue({
+  maxBatchSize: 50,
+  maxWaitTime: 100,
+  processBatch: async (addresses) => {
+    return limiter.execute(() =>
+      Promise.all(
+        addresses.map(addr => provider.eth_getBalance(addr))
+      )
+    );
+  }
+});
+```
+
+## API Reference
+
+### throttle
+
+```typescript
+function throttle<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => TReturn,
+  wait: number
+): (...args: TArgs) => TReturn | undefined
+```
+
+### debounce
+
+```typescript
+function debounce<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => TReturn,
+  wait: number
+): ((...args: TArgs) => void) & { cancel: () => void }
+```
+
+### RateLimiter
+
+```typescript
+class RateLimiter {
+  constructor(options: RateLimiterOptions)
+  execute<T>(fn: () => Promise<T>): Promise<T>
+  wrap<TArgs, TReturn>(
+    fn: (...args: TArgs) => Promise<TReturn>
+  ): (...args: TArgs) => Promise<TReturn>
+  getTokens(): number
+  getQueueLength(): number
+  clearQueue(): void
+}
+```
+
+## See Also
+
+- [Batch Processing](/utils/batch) - Combine with rate limiting
+- [Retry](/utils/retry) - Retry rate-limited requests
+- [Polling](/utils/polling) - Poll with rate limits
