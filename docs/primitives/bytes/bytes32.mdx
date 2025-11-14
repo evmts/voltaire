@@ -19,14 +19,15 @@ import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
 // Storage slot
 const slot = Bytes32(0);
 
-// Merkle node
-const node = Bytes32('0x' + 'ab'.repeat(32));
+// Keccak256 hash output (32 bytes, same size as Bytes32)
+const hash = Keccak256.hash(data);
+const hashAsBytes = Bytes32(hash);
 
 // Convert to/from bigint
 const value = Bytes32.toBigint(slot);
 
 // Extract address (last 20 bytes)
-const addr = Bytes32.toAddress(node);
+const addr = Bytes32.toAddress(hashAsBytes);
 ```
 
 ## Why Bytes32 is Critical
@@ -43,7 +44,7 @@ const addr = Bytes32.toAddress(node);
 const slot = Bytes32(0);
 
 // Hash results (same size as Bytes32)
-const hash = Hash.keccak256(data);
+const hash = Keccak256.hash(data);
 const bytes = Bytes32(hash);
 
 // Merkle tree nodes
@@ -51,24 +52,27 @@ const left = Bytes32('0x...');
 const right = Bytes32('0x...');
 ```
 
-## Difference from Hash
+## Difference from Keccak256Hash
 
 Both are 32 bytes, but semantic meaning differs:
 
 ```typescript
-// Hash = keccak256 output (semantic)
-const hash: BrandedHash = Hash.keccak256(data);
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+
+// Keccak256Hash = keccak256 output (semantic)
+const hash = Keccak256.hash(data);
 
 // Bytes32 = generic 32-byte value
-const slot: BrandedBytes32 = Bytes32(0);
+const slot = Bytes32(0);
 
 // Convert between them
 const hashAsBytes = Bytes32(hash);
-const bytesAsHash = Bytes32.toHash(slot);
+const bytesAsHash = Keccak256.from(slot);
 ```
 
 **When to use each:**
-- **Hash** - Cryptographic hash outputs (keccak256 results)
+- **Keccak256Hash** - Cryptographic hash outputs (keccak256 results)
 - **Bytes32** - Storage slots, generic 32-byte values, numeric conversions
 
 ## Type Safety
@@ -254,12 +258,14 @@ const large = Bytes32('0x' + 'ff'.repeat(32));
 const bigValue = Bytes32.toBigint(large);
 ```
 
-### toHash
-Convert to Hash (semantic change):
+### toKeccak256Hash
+Convert to Keccak256Hash (semantic change):
 
 ```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
 const slot = Bytes32(0);
-const hash = Bytes32.toHash(slot);
+const hash = Keccak256.from(slot);
 
 // Same bytes, different type
 console.log(hash.length); // 32
@@ -381,7 +387,7 @@ const slot0 = Bytes32(0);
 // Slot for address mapping
 function mappingSlot(key: Address, slot: number): Bytes32 {
   const data = concat([key, Bytes32(slot)]);
-  const hash = Hash.keccak256(data);
+  const hash = Keccak256.hash(data);
   return Bytes32(hash);
 }
 ```
@@ -394,7 +400,7 @@ const leftNode = Bytes32('0x...');
 const rightNode = Bytes32('0x...');
 
 // Compute parent
-const parent = Hash.keccak256(concat([leftNode, rightNode]));
+const parent = Keccak256.hash(concat([leftNode, rightNode]));
 const parentNode = Bytes32(parent);
 ```
 
@@ -414,9 +420,8 @@ const stateRoot = Bytes32('0x...');
 ## Related
 
 - [Bytes](/primitives/bytes) - Generic `Bytes<N>` type documentation
-- [Hash](/primitives/hash) - Cryptographic hashes (also 32 bytes)
+- [Keccak256](/crypto/keccak256) - Cryptographic hashes (also 32 bytes)
 - [Bytes16](/primitives/bytes/bytes16) - 128-bit fixed-size bytes
 - [Bytes64](/primitives/bytes/bytes64) - 512-bit fixed-size bytes
-- [Hex](/primitives/hex) - Hex string types and utilities
 - [Uint](/primitives/uint) - 256-bit unsigned integers
 - [Address](/primitives/address) - 160-bit Ethereum addresses

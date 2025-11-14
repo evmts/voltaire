@@ -1,0 +1,551 @@
+---
+title: "Timeout"
+description: "Add timeouts to promises and async operations with cancellation support"
+---
+
+# Timeout
+
+Add timeouts to promises and async operations. Essential for preventing hung requests, managing long-running operations, and implementing cancellation in Ethereum applications.
+
+## Overview
+
+Timeout utilities provide:
+- **Promise timeouts**: Race promises against time limit
+- **Cancellation**: AbortSignal support
+- **Function wrapping**: Create timeout-wrapped versions
+- **Deferred promises**: Manual promise control
+- **Retry integration**: Timeout + retry patterns
+
+## Basic Usage
+
+### Simple Timeout
+
+Wrap a promise with timeout:
+
+```typescript
+import { withTimeout } from 'voltaire/utils';
+
+const result = await withTimeout(
+  provider.eth_getBlockByNumber('latest'),
+  { ms: 5000 }
+);
+```
+
+### Custom Timeout Message
+
+```typescript
+const balance = await withTimeout(
+  provider.eth_getBalance(address),
+  {
+    ms: 10000,
+    message: 'Balance fetch timed out after 10s'
+  }
+);
+```
+
+## Timeout Options
+
+### TimeoutOptions
+
+```typescript
+interface TimeoutOptions {
+  ms: number;              // Timeout duration in milliseconds
+  message?: string;        // Error message (default: "Operation timed out")
+  signal?: AbortSignal;    // Optional AbortController signal
+}
+```
+
+## Timeout Functions
+
+### withTimeout
+
+Add timeout to any promise:
+
+```typescript
+try {
+  const data = await withTimeout(
+    fetchData(),
+    { ms: 30000 }
+  );
+} catch (error) {
+  if (error instanceof TimeoutError) {
+    console.log('Operation timed out');
+  }
+}
+```
+
+### wrapWithTimeout
+
+Create timeout-wrapped functions:
+
+```typescript
+import { wrapWithTimeout } from 'voltaire/utils';
+
+const getBalanceWithTimeout = wrapWithTimeout(
+  (address: string) => provider.eth_getBalance(address),
+  5000,
+  'Balance fetch timeout'
+);
+
+const balance = await getBalanceWithTimeout('0x123...');
+```
+
+### sleep
+
+Async delay with optional cancellation:
+
+```typescript
+import { sleep } from 'voltaire/utils';
+
+// Simple delay
+await sleep(1000);
+
+// Cancellable delay
+const controller = new AbortController();
+const sleepPromise = sleep(5000, controller.signal);
+
+// Cancel after 1 second
+setTimeout(() => controller.abort(), 1000);
+
+try {
+  await sleepPromise;
+} catch (error) {
+  console.log('Sleep cancelled');
+}
+```
+
+### createDeferred
+
+Manual promise control:
+
+```typescript
+import { createDeferred } from 'voltaire/utils';
+
+const { promise, resolve, reject } = createDeferred<number>();
+
+// Resolve from event handler
+provider.on('block', (blockNumber) => {
+  if (blockNumber > 1000000) {
+    resolve(blockNumber);
+  }
+});
+
+// Reject on timeout
+setTimeout(() => reject(new Error('Timeout')), 30000);
+
+const result = await promise;
+```
+
+### executeWithTimeout
+
+Timeout with built-in retry:
+
+```typescript
+import { executeWithTimeout } from 'voltaire/utils';
+
+const block = await executeWithTimeout(
+  () => provider.eth_getBlockByNumber('latest'),
+  5000,  // 5s timeout per attempt
+  3      // Retry up to 3 times
+);
+```
+
+## Cancellation with AbortSignal
+
+### Basic Cancellation
+
+```typescript
+const controller = new AbortController();
+
+const dataPromise = withTimeout(
+  fetch('https://api.example.com/data'),
+  {
+    ms: 30000,
+    signal: controller.signal
+  }
+);
+
+// Cancel operation
+controller.abort();
+
+try {
+  await dataPromise;
+} catch (error) {
+  if (error.message === 'Operation aborted') {
+    console.log('User cancelled operation');
+  }
+}
+```
+
+### Multiple Operations
+
+Share abort controller across operations:
+
+```typescript
+const controller = new AbortController();
+
+const operations = [
+  withTimeout(
+    provider.eth_getBalance(address1),
+    { ms: 10000, signal: controller.signal }
+  ),
+  withTimeout(
+    provider.eth_getBalance(address2),
+    { ms: 10000, signal: controller.signal }
+  ),
+  withTimeout(
+    provider.eth_getBalance(address3),
+    { ms: 10000, signal: controller.signal }
+  )
+];
+
+// Cancel all operations
+if (userCancelled) {
+  controller.abort();
+}
+
+const results = await Promise.allSettled(operations);
+```
+
+## Real-World Examples
+
+### RPC Call with Timeout
+
+Prevent hung RPC calls:
+
+```typescript
+async function safeRpcCall<T>(
+  fn: () => Promise<T>,
+  timeoutMs: number = 10000
+): Promise<T> {
+  return withTimeout(fn(), {
+    ms: timeoutMs,
+    message: `RPC call timeout after ${timeoutMs}ms`
+  });
+}
+
+const blockNumber = await safeRpcCall(
+  () => provider.eth_blockNumber(),
+  5000
+);
+```
+
+### Transaction Submission
+
+Timeout transaction submission:
+
+```typescript
+const txHash = await withTimeout(
+  provider.eth_sendRawTransaction(signedTx),
+  {
+    ms: 30000,
+    message: 'Transaction submission timeout'
+  }
+);
+```
+
+### Parallel Operations with Global Timeout
+
+Timeout entire batch:
+
+```typescript
+const results = await withTimeout(
+  Promise.all([
+    provider.eth_getBalance(address1),
+    provider.eth_getBalance(address2),
+    provider.eth_getBalance(address3)
+  ]),
+  {
+    ms: 15000,
+    message: 'Batch operation timeout'
+  }
+);
+```
+
+### Race Against Multiple Providers
+
+Use fastest provider:
+
+```typescript
+const providers = [
+  new HttpProvider('https://eth.llamarpc.com'),
+  new HttpProvider('https://rpc.ankr.com/eth'),
+  new HttpProvider('https://cloudflare-eth.com')
+];
+
+const blockNumber = await Promise.race(
+  providers.map(p =>
+    withTimeout(
+      p.eth_blockNumber(),
+      { ms: 5000 }
+    )
+  )
+);
+```
+
+### User-Initiated Cancellation
+
+Cancel long-running operation:
+
+```typescript
+const controller = new AbortController();
+
+// UI cancel button
+cancelButton.onclick = () => controller.abort();
+
+try {
+  const logs = await withTimeout(
+    provider.eth_getLogs({
+      fromBlock: '0x0',
+      toBlock: 'latest'
+    }),
+    {
+      ms: 60000,
+      signal: controller.signal,
+      message: 'Log fetch timeout'
+    }
+  );
+} catch (error) {
+  if (error.message === 'Operation aborted') {
+    console.log('User cancelled');
+  } else if (error instanceof TimeoutError) {
+    console.log('Operation timed out');
+  }
+}
+```
+
+## Combining with Other Utils
+
+### Timeout + Retry
+
+Retry with timeout per attempt:
+
+```typescript
+import { retryWithBackoff, withTimeout } from 'voltaire/utils';
+
+const data = await retryWithBackoff(
+  () => withTimeout(
+    provider.eth_call({ to, data }),
+    { ms: 5000 }
+  ),
+  {
+    maxRetries: 3,
+    shouldRetry: (error) => {
+      // Don't retry on timeout
+      return !(error instanceof TimeoutError);
+    }
+  }
+);
+```
+
+### Timeout + Polling
+
+Add timeout to polling:
+
+```typescript
+import { poll, withTimeout } from 'voltaire/utils';
+
+const receipt = await withTimeout(
+  poll(
+    () => provider.eth_getTransactionReceipt(txHash),
+    { interval: 1000 }
+  ),
+  {
+    ms: 120000,
+    message: 'Transaction confirmation timeout after 2 minutes'
+  }
+);
+```
+
+### Timeout + Rate Limiting
+
+Timeout rate-limited operations:
+
+```typescript
+import { RateLimiter, withTimeout } from 'voltaire/utils';
+
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000
+});
+
+const result = await withTimeout(
+  limiter.execute(() => provider.eth_blockNumber()),
+  {
+    ms: 15000,
+    message: 'Rate-limited operation timeout'
+  }
+);
+```
+
+## Error Handling
+
+### TimeoutError
+
+Catch timeout-specific errors:
+
+```typescript
+import { withTimeout, TimeoutError } from 'voltaire/utils';
+
+try {
+  await withTimeout(
+    longRunningOperation(),
+    { ms: 30000 }
+  );
+} catch (error) {
+  if (error instanceof TimeoutError) {
+    console.log('Operation timed out');
+    // Retry or fallback
+  } else {
+    // Other error
+    throw error;
+  }
+}
+```
+
+### Cleanup on Timeout
+
+Perform cleanup when timeout occurs:
+
+```typescript
+const controller = new AbortController();
+
+try {
+  await withTimeout(
+    fetchWithAbort(url, controller.signal),
+    { ms: 10000 }
+  );
+} catch (error) {
+  if (error instanceof TimeoutError) {
+    controller.abort(); // Clean up pending request
+  }
+  throw error;
+}
+```
+
+## Best Practices
+
+### Choose Appropriate Timeouts
+
+- **Fast operations** (balance, blockNumber): 5000-10000ms
+- **Medium operations** (calls, receipts): 10000-30000ms
+- **Slow operations** (logs, traces): 30000-60000ms
+
+### Always Handle TimeoutError
+
+```typescript
+try {
+  await withTimeout(operation(), { ms: 10000 });
+} catch (error) {
+  if (error instanceof TimeoutError) {
+    // Handle timeout specifically
+  } else {
+    // Handle other errors
+  }
+}
+```
+
+### Use AbortSignal for Cleanup
+
+When operations support AbortSignal, use it for proper cleanup:
+
+```typescript
+const controller = new AbortController();
+
+withTimeout(
+  fetch(url, { signal: controller.signal }),
+  {
+    ms: 10000,
+    signal: controller.signal
+  }
+);
+```
+
+### Per-Operation vs Global Timeout
+
+- **Per-operation**: Each request has own timeout
+- **Global**: Entire batch has single timeout
+
+```typescript
+// Per-operation: Each has 5s
+await Promise.all(
+  addresses.map(addr =>
+    withTimeout(
+      provider.eth_getBalance(addr),
+      { ms: 5000 }
+    )
+  )
+);
+
+// Global: All must complete in 10s total
+await withTimeout(
+  Promise.all(
+    addresses.map(addr => provider.eth_getBalance(addr))
+  ),
+  { ms: 10000 }
+);
+```
+
+## API Reference
+
+### withTimeout
+
+```typescript
+async function withTimeout<T>(
+  promise: Promise<T>,
+  options: TimeoutOptions
+): Promise<T>
+```
+
+### wrapWithTimeout
+
+```typescript
+function wrapWithTimeout<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => Promise<TReturn>,
+  ms: number,
+  message?: string
+): (...args: TArgs) => Promise<TReturn>
+```
+
+### sleep
+
+```typescript
+function sleep(
+  ms: number,
+  signal?: AbortSignal
+): Promise<void>
+```
+
+### createDeferred
+
+```typescript
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error: unknown) => void;
+}
+```
+
+### executeWithTimeout
+
+```typescript
+async function executeWithTimeout<T>(
+  fn: () => Promise<T>,
+  timeoutMs: number,
+  maxRetries?: number
+): Promise<T>
+```
+
+### TimeoutError
+
+```typescript
+class TimeoutError extends Error {
+  constructor(message?: string)
+}
+```
+
+## See Also
+
+- [Retry](/utils/retry) - Combine with retry logic
+- [Polling](/utils/polling) - Add timeouts to polling
+- [Rate Limiting](/utils/rate-limit) - Timeout rate-limited operations

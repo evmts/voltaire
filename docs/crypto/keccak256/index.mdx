@@ -235,6 +235,8 @@ const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 ## API Reference
 
+All Keccak256 implementations share the same API. Return type is `BrandedHash` (32-byte `Uint8Array` with type branding).
+
 ### `Keccak256.hash(data: Uint8Array): BrandedHash`
 
 Hash arbitrary bytes with Keccak-256.
