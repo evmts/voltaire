@@ -59,10 +59,16 @@ mode: "custom"
         <button id="claude-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid #E6A23C', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
           document.getElementById('claude-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
           document.getElementById('claude-btn').style.color = 'white';
+          document.getElementById('claude-btn').style.borderColor = '#E6A23C';
           document.getElementById('cursor-btn').style.background = 'transparent';
           document.getElementById('cursor-btn').style.color = 'currentColor';
+          document.getElementById('cursor-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
+          document.getElementById('codex-btn').style.background = 'transparent';
+          document.getElementById('codex-btn').style.color = 'currentColor';
+          document.getElementById('codex-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
           document.getElementById('claude-code').style.display = 'block';
           document.getElementById('cursor-code').style.display = 'none';
+          document.getElementById('codex-code').style.display = 'none';
         }}>
           Claude
         </button>
@@ -72,10 +78,31 @@ mode: "custom"
           document.getElementById('cursor-btn').style.borderColor = '#E6A23C';
           document.getElementById('claude-btn').style.background = 'transparent';
           document.getElementById('claude-btn').style.color = 'currentColor';
+          document.getElementById('claude-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
+          document.getElementById('codex-btn').style.background = 'transparent';
+          document.getElementById('codex-btn').style.color = 'currentColor';
+          document.getElementById('codex-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
           document.getElementById('claude-code').style.display = 'none';
           document.getElementById('cursor-code').style.display = 'block';
+          document.getElementById('codex-code').style.display = 'none';
         }}>
           Cursor
+        </button>
+        <button id="codex-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+          document.getElementById('codex-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
+          document.getElementById('codex-btn').style.color = 'white';
+          document.getElementById('codex-btn').style.borderColor = '#E6A23C';
+          document.getElementById('claude-btn').style.background = 'transparent';
+          document.getElementById('claude-btn').style.color = 'currentColor';
+          document.getElementById('claude-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
+          document.getElementById('cursor-btn').style.background = 'transparent';
+          document.getElementById('cursor-btn').style.color = 'currentColor';
+          document.getElementById('cursor-btn').style.borderColor = 'rgba(128, 128, 128, 0.3)';
+          document.getElementById('claude-code').style.display = 'none';
+          document.getElementById('cursor-code').style.display = 'none';
+          document.getElementById('codex-code').style.display = 'block';
+        }}>
+          Codex
         </button>
       </div>
       <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
@@ -102,7 +129,7 @@ mode: "custom"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp');
+        navigator.clipboard.writeText('claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -110,7 +137,7 @@ mode: "custom"
         }, 500);
       }}>
 ```bash
-claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
+claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 ```
       </div>
       <div id="cursor-code" style={{ cursor: 'pointer', display: 'none' }}
@@ -134,7 +161,7 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "tevm": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
+        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "voltaire": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -145,12 +172,46 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
 // Add to .cursor/mcp.json
 {
   "mcpServers": {
-    "tevm": {
+    "voltaire": {
       "command": "npx",
       "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
     }
   }
 }
+```
+      </div>
+      <div id="codex-code" style={{ cursor: 'pointer', display: 'none' }}
+           onMouseDown={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.transition = 'box-shadow 0.1s ease';
+          codeBlock.style.boxShadow = '0 0 0 3px #E6A23C, 0 0 0 6px #A0522D';
+        }
+      }}
+           onMouseUp={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onMouseLeave={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onClick={(e) => {
+        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.voltaire]\nurl = "https://voltaire.tevm.sh/mcp"');
+        const feedback = document.getElementById('copy-feedback');
+        feedback.style.opacity = '1';
+        setTimeout(() => {
+          feedback.style.opacity = '0';
+        }, 500);
+      }}>
+```toml
+# Add to ~/.codex/config.toml
+[mcp_servers.voltaire]
+url = "https://voltaire.tevm.sh/mcp"
 ```
       </div>
     </div>
