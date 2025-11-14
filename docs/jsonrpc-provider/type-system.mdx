@@ -33,7 +33,7 @@ npm run generate:jsonrpc
 jsonrpc/
 ├── types/              # Hand-written base types
 │   ├── Address.ts/zig
-│   ├── Hash.ts/zig
+│   ├── Keccak256.ts/zig
 │   ├── Quantity.ts/zig
 │   ├── BlockTag.ts/zig
 │   └── BlockSpec.ts/zig
@@ -147,7 +147,7 @@ This enforces error checking before accessing results.
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // ✅ Correct: Address type
 await provider.eth_getBalance(Address('0x...'), 'latest');
@@ -155,8 +155,8 @@ await provider.eth_getBalance(Address('0x...'), 'latest');
 // ❌ Error: string not assignable to Address
 await provider.eth_getBalance('0x...', 'latest');
 
-// ❌ Error: Hash not assignable to Address
-await provider.eth_getBalance(Hash('0x...'), 'latest');
+// ❌ Error: Keccak256Hash not assignable to Address
+await provider.eth_getBalance(Keccak256.hash(data), 'latest');
 ```
 
 ### Type Inference
