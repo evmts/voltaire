@@ -19,12 +19,12 @@ mode: "custom"
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
     <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-      <span style={{ display: 'block' }}>Simple Ethereum</span>
+      <span style={{ display: 'block' }}>Ethereum</span>
       <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
     </h1>
 
     <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-      A modern, high-performance, wasm-based Ethereum library
+      Modern, high-performance WASM-based Ethereum library
     </p>
 
     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -35,6 +35,14 @@ mode: "custom"
          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
         Why Voltaire?
+      </a>
+      <a href="/getting-started"
+         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
+         onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
+         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+         onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
+        Get Started
       </a>
       <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
@@ -47,10 +55,33 @@ mode: "custom"
     </div>
 
     <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
+        <button id="claude-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid #E6A23C', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+          document.getElementById('claude-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
+          document.getElementById('claude-btn').style.color = 'white';
+          document.getElementById('cursor-btn').style.background = 'transparent';
+          document.getElementById('cursor-btn').style.color = 'currentColor';
+          document.getElementById('claude-code').style.display = 'block';
+          document.getElementById('cursor-code').style.display = 'none';
+        }}>
+          Claude
+        </button>
+        <button id="cursor-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+          document.getElementById('cursor-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
+          document.getElementById('cursor-btn').style.color = 'white';
+          document.getElementById('cursor-btn').style.borderColor = '#E6A23C';
+          document.getElementById('claude-btn').style.background = 'transparent';
+          document.getElementById('claude-btn').style.color = 'currentColor';
+          document.getElementById('claude-code').style.display = 'none';
+          document.getElementById('cursor-code').style.display = 'block';
+        }}>
+          Cursor
+        </button>
+      </div>
       <div id="copy-feedback" style={{ position: 'absolute', top: '-2.5rem', right: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '600', opacity: '0', transition: 'opacity 0.3s', pointerEvents: 'none', zIndex: 10 }}>
         Copied!
       </div>
-      <div style={{ cursor: 'pointer' }}
+      <div id="claude-code" style={{ cursor: 'pointer' }}
            onMouseDown={(e) => {
         const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
         if (codeBlock) {
@@ -82,6 +113,46 @@ mode: "custom"
 claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
 ```
       </div>
+      <div id="cursor-code" style={{ cursor: 'pointer', display: 'none' }}
+           onMouseDown={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.transition = 'box-shadow 0.1s ease';
+          codeBlock.style.boxShadow = '0 0 0 3px #E6A23C, 0 0 0 6px #A0522D';
+        }
+      }}
+           onMouseUp={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onMouseLeave={(e) => {
+        const codeBlock = e.currentTarget.querySelector('[data-component-part="code-block-root"]');
+        if (codeBlock) {
+          codeBlock.style.boxShadow = '';
+        }
+      }}
+           onClick={(e) => {
+        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "tevm": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
+        const feedback = document.getElementById('copy-feedback');
+        feedback.style.opacity = '1';
+        setTimeout(() => {
+          feedback.style.opacity = '0';
+        }, 500);
+      }}>
+```json
+// Add to .cursor/mcp.json
+{
+  "mcpServers": {
+    "tevm": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+      </div>
     </div>
 
     <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
@@ -90,14 +161,14 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>TypeScript branded types make all ethereum values runtime validated and typesafe</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Never accidentally pass a hex string where an Address is expected. The compiler catches these bugs before they ship.</p>
           </div>
         </a>
         <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>⚡</div>
           <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>High Performance</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Zig-Wasm implementations for measurable performance gains</p>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Written in Zig</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>High-performance implementations for cryptography, encoding, and EVM execution written in Zig</p>
           </div>
         </a>
         <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -118,14 +189,14 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📦</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Powerful Features</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis in addition to the bread and butter primitives and provider features all Ethereum libraries offer</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis</p>
           </div>
         </a>
         <a href="/getting-started/multiplatform" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Native TypeScript and Zig implementations with C-FFI exports for use in any programming language</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works in browser, mobile, Node.js, and native environments</p>
           </div>
         </a>
       </div>
