@@ -41,12 +41,12 @@ Sign a 32-byte message hash with deterministic ECDSA.
 **Example:**
 ```typescript
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
-const message = Hash.keccak256String('Hello, Ethereum!');
+const message = Keccak256.hashString('Hello, Ethereum!');
 const signature = Secp256k1.sign(message, privateKey);
 
 console.log(signature.v); // 27 or 28
@@ -186,8 +186,8 @@ assert(sig1.v === sig2.v);
 const privateKey = Bytes32();
 privateKey[31] = 1;
 
-const msg1 = Hash.keccak256String("message 1");
-const msg2 = Hash.keccak256String("message 2");
+const msg1 = Keccak256.hashString("message 1");
+const msg2 = Keccak256.hashString("message 2");
 
 const sig1 = Secp256k1.sign(msg1, privateKey);
 const sig2 = Secp256k1.sign(msg2, privateKey);

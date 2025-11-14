@@ -18,7 +18,7 @@ Voltaire provides Keccak256 as a **namespace with multiple implementation varian
 - `Keccak256.native` - Assembly-optimized (Node.js/Bun/Deno FFI)
 - `Keccak256.accel` - SIMD/AVX2 hardware acceleration (x86-64)
 
-All variants share the same data-first API and return `BrandedHash` type.
+All variants share the same data-first API and return `Keccak256Hash` type.
 
 Keccak256 is fundamental to Ethereum's security model:
 - **Address derivation**: Computing Ethereum addresses from public keys (last 20 bytes of Keccak256(publicKey))
@@ -235,16 +235,16 @@ const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 ## API Reference
 
-All Keccak256 implementations share the same API. Return type is `BrandedHash` (32-byte `Uint8Array` with type branding).
+All Keccak256 implementations share the same API. Return type is `Keccak256Hash` (32-byte `Uint8Array` with type branding).
 
-### `Keccak256.hash(data: Uint8Array): BrandedHash`
+### `Keccak256.hash(data: Uint8Array): Keccak256Hash`
 
 Hash arbitrary bytes with Keccak-256.
 
 **Parameters:**
 - `data`: Input data to hash (Uint8Array)
 
-**Returns:** 32-byte hash (BrandedHash extends Uint8Array)
+**Returns:** 32-byte hash (Keccak256Hash extends Uint8Array)
 
 **Example:**
 ```typescript
@@ -256,7 +256,7 @@ console.log(hash.length); // 32
 
 ---
 
-### `Keccak256.hashString(str: string): BrandedHash`
+### `Keccak256.hashString(str: string): Keccak256Hash`
 
 Hash UTF-8 string with Keccak-256.
 
@@ -265,7 +265,7 @@ String is UTF-8 encoded before hashing using TextEncoder.
 **Parameters:**
 - `str`: String to hash
 
-**Returns:** 32-byte hash (BrandedHash)
+**Returns:** 32-byte hash (Keccak256Hash)
 
 **Example:**
 ```typescript
@@ -275,7 +275,7 @@ const hash = Keccak256.hashString('hello');
 
 ---
 
-### `Keccak256.hashHex(hex: string): BrandedHash`
+### `Keccak256.hashHex(hex: string): Keccak256Hash`
 
 Hash hex-encoded string with Keccak-256.
 
@@ -284,7 +284,7 @@ Hex string is decoded to bytes before hashing. Supports both "0x"-prefixed and u
 **Parameters:**
 - `hex`: Hex string to hash
 
-**Returns:** 32-byte hash (BrandedHash)
+**Returns:** 32-byte hash (Keccak256Hash)
 
 **Example:**
 ```typescript
@@ -293,7 +293,7 @@ const hash = Keccak256.hashHex('0x1234');
 
 ---
 
-### `Keccak256.hashMultiple(chunks: readonly Uint8Array[]): BrandedHash`
+### `Keccak256.hashMultiple(chunks: readonly Uint8Array[]): Keccak256Hash`
 
 Hash multiple data chunks in sequence.
 
@@ -302,7 +302,7 @@ Equivalent to hashing the concatenation of all chunks, but can be more efficient
 **Parameters:**
 - `chunks`: Array of data chunks to hash
 
-**Returns:** 32-byte hash (BrandedHash)
+**Returns:** 32-byte hash (Keccak256Hash)
 
 **Example:**
 ```typescript
@@ -339,7 +339,7 @@ const selector = Keccak256.selector('transfer(address,uint256)');
 
 ---
 
-### `Keccak256.topic(signature: string): BrandedHash`
+### `Keccak256.topic(signature: string): Keccak256Hash`
 
 Compute event topic (32-byte Keccak-256 hash).
 
@@ -348,7 +348,7 @@ Used for Ethereum event signatures in logs. Topics are the full 32-byte hash of 
 **Parameters:**
 - `signature`: Event signature string (e.g., "Transfer(address,address,uint256)")
 
-**Returns:** 32-byte topic (BrandedHash)
+**Returns:** 32-byte topic (Keccak256Hash)
 
 **Example:**
 ```typescript
@@ -420,23 +420,23 @@ Keccak256.STATE_SIZE   // 25 - State size (25 u64 words)
 
 ## Type Alias
 
-All Keccak256 functions return `BrandedHash`, a branded `Uint8Array` type:
+All Keccak256 functions return `Keccak256Hash`, a branded `Uint8Array` type:
 
 ```typescript
-import type { BrandedHash } from '@tevm/voltaire/primitives/Hash';
+import type { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
 
-// BrandedHash is a Uint8Array with type branding for compile-time safety
-type BrandedHash = Uint8Array & { readonly __tag: "Hash" };
+// Keccak256Hash is a Uint8Array with type branding for compile-time safety
+type Keccak256Hash = Uint8Array & { readonly __tag: "Hash" };
 
 // All hash functions return this type
-const hash: BrandedHash = Keccak256.hash(data);
-const topic: BrandedHash = Keccak256.topic("Transfer(address,address,uint256)");
+const hash: Keccak256Hash = Keccak256.hash(data);
+const topic: Keccak256Hash = Keccak256.topic("Transfer(address,address,uint256)");
 
 // Zero runtime overhead - just TypeScript compile-time checking
 console.log(hash instanceof Uint8Array); // true
 ```
 
-See [Hash Primitive](/primitives/hash) for full type documentation.
+See [Keccak256Hash](/crypto/keccak256) for full type documentation.
 
 ## Test Vectors
 
@@ -502,8 +502,8 @@ Direct wrapper around @noble/hashes battle-tested implementation:
 ```typescript
 import { keccak_256 } from "@noble/hashes/sha3.js";
 
-export function hash(data: Uint8Array): BrandedHash {
-  return keccak_256(data) as BrandedHash;
+export function hash(data: Uint8Array): Keccak256Hash {
+  return keccak_256(data) as Keccak256Hash;
 }
 ```
 
@@ -591,7 +591,7 @@ pub fn hash(data: []const u8, output: *[DIGEST_SIZE]u8) void {
 
 ## Related
 
-- [Hash Primitive](/primitives/hash) - 32-byte hash type used by Keccak256
+- [Keccak256Hash](/crypto/keccak256) - 32-byte hash type used by Keccak256
 - [Address](/primitives/address) - Address derivation uses Keccak256
 - [SHA256](/crypto/sha256) - Alternative hash function
 - [RIPEMD160](/crypto/ripemd160) - Used in Bitcoin address derivation

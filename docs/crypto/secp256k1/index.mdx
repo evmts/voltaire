@@ -26,10 +26,10 @@ Secp256k1 is an **elliptic curve digital signature algorithm (ECDSA)** over the 
 
 ```typescript
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign a message hash
-const messageHash = Hash.keccak256String('Hello, Ethereum!');
+const messageHash = Keccak256.hashString('Hello, Ethereum!');
 const privateKey = Hex.toBytes('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 const signature = Secp256k1.sign(messageHash, privateKey);
 
@@ -332,7 +332,7 @@ Every Ethereum transaction is signed with secp256k1:
 ```typescript
 import * as Transaction from '@tevm/voltaire/primitives/Transaction';
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Create transaction
 const tx = {
@@ -361,13 +361,13 @@ Ethereum addresses are derived from secp256k1 public keys:
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Derive public key from private key
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 // Hash public key with Keccak256
-const hash = Hash.keccak256(publicKey);
+const hash = Keccak256.hash(publicKey);
 
 // Take last 20 bytes as address
 const address = Address(hash.slice(12));
@@ -410,7 +410,7 @@ For comprehensive technical comparison with P-256 including performance, securit
 ## Related
 
 - [Primitives: Signature](/primitives/signature) - Generic signature type
-- [Primitives: Hash](/primitives/hash) - Keccak256 hashing for message preparation
+- [Keccak256](/crypto/keccak256) - Keccak256 hashing for message preparation
 - [Primitives: Address](/primitives/address) - Ethereum addresses from public keys
 - [Precompiles: ecRecover](/precompiles/ecrecover) - EVM signature recovery
 - [Crypto: P256](/crypto/p256) - NIST P-256 curve (WebAuthn)

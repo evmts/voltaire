@@ -271,7 +271,7 @@ const signature = Secp256k1.sign(rawMessage, privateKey);
 ✅ **Secure:**
 ```typescript
 // Hash message first (collision-resistant)
-const messageHash = Hash.keccak256(rawMessage);
+const messageHash = Keccak256.hash(rawMessage);
 const signature = Secp256k1.sign(messageHash, privateKey);
 ```
 

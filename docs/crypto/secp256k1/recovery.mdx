@@ -38,12 +38,12 @@ Recover the 64-byte public key from a signature and message hash.
 **Example:**
 ```typescript
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign message
 const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
-const messageHash = Hash.keccak256String('Recover my key!');
+const messageHash = Keccak256.hashString('Recover my key!');
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Recover public key (without knowing private key)
@@ -198,7 +198,7 @@ console.log(Address.toHex(senderAddress));
 Recover signer from personal_sign messages:
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 function recoverPersonalSignSigner(
   message: string,
@@ -209,7 +209,7 @@ function recoverPersonalSignSigner(
   const prefixedMessage = new TextEncoder().encode(prefix + message);
 
   // Hash prefixed message
-  const messageHash = Hash.keccak256(prefixedMessage);
+  const messageHash = Keccak256.hash(prefixedMessage);
 
   // Recover public key
   return Secp256k1.recoverPublicKey(signature, messageHash);
@@ -318,7 +318,7 @@ try {
 const privateKey = Bytes32();
 privateKey[31] = 42;
 
-const messageHash = Hash.keccak256String("test recovery");
+const messageHash = Keccak256.hashString("test recovery");
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Recover public key
@@ -360,7 +360,7 @@ assert(match1 !== match2); // Exactly one matches
 const message = "Hello, Ethereum!";
 const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
 const prefixedMessage = new TextEncoder().encode(prefix + message);
-const messageHash = Hash.keccak256(prefixedMessage);
+const messageHash = Keccak256.hash(prefixedMessage);
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Recover signer

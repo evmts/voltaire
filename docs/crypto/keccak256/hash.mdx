@@ -87,8 +87,8 @@ Old `Hash` primitive replaced by `Keccak256Hash` for clarity:
 
 ```typescript
 // OLD (deprecated Hash primitive)
-import * as Hash from '@tevm/voltaire/primitives/Hash';
-const hash = Hash.keccak256(data);
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+const hash = Keccak256.hash(data);
 
 // NEW (Keccak256Hash type)
 import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
@@ -96,7 +96,7 @@ const hash = Keccak256.hash(data);
 ```
 
 **Migration steps:**
-1. Replace `Hash.keccak256()` with `Keccak256.hash()`
+1. Replace `Keccak256.hash()` with `Keccak256.hash()`
 2. Replace `BrandedHash` type with `Keccak256Hash`
 3. All operations remain the same (same 32-byte structure)
 

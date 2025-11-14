@@ -348,7 +348,7 @@ function doubleSha256(data: Uint8Array): Uint8Array {
 ### Merkle Trees
 Build authenticated data structures:
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 function merkleRoot(leaves: Uint8Array[]): Uint8Array {
@@ -406,4 +406,4 @@ Explore comprehensive SHA-256 documentation:
 - [Keccak256](/crypto/keccak256) - Ethereum's hash function
 - [Blake2](/crypto/blake2) - High-performance alternative
 - [RIPEMD160](/crypto/ripemd160) - Used with SHA256 in Bitcoin addresses
-- [Hash Primitive](/primitives/hash) - 32-byte hash type
+- [Keccak256Hash](/crypto/keccak256) - 32-byte hash type

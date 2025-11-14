@@ -15,7 +15,7 @@ Real-world usage patterns for transaction signing, message authentication, and a
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 import * as Transaction from '@tevm/voltaire/primitives/Transaction';
 import * as Rlp from '@tevm/voltaire/primitives/Rlp';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Create unsigned transaction
 const tx = {
@@ -38,7 +38,7 @@ const rlpEncoded = Rlp.encode([
 ]);
 
 // Hash transaction
-const txHash = Hash.keccak256(rlpEncoded);
+const txHash = Keccak256.hash(rlpEncoded);
 
 // Sign with private key
 const privateKey = ...; // Your 32-byte key
@@ -87,7 +87,7 @@ const rlpEncoded = Rlp.encode([
   tx1559.accessList,
 ]);
 
-const txHash = Hash.keccak256(rlpEncoded);
+const txHash = Keccak256.hash(rlpEncoded);
 const signature = Secp256k1.sign(txHash, privateKey);
 
 const signedTx = {
@@ -105,7 +105,7 @@ const signedTx = {
 function getTransactionSender(signedTx: SignedTransaction): string {
   // Reconstruct signing hash
   const rlpEncoded = Rlp.encode([ /* ... */ ]);
-  const txHash = Hash.keccak256(rlpEncoded);
+  const txHash = Keccak256.hash(rlpEncoded);
 
   // Extract signature
   const signature = {
@@ -118,7 +118,7 @@ function getTransactionSender(signedTx: SignedTransaction): string {
   const publicKey = Secp256k1.recoverPublicKey(signature, txHash);
 
   // Derive sender address
-  const addressHash = Hash.keccak256(publicKey);
+  const addressHash = Keccak256.hash(publicKey);
   return Address.toHex(addressHash.slice(12));
 }
 ```
@@ -128,7 +128,7 @@ function getTransactionSender(signedTx: SignedTransaction): string {
 ### Sign Message
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 function personalSign(message: string, privateKey: Uint8Array): {
@@ -141,7 +141,7 @@ function personalSign(message: string, privateKey: Uint8Array): {
   const prefixedMessage = new TextEncoder().encode(prefix + message);
 
   // Hash prefixed message
-  const messageHash = Hash.keccak256(prefixedMessage);
+  const messageHash = Keccak256.hash(prefixedMessage);
 
   // Sign
   return Secp256k1.sign(messageHash, privateKey);
@@ -163,11 +163,11 @@ function personalVerify(
   // Reconstruct hash
   const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
   const prefixedMessage = new TextEncoder().encode(prefix + message);
-  const messageHash = Hash.keccak256(prefixedMessage);
+  const messageHash = Keccak256.hash(prefixedMessage);
 
   // Recover signer
   const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
-  const addressHash = Hash.keccak256(publicKey);
+  const addressHash = Keccak256.hash(publicKey);
   const signerAddress = Address.toHex(addressHash.slice(12));
 
   // Compare addresses
@@ -239,7 +239,7 @@ function verifyTypedData(
 
   // Recover signer
   const publicKey = Secp256k1.recoverPublicKey(signature, typedDataHash);
-  const addressHash = Hash.keccak256(publicKey);
+  const addressHash = Keccak256.hash(publicKey);
   const signerAddress = Address.toHex(addressHash.slice(12));
 
   return signerAddress.toLowerCase() === expectedSigner.toLowerCase();
@@ -252,7 +252,7 @@ function verifyTypedData(
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 function deriveAddress(privateKey: Uint8Array): string {
@@ -260,7 +260,7 @@ function deriveAddress(privateKey: Uint8Array): string {
   const publicKey = Secp256k1.derivePublicKey(privateKey);
 
   // 2. Hash public key with Keccak256
-  const hash = Hash.keccak256(publicKey);
+  const hash = Keccak256.hash(publicKey);
 
   // 3. Take last 20 bytes as address
   const addressBytes = hash.slice(12);
@@ -449,7 +449,7 @@ async function batchVerify(
 function generateTestKey(seed: number): Uint8Array {
   const privateKey = Bytes32();
   const seedBytes = new Uint8Array(new BigUint64Array([BigInt(seed)]).buffer);
-  const hash = Hash.keccak256(seedBytes);
+  const hash = Keccak256.hash(seedBytes);
   privateKey.set(hash);
   return privateKey;
 }
@@ -475,7 +475,7 @@ function createMockSignature(
   message: string,
   privateKey: Uint8Array
 ): { signature: Signature; signer: string } {
-  const messageHash = Hash.keccak256String(message);
+  const messageHash = Keccak256.hashString(message);
   const signature = Secp256k1.sign(messageHash, privateKey);
   const publicKey = Secp256k1.derivePublicKey(privateKey);
   const signer = Address.fromPublicKey(publicKey);

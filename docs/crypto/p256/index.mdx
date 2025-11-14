@@ -29,10 +29,10 @@ P256 (secp256r1) is a **NIST-standardized elliptic curve** for ECDSA signatures 
 
 ```typescript
 import * as P256 from '@tevm/voltaire/crypto/P256';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign a message hash
-const messageHash = Hash.keccak256String('Hello, P256!');
+const messageHash = Keccak256.hashString('Hello, P256!');
 const privateKey = Bytes32(); // Your 32-byte private key
 const signature = P256.sign(messageHash, privateKey);
 
@@ -467,5 +467,5 @@ For implementation details, security considerations, and usage patterns similar 
 - [Crypto: Ed25519](/crypto/ed25519) - Edwards curve signatures
 - [Crypto: X25519](/crypto/x25519) - Curve25519 key exchange
 - [Primitives: Signature](/primitives/signature) - Generic signature type
-- [Primitives: Hash](/primitives/hash) - Message hashing (SHA-256 for WebAuthn)
+- [Keccak256](/crypto/keccak256) - Message hashing (SHA-256 for WebAuthn)
 - [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md) - P-256 precompile proposal

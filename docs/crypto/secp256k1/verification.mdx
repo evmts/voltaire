@@ -38,12 +38,12 @@ Verify an ECDSA signature against a message hash and public key.
 **Example:**
 ```typescript
 import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign message
 const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
-const messageHash = Hash.keccak256String('Verify me!');
+const messageHash = Keccak256.hashString('Verify me!');
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Verify with public key
@@ -214,7 +214,7 @@ if (publicKey.length === 65 && publicKey[0] === 0x04) {
 const privateKey = Bytes32();
 privateKey[31] = 42;
 
-const messageHash = Hash.keccak256String("test message");
+const messageHash = Keccak256.hashString("test message");
 const signature = Secp256k1.sign(messageHash, privateKey);
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
@@ -237,10 +237,10 @@ assert(Secp256k1.verify(signature, messageHash, wrongPublicKey) === false);
 ### Wrong Message
 
 ```typescript
-const originalHash = Hash.keccak256String("original");
+const originalHash = Keccak256.hashString("original");
 const signature = Secp256k1.sign(originalHash, privateKey);
 
-const differentHash = Hash.keccak256String("different");
+const differentHash = Keccak256.hashString("different");
 
 // Wrong message hash: verification fails
 assert(Secp256k1.verify(signature, differentHash, publicKey) === false);
