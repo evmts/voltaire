@@ -47,6 +47,7 @@
 	"navigation": [
 		{
 			"group": "Why Voltaire?",
+			"icon": "lightbulb",
 			"pages": [
 				"introduction",
 				"getting-started/branded-types",
@@ -58,10 +59,12 @@
 		},
 		{
 			"group": "Getting Started",
+			"icon": "rocket",
 			"pages": ["getting-started", "mcp"]
 		},
 		{
 			"group": "JSONRPCProvider",
+			"icon": "server",
 			"pages": [
 				"jsonrpc-provider/index",
 				"jsonrpc-provider/getting-started",
@@ -107,9 +110,12 @@
 		},
 		{
 			"group": "Primitives",
+			"icon": "cubes",
 			"pages": [
 				{
 					"group": "ABI",
+					"icon": "brackets-curly",
+					"iconType": "solid",
 					"pages": [
 						"primitives/abi/index",
 						"primitives/abi/fundamentals",
@@ -187,6 +193,8 @@
 				},
 				{
 					"group": "AccessList",
+					"icon": "list-check",
+					"iconType": "regular",
 					"pages": [
 						"primitives/accesslist/index",
 						"primitives/accesslist/branded-accesslist",
@@ -202,6 +210,8 @@
 				},
 				{
 					"group": "Address",
+					"icon": "location-dot",
+					"iconType": "solid",
 					"pages": [
 						"primitives/address/index",
 						"primitives/address/branded-address",
@@ -217,6 +227,8 @@
 				},
 				{
 					"group": "Authorization",
+					"icon": "key",
+					"iconType": "light",
 					"pages": [
 						"primitives/authorization/index",
 						"primitives/authorization/branded-authorization",
@@ -235,6 +247,8 @@
 				},
 				{
 					"group": "Base64",
+					"icon": "binary",
+					"iconType": "light",
 					"pages": [
 						"primitives/base64/index",
 						"primitives/base64/branded-base64",
@@ -246,6 +260,8 @@
 				},
 				{
 					"group": "BinaryTree",
+					"icon": "diagram-project",
+					"iconType": "light",
 					"pages": [
 						"primitives/binarytree/index",
 						"primitives/binarytree/branded-binarytree",
@@ -259,6 +275,8 @@
 				},
 				{
 					"group": "BloomFilter",
+					"icon": "filter",
+					"iconType": "light",
 					"pages": [
 						"primitives/bloomfilter/index",
 						"primitives/bloomfilter/branded-bloomfilter",
@@ -273,6 +291,8 @@
 				},
 				{
 					"group": "Bytecode",
+					"icon": "code",
+					"iconType": "solid",
 					"pages": [
 						"primitives/bytecode/index",
 						"primitives/bytecode/scan",
@@ -307,6 +327,8 @@
 				},
 				{
 					"group": "Chain",
+					"icon": "link",
+					"iconType": "solid",
 					"pages": [
 						"primitives/chain/index",
 						"primitives/chain/branded-chain",
@@ -318,6 +340,8 @@
 				},
 				{
 					"group": "Denomination",
+					"icon": "coins",
+					"iconType": "solid",
 					"pages": [
 						"primitives/denomination/index",
 						"primitives/denomination/wei",
@@ -335,6 +359,8 @@
 				},
 				{
 					"group": "ENS",
+					"icon": "at",
+					"iconType": "regular",
 					"pages": [
 						"primitives/ens/index",
 						"primitives/ens/branded-ens",
@@ -350,6 +376,8 @@
 				},
 				{
 					"group": "FeeMarket",
+					"icon": "chart-line",
+					"iconType": "light",
 					"pages": [
 						"primitives/feemarket/index",
 						"primitives/feemarket/branded-feemarket",
@@ -365,6 +393,8 @@
 				},
 				{
 					"group": "GasConstants",
+					"icon": "gas-pump",
+					"iconType": "light",
 					"pages": [
 						"primitives/gasconstants/index",
 						"primitives/gasconstants/branded-gasconstants",
@@ -379,6 +409,8 @@
 				},
 				{
 					"group": "Hardfork",
+					"icon": "code-branch",
+					"iconType": "light",
 					"pages": [
 						"primitives/hardfork/index",
 						"primitives/hardfork/branded-hardfork",
@@ -420,57 +452,9 @@
 					]
 				},
 				{
-					"group": "Hash",
-					"pages": [
-						"primitives/hash/index",
-						"primitives/hash/branded-hash",
-						"primitives/hash/constructors",
-						"primitives/hash/conversions",
-						"primitives/hash/validation",
-						"primitives/hash/hashing",
-						"primitives/hash/comparisons",
-						"primitives/hash/utilities",
-						"primitives/hash/uint8array-methods",
-						"primitives/hash/wasm"
-					]
-				},
-				{
-					"group": "Hex",
-					"pages": [
-						"primitives/hex/index",
-						"primitives/hex/branded-hex",
-						"primitives/hex/from",
-						"primitives/hex/from-bytes",
-						"primitives/hex/from-number",
-						"primitives/hex/from-bigint",
-						"primitives/hex/from-string",
-						"primitives/hex/from-boolean",
-						"primitives/hex/random",
-						"primitives/hex/zero",
-						"primitives/hex/to-bytes",
-						"primitives/hex/to-number",
-						"primitives/hex/to-bigint",
-						"primitives/hex/to-string",
-						"primitives/hex/to-boolean",
-						"primitives/hex/is-hex",
-						"primitives/hex/validate",
-						"primitives/hex/is-sized",
-						"primitives/hex/assert-size",
-						"primitives/hex/concat",
-						"primitives/hex/slice",
-						"primitives/hex/pad",
-						"primitives/hex/pad-right",
-						"primitives/hex/trim",
-						"primitives/hex/xor",
-						"primitives/hex/size",
-						"primitives/hex/equals",
-						"primitives/hex/clone",
-						"primitives/hex/usage-patterns",
-						"primitives/hex/wasm"
-					]
-				},
-				{
 					"group": "Opcode",
+					"icon": "microchip",
+					"iconType": "light",
 					"pages": [
 						"primitives/opcode/index",
 						"primitives/opcode/branded-opcode",
@@ -484,6 +468,8 @@
 				},
 				{
 					"group": "RLP",
+					"icon": "box-archive",
+					"iconType": "light",
 					"pages": [
 						"primitives/rlp/index",
 						"primitives/rlp/Rlp",
@@ -500,6 +486,8 @@
 				},
 				{
 					"group": "Signature",
+					"icon": "signature",
+					"iconType": "solid",
 					"pages": [
 						"primitives/signature/index",
 						"primitives/signature/branded-signature",
@@ -516,6 +504,8 @@
 				},
 				{
 					"group": "SIWE",
+					"icon": "user-check",
+					"iconType": "regular",
 					"pages": [
 						"primitives/siwe/index",
 						"primitives/siwe/branded-siwe",
@@ -533,6 +523,8 @@
 				},
 				{
 					"group": "State",
+					"icon": "database",
+					"iconType": "light",
 					"pages": [
 						"primitives/state/index",
 						"primitives/state/branded-state",
@@ -548,6 +540,8 @@
 				},
 				{
 					"group": "Transaction",
+					"icon": "paper-plane",
+					"iconType": "solid",
 					"pages": [
 						"primitives/transaction/index",
 						"primitives/transaction/types",
@@ -566,6 +560,8 @@
 				},
 				{
 					"group": "Unsigned Integers",
+					"icon": "hashtag",
+					"iconType": "solid",
 					"pages": [
 						"primitives/uint/index",
 						"primitives/uint8/index",
@@ -578,6 +574,8 @@
 				},
 				{
 					"group": "Signed Integers",
+					"icon": "hashtag",
+					"iconType": "solid",
 					"pages": [
 						"primitives/int8/index",
 						"primitives/int16/index",
@@ -588,17 +586,13 @@
 				},
 				{
 					"group": "Bytes Types",
+					"icon": "hashtag",
+					"iconType": "solid",
 					"pages": [
 						"primitives/bytes/index",
-						"primitives/bytes/bytes1",
-						"primitives/bytes/bytes2",
-						"primitives/bytes/bytes3",
-						"primitives/bytes/bytes4",
-						"primitives/bytes/bytes5",
-						"primitives/bytes/bytes6",
-						"primitives/bytes/bytes7",
 						"primitives/bytes/bytes8",
 						"primitives/bytes/bytes16",
+						"primitives/bytes/bytes20",
 						"primitives/bytes/bytes32",
 						"primitives/bytes/bytes64"
 					]
@@ -607,6 +601,7 @@
 		},
 		{
 			"group": "Cryptography",
+			"icon": "shield-halved",
 			"pages": [
 				{
 					"group": "Overview",
@@ -618,10 +613,21 @@
 				},
 				{
 					"group": "Keccak256",
-					"pages": ["crypto/keccak256/index"]
+					"icon": "shield-halved",
+					"iconType": "solid",
+					"pages": [
+						"crypto/keccak256/index",
+						"crypto/keccak256/hash",
+						"crypto/keccak256/implementations",
+						"crypto/keccak256/hash-methods",
+						"crypto/keccak256/ethereum-methods",
+						"crypto/keccak256/usage-patterns"
+					]
 				},
 				{
 					"group": "Secp256k1",
+					"icon": "key",
+					"iconType": "solid",
 					"pages": [
 						"crypto/secp256k1/index",
 						"crypto/secp256k1/signing",
@@ -637,6 +643,8 @@
 				},
 				{
 					"group": "BLS12-381",
+					"icon": "cubes",
+					"iconType": "light",
 					"pages": [
 						"crypto/bls12-381",
 						"crypto/bls12-381/index",
@@ -654,6 +662,8 @@
 				},
 				{
 					"group": "BN254",
+					"icon": "cube",
+					"iconType": "light",
 					"pages": [
 						"crypto/bn254",
 						"crypto/bn254/index",
@@ -669,6 +679,8 @@
 				},
 				{
 					"group": "KZG",
+					"icon": "file-zipper",
+					"iconType": "light",
 					"pages": [
 						"crypto/kzg",
 						"crypto/kzg/index",
@@ -684,6 +696,8 @@
 				},
 				{
 					"group": "SHA256",
+					"icon": "lock",
+					"iconType": "regular",
 					"pages": [
 						"crypto/sha256/index",
 						"crypto/sha256/api-reference",
@@ -696,14 +710,20 @@
 				},
 				{
 					"group": "RIPEMD160",
+					"icon": "fingerprint",
+					"iconType": "light",
 					"pages": ["crypto/ripemd160/index"]
 				},
 				{
 					"group": "Blake2",
+					"icon": "hashtag",
+					"iconType": "light",
 					"pages": ["crypto/blake2/index"]
 				},
 				{
 					"group": "AES-GCM",
+					"icon": "shield",
+					"iconType": "regular",
 					"pages": [
 						"crypto/aesgcm/index",
 						"crypto/aesgcm/encryption",
@@ -714,22 +734,32 @@
 				},
 				{
 					"group": "ChaCha20Poly1305",
+					"icon": "shield",
+					"iconType": "regular",
 					"pages": ["crypto/chacha20poly1305/index"]
 				},
 				{
 					"group": "P256",
+					"icon": "ellipsis",
+					"iconType": "regular",
 					"pages": ["crypto/p256/index"]
 				},
 				{
 					"group": "Ed25519",
+					"icon": "signature",
+					"iconType": "regular",
 					"pages": ["crypto/ed25519/index"]
 				},
 				{
 					"group": "X25519",
+					"icon": "arrows-left-right",
+					"iconType": "regular",
 					"pages": ["crypto/x25519/index"]
 				},
 				{
 					"group": "BIP39",
+					"icon": "book",
+					"iconType": "regular",
 					"pages": [
 						"crypto/bip39/index",
 						"crypto/bip39/generation",
@@ -742,6 +772,8 @@
 				},
 				{
 					"group": "HDWallet",
+					"icon": "wallet",
+					"iconType": "regular",
 					"pages": [
 						"crypto/hdwallet/index",
 						"crypto/hdwallet/extended-keys",
@@ -751,12 +783,15 @@
 				},
 				{
 					"group": "EIP712",
+					"icon": "file-signature",
+					"iconType": "regular",
 					"pages": ["crypto/eip712/index"]
 				}
 			]
 		},
 		{
 			"group": "EVM",
+			"icon": "microchip",
 			"pages": [
 				"evm/index",
 				{
@@ -1018,6 +1053,7 @@
 		},
 		{
 			"group": "Guides",
+			"icon": "book-open",
 			"pages": [
 				"guides/index",
 				"primitives/address/fundamentals",
@@ -1037,7 +1073,6 @@
 				"primitives/gasconstants/fundamentals",
 				"primitives/hardfork/fundamentals",
 				"primitives/hash/fundamentals",
-				"primitives/hex/fundamentals",
 				"primitives/opcode/fundamentals",
 				"primitives/rlp/fundamentals",
 				"primitives/signature/fundamentals",
@@ -1049,6 +1084,7 @@
 		},
 		{
 			"group": "Examples",
+			"icon": "code",
 			"pages": [
 				{
 					"group": "Getting Started",

@@ -149,10 +149,12 @@ At the core of Voltaire are **branded primitives** — native JavaScript types (
 A branded type is a primitive with a compile-time tag that prevents mixing incompatible values:
 
 ```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
 // Branded type definition
-type Address = Uint8Array & { readonly __tag: "Address" };
-type Hash = Uint8Array & { readonly __brand: symbol };
-type Uint = bigint & { readonly __brand: symbol };
+type Address = Uint8Array & { readonly [brand]: "Address" };
+type Hash = Uint8Array & { readonly [brand]: "Hash" };
+type Uint = bigint & { readonly [brand]: "Uint256" };
 
 // These prevent accidents like:
 const address: Address = someHash; // ❌ Type error
@@ -241,7 +243,7 @@ const contractAddr = deployer.calculateCreateAddress(0n);
 ### Working with Hashes
 
 ```typescript
-import { Keccak256, Hash } from "@tevm/voltaire";
+import { Keccak256, Hash, Hex } from "@tevm/voltaire";
 
 // Hash data
 const data = Hex("0x010203");
@@ -281,7 +283,7 @@ const hex = Uint.toHex(sum); // "0x0000...0163"
 ### Working with Transactions
 
 ```typescript
-import { Transaction } from "@tevm/voltaire";
+import { Transaction, Hex } from "@tevm/voltaire";
 
 // EIP-1559 transaction
 const tx: Transaction.EIP1559 = {
@@ -353,7 +355,7 @@ Now let's build something practical: create and sign an EIP-1559 transaction.
 ### 1. Create a transaction
 
 ```typescript
-import { Transaction, Address } from "@tevm/voltaire";
+import { Transaction, Address, Hex } from "@tevm/voltaire";
 
 const tx = {
   type: 2, // EIP-1559

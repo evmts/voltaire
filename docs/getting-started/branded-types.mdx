@@ -36,13 +36,11 @@ In Voltaire, if something has type `BrandedAddress`, you know it was validated a
 
 ## The Solution
 
-Add compile-time-only brand field. A `BrandedAddress` is a `Uint8Array` with a compile-time-only type tag:
+Add compile-time-only brand field using Symbols. A `BrandedAddress` is a `Uint8Array` with a compile-time-only Symbol tag:
 
 ```typescript
-declare const brand: unique symbol
-
-type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
-type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" }
+type BrandedAddress = Uint8Array & { readonly [Symbol.for("type")]: "Address" }
+type BrandedBytecode = Uint8Array & { readonly [Symbol.for("type")]: "Bytecode" }
 
 function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
 
@@ -93,10 +91,10 @@ In addition to eliminating casing bugs, `Uint8Array` provides better performance
 
 ## Voltaire's Approach
 
-All primitives use a shared `unique symbol` with string literal tags:
+All primitives use Symbol-based branding with importable symbols:
 
 ```typescript
-declare const brand: unique symbol
+import { brand } from '@tevm/voltaire/brand';
 
 type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
 type BrandedHex = string & { readonly [brand]: "Hex" }
@@ -104,6 +102,50 @@ type BrandedHex = string & { readonly [brand]: "Hex" }
 function process(addr: BrandedAddress) { /* ... */ }
 const hex: BrandedHex = "0x..." as BrandedHex
 process(hex) // ✗ Error
+```
+
+The `brand` symbol can be imported from `@tevm/voltaire/brand`:
+
+```typescript
+import { brand } from '@tevm/voltaire/brand';
+
+// The brand symbol is:
+brand  // Symbol.for("type") - Base type identifier for all branded types
+```
+
+## Hierarchical Type System
+
+Voltaire uses boolean flags to build type hierarchies. Base types are extended with additional properties:
+
+```typescript
+import { brand } from '@tevm/voltaire/brand';
+
+// Base types
+type Bytes20 = Uint8Array & { readonly [brand]: "Bytes20" }
+type Hex = string & { readonly [brand]: "Hex" }
+
+// Extended types add boolean flags
+type Address = Bytes20 & { readonly checksum: true }
+type ChecksumAddress = Hex & {
+  readonly [brand]: "Hex"
+  readonly checksum: true
+}
+type LowercaseHex = Hex & { readonly lowercase: true }
+type UppercaseHex = Hex & { readonly uppercase: true }
+```
+
+This enables fine-grained type safety:
+
+```typescript
+function requireChecksummed(addr: ChecksumAddress) { /* ... */ }
+function requireLowercase(hex: LowercaseHex) { /* ... */ }
+
+const addr = Address.toChecksummed(address); // ChecksumAddress
+requireChecksummed(addr); // ✓ Valid
+
+const lower = Address.toLowercase(address); // LowercaseHex
+requireChecksummed(lower); // ✗ Error: Missing checksum flag
+requireLowercase(lower); // ✓ Valid
 ```
 
 ## Console Formatting

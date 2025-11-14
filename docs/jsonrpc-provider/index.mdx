@@ -220,10 +220,12 @@ if (response.error) {
 type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | Quantity;
 
 // Branded primitives
-type Address = Uint8Array & { readonly __tag: "Address" };
-type Hash = Uint8Array & { readonly __tag: "Hash" };
-type Hex = string & { readonly __tag: "Hex" };
-type Quantity = string & { readonly __tag: "Quantity" };  // Hex-encoded numbers
+import type { brand } from '@tevm/voltaire/brand';
+
+type Address = Uint8Array & { readonly [brand]: "Address" };
+type Hash = Uint8Array & { readonly [brand]: "Hash" };
+type Hex = string & { readonly [brand]: "Hex" };
+type Quantity = string & { readonly [brand]: "Quantity" };  // Hex-encoded numbers
 
 // Request types
 interface CallParams {

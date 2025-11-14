@@ -51,17 +51,19 @@ jsonrpc/
 Core types used throughout the JSON-RPC API:
 
 ```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
 // Address - 20-byte Ethereum address
-type Address = Uint8Array & { readonly __tag: "Address" };
+type Address = Uint8Array & { readonly [brand]: "Address" };
 
 // Hash - 32-byte hash
-type Hash = Uint8Array & { readonly __tag: "Hash" };
+type Hash = Uint8Array & { readonly [brand]: "Hash" };
 
 // Hex - Hex-encoded byte string
-type Hex = string & { readonly __tag: "Hex" };
+type Hex = string & { readonly [brand]: "Hex" };
 
 // Quantity - Hex-encoded unsigned integer
-type Quantity = string & { readonly __tag: "Quantity" };
+type Quantity = string & { readonly [brand]: "Quantity" };
 
 // BlockTag - Block identifier
 type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | Quantity;
