@@ -1,0 +1,657 @@
+---
+title: Usage Patterns
+description: Common patterns and best practices for Keccak256
+---
+
+# Usage Patterns
+
+Best practices and common patterns for using Keccak256 in Ethereum applications.
+
+## Implementation Selection
+
+### Default Strategy
+
+Start with pure TypeScript, optimize when needed:
+
+```typescript
+// 1. Start with default (universal compatibility)
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+const hash = Keccak256.hash(data);
+
+// 2. Profile - is hashing a bottleneck?
+// 3. If yes, switch to WASM or native
+
+// 3a. Browser/Edge - use standalone WASM (3KB)
+import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+await Keccak256Standalone.init();
+const hash = Keccak256Standalone.hash(data);
+
+// 3b. Node.js/Bun - use native (fastest)
+import { Keccak256 } from '@tevm/voltaire/native/crypto/keccak256';
+const hash = Keccak256.hash(data);
+```
+
+### Environment-Based Selection
+
+Automatic selection based on runtime:
+
+```typescript
+async function getKeccak256Impl() {
+  // Try native first (Node.js/Bun)
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      const { Keccak256 } = await import('@tevm/voltaire/native/crypto/keccak256');
+      return Keccak256;
+    } catch {
+      // Native not available, fall through
+    }
+  }
+
+  // Try WASM (browser/edge)
+  if (typeof WebAssembly !== 'undefined') {
+    const { Keccak256Standalone } = await import('@tevm/voltaire/crypto/keccak256.standalone');
+    await Keccak256Standalone.init();
+    return Keccak256Standalone;
+  }
+
+  // Fallback to pure JS
+  const { Keccak256 } = await import('@tevm/voltaire/crypto/Keccak256');
+  return Keccak256;
+}
+
+// Use selected implementation
+const Keccak256 = await getKeccak256Impl();
+const hash = Keccak256.hash(data);
+```
+
+### Bundle Size Optimization
+
+Minimize bundle size for client deployments:
+
+```typescript
+// ❌ Large bundle - imports full primitives WASM (200KB)
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+// ✅ Small bundle - standalone WASM (3KB)
+import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+
+// ✅ Conditional import (3KB WASM only when needed)
+const Keccak256 = await import('@tevm/voltaire/crypto/keccak256.standalone')
+  .then(m => m.Keccak256Standalone);
+await Keccak256.init();
+```
+
+---
+
+## Type Safety
+
+### Working with Keccak256Hash
+
+Type-safe hash handling:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+
+// Hash returns branded type
+const hash: Keccak256Hash = Keccak256.hash(data);
+
+// Use as Uint8Array
+hash[0];          // First byte
+hash.length;      // Always 32
+hash.slice(0, 4); // First 4 bytes (selector)
+hash.slice(12);   // Last 20 bytes (address)
+
+// Convert to other types
+const hexHash: string = Hex.fromBytes(hash);
+const bigintHash: bigint = BigInt('0x' + hexHash.slice(2));
+
+// Pass to functions expecting Uint8Array
+function processHash(h: Uint8Array) { }
+processHash(hash); // ✅ Works - branded type extends Uint8Array
+```
+
+### Type Narrowing
+
+Ensure correct input types:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Address } from '@tevm/voltaire/primitives/Address';
+
+// ❌ Type error - string not Uint8Array
+const hash = Keccak256.hash('0x1234'); // Error
+
+// ✅ Convert first
+const hash = Keccak256.hashHex('0x1234'); // OK
+
+// ✅ Use typed primitives
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const addressHash = Keccak256.hash(address); // OK - Address extends Uint8Array
+```
+
+---
+
+## Performance Optimization
+
+### Batch Processing
+
+Process multiple hashes efficiently:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Inefficient - repeated function calls
+const hashes = data.map(d => Keccak256.hash(d));
+
+// ✅ More efficient - batch with typed array
+function batchHash(inputs: readonly Uint8Array[]): Uint8Array[] {
+  const result = new Array(inputs.length);
+  for (let i = 0; i < inputs.length; i++) {
+    result[i] = Keccak256.hash(inputs[i]);
+  }
+  return result;
+}
+
+const hashes = batchHash(dataArray);
+```
+
+### Caching Selectors
+
+Cache frequently used selectors:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+
+// Create selector cache
+const SelectorCache = {
+  transfer: Keccak256.selector('transfer(address,uint256)'),
+  approve: Keccak256.selector('approve(address,uint256)'),
+  balanceOf: Keccak256.selector('balanceOf(address)'),
+} as const;
+
+// Use cached selectors
+function buildTransferCalldata(to: Uint8Array, amount: bigint): Uint8Array {
+  const selector = SelectorCache.transfer; // No recomputation
+  const params = encodeParams(['address', 'uint256'], [to, amount]);
+  return concat([selector, params]);
+}
+```
+
+### Reusing Hash Results
+
+Avoid redundant hashing:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Inefficient - hashes initCode twice
+const create2Addr1 = Keccak256.create2Address(
+  deployer,
+  salt1,
+  Keccak256.hash(initCode)
+);
+const create2Addr2 = Keccak256.create2Address(
+  deployer,
+  salt2,
+  Keccak256.hash(initCode)
+);
+
+// ✅ Efficient - hash once, reuse
+const initCodeHash = Keccak256.hash(initCode);
+const create2Addr1 = Keccak256.create2Address(deployer, salt1, initCodeHash);
+const create2Addr2 = Keccak256.create2Address(deployer, salt2, initCodeHash);
+```
+
+---
+
+## Error Handling
+
+### Input Validation
+
+Validate inputs before hashing:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Address } from '@tevm/voltaire/primitives/Address';
+
+function computeContractAddress(
+  sender: Uint8Array,
+  nonce: bigint
+): Uint8Array {
+  // Validate sender length
+  if (sender.length !== 20) {
+    throw new Error(`Invalid sender length: ${sender.length}, expected 20`);
+  }
+
+  // Validate nonce range
+  if (nonce < 0n) {
+    throw new Error(`Invalid nonce: ${nonce}, must be >= 0`);
+  }
+
+  return Keccak256.contractAddress(sender, nonce);
+}
+```
+
+### Catching Errors
+
+Handle CREATE2 validation errors:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+function safeCreate2Address(
+  deployer: Uint8Array,
+  salt: Uint8Array,
+  initCodeHash: Uint8Array
+): Uint8Array | null {
+  try {
+    return Keccak256.create2Address(deployer, salt, initCodeHash);
+  } catch (error) {
+    if (error instanceof InvalidLengthError) {
+      console.error('Invalid input length:', error.message);
+      return null;
+    }
+    throw error; // Unexpected error
+  }
+}
+```
+
+---
+
+## Ethereum Integration
+
+### Transaction Hashing
+
+Hash transaction data for signing:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Rlp } from '@tevm/voltaire/primitives/Rlp';
+
+// Legacy transaction hash
+function hashLegacyTransaction(tx: {
+  nonce: bigint;
+  gasPrice: bigint;
+  gasLimit: bigint;
+  to: Uint8Array;
+  value: bigint;
+  data: Uint8Array;
+}): Uint8Array {
+  const encoded = Rlp.encode([
+    tx.nonce,
+    tx.gasPrice,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data
+  ]);
+  return Keccak256.hash(encoded);
+}
+
+// EIP-1559 transaction hash
+function hashEip1559Transaction(tx: {
+  chainId: bigint;
+  nonce: bigint;
+  maxPriorityFeePerGas: bigint;
+  maxFeePerGas: bigint;
+  gasLimit: bigint;
+  to: Uint8Array;
+  value: bigint;
+  data: Uint8Array;
+  accessList: unknown[];
+}): Uint8Array {
+  const encoded = Rlp.encode([
+    tx.chainId,
+    tx.nonce,
+    tx.maxPriorityFeePerGas,
+    tx.maxFeePerGas,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data,
+    tx.accessList
+  ]);
+  // EIP-2718: prepend transaction type (0x02)
+  const typed = new Uint8Array([0x02, ...encoded]);
+  return Keccak256.hash(typed);
+}
+```
+
+### Address Derivation
+
+Derive Ethereum address from public key:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Secp256k1 } from '@tevm/voltaire/crypto/Secp256k1';
+
+function publicKeyToAddress(publicKey: Uint8Array): Uint8Array {
+  // Public key must be uncompressed (65 bytes starting with 0x04)
+  if (publicKey.length !== 65 || publicKey[0] !== 0x04) {
+    throw new Error('Public key must be uncompressed (65 bytes, starts with 0x04)');
+  }
+
+  // Hash public key (excluding 0x04 prefix)
+  const pubKeyWithoutPrefix = publicKey.slice(1);
+  const hash = Keccak256.hash(pubKeyWithoutPrefix);
+
+  // Take last 20 bytes as address
+  return hash.slice(12);
+}
+
+// Derive from private key
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+const publicKey = Secp256k1.getPublicKey(privateKey, false); // uncompressed
+const address = publicKeyToAddress(publicKey);
+```
+
+### Contract Interaction
+
+Build contract calls with selectors:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Abi } from '@tevm/voltaire/primitives/Abi';
+
+function encodeContractCall(
+  signature: string,
+  types: string[],
+  values: unknown[]
+): Uint8Array {
+  // Get selector
+  const selector = Keccak256.selector(signature);
+
+  // Encode parameters
+  const params = Abi.encodeParams(types, values);
+
+  // Combine selector + params
+  const calldata = new Uint8Array(selector.length + params.length);
+  calldata.set(selector, 0);
+  calldata.set(params, selector.length);
+
+  return calldata;
+}
+
+// Build transfer call
+const transferCall = encodeContractCall(
+  'transfer(address,uint256)',
+  ['address', 'uint256'],
+  [recipientAddress, transferAmount]
+);
+
+// Send transaction
+await provider.sendTransaction({
+  to: tokenAddress,
+  data: transferCall
+});
+```
+
+### Event Filtering
+
+Filter logs by event signature:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+
+async function getTransferLogs(
+  tokenAddress: string,
+  fromBlock: number,
+  toBlock: number
+): Promise<Log[]> {
+  // Compute Transfer event topic
+  const transferTopic = Hex.fromBytes(
+    Keccak256.topic('Transfer(address,address,uint256)')
+  );
+
+  // Query logs
+  return await provider.getLogs({
+    address: tokenAddress,
+    topics: [transferTopic],
+    fromBlock,
+    toBlock
+  });
+}
+
+// Get all transfers
+const logs = await getTransferLogs(
+  '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+  0,
+  'latest'
+);
+
+// Process logs
+for (const log of logs) {
+  const from = '0x' + log.topics[1].slice(26); // Remove padding
+  const to = '0x' + log.topics[2].slice(26);
+  console.log(`Transfer from ${from} to ${to}`);
+}
+```
+
+---
+
+## Security Best Practices
+
+### Signature Normalization
+
+Always normalize function/event signatures:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Dangerous - user input not normalized
+function getSelectorUnsafe(userInput: string): Uint8Array {
+  return Keccak256.selector(userInput);
+}
+
+// ✅ Safe - normalize signature
+function getSelectorSafe(signature: string): Uint8Array {
+  // Remove whitespace
+  const normalized = signature.replace(/\s/g, '');
+
+  // Validate format: name(type1,type2,...)
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*\([a-zA-Z0-9_,\[\]]*\)$/.test(normalized)) {
+    throw new Error(`Invalid signature format: ${signature}`);
+  }
+
+  return Keccak256.selector(normalized);
+}
+```
+
+### Input Sanitization
+
+Validate inputs before hashing:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+function hashUserData(data: unknown): Uint8Array {
+  // ❌ Unsafe - no validation
+  // return Keccak256.hash(data as Uint8Array);
+
+  // ✅ Safe - validate type
+  if (!(data instanceof Uint8Array)) {
+    throw new TypeError('Data must be Uint8Array');
+  }
+
+  // ✅ Safe - validate length
+  if (data.length === 0) {
+    throw new Error('Data cannot be empty');
+  }
+
+  return Keccak256.hash(data);
+}
+```
+
+### Constant-Time Comparisons
+
+Compare hashes in constant time:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Timing attack vulnerable
+function verifyHashUnsafe(data: Uint8Array, expectedHash: Uint8Array): boolean {
+  const hash = Keccak256.hash(data);
+  return hash.toString() === expectedHash.toString(); // Early exit on mismatch
+}
+
+// ✅ Constant-time comparison
+function verifyHashSafe(data: Uint8Array, expectedHash: Uint8Array): boolean {
+  const hash = Keccak256.hash(data);
+
+  if (hash.length !== expectedHash.length) {
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < hash.length; i++) {
+    result |= hash[i] ^ expectedHash[i];
+  }
+
+  return result === 0;
+}
+```
+
+---
+
+## Testing
+
+### Test Vectors
+
+Validate implementation with known vectors:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
+import { describe, it, expect } from 'vitest';
+
+describe('Keccak256', () => {
+  it('produces correct hash for empty string', () => {
+    const hash = Keccak256.hashString('');
+    expect(Hex.fromBytes(hash)).toBe(
+      '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'
+    );
+  });
+
+  it('produces correct hash for "abc"', () => {
+    const hash = Keccak256.hashString('abc');
+    expect(Hex.fromBytes(hash)).toBe(
+      '0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45'
+    );
+  });
+
+  it('produces correct transfer selector', () => {
+    const selector = Keccak256.selector('transfer(address,uint256)');
+    expect(Hex.fromBytes(selector)).toBe('0xa9059cbb');
+  });
+});
+```
+
+### Property Testing
+
+Test hash properties:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { describe, it, expect } from 'vitest';
+
+describe('Keccak256 properties', () => {
+  it('always produces 32-byte output', () => {
+    const inputs = [
+      new Uint8Array(0),
+      new Uint8Array(1),
+      new Uint8Array(100),
+      new Uint8Array(10000)
+    ];
+
+    for (const input of inputs) {
+      const hash = Keccak256.hash(input);
+      expect(hash.length).toBe(32);
+    }
+  });
+
+  it('is deterministic', () => {
+    const data = new Uint8Array([1, 2, 3, 4, 5]);
+    const hash1 = Keccak256.hash(data);
+    const hash2 = Keccak256.hash(data);
+    expect(hash1).toEqual(hash2);
+  });
+
+  it('produces different hashes for different inputs', () => {
+    const data1 = new Uint8Array([1, 2, 3]);
+    const data2 = new Uint8Array([1, 2, 4]);
+    const hash1 = Keccak256.hash(data1);
+    const hash2 = Keccak256.hash(data2);
+    expect(hash1).not.toEqual(hash2);
+  });
+});
+```
+
+---
+
+## Common Pitfalls
+
+### SHA-3 vs Keccak Confusion
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { sha3_256 } from '@noble/hashes/sha3';
+
+// ❌ Wrong - SHA-3 is NOT Keccak-256
+const wrongHash = sha3_256(data); // Different padding
+
+// ✅ Correct - Use Keccak-256
+const correctHash = Keccak256.hash(data);
+
+// Ethereum uses original Keccak, not finalized SHA-3
+```
+
+### Signature Format Errors
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Wrong - space in signature
+const wrong1 = Keccak256.selector('transfer(address, uint256)');
+
+// ❌ Wrong - parameter names included
+const wrong2 = Keccak256.selector('transfer(address to, uint256 amount)');
+
+// ❌ Wrong - non-canonical type
+const wrong3 = Keccak256.selector('transfer(address,uint)');
+
+// ✅ Correct - canonical signature
+const correct = Keccak256.selector('transfer(address,uint256)');
+```
+
+### Address Derivation Errors
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// ❌ Wrong - hashing compressed public key
+const compressedPubKey = new Uint8Array(33); // 33 bytes
+const wrongAddr = Keccak256.hash(compressedPubKey).slice(12);
+
+// ❌ Wrong - including 0x04 prefix
+const uncompressedPubKey = new Uint8Array(65);
+const wrongAddr2 = Keccak256.hash(uncompressedPubKey).slice(12);
+
+// ✅ Correct - hash uncompressed key without 0x04 prefix
+const correctAddr = Keccak256.hash(uncompressedPubKey.slice(1)).slice(12);
+```
+
+---
+
+## Related
+
+- [Core Hashing Methods](/crypto/keccak256/hash-methods) - hash, hashString, hashHex, hashMultiple
+- [Ethereum Methods](/crypto/keccak256/ethereum-methods) - selector, topic, contractAddress, create2Address
+- [Implementations](/crypto/keccak256/implementations) - Implementation comparison and selection
+- [Keccak256 Overview](/crypto/keccak256) - Main documentation
