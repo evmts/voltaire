@@ -257,11 +257,11 @@ try {
 Common pattern: concatenate two 32-byte hashes:
 
 ```typescript
-import { Hash } from '@tevm/voltaire';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Two hashes to concatenate
-const hash1 = Hash.keccak256(data1);
-const hash2 = Hash.keccak256(data2);
+const hash1 = Keccak256.hash(data1);
+const hash2 = Keccak256.hash(data2);
 
 // Combine into Bytes64
 const combined = Bytes64();
