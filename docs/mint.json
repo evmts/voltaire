@@ -10,12 +10,12 @@
 	},
 	"favicon": "/favicon.png",
 	"colors": {
-		"primary": "#0D9373",
-		"light": "#07C983",
-		"dark": "#0D9373",
+		"primary": "#8B5CF6",
+		"light": "#A78BFA",
+		"dark": "#7C3AED",
 		"anchors": {
-			"from": "#0D9373",
-			"to": "#07C983"
+			"from": "#8B5CF6",
+			"to": "#A78BFA"
 		},
 		"background": {
 			"light": "#FDF2E2",
@@ -64,6 +64,13 @@
 				"getting-started",
 				"comparisons",
 				"mcp"
+			]
+		},
+		{
+			"group": "Core Concepts",
+			"icon": "book",
+			"pages": [
+				"concepts/branded-types"
 			]
 		},
 		{
