@@ -62,6 +62,7 @@
 			"icon": "rocket",
 			"pages": [
 				"getting-started",
+				"comparisons",
 				"mcp"
 			]
 		},
@@ -109,18 +110,6 @@
 				},
 				"jsonrpc-provider/usage-patterns",
 				"jsonrpc-provider/comparison"
-			]
-		},
-		{
-			"group": "Utils",
-			"icon": "wrench",
-			"pages": [
-				"utils/index",
-				"utils/retry",
-				"utils/rate-limit",
-				"utils/polling",
-				"utils/timeout",
-				"utils/batch"
 			]
 		},
 		{
@@ -1123,6 +1112,18 @@
 						}
 					]
 				}
+			]
+		},
+		{
+			"group": "Utils",
+			"icon": "wrench",
+			"pages": [
+				"utils/index",
+				"utils/retry",
+				"utils/rate-limit",
+				"utils/polling",
+				"utils/timeout",
+				"utils/batch"
 			]
 		},
 		{

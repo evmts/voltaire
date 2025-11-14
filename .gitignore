@@ -3,6 +3,8 @@
 dist/
 types/
 
+modern-monaco
+
 .crush/
 
 .scratch/

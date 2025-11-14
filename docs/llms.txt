@@ -74,7 +74,7 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 - [Ether](/primitives/denomination/ether): Ether denomination utilities
 
 ### Hash
-- [Hash Overview](/primitives/hash): Cryptographic hash primitives
+- [Keccak256 Overview](/crypto/keccak256): Cryptographic hash primitives
 - [Branded Hash](/primitives/hash/branded-hash): Type-safe hash primitives
 
 ### Hex
