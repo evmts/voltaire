@@ -153,12 +153,12 @@ import type { brand } from '@tevm/voltaire/brand';
 
 // Branded type definition
 type Address = Uint8Array & { readonly [brand]: "Address" };
-type Hash = Uint8Array & { readonly [brand]: "Hash" };
+type Keccak256Hash = Uint8Array & { readonly [brand]: "Keccak256Hash" };
 type Uint = bigint & { readonly [brand]: "Uint256" };
 
 // These prevent accidents like:
 const address: Address = someHash; // ❌ Type error
-const hash: Hash = someAddress;     // ❌ Type error
+const hash: Keccak256Hash = someAddress;     // ❌ Type error
 ```
 
 **Benefits:**
@@ -243,18 +243,18 @@ const contractAddr = deployer.calculateCreateAddress(0n);
 ### Working with Hashes
 
 ```typescript
-import { Keccak256, Hash, Hex } from "@tevm/voltaire";
+import { Keccak256, Hex } from "@tevm/voltaire";
 
 // Hash data
 const data = Hex("0x010203");
 const hash = Keccak256.hash(data);
 
 // Convert to hex
-const hex = Hash.toHex(hash);
+const hex = Keccak256.toHex(hash);
 
 // Constant-time comparison
 const hash2 = Keccak256.hash(data);
-Hash.equals(hash, hash2); // true
+Keccak256.equals(hash, hash2); // true
 ```
 
 ### Working with Uint256
@@ -318,14 +318,14 @@ Voltaire provides opt-in type safety through branded types:
 
 ```typescript
 import type { BrandedAddress } from "@tevm/voltaire/Address";
-import type { BrandedHash } from "@tevm/voltaire/Hash";
+import type { Keccak256Hash } from "@tevm/voltaire/Keccak256";
 
 function processAddress(addr: BrandedAddress) {
   // TypeScript ensures addr is a valid Address
 }
 
-function processHash(hash: BrandedHash) {
-  // TypeScript ensures hash is a valid Hash
+function processHash(hash: Keccak256Hash) {
+  // TypeScript ensures hash is a Keccak256 output
 }
 
 // Type errors prevent mistakes
@@ -386,13 +386,13 @@ console.log("Signed transaction:", signedTx);
 ### 3. Serialize for broadcasting
 
 ```typescript
-import { Hash } from "@tevm/voltaire";
+import { Hex } from "@tevm/voltaire";
 
 // Serialize to RLP-encoded bytes
 const serialized = Transaction.serialize(signedTx);
 
 // Convert to hex for RPC
-const txHex = Hash.toHex(serialized);
+const txHex = Hex.from(serialized);
 console.log("Transaction hex:", txHex);
 
 // You can now send this via eth_sendRawTransaction
@@ -407,7 +407,7 @@ console.log("Sender address:", Address.toChecksummed(sender));
 
 // Calculate transaction hash
 const txHash = Transaction.hash(signedTx);
-console.log("Transaction hash:", Hash.toHex(txHash));
+console.log("Transaction hash:", Keccak256.toHex(txHash));
 ```
 
 <Warning>

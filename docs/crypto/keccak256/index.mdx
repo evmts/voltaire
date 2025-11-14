@@ -11,6 +11,15 @@ Keccak256 is a **cryptographic one-way hash function** based on the sponge const
 
 **Mainnet-critical algorithm** - Used in Ethereum execution layer for transaction hashing, address derivation (last 20 bytes of hash), function selectors (first 4 bytes), event topics, and Merkle Patricia tree state roots.
 
+Voltaire provides Keccak256 as a **namespace with multiple implementation variants**:
+- `Keccak256` - Default pure TypeScript (auto-selected)
+- `Keccak256.noble` - Explicit @noble/hashes reference
+- `Keccak256.wasm` - WASM implementation
+- `Keccak256.native` - Assembly-optimized (Node.js/Bun/Deno FFI)
+- `Keccak256.accel` - SIMD/AVX2 hardware acceleration (x86-64)
+
+All variants share the same data-first API and return `BrandedHash` type.
+
 Keccak256 is fundamental to Ethereum's security model:
 - **Address derivation**: Computing Ethereum addresses from public keys (last 20 bytes of Keccak256(publicKey))
 - **Function selectors**: First 4 bytes of Keccak256(signature) identify contract methods
