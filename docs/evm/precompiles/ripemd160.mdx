@@ -123,12 +123,12 @@ Use SHA-256 or Keccak256 for general-purpose hashing when RIPEMD-160 compatibili
 
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 
 // Test 1: Empty input
 const input1 = new Uint8Array(0);
 // Expected: 9c1185a5c5e9fc54612808977ee8f548b2258d31 (20 bytes, padded to 32)
-const expected1 = Hash('0x0000000000000000000000009c1185a5c5e9fc54612808977ee8f548b2258d31');
+const expected1 = Bytes32('0x0000000000000000000000009c1185a5c5e9fc54612808977ee8f548b2258d31');
 
 // Test 2: Small input
 const input2 = Hex('0x0102030405');

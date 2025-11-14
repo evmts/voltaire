@@ -92,12 +92,12 @@ if (result.success) {
 
 ```typescript
 import * as Hex from '@tevm/voltaire/primitives/Hex';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 
 // Test 1: Empty input
 const input1 = new Uint8Array(0);
 // Expected: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-const expected1 = Hash('0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+const expected1 = Bytes32('0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 
 // Test 2: "abc"
 const input2 = new TextEncoder().encode("abc");
