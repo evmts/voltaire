@@ -216,10 +216,10 @@ Monitor specific contract events:
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
-const transferSignature = Hash(
+const transferSignature = Keccak256.from(
   '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 );
 
@@ -387,5 +387,5 @@ const provider = createPublicClient({
 - [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
 - [Adapters](/jsonrpc-provider/adapters) - Creating and using provider adapters
 - [Address](/primitives/address) - Address primitive documentation
-- [Hash](/primitives/hash) - Hash primitive documentation
+- [Keccak256](/crypto/keccak256) - Hash primitive documentation
 - [Hex](/primitives/hex) - Hex primitive documentation

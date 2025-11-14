@@ -15,7 +15,7 @@ Transaction methods handle the full lifecycle: submission, retrieval, receipt tr
 import { Provider } from '@tevm/voltaire/provider';
 import * as Address from '@tevm/voltaire/primitives/Address';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://eth.llamarpc.com' });
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');

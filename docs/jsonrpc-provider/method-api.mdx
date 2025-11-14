@@ -37,7 +37,7 @@ All parameters use Voltaire's branded primitive types for compile-time safety:
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Construct branded types
@@ -201,7 +201,7 @@ const gasEstimate = await provider.eth_estimateGas({
 ### Transaction Operations
 
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Submit signed transaction

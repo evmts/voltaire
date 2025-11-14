@@ -38,7 +38,7 @@ async function getAccountState(
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const contractAddress = Address('0x...');
 const transferSig = Hash(
@@ -58,11 +58,11 @@ for await (const log of provider.events.logs({
 ## Waiting for Transaction Confirmation
 
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 async function waitForConfirmation(
   provider: Provider,
-  txHash: Hash.BrandedHash,
+  txHash: Keccak256.Keccak256Hash,
   confirmations: number = 3
 ): Promise<void> {
   const receiptRes = await provider.eth_getTransactionReceipt(txHash);

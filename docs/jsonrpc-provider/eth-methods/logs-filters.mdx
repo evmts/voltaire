@@ -13,7 +13,7 @@ Query event logs matching filter criteria.
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const logs = await provider.eth_getLogs({
   fromBlock: 'earliest',
@@ -123,7 +123,7 @@ Always uninstall filters when done to prevent resource leaks.
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Create filter for Transfer events
 const filterId = await provider.eth_newFilter({

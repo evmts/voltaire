@@ -17,7 +17,7 @@ Access engine methods directly on the provider:
 
 ```typescript
 import { Provider } from '@tevm/voltaire/provider';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Validate payload (consensus layer → execution layer)
 const response = await provider.engine_newPayloadV3(payload);
@@ -156,7 +156,7 @@ interface ForkchoiceState {
 **Example:**
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const forkchoiceState = {
   headBlockHash: Hash('0xabc...'),
@@ -261,7 +261,7 @@ const blobs = await provider.engine_getBlobsV1(blobVersionedHashes);
 **Example:**
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Get blobs for specific commitments
 const blobHashes = [

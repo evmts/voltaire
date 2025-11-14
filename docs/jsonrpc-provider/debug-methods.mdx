@@ -17,9 +17,9 @@ Access debug methods directly on the provider:
 
 ```typescript
 import { Provider } from '@tevm/voltaire/provider';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
-const txHash = Hash('0x...');
+const txHash = Keccak256.from('0x...');
 
 // Trace transaction execution
 const trace = await provider.debug_traceTransaction(txHash, {
@@ -54,7 +54,7 @@ const trace = await provider.debug_traceTransaction(txHash, {
 **Example:**
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const txHash = Hash('0xabc123...');
 
@@ -124,7 +124,7 @@ const traces = await provider.debug_traceBlockByHash(blockHash, {
 **Example:**
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const blockHash = Hash('0xdef456...');
 
@@ -241,9 +241,9 @@ interface TraceOptions {
 ### Debug Failed Transaction
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
-async function debugFailedTx(txHash: Hash.BrandedHash) {
+async function debugFailedTx(txHash: Keccak256.Keccak256Hash) {
   // Get transaction receipt
   const receipt = await provider.eth_getTransactionReceipt(txHash);
 
@@ -264,7 +264,7 @@ async function debugFailedTx(txHash: Hash.BrandedHash) {
 ### Analyze Gas Usage
 
 ```typescript
-async function analyzeGas(txHash: Hash.BrandedHash) {
+async function analyzeGas(txHash: Keccak256.Keccak256Hash) {
   const trace = await provider.debug_traceTransaction(txHash, {
     tracer: 'callTracer'
   });
@@ -308,7 +308,7 @@ async function testTransaction(params: CallParams) {
 ### Compare State Changes
 
 ```typescript
-async function compareStateChanges(txHash: Hash.BrandedHash) {
+async function compareStateChanges(txHash: Keccak256.Keccak256Hash) {
   // Get pre-state
   const preTrace = await provider.debug_traceTransaction(txHash, {
     tracer: 'prestateTracer'
