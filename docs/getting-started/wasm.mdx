@@ -1,110 +1,63 @@
 ---
-title: Zig-Wasm-Accelerated
+title: Zig Accelerated
 description: High-performance WASM implementations built with Zig
 ---
 
-Voltaire provides high-performance WASM implementations built with Zig alongside pure TypeScript implementations. WASM works in almost all JavaScript environments (Node, Bun, browsers) without any special build tools or deployment configuration.
+Provides up to 3x performance boosts for common cryptography such as Keccak256, and up to 100x performance improvement for computationally expensive operations.
 
-## Dual Implementations
+Zig excels at building small bundle sizes for WASM compared to other languages like Rust. Voltaire carefully optimizes WASM bundle sizes to keep them minimal. WASM is highly portable - it works on mobile phones, browsers, Node.js, and anywhere JavaScript runs.
 
-Every feature in Voltaire has both TypeScript and Zig implementations. This gives you flexibility to choose the right trade-off for your use case:
+## Implementation Options
+
+Voltaire provides multiple implementation choices:
+
+1. **Default (WASM)** - Balanced performance and bundle size
+2. **WASM (explicit)** - Same as default, explicit import path
+3. **TypeScript** - Pure TypeScript, no WASM dependency
+4. **Assembly** - Maximum speed using native assembly
 
 ```typescript
-import { keccak256 } from '@tevm/voltaire/crypto';        // JavaScript version
-import { keccak256 } from '@tevm/voltaire/crypto/wasm';  // WASM version
+import { keccak256 } from '@tevm/voltaire/crypto';        // Default (WASM)
+import { keccak256 } from '@tevm/voltaire/crypto/wasm';  // WASM (explicit)
+import { keccak256 } from '@tevm/voltaire/crypto/ts';    // TypeScript
+import { keccak256 } from '@tevm/voltaire/crypto/asm';   // Assembly
 ```
 
-The APIs are identical - you can swap implementations without changing your code. Start with JavaScript for simplicity, switch to WASM for performance, or mix both in the same codebase.
+The APIs are identical - you can swap implementations without changing your code. Start with the default WASM for balanced performance, switch to TypeScript when you need no WASM dependency, or use assembly for maximum raw performance.
 
 <Note>
-Whether a method uses WASM or JavaScript under the hood is mostly transparent. The API remains consistent regardless of implementation.
+By default, Voltaire chooses what we believe to be the most balanced trade-offs between performance, bundle size, and other concerns like debuggability.
 </Note>
 
-## When to Use WASM
-
-We measure performance and bundle size for every operation in both JavaScript and WASM. Sometimes WASM is a clear winner, sometimes JavaScript is better.
-
-### WASM is Better For:
-
-**Cryptography** - Up to 3x faster with smaller bundle sizes:
-```typescript
-import { keccak256 } from '@tevm/voltaire/crypto/wasm';
-
-// WASM: 3x faster + smaller bundle size
-const hash = keccak256(data);
-```
-
-**EVM Operations** - Complex bytecode execution benefits from native performance:
-```typescript
-import { executeOpcode } from '@tevm/voltaire/evm/wasm';
-```
-
-**Encoding/Decoding with Crypto** - When operations involve cryptographic hashing:
-```typescript
-import { rlpEncode } from '@tevm/voltaire/primitives/wasm';
-```
-
-### JavaScript is Better For:
-
-**Simple String Operations** - Native JavaScript is faster than WASM overhead:
-```typescript
-import { Hex } from '@tevm/voltaire/primitives';
-
-// Pure JS: No WASM bridge overhead
-const lowercase = Hex.toLowercase(hex);
-```
-
-**Small Operations** - When crossing the WASM boundary costs more than the operation itself.
-
-## Performance
-
-By default, Voltaire uses JavaScript implementations to maximize compatibility. You can opt into WASM for better performance and smaller bundle sizes when it makes sense for your use case.
-
-<Note>
-**No guarantees** - Default implementations and recommendations may change as we optimize. Always benchmark for your specific use case.
-</Note>
+<Warning>
+The assembly version (`/asm`) uses native assembly optimizations and is not audited. Use only when you need absolute maximum performance and understand the security implications.
+</Warning>
 
 ### Benchmarks
 
 Performance and bundle size comparison across implementations:
 
-| Operation | JS Performance | WASM Performance | JS Bundle | WASM Bundle | Recommendation |
-|-----------|----------------|------------------|-----------|-------------|----------------|
+| Operation | TypeScript Perf | WASM Perf | Assembly Perf | TypeScript Bundle | WASM Bundle | Assembly Bundle | Default |
+|-----------|----------------|-----------|---------------|-------------------|-------------|-----------------|---------|
 | **Cryptography** |
-| keccak256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 recover | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 aggregate | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| sha256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| ripemd160 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| keccak256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| secp256k1 recover | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| BLS12-381 aggregate | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| sha256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| ripemd160 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
 | **Encoding** |
-| RLP encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-| RLP decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-| ABI encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-| ABI decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
+| RLP encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+| RLP decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+| ABI encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+| ABI decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
 | **EVM** |
-| Opcode execution | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| Bytecode analysis | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| Opcode execution | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
+| Bytecode analysis | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
 | **Primitives** |
-| Address checksum | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-| Hex encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-| Hex decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | JavaScript |
-
-**General recommendations:**
-- **Cryptographic operations**: WASM typically 2-3x faster with smaller bundles
-- **EVM operations**: WASM for complex bytecode execution
-- **Simple encoding**: JavaScript avoids WASM bridge overhead
-- **String operations**: JavaScript for native performance
-
-## Zero Configuration
-
-WASM implementations work out of the box in:
-- Node.js
-- Bun
-- Browsers (Chrome, Firefox, Safari, Edge)
-- Edge runtimes (Cloudflare Workers, Vercel Edge)
-
-No webpack configuration, no bundler plugins, no deployment changes required.
+| Address checksum | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+| Hex encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+| Hex decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
