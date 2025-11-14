@@ -1,6 +1,6 @@
 ---
-title: Branded Types
-description: Modern type safety with runtime validation
+title: Safe Ethereum
+description: Modern type safety with branded types prevents entire classes of bugs while providing powerful functionality and robustness
 ---
 
 ## The Problem
@@ -18,7 +18,7 @@ function transfer(to: Address, amount: bigint) {
 const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
 const bytecode: Bytecode = "0x60806040";
 
-transfer(bytecode, 100n); // ✓ Compiles - sends funds to bytecode!
+transfer(bytecode, 100n); // ✓ Compiles - breaks downstream!
 ```
 
 Even worse, template literal types provide no runtime validation:
@@ -32,27 +32,45 @@ const wrong: Address = "0x123"; // ✓ Compiles - wrong length!
 transfer(invalid, 100n); // Runtime error or lost funds
 ```
 
-In Voltaire, if something has type `BrandedAddress`, you know it was validated at runtime to be a valid address.
-
 ## The Solution
 
-Add compile-time-only brand field using Symbols. A `BrandedAddress` is a `Uint8Array` with a compile-time-only Symbol tag:
+[Branded types](https://prosopo.io/blog/typescript-branding/) and strong validators.
+
+A branded type is a native JavaScript type (like `Uint8Array` or `string`) with a compile-time-only tag that prevents mixing incompatible values. Voltaire uses Symbol-based branding:
 
 ```typescript
-type BrandedAddress = Uint8Array & { readonly [Symbol.for("type")]: "Address" }
-type BrandedBytecode = Uint8Array & { readonly [Symbol.for("type")]: "Bytecode" }
+import { Address, Bytecode, Bytes32 } from '@tevm/voltaire';
 
-function verifySignature(addr: BrandedAddress, hash: Uint8Array) { /* ... */ }
+function verifySignature(addr: Address, salt: Bytes32) { /* ... */ }
 
 const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const bytecode = Bytecode("0x6001")
 
-verifySignature(bytecode, Hash("0x1234...")) // ✗ Error: Type 'BrandedBytecode' is not assignable to type 'BrandedAddress'
+verifySignature(bytecode, Bytes32("0x1234...")) // ✗ Error: Type 'Bytecode' is not assignable to type 'Address'
 ```
 
-Brand exists only in type system - erased at runtime. Values are still plain Uint8Array.
+Every Ethereum type is provided by Voltaire. Voltaire takes a data-first approach to Ethereum, thinking of Ethereum as just data that gets transformed in a stream of blocks. This allows you to focus on representing data types with strong validation, declarative transformations, and robust runtime safety.
 
-## Casing Bugs
+If something has type `BrandedAddress`, you know it was validated at runtime to be a valid address.
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Type Safety" icon="lock">
+    Can't mix Address with Hash or Bytecode. Arguments can't be swapped.
+  </Card>
+  <Card title="Self-Documenting" icon="book">
+    Function signatures clearly show expected types instead of generic Uint8Array.
+  </Card>
+  <Card title="Zero Runtime Cost" icon="gauge">
+    Brand field only exists in TypeScript's type checker. Zero runtime overhead.
+  </Card>
+  <Card title="Validated" icon="shield-check">
+    Input validated at construction. No runtime validation libraries needed.
+  </Card>
+</CardGroup>
+
+## Casing Bugs Eliminated
 
 String-based addresses suffer from casing inconsistencies:
 
@@ -67,98 +85,9 @@ addr1 === addr2; // false
 
 This leads to bugs when comparing addresses, using them as map keys, or validating signatures. Voltaire eliminates this entire class of bugs by using `Uint8Array` as the underlying type.
 
-Even when using hex strings, Voltaire maintains type safety through branded variants:
-
-```typescript
-import { Address } from '@tevm/voltaire';
-
-const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-
-// Each returns a branded hex string type
-const checksummed = Address.toChecksummed(address); // ChecksumAddress
-const lowercase = Address.toLowercase(address);     // LowercaseAddress
-const uppercase = Address.toUppercase(address);     // UppercaseAddress
-const hex = Address.toHex(address);                 // Hex
-
-// Type-safe even with strings
-function verify(addr: ChecksumAddress) { }
-verify(lowercase); // ✗ Error: Type 'LowercaseAddress' is not assignable to 'ChecksumAddress'
-```
-
 <Note>
-In addition to eliminating casing bugs, `Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type.
+`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type.
 </Note>
-
-## Voltaire's Approach
-
-All primitives use Symbol-based branding with importable symbols:
-
-```typescript
-import { brand } from '@tevm/voltaire/brand';
-
-type BrandedAddress = Uint8Array & { readonly [brand]: "Address" }
-type BrandedHex = string & { readonly [brand]: "Hex" }
-
-function process(addr: BrandedAddress) { /* ... */ }
-const hex: BrandedHex = "0x..." as BrandedHex
-process(hex) // ✗ Error
-```
-
-The `brand` symbol can be imported from `@tevm/voltaire/brand`:
-
-```typescript
-import { brand } from '@tevm/voltaire/brand';
-
-// The brand symbol is:
-brand  // Symbol.for("type") - Base type identifier for all branded types
-```
-
-## Hierarchical Type System
-
-Voltaire uses boolean flags to build type hierarchies. Base types are extended with additional properties:
-
-```typescript
-import { brand } from '@tevm/voltaire/brand';
-
-// Base types
-type Bytes20 = Uint8Array & { readonly [brand]: "Bytes20" }
-type Hex = string & { readonly [brand]: "Hex" }
-
-// Extended types add boolean flags
-type Address = Bytes20 & { readonly checksum: true }
-type ChecksumAddress = Hex & {
-  readonly [brand]: "Hex"
-  readonly checksum: true
-}
-type LowercaseHex = Hex & { readonly lowercase: true }
-type UppercaseHex = Hex & { readonly uppercase: true }
-```
-
-This enables fine-grained type safety:
-
-```typescript
-function requireChecksummed(addr: ChecksumAddress) { /* ... */ }
-function requireLowercase(hex: LowercaseHex) { /* ... */ }
-
-const addr = Address.toChecksummed(address); // ChecksumAddress
-requireChecksummed(addr); // ✓ Valid
-
-const lower = Address.toLowercase(address); // LowercaseHex
-requireChecksummed(lower); // ✗ Error: Missing checksum flag
-requireLowercase(lower); // ✓ Valid
-```
-
-## Console Formatting
-
-In Node, Bun, and browsers, branded types display formatted:
-
-```typescript
-const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-console.log(address);
-// Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-```
-
-This makes debugging more readable while maintaining full `Uint8Array` performance.
 
 ## Validation at Construction
 
@@ -198,30 +127,13 @@ Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3E"); // Invalid EIP-55
 // Error: Invalid checksum
 ```
 
-## Benefits of Branded Types
-
-<CardGroup cols={2}>
-  <Card title="Type Safety" icon="lock">
-    Can't mix Address with Hash or Bytecode. Arguments can't be swapped.
-  </Card>
-  <Card title="Self-Documenting" icon="book">
-    Function signatures clearly show expected types instead of generic Uint8Array.
-  </Card>
-  <Card title="Zero Runtime Cost" icon="gauge">
-    Brand field only exists in TypeScript's type checker. Zero runtime overhead.
-  </Card>
-  <Card title="Validated" icon="shield-check">
-    Input validated at construction. No runtime validation libraries needed.
-  </Card>
-</CardGroup>
-
 ## Learn More
 
 <CardGroup cols={2}>
+  <Card title="Branded Types Reference" icon="book" href="/concepts/branded-types">
+    Complete guide to branded types in Voltaire
+  </Card>
   <Card title="Address Primitive" icon="cube" href="/primitives/address">
     Complete Address API reference
-  </Card>
-  <Card title="TypeScript Branding" icon="book-open" href="https://prosopo.io/blog/typescript-branding/">
-    In-depth guide to branded types (Prosopo)
   </Card>
 </CardGroup>
