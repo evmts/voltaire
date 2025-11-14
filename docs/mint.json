@@ -112,6 +112,18 @@
 			]
 		},
 		{
+			"group": "Utils",
+			"icon": "wrench",
+			"pages": [
+				"utils/index",
+				"utils/retry",
+				"utils/rate-limit",
+				"utils/polling",
+				"utils/timeout",
+				"utils/batch"
+			]
+		},
+		{
 			"group": "Primitives",
 			"icon": "cubes",
 			"pages": [
