@@ -451,6 +451,7 @@
 						"primitives/hardfork/wasm"
 					]
 				},
+				"primitives/hash",
 				{
 					"group": "Opcode",
 					"icon": "microchip",
