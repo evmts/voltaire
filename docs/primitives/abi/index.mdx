@@ -183,26 +183,161 @@ export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
 
 ### Core Concepts
 
-- [Fundamentals](fundamentals) - Learn ABI encoding structure, function selectors, and data layout
-- [Types](types) - Complete ABI type system: Abi, Parameter, AbiType, Item types, and type utilities
+<CardGroup cols={3}>
+  <Card title="Fundamentals" icon="book" href="/primitives/abi/fundamentals">
+    Learn ABI encoding structure, selectors, and data layout
+  </Card>
+  <Card title="ABI Types" icon="brackets-curly" href="/primitives/abi/types">
+    Function, Event, Error, Constructor type definitions
+  </Card>
+  <Card title="Encoding Guide" icon="code" href="/primitives/abi/encoding">
+    ABI encoding and decoding mechanics
+  </Card>
+  <Card title="Selectors & Signatures" icon="fingerprint" href="/primitives/abi/selectors">
+    Function selectors and event topic hashes
+  </Card>
+  <Card title="Usage Patterns" icon="lightbulb" href="/primitives/abi/usage-patterns">
+    Common patterns: contract calls, log parsing
+  </Card>
+</CardGroup>
 
-### Item Types
+### Top-Level Methods
 
-- [Function](function) - Function encoding/decoding, selectors, signatures, and result handling
-- [Event](event) - Event log encoding/decoding, topic generation, and event filtering
-- [Error](error) - Custom error encoding/decoding with type-safe parameter handling
-- [Constructor](constructor) - Constructor parameter encoding for contract deployment
+<CardGroup cols={3}>
+  <Card title="format" icon="align-left" href="/primitives/abi/format">
+    Format ABI item to human-readable signature
+  </Card>
+  <Card title="formatWithArgs" icon="brackets-square" href="/primitives/abi/format-with-args">
+    Format with concrete argument values
+  </Card>
+  <Card title="getItem" icon="magnifying-glass" href="/primitives/abi/get-item">
+    Find ABI item by name and type
+  </Card>
+  <Card title="encode" icon="arrow-right" href="/primitives/abi/encode">
+    Generic ABI encoding for any item type
+  </Card>
+  <Card title="decode" icon="arrow-left" href="/primitives/abi/decode">
+    Generic ABI decoding for any item type
+  </Card>
+  <Card title="decodeData" icon="file-code" href="/primitives/abi/decode-data">
+    Decode without selector prefix
+  </Card>
+  <Card title="parseLogs" icon="list" href="/primitives/abi/parse-logs">
+    Parse multiple event logs using full ABI
+  </Card>
+</CardGroup>
 
-### Encoding & Decoding
+### Function Methods
 
-- [Encoding](encoding) - Low-level ABI encoding patterns and algorithms
-- [Decoding](decoding) - Low-level ABI decoding patterns and algorithms
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/function-get-selector">
+    Get function selector (4 bytes)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/function-get-signature">
+    Get human-readable function signature
+  </Card>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/function-encode-params">
+    Encode function input parameters
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/function-decode-params">
+    Decode function input parameters
+  </Card>
+  <Card title="encodeResult" icon="arrow-up" href="/primitives/abi/function-encode-result">
+    Encode function return values
+  </Card>
+  <Card title="decodeResult" icon="arrow-down" href="/primitives/abi/function-decode-result">
+    Decode function return values
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/function-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
 
-### Advanced
+### Event Methods
 
-- [BrandedAbi](branded-abi) - Tree-shakeable functional API with data-first patterns
-- [WASM](wasm) - WebAssembly-accelerated encoding/decoding implementation
-- [Usage Patterns](usage-patterns) - Common patterns: contract calls, log parsing, type inference
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/event-get-selector">
+    Get event selector (32 bytes, topic0)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/event-get-signature">
+    Get human-readable event signature
+  </Card>
+  <Card title="encodeTopics" icon="hashtag" href="/primitives/abi/event-encode-topics">
+    Encode indexed parameters to topics
+  </Card>
+  <Card title="decodeLog" icon="file-lines" href="/primitives/abi/event-decode-log">
+    Decode event log data and topics
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/event-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+  <Card title="EncodeTopics" icon="gear" href="/primitives/abi/event-encode-topics-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
+
+### Error Methods
+
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/error-get-selector">
+    Get error selector (4 bytes)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/error-get-signature">
+    Get human-readable error signature
+  </Card>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/error-encode-params">
+    Encode error parameters
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/error-decode-params">
+    Decode error parameters
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/error-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
+
+### Constructor Methods
+
+<CardGroup cols={3}>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/constructor-encode-params">
+    Encode constructor parameters for deployment
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/constructor-decode-params">
+    Decode constructor parameters from bytecode
+  </Card>
+</CardGroup>
+
+### Item Utilities
+
+<CardGroup cols={3}>
+  <Card title="isFunction" icon="circle-check" href="/primitives/abi/item-is-function">
+    Type guard: check if item is function
+  </Card>
+  <Card title="isEvent" icon="circle-check" href="/primitives/abi/item-is-event">
+    Type guard: check if item is event
+  </Card>
+  <Card title="isError" icon="circle-check" href="/primitives/abi/item-is-error">
+    Type guard: check if item is error
+  </Card>
+  <Card title="isConstructor" icon="circle-check" href="/primitives/abi/item-is-constructor">
+    Type guard: check if item is constructor
+  </Card>
+  <Card title="isFallback" icon="circle-check" href="/primitives/abi/item-is-fallback">
+    Type guard: check if item is fallback
+  </Card>
+  <Card title="isReceive" icon="circle-check" href="/primitives/abi/item-is-receive">
+    Type guard: check if item is receive
+  </Card>
+  <Card title="format" icon="align-left" href="/primitives/abi/item-format">
+    Format ABI item to signature string
+  </Card>
+  <Card title="formatWithArgs" icon="brackets-square" href="/primitives/abi/item-format-with-args">
+    Format with concrete argument values
+  </Card>
+  <Card title="getItem" icon="magnifying-glass" href="/primitives/abi/item-get-item">
+    Get specific item from ABI by name/type
+  </Card>
+</CardGroup>
 
 ## ABI JSON Format
 
