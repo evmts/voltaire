@@ -61,29 +61,48 @@
 			"pages": ["getting-started", "mcp"]
 		},
 		{
-			"group": "JSON-RPC",
+			"group": "JSONRPCProvider",
 			"pages": [
-				"jsonrpc/index",
-				"jsonrpc/eth",
-				"jsonrpc/debug",
-				"jsonrpc/engine"
-			]
-		},
-		{
-			"group": "Provider",
-			"pages": [
-				"provider/index",
+				"jsonrpc-provider/index",
+				"jsonrpc-provider/getting-started",
 				{
-					"group": "Methods",
+					"group": "Core Concepts",
 					"pages": [
-						"provider/methods",
-						"provider/eth-methods",
-						"provider/debug-methods",
-						"provider/engine-methods"
+						"jsonrpc-provider/method-api",
+						"jsonrpc-provider/type-system",
+						"jsonrpc-provider/events"
 					]
 				},
-				"provider/events",
-				"provider/adapters"
+				{
+					"group": "Method Reference",
+					"pages": [
+						{
+							"group": "eth Methods",
+							"pages": [
+								"jsonrpc-provider/eth-methods/index",
+								"jsonrpc-provider/eth-methods/blocks",
+								"jsonrpc-provider/eth-methods/transactions",
+								"jsonrpc-provider/eth-methods/state",
+								"jsonrpc-provider/eth-methods/calls",
+								"jsonrpc-provider/eth-methods/logs-filters",
+								"jsonrpc-provider/eth-methods/fees",
+								"jsonrpc-provider/eth-methods/network"
+							]
+						},
+						"jsonrpc-provider/debug-methods",
+						"jsonrpc-provider/engine-methods"
+					]
+				},
+				{
+					"group": "Advanced",
+					"pages": [
+						"jsonrpc-provider/adapters",
+						"jsonrpc-provider/error-handling",
+						"jsonrpc-provider/performance"
+					]
+				},
+				"jsonrpc-provider/usage-patterns",
+				"jsonrpc-provider/comparison"
 			]
 		},
 		{
@@ -91,7 +110,80 @@
 			"pages": [
 				{
 					"group": "ABI",
-					"pages": ["primitives/abi/index"]
+					"pages": [
+						"primitives/abi/index",
+						"primitives/abi/fundamentals",
+						"primitives/abi/types",
+						"primitives/abi/encoding",
+						"primitives/abi/selectors",
+						"primitives/abi/usage-patterns",
+						{
+							"group": "Top-Level Methods",
+							"pages": [
+								"primitives/abi/format",
+								"primitives/abi/format-with-args",
+								"primitives/abi/get-item",
+								"primitives/abi/encode",
+								"primitives/abi/decode",
+								"primitives/abi/decode-data",
+								"primitives/abi/parse-logs"
+							]
+						},
+						{
+							"group": "Function Methods",
+							"pages": [
+								"primitives/abi/function-get-selector",
+								"primitives/abi/function-get-signature",
+								"primitives/abi/function-encode-params",
+								"primitives/abi/function-decode-params",
+								"primitives/abi/function-encode-result",
+								"primitives/abi/function-decode-result",
+								"primitives/abi/function-get-selector-factory"
+							]
+						},
+						{
+							"group": "Event Methods",
+							"pages": [
+								"primitives/abi/event-get-selector",
+								"primitives/abi/event-get-signature",
+								"primitives/abi/event-encode-topics",
+								"primitives/abi/event-decode-log",
+								"primitives/abi/event-get-selector-factory",
+								"primitives/abi/event-encode-topics-factory"
+							]
+						},
+						{
+							"group": "Error Methods",
+							"pages": [
+								"primitives/abi/error-get-selector",
+								"primitives/abi/error-get-signature",
+								"primitives/abi/error-encode-params",
+								"primitives/abi/error-decode-params",
+								"primitives/abi/error-get-selector-factory"
+							]
+						},
+						{
+							"group": "Constructor Methods",
+							"pages": [
+								"primitives/abi/constructor-encode-params",
+								"primitives/abi/constructor-decode-params"
+							]
+						},
+						{
+							"group": "Item Utilities",
+							"pages": [
+								"primitives/abi/item-is-function",
+								"primitives/abi/item-is-event",
+								"primitives/abi/item-is-error",
+								"primitives/abi/item-is-constructor",
+								"primitives/abi/item-is-fallback",
+								"primitives/abi/item-is-receive",
+								"primitives/abi/item-format",
+								"primitives/abi/item-format-with-args",
+								"primitives/abi/item-get-item"
+							]
+						}
+					]
 				},
 				{
 					"group": "AccessList",
