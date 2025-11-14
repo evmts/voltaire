@@ -60,14 +60,14 @@ const checksummed = Address.toChecksummed(addr);
 </Tab>
 <Tab title="Hashes">
 
-For cryptographic hashes (32 bytes), use the `Hash` type:
+For cryptographic hashes (32 bytes), use the `Keccak256` module:
 
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Keccak256 hash (32 bytes)
-const hash = Hash.keccak256('hello');
-const hex = Hash.toHex(hash);
+const hash = Keccak256.hash('hello');
+const hex = Keccak256.toHex(hash);
 ```
 
 </Tab>
@@ -138,12 +138,11 @@ All fixed-size hex types are now under bytes:
 Domain-specific types with specialized methods:
 
 - [Address](/primitives/address/index) - 20-byte Ethereum addresses with EIP-55 checksumming
-- [Hash](/primitives/hash/index) - 32-byte cryptographic hash values
-- [Signature](/primitives/signature/index) - 65-byte ECDSA signatures (r, s, v)
+- [Keccak256](/crypto/keccak256) - 32-byte cryptographic hash values
+- [Signature](/crypto/secp256k1) - ECDSA signatures (r, s, v)
 
 ## Related
 
 - [Bytes Types](/primitives/bytes/index) - All fixed-size byte variants
 - [Address](/primitives/address/index) - Ethereum addresses
-- [Hash](/primitives/hash/index) - Cryptographic hashes
-- [Signature](/primitives/signature/index) - ECDSA signatures
+- [Keccak256](/crypto/keccak256) - Cryptographic hashes
