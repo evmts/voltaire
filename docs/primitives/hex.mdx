@@ -1,0 +1,149 @@
+---
+title: Hex (Deprecated)
+description: The Hex primitive has been replaced by typed hex variants
+---
+
+<Warning>
+**Deprecated** - The `Hex` primitive has been replaced by typed variants for better type safety and clarity.
+</Warning>
+
+## Migration Guide
+
+The legacy `Hex` type provided a generic hex string representation. It has been replaced with **typed hex variants** that provide compile-time size checking and clearer semantics.
+
+### Old API (Deprecated)
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex';
+
+// Generic untyped hex
+const hex: BrandedHex = Hex.from("0x1234");
+const bytes = Hex.toBytes(hex);
+```
+
+### New API (Recommended)
+
+Use typed variants based on your data's semantic meaning:
+
+<Tabs>
+<Tab title="Fixed-Size Bytes">
+
+For fixed-size hex values, use `Bytes<N>` variants:
+
+```typescript
+import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes16 from '@tevm/voltaire/primitives/Bytes/Bytes16';
+
+// 32-byte values (hashes, storage slots)
+const hash = Bytes32('0x' + '12'.repeat(32));
+const slot = Bytes32(0);
+
+// 16-byte values
+const uuid = Bytes16('0x' + 'ab'.repeat(16));
+```
+
+Available sizes: `Bytes1`, `Bytes2`, `Bytes3`, `Bytes4`, `Bytes5`, `Bytes6`, `Bytes7`, `Bytes8`, `Bytes16`, `Bytes32`, `Bytes64`
+
+</Tab>
+<Tab title="Addresses">
+
+For Ethereum addresses (20 bytes), use the `Address` type:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// 20-byte address with EIP-55 checksumming
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const checksummed = Address.toChecksummed(addr);
+```
+
+</Tab>
+<Tab title="Hashes">
+
+For cryptographic hashes (32 bytes), use the `Hash` type:
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash';
+
+// Keccak256 hash (32 bytes)
+const hash = Hash.keccak256('hello');
+const hex = Hash.toHex(hash);
+```
+
+</Tab>
+</Tabs>
+
+## Why Typed Variants?
+
+The typed variants provide several advantages over the generic `Hex` type:
+
+1. **Compile-time size checking** - Catch size mismatches during development
+2. **Semantic clarity** - Type names reflect data meaning (Address vs Hash vs Bytes32)
+3. **Better IDE support** - Type-specific methods and documentation
+4. **Prevents mixing types** - Can't accidentally use an Address where a Hash is expected
+
+## Migration Examples
+
+### Generic Hex → Bytes32
+
+```typescript
+// Before (deprecated)
+import * as Hex from '@tevm/voltaire/Hex';
+const value = Hex.from('0x' + '00'.repeat(32));
+
+// After
+import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+const value = Bytes32('0x' + '00'.repeat(32));
+```
+
+### Hex with Size → Fixed Bytes
+
+```typescript
+// Before (deprecated)
+import * as Hex from '@tevm/voltaire/Hex';
+const selector = Hex.from('0x12345678');
+Hex.assertSize(selector, 4);
+
+// After
+import * as Bytes4 from '@tevm/voltaire/primitives/Bytes/Bytes4';
+const selector = Bytes4('0x12345678'); // Size checked at construction
+```
+
+### Hex Address → Address
+
+```typescript
+// Before (deprecated)
+import * as Hex from '@tevm/voltaire/Hex';
+const addr = Hex.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// After
+import * as Address from '@tevm/voltaire/Address';
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const checksummed = Address.toChecksummed(addr);
+```
+
+## Where to Find Replacements
+
+### Fixed-Size Types
+
+All fixed-size hex types are now under bytes:
+
+- [Bytes1 - Bytes8](/primitives/bytes/bytes1) - Small fixed sizes (selectors, flags)
+- [Bytes16](/primitives/bytes/bytes16) - 128-bit values (UUIDs)
+- [Bytes32](/primitives/bytes/bytes32) - 256-bit values (hashes, storage slots, merkle nodes)
+- [Bytes64](/primitives/bytes/bytes64) - 512-bit values (public keys, signatures)
+
+### Semantic Types
+
+Domain-specific types with specialized methods:
+
+- [Address](/primitives/address/index) - 20-byte Ethereum addresses with EIP-55 checksumming
+- [Hash](/primitives/hash/index) - 32-byte cryptographic hash values
+- [Signature](/primitives/signature/index) - 65-byte ECDSA signatures (r, s, v)
+
+## Related
+
+- [Bytes Types](/primitives/bytes/index) - All fixed-size byte variants
+- [Address](/primitives/address/index) - Ethereum addresses
+- [Hash](/primitives/hash/index) - Cryptographic hashes
+- [Signature](/primitives/signature/index) - ECDSA signatures
