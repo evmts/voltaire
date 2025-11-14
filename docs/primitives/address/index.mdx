@@ -93,7 +93,7 @@ console.log(Address.toChecksummed(addr));
 
 ```typescript
 import { Address } from '@tevm/voltaire/Address';
-import { Hash } from '@tevm/voltaire/Hash';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
 import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 // Predict CREATE address
@@ -102,7 +102,7 @@ const nonce = 0n;
 const createAddr = Address.calculateCreateAddress(deployer, nonce);
 
 // Predict CREATE2 address
-const salt = Hash.from('0x1234...');
+const salt = Bytes32('0x1234...');
 const initCode = Bytecode.from('0x6080...');
 const create2Addr = Address.calculateCreate2Address(deployer, salt, initCode);
 
@@ -319,8 +319,8 @@ Importing from `@tevm/voltaire/Address` instead of the main entry point enables 
 
 ## Related
 
-- [Hash](/primitives/hash) - Keccak256 hashing for address derivation and verification
-- [Hex](/primitives/hex) - Hex string encoding with EIP-55 checksum support
+- [Keccak256](/crypto/keccak256) - Keccak256 hashing for address derivation and verification
+- [Bytes](/primitives/bytes) - Fixed-size byte types including Bytes32 for salts
 - [Uint](/primitives/uint) - Unsigned integer types for address arithmetic
 
 ## Specification References

@@ -33,70 +33,134 @@ Ethereum uses the original Keccak-256 algorithm (pre-NIST), NOT the finalized SH
 
 ## Implementation Variants
 
-Voltaire provides multiple Keccak256 implementations optimized for different environments:
+Voltaire provides four Keccak256 implementations, each optimized for different use cases:
 
-### Default (Pure TypeScript)
-Uses @noble/hashes for broad compatibility and zero native dependencies.
+### 1. Default (Pure TypeScript)
+Uses @noble/hashes - zero native dependencies, maximum compatibility.
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
-const hash = Keccak256.hash(data); // Pure JS, ~100-200 MB/s
+const hash = Keccak256.hash(data);
+// Pure TypeScript, ~100-200 MB/s
+// Works everywhere: browsers, Node.js, Deno, Bun, edge workers
 ```
 
-### WASM (Unified)
-Compiled from Zig via unified loader. Size-optimized ReleaseSmall build.
+**When to use:**
+- Universal compatibility required
+- No build complexity
+- Default choice for most applications
+- Trust in @noble/hashes battle-tested implementation
+
+### 2. WASM Implementation
+Compiled from Zig's stdlib Keccak256 via unified loader (ReleaseSmall).
 
 ```typescript
 import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 await Keccak256Wasm.init();
-const hash = Keccak256Wasm.hash(data); // ~200-400 MB/s
+const hash = Keccak256Wasm.hash(data);
+// WASM, ~200-400 MB/s
+// 2-4x faster than pure JS
 ```
 
-### Standalone WASM
-Minimal 3KB WASM module with only Keccak256.
+**When to use:**
+- Need better performance than pure JS
+- Browser/edge environments
+- Acceptable init() overhead
+- Bundled as part of Voltaire primitives.wasm
+
+### 3. Native Assembly (keccak-asm)
+Platform-optimized assembly via keccak-asm Rust crate with FFI bindings.
 
 ```typescript
-import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+import { Keccak256Native } from '@tevm/voltaire/native/crypto/keccak256';
 
-await Keccak256Standalone.init();
-const hash = Keccak256Standalone.hash(data); // ~200-400 MB/s, tiny bundle
+const hash = Keccak256Native.hash(data);
+// Assembly-optimized, ~500-1000 MB/s
+// x86-64: AVX2/SSE2 instructions
+// ARM: NEON instructions
 ```
 
-### Native/Hardware Accelerated
-Assembly-optimized implementation via keccak-asm Rust crate for x86-64 and ARM.
+**When to use:**
+- Node.js, Bun, or Deno with native modules
+- Maximum throughput required
+- Processing large volumes of data
+- 3-10x faster than pure JavaScript
+
+### 4. Hardware Acceleration (SIMD/AVX2)
+SIMD-accelerated implementation using AVX2 vector operations (x86-64 only).
 
 ```typescript
-// When using native FFI bindings (Node.js, Bun, Deno)
-import { Keccak256 } from '@tevm/voltaire/native/crypto/keccak256';
+import { Keccak256Accel } from '@tevm/voltaire/native/crypto/keccak256-accel';
 
-const hash = Keccak256.hash(data); // ~500-1000 MB/s
+const hash = Keccak256Accel.hash(data);
+// SIMD/AVX2, ~800+ MB/s (x86-64 only)
+// Auto-detects CPU features, falls back to software
 ```
 
-See [Implementation Guide](/crypto/keccak256/implementations) for detailed comparison and selection criteria.
+**When to use:**
+- x86-64 processors with AVX2 support
+- EVM node implementations
+- High-throughput blockchain applications
+- CPU feature detection at runtime
+
+## Implementation Selection Guide
+
+Choose the right implementation based on your environment and performance needs:
+
+| Environment | Recommended | Why |
+|------------|-------------|-----|
+| **Browser** | Keccak256 (default) | Universal compatibility, zero setup |
+| **Browser + Performance** | Keccak256Wasm | 2-4x faster, small bundle overhead |
+| **Node.js/Bun/Deno** | Keccak256Native | 3-10x faster with native FFI |
+| **High-throughput** | Keccak256Accel | Maximum performance on x86-64 AVX2 |
+| **Edge Workers** | Keccak256 or Keccak256Wasm | Depends on WASM support |
+| **Universal Library** | Keccak256 (default) | Works everywhere |
+
+### Performance Comparison
+
+Typical throughput on modern hardware (M1 Pro, i7-12700K):
+
+| Implementation | Small (32B) | Medium (256B) | Large (4KB) | Platform |
+|---------------|-------------|---------------|-------------|----------|
+| **Keccak256** (noble) | ~150 MB/s | ~180 MB/s | ~200 MB/s | Universal |
+| **Keccak256Wasm** | ~300 MB/s | ~350 MB/s | ~400 MB/s | WASM |
+| **Keccak256Native** | ~600 MB/s | ~800 MB/s | ~1000 MB/s | x86-64/ARM |
+| **Keccak256Accel** | ~700 MB/s | ~850 MB/s | ~1100 MB/s | x86-64 AVX2 |
+
+*Benchmarks vary by CPU, input size, and runtime environment.*
 
 ## Dependency Injection Pattern
 
 All implementations share the same data-first API, enabling runtime algorithm selection:
 
 ```typescript
-// Choose implementation at import time
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';       // default
-import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm'; // WASM
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+import { Keccak256Native } from '@tevm/voltaire/native/crypto/keccak256';
 
-// Both have identical API
+// All have identical API
 const hash1 = Keccak256.hash(data);
 const hash2 = Keccak256Wasm.hash(data);
+const hash3 = Keccak256Native.hash(data);
 
-// Or inject dynamically
-function processData(algorithm: typeof Keccak256, data: Uint8Array) {
-  return algorithm.hash(data);
+// Dynamic selection based on environment
+function selectImplementation() {
+  // Check for native FFI support
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    return Keccak256Native;
+  }
+  // Check for WASM support
+  if (typeof WebAssembly !== 'undefined') {
+    return Keccak256Wasm;
+  }
+  // Fallback to pure JS
+  return Keccak256;
 }
 
-// Select based on environment
-const impl = typeof WebAssembly !== 'undefined' ? Keccak256Wasm : Keccak256;
-const result = processData(impl, data);
+const impl = selectImplementation();
+const result = impl.hash(data);
 ```
 
 ## Quick Start
