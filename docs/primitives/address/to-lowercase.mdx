@@ -37,9 +37,9 @@ console.log(lower === hex)  // true
 ```
 
 **Type difference:**
-- `toLowercase()` returns branded `Lowercase` type with `__lowercase: true` tag
-- `toHex()` returns generic `BrandedHex` type
-- Both are `Uint8Array` subclasses at runtime - type tags exist only at compile time
+- `toLowercase()` returns branded `Lowercase` type extending `Hex.Sized<20>` with `__lowercase: true` property
+- `toHex()` returns generic hex string
+- Both are strings at runtime - type tags exist only at compile time
 
 **Use `toLowercase()` when:**
 - You want explicit type safety for lowercase addresses

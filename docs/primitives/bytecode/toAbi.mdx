@@ -84,7 +84,9 @@ The PUSH32 value before a LOG instruction is extracted as an event topic hash.
 ## Return Type
 
 ```typescript
-type BrandedAbi = ReadonlyArray<ABIItem> & { readonly __tag: "Abi" };
+import type { brand } from '@tevm/voltaire/brand';
+
+type BrandedAbi = ReadonlyArray<ABIItem> & { readonly [brand]: "Abi" };
 
 type ABIItem = ABIFunction | ABIEvent;
 

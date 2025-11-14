@@ -46,12 +46,12 @@ const key = Bytes16('0x' + 'ab'.repeat(16));
 
 ## Type Safety
 
-Bytes16 uses TypeScript branding for compile-time safety:
+Bytes16 uses Symbol branding for compile-time safety:
 
 ```typescript
 type BrandedBytes16 = Uint8Array & {
-  readonly [brand]: "Bytes16";
-  readonly size: 16;
+  readonly [Symbol.for("Bytes16")]: true;
+  readonly length: 16;
 };
 ```
 
@@ -64,6 +64,28 @@ const bytes32 = Bytes32('0x' + '12'.repeat(32));
 // Type error: cannot assign Bytes32 to Bytes16
 const wrong: Bytes16.BrandedBytes16 = bytes32;
 ```
+
+### Hex Variants
+
+Bytes16 also supports hex string variants with case flags:
+
+```typescript
+// Lowercase hex (default)
+type HexBytes16 = string & {
+  readonly [Symbol.for("HexBytes16")]: true;
+  readonly length: 34; // "0x" + 32 hex chars
+  readonly lowercase: true;
+};
+
+// Uppercase hex
+type HexBytes16Upper = string & {
+  readonly [Symbol.for("HexBytes16")]: true;
+  readonly length: 34;
+  readonly uppercase: true;
+};
+```
+
+For generic byte concepts, see [Bytes](/primitives/bytes).
 
 ## Constructors
 

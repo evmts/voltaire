@@ -20,14 +20,15 @@ EIP-55 checksummed address type providing mixed-case format for display and inte
 ## Type Definition
 
 ```typescript
-type Checksummed = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __checksummed: true
 }
 ```
 
-Branded string with EIP-55 mixed-case checksum.
+Branded string with EIP-55 mixed-case checksum extending `Hex.Sized<20>`.
 
 Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L8)
 

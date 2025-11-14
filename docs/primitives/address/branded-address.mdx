@@ -19,15 +19,66 @@ Primary benefit: When using tree-shakeable imports and avoiding methods that use
 
 ## Type Definition
 
+### BrandedAddress (Uint8Array)
+
+The core Address type is a branded 20-byte `Uint8Array`:
+
 ```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
 export type BrandedAddress = Uint8Array & {
-  readonly __tag: "Address"
-}
+  readonly [brand]: "Address";
+};
 ```
 
-Runtime-validated 20-byte `Uint8Array`. [Brand](/getting-started/branded-types) prevents accidental mixing with other Uint8Arrays.
+**Properties:**
+- **Size:** Always 20 bytes (160 bits)
+- **Branding:** Uses [Symbol branding](/getting-started/branded-types) via `brand` symbol
+- **Conceptual relation:** Represents a fixed 20-byte value (conceptually like `BrandedBytes<20>`)
+- **Type safety:** Prevents accidental mixing with other Uint8Arrays
 
-Defined in: [primitives/Address/BrandedAddress/BrandedAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js)
+Defined in: [primitives/Address/BrandedAddress/BrandedAddress.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.ts)
+
+Related: [Bytes32](/primitives/bytes/bytes32) - Similar pattern for 32-byte fixed values
+
+### HexAddress Variants
+
+Address also provides hex string variants that extend `Hex.Sized<20>`:
+
+```typescript
+import type { Sized } from '@tevm/voltaire/primitives/Hex';
+import type { brand } from '@tevm/voltaire/brand';
+
+// Base hex address (Hex.Sized<20>)
+type HexAddress = Sized<20> & {
+  readonly [brand]: "Hex";
+  readonly size: 20;
+};
+
+// EIP-55 checksummed address
+type ChecksumAddress = HexAddress & {
+  readonly checksum: true;
+};
+
+// Lowercase hex address
+type LowercaseAddress = HexAddress & {
+  readonly lowercase: true;
+};
+
+// Uppercase hex address
+type UppercaseAddress = HexAddress & {
+  readonly uppercase: true;
+};
+```
+
+**Hex variants:**
+- **Base `Hex.Sized<20>`:** 20-byte hex string type from Hex primitive using symbol branding
+- **ChecksumAddress:** EIP-55 checksummed (mixed case for integrity)
+- **LowercaseAddress:** All lowercase hex (e.g., `"0x742d35cc..."`)
+- **UppercaseAddress:** All uppercase hex (e.g., `"0x742D35CC..."`)
+- **Symbol branding:** Uses `brand` symbol (`Symbol.for("type")`) for nominal typing
+
+See [Hex](/primitives/hex) for details on sized hex strings.
 
 ## Available Functions
 
@@ -146,12 +197,16 @@ import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
 
-const checksummed = ChecksumAddress(addr) // uses keccak256
-const lowercase = LowercaseAddress(addr)
-const uppercase = UppercaseAddress(addr)
+// Create hex string variants from BrandedAddress (Uint8Array)
+const checksummed = ChecksumAddress.from(addr) // uses keccak256
+const lowercase = LowercaseAddress.from(addr)
+const uppercase = UppercaseAddress.from(addr)
 
+// Validate hex string checksum
 ChecksumAddress.isValid("0x742d35Cc...") // uses keccak256
 ```
+
+These functions convert from `BrandedAddress` (Uint8Array) to hex string variants (`ChecksumAddress`, `LowercaseAddress`, `UppercaseAddress`).
 
 See [Variants](/primitives/address/variants) for details.
 
@@ -272,6 +327,8 @@ const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 ## Interoperability
 
+### BrandedAddress and Address Class
+
 BrandedAddress and Address are fully compatible:
 
 ```typescript
@@ -288,6 +345,28 @@ const branded: BrandedAddress = addr
 const checksummed = Address.toChecksummed(branded) // ✓ works
 ```
 
+### BrandedAddress and Hex Variants
+
+BrandedAddress (Uint8Array) and hex string variants are separate types with conversion functions:
+
+```typescript
+import type { BrandedAddress } from '@tevm/voltaire/Address'
+import type { ChecksumAddress, LowercaseAddress } from '@tevm/voltaire/Address'
+
+// BrandedAddress = Uint8Array & { [brand]: "Address" }
+const addr: BrandedAddress = Address.from("0x742d35Cc...")
+
+// ChecksumAddress = Hex.Sized<20> & { __variant: 'Address', [Symbol.for('checksum')]: boolean }
+const checksumHex: ChecksumAddress = ChecksumAddress.from(addr)
+
+// Convert between them
+const backToBytes: BrandedAddress = Address.from(checksumHex) // hex string → Uint8Array
+```
+
+**Type relationship:**
+- **BrandedAddress:** 20-byte Uint8Array (runtime data)
+- **HexAddress variants:** Hex.Sized<20> strings (display/serialization)
+
 ## Constants
 
 ```typescript
@@ -299,6 +378,7 @@ HEX_SIZE  // 42 (characters, including "0x")
 
 ## Related
 
+**Address Documentation:**
 - [Address](/primitives/address) - Main Address class documentation
 - [Constructors](/primitives/address/constructors) - Creating addresses
 - [Conversions](/primitives/address/conversions) - Format conversions
@@ -306,3 +386,8 @@ HEX_SIZE  // 42 (characters, including "0x")
 - [Validation](/primitives/address/validation) - Input validation
 - [Contract Addresses](/primitives/address/contract-addresses) - CREATE/CREATE2
 - [Variants](/primitives/address/variants) - Checksummed/Lowercase/Uppercase
+
+**Related Primitives:**
+- [Hex](/primitives/hex) - Hex string types (Hex.Sized<20> used by hex variants)
+- [Bytes32](/primitives/bytes/bytes32) - Similar pattern for 32-byte fixed values
+- [Bytes16](/primitives/bytes/bytes16) - Similar pattern for 16-byte fixed values

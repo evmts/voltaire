@@ -9,7 +9,9 @@ description: The most critical fixed-size type in Ethereum - 256-bit values for 
 
 ## Overview
 
-Bytes32 is a branded `Uint8Array` type representing exactly 32 bytes (256 bits). It's the most common fixed-size type in Ethereum and provides strict type safety for 256-bit values.
+Bytes32 is a branded `Uint8Array` specialization of the generic `Bytes<N>` type, representing exactly 32 bytes (256 bits). It's the most common fixed-size type in Ethereum and provides strict type safety for 256-bit values through Symbol-based branding.
+
+See the [Bytes overview](/primitives/bytes) for generic `Bytes<N>` documentation and other size specializations.
 
 ```typescript
 import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
@@ -71,16 +73,18 @@ const bytesAsHash = Bytes32.toHash(slot);
 
 ## Type Safety
 
-Bytes32 uses TypeScript branding:
+Bytes32 is a specialization of `Bytes<32>` using Symbol-based branding for compile-time type safety with zero runtime overhead:
 
 ```typescript
+import type { brand } from './brand.js';
+
 type BrandedBytes32 = Uint8Array & {
   readonly [brand]: "Bytes32";
   readonly size: 32;
 };
 ```
 
-Prevents mixing types:
+The `brand` symbol is a unique TypeScript symbol that creates nominal typing - structurally identical types are incompatible if they have different brands:
 
 ```typescript
 const bytes32 = Bytes32(42);
@@ -89,6 +93,54 @@ const bytes16 = Bytes16('0x' + '12'.repeat(16));
 // Type error: cannot assign Bytes16 to Bytes32
 const wrong: Bytes32.BrandedBytes32 = bytes16;
 ```
+
+This branding system provides:
+- **Compile-time safety** - Cannot mix different sized Bytes types
+- **Zero runtime cost** - Brand only exists in TypeScript, erased after compilation
+- **Hardcoded length** - Type includes `{ readonly size: 32 }` for static length checking
+
+## Hex String Representation
+
+For hex string representations, use the `HexBytes32` type which extends branded hex strings with size information:
+
+```typescript
+import type { HexBytes32 } from '@tevm/voltaire/primitives/Hex';
+
+// HexBytes32 is a string type with branding
+type HexBytes32 = `0x${string}` & {
+  readonly [brand]: "Hex";
+  readonly size: 32;
+};
+
+// Convert between Bytes32 and HexBytes32
+const bytes = Bytes32(42);
+const hex: HexBytes32 = Bytes32.toHex(bytes); // "0x00...002a"
+const restored = Bytes32.fromHex(hex);
+```
+
+### Case Sensitivity
+
+HexBytes32 supports case variants through additional branding:
+
+```typescript
+// Uppercase hex digits (A-F)
+type HexBytes32Uppercase = HexBytes32 & {
+  readonly [Symbol.for("uppercase")]: true;
+};
+
+// Lowercase hex digits (a-f)
+type HexBytes32Lowercase = HexBytes32 & {
+  readonly [Symbol.for("lowercase")]: true;
+};
+
+// Mixed case (EIP-55 checksummed for addresses)
+type HexBytes32Mixed = HexBytes32 & {
+  readonly [Symbol.for("uppercase")]: false;
+  readonly [Symbol.for("lowercase")]: false;
+};
+```
+
+Most Ethereum tooling uses lowercase hex by default, but uppercase is common in certain contexts (like BLS signatures).
 
 ## Constructors
 
@@ -361,8 +413,10 @@ const stateRoot = Bytes32('0x...');
 
 ## Related
 
+- [Bytes](/primitives/bytes) - Generic `Bytes<N>` type documentation
 - [Hash](/primitives/hash) - Cryptographic hashes (also 32 bytes)
 - [Bytes16](/primitives/bytes/bytes16) - 128-bit fixed-size bytes
 - [Bytes64](/primitives/bytes/bytes64) - 512-bit fixed-size bytes
+- [Hex](/primitives/hex) - Hex string types and utilities
 - [Uint](/primitives/uint) - 256-bit unsigned integers
 - [Address](/primitives/address) - 160-bit Ethereum addresses

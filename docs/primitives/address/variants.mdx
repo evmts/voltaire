@@ -14,7 +14,7 @@ Address variants provide type-safe hex strings with specific casing guarantees:
 - **Lowercase** - All lowercase hex for canonical storage
 - **Uppercase** - All uppercase hex for specific protocols
 
-Each variant is a [branded](/getting-started/branded-types) hex string type (`string & { __tag, __variant, __casing }`), not a `Uint8Array`.
+Each variant is a [branded](/getting-started/branded-types) hex string type extending `Hex.Sized<20>`, not a `Uint8Array`.
 
 ## ChecksumAddress
 
@@ -42,8 +42,9 @@ typeof checksummed // "string"
 
 **Type:**
 ```typescript
-type Checksummed = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __checksummed: true
 }
@@ -103,8 +104,9 @@ const lowercase = Address.Lowercase(addr)
 
 **Type:**
 ```typescript
-type Lowercase = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Lowercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __lowercase: true
 }
@@ -134,8 +136,9 @@ const uppercase = Address.Uppercase(addr)
 
 **Type:**
 ```typescript
-type Uppercase = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __uppercase: true
 }

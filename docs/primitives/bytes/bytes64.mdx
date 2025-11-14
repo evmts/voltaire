@@ -62,12 +62,12 @@ const signature = Bytes64('0x...');
 
 ## Type Safety
 
-Bytes64 uses TypeScript branding for compile-time safety:
+Bytes64 uses Symbol branding for compile-time safety:
 
 ```typescript
 type BrandedBytes64 = Uint8Array & {
-  readonly [brand]: "Bytes64";
-  readonly size: 64;
+  readonly [Symbol.for("Bytes64")]: true;
+  readonly length: 64;
 };
 ```
 
@@ -80,6 +80,28 @@ const bytes32 = Bytes32('0x' + '12'.repeat(32));
 // Type error: cannot assign Bytes32 to Bytes64
 const wrong: Bytes64.BrandedBytes64 = bytes32;
 ```
+
+### Hex Variants
+
+Bytes64 also supports hex string variants with case flags:
+
+```typescript
+// Lowercase hex (default)
+type HexBytes64 = string & {
+  readonly [Symbol.for("HexBytes64")]: true;
+  readonly length: 130; // "0x" + 128 hex chars
+  readonly lowercase: true;
+};
+
+// Uppercase hex
+type HexBytes64Upper = string & {
+  readonly [Symbol.for("HexBytes64")]: true;
+  readonly length: 130;
+  readonly uppercase: true;
+};
+```
+
+For generic byte concepts, see [Bytes](/primitives/bytes).
 
 ## Constructors
 

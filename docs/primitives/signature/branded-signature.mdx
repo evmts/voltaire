@@ -10,10 +10,12 @@ Branded Uint8Array type for cryptographic signatures with algorithm metadata.
 ## Type Definition
 
 ```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
 type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
 
 type BrandedSignature = Uint8Array & {
-  readonly __tag: "Signature";
+  readonly [brand]: "Signature";
   readonly algorithm: SignatureAlgorithm;
   readonly v?: number; // Recovery ID for secp256k1 (27 or 28)
 };
@@ -21,13 +23,13 @@ type BrandedSignature = Uint8Array & {
 
 ## Properties
 
-### __tag
+### brand
 
 ```typescript
-readonly __tag: "Signature"
+readonly [brand]: "Signature"
 ```
 
-Type brand for runtime type checking.
+Type brand for runtime type checking using symbol branding.
 
 **Visibility:** Non-enumerable
 **Writable:** false
@@ -97,8 +99,10 @@ Metadata: algorithm = 'ed25519'
 Properties are defined using `Object.defineProperties()`:
 
 ```typescript
+import { brand } from '@tevm/voltaire/brand';
+
 Object.defineProperties(bytes, {
-  __tag: {
+  [brand]: {
     value: "Signature",
     writable: false,
     enumerable: false,
@@ -138,7 +142,7 @@ if (Signature.is(value)) {
 
 **Checks:**
 - Is Uint8Array
-- Has `__tag === "Signature"`
+- Has `[brand] === "Signature"`
 - Has `algorithm` property
 
 ### Algorithm-Specific Checks
@@ -170,7 +174,7 @@ function isECDSA(sig: BrandedSignature): boolean {
 const sig1 = Signature.fromSecp256k1(r, s, 27);
 console.log(sig1.algorithm); // "secp256k1"
 console.log(sig1.v); // 27
-console.log(sig1.__tag); // "Signature"
+console.log(sig1[brand]); // "Signature"
 
 // P-256 without recovery ID
 const sig2 = Signature.fromP256(r, s);
@@ -207,7 +211,7 @@ if (sig.v !== undefined) {
 }
 
 // Brand check
-console.log(sig.__tag); // "Signature"
+console.log(sig[brand]); // "Signature"
 ```
 
 ### Preserving Metadata
@@ -362,7 +366,7 @@ const sig = Signature.fromSecp256k1(r, s, 27);
 // These throw in strict mode:
 sig.algorithm = 'p256'; // Error
 sig.v = 28; // Error
-sig.__tag = 'Foo'; // Error
+sig[brand] = 'Foo'; // Error
 
 // Bytes are mutable (Uint8Array behavior):
 sig[0] = 99; // Allowed (mutates signature bytes)

@@ -17,14 +17,15 @@ Branded hex string type representing lowercase addresses for canonical storage a
 
 Type definition:
 ```typescript
-type Lowercase = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Lowercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __lowercase: true
 }
 ```
 
-The `Lowercase` type is a **branded string**, not a `Uint8Array` like `BrandedAddress`.
+The `Lowercase` type is a **branded string** extending `Hex.Sized<20>`, not a `Uint8Array` like `BrandedAddress`.
 
 ## LowercaseAddress.from()
 

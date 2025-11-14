@@ -13,13 +13,25 @@ New to Ethereum addresses? Start with [Fundamentals](/primitives/address/fundame
 
 ## Overview
 
-Address is represented as a [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following data-first principles used throughout Voltaire.
+Address is a specialized [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) that extends the 20-byte (Bytes20) type with address-specific semantics, including EIP-55 mixed-case checksumming for error detection and validation.
+
+<Tabs>
+<Tab title="Type Definition">
 
 ```typescript
-export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+import type { brand } from './brand.js'
+
+export type BrandedAddress = Uint8Array & {
+  readonly [brand]: "Address"
+}
 ```
 
-Addresses use EIP-55 mixed-case checksumming for error detection. Voltaire handles checksums automatically while storing addresses as raw bytes internally to avoid case-sensitivity bugs.
+Address is a branded `Uint8Array` (20 bytes). TypeScript enforces type safety through a unique Symbol brand, preventing accidental mixing with other Uint8Arrays while maintaining zero runtime overhead.
+
+</Tab>
+</Tabs>
+
+Voltaire handles checksums automatically while storing addresses as raw bytes internally to avoid case-sensitivity bugs.
 
 ### Developer Experience
 
@@ -36,7 +48,69 @@ This makes debugging more readable than raw byte arrays while maintaining the pe
 ## Quick Start
 
 <Tabs>
+<Tab title="Basic Usage">
 
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+
+// Create from hex string
+const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// Get checksummed representation
+console.log(Address.toChecksummed(addr));
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Get lowercase hex
+console.log(Address.toHex(addr));
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Validate checksum
+console.log(Address.isValidChecksum('0x742d35Cc...'));
+// true
+```
+
+</Tab>
+<Tab title="From Public Key">
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+
+// Derive address from private key
+const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const addr = Address.fromPrivateKey(privateKey);
+
+// Or from public key coordinates
+const pubKey = Secp256k1.getPublicKey(privateKey);
+const addr2 = Address.fromPublicKey(pubKey.x, pubKey.y);
+
+console.log(Address.toChecksummed(addr));
+// "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+```
+
+</Tab>
+<Tab title="Contract Addresses">
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+import { Hash } from '@tevm/voltaire/Hash';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
+
+// Predict CREATE address
+const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const nonce = 0n;
+const createAddr = Address.calculateCreateAddress(deployer, nonce);
+
+// Predict CREATE2 address
+const salt = Hash.from('0x1234...');
+const initCode = Bytecode.from('0x6080...');
+const create2Addr = Address.calculateCreate2Address(deployer, salt, initCode);
+
+console.log(Address.toHex(createAddr));
+console.log(Address.toHex(create2Addr));
+```
+
+</Tab>
 </Tabs>
 
 ## Practical Examples
@@ -97,12 +171,14 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 <Tab title="BrandedAddress">
 
 ```typescript
+import type { brand } from './brand.js'
+
 export type BrandedAddress = Uint8Array & {
-  readonly __tag: "Address";
-};
+  readonly [brand]: "Address"
+}
 ```
 
-Main branded type. Runtime is `Uint8Array` (20 bytes), TypeScript enforces type safety.
+Main branded type. Runtime is `Uint8Array` (20 bytes), TypeScript enforces type safety through Symbol branding.
 
 </Tab>
 <Tab title="AddressLike">
@@ -114,21 +190,34 @@ type AddressLike =
   | Address
   | string
   | number
-  | bigint;
+  | bigint
 ```
 
 Union type accepting any input that can be coerced to address. Accepted by `Address.from()`.
 
 </Tab>
-<Tab title="Checksummed Variants">
+<Tab title="Hex Variants">
 
 ```typescript
-export type Checksummed = string & { readonly __tag: "Checksummed" };
-export type Lowercase = string & { readonly __tag: "Lowercase" };
-export type Uppercase = string & { readonly __tag: "Uppercase" };
+import type { Hex } from '@tevm/voltaire'
+
+export type Checksummed = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __checksummed: true
+}
+
+export type Lowercase = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __lowercase: true
+}
+
+export type Uppercase = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __uppercase: true
+}
 ```
 
-Branded string types for different hex formats. See [variants](./variants) for details.
+Branded hex string types for different address formats. See [variants](./variants) for details.
 
 </Tab>
 </Tabs>

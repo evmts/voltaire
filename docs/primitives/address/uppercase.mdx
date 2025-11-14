@@ -10,14 +10,15 @@ Branded hex string type representing an address in all uppercase format. Provide
 ## Type Definition
 
 ```typescript
-type Uppercase = string & {
-  readonly __tag: 'Hex'
+import type { Hex } from '@tevm/voltaire'
+
+type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
   readonly __uppercase: true
 }
 ```
 
-The `Uppercase` type is a branded string, not a `Uint8Array`. It guarantees:
+The `Uppercase` type is a branded string extending `Hex.Sized<20>`, not a `Uint8Array`. It guarantees:
 - Valid hex string with `0x` prefix
 - Exactly 42 characters (2 prefix + 40 hex)
 - All alphabetic hex characters (A-F) are uppercase

@@ -94,7 +94,9 @@ Type guard for branded ENS.
 ## Types
 
 ```typescript
-type BrandedEns = string & { readonly __tag: "Ens" }
+import type { brand } from '@tevm/voltaire/brand';
+
+type BrandedEns = string & { readonly [brand]: "Ens" }
 ```
 
 ## Security

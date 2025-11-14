@@ -12,7 +12,9 @@ New to bytecode? Start with [Fundamentals](/primitives/bytecode/fundamentals) fo
 [Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
 
 ```typescript
-export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
+import type { brand } from '@tevm/voltaire/brand';
+
+export type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" };
 ```
 
 ### Native Uint8Array Methods
@@ -99,12 +101,14 @@ JavaScript builtins available on all `Uint8Array` instances:
 <Tab title="BrandedBytecode">
 
 ```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
 export type BrandedBytecode = Uint8Array & {
-  readonly __tag: "Bytecode";
+  readonly [brand]: "Bytecode";
 };
 ```
 
-Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety.
+Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety with symbol branding.
 
 </Tab>
 <Tab title="BytecodeLike">
