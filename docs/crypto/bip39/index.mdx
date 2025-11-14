@@ -5,14 +5,17 @@ description: Mnemonic seed phrase generation and recovery
 
 ## Overview
 
-BIP-39 (Bitcoin Improvement Proposal 39) defines a standard for generating and using mnemonic phrases (12-24 word sequences) for deterministic wallet generation. These human-readable phrases are easier to back up and restore than raw binary seeds.
+BIP39 is a **mnemonic seed phrase standard** (Bitcoin Improvement Proposal 39) that encodes cryptographic entropy as human-readable words for deterministic wallet key generation.
 
-Key features:
-- **Human-readable**: 12-24 common English words
-- **Deterministic**: Same mnemonic always produces same seed
-- **Checksum**: Last word validates entire phrase
-- **Passphrase support**: Optional additional security layer
-- **Multi-language**: Support for multiple wordlists
+**Ethereum context:** **Wallet standard** - De facto standard for Ethereum wallets (MetaMask, Ledger, Trezor). Not part of Ethereum protocol itself, but critical for key management UX.
+
+Key operations:
+- **Generate entropy**: 128/160/192/224/256 bits of cryptographically secure randomness
+- **Entropy → mnemonic**: Convert to 12/15/18/21/24 words from BIP39 wordlist
+- **Mnemonic → seed**: Derive 512-bit seed via PBKDF2-HMAC-SHA512 (2048 iterations)
+- **Optional passphrase**: Additional security layer for plausible deniability
+
+**Implementation:** Via libwally-core (C library, audited)
 
 ## Quick Start
 
@@ -241,52 +244,68 @@ seed = PBKDF2(
 - Standardized, widely supported
 - 2048 iterations balance security vs performance
 
-## Security
+## Security Considerations
 
-### Critical Warnings
+### Critical Requirements
+
+**1. Mnemonic must be from official BIP39 wordlist**
+```typescript
+// Valid - uses official wordlist
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Invalid - custom words fail checksum
+Bip39.validateMnemonic('custom words not in wordlist'); // false
+```
+
+**2. Entropy source must be cryptographically secure**
+```typescript
+// ✅ SECURE - Uses crypto.getRandomValues()
+const mnemonic = Bip39.generateMnemonic(256);
+
+// ❌ NEVER use Math.random() or user-provided "randomness"
+const badEntropy = new Uint8Array(32).map(() => Math.floor(Math.random() * 256));
+```
+
+**3. Passphrases provide plausible deniability**
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Different passphrases = different wallets
+const wallet1 = await Bip39.mnemonicToSeed(mnemonic, 'decoy passphrase');
+const wallet2 = await Bip39.mnemonicToSeed(mnemonic, 'real passphrase');
+// wallet1 !== wallet2
+
+// Use case: Keep small balance in decoy wallet under duress
+// Real funds protected by separate passphrase
+```
+
+### Best Practices
 
 **1. Never transmit mnemonics unencrypted**
 ```typescript
-// DANGEROUS - Never do this
+// ❌ DANGEROUS
 fetch('https://api.example.com', {
   body: JSON.stringify({ mnemonic })
 });
 
-// SAFE - Only transmit seed-derived public data
+// ✅ SAFE - Only transmit public data
 const seed = await Bip39.mnemonicToSeed(mnemonic);
 const hdKey = HDWallet.fromSeed(seed);
 const publicKey = HDWallet.getPublicKey(hdKey);
 ```
 
-**2. Store mnemonics encrypted**
-```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
-
-// Encrypt before storage
-const key = await AesGcm.generateKey(256);
-const nonce = AesGcm.generateNonce();
-const encryptedMnemonic = await AesGcm.encrypt(
-  new TextEncoder().encode(mnemonic),
-  key,
-  nonce
-);
-// Store: encryptedMnemonic + nonce (never store raw mnemonic)
-```
-
-**3. Validate user-provided mnemonics**
+**2. Validate user-provided mnemonics**
 ```typescript
 function importWallet(userMnemonic: string) {
-  // Always validate before using
   if (!Bip39.validateMnemonic(userMnemonic)) {
     throw new Error('Invalid mnemonic phrase. Please check for typos.');
   }
-
   const seed = await Bip39.mnemonicToSeed(userMnemonic);
   // Proceed with seed...
 }
 ```
 
-**4. Use 24-word mnemonics for high-value wallets**
+**3. Use 24-word mnemonics for high-value wallets**
 ```typescript
 // Recommended for significant funds
 const mnemonic = Bip39.generateMnemonic(256); // 24 words = 256-bit security
@@ -295,41 +314,16 @@ const mnemonic = Bip39.generateMnemonic(256); // 24 words = 256-bit security
 const mnemonic12 = Bip39.generateMnemonic(128); // 12 words = 128-bit security
 ```
 
-**5. Never reuse mnemonics across applications**
+**4. Physical backups for cold storage**
+- Write mnemonic on paper, store in fireproof safe
+- Consider metal backups (fire/water resistant)
+- Split storage for high-value wallets
+- Verify backups by restoring test wallet
 
-Each application/purpose should have its own mnemonic:
-```typescript
-// Bad
-const mnemonic = Bip39.generateMnemonic();
-const ethWallet = createEthWallet(mnemonic);
-const btcWallet = createBtcWallet(mnemonic); // Same mnemonic
-
-// Good
-const ethMnemonic = Bip39.generateMnemonic();
-const btcMnemonic = Bip39.generateMnemonic();
-const ethWallet = createEthWallet(ethMnemonic);
-const btcWallet = createBtcWallet(btcMnemonic);
-```
-
-### Best Practices
-
-1. **Secure generation**: Use cryptographically secure randomness
-   - `Bip39.generateMnemonic()` uses `crypto.getRandomValues()`
-   - Never use `Math.random()` or user-provided "randomness"
-
-2. **Offline generation**: Generate mnemonics on air-gapped devices for cold storage
-
-3. **Physical backups**: Write mnemonic on paper, store in fireproof safe
-   - Consider metal backups (fire/water resistant)
-   - Split storage for high-value wallets
-
-4. **Verify backups**: Always verify written mnemonic by restoring a test wallet
-
-5. **Passphrases**: If using passphrases, back them up separately and securely
-
-6. **Word order matters**: Changing word order invalidates mnemonic
-
-7. **Checksum validation**: Last word is partially a checksum - validates entire phrase
+**5. Passphrase management**
+- Back up passphrases separately from mnemonic
+- **Warning:** Forgetting passphrase means **permanent loss of funds**
+- No recovery possible without correct passphrase
 
 ## Common Errors
 

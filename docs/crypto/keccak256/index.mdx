@@ -5,20 +5,90 @@ description: Ethereum's primary hashing algorithm for addresses, topics, and fun
 
 # Keccak256
 
-Ethereum's primary cryptographic hash function (SHA-3 variant)
+Keccak256 is a **cryptographic one-way hash function** based on the sponge construction that produces a fixed 32-byte digest from arbitrary-length input.
 
 ## Overview
 
-Keccak256 is the cryptographic hash function used throughout Ethereum. It produces a 32-byte (256-bit) digest from arbitrary-length input data. While standardized SHA-3 uses different padding than Keccak, Ethereum adopted the original Keccak specification before SHA-3 finalization.
+**Mainnet-critical algorithm** - Used in Ethereum execution layer for transaction hashing, address derivation (last 20 bytes of hash), function selectors (first 4 bytes), event topics, and Merkle Patricia tree state roots.
 
-Keccak256 is fundamental to Ethereum's security model, used for:
+Keccak256 is fundamental to Ethereum's security model:
 - **Address derivation**: Computing Ethereum addresses from public keys (last 20 bytes of Keccak256(publicKey))
 - **Function selectors**: First 4 bytes of Keccak256(signature) identify contract methods
 - **Event topics**: Keccak256(eventSignature) creates indexed event identifiers
-- **Merkle trees**: Hashing transaction and state trie nodes
+- **Merkle Patricia trees**: Hashing transaction and state trie nodes
 - **Contract addresses**: CREATE and CREATE2 address calculation
 
-The implementation uses @noble/hashes in TypeScript and hardware-accelerated assembly (keccak-asm) in Zig for optimal performance.
+<Warning title="SHA-3 vs Keccak Distinction">
+Ethereum uses the original Keccak-256 algorithm (pre-NIST), NOT the finalized SHA-3 standard. They differ in padding scheme: SHA-3 uses `0x06` padding while Keccak uses `0x01`. Do not use SHA-3 libraries for Ethereum - they will produce incorrect results. Use Keccak-256 specifically.
+</Warning>
+
+## Implementation Variants
+
+Voltaire provides multiple Keccak256 implementations optimized for different environments:
+
+### Default (Pure TypeScript)
+Uses @noble/hashes for broad compatibility and zero native dependencies.
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+const hash = Keccak256.hash(data); // Pure JS, ~100-200 MB/s
+```
+
+### WASM (Unified)
+Compiled from Zig via unified loader. Size-optimized ReleaseSmall build.
+
+```typescript
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+await Keccak256Wasm.init();
+const hash = Keccak256Wasm.hash(data); // ~200-400 MB/s
+```
+
+### Standalone WASM
+Minimal 3KB WASM module with only Keccak256.
+
+```typescript
+import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+
+await Keccak256Standalone.init();
+const hash = Keccak256Standalone.hash(data); // ~200-400 MB/s, tiny bundle
+```
+
+### Native/Hardware Accelerated
+Assembly-optimized implementation via keccak-asm Rust crate for x86-64 and ARM.
+
+```typescript
+// When using native FFI bindings (Node.js, Bun, Deno)
+import { Keccak256 } from '@tevm/voltaire/native/crypto/keccak256';
+
+const hash = Keccak256.hash(data); // ~500-1000 MB/s
+```
+
+See [Implementation Guide](/crypto/keccak256/implementations) for detailed comparison and selection criteria.
+
+## Dependency Injection Pattern
+
+All implementations share the same data-first API, enabling runtime algorithm selection:
+
+```typescript
+// Choose implementation at import time
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';       // default
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm'; // WASM
+
+// Both have identical API
+const hash1 = Keccak256.hash(data);
+const hash2 = Keccak256Wasm.hash(data);
+
+// Or inject dynamically
+function processData(algorithm: typeof Keccak256, data: Uint8Array) {
+  return algorithm.hash(data);
+}
+
+// Select based on environment
+const impl = typeof WebAssembly !== 'undefined' ? Keccak256Wasm : Keccak256;
+const result = processData(impl, data);
+```
 
 ## Quick Start
 
@@ -311,34 +381,28 @@ Given a hash output, finding an input that produces that hash requires ~2^256 op
 Given an input and its hash, finding a different input with the same hash requires ~2^256 operations.
 
 ### Ethereum-Specific Notes
-- **Not SHA-3**: Ethereum uses the original Keccak specification, which differs from finalized SHA-3 in padding
 - **Deterministic**: Same input always produces same output
 - **One-way**: Hash output cannot be reversed to recover input
 - **Avalanche effect**: Small input changes cause large output changes
-
-<Warning title="SHA-3 vs Keccak">
-Ethereum uses the original Keccak-256 algorithm, NOT NIST's finalized SHA-3. They differ in padding scheme. Do not use SHA-3 libraries for Ethereum - use Keccak-256 specifically.
-</Warning>
+- **Constant-time**: Implementation avoids timing side-channels
 
 ## Performance
 
-### Hardware Acceleration
-- **TypeScript**: Uses @noble/hashes (pure JS, constant-time)
-- **Zig/Native**: Uses keccak-asm with optimized assembly for x86-64 and ARM
-- **WASM**: Available via keccak256.wasm.ts for browser environments
+### Performance Comparison
+Typical throughput on modern hardware (varies by platform and CPU):
 
-### Benchmarks
-Typical performance (varies by platform):
-- Native (Zig): ~500-1000 MB/s
-- WASM: ~200-400 MB/s
-- Pure JS: ~100-200 MB/s
+| Implementation | Throughput | Use Case |
+|---------------|-----------|----------|
+| Native/Assembly | ~500-1000 MB/s | Node.js/Bun/Deno with FFI |
+| WASM (Unified/Standalone) | ~200-400 MB/s | Browsers, edge workers |
+| Pure JS (@noble) | ~100-200 MB/s | Universal compatibility |
 
-Hardware acceleration provides 3-10x speedup over pure JavaScript depending on platform.
+Hardware acceleration provides 3-10x speedup over pure JavaScript. WASM offers 2-4x improvement with broader compatibility than native bindings.
 
 ## Implementation Details
 
-### TypeScript Implementation
-Uses @noble/hashes pure TypeScript Keccak-256 implementation:
+### Pure TypeScript (Default)
+Uses @noble/hashes Keccak-256 implementation:
 ```typescript
 import { keccak_256 } from "@noble/hashes/sha3.js";
 
@@ -347,13 +411,59 @@ export function hash(data: Uint8Array): BrandedHash {
 }
 ```
 
-#### WASM
-Available via `keccak256.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
+**Characteristics:**
+- Zero native dependencies
+- Constant-time implementation
+- Runs everywhere (Node.js, browsers, Deno, Bun, edge)
+- ~100-200 MB/s throughput
+
+### WASM Variants
+Compiled from Zig's stdlib Keccak-256 implementation.
+
+**Unified WASM** (`keccak256.wasm`):
+- Part of main primitives.wasm bundle
+- Includes all Voltaire primitives and crypto
+- Requires init() before use
+
+**Standalone WASM** (`keccak256.standalone`):
+- Only Keccak-256 implementation
+- ~3KB bundle size
+- Ideal for minimal deployments
+- Independent memory management
 
 ```typescript
+// Unified
 import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 await Keccak256Wasm.init();
 const hash = Keccak256Wasm.hash(data);
+
+// Standalone
+import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+await Keccak256Standalone.init();
+const hash = Keccak256Standalone.hash(data);
+```
+
+### Native/Assembly
+Uses keccak-asm Rust crate with platform-optimized assembly.
+
+**Characteristics:**
+- x86-64: AVX2/SSE2 instructions
+- ARM: NEON instructions
+- ~500-1000 MB/s throughput
+- Requires FFI bindings (Node.js, Bun, Deno native modules)
+
+Implementation in Zig (`keccak_asm.zig`):
+```zig
+pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
+    if (builtin.target.cpu.arch == .wasm32) {
+        // WASM: use standard library
+        std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
+        return;
+    }
+    // Native: use assembly-optimized C wrapper
+    const result = c.keccak256(data.ptr, data.len, out_hash, 32);
+    try keccakResultToError(result);
+}
 ```
 
 ## Related

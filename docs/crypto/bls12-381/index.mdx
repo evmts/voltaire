@@ -1,15 +1,26 @@
 ---
 title: BLS12-381
-description: Pairing-friendly elliptic curve for Ethereum 2.0 consensus, signature aggregation, and EIP-2537 precompiles
+description: Consensus-layer-only pairing-friendly elliptic curve for Beacon Chain validator signatures (NOT for application development)
 ---
 
 # BLS12-381
 
-Pairing-friendly elliptic curve designed for Ethereum 2.0 consensus layer signatures, efficient signature aggregation, and polynomial commitments. BLS12-381 provides 128-bit security with optimal performance for blockchain applications.
+BLS12-381 is a **pairing-friendly elliptic curve** at the 128-bit security level, designed for BLS (Boneh-Lynn-Shacham) signature aggregation in proof-of-stake consensus systems.
 
 ## Overview
 
+**Consensus layer only** - Used exclusively in Ethereum's Beacon Chain for validator signatures. NOT available in execution layer (no EVM precompiles on mainnet, only L2s). Signature aggregation reduces bandwidth from ~100MB to ~1MB per epoch.
+
 BLS12-381 is a Barreto-Lynn-Scott pairing-friendly curve specifically designed for blockchain use cases requiring signature aggregation and zero-knowledge proofs. Named after its designers and 381-bit prime field, it has become the standard for Ethereum's proof-of-stake consensus.
+
+### Who Should Use This?
+
+**Consensus Client Developers**: Building Ethereum consensus clients (Prysm, Lighthouse, Teku, Nimbus)
+
+**NOT for**:
+- Smart contract developers (use [BN254](/crypto/bn254) for zkSNARKs)
+- DApp developers (use execution layer primitives: secp256k1, keccak256)
+- Most application developers (consensus layer is abstracted away)
 
 ### Why BLS12-381?
 
@@ -23,11 +34,11 @@ BLS12-381 is a Barreto-Lynn-Scott pairing-friendly curve specifically designed f
 
 ### Ethereum Use Cases
 
-- **Validator Signatures**: Aggregate thousands of validator signatures into 96 bytes
-- **Sync Committees**: Light client proofs with compact signature aggregation
-- **Cross-Chain Bridges**: Trustless interoperability with zkSNARK integration
-- **Polynomial Commitments**: KZG commitments for data availability (EIP-4844)
-- **Future DeFi**: Privacy-preserving protocols and zero-knowledge proofs
+- **Validator Signatures**: Aggregate thousands of validator signatures into 96 bytes (Beacon Chain only)
+- **Sync Committees**: Light client proofs with compact signature aggregation (consensus layer)
+- **Attestation Aggregation**: Reduce consensus message bandwidth by 99%
+- **NOT for Smart Contracts**: Use BN254 instead for application-layer zkSNARKs and DeFi
+- **NOT for DApp Development**: Consensus client development only
 
 ## Mathematical Foundation
 
@@ -73,32 +84,30 @@ r = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 e(P1, Q1) · e(P2, Q2) · ... · e(Pn, Qn) = 1
 ```
 
-## Quick Start
+## Implementation Details
 
-```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+<Warning>
+**NOT for Application Development** - BLS12-381 is consensus-layer-only infrastructure. Most developers will never directly use this. For smart contract zkSNARKs and privacy-preserving DeFi, use [BN254](/crypto/bn254) instead.
+</Warning>
 
-// G1 point addition (signatures)
-const g1Point1 = Hex.toBytes('0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb');
-const g1Point2 = Hex.toBytes('0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1');
-const g1Input = new Uint8Array([...g1Point1, new Uint8Array(80), ...g1Point2, new Uint8Array(80)]);  // 256 bytes padded
-const g1Output = new Uint8Array(128);
-await bls12_381.g1Add(g1Input, g1Output);
+### Access & Availability
 
-// G2 scalar multiplication (public keys)
-const g2Point = Hex.toBytes('0x024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8');
-const scalar = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000002');
-const g2Input = new Uint8Array([...g2Point, new Uint8Array(224), ...scalar]);  // 288 bytes
-const g2Output = new Uint8Array(256);
-await bls12_381.g2Mul(g2Input, g2Output);
+**Native C ONLY**: Via libblst library (production-grade, audited by Trail of Bits and NCC Group)
 
-// Pairing check (signature verification)
-const pairingInput = new Uint8Array([...g1Point1, new Uint8Array(80), ...g2Point, new Uint8Array(224)]);  // Pairs
-const pairingOutput = Bytes32();
-await bls12_381.pairing(pairingInput, pairingOutput);
+**NO JavaScript/TypeScript interface**: Consensus layer operations, not exposed to application tier
 
-// Result: pairingOutput[31] === 0x01 means verification passed
-```
+**NO WASM**: Not needed for application development - used exclusively by consensus client implementations
+
+**Accessible via**: Native Zig bindings only, for consensus client development (Prysm, Lighthouse, etc.)
+
+### Key Operations
+
+When building consensus clients:
+
+- **G1 point operations**: Validator public keys (48 bytes compressed)
+- **G2 point operations**: BLS signatures (96 bytes compressed)
+- **Pairing check**: Signature verification using bilinear pairing
+- **Multi-signature aggregation**: Combine thousands of signatures into one
 
 ## Documentation
 
@@ -149,23 +158,23 @@ await bls12_381.pairing(pairingInput, pairingOutput);
 
 ## Implementation Status
 
-### Native (Production)
+### Native (Production - Consensus Clients Only)
 
 **Library**: BLST (Supranational)
 - Audited by Trail of Bits, NCC Group
 - Assembly-optimized for x86_64, ARM64
 - Constant-time, side-channel resistant
-- Used in all major Ethereum clients
+- Used in all major Ethereum consensus clients (Prysm, Lighthouse, Teku, Nimbus)
 
 **Location**: `lib/blst/`
 
-### WASM (Limited)
+**Access**: Native Zig bindings only - NO JavaScript/TypeScript API
 
-**Status**: Not supported (BLST requires native compilation)
+### WASM
 
-**Alternatives**:
-- @noble/curves (pure TypeScript, ~10x slower)
-- Stub implementation (returns errors)
+**Status**: Not available (not needed for application development)
+
+**Rationale**: BLS12-381 is consensus-layer infrastructure. Application developers use execution layer primitives (secp256k1, keccak256) or BN254 for zkSNARKs.
 
 ## Security Level
 
@@ -180,18 +189,24 @@ await bls12_381.pairing(pairingInput, pairingOutput);
 
 ## EIP-2537 Precompiles
 
-**Status**: Proposed (pending activation)
+<Note>
+**NOT on Mainnet** - Proposed BLS12-381 precompiles for EVM, but NOT activated on mainnet yet. Some L2s may implement them for zkRollup verification.
+</Note>
 
-**Precompile Addresses** (0x0b - 0x13):
+**Status**: Proposed (pending mainnet activation)
+
+**Precompile Addresses** (0x0b - 0x13, if activated):
 - G1 operations: ADD, MUL, MSM
 - G2 operations: ADD, MUL, MSM
 - Pairing check
 - Hash-to-curve mappings
 
-**Gas Costs**:
+**Gas Costs** (proposed):
 - G1 addition: 500 gas
 - Pairing base: 115,000 gas
 - Pairing per pair: 23,000 gas
+
+**Current Reality**: Only available on consensus layer (Beacon Chain). For execution layer zkSNARKs, use [BN254 precompiles](/precompiles/bn254) (0x06-0x08) which ARE on mainnet.
 
 [See full precompile documentation →](./precompiles)
 
@@ -214,9 +229,10 @@ await bls12_381.pairing(pairingInput, pairingOutput);
 
 ## Related
 
-- [KZG Commitments](/crypto/kzg) - Polynomial commitments using BLS12-381
-- [BN254](/crypto/bn254) - Alternative pairing curve (zkSNARKs)
-- [Precompiles: BLS12-381](/precompiles/bls12-381) - EIP-2537 implementation
+- [KZG Commitments](/crypto/kzg) - Polynomial commitments using BLS12-381 (consensus layer, EIP-4844)
+- [BN254](/crypto/bn254) - **USE THIS** for execution layer zkSNARKs and smart contracts
+- [secp256k1](/crypto/secp256k1) - Execution layer transaction signatures
+- [Precompiles: BLS12-381](/precompiles/bls12-381) - EIP-2537 implementation (NOT on mainnet)
 
 ## References
 

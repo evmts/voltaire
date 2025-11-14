@@ -5,11 +5,13 @@ description: Polynomial commitments for EIP-4844 blob transactions, Proto-Danksh
 
 # KZG Commitments
 
-Kate-Zaverucha-Goldberg (KZG) polynomial commitments enable Ethereum's EIP-4844 blob transactions, reducing L2 costs by 10-100x through efficient data availability.
+KZG (Kate-Zaverucha-Goldberg) is a polynomial commitment scheme using pairings over the BLS12-381 elliptic curve, enabling succinct proofs of polynomial evaluations.
+
+**Mainnet-critical algorithm (post-Dencun)** - Core primitive for EIP-4844 blob transactions, enabling proto-danksharding and L2 data availability scaling.
 
 ## Overview
 
-KZG commitments allow rollups to post large data blobs (128 KB) as tiny commitments (48 bytes) on-chain. Validators can verify data availability without storing full blobs, enabling Proto-Danksharding.
+KZG commitments allow rollups to post large data blobs (~126 KB) as tiny commitments (48 bytes) on-chain. Validators can verify data availability without storing full blobs, enabling Proto-Danksharding and reducing L2 costs by 100-200x.
 
 ### Why KZG for Ethereum?
 
@@ -18,7 +20,7 @@ KZG commitments allow rollups to post large data blobs (128 KB) as tiny commitme
 **Impact**: Rollup costs reduced from ~$1-5 to ~$0.01-0.10 per transaction
 
 **Key Properties**:
-- **Succinct**: 48-byte commitment for 128 KB blob
+- **Succinct**: 48-byte commitment for ~126 KB blob (4096 field elements)
 - **Binding**: Cannot change blob after commitment
 - **Verifiable**: Prove `p(z) = y` at any point
 - **Batch-friendly**: Verify multiple proofs efficiently
@@ -46,12 +48,27 @@ e(C - [y]₁, [1]₂) = e(π, [τ]₂ - [z]₂)
 
 ### Trusted Setup
 
+**Ethereum KZG Ceremony**: Multi-party computation generating trusted setup parameters
+
 **τ (tau)**: Secret value from MPC ceremony
 - 140,000+ participants (Ethereum KZG ceremony 2023)
 - Safe if ANY participant destroyed their secret
 - Powers of τ precomputed in G1 and G2
 
+**Security Assumption**: Soundness relies on at least one honest participant who destroyed their secret contribution. If all participants colluded, they could create false proofs. However, with 140,000+ participants, this scenario is cryptographically impractical.
+
 **Setup Size**: ~1 MB (4096 G1 points + 65 G2 points)
+
+## Implementation Details
+
+**Native C Only**: KZG operations via c-kzg-4844 library (trusted setup required)
+
+**WASM Not Supported**: WASM target returns `error.NotSupported` due to C library dependencies. KZG is only available in native environments.
+
+**Import**:
+```typescript
+import { KZG } from '@tevm/voltaire/crypto/KZG';
+```
 
 ## Quick Start
 
@@ -61,24 +78,24 @@ e(C - [y]₁, [1]₂) = e(π, [τ]₂ - [z]₂)
 ```typescript
 import { KZG } from '@tevm/voltaire/crypto/KZG';
 
-// Load trusted setup (once)
+// Load trusted setup (once, required before operations)
 KZG.loadTrustedSetup();
 
-// Create blob (128 KB)
+// Create blob (131,072 bytes = 4096 field elements × 32 bytes)
 const blob = new Uint8Array(131072);
 // ... fill with rollup data
 
-// Generate commitment
+// blobToKzgCommitment(blob) → 48-byte commitment
 const commitment = KZG.blobToKzgCommitment(blob);
 
-// Create proof for evaluation at z
+// computeKzgProof(blob, z) → proof at evaluation point
 const z = randomFieldElement();
 const { proof, y } = KZG.computeKzgProof(blob, z);
 
-// Verify proof
+// verifyKzgProof(commitment, z, y, proof) → boolean
 const valid = KZG.verifyKzgProof(commitment, z, y, proof);
 
-// Batch verification (EIP-4844)
+// verifyBlobKzgProofBatch(blobs[], commitments[], proofs[]) → boolean
 const batchValid = KZG.verifyBlobKzgProofBatch(
   blobs, commitments, proofs
 );
@@ -148,9 +165,11 @@ const batchValid = verifyBatch(blobs, commitments, proofs);
 
 ### Blob Format
 
-**Size**: 131,072 bytes (128 KB exactly)
+**Size**: 131,072 bytes (~126 KB)
 **Structure**: 4,096 field elements × 32 bytes
 **Constraint**: Each element < BLS12-381 scalar field modulus
+
+**Note**: While often described as "128 KB", the actual size is 131,072 bytes (128 × 1024), approximately 126 KB in decimal.
 
 ```typescript
 interface Blob {
@@ -185,11 +204,13 @@ interface BlobTransaction {
 
 ### Blob Lifecycle
 
-1. **Submission**: Rollup creates blob transaction
+1. **Submission**: Rollup creates blob transaction with KZG commitments
 2. **Inclusion**: Block proposer includes in block
-3. **Verification**: Nodes verify KZG proofs
-4. **Availability**: Blobs available for 18 days
-5. **Pruning**: After 18 days, blobs deleted (commitments remain)
+3. **Verification**: Nodes verify KZG proofs ensure commitment correctness
+4. **Availability**: Blobs available for 18 days (commitments enable verification without full blob download)
+5. **Pruning**: After 18 days, blobs deleted (commitments remain on-chain permanently)
+
+**Mainnet Deployment**: Dencun hard fork (March 2024)
 
 ## Point Evaluation Precompile
 
@@ -227,14 +248,18 @@ interface PointEvaluationInput {
 - Error handling
 - Memory management
 
-**WASM**: Not supported (C library requires native)
+**Platform Support**:
+- **Native**: Full support via c-kzg-4844 C library
+- **WASM**: NOT SUPPORTED - Returns `error.NotSupported` due to C library dependencies
+
+**Trusted Setup**: Must call `loadTrustedSetup()` before any KZG operations. Setup loads Ethereum KZG Ceremony parameters (~1 MB).
 
 ## Gas Economics
 
 **Blob Gas**: Separate gas market from execution gas
 
-**Target**: 3 blobs per block (~384 KB)
-**Max**: 6 blobs per block (~768 KB)
+**Target**: 3 blobs per block (~393 KB)
+**Max**: 6 blobs per block (~786 KB)
 
 **Pricing**: EIP-1559 style (exponential)
 ```
@@ -242,25 +267,26 @@ baseFeePerBlobGas adjusts based on blob usage
 ```
 
 **Cost Comparison**:
-- Calldata: ~16 gas/byte × 128KB = ~2M gas (~$100-500)
+- Calldata: ~16 gas/byte × 131KB = ~2.1M gas (~$100-500)
 - Blob: ~50K gas per blob (~$1-5)
 
-**Savings**: 100-200x reduction for L2s
+**Savings**: 100-200x reduction for L2 transaction data costs
 
 ## Security
 
 **Trusted Setup Security**:
-- Safe if ≥1 participant honest
-- 140,000+ participants in ceremony
-- Publicly verifiable transcript
+- **Assumption**: Safe if ≥1 participant destroyed their secret contribution
+- **Participants**: 140,000+ in Ethereum KZG Ceremony (2023)
+- **Verification**: Publicly verifiable transcript ensures ceremony correctness
+- **Risk**: If all participants colluded, they could create false proofs. With 140,000+ participants, this is cryptographically impractical.
 
 **Commitment Binding**:
 - Computationally infeasible to find collision
-- Based on discrete log hardness in G1
+- Based on discrete log hardness in G1 (BLS12-381)
 
 **Proof Soundness**:
-- Cannot forge proof for wrong value
-- Pairing check guarantees correctness
+- Cannot forge proof for wrong evaluation value
+- Pairing check guarantees correctness via bilinear map properties
 
 ## Use Cases
 

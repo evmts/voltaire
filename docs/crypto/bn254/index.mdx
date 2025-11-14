@@ -5,7 +5,9 @@ description: Pairing-friendly elliptic curve for zkSNARK verification, Ethereum 
 
 # BN254 (alt_bn128)
 
-Barreto-Naehrig pairing-friendly curve standardized in Ethereum as alt_bn128. Primary curve for on-chain zkSNARK verification via precompiles 0x06-0x08.
+BN254 (also known as alt_bn128) is a **pairing-friendly elliptic curve** at the 128-bit security level, optimized for zkSNARK verification in zero-knowledge proof systems.
+
+**L2-critical algorithm** - Used extensively in Polygon, Optimism, Arbitrum, and zkEVMs for zero-knowledge proof verification. Available as EVM precompiles (0x06-0x08) for efficient on-chain verification.
 
 ## Overview
 
@@ -16,9 +18,9 @@ BN254 (also BN128, alt_bn128) is THE pairing curve for Ethereum zkSNARKs. Activa
 **Gas-Efficient**: Precompiled contracts make zkSNARK verification affordable
 **Ecosystem**: Groth16, PlonK, and most zk-proof systems support BN254
 **Adoption**: Tornado Cash, zkSync, Aztec, Polygon zkEVM all use BN254
-**Tooling**: Mature libraries (snarkjs, circom, libsnark) 
+**Tooling**: Mature libraries (snarkjs, circom, libsnark)
 
-**Security Note**: ~100-bit security (weaker than BLS12-381's 128-bit). Sufficient for current use but may need migration by 2030.
+**Security Note**: 128-bit security level (equivalent to BLS12-381). Some estimates suggest ~100-bit practical security due to faster discrete log attacks on BN curves, but sufficient for current use.
 
 ## Mathematical Foundation
 
@@ -50,19 +52,73 @@ r = 2188824287183927522224640574525727508854836440041603434369820418657580849561
 
 **Curve Parameter**: t = 4965661367192848881 (BN curve)
 
+## Implementation Status
+
+Voltaire provides multiple BN254 implementations optimized for different environments:
+
+### Pure Zig Implementation
+
+**Location**: `src/crypto/bn254.zig` (~32KB)
+
+Complete implementation including:
+- G1/G2 point operations (add, double, negate, multiply)
+- Projective coordinates with Montgomery form field arithmetic
+- NAF (Non-Adjacent Form) scalar multiplication
+- Optimal ate pairing (Miller loop + final exponentiation)
+- Field arithmetic (Fp, Fp2, Fp6, Fp12)
+
+**Import**:
+```typescript
+import { bn254 } from '@tevm/voltaire/crypto';
+// Uses pure Zig via FFI (native) or WASM
+```
+
+### Arkworks Rust (PRODUCTION)
+
+**Location**: `src/crypto/bn254_arkworks.zig` (FFI wrapper)
+
+Production-grade implementation via `arkworks-algebra`:
+- Audited and battle-tested
+- ~2x faster than pure Zig
+- Used for EVM precompile implementation
+- Full G1/G2/GT operations and pairing
+
+**Import**:
+```typescript
+import { bn254Ark } from '@tevm/voltaire/crypto';
+// Direct access to arkworks implementation
+```
+
+### WASM Status
+
+**Location**: `src/crypto/bn254.wasm.ts`
+
+**Status**: Stub/TODO - Not yet implemented
+
+WASM loader infrastructure needed. All methods currently throw:
+```
+"Bn254Wasm not yet implemented - requires WASM loader infrastructure"
+```
+
+Planned features:
+- G1/G2 point operations
+- Field arithmetic
+- Pairing operations
+- Tree-shakeable individual modules
+
 ## Quick Start
 
 ```typescript
-import { bn254 } from '@tevm/voltaire/crypto';
+import { bn254Ark } from '@tevm/voltaire/crypto';
 
-// G1 point addition
+// G1 point addition (arkworks)
 const g1a = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
                         '0000000000000000000000000000000000000000000000000000000000000002');
 const g1b = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
                         '0000000000000000000000000000000000000000000000000000000000000002');
 const input = new Uint8Array([...g1a, ...g1b]);
 const output = Bytes64();
-await bn254.g1Add(input, output);
+await bn254Ark.g1Add(input, output);
 
 // G1 scalar multiplication
 const point = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
@@ -70,7 +126,7 @@ const point = Hex.toBytes('0x000000000000000000000000000000000000000000000000000
 const scalar = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000003');
 const mulInput = new Uint8Array([...point, ...scalar]);
 const mulOutput = Bytes64();
-await bn254.g1Mul(mulInput, mulOutput);
+await bn254Ark.g1Mul(mulInput, mulOutput);
 
 // Pairing check (zkSNARK verification)
 const g1Point = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +
@@ -80,8 +136,77 @@ const g2Point = Hex.toBytes('0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e7129
                             '090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b' +
                             '12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa');
 const pairs = new Uint8Array([...g1Point, ...g2Point]); // Single pair
-const success = await bn254.pairingCheck(pairs);
+const success = await bn254Ark.pairingCheck(pairs);
 ```
+
+## Key Operations
+
+### G1 Point Operations
+
+G1 operates on the base curve over field Fp:
+- **Addition**: Point addition on elliptic curve
+- **Scalar multiplication**: Multiply point by scalar (NAF algorithm)
+- **Double**: Efficient point doubling
+- **Negate**: Compute additive inverse
+
+See [**G1 Operations**](./g1-operations) for detailed API reference.
+
+### G2 Point Operations
+
+G2 operates on the twisted curve over extension field Fp2:
+- **Addition/Multiplication**: Same operations as G1, over Fp2
+- **Subgroup check**: Critical for security (prevent invalid curve attacks)
+- **Frobenius endomorphism**: Fast scalar multiplication
+
+See [**G2 Operations**](./g2-operations) for detailed API reference.
+
+### Pairing Check
+
+The core operation for zkSNARK verification:
+
+**Input**: Pairs of points (P1, Q1), (P2, Q2), ..., (Pn, Qn) where Pi ∈ G1, Qi ∈ G2
+
+**Output**: Boolean - whether e(P1, Q1) · e(P2, Q2) · ... · e(Pn, Qn) = 1
+
+**Implementation**:
+1. Miller loop: Compute line functions for each pair
+2. Final exponentiation: Raise result to (p^12 - 1) / r
+
+See [**Pairing**](./pairing) for mathematical details.
+
+### Field Arithmetic
+
+- **Fp**: Base field (254-bit prime modulus)
+- **Fp2**: Quadratic extension (a + bi)
+- **Fp6**: Sextic extension (3 Fp2 elements)
+- **Fp12**: Dodecic extension (2 Fp6 elements) - pairing target group
+
+All operations use Montgomery form for efficient modular arithmetic.
+
+## zkSNARK Usage
+
+BN254 is the standard curve for Ethereum zkSNARK systems:
+
+### Groth16 Verification
+
+Most common zkSNARK construction. Verification requires:
+- 3 G1 points (proof.A, proof.C, public inputs contribution)
+- 1 G2 point (proof.B)
+- 1 precomputed G2 verification key
+- 1 pairing check with 3 pairs
+
+**Gas cost**: ~147,000 gas (45,000 base + 34,000 per pair × 3)
+
+### PLONK Verification
+
+More flexible than Groth16, supports universal setup:
+- Multiple G1 points (commitments, evaluations)
+- Fewer G2 points (usually 1-2)
+- Pairing check with fewer pairs
+
+**Gas cost**: ~100,000-200,000 gas (varies by circuit size)
+
+See [**zkSNARK Usage**](./zk-usage) for implementation patterns.
 
 ## Documentation
 
@@ -89,7 +214,7 @@ const success = await bn254.pairingCheck(pairs);
 
 - [**Pairing**](./pairing) - Optimal ate pairing, Miller loop, final exponentiation
 - [**Precompiles**](./precompiles) - EIP-196/197 precompiled contracts (0x06-0x08)
-- [**zkSNARK Usage**](./zk-usage) - Groth16, PlonK, proof verification patterns
+- [**zkSNARK Usage**](./zk-usage) - Groth16, PLONK, proof verification patterns
 
 ### Operations
 
@@ -133,20 +258,6 @@ Both big-endian Fp elements. Infinity represented as (0, 0).
 
 Fp2 elements: x = x.c0 + x.c1·i, y = y.c0 + y.c1·i
 
-## Implementation
-
-**Pure Zig**: `src/crypto/bn254/*.zig`
-- G1/G2 projective coordinates
-- Field arithmetic (Montgomery form)
-- NAF scalar multiplication
-- Optimal ate pairing
-
-**Rust (arkworks)**: `src/crypto/bn254_arkworks.zig`
-- Production-grade, audited
-- Used for precompile implementation
-- Faster than pure Zig (~2x)
-
-**TypeScript**: Via FFI to Zig/Rust
 
 ## Gas Costs
 
@@ -162,18 +273,22 @@ Fp2 elements: x = x.c0 + x.c1·i, y = y.c0 + y.c1·i
 
 ## Security
 
-**Current Security**: ~100-bit (NFS attacks, ~2016 estimates)
+**Security Level**: 128-bit (nominal)
 
-**Concerns**:
-- Weaker than BLS12-381 (128-bit)
-- May need migration by 2030 for long-term security
+BN254 provides 128-bit security level equivalent to BLS12-381. However, practical attacks on the discrete logarithm problem for BN curves are faster than originally estimated:
 
-**Mitigations**:
-- Sufficient for current protocols
-- Monitor cryptanalysis research
-- Plan migration path to BLS12-381 or BLS24
+**Practical Considerations**:
+- Some estimates suggest ~100-bit practical security due to faster DLP attacks
+- Kim-Barbulescu attack (2016) improved NFS complexity for BN curves
+- Still sufficient for current protocols and usage
 
-**Subgroup Attacks**: Critical to validate G2 subgroup membership
+**Critical Security Requirement**: Always validate G2 subgroup membership to prevent invalid curve attacks.
+
+**Comparison to BLS12-381**:
+- BLS12-381: 128-bit security (more conservative curve choice)
+- BN254: 128-bit nominal, ~100-bit practical (faster operations, wider adoption)
+
+**Recommendation**: BN254 remains secure for current use. Monitor cryptanalysis research. Consider BLS12-381 for new protocols requiring maximum security margin.
 
 ## Use Cases
 

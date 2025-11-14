@@ -5,7 +5,11 @@ description: Industry-standard SHA-256 hash function for Bitcoin and general cry
 
 # SHA256
 
-Industry-standard SHA-256 cryptographic hash function
+SHA256 is a **cryptographic one-way hash function** from the SHA-2 family, producing a fixed 32-byte digest standardized by NIST FIPS 180-4.
+
+## Ethereum Context
+
+**Mainnet algorithm** - Available as EVM precompile at address 0x02 for legacy compatibility and cryptographic proofs. Not used in core protocol (Ethereum prefers Keccak256).
 
 ## Overview
 
@@ -13,12 +17,18 @@ SHA256 (Secure Hash Algorithm 256-bit) is one of the most widely used cryptograp
 
 SHA256 is fundamental to blockchain technology and cryptography, used for:
 - **Bitcoin**: Block hashing, transaction IDs, address derivation (combined with RIPEMD160)
+- **Ethereum**: EVM precompile at 0x02, rarely used in practice (Keccak256 dominates)
 - **TLS/SSL**: Certificate signatures and secure communications
 - **Digital signatures**: Message digest for signing algorithms
 - **Merkle trees**: Constructing efficient authenticated data structures
 - **File integrity**: Checksums, content addressing, digital forensics
 
-Unlike Keccak256 (used in Ethereum), SHA256 follows NIST's finalized specification and is standardized across all implementations. The implementation uses @noble/hashes in TypeScript and hardware-accelerated instructions (SHA-NI, AVX2) in Zig for optimal performance.
+### Implementations
+
+- **Pure Zig**: Optimized software implementation following FIPS 180-4
+- **Hardware accelerated**: SHA-NI instructions on x86-64 (10x faster), AVX2 vectorization, ARM SHA2 extensions
+- **WASM**: Available via sha256.wasm.ts for browser environments (ReleaseSmall: 34KB)
+- **TypeScript**: Uses @noble/hashes pure implementation for JavaScript environments
 
 ## Quick Start
 
@@ -264,13 +274,22 @@ SHA256 alone is NOT suitable for password hashing. Use proper password hashing f
 
 ### Benchmarks
 Typical performance (varies by platform):
-- Native with SHA-NI: ~2000-3000 MB/s
-- Native with AVX2: ~800-1200 MB/s
+- Native with SHA-NI: ~2000-3000 MB/s (10x faster than software)
+- Native with AVX2: ~800-1200 MB/s (2x faster than software)
 - Native software: ~400-600 MB/s
 - WASM: ~200-400 MB/s
 - Pure JS: ~100-200 MB/s
 
-Hardware acceleration provides 5-20x speedup depending on available CPU features.
+### Performance vs Keccak256
+```
+Algorithm          Software    with Hardware Accel
+---------          --------    -------------------
+SHA256             ~500 MB/s   ~2500 MB/s (SHA-NI)
+Keccak256          ~350 MB/s   ~350 MB/s (no accel)
+Blake2b            ~700 MB/s   ~700 MB/s (no accel)
+```
+
+**Key insight**: SHA256 with hardware acceleration outperforms Keccak256, but in software-only environments (WASM, some servers), Blake2b is faster. Ethereum chose Keccak256 before SHA-NI became widespread.
 
 ### CPU Feature Detection
 Zig implementation automatically detects and uses available CPU features:

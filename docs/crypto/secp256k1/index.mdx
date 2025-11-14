@@ -5,7 +5,9 @@ description: ECDSA signatures using the secp256k1 elliptic curve - Ethereum's co
 
 ## Overview
 
-Secp256k1 is the elliptic curve used by Bitcoin and Ethereum for digital signatures. It provides 128 bits of security and is defined by the Standards for Efficient Cryptography Group (SECG) in SEC 2.
+Secp256k1 is an **elliptic curve digital signature algorithm (ECDSA)** over the secp256k1 curve, providing asymmetric cryptography for transaction authentication.
+
+**Mainnet-critical algorithm** - Primary signature scheme for Ethereum transactions, message signing, and public key recovery from signatures.
 
 **Curve equation**: y² = x³ + 7 (mod p)
 
@@ -14,7 +16,11 @@ Secp256k1 is the elliptic curve used by Bitcoin and Ethereum for digital signatu
 - Curve order: `n = FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`
 - Generator point G with coordinates (Gx, Gy)
 
-**Ethereum usage**: Every transaction signature, address derivation via `ecRecover`, and account authentication uses secp256k1 ECDSA.
+**Key operations**:
+- **sign**(hash, privateKey) → signature - Create ECDSA signature with deterministic nonce (RFC 6979)
+- **verify**(signature, hash, publicKey) → boolean - Validate signature authenticity
+- **recoverPublicKey**(signature, hash) → publicKey - Recover signer's public key (Ethereum's ecRecover)
+- **derivePublicKey**(privateKey) → publicKey - Elliptic curve point multiplication (privateKey * G)
 
 ## Quick Start
 
@@ -182,21 +188,19 @@ Secp256k1.SIGNATURE_COMPONENT_SIZE // 32 bytes (for r and s)
 
 ### Critical Warnings
 
-⚠️ **NEVER reuse nonces**: Secp256k1 uses deterministic signatures (RFC 6979) to prevent nonce reuse. Random nonce generation is dangerous - reusing a nonce with different messages leaks the private key.
+⚠️ **Signatures must be validated**: Verify r and s are in valid range [1, n-1] where n is curve order. Invalid signature components can leak information or cause verification failures.
 
-⚠️ **Validate all inputs**: Always validate private keys (0 < key < curve order), public keys (point on curve), and signature components before use.
+⚠️ **Deterministic nonces prevent reuse attacks**: RFC 6979 deterministic signatures eliminate nonce reuse vulnerability. Reusing a nonce with different messages leaks the private key - never implement custom nonce generation.
+
+⚠️ **Recovery ID (v parameter) for public key recovery**: The v parameter (27 or 28 in Ethereum) indicates which of two possible public keys to recover from a signature. Critical for ecRecover precompile.
 
 ⚠️ **Low-s enforcement**: Signatures automatically use low-s values (s ≤ n/2) to prevent malleability. Both high-s and low-s signatures verify successfully, but Ethereum requires low-s.
 
 ⚠️ **Use cryptographically secure random**: Never use `Math.random()` for private key generation. Use `crypto.getRandomValues()` or similar CSPRNG.
 
-### TypeScript Implementation
+### Performance
 
-The TypeScript implementation uses **@noble/curves** by Paul Miller, a widely-audited and battle-tested library:
-- Constant-time operations to prevent timing attacks
-- RFC 6979 deterministic signatures (no nonce reuse risk)
-- Validates all curve points and scalars
-- Low-s normalization for Ethereum compatibility
+Native Zig implementation provides **2-5x speedup** over pure JavaScript on cryptographic operations, with negligible overhead for FFI calls.
 
 ### Test Vectors
 
@@ -258,38 +262,66 @@ expect(() => Secp256k1.sign(messageHash, invalidKey)).toThrow(); // Throws
 
 ## Implementation Details
 
-### TypeScript
+Voltaire provides **three secp256k1 implementations** for different use cases:
+
+### Reference Implementation (Default)
 
 **Library**: `@noble/curves/secp256k1` by Paul Miller
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+const signature = Secp256k1.sign(messageHash, privateKey);
+const isValid = Secp256k1.verify(signature, messageHash, publicKey);
+```
+
+**Characteristics**:
 - **Audit status**: Multiple security audits, widely used in production
 - **Features**: Constant-time operations, RFC 6979 deterministic signing, point validation
 - **Size**: ~20KB minified (tree-shakeable)
-- **Performance**: Competitive with native implementations
+- **Use case**: Default for TypeScript/JavaScript applications, validation fallback
 
-The TypeScript API wraps @noble/curves with Ethereum-specific conventions:
+**Ethereum conventions**:
 - 64-byte uncompressed public keys (x || y, no 0x04 prefix)
 - Recovery ID v = 27 or 28 (Ethereum format)
 - Low-s normalization enforced
 
-### Zig
+### Native Zig Implementation
 
-**Implementation**: Custom elliptic curve arithmetic in `src/crypto/secp256k1.zig`
-- **Status**: ⚠️ UNAUDITED - Educational/testing only
-- **Features**: Affine point arithmetic, modular arithmetic, signature generation
-- **Limitations**: Not constant-time, unvalidated edge cases, no production guarantees
-
-For FFI usage, prefer the TypeScript implementation or use the EVM precompiles.
-
-### WASM
-
-Secp256k1 operations are available in WASM builds:
-- **ReleaseSmall**: Size-optimized for bundle size
-- **ReleaseFast**: Performance-optimized for throughput
+**Pure Zig elliptic curve arithmetic** (`src/crypto/secp256k1.zig` - 92KB, 2682 lines)
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/crypto/Secp256k1';
-// Automatically uses WASM in supported environments
+// Native FFI automatically used when available
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 ```
+
+**Characteristics**:
+- **Status**: ⚠️ UNAUDITED - Educational/testing only
+- **Performance**: 2-5x faster than pure JavaScript
+- **Features**: Affine point arithmetic, modular arithmetic, signature generation/verification
+- **Limitations**: Not constant-time, unvalidated edge cases, no production guarantees
+- **Use case**: Performance-critical operations, research, testing
+
+### WASM Implementation
+
+**Zig stdlib via wasm-loader** (bundled in `wasm/primitives.wasm`)
+
+```typescript
+import { Secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1.wasm';
+
+const signature = Secp256k1Wasm.sign(messageHash, privateKey);
+```
+
+**Characteristics**:
+- **ReleaseSmall**: 360KB (size-optimized for production bundles)
+- **ReleaseFast**: 4.3MB (performance-optimized for benchmarking)
+- **Use case**: Browser environments, sandboxed execution, consistent cross-platform behavior
+- **Import path**: `import { Secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1.wasm'`
+
+**When to use**:
+- **Reference** (@noble/curves): Default for all TypeScript applications
+- **Native Zig**: Performance-critical paths in Node.js/Bun (when audited)
+- **WASM**: Browser environments requiring consistent behavior
 
 ## Ethereum Integration
 

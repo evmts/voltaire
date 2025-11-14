@@ -5,7 +5,9 @@ description: Curve25519 Elliptic Curve Diffie-Hellman - modern, fast key exchang
 
 ## Overview
 
-X25519 is an elliptic curve Diffie-Hellman (ECDH) key exchange protocol using Curve25519. It's designed specifically for key agreement - two parties can independently compute a shared secret without transmitting it over the network.
+X25519 is an **elliptic curve Diffie-Hellman (ECDH) key exchange** over Curve25519, enabling two parties to establish a shared secret over an insecure channel.
+
+**Ethereum context**: **Not on Ethereum** - Used for encrypted peer-to-peer communications (e.g., Whisper, Waku). Not part of core protocol.
 
 **Curve**: Montgomery curve v² = u³ + 486662u² + u over prime field 2²⁵⁵ - 19
 
@@ -15,6 +17,7 @@ X25519 is an elliptic curve Diffie-Hellman (ECDH) key exchange protocol using Cu
 - **Secure**: 128-bit security level with built-in protection against timing attacks
 - **Small keys**: 32-byte public and secret keys
 - **No signatures**: X25519 is for key exchange only (use Ed25519 for signatures)
+- **Implementations**: Native Zig (3KB), WASM via wasm-loader
 
 **Modern usage**: TLS 1.3, WireGuard, Signal Protocol, SSH, Tor, WhatsApp, iMessage, and nearly all modern encrypted communications.
 
@@ -437,9 +440,9 @@ async function tlsKeyExchange(): Promise<TLSHandshake> {
 }
 ```
 
-## Ethereum Context
+## Web3 Usage
 
-X25519 is **not used in Ethereum's core protocol**, but appears in Web3 applications:
+X25519 appears in Web3 infrastructure (not core protocol):
 
 ### Encrypted Communication
 

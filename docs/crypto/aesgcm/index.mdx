@@ -5,7 +5,9 @@ description: Authenticated encryption with AES-GCM
 
 ## Overview
 
-AES-GCM (Advanced Encryption Standard - Galois/Counter Mode) provides authenticated encryption, ensuring both confidentiality and integrity. It encrypts data and generates an authentication tag that prevents tampering.
+AES-GCM is an **authenticated encryption algorithm** combining AES (Advanced Encryption Standard) in Galois/Counter Mode, providing both confidentiality and authenticity with a single key.
+
+**Ethereum context**: **Not on Ethereum** - Used for encrypted wallet storage (e.g., UTC/JSON keystore format) and secure messaging. Not part of Ethereum protocol.
 
 Key features:
 - **Authenticated encryption**: Confidentiality + integrity in one operation
@@ -13,6 +15,8 @@ Key features:
 - **Parallelizable**: Can encrypt/decrypt blocks in parallel
 - **Additional data**: Authenticate without encrypting (AAD)
 - **Standards-compliant**: NIST approved, widely used
+- **Key sizes**: 128, 192, or 256 bits
+- **Implementations**: Native Zig (16KB), NO WASM (not in browser crypto standard libs)
 
 ## Quick Start
 

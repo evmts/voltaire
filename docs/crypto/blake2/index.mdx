@@ -5,7 +5,11 @@ description: High-performance cryptographic hash faster than SHA-256 with variab
 
 # Blake2
 
-High-performance cryptographic hash function
+Blake2b is a **cryptographic one-way hash function** optimized for speed, producing variable-length digests up to 64 bytes.
+
+## Ethereum Context
+
+**Not on mainnet** - High-performance alternative to Keccak256 and SHA256. Used in some L2s and custom protocols. Available as precompile (0x09) via Blake2F compression function.
 
 ## Overview
 
@@ -14,7 +18,7 @@ BLAKE2 is a cryptographic hash function faster than MD5, SHA-1, SHA-2, and SHA-3
 BLAKE2b (this implementation) is optimized for 64-bit platforms and produces digests of any size between 1 and 64 bytes (8 to 512 bits). The variable output length makes it versatile for different use cases without requiring separate algorithms.
 
 Key characteristics:
-- **Performance**: 2-4x faster than SHA-256 on modern CPUs
+- **Performance**: 2-4x faster than SHA-256 in software, competitive with SHA-NI hardware acceleration
 - **Security**: At least as secure as SHA-3 with no known attacks
 - **Flexibility**: Variable output length (1-64 bytes)
 - **Simplicity**: Fewer rounds than SHA-3, easier to implement correctly
@@ -25,7 +29,18 @@ Used in:
 - **IPFS**: Content addressing
 - **WireGuard**: VPN protocol
 - **Argon2**: Password hashing (winner of Password Hashing Competition)
+- **L2 blockchains**: Some rollups use Blake2 for performance
 - **General purpose**: File integrity, checksums, merkle trees
+
+### Implementations
+
+- **Pure Zig**: Custom Blake2b implementation (34KB compiled size)
+  - **WARNING**: Zig implementation is UNAUDITED custom crypto code
+  - Optimized for 64-bit platforms
+  - Constant-time operations to resist timing attacks
+- **TypeScript**: Uses @noble/hashes pure implementation
+- **WASM**: Available via Blake2.wasm.ts for browser environments (ReleaseSmall: 34KB)
+- **C FFI**: For platforms without native Zig support
 
 ## Quick Start
 
@@ -253,12 +268,12 @@ BLAKE2 represents modern hash function design: secure, fast, simple. For new app
 - **TypeScript**: Uses @noble/hashes pure TypeScript implementation
   - Constant-time operations
   - Optimized for JavaScript engines
-- **Zig/Native**: Custom BLAKE2b implementation in Zig
+- **Zig/Native**: Custom BLAKE2b implementation in Zig (34KB)
   - **WARNING**: Zig implementation is UNAUDITED custom crypto code
   - Optimized for 64-bit platforms
   - Constant-time operations to resist timing attacks
   - No hardware acceleration (pure software)
-- **WASM**: Available via Blake2.wasm.ts for browser environments
+- **WASM**: Available via Blake2.wasm.ts for browser environments (ReleaseSmall: 34KB)
 
 ### Benchmarks
 Typical performance (varies by platform):
@@ -268,16 +283,28 @@ Typical performance (varies by platform):
 
 BLAKE2b is significantly faster than SHA-256 software implementations, though SHA-256 with hardware acceleration (SHA-NI) can be faster.
 
-### Comparison to Other Hashes
-On modern CPUs without hardware crypto acceleration:
+### Performance vs Keccak256 and SHA256
 ```
-BLAKE2b:     ~700 MB/s
-SHA-256:     ~400 MB/s (software)
-SHA-3:       ~150 MB/s
-MD5:         ~600 MB/s (insecure, don't use)
+Algorithm          Software Speed    Hardware Accel    Bundle Size
+---------          --------------    --------------    -----------
+Blake2b            ~700 MB/s         N/A               34KB (Zig)
+SHA256             ~500 MB/s         ~2500 MB/s        Native
+Keccak256          ~350 MB/s         N/A               ~45KB (Zig)
+SHA-3              ~150 MB/s         N/A               Large
 ```
 
-With SHA-NI hardware acceleration, SHA-256 can reach 2-3 GB/s, but BLAKE2 remains competitive and more widely accelerated.
+**Key insights**:
+- Blake2b is **2x faster** than Keccak256 in software
+- Blake2b is **1.4x faster** than SHA256 in software
+- SHA256 with SHA-NI hardware acceleration is faster (~2500 MB/s) but not available in WASM
+- Blake2b offers best software performance with small bundle size (34KB)
+- For L2s and custom protocols, Blake2b provides significant performance advantages over Keccak256
+
+**When Blake2b outperforms alternatives**:
+- WASM environments (no SHA-NI hardware acceleration)
+- High-throughput applications (file hashing, merkle trees)
+- L2 rollups prioritizing performance over mainnet compatibility
+- Applications needing variable-length output (1-64 bytes)
 
 ## Implementation Details
 

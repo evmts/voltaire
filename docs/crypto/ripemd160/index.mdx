@@ -5,7 +5,11 @@ description: 160-bit hash function used in Bitcoin address derivation
 
 # RIPEMD160
 
-Legacy 160-bit hash function for Bitcoin address derivation
+RIPEMD160 is a **cryptographic one-way hash function** producing a 20-byte digest, designed as an alternative to SHA-1.
+
+## Ethereum Context
+
+**Mainnet algorithm** - Available as EVM precompile at address 0x03 for Bitcoin address compatibility. Rarely used in practice but required for Bitcoin-Ethereum bridges.
 
 ## Overview
 
@@ -13,10 +17,20 @@ RIPEMD160 (RACE Integrity Primitives Evaluation Message Digest 160-bit) is a cry
 
 While largely superseded by SHA-256 and SHA-3 for general cryptography, RIPEMD160 remains important in blockchain technology:
 - **Bitcoin addresses**: Combined with SHA256 for address generation (Base58Check encoding)
+- **Ethereum precompile**: Address 0x03 for Bitcoin-Ethereum interoperability
 - **Address derivation**: Creates shorter address representations (20 bytes vs 32 bytes)
 - **Legacy compatibility**: Maintained for Bitcoin protocol compatibility
 
 The shorter 160-bit output (compared to 256-bit SHA256) provides compact addresses while maintaining sufficient security for address collision resistance (~80-bit security level).
+
+### Implementations
+
+- **Pure Zig**: Custom RIPEMD160 implementation following Bitcoin Core reference
+  - **WARNING**: Zig implementation is UNAUDITED custom crypto code
+  - Uses constant-time operations to resist timing attacks
+- **TypeScript**: Uses @noble/hashes legacy module for JavaScript environments
+- **WASM**: Available via ripemd160.wasm.ts for browser environments
+- **C FFI fallback**: For platforms without native Zig support
 
 <Warning title="Legacy Function">
 RIPEMD160 is primarily maintained for Bitcoin compatibility. For new applications requiring 160-bit hashes, consider Blake2b with 20-byte output, which offers better performance and security margins.
@@ -227,7 +241,17 @@ Typical performance (varies by platform):
 - WASM: ~80-150 MB/s
 - Pure JS: ~50-100 MB/s
 
-Note: RIPEMD160 is slower than SHA256 or Blake2b on modern hardware, which have hardware acceleration support.
+### Performance vs Other Hashes
+```
+Algorithm          Software Speed    Hardware Accel
+---------          --------------    --------------
+RIPEMD160          ~200 MB/s         N/A (no accel)
+SHA256             ~500 MB/s         ~2500 MB/s
+Keccak256          ~350 MB/s         N/A
+Blake2b            ~700 MB/s         N/A
+```
+
+**Key insight**: RIPEMD160 is slower than modern alternatives and lacks hardware acceleration. Only use for Bitcoin compatibility. For new applications, Blake2b offers 3x better performance with stronger security margins.
 
 ## Implementation Details
 

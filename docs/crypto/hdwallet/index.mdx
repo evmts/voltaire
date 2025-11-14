@@ -5,14 +5,17 @@ description: Hierarchical Deterministic wallet key derivation
 
 ## Overview
 
-HD (Hierarchical Deterministic) Wallets enable deriving unlimited key pairs from a single seed using standardized derivation paths. This implementation follows BIP-32 (key derivation) and BIP-44 (multi-account hierarchy) standards.
+HD Wallet (Hierarchical Deterministic Wallet, BIP32/BIP44) is a **key derivation system** that generates unlimited child keys from a single master seed using elliptic curve mathematics.
 
-Key features:
-- **Single seed, infinite keys**: Derive unlimited addresses from one mnemonic
-- **Hierarchical structure**: Organized tree of keys (accounts, addresses)
-- **Deterministic**: Same seed + path always produces same key
-- **Privacy**: Each transaction can use a unique address
-- **Backup**: Single mnemonic backs up entire wallet
+**Ethereum context:** **Wallet standard** - Enables single backup for unlimited accounts. Ethereum uses BIP44 path `m/44'/60'/0'/0/n` where n is account index.
+
+Key operations:
+- **Derive master key from seed**: HMAC-SHA512 with curve order validation
+- **Child key derivation**: Both hardened (requires private key) and normal (public key only)
+- **Extended key serialization**: Export/import xprv/xpub for wallet portability
+- **BIP44 path structure**: `m / purpose' / coin_type' / account' / change / address_index`
+
+**Implementation:** Via libwally-core (C library, audited)
 
 ## Quick Start
 
@@ -267,7 +270,34 @@ HDWallet.BIP44_PATH.ETH(account, index)  // m/44'/60'/account'/0/index
 HDWallet.BIP44_PATH.BTC(account, index)  // m/44'/0'/account'/0/index
 ```
 
-## Derivation Paths (BIP-32)
+## BIP44 Derivation Paths
+
+### Ethereum Standard Path
+
+Ethereum uses BIP44 path: `m/44'/60'/0'/0/n`
+
+```typescript
+// Standard Ethereum addresses
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+const eth2 = HDWallet.deriveEthereum(root, 0, 2); // m/44'/60'/0'/0/2
+
+// Second account
+const account2 = HDWallet.deriveEthereum(root, 1, 0); // m/44'/60'/1'/0/0
+```
+
+**Path components:**
+```
+m / purpose' / coin_type' / account' / change / address_index
+    44'        60'          0'         0        0
+```
+
+- **`m`**: Master key (root)
+- **`44'`**: BIP44 standard (hardened)
+- **`60'`**: Ethereum coin type (hardened)
+- **`0'`**: Account index (hardened) - first account
+- **`0`**: External addresses (non-hardened) - not change addresses
+- **`n`**: Address index (non-hardened) - increments for each address
 
 ### BIP-32 Path Format
 
@@ -275,28 +305,18 @@ HDWallet.BIP44_PATH.BTC(account, index)  // m/44'/0'/account'/0/index
 m / purpose' / coin_type' / account' / change / address_index
 ```
 
-- **`m`**: Master key (root)
-- **`purpose'`**: Standard (44' for BIP-44, 49' for SegWit, 84' for Native SegWit)
-- **`coin_type'`**: Cryptocurrency (0' for Bitcoin, 60' for Ethereum)
-- **`account'`**: Account index (0', 1', 2'...)
-- **`change`**: External (0) or internal/change (1) addresses
-- **`address_index`**: Address within account (0, 1, 2...)
-
 **Hardened vs Normal:**
-- **Hardened** (`'` or `h` suffix): Requires private key, more secure
-- **Normal** (no suffix): Can be derived from public key
+- **Hardened** (`'` or `h` suffix): Index ≥ 2³¹, requires private key, more secure
+- **Normal** (no suffix): Index < 2³¹, can be derived from public key
 
-### BIP-44 Standard
+**Ethereum-specific:**
+- Purpose: Always `44'` (BIP44)
+- Coin type: Always `60'` (Ethereum)
+- Account: `0'`, `1'`, `2'`... (user accounts)
+- Change: Always `0` (Ethereum doesn't use change addresses like Bitcoin)
+- Address index: `0`, `1`, `2`... (addresses within account)
 
-BIP-44 defines multi-account hierarchy for HD wallets:
-
-**Ethereum (coin type 60):**
-```
-m/44'/60'/0'/0/0    First address, first account
-m/44'/60'/0'/0/1    Second address, first account
-m/44'/60'/0'/0/2    Third address, first account
-m/44'/60'/1'/0/0    First address, second account
-```
+### Other Coin Types
 
 **Bitcoin (coin type 0):**
 ```
@@ -305,9 +325,11 @@ m/44'/0'/0'/1/0     First change address, first account
 m/44'/0'/0'/0/1     Second receive address, first account
 ```
 
-**Other coins:**
+**Common coin types:**
+- Bitcoin: `m/44'/0'/...`
 - Litecoin: `m/44'/2'/...`
 - Dogecoin: `m/44'/3'/...`
+- Ethereum: `m/44'/60'/...`
 - Ethereum Classic: `m/44'/61'/...`
 
 ### Hardened Derivation

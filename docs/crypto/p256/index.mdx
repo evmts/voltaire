@@ -5,7 +5,9 @@ description: NIST P-256 (secp256r1) ECDSA signatures - WebAuthn, iOS Secure Encl
 
 ## Overview
 
-P-256, also known as **secp256r1** or **prime256v1**, is a NIST-standardized elliptic curve widely used in modern security systems. It provides 128-bit security and is the default curve for many enterprise and government applications.
+P256 (secp256r1) is a **NIST-standardized elliptic curve** for ECDSA signatures and ECDH key exchange, commonly used in hardware secure enclaves.
+
+**Ethereum context**: **Not on mainnet** - Used for hardware wallet integration (Secure Enclave, TPM, FIDO2) and account abstraction proposals. Some L2s exploring for native WebAuthn support.
 
 **Curve**: Short Weierstrass y² = x³ - 3x + b (mod p)
 
@@ -13,6 +15,8 @@ P-256, also known as **secp256r1** or **prime256v1**, is a NIST-standardized ell
 - Prime field: `p = 2²⁵⁶ - 2²²⁴ + 2¹⁹² + 2⁹⁶ - 1`
 - Curve order: `n = FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551`
 - Also called: secp256r1, prime256v1, NIST P-256
+- **Implementations**: Native Zig (4KB), WASM via wasm-loader
+- **Operations**: sign, verify, derivePublicKey, ecdh
 
 **Modern usage**:
 - **WebAuthn / FIDO2**: Passkey authentication (YubiKey, TouchID, Windows Hello)
@@ -376,9 +380,9 @@ const messageHash = Hash.sha256(new TextEncoder().encode(message));
 const isValid = P256.verify(signature, messageHash, publicKey);
 ```
 
-## Ethereum Context
+## Web3 Usage
 
-P-256 is **not used in Ethereum's core protocol** (which uses secp256k1), but appears in:
+P-256 not in Ethereum core protocol (which uses secp256k1), but appears in:
 
 ### Account Abstraction (EIP-7212)
 
