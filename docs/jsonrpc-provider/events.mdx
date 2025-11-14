@@ -109,7 +109,7 @@ interface LogsParams {
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Subscribe to ERC20 Transfer events
 const tokenAddress = Address('0x...');
@@ -313,11 +313,11 @@ await Promise.race([
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 async function monitorContractEvents(
   contractAddress: Address.BrandedAddress,
-  eventSignature: Hash.BrandedHash
+  eventSignature: Keccak256.Keccak256Hash
 ) {
   console.log('Monitoring events for', contractAddress);
 
@@ -340,10 +340,10 @@ async function monitorContractEvents(
 ### Wait for Transaction Confirmation
 
 ```typescript
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 async function waitForConfirmation(
-  txHash: Hash.BrandedHash,
+  txHash: Keccak256.Keccak256Hash,
   confirmations: number = 3
 ): Promise<void> {
   const receipt = await provider.eth_getTransactionReceipt(txHash);
@@ -480,7 +480,7 @@ Event parameters use branded primitive types:
 
 ```typescript
 import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Type-safe event filtering
 const address = Address('0x...');
