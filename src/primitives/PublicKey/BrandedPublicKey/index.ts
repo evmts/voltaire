@@ -32,7 +32,9 @@ export function toAddress(publicKey: string) {
 export function verify(
 	publicKey: string,
 	hash: import("../../Hash/BrandedHash/BrandedHash.js").BrandedHash,
-	signature: import("../../Signature/BrandedSignature/BrandedSignature.js").BrandedSignature,
+	signature: import(
+		"../../Signature/BrandedSignature/BrandedSignature.js",
+	).BrandedSignature,
 ): boolean {
 	return _verify(from(publicKey), hash, signature);
 }
