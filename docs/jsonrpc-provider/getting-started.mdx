@@ -1,0 +1,391 @@
+---
+title: Getting Started
+description: Install and make your first JSON-RPC requests with type-safe providers
+---
+
+# Getting Started
+
+Install Voltaire and start making type-safe JSON-RPC requests to Ethereum nodes.
+
+## Installation
+
+```bash
+npm install @tevm/voltaire
+```
+
+## Creating a Provider
+
+Voltaire provides the `Provider` interface but doesn't include transport implementations. Create providers using adapters or third-party libraries.
+
+###
+
+ From HTTP URL
+
+```typescript
+import { createPublicClient, http } from 'viem';
+import type { Provider } from '@tevm/voltaire/provider';
+
+// Create viem client
+const client = createPublicClient({
+  transport: http('https://eth.llamarpc.com')
+});
+
+// Use as Provider (viem PublicClient is Provider-compatible)
+const provider: Provider = client as unknown as Provider;
+```
+
+### From WebSocket
+
+```typescript
+import { createPublicClient, webSocket } from 'viem';
+
+const provider = createPublicClient({
+  transport: webSocket('wss://eth.llamarpc.com')
+}) as unknown as Provider;
+```
+
+### From Window Ethereum (MetaMask)
+
+```typescript
+import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
+import type { Provider } from '@tevm/voltaire/provider';
+
+// Wrap window.ethereum with EIP-1193 adapter
+const provider: Provider = Eip1193Provider(window.ethereum);
+```
+
+### Custom Transport
+
+Implement the `Provider` interface for custom transports:
+
+```typescript
+import type { Provider, Response } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
+
+class CustomProvider implements Provider {
+  async eth_blockNumber(): Promise<Response<string>> {
+    // Your implementation
+  }
+
+  async eth_getBalance(
+    address: Address.BrandedAddress,
+    blockTag: string
+  ): Promise<Response<string>> {
+    // Your implementation
+  }
+
+  // ... implement remaining 63 methods
+}
+```
+
+See [Adapters](/jsonrpc-provider/adapters) for detailed implementation patterns.
+
+## Your First Request
+
+### Get Block Number
+
+Simplest request - no parameters:
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+
+const provider: Provider = /* ... */;
+
+const response = await provider.eth_blockNumber();
+
+if (response.error) {
+  console.error('Error:', response.error.message);
+} else {
+  console.log('Current block:', response.result);
+}
+```
+
+### Get Account Balance
+
+Request with branded Address parameter:
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
+
+const provider: Provider = /* ... */;
+
+// Create branded Address
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+const response = await provider.eth_getBalance(address, 'latest');
+
+if (!response.error) {
+  const balanceWei = BigInt(response.result);
+  const balanceEth = Number(balanceWei) / 1e18;
+  console.log(`Balance: ${balanceEth} ETH`);
+}
+```
+
+### Call Contract Method
+
+Execute read-only contract call:
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const provider: Provider = /* ... */;
+
+const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
+const methodSignature = '0x18160ddd'; // totalSupply()
+
+const response = await provider.eth_call({
+  to: contractAddress,
+  data: Hex(methodSignature)
+}, 'latest');
+
+if (!response.error) {
+  const totalSupply = BigInt(response.result);
+  console.log('Total supply:', totalSupply);
+}
+```
+
+## Handling Responses
+
+All provider methods return `Response<T>`:
+
+```typescript
+type Response<T> =
+  | { result: T; error?: never }
+  | { result?: never; error: RpcError };
+```
+
+Always check for errors before using results:
+
+```typescript
+const response = await provider.eth_blockNumber();
+
+// ❌ Don't access result directly
+console.log(response.result); // May be undefined!
+
+// ✅ Check for errors first
+if (response.error) {
+  console.error('RPC error:', response.error.code, response.error.message);
+  return;
+}
+
+// Now safe to use result
+console.log('Block:', response.result);
+```
+
+### Type-Safe Error Handling
+
+TypeScript narrows the type after checking:
+
+```typescript
+const response = await provider.eth_getBalance(address, 'latest');
+
+if (response.error) {
+  // response.error is RpcError
+  // response.result is undefined
+  console.error(response.error.message);
+} else {
+  // response.result is string (Quantity)
+  // response.error is undefined
+  const balance = BigInt(response.result);
+}
+```
+
+## Subscribing to Events
+
+Subscribe to blockchain events using async generators:
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+
+const provider: Provider = /* ... */;
+
+// Subscribe to new blocks
+for await (const block of provider.events.newHeads()) {
+  console.log('New block:', block.number);
+  console.log('Hash:', block.hash);
+  console.log('Transactions:', block.transactions.length);
+}
+```
+
+### Subscribe with Filter
+
+Monitor specific contract events:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
+const transferSignature = Hash(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+for await (const log of provider.events.logs({
+  address: contractAddress,
+  topics: [transferSignature]
+})) {
+  console.log('Transfer event in block:', log.blockNumber);
+  console.log('Transaction:', log.transactionHash);
+}
+```
+
+### Stop Subscription
+
+Break from loop to stop subscription:
+
+```typescript
+let count = 0;
+
+for await (const block of provider.events.newHeads()) {
+  console.log('Block:', block.number);
+
+  count++;
+  if (count >= 10) {
+    break; // Stop after 10 blocks
+  }
+}
+
+console.log('Subscription stopped');
+```
+
+## Common Patterns
+
+### Check Account State
+
+Get balance, nonce, and code in parallel:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+const [balance, nonce, code] = await Promise.all([
+  provider.eth_getBalance(address, 'latest'),
+  provider.eth_getTransactionCount(address, 'latest'),
+  provider.eth_getCode(address, 'latest')
+]);
+
+if (!balance.error && !nonce.error && !code.error) {
+  console.log('Balance:', balance.result);
+  console.log('Nonce:', nonce.result);
+  console.log('Is contract:', code.result !== '0x');
+}
+```
+
+### Estimate Gas for Transaction
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const gasEstimate = await provider.eth_estimateGas({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: '0x0',
+  data: Hex('0xa9059cbb...') // transfer(address,uint256)
+});
+
+if (!gasEstimate.error) {
+  const gas = BigInt(gasEstimate.result);
+  console.log('Estimated gas:', gas);
+
+  // Add 20% buffer
+  const gasLimit = gas * 120n / 100n;
+  console.log('Recommended gas limit:', gasLimit);
+}
+```
+
+### Query Historical State
+
+Use block numbers to query historical data:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x...');
+const blockNumber = '0xF4240'; // Block 1,000,000
+
+const response = await provider.eth_getBalance(address, blockNumber);
+
+if (!response.error) {
+  console.log('Balance at block 1M:', response.result);
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Method API" icon="code" href="/jsonrpc-provider/method-api">
+    Learn about method calls, parameters, and response handling.
+  </Card>
+
+  <Card title="Type System" icon="shield" href="/jsonrpc-provider/type-system">
+    Understand auto-generated types and branded primitives.
+  </Card>
+
+  <Card title="Events" icon="rss" href="/jsonrpc-provider/events">
+    Master async generator subscriptions for real-time updates.
+  </Card>
+
+  <Card title="Usage Patterns" icon="book" href="/jsonrpc-provider/usage-patterns">
+    Explore recipes for common blockchain interaction patterns.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### "Type 'string' is not assignable to type 'Address'"
+
+Use branded primitive constructors:
+
+```typescript
+// ❌ Error: string not assignable to Address
+await provider.eth_getBalance('0x...', 'latest');
+
+// ✅ Correct: use Address constructor
+import * as Address from '@tevm/voltaire/Address';
+await provider.eth_getBalance(Address('0x...'), 'latest');
+```
+
+### "response.result is possibly undefined"
+
+Check for errors before accessing result:
+
+```typescript
+// ❌ TypeScript error: result may be undefined
+const response = await provider.eth_blockNumber();
+console.log(response.result);
+
+// ✅ Correct: check error first
+if (!response.error) {
+  console.log(response.result); // TypeScript knows result is defined
+}
+```
+
+### Events not firing
+
+Ensure transport supports subscriptions (WebSocket required for real-time, HTTP falls back to polling):
+
+```typescript
+// ✅ WebSocket supports real-time subscriptions
+const provider = createPublicClient({
+  transport: webSocket('wss://...')
+});
+
+// ⚠️ HTTP falls back to polling (less efficient)
+const provider = createPublicClient({
+  transport: http('https://...')
+});
+```
+
+## Related
+
+- [Method API](/jsonrpc-provider/method-api) - Detailed method documentation
+- [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
+- [Adapters](/jsonrpc-provider/adapters) - Creating and using provider adapters
+- [Address](/primitives/address) - Address primitive documentation
+- [Hash](/primitives/hash) - Hash primitive documentation
+- [Hex](/primitives/hex) - Hex primitive documentation

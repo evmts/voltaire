@@ -1,0 +1,85 @@
+---
+title: Error Handling
+description: Response structure, error codes, and retry strategies
+---
+
+# Error Handling
+
+Provider methods return errors as values in the `Response<T>` type instead of throwing exceptions.
+
+## Response Structure
+
+All methods return `Response<T>`:
+
+```typescript
+type Response<T> =
+  | { result: T; error?: never }
+  | { result?: never; error: RpcError };
+
+interface RpcError {
+  code: number;
+  message: string;
+  data?: unknown;
+}
+```
+
+## Checking for Errors
+
+Always check for errors before using results:
+
+```typescript
+const response = await provider.eth_blockNumber();
+
+if (response.error) {
+  console.error('RPC error:', response.error.code, response.error.message);
+  return;
+}
+
+// Safe to use result
+console.log('Block number:', response.result);
+```
+
+## Common Error Codes
+
+| Code | Message | Description |
+|------|---------|-------------|
+| `-32700` | Parse error | Invalid JSON |
+| `-32600` | Invalid request | Missing required fields |
+| `-32601` | Method not found | Method doesn't exist |
+| `-32602` | Invalid params | Wrong parameter types |
+| `-32603` | Internal error | Server-side error |
+| `3` | Execution reverted | Contract execution failed |
+
+## Retry Strategies
+
+### Exponential Backoff
+
+```typescript
+async function fetchWithRetry<T>(
+  fn: () => Promise<Response<T>>,
+  maxRetries: number = 3
+): Promise<Response<T>> {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await fn();
+
+    if (!response.error || response.error.code === -32601) {
+      return response; // Success or method not found (don't retry)
+    }
+
+    // Exponential backoff: 1s, 2s, 4s
+    await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+  }
+
+  return fn(); // Final attempt
+}
+
+// Usage
+const response = await fetchWithRetry(() =>
+  provider.eth_getBalance(address, 'latest')
+);
+```
+
+## Related
+
+- [Method API](/jsonrpc-provider/method-api) - Method calls and responses
+- [Performance](/jsonrpc-provider/performance) - Optimization strategies

@@ -1,0 +1,203 @@
+---
+title: Network Methods
+description: Ethereum network info methods - chain ID, sync status, coinbase, accounts
+---
+
+# Network Methods
+
+Network information methods for detecting chain ID, checking sync status, and querying node/account state.
+
+## Overview
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io/v3/...' });
+
+// Network detection
+const chainId = await provider.eth_chainId();
+const syncStatus = await provider.eth_syncing();
+
+// Node info
+const coinbase = await provider.eth_coinbase();
+const accounts = await provider.eth_accounts();
+```
+
+## Methods
+
+### eth_chainId
+
+Get the chain ID.
+
+```typescript
+const chainId = await provider.eth_chainId();
+// Response<Quantity>
+```
+
+**Returns:** Chain ID as hex quantity (e.g., `0x1` for Ethereum mainnet)
+
+**Usage:**
+```typescript
+const response = await provider.eth_chainId();
+const chainId = parseInt(response.data, 16);
+
+if (chainId === 1) {
+  console.log('Connected to Ethereum mainnet');
+} else if (chainId === 11155111) {
+  console.log('Connected to Sepolia testnet');
+}
+```
+
+### eth_syncing
+
+Get sync status (false if not syncing).
+
+```typescript
+const syncStatus = await provider.eth_syncing();
+// Response<SyncStatus | false>
+```
+
+**Returns:**
+- `false` if node is fully synced
+- `SyncStatus` object if syncing:
+  - `startingBlock: Quantity` - Block where sync started
+  - `currentBlock: Quantity` - Current synced block
+  - `highestBlock: Quantity` - Highest known block
+
+**Usage:**
+```typescript
+const response = await provider.eth_syncing();
+
+if (response.data === false) {
+  console.log('Node is fully synced');
+} else {
+  const { currentBlock, highestBlock } = response.data;
+  const progress = (parseInt(currentBlock, 16) / parseInt(highestBlock, 16)) * 100;
+  console.log(`Syncing: ${progress.toFixed(2)}% complete`);
+}
+```
+
+### eth_coinbase
+
+Get the coinbase address (miner/validator).
+
+```typescript
+const coinbase = await provider.eth_coinbase();
+// Response<Address>
+```
+
+**Returns:** Address that receives mining/validation rewards
+
+**Usage:**
+```typescript
+const response = await provider.eth_coinbase();
+console.log(`Coinbase address: ${response.data}`);
+```
+
+<Note>
+Returns null or zero address if not mining/validating
+</Note>
+
+### eth_accounts
+
+List available accounts (if wallet is connected).
+
+```typescript
+const accounts = await provider.eth_accounts();
+// Response<Address[]>
+```
+
+**Returns:** Array of available account addresses
+
+**Usage:**
+```typescript
+const response = await provider.eth_accounts();
+
+if (response.data.length === 0) {
+  console.log('No accounts available');
+} else {
+  console.log(`Found ${response.data.length} account(s):`);
+  response.data.forEach((address, i) => {
+    console.log(`  ${i + 1}. ${address}`);
+  });
+}
+```
+
+<Warning>
+Most public RPC nodes return empty array. Only works with personal/wallet connections.
+</Warning>
+
+## Common Patterns
+
+### Network Detection
+
+```typescript
+async function detectNetwork(provider: Provider) {
+  const response = await provider.eth_chainId();
+  const chainId = parseInt(response.data, 16);
+
+  const networks: Record<number, string> = {
+    1: 'Ethereum Mainnet',
+    11155111: 'Sepolia',
+    17000: 'Holesky',
+    137: 'Polygon',
+    10: 'Optimism',
+    42161: 'Arbitrum One',
+  };
+
+  return networks[chainId] || `Unknown (${chainId})`;
+}
+```
+
+### Check Node Readiness
+
+```typescript
+async function isNodeReady(provider: Provider): Promise<boolean> {
+  const syncResponse = await provider.eth_syncing();
+
+  // Node is ready if not syncing
+  if (syncResponse.data === false) {
+    return true;
+  }
+
+  // Check if syncing is near completion
+  const { currentBlock, highestBlock } = syncResponse.data;
+  const current = parseInt(currentBlock, 16);
+  const highest = parseInt(highestBlock, 16);
+
+  // Consider ready if within 10 blocks
+  return (highest - current) < 10;
+}
+```
+
+### Verify Connection
+
+```typescript
+async function verifyConnection(provider: Provider) {
+  try {
+    // Quick check - chainId is fast and always available
+    const response = await provider.eth_chainId();
+    return {
+      connected: true,
+      chainId: parseInt(response.data, 16),
+    };
+  } catch (error) {
+    return {
+      connected: false,
+      error: error.message,
+    };
+  }
+}
+```
+
+## Related Methods
+
+- [Block Methods](/jsonrpc-provider/eth-methods/index#block-methods) - Query block data
+- [State Methods](/jsonrpc-provider/eth-methods/index#state-methods) - Query account state
+- [Transaction Methods](/jsonrpc-provider/eth-methods/index#transaction-methods) - Send and query transactions
+
+## See Also
+
+- [Response Type](/jsonrpc-provider/types#response) - JSON-RPC response wrapper
+- [Error Handling](/jsonrpc-provider/errors) - Handle RPC errors
+- [EIP-695](https://eips.ethereum.org/EIPS/eip-695) - eth_chainId specification

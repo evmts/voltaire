@@ -1,0 +1,166 @@
+---
+title: Logs & Filters
+description: Query event logs and create filters for monitoring
+---
+
+Query historical event logs and create filters to monitor new blocks, transactions, and events.
+
+## Log Query
+
+### eth_getLogs
+
+Query event logs matching filter criteria.
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const logs = await provider.eth_getLogs({
+  fromBlock: 'earliest',
+  toBlock: 'latest',
+  address: Address('0x...'),
+  topics: [Hash('0x...')]  // Event signature
+});
+// Response<Log[]>
+```
+
+**Parameters:**
+- `fromBlock: BlockTag` - Starting block (default: 'latest')
+- `toBlock: BlockTag` - Ending block (default: 'latest')
+- `address?: Address | Address[]` - Contract address(es) to filter
+- `topics?: Array<Hash | Hash[] | null>` - Event topic filters
+
+**Usage patterns:**
+- Query historical events from contracts
+- Filter by event signature (topic[0])
+- Filter by indexed parameters (topic[1-3])
+- Search across multiple contracts
+
+## Filter Creation
+
+### eth_newFilter
+
+Create a log filter for event monitoring.
+
+```typescript
+const filterId = await provider.eth_newFilter({
+  fromBlock: 'latest',
+  toBlock: 'latest',
+  address: Address('0x...'),
+  topics: []
+});
+// Response<Quantity>
+```
+
+**Parameters:** Same as `eth_getLogs`
+
+**Returns:** Filter ID for polling
+
+### eth_newBlockFilter
+
+Create a filter for new block hashes.
+
+```typescript
+const filterId = await provider.eth_newBlockFilter();
+// Response<Quantity>
+```
+
+Monitor new blocks by polling for changes.
+
+### eth_newPendingTransactionFilter
+
+Create a filter for pending transaction hashes.
+
+```typescript
+const filterId = await provider.eth_newPendingTransactionFilter();
+// Response<Quantity>
+```
+
+Monitor mempool activity by polling for new transactions.
+
+## Filter Polling
+
+### eth_getFilterChanges
+
+Get new entries for a filter since last poll.
+
+```typescript
+const changes = await provider.eth_getFilterChanges(filterId);
+// Response<Log[] | Hash[]>
+```
+
+**Returns:**
+- `Log[]` - For log filters
+- `Hash[]` - For block/transaction filters
+
+**Note:** Resets the filter's internal state - subsequent calls only return new changes.
+
+### eth_getFilterLogs
+
+Get all logs matching a filter (does not reset state).
+
+```typescript
+const logs = await provider.eth_getFilterLogs(filterId);
+// Response<Log[]>
+```
+
+**Note:** Only works with log filters, not block/transaction filters.
+
+## Filter Cleanup
+
+### eth_uninstallFilter
+
+Remove a filter and free resources.
+
+```typescript
+const success = await provider.eth_uninstallFilter(filterId);
+// Response<boolean>
+```
+
+Always uninstall filters when done to prevent resource leaks.
+
+## Usage Example
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Create filter for Transfer events
+const filterId = await provider.eth_newFilter({
+  fromBlock: 'latest',
+  address: Address('0x...'),
+  topics: [
+    Hash('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') // Transfer(address,address,uint256)
+  ]
+});
+
+// Poll for changes
+setInterval(async () => {
+  const logs = await provider.eth_getFilterChanges(filterId);
+  if (logs.length > 0) {
+    console.log('New transfers:', logs);
+  }
+}, 5000);
+
+// Cleanup on exit
+process.on('exit', async () => {
+  await provider.eth_uninstallFilter(filterId);
+});
+```
+
+## Filter Lifecycle
+
+1. **Create** - Use `eth_newFilter`, `eth_newBlockFilter`, or `eth_newPendingTransactionFilter`
+2. **Poll** - Call `eth_getFilterChanges` periodically to get new entries
+3. **Query** - Optionally use `eth_getFilterLogs` to re-query all matches
+4. **Cleanup** - Call `eth_uninstallFilter` when done
+
+<Warning>
+Filters expire after 5 minutes of inactivity on most nodes. Poll regularly to keep them alive.
+</Warning>
+
+## Related
+
+- [State Methods](/jsonrpc-provider/eth-methods/state) - Query account and storage state
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions) - Send and query transactions
+- [Block Methods](/jsonrpc-provider/eth-methods/blocks) - Query block data

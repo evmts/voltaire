@@ -1,0 +1,316 @@
+---
+title: Block Methods
+description: Query blocks, receipts, and transaction counts (8 methods)
+---
+
+# Block Methods
+
+8 methods for querying block data, receipts, and transaction counts.
+
+## Overview
+
+Block methods provide access to block headers, full blocks, transaction receipts, and metadata. Use these methods to query blockchain state at specific block heights or hashes.
+
+## Methods
+
+<Accordion title="eth_blockNumber">
+
+Get the most recent block number.
+
+**Returns:** `Response<Quantity>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const response = await provider.eth_blockNumber();
+
+if (!response.error) {
+  console.log('Current block:', response.result);
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByNumber">
+
+Get block by number with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query (`'latest'`, `'earliest'`, `'pending'`, or block number) |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Response<Block>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Get latest block with full transaction objects
+const block = await provider.eth_getBlockByNumber('latest', true);
+
+if (!block.error) {
+  console.log('Block number:', block.result.number);
+  console.log('Transaction count:', block.result.transactions.length);
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByHash">
+
+Get block by hash with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Response<Block>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Hash('0x...');
+
+const block = await provider.eth_getBlockByHash(blockHash, false);
+
+if (!block.error) {
+  console.log('Block:', block.result);
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockReceipts">
+
+Get all transaction receipts for a block.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Response<TransactionReceipt[]>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const receipts = await provider.eth_getBlockReceipts('latest');
+
+if (!receipts.error) {
+  console.log('Receipts:', receipts.result.length);
+  receipts.result.forEach((receipt, i) => {
+    console.log(`TX ${i} status:`, receipt.status);
+  });
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByHash">
+
+Get transaction count in a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Response<Quantity>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Hash('0x...');
+
+const count = await provider.eth_getBlockTransactionCountByHash(blockHash);
+
+if (!count.error) {
+  console.log('Transaction count:', count.result);
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByNumber">
+
+Get transaction count in a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Response<Quantity>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const count = await provider.eth_getBlockTransactionCountByNumber('latest');
+
+if (!count.error) {
+  console.log('Transaction count:', count.result);
+}
+```
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockHash">
+
+Get uncle count for a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Response<Quantity>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Hash('0x...');
+
+const count = await provider.eth_getUncleCountByBlockHash(blockHash);
+
+if (!count.error) {
+  console.log('Uncle count:', count.result);
+}
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockNumber">
+
+Get uncle count for a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Response<Quantity>`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const count = await provider.eth_getUncleCountByBlockNumber('latest');
+
+if (!count.error) {
+  console.log('Uncle count:', count.result);
+}
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+## Usage Patterns
+
+### Get Latest Block with Transactions
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+const block = await provider.eth_getBlockByNumber('latest', true);
+
+if (!block.error) {
+  console.log('Block:', block.result.number);
+  console.log('Gas used:', block.result.gasUsed);
+  console.log('Transactions:', block.result.transactions.length);
+
+  // Get receipts for all transactions
+  const receipts = await provider.eth_getBlockReceipts('latest');
+  if (!receipts.error) {
+    const gasUsedTotal = receipts.result.reduce(
+      (sum, r) => sum + BigInt(r.gasUsed),
+      0n
+    );
+    console.log('Total gas used:', gasUsedTotal);
+  }
+}
+```
+
+### Query Historical Block
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Query specific block number
+const blockNumber = Quantity(18000000n);
+const block = await provider.eth_getBlockByNumber(blockNumber, false);
+
+if (!block.error) {
+  console.log('Timestamp:', block.result.timestamp);
+  console.log('Miner:', block.result.miner);
+
+  // Get transaction count
+  const txCount = await provider.eth_getBlockTransactionCountByNumber(blockNumber);
+  if (!txCount.error) {
+    console.log('Transactions:', txCount.result);
+  }
+}
+```
+
+### Check Block Finality
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Get latest and finalized blocks
+const [latestRes, finalizedRes] = await Promise.all([
+  provider.eth_getBlockByNumber('latest', false),
+  provider.eth_getBlockByNumber('finalized', false)
+]);
+
+if (!latestRes.error && !finalizedRes.error) {
+  const latest = BigInt(latestRes.result.number);
+  const finalized = BigInt(finalizedRes.result.number);
+  const confirmations = latest - finalized;
+
+  console.log('Latest block:', latest);
+  console.log('Finalized block:', finalized);
+  console.log('Blocks until finalized:', confirmations);
+}
+```
+
+## Related
+
+- [eth Methods](/jsonrpc-provider/eth-methods/index) - All eth namespace methods
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions) - Transaction queries and submission
+- [State Methods](/jsonrpc-provider/eth-methods/state) - Account and storage queries
+- [Block JSON-RPC Types](/jsonrpc/eth/types/block) - Block type definitions

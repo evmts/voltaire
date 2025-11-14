@@ -1,0 +1,70 @@
+---
+title: Comparison
+description: JSONRPCProvider vs EIP-1193, ethers, and viem
+---
+
+# Comparison
+
+How JSONRPCProvider compares to other Ethereum provider libraries.
+
+## vs EIP-1193
+
+| Feature | EIP-1193 | JSONRPCProvider |
+|---------|----------|-----------------|
+| Method calls | `request({ method, params })` | `provider.method(params)` |
+| Parameters | Plain strings/objects | Branded primitive types |
+| Events | `on(event, listener)` | `events.event()` async generator |
+| Errors | Throws exceptions | Returns error values |
+| Type safety | Basic inference | Full inference with brands |
+| Response format | Direct result | `Response<T>` union |
+
+### Migration from EIP-1193
+
+```typescript
+// EIP-1193
+const blockNumber = await provider.request({
+  method: 'eth_blockNumber',
+  params: []
+});
+
+// JSONRPCProvider
+const response = await provider.eth_blockNumber();
+if (!response.error) {
+  const blockNumber = response.result;
+}
+```
+
+## vs ethers.js
+
+| Feature | ethers.js | JSONRPCProvider |
+|---------|-----------|-----------------|
+| Method style | Abstracted (getBalance) | Direct JSON-RPC (eth_getBalance) |
+| Types | Runtime classes | Branded primitives |
+| Response | Throws on error | Returns error values |
+| Events | EventEmitter | Async generators |
+
+Voltaire provides lower-level JSON-RPC access while ethers provides higher-level abstractions.
+
+## vs viem
+
+| Feature | viem | JSONRPCProvider |
+|---------|------|-----------------|
+| API style | Actions | Direct methods |
+| Type system | Narrow types | Branded primitives |
+| Tree-shaking | ✅ Yes | ✅ Yes |
+| WASM | ❌ No | ✅ Yes (optional) |
+
+viem PublicClient is largely compatible with JSONRPCProvider interface.
+
+## When to Use JSONRPCProvider
+
+- **Direct JSON-RPC access** - Need raw JSON-RPC methods without abstraction
+- **Type safety** - Want branded types for compile-time safety
+- **Multi-language** - Building for TypeScript + Zig/Rust/C
+- **WASM acceleration** - Performance-critical crypto operations
+- **Custom providers** - Building custom transport layers
+
+## Related
+
+- [Getting Started](/jsonrpc-provider/getting-started) - Installation and setup
+- [Adapters](/jsonrpc-provider/adapters) - Convert to/from other formats

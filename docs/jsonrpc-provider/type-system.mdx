@@ -1,0 +1,314 @@
+---
+title: Type System
+description: Auto-generated JSON-RPC types from the official OpenRPC specification
+---
+
+# Type System
+
+All JSON-RPC types are auto-generated from the [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specification, ensuring they stay in sync with the official Ethereum JSON-RPC API.
+
+## Auto-Generation from OpenRPC
+
+Types are generated using Zig codegen tools from the official OpenRPC spec:
+
+```bash
+# Generate all types (eth, debug, engine)
+zig build generate-jsonrpc
+
+# Or using npm script
+npm run generate:jsonrpc
+```
+
+**Source**: [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specification
+
+**Format**: [OpenRPC](https://open-rpc.org/) JSON-RPC API description
+
+**Total methods**: 65 across 3 namespaces (eth, debug, engine)
+
+## Type Hierarchy
+
+### Namespace Organization
+
+```
+jsonrpc/
+├── types/              # Hand-written base types
+│   ├── Address.ts/zig
+│   ├── Hash.ts/zig
+│   ├── Quantity.ts/zig
+│   ├── BlockTag.ts/zig
+│   └── BlockSpec.ts/zig
+├── eth/                # Generated: 40 eth_* methods
+├── debug/              # Generated: 5 debug_* methods
+├── engine/             # Generated: 20 engine_* methods
+├── JsonRpc.ts/zig      # Root union of all methods
+└── index.ts/root.zig   # Module entry
+```
+
+**Important**: All files except `types/` are auto-generated and should **not** be edited manually.
+
+### Base Types
+
+Core types used throughout the JSON-RPC API:
+
+```typescript
+// Address - 20-byte Ethereum address
+type Address = Uint8Array & { readonly __tag: "Address" };
+
+// Hash - 32-byte hash
+type Hash = Uint8Array & { readonly __tag: "Hash" };
+
+// Hex - Hex-encoded byte string
+type Hex = string & { readonly __tag: "Hex" };
+
+// Quantity - Hex-encoded unsigned integer
+type Quantity = string & { readonly __tag: "Quantity" };
+
+// BlockTag - Block identifier
+type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | Quantity;
+```
+
+These types are hand-written in `jsonrpc/types/` and used by generated method definitions.
+
+## Branded Primitives Integration
+
+Generated types use Voltaire's branded primitive system:
+
+```typescript
+// Generated eth_getBalance params
+interface EthGetBalanceParams {
+  address: Address;    // Branded Address from primitives
+  block: BlockTag;     // BlockTag type
+}
+
+// Generated eth_call params
+interface EthCallParams {
+  from?: Address;
+  to: Address;
+  gas?: Quantity;
+  gasPrice?: Quantity;
+  value?: Quantity;
+  data?: Hex;          // Branded Hex from primitives
+}
+```
+
+**Benefits**:
+- Type-safe at compile time
+- Zero runtime overhead (just Uint8Array/string)
+- Can't mix Address and Hash accidentally
+- IDE autocomplete and refactoring
+
+## Method Type Structure
+
+Each generated method includes:
+
+```typescript
+// Example: eth_getBalance
+export namespace eth_getBalance {
+  // Request parameters
+  export interface Params {
+    address: Address;
+    block: BlockTag;
+  }
+
+  // Response result type
+  export type Result = Quantity;
+
+  // Full method type
+  export type Method = (
+    address: Address,
+    block: BlockTag
+  ) => Promise<Response<Quantity>>;
+}
+```
+
+## Response Type
+
+All methods return the same `Response<T>` structure:
+
+```typescript
+type Response<T> =
+  | { result: T; error?: never }
+  | { result?: never; error: RpcError };
+
+interface RpcError {
+  code: number;
+  message: string;
+  data?: unknown;
+}
+```
+
+This enforces error checking before accessing results.
+
+## Type Safety Examples
+
+### Compile-Time Validation
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+// ✅ Correct: Address type
+await provider.eth_getBalance(Address('0x...'), 'latest');
+
+// ❌ Error: string not assignable to Address
+await provider.eth_getBalance('0x...', 'latest');
+
+// ❌ Error: Hash not assignable to Address
+await provider.eth_getBalance(Hash('0x...'), 'latest');
+```
+
+### Type Inference
+
+TypeScript infers return types automatically:
+
+```typescript
+// Inferred: Promise<Response<Quantity>>
+const balanceResponse = await provider.eth_getBalance(address, 'latest');
+
+// Inferred: Promise<Response<Block>>
+const blockResponse = await provider.eth_getBlockByNumber('latest', true);
+
+// Inferred: Promise<Response<Hex>>
+const callResponse = await provider.eth_call(params, 'latest');
+```
+
+### Discriminated Unions
+
+After checking for errors, TypeScript narrows types:
+
+```typescript
+const response = await provider.eth_getBalance(address, 'latest');
+
+if (response.error) {
+  // response.error: RpcError
+  // response.result: undefined
+  console.error(response.error.message);
+} else {
+  // response.result: Quantity
+  // response.error: undefined
+  const balance = BigInt(response.result);
+}
+```
+
+## TypeScript and Zig Interop
+
+Types are generated for both TypeScript and Zig:
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+// TypeScript types
+import * as eth from '@tevm/voltaire/jsonrpc/eth';
+
+type BalanceParams = typeof eth.eth_getBalance.Params;
+type BalanceResult = typeof eth.eth_getBalance.Result;
+
+const params: BalanceParams = {
+  address: Address('0x...'),
+  block: 'latest'
+};
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+// Zig types
+const jsonrpc = @import("jsonrpc");
+const eth = jsonrpc.eth;
+
+// eth_getBalance params
+const params = eth.EthGetBalance.Params{
+    .address = "0x...",
+    .block = "latest",
+};
+
+// eth_getBalance result
+const result: eth.EthGetBalance.Result = try call(params);
+```
+
+</Tab>
+</Tabs>
+
+## Version Compatibility
+
+Generated types match the version of ethereum/execution-apis used during generation.
+
+**Current version**: Based on latest execution-apis main branch
+
+**Update frequency**: Regenerate types when new RPC methods or parameters are added to the spec
+
+**Breaking changes**: Rare, but follow Ethereum's JSON-RPC versioning (e.g., engine_newPayloadV1 → V2 → V3)
+
+## Custom Types
+
+While most types are generated, you can extend them for application-specific needs:
+
+```typescript
+import type { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
+
+// Custom wrapper type
+interface AccountInfo {
+  address: Address.BrandedAddress;
+  balance: bigint;
+  nonce: number;
+  isContract: boolean;
+}
+
+// Helper function using generated types
+async function getAccountInfo(
+  provider: Provider,
+  address: Address.BrandedAddress
+): Promise<AccountInfo | null> {
+  const [balanceRes, nonceRes, codeRes] = await Promise.all([
+    provider.eth_getBalance(address, 'latest'),
+    provider.eth_getTransactionCount(address, 'latest'),
+    provider.eth_getCode(address, 'latest')
+  ]);
+
+  if (balanceRes.error || nonceRes.error || codeRes.error) {
+    return null;
+  }
+
+  return {
+    address,
+    balance: BigInt(balanceRes.result),
+    nonce: Number(nonceRes.result),
+    isContract: codeRes.result !== '0x'
+  };
+}
+```
+
+## Regenerating Types
+
+When ethereum/execution-apis is updated:
+
+```bash
+# Update submodule (if using git submodule)
+git submodule update --remote vendor/execution-apis
+
+# Regenerate all types
+zig build generate-jsonrpc
+
+# Clean generated files (preserves hand-written types/)
+zig build clean-jsonrpc
+```
+
+**Generated files**: Do not edit manually - changes will be overwritten
+
+**Hand-written files** (`jsonrpc/types/`): Safe to edit
+
+## Related
+
+- [Method API](/jsonrpc-provider/method-api) - Using typed methods
+- [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
+- [debug Methods](/jsonrpc-provider/debug-methods) - All 5 debug namespace methods
+- [engine Methods](/jsonrpc-provider/engine-methods) - All 20 engine namespace methods
+
+## Specifications
+
+- [ethereum/execution-apis](https://github.com/ethereum/execution-apis) - Official JSON-RPC specification
+- [OpenRPC](https://open-rpc.org/) - JSON-RPC API description format
+- [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) - Ethereum Provider JavaScript API

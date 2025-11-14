@@ -1,0 +1,448 @@
+---
+title: Transaction Methods
+description: Submit, query, and track Ethereum transactions via JSON-RPC
+---
+
+# Transaction Methods
+
+9 methods for submitting signed transactions, querying transaction data, and managing account nonces.
+
+## Overview
+
+Transaction methods handle the full lifecycle: submission, retrieval, receipt tracking, and nonce management.
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+const provider = new Provider({ url: 'https://eth.llamarpc.com' });
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+// Submit transaction
+const txHash = await provider.eth_sendRawTransaction(signedTx);
+
+// Track transaction
+const tx = await provider.eth_getTransactionByHash(txHash.result);
+const receipt = await provider.eth_getTransactionReceipt(txHash.result);
+
+// Get nonce
+const nonce = await provider.eth_getTransactionCount(address, 'latest');
+```
+
+## Methods
+
+<Accordion title="eth_sendRawTransaction">
+
+Submit a signed transaction to the network for execution.
+
+**Parameters:**
+- `signedTransaction: Hex` - Signed transaction bytes
+
+**Returns:** `Response<Hash>` - Transaction hash
+
+```typescript
+const txHash = await provider.eth_sendRawTransaction(
+  Hex('0xf86c808504a817c800825208...')
+);
+// Response<Hash>
+```
+
+**Use cases:**
+- Submit pre-signed transactions
+- Broadcast transactions from offline signing
+- Send transactions without wallet interaction
+
+</Accordion>
+
+<Accordion title="eth_sendTransaction">
+
+Sign and send a transaction (requires unlocked account). Most nodes disable this for security.
+
+**Parameters:**
+- `transaction: TransactionRequest` - Transaction parameters
+  - `from: Address` - Sender address (must be unlocked)
+  - `to?: Address` - Recipient address (omit for contract creation)
+  - `value?: Quantity` - ETH amount in wei
+  - `data?: Hex` - Transaction data
+  - `gas?: Quantity` - Gas limit
+  - `gasPrice?: Quantity` - Gas price (legacy)
+  - `maxFeePerGas?: Quantity` - Max fee (EIP-1559)
+  - `maxPriorityFeePerGas?: Quantity` - Max priority fee (EIP-1559)
+  - `nonce?: Quantity` - Transaction nonce
+
+**Returns:** `Response<Hash>` - Transaction hash
+
+```typescript
+const txHash = await provider.eth_sendTransaction({
+  from: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'),
+  to: Address('0x5FbDB2315678afecb367f032d93F642f64180aa3'),
+  value: Quantity(1000000000000000000n), // 1 ETH
+  data: Hex('0x')
+});
+// Response<Hash>
+```
+
+<Warning>
+Most public nodes do not support this method. Use `eth_sendRawTransaction` with client-side signing instead.
+</Warning>
+
+</Accordion>
+
+<Accordion title="eth_getTransactionByHash">
+
+Get transaction details by hash. Returns null if transaction not found.
+
+**Parameters:**
+- `hash: Hash` - Transaction hash
+
+**Returns:** `Response<Transaction | null>` - Transaction object or null
+
+```typescript
+const tx = await provider.eth_getTransactionByHash(
+  Hash('0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b')
+);
+
+if (!tx.error && tx.result) {
+  console.log('From:', tx.result.from);
+  console.log('To:', tx.result.to);
+  console.log('Value:', tx.result.value);
+  console.log('Block:', tx.result.blockNumber);
+}
+```
+
+**Transaction fields:**
+- `hash: Hash` - Transaction hash
+- `from: Address` - Sender address
+- `to: Address | null` - Recipient (null for contract creation)
+- `value: Quantity` - ETH amount in wei
+- `input: Hex` - Transaction data
+- `nonce: Quantity` - Sender nonce
+- `gas: Quantity` - Gas limit
+- `gasPrice: Quantity` - Gas price
+- `blockHash: Hash | null` - Block hash (null if pending)
+- `blockNumber: Quantity | null` - Block number (null if pending)
+- `transactionIndex: Quantity | null` - Index in block (null if pending)
+
+</Accordion>
+
+<Accordion title="eth_getTransactionByBlockHashAndIndex">
+
+Get transaction by block hash and transaction index within that block.
+
+**Parameters:**
+- `blockHash: Hash` - Block hash
+- `index: Quantity` - Transaction index in block (0-indexed)
+
+**Returns:** `Response<Transaction | null>` - Transaction object or null
+
+```typescript
+const tx = await provider.eth_getTransactionByBlockHashAndIndex(
+  Hash('0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35'),
+  Quantity(0) // First transaction
+);
+// Response<Transaction | null>
+```
+
+**Use cases:**
+- Iterate through block transactions by index
+- Retrieve specific transaction position
+- Process transactions sequentially
+
+</Accordion>
+
+<Accordion title="eth_getTransactionByBlockNumberAndIndex">
+
+Get transaction by block number and transaction index within that block.
+
+**Parameters:**
+- `blockTag: BlockTag` - Block number or tag ('latest', 'earliest', 'pending', 'safe', 'finalized')
+- `index: Quantity` - Transaction index in block (0-indexed)
+
+**Returns:** `Response<Transaction | null>` - Transaction object or null
+
+```typescript
+const tx = await provider.eth_getTransactionByBlockNumberAndIndex(
+  'latest',
+  Quantity(0)
+);
+// Response<Transaction | null>
+
+// By block number
+const tx2 = await provider.eth_getTransactionByBlockNumberAndIndex(
+  Quantity(18000000),
+  Quantity(5)
+);
+```
+
+**Use cases:**
+- Get transactions from recent blocks
+- Access finalized/safe transactions
+- Query specific transaction positions
+
+</Accordion>
+
+<Accordion title="eth_getTransactionReceipt">
+
+Get transaction receipt (includes status, logs, gas used). Returns null if transaction not mined.
+
+**Parameters:**
+- `hash: Hash` - Transaction hash
+
+**Returns:** `Response<TransactionReceipt | null>` - Receipt object or null
+
+```typescript
+const receipt = await provider.eth_getTransactionReceipt(
+  Hash('0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b')
+);
+
+if (!receipt.error && receipt.result) {
+  console.log('Status:', receipt.result.status); // 1 = success, 0 = failure
+  console.log('Gas used:', receipt.result.gasUsed);
+  console.log('Logs:', receipt.result.logs);
+  console.log('Contract address:', receipt.result.contractAddress);
+}
+```
+
+**Receipt fields:**
+- `transactionHash: Hash` - Transaction hash
+- `transactionIndex: Quantity` - Index in block
+- `blockHash: Hash` - Block hash
+- `blockNumber: Quantity` - Block number
+- `from: Address` - Sender address
+- `to: Address | null` - Recipient (null for contract creation)
+- `cumulativeGasUsed: Quantity` - Total gas used in block up to this tx
+- `gasUsed: Quantity` - Gas used by this transaction
+- `contractAddress: Address | null` - Created contract address (null if not creation)
+- `logs: Log[]` - Event logs emitted
+- `logsBloom: Hex` - Bloom filter for logs
+- `status: Quantity` - 1 for success, 0 for failure (post-Byzantium)
+- `effectiveGasPrice: Quantity` - Actual gas price paid
+
+</Accordion>
+
+<Accordion title="eth_getTransactionCount">
+
+Get transaction count (nonce) for an address. This is the next nonce to use.
+
+**Parameters:**
+- `address: Address` - Account address
+- `blockTag: BlockTag` - Block to query ('latest', 'earliest', 'pending', 'safe', 'finalized')
+
+**Returns:** `Response<Quantity>` - Transaction count (nonce)
+
+```typescript
+const nonce = await provider.eth_getTransactionCount(
+  Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'),
+  'latest'
+);
+// Response<Quantity>
+
+// Use pending for accurate nonce when submitting multiple transactions
+const pendingNonce = await provider.eth_getTransactionCount(
+  Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'),
+  'pending'
+);
+```
+
+**Block tag semantics:**
+- `'latest'` - Last mined block (confirmed transactions)
+- `'pending'` - Includes pending transactions (for sequential submission)
+- `'safe'` - Safe block (post-merge)
+- `'finalized'` - Finalized block (post-merge)
+
+**Use cases:**
+- Get next nonce before signing transaction
+- Check account activity (nonce = 0 means no transactions)
+- Track pending transactions
+
+</Accordion>
+
+<Accordion title="eth_sign">
+
+Sign arbitrary data with an account (requires unlocked account).
+
+**Parameters:**
+- `address: Address` - Account to sign with (must be unlocked)
+- `message: Hex` - Data to sign
+
+**Returns:** `Response<Hex>` - Signature bytes
+
+```typescript
+const signature = await provider.eth_sign(
+  Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'),
+  Hex('0xdeadbeef')
+);
+// Response<Hex>
+```
+
+<Warning>
+`eth_sign` is dangerous and deprecated. It can sign arbitrary data including valid transactions, enabling phishing attacks. Use typed signing methods like EIP-712 (`eth_signTypedData_v4`) instead.
+</Warning>
+
+</Accordion>
+
+<Accordion title="eth_signTransaction">
+
+Sign a transaction (requires unlocked account). Returns signed transaction without broadcasting.
+
+**Parameters:**
+- `transaction: TransactionRequest` - Transaction to sign
+  - `from: Address` - Sender address (must be unlocked)
+  - `to?: Address` - Recipient address
+  - `value?: Quantity` - ETH amount in wei
+  - `data?: Hex` - Transaction data
+  - `gas?: Quantity` - Gas limit
+  - `gasPrice?: Quantity` - Gas price (legacy)
+  - `maxFeePerGas?: Quantity` - Max fee (EIP-1559)
+  - `maxPriorityFeePerGas?: Quantity` - Max priority fee (EIP-1559)
+  - `nonce?: Quantity` - Transaction nonce
+
+**Returns:** `Response<Hex>` - Signed transaction bytes
+
+```typescript
+const signedTx = await provider.eth_signTransaction({
+  from: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'),
+  to: Address('0x5FbDB2315678afecb367f032d93F642f64180aa3'),
+  value: Quantity(1000000000000000000n),
+  gas: Quantity(21000)
+});
+
+// Broadcast later
+if (!signedTx.error) {
+  const txHash = await provider.eth_sendRawTransaction(signedTx.result);
+}
+```
+
+<Warning>
+Most public nodes do not support this method. Use client-side signing libraries like `@noble/secp256k1` or Voltaire's crypto primitives instead.
+</Warning>
+
+</Accordion>
+
+## Usage Patterns
+
+### Submit and Monitor Transaction
+
+```typescript
+// 1. Get current nonce
+const nonceRes = await provider.eth_getTransactionCount(senderAddress, 'pending');
+if (nonceRes.error) throw new Error('Failed to get nonce');
+
+// 2. Sign transaction (client-side)
+const signedTx = signTransaction({
+  nonce: nonceRes.result,
+  to: recipientAddress,
+  value: Quantity(1000000000000000000n),
+  gas: Quantity(21000),
+  gasPrice: gasPriceRes.result
+}, privateKey);
+
+// 3. Submit transaction
+const txHashRes = await provider.eth_sendRawTransaction(signedTx);
+if (txHashRes.error) throw new Error('Failed to submit transaction');
+
+// 4. Poll for receipt
+let receipt = null;
+let attempts = 0;
+const maxAttempts = 60;
+
+while (!receipt && attempts < maxAttempts) {
+  const receiptRes = await provider.eth_getTransactionReceipt(txHashRes.result);
+
+  if (!receiptRes.error && receiptRes.result) {
+    receipt = receiptRes.result;
+
+    if (receipt.status === Quantity(1)) {
+      console.log('Transaction successful in block', receipt.blockNumber);
+    } else {
+      console.log('Transaction failed');
+    }
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  attempts++;
+}
+
+if (!receipt) {
+  console.log('Transaction not mined after 60 seconds');
+}
+```
+
+### Query Transaction Status
+
+```typescript
+// Get transaction and receipt
+const [txRes, receiptRes] = await Promise.all([
+  provider.eth_getTransactionByHash(txHash),
+  provider.eth_getTransactionReceipt(txHash)
+]);
+
+if (txRes.error || !txRes.result) {
+  console.log('Transaction not found');
+} else if (receiptRes.error || !receiptRes.result) {
+  console.log('Transaction pending (not mined yet)');
+} else {
+  const receipt = receiptRes.result;
+
+  if (receipt.status === Quantity(1)) {
+    console.log('Transaction successful');
+    console.log('Gas used:', receipt.gasUsed);
+    console.log('Logs:', receipt.logs.length);
+  } else {
+    console.log('Transaction failed');
+  }
+}
+```
+
+### Get Account Nonce
+
+```typescript
+// For next transaction submission
+const nonce = await provider.eth_getTransactionCount(address, 'pending');
+
+// For confirmed transaction count
+const confirmedNonce = await provider.eth_getTransactionCount(address, 'latest');
+
+// Check if account has pending transactions
+if (!nonce.error && !confirmedNonce.error) {
+  const pendingCount = Number(nonce.result) - Number(confirmedNonce.result);
+  console.log(`Account has ${pendingCount} pending transactions`);
+}
+```
+
+### Process Block Transactions
+
+```typescript
+// Get transaction count
+const countRes = await provider.eth_getBlockTransactionCountByNumber('latest');
+
+if (!countRes.error) {
+  const count = Number(countRes.result);
+
+  // Fetch all transactions
+  const txPromises = Array.from({ length: count }, (_, i) =>
+    provider.eth_getTransactionByBlockNumberAndIndex('latest', Quantity(i))
+  );
+
+  const txResults = await Promise.all(txPromises);
+
+  for (const txRes of txResults) {
+    if (!txRes.error && txRes.result) {
+      console.log('Transaction:', txRes.result.hash);
+      console.log('From:', txRes.result.from);
+      console.log('To:', txRes.result.to);
+      console.log('Value:', txRes.result.value);
+    }
+  }
+}
+```
+
+## Related
+
+- [Block Methods](/jsonrpc-provider/eth-methods/blocks) - Query blocks containing transactions
+- [eth_call](/jsonrpc-provider/eth-methods/index#call-methods) - Execute read-only calls
+- [eth_getLogs](/jsonrpc-provider/eth-methods/index#log-filter-methods) - Query transaction event logs
+- [Transaction Primitive](/primitives/transaction) - Transaction data structures
+- [Error Handling](/jsonrpc-provider/error-handling) - Handle transaction errors

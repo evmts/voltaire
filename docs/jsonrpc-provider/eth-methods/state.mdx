@@ -1,0 +1,227 @@
+---
+title: State Query Methods
+description: Query Ethereum state with eth_getBalance, eth_getCode, eth_getStorageAt, eth_getProof
+---
+
+State methods query account balances, contract bytecode, storage, and Merkle proofs at specific block heights.
+
+## eth_getBalance
+
+Get ether balance of an address.
+
+```typescript
+const balance = await provider.eth_getBalance(address, 'latest');
+// Response<Quantity>
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+const provider = Provider({ url: 'https://eth.llamarpc.com' });
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+const balance = await provider.eth_getBalance(address, 'latest');
+if (balance.isOk()) {
+  console.log(`Balance: ${balance.value} wei`);
+}
+```
+
+## eth_getCode
+
+Get contract bytecode at an address.
+
+```typescript
+const code = await provider.eth_getCode(address, 'latest');
+// Response<Hex>
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```typescript
+// Check if address is a contract
+const code = await provider.eth_getCode(address, 'latest');
+if (code.isOk() && code.value !== '0x') {
+  console.log('Address is a contract');
+  console.log('Bytecode:', code.value);
+} else {
+  console.log('Address is an EOA');
+}
+```
+
+## eth_getStorageAt
+
+Get value from a contract storage slot.
+
+```typescript
+const value = await provider.eth_getStorageAt(
+  address,
+  Quantity(0),
+  'latest'
+);
+// Response<Hex>
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `position: Quantity` - Storage slot
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```typescript
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
+
+// Read storage slot 0
+const value = await provider.eth_getStorageAt(
+  contractAddress,
+  Quantity(0),
+  'latest'
+);
+
+if (value.isOk()) {
+  console.log('Storage slot 0:', value.value);
+}
+
+// Read multiple slots
+const slots = [0, 1, 2];
+const values = await Promise.all(
+  slots.map(slot =>
+    provider.eth_getStorageAt(contractAddress, Quantity(slot), 'latest')
+  )
+);
+```
+
+## eth_getProof
+
+Get Merkle proof for account and storage values.
+
+```typescript
+const proof = await provider.eth_getProof(
+  address,
+  [Quantity(0), Quantity(1)],
+  'latest'
+);
+// Response<Proof>
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `storageKeys: Quantity[]` - Storage slots to prove
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```typescript
+// Get proof for account and storage
+const proof = await provider.eth_getProof(
+  address,
+  [Quantity(0), Quantity(1)],
+  'latest'
+);
+
+if (proof.isOk()) {
+  console.log('Account proof:', proof.value.accountProof);
+  console.log('Storage proofs:', proof.value.storageProof);
+  console.log('Balance:', proof.value.balance);
+  console.log('Nonce:', proof.value.nonce);
+  console.log('Code hash:', proof.value.codeHash);
+  console.log('Storage hash:', proof.value.storageHash);
+}
+```
+
+**Proof structure:**
+```typescript
+interface Proof {
+  address: Address;
+  accountProof: Hex[];
+  balance: Quantity;
+  codeHash: Hash;
+  nonce: Quantity;
+  storageHash: Hash;
+  storageProof: {
+    key: Quantity;
+    value: Quantity;
+    proof: Hex[];
+  }[];
+}
+```
+
+## Common Patterns
+
+### Check account type
+```typescript
+// Determine if address is contract or EOA
+const [balance, code] = await Promise.all([
+  provider.eth_getBalance(address, 'latest'),
+  provider.eth_getCode(address, 'latest')
+]);
+
+if (balance.isOk() && code.isOk()) {
+  const isContract = code.value !== '0x';
+  const hasBalance = balance.value > 0n;
+
+  console.log('Account type:', isContract ? 'Contract' : 'EOA');
+  console.log('Has balance:', hasBalance);
+}
+```
+
+### Verify state proof
+```typescript
+// Get proof for account state
+const proof = await provider.eth_getProof(
+  address,
+  [Quantity(0)],
+  'latest'
+);
+
+if (proof.isOk()) {
+  // Verify account proof against state root
+  const stateRoot = await provider.eth_getBlockByNumber('latest', false);
+
+  if (stateRoot.isOk()) {
+    // Verify Merkle proof
+    // (verification logic depends on your needs)
+    console.log('State root:', stateRoot.value.stateRoot);
+    console.log('Account proof valid');
+  }
+}
+```
+
+### Read contract state
+```typescript
+// Read multiple storage slots efficiently
+async function readContractState(
+  provider: Provider,
+  address: Address,
+  slots: number[]
+): Promise<Map<number, Hex>> {
+  const results = await Promise.all(
+    slots.map(slot =>
+      provider.eth_getStorageAt(address, Quantity(slot), 'latest')
+    )
+  );
+
+  const state = new Map<number, Hex>();
+  for (let i = 0; i < slots.length; i++) {
+    if (results[i].isOk()) {
+      state.set(slots[i], results[i].value);
+    }
+  }
+
+  return state;
+}
+
+// Usage
+const state = await readContractState(
+  provider,
+  contractAddress,
+  [0, 1, 2, 3, 4]
+);
+```
