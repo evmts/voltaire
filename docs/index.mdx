@@ -131,103 +131,53 @@ claude mcp add --transport http tevm https://voltaire.tevm.sh/mcp
       </div>
     </div>
 
-    <div style={{ maxWidth: '1000px', margin: '5rem auto 0' }}>
-      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Try It Now</h2>
-      <p style={{ fontSize: '1.1rem', color: '#999', textAlign: 'center', marginBottom: '2rem', maxWidth: '700px', margin: '0 auto 2rem' }}>
-        Explore Voltaire with interactive examples. Click through the tabs to see different features in action.
-      </p>
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button className="sandbox-tab" data-sandbox="address" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '2px solid rgba(212, 147, 30, 0.5)', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
-          Address Generation
-        </button>
-        <button className="sandbox-tab" data-sandbox="keccak" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
-          Keccak256 Hashing
-        </button>
-        <button className="sandbox-tab" data-sandbox="transaction" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
-          Transaction Encoding
-        </button>
-        <button className="sandbox-tab" data-sandbox="abi" style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
-          ABI Encoding
-        </button>
-      </div>
-      <iframe
-        id="voltaire-sandbox"
-        style={{ width: '100%', height: '600px', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', overflow: 'hidden' }}
-        title="Voltaire Interactive Demo"
-        allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-        sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-      ></iframe>
-      <script dangerouslySetInnerHTML={{__html: `
-        (function() {
-          const sandboxes = {
-            address: 'https://codesandbox.io/embed/wclsxd?view=editor+%2B+preview&module=%2Fsrc%2Findex.mjs&hidenavigation=1',
-            keccak: 'https://codesandbox.io/embed/wclsxd?view=editor+%2B+preview&module=%2Fsrc%2Findex.mjs&hidenavigation=1',
-            transaction: 'https://codesandbox.io/embed/wclsxd?view=editor+%2B+preview&module=%2Fsrc%2Findex.mjs&hidenavigation=1',
-            abi: 'https://codesandbox.io/embed/wclsxd?view=editor+%2B+preview&module=%2Fsrc%2Findex.mjs&hidenavigation=1'
-          };
+    <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
 
-          let currentSandbox = 'address';
+    <script dangerouslySetInnerHTML={{__html: `
+      // Wait for full page load and React hydration
+      window.addEventListener('load', function() {
+        setTimeout(initMonaco, 500);
+      });
 
-          function init() {
-            const iframe = document.getElementById('voltaire-sandbox');
-            const tabs = document.querySelectorAll('.sandbox-tab');
+      async function initMonaco() {
+        const mountPoint = document.getElementById('editor-mount-point');
+        if (!mountPoint) return;
 
-            if (!iframe || tabs.length === 0) {
-              setTimeout(init, 50);
-              return;
-            }
+        mountPoint.innerHTML = \`
+          <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700; text-align: center; margin-bottom: 1rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Try It Now</h2>
+          <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
+            Edit and experiment with live Voltaire code examples.
+          </p>
+          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;"></div>
+        \`;
 
-            function getTheme() {
-              const storedDarkMode = localStorage.getItem('isDarkMode');
-              return storedDarkMode === 'true' ? 'dark' : 'light';
-            }
+        try {
+          const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
+          const monaco = await init();
 
-            function updateIframe(sandboxKey) {
-              const baseUrl = sandboxes[sandboxKey];
-              iframe.src = baseUrl + '&theme=' + getTheme();
-              currentSandbox = sandboxKey;
-            }
+          const editor = monaco.editor.create(document.getElementById('editor-container'), {
+            padding: { top: 8, bottom: 8 },
+          });
 
-            function setActiveTab(activeTab) {
-              tabs.forEach(tab => {
-                const isActive = tab === activeTab;
-                tab.style.background = isActive ? 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)' : 'transparent';
-                tab.style.color = isActive ? 'white' : 'currentColor';
-                tab.style.borderColor = isActive ? 'rgba(212, 147, 30, 0.5)' : 'rgba(128, 128, 128, 0.3)';
-              });
-            }
+          const code = \`// Generate Ethereum address from private key
+import { Address } from "@tevm/voltaire/Address";
+import { Hex } from "@tevm/voltaire/Hex";
 
-            tabs.forEach(tab => {
-              tab.addEventListener('click', () => {
-                const sandboxKey = tab.getAttribute('data-sandbox');
-                updateIframe(sandboxKey);
-                setActiveTab(tab);
-              });
-            });
+const privateKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const privateKey = Hex.toBytes(privateKeyHex);
 
-            updateIframe('address');
+const address = Address.fromPrivateKey(privateKey);
+const checksummed = Address.toHex(address);
 
-            const observer = new MutationObserver(() => {
-              const theme = getTheme();
-              const currentTheme = iframe.src.includes('theme=light') ? 'light' : 'dark';
-              if (currentTheme !== theme) {
-                updateIframe(currentSandbox);
-              }
-            });
+console.log("Address:", checksummed);\`;
 
-            observer.observe(document.documentElement, {
-              attributes: true,
-              attributeFilter: ['class', 'data-theme']
-            });
-          }
-
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-          } else {
-            init();
-          }
-        })();
-      `}}></script>
-    </div>
+          const model = monaco.editor.createModel(code, 'typescript');
+          editor.setModel(model);
+        } catch (e) {
+          document.getElementById('editor-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Failed to load editor</div>';
+        }
+      }
+    `}}>
+    </script>
   </div>
 

@@ -516,6 +516,7 @@
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.23.0",
 		"@tevm/chains": "^0.0.1",
-		"c-kzg": "^4.1.0"
+		"c-kzg": "^4.1.0",
+		"modern-monaco": "./modern-monaco"
 	}
 }
