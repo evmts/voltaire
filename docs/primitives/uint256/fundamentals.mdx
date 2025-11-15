@@ -10,7 +10,7 @@ description: Learn unsigned integers, EVM types, and arithmetic operations
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Uint API](/primitives/uint256/index).
 </Info>
-Unsigned integers are non-negative whole numbers used throughout Ethereum for amounts, balances, timestamps, and more. This guide teaches uint fundamentals using Voltaire.
+Unsigned integers are non-negative whole numbers used throughout Ethereum for amounts, balances, timestamps, and more. This guide teaches uint fundamentals using Tevm.
 
 ## What Are Unsigned Integers?
 
@@ -53,7 +53,7 @@ Most Ethereum operations use `uint256` (32 bytes) because:
 <Tabs>
 <Tab title="From Bigint">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Direct construction (recommended for known values)
 const amount = Uint(1000000000000000000n);  // 1 ETH in wei
@@ -67,7 +67,7 @@ const value = Uint(100n);
 </Tab>
 <Tab title="From Hex">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Parse hex strings
 const fromHex = Uint("0xff");         // 255
@@ -82,7 +82,7 @@ console.log(a.equals(b));  // true
 </Tab>
 <Tab title="From Number">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // From JavaScript numbers (safe up to Number.MAX_SAFE_INTEGER)
 const count = Uint(42);
@@ -98,7 +98,7 @@ const large = Uint(10n ** 20n);  // ✅ Correct
 </Tab>
 <Tab title="From Bytes">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // From Uint8Array (32 bytes, big-endian)
 const bytes = Bytes32();
@@ -117,7 +117,7 @@ const decoded = Uint(abiEncoded);
 The EVM stores unsigned integers in **big-endian** format: most significant byte first.
 
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Example: 255 (0xff) in big-endian
 const value = Uint(255n);
@@ -143,7 +143,7 @@ All arithmetic wraps on overflow (mod 2^256), matching EVM behavior:
 <Tabs>
 <Tab title="Basic Arithmetic">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const a = Uint(100n);
 const b = Uint(50n);
@@ -175,7 +175,7 @@ console.log(power.toBigInt());            // 256n
 </Tab>
 <Tab title="Overflow Wrapping">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Addition overflow wraps around
 const max = Uint.MAX;  // 2^256 - 1
@@ -197,7 +197,7 @@ console.log(product.lessThan(Uint.MAX));  // true (wrapped)
 </Tab>
 <Tab title="Safe Arithmetic">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Check before operations to avoid wrapping
 function safeAdd(a: Uint, b: Uint): Uint | null {
@@ -226,7 +226,7 @@ console.log(result === null);  // true (would overflow)
 <Tabs>
 <Tab title="Equality">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const a = Uint(100n);
 const b = Uint(100n);
@@ -243,7 +243,7 @@ console.log(a.isZero());          // false
 </Tab>
 <Tab title="Ordering">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const a = Uint(100n);
 const b = Uint(200n);
@@ -261,7 +261,7 @@ console.log(b.greaterThanOrEqual(b)); // true
 </Tab>
 <Tab title="Sorting">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Sort array of uints
 const values = [
@@ -287,7 +287,7 @@ console.log(values.map(v => v.toBigInt()));
 <Tabs>
 <Tab title="Logical Operations">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const a = Uint("0xff00");  // 0xff00
 const b = Uint("0x00ff");  // 0x00ff
@@ -311,7 +311,7 @@ console.log(not.toHex().slice(0, 10));  // "0x000000..." (inverted bits)
 </Tab>
 <Tab title="Bit Shifts">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint(1n);
 
@@ -330,7 +330,7 @@ const overflow = large.shiftLeft(10);  // Wraps (keeps lower 256 bits)
 </Tab>
 <Tab title="Bit Manipulation">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint("0xff00ff");
 
@@ -349,10 +349,10 @@ console.log(lowerByte.toHex(false));  // "0xff"
 
 ## Size Variants and Padding
 
-While Voltaire focuses on uint256, you can work with smaller sizes:
+While Tevm focuses on uint256, you can work with smaller sizes:
 
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Simulate uint8 (0-255)
 function toUint8(value: Uint): Uint {
@@ -380,7 +380,7 @@ console.log(u16.toBigInt()); // 1000n (fits in uint16)
 <Tabs>
 <Tab title="Token Amounts">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // ERC20 token with 18 decimals
 const tokenDecimals = 18n;
@@ -400,7 +400,7 @@ console.log(toDisplayValue(amount, tokenDecimals));  // "1000.000000000000000000
 </Tab>
 <Tab title="Wei/Ether Conversions">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // 1 ether = 10^18 wei
 const weiPerEther = 10n ** 18n;
@@ -424,7 +424,7 @@ console.log(backToEther);  // 2n
 </Tab>
 <Tab title="Gas Calculations">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Calculate transaction cost
 function calculateGasCost(gasLimit: Uint, gasPrice: Uint): Uint {
@@ -448,7 +448,7 @@ console.log(canAfford(balance, cost));  // true
 </Tab>
 <Tab title="Timestamps">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // Block timestamps (Unix time in seconds)
 const now = Uint(Math.floor(Date.now() / 1000));
@@ -473,7 +473,7 @@ console.log(isFuture(tomorrow));  // true
 **CRITICAL**: JavaScript numbers are 64-bit floats, only precise up to 2^53-1 (9,007,199,254,740,991).
 
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 // ❌ WRONG: Precision loss with large numbers
 const wrong = Uint(1e20);
@@ -504,7 +504,7 @@ const bigint = large.toBigInt();  // Safe
 <Tabs>
 <Tab title="To Hex">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint(100n);
 
@@ -521,7 +521,7 @@ console.log(value.toHex(false));
 </Tab>
 <Tab title="To Number/BigInt">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint(42n);
 
@@ -542,7 +542,7 @@ try {
 </Tab>
 <Tab title="To Bytes">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint(255n);
 
@@ -558,7 +558,7 @@ console.log(abiEncoded.length);  // 32
 </Tab>
 <Tab title="To String">
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from 'tevm';
 
 const value = Uint(255n);
 

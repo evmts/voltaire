@@ -379,7 +379,7 @@ Each 32-byte field element must be < BLS12-381 scalar field modulus:
 Modulus: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 ```
 
-Invalid field elements cause transaction rejection. Voltaire handles this automatically in `fromData()`:
+Invalid field elements cause transaction rejection. Tevm handles this automatically in `fromData()`:
 
 ```typescript
 import { Blob } from '@tevm/voltaire';

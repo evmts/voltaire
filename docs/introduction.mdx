@@ -1,38 +1,38 @@
 ---
-title: What is Voltaire?
+title: What is Tevm?
 description: Modern general-purpose Ethereum library for TypeScript
 ---
 
-Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
+Tevm is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
 
 ## Simple, Intuitive API
 
-Voltaire's API mirrors Ethereum specifications. Each primitive is a simple constructor:
+Tevm's API mirrors Ethereum specifications. Each primitive is a simple constructor:
 
 ```typescript
+// Types map one-to-one with Ethereum specs
 import {
-  Address, Hash, Bytes32, Uint256, Denomination,
-  Transaction, Signature, Bytecode, Opcode,
+  Address, Keccak256, Bytes32, Wei, Gwei, Ether,
+  Transaction, PrivateKey, Signer, Bytecode, Opcode,
   Rlp, Abi, FeeMarket, AccessList, Blob,
-  Keccak256, Secp256k1, Sha256, Kzg,
+  Secp256k1, Sha256, Kzg,
   Chain, Hardfork, Rpc
-} from "@tevm/voltaire";
+} from "tevm";
 
 // Addresses
-const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const address: Address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const addressHex = address.toHex();          // "0x742d35cc..."
 const checksummed = address.toChecksummed(); // "0x742d35Cc..."
 
 // Hashes and bytes
-const hash = Keccak256.hashHex("0x1234");
-const hashHex = Hex.fromBytes(hash);         // "0x..."
-const bytes = Bytes32("0x" + "0".repeat(64));
-const bytesHex = Hex.fromBytes(bytes);
+const hash: Keccak256 = Keccak256("0x1234");
+const bytes: Bytes32 = Bytes32("0x" + "0".repeat(64));
+const bytesHex: Bytes32.Hex = bytes.toHex();
 
 // Numbers and denominations
-const value = Uint256(1000000000000000000n); // 1 ETH in wei
-const inEther = Denomination.weiToEther(value); // 1n
-const inGwei = Denomination.weiToGwei(value);   // 1000000000n
+const value: Wei = Wei(1000000000000000000n);
+const inEther = value.toEther();  // 1n (type: Ether)
+const inGwei = value.toGwei();    // 1000000000n (type: Gwei)
 
 // Bytecode and opcodes
 const code = Bytecode("0x6080604052");
@@ -47,18 +47,19 @@ const tx = Transaction({
   gasLimit: 21000n
 });
 
-// Signatures
-const privateKey = Bytes32("0x" + "1".repeat(64));
-const signature = Secp256k1.sign(hash, privateKey);
-const recovered = signature.recover(hash);
+// Private keys and signatures
+const privateKey: PrivateKey = PrivateKey.random();
+const signer = Signer.fromPrivateKey(privateKey);
+const signature: Secp256k1.Signature = signer.sign(hash);
+const recovered: Address = signer.recover(hash);
 
 // RLP encoding
-const encoded = Rlp.encode([address, value]);
+const encoded = Rlp([address, value]);
 const decoded = Rlp.decode(encoded);
 
 // ABI encoding
-const funcSig = Abi.FunctionSignature("transfer(address,uint256)");
-const params = Abi.Parameters(["address", "uint256"], [address, value]);
+const funcSig = Abi.encodeParams("transfer(address,uint256)", [address, value]);
+const encoded = funcSig.toAbiEncoded();
 
 // Fee market (EIP-1559)
 const baseFee = FeeMarket.BaseFee(/* ... */);
@@ -100,5 +101,5 @@ const balanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
 - **[WASM-Accelerated](/getting-started/wasm)** - High-performance implementations for cryptography, encoding, and EVM execution written in Zig.
 - **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/mcp) and [llms.txt](/llms.txt) along with the docs themselves.
 - **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
-- **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Voltaire such as EVM execution and bytecode analysis.
+- **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Tevm such as EVM execution and bytecode analysis.
 

@@ -10,7 +10,7 @@ description: Learn Ethereum state structure, Merkle Patricia Tries, and state ve
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [State API](/primitives/state/index).
 </Info>
-Ethereum state is a global key-value mapping of all accounts (EOAs and contracts) to their data (balance, nonce, code, storage). This guide teaches state fundamentals using Voltaire.
+Ethereum state is a global key-value mapping of all accounts (EOAs and contracts) to their data (balance, nonce, code, storage). This guide teaches state fundamentals using Tevm.
 
 ## What is Ethereum State?
 
@@ -45,9 +45,9 @@ Two account types exist in Ethereum:
 <Tabs>
 <Tab title="Externally Owned Accounts (EOA)">
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
 
 // EOA example (user wallet)
 const eoaAddress = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -66,9 +66,9 @@ const eoaAccount = {
 </Tab>
 <Tab title="Contract Accounts">
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
 
 // Contract account (USDC on mainnet)
 const contractAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
@@ -95,8 +95,8 @@ Each contract account has its own **storage trie** mapping 256-bit slot numbers 
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
 
 // USDC contract storage example
 const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
@@ -133,8 +133,8 @@ contract Token {
 ```
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import { Keccak256 } from '@tevm/crypto';
+import * as State from 'tevm/State';
+import { Keccak256 } from 'tevm/crypto';
 
 // Simple variables occupy sequential slots
 const totalSupplyKey = State.StorageKey(contractAddress, 0n);
@@ -200,7 +200,7 @@ The **state root** is a single 32-byte hash proving the entire world state:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Hash from 'tevm/Hash';
 
 // Every block header includes state root
 const blockStateRoot = Hash("0x123abc..."); // 32 bytes
@@ -230,8 +230,8 @@ Voltaire provides utilities for working with storage keys:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
 
 const contract = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
@@ -274,8 +274,8 @@ Every transaction modifies state. The EVM applies state transitions:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
 
 // State transition example: ETH transfer
 const sender = Address("0xAlice...");
@@ -349,7 +349,7 @@ console.log(`State root changed: ${!Hash.equals(oldRoot, newRoot)}`); // true
 Storage changes also trigger state root updates:
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // SSTORE operation changes storage
 const contractAddr = Address("0xContract...");
@@ -378,9 +378,9 @@ Merkle proofs allow proving account or storage data without the full state:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
-import { Keccak256 } from '@tevm/crypto';
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Hash from 'tevm/Hash';
+import { Keccak256 } from 'tevm/crypto';
+import * as Rlp from 'tevm/Rlp';
 
 // Merkle proof verifies account data against state root
 function verifyAccountProof(
@@ -487,7 +487,7 @@ async function verifyBalance(
 Prove token balance without trusting the RPC provider:
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 async function verifyTokenBalance(
   tokenAddress: Address,
@@ -576,7 +576,7 @@ async function submitFraudProof(
 Analyze storage layout and usage:
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // Enumerate storage slots
 async function analyzeContractStorage(

@@ -7,7 +7,7 @@ description: WASM acceleration and limitations for blob operations
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
 
-Voltaire provides WASM builds for blob operations with some limitations. This page covers WASM support, performance, and workarounds.
+Tevm provides WASM builds for blob operations with some limitations. This page covers WASM support, performance, and workarounds.
 
 ## Current Status
 
@@ -131,7 +131,7 @@ app.listen(3000);
 
 ### WASM Builds
 
-Voltaire provides optimized WASM builds:
+Tevm provides optimized WASM builds:
 
 ```bash
 # ReleaseSmall (production - size optimized)
@@ -152,7 +152,7 @@ wasm/primitives-fast.wasm  # ReleaseFast
 
 ```typescript
 // Automatic WASM loading
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // WASM is loaded automatically when needed
 const blob = Blob.fromData(data);
@@ -358,7 +358,7 @@ bun run test:wasm
 ### Tracking Issue
 
 Follow progress on WASM KZG support:
-- [GitHub Issue](https://github.com/tevm/voltaire/issues/XXX)
+- [GitHub Issue](https://github.com/tevm/tevm/issues/XXX)
 
 ## Limitations
 

@@ -9,7 +9,7 @@ description: Uint256 type definition and validation
 
 # BrandedUint256 Type
 
-`BrandedUint256` is the underlying branded type for Uint256 operations used throughout Voltaire's Uint module.
+`BrandedUint256` is the underlying branded type for Uint256 operations used throughout Tevm's Uint module.
 
 ## Type Definition
 
@@ -26,7 +26,7 @@ Runtime-validated `bigint` constrained to `0 <= value <= 2^256-1`. The brand pre
 Use through the `Uint` class:
 
 ```typescript
-import { Uint } from '@tevm/voltaire'
+import { Uint } from 'tevm'
 
 // Create Uint
 const a = Uint(100n)

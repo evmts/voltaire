@@ -10,7 +10,7 @@ description: Learn RLP encoding, decoding, and serialization fundamentals
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [RLP API](/primitives/rlp/index).
 </Info>
-RLP (Recursive Length Prefix) is Ethereum's serialization format for encoding arbitrarily nested arrays of binary data. This guide teaches RLP fundamentals using Voltaire.
+RLP (Recursive Length Prefix) is Ethereum's serialization format for encoding arbitrarily nested arrays of binary data. This guide teaches RLP fundamentals using Tevm.
 
 ## What is RLP?
 
@@ -105,7 +105,7 @@ RLP uses five encoding rules based on data type and length:
 Bytes with values less than 0x80 encode as themselves - no prefix needed.
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Single byte < 0x80
 const encoded = Rlp.encode(new Uint8Array([0x42]));
@@ -123,7 +123,7 @@ console.log([...max]); // [0x7f]
 Byte strings of 0-55 bytes: `[0x80 + length, ...bytes]`
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Empty string
 const empty = Rlp.encode(Bytes());
@@ -154,7 +154,7 @@ console.log(maxShort.length); // 56 (prefix + 55 bytes)
 Byte strings of 56+ bytes: `[0xb7 + length_of_length, ...length_bytes, ...bytes]`
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // 56 bytes (minimum for this rule)
 const minLong = Rlp.encode(new Uint8Array(56).fill(0x42));
@@ -184,7 +184,7 @@ console.log(veryLong[0]); // 0xba (0xb7 + 3)
 Lists with total payload < 56 bytes: `[0xc0 + length, ...encoded_items]`
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Empty list
 const empty = Rlp.encode([]);
@@ -218,7 +218,7 @@ console.log([...withStrings]); // [0xc5, 0x82, 0x42, 0x43, 0x44]
 Lists with total payload >= 56 bytes: `[0xf7 + length_of_length, ...length_bytes, ...encoded_items]`
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // List with 60 single-byte items
 const longList = Rlp.encode(
@@ -244,7 +244,7 @@ console.log(manyStrings[1]); // 90 (payload length)
 ### Example 1: Encoding "dog"
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 const dog = new TextEncoder().encode('dog');
 // Uint8Array([0x64, 0x6f, 0x67]) - 3 bytes
@@ -272,7 +272,7 @@ Output: [0x83, 0x64, 0x6f, 0x67]
 ### Example 2: Encoding [ "cat", "dog" ]
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 const cat = new TextEncoder().encode('cat');
 const dog = new TextEncoder().encode('dog');
@@ -313,7 +313,7 @@ Output: [0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]
 ### Example 3: Nested Structure
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // [ "hello", [ "world" ] ]
 const hello = new TextEncoder().encode('hello');
@@ -355,7 +355,7 @@ Output: [0xcd, ...encoded items...]
 RLP treats numbers as byte strings - you must convert to bytes first:
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Zero encodes as empty byte string (NOT 0x00)
 const zero = Rlp.encode(Bytes());
@@ -395,7 +395,7 @@ const canonical = Rlp.encode(new Uint8Array([0x01, 0x90]));
 Decoding reverses the encoding process by examining prefix bytes:
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 const encoded = new Uint8Array([0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]);
 
@@ -448,7 +448,7 @@ decode(input, offset = 0):
 Process multiple RLP-encoded items from a byte stream:
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Byte stream containing multiple RLP items
 let buffer = new Uint8Array([
@@ -476,7 +476,7 @@ console.log(items[2]); // { type: 'list', value: [] }
 Ethereum transactions use RLP encoding for signing and transmission:
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Legacy transaction fields (9 fields)
 const nonce = new Uint8Array([0x09]);                    // 9
@@ -500,7 +500,7 @@ console.log(`Transaction size: ${encoded.length} bytes`);
 console.log(`List prefix: 0x${encoded[0].toString(16)}`); // 0xf8 or 0xf9
 
 // This is what gets hashed for signing
-import { keccak256 } from '@tevm/voltaire/Keccak256';
+import { keccak256 } from 'tevm/Keccak256';
 const txHash = keccak256(encoded);
 console.log(`Transaction hash: ${txHash}`);
 
@@ -543,7 +543,7 @@ All transaction types use RLP:
 - EIP-1559 (fee market transactions)
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Decode raw transaction from network
 const rawTx = new Uint8Array([...]); // From eth_getRawTransaction
@@ -620,7 +620,7 @@ const encodedMessage = Rlp.encode(hello);
 Ensure RLP encoding is valid before decoding:
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 const rlpBytes = new Uint8Array([0xc8, 0x83, 0x63, 0x61, 0x74]);
 
@@ -647,7 +647,7 @@ RLP has canonical form requirements:
 - Empty byte string is `[0x80]`, not `[]`
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Non-canonical: leading zero
 const nonCanonical = new Uint8Array([0x82, 0x00, 0x01]);
@@ -657,7 +657,7 @@ const nonCanonical = new Uint8Array([0x82, 0x00, 0x01]);
 const shouldBeShort = new Uint8Array([0xb8, 0x01, 0x42]);
 // Should be: [0x42] (Rule 1 applies)
 
-// Voltaire always produces canonical encoding
+// Tevm always produces canonical encoding
 const canonical = Rlp.encode(new Uint8Array([0x42]));
 console.log([...canonical]); // [0x42] ✅
 ```
@@ -667,8 +667,8 @@ console.log([...canonical]); // [0x42] ✅
 ### Working with Addresses
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rlp from 'tevm/Rlp';
+import * as Address from 'tevm/Address';
 
 const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 
@@ -687,8 +687,8 @@ if (decoded.data.type === 'bytes') {
 ### Working with Hashes
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Rlp from 'tevm/Rlp';
+import * as Hash from 'tevm/Hash';
 
 const hash = Hash("0x1234...");
 
@@ -705,7 +705,7 @@ const encodedList = Rlp.encode(hashes);
 ### Encoding Variable-Length Data
 
 ```typescript
-import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Rlp from 'tevm/Rlp';
 
 // Contract deployment data (can be large)
 const initCode = new Uint8Array(5000); // 5KB

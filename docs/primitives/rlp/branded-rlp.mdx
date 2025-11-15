@@ -9,7 +9,7 @@ description: RLP data structure type definition and usage
 
 # BrandedRlp Type
 
-`BrandedRlp` is the underlying branded type for RLP data structures used throughout Voltaire's RLP module.
+`BrandedRlp` is the underlying branded type for RLP data structures used throughout Tevm's RLP module.
 
 ## Type Definition
 
@@ -28,7 +28,7 @@ Union type representing either:
 Use through the `Rlp` class or imported functions:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Create RLP data
 const bytes = Rlp(new Uint8Array([1, 2, 3]))

@@ -1,5 +1,5 @@
 ---
-title: Voltaire
+title: Tevm
 description: High-performance, type-safe Ethereum primitives and cryptography
 mode: "custom"
 ---
@@ -19,14 +19,11 @@ mode: "custom"
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
     <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-      <span style={{ display: 'block', overflow: 'hidden', height: 'clamp(3rem, 8vw, 6rem)' }}>
-        <span id="animated-text" style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', transition: 'transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }}>Voltaire</span>
-      </span>
-      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
+      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Tevm</span>
     </h1>
 
     <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 1rem', lineHeight: '1.6' }}>
-      Modern, high-performance Ethereum library for TypeScript
+      Modern, high-performance Ethereum library for <span style={{ position: 'relative', display: 'inline-block', overflow: 'hidden', verticalAlign: 'middle', top: '-0.1em', width: '10ch', textAlign: 'left' }}><span id="language-text" style={{ display: 'inline-block', color: '#3178C6', transition: 'transform 0.2s ease-out' }}>TypeScript</span></span>
     </p>
 
     <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.2rem)', color: '#666', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
@@ -40,7 +37,7 @@ mode: "custom"
          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
-        Why Voltaire?
+        Why Tevm?
       </a>
       <a href="/getting-started"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
@@ -50,7 +47,7 @@ mode: "custom"
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
         Get Started
       </a>
-      <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
+      <a href="https://github.com/evmts/tevm" target="_blank" rel="noopener"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
@@ -182,7 +179,7 @@ mode: "custom"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp');
+        navigator.clipboard.writeText('claude mcp add --transport http tevm https://tevm.sh/mcp');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -190,7 +187,7 @@ mode: "custom"
         }, 500);
       }}>
 ```bash
-claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
+claude mcp add --transport http tevm https://tevm.sh/mcp
 ```
       </div>
       <div id="cursor-code" style={{ cursor: 'pointer', display: 'none' }}
@@ -214,7 +211,7 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "voltaire": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
+        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "tevm": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://tevm.sh/mcp"]\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -225,9 +222,9 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 // Add to .cursor/mcp.json
 {
   "mcpServers": {
-    "voltaire": {
+    "tevm": {
       "command": "npx",
-      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+      "args": ["mcp-remote", "https://tevm.sh/mcp"]
     }
   }
 }
@@ -254,7 +251,7 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.voltaire]\nurl = "https://voltaire.tevm.sh/mcp"');
+        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.tevm]\nurl = "https://tevm.sh/mcp"');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -263,8 +260,8 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
       }}>
 ```toml
 # Add to ~/.codex/config.toml
-[mcp_servers.voltaire]
-url = "https://voltaire.tevm.sh/mcp"
+[mcp_servers.tevm]
+url = "https://tevm.sh/mcp"
 ```
       </div>
     </div>
@@ -279,33 +276,40 @@ url = "https://voltaire.tevm.sh/mcp"
       });
 
       function initTextAnimation() {
-        let isVoltaire = true;
-        const animatedText = document.getElementById('animated-text');
+        // Language animation (TypeScript <-> WASM <-> Zig)
+        const languages = [
+          { name: 'TypeScript', color: '#3178C6' },
+          { name: 'WASM', color: '#654FF0' },
+          { name: 'Zig', color: '#F7A41D' }
+        ];
+        let langIndex = 0;
+        const languageText = document.getElementById('language-text');
 
-        if (!animatedText) {
-          console.error('animated-text element not found');
+        if (!languageText) {
+          console.error('language-text element not found');
           return;
         }
 
-        function animate() {
+        function animateLanguage() {
           // Slide up (exit)
-          animatedText.style.transform = 'translateY(-100%)';
+          languageText.style.transform = 'translateY(-100%)';
 
-          // Change text and slide in from bottom after exit animation
           setTimeout(() => {
-            isVoltaire = !isVoltaire;
-            animatedText.textContent = isVoltaire ? 'Voltaire' : 'Ethereum primitives';
-            animatedText.style.transform = 'translateY(100%)';
+            langIndex = (langIndex + 1) % languages.length;
+            const lang = languages[langIndex];
 
-            // Slide to center
+            languageText.textContent = lang.name;
+            languageText.style.color = lang.color;
+            languageText.style.transform = 'translateY(100%)';
+
             setTimeout(() => {
-              animatedText.style.transform = 'translateY(0)';
+              languageText.style.transform = 'translateY(0)';
             }, 50);
-          }, 600);
+          }, 200);
         }
 
-        // Start animation cycle
-        setInterval(animate, 2000);
+        // Start animation cycle (every 5 seconds)
+        setInterval(animateLanguage, 5000);
       }
 
       async function initMonaco() {
@@ -315,7 +319,7 @@ url = "https://voltaire.tevm.sh/mcp"
         mountPoint.innerHTML = \`
           <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700; text-align: center; margin-bottom: 1rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Try It Now</h2>
           <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
-            Edit and experiment with live Voltaire code examples.
+            Edit and experiment with live Tevm code examples.
           </p>
           <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;"></div>
         \`;
@@ -329,7 +333,7 @@ url = "https://voltaire.tevm.sh/mcp"
           });
 
           const code = \`// Generate Ethereum address from private key
-import { Address, Hex } from "@tevm/voltaire";
+import { Address, Hex } from "tevm";
 
 const privateKey = Hex.toBytes(
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
