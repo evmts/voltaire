@@ -16,7 +16,7 @@ Common patterns and best practices for working with Ethereum transactions.
 ### Simple ETH Transfer
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 async function createTransfer(
   from: AddressType,
@@ -123,7 +123,7 @@ async function createContractCall(
 ### With Private Key
 
 ```typescript
-import { getSigningHash } from '@tevm/voltaire/Transaction'
+import { getSigningHash } from 'tevm/Transaction'
 import { secp256k1 } from '@noble/curves/secp256k1'
 
 function signTransaction(
@@ -197,7 +197,7 @@ async function signWithHardwareWallet(
 ### Submit and Wait
 
 ```typescript
-import { serialize, hash } from '@tevm/voltaire/Transaction'
+import { serialize, hash } from 'tevm/Transaction'
 
 async function submitTransaction(
   tx: Transaction.Any
@@ -284,7 +284,7 @@ import {
   getSender,
   getChainId,
   getGasPrice
-} from '@tevm/voltaire/Transaction'
+} from 'tevm/Transaction'
 
 interface ValidationResult {
   valid: boolean
@@ -355,7 +355,7 @@ async function validateTransaction(
 ### Simple Pool Implementation
 
 ```typescript
-import { hash, getSender, getGasPrice } from '@tevm/voltaire/Transaction'
+import { hash, getSender, getGasPrice } from 'tevm/Transaction'
 
 class TransactionPool {
   private pending = new Map<string, Transaction.Any>()

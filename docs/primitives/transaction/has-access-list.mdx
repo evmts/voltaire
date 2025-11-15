@@ -30,7 +30,7 @@ Check if transaction has an access list.
 ### Conditional Access List Processing
 
 ```typescript
-import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList, getAccessList } from 'tevm/Transaction'
 
 function processTransaction(tx: Transaction.Any) {
   if (hasAccessList(tx)) {
@@ -45,7 +45,7 @@ function processTransaction(tx: Transaction.Any) {
 ### Type-Safe Access List Access
 
 ```typescript
-import { hasAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList } from 'tevm/Transaction'
 
 function analyzeAccessList(tx: Transaction.Any) {
   if (!hasAccessList(tx)) {
@@ -67,7 +67,7 @@ function analyzeAccessList(tx: Transaction.Any) {
 ### Transaction Classification
 
 ```typescript
-import { hasAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList } from 'tevm/Transaction'
 
 function classifyTransaction(tx: Transaction.Any): string {
   if (!hasAccessList(tx)) {
@@ -92,7 +92,7 @@ function classifyTransaction(tx: Transaction.Any): string {
 ### Gas Cost Analysis
 
 ```typescript
-import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList, getAccessList } from 'tevm/Transaction'
 
 function calculateAccessListGasCost(tx: Transaction.Any): bigint {
   if (!hasAccessList(tx)) {
@@ -114,7 +114,7 @@ function calculateAccessListGasCost(tx: Transaction.Any): bigint {
 ### Filtering Transactions
 
 ```typescript
-import { hasAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList } from 'tevm/Transaction'
 
 function filterTransactionsWithAccessLists(
   transactions: Transaction.Any[]
@@ -137,7 +137,7 @@ function filterLegacyTransactions(
 The `hasAccessList` function works well as a type guard:
 
 ```typescript
-import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList, getAccessList } from 'tevm/Transaction'
 
 function processWithAccessList(tx: Transaction.Any) {
   // Type guard narrows tx type

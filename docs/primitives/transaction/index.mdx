@@ -24,8 +24,8 @@ Transaction module provides type-safe encoding, decoding, signing, and hashing f
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
-import * as Address from '@tevm/voltaire/Address'
+import * as Transaction from 'tevm/Transaction'
+import * as Address from 'tevm/Address'
 
 // Create a transaction
 const tx: Transaction.EIP1559 = {
@@ -66,7 +66,7 @@ const type = Transaction.detectType(serialized)
 
 <Tab title="Type-Specific Operations">
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Legacy transaction
 const legacy: Transaction.Legacy = {
@@ -117,7 +117,7 @@ const blobCost = Transaction.EIP4844.getBlobGasCost(eip4844, blobBaseFee)
 
 <Tab title="Utilities">
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Format for display
 const formatted = Transaction.format(tx)
@@ -289,7 +289,7 @@ type EIP7702 = {
 type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702
 ```
 
-Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts)
+Source: [types.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/types.ts)
 
 ## API Methods
 
@@ -339,7 +339,7 @@ Import only what you need:
 
 ```typescript
 // Namespace import (all methods)
-import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Transaction from 'tevm/Transaction';
 
 // Granular imports (tree-shakeable)
 import { serialize } from '@tevm/voltaire/Transaction/serialize';

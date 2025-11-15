@@ -37,12 +37,12 @@ type EIP4844 = {
 }
 ```
 
-Source: [types.ts:111-130](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L111-L130)
+Source: [types.ts:111-130](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/types.ts#L111-L130)
 
 ## Creating EIP-4844 Transactions
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 const tx: Transaction.EIP4844 = {
   type: Transaction.Type.EIP4844,
@@ -101,7 +101,7 @@ function getBlobGasCost(
 ### Usage
 
 ```typescript
-import { EIP4844 } from '@tevm/voltaire/Transaction'
+import { EIP4844 } from 'tevm/Transaction'
 
 const tx: Transaction.EIP4844 = {
   blobVersionedHashes: [hash1, hash2, hash3],  // 3 blobs
@@ -118,7 +118,7 @@ const blobCost = EIP4844.getBlobGasCost(tx, blobBaseFee)
 blobGasCost = blobCount × 131072 × blobBaseFee
 ```
 
-Source: [EIP4844/getBlobGasCost.js:13-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/EIP4844/getBlobGasCost.js#L13-L18)
+Source: [EIP4844/getBlobGasCost.js:13-18](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/EIP4844/getBlobGasCost.js#L13-L18)
 
 ## Total Cost
 
@@ -182,7 +182,7 @@ Target: 3 blobs per block
 EIP-4844 uses same execution gas pricing as EIP-1559:
 
 ```typescript
-import { EIP4844 } from '@tevm/voltaire/Transaction'
+import { EIP4844 } from 'tevm/Transaction'
 
 const executionPrice = EIP4844.getEffectiveGasPrice(tx, baseFee)
 // Same calculation as EIP1559.getEffectiveGasPrice
@@ -191,7 +191,7 @@ const executionPrice = EIP4844.getEffectiveGasPrice(tx, baseFee)
 ## Methods
 
 ```typescript
-import { EIP4844 } from '@tevm/voltaire/Transaction'
+import { EIP4844 } from 'tevm/Transaction'
 
 // Serialization
 const bytes = EIP4844.serialize(eip4844Tx)

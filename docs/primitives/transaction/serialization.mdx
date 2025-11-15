@@ -243,7 +243,7 @@ Source: [serialize.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Tr
 Serialize and deserialize should be perfect inverses:
 
 ```typescript
-import { serialize, deserialize } from '@tevm/voltaire/Transaction'
+import { serialize, deserialize } from 'tevm/Transaction'
 
 const original: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -346,7 +346,7 @@ const tx = Transaction.deserialize(data)
 ## Error Handling
 
 ```typescript
-import { serialize, deserialize } from '@tevm/voltaire/Transaction'
+import { serialize, deserialize } from 'tevm/Transaction'
 
 // Invalid transaction type
 try {

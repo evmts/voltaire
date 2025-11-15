@@ -81,7 +81,7 @@ Used for:
 function hash(tx: BrandedTransactionLegacy): HashType
 
 // Usage
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 const txHash = Legacy.hash.call(legacyTx)
 ```
 
@@ -91,7 +91,7 @@ const txHash = Legacy.hash.call(legacyTx)
 function getSigningHash(tx: BrandedTransactionLegacy): HashType
 
 // Usage
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 const signingHash = Legacy.getSigningHash.call(legacyTx)
 ```
 
@@ -101,7 +101,7 @@ const signingHash = Legacy.getSigningHash.call(legacyTx)
 function hash(tx: BrandedTransactionEIP1559): HashType
 
 // Usage
-import { EIP1559 } from '@tevm/voltaire/Transaction'
+import { EIP1559 } from 'tevm/Transaction'
 const txHash = EIP1559.hash(eip1559Tx)
 ```
 
@@ -111,7 +111,7 @@ const txHash = EIP1559.hash(eip1559Tx)
 function getSigningHash(tx: BrandedTransactionEIP1559): HashType
 
 // Usage
-import { EIP1559 } from '@tevm/voltaire/Transaction'
+import { EIP1559 } from 'tevm/Transaction'
 const signingHash = EIP1559.getSigningHash(eip1559Tx)
 ```
 
@@ -122,7 +122,7 @@ Similar methods exist for EIP2930, EIP4844, and EIP7702.
 ### Transaction Identification
 
 ```typescript
-import { hash } from '@tevm/voltaire/Transaction'
+import { hash } from 'tevm/Transaction'
 
 // Store in database
 const txHash = hash(tx)
@@ -135,7 +135,7 @@ const retrievedTx = await db.transactions.get(txHash)
 ### Block Transaction List
 
 ```typescript
-import { hash } from '@tevm/voltaire/Transaction'
+import { hash } from 'tevm/Transaction'
 
 const block = {
   number: 18000000n,
@@ -147,7 +147,7 @@ const block = {
 ### Transaction Pool
 
 ```typescript
-import { hash } from '@tevm/voltaire/Transaction'
+import { hash } from 'tevm/Transaction'
 
 class TransactionPool {
   private txs = new Map<string, Transaction.Any>()
@@ -166,7 +166,7 @@ class TransactionPool {
 ### Signing Workflow
 
 ```typescript
-import { getSigningHash, hash } from '@tevm/voltaire/Transaction'
+import { getSigningHash, hash } from 'tevm/Transaction'
 
 // 1. Create unsigned transaction
 const unsignedTx: Transaction.EIP1559 = {
@@ -207,7 +207,7 @@ console.log('Transaction hash:', Hex(txHash))
 ### Signature Verification
 
 ```typescript
-import { getSigningHash, getSender } from '@tevm/voltaire/Transaction'
+import { getSigningHash, getSender } from 'tevm/Transaction'
 
 // Verify signature by recovering sender
 const signingHash = getSigningHash(tx)
@@ -241,7 +241,7 @@ signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data, chainId
 
 Example:
 ```typescript
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 
 const legacyTx: Transaction.Legacy = {
   type: Transaction.Type.Legacy,
@@ -280,7 +280,7 @@ Blob hashes ARE included in signing hash, but the actual blob data is not.
 Hashing is cryptographically expensive (keccak256):
 
 ```typescript
-import { hash } from '@tevm/voltaire/Transaction'
+import { hash } from 'tevm/Transaction'
 
 // Cache hashes for repeated use
 const cache = new Map<Transaction.Any, HashType>()
