@@ -9,7 +9,7 @@ description: Bloom filter type definition and implementation details
 
 # BrandedBloomFilter Type
 
-`BrandedBloomFilter` is the underlying branded type for bloom filter operations used throughout Voltaire's BloomFilter module.
+`BrandedBloomFilter` is the underlying branded type for bloom filter operations used throughout Tevm's BloomFilter module.
 
 ## Type Definition
 
@@ -28,7 +28,7 @@ Runtime-validated `Uint8Array` with bloom filter parameters. The brand prevents 
 Use through the `BloomFilter` class:
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 // Create new filter
 const filter = BloomFilter.create(2048, 3)
@@ -46,7 +46,7 @@ const hex = filter.toHex()
 ## Type Checking
 
 ```typescript
-import type { BrandedBloomFilter } from '@tevm/voltaire'
+import type { BrandedBloomFilter } from 'tevm'
 
 function processFilter(filter: BrandedBloomFilter) {
   // filter is guaranteed to be valid BloomFilter
