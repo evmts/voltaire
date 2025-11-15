@@ -9,7 +9,7 @@
  */
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
+import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 // Generate random private key (in production, use secure key management)

@@ -10,7 +10,7 @@
  */
 
 import { Hex } from "@tevm/voltaire";
-import type { BrandedHex, Sized } from "@tevm/voltaire/BrandedHex";
+import type { HexType, Sized } from "@tevm/voltaire/HexType";
 
 // Define type aliases
 type Hash = Sized<32>;
@@ -37,7 +37,7 @@ processHash(hash);
 processAddress(address);
 processSelector(selector);
 
-function classifyValue(value: BrandedHex): string {
+function classifyValue(value: HexType): string {
 	if (Hex.isSized(value, 32)) {
 		// TypeScript knows value is Sized<32>
 		return `Hash or U256: ${value}`;
@@ -57,12 +57,12 @@ const values = [Hex.random(32), Hex.random(20), Hex.random(4), Hex.random(8)];
 
 values.forEach((v) => {});
 
-function createHash(value: BrandedHex): Hash {
+function createHash(value: HexType): Hash {
 	// Assert and return typed value
 	return Hex.assertSize(value, 32);
 }
 
-function createAddress(value: BrandedHex): Address {
+function createAddress(value: HexType): Address {
 	return Hex.assertSize(value, 20);
 }
 
@@ -89,9 +89,9 @@ type EthValue =
 	| { type: "hash"; value: Hash }
 	| { type: "address"; value: Address }
 	| { type: "selector"; value: Selector }
-	| { type: "unknown"; value: BrandedHex };
+	| { type: "unknown"; value: HexType };
 
-function classify(hex: BrandedHex): EthValue {
+function classify(hex: HexType): EthValue {
 	const size = Hex.size(hex);
 
 	if (size === 32) {
@@ -141,14 +141,14 @@ const addresses: Address[] = [
 ];
 addresses.forEach((a, i) => {});
 
-function hexToAddress(hex: BrandedHex): Address | null {
+function hexToAddress(hex: HexType): Address | null {
 	if (!Hex.isSized(hex, 20)) {
 		return null;
 	}
 	return hex; // TypeScript knows it's Sized<20>
 }
 
-function hexToHash(hex: BrandedHex): Hash | null {
+function hexToHash(hex: HexType): Hash | null {
 	if (!Hex.isSized(hex, 32)) {
 		return null;
 	}
@@ -173,11 +173,11 @@ const U256_SIZE = 32;
 const SIGNATURE_SIZE = 65;
 
 // Use in validation
-function validateHash(hex: BrandedHex): Hash {
+function validateHash(hex: HexType): Hash {
 	return Hex.assertSize(hex, HASH_SIZE);
 }
 
-function validateAddress(hex: BrandedHex): Address {
+function validateAddress(hex: HexType): Address {
 	return Hex.assertSize(hex, ADDRESS_SIZE);
 }
 

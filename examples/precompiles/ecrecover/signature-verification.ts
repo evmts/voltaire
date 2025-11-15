@@ -14,7 +14,7 @@ import {
 	execute,
 } from "../../../src/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
+import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
 
 // Simulate a signed message scenario
 const signerKey = crypto.getRandomValues(new Uint8Array(32));

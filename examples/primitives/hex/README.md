@@ -152,7 +152,7 @@ const addr: Address = Hex.assertSize(Hex('0x742d...'), 20)
 ### Tree-Shakeable API
 All functions available as tree-shakeable imports:
 ```typescript
-import { from, toBytes, concat } from '@tevm/voltaire/BrandedHex'
+import { from, toBytes, concat } from '@tevm/voltaire/HexType'
 ```
 
 ## Documentation
@@ -165,7 +165,7 @@ Full documentation available at:
 - [Manipulation](/primitives/hex/manipulation)
 - [Utilities](/primitives/hex/utilities)
 - [Sizing](/primitives/hex/sizing)
-- [BrandedHex API](/primitives/hex/branded-hex)
+- [HexType API](/primitives/hex/branded-hex)
 
 ## Related Examples
 
