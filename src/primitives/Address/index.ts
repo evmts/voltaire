@@ -312,26 +312,26 @@ Address.prototype.toAbiEncoded = function () {
 Address.prototype.toShortHex = function () {
 	return BrandedAddress.toShortHex(this);
 };
-Address.prototype.compare = function (other: BrandedAddressType): number {
-	return BrandedAddress.compare(this as BrandedAddressType, other);
+Address.prototype.compare = function (other: AddressType): number {
+	return BrandedAddress.compare(this as AddressType, other);
 };
-Address.prototype.lessThan = function (other: BrandedAddressType): boolean {
-	return BrandedAddress.lessThan(this as BrandedAddressType, other);
+Address.prototype.lessThan = function (other: AddressType): boolean {
+	return BrandedAddress.lessThan(this as AddressType, other);
 };
-Address.prototype.greaterThan = function (other: BrandedAddressType): boolean {
-	return BrandedAddress.greaterThan(this as BrandedAddressType, other);
+Address.prototype.greaterThan = function (other: AddressType): boolean {
+	return BrandedAddress.greaterThan(this as AddressType, other);
 };
 Address.prototype.isZero = function (): boolean {
-	return BrandedAddress.isZero(this as BrandedAddressType);
+	return BrandedAddress.isZero(this as AddressType);
 };
-Address.prototype.equals = function (other: BrandedAddressType): boolean {
-	return BrandedAddress.equals(this as BrandedAddressType, other);
+Address.prototype.equals = function (other: AddressType): boolean {
+	return BrandedAddress.equals(this as AddressType, other);
 };
 Address.prototype.toBytes = function (): Uint8Array {
-	return BrandedAddress.toBytes(this as BrandedAddressType);
+	return BrandedAddress.toBytes(this as AddressType);
 };
-Address.prototype.clone = function (): BrandedAddressType {
-	const result = BrandedAddress.clone(this as BrandedAddressType);
+Address.prototype.clone = function (): AddressType {
+	const result = BrandedAddress.clone(this as AddressType);
 	Object.setPrototypeOf(result, Address.prototype);
 	const crypto = (this as any)._crypto;
 	if (crypto) {
@@ -346,7 +346,7 @@ Address.prototype.clone = function (): BrandedAddressType {
 };
 Address.prototype.calculateCreateAddress = function (
 	nonce: bigint,
-): BrandedAddressType {
+): AddressType {
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
 		throw new Error(
