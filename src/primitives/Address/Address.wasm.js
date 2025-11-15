@@ -314,7 +314,7 @@ export function toUppercase(address) {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
- * @returns {import('../Uint/index.js').BrandedUint256} Uint256 bytes
+ * @returns {import('../Uint/index.js').Uint256Type} Uint256 bytes
  * @throws {never} Never throws
  * @example
  * ```javascript
@@ -325,7 +325,7 @@ export function toUppercase(address) {
 export function toU256(address) {
 	const bytes = new Uint8Array(32);
 	bytes.set(address, 12); // Left-pad with 12 zero bytes
-	return /** @type {import('../Uint/index.js').BrandedUint256} */ (bytes);
+	return /** @type {import('../Uint/index.js').Uint256Type} */ (bytes);
 }
 
 /**
