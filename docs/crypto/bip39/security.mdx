@@ -191,7 +191,7 @@ Products: Cryptosteel, Billfodl, Steely
 ### Digital Storage (Encrypted)
 
 ```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from 'tevm/crypto/aesgcm';
 
 async function encryptMnemonic(
   mnemonic: string,
@@ -510,7 +510,7 @@ const package: InheritancePackage = {
   instructions: 'Use password we discussed. Contact @lawyer for legal access.',
   hints: ['Favorite book title', 'Wedding anniversary'],
   wallet: {
-    name: 'voltaire',
+    name: 'tevm',
     version: '1.0.0',
     derivation: "m/44'/60'/0'/0/0"
   }

@@ -359,7 +359,7 @@ const encrypted = chacha20poly1305(key, nonce).encrypt(privateKey);
 
 ```typescript
 // WebCrypto API provides native AES-GCM
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from 'tevm/crypto/aesgcm';
 
 // Hardware-accelerated in browsers
 const key = await AesGcm.generateKey(256);

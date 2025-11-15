@@ -28,7 +28,7 @@ X25519 is an **elliptic curve Diffie-Hellman (ECDH) key exchange** over Curve255
 ## Quick Start
 
 ```typescript
-import * as X25519 from '@tevm/voltaire/crypto/X25519';
+import * as X25519 from 'tevm/crypto/X25519';
 
 // Generate two keypairs
 const aliceKeypair = X25519.generateKeypair();
@@ -336,7 +336,7 @@ X25519 operations available in WASM builds:
 - **ReleaseFast**: Performance-optimized
 
 ```typescript
-import { X25519 } from '@tevm/voltaire/crypto/X25519';
+import { X25519 } from 'tevm/crypto/X25519';
 // Automatically uses WASM in supported environments
 ```
 

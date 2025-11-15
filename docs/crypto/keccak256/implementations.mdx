@@ -9,7 +9,7 @@ description: Comparison and selection guide for Keccak256 implementation variant
 
 # Keccak256 Implementation Guide
 
-Voltaire provides four Keccak256 implementations optimized for different deployment scenarios. All share the same data-first API, enabling transparent algorithm swapping.
+Tevm provides four Keccak256 implementations optimized for different deployment scenarios. All share the same data-first API, enabling transparent algorithm swapping.
 
 ## Implementation Comparison
 
@@ -32,7 +32,7 @@ Voltaire provides four Keccak256 implementations optimized for different deploym
 
 **Characteristics:**
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 // No initialization needed
 const hash = Keccak256.hash(data);
@@ -45,13 +45,13 @@ const hash = Keccak256.hash(data);
 ### WASM Unified
 
 **Use when:**
-- Using multiple Voltaire primitives/crypto functions
+- Using multiple Tevm primitives/crypto functions
 - 200KB bundle is acceptable
 - Need 2-4x speedup over pure JS
 
 **Characteristics:**
 ```typescript
-import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
 
 // One-time initialization
 await Keccak256Wasm.init();
@@ -73,7 +73,7 @@ const hash = Keccak256Wasm.hash(data);
 
 **Characteristics:**
 ```typescript
-import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+import { Keccak256Standalone } from 'tevm/crypto/keccak256.standalone';
 
 // One-time initialization
 await Keccak256Standalone.init();
@@ -95,7 +95,7 @@ const hash = Keccak256Standalone.hash(data);
 
 **Characteristics:**
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/native/crypto/keccak256';
+import { Keccak256 } from 'tevm/native/crypto/keccak256';
 
 // No initialization needed (native FFI)
 const hash = Keccak256.hash(data);
@@ -143,7 +143,7 @@ const hash = Keccak256.hash(data);
 Pure TypeScript and Native implementations are ready immediately:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 // Use immediately
 const hash = Keccak256.hash(data);
@@ -153,7 +153,7 @@ const hash = Keccak256.hash(data);
 WASM variants require async initialization:
 
 ```typescript
-import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
 
 // Initialize once at startup
 await Keccak256Wasm.init();
@@ -224,7 +224,7 @@ Need Keccak256?
 │  │  ├─ Yes → WASM Standalone (3KB)
 │  │  └─ No → WASM Unified (if multiple features)
 │  └─ No → Continue
-├─ Using other Voltaire features?
+├─ Using other Tevm features?
 │  ├─ Yes → WASM Unified (200KB amortized)
 │  └─ No → WASM Standalone (3KB)
 └─ Async init acceptable?
@@ -238,11 +238,11 @@ Need Keccak256?
 
 ```typescript
 // Before
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 const hash = Keccak256.hash(data);
 
 // After (minimal change)
-import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
+import { Keccak256Standalone } from 'tevm/crypto/keccak256.standalone';
 await Keccak256Standalone.init(); // Add at startup
 const hash = Keccak256Standalone.hash(data); // Same API
 ```
@@ -255,10 +255,10 @@ const Keccak256Impl = await (async () => {
   if (typeof process !== 'undefined' && process.versions?.node) {
     // Node.js - try native
     try {
-      return await import('@tevm/voltaire/native/crypto/keccak256');
+      return await import('tevm/native/crypto/keccak256');
     } catch {
       // Fallback to WASM
-      const { Keccak256Wasm } = await import('@tevm/voltaire/crypto/keccak256.wasm');
+      const { Keccak256Wasm } = await import('tevm/crypto/keccak256.wasm');
       await Keccak256Wasm.init();
       return { Keccak256: Keccak256Wasm };
     }
@@ -266,13 +266,13 @@ const Keccak256Impl = await (async () => {
 
   if (typeof WebAssembly !== 'undefined') {
     // Browser with WASM - use standalone
-    const { Keccak256Standalone } = await import('@tevm/voltaire/crypto/keccak256.standalone');
+    const { Keccak256Standalone } = await import('tevm/crypto/keccak256.standalone');
     await Keccak256Standalone.init();
     return { Keccak256: Keccak256Standalone };
   }
 
   // Fallback to pure JS
-  return await import('@tevm/voltaire/crypto/Keccak256');
+  return await import('tevm/crypto/Keccak256');
 })();
 
 // Use selected implementation

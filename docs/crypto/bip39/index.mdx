@@ -20,7 +20,7 @@ Key operations:
 ## Quick Start
 
 ```typescript
-import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as Bip39 from 'tevm/crypto/bip39';
 
 // Generate 12-word mnemonic (128-bit entropy)
 const mnemonic12 = Bip39.generateMnemonic(128);
@@ -360,8 +360,8 @@ Bip39.entropyToMnemonic(goodEntropy); // Valid 24-word mnemonic
 BIP-39 is typically used with BIP-32 (HD Wallets) for deterministic key generation:
 
 ```typescript
-import * as Bip39 from '@tevm/voltaire/crypto/bip39';
-import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+import * as Bip39 from 'tevm/crypto/bip39';
+import * as HDWallet from 'tevm/crypto/hdwallet';
 
 // 1. Generate mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
