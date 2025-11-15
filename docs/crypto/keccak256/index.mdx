@@ -37,7 +37,7 @@ Ethereum uses the original Keccak-256 algorithm (pre-NIST), NOT the finalized SH
 
 ## Implementation Variants
 
-Voltaire provides four Keccak256 implementations, each optimized for different use cases:
+Tevm provides four Keccak256 implementations, each optimized for different use cases:
 
 ### 1. Default (Pure TypeScript)
 Uses @noble/hashes - zero native dependencies, maximum compatibility.
@@ -532,7 +532,7 @@ const hash = Keccak256Wasm.hash(data);
 
 **Characteristics:**
 - Part of main `primitives.wasm` bundle
-- Includes all Voltaire primitives and crypto
+- Includes all Tevm primitives and crypto
 - Requires async `init()` before use
 - ~200-400 MB/s throughput
 - 2-4x faster than pure JS

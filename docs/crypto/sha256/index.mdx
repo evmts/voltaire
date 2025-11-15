@@ -39,8 +39,8 @@ SHA256 is fundamental to blockchain technology and cryptography, used for:
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Sha256 } from 'tevm/crypto/sha256';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Hash bytes - constructor returns branded Sha256 type
 const data = new Uint8Array([1, 2, 3, 4, 5]);
@@ -64,7 +64,7 @@ const hexString = Hex.fromBytes(hash);
 
 <Tab title="Incremental Hashing">
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from 'tevm/crypto/sha256';
 
 // Create incremental hasher for streaming data
 const hasher = Sha256.create();
@@ -82,8 +82,8 @@ const hash = hasher.digest();
 
 <Tab title="Data-First Methods">
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Sha256 } from 'tevm/crypto/sha256';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Constructor (most common)
 const hash1 = Sha256(data);
@@ -110,7 +110,7 @@ Compute SHA256 hash of input data using constructor pattern.
 
 **Example:**
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Hash bytes
 const hash = Sha256(new Uint8Array([1, 2, 3]));
@@ -310,7 +310,7 @@ export function hash(data: Uint8Array): Uint8Array {
 Available via `sha256.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript
-import { Sha256Wasm } from '@tevm/voltaire/crypto/sha256.wasm';
+import { Sha256Wasm } from 'tevm/crypto/sha256.wasm';
 const hash = Sha256Wasm.hash(data);
 ```
 
@@ -319,9 +319,9 @@ const hash = Sha256Wasm.hash(data);
 ### Bitcoin Address Derivation
 Bitcoin addresses combine SHA256 and RIPEMD160:
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Sha256 } from 'tevm/crypto/sha256';
+import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Simplified Bitcoin P2PKH address derivation
 const publicKey = Hex('0x04' + '1234...'); // 65-byte uncompressed secp256k1 public key
@@ -333,7 +333,7 @@ const ripemd160Hash = Ripemd160(sha256Hash); // BrandedRipemd160
 ### Double SHA256
 Bitcoin uses double SHA256 for block and transaction hashing:
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from 'tevm/crypto/sha256';
 
 function doubleSha256(data: Uint8Array): BrandedSha256 {
   return Sha256(Sha256(data));
@@ -343,8 +343,8 @@ function doubleSha256(data: Uint8Array): BrandedSha256 {
 ### Merkle Trees
 Build authenticated data structures:
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Sha256 } from 'tevm/crypto/sha256';
+import * as Hex from 'tevm/primitives/Hex';
 
 function merkleRoot(leaves: Uint8Array[]): BrandedSha256 {
   if (leaves.length === 0) throw new Error("No leaves");
@@ -369,7 +369,7 @@ function merkleRoot(leaves: Uint8Array[]): BrandedSha256 {
 ### Streaming Large Files
 Process data in chunks:
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from 'tevm/crypto/sha256';
 
 async function hashFile(file: File): Promise<BrandedSha256> {
   const hasher = Sha256.create();

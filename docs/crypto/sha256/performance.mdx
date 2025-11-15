@@ -63,7 +63,7 @@ Real-world benchmarks from production systems:
 
 ```typescript
 // Benchmark methodology
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { SHA256 } from 'tevm/crypto/sha256';
 
 function benchmark(size: number): number {
   const data = new Uint8Array(size);
@@ -277,7 +277,7 @@ JavaScript (noble)     200 MB/s         6%
 
 ```typescript
 // Import WASM-optimized version
-import { SHA256Wasm } from '@tevm/voltaire/crypto/sha256.wasm';
+import { SHA256Wasm } from 'tevm/crypto/sha256.wasm';
 
 // Pre-initialize WASM module
 await SHA256Wasm.init(); // Do once at startup

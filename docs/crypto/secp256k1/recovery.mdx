@@ -41,8 +41,8 @@ Recover the 64-byte public key from a signature and message hash.
 
 **Example:**
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 // Sign message
 const privateKey = Bytes32();
@@ -170,9 +170,9 @@ function verifySigner(
 Every Ethereum transaction signature enables sender recovery:
 
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
-import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Address from 'tevm/primitives/Address';
+import * as Transaction from 'tevm/primitives/Transaction';
 
 // Parse transaction
 const tx = {
@@ -202,7 +202,7 @@ console.log(Address.toHex(senderAddress));
 Recover signer from personal_sign messages:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 function recoverPersonalSignSigner(
   message: string,
@@ -231,7 +231,7 @@ const address = Address.fromPublicKey(publicKey);
 Recover signer from typed structured data:
 
 ```typescript
-import * as EIP712 from '@tevm/voltaire/crypto/EIP712';
+import * as EIP712 from 'tevm/crypto/EIP712';
 
 function recoverTypedDataSigner(
   domain: EIP712.Domain,

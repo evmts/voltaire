@@ -18,8 +18,8 @@ Keccak256Hash is a branded `Uint8Array` that extends Bytes32 with additional sem
 While Bytes32 is a generic 32-byte value, Keccak256Hash explicitly communicates "this came from a keccak256 operation" at compile-time with zero runtime overhead.
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Keccak256Hash output
 const hash = Keccak256.hash(data);
@@ -37,8 +37,8 @@ console.log(bytes.length); // 32
 Keccak256Hash extends Bytes32 with a keccak256 semantic symbol:
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
-import type { BrandedBytes } from '@tevm/voltaire/primitives/Bytes';
+import type { brand } from 'tevm/brand';
+import type { BrandedBytes } from 'tevm/primitives/Bytes';
 
 type Keccak256Hash = BrandedBytes<32> & {
   readonly [Symbol.for("keccak256")]: true;
@@ -61,8 +61,8 @@ This layered branding provides:
 Keccak256Hash and Bytes32 are the same size (32 bytes) but convey different semantics:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Keccak256Hash = semantic "this is a keccak256 hash"
 const txHash: Keccak256Hash = Keccak256.hash(txData);
@@ -91,11 +91,11 @@ Old `Hash` primitive replaced by `Keccak256Hash` for clarity:
 
 ```typescript
 // OLD (deprecated Hash primitive)
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 const hash = Keccak256.hash(data);
 
 // NEW (Keccak256Hash type)
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 const hash = Keccak256.hash(data);
 ```
 
@@ -130,7 +130,7 @@ const digest = Keccak256.hash(message);
 ### Use Bytes32 when:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Storage slots
 const slot = Bytes32.from(0);
@@ -154,7 +154,7 @@ All Keccak256Hash values come from `Keccak256` module methods:
 Direct hashing of bytes:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const data = new Uint8Array([1, 2, 3, 4, 5]);
 const hash: Keccak256Hash = Keccak256.hash(data);
@@ -203,7 +203,7 @@ Keccak256Hash can be converted using Bytes32 operations:
 Convert to hex string:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 const hash = Keccak256.hash(data);
 const hex = Bytes32.toHex(hash);
@@ -233,7 +233,7 @@ console.log(typeof value); // "bigint"
 Extract address (last 20 bytes):
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 // Ethereum address derivation
 const pubKeyHash = Keccak256.hash(publicKey);
@@ -247,7 +247,7 @@ const address = Bytes32.toAddress(pubKeyHash);
 Check equality:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 const hash1 = Keccak256.hash(data1);
 const hash2 = Keccak256.hash(data2);
@@ -289,8 +289,8 @@ See [Bytes32 documentation](/primitives/bytes/bytes32) for all operations.
 ### Transaction Hashes
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
-import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Transaction from 'tevm/primitives/Transaction';
 
 // Hash transaction for signing
 const tx = Transaction.from({
@@ -340,7 +340,7 @@ const logs = await provider.getLogs({
 ### Address Derivation
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Ethereum address = last 20 bytes of keccak256(publicKey)
 const pubKeyHash: Keccak256Hash = Keccak256.hash(publicKey);

@@ -47,8 +47,8 @@ Used in:
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Blake2 } from 'tevm/crypto/blake2';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Hash bytes with default 64-byte output - constructor pattern
 const data = Hex('0x0102030405');
@@ -67,7 +67,7 @@ const hash20 = Blake2(data, 20);
 
 <Tab title="String Hashing">
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 // Hash string with default 64-byte output
 const hash = Blake2('hello world');
@@ -85,8 +85,8 @@ const directHash = Blake2('hello world', 48);
 
 <Tab title="Variable Output">
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Blake2 } from 'tevm/crypto/blake2';
+import * as Hex from 'tevm/primitives/Hex';
 
 const data = Hex('0x010203');
 
@@ -121,7 +121,7 @@ Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hash
 
 **Example:**
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Default 64-byte output
 const hash64 = Blake2(Hex('0x010203'));
@@ -334,7 +334,7 @@ export function hash(
 Available via `Blake2.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript
-import { Blake2Wasm } from '@tevm/voltaire/crypto/blake2.wasm';
+import { Blake2Wasm } from 'tevm/crypto/blake2.wasm';
 const hash = Blake2Wasm.hash(data, 32);
 ```
 
@@ -343,7 +343,7 @@ const hash = Blake2Wasm.hash(data, 32);
 ### Fast File Integrity
 BLAKE2 excels at high-throughput hashing:
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 async function hashLargeFile(file: File): Promise<Uint8Array> {
   const chunkSize = 1024 * 1024; // 1MB chunks
@@ -368,7 +368,7 @@ async function hashLargeFile(file: File): Promise<Uint8Array> {
 
 ### Content Addressing (IPFS-style)
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 function contentAddress(data: Uint8Array): string {
   const hash = Blake2(data, 32); // 32-byte output
@@ -379,7 +379,7 @@ function contentAddress(data: Uint8Array): string {
 
 ### Merkle Trees with Custom Size
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
   if (leaves.length === 0) throw new Error("No leaves");
@@ -407,7 +407,7 @@ function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
 
 ### Fast Checksums
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 // 16-byte checksum for data deduplication
 function checksum(data: Uint8Array): Uint8Array {
@@ -422,7 +422,7 @@ function cryptoChecksum(data: Uint8Array): Uint8Array {
 
 ### Variable-Length Hashes
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 // Custom output sizes for different purposes
 const addressHash = Blake2(data, 20);    // 20 bytes (address-sized)
@@ -545,7 +545,7 @@ export function hash(
 
 Zcash uses Blake2 in its Equihash proof-of-work algorithm:
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 // Simplified Zcash-style usage
 const header = new Uint8Array(140);
@@ -555,7 +555,7 @@ const hash = Blake2(header, 32);
 ### IPFS Content Addressing
 
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 function contentHash(data: Uint8Array): Uint8Array {
   return Blake2(data, 32);
@@ -565,7 +565,7 @@ function contentHash(data: Uint8Array): Uint8Array {
 ### Fast File Checksums
 
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 async function checksumFile(file: File): Promise<Uint8Array> {
   const chunkSize = 1024 * 1024; // 1MB chunks
@@ -590,7 +590,7 @@ async function checksumFile(file: File): Promise<Uint8Array> {
 ### Variable-Length Hashes
 
 ```typescript
-import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+import { Blake2 } from 'tevm/crypto/blake2';
 
 // Different hash sizes for different purposes
 const addressHash = Blake2(data, 20);    // 20 bytes

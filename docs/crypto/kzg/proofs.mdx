@@ -25,7 +25,7 @@ KZG proofs enable proving `p(z) = y` where:
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Blob, Bytes32 } from '@tevm/voltaire';
+import { Kzg, Blob, Bytes32 } from 'tevm';
 
 Kzg.loadTrustedSetup();
 
@@ -42,7 +42,7 @@ const { proof, y } = Kzg.Proof(blob, z);
 <Tab title="Factory API">
 
 ```typescript
-import { Kzg, Blob, Bytes32 } from '@tevm/voltaire';
+import { Kzg, Blob, Bytes32 } from 'tevm';
 import * as ckzg from 'c-kzg';
 
 Kzg.loadTrustedSetup();
@@ -67,7 +67,7 @@ const { proof, y } = Proof(blob, z);
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Bytes32 } from '@tevm/voltaire';
+import { Kzg, Bytes32 } from 'tevm';
 
 const commitment = Kzg.Commitment(blob);
 const z = Bytes32();
@@ -82,7 +82,7 @@ const valid = Kzg.verify(commitment, z, y, proof);
 <Tab title="Factory API">
 
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from 'tevm';
 import * as ckzg from 'c-kzg';
 
 Kzg.loadTrustedSetup();
@@ -113,7 +113,7 @@ Optimized verification for blob-commitment pairs:
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Blob, Bytes32 } from '@tevm/voltaire';
+import { Kzg, Blob, Bytes32 } from 'tevm';
 
 const blob = Blob(131072);
 const commitment = Kzg.Commitment(blob);
@@ -128,7 +128,7 @@ const valid = Kzg.verifyBlob(blob, commitment, proof);
 <Tab title="Factory API">
 
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from 'tevm';
 import * as ckzg from 'c-kzg';
 
 const verifyBlob = Kzg.VerifyBlobFactory({
@@ -149,7 +149,7 @@ Verify multiple proofs efficiently:
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from 'tevm';
 
 const blobs = [blob1, blob2, blob3];
 const commitments = blobs.map(b => Kzg.Commitment(b));
@@ -164,7 +164,7 @@ const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
 <Tab title="Factory API">
 
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from 'tevm';
 import * as ckzg from 'c-kzg';
 
 const verifyBatch = Kzg.VerifyBatchFactory({

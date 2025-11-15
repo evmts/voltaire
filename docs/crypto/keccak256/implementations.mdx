@@ -60,14 +60,14 @@ await Keccak256Wasm.init();
 const hash = Keccak256Wasm.hash(data);
 ```
 
-- **Pros:** Full Voltaire features, 2-4x faster than pure JS
+- **Pros:** Full Tevm features, 2-4x faster than pure JS
 - **Cons:** Larger bundle (~200KB), async init
 - **Bundle:** ~200KB (includes all primitives + crypto)
 
 ### WASM Standalone
 
 **Use when:**
-- Only need Keccak256 (not other Voltaire functions)
+- Only need Keccak256 (not other Tevm functions)
 - Minimal bundle size is critical
 - Browser/edge deployment with WASM support
 
@@ -172,7 +172,7 @@ if (Keccak256Wasm.isReady()) {
 Minimal implementation with only Keccak256:
 - Zig stdlib Keccak-256 implementation
 - Minimal WASM runtime overhead
-- No dependencies on other Voltaire modules
+- No dependencies on other Tevm modules
 
 ### Pure TypeScript (25KB)
 Includes @noble/hashes dependencies:
@@ -180,7 +180,7 @@ Includes @noble/hashes dependencies:
 - Tree-shakeable (only Keccak-256 if unused)
 
 ### WASM Unified (200KB)
-Full Voltaire primitives and crypto:
+Full Tevm primitives and crypto:
 - All Abi, Address, Hash, etc. primitives
 - All crypto functions (secp256k1, BLS, etc.)
 - Amortized cost if using multiple features
@@ -203,7 +203,7 @@ Native and WASM implementations provide batch hashing:
 
 ```typescript
 // WASM Unified
-import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
 await Keccak256Wasm.init();
 
 const inputs = [data1, data2, data3];

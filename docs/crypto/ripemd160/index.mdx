@@ -45,7 +45,7 @@ RIPEMD160 is primarily maintained for Bitcoin compatibility. For new application
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+import { Ripemd160 } from 'tevm/crypto/ripemd160';
 
 // Hash bytes - constructor returns branded Ripemd160 type
 const data = new Uint8Array([1, 2, 3, 4, 5]);
@@ -64,9 +64,9 @@ const directHash = Ripemd160('hello');
 
 <Tab title="Bitcoin Address">
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Sha256 } from 'tevm/crypto/sha256';
+import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Bitcoin P2PKH address derivation (simplified)
 const publicKey = Hex('0x04' + '9876...'); // 65-byte uncompressed secp256k1 public key
@@ -283,7 +283,7 @@ export function hash(data: Uint8Array | string): Uint8Array {
 Available via `ripemd160.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript
-import { Ripemd160Wasm } from '@tevm/voltaire/crypto/ripemd160.wasm';
+import { Ripemd160Wasm } from 'tevm/crypto/ripemd160.wasm';
 await Ripemd160Wasm.load();
 const hash = Ripemd160Wasm.hash(data);
 ```
@@ -293,8 +293,8 @@ const hash = Ripemd160Wasm.hash(data);
 ### Bitcoin P2PKH Address
 Pay-to-PubKey-Hash (most common Bitcoin address):
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+import { Sha256 } from 'tevm/crypto/sha256';
+import { Ripemd160 } from 'tevm/crypto/ripemd160';
 
 function createPubKeyHash(publicKey: Uint8Array): BrandedRipemd160 {
   // Bitcoin uses SHA256 followed by RIPEMD160
@@ -309,8 +309,8 @@ function createPubKeyHash(publicKey: Uint8Array): BrandedRipemd160 {
 ### Bitcoin P2SH Address
 Pay-to-Script-Hash addresses:
 ```typescript
-import { Sha256 } from '@tevm/voltaire/crypto/sha256';
-import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+import { Sha256 } from 'tevm/crypto/sha256';
+import { Ripemd160 } from 'tevm/crypto/ripemd160';
 
 function createScriptHash(redeemScript: Uint8Array): BrandedRipemd160 {
   const sha256Hash = Sha256(redeemScript);   // BrandedSha256

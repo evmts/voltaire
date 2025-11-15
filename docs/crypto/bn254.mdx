@@ -21,7 +21,7 @@ BN254 (also known as BN128 or Alt-BN128) is a Barreto-Naehrig pairing-friendly e
 ## Quick Start
 
 ```typescript
-import * as BN254 from '@tevm/voltaire/crypto/bn254';
+import * as BN254 from 'tevm/crypto/bn254';
 
 // G1 operations (base field)
 const g1Gen = BN254.G1.generator();
@@ -62,7 +62,7 @@ BN254 operates over two finite fields:
 #### Base Field (Fp)
 
 ```typescript
-import * as Fp from '@tevm/voltaire/crypto/bn254/Fp';
+import * as Fp from 'tevm/crypto/bn254/Fp';
 
 // Field modulus (254 bits)
 const p = Fp.MOD; // 21888242871839275222246405745257275088696311157297823662689037894645226208583n
@@ -78,7 +78,7 @@ const inv = Fp.inv(a);
 #### Scalar Field (Fr)
 
 ```typescript
-import * as Fr from '@tevm/voltaire/crypto/bn254/Fr';
+import * as Fr from 'tevm/crypto/bn254/Fr';
 
 // Scalar field modulus (curve order)
 const r = Fr.MOD; // 21888242871839275222246405745257275088548364400416034343698204186575808495617n
@@ -92,7 +92,7 @@ const product = Fr.mul(s1, s2);
 #### Extension Field (Fp2)
 
 ```typescript
-import * as Fp2 from '@tevm/voltaire/crypto/bn254/Fp2';
+import * as Fp2 from 'tevm/crypto/bn254/Fp2';
 
 // Quadratic extension Fp2 = Fp[u]/(u^2 + 1)
 const elem = Fp2.create(123n, 456n); // 123 + 456u
@@ -105,7 +105,7 @@ const conjugate = Fp2.conjugate(elem); // 123 - 456u
 #### G1 Points (Base Field)
 
 ```typescript
-import * as G1 from '@tevm/voltaire/crypto/bn254/G1';
+import * as G1 from 'tevm/crypto/bn254/G1';
 
 // Generator point
 const g = G1.generator(); // (1, 2)
@@ -130,7 +130,7 @@ const deserialized = BN254.deserializeG1(serialized);
 #### G2 Points (Extension Field)
 
 ```typescript
-import * as G2 from '@tevm/voltaire/crypto/bn254/G2';
+import * as G2 from 'tevm/crypto/bn254/G2';
 
 // Generator point (Fp2 coordinates)
 const g2 = G2.generator();
@@ -156,7 +156,7 @@ const deserialized = BN254.deserializeG2(serialized);
 #### Optimal Ate Pairing
 
 ```typescript
-import * as Pairing from '@tevm/voltaire/crypto/bn254/Pairing';
+import * as Pairing from 'tevm/crypto/bn254/Pairing';
 
 // Single pairing computation
 const g1 = G1.generator();
@@ -244,7 +244,7 @@ function verifyGroth16Proof(
 
 ```typescript
 // Direct precompile usage (via Zig/Rust)
-import { bn254Add, bn254Mul, bn254Pairing } from '@tevm/voltaire/crypto/bn254';
+import { bn254Add, bn254Mul, bn254Pairing } from 'tevm/crypto/bn254';
 
 // ECADD (0x06): Add two G1 points
 const input1 = new Uint8Array(128); // p1_x || p1_y || p2_x || p2_y
@@ -354,7 +354,7 @@ zig build build-ts-wasm-fast       # Optimized WASM
 ## Constants
 
 ```typescript
-import { FP_MOD, FR_MOD, B_G1, G1_GENERATOR_X, G1_GENERATOR_Y } from '@tevm/voltaire/crypto/bn254';
+import { FP_MOD, FR_MOD, B_G1, G1_GENERATOR_X, G1_GENERATOR_Y } from 'tevm/crypto/bn254';
 
 // Field modulus (254 bits)
 FP_MOD // 21888242871839275222246405745257275088696311157297823662689037894645226208583n
