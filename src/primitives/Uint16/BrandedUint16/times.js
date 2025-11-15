@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint16.js').BrandedUint16} a - First operand
- * @param {import('./BrandedUint16.js').BrandedUint16} b - Second operand
- * @returns {import('./BrandedUint16.js').BrandedUint16} Product (a * b)
+ * @param {import('./Uint16Type.js').BrandedUint16} a - First operand
+ * @param {import('./Uint16Type.js').BrandedUint16} b - Second operand
+ * @returns {import('./Uint16Type.js').BrandedUint16} Product (a * b)
  * @throws {Error} If result exceeds maximum value
  * @example
  * ```javascript
@@ -24,5 +24,5 @@ export function times(a, b) {
 			`Uint16 overflow: ${a} * ${b} = ${product} exceeds maximum (65535)`,
 		);
 	}
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (product);
+	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (product);
 }

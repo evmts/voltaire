@@ -5,8 +5,8 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint16.js').BrandedUint16} uint - Input value
- * @returns {import('./BrandedUint16.js').BrandedUint16} Bitwise NOT result
+ * @param {import('./Uint16Type.js').BrandedUint16} uint - Input value
+ * @returns {import('./Uint16Type.js').BrandedUint16} Bitwise NOT result
  * @throws {never}
  * @example
  * ```javascript
@@ -16,7 +16,7 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function bitwiseNot(uint) {
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (
+	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (
 		~uint & MAX
 	);
 }

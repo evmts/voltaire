@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
  * @param {number} value - number value
- * @returns {import('./BrandedUint16.js').BrandedUint16} Uint16 value
+ * @returns {import('./Uint16Type.js').BrandedUint16} Uint16 value
  * @throws {Error} If value is out of range or not an integer
  * @example
  * ```javascript
@@ -27,5 +27,5 @@ export function fromNumber(value) {
 		throw new Error(`Uint16 value exceeds maximum (65535): ${value}`);
 	}
 
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (value);
+	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (value);
 }

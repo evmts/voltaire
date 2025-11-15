@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint16.js').BrandedUint16} a - First operand
- * @param {import('./BrandedUint16.js').BrandedUint16} b - Second operand
- * @returns {import('./BrandedUint16.js').BrandedUint16} Bitwise OR result
+ * @param {import('./Uint16Type.js').BrandedUint16} a - First operand
+ * @param {import('./Uint16Type.js').BrandedUint16} b - Second operand
+ * @returns {import('./Uint16Type.js').BrandedUint16} Bitwise OR result
  * @throws {never}
  * @example
  * ```javascript
@@ -16,5 +16,5 @@
  * ```
  */
 export function bitwiseOr(a, b) {
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (a | b);
+	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (a | b);
 }

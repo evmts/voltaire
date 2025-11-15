@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedUint16.js').BrandedUint16} true if valid Uint16
+ * @returns {value is import('./Uint16Type.js').BrandedUint16} true if valid Uint16
  * @throws {never}
  * @example
  * ```javascript

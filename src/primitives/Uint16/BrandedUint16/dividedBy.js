@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint16.js').BrandedUint16} a - Dividend
- * @param {import('./BrandedUint16.js').BrandedUint16} b - Divisor
- * @returns {import('./BrandedUint16.js').BrandedUint16} Quotient (floor(a / b))
+ * @param {import('./Uint16Type.js').BrandedUint16} a - Dividend
+ * @param {import('./Uint16Type.js').BrandedUint16} b - Divisor
+ * @returns {import('./Uint16Type.js').BrandedUint16} Quotient (floor(a / b))
  * @throws {Error} If divisor is zero
  * @example
  * ```javascript
@@ -19,7 +19,7 @@ export function dividedBy(a, b) {
 	if (b === 0) {
 		throw new Error("Division by zero");
 	}
-	return /** @type {import('./BrandedUint16.js').BrandedUint16} */ (
+	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (
 		Math.floor(a / b)
 	);
 }

@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint16.js').BrandedUint16} uint - Uint16 value
+ * @param {import('./Uint16Type.js').BrandedUint16} uint - Uint16 value
  * @param {boolean} [padded=true] - Whether to pad to 4 characters (2 bytes)
  * @returns {string} Hex string with 0x prefix
  * @throws {never}
