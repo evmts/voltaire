@@ -10,7 +10,7 @@ description: Learn Ethereum transaction types, lifecycle, signing, and gas mecha
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Transaction API](/primitives/transaction/index).
 </Info>
-Ethereum transactions are cryptographically signed messages that initiate state transitions on the Ethereum blockchain. This guide teaches transaction fundamentals using Voltaire.
+Ethereum transactions are cryptographically signed messages that initiate state transitions on the Ethereum blockchain. This guide teaches transaction fundamentals using Tevm.
 
 ## What Are Transactions?
 
@@ -31,8 +31,8 @@ Ethereum supports 5 transaction types, each adding new capabilities:
 Original transaction format from Ethereum genesis (2015).
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 
 const legacy: Transaction.Legacy = {
   type: Transaction.Type.Legacy,
@@ -65,8 +65,8 @@ const txHash = Transaction.hash(legacy);
 Access list transactions introduced in Berlin hard fork (2021).
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 
 const eip2930: Transaction.EIP2930 = {
   type: Transaction.Type.EIP2930,
@@ -106,8 +106,8 @@ Pre-declare which addresses and storage slots will be accessed. Reduces gas cost
 Dynamic fee market transactions from London hard fork (2021).
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 
 const eip1559: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -170,8 +170,8 @@ refund = (maxFeePerGas - effectiveGasPrice) * gasUsed
 Blob transactions for L2 data availability from Dencun hard fork (2024).
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 import * as Hash from '@tevm/voltaire/Hash';
 
 const eip4844: Transaction.EIP4844 = {
@@ -228,8 +228,8 @@ totalCost = executionCost + blobCost + value
 EOA delegation transactions from Pectra hard fork (2024).
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 import * as Authorization from '@tevm/voltaire/Authorization';
 
 const eip7702: Transaction.EIP7702 = {
@@ -310,8 +310,8 @@ Each authorization temporarily delegates an EOA's code to a contract:
 ### Complete Example: Send ETH
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Address from '@tevm/voltaire/Address';
+import * as Transaction from 'tevm/Transaction';
+import * as Address from 'tevm/Address';
 import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
 
 // 1. CONSTRUCT - Create unsigned transaction
@@ -814,8 +814,8 @@ const sender = Transaction.getSender(tx);
 Transactions use Recursive Length Prefix (RLP) encoding:
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Transaction from 'tevm/Transaction';
+import * as Hex from 'tevm/Hex';
 
 const tx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,

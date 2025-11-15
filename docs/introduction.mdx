@@ -48,7 +48,7 @@ const tx = Transaction({
 });
 
 // Private keys and signatures
-const privateKey: PrivateKey = PrivateKey.random();
+const privateKey: PrivateKey = PrivateKey.fromRandom();
 const signer = Signer.fromPrivateKey(privateKey);
 const signature: Secp256k1.Signature = signer.sign(hash);
 const recovered: Address = signer.recover(hash);

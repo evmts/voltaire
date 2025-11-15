@@ -10,7 +10,7 @@ description: Learn Ethereum fee market mechanics for EIP-1559 and EIP-4844
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [FeeMarket API](/primitives/feemarket/index).
 </Info>
-Ethereum has two independent fee markets: EIP-1559 for transaction execution (gas) and EIP-4844 for blob data availability. This guide explains how both work using Voltaire.
+Ethereum has two independent fee markets: EIP-1559 for transaction execution (gas) and EIP-4844 for blob data availability. This guide explains how both work using Tevm.
 
 ## What is EIP-1559?
 
@@ -49,7 +49,7 @@ Block utilization → Next block adjustment:
 ### Calculating Next Base Fee
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Block with 50% utilization (at target)
 const nextFee1 = FeeMarket.BaseFee(
@@ -107,7 +107,7 @@ The `/8n` factor gives 12.5% max adjustment per block.
 Priority fee (tip) incentivizes validators to include your transaction:
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 const txFee = FeeMarket.calculateTxFee({
   maxFeePerGas: 2_000_000_000n,         // Max you'll pay (2 gwei)
@@ -187,7 +187,7 @@ Understanding the two fee parameters:
 ### Setting Fees for Different Urgency Levels
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Current network state
 const currentBaseFee = 1_000_000_000n; // 1 gwei
@@ -236,7 +236,7 @@ console.log('High urgency:', highFee.effectiveGasPrice);     // 3_000_000_000n
 Calculate total cost for a token transfer:
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Current network conditions
 const currentBaseFee = 1_200_000_000n; // 1.2 gwei
@@ -281,7 +281,7 @@ console.log(`Total cost: ${ethCost} ETH`);
 Protect against sudden base fee increases:
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Project base fees for next 5 blocks assuming high utilization
 const currentBaseFee = 1_000_000_000n;
@@ -319,7 +319,7 @@ console.log(`Safe maxFeePerGas: ${maxFeePerGas}`);
 EIP-4844 introduced a separate fee market for blob data (layer 2 data availability):
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Blob gas operates independently from regular gas
 const BLOB_GAS_PER_BLOB = 131_072n; // Each blob costs this much blob gas
@@ -362,7 +362,7 @@ scenarios.forEach(({ blobs, excessBlobGas }) => {
 ### Complete Blob Transaction Example
 
 ```typescript
-import * as FeeMarket from '@tevm/voltaire';
+import * as FeeMarket from 'tevm';
 
 // Current blob market state
 const parentExcessBlobGas = 131_072n; // 1 blob above target

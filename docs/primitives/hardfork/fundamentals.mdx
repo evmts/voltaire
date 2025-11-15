@@ -10,7 +10,7 @@ description: Learn Ethereum hardfork protocol upgrades and version management
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Hardfork API](/primitives/hardfork/index).
 </Info>
-Ethereum hardforks are backwards-incompatible protocol upgrades that introduce new features, fix bugs, and improve performance across the network. This guide teaches hardfork fundamentals using Voltaire.
+Ethereum hardforks are backwards-incompatible protocol upgrades that introduce new features, fix bugs, and improve performance across the network. This guide teaches hardfork fundamentals using Tevm.
 
 ## What Are Hardforks?
 
@@ -36,7 +36,7 @@ Hardforks enable protocol evolution without fragmenting the network:
 <Tabs>
 <Tab title="Chronological">
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 // Early era (2015-2017)
 Hardfork.FRONTIER          // July 2015 - Genesis block
@@ -60,7 +60,7 @@ console.log(Hardfork.compare(Hardfork.LONDON, Hardfork.CANCUN)); // -1 (London i
 </Tab>
 <Tab title="Feature View">
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 // Gas optimizations
 Hardfork.BERLIN   // EIP-2929: SLOAD/CALL access list pricing
@@ -92,7 +92,7 @@ console.log(Hardfork.hasEIP4844(fork));  // true - blobs available
 Hardforks activate at predetermined block numbers (pre-Merge) or timestamps (post-Merge):
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 // Block-based activation (pre-Merge)
 const berlinBlock = 12244000;   // Mainnet Berlin activation
@@ -124,7 +124,7 @@ console.log(getGasCostMultiplier("berlin", 13000000));   // 2600
 Use version comparison to gate features based on hardfork:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function validateTransaction(tx: any, networkHardfork: string) {
   const fork = Hardfork(networkHardfork);
@@ -170,7 +170,7 @@ try {
 Compare feature availability across hardforks:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function compareFeatures(forkA: string, forkB: string) {
   const a = Hardfork(forkA);
@@ -220,7 +220,7 @@ Common features tied to specific hardforks:
 ### EIP-1559 Base Fee (London)
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function calculateMaxFee(hardfork: string, baseFee: bigint, priorityFee: bigint): bigint {
   const fork = Hardfork(hardfork);
@@ -242,7 +242,7 @@ console.log(calculateMaxFee("cancun", 15n, 3n));   // 18n
 ### EIP-3855 PUSH0 Opcode (Shanghai)
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function supportsOptimizedBytecode(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
@@ -260,7 +260,7 @@ console.log(supportsOptimizedBytecode("cancun"));   // true
 ### EIP-4844 Blob Transactions (Cancun)
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function supportsBlobTransactions(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
@@ -277,7 +277,7 @@ console.log(supportsBlobTransactions("cancun"));   // true
 ### EIP-1153 Transient Storage (Cancun)
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 function supportsTransientStorage(hardfork: string): boolean {
   const fork = Hardfork(hardfork);

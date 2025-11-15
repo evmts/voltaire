@@ -10,7 +10,7 @@ description: Learn Ethereum ABI encoding structure, function selectors, and data
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [ABI API](/primitives/abi/index).
 </Info>
-The Application Binary Interface (ABI) is Ethereum's standard for encoding function calls, return values, events, and errors when interacting with smart contracts. This guide teaches ABI fundamentals using Voltaire.
+The Application Binary Interface (ABI) is Ethereum's standard for encoding function calls, return values, events, and errors when interacting with smart contracts. This guide teaches ABI fundamentals using Tevm.
 
 ## What is ABI?
 
@@ -27,8 +27,8 @@ Without ABI, contracts couldn't communicate. It's the protocol that lets you cal
 Every function call starts with a **4-byte selector** derived from the function signature:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
-import { Keccak256 } from '@tevm/voltaire';
+import { Function } from 'tevm';
+import { Keccak256 } from 'tevm';
 
 // Function signature: name + parameter types (no spaces, no names)
 const signature = "transfer(address,uint256)";
@@ -78,7 +78,7 @@ Types with known size encode directly into 32-byte slots:
 <Tabs>
 <Tab title="uint256">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -93,7 +93,7 @@ const encoded = Function.encodeParams(fn, [42n]);
 </Tab>
 <Tab title="address">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -110,7 +110,7 @@ const encoded = Function.encodeParams(fn, [
 </Tab>
 <Tab title="bool">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -125,7 +125,7 @@ const encoded = Function.encodeParams(fn, [true]);
 </Tab>
 <Tab title="bytes32">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -148,7 +148,7 @@ Dynamic types (string, bytes, arrays) use **offset-based encoding**:
 <Tabs>
 <Tab title="string">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -169,7 +169,7 @@ Structure:
 </Tab>
 <Tab title="bytes">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -185,7 +185,7 @@ const encoded = Function.encodeParams(fn, [new Uint8Array([0xaa, 0xbb])]);
 </Tab>
 <Tab title="uint256[]">
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -208,7 +208,7 @@ const encoded = Function.encodeParams(fn, [[1n, 2n, 3n]]);
 Encode complete calldata for `transfer(address,uint256)`:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const transferFn = {
   type: "function",
@@ -241,7 +241,7 @@ Use this calldata when making contract calls via RPC or transaction.
 Decode function return data after execution:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const balanceOfFn = {
   type: "function",
@@ -267,7 +267,7 @@ console.log(result); // [1000n]
 Mixed fixed and dynamic types require offset tracking:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -312,7 +312,7 @@ Offset  Content
 Encode constructor parameters for contract deployment:
 
 ```typescript
-import { Constructor } from '@tevm/voltaire';
+import { Constructor } from 'tevm';
 
 const constructorDef = {
   type: "constructor",
@@ -340,7 +340,7 @@ Events split data into **indexed topics** (for filtering) and **non-indexed data
 ### Event Structure
 
 ```typescript
-import { Event } from '@tevm/voltaire';
+import { Event } from 'tevm';
 
 const transferEvent = {
   type: "event",
@@ -358,7 +358,7 @@ const transferEvent = {
 Topic 0 is always the event signature hash:
 
 ```typescript
-import { Event, Keccak256 } from '@tevm/voltaire';
+import { Event, Keccak256 } from 'tevm';
 
 // Get event signature hash (topic 0)
 const signature = Event.getSignature(transferEvent);
@@ -386,7 +386,7 @@ console.log(topics);
 Parse log data and topics back to values:
 
 ```typescript
-import { Event } from '@tevm/voltaire';
+import { Event } from 'tevm';
 
 const transferEvent = {
   type: "event",
@@ -444,7 +444,7 @@ Limit: Maximum 3 indexed parameters per event (topics 1-3).
 Tuples (structs) encode as grouped parameters:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -480,7 +480,7 @@ const encoded = Function.encodeParams(fn, [
 ### Array of Tuples
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const fn = {
   type: "function",
@@ -547,7 +547,7 @@ Key:
 ### Calling Contract Functions
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 // Define function
 const transferFn = {
@@ -577,7 +577,7 @@ const tx = {
 ### Parsing Event Logs
 
 ```typescript
-import { Event } from '@tevm/voltaire';
+import { Event } from 'tevm';
 
 const transferEvent = {
   type: "event",
@@ -610,7 +610,7 @@ console.log(transfers);
 ### Handling Contract Errors
 
 ```typescript
-import { AbiError } from '@tevm/voltaire';
+import { AbiError } from 'tevm';
 
 const insufficientBalanceError = {
   type: "error",
@@ -640,7 +640,7 @@ try {
 Voltaire provides full TypeScript type inference:
 
 ```typescript
-import { Function } from '@tevm/voltaire';
+import { Function } from 'tevm';
 
 const balanceOfFn = {
   type: "function",
@@ -669,7 +669,7 @@ import {
   AbiEncodingError,
   AbiDecodingError,
   AbiParameterMismatchError
-} from '@tevm/voltaire';
+} from 'tevm';
 
 try {
   const encoded = Function.encodeParams(fn, [/* params */]);

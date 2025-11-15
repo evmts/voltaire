@@ -18,7 +18,7 @@ C API requires manual sorting using standard library `qsort` with custom compara
 **Example:**
 
 ```c
-#include "voltaire.h"
+#include "tevm.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,7 +53,7 @@ int main() {
 **Creating sorted copy:**
 
 ```c
-#include "voltaire.h"
+#include "tevm.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,7 +105,7 @@ int main() {
 
 **Example ordering:**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // These addresses sorted lexicographically:
 const addrs = [
@@ -125,7 +125,7 @@ const sorted = Address.sortAddresses(addrs.map(Address.fromHex))
 Ensure deterministic address order for signatures or storage:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function signMultisigTransaction(signers: Address[], tx: Transaction) {
   // Sort signers for canonical order
@@ -143,8 +143,8 @@ function signMultisigTransaction(signers: Address[], tx: Transaction) {
 Build ordered merkle trees with sorted leaves:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
-import { keccak256 } from '@tevm/voltaire/crypto'
+import { Address } from 'tevm'
+import { keccak256 } from 'tevm/crypto'
 
 function buildAddressMerkleTree(addresses: Address[]) {
   // Sort addresses for deterministic tree structure
@@ -163,7 +163,7 @@ function buildAddressMerkleTree(addresses: Address[]) {
 Ensure consistent output across runs:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function findCommonAddresses(
   list1: Address[],
@@ -186,7 +186,7 @@ function findCommonAddresses(
 Sort before removing duplicates (often more efficient):
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function deduplicate(addresses: Address[]): Address[] {
   // Sort first
@@ -211,7 +211,7 @@ function deduplicate(addresses: Address[]): Address[] {
 Sort for efficient lookup:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 class SortedAddressSet {
   private addresses: Address[]
@@ -266,8 +266,8 @@ class SortedAddressSet {
 Sort addresses in event logs for indexed storage:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
-import type { EventLog } from '@tevm/voltaire/EventLog'
+import { Address } from 'tevm'
+import type { EventLog } from 'tevm/EventLog'
 
 function indexEventsByAddress(logs: EventLog[]): Map<string, EventLog[]> {
   const index = new Map<string, EventLog[]>()
@@ -305,7 +305,7 @@ function indexEventsByAddress(logs: EventLog[]): Map<string, EventLog[]> {
 For large arrays, consider single-pass operations:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Less efficient - multiple iterations
 const sorted = Address.sortAddresses(addresses)
@@ -333,7 +333,7 @@ function sortAndDedupe(addresses: Address[]): Address[] {
 Original array unchanged (immutable operation):
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const original = [addr3, addr1, addr2]
 const sorted = Address.sortAddresses(original)
@@ -346,7 +346,7 @@ console.log(original[0] === addr3) // true (unchanged)
 
 **Built on compare():**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 Address.sortAddresses(addresses)
 
@@ -356,7 +356,7 @@ Address.sortAddresses(addresses)
 
 **Combined with deduplication:**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Sort then dedupe
 const sorted = Address.sortAddresses(addresses)
@@ -368,7 +368,7 @@ const unique = Address.deduplicateAddresses(addresses)
 
 **With filtering:**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Filter non-zero addresses and sort
 const nonZero = addresses.filter(addr => !addr.isZero())
@@ -380,7 +380,7 @@ const sorted = Address.sortAddresses(nonZero)
 ### Empty Array
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const sorted = Address.sortAddresses([])
 console.log(sorted.length) // 0
@@ -389,7 +389,7 @@ console.log(sorted.length) // 0
 ### Single Address
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const single = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const sorted = Address.sortAddresses([single])
@@ -401,7 +401,7 @@ console.log(sorted[0].equals(single)) // true
 ### Duplicate Addresses
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const addr = Address("0x0000000000000000000000000000000000000001")
 const sorted = Address.sortAddresses([addr, addr, addr])
@@ -418,7 +418,7 @@ console.log(unique.length) // 1
 ### Already Sorted
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const alreadySorted = [
   Address("0x0000000000000000000000000000000000000001"),

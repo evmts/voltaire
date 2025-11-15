@@ -33,7 +33,7 @@ JavaScript builtins available on all `Uint8Array` instances:
 [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
 
 <Note>
-`toHex()` and `setFromHex()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Voltaire's `Hex.toHex()` for broader compatibility.
+`toHex()` and `setFromHex()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Tevm's `Hex.toHex()` for broader compatibility.
 </Note>
 
 ## Quick Reference
@@ -198,7 +198,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { fromHex, analyze, formatInstructions } from '@tevm/voltaire/BrandedBytecode';
+import { fromHex, analyze, formatInstructions } from 'tevm/BrandedBytecode';
 
 const code = fromHex("0x6001");
 const analysis = analyze(code);
