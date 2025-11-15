@@ -249,7 +249,7 @@ When displaying values to users, convert to appropriate units:
 
 ```typescript
 import * as Wei from 'tevm/Wei';
-import * as Ether from '@tevm/voltaire/Ether';
+import * as Ether from 'tevm/Ether';
 
 const balance = Wei(1_234_567_890_123_456_789n);
 
@@ -288,7 +288,7 @@ const tx = {
 <Tab title="Gas Price Display">
 ```typescript
 import * as Wei from 'tevm/Wei';
-import * as Gwei from '@tevm/voltaire/Gwei';
+import * as Gwei from 'tevm/Gwei';
 
 // Gas price from RPC (in Wei)
 const gasPriceWei = Wei(50_000_000_000n);
@@ -342,7 +342,7 @@ const amount = Wei("1000000000000000000");
 <Tab title="Integer Division">
 ```typescript
 import * as Wei from 'tevm/Wei';
-import * as Ether from '@tevm/voltaire/Ether';
+import * as Ether from 'tevm/Ether';
 
 // Integer division truncates (rounds down)
 const halfEther = Wei(500_000_000_000_000_000n);  // 0.5 ETH

@@ -35,7 +35,7 @@ function detectType(data: Uint8Array): Type
 ### Usage
 
 ```typescript
-import { detectType, Type } from '@tevm/voltaire/Transaction'
+import { detectType, Type } from 'tevm/Transaction'
 
 // Detect Legacy transaction (starts with RLP list marker 0xc0-0xff)
 const legacyData = new Uint8Array([0xf8, 0x6c, ...])
@@ -64,7 +64,7 @@ try {
 }
 ```
 
-Source: [detectType.ts:6-31](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/detectType.ts#L6-L31)
+Source: [detectType.ts:6-31](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/detectType.ts#L6-L31)
 
 ## Detection Logic
 
@@ -110,7 +110,7 @@ switch (firstByte) {
 ### From Network Data
 
 ```typescript
-import { detectType, deserialize } from '@tevm/voltaire/Transaction'
+import { detectType, deserialize } from 'tevm/Transaction'
 
 // Receive transaction from network
 const txData = new Uint8Array([...])
@@ -126,7 +126,7 @@ const tx = deserialize(txData)
 ### From Transaction Pool
 
 ```typescript
-import { detectType, Type } from '@tevm/voltaire/Transaction'
+import { detectType, Type } from 'tevm/Transaction'
 
 function categorizeTx(data: Uint8Array) {
   const type = detectType(data)
@@ -147,7 +147,7 @@ function categorizeTx(data: Uint8Array) {
 ### Batch Detection
 
 ```typescript
-import { detectType, Type } from '@tevm/voltaire/Transaction'
+import { detectType, Type } from 'tevm/Transaction'
 
 function analyzeBlock(transactions: Uint8Array[]) {
   const counts = {

@@ -93,8 +93,8 @@ console.log(`Estimated: ${Wei.toEther(estimatedCost)} ETH`)
 ### Gas Price Comparison
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Gwei from 'tevm/Gwei'
+import * as Uint from 'tevm/Uint'
 
 interface GasPrices {
   fast: Gwei.Type
@@ -251,7 +251,7 @@ console.log(formatWeiAsEther(balance, 2))   // "1.23"
 ### Format with Units
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Wei from 'tevm/Wei'
 
 function formatBalance(wei: Wei.Type): string {
   const weiU256 = Wei.toU256(wei)
@@ -408,7 +408,7 @@ shares.forEach((share, i) => {
 ```typescript
 import * as Ether from 'tevm/Ether'
 import * as Wei from 'tevm/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Uint from 'tevm/Uint'
 
 function weiToUSD(
   wei: Wei.Type,
@@ -501,7 +501,7 @@ if (isWithinRange(value, min, max)) {
 ### Dust Amount Detection
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Wei from 'tevm/Wei'
 
 const DUST_THRESHOLD = Wei(1_000_000_000_000n)  // 0.000001 ETH
 

@@ -40,7 +40,7 @@ export type Chain = {
 
 Plain JavaScript object with chain configuration. No special branding beyond TypeScript type safety.
 
-Defined in: [primitives/Chain/ChainType.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts)
+Defined in: [primitives/Chain/ChainType.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Chain/ChainType.ts)
 
 ## Available Functions
 
@@ -49,8 +49,8 @@ All Chain functionality available as tree-shakeable functions:
 ### Constructors
 
 ```typescript
-import { from, fromId } from '@tevm/voltaire/BrandedChain'
-import { mainnet } from '@tevm/chains'
+import { from, fromId } from 'tevm/BrandedChain'
+import { mainnet } from 'tevm/chains'
 
 const chain1 = from(mainnet)
 const chain2 = fromId(9)
@@ -61,7 +61,7 @@ See [Constructors](/primitives/chain/constructors) for details.
 ### Chain Lookup
 
 ```typescript
-import { fromId, byId } from '@tevm/voltaire/BrandedChain'
+import { fromId, byId } from 'tevm/BrandedChain'
 
 // Function-based lookup
 const quai = fromId(9)
@@ -89,7 +89,7 @@ Chain.fromId(id)
 This enables functional composition and partial application:
 
 ```typescript
-import { fromId } from '@tevm/voltaire/BrandedChain'
+import { fromId } from 'tevm/BrandedChain'
 
 // Function composition
 const getChainName = (chainId: number) => fromId(chainId)?.name
@@ -112,7 +112,7 @@ chains.forEach(chain => {
 **Best for:** Applications using a fixed set of known chains.
 
 ```typescript
-import { quai9, flr14, ronin2020 } from '@tevm/chains'
+import { quai9, flr14, ronin2020 } from 'tevm/chains'
 
 // Only these 3 chains in bundle
 const chains = [quai9, flr14, ronin2020]
@@ -131,7 +131,7 @@ const quai = getChain(9)
 **Best for:** Applications with dynamic chain selection.
 
 ```typescript
-import { fromId, byId } from '@tevm/voltaire/BrandedChain'
+import { fromId, byId } from 'tevm/BrandedChain'
 
 // Full chain registry in bundle
 const quai = fromId(9)
@@ -150,8 +150,8 @@ function getChain(userChainId: number) {
 **Best for:** Applications with common chains but occasional dynamic lookup.
 
 ```typescript
-import { quai9, flr14, ronin2020 } from '@tevm/chains'
-import { fromId } from '@tevm/voltaire/BrandedChain'
+import { quai9, flr14, ronin2020 } from 'tevm/chains'
+import { fromId } from 'tevm/BrandedChain'
 
 // Common chains available without lookup
 const COMMON_CHAINS = [quai9, flr14, ronin2020]
@@ -174,11 +174,11 @@ function getChain(chainId: number) {
 
 ```typescript
 // Common chains in main bundle
-import { quai9, flr14 } from '@tevm/chains'
+import { quai9, flr14 } from 'tevm/chains'
 
 // Lazy load registry for admin panel
 async function loadFullRegistry() {
-  const { fromId } = await import('@tevm/voltaire/BrandedChain')
+  const { fromId } = await import('tevm/BrandedChain')
   return fromId
 }
 
@@ -218,8 +218,8 @@ async function getAdminChain(chainId: number) {
 ### Minimal Bundle (Fixed Chains)
 
 ```typescript
-import { quai9, flr14 } from '@tevm/chains'
-import { from } from '@tevm/voltaire/BrandedChain'
+import { quai9, flr14 } from 'tevm/chains'
+import { from } from 'tevm/BrandedChain'
 
 // Wrap with Chain class if needed
 const quai = from(quai9)
@@ -232,7 +232,7 @@ console.log(flare.name) // "Flare Mainnet"
 ### Dynamic Chain Loading
 
 ```typescript
-import { fromId } from '@tevm/voltaire/BrandedChain'
+import { fromId } from 'tevm/BrandedChain'
 
 function loadChain(chainIdFromUser: number) {
   const chain = fromId(chainIdFromUser)
@@ -253,7 +253,7 @@ console.log(chain.name) // "Quai Mainnet"
 
 ```typescript
 // app.ts - Main bundle with common chains
-import { quai9, flr14, ronin2020 } from '@tevm/chains'
+import { quai9, flr14, ronin2020 } from 'tevm/chains'
 
 export const SUPPORTED_CHAINS = [quai9, flr14, ronin2020]
 
@@ -262,7 +262,7 @@ export function getChain(chainId: number) {
 }
 
 // admin.ts - Admin panel with full registry
-import { fromId } from '@tevm/voltaire/BrandedChain'
+import { fromId } from 'tevm/BrandedChain'
 
 export function getAllChains() {
   return Object.values(byId)
@@ -276,8 +276,8 @@ export function findChain(chainId: number) {
 ### Functional Composition
 
 ```typescript
-import { fromId } from '@tevm/voltaire/BrandedChain'
-import type { Chain } from '@tevm/voltaire/BrandedChain'
+import { fromId } from 'tevm/BrandedChain'
+import type { Chain } from 'tevm/BrandedChain'
 
 // Compose functions
 const getChainName = (id: number) => fromId(id)?.name ?? 'Unknown'
@@ -299,8 +299,8 @@ console.log(rpcs)    // ["https://...", ...]
 ### Type-Safe Chain Operations
 
 ```typescript
-import { fromId } from '@tevm/voltaire/BrandedChain'
-import type { Chain } from '@tevm/voltaire/BrandedChain'
+import { fromId } from 'tevm/BrandedChain'
+import type { Chain } from 'tevm/BrandedChain'
 
 function requireChain(chainId: number): Chain {
   const chain = fromId(chainId)
@@ -334,7 +334,7 @@ try {
 - **Fixed chain set** (production apps)
 - **Tree-shaking important**
 - **Functional style** preferred
-- **Direct imports** from @tevm/chains
+- **Direct imports** from tevm/chains
 
 ### Use Chain Class When:
 - **Dynamic chains** needed
@@ -347,9 +347,9 @@ try {
 BrandedChain and Chain are fully compatible:
 
 ```typescript
-import { Chain } from '@tevm/voltaire'
-import { fromId } from '@tevm/voltaire/BrandedChain'
-import { quai9 } from '@tevm/chains'
+import { Chain } from 'tevm'
+import { fromId } from 'tevm/BrandedChain'
+import { quai9 } from 'tevm/chains'
 
 // BrandedChain functions work with Chain class
 const chain1 = Chain(quai9)
@@ -360,9 +360,9 @@ console.log(chain1.chainId) // 9
 console.log(chain2?.chainId) // 9
 ```
 
-## Re-exports from @tevm/chains
+## Re-exports from tevm/chains
 
-BrandedChain re-exports all chains from @tevm/chains:
+BrandedChain re-exports all chains from tevm/chains:
 
 ```typescript
 import {
@@ -382,7 +382,7 @@ import {
   from,
   fromId,
   byId,
-} from '@tevm/voltaire/BrandedChain'
+} from 'tevm/BrandedChain'
 ```
 
 This provides a single import path for all chain-related functionality.
@@ -393,4 +393,4 @@ This provides a single import path for all chain-related functionality.
 - [Constructors](/primitives/chain/constructors) - Creating chains
 - [Chain Lookup](/primitives/chain/chain-lookup) - Looking up chains by ID
 - [Metadata](/primitives/chain/metadata) - Chain properties
-- [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) - Chain registry source
+- [tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) - Chain registry source

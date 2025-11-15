@@ -22,7 +22,7 @@ function format(tx: Any): string
 ### Usage
 
 ```typescript
-import { format } from '@tevm/voltaire/Transaction'
+import { format } from 'tevm/Transaction'
 
 const tx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -48,7 +48,7 @@ format(deploy)
 // "Legacy tx contract creation, value: 0 ETH, nonce: 0"
 ```
 
-Source: [format.ts:6-20](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/format.ts#L6-L20)
+Source: [format.ts:6-20](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/format.ts#L6-L20)
 
 ## getGasPrice
 
@@ -74,7 +74,7 @@ function getGasPrice(tx: Any, baseFee?: bigint): bigint
 ### Usage
 
 ```typescript
-import { getGasPrice } from '@tevm/voltaire/Transaction'
+import { getGasPrice } from 'tevm/Transaction'
 
 // Legacy/EIP-2930: Returns fixed gasPrice
 const legacyTx: Transaction.Legacy = {
@@ -102,7 +102,7 @@ try {
 }
 ```
 
-Source: [getGasPrice.ts:16-38](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getGasPrice.ts#L16-L38)
+Source: [getGasPrice.ts:16-38](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/getGasPrice.ts#L16-L38)
 
 ## hasAccessList
 
@@ -120,7 +120,7 @@ function hasAccessList(tx: Any): boolean
 ### Usage
 
 ```typescript
-import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList, getAccessList } from 'tevm/Transaction'
 
 const tx: Transaction.Any = /* ... */
 
@@ -132,7 +132,7 @@ if (hasAccessList(tx)) {
 }
 ```
 
-Source: [hasAccessList.ts:7-9](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/hasAccessList.ts#L7-L9)
+Source: [hasAccessList.ts:7-9](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/hasAccessList.ts#L7-L9)
 
 ## getAccessList
 
@@ -150,7 +150,7 @@ function getAccessList(tx: Any): AccessList
 ### Usage
 
 ```typescript
-import { getAccessList } from '@tevm/voltaire/Transaction'
+import { getAccessList } from 'tevm/Transaction'
 
 // EIP-1559 with access list
 const eip1559: Transaction.EIP1559 = {
@@ -168,7 +168,7 @@ const legacy: Transaction.Legacy = { /* ... */ }
 getAccessList(legacy)  // []
 ```
 
-Source: [getAccessList.ts:7-12](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getAccessList.ts#L7-L12)
+Source: [getAccessList.ts:7-12](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/getAccessList.ts#L7-L12)
 
 ## getChainId
 
@@ -186,7 +186,7 @@ function getChainId(tx: Any): bigint | null
 ### Usage
 
 ```typescript
-import { getChainId } from '@tevm/voltaire/Transaction'
+import { getChainId } from 'tevm/Transaction'
 
 // EIP-1559 (explicit chainId field)
 const eip1559: Transaction.EIP1559 = {
@@ -213,7 +213,7 @@ const oldLegacy: Transaction.Legacy = {
 getChainId(oldLegacy)  // null
 ```
 
-Source: [getChainId.ts:8-13](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getChainId.ts#L8-L13)
+Source: [getChainId.ts:8-13](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/getChainId.ts#L8-L13)
 
 ## isSigned
 
@@ -231,7 +231,7 @@ function isSigned(tx: Any): boolean
 ### Usage
 
 ```typescript
-import { isSigned, getSender } from '@tevm/voltaire/Transaction'
+import { isSigned, getSender } from 'tevm/Transaction'
 
 const signedTx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -256,7 +256,7 @@ if (isSigned(tx)) {
 }
 ```
 
-Source: [isSigned.ts:7-14](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/isSigned.ts#L7-L14)
+Source: [isSigned.ts:7-14](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/isSigned.ts#L7-L14)
 
 ## assertSigned
 
@@ -273,7 +273,7 @@ function assertSigned(tx: Any): void
 ### Usage
 
 ```typescript
-import { assertSigned, getSender } from '@tevm/voltaire/Transaction'
+import { assertSigned, getSender } from 'tevm/Transaction'
 
 try {
   assertSigned(tx)
@@ -286,14 +286,14 @@ try {
 }
 ```
 
-Source: [assertSigned.ts:6-13](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/assertSigned.ts#L6-L13)
+Source: [assertSigned.ts:6-13](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/assertSigned.ts#L6-L13)
 
 ## Usage Patterns
 
 ### Transaction Cost Calculation
 
 ```typescript
-import { getGasPrice } from '@tevm/voltaire/Transaction'
+import { getGasPrice } from 'tevm/Transaction'
 
 function calculateMaxCost(
   tx: Transaction.Any,
@@ -321,7 +321,7 @@ const maxCost = calculateMaxCost(tx, 15000000000n)
 ### Replay Protection Check
 
 ```typescript
-import { getChainId } from '@tevm/voltaire/Transaction'
+import { getChainId } from 'tevm/Transaction'
 
 function validateChainId(
   tx: Transaction.Any,
@@ -344,7 +344,7 @@ function validateChainId(
 ### Access List Extraction
 
 ```typescript
-import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+import { hasAccessList, getAccessList } from 'tevm/Transaction'
 
 function extractAddresses(tx: Transaction.Any): Set<AddressType> {
   const addresses = new Set<AddressType>()
@@ -374,7 +374,7 @@ function extractAddresses(tx: Transaction.Any): Set<AddressType> {
 ### Transaction Display
 
 ```typescript
-import { format, getGasPrice, getChainId } from '@tevm/voltaire/Transaction'
+import { format, getGasPrice, getChainId } from 'tevm/Transaction'
 
 function displayTransaction(
   tx: Transaction.Any,
@@ -404,7 +404,7 @@ function displayTransaction(
 ### Signature Validation
 
 ```typescript
-import { isSigned, assertSigned, verifySignature, getSender } from '@tevm/voltaire/Transaction'
+import { isSigned, assertSigned, verifySignature, getSender } from 'tevm/Transaction'
 
 function validateTransaction(
   tx: Transaction.Any,
@@ -444,7 +444,7 @@ import {
   getChainId,
   getGasPrice,
   hash
-} from '@tevm/voltaire/Transaction'
+} from 'tevm/Transaction'
 
 interface PoolEntry {
   tx: Transaction.Any

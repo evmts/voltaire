@@ -50,7 +50,7 @@ const log = EventLog({
 ### Minimal Log (Testing)
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Minimal log with required fields only
 const testLog = EventLog({
@@ -88,7 +88,7 @@ const log = EventLog({
 ### Anonymous Event
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Anonymous event with 4 indexed parameters (no signature in topic0)
 const anonymousLog = EventLog({

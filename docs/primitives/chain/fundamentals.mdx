@@ -149,7 +149,7 @@ console.log(identifyNetwork(137));      // "Layer 2 Network"
 Check if transaction matches expected network:
 
 ```typescript
-import { Transaction, Chain } from '@tevm/voltaire';
+import { Transaction, Chain } from 'tevm';
 
 function validateNetwork(tx: Transaction, expectedChainId: number): boolean {
   if (tx.chainId !== expectedChainId) {
@@ -212,7 +212,7 @@ console.log(isTestnet(137));      // false (Polygon mainnet)
 **Network identification** (chain metadata) and **replay protection** (chain ID in signature) serve different purposes:
 
 ```typescript
-import { Chain, Transaction } from '@tevm/voltaire';
+import { Chain, Transaction } from 'tevm';
 
 // Network identification: Get chain metadata
 const chain = Chain.fromId(1);

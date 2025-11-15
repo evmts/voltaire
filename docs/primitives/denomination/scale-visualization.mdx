@@ -262,10 +262,10 @@ Transfer (21,000 gas) - Cost in Ether:
 ### What fits in different units?
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from 'tevm/Wei'
+import * as Gwei from 'tevm/Gwei'
 import * as Ether from 'tevm/Ether'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Uint from 'tevm/Uint'
 
 // How much in Wei?
 const weiCapacity = Uint(2n ** 256n - 1n)  // Max Uint256

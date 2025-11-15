@@ -14,8 +14,8 @@ Common patterns for working with storage keys and EVM state management.
 Track contract storage across multiple contracts:
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
 
 // Create storage database
 const storage = new Map<string, bigint>();
@@ -40,8 +40,8 @@ console.log(value); // 1000000000n
 Calculate storage slots for Solidity mappings:
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import { Keccak256 } from '@tevm/crypto';
+import * as State from 'tevm/State';
+import { Keccak256 } from 'tevm/crypto';
 
 function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {
   // Solidity: keccak256(abi.encode(key, baseSlot))

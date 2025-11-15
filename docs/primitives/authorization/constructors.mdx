@@ -109,7 +109,7 @@ export function isUnsigned(value: unknown): value is Unsigned {
 ### Manual Construction
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
@@ -126,7 +126,7 @@ if (Authorization.isUnsigned(unsigned)) {
 ### From Account State
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 async function createUnsignedAuth(
   eoa: Address,
@@ -153,7 +153,7 @@ const unsigned = await createUnsignedAuth(
 ### Batch Creation
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 function createAuthBatch(
   delegations: Array<{ to: Address; nonce: bigint }>,
@@ -299,7 +299,7 @@ function parseAuthResponse(response: ApiResponse): Authorization.Item[] {
 ### Factory Pattern
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 class AuthorizationFactory {
   constructor(
@@ -348,7 +348,7 @@ const auth = factory.createSigned(contractAddress, 0n);
 ### Builder Pattern
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 class AuthorizationBuilder {
   private chainId?: bigint;
@@ -406,7 +406,7 @@ const auth = new AuthorizationBuilder()
 ### Safe Constructor
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 function safeCreateUnsigned(
   chainId: unknown,

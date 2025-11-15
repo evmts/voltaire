@@ -213,7 +213,7 @@ function generateUpgradeTimeline(from: BrandedHardfork, to: BrandedHardfork) {
 When start > end but reverse=false not supported, returns empty or throws:
 
 ```typescript
-import { Hardfork, BERLIN, LONDON } from '@tevm/voltaire'
+import { Hardfork, BERLIN, LONDON } from 'tevm'
 
 // Forward range works
 const forward = Hardfork.range(BERLIN, LONDON)  // [BERLIN, LONDON]

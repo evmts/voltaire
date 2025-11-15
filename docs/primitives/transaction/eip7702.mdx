@@ -47,12 +47,12 @@ type Authorization = {
 type AuthorizationList = readonly Authorization[]
 ```
 
-Source: [types.ts:132-150](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L132-L150)
+Source: [types.ts:132-150](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/types.ts#L132-L150)
 
 ## Creating EIP-7702 Transactions
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Single authorization
 const authorization: Transaction.Authorization = {
@@ -247,7 +247,7 @@ const limitedTx: Transaction.EIP7702 = {
 ## Methods
 
 ```typescript
-import { EIP7702 } from '@tevm/voltaire/Transaction'
+import { EIP7702 } from 'tevm/Transaction'
 
 // Serialization
 const bytes = EIP7702.serialize(eip7702Tx)
@@ -268,7 +268,7 @@ const effectivePrice = EIP7702.getEffectiveGasPrice(eip7702Tx, baseFee)
 ## Authorization Namespace
 
 ```typescript
-import { Authorization } from '@tevm/voltaire/Transaction'
+import { Authorization } from 'tevm/Transaction'
 
 // Verify authorization signature
 const isValid = Authorization.verifySignature(authorization)

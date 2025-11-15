@@ -18,7 +18,7 @@ Allow relayer to pay gas for user transactions.
 ### Basic Sponsored Transaction
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 // User creates authorization
 async function createSponsoredAuth(
@@ -209,7 +209,7 @@ Guardian-based account recovery.
 ### Guardian Setup
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 interface Guardian {
   address: Address;

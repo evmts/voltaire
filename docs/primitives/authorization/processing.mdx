@@ -277,7 +277,7 @@ const delegations = Authorization.processAll.call(deduplicated);
 Group delegations by authority:
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 function groupByAuthority(
   authList: Authorization.Item[]
@@ -482,7 +482,7 @@ const delegations = processPipeline(authList, {
 Verify all authorities are expected:
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 function processWithAuthorityCheck(
   authList: Authorization.Item[],

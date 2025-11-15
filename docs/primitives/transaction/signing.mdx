@@ -257,7 +257,7 @@ const eip1559Valid = EIP1559.verifySignature(eip1559Tx)
 ### Transaction Pool Validation
 
 ```typescript
-import { verifySignature, getSender } from '@tevm/voltaire/Transaction'
+import { verifySignature, getSender } from 'tevm/Transaction'
 
 class TransactionPool {
   async add(tx: Transaction.Any): Promise<void> {
@@ -302,7 +302,7 @@ function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
 ### Replay Protection
 
 ```typescript
-import { getSender, getChainId } from '@tevm/voltaire/Transaction'
+import { getSender, getChainId } from 'tevm/Transaction'
 
 function validateTransaction(tx: Transaction.Any, currentChainId: bigint) {
   // Verify signature

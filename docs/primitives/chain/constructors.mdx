@@ -18,7 +18,7 @@ Methods for creating Chain instances from chain configuration objects and chain 
 Universal constructor creates Chain instance from chain object. Identity function that sets proper prototype.
 
 ```typescript
-import { mainnet, optimism } from '@tevm/chains'
+import { mainnet, optimism } from 'tevm/chains'
 
 const chain1 = Chain(mainnet)
 const chain2 = Chain(optimism)
@@ -32,7 +32,7 @@ console.log(chain2.chainId)  // 10
 
 **Returns:** `Chain`
 
-Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/tevm/blob/main/src/primitives/Chain/Chain.js)
 
 ## Static Constructors
 
@@ -41,7 +41,7 @@ Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/voltaire/blo
 Creates Chain instance from chain configuration object. Identity function that sets proper prototype.
 
 ```typescript
-import { mainnet, optimism, arbitrum, base } from '@tevm/chains'
+import { mainnet, optimism, arbitrum, base } from 'tevm/chains'
 
 const chain = Chain(mainnet)
 console.log(chain.name)      // "Ethereum Mainnet"
@@ -58,11 +58,11 @@ console.log(op.chainId)      // 10
 **Returns:** `Chain`
 
 **Use cases:**
-- Wrapping chain objects from @tevm/chains
+- Wrapping chain objects from tevm/chains
 - Adding prototype methods to plain chain objects
 - Type conversion for libraries expecting Chain instances
 
-Defined in: [primitives/Chain/Chain.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:21](https://github.com/evmts/tevm/blob/main/src/primitives/Chain/Chain.js)
 
 ### `Chain.fromId(id)`
 
@@ -102,17 +102,17 @@ console.log(unknown)         // undefined
 - Validating chain IDs before operations
 - Network switching in dApps
 
-Defined in: [primitives/Chain/Chain.js:28](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:28](https://github.com/evmts/tevm/blob/main/src/primitives/Chain/Chain.js)
 
-Delegates to: [primitives/Chain/BrandedChain/fromId.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/BrandedChain/fromId.js)
+Delegates to: [primitives/Chain/BrandedChain/fromId.js:15](https://github.com/evmts/tevm/blob/main/src/primitives/Chain/BrandedChain/fromId.js)
 
 ## Usage Examples
 
 ### Basic Usage
 
 ```typescript
-import { Chain } from '@tevm/voltaire'
-import { mainnet, optimism } from '@tevm/chains'
+import { Chain } from 'tevm'
+import { mainnet, optimism } from 'tevm/chains'
 
 // From chain object
 const eth = Chain(mainnet)
@@ -186,7 +186,7 @@ if (chain) {
 ### Multi-Chain Application
 
 ```typescript
-import { Chain } from '@tevm/voltaire'
+import { Chain } from 'tevm'
 
 const SUPPORTED_CHAINS = [1, 10, 42161, 8453] as const
 
@@ -229,7 +229,7 @@ function processChain(chainOrId: Chain | number): Chain {
 }
 
 // Works with chain objects
-import { mainnet } from '@tevm/chains'
+import { mainnet } from 'tevm/chains'
 const eth = processChain(mainnet)
 
 // Works with chain IDs
@@ -239,7 +239,7 @@ const quai = processChain(9)
 ## Notes
 
 - `from()` is an identity function - returns the same object with prototype set
-- `fromId()` delegates to `getChainById` from @tevm/chains
-- All chain objects come from [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) registry
+- `fromId()` delegates to `getChainById` from tevm/chains
+- All chain objects come from [tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) registry
 - Chain IDs are unique identifiers defined by [EIP-155](https://eips.ethereum.org/EIPS/eip-155)
-- New chains are added to @tevm/chains registry regularly
+- New chains are added to tevm/chains registry regularly

@@ -354,8 +354,8 @@ Tree-shakeable factory with explicit crypto dependencies.
 import { Authorization } from 'tevm';
 import { hash as keccak256 } from 'tevm/crypto/Keccak256';
 import { encode as rlpEncode } from 'tevm/Rlp';
-import { recoverPublicKey } from '@tevm/voltaire/crypto/Secp256k1';
-import { fromPublicKey as addressFromPublicKey } from '@tevm/voltaire/Address';
+import { recoverPublicKey } from 'tevm/crypto/Secp256k1';
+import { fromPublicKey as addressFromPublicKey } from 'tevm/Address';
 
 const verify = Authorization.Verify({
   keccak256,
@@ -443,7 +443,7 @@ The yParity (v) indicates which of two possible points to use.
 ### Create, Sign, Verify
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 // 1. Create unsigned authorization
 const unsigned: Authorization.Unsigned = {
@@ -648,7 +648,7 @@ async function requestSignature(
 Verify signature is from expected account:
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 function verifyExpectedSigner(
   auth: Authorization.Item,
@@ -702,7 +702,7 @@ verify:   ~8,000 ops/sec   (includes public key recovery)
 ### Test Signing & Verification
 
 ```typescript
-import { Authorization, Address } from '@tevm/voltaire';
+import { Authorization, Address } from 'tevm';
 
 // Create test private key
 const privateKey = Bytes32();

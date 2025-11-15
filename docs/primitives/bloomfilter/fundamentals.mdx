@@ -200,7 +200,7 @@ This is acceptable because:
 Here's how Ethereum uses bloom filters for efficient log queries:
 
 ```typescript
-import { BloomFilter, Address, Hex, Keccak256 } from '@tevm/voltaire';
+import { BloomFilter, Address, Hex, Keccak256 } from 'tevm';
 
 // Block header contains bloom filter
 const blockBloom = BloomFilter.create(2048, 3);

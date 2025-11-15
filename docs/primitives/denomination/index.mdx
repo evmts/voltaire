@@ -310,8 +310,8 @@ const cost = Uint.times(gasPriceWei, gasUsed)
 All conversions use integer division. Fractional results truncate:
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from 'tevm/Wei'
+import * as Ether from 'tevm/Ether'
 
 // 500 Wei = 0.000000000000000500 Ether
 const wei = Wei(500n)
@@ -325,8 +325,8 @@ const weiValue = Ether.toWei(oneEther)  // 1_000_000_000_000_000_000n
 For fractional display, use `Uint.dividedBy` and handle remainder:
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 const wei = Wei(1_500_000_000_000_000_000n)  // 1.5 Ether in Wei
 

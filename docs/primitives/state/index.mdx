@@ -93,7 +93,7 @@ See [from](/primitives/state/from) for details.
 
 ```typescript
 import * as State from 'tevm/State';
-import * as Address from '@tevm/voltaire/Address';
+import * as Address from 'tevm/Address';
 
 // Create storage key
 const contractAddr = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
@@ -201,7 +201,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { StorageKey, toString, fromString } from '@tevm/voltaire/State';
+import { StorageKey, toString, fromString } from 'tevm/State';
 
 const key = StorageKey(contractAddress, 0n);
 const keyStr = toString(key);
