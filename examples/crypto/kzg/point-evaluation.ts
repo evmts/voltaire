@@ -16,7 +16,7 @@ import * as Hex from "../../../src/primitives/Hex/index.js";
 KZG.loadTrustedSetup();
 
 const blob = KZG.generateRandomBlob();
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 
 // Versioned hash = SHA256(commitment) with version byte 0x01
 const commitmentHash = SHA256.hash(commitment);
@@ -28,7 +28,7 @@ const z = new Uint8Array(32);
 crypto.getRandomValues(z);
 z[0] = 0; // Ensure < BLS12-381 modulus
 
-const { proof, y } = KZG.computeKzgProof(blob, z);
+const { proof, y } = KZG.Proof(blob, z);
 
 // Input format (exactly 192 bytes):
 // Offset | Length | Description

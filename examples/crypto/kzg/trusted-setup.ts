@@ -18,19 +18,19 @@ KZG.loadTrustedSetup(); // Should be no-op if already loaded
 
 const blob = KZG.generateRandomBlob();
 
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 const iterations = 1000;
 const testBlob = KZG.generateRandomBlob();
 
 const start = performance.now();
 for (let i = 0; i < iterations; i++) {
-	KZG.blobToKzgCommitment(testBlob);
+	KZG.Commitment(testBlob);
 }
 const elapsed = performance.now() - start;
 KZG.freeTrustedSetup();
 try {
 	const testBlob2 = KZG.generateRandomBlob();
-	KZG.blobToKzgCommitment(testBlob2);
+	KZG.Commitment(testBlob2);
 } catch (error) {}
 KZG.loadTrustedSetup();
 

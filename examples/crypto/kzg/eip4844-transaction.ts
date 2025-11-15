@@ -32,8 +32,8 @@ const tempBlob2 = KZG.generateRandomBlob();
 blob1.set(tempBlob1);
 blob2.set(tempBlob2);
 
-const commitment1 = KZG.blobToKzgCommitment(blob1);
-const commitment2 = KZG.blobToKzgCommitment(blob2);
+const commitment1 = KZG.Commitment(blob1);
+const commitment2 = KZG.Commitment(blob2);
 
 function computeVersionedHash(commitment: Uint8Array): Uint8Array {
 	const hash = SHA256.hash(commitment);
@@ -49,8 +49,8 @@ const z = new Uint8Array(32);
 crypto.getRandomValues(z);
 z[0] = 0;
 
-const proof1 = KZG.computeKzgProof(blob1, z);
-const proof2 = KZG.computeKzgProof(blob2, z);
+const proof1 = KZG.Proof(blob1, z);
+const proof2 = KZG.Proof(blob2, z);
 
 const blobTransaction = {
 	type: 3, // EIP-4844 blob transaction

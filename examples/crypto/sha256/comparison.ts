@@ -14,10 +14,10 @@ import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
 const data = new TextEncoder().encode("Hello, World!");
 
 const sha256Hash = SHA256.hash(data);
-const keccak256Hash = Keccak256.hash(data);
+const keccak256Hash = Keccak256(data);
 
 const emptySha256 = SHA256.hashString("");
-const emptyKeccak256 = Keccak256.hashString("");
+const emptyKeccak256 = Keccak256("");
 
 // Bitcoin uses SHA-256 (double)
 function bitcoinHash(data: Uint8Array): Uint8Array {
@@ -26,7 +26,7 @@ function bitcoinHash(data: Uint8Array): Uint8Array {
 
 // Ethereum uses Keccak-256
 function ethereumHash(data: Uint8Array): Uint8Array {
-	return Keccak256.hash(data);
+	return Keccak256(data);
 }
 
 const blockData = new TextEncoder().encode("Block header data");
@@ -38,7 +38,7 @@ const functionSig = "transfer(address,uint256)";
 const functionBytes = new TextEncoder().encode(functionSig);
 
 // Ethereum uses Keccak-256 for function selectors
-const keccakHash = Keccak256.hash(functionBytes);
+const keccakHash = Keccak256(functionBytes);
 const selector = keccakHash.slice(0, 4);
 
 // If we used SHA-256 (WRONG for Ethereum!)
@@ -51,7 +51,7 @@ for (let i = 0; i < 64; i++) {
 	publicKey[i] = i & 0xff;
 }
 const bitcoinStep1 = SHA256.hash(publicKey);
-const ethereumStep1 = Keccak256.hash(publicKey);
+const ethereumStep1 = Keccak256(publicKey);
 const ethereumAddress = ethereumStep1.slice(12);
 
 const testData = new Uint8Array(1024 * 1024); // 1MB
@@ -71,7 +71,7 @@ const sha256Time = (performance.now() - sha256Start) / iterations;
 // Keccak-256 benchmark
 const keccak256Start = performance.now();
 for (let i = 0; i < iterations; i++) {
-	Keccak256.hash(testData);
+	Keccak256(testData);
 }
 const keccak256Time = (performance.now() - keccak256Start) / iterations;
 
@@ -85,8 +85,8 @@ const input2 = new Uint8Array([1, 2, 3, 4, 6]); // Last byte different
 
 const sha1 = SHA256.hash(input1);
 const sha2 = SHA256.hash(input2);
-const kec1 = Keccak256.hash(input1);
-const kec2 = Keccak256.hash(input2);
+const kec1 = Keccak256(input1);
+const kec2 = Keccak256(input2);
 
 // Count differing bits for SHA-256
 let shaDiff = 0;

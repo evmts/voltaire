@@ -10,7 +10,7 @@ const multiHash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 // Compare to concatenating first
 const concatenated = Hex.concat([chunk1, chunk2, chunk3]);
-const singleHash = Keccak256.hashHex(concatenated);
+const singleHash = Keccak256(concatenated);
 
 // Simulate ABI encoding: function selector + parameters
 const selector = Hex("0xa9059cbb"); // transfer(address,uint256)
@@ -33,10 +33,10 @@ const calldataHash = Keccak256.hashMultiple([
 ]);
 
 // Simulate Merkle tree leaf hashes
-const leaf1 = Keccak256.hashString("Transaction 1");
-const leaf2 = Keccak256.hashString("Transaction 2");
-const leaf3 = Keccak256.hashString("Transaction 3");
-const leaf4 = Keccak256.hashString("Transaction 4");
+const leaf1 = Keccak256("Transaction 1");
+const leaf2 = Keccak256("Transaction 2");
+const leaf3 = Keccak256("Transaction 3");
+const leaf4 = Keccak256("Transaction 4");
 
 // Build tree level 1
 const node1 = Keccak256.hashMultiple([leaf1, leaf2]);
@@ -110,5 +110,5 @@ const time1 = performance.now() - start1;
 // Method 2: Concatenate then hash
 const start2 = performance.now();
 const combined = Hex.concat(smallChunks as any);
-const hash2 = Keccak256.hashHex(combined);
+const hash2 = Keccak256(combined);
 const time2 = performance.now() - start2;

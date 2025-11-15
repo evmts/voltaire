@@ -2,7 +2,7 @@
 import * as Eip1559 from "../eip1559Constants.js";
 
 /**
- * Calculate next block's base fee using EIP-1559 formula (standard form)
+ * Calculate next block's base fee using EIP-1559 formula (constructor form)
  *
  * Formula:
  * - gasTarget = gasLimit / 2
@@ -22,11 +22,11 @@ import * as Eip1559 from "../eip1559Constants.js";
  * ```javascript
  * import * as FeeMarket from './primitives/FeeMarket/index.js';
  * // Block at target (50% full): base fee unchanged
- * const baseFee1 = FeeMarket.calculateBaseFee(15_000_000n, 30_000_000n, 1_000_000_000n);
+ * const baseFee1 = FeeMarket.BaseFee(15_000_000n, 30_000_000n, 1_000_000_000n);
  * // baseFee1 === 1_000_000_000n
  * ```
  */
-export function calculateBaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {
+export function BaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {
 	// Target is 50% of gas limit (elasticity multiplier = 2)
 	const parentGasTarget = parentGasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 

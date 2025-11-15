@@ -22,7 +22,7 @@ const prefixedMessage = new TextEncoder().encode(
 );
 
 // Hash the prefixed message
-const messageHash = Keccak256.hash(prefixedMessage);
+const messageHash = Keccak256(prefixedMessage);
 
 // Sign the hash
 const signature = Secp256k1.sign(messageHash, privateKey);

@@ -23,7 +23,5 @@ export function fromBigint(value) {
 		throw new Error(`Uint16 value exceeds maximum (65535): ${value}`);
 	}
 
-	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
-		Number(value)
-	);
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (Number(value));
 }

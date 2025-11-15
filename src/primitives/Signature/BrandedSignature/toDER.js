@@ -4,7 +4,7 @@ import { InvalidAlgorithmError } from "./errors.js";
 /**
  * Convert ECDSA signature to DER encoding
  *
- * @param {import('../SignatureType.js').BrandedSignature} signature - Signature to convert
+ * @param {import('../SignatureType.js').SignatureType} signature - Signature to convert
  * @returns {Uint8Array} DER-encoded signature
  * @throws {InvalidAlgorithmError} If signature is not ECDSA (secp256k1 or p256)
  *

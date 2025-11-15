@@ -3,7 +3,7 @@ import { InvalidAlgorithmError } from "./errors.js";
 /**
  * Get v (recovery ID) from secp256k1 signature
  *
- * @param {import('../SignatureType.js').BrandedSignature} signature - Signature
+ * @param {import('../SignatureType.js').SignatureType} signature - Signature
  * @returns {number | undefined} Recovery ID (27 or 28) or undefined
  * @throws {InvalidAlgorithmError} If signature is not secp256k1
  *

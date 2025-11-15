@@ -11,11 +11,42 @@
 import { ripemd160 } from "@noble/hashes/legacy.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import * as Ripemd160 from "./Ripemd160.js";
+import { Ripemd160 } from "./Ripemd160.js";
+import * as Ripemd160Namespace from "./Ripemd160.js";
+
+describe("Ripemd160 constructor", () => {
+	it("should hash string input", () => {
+		const hash = Ripemd160("hello");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+		expect(hash).toEqual(Ripemd160Namespace.hash("hello"));
+	});
+
+	it("should hash Uint8Array input", () => {
+		const data = new Uint8Array([1, 2, 3]);
+		const hash = Ripemd160(data);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+		expect(hash).toEqual(Ripemd160Namespace.hash(data));
+	});
+
+	it("should handle empty string", () => {
+		const hash = Ripemd160("");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+		expect(hash).toEqual(Ripemd160Namespace.hash(""));
+	});
+
+	it("should match hashString for string inputs", () => {
+		const hash1 = Ripemd160("test message");
+		const hash2 = Ripemd160Namespace.hashString("test message");
+		expect(hash1).toEqual(hash2);
+	});
+});
 
 describe("Ripemd160.hash", () => {
 	it("should hash empty input", () => {
-		const hash = Ripemd160.hash(new Uint8Array([]));
+		const hash = Ripemd160Namespace.hash(new Uint8Array([]));
 		expect(hash).toBeInstanceOf(Uint8Array);
 		expect(hash.length).toBe(20);
 
@@ -30,7 +61,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash single byte 'a'", () => {
 		const input = new Uint8Array([0x61]); // "a"
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector for "a"
 		const expected = new Uint8Array([
@@ -43,7 +74,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash 'abc' (official test vector)", () => {
 		const input = new Uint8Array([0x61, 0x62, 0x63]); // "abc"
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector for "abc"
 		const expected = new Uint8Array([
@@ -56,7 +87,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash 'message digest'", () => {
 		const input = new TextEncoder().encode("message digest");
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector
 		const expected = new Uint8Array([
@@ -69,7 +100,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash lowercase alphabet", () => {
 		const input = new TextEncoder().encode("abcdefghijklmnopqrstuvwxyz");
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector
 		const expected = new Uint8Array([
@@ -84,7 +115,7 @@ describe("Ripemd160.hash", () => {
 		const input = new TextEncoder().encode(
 			"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
 		);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector
 		const expected = new Uint8Array([
@@ -99,7 +130,7 @@ describe("Ripemd160.hash", () => {
 		const input = new TextEncoder().encode(
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
 		);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector
 		const expected = new Uint8Array([
@@ -115,7 +146,7 @@ describe("Ripemd160.hash", () => {
 		const input = new TextEncoder().encode(
 			"12345678901234567890123456789012345678901234567890123456789012345678901234567890",
 		);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Official RIPEMD160 test vector
 		const expected = new Uint8Array([
@@ -128,7 +159,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash single byte 0x00", () => {
 		const input = new Uint8Array([0x00]);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -137,7 +168,7 @@ describe("Ripemd160.hash", () => {
 
 	it("should hash single byte 0xFF", () => {
 		const input = new Uint8Array([0xff]);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -145,26 +176,28 @@ describe("Ripemd160.hash", () => {
 	});
 
 	it("should accept string input", () => {
-		const hash = Ripemd160.hash("abc");
+		const hash = Ripemd160Namespace.hash("abc");
 		expect(hash.length).toBe(20);
 
 		// Should match byte array input
-		const hashFromBytes = Ripemd160.hash(new Uint8Array([0x61, 0x62, 0x63]));
+		const hashFromBytes = Ripemd160Namespace.hash(
+			new Uint8Array([0x61, 0x62, 0x63]),
+		);
 		expect(hash).toEqual(hashFromBytes);
 	});
 
 	it("should be deterministic", () => {
 		const input = new Uint8Array([1, 2, 3, 4, 5]);
-		const hash1 = Ripemd160.hash(input);
-		const hash2 = Ripemd160.hash(input);
+		const hash1 = Ripemd160Namespace.hash(input);
+		const hash2 = Ripemd160Namespace.hash(input);
 
 		expect(hash1).toEqual(hash2);
 	});
 
 	it("should produce different hashes for different inputs", () => {
-		const hash1 = Ripemd160.hash(new Uint8Array([0x00]));
-		const hash2 = Ripemd160.hash(new Uint8Array([0x01]));
-		const hash3 = Ripemd160.hash(new Uint8Array([0x00, 0x00]));
+		const hash1 = Ripemd160Namespace.hash(new Uint8Array([0x00]));
+		const hash2 = Ripemd160Namespace.hash(new Uint8Array([0x01]));
+		const hash3 = Ripemd160Namespace.hash(new Uint8Array([0x00, 0x00]));
 
 		expect(hash1).not.toEqual(hash2);
 		expect(hash1).not.toEqual(hash3);
@@ -174,16 +207,16 @@ describe("Ripemd160.hash", () => {
 
 describe("Ripemd160.hashString", () => {
 	it("should hash empty string", () => {
-		const hash = Ripemd160.hashString("");
+		const hash = Ripemd160Namespace.hashString("");
 		expect(hash.length).toBe(20);
 
 		// Should match empty byte array
-		const hashEmpty = Ripemd160.hash(new Uint8Array([]));
+		const hashEmpty = Ripemd160Namespace.hash(new Uint8Array([]));
 		expect(hash).toEqual(hashEmpty);
 	});
 
 	it("should hash 'hello'", () => {
-		const hash = Ripemd160.hashString("hello");
+		const hash = Ripemd160Namespace.hashString("hello");
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(new TextEncoder().encode("hello")));
@@ -191,7 +224,7 @@ describe("Ripemd160.hashString", () => {
 	});
 
 	it("should hash 'The quick brown fox jumps over the lazy dog'", () => {
-		const hash = Ripemd160.hashString(
+		const hash = Ripemd160Namespace.hashString(
 			"The quick brown fox jumps over the lazy dog",
 		);
 
@@ -204,27 +237,27 @@ describe("Ripemd160.hashString", () => {
 	});
 
 	it("should hash UTF-8 strings correctly", () => {
-		const hash = Ripemd160.hashString("Hello 世界 🌍");
+		const hash = Ripemd160Namespace.hashString("Hello 世界 🌍");
 
 		// Should match manual UTF-8 encoding
 		const manualBytes = new TextEncoder().encode("Hello 世界 🌍");
-		const hashFromBytes = Ripemd160.hash(manualBytes);
+		const hashFromBytes = Ripemd160Namespace.hash(manualBytes);
 
 		expect(hash).toEqual(hashFromBytes);
 	});
 
 	it("should be deterministic for strings", () => {
 		const str = "test string";
-		const hash1 = Ripemd160.hashString(str);
-		const hash2 = Ripemd160.hashString(str);
+		const hash1 = Ripemd160Namespace.hashString(str);
+		const hash2 = Ripemd160Namespace.hashString(str);
 
 		expect(hash1).toEqual(hash2);
 	});
 
 	it("should match hash() with string input", () => {
 		const str = "test";
-		const hash1 = Ripemd160.hashString(str);
-		const hash2 = Ripemd160.hash(str);
+		const hash1 = Ripemd160Namespace.hashString(str);
+		const hash2 = Ripemd160Namespace.hash(str);
 
 		expect(hash1).toEqual(hash2);
 	});
@@ -241,7 +274,7 @@ describe("Bitcoin use cases", () => {
 		const sha256Hash = sha256(input);
 
 		// Second: RIPEMD160 of the SHA256 hash
-		const hash160 = Ripemd160.hash(sha256Hash);
+		const hash160 = Ripemd160Namespace.hash(sha256Hash);
 
 		expect(hash160.length).toBe(20);
 
@@ -265,7 +298,7 @@ describe("Bitcoin use cases", () => {
 		const sha256Hash = sha256(pubkey);
 
 		// RIPEMD160 of SHA256 hash
-		const hash160 = Ripemd160.hash(sha256Hash);
+		const hash160 = Ripemd160Namespace.hash(sha256Hash);
 
 		expect(hash160.length).toBe(20);
 
@@ -283,7 +316,7 @@ describe("Bitcoin use cases", () => {
 		]);
 
 		const sha256Hash = sha256(compressedPubkey);
-		const hash160 = Ripemd160.hash(sha256Hash);
+		const hash160 = Ripemd160Namespace.hash(sha256Hash);
 
 		expect(hash160.length).toBe(20);
 
@@ -372,7 +405,7 @@ describe("Bitcoin use cases", () => {
 		]);
 
 		const sha256Hash = sha256(redeemScript);
-		const scriptHash = Ripemd160.hash(sha256Hash);
+		const scriptHash = Ripemd160Namespace.hash(sha256Hash);
 
 		expect(scriptHash.length).toBe(20);
 	});
@@ -381,7 +414,7 @@ describe("Bitcoin use cases", () => {
 describe("Edge cases", () => {
 	it("should handle exactly 64 bytes (one block)", () => {
 		const input = new Uint8Array(64).fill(0x61); // 'a'
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -390,7 +423,7 @@ describe("Edge cases", () => {
 
 	it("should handle exactly 128 bytes (two blocks)", () => {
 		const input = new Uint8Array(128).fill(0x61);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -400,7 +433,7 @@ describe("Edge cases", () => {
 	it("should handle boundary condition: 55 bytes", () => {
 		// 55 bytes is the maximum that fits in one block with padding
 		const input = new Uint8Array(55).fill(0x61);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -410,7 +443,7 @@ describe("Edge cases", () => {
 	it("should handle boundary condition: 56 bytes", () => {
 		// 56 bytes forces padding into second block
 		const input = new Uint8Array(56).fill(0x61);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -423,11 +456,11 @@ describe("Edge cases", () => {
 			input[i] = (i * 7) & 0xff;
 		}
 
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 		expect(hash.length).toBe(20);
 
 		// Should be deterministic
-		const hash2 = Ripemd160.hash(input);
+		const hash2 = Ripemd160Namespace.hash(input);
 		expect(hash).toEqual(hash2);
 	});
 
@@ -439,11 +472,11 @@ describe("Edge cases", () => {
 			input[i] = (i * 13 + 7) & 0xff;
 		}
 
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 		expect(hash.length).toBe(20);
 
 		// Should be deterministic
-		const hash2 = Ripemd160.hash(input);
+		const hash2 = Ripemd160Namespace.hash(input);
 		expect(hash).toEqual(hash2);
 	});
 
@@ -453,8 +486,8 @@ describe("Edge cases", () => {
 		const input2 = new Uint8Array(100).fill(0);
 		input2[99] = 1; // Single bit difference at end
 
-		const hash1 = Ripemd160.hash(input1);
-		const hash2 = Ripemd160.hash(input2);
+		const hash1 = Ripemd160Namespace.hash(input1);
+		const hash2 = Ripemd160Namespace.hash(input2);
 
 		expect(hash1).not.toEqual(hash2);
 
@@ -474,7 +507,7 @@ describe("Edge cases", () => {
 			input[i] = i;
 		}
 
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 		expect(hash.length).toBe(20);
 
 		// Cross-validate with @noble
@@ -487,7 +520,7 @@ describe("Edge cases", () => {
 				"This message is longer than 64 bytes to test multi-block processing.",
 		);
 
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(ripemd160(input));
@@ -498,7 +531,7 @@ describe("Edge cases", () => {
 describe("Cross-validation with @noble/hashes", () => {
 	it("should match @noble for empty input", () => {
 		const input = new Uint8Array([]);
-		const ourHash = Ripemd160.hash(input);
+		const ourHash = Ripemd160Namespace.hash(input);
 		const nobleHash = ripemd160(input);
 
 		expect(ourHash).toEqual(nobleHash);
@@ -513,7 +546,7 @@ describe("Cross-validation with @noble/hashes", () => {
 				input[i] = (i * 7) & 0xff;
 			}
 
-			const ourHash = Ripemd160.hash(input);
+			const ourHash = Ripemd160Namespace.hash(input);
 			const nobleHash = ripemd160(input);
 
 			expect(ourHash).toEqual(nobleHash);
@@ -532,7 +565,7 @@ describe("Cross-validation with @noble/hashes", () => {
 		];
 
 		for (const str of strings) {
-			const ourHash = Ripemd160.hashString(str);
+			const ourHash = Ripemd160Namespace.hashString(str);
 			const nobleHash = ripemd160(new TextEncoder().encode(str));
 
 			expect(ourHash).toEqual(nobleHash);
@@ -565,7 +598,7 @@ describe("Cross-validation with @noble/hashes", () => {
 		];
 
 		for (const tv of testVectors) {
-			const ourHash = Ripemd160.hashString(tv.input);
+			const ourHash = Ripemd160Namespace.hashString(tv.input);
 			const nobleHash = ripemd160(new TextEncoder().encode(tv.input));
 
 			expect(ourHash).toEqual(tv.expected);
@@ -580,7 +613,7 @@ describe("Cross-validation with @noble/hashes", () => {
 			input[i] = (i * 13 + 7) & 0xff;
 		}
 
-		const ourHash = Ripemd160.hash(input);
+		const ourHash = Ripemd160Namespace.hash(input);
 		const nobleHash = ripemd160(input);
 
 		expect(ourHash).toEqual(nobleHash);
@@ -589,7 +622,7 @@ describe("Cross-validation with @noble/hashes", () => {
 
 describe("RIPEMD160 constants", () => {
 	it("should export SIZE constant", () => {
-		expect(Ripemd160.SIZE).toBe(20);
+		expect(Ripemd160Namespace.SIZE).toBe(20);
 	});
 });
 
@@ -604,7 +637,7 @@ describe("Security properties", () => {
 			new Uint8Array([1, 1]),
 		];
 
-		const hashes = testInputs.map((input) => Ripemd160.hash(input));
+		const hashes = testInputs.map((input) => Ripemd160Namespace.hash(input));
 
 		// All hashes should be unique
 		for (let i = 0; i < hashes.length; i++) {
@@ -618,7 +651,7 @@ describe("Security properties", () => {
 		// While we can't prove preimage resistance in a test,
 		// we can verify that hash output appears random
 		const input = new Uint8Array([0x42]);
-		const hash = Ripemd160.hash(input);
+		const hash = Ripemd160Namespace.hash(input);
 
 		// Hash should not contain the input value repeated
 		let inputByteCount = 0;
@@ -637,7 +670,7 @@ describe("Security properties", () => {
 
 		for (let i = 0; i < inputs; i++) {
 			const input = new Uint8Array([i]);
-			const hash = Ripemd160.hash(input);
+			const hash = Ripemd160Namespace.hash(input);
 
 			for (const byte of hash) {
 				byteCounts[byte]++;
@@ -668,7 +701,7 @@ describe("Bitcoin-specific hash160 integration tests", () => {
 
 		// Compute hash160
 		const sha256Hash = sha256(genesisPubKey);
-		const hash160 = Ripemd160.hash(sha256Hash);
+		const hash160 = Ripemd160Namespace.hash(sha256Hash);
 
 		expect(hash160.length).toBe(20);
 
@@ -688,7 +721,7 @@ describe("Bitcoin-specific hash160 integration tests", () => {
 		const results = [];
 		for (let i = 0; i < 10; i++) {
 			const sha256Hash = sha256(input);
-			const hash160 = Ripemd160.hash(sha256Hash);
+			const hash160 = Ripemd160Namespace.hash(sha256Hash);
 			results.push(hash160);
 		}
 

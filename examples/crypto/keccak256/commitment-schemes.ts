@@ -70,7 +70,7 @@ for (const bid of bids) {
 
 const document = "Important legal document content";
 const timestamp = Date.now();
-const documentHash = Keccak256.hashString(document);
+const documentHash = Keccak256(document);
 
 // Create timestamped commitment
 const timestampBytes = new Uint8Array(8);
@@ -79,15 +79,15 @@ const timestampedCommitment = Keccak256.hashMultiple([
 	documentHash,
 	timestampBytes,
 ]);
-const verifyHash = Keccak256.hashString(document);
+const verifyHash = Keccak256(document);
 const verifyCommitment = Keccak256.hashMultiple([verifyHash, timestampBytes]);
 
 // Build Merkle tree
 const leaves = [
-	Keccak256.hashString("Transaction 1"),
-	Keccak256.hashString("Transaction 2"),
-	Keccak256.hashString("Transaction 3"),
-	Keccak256.hashString("Transaction 4"),
+	Keccak256("Transaction 1"),
+	Keccak256("Transaction 2"),
+	Keccak256("Transaction 3"),
+	Keccak256("Transaction 4"),
 ];
 for (let i = 0; i < leaves.length; i++) {}
 
@@ -143,7 +143,7 @@ for (let i = chain.length - 2; i >= 0; i--) {
 }
 
 const secret = "my-secret-password";
-const secretHash = Keccak256.hashString(secret);
+const secretHash = Keccak256(secret);
 
 // Challenge-response
 const challenge = crypto.getRandomValues(new Uint8Array(32));

@@ -7,11 +7,11 @@ import { Hex } from "../../src/primitives/Hex/index.js";
 
 // Hash a simple string
 const message = "Hello, World!";
-const hash = Keccak256.hashString(message);
+const hash = Keccak256(message);
 const hexHash = Hex.fromBytes(hash);
 
 // Hash an empty string
-const emptyHash = Keccak256.hashString("");
+const emptyHash = Keccak256("");
 const emptyHexHash = Hex.fromBytes(emptyHash);
 // SNIPPET:END
 

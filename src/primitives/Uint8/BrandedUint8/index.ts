@@ -1,4 +1,4 @@
-export * from "./BrandedUint8.js";
+export * from "../Uint8Type.js";
 export * from "./constants.js";
 
 import { bitLength } from "./bitLength.js";
@@ -68,7 +68,7 @@ export {
 	popCount,
 };
 
-export const BrandedUint8 = {
+export const Uint8Type = {
 	from,
 	fromHex,
 	fromBigint,

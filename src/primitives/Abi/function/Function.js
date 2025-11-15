@@ -41,5 +41,12 @@ Function.decodeParams = BrandedFunction.decodeParams;
 Function.encodeResult = BrandedFunction.encodeResult;
 Function.decodeResult = BrandedFunction.decodeResult;
 
+// Constructor-style aliases (data-first pattern)
+Function.Signature = BrandedFunction.Signature;
+Function.Params = BrandedFunction.Params;
+Function.DecodeParams = BrandedFunction.DecodeParams;
+Function.Result = BrandedFunction.Result;
+Function.DecodeResult = BrandedFunction.DecodeResult;
+
 // Factories
 Function.GetSelector = BrandedFunction.GetSelector;

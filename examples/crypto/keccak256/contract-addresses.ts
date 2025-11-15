@@ -16,7 +16,7 @@ const factory = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const initCode = Bytecode("0x6080604052348015610000f57600080fd");
 
 // Calculate CREATE2 addresses with different salts
-const initCodeHash = Keccak256.hash(initCode);
+const initCodeHash = Keccak256(initCode);
 
 for (const saltValue of [0n, 1n, 42n, 12345n]) {
 	// Convert bigint to 32-byte hash
@@ -35,7 +35,7 @@ const createAddr = Keccak256.contractAddress(deployer2, 1n);
 const saltZero = Hash(
 	"0x0000000000000000000000000000000000000000000000000000000000000000",
 );
-const initCodeHash2 = Keccak256.hash(initCode);
+const initCodeHash2 = Keccak256(initCode);
 const create2Addr = Keccak256.create2Address(
 	deployer2,
 	saltZero,
@@ -50,7 +50,7 @@ const salts = [
 	{ name: "Carol", value: 300n },
 ];
 
-const factoryInitCodeHash = Keccak256.hash(initCode);
+const factoryInitCodeHash = Keccak256(initCode);
 
 for (const { name, value } of salts) {
 	const saltBytes = new Uint8Array(32);
@@ -61,7 +61,7 @@ for (const { name, value } of salts) {
 
 const factoryAddr2 = Address("0x2222222222222222222222222222222222222222");
 
-const strategyInitCodeHash = Keccak256.hash(initCode);
+const strategyInitCodeHash = Keccak256(initCode);
 
 // Strategy 1: Sequential numbering
 const salt1Bytes = new Uint8Array(32);
@@ -102,8 +102,8 @@ const bytecode2 = Bytecode("0x6080604053"); // Last byte different
 const zeroSalt = Hash(
 	"0x0000000000000000000000000000000000000000000000000000000000000000",
 );
-const bytecode1Hash = Keccak256.hash(bytecode1);
-const bytecode2Hash = Keccak256.hash(bytecode2);
+const bytecode1Hash = Keccak256(bytecode1);
+const bytecode2Hash = Keccak256(bytecode2);
 const addr1 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode1Hash);
 const addr2 = Keccak256.create2Address(factoryAddr, zeroSalt, bytecode2Hash);
 
@@ -122,7 +122,7 @@ const pairSaltBytes = new Uint8Array(32);
 new DataView(pairSaltBytes.buffer).setBigUint64(24, pairSalt, false);
 const pairSaltHash = Hash(pairSaltBytes);
 
-const pairInitCodeHash = Keccak256.hash(pairInitCode);
+const pairInitCodeHash = Keccak256(pairInitCode);
 const pairAddr = Keccak256.create2Address(
 	uniswapFactory,
 	pairSaltHash,

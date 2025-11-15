@@ -5,7 +5,7 @@ export * from "./BrandedEvent.js";
 import {
 	keccak256 as keccak256Impl,
 	keccak256String as keccak256StringImpl,
-} from "../../../Hash/HashType/index.js";
+} from "../../../Hash/BrandedHash/index.js";
 
 import { decodeLog } from "./decodeLog.js";
 import { EncodeTopics } from "./encodeTopics.js";
@@ -27,12 +27,20 @@ export const encodeTopics = EncodeTopics({
 // Export individual functions
 export { getSignature, decodeLog };
 
+// Constructor-style aliases (data-first pattern)
+export { getSignature as Signature };
+export { decodeLog as DecodeLog };
+
 // Namespace export
 export const BrandedEvent = {
 	getSignature,
 	getSelector,
 	encodeTopics,
 	decodeLog,
+	// Constructor-style aliases
+	Signature: getSignature,
+	Topics: encodeTopics,
+	DecodeLog: decodeLog,
 	// Factories
 	GetSelector,
 	EncodeTopics,

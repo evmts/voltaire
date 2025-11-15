@@ -109,7 +109,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 	describe("Blob to KZG Commitment", () => {
 		it("should compute commitment for empty blob", () => {
 			const blob = KZG.createEmptyBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			expect(commitment).toBeInstanceOf(Uint8Array);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
@@ -119,7 +119,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should compute commitment for random blob", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			expect(commitment).toBeInstanceOf(Uint8Array);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
@@ -127,8 +127,8 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should be deterministic - same blob produces same commitment", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment1 = KZG.blobToKzgCommitment(blob);
-			const commitment2 = KZG.blobToKzgCommitment(blob);
+			const commitment1 = KZG.Commitment(blob);
+			const commitment2 = KZG.Commitment(blob);
 
 			expect(commitment1).toEqual(commitment2);
 		});
@@ -137,8 +137,8 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob1 = KZG.createEmptyBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const commitment1 = KZG.blobToKzgCommitment(blob1);
-			const commitment2 = KZG.blobToKzgCommitment(blob2);
+			const commitment1 = KZG.Commitment(blob1);
+			const commitment2 = KZG.Commitment(blob2);
 
 			expect(commitment1).not.toEqual(commitment2);
 		});
@@ -154,15 +154,13 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 				}
 			}
 
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 		});
 
 		it("should reject invalid blob size", () => {
 			const wrongSize = new Uint8Array(1000);
-			expect(() => KZG.blobToKzgCommitment(wrongSize)).toThrow(
-				KzgInvalidBlobError,
-			);
+			expect(() => KZG.Commitment(wrongSize)).toThrow(KzgInvalidBlobError);
 		});
 	});
 
@@ -181,7 +179,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = createValidFieldElement(0x42);
 
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			expect(proof).toBeInstanceOf(Uint8Array);
 			expect(proof.length).toBe(BYTES_PER_PROOF);
@@ -193,8 +191,8 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = createValidFieldElement(0x33);
 
-			const result1 = KZG.computeKzgProof(blob, z);
-			const result2 = KZG.computeKzgProof(blob, z);
+			const result1 = KZG.Proof(blob, z);
+			const result2 = KZG.Proof(blob, z);
 
 			expect(result1.proof).toEqual(result2.proof);
 			expect(result1.y).toEqual(result2.y);
@@ -205,8 +203,8 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const z1 = createValidFieldElement(0x01);
 			const z2 = createValidFieldElement(0x02);
 
-			const result1 = KZG.computeKzgProof(blob, z1);
-			const result2 = KZG.computeKzgProof(blob, z2);
+			const result1 = KZG.Proof(blob, z1);
+			const result2 = KZG.Proof(blob, z2);
 
 			// Different z should produce different proofs and y values
 			expect(result1.proof).not.toEqual(result2.proof);
@@ -217,7 +215,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = new Uint8Array(32); // All zeros - valid field element
 
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			expect(proof.length).toBe(BYTES_PER_PROOF);
 			expect(y.length).toBe(BYTES_PER_FIELD_ELEMENT);
@@ -227,23 +225,23 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 			const wrongZ = new Uint8Array(16);
 
-			expect(() => KZG.computeKzgProof(blob, wrongZ)).toThrow(KzgError);
+			expect(() => KZG.Proof(blob, wrongZ)).toThrow(KzgError);
 		});
 
 		it("should reject non-Uint8Array evaluation point", () => {
 			const blob = KZG.generateRandomBlob();
 
-			expect(() => KZG.computeKzgProof(blob, null as any)).toThrow(KzgError);
-			expect(() => KZG.computeKzgProof(blob, "0x42" as any)).toThrow(KzgError);
+			expect(() => KZG.Proof(blob, null as any)).toThrow(KzgError);
+			expect(() => KZG.Proof(blob, "0x42" as any)).toThrow(KzgError);
 		});
 	});
 
 	describe("Verify KZG Proof", () => {
 		it("should verify valid proof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x55);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 			expect(isValid).toBe(true);
@@ -253,9 +251,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob1 = KZG.generateRandomBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const wrongCommitment = KZG.blobToKzgCommitment(blob2);
+			const wrongCommitment = KZG.Commitment(blob2);
 			const z = createValidFieldElement(0x66);
-			const { proof, y } = KZG.computeKzgProof(blob1, z);
+			const { proof, y } = KZG.Proof(blob1, z);
 
 			const isValid = KZG.verifyKzgProof(wrongCommitment, z, y, proof);
 			expect(isValid).toBe(false);
@@ -263,9 +261,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should reject proof with corrupted proof bytes", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x77);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			// Corrupt proof by flipping a bit
 			const corruptedProof = new Uint8Array(proof);
@@ -279,9 +277,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should reject proof with wrong y value", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x88);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			// Corrupt y value
 			const wrongY = new Uint8Array(y);
@@ -295,9 +293,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should reject proof with wrong evaluation point", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x99);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const wrongZ = createValidFieldElement(0xaa);
 
@@ -307,9 +305,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should validate proof at zero evaluation point", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = new Uint8Array(32); // All zeros - valid field element
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 			expect(isValid).toBe(true);
@@ -341,7 +339,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 	describe("Verify Blob KZG Proof", () => {
 		it("should verify valid blob proof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			// Note: verifyBlobKzgProof uses a specialized proof format
 			// These tests would require proper blob proof generation
@@ -353,8 +351,8 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob1 = KZG.generateRandomBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const commitment1 = KZG.blobToKzgCommitment(blob1);
-			const wrongCommitment = KZG.blobToKzgCommitment(blob2);
+			const commitment1 = KZG.Commitment(blob1);
+			const wrongCommitment = KZG.Commitment(blob2);
 
 			// Verify commitments are different
 			expect(commitment1).not.toEqual(wrongCommitment);
@@ -380,9 +378,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 			for (let i = 0; i < numBlobs; i++) {
 				const blob = KZG.generateRandomBlob();
-				const commitment = KZG.blobToKzgCommitment(blob);
+				const commitment = KZG.Commitment(blob);
 				const z = new Uint8Array(32).fill(i);
-				const { proof } = KZG.computeKzgProof(blob, z);
+				const { proof } = KZG.Proof(blob, z);
 
 				blobs.push(blob);
 				commitments.push(commitment);
@@ -416,12 +414,12 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 
 			// 2. Compute commitment
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 
 			// 3. Compute proof at evaluation point
 			const z = createValidFieldElement(0xff);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			// 4. Verify proof
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
@@ -436,10 +434,10 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 			for (let i = 0; i < numBlobs; i++) {
 				const blob = KZG.generateRandomBlob();
-				const commitment = KZG.blobToKzgCommitment(blob);
+				const commitment = KZG.Commitment(blob);
 
 				const z = createValidFieldElement(i);
-				const { proof, y } = KZG.computeKzgProof(blob, z);
+				const { proof, y } = KZG.Proof(blob, z);
 
 				const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 				expect(isValid).toBe(true);
@@ -457,9 +455,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 			const blob = KZG.createEmptyBlob();
 
-			expect(() => KZG.blobToKzgCommitment(blob)).toThrow(
-				KzgNotInitializedError,
-			);
+			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
 
 			// Restore state
 			if (wasInitialized) {
@@ -473,7 +469,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 
 			const start = performance.now();
-			KZG.blobToKzgCommitment(blob);
+			KZG.Commitment(blob);
 			const duration = performance.now() - start;
 
 			// Should complete within 100ms (generous bound)
@@ -485,7 +481,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const z = createValidFieldElement(0x42);
 
 			const start = performance.now();
-			KZG.computeKzgProof(blob, z);
+			KZG.Proof(blob, z);
 			const duration = performance.now() - start;
 
 			// Should complete within 100ms
@@ -494,9 +490,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should verify proof in reasonable time", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const start = performance.now();
 			KZG.verifyKzgProof(commitment, z, y, proof);
@@ -513,20 +509,20 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob1 = KZG.createEmptyBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const commitment1 = KZG.blobToKzgCommitment(blob1);
-			const commitment2 = KZG.blobToKzgCommitment(blob2);
+			const commitment1 = KZG.Commitment(blob1);
+			const commitment2 = KZG.Commitment(blob2);
 
 			expect(commitment1).not.toEqual(commitment2);
 		});
 
 		it("should not accept forged proofs", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			// Generate proof for different blob
 			const differentBlob = KZG.generateRandomBlob();
 			const z = createValidFieldElement(0xaa);
-			const { proof, y } = KZG.computeKzgProof(differentBlob, z);
+			const { proof, y } = KZG.Proof(differentBlob, z);
 
 			// Proof from different blob should not verify
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);

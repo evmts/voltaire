@@ -15,7 +15,5 @@
  * ```
  */
 export function shiftRight(uint, shift) {
-	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
-		uint >>> shift
-	);
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (uint >>> shift);
 }

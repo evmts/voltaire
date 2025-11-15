@@ -10,14 +10,18 @@
  * // Initialize trusted setup (required once)
  * KZG.loadTrustedSetup();
  *
- * // Generate commitment from blob
- * const commitment = KZG.blobToKzgCommitment(blob);
+ * // Generate commitment from blob (constructor pattern)
+ * const commitment = KZG.Commitment(blob);
  *
- * // Compute proof at evaluation point
- * const { proof, y } = KZG.computeKzgProof(blob, z);
+ * // Compute proof at evaluation point (constructor pattern)
+ * const { proof, y } = KZG.Proof(blob, z);
  *
  * // Verify proof
  * const valid = KZG.verifyKzgProof(commitment, z, y, proof);
+ *
+ * // Legacy API (deprecated)
+ * // const commitment = KZG.blobToKzgCommitment(blob);
+ * // const { proof, y } = KZG.computeKzgProof(blob, z);
  * ```
  */
 

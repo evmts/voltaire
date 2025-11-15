@@ -17,7 +17,7 @@ import * as Hex from "../../../src/primitives/Hex/index.js";
 KZG.loadTrustedSetup();
 
 const blob = KZG.generateRandomBlob();
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 
 // Compute SHA-256 of commitment
 const commitmentHash = SHA256.hash(commitment);
@@ -77,7 +77,7 @@ const test2 = verifyVersionedHash(wrongHash, commitment);
 
 // Test 3: Wrong commitment
 const blob2 = KZG.generateRandomBlob();
-const commitment2 = KZG.blobToKzgCommitment(blob2);
+const commitment2 = KZG.Commitment(blob2);
 const test3 = verifyVersionedHash(versionedHash, commitment2);
 
 const blobs = [
@@ -86,7 +86,7 @@ const blobs = [
 	KZG.generateRandomBlob(),
 ];
 
-const commitments = blobs.map((b) => KZG.blobToKzgCommitment(b));
+const commitments = blobs.map((b) => KZG.Commitment(b));
 const versionedHashes = commitments.map((c) => {
 	const hash = SHA256.hash(c);
 	hash[0] = 0x01;
@@ -116,7 +116,7 @@ function parseVersionedHash(hash: Uint8Array): {
 }
 
 // Example usage
-const testCommitment = KZG.blobToKzgCommitment(KZG.generateRandomBlob());
+const testCommitment = KZG.Commitment(KZG.generateRandomBlob());
 const testHash = commitmentToVersionedHash(testCommitment);
 const parsed = parseVersionedHash(testHash);
 

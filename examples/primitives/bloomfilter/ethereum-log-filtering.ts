@@ -15,7 +15,7 @@ function createAddress(hexSuffix: string): ReturnType<typeof Address.from> {
 
 // Create realistic event topic hashes
 function createTopic(signature: string): ReturnType<typeof Hash.from> {
-	return Keccak256.hash(signature);
+	return Keccak256(signature);
 }
 
 // Simulate an Ethereum log

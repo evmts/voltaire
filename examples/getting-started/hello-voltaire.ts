@@ -6,7 +6,7 @@ import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
 import { Hex } from "../../src/primitives/Hex/index.js";
 
 // Hash a string using Keccak256
-const hash = Keccak256.hashString("Hello, Voltaire!");
+const hash = Keccak256("Hello, Voltaire!");
 
 // The hash is returned as a Uint8Array - convert to hex
 const hexHash = Hex.fromBytes(hash);

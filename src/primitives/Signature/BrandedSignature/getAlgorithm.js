@@ -1,7 +1,7 @@
 /**
  * Get the algorithm of a signature
  *
- * @param {import('../SignatureType.js').BrandedSignature} signature - Signature to check
+ * @param {import('../SignatureType.js').SignatureType} signature - Signature to check
  * @returns {import('../SignatureType.js').SignatureAlgorithm} Signature algorithm
  *
  * @example

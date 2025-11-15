@@ -3,7 +3,7 @@ export * from "./BrandedFunction.js";
 export * from "./statemutability.js";
 
 // Import crypto dependencies
-import { keccak256String as keccak256StringImpl } from "../../../Hash/HashType/index.js";
+import { keccak256String as keccak256StringImpl } from "../../../Hash/BrandedHash/index.js";
 
 import { decodeParams } from "./decodeParams.js";
 import { decodeResult } from "./decodeResult.js";
@@ -23,6 +23,13 @@ export const getSelector = GetSelector({
 // Export individual functions
 export { getSignature, encodeParams, decodeParams, encodeResult, decodeResult };
 
+// Constructor-style aliases (data-first pattern)
+export { getSignature as Signature };
+export { encodeParams as Params };
+export { decodeParams as DecodeParams };
+export { encodeResult as Result };
+export { decodeResult as DecodeResult };
+
 // Namespace export
 export const BrandedFunction = {
 	getSelector,
@@ -31,6 +38,12 @@ export const BrandedFunction = {
 	decodeParams,
 	encodeResult,
 	decodeResult,
+	// Constructor-style aliases
+	Signature: getSignature,
+	Params: encodeParams,
+	DecodeParams: decodeParams,
+	Result: encodeResult,
+	DecodeResult: decodeResult,
 	// Factory
 	GetSelector,
 };

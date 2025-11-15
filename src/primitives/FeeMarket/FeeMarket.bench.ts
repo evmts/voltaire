@@ -74,48 +74,44 @@ const testBlobTxParams: FeeMarket.BlobTxFeeParams = {
 
 const results: BenchmarkResult[] = [];
 results.push(
-	benchmark("calculateBaseFee - at target", () =>
-		FeeMarket.calculateBaseFee(15_000_000n, 30_000_000n, 1_000_000_000n),
+	benchmark("BaseFee - at target", () =>
+		FeeMarket.BaseFee(15_000_000n, 30_000_000n, 1_000_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBaseFee - above target", () =>
-		FeeMarket.calculateBaseFee(25_000_000n, 30_000_000n, 1_000_000_000n),
+	benchmark("BaseFee - above target", () =>
+		FeeMarket.BaseFee(25_000_000n, 30_000_000n, 1_000_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBaseFee - below target", () =>
-		FeeMarket.calculateBaseFee(10_000_000n, 30_000_000n, 1_000_000_000n),
+	benchmark("BaseFee - below target", () =>
+		FeeMarket.BaseFee(10_000_000n, 30_000_000n, 1_000_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBaseFee - full block", () =>
-		FeeMarket.calculateBaseFee(30_000_000n, 30_000_000n, 1_000_000_000n),
+	benchmark("BaseFee - full block", () =>
+		FeeMarket.BaseFee(30_000_000n, 30_000_000n, 1_000_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBaseFee - empty block", () =>
-		FeeMarket.calculateBaseFee(0n, 30_000_000n, 1_000_000_000n),
+	benchmark("BaseFee - empty block", () =>
+		FeeMarket.BaseFee(0n, 30_000_000n, 1_000_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBlobBaseFee - no excess", () =>
-		FeeMarket.calculateBlobBaseFee(0n),
+	benchmark("BlobBaseFee - no excess", () => FeeMarket.BlobBaseFee(0n)),
+);
+results.push(
+	benchmark("BlobBaseFee - at target", () => FeeMarket.BlobBaseFee(393216n)),
+);
+results.push(
+	benchmark("BlobBaseFee - high excess", () =>
+		FeeMarket.BlobBaseFee(1_000_000n),
 	),
 );
 results.push(
-	benchmark("calculateBlobBaseFee - at target", () =>
-		FeeMarket.calculateBlobBaseFee(393216n),
-	),
-);
-results.push(
-	benchmark("calculateBlobBaseFee - high excess", () =>
-		FeeMarket.calculateBlobBaseFee(1_000_000n),
-	),
-);
-results.push(
-	benchmark("calculateBlobBaseFee - very high excess", () =>
-		FeeMarket.calculateBlobBaseFee(10_000_000n),
+	benchmark("BlobBaseFee - very high excess", () =>
+		FeeMarket.BlobBaseFee(10_000_000n),
 	),
 );
 results.push(
@@ -288,10 +284,10 @@ const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Calculate statistics by category
 const categories = {
-	baseFee: results.filter((r) => r.name.includes("calculateBaseFee")),
+	baseFee: results.filter((r) => r.name.includes("BaseFee")),
 	blobFee: results.filter(
 		(r) =>
-			r.name.includes("calculateBlobBaseFee") ||
+			r.name.includes("BlobBaseFee") ||
 			r.name.includes("calculateExcessBlobGas"),
 	),
 	txFee: results.filter(

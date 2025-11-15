@@ -3,7 +3,7 @@ import * as Eip4844 from "../eip4844Constants.js";
 import { fakeExponential } from "./fakeExponential.js";
 
 /**
- * Calculate blob base fee using EIP-4844 formula (standard form)
+ * Calculate blob base fee using EIP-4844 formula (constructor form)
  *
  * Formula: fakeExponential(MIN_BLOB_BASE_FEE, excessBlobGas, BLOB_BASE_FEE_UPDATE_FRACTION)
  *
@@ -18,11 +18,11 @@ import { fakeExponential } from "./fakeExponential.js";
  * ```javascript
  * import * as FeeMarket from './primitives/FeeMarket/index.js';
  * // No excess: minimum fee
- * const fee1 = FeeMarket.calculateBlobBaseFee(0n);
+ * const fee1 = FeeMarket.BlobBaseFee(0n);
  * // fee1 === 1n
  * ```
  */
-export function calculateBlobBaseFee(excessBlobGas) {
+export function BlobBaseFee(excessBlobGas) {
 	return fakeExponential(
 		Eip4844.MIN_BLOB_BASE_FEE,
 		excessBlobGas,

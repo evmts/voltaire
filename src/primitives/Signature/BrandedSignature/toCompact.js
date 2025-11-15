@@ -3,7 +3,7 @@ import { ECDSA_WITH_V_SIZE } from "./constants.js";
 /**
  * Convert Signature to compact format (with v if present)
  *
- * @param {import('../SignatureType.js').BrandedSignature} signature - Signature to convert
+ * @param {import('../SignatureType.js').SignatureType} signature - Signature to convert
  * @returns {Uint8Array} Compact signature (64 bytes or 65 bytes with v)
  *
  * @example

@@ -31,6 +31,10 @@ export const Event = {
 	getSelector: BrandedEvent.getSelector,
 	encodeTopics: BrandedEvent.encodeTopics,
 	decodeLog: BrandedEvent.decodeLog,
+	// Constructor-style aliases
+	Signature: BrandedEvent.Signature,
+	Topics: BrandedEvent.Topics,
+	DecodeLog: BrandedEvent.DecodeLog,
 	// Factories
 	GetSelector: BrandedEvent.GetSelector,
 	EncodeTopics: BrandedEvent.EncodeTopics,

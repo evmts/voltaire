@@ -11,11 +11,50 @@
 
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import * as SHA256 from "./SHA256.js";
+import { SHA256 } from "./SHA256.js";
+import * as SHA256Namespace from "./SHA256.js";
+
+describe("SHA256 constructor", () => {
+	it("should hash string input", () => {
+		const hash = SHA256("hello");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+		expect(hash).toEqual(SHA256Namespace.hashString("hello"));
+	});
+
+	it("should hash hex string with 0x prefix", () => {
+		const hash = SHA256("0xdeadbeef");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+		expect(hash).toEqual(SHA256Namespace.hashHex("0xdeadbeef"));
+	});
+
+	it("should hash hex string without 0x prefix", () => {
+		const hash = SHA256("deadbeef");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+		expect(hash).toEqual(SHA256Namespace.hashHex("deadbeef"));
+	});
+
+	it("should hash Uint8Array input", () => {
+		const data = new Uint8Array([1, 2, 3]);
+		const hash = SHA256(data);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+		expect(hash).toEqual(SHA256Namespace.hash(data));
+	});
+
+	it("should handle empty string", () => {
+		const hash = SHA256("");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+		expect(hash).toEqual(SHA256Namespace.hashString(""));
+	});
+});
 
 describe("SHA256.hash", () => {
 	it("should hash empty input", () => {
-		const hash = SHA256.hash(new Uint8Array([]));
+		const hash = SHA256Namespace.hash(new Uint8Array([]));
 		expect(hash).toBeInstanceOf(Uint8Array);
 		expect(hash.length).toBe(32);
 
@@ -31,7 +70,7 @@ describe("SHA256.hash", () => {
 
 	it("should hash 'abc' (NIST test vector)", () => {
 		const input = new Uint8Array([0x61, 0x62, 0x63]); // "abc"
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		// NIST test vector: SHA256("abc")
 		const expected = new Uint8Array([
@@ -47,7 +86,7 @@ describe("SHA256.hash", () => {
 		const input = new TextEncoder().encode(
 			"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
 		);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		// NIST test vector
 		const expected = new Uint8Array([
@@ -63,7 +102,7 @@ describe("SHA256.hash", () => {
 		const input = new TextEncoder().encode(
 			"The quick brown fox jumps over the lazy dog",
 		);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		const expected = new Uint8Array([
 			0xd7, 0xa8, 0xfb, 0xb3, 0x07, 0xd7, 0x80, 0x94, 0x69, 0xca, 0x9a, 0xbc,
@@ -76,7 +115,7 @@ describe("SHA256.hash", () => {
 
 	it("should hash single byte 0x00", () => {
 		const input = new Uint8Array([0x00]);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		const expected = new Uint8Array([
 			0x6e, 0x34, 0x0b, 0x9c, 0xff, 0xb3, 0x7a, 0x98, 0x9c, 0xa5, 0x44, 0xe6,
@@ -89,7 +128,7 @@ describe("SHA256.hash", () => {
 
 	it("should hash single byte 0xFF", () => {
 		const input = new Uint8Array([0xff]);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		// Cross-validate with @noble
 		expect(hash).toEqual(sha256(input));
@@ -98,7 +137,7 @@ describe("SHA256.hash", () => {
 
 	it("should hash all-zero input (32 bytes)", () => {
 		const input = new Uint8Array(32).fill(0);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -106,7 +145,7 @@ describe("SHA256.hash", () => {
 
 	it("should hash all-ones input (32 bytes)", () => {
 		const input = new Uint8Array(32).fill(0xff);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -114,16 +153,16 @@ describe("SHA256.hash", () => {
 
 	it("should be deterministic", () => {
 		const input = new Uint8Array([1, 2, 3, 4, 5]);
-		const hash1 = SHA256.hash(input);
-		const hash2 = SHA256.hash(input);
+		const hash1 = SHA256Namespace.hash(input);
+		const hash2 = SHA256Namespace.hash(input);
 
 		expect(hash1).toEqual(hash2);
 	});
 
 	it("should produce different hashes for different inputs", () => {
-		const hash1 = SHA256.hash(new Uint8Array([0x00]));
-		const hash2 = SHA256.hash(new Uint8Array([0x01]));
-		const hash3 = SHA256.hash(new Uint8Array([0x00, 0x00]));
+		const hash1 = SHA256Namespace.hash(new Uint8Array([0x00]));
+		const hash2 = SHA256Namespace.hash(new Uint8Array([0x01]));
+		const hash3 = SHA256Namespace.hash(new Uint8Array([0x00, 0x00]));
 
 		expect(hash1).not.toEqual(hash2);
 		expect(hash1).not.toEqual(hash3);
@@ -132,7 +171,7 @@ describe("SHA256.hash", () => {
 
 	it("should handle exactly 64 bytes (one block)", () => {
 		const input = new Uint8Array(64).fill(0x42);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -140,7 +179,7 @@ describe("SHA256.hash", () => {
 
 	it("should handle 65 bytes (just over one block)", () => {
 		const input = new Uint8Array(65).fill(0x42);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -152,27 +191,27 @@ describe("SHA256.hash", () => {
 			input[i] = i & 0xff;
 		}
 
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 		expect(hash.length).toBe(32);
 
 		// Should be deterministic
-		const hash2 = SHA256.hash(input);
+		const hash2 = SHA256Namespace.hash(input);
 		expect(hash).toEqual(hash2);
 	});
 });
 
 describe("SHA256.hashString", () => {
 	it("should hash empty string", () => {
-		const hash = SHA256.hashString("");
+		const hash = SHA256Namespace.hashString("");
 		expect(hash.length).toBe(32);
 
 		// Should match empty byte array
-		const hashEmpty = SHA256.hash(new Uint8Array([]));
+		const hashEmpty = SHA256Namespace.hash(new Uint8Array([]));
 		expect(hash).toEqual(hashEmpty);
 	});
 
 	it("should hash 'hello world'", () => {
-		const hash = SHA256.hashString("hello world");
+		const hash = SHA256Namespace.hashString("hello world");
 
 		const expected = new Uint8Array([
 			0xb9, 0x4d, 0x27, 0xb9, 0x93, 0x4d, 0x3e, 0x08, 0xa5, 0x2e, 0x52, 0xd7,
@@ -184,19 +223,19 @@ describe("SHA256.hashString", () => {
 	});
 
 	it("should hash UTF-8 strings correctly", () => {
-		const hash = SHA256.hashString("Hello 世界 🌍");
+		const hash = SHA256Namespace.hashString("Hello 世界 🌍");
 
 		// Should match manual UTF-8 encoding
 		const manualBytes = new TextEncoder().encode("Hello 世界 🌍");
-		const hashFromBytes = SHA256.hash(manualBytes);
+		const hashFromBytes = SHA256Namespace.hash(manualBytes);
 
 		expect(hash).toEqual(hashFromBytes);
 	});
 
 	it("should be deterministic for strings", () => {
 		const str = "test string";
-		const hash1 = SHA256.hashString(str);
-		const hash2 = SHA256.hashString(str);
+		const hash1 = SHA256Namespace.hashString(str);
+		const hash2 = SHA256Namespace.hashString(str);
 
 		expect(hash1).toEqual(hash2);
 	});
@@ -204,37 +243,37 @@ describe("SHA256.hashString", () => {
 
 describe("SHA256.hashHex", () => {
 	it("should hash hex string with 0x prefix", () => {
-		const hash = SHA256.hashHex("0xdeadbeef");
+		const hash = SHA256Namespace.hashHex("0xdeadbeef");
 		expect(hash.length).toBe(32);
 
 		// Should match byte array [0xde, 0xad, 0xbe, 0xef]
 		const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-		const hashFromBytes = SHA256.hash(bytes);
+		const hashFromBytes = SHA256Namespace.hash(bytes);
 
 		expect(hash).toEqual(hashFromBytes);
 	});
 
 	it("should hash hex string without 0x prefix", () => {
-		const hash = SHA256.hashHex("deadbeef");
+		const hash = SHA256Namespace.hashHex("deadbeef");
 		expect(hash.length).toBe(32);
 
 		// Should match with 0x prefix
-		const hashWithPrefix = SHA256.hashHex("0xdeadbeef");
+		const hashWithPrefix = SHA256Namespace.hashHex("0xdeadbeef");
 		expect(hash).toEqual(hashWithPrefix);
 	});
 
 	it("should hash empty hex string", () => {
-		const hash = SHA256.hashHex("");
+		const hash = SHA256Namespace.hashHex("");
 		expect(hash.length).toBe(32);
 
 		// Should match empty byte array
-		const hashEmpty = SHA256.hash(new Uint8Array([]));
+		const hashEmpty = SHA256Namespace.hash(new Uint8Array([]));
 		expect(hash).toEqual(hashEmpty);
 	});
 
 	it("should hash 32-byte hex (typical Ethereum hash)", () => {
 		const hexHash = `0x${"a".repeat(64)}`; // 32 bytes
-		const hash = SHA256.hashHex(hexHash);
+		const hash = SHA256Namespace.hashHex(hexHash);
 
 		expect(hash.length).toBe(32);
 	});
@@ -243,8 +282,8 @@ describe("SHA256.hashHex", () => {
 describe("SHA256.toHex", () => {
 	it("should convert hash to hex string", () => {
 		const input = new Uint8Array([0x61, 0x62, 0x63]); // "abc"
-		const hash = SHA256.hash(input);
-		const hex = SHA256.toHex(hash);
+		const hash = SHA256Namespace.hash(input);
+		const hex = SHA256Namespace.toHex(hash);
 
 		expect(hex).toBe(
 			"0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
@@ -252,8 +291,8 @@ describe("SHA256.toHex", () => {
 	});
 
 	it("should handle empty hash", () => {
-		const hash = SHA256.hash(new Uint8Array([]));
-		const hex = SHA256.toHex(hash);
+		const hash = SHA256Namespace.hash(new Uint8Array([]));
+		const hex = SHA256Namespace.toHex(hash);
 
 		expect(hex).toBe(
 			"0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -262,7 +301,7 @@ describe("SHA256.toHex", () => {
 
 	it("should produce lowercase hex with 0x prefix", () => {
 		const hash = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-		const hex = SHA256.toHex(hash);
+		const hex = SHA256Namespace.toHex(hash);
 
 		expect(hex).toBe("0xdeadbeef");
 		expect(hex).toMatch(/^0x/);
@@ -276,10 +315,10 @@ describe("Bitcoin use cases", () => {
 		const input = new TextEncoder().encode("hello");
 
 		// First hash
-		const hash1 = SHA256.hash(input);
+		const hash1 = SHA256Namespace.hash(input);
 
 		// Second hash (hash of hash)
-		const hash2 = SHA256.hash(hash1);
+		const hash2 = SHA256Namespace.hash(hash1);
 
 		expect(hash2.length).toBe(32);
 
@@ -305,7 +344,7 @@ describe("Bitcoin use cases", () => {
 			0xf6, 0x56, 0xb4, 0x12, 0xa3,
 		]);
 
-		const hash = SHA256.hash(pubkey);
+		const hash = SHA256Namespace.hash(pubkey);
 		expect(hash.length).toBe(32);
 
 		// Cross-validate with @noble
@@ -319,7 +358,7 @@ describe("Ethereum use cases", () => {
 		// It's rarely used (Keccak256 is standard), but exists for Bitcoin compatibility
 
 		const input = new TextEncoder().encode("test");
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 
@@ -338,11 +377,11 @@ describe("Edge cases", () => {
 			input[i] = (i * 7 + 13) & 0xff;
 		}
 
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 		expect(hash.length).toBe(32);
 
 		// Should be deterministic
-		const hash2 = SHA256.hash(input);
+		const hash2 = SHA256Namespace.hash(input);
 		expect(hash).toEqual(hash2);
 	});
 
@@ -352,8 +391,8 @@ describe("Edge cases", () => {
 		const input2 = new Uint8Array(100).fill(0);
 		input2[99] = 1; // Single bit difference at end
 
-		const hash1 = SHA256.hash(input1);
-		const hash2 = SHA256.hash(input2);
+		const hash1 = SHA256Namespace.hash(input1);
+		const hash2 = SHA256Namespace.hash(input2);
 
 		expect(hash1).not.toEqual(hash2);
 
@@ -370,7 +409,7 @@ describe("Edge cases", () => {
 	it("should handle boundary condition: 55 bytes", () => {
 		// 55 bytes is the maximum that fits in one block with padding
 		const input = new Uint8Array(55).fill(0x61); // 'a'
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -379,7 +418,7 @@ describe("Edge cases", () => {
 	it("should handle boundary condition: 56 bytes", () => {
 		// 56 bytes forces padding into second block
 		const input = new Uint8Array(56).fill(0x61);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
@@ -391,7 +430,7 @@ describe("Edge cases", () => {
 			input[i] = i;
 		}
 
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 		expect(hash.length).toBe(32);
 		expect(hash).toEqual(sha256(input));
 	});
@@ -400,7 +439,7 @@ describe("Edge cases", () => {
 describe("Cross-validation with @noble/hashes", () => {
 	it("should match @noble for empty input", () => {
 		const input = new Uint8Array([]);
-		const ourHash = SHA256.hash(input);
+		const ourHash = SHA256Namespace.hash(input);
 		const nobleHash = sha256(input);
 
 		expect(ourHash).toEqual(nobleHash);
@@ -415,7 +454,7 @@ describe("Cross-validation with @noble/hashes", () => {
 				input[i] = (i * 7) & 0xff;
 			}
 
-			const ourHash = SHA256.hash(input);
+			const ourHash = SHA256Namespace.hash(input);
 			const nobleHash = sha256(input);
 
 			expect(ourHash).toEqual(nobleHash);
@@ -433,7 +472,7 @@ describe("Cross-validation with @noble/hashes", () => {
 		];
 
 		for (const str of strings) {
-			const ourHash = SHA256.hashString(str);
+			const ourHash = SHA256Namespace.hashString(str);
 			const nobleHash = sha256(new TextEncoder().encode(str));
 
 			expect(ourHash).toEqual(nobleHash);
@@ -447,7 +486,7 @@ describe("Cross-validation with @noble/hashes", () => {
 			input[i] = (i * 13 + 7) & 0xff;
 		}
 
-		const ourHash = SHA256.hash(input);
+		const ourHash = SHA256Namespace.hash(input);
 		const nobleHash = sha256(input);
 
 		expect(ourHash).toEqual(nobleHash);
@@ -475,7 +514,7 @@ describe("Security properties", () => {
 			new Uint8Array([1, 1]),
 		];
 
-		const hashes = testInputs.map((input) => SHA256.hash(input));
+		const hashes = testInputs.map((input) => SHA256Namespace.hash(input));
 
 		// All hashes should be unique
 		for (let i = 0; i < hashes.length; i++) {
@@ -489,7 +528,7 @@ describe("Security properties", () => {
 		// While we can't prove preimage resistance in a test,
 		// we can verify that hash output appears random
 		const input = new Uint8Array([0x42]);
-		const hash = SHA256.hash(input);
+		const hash = SHA256Namespace.hash(input);
 
 		// Hash should not contain the input value repeated
 		let inputByteCount = 0;
@@ -508,7 +547,7 @@ describe("Security properties", () => {
 
 		for (let i = 0; i < inputs; i++) {
 			const input = new Uint8Array([i]);
-			const hash = SHA256.hash(input);
+			const hash = SHA256Namespace.hash(input);
 
 			for (const byte of hash) {
 				byteCounts[byte]++;

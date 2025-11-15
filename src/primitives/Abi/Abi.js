@@ -1,4 +1,10 @@
 import { BrandedAbi } from "./BrandedAbi/index.js";
+import {
+	encodeParameters,
+	decodeParameters,
+	Parameters,
+	DecodeParameters,
+} from "./Encoding.js";
 
 /**
  * Factory function for creating Abi instances
@@ -37,6 +43,14 @@ Abi.encode = BrandedAbi.encode;
 Abi.decode = BrandedAbi.decode;
 Abi.decodeData = BrandedAbi.decodeData;
 Abi.parseLogs = BrandedAbi.parseLogs;
+
+// Parameter encoding/decoding methods
+Abi.encodeParameters = encodeParameters;
+Abi.decodeParameters = decodeParameters;
+
+// Constructor-style aliases (data-first pattern)
+Abi.Parameters = Parameters;
+Abi.DecodeParameters = DecodeParameters;
 
 // Sub-namespaces
 Abi.Function = BrandedAbi.Function;

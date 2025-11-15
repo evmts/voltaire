@@ -109,6 +109,12 @@ KZG.isInitialized = isInitialized;
 KZG.validateBlob = validateBlob;
 KZG.createEmptyBlob = createEmptyBlob;
 KZG.generateRandomBlob = generateRandomBlob;
+
+// Constructor pattern (new API)
+KZG.Commitment = blobToKzgCommitment;
+KZG.Proof = computeKzgProof;
+
+// Legacy method names (deprecated)
 KZG.blobToKzgCommitment = blobToKzgCommitment;
 KZG.computeKzgProof = computeKzgProof;
 KZG.verifyKzgProof = verifyKzgProof;

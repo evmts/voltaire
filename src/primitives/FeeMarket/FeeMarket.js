@@ -10,14 +10,14 @@
  * import * as FeeMarket from './FeeMarket.js';
  *
  * // Calculate next base fee (EIP-1559)
- * const nextBaseFee = FeeMarket.calculateBaseFee(
+ * const nextBaseFee = FeeMarket.BaseFee(
  *   30_000_000n, // parent gas used
  *   30_000_000n, // parent gas limit
  *   1_000_000_000n // parent base fee (1 gwei)
  * );
  *
  * // Calculate blob base fee (EIP-4844)
- * const blobBaseFee = FeeMarket.calculateBlobBaseFee(393216n);
+ * const blobBaseFee = FeeMarket.BlobBaseFee(393216n);
  * ```
  */
 
@@ -39,8 +39,8 @@ export const Eip1559 = Eip1559Constants;
 export const Eip4844 = Eip4844Constants;
 
 // Import methods
-import { calculateBaseFee } from "./BrandedFeeMarket/calculateBaseFee.js";
-import { calculateBlobBaseFee } from "./BrandedFeeMarket/calculateBlobBaseFee.js";
+import { BaseFee } from "./BrandedFeeMarket/BaseFee.js";
+import { BlobBaseFee } from "./BrandedFeeMarket/BlobBaseFee.js";
 import { calculateBlobTxFee } from "./BrandedFeeMarket/calculateBlobTxFee.js";
 import { calculateExcessBlobGas } from "./BrandedFeeMarket/calculateExcessBlobGas.js";
 import { calculateTxFee } from "./BrandedFeeMarket/calculateTxFee.js";
@@ -58,8 +58,8 @@ import { weiToGwei } from "./BrandedFeeMarket/weiToGwei.js";
 
 // Export individual functions
 export {
-	calculateBaseFee,
-	calculateBlobBaseFee,
+	BaseFee,
+	BlobBaseFee,
 	calculateExcessBlobGas,
 	calculateTxFee,
 	calculateBlobTxFee,

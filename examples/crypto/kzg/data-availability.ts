@@ -25,7 +25,7 @@ const rollupBatch = {
 
 // Create blob from rollup data
 const blob = KZG.generateRandomBlob(); // In reality: encode compressed batch
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 const versionedHash = (() => {
 	const hash = SHA256.hash(commitment);
 	hash[0] = 0x01;
@@ -33,7 +33,7 @@ const versionedHash = (() => {
 })();
 
 // Verify commitment matches
-const recomputedCommitment = KZG.blobToKzgCommitment(blob);
+const recomputedCommitment = KZG.Commitment(blob);
 const commitmentMatches = recomputedCommitment.every(
 	(b, i) => b === commitment[i],
 );

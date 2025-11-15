@@ -16,7 +16,7 @@ KZG.loadTrustedSetup();
 
 // Create a blob (represents polynomial coefficients)
 const blob = KZG.generateRandomBlob();
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 
 // Create random evaluation point (32-byte field element)
 const z = new Uint8Array(32);
@@ -24,7 +24,7 @@ crypto.getRandomValues(z);
 z[0] = 0; // Ensure z < BLS12-381 modulus
 
 // Compute proof: proves that polynomial(z) = y
-const { proof, y } = KZG.computeKzgProof(blob, z);
+const { proof, y } = KZG.Proof(blob, z);
 
 const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 
@@ -35,7 +35,7 @@ wrongY[0] = 0;
 const invalidProof1 = KZG.verifyKzgProof(commitment, z, wrongY, proof);
 
 const blob2 = KZG.generateRandomBlob();
-const wrongCommitment = KZG.blobToKzgCommitment(blob2);
+const wrongCommitment = KZG.Commitment(blob2);
 
 const invalidProof2 = KZG.verifyKzgProof(wrongCommitment, z, y, proof);
 
@@ -53,13 +53,13 @@ const evaluationPoints = [
 ];
 for (let i = 0; i < evaluationPoints.length; i++) {
 	const zPoint = evaluationPoints[i];
-	const result = KZG.computeKzgProof(blob, zPoint);
+	const result = KZG.Proof(blob, zPoint);
 	const valid = KZG.verifyKzgProof(commitment, zPoint, result.y, result.proof);
 }
 
 const z2 = new Uint8Array(32).fill(123);
-const result1 = KZG.computeKzgProof(blob, z2);
-const result2 = KZG.computeKzgProof(blob, z2);
+const result1 = KZG.Proof(blob, z2);
+const result2 = KZG.Proof(blob, z2);
 
 const sameProof = result1.proof.every((byte, i) => byte === result2.proof[i]);
 const sameY = result1.y.every((byte, i) => byte === result2.y[i]);

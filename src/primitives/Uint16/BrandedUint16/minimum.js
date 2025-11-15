@@ -16,7 +16,5 @@
  * ```
  */
 export function minimum(a, b) {
-	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
-		a < b ? a : b
-	);
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (a < b ? a : b);
 }

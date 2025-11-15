@@ -136,20 +136,20 @@ describe("Kzg Blob to Commitment", () => {
 	it("should throw if not initialized", () => {
 		Kzg.freeTrustedSetup();
 		const blob = Kzg.createEmptyBlob();
-		expect(() => Kzg.blobToKzgCommitment(blob)).toThrow(KzgNotInitializedError);
+		expect(() => Kzg.Commitment(blob)).toThrow(KzgNotInitializedError);
 		Kzg.loadTrustedSetup();
 	});
 
 	it("should compute commitment for empty blob", () => {
 		const blob = Kzg.createEmptyBlob();
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		expect(commitment).toBeInstanceOf(Uint8Array);
 		expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 	});
 
 	it("should compute commitment for random blob", () => {
 		const blob = Kzg.generateRandomBlob(999);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		expect(commitment).toBeInstanceOf(Uint8Array);
 		expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 		// Commitment should not be all zeros for random blob
@@ -158,22 +158,22 @@ describe("Kzg Blob to Commitment", () => {
 
 	it("should be deterministic", () => {
 		const blob = Kzg.generateRandomBlob(12345);
-		const commitment1 = Kzg.blobToKzgCommitment(blob);
-		const commitment2 = Kzg.blobToKzgCommitment(blob);
+		const commitment1 = Kzg.Commitment(blob);
+		const commitment2 = Kzg.Commitment(blob);
 		expect(commitment1).toEqual(commitment2);
 	});
 
 	it("should produce different commitments for different blobs", () => {
 		const blob1 = Kzg.generateRandomBlob(1);
 		const blob2 = Kzg.generateRandomBlob(2);
-		const commitment1 = Kzg.blobToKzgCommitment(blob1);
-		const commitment2 = Kzg.blobToKzgCommitment(blob2);
+		const commitment1 = Kzg.Commitment(blob1);
+		const commitment2 = Kzg.Commitment(blob2);
 		expect(commitment1).not.toEqual(commitment2);
 	});
 
 	it("should reject invalid blob", () => {
 		const blob = new Uint8Array(1000);
-		expect(() => Kzg.blobToKzgCommitment(blob)).toThrow(KzgInvalidBlobError);
+		expect(() => Kzg.Commitment(blob)).toThrow(KzgInvalidBlobError);
 	});
 });
 
@@ -188,14 +188,14 @@ describe("Kzg Compute Proof", () => {
 		Kzg.freeTrustedSetup();
 		const blob = Kzg.createEmptyBlob();
 		const z = new Uint8Array(32);
-		expect(() => Kzg.computeKzgProof(blob, z)).toThrow(KzgNotInitializedError);
+		expect(() => Kzg.Proof(blob, z)).toThrow(KzgNotInitializedError);
 		Kzg.loadTrustedSetup();
 	});
 
 	it("should compute proof for empty blob", () => {
 		const blob = Kzg.createEmptyBlob();
 		const z = new Uint8Array(32);
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		expect(proof).toBeInstanceOf(Uint8Array);
 		expect(proof.length).toBe(BYTES_PER_PROOF);
 		expect(y).toBeInstanceOf(Uint8Array);
@@ -206,7 +206,7 @@ describe("Kzg Compute Proof", () => {
 		const blob = Kzg.generateRandomBlob(7777);
 		const z = new Uint8Array(32);
 		z[31] = 0x42;
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		expect(proof).toBeInstanceOf(Uint8Array);
 		expect(proof.length).toBe(BYTES_PER_PROOF);
 		expect(y).toBeInstanceOf(Uint8Array);
@@ -217,8 +217,8 @@ describe("Kzg Compute Proof", () => {
 		const blob = Kzg.generateRandomBlob(8888);
 		const z = new Uint8Array(32);
 		z[31] = 0x33;
-		const result1 = Kzg.computeKzgProof(blob, z);
-		const result2 = Kzg.computeKzgProof(blob, z);
+		const result1 = Kzg.Proof(blob, z);
+		const result2 = Kzg.Proof(blob, z);
 		expect(result1.proof).toEqual(result2.proof);
 		expect(result1.y).toEqual(result2.y);
 	});
@@ -226,13 +226,13 @@ describe("Kzg Compute Proof", () => {
 	it("should reject invalid blob", () => {
 		const blob = new Uint8Array(1000);
 		const z = new Uint8Array(32);
-		expect(() => Kzg.computeKzgProof(blob, z)).toThrow(KzgInvalidBlobError);
+		expect(() => Kzg.Proof(blob, z)).toThrow(KzgInvalidBlobError);
 	});
 
 	it("should reject invalid evaluation point", () => {
 		const blob = Kzg.createEmptyBlob();
 		const z = new Uint8Array(16);
-		expect(() => Kzg.computeKzgProof(blob, z)).toThrow(KzgError);
+		expect(() => Kzg.Proof(blob, z)).toThrow(KzgError);
 	});
 });
 
@@ -257,20 +257,20 @@ describe("Kzg Verify Proof", () => {
 
 	it("should verify valid proof", () => {
 		const blob = Kzg.generateRandomBlob(9999);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		const z = new Uint8Array(32);
 		z[31] = 0x44;
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 		expect(valid).toBe(true);
 	});
 
 	it("should reject invalid proof (corrupted)", () => {
 		const blob = Kzg.generateRandomBlob(1111);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		const z = new Uint8Array(32);
 		z[31] = 0x55;
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		// Corrupt the proof
 		const corruptedProof = new Uint8Array(proof);
 		corruptedProof[0]! ^= 1;
@@ -281,10 +281,10 @@ describe("Kzg Verify Proof", () => {
 	it("should reject proof with wrong commitment", () => {
 		const blob1 = Kzg.generateRandomBlob(2222);
 		const blob2 = Kzg.generateRandomBlob(3333);
-		const commitment2 = Kzg.blobToKzgCommitment(blob2);
+		const commitment2 = Kzg.Commitment(blob2);
 		const z = new Uint8Array(32);
 		z[31] = 0x66;
-		const { proof, y } = Kzg.computeKzgProof(blob1, z);
+		const { proof, y } = Kzg.Proof(blob1, z);
 		// Verify with wrong commitment
 		const valid = Kzg.verifyKzgProof(commitment2, z, y, proof);
 		expect(valid).toBe(false);
@@ -292,10 +292,10 @@ describe("Kzg Verify Proof", () => {
 
 	it("should reject proof with wrong y value", () => {
 		const blob = Kzg.generateRandomBlob(4444);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		const z = new Uint8Array(32);
 		z[31] = 0x77;
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		// Corrupt y value
 		const wrongY = new Uint8Array(y);
 		wrongY[0]! ^= 1;
@@ -329,7 +329,7 @@ describe("Kzg Verify Blob Proof", () => {
 
 	it("should verify valid blob proof", () => {
 		const blob = Kzg.generateRandomBlob(5555);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		// For blob proof, we need to use computeBlobKzgProof from c-kzg directly
 		const ckzg = require("c-kzg");
 		const proof = ckzg.computeBlobKzgProof(blob, commitment)!;
@@ -360,7 +360,7 @@ describe("Kzg Batch Verification", () => {
 			Kzg.generateRandomBlob(2),
 			Kzg.generateRandomBlob(3),
 		];
-		const commitments = blobs.map((blob) => Kzg.blobToKzgCommitment(blob));
+		const commitments = blobs.map((blob) => Kzg.Commitment(blob));
 		// For blob batch verification, use computeBlobKzgProof
 		const ckzg = require("c-kzg");
 		const proofs = blobs.map((blob, i) =>
@@ -372,8 +372,8 @@ describe("Kzg Batch Verification", () => {
 
 	it("should reject mismatched array lengths", () => {
 		const blobs = [Kzg.generateRandomBlob(1), Kzg.generateRandomBlob(2)];
-		const commitments = [Kzg.blobToKzgCommitment(blobs[0]!)];
-		const proofs = [Kzg.computeKzgProof(blobs[0]!, new Uint8Array(32)).proof];
+		const commitments = [Kzg.Commitment(blobs[0]!)];
+		const proofs = [Kzg.Proof(blobs[0]!, new Uint8Array(32)).proof];
 		expect(() =>
 			Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs),
 		).toThrow(KzgError);
@@ -397,7 +397,7 @@ describe("Kzg Integration Tests", () => {
 		const blob = Kzg.generateRandomBlob(54321);
 
 		// Generate commitment
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 		expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 
 		// Compute proofs at multiple evaluation points
@@ -408,7 +408,7 @@ describe("Kzg Integration Tests", () => {
 			z[31] = pointByte;
 
 			// Generate proof
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.Proof(blob, z);
 
 			// Verify proof
 			const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
@@ -421,12 +421,12 @@ describe("Kzg Integration Tests", () => {
 
 		for (let i = 0; i < numBlobs; i++) {
 			const blob = Kzg.generateRandomBlob(i * 1000);
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.Commitment(blob);
 
 			const z = new Uint8Array(32);
 			z[31] = i;
 
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.Proof(blob, z);
 			const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 
 			expect(valid).toBe(true);
@@ -437,8 +437,8 @@ describe("Kzg Integration Tests", () => {
 		const blob1 = Kzg.generateRandomBlob(1);
 		const blob2 = Kzg.generateRandomBlob(2);
 
-		const commitment1 = Kzg.blobToKzgCommitment(blob1);
-		const commitment2 = Kzg.blobToKzgCommitment(blob2);
+		const commitment1 = Kzg.Commitment(blob1);
+		const commitment2 = Kzg.Commitment(blob2);
 
 		// Commitments should be different
 		expect(commitment1).not.toEqual(commitment2);
@@ -446,14 +446,14 @@ describe("Kzg Integration Tests", () => {
 
 	it("should maintain proof consistency across multiple calls", () => {
 		const blob = Kzg.generateRandomBlob(55555);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 
 		const z = new Uint8Array(32);
 		z[31] = 0xaa;
 
 		// Generate same proof multiple times
 		for (let i = 0; i < 5; i++) {
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.Proof(blob, z);
 			const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 			expect(valid).toBe(true);
 		}
@@ -469,11 +469,11 @@ describe("Kzg Edge Cases", () => {
 
 	it("should handle all-zero blob", () => {
 		const blob = Kzg.createEmptyBlob();
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 
 		const z = new Uint8Array(32);
 		z[31] = 0x01;
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 
 		const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 		expect(valid).toBe(true);
@@ -481,10 +481,10 @@ describe("Kzg Edge Cases", () => {
 
 	it("should handle zero evaluation point", () => {
 		const blob = Kzg.generateRandomBlob(11111);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 
 		const z = new Uint8Array(32);
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 
 		const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 		expect(valid).toBe(true);
@@ -492,13 +492,13 @@ describe("Kzg Edge Cases", () => {
 
 	it("should handle max-value evaluation point", () => {
 		const blob = Kzg.generateRandomBlob(22222);
-		const commitment = Kzg.blobToKzgCommitment(blob);
+		const commitment = Kzg.Commitment(blob);
 
 		const z = new Uint8Array(32);
 		z.fill(0xff);
 		z[0] = 0x00; // Keep within field
 
-		const { proof, y } = Kzg.computeKzgProof(blob, z);
+		const { proof, y } = Kzg.Proof(blob, z);
 		const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
 		expect(valid).toBe(true);
 	});

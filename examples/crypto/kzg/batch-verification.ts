@@ -21,7 +21,7 @@ const commitments: Uint8Array[] = [];
 
 for (let i = 0; i < NUM_BLOBS; i++) {
 	const blob = KZG.generateRandomBlob();
-	const commitment = KZG.blobToKzgCommitment(blob);
+	const commitment = KZG.Commitment(blob);
 
 	blobs.push(blob);
 	commitments.push(commitment);
@@ -36,7 +36,7 @@ const proofs: Uint8Array[] = [];
 const yValues: Uint8Array[] = [];
 
 for (let i = 0; i < NUM_BLOBS; i++) {
-	const { proof, y } = KZG.computeKzgProof(blobs[i], z);
+	const { proof, y } = KZG.Proof(blobs[i], z);
 	proofs.push(proof);
 	yValues.push(y);
 }
@@ -74,8 +74,8 @@ const maxCommitments: Uint8Array[] = [];
 const maxProofs: Uint8Array[] = [];
 for (let i = 0; i < MAX_BLOBS; i++) {
 	const blob = KZG.generateRandomBlob();
-	const commitment = KZG.blobToKzgCommitment(blob);
-	const { proof } = KZG.computeKzgProof(blob, z);
+	const commitment = KZG.Commitment(blob);
+	const { proof } = KZG.Proof(blob, z);
 
 	maxBlobs.push(blob);
 	maxCommitments.push(commitment);

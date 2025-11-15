@@ -22,10 +22,11 @@ export {
  * Creates a Blob instance from various input types.
  *
  * Canonical Class API constructor. Supports:
+ * - Number (creates empty blob of specified size)
  * - Raw blob data (131072 bytes)
  * - Data to encode (auto-encodes with length prefix)
  *
- * @param {Uint8Array} value - Uint8Array (either 131072 bytes blob or data to encode)
+ * @param {number | Uint8Array} value - Number for size or Uint8Array (either 131072 bytes blob or data to encode)
  * @returns {Blob} Blob instance
  * @throws {Error} If data exceeds maximum size
  *
@@ -33,14 +34,21 @@ export {
  * ```typescript
  * import { Blob } from './primitives/Blob/index.js';
  *
+ * // Create empty blob by size
+ * const blob1 = Blob(131072);
+ *
  * // Raw blob
- * const blob1 = Blob(new Uint8Array(131072));
+ * const blob2 = Blob(new Uint8Array(131072));
  *
  * // Auto-encode data
- * const blob2 = Blob(new TextEncoder().encode("Hello"));
+ * const blob3 = Blob(new TextEncoder().encode("Hello"));
  * ```
  */
 export function Blob(value) {
+	// If value is a number, create an empty blob of that size
+	if (typeof value === "number") {
+		value = new Uint8Array(value);
+	}
 	const result = BrandedBlob.from(value);
 	Object.setPrototypeOf(result, Blob.prototype);
 	return result;

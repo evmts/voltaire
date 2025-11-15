@@ -6,16 +6,16 @@ const content1 = "Hello, World!";
 const content2 = "Hello, World!";
 const content3 = "Hello, World?"; // Slightly different
 
-const hash1 = Keccak256.hashString(content1);
-const hash2 = Keccak256.hashString(content2);
-const hash3 = Keccak256.hashString(content3);
+const hash1 = Keccak256(content1);
+const hash2 = Keccak256(content2);
+const hash3 = Keccak256(content3);
 
 class ContentStore {
 	private store = new Map<string, Uint8Array>();
 
 	// Store content by its hash
 	put(content: Uint8Array): string {
-		const hash = Keccak256.hash(content);
+		const hash = Keccak256(content);
 		const key = Hex.fromBytes(hash);
 		this.store.set(key, content);
 		return key;
@@ -28,7 +28,7 @@ class ContentStore {
 
 	// Verify content matches hash
 	verify(hash: string, content: Uint8Array): boolean {
-		const computedHash = Hex.fromBytes(Keccak256.hash(content));
+		const computedHash = Hex.fromBytes(Keccak256(content));
 		return computedHash === hash;
 	}
 
@@ -59,8 +59,8 @@ const contractCode1 = Bytecode("0x6080604052348015610000f57600080fd");
 
 const contractCode2 = Bytecode("0x608060405234801561001057600080fd"); // Slightly different
 
-const codeHash1 = Keccak256.hash(contractCode1);
-const codeHash2 = Keccak256.hash(contractCode2);
+const codeHash1 = Keccak256(contractCode1);
+const codeHash2 = Keccak256(contractCode2);
 
 // Simulate downloading a file in chunks
 const pngHeader = Hex("0x89504e47");
@@ -75,15 +75,15 @@ const fileChunks = [pngHeader, pngData, contentBytes];
 
 // Compute hash before "sending"
 const originalFile = Hex.concat([...fileChunks]);
-const expectedHash = Keccak256.hashHex(originalFile);
+const expectedHash = Keccak256(originalFile);
 
 // Simulate receiving and verifying
 const receivedFile = Hex.concat([...fileChunks]);
-const receivedHash = Keccak256.hashHex(receivedFile);
+const receivedHash = Keccak256(receivedFile);
 
 // Simulate corruption
 receivedFile[50] ^= 0xff; // Flip bits
-const corruptedHash = Keccak256.hash(receivedFile);
+const corruptedHash = Keccak256(receivedFile);
 
 interface Commit {
 	parent?: string;
@@ -96,7 +96,7 @@ function hashCommit(commit: Commit): string {
 	const encoded = new TextEncoder().encode(
 		JSON.stringify(commit, null, 0), // No whitespace for deterministic hash
 	);
-	return Hex.fromBytes(Keccak256.hash(encoded));
+	return Hex.fromBytes(Keccak256(encoded));
 }
 
 const commit1: Commit = {
@@ -136,9 +136,9 @@ for (let i = 0; i < largeFileSize * 2; i += chunkSize * 2) {
 }
 
 // Hash each chunk
-const chunkHashes = chunks.map((chunk) => Keccak256.hashHex(chunk as any));
+const chunkHashes = chunks.map((chunk) => Keccak256(chunk as any));
 for (let i = 0; i < chunkHashes.length; i++) {}
 
 // Build root hash from all chunk hashes
 const allChunkHashes = Hex.concat(chunkHashes as any);
-const rootHash = Keccak256.hashHex(allChunkHashes);
+const rootHash = Keccak256(allChunkHashes);

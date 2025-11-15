@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { calculateBaseFee } from "./calculateBaseFee.js";
+import { BaseFee } from "./BaseFee.js";
 import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
 
 /**
@@ -26,11 +26,7 @@ import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
  * ```
  */
 export function nextState(state) {
-	const nextBaseFee = calculateBaseFee(
-		state.gasUsed,
-		state.gasLimit,
-		state.baseFee,
-	);
+	const nextBaseFee = BaseFee(state.gasUsed, state.gasLimit, state.baseFee);
 	const nextExcessBlobGas = calculateExcessBlobGas(
 		state.excessBlobGas,
 		state.blobGasUsed,

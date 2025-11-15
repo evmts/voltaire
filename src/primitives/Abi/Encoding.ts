@@ -440,3 +440,7 @@ export {
 	isDynamicType,
 	padRight,
 };
+
+// Constructor-style aliases (data-first pattern)
+export { encodeParameters as Parameters };
+export { decodeParameters as DecodeParameters };

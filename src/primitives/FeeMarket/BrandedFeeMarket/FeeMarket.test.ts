@@ -61,9 +61,9 @@ describe("FeeMarket.Eip4844 Constants", () => {
 // Base Fee Calculation Tests (EIP-1559)
 // ============================================================================
 
-describe("FeeMarket.calculateBaseFee", () => {
+describe("FeeMarket.BaseFee", () => {
 	it("keeps base fee unchanged at target", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			15_000_000n, // 50% of limit (at target)
 			30_000_000n,
 			1_000_000_000n,
@@ -72,12 +72,12 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("keeps base fee unchanged for empty block", () => {
-		const baseFee = FeeMarket.calculateBaseFee(0n, 30_000_000n, 1_000_000_000n);
+		const baseFee = FeeMarket.BaseFee(0n, 30_000_000n, 1_000_000_000n);
 		expect(baseFee).toBe(1_000_000_000n);
 	});
 
 	it("increases base fee for full block", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			30_000_000n, // 100% full
 			30_000_000n,
 			1_000_000_000n,
@@ -87,7 +87,7 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("increases base fee above target proportionally", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			22_500_000n, // 75% full (50% above target)
 			30_000_000n,
 			1_000_000_000n,
@@ -97,7 +97,7 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("decreases base fee below target", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			7_500_000n, // 25% full (50% below target)
 			30_000_000n,
 			1_000_000_000n,
@@ -107,7 +107,7 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("enforces minimum base fee", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			0n,
 			30_000_000n,
 			1n, // Below minimum
@@ -116,7 +116,7 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("enforces minimum base fee on decrease", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			0n,
 			30_000_000n,
 			FeeMarket.Eip1559.MIN_BASE_FEE,
@@ -125,13 +125,13 @@ describe("FeeMarket.calculateBaseFee", () => {
 	});
 
 	it("handles very small base fee", () => {
-		const baseFee = FeeMarket.calculateBaseFee(30_000_000n, 30_000_000n, 8n);
+		const baseFee = FeeMarket.BaseFee(30_000_000n, 30_000_000n, 8n);
 		// Should still enforce minimum increase
 		expect(baseFee).toBeGreaterThan(8n);
 	});
 
 	it("handles maximum gas usage", () => {
-		const baseFee = FeeMarket.calculateBaseFee(
+		const baseFee = FeeMarket.BaseFee(
 			30_000_000n,
 			30_000_000n,
 			100_000_000_000n,
@@ -144,21 +144,21 @@ describe("FeeMarket.calculateBaseFee", () => {
 // Blob Fee Calculation Tests (EIP-4844)
 // ============================================================================
 
-describe("FeeMarket.calculateBlobBaseFee", () => {
+describe("FeeMarket.BlobBaseFee", () => {
 	it("returns minimum fee with no excess", () => {
-		const fee = FeeMarket.calculateBlobBaseFee(0n);
+		const fee = FeeMarket.BlobBaseFee(0n);
 		expect(fee).toBe(FeeMarket.Eip4844.MIN_BLOB_BASE_FEE);
 	});
 
 	it("increases fee with excess blob gas", () => {
-		const fee = FeeMarket.calculateBlobBaseFee(393216n); // 1 target worth
+		const fee = FeeMarket.BlobBaseFee(393216n); // 1 target worth
 		expect(fee).toBeGreaterThanOrEqual(FeeMarket.Eip4844.MIN_BLOB_BASE_FEE);
 	});
 
 	it("increases exponentially with high excess", () => {
-		const fee1 = FeeMarket.calculateBlobBaseFee(10_000_000n);
-		const fee2 = FeeMarket.calculateBlobBaseFee(20_000_000n); // 2x excess
-		const fee3 = FeeMarket.calculateBlobBaseFee(30_000_000n); // 3x excess
+		const fee1 = FeeMarket.BlobBaseFee(10_000_000n);
+		const fee2 = FeeMarket.BlobBaseFee(20_000_000n); // 2x excess
+		const fee3 = FeeMarket.BlobBaseFee(30_000_000n); // 3x excess
 
 		expect(fee2).toBeGreaterThan(fee1);
 		expect(fee3).toBeGreaterThan(fee2);
@@ -167,12 +167,12 @@ describe("FeeMarket.calculateBlobBaseFee", () => {
 	});
 
 	it("handles very small excess", () => {
-		const fee = FeeMarket.calculateBlobBaseFee(1n);
+		const fee = FeeMarket.BlobBaseFee(1n);
 		expect(fee).toBeGreaterThanOrEqual(FeeMarket.Eip4844.MIN_BLOB_BASE_FEE);
 	});
 
 	it("handles large excess gas values", () => {
-		const fee = FeeMarket.calculateBlobBaseFee(10_000_000n);
+		const fee = FeeMarket.BlobBaseFee(10_000_000n);
 		expect(fee).toBeGreaterThan(0n);
 	});
 });

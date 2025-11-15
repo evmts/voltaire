@@ -1,7 +1,7 @@
 import type { brand } from "../../../brand.js";
-import type { BrandedUint256 } from "../../Uint/BrandedUint256/BrandedUint256.js";
+import type { Uint256Type } from "../../Uint/Uint256Type.js";
 
 /**
  * Branded Gwei type - represents Ethereum amounts in gwei (10^9 wei = 10^-9 ETH)
  */
-export type BrandedGwei = BrandedUint256 & { readonly [brand]: "Gwei" };
+export type BrandedGwei = Uint256Type & { readonly [brand]: "Gwei" };

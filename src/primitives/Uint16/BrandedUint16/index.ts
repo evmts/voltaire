@@ -1,4 +1,4 @@
-export * from "./BrandedUint16.js";
+export * from "./Uint16Type.js";
 export * from "./constants.js";
 
 import { bitLength } from "./bitLength.js";
@@ -68,7 +68,7 @@ export {
 	popCount,
 };
 
-export const BrandedUint16 = {
+export const Uint16Type = {
 	from,
 	fromHex,
 	fromBigint,

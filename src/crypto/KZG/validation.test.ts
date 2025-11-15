@@ -40,9 +40,9 @@ describe("KZG Validation - Edge Cases", () => {
 	describe("Commitment Validation", () => {
 		it("should verify valid blob + commitment + proof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0x42);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 			expect(isValid).toBe(true);
@@ -100,15 +100,15 @@ describe("KZG Validation - Edge Cases", () => {
 			blob[1] = 0x01;
 			blob[2] = 0x02;
 
-			const commitment1 = KZG.blobToKzgCommitment(blob);
-			const commitment2 = KZG.blobToKzgCommitment(blob);
+			const commitment1 = KZG.Commitment(blob);
+			const commitment2 = KZG.Commitment(blob);
 
 			expect(commitment1).toEqual(commitment2);
 		});
 
 		it("should have commitment length exactly 48 bytes", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 		});
@@ -118,7 +118,7 @@ describe("KZG Validation - Edge Cases", () => {
 		it("should generate valid proof with correct size", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = createFieldElement(0x55);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			expect(proof.length).toBe(BYTES_PER_PROOF);
 			expect(y.length).toBe(BYTES_PER_FIELD_ELEMENT);
@@ -126,7 +126,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject proof with invalid size (not 48 bytes)", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement();
 			const y = createFieldElement();
 			const wrongProof = new Uint8Array(32); // Wrong size
@@ -138,7 +138,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should handle all-zero proof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement();
 			const y = createFieldElement();
 			const zeroProof = new Uint8Array(BYTES_PER_PROOF).fill(0);
@@ -149,7 +149,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should handle all-ones proof (0xff)", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement();
 			const y = createFieldElement();
 			const onesProof = new Uint8Array(BYTES_PER_PROOF).fill(0xff);
@@ -173,8 +173,8 @@ describe("KZG Validation - Edge Cases", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = createFieldElement(0x99);
 
-			const result1 = KZG.computeKzgProof(blob, z);
-			const result2 = KZG.computeKzgProof(blob, z);
+			const result1 = KZG.Proof(blob, z);
+			const result2 = KZG.Proof(blob, z);
 
 			expect(result1.proof).toEqual(result2.proof);
 			expect(result1.y).toEqual(result2.y);
@@ -192,7 +192,7 @@ describe("KZG Validation - Edge Cases", () => {
 				}
 			}
 
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 		});
 
@@ -229,7 +229,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 			expect(() => KZG.validateBlob(blob)).not.toThrow();
 
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 		});
 
@@ -237,7 +237,7 @@ describe("KZG Validation - Edge Cases", () => {
 			const blob = KZG.createEmptyBlob();
 			const z = createFieldElement();
 
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 			expect(proof.length).toBe(BYTES_PER_PROOF);
 			expect(y.length).toBe(BYTES_PER_FIELD_ELEMENT);
 		});
@@ -246,9 +246,9 @@ describe("KZG Validation - Edge Cases", () => {
 	describe("Verification Tests", () => {
 		it("should verify correct triplet (blob, commitment, proof)", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0xaa);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
 			expect(isValid).toBe(true);
@@ -258,9 +258,9 @@ describe("KZG Validation - Edge Cases", () => {
 			const blob1 = KZG.generateRandomBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const wrongCommitment = KZG.blobToKzgCommitment(blob2);
+			const wrongCommitment = KZG.Commitment(blob2);
 			const z = createFieldElement(0xbb);
-			const { proof, y } = KZG.computeKzgProof(blob1, z);
+			const { proof, y } = KZG.Proof(blob1, z);
 
 			const isValid = KZG.verifyKzgProof(wrongCommitment, z, y, proof);
 			expect(isValid).toBe(false);
@@ -270,10 +270,10 @@ describe("KZG Validation - Edge Cases", () => {
 			const blob1 = KZG.generateRandomBlob();
 			const blob2 = KZG.generateRandomBlob();
 
-			const commitment = KZG.blobToKzgCommitment(blob1);
+			const commitment = KZG.Commitment(blob1);
 			const z = createFieldElement(0xcc);
-			const { proof: wrongProof } = KZG.computeKzgProof(blob2, z);
-			const { y } = KZG.computeKzgProof(blob1, z);
+			const { proof: wrongProof } = KZG.Proof(blob2, z);
+			const { y } = KZG.Proof(blob1, z);
 
 			const isValid = KZG.verifyKzgProof(commitment, z, y, wrongProof);
 			expect(isValid).toBe(false);
@@ -281,13 +281,13 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject tampered blob", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			// Tamper blob after commitment
 			blob[100] ^= 1;
 
 			const z = createFieldElement(0xdd);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			// Proof is from tampered blob, won't match commitment
 			const isValid = KZG.verifyKzgProof(commitment, z, y, proof);
@@ -296,9 +296,9 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject swapped commitment and proof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0xee);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			// Swap commitment and proof (both 48 bytes)
 			const isValid = KZG.verifyKzgProof(
@@ -312,9 +312,9 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject verification with wrong evaluation point", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0xff);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const wrongZ = createFieldElement(0x00);
 			const isValid = KZG.verifyKzgProof(commitment, wrongZ, y, proof);
@@ -323,9 +323,9 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject verification with wrong y value", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0x11);
-			const { proof, y } = KZG.computeKzgProof(blob, z);
+			const { proof, y } = KZG.Proof(blob, z);
 
 			const wrongY = createFieldElement(0x22);
 			const isValid = KZG.verifyKzgProof(commitment, z, wrongY, proof);
@@ -346,7 +346,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should verify single valid triplet", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			// For batch verification, we need proper blob proofs
 			// verifyBlobKzgProof requires specific proof format
@@ -356,7 +356,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should verify multiple valid triplets (2 blobs)", () => {
 			const blobs = [KZG.generateRandomBlob(), KZG.generateRandomBlob()];
-			const commitments = blobs.map((b) => KZG.blobToKzgCommitment(b));
+			const commitments = blobs.map((b) => KZG.Commitment(b));
 
 			expect(commitments.length).toBe(2);
 			commitments.forEach((c) => {
@@ -369,7 +369,7 @@ describe("KZG Validation - Edge Cases", () => {
 			const blobs = Array.from({ length: count }, () =>
 				KZG.generateRandomBlob(),
 			);
-			const commitments = blobs.map((b) => KZG.blobToKzgCommitment(b));
+			const commitments = blobs.map((b) => KZG.Commitment(b));
 
 			expect(commitments.length).toBe(count);
 			commitments.forEach((c) => {
@@ -392,7 +392,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should reject mismatched array lengths (blobs.length !== proofs.length)", () => {
 			const blobs = [KZG.generateRandomBlob(), KZG.generateRandomBlob()];
-			const commitments = blobs.map((b) => KZG.blobToKzgCommitment(b));
+			const commitments = blobs.map((b) => KZG.Commitment(b));
 			const proofs = [new Uint8Array(BYTES_PER_PROOF)];
 
 			expect(() =>
@@ -430,7 +430,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should allow operations after trusted setup loaded", () => {
 			const blob = KZG.generateRandomBlob();
-			expect(() => KZG.blobToKzgCommitment(blob)).not.toThrow();
+			expect(() => KZG.Commitment(blob)).not.toThrow();
 		});
 
 		it("should validate KZG parameters match EIP-4844 spec", () => {
@@ -450,7 +450,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 			for (const fill of points) {
 				const z = createFieldElement(fill);
-				const { proof, y } = KZG.computeKzgProof(blob, z);
+				const { proof, y } = KZG.Proof(blob, z);
 
 				expect(proof.length).toBe(BYTES_PER_PROOF);
 				expect(y.length).toBe(BYTES_PER_FIELD_ELEMENT);
@@ -460,9 +460,9 @@ describe("KZG Validation - Edge Cases", () => {
 		it("should have deterministic commitment for same blob", () => {
 			const blob = KZG.generateRandomBlob();
 
-			const c1 = KZG.blobToKzgCommitment(blob);
-			const c2 = KZG.blobToKzgCommitment(blob);
-			const c3 = KZG.blobToKzgCommitment(blob);
+			const c1 = KZG.Commitment(blob);
+			const c2 = KZG.Commitment(blob);
+			const c3 = KZG.Commitment(blob);
 
 			expect(c1).toEqual(c2);
 			expect(c2).toEqual(c3);
@@ -470,7 +470,7 @@ describe("KZG Validation - Edge Cases", () => {
 
 		it("should validate commitment format (48 bytes, G1 point)", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.blobToKzgCommitment(blob);
+			const commitment = KZG.Commitment(blob);
 
 			expect(commitment).toBeInstanceOf(Uint8Array);
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
@@ -484,7 +484,7 @@ describe("KZG Validation - Edge Cases", () => {
 		it("should validate proof format (48 bytes, G1 point)", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = createFieldElement(0x42);
-			const { proof } = KZG.computeKzgProof(blob, z);
+			const { proof } = KZG.Proof(blob, z);
 
 			expect(proof).toBeInstanceOf(Uint8Array);
 			expect(proof.length).toBe(BYTES_PER_PROOF);

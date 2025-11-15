@@ -23,13 +23,13 @@ try {
 	console.error(error);
 }
 
-const commitment = KZG.blobToKzgCommitment(blob);
+const commitment = KZG.Commitment(blob);
 
-const commitment2 = KZG.blobToKzgCommitment(blob);
+const commitment2 = KZG.Commitment(blob);
 const areEqual = commitment.every((byte, i) => byte === commitment2[i]);
 
 const blob2 = KZG.generateRandomBlob();
-const commitment3 = KZG.blobToKzgCommitment(blob2);
+const commitment3 = KZG.Commitment(blob2);
 const areDifferent = !commitment.every((byte, i) => byte === commitment3[i]);
 
 const blobs = [
@@ -37,7 +37,7 @@ const blobs = [
 	KZG.generateRandomBlob(),
 	KZG.generateRandomBlob(),
 ];
-const commitments = blobs.map((b) => KZG.blobToKzgCommitment(b));
+const commitments = blobs.map((b) => KZG.Commitment(b));
 
 for (let i = 0; i < commitments.length; i++) {}
 

@@ -203,7 +203,7 @@ describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
 
 			const commitment1 = Blob.toCommitment(blob);
 			const commitment2 = Blob.toCommitment(blob);
-			const commitment3 = KZG.blobToKzgCommitment(blob);
+			const commitment3 = KZG.Commitment(blob);
 
 			expect(commitment1).toEqual(commitment2);
 			expect(commitment1).toEqual(commitment3);

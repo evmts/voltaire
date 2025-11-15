@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { calculateBlobBaseFee } from "./calculateBlobBaseFee.js";
+import { BlobBaseFee } from "./BlobBaseFee.js";
 
 /**
  * Get current blob base fee (takes this)
@@ -17,5 +17,5 @@ import { calculateBlobBaseFee } from "./calculateBlobBaseFee.js";
  * ```
  */
 export function getBlobBaseFee(state) {
-	return calculateBlobBaseFee(state.excessBlobGas);
+	return BlobBaseFee(state.excessBlobGas);
 }

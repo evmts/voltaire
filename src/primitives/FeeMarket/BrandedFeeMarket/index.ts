@@ -1,6 +1,6 @@
 // Import all functions
-import { calculateBaseFee } from "./calculateBaseFee.js";
-import { calculateBlobBaseFee } from "./calculateBlobBaseFee.js";
+import { BaseFee } from "./BaseFee.js";
+import { BlobBaseFee } from "./BlobBaseFee.js";
 import { calculateBlobTxFee } from "./calculateBlobTxFee.js";
 import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
 import { calculateTxFee } from "./calculateTxFee.js";
@@ -18,8 +18,8 @@ import { weiToGwei } from "./weiToGwei.js";
 
 // Export individual functions (public API)
 export {
-	calculateBaseFee,
-	calculateBlobBaseFee,
+	BaseFee,
+	BlobBaseFee,
 	calculateBlobTxFee,
 	calculateExcessBlobGas,
 	calculateTxFee,
@@ -38,8 +38,8 @@ export {
 
 // Export internal functions (tree-shakeable)
 export {
-	calculateBaseFee as _calculateBaseFee,
-	calculateBlobBaseFee as _calculateBlobBaseFee,
+	BaseFee as _BaseFee,
+	BlobBaseFee as _BlobBaseFee,
 	calculateBlobTxFee as _calculateBlobTxFee,
 	calculateExcessBlobGas as _calculateExcessBlobGas,
 	calculateTxFee as _calculateTxFee,
@@ -58,8 +58,8 @@ export {
 
 // Namespace export
 export const BrandedFeeMarket = {
-	calculateBaseFee,
-	calculateBlobBaseFee,
+	BaseFee,
+	BlobBaseFee,
 	calculateBlobTxFee,
 	calculateExcessBlobGas,
 	calculateTxFee,
