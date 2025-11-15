@@ -10,12 +10,12 @@
 	},
 	"favicon": "/favicon.png",
 	"colors": {
-		"primary": "#8B5CF6",
-		"light": "#A78BFA",
-		"dark": "#7C3AED",
+		"primary": "#10B981",
+		"light": "#34D399",
+		"dark": "#059669",
 		"anchors": {
-			"from": "#8B5CF6",
-			"to": "#A78BFA"
+			"from": "#10B981",
+			"to": "#34D399"
 		},
 		"background": {
 			"light": "#FDF2E2",
@@ -226,11 +226,6 @@
 					"pages": [
 						"primitives/address/index",
 						"primitives/address/branded-address",
-						"primitives/address/constructors",
-						"primitives/address/conversions",
-						"primitives/address/validation",
-						"primitives/address/comparisons",
-						"primitives/address/contract-addresses",
 						"primitives/address/uint8array-methods",
 						"primitives/address/variants",
 						"primitives/address/wasm"
@@ -575,11 +570,8 @@
 					"icon": "hashtag",
 					"iconType": "solid",
 					"pages": [
-						"primitives/uint/index",
 						"primitives/uint8/index",
 						"primitives/uint16/index",
-						"primitives/uint32/index",
-						"primitives/uint64/index",
 						"primitives/uint128/index",
 						"primitives/uint256/index"
 					]
@@ -591,7 +583,6 @@
 					"pages": [
 						"primitives/int8/index",
 						"primitives/int16/index",
-						"primitives/int32/index",
 						"primitives/int128/index",
 						"primitives/int256/index"
 					]
@@ -602,7 +593,6 @@
 					"iconType": "solid",
 					"pages": [
 						"primitives/bytes/index",
-						"primitives/bytes/bytes8",
 						"primitives/bytes/bytes16",
 						"primitives/bytes/bytes20",
 						"primitives/bytes/bytes32",

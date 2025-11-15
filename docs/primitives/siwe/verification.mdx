@@ -164,9 +164,6 @@ Returns `false` for:
 
 Combined validation and signature verification.
 
-<Tabs>
-<Tab title="Wrapper API">
-
 ### Signature
 
 ```typescript
@@ -321,9 +318,6 @@ async function authenticateWithSiwe(
 **Signature Verification:** O(1) - secp256k1 recovery (expensive)
 
 **Optimization:** Always validates first to avoid wasting cycles on invalid messages
-
-</Tab>
-</Tabs>
 
 ---
 
