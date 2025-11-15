@@ -56,8 +56,8 @@ Result is value shifted right by shift positions, with zeros filling vacated hig
 ### Basic Right Shift
 
 ```typescript
-import { shr } from '@tevm/voltaire/evm/bitwise';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { shr } from 'tevm/evm/bitwise';
+import { createFrame } from 'tevm/evm/Frame';
 
 // Shift 0xFF00 right by 8 bits (divide by 256)
 const frame = createFrame({ stack: [8n, 0xFF00n] });

@@ -49,8 +49,8 @@ This operation is functionally equivalent to `EQ(a, 0)` but uses only one stack 
 ### Zero Check
 
 ```typescript
-import { iszero } from '@tevm/voltaire/evm/comparison';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { iszero } from 'tevm/evm/comparison';
+import { createFrame } from 'tevm/evm/Frame';
 
 // 0 is zero = 1 (true)
 const frame = createFrame({ stack: [0n] });

@@ -79,9 +79,9 @@ CALL performs a nested execution in the target account's context:
 ### Basic External Call
 
 ```typescript
-import { CALL } from '@tevm/voltaire/evm/system';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
-import { Address } from '@tevm/voltaire/primitives';
+import { CALL } from 'tevm/evm/system';
+import { createFrame } from 'tevm/evm/Frame';
+import { Address } from 'tevm/primitives';
 
 const frame = createFrame({
   gasRemaining: 1000000n,
@@ -118,7 +118,7 @@ console.log(frame.return_data);      // Returndata from callee
 ### Value Transfer Call
 
 ```typescript
-import { Address } from '@tevm/voltaire/primitives';
+import { Address } from 'tevm/primitives';
 
 // Send 1 ETH to address with empty calldata
 const frame = createFrame({

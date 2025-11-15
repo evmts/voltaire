@@ -55,8 +55,8 @@ The key advantage over `ADD` then `MOD` is that ADDMOD avoids intermediate overf
 ### Basic Modular Addition
 
 ```typescript
-import { addmod } from '@tevm/voltaire/evm/arithmetic';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { addmod } from 'tevm/evm/arithmetic';
+import { createFrame } from 'tevm/evm/Frame';
 
 // (5 + 10) % 3 = 15 % 3 = 0
 const frame = createFrame({ stack: [5n, 10n, 3n] });

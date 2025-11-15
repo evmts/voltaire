@@ -56,8 +56,8 @@ JUMP alters program flow by changing the program counter:
 ### Basic Jump
 
 ```typescript
-import { createFrame } from '@tevm/voltaire/evm/Frame';
-import { handler_0x56_JUMP } from '@tevm/voltaire/evm/control';
+import { createFrame } from 'tevm/evm/Frame';
+import { handler_0x56_JUMP } from 'tevm/evm/control';
 
 // Bytecode with JUMPDEST at position 5
 const bytecode = new Uint8Array([

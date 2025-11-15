@@ -48,8 +48,8 @@ Key characteristics:
 ### Basic Usage
 
 ```typescript
-import { calldatasize } from '@tevm/voltaire/evm/context';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { calldatasize } from 'tevm/evm/context';
+import { createFrame } from 'tevm/evm/Frame';
 
 const calldata = new Uint8Array(68); // selector + 2 uint256
 const frame = createFrame({ calldata, stack: [] });

@@ -50,8 +50,8 @@ All comparisons are unsigned. Values with bit 255 set are treated as large posit
 ### Basic Comparison
 
 ```typescript
-import { gt } from '@tevm/voltaire/evm/comparison';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { gt } from 'tevm/evm/comparison';
+import { createFrame } from 'tevm/evm/Frame';
 
 // 10 > 5 = 1 (true)
 const frame = createFrame({ stack: [10n, 5n] });

@@ -50,8 +50,8 @@ No exceptions are thrown for underflow. The result always fits in 256 bits.
 ### Basic Subtraction
 
 ```typescript
-import { sub } from '@tevm/voltaire/evm/arithmetic';
-import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { sub } from 'tevm/evm/arithmetic';
+import { createFrame } from 'tevm/evm/Frame';
 
 // 10 - 5 = 5
 const frame = createFrame({ stack: [10n, 5n] });
