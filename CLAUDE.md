@@ -122,11 +122,11 @@ bun run size                  # Bundle size analysis
 Data-first branded Uint8Arrays with tree-shakable namespace methods:
 
 ```typescript
-// Type def (BrandedAddress.ts)
-export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+// Type def (AddressType.ts)
+export type AddressType = Uint8Array & { readonly __tag: "Address" };
 
 // Internal method (toHex.js - NOTE .js extension!)
-export function toHex(data: BrandedAddress): Hex { ... }
+export function toHex(data: AddressType): Hex { ... }
 
 // Index: dual export (index.ts)
 export { toHex as _toHex } from "./toHex.js";   // Internal API
@@ -144,7 +144,7 @@ Address._toHex(addr)           // Advanced (internal, no conversion)
 
 ```
 Address/
-├── BrandedAddress.ts    # Type definition
+├── AddressType.ts    # Type definition
 ├── from.js              # Constructor (no wrapper needed)
 ├── toHex.js             # Internal method (this: Address)
 ├── equals.js            # Internal method

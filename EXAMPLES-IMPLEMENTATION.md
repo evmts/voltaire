@@ -315,10 +315,10 @@ This ensures:
 grep "export" src/primitives/Address/index.ts
 
 # Check method names
-ls src/primitives/Address/BrandedAddress/
+ls src/primitives/Address/AddressType/
 
 # Read tests for usage
-cat src/primitives/Address/BrandedAddress/*.test.ts
+cat src/primitives/Address/AddressType/*.test.ts
 ```
 
 ### Common Patterns

@@ -239,8 +239,8 @@ WASM instantiation & memory management (3+ files in src/wasm-loader/)
 For each primitive (e.g., Address):
 ```
 Address/
-├── BrandedAddress/
-│   ├── BrandedAddress.ts        # Type definition
+├── AddressType/
+│   ├── AddressType.ts        # Type definition
 │   ├── ChecksumAddress.test.ts   # Checksummed variant tests
 │   ├── LowercaseAddress.test.ts  # Lowercase variant tests
 │   ├── UppercaseAddress.test.ts  # Uppercase variant tests
@@ -297,16 +297,16 @@ Implementations:
 
 **TypeScript Pattern:**
 ```typescript
-// BrandedAddress.ts
-export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+// AddressType.ts
+export type AddressType = Uint8Array & { readonly __tag: "Address" };
 
 // from.ts - Constructor (no wrapper needed)
-export function from(value: string | Uint8Array): BrandedAddress {
+export function from(value: string | Uint8Array): AddressType {
   // Implementation
 }
 
 // toHex.ts - Internal method
-export function toHex(data: BrandedAddress): Hex {
+export function toHex(data: AddressType): Hex {
   // Implementation
 }
 
@@ -810,7 +810,7 @@ export * as Precompiles from "./evm/precompiles/precompiles.js";
 ### Example 1: Address Primitive
 ```
 /src/primitives/Address/
-├── BrandedAddress/BrandedAddress.ts      # Type definition
+├── AddressType/AddressType.ts      # Type definition
 ├── from.ts                                # Constructor
 ├── toHex.ts                               # Conversion
 ├── equals.ts                              # Comparison
