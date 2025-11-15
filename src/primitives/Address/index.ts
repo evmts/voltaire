@@ -109,7 +109,7 @@ export function Address(
 export function Address(
 	value: number | bigint | string | Uint8Array,
 	crypto?: AddressCrypto,
-): BrandedAddressType {
+): AddressType {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	// Store crypto deps on instance
@@ -127,42 +127,42 @@ export function Address(
 // Alias for Address()
 Address.from = (
 	value: number | bigint | string | Uint8Array,
-): BrandedAddressType => {
+): AddressType => {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.from.prototype = Address.prototype;
 
-Address.fromBase64 = (value: string): BrandedAddressType => {
+Address.fromBase64 = (value: string): AddressType => {
 	const result = BrandedAddress.fromBase64(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.fromBase64.prototype = Address.prototype;
 
-Address.fromHex = (value: string): BrandedAddressType => {
+Address.fromHex = (value: string): AddressType => {
 	const result = BrandedAddress.fromHex(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.fromHex.prototype = Address.prototype;
 
-Address.fromBytes = (value: Uint8Array): BrandedAddressType => {
+Address.fromBytes = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromBytes(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.fromBytes.prototype = Address.prototype;
 
-Address.fromNumber = (value: number | bigint): BrandedAddressType => {
+Address.fromNumber = (value: number | bigint): AddressType => {
 	const result = BrandedAddress.fromNumber(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.fromNumber.prototype = Address.prototype;
 
-Address.fromPublicKey = (x: bigint, y: bigint): BrandedAddressType => {
+Address.fromPublicKey = (x: bigint, y: bigint): AddressType => {
 	const result = BrandedAddress.fromPublicKey(x, y);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
@@ -171,14 +171,14 @@ Address.fromPublicKey.prototype = Address.prototype;
 
 export const fromPublicKey = Address.fromPublicKey;
 
-Address.fromPrivateKey = (value: Uint8Array): BrandedAddressType => {
+Address.fromPrivateKey = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromPrivateKey(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 Address.fromPrivateKey.prototype = Address.prototype;
 
-Address.fromAbiEncoded = (value: Uint8Array): BrandedAddressType => {
+Address.fromAbiEncoded = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromAbiEncoded(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
