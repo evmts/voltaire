@@ -1,4 +1,4 @@
-import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
+import type { PrivateKeyType } from "../PrivateKeyType.js";
 
 /**
  * Convert PrivateKey to hex string
@@ -11,6 +11,6 @@ import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
  * const hex = PrivateKey._toHex.call(pk);
  * ```
  */
-export function toHex(this: BrandedPrivateKey): string {
+export function toHex(this: PrivateKeyType): string {
 	return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }

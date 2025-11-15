@@ -7,13 +7,13 @@ export const SIZE = 32;
 
 /**
  * Zero Bytes32 constant (32 zero bytes)
- * @type {import('./BrandedBytes32.ts').BrandedBytes32}
+ * @type {import('./Bytes32Type.ts').Bytes32Type}
  */
 export const ZERO =
-	/** @type {import('./BrandedBytes32.ts').BrandedBytes32} */ (
+	/** @type {import('./Bytes32Type.ts').Bytes32Type} */ (
 		new Uint8Array(SIZE)
 	);
 
 /**
- * @typedef {import('./BrandedBytes32.ts').BrandedBytes32} BrandedBytes32
+ * @typedef {import('./Bytes32Type.ts').Bytes32Type} Bytes32Type
  */

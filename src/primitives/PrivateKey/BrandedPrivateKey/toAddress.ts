@@ -1,6 +1,6 @@
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import { Hash } from "../../Hash/index.js";
-import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
+import type { PrivateKeyType } from "../PrivateKeyType.js";
 import { toPublicKey } from "./toPublicKey.js";
 
 /**
@@ -14,7 +14,7 @@ import { toPublicKey } from "./toPublicKey.js";
  * const address = PrivateKey._toAddress.call(pk);
  * ```
  */
-export function toAddress(this: BrandedPrivateKey): BrandedAddress {
+export function toAddress(this: PrivateKeyType): BrandedAddress {
 	const publicKey = toPublicKey.call(this);
 	const hash = Hash.keccak256(publicKey);
 	// Take last 20 bytes of keccak256(publicKey) - use native slice

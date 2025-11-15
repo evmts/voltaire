@@ -4,7 +4,7 @@ import { InvalidLengthError } from "../../errors/ValidationError.js";
  * Create PrivateKey from raw bytes
  *
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
- * @returns {import('./BrandedPrivateKey.js').BrandedPrivateKey} Private key
+ * @returns {import('../PrivateKeyType.js').PrivateKeyType} Private key
  * @throws {InvalidLengthError} If bytes is not 32 bytes
  *
  * @example
@@ -27,7 +27,7 @@ export function fromBytes(bytes) {
 			},
 		);
 	}
-	return /** @type {import('./BrandedPrivateKey.js').BrandedPrivateKey} */ (
+	return /** @type {import('../PrivateKeyType.js').PrivateKeyType} */ (
 		new Uint8Array(bytes)
 	);
 }

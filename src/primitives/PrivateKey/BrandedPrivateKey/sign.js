@@ -8,7 +8,7 @@ export function Sign({ secp256k1Sign }) {
 	/**
 	 * Sign a message hash with private key
 	 *
-	 * @param {import('./BrandedPrivateKey.js').BrandedPrivateKey} privateKey - Private key (32 bytes)
+	 * @param {import('../PrivateKeyType.js').PrivateKeyType} privateKey - Private key (32 bytes)
 	 * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} hash - Message hash to sign
 	 * @returns {import('../../Signature/BrandedSignature/BrandedSignature.js').BrandedSignature} ECDSA signature
 	 *

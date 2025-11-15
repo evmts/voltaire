@@ -26,7 +26,7 @@ export interface AddressCrypto {
 /**
  * Base Address type without crypto-dependent methods
  */
-export interface BaseAddress extends BrandedAddressType {
+export interface BaseAddress extends AddressType {
 	toHex(): string;
 	toLowercase(): string;
 	toUppercase(): string;
@@ -34,12 +34,12 @@ export interface BaseAddress extends BrandedAddressType {
 	toAbiEncoded(): Uint8Array;
 	toShortHex(startLength?: number, endLength?: number): string;
 	isZero(): boolean;
-	equals(other: BrandedAddressType): boolean;
+	equals(other: AddressType): boolean;
 	toBytes(): Uint8Array;
-	clone(): BrandedAddressType;
-	compare(other: BrandedAddressType): number;
-	lessThan(other: BrandedAddressType): boolean;
-	greaterThan(other: BrandedAddressType): boolean;
+	clone(): AddressType;
+	compare(other: AddressType): number;
+	lessThan(other: AddressType): boolean;
+	greaterThan(other: AddressType): boolean;
 }
 
 /**
@@ -50,14 +50,14 @@ export interface AddressWithKeccak extends BaseAddress {
 	calculateCreate2Address(
 		salt: BrandedHash,
 		initCode: BrandedBytecode,
-	): BrandedAddressType;
+	): AddressType;
 }
 
 /**
  * Address with full crypto support (enables all contract address methods)
  */
 export interface AddressWithFullCrypto extends AddressWithKeccak {
-	calculateCreateAddress(nonce: bigint): BrandedAddressType;
+	calculateCreateAddress(nonce: bigint): AddressType;
 }
 
 /**
