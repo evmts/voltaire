@@ -46,7 +46,7 @@ Source: [types.ts:74-90](https://github.com/evmts/tevm/blob/main/src/primitives/
 ## Creating EIP-2930 Transactions
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Without access list (same cost as Legacy)
 const basic: Transaction.EIP2930 = {
@@ -172,7 +172,7 @@ const result = await provider.send('eth_createAccessList', [{
 ### Manual Construction
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Calculate storage slot for mapping
 function mapSlot(key: AddressType, slot: bigint): HashType {

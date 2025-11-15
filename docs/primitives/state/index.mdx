@@ -92,7 +92,7 @@ See [from](/primitives/state/from) for details.
 ### Basic Storage Operations
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 import * as Address from '@tevm/voltaire/Address';
 
 // Create storage key
@@ -110,7 +110,7 @@ const value = storage.get(State.StorageKey.toString(key)); // 1000000000n
 ### String Serialization
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 const key = State.StorageKey(contractAddress, 42n);
 
@@ -129,9 +129,9 @@ State.StorageKey.equals(key, parsed); // true
 ### Storage Slot Computation
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/crypto';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
+import { Keccak256 } from 'tevm/crypto';
 
 // USDC contract
 const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
@@ -159,7 +159,7 @@ const userBalanceKey = State.StorageKey(usdcAddress, computedSlot);
 ### Multi-Contract State
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // Track state across multiple contracts
 const stateDb = new Map<string, bigint>();
@@ -184,7 +184,7 @@ for (const [keyStr, value] of stateDb.entries()) {
 ### Type Guards
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 function processStorage(key: unknown) {
   if (State.StorageKey.is(key)) {
