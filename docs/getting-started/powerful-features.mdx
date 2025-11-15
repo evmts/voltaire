@@ -7,7 +7,7 @@ description: Unique features beyond standard Ethereum libraries
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
 
-Voltaire provides all standard features including primitive types (Address, Hash, Transaction, etc.), JSON-RPC provider, and cryptography. But we also offer **unique features not found in any other TypeScript-based Ethereum library**.
+Tevm provides all standard features including primitive types (Address, Hash, Transaction, etc.), JSON-RPC provider, and cryptography. But we also offer **unique features not found in any other TypeScript-based Ethereum library**.
 
 ## EVM Execution
 
@@ -16,8 +16,8 @@ Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate ga
 ### Simulate Transactions
 
 ```typescript
-import { createEvm } from '@tevm/voltaire/evm';
-import { Address } from '@tevm/voltaire/primitives';
+import { createEvm } from 'tevm/evm';
+import { Address } from 'tevm/primitives';
 
 const evm = createEvm({
   fork: {
@@ -116,7 +116,7 @@ Parse and analyze EVM bytecode without executing it. Essential for security anal
 ### Parse Instructions
 
 ```typescript
-import { Bytecode } from '@tevm/voltaire/primitives';
+import { Bytecode } from 'tevm/primitives';
 
 const bytecode = Bytecode('0x608060405234801561001057600080fd5b50...');
 
@@ -229,7 +229,7 @@ console.log('Runtime code hash:', codeHash);
 Create local forks of any Ethereum network for testing and simulation:
 
 ```typescript
-import { createEvm } from '@tevm/voltaire/evm';
+import { createEvm } from 'tevm/evm';
 
 // Fork mainnet at specific block
 const mainnetFork = createEvm({

@@ -5,11 +5,11 @@ description: 3x performance boosts for common cryptography, such as keccak256, w
 
 3x performance boosts for common cryptography, such as keccak256, with 100x performance improvements for EVM execution.
 
-Voltaire is built with high performance WASM implementations built in Zig for computationally expensive operations, along with regular JavaScript implementations where using WASM doesn't make as much sense, such as simple hex encoding.
+Tevm is built with high performance WASM implementations built in Zig for computationally expensive operations, along with regular JavaScript implementations where using WASM doesn't make as much sense, such as simple hex encoding.
 
 ## Implementation Options
 
-Voltaire provides multiple implementation choices:
+Tevm provides multiple implementation choices:
 
 1. **Default (WASM)** - Balanced performance and bundle size
 2. **WASM (explicit)** - Same as default, explicit import path
@@ -17,16 +17,16 @@ Voltaire provides multiple implementation choices:
 4. **Assembly** - Maximum speed using native assembly
 
 ```typescript
-import { keccak256 } from '@tevm/voltaire/crypto';        // Default (WASM)
-import { keccak256 } from '@tevm/voltaire/crypto/wasm';  // WASM (explicit)
-import { keccak256 } from '@tevm/voltaire/crypto/ts';    // TypeScript
-import { keccak256 } from '@tevm/voltaire/crypto/asm';   // Assembly
+import { keccak256 } from 'tevm/crypto';        // Default (WASM)
+import { keccak256 } from 'tevm/crypto/wasm';  // WASM (explicit)
+import { keccak256 } from 'tevm/crypto/ts';    // TypeScript
+import { keccak256 } from 'tevm/crypto/asm';   // Assembly
 ```
 
 The APIs are identical - you can swap implementations without changing your code. Start with the default WASM for balanced performance, switch to TypeScript when you need no WASM dependency, or use assembly for maximum raw performance.
 
 <Note>
-By default, Voltaire chooses what we believe to be the most balanced trade-offs between performance, bundle size, and other concerns like debuggability.
+By default, Tevm chooses what we believe to be the most balanced trade-offs between performance, bundle size, and other concerns like debuggability.
 </Note>
 
 <Warning>
