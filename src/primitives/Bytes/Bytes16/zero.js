@@ -5,7 +5,7 @@ import { SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @returns {import('./BrandedBytes16.ts').BrandedBytes16} Zero-filled Bytes16
+ * @returns {import('./Bytes16Type.ts').Bytes16Type} Zero-filled Bytes16
  * @example
  * ```javascript
  * import * as Bytes16 from './primitives/Bytes/Bytes16/index.js';
@@ -13,7 +13,7 @@ import { SIZE } from "./constants.js";
  * ```
  */
 export function zero() {
-	return /** @type {import('./BrandedBytes16.ts').BrandedBytes16} */ (
+	return /** @type {import('./Bytes16Type.ts').Bytes16Type} */ (
 		new Uint8Array(SIZE)
 	);
 }

@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes16.ts').BrandedBytes16} bytes - Value to check
+ * @param {import('./Bytes16Type.ts').Bytes16Type} bytes - Value to check
  * @returns {boolean} True if all zeros
  * @example
  * ```javascript

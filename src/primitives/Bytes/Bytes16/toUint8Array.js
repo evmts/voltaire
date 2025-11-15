@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes16.ts').BrandedBytes16} bytes - Bytes16 to convert
+ * @param {import('./Bytes16Type.ts').Bytes16Type} bytes - Bytes16 to convert
  * @returns {Uint8Array} Raw bytes
  * @example
  * ```javascript

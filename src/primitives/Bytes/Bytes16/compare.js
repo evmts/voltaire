@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes16.ts').BrandedBytes16} a - First value
- * @param {import('./BrandedBytes16.ts').BrandedBytes16} b - Second value
+ * @param {import('./Bytes16Type.ts').Bytes16Type} a - First value
+ * @param {import('./Bytes16Type.ts').Bytes16Type} b - Second value
  * @returns {number} -1 if a < b, 0 if equal, 1 if a > b
  * @example
  * ```javascript

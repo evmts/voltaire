@@ -7,7 +7,7 @@ import { fromHex } from "./fromHex.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
  * @param {string | Uint8Array} value - Hex string with optional 0x prefix or Uint8Array
- * @returns {import('./BrandedBytes16.ts').BrandedBytes16} Bytes16
+ * @returns {import('./Bytes16Type.ts').Bytes16Type} Bytes16
  * @throws {Error} If input is invalid or wrong length
  * @example
  * ```javascript

@@ -7,7 +7,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 16 bytes)
- * @returns {import('./BrandedBytes16.ts').BrandedBytes16} Bytes16
+ * @returns {import('./Bytes16Type.ts').Bytes16Type} Bytes16
  * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript
@@ -28,7 +28,7 @@ export function fromBytes(bytes) {
 			},
 		);
 	}
-	return /** @type {import('./BrandedBytes16.ts').BrandedBytes16} */ (
+	return /** @type {import('./Bytes16Type.ts').Bytes16Type} */ (
 		new Uint8Array(bytes)
 	);
 }
