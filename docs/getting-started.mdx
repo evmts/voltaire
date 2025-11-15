@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Learn the core patterns and architecture of Voltaire
+description: Learn the core patterns and architecture of Tevm
 ---
 
 <Warning>
@@ -9,7 +9,7 @@ description: Learn the core patterns and architecture of Voltaire
 
 # Getting Started
 
-Voltaire is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities. This guide will teach you the core concepts and patterns that make Voltaire different.
+Tevm is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities. This guide will teach you the core concepts and patterns that make Tevm different.
 
 ## Prerequisites
 
@@ -26,39 +26,39 @@ New to Ethereum? Check out [ethereum.org/developers](https://ethereum.org/en/dev
 <Tabs>
   <Tab title="npm">
     ```bash
-    npm install @tevm/voltaire
+    npm install tevm
     ```
   </Tab>
   <Tab title="bun">
     ```bash
-    bun add @tevm/voltaire
+    bun add tevm
     ```
   </Tab>
   <Tab title="pnpm">
     ```bash
-    pnpm add @tevm/voltaire
+    pnpm add tevm
     ```
   </Tab>
   <Tab title="yarn">
     ```bash
-    yarn add @tevm/voltaire
+    yarn add tevm
     ```
   </Tab>
 </Tabs>
 
 ## Quick Start (5 Minutes)
 
-Let's build a simple example that demonstrates Voltaire's core capabilities: hashing, signing, and address validation.
+Let's build a simple example that demonstrates Tevm's core capabilities: hashing, signing, and address validation.
 
 ### 1. Create a new file `example.ts`
 
 <Tabs>
   <Tab title="Node.js/Bun">
     ```typescript
-    import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+    import { Keccak256, Secp256k1, Address } from "tevm";
 
     // Hash a message
-    const message = "Welcome to Voltaire";
+    const message = "Welcome to Tevm";
     const messageHash = Keccak256.hash(message);
     console.log("Message hash:", messageHash);
 
@@ -81,10 +81,10 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
   </Tab>
   <Tab title="Browser (Vite)">
     ```typescript
-    import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+    import { Keccak256, Secp256k1, Address } from "tevm";
 
     // Hash a message
-    const message = "Welcome to Voltaire";
+    const message = "Welcome to Tevm";
     const messageHash = Keccak256.hash(message);
     document.body.innerHTML += `<p>Hash: ${messageHash}</p>`;
 
@@ -133,11 +133,11 @@ Signer address: 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
 Signature valid: true
 ```
 
-You've just hashed data, signed a message, and recovered an Ethereum address using Voltaire.
+You've just hashed data, signed a message, and recovered an Ethereum address using Tevm.
 
 ## Core Architecture
 
-Voltaire uses a **data-first architecture** with two complementary APIs:
+Tevm uses a **data-first architecture** with two complementary APIs:
 
 1. **Branded Types with Namespaced Methods** — Tree-shakeable, zero-overhead primitives
 2. **Class APIs** — Convenient wrappers for familiar OOP patterns
@@ -146,14 +146,14 @@ Both APIs operate on the same underlying data, giving you flexibility to choose 
 
 ## Branded Types Pattern
 
-At the core of Voltaire are **branded primitives** — native JavaScript types (Uint8Array, bigint, string) with TypeScript brands for type safety.
+At the core of Tevm are **branded primitives** — native JavaScript types (Uint8Array, bigint, string) with TypeScript brands for type safety.
 
 ### What is a Branded Type?
 
 A branded type is a primitive with a compile-time tag that prevents mixing incompatible values:
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
+import type { brand } from 'tevm/brand';
 
 // Branded type definition
 type Address = Uint8Array & { readonly [brand]: "Address" };
@@ -173,10 +173,10 @@ const hash: Keccak256Hash = someAddress;     // ❌ Type error
 
 ## Class API Pattern
 
-For familiar OOP ergonomics, Voltaire provides class wrappers:
+For familiar OOP ergonomics, Tevm provides class wrappers:
 
 ```typescript
-import { Address } from "@tevm/voltaire";
+import { Address } from "tevm";
 
 // Constructor accepts multiple formats
 const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
@@ -199,7 +199,7 @@ The Class API provides all you need for most use cases with familiar OOP pattern
 
 ## Method Naming Convention
 
-Voltaire follows consistent naming patterns across all types:
+Tevm follows consistent naming patterns across all types:
 
 ### Construction
 - `Type.from(value)` — Universal constructor (accepts multiple formats)
@@ -227,7 +227,7 @@ Voltaire follows consistent naming patterns across all types:
 ### Working with Addresses
 
 ```typescript
-import { Address } from "@tevm/voltaire";
+import { Address } from "tevm";
 
 // Create from hex
 const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
@@ -247,7 +247,7 @@ const contractAddr = deployer.calculateCreateAddress(0n);
 ### Working with Hashes
 
 ```typescript
-import { Keccak256, Hex } from "@tevm/voltaire";
+import { Keccak256, Hex } from "tevm";
 
 // Hash data
 const data = Hex("0x010203");
@@ -264,7 +264,7 @@ Keccak256.equals(hash, hash2); // true
 ### Working with Uint256
 
 ```typescript
-import { Uint } from "@tevm/voltaire";
+import { Uint } from "tevm";
 
 // Create from various formats
 const a = Uint(100n);
@@ -287,7 +287,7 @@ const hex = Uint.toHex(sum); // "0x0000...0163"
 ### Working with Transactions
 
 ```typescript
-import { Transaction, Hex } from "@tevm/voltaire";
+import { Transaction, Hex } from "tevm";
 
 // EIP-1559 transaction
 const tx: Transaction.EIP1559 = {
@@ -318,11 +318,11 @@ const sender = Transaction(tx);
 
 ## Type Safety
 
-Voltaire provides opt-in type safety through branded types:
+Tevm provides opt-in type safety through branded types:
 
 ```typescript
-import type { AddressType } from "@tevm/voltaire/Address";
-import type { Keccak256Hash } from "@tevm/voltaire/Keccak256";
+import type { AddressType } from "tevm/Address";
+import type { Keccak256Hash } from "tevm/Keccak256";
 
 function processAddress(addr: AddressType) {
   // TypeScript ensures addr is a valid Address
@@ -344,7 +344,7 @@ processHash(addr);     // ❌ Type error
 
 ## Performance
 
-Voltaire is optimized for performance:
+Tevm is optimized for performance:
 
 - **Zero overhead abstractions** — Branded types compile to primitives
 - **Tree-shaking** — Only bundle what you use
@@ -359,7 +359,7 @@ Now let's build something practical: create and sign an EIP-1559 transaction.
 ### 1. Create a transaction
 
 ```typescript
-import { Transaction, Address, Hex } from "@tevm/voltaire";
+import { Transaction, Address, Hex } from "tevm";
 
 const tx = {
   type: 2, // EIP-1559
@@ -377,7 +377,7 @@ const tx = {
 ### 2. Sign the transaction
 
 ```typescript
-import { Secp256k1 } from "@tevm/voltaire";
+import { Secp256k1 } from "tevm";
 
 // Your private key (NEVER share or commit this!)
 const privateKey = "0x...";
@@ -390,7 +390,7 @@ console.log("Signed transaction:", signedTx);
 ### 3. Serialize for broadcasting
 
 ```typescript
-import { Hex } from "@tevm/voltaire";
+import { Hex } from "tevm";
 
 // Serialize to RLP-encoded bytes
 const serialized = Transaction.serialize(signedTx);
@@ -428,11 +428,11 @@ Make sure you're using the correct import paths:
 
 ```typescript
 // ✅ Correct
-import { Address } from "@tevm/voltaire";
-import { AddressType } from "@tevm/voltaire/Address";
+import { Address } from "tevm";
+import { AddressType } from "tevm/Address";
 
 // ❌ Wrong
-import { Address } from "@tevm/voltaire/primitives/Address";
+import { Address } from "tevm/primitives/Address";
 ```
 
 Check your `tsconfig.json` has `"moduleResolution": "bundler"` or `"node16"`.
@@ -456,7 +456,7 @@ const addr = AddressType("0x...");
 If using WASM modules, make sure to await initialization:
 
 ```typescript
-import { Keccak256Wasm } from "@tevm/voltaire/crypto/keccak256.wasm";
+import { Keccak256Wasm } from "tevm/crypto/keccak256.wasm";
 
 // Must initialize before use
 await Keccak256Wasm.init();
@@ -471,10 +471,10 @@ Use tree-shakeable imports to reduce bundle size:
 
 ```typescript
 // ❌ Imports entire Address class (~18 KB)
-import { Address } from "@tevm/voltaire";
+import { Address } from "tevm";
 
 // ✅ Only imports specific functions (~500 bytes)
-import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
+import { fromHex, toChecksummed } from "tevm/Address";
 ```
 
 ## Migration Guides
@@ -488,8 +488,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { getAddress } from "ethers";
     const addr = getAddress("0xa0cf...");
 
-    // Voltaire
-    import { Address } from "@tevm/voltaire";
+    // Tevm
+    import { Address } from "tevm";
     const addr = Address("0xa0cf...");
     const checksum = addr.toChecksummed();
     ```
@@ -501,8 +501,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { keccak256, toUtf8Bytes } from "ethers";
     const hash = keccak256(toUtf8Bytes("hello"));
 
-    // Voltaire
-    import { Keccak256 } from "@tevm/voltaire";
+    // Tevm
+    import { Keccak256 } from "tevm";
     const hash = Keccak256.hash("hello");
     ```
   </Tab>
@@ -514,8 +514,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     const wallet = new Wallet(privateKey);
     const sig = await wallet.signMessage("hello");
 
-    // Voltaire
-    import { Keccak256, Secp256k1 } from "@tevm/voltaire";
+    // Tevm
+    import { Keccak256, Secp256k1 } from "tevm";
     const hash = Keccak256.hash("hello");
     const sig = Secp256k1.sign(hash, privateKey);
     ```
@@ -532,8 +532,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
       // ...
     });
 
-    // Voltaire
-    import { Transaction } from "@tevm/voltaire";
+    // Tevm
+    import { Transaction } from "tevm";
     const signed = Transaction.sign({
       type: 2,
       to: Address("0x..."),
@@ -554,8 +554,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { getAddress } from "viem";
     const addr = getAddress("0xa0cf...");
 
-    // Voltaire
-    import { Address } from "@tevm/voltaire";
+    // Tevm
+    import { Address } from "tevm";
     const addr = Address("0xa0cf...");
     ```
   </Tab>
@@ -566,8 +566,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { keccak256 } from "viem";
     const hash = keccak256("0x...");
 
-    // Voltaire
-    import { Keccak256 } from "@tevm/voltaire";
+    // Tevm
+    import { Keccak256 } from "tevm";
     const hash = Keccak256.hash("0x...");
     ```
   </Tab>
@@ -582,8 +582,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
       args: [address, amount],
     });
 
-    // Voltaire
-    import { Abi } from "@tevm/voltaire";
+    // Tevm
+    import { Abi } from "tevm";
     const data = Abi.encodeFunction(
       { name: "transfer", inputs: [...] },
       [address, amount]
@@ -601,8 +601,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { toChecksumAddress } from "web3-utils";
     const addr = toChecksumAddress("0xa0cf...");
 
-    // Voltaire
-    import { Address } from "@tevm/voltaire";
+    // Tevm
+    import { Address } from "tevm";
     const addr = Address("0xa0cf...");
     const checksum = addr.toChecksummed();
     ```
@@ -614,8 +614,8 @@ import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
     import { sha3 } from "web3-utils";
     const hash = sha3("hello");
 
-    // Voltaire
-    import { Keccak256 } from "@tevm/voltaire";
+    // Tevm
+    import { Keccak256 } from "tevm";
     const hash = Keccak256.hash("hello");
     ```
   </Tab>
