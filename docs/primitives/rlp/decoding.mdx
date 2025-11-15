@@ -56,11 +56,11 @@ type BrandedRlp =
 - `Error('RecursionDepthExceeded')` - Nested too deeply (max 32)
 - `Error('UnexpectedInput')` - Invalid data format
 
-Source: [decode.js:36-51](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L36-L51)
+Source: [decode.js:36-51](https://github.com/evmts/tevm/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L36-L51)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Decode single value
 const bytes = new Uint8Array([0x83, 1, 2, 3])
@@ -128,7 +128,7 @@ RLP decoder uses the first byte (prefix) to determine data type and length:
 Bytes with value < 0x80 encode as themselves:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const encoded = new Uint8Array([0x7f])
 const result = Rlp.decode(encoded)
@@ -144,7 +144,7 @@ const result = Rlp.decode(zero)
 Length encoded in prefix: `length = prefix - 0x80`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty string
 const empty = new Uint8Array([0x80])
@@ -168,7 +168,7 @@ const result = Rlp.decode(max)
 Length-of-length encoding: `lengthOfLength = prefix - 0xb7`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // 56-byte string (minimum long form)
 const min = new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)])
@@ -190,7 +190,7 @@ const result = Rlp.decode(large)
 Total payload length in prefix: `length = prefix - 0xc0`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty list
 const empty = new Uint8Array([0xc0])
@@ -224,7 +224,7 @@ const result = Rlp.decode(strings)
 Length-of-length encoding: `lengthOfLength = prefix - 0xf7`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // List with 60 bytes total payload
 const items = Array(30).fill([0x01, 0x02]).flat()
@@ -247,7 +247,7 @@ const result = Rlp.decode(large)
 Decode transaction bytes and extract fields:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Legacy transaction RLP
 const txBytes = new Uint8Array([...])  // RLP-encoded transaction
@@ -271,7 +271,7 @@ if (result.data.type === 'list') {
 Flatten nested lists to extract all byte values:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const nested = new Uint8Array([...])  // Deeply nested RLP
 const result = Rlp.decode(nested)
@@ -290,7 +290,7 @@ for (const item of allBytes) {
 Decode multiple RLP values from a stream:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function* decodeStream(bytes: Uint8Array) {
   let remainder = bytes
@@ -315,7 +315,7 @@ for (const data of decodeStream(stream)) {
 Decode with validation and type checking:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function decodeTransaction(bytes: Uint8Array) {
   const result = Rlp.decode(bytes)
@@ -348,7 +348,7 @@ RLP decoder enforces canonical encoding rules to prevent malleability:
 Single bytes < 0x80 must not have a length prefix:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Invalid: single byte 0x7f with prefix
 const invalid = new Uint8Array([0x81, 0x7f])
@@ -369,7 +369,7 @@ const result = Rlp.decode(valid)  // OK
 Strings < 56 bytes must use short form:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Invalid: 3-byte string using long form
 const invalid = new Uint8Array([0xb8, 0x03, 1, 2, 3])
@@ -390,7 +390,7 @@ const result = Rlp.decode(valid)  // OK
 Length encodings must not have leading zeros:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Invalid: length with leading zero
 const invalid = new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)])
@@ -411,7 +411,7 @@ const result = Rlp.decode(valid)  // OK
 Declared length must match actual data:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Invalid: declared 5 bytes but only 3 provided
 const invalid = new Uint8Array([0x85, 1, 2, 3])
@@ -436,7 +436,7 @@ try {
 Comprehensive error handling for malformed input:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty input
 try {
@@ -501,7 +501,7 @@ try {
 Maximum recursion depth is 32 to prevent stack overflow:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // This is fine (depth = 3)
 const shallow = [[[new Uint8Array([1])]]]
@@ -526,7 +526,7 @@ try {
 Use stream mode to avoid re-parsing when decoding multiple values:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Inefficient: decode + re-decode remainder
 const data = new Uint8Array([0x01, 0x02, 0x03])
@@ -571,7 +571,7 @@ Validation ensures malformed RLP can't cause issues downstream. The performance 
 Decode and re-encode produces identical bytes (for canonical input):
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Original data
 const original = new Uint8Array([0x83, 1, 2, 3])
@@ -597,7 +597,7 @@ console.log(bytesEqual(original, reencoded))  // true
 Non-canonical input will be normalized on re-encoding:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // This would fail to decode (non-canonical)
 // But if we had non-canonical that somehow got through:

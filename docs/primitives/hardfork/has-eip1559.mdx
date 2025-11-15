@@ -39,7 +39,7 @@ description: Check if EIP-1559 base fee mechanism is available
 Choose appropriate transaction format:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function buildTransaction(fork: BrandedHardfork, params: TxParams) {
   if (fork.hasEIP1559()) {
@@ -62,7 +62,7 @@ function buildTransaction(fork: BrandedHardfork, params: TxParams) {
 Calculate effective gas price:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function calculateGasPrice(
   fork: BrandedHardfork,
@@ -83,7 +83,7 @@ function calculateGasPrice(
 Configure fee market parameters:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getFeeMarketConfig(fork: BrandedHardfork) {
   if (fork.hasEIP1559()) {
@@ -103,7 +103,7 @@ function getFeeMarketConfig(fork: BrandedHardfork) {
 Check BASEFEE opcode support:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getBaseFeeOpcode(fork: BrandedHardfork): number | null {
   if (fork.hasEIP1559()) {
@@ -119,7 +119,7 @@ function getBaseFeeOpcode(fork: BrandedHardfork): number | null {
 Validate network supports EIP-1559:
 
 ```typescript
-import { Hardfork, LONDON } from '@tevm/voltaire'
+import { Hardfork, LONDON } from 'tevm'
 
 function validateEIP1559Support(config: NetworkConfig) {
   const fork = Hardfork(config.hardfork)

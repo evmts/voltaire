@@ -24,7 +24,7 @@ RLP validation checks:
 ### Valid Examples
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Single byte < 0x80
 Rlp.validate(new Uint8Array([0x7f]))
@@ -55,7 +55,7 @@ Rlp.validate(new Uint8Array([0xc2, 0x01, 0x02]))
 ### Invalid Examples
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Incomplete data
 Rlp.validate(new Uint8Array([0x83, 1]))
@@ -89,7 +89,7 @@ Rlp.validate(new Uint8Array([0x01, 0x02]))
 Validate before decoding:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function safelyDecode(bytes: Uint8Array) {
   if (!Rlp.validate(bytes)) {
@@ -112,7 +112,7 @@ try {
 Validate transaction bytes before processing:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function validateTransaction(txBytes: Uint8Array): boolean {
   // First check if valid RLP
@@ -145,7 +145,7 @@ if (validateTransaction(tx)) {
 Validate API inputs:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 interface ApiRequest {
   rlpData: string  // Hex-encoded RLP
@@ -171,7 +171,7 @@ function handleRequest(req: ApiRequest): Response {
 Validate multiple RLP values:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function validateBatch(items: Uint8Array[]): boolean[] {
   return items.map(item => Rlp.validate(item))
@@ -195,7 +195,7 @@ console.log(`All valid: ${allValid}`)
 Validate stored RLP data:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 class RlpStorage {
   private store = new Map<string, Uint8Array>()
@@ -250,7 +250,7 @@ function validate(data: Uint8Array): boolean {
 - Cached results
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Trusted: just encoded
 const data = [new Uint8Array([1]), new Uint8Array([2])]
@@ -270,7 +270,7 @@ if (Rlp.validate(networkData)) {
 `validate` never throws, always returns boolean:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Safe for any input
 const result1 = Rlp.validate(Bytes())
@@ -292,7 +292,7 @@ try {
 ### 1. Length Consistency
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Declared 3 bytes, provided 3 bytes
 Rlp.validate(new Uint8Array([0x83, 1, 2, 3]))
@@ -306,7 +306,7 @@ Rlp.validate(new Uint8Array([0x83, 1]))
 ### 2. Canonical Encoding
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Canonical: single byte as-is
 Rlp.validate(new Uint8Array([0x7f]))
@@ -320,7 +320,7 @@ Rlp.validate(new Uint8Array([0x81, 0x7f]))
 ### 3. No Leading Zeros
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Valid: minimal length encoding
 Rlp.validate(new Uint8Array([0xb8, 56, ...Array(56).fill(0x42)]))
@@ -334,7 +334,7 @@ Rlp.validate(new Uint8Array([0xb9, 0x00, 0x38, ...Array(56).fill(0x42)]))
 ### 4. Depth Limits
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Valid: depth 3
 const shallow = [[[new Uint8Array([1])]]]
@@ -355,7 +355,7 @@ Rlp.validate(encoded)
 ### 5. Proper Prefix Ranges
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Valid prefixes:
 // 0x00-0x7f: single byte

@@ -16,7 +16,7 @@ description: Check if hardfork is strictly greater than target (alias for isAfte
 `gt` mimics the `>` operator for clearer code:
 
 ```typescript
-import { CANCUN, LONDON } from '@tevm/voltaire'
+import { CANCUN, LONDON } from 'tevm'
 
 // Operator-style (reads like > operator)
 if (CANCUN.gt(LONDON)) {
@@ -34,7 +34,7 @@ if (CANCUN.isAfter(LONDON)) {
 ### Version Detection
 
 ```typescript
-import { Hardfork, CANCUN } from '@tevm/voltaire'
+import { Hardfork, CANCUN } from 'tevm'
 
 const fork = Hardfork(config.hardfork)
 
@@ -46,7 +46,7 @@ if (fork.gt(CANCUN)) {
 ### Network Configuration
 
 ```typescript
-import { Hardfork, PRAGUE } from '@tevm/voltaire'
+import { Hardfork, PRAGUE } from 'tevm'
 
 function isExperimental(fork: BrandedHardfork): boolean {
   return fork.gt(PRAGUE)
@@ -66,7 +66,7 @@ LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16) < PRAGUE (17)
 Returns false when versions are equal:
 
 ```typescript
-import { CANCUN } from '@tevm/voltaire'
+import { CANCUN } from 'tevm'
 
 CANCUN.gt(CANCUN)  // false - not strictly greater
 ```

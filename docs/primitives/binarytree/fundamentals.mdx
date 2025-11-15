@@ -37,7 +37,7 @@ A binary merkle tree stores data in **leaf nodes** and hashes pairs of nodes upw
 The beacon chain uses **Simple Serialize (SSZ)** with binary merkle trees for all consensus data:
 
 ```typescript
-import { Bytecode } from '@tevm/voltaire';
+import { Bytecode } from 'tevm';
 
 // SSZ uses generalized merkle trees
 // Example: BeaconBlock structure is merkleized
@@ -55,7 +55,7 @@ const blockRoot = computeBeaconBlockRoot(beaconBlock);
 EIP-7864 proposes **Binary State Tree** to replace the Patricia Merkle Tree for Ethereum state:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire';
+import { BinaryTree } from 'tevm';
 
 const tree = BinaryTree.init();
 
@@ -80,7 +80,7 @@ const rootHash = BinaryTree.rootHash(tree2);
 Leaves store raw data values. Each leaf is hashed:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 const leafData = new Uint8Array([0x42, 0x43, 0x44]);
 const leafHash = Keccak256.hash(leafData);
@@ -92,7 +92,7 @@ const leafHash = Keccak256.hash(leafData);
 Internal nodes hash their two children:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 // Hash left and right child hashes together
 function hashParent(left: Uint8Array, right: Uint8Array): Uint8Array {
@@ -108,7 +108,7 @@ const parentHash = hashParent(leftChildHash, rightChildHash);
 ### Complete Tree Construction
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 // Build tree from 4 data values
 const leaves = [
@@ -168,7 +168,7 @@ Verification:
 ### Generate Proof
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 function generateProof(
   leaves: Uint8Array[],
@@ -218,7 +218,7 @@ console.log(`Proof size: ${proof.length} hashes`); // 2 hashes for 4 leaves
 ### Verify Proof
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 function verifyProof(
   leaf: Uint8Array,
@@ -256,7 +256,7 @@ console.log(`Proof valid: ${isValid}`); // true
 ## Complete Example: Build, Prove, Verify
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from 'tevm';
 
 // 1. Build tree from data
 const data = [

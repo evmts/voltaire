@@ -15,7 +15,7 @@ Disassemble bytecode into array of formatted assembly strings.
 
 <Tab title="Functional API">
 ```typescript
-import { disassemble } from '@tevm/voltaire/Opcode'
+import { disassemble } from 'tevm/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x01,  // PUSH1 1
@@ -51,7 +51,7 @@ Each line format: `"<offset>: <mnemonic> [immediate]"`
 ### Print Contract Disassembly
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 function printDisassembly(bytecode: Uint8Array): void {
   const lines = Opcode.disassemble(bytecode)

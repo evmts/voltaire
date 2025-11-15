@@ -19,7 +19,7 @@ Takes **lower 160 bits** (20 bytes) of input value. Higher bits are discarded.
 
 **Examples:**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Value fits in 160 bits - no truncation
 const fits = 0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n
@@ -41,7 +41,7 @@ console.log(addr2.toHex())
 Generate sequential addresses for testing:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const testAddresses = Array({ length: 10 }, (_, i) =>
   Address(i + 1)
@@ -57,7 +57,7 @@ testAddresses.forEach((addr, i) => {
 Perform arithmetic on addresses:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function nextAddress(addr: Address): Address {
   const n = addr.toU256()
@@ -75,7 +75,7 @@ console.log(next.toHex())  // "0x...0065"
 Convert between numeric and address representations:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Numeric to address
 const num = 0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n
@@ -91,7 +91,7 @@ console.log(num === backToNum) // true
 Create predictable test addresses:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const TEST_ADDRESSES = {
   ZERO: Address(0n),
@@ -122,7 +122,7 @@ Address(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n) // ✓ Safe
 ## Error Handling
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Valid values
 console.log(Address(0n))    // ✓ Zero address
@@ -148,7 +148,7 @@ try {
 Values larger than 160 bits are **truncated** (not an error):
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // 256-bit value (Hash-sized)
 const hash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn
@@ -165,7 +165,7 @@ console.log(addr.toHex())
 ## Comparison with Other Constructors
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const value = 69n
 

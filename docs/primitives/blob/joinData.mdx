@@ -26,7 +26,7 @@ Result: chunk_1 + chunk_2 + chunk_3
 ### Manual Join
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const blobs = Blob.splitData(data);
 
@@ -49,7 +49,7 @@ console.log(Blob.equals(result, auto)); // true
 ## Round-Trip Verification
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 function verifyRoundTrip(data: Uint8Array) {
   // Split
@@ -79,7 +79,7 @@ verifyRoundTrip(new Uint8Array(300_000));
 ## Error Handling
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Invalid blob size
 try {
@@ -102,7 +102,7 @@ try {
 ## Empty Array
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Empty array returns empty data
 const result = Blob.joinData([]);

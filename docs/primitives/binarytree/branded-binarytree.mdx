@@ -48,7 +48,7 @@ export type Node =
 
 Runtime-validated tree structure. Interface brand ensures type safety with minimal runtime overhead.
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts)
 
 ## Available Functions
 
@@ -57,7 +57,7 @@ All BinaryTree functionality available as tree-shakeable functions:
 ### Constructor
 
 ```typescript
-import { init } from '@tevm/voltaire/BrandedBinaryTree'
+import { init } from 'tevm/BrandedBinaryTree'
 
 const tree = init()
 // Returns: { root: { type: "empty" } }
@@ -68,7 +68,7 @@ See [Constructors](/primitives/binarytree/constructors) for details.
 ### Operations
 
 ```typescript
-import { init, insert, get } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, get } from 'tevm/BrandedBinaryTree'
 
 let tree = init()
 
@@ -91,7 +91,7 @@ import {
   hashInternal,
   hashStem,
   hashLeaf
-} from '@tevm/voltaire/BrandedBinaryTree'
+} from 'tevm/BrandedBinaryTree'
 
 // Root hash
 const hash = rootHash(tree) // Uint8Array (32 bytes)
@@ -115,7 +115,7 @@ import {
   addressToKey,
   splitKey,
   getStemBit
-} from '@tevm/voltaire/BrandedBinaryTree'
+} from 'tevm/BrandedBinaryTree'
 
 // Address to key (20 bytes → 32 bytes)
 const key = addressToKey(address)
@@ -150,7 +150,7 @@ BinaryTree.rootHash(tree)
 This enables functional composition and partial application:
 
 ```typescript
-import { init, insert, rootHash, rootHashHex } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, rootHash, rootHashHex } from 'tevm/BrandedBinaryTree'
 
 // Function composition
 const insertAndHash = (tree, key, value) => {
@@ -183,7 +183,7 @@ Primary benefit: **Selective inclusion of hash functions**
 ### Example 1: Minimal Bundle (No Hashing)
 
 ```typescript
-import { init, insert, get } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, get } from 'tevm/BrandedBinaryTree'
 
 let tree = init()
 tree = insert(tree, key, value)
@@ -195,7 +195,7 @@ const retrieved = get(tree, key)
 ### Example 2: With Root Hash (BLAKE3 Only)
 
 ```typescript
-import { init, insert, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, rootHash } from 'tevm/BrandedBinaryTree'
 
 let tree = init()
 tree = insert(tree, key, value)
@@ -207,7 +207,7 @@ const hash = rootHash(tree)
 ### Example 3: With Hex Conversion
 
 ```typescript
-import { init, insert, rootHashHex } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, rootHashHex } from 'tevm/BrandedBinaryTree'
 
 let tree = init()
 tree = insert(tree, key, value)
@@ -219,7 +219,7 @@ const hex = rootHashHex(tree)
 ### Example 4: BinaryTree Factory (Everything)
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const tree = BinaryTree()
 ```
@@ -264,8 +264,8 @@ const tree = BinaryTree()
 BrandedBinaryTree and BinaryTree are fully compatible:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
-import { insert, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
+import { BinaryTree } from 'tevm'
+import { insert, rootHash } from 'tevm/BrandedBinaryTree'
 
 // Factory creates compatible structure
 const tree = BinaryTree()
@@ -285,7 +285,7 @@ import {
   InvalidAddressLengthError,
   InvalidKeyLengthError,
   InvalidTreeStateError
-} from '@tevm/voltaire/BrandedBinaryTree'
+} from 'tevm/BrandedBinaryTree'
 
 // Address validation
 try {
@@ -320,7 +320,7 @@ try {
 ### Immutable Updates
 
 ```typescript
-import { init, insert } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert } from 'tevm/BrandedBinaryTree'
 
 const updateTree = (tree, updates) => {
   let result = tree
@@ -344,7 +344,7 @@ console.log(tree2.root.type) // 'stem'
 ### Composition
 
 ```typescript
-import { init, insert, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, rootHash } from 'tevm/BrandedBinaryTree'
 
 const pipe = (...fns) => (x) => fns.reduce((v, f) => f(v), x)
 
@@ -360,7 +360,7 @@ const hash = createAndHash()
 ### Currying
 
 ```typescript
-import { insert, get } from '@tevm/voltaire/BrandedBinaryTree'
+import { insert, get } from 'tevm/BrandedBinaryTree'
 
 // Curry insert for specific key
 const insertAtKey = (key) => (tree, value) => insert(tree, key, value)
@@ -380,7 +380,7 @@ const retrieved = getAccountData(tree)
 ### Higher-Order Functions
 
 ```typescript
-import { init, insert, get } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, get } from 'tevm/BrandedBinaryTree'
 
 // Map over entries
 function insertAll(tree, entries) {
@@ -415,14 +415,14 @@ import type {
   LeafNode,
   EmptyNode,
   AccountData
-} from '@tevm/voltaire/BrandedBinaryTree'
+} from 'tevm/BrandedBinaryTree'
 
 import {
   init,
   insert,
   get,
   rootHash
-} from '@tevm/voltaire/BrandedBinaryTree'
+} from 'tevm/BrandedBinaryTree'
 
 // Type-safe tree operations
 const tree: BinaryTree = init()
@@ -447,13 +447,13 @@ if (isStemNode(tree.root)) {
 
 ```typescript
 // Minimal (no BLAKE3): ~2-3KB
-import { init, insert, get, addressToKey, splitKey } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, get, addressToKey, splitKey } from 'tevm/BrandedBinaryTree'
 
 // With hashing (includes BLAKE3): ~10-15KB
-import { init, insert, rootHash, rootHashHex } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert, rootHash, rootHashHex } from 'tevm/BrandedBinaryTree'
 
 // Factory (all methods): ~15-20KB
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 ```
 
 ### Runtime Performance
@@ -474,7 +474,7 @@ console.log(JSON.stringify(tree1) === JSON.stringify(tree2)) // true
 Functional API encourages immutability, creating new tree instances:
 
 ```typescript
-import { init, insert } from '@tevm/voltaire/BrandedBinaryTree'
+import { init, insert } from 'tevm/BrandedBinaryTree'
 
 let tree = init()
 

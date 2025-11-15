@@ -35,7 +35,7 @@ function serialize(tx: Any): Uint8Array
 ### Usage
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Serialize EIP-1559 transaction
 const tx: Transaction.EIP1559 = {
@@ -79,7 +79,7 @@ const legacySerialized = Transaction.serialize(legacy)
 //             RLP list (no type prefix)
 ```
 
-Source: [serialize.ts:11-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/serialize.ts#L11-L26)
+Source: [serialize.ts:11-26](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/serialize.ts#L11-L26)
 
 ## deserialize
 
@@ -107,7 +107,7 @@ Transaction object (type depends on transaction type in data)
 ### Usage
 
 ```typescript
-import { deserialize } from '@tevm/voltaire/Transaction'
+import { deserialize } from 'tevm/Transaction'
 
 // Deserialize from network
 const data = new Uint8Array([0x02, 0xf8, 0x6c, ...])
@@ -124,7 +124,7 @@ const legacyTx = deserialize(legacyData)
 console.log('Gas price:', legacyTx.gasPrice)
 ```
 
-Source: [deserialize.ts:12-28](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/deserialize.ts#L12-L28)
+Source: [deserialize.ts:12-28](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/deserialize.ts#L12-L28)
 
 ## Serialization Format
 
@@ -210,7 +210,7 @@ rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])
 function serialize(tx: BrandedTransactionLegacy): Uint8Array
 
 // Usage
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 const bytes = Legacy.serialize.call(legacyTx)
 ```
 
@@ -220,7 +220,7 @@ const bytes = Legacy.serialize.call(legacyTx)
 function serialize(tx: BrandedTransactionEIP1559): Uint8Array
 
 // Usage
-import { EIP1559 } from '@tevm/voltaire/Transaction'
+import { EIP1559 } from 'tevm/Transaction'
 const bytes = EIP1559.serialize(eip1559Tx)
 ```
 
@@ -230,13 +230,13 @@ const bytes = EIP1559.serialize(eip1559Tx)
 function serialize(tx: BrandedTransactionEIP4844): Uint8Array
 
 // Usage
-import { EIP4844 } from '@tevm/voltaire/Transaction'
+import { EIP4844 } from 'tevm/Transaction'
 const bytes = EIP4844.serialize(eip4844Tx)
 ```
 
 Similar methods exist for EIP2930 and EIP7702.
 
-Source: [serialize.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/serialize.ts)
+Source: [serialize.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/serialize.ts)
 
 ## Round-Trip Serialization
 
@@ -314,7 +314,7 @@ Serialized transactions are used for:
 4. **RPC responses** - eth_getTransactionByHash
 
 ```typescript
-import { serialize, hash } from '@tevm/voltaire/Transaction'
+import { serialize, hash } from 'tevm/Transaction'
 
 // Prepare for broadcast
 const tx: Transaction.EIP1559 = { /* ... */ }

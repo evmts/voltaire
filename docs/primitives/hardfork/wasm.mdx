@@ -16,7 +16,7 @@ WebAssembly acceleration status for Hardfork operations.
 WASM is **NOT** implemented for Hardfork operations and is **NOT** planned.
 
 ```typescript
-import { isWasmHardforkAvailable } from '@tevm/voltaire/hardfork.wasm';
+import { isWasmHardforkAvailable } from 'tevm/hardfork.wasm';
 
 console.log(isWasmHardforkAvailable());  // false
 ```
@@ -103,7 +103,7 @@ function isWasmHardforkAvailable(): boolean
 
 **Example:**
 ```typescript
-import { isWasmHardforkAvailable } from '@tevm/voltaire/hardfork.wasm';
+import { isWasmHardforkAvailable } from 'tevm/hardfork.wasm';
 
 if (isWasmHardforkAvailable()) {
   // Never reaches here
@@ -148,7 +148,7 @@ function getHardforkImplementationStatus(): {
 
 **Example:**
 ```typescript
-import { getHardforkImplementationStatus } from '@tevm/voltaire/hardfork.wasm';
+import { getHardforkImplementationStatus } from 'tevm/hardfork.wasm';
 
 const status = getHardforkImplementationStatus();
 console.log(status.available);       // false
@@ -174,11 +174,11 @@ export { isWasmHardforkAvailable, getHardforkImplementationStatus };
 **Usage:**
 ```typescript
 // Both imports identical at runtime
-import { Hardfork, CANCUN } from '@tevm/voltaire/hardfork';
-import { Hardfork, CANCUN } from '@tevm/voltaire/hardfork.wasm';
+import { Hardfork, CANCUN } from 'tevm/hardfork';
+import { Hardfork, CANCUN } from 'tevm/hardfork.wasm';
 
 // Only difference: wasm export has status functions
-import { isWasmHardforkAvailable } from '@tevm/voltaire/hardfork.wasm';
+import { isWasmHardforkAvailable } from 'tevm/hardfork.wasm';
 ```
 
 ## Performance Comparison
@@ -340,10 +340,10 @@ These primitives DO benefit from WASM:
 
 ```typescript
 // Good - use main module
-import { Hardfork, CANCUN } from '@tevm/voltaire';
+import { Hardfork, CANCUN } from 'tevm';
 
 // Unnecessary - wasm module is identical
-import { Hardfork, CANCUN } from '@tevm/voltaire/hardfork.wasm';
+import { Hardfork, CANCUN } from 'tevm/hardfork.wasm';
 ```
 
 ### 2. Don't Check for WASM

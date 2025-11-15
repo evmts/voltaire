@@ -16,7 +16,7 @@ Practical patterns for address validation, conversion, and contract address calc
 ### Input Validation
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
+import * as Address from 'tevm/Address';
 
 function validateUserInput(input: string): AddressType {
   // Check format
@@ -98,7 +98,7 @@ function predictMultipleDeployments(
 ### CREATE2 Deterministic Deployment
 
 ```typescript
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Hash from 'tevm/Hash';
 
 // Calculate CREATE2 address
 function calculateCreate2(
@@ -135,7 +135,7 @@ function findVanityCreate2(
 ### From Private Key
 
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import * as Secp256k1 from 'tevm/Secp256k1';
 
 // Derive address from private key
 function deriveAddress(privateKey: Uint8Array): AddressType {

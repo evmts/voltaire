@@ -88,7 +88,7 @@ The PUSH32 value before a LOG instruction is extracted as an event topic hash.
 ## Return Type
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
+import type { brand } from 'tevm/brand';
 
 type BrandedAbi = ReadonlyArray<ABIItem> & { readonly [brand]: "Abi" };
 
@@ -329,7 +329,7 @@ Results are deterministic and can be cached. Re-running analysis on the same byt
 Reconstructed ABIs are compatible with Abi module methods:
 
 ```typescript
-import * as Abi from '@tevm/voltaire/Abi';
+import * as Abi from 'tevm/Abi';
 
 const code = Bytecode(bytecode);
 const abi = code.toAbi();

@@ -16,7 +16,7 @@ Practical patterns for working with ABI encoding and decoding in production code
 ### Function Call Encoding
 
 ```typescript
-import { Function, Abi } from '@tevm/voltaire';
+import { Function, Abi } from 'tevm';
 
 // Define function
 const transferFn = {
@@ -102,7 +102,7 @@ const balances = results.map((data, i) => calls[i].decoder(data));
 ### Log Parsing
 
 ```typescript
-import { Event } from '@tevm/voltaire';
+import { Event } from 'tevm';
 
 // Define Transfer event
 const transferEvent = {
@@ -188,7 +188,7 @@ const parsed = logs.map(log => {
 ### Custom Error Decoding
 
 ```typescript
-import { AbiError } from '@tevm/voltaire';
+import { AbiError } from 'tevm';
 
 // Define custom errors
 const errors = {
@@ -247,7 +247,7 @@ const fullError = new Uint8Array([
 ### From JSON
 
 ```typescript
-import { Abi } from '@tevm/voltaire';
+import { Abi } from 'tevm';
 
 // Load ABI from contract artifact
 const artifact = require('./artifacts/Token.json');

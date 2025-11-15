@@ -18,7 +18,7 @@ A valid versioned hash must:
 2. Have version byte 0x01 (KZG commitment version)
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 function isValidVersionedHash(hash: Uint8Array): boolean {
   // Check length
@@ -42,7 +42,7 @@ function isValidVersionedHash(hash: Uint8Array): boolean {
 Current supported version:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 console.log(Blob.COMMITMENT_VERSION_KZG); // 0x01
 
@@ -57,7 +57,7 @@ console.log(hash[0]); // 0x01
 ## VersionedHash Utilities
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const versionedHash = blob.toVersionedHash();
 
@@ -78,7 +78,7 @@ console.log(Blob.VersionedHash.version(versionedHash)); // 1
 ## Transaction Validation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 function validateBlobVersionedHashes(
   hashes: Uint8Array[],
@@ -109,7 +109,7 @@ if (!validateBlobVersionedHashes(tx.blobVersionedHashes)) {
 ## Error Cases
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Wrong length
 const tooShort = Bytes16();

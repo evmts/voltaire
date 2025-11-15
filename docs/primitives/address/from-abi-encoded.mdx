@@ -44,7 +44,7 @@ EVM ABI encoding represents addresses as 32-byte words with right-aligned data:
 ### Decoding Contract Call Results
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // ABI-encoded address from contract call return data
 const returnData = new Uint8Array([
@@ -60,7 +60,7 @@ console.log(addr.toChecksummed())
 ### Round-trip Encoding
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const original = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -76,7 +76,7 @@ console.log(original.equals(decoded)) // true
 ### Multiple Addresses from ABI Data
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // ABI-encoded array of addresses (2 addresses = 64 bytes)
 const abiData = new Uint8Array(64)
@@ -91,7 +91,7 @@ const addr2 = Address(abiData.slice(32, 64))
 ## Error Handling
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Wrong length - throws error
 try {

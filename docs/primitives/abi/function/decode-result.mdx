@@ -12,7 +12,7 @@ description: Decode function return values from ABI-encoded data
 ### Single Return Value
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const totalSupplyFn = new Function({
   type: "function",
@@ -34,7 +34,7 @@ console.log(totalSupply)  // 1000000n
 ### Multiple Return Values
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getReservesFn = new Function({
   type: "function",
@@ -58,7 +58,7 @@ console.log({ reserve0, reserve1, timestamp })
 ### Boolean Return
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -82,7 +82,7 @@ console.log(success)  // true or false
 ### Dynamic Return Types
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getNameFn = new Function({
   type: "function",
@@ -102,7 +102,7 @@ console.log(name)  // "MyToken"
 ### Array Returns
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getHoldersFn = new Function({
   type: "function",
@@ -122,7 +122,7 @@ console.log(holders)  // ["0x...", "0x...", ...]
 ### Struct/Tuple Returns
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getOrderFn = new Function({
   type: "function",
@@ -155,8 +155,8 @@ console.log(order.price)   // 5n
 ## Error Handling
 
 ```typescript
-import { Function } from '@tevm/voltaire'
-import { AbiDecodingError } from '@tevm/voltaire'
+import { Function } from 'tevm'
+import { AbiDecodingError } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",

@@ -326,7 +326,7 @@ sorted.slice(0, 10).forEach(([opcode, gas]) => {
 Gas costs come from [Opcode.getGasCost()](/primitives/opcode/getGasCost):
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode';
+import * as Opcode from 'tevm/Opcode';
 
 const addCost = Opcode.getGasCost('ADD');       // 3
 const sloadCost = Opcode.getGasCost('SLOAD');   // 100 (warm)

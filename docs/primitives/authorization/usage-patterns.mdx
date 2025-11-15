@@ -61,7 +61,7 @@ async function submitSponsoredTx(
 Sponsor multiple users in one transaction:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 async function sponsorMultipleUsers(
   userAuths: Array<{
@@ -102,7 +102,7 @@ Execute multiple operations atomically.
 ### Token Batch Operations
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 interface TokenOp {
   type: 'approve' | 'transfer';
@@ -150,7 +150,7 @@ await executeBatchOps([
 ### DEX Swap Batch
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 interface Swap {
   dex: Address;
@@ -268,7 +268,7 @@ class RecoveryModule {
 ### Time-Locked Recovery
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 class TimeLockRecovery {
   async initiateRecovery(
@@ -323,7 +323,7 @@ Implement custom transaction validation.
 ### Spending Limits
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 async function transferWithLimit(
   recipient: Address,
@@ -358,7 +358,7 @@ async function transferWithLimit(
 ### Multi-Sig Validation
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 async function multiSigTransfer(
   signers: Uint8Array[],
@@ -400,7 +400,7 @@ Temporary permission delegation.
 ### Create Session Key
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 class SessionKeyManager {
   async createSession(
@@ -453,7 +453,7 @@ class SessionKeyManager {
 ### Gaming Session Keys
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 // Create session for gaming
 const { sessionKey, auth } = await createSession(
@@ -488,7 +488,7 @@ Manage authorization collections.
 ### Authorization Pool
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 class AuthorizationPool {
   private auths = new Map<string, Authorization.Item>();
@@ -552,7 +552,7 @@ Handle authorization failures gracefully.
 ### Retry Logic
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 async function signWithRetry(
   unsigned: Authorization.Unsigned,
@@ -590,7 +590,7 @@ async function signWithRetry(
 ### Fallback Strategy
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 class AuthorizationStrategy {
   async execute(

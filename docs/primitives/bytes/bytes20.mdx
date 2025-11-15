@@ -12,7 +12,7 @@ description: 20-byte (160-bit) values - Ethereum addresses and packed data
 Bytes20 is a branded `Uint8Array` type representing exactly 20 bytes (160 bits). It's the fundamental type for Ethereum addresses and provides strict size validation for fixed 20-byte values.
 
 ```typescript
-import * as Bytes20 from '@tevm/voltaire/primitives/Bytes/Bytes20';
+import * as Bytes20 from 'tevm/primitives/Bytes/Bytes20';
 
 // Create from hex
 const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
@@ -391,7 +391,7 @@ console.log(abiEncoded.length); // 32
 
 ```typescript
 // Extract address from Bytes32 storage slot (last 20 bytes)
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 const slot = Bytes32('0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e');
 const extractedAddr = Bytes20(slot.slice(12)); // Last 20 bytes

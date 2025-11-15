@@ -26,8 +26,8 @@ ECDSA signatures allow recovering the signer's public key from the signature and
 Secp256k1 signatures can recover the public key that created the signature:
 
 ```typescript
-import { Signature } from '@tevm/voltaire';
-import { Secp256k1 } from '@tevm/voltaire/crypto';
+import { Signature } from 'tevm';
+import { Secp256k1 } from 'tevm/crypto';
 
 // Transaction signature
 const sig = Signature.fromSecp256k1(r, s, 27);
@@ -51,8 +51,8 @@ console.log(publicKey.length); // 65 bytes (uncompressed) or 33 bytes (compresse
 Ethereum addresses are derived from public keys via keccak256 hash:
 
 ```typescript
-import { Signature, Address } from '@tevm/voltaire';
-import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+import { Signature, Address } from 'tevm';
+import { Secp256k1, keccak256 } from 'tevm/crypto';
 
 const sig = Signature.fromSecp256k1(r, s, v);
 const messageHash = keccak256(message);
@@ -113,8 +113,8 @@ const sig = Signature.fromSecp256k1(r, s, standardV);
 ### Ethereum Transaction Recovery
 
 ```typescript
-import { Signature, Hash } from '@tevm/voltaire';
-import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+import { Signature, Hash } from 'tevm';
+import { Secp256k1, keccak256 } from 'tevm/crypto';
 
 // Transaction data
 const tx = {
@@ -147,8 +147,8 @@ console.log(Address.toString(sender)); // "0x..."
 ### EIP-712 Signed Message Recovery
 
 ```typescript
-import { Signature } from '@tevm/voltaire';
-import { EIP712, Secp256k1 } from '@tevm/voltaire/crypto';
+import { Signature } from 'tevm';
+import { EIP712, Secp256k1 } from 'tevm/crypto';
 
 const domain = {
   name: 'My Dapp',
@@ -182,8 +182,8 @@ const signer = Secp256k1.recoverAddress(sig, messageHash);
 ### Personal Sign Recovery
 
 ```typescript
-import { Signature, Hash } from '@tevm/voltaire';
-import { keccak256, Secp256k1 } from '@tevm/voltaire/crypto';
+import { Signature, Hash } from 'tevm';
+import { keccak256, Secp256k1 } from 'tevm/crypto';
 
 // Ethereum personal_sign prefixes message
 const message = 'Sign this message';

@@ -10,7 +10,7 @@ description: Learn EVM opcodes, stack machine architecture, and bytecode executi
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Opcode API](/primitives/opcode/index).
 </Info>
-EVM opcodes are the low-level machine instructions that smart contracts execute on the Ethereum Virtual Machine. This guide teaches opcode fundamentals using Voltaire.
+EVM opcodes are the low-level machine instructions that smart contracts execute on the Ethereum Virtual Machine. This guide teaches opcode fundamentals using Tevm.
 
 ## What Are Opcodes?
 
@@ -42,7 +42,7 @@ Stack (max 1024 items, 32 bytes each):
 <Tabs>
 <Tab title="ADD Example">
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Bytecode: PUSH1 5, PUSH1 3, ADD
 const bytecode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x01])
@@ -88,7 +88,7 @@ After ADD:
 Every opcode has **stack inputs** (items consumed) and **stack outputs** (items produced):
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const info = Opcode.info(0x01) // ADD
 console.log(info)
@@ -107,7 +107,7 @@ console.log(info)
 Binary operations pop 2 values, push 1 result:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // ADD (0x01): a + b
 const addCode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x01])
@@ -130,7 +130,7 @@ console.log(Opcode.disassemble(addCode))
 SLOAD reads from persistent contract storage, SSTORE writes:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // SLOAD (0x54): Load from storage[slot]
 const sloadCode = new Uint8Array([
@@ -159,7 +159,7 @@ console.log(Opcode.info(0x55))
 MLOAD reads from temporary memory, MSTORE writes:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // MSTORE (0x52): Store value at memory[offset:offset+32]
 const mstoreCode = new Uint8Array([
@@ -186,7 +186,7 @@ console.log(Opcode.disassemble(mstoreCode))
 JUMP and JUMPI control program flow. Jump targets must be JUMPDEST (0x5B):
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const code = new Uint8Array([
   0x60, 0x05,  // PUSH1 5 (jump target)
@@ -222,7 +222,7 @@ const jumpiCode = new Uint8Array([
 CALL invokes other contracts:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // CALL (0xF1): Call another contract
 // Stack inputs: [gas, address, value, argsOffset, argsSize, retOffset, retSize]
@@ -251,7 +251,7 @@ console.log(Opcode.info(0xF1))
 Every opcode has a base gas cost. Some have dynamic costs:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Fixed gas costs
 console.log(Opcode.info(0x01)) // ADD: 3 gas
@@ -272,7 +272,7 @@ Gas costs changed across hardforks. EIP-2929 (Berlin) introduced warm/cold acces
 PUSH1-PUSH32 (0x60-0x7F) embed immediate data in bytecode:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // PUSH1 (0x60): Push 1 byte
 console.log(Opcode.pushBytes(0x60)) // 1
@@ -308,7 +308,7 @@ PUSH instruction data is NOT executable. Parsing must skip immediate bytes or yo
 The EVM stack has a **1024-item maximum**. Stack overflow causes execution to fail:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Track stack depth through bytecode
 function analyzeStackDepth(bytecode: Uint8Array): number {
@@ -345,7 +345,7 @@ console.log(analyzeStackDepth(safeCode)) // 1
 Contracts check function selectors (first 4 bytes of calldata):
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const dispatchCode = new Uint8Array([
   0x60, 0x00,  // PUSH1 0 (calldata offset)
@@ -379,7 +379,7 @@ console.log(Opcode.disassemble(dispatchCode))
 Reading and modifying storage:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Increment storage slot 0
 const incrementCode = new Uint8Array([
@@ -407,7 +407,7 @@ console.log(Opcode.disassemble(incrementCode))
 Common memory usage pattern:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Standard memory setup at contract start
 const memorySetupCode = new Uint8Array([
@@ -436,7 +436,7 @@ console.log(Opcode.disassemble(memorySetupCode))
 Contract that returns the value 42:
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const code = new Uint8Array([
   0x60, 0x2a,  // PUSH1 0x2a (42 in hex)

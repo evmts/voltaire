@@ -18,7 +18,7 @@ description: Check if hardfork is after a target version (strictly greater than)
 Check for newer versions:
 
 ```typescript
-import { Hardfork, CANCUN } from '@tevm/voltaire'
+import { Hardfork, CANCUN } from 'tevm'
 
 const fork = Hardfork(config.hardfork)
 
@@ -33,7 +33,7 @@ if (fork.isAfter(CANCUN)) {
 Check for features beyond a certain version:
 
 ```typescript
-import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+import { Hardfork, SHANGHAI } from 'tevm'
 
 function hasNewFeatures(fork: BrandedHardfork): boolean {
   // Check if this is a newer hardfork with additional features
@@ -46,7 +46,7 @@ function hasNewFeatures(fork: BrandedHardfork): boolean {
 Validate forward compatibility:
 
 ```typescript
-import { Hardfork, PRAGUE } from '@tevm/voltaire'
+import { Hardfork, PRAGUE } from 'tevm'
 
 function validateTestnetConfig(fork: BrandedHardfork) {
   if (fork.isAfter(PRAGUE)) {
@@ -71,7 +71,7 @@ LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16) < PRAGUE (17)
 **Important:** `isAfter` returns false when versions are equal:
 
 ```typescript
-import { CANCUN } from '@tevm/voltaire'
+import { CANCUN } from 'tevm'
 
 CANCUN.isAfter(CANCUN)  // false - not strictly after itself
 ```
@@ -79,7 +79,7 @@ CANCUN.isAfter(CANCUN)  // false - not strictly after itself
 For "greater than or equal", use [isAtLeast](/primitives/hardfork/is-at-least) or [gte](/primitives/hardfork/gte):
 
 ```typescript
-import { CANCUN, LONDON } from '@tevm/voltaire'
+import { CANCUN, LONDON } from 'tevm'
 
 // Greater than or equal
 CANCUN.isAtLeast(CANCUN)     // true

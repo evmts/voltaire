@@ -28,7 +28,7 @@ Comparison uses array index lookup, making it O(1) constant time.
 Check minimum version requirements:
 
 ```typescript
-import { Hardfork, LONDON } from '@tevm/voltaire'
+import { Hardfork, LONDON } from 'tevm'
 
 const fork = Hardfork(config.hardfork)
 
@@ -44,7 +44,7 @@ if (!fork.isAtLeast(LONDON)) {
 Validate network compatibility:
 
 ```typescript
-import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+import { Hardfork, SHANGHAI } from 'tevm'
 
 function validateNetworkConfig(clientFork: BrandedHardfork, networkFork: BrandedHardfork) {
   if (!clientFork.isAtLeast(networkFork)) {
@@ -64,7 +64,7 @@ validateNetworkConfig(LONDON, SHANGHAI)  // Throws error
 Select appropriate transaction format:
 
 ```typescript
-import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
+import { Hardfork, LONDON, CANCUN } from 'tevm'
 
 function selectTxType(fork: BrandedHardfork): number {
   if (fork.isAtLeast(CANCUN)) {

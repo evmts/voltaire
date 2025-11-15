@@ -12,7 +12,7 @@ description: Generate 48-byte KZG proof for blob
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from 'tevm';
 
 const blob = Blob.fromData(data);
 const commitment = Kzg.Commitment(blob);
@@ -38,7 +38,7 @@ Tree-shakeable factory pattern with explicit KZG dependency.
 **Example:**
 
 ```typescript
-import { Kzg } from '@tevm/voltaire'
+import { Kzg } from 'tevm'
 import { computeBlobKzgProof } from 'c-kzg'
 
 const Proof = Kzg.ProofFactory({ computeBlobKzgProof })

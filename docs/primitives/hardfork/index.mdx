@@ -14,7 +14,7 @@ description: Ethereum protocol upgrade identification and comparison utilities
 Ethereum hardforks are protocol upgrades that change EVM behavior, gas costs, or add features. This module provides type-safe hardfork identification, version comparison, and feature detection.
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire';
+import { Hardfork } from 'tevm';
 
 const fork = Hardfork("cancun");
 if (Hardfork.hasEIP4844(fork)) {
@@ -106,7 +106,7 @@ Hardfork.DEFAULT  // PRAGUE
 ### Version Gating
 
 ```typescript
-import { Hardfork, CANCUN, LONDON } from '@tevm/voltaire';
+import { Hardfork, CANCUN, LONDON } from 'tevm';
 
 const fork = Hardfork("cancun");
 
@@ -141,7 +141,7 @@ function getNetworkCapabilities(hardfork: string) {
 ### Upgrade Path
 
 ```typescript
-import { BERLIN, CANCUN, range } from '@tevm/voltaire';
+import { BERLIN, CANCUN, range } from 'tevm';
 
 // Get all hardforks between two versions
 const upgradePath = range(BERLIN, CANCUN);
@@ -164,10 +164,10 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific features
-import { hasEIP4844, isAtLeast, fromString } from '@tevm/voltaire/Hardfork'
+import { hasEIP4844, isAtLeast, fromString } from 'tevm/Hardfork'
 
 // Or import constants only
-import { CANCUN, LONDON, BERLIN } from '@tevm/voltaire/Hardfork'
+import { CANCUN, LONDON, BERLIN } from 'tevm/Hardfork'
 
 // Selective imports reduce bundle size
 const fork = fromString(userInput)

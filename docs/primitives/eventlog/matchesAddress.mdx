@@ -18,7 +18,7 @@ description: Check if log matches address filter
 Checks exact address equality using constant-time comparison:
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 const usdcAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
 
@@ -33,7 +33,7 @@ console.log(`Found ${usdcLogs.length} USDC logs`);
 Matches if log address equals ANY of the filter addresses:
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 const stablecoins = [
   Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'), // USDC
@@ -54,7 +54,7 @@ console.log(`Found ${stablecoinLogs.length} stablecoin logs`);
 ### Filtering Single Contract
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 const wethAddress = Address('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
 
@@ -71,7 +71,7 @@ for (const log of wethLogs) {
 ### Multi-Contract Monitoring
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 // Monitor multiple DEX contracts
 const dexContracts = [
@@ -88,7 +88,7 @@ console.log(`Found ${dexLogs.length} DEX logs across ${dexContracts.length} cont
 ### Token Portfolio Tracking
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 // User's token portfolio
 const portfolio = [
@@ -117,7 +117,7 @@ console.log('Events per token:', byContract.size);
 ### Excluding Specific Contracts
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 const excludedContract = Address('0x...');
 
@@ -128,7 +128,7 @@ const filtered = allLogs.filter(log => !log.matchesAddress(excludedContract));
 ### Combining with Topic Filters
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const tokens = [usdcAddress, daiAddress, wethAddress];
@@ -147,7 +147,7 @@ console.log(`Found ${transfers.length} transfers`);
 Uses constant-time address comparison to prevent timing attacks:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Comparison time doesn't leak whether addresses match
 const matches = log.matchesAddress(targetAddress);
@@ -164,7 +164,7 @@ const sensitiveL ogs = allLogs.filter(log =>
 For large log arrays, use `filterLogs` for optimized batch filtering:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Efficient: Uses optimized internal filtering
 const filtered = EventLog.filterLogs(allLogs, {

@@ -36,7 +36,7 @@ Authorization.validate.call(auth: Authorization.Item): void
 ## Basic Usage
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -193,7 +193,7 @@ const sig2 = { r, s: SECP256K1_N - 0x123n, v: 1 };
 `validate()` rejects high s values:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const auth = {
   chainId: 1n,
@@ -240,7 +240,7 @@ function normalizeSignature(r: bigint, s: bigint, v: number): {
 Always validate before any operations:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function processAuthorization(auth: Authorization.Item): void {
   // Validate first
@@ -259,7 +259,7 @@ function processAuthorization(auth: Authorization.Item): void {
 Validate entire authorization list:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateAuthList(authList: Authorization.Item[]): {
   valid: Authorization.Item[];
@@ -293,7 +293,7 @@ console.log(`Valid: ${valid.length}, Invalid: ${invalid.length}`);
 Validate as soon as authorization is received:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 class AuthorizationQueue {
   private queue: Authorization.Item[] = [];
@@ -326,7 +326,7 @@ class AuthorizationQueue {
 Combine type guards with validation:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateUnknown(data: unknown): Authorization.Item {
   // First check type
@@ -348,7 +348,7 @@ const auth = validateUnknown(apiResponse);
 Handle specific validation errors:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateWithHandling(auth: Authorization.Item): boolean {
   try {
@@ -448,7 +448,7 @@ Authorization.validate.call(validAuth);
 ### Invalid Cases
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 // Zero chain ID
 expect(() => {

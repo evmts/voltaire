@@ -56,7 +56,7 @@ Root hash = BLAKE3(hash(left) || hash(right))
 AccountData stored at subindex 0 of account stem:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 interface AccountData {
   version: number    // 1 byte
@@ -111,7 +111,7 @@ function unpackAccountData(packed: Uint8Array): AccountData {
 ### Create Account
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 function createAccount(
   tree: BinaryTree,
@@ -148,7 +148,7 @@ tree = createAccount(tree, address, 1000000000000000000n) // 1 ETH
 ### Update Account Balance
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 function updateBalance(
   tree: BinaryTree,
@@ -212,7 +212,7 @@ tree = incrementNonce(tree, address)
 Storage slots stored at subindices 1-255 (slot 0 at subindex 1, etc.):
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 function writeStorage(
   tree: BinaryTree,
@@ -296,7 +296,7 @@ tree = batchWriteStorage(tree, address, updates)
 ### Capture State Root
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 interface StateSnapshot {
   root: string
@@ -714,7 +714,7 @@ assertAccountBalance(tree, address, 1000n) // Passes
 Full state management implementation:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 class EthereumState {
   private tree: BinaryTree

@@ -44,7 +44,7 @@ description: Check if transient storage opcodes (TLOAD/TSTORE) are available
 Implement cheap reentrancy guards:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getReentrancyLockImplementation(fork: BrandedHardfork) {
   if (fork.hasEIP1153()) {
@@ -76,7 +76,7 @@ function getReentrancyLockImplementation(fork: BrandedHardfork) {
 Store temporary values:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function useTransientCache(fork: BrandedHardfork): boolean {
   // Use transient storage for intermediate calculations
@@ -90,7 +90,7 @@ function useTransientCache(fork: BrandedHardfork): boolean {
 Pass data between contracts in same transaction:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function supportsTransientMessaging(fork: BrandedHardfork): boolean {
   // Enable contract-to-contract data passing
@@ -104,7 +104,7 @@ function supportsTransientMessaging(fork: BrandedHardfork): boolean {
 Track temporary balances:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getFlashLoanImplementation(fork: BrandedHardfork) {
   if (fork.hasEIP1153()) {
@@ -139,7 +139,7 @@ function getFlashLoanImplementation(fork: BrandedHardfork) {
 Reentrancy lock pattern:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function estimateReentrancyLockGas(fork: BrandedHardfork): number {
   if (fork.hasEIP1153()) {
@@ -159,7 +159,7 @@ function estimateReentrancyLockGas(fork: BrandedHardfork): number {
 Check transient storage support:
 
 ```typescript
-import { Hardfork, CANCUN } from '@tevm/voltaire'
+import { Hardfork, CANCUN } from 'tevm'
 
 function validateTransientStorage(config: NetworkConfig) {
   const fork = Hardfork(config.hardfork)
@@ -177,7 +177,7 @@ function validateTransientStorage(config: NetworkConfig) {
 Enable transient storage in compiler:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getSoliditySettings(fork: BrandedHardfork) {
   return {

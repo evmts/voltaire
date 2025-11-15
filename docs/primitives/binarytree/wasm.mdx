@@ -15,7 +15,7 @@ WebAssembly-accelerated implementations of BinaryTree methods, compiled from Zig
 
 WASM implementations provide performance-critical operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements for the JavaScript implementations with identical APIs.
 
-All WASM methods are compiled from [binary_tree.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
+All WASM methods are compiled from [binary_tree.zig](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/binary_tree.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
 
 <Note title="Current Status">
 WASM implementation for BinaryTree is in development. The Zig source exists but WASM bindings are not yet exported. This documentation describes the intended architecture following the Address WASM pattern.
@@ -27,7 +27,7 @@ WASM implementation for BinaryTree is in development. The Zig source exists but 
 <Tab title="Direct Import">
 ```typescript
 // Import WASM implementation instead of JS version
-import { BinaryTree } from '@tevm/voltaire/BinaryTree.wasm'
+import { BinaryTree } from 'tevm/BinaryTree.wasm'
 
 // API is identical to JS version
 const tree = BinaryTree.init()
@@ -38,8 +38,8 @@ const hash = BinaryTree.rootHash(tree2) // Uses WASM
 
 <Tab title="Override Static Methods">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
-import * as WasmBinaryTree from '@tevm/voltaire/BinaryTree.wasm'
+import { BinaryTree } from 'tevm'
+import * as WasmBinaryTree from 'tevm/BinaryTree.wasm'
 
 // Override specific methods with WASM versions
 BinaryTree.init = WasmBinaryTree.init
@@ -73,8 +73,8 @@ Use WASM when building large trees with many insertions or computing many root h
 Replace static methods by reassigning:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
-import * as WasmBinaryTree from '@tevm/voltaire/BinaryTree.wasm'
+import { BinaryTree } from 'tevm'
+import * as WasmBinaryTree from 'tevm/BinaryTree.wasm'
 
 BinaryTree.init = WasmBinaryTree.init
 BinaryTree.insert = WasmBinaryTree.insert
@@ -88,8 +88,8 @@ BinaryTree.hashInternal = WasmBinaryTree.hashInternal
 Since BinaryTree uses factory pattern rather than class instances, method override is straightforward:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
-import * as WasmBinaryTree from '@tevm/voltaire/BinaryTree.wasm'
+import { BinaryTree } from 'tevm'
+import * as WasmBinaryTree from 'tevm/BinaryTree.wasm'
 
 // Replace all methods
 Object.assign(BinaryTree, WasmBinaryTree)
@@ -234,8 +234,8 @@ const wasm = b.addSharedLibrary(.{
 Complete example using WASM acceleration:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
-import * as WasmBinaryTree from '@tevm/voltaire/BinaryTree.wasm'
+import { BinaryTree } from 'tevm'
+import * as WasmBinaryTree from 'tevm/BinaryTree.wasm'
 
 // Override with WASM
 Object.assign(BinaryTree, WasmBinaryTree)

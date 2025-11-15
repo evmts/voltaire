@@ -12,8 +12,8 @@ description: Get canonical event signature string for hashing
 ### Computing Event Selector
 
 ```typescript
-import { Event } from '@tevm/voltaire'
-import { Keccak256 } from '@tevm/voltaire'
+import { Event } from 'tevm'
+import { Keccak256 } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -38,7 +38,7 @@ console.log(selector)
 ### Signature Ignores Parameter Names
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const event1 = new Event({
   type: "event",

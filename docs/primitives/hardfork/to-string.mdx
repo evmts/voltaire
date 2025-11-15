@@ -16,7 +16,7 @@ description: Convert hardfork to canonical string name
 Returns canonical name (not aliases):
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const merge = Hardfork("merge")
 const paris = Hardfork("paris")  // Alias
@@ -39,7 +39,7 @@ Hardfork.toString(paris)   // "merge" (canonical, not "paris")
 Convert for user display:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function displayHardfork(fork: BrandedHardfork): string {
   const name = Hardfork.toString(fork)
@@ -55,7 +55,7 @@ displayHardfork(MERGE)   // "Merge"
 Log current hardfork:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function logHardforkInfo(fork: BrandedHardfork) {
   console.log(`Current hardfork: ${Hardfork.toString(fork)}`)
@@ -70,7 +70,7 @@ function logHardforkInfo(fork: BrandedHardfork) {
 Normalize for storage:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function saveConfig(fork: BrandedHardfork) {
   const config = {
@@ -93,7 +93,7 @@ function loadConfig() {
 Serialize for API:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getNetworkInfo(fork: BrandedHardfork) {
   return {
@@ -113,7 +113,7 @@ function getNetworkInfo(fork: BrandedHardfork) {
 Use as map keys:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const featureMatrix = new Map<string, Features>()
 
@@ -167,7 +167,7 @@ function getHardforkFeatures(fork: BrandedHardfork): Features | undefined {
 Always use `toString` for storage/comparison:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 // Good - normalized
 function saveHardfork(fork: BrandedHardfork) {
@@ -186,7 +186,7 @@ function saveHardforkBad(input: string) {
 `fromString` is the inverse:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const fork = Hardfork("cancun")
 const name = Hardfork.toString(fork)

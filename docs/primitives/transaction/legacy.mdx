@@ -32,12 +32,12 @@ type Legacy = {
 }
 ```
 
-Source: [types.ts:59-72](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L59-L72)
+Source: [types.ts:59-72](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/types.ts#L59-L72)
 
 ## Creating Legacy Transactions
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Transaction from 'tevm/Transaction'
 
 // Simple transfer
 const transfer: Transaction.Legacy = {
@@ -126,7 +126,7 @@ function getChainId(tx: BrandedTransactionLegacy): bigint | null
 ### Usage
 
 ```typescript
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 
 const tx: Transaction.Legacy = {
   type: Transaction.Type.Legacy,
@@ -158,14 +158,14 @@ if (tx.v === 27n || tx.v === 28n) {
 return (tx.v - 35n) / 2n  // EIP-155
 ```
 
-Source: [Legacy/getChainId.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/Legacy/getChainId.js)
+Source: [Legacy/getChainId.js](https://github.com/evmts/tevm/blob/main/src/primitives/Transaction/Legacy/getChainId.js)
 
 ## Methods
 
 All standard transaction methods work with legacy transactions:
 
 ```typescript
-import { Legacy } from '@tevm/voltaire/Transaction'
+import { Legacy } from 'tevm/Transaction'
 
 // Serialization
 const bytes = Legacy.serialize.call(legacyTx)

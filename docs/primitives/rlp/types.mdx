@@ -35,7 +35,7 @@ export type BrandedRlp =
 - `type: "bytes" | "list"` - Discriminant field
 - `value: Uint8Array | BrandedRlp[]` - Data payload
 
-Source: [BrandedRlp.ts:4-6](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
+Source: [BrandedRlp.ts:4-6](https://github.com/evmts/tevm/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
 
 ### BytesData Variant
 
@@ -50,7 +50,7 @@ type BytesData = {
 
 **Examples:**
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Single byte
 const single: BrandedRlp = {
@@ -88,7 +88,7 @@ type ListData = {
 
 **Examples:**
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty list
 const empty: BrandedRlp = {
@@ -154,11 +154,11 @@ function isData(value: unknown): value is BrandedRlp
 **Returns:**
 - `boolean` - True if value is RLP data (bytes or list)
 
-Source: [isData.js:7-15](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isData.js#L7-L15)
+Source: [isData.js:7-15](https://github.com/evmts/tevm/blob/main/src/primitives/Rlp/BrandedRlp/isData.js#L7-L15)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Valid RLP data
 const bytesData = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -225,11 +225,11 @@ function isBytesData(value: unknown): boolean
 **Returns:**
 - `boolean` - True if value is bytes data
 
-Source: [isBytesData.js:9-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isBytesData.js#L9-L11)
+Source: [isBytesData.js:9-11](https://github.com/evmts/tevm/blob/main/src/primitives/Rlp/BrandedRlp/isBytesData.js#L9-L11)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Bytes data
 const bytes = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -293,11 +293,11 @@ function isListData(value: unknown): boolean
 **Returns:**
 - `boolean` - True if value is list data
 
-Source: [isListData.js:9-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isListData.js#L9-L11)
+Source: [isListData.js:9-11](https://github.com/evmts/tevm/blob/main/src/primitives/Rlp/BrandedRlp/isListData.js#L9-L11)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // List data
 const list = { type: 'list', value: [] }
@@ -359,7 +359,7 @@ function isListData(value) {
 RLP uses TypeScript discriminated unions for type safety:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function processRlpData(data: BrandedRlp) {
   // TypeScript uses 'type' field to narrow types
@@ -380,7 +380,7 @@ function processRlpData(data: BrandedRlp) {
 Combine type guards with TypeScript narrowing:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function extractBytes(data: unknown): Uint8Array[] {
   // First check if it's RLP data at all
@@ -409,7 +409,7 @@ function extractBytes(data: unknown): Uint8Array[] {
 Ensure all type variants are handled:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function serializeRlp(data: BrandedRlp): string {
   switch (data.type) {
@@ -432,7 +432,7 @@ function serializeRlp(data: BrandedRlp): string {
 Use `Rlp()` constructor for automatic type detection:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // From bytes
 const bytesData = Rlp(new Uint8Array([1, 2, 3]))
@@ -456,7 +456,7 @@ const same = Rlp(existing)
 Create structures directly:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Manual bytes data
 const bytes: BrandedRlp = {
@@ -490,7 +490,7 @@ const nested: BrandedRlp = {
 Use type guards for safe access:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function getFirstByte(data: BrandedRlp): number | undefined {
   if (Rlp.isBytesData(data)) {
@@ -520,7 +520,7 @@ function countItems(data: BrandedRlp): number {
 Type guards perform runtime validation:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function validateRlpData(value: unknown): asserts value is BrandedRlp {
   if (!Rlp.isData(value)) {
@@ -553,7 +553,7 @@ validateRlpData(data)
 Assert types when you know the structure:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function processTransaction(data: BrandedRlp) {
   // We know transactions are lists
@@ -609,7 +609,7 @@ Contains decoded RLP data and remaining bytes. See [Decoding](/primitives/rlp/de
 ### Transaction Type
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 type Transaction = {
   nonce: Uint8Array
@@ -668,7 +668,7 @@ function fromRlp(data: BrandedRlp): Transaction {
 ### Merkle Proof Type
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 type MerkleProof = Uint8Array[]
 

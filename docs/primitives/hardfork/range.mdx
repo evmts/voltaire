@@ -18,7 +18,7 @@ description: Get hardforks between two versions (inclusive)
 Returns hardforks in chronological order:
 
 ```typescript
-import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
+import { Hardfork, BERLIN, CANCUN } from 'tevm'
 
 const forks = Hardfork.range(BERLIN, CANCUN)
 // [BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI, CANCUN]
@@ -29,7 +29,7 @@ const forks = Hardfork.range(BERLIN, CANCUN)
 Returns hardforks in reverse chronological order:
 
 ```typescript
-import { Hardfork, CANCUN, BERLIN } from '@tevm/voltaire'
+import { Hardfork, CANCUN, BERLIN } from 'tevm'
 
 const forks = Hardfork.range(CANCUN, BERLIN)
 // [CANCUN, SHANGHAI, MERGE, GRAY_GLACIER, ARROW_GLACIER, LONDON, BERLIN]
@@ -40,7 +40,7 @@ const forks = Hardfork.range(CANCUN, BERLIN)
 Returns array with single element:
 
 ```typescript
-import { Hardfork, LONDON } from '@tevm/voltaire'
+import { Hardfork, LONDON } from 'tevm'
 
 const forks = Hardfork.range(LONDON, LONDON)
 // [LONDON]
@@ -53,7 +53,7 @@ const forks = Hardfork.range(LONDON, LONDON)
 Get hardforks to upgrade through:
 
 ```typescript
-import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
+import { Hardfork, BERLIN, CANCUN } from 'tevm'
 
 function getUpgradePath(from: BrandedHardfork, to: BrandedHardfork) {
   const path = Hardfork.range(from, to)
@@ -71,7 +71,7 @@ console.log(`Need to upgrade through ${upgrades.length} hardforks`)
 List features introduced in range:
 
 ```typescript
-import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
+import { Hardfork, LONDON, CANCUN } from 'tevm'
 
 function listFeatureChanges(start: BrandedHardfork, end: BrandedHardfork) {
   const forks = Hardfork.range(start, end)
@@ -113,7 +113,7 @@ const changes = listFeatureChanges(LONDON, CANCUN)
 Plan network upgrade:
 
 ```typescript
-import { Hardfork, BERLIN, PRAGUE } from '@tevm/voltaire'
+import { Hardfork, BERLIN, PRAGUE } from 'tevm'
 
 function planMigration(current: BrandedHardfork, target: BrandedHardfork) {
   if (current.isAtLeast(target)) {
@@ -146,7 +146,7 @@ console.log(`Upgrade requires ${plan.steps} steps`)
 Check if fork is in supported range:
 
 ```typescript
-import { Hardfork, BERLIN, SHANGHAI } from '@tevm/voltaire'
+import { Hardfork, BERLIN, SHANGHAI } from 'tevm'
 
 function isSupportedVersion(fork: BrandedHardfork): boolean {
   const MIN_VERSION = BERLIN
@@ -165,7 +165,7 @@ isSupportedVersion(CANCUN)   // false
 Find breaking changes in range:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function findBreakingChanges(start: BrandedHardfork, end: BrandedHardfork) {
   const forks = Hardfork.range(start, end)
@@ -189,7 +189,7 @@ function findBreakingChanges(start: BrandedHardfork, end: BrandedHardfork) {
 Generate network upgrade timeline:
 
 ```typescript
-import { Hardfork, LONDON, OSAKA } from '@tevm/voltaire'
+import { Hardfork, LONDON, OSAKA } from 'tevm'
 
 function generateUpgradeTimeline(from: BrandedHardfork, to: BrandedHardfork) {
   const forks = Hardfork.range(from, to)
@@ -227,7 +227,7 @@ const reverse = Hardfork.range(LONDON, BERLIN)  // [LONDON, BERLIN]
 If hardforks don't exist in order:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const invalidFork = "notahardfork" as any
 

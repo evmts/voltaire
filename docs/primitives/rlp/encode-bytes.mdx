@@ -16,7 +16,7 @@ RLP string encoding has three cases based on byte length:
 For a single byte with value less than 0x80 (128), the byte encodes as itself with no prefix:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Byte value 0x7f (127)
 const input = new Uint8Array([0x7f])
@@ -39,7 +39,7 @@ const encoded = Rlp.encodeBytes(high)
 For strings of 0-55 bytes, prefix with `0x80 + length`:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty string
 const empty = Bytes()
@@ -65,7 +65,7 @@ const encoded = Rlp.encodeBytes(max)
 For strings of 56+ bytes, use long form: `[0xb7 + length_of_length, ...length_bytes, ...bytes]`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // 56 bytes (minimum for long form)
 const min = new Uint8Array(56).fill(0x42)
@@ -99,7 +99,7 @@ The threshold of 56 bytes is chosen because lengths 0-55 fit in a single prefix 
 Encode individual transaction fields:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Encode nonce (typically small number)
 const nonce = new Uint8Array([0x00])
@@ -124,7 +124,7 @@ const encodedR = Rlp.encodeBytes(r)
 Encode contract bytecode (often > 56 bytes):
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Contract bytecode (example: 500 bytes)
 const bytecode = new Uint8Array(500).fill(0x60)
@@ -139,8 +139,8 @@ const encoded = Rlp.encodeBytes(bytecode)
 Encode 32-byte hash values:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
-import { keccak256 } from '@tevm/voltaire/crypto'
+import { Rlp } from 'tevm'
+import { keccak256 } from 'tevm/crypto'
 
 const data = new Uint8Array([1, 2, 3, 4])
 const hash = keccak256(data)  // 32 bytes
@@ -155,7 +155,7 @@ const encoded = Rlp.encodeBytes(hash)
 Encode empty byte arrays:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty transaction data field
 const empty = Bytes()
@@ -183,7 +183,7 @@ const tx = [
 Use `encodeBytes` instead of generic `encode` when you know the input is bytes (not a list), to skip type dispatch overhead.
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Direct encoding
 const encoded = Rlp.encodeBytes(bytes)
@@ -197,7 +197,7 @@ const encoded = Rlp.encode(bytes)
 For repeated encoding, pre-calculate buffer sizes:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Calculate size first
 function calculateEncodedSize(bytes: Uint8Array): number {
@@ -221,7 +221,7 @@ const buffer = new Uint8Array(size)
 Encode multiple byte arrays efficiently:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const items = [
   new Uint8Array([1, 2, 3]),

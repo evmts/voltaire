@@ -48,7 +48,7 @@ description: Check if PUSH0 opcode is available
 Select optimal zero-push implementation:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getPushZeroOpcode(fork: BrandedHardfork) {
   if (fork.hasEIP3855()) {
@@ -72,7 +72,7 @@ function getPushZeroOpcode(fork: BrandedHardfork) {
 Enable PUSH0 in compiler:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getCompilerTarget(fork: BrandedHardfork) {
   return {
@@ -87,7 +87,7 @@ function getCompilerTarget(fork: BrandedHardfork) {
 Generate optimal bytecode:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function emitPushZero(fork: BrandedHardfork): Uint8Array {
   if (fork.hasEIP3855()) {
@@ -103,7 +103,7 @@ function emitPushZero(fork: BrandedHardfork): Uint8Array {
 Calculate gas costs:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function estimatePushZeroGas(
   fork: BrandedHardfork,
@@ -144,7 +144,7 @@ function validatePUSH0Support(config: NetworkConfig) {
 Solidity compiler support:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getSoliditySettings(fork: BrandedHardfork) {
   return {

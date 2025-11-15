@@ -18,8 +18,8 @@ Production-ready examples for EIP-7702 implementations, relay networks, and smar
 A simple relay service that sponsors user transactions.
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
-import type { Authorization as AuthorizationType } from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
+import type { Authorization as AuthorizationType } from 'tevm/Authorization';
 import { Address, Hash, Hex } from '@tevm/primitives';
 
 interface RelayRequest {
@@ -181,7 +181,7 @@ interface IBatchExecutor {
 }
 
 // Usage from TypeScript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 async function executeBatchOperations(
   userEOA: Address,
@@ -257,7 +257,7 @@ async function multiSwapAndTransfer(
 Recover account using guardian signatures.
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 interface RecoveryConfig {
   guardians: Address[];
@@ -524,7 +524,7 @@ await smartAccount.batchExecute([
 Complete gasless transaction flow.
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 interface GaslessRequest {
   userAddress: Address;

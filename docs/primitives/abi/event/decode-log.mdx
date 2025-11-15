@@ -12,7 +12,7 @@ description: Decode event log data and topics back to parameter values
 ### Parse Transfer Events
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -45,7 +45,7 @@ console.log(transfers)
 ### Complex Event Types
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const swapEvent = new Event({
   type: "event",

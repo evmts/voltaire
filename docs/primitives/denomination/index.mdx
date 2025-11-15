@@ -24,9 +24,9 @@ Start with [Fundamentals](/primitives/denomination/fundamentals) to learn about 
 <Tabs>
 <Tab title="Direct Usage">
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from 'tevm/Wei'
+import * as Gwei from 'tevm/Gwei'
+import * as Ether from 'tevm/Ether'
 
 // Create values
 const wei = Wei(1_000_000_000n)      // 1 Gwei in Wei
@@ -44,9 +44,9 @@ const total = wei + gwei  // ✗ Type error - cannot mix Wei and Gwei
 </Tab>
 <Tab title="Gas Price Calculation">
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Gwei from 'tevm/Gwei'
+import * as Uint from 'tevm/Uint'
 
 // Gas price in Gwei (common format)
 const gasPriceGwei = Gwei(50n)  // 50 Gwei
@@ -65,8 +65,8 @@ console.log(`Cost: ${txCostEther} ETH`)
 </Tab>
 <Tab title="Transaction Values">
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
 
 // User inputs value in Ether (500_000_000_000_000_000n Wei = 0.5 ETH)
 const valueEther = Ether(500_000_000_000_000_000n)  // 0.5 ETH
@@ -142,9 +142,9 @@ Try converting between denominations:
 <Tabs>
 <Tab title="Wei ↔ Gwei ↔ Ether">
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from 'tevm/Wei'
+import * as Gwei from 'tevm/Gwei'
+import * as Ether from 'tevm/Ether'
 
 // Example: Convert 1.5 ETH to all units
 const etherValue = Ether(1n)  // 1 Ether
@@ -206,7 +206,7 @@ Two APIs for different use cases:
 #### Branded API (Type-safe)
 Requires branded types, compile-time safety:
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedWei from 'tevm/BrandedWei'
 const wei = BrandedWei(1000000000n)
 BrandedWei.toGwei(wei)  // Must pass BrandedWei
 ```
@@ -290,9 +290,9 @@ Compile-time type safety prevents unit mixing bugs. `Wei.Type` and `Gwei.Type` a
 Each denomination prevents accidental mixing:
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Gwei from 'tevm/Gwei'
+import * as Uint from 'tevm/Uint'
 
 const gasPrice = Gwei(50n)
 const gasUsed = Uint(21_000n)

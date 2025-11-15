@@ -16,9 +16,9 @@ Common patterns for working with Wei, Gwei, and Ether in real-world applications
 ### Basic Gas Cost
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Gwei from 'tevm/Gwei'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function calculateGasCost(
   gasPriceGwei: Gwei.Type,
@@ -45,9 +45,9 @@ console.log(`Cost: ${Wei.toGwei(cost)} Gwei`)  // 1_050_000 Gwei
 ### EIP-1559 Gas Calculation
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Gwei from 'tevm/Gwei'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 interface EIP1559Params {
   baseFeePerGas: Gwei.Type
@@ -149,8 +149,8 @@ if (selected) {
 ### User Input to Transaction
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
 
 function parseEtherInput(input: string): Wei.Type {
   // Parse user input (e.g., "1.5" ETH)
@@ -183,9 +183,9 @@ console.log(`(${input} ETH)`)
 ### Balance Checking
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Uint from 'tevm/Uint'
 
 function hasSufficientBalance(
   balance: Wei.Type,
@@ -219,8 +219,8 @@ if (hasSufficientBalance(balance, value, gasCost)) {
 ### Format Wei as Ether
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function formatWeiAsEther(wei: Wei.Type, decimals: number = 18): string {
   const weiU256 = Wei.toU256(wei)
@@ -281,8 +281,8 @@ console.log(formatBalance(Wei(1_000n)))                      // "1000 Wei"
 ### Compact Display
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function formatCompact(wei: Wei.Type): string {
   const weiU256 = Wei.toU256(wei)
@@ -313,8 +313,8 @@ console.log(formatCompact(Wei(500_000_000_000_000_000n)))    // "0.5000 ETH"
 ### Adding Values
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function addWei(a: Wei.Type, b: Wei.Type): Wei.Type {
   const aU256 = Wei.toU256(a)
@@ -334,8 +334,8 @@ console.log(`Total: ${total} Wei`)
 ### Calculating Percentages
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function calculatePercentage(
   amount: Wei.Type,
@@ -368,8 +368,8 @@ console.log(`Remaining: ${remaining} Wei`)
 ### Splitting Values
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function splitEqually(
   total: Wei.Type,
@@ -406,8 +406,8 @@ shares.forEach((share, i) => {
 ### ETH/USD Conversion
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
 import * as Uint from '@tevm/voltaire/Uint'
 
 function weiToUSD(
@@ -437,9 +437,9 @@ console.log(`Balance: $${usdValue.toFixed(2)} USD`)  // "$3000.75 USD"
 ### Gas Cost in USD
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Gwei from 'tevm/Gwei'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function gasCostUSD(
   gasPriceGwei: Gwei.Type,
@@ -471,9 +471,9 @@ console.log(`Gas cost: $${costUsd.toFixed(2)} USD`)
 ### Range Checking
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Uint from 'tevm/Uint'
 
 function isWithinRange(
   value: Wei.Type,

@@ -75,7 +75,7 @@ description: Check if hardfork is post-Merge (Proof of Stake consensus)
 Determine consensus mechanism:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getConsensusInfo(fork: BrandedHardfork) {
   if (fork.isPostMerge()) {
@@ -103,7 +103,7 @@ function getConsensusInfo(fork: BrandedHardfork) {
 Validate mining configuration:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function validateMiningConfig(fork: BrandedHardfork, config: MiningConfig) {
   if (fork.isPostMerge() && config.mining) {
@@ -120,7 +120,7 @@ function validateMiningConfig(fork: BrandedHardfork, config: MiningConfig) {
 Handle DIFFICULTY/PREVRANDAO opcode:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function handleDifficultyOpcode(fork: BrandedHardfork, value: bigint) {
   if (fork.isPostMerge()) {
@@ -136,7 +136,7 @@ function handleDifficultyOpcode(fork: BrandedHardfork, value: bigint) {
 Validate block structure:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function validateBlock(fork: BrandedHardfork, block: Block) {
   if (fork.isPostMerge()) {
@@ -164,7 +164,7 @@ function validateBlock(fork: BrandedHardfork, block: Block) {
 Check consensus mechanism:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getNetworkType(fork: BrandedHardfork): string {
   return fork.isPostMerge() ? "mainnet-pos" : "mainnet-pow"

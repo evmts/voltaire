@@ -59,7 +59,7 @@ description: Check if blob transactions (proto-danksharding) are available
 Select cheapest L2 data posting method:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function selectL2DataMethod(fork: BrandedHardfork): string {
   if (fork.hasEIP4844()) {
@@ -77,7 +77,7 @@ function selectL2DataMethod(fork: BrandedHardfork): string {
 Choose appropriate transaction format:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function buildL2BatchSubmission(
   fork: BrandedHardfork,
@@ -103,7 +103,7 @@ function buildL2BatchSubmission(
 Calculate costs for blob vs calldata:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function estimateL2PostingCost(
   fork: BrandedHardfork,
@@ -129,7 +129,7 @@ function estimateL2PostingCost(
 Check blob-related opcodes:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getBlobOpcodes(fork: BrandedHardfork) {
   if (fork.hasEIP4844()) {
@@ -148,7 +148,7 @@ function getBlobOpcodes(fork: BrandedHardfork) {
 Access blob hashes in smart contracts:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function generateBlobHashLoader(fork: BrandedHardfork): Uint8Array {
   if (!fork.hasEIP4844()) {
@@ -165,7 +165,7 @@ function generateBlobHashLoader(fork: BrandedHardfork): Uint8Array {
 Validate blob transaction support:
 
 ```typescript
-import { Hardfork, CANCUN } from '@tevm/voltaire'
+import { Hardfork, CANCUN } from 'tevm'
 
 function validateBlobSupport(config: NetworkConfig) {
   const fork = Hardfork(config.hardfork)

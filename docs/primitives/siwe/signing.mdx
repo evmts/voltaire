@@ -122,7 +122,7 @@ const valid = Address.equals(recoveredAddress, message.address);
 #### Manual Signing (Testing)
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire';
+import { Secp256k1 } from 'tevm';
 
 const message = Siwe.create({ ... });
 const hash = Siwe.getMessageHash(message);

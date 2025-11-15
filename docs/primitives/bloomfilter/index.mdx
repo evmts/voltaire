@@ -129,7 +129,7 @@ Standard Ethereum bloom filter parameters for block headers.
 ### Creating and Using Filters
 
 ```typescript
-import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire';
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from 'tevm';
 
 // Create filter with Ethereum parameters
 const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
@@ -233,7 +233,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { create, add, contains, toHex } from '@tevm/voltaire/BrandedBloomFilter';
+import { create, add, contains, toHex } from 'tevm/BrandedBloomFilter';
 
 const filter = create(2048, 3);
 add(filter, item);

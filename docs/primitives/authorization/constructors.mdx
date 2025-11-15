@@ -25,7 +25,7 @@ Authorization.isItem(value: unknown): value is Authorization.Item
 
 **Example:**
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const data: unknown = getAuthFromAPI();
 
@@ -74,7 +74,7 @@ Authorization.isUnsigned(value: unknown): value is Authorization.Unsigned
 
 **Example:**
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const data: unknown = getUserAuth();
 
@@ -181,7 +181,7 @@ const allValid = batch.every(Authorization.isUnsigned);
 See [Signing](./signing) for details on signing unsigned authorizations.
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 // Create unsigned
 const unsigned: Authorization.Unsigned = {
@@ -206,7 +206,7 @@ if (Authorization.isItem(auth)) {
 ### Safe Type Narrowing
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function processAuth(data: unknown): void {
   if (!Authorization.isItem(data)) {
@@ -223,7 +223,7 @@ function processAuth(data: unknown): void {
 ### Union Type Handling
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 type AuthData = Authorization.Item | Authorization.Unsigned;
 
@@ -242,7 +242,7 @@ function formatAuth(auth: AuthData): string {
 ### Validation Pipeline
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 interface ValidatedAuth {
   auth: Authorization.Item;
@@ -270,7 +270,7 @@ function validateAndProcess(data: unknown): ValidatedAuth {
 ### API Response Handler
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 interface ApiResponse {
   authorizations: unknown[];
@@ -438,7 +438,7 @@ function safeCreateUnsigned(
 ### Array Validator
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateAuthArray(data: unknown[]): Authorization.Item[] {
   const valid: Authorization.Item[] = [];

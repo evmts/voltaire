@@ -18,7 +18,7 @@ Data-first branded Wei type - `BrandedUint` representing Wei denomination with z
 ## Type Definition
 
 ```typescript
-import type { BrandedUint } from '@tevm/voltaire/BrandedUint'
+import type { BrandedUint } from 'tevm/BrandedUint'
 
 export type BrandedWei = BrandedUint & { readonly __brand: unique symbol }
 ```
@@ -32,7 +32,7 @@ Inherits all `BrandedUint` properties - 32-byte Uint8Array with bigint arithmeti
 Create BrandedWei from numeric input.
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedWei from 'tevm/BrandedWei'
 
 const wei1 = BrandedWei(1_000_000_000n)              // 1 Gwei in Wei
 const wei2 = BrandedWei(1_000_000_000_000_000_000n)  // 1 Ether in Wei
@@ -50,8 +50,8 @@ const wei4 = BrandedWei(42)                          // Number input
 Convert BrandedGwei to BrandedWei (multiply by 10^9).
 
 ```typescript
-import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedGwei from 'tevm/BrandedGwei'
+import * as BrandedWei from 'tevm/BrandedWei'
 
 const gwei = BrandedGwei(50n)
 const wei = BrandedWei.fromGwei(gwei)  // 50_000_000_000n Wei
@@ -69,8 +69,8 @@ const wei = BrandedWei.fromGwei(gwei)  // 50_000_000_000n Wei
 Convert BrandedEther to BrandedWei (multiply by 10^18).
 
 ```typescript
-import * as BrandedEther from '@tevm/voltaire/BrandedEther'
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedEther from 'tevm/BrandedEther'
+import * as BrandedWei from 'tevm/BrandedWei'
 
 const ether = BrandedEther(1n)
 const wei = BrandedWei.fromEther(ether)  // 1_000_000_000_000_000_000n Wei
@@ -90,7 +90,7 @@ const wei = BrandedWei.fromEther(ether)  // 1_000_000_000_000_000_000n Wei
 Convert BrandedWei to BrandedGwei (divide by 10^9).
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedWei from 'tevm/BrandedWei'
 
 const wei = BrandedWei(50_000_000_000n)
 const gwei = BrandedWei.toGwei(wei)  // BrandedGwei(50n)
@@ -112,7 +112,7 @@ const gwei2 = BrandedWei.toGwei(wei2)  // BrandedGwei(50n) - truncates
 Convert BrandedWei to BrandedEther (divide by 10^18).
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedWei from 'tevm/BrandedWei'
 
 const wei = BrandedWei(1_000_000_000_000_000_000n)
 const ether = BrandedWei.toEther(wei)  // BrandedEther(1n)
@@ -136,8 +136,8 @@ const ether2 = BrandedWei.toEther(wei2)  // BrandedEther(0n) - truncates
 Convert BrandedWei to raw BrandedUint (removes denomination branding).
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
-import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+import * as BrandedWei from 'tevm/BrandedWei'
+import * as BrandedUint from 'tevm/BrandedUint'
 
 const wei = BrandedWei(1_000_000_000n)
 const u256 = BrandedWei.toU256(wei)  // BrandedUint (no denomination)
@@ -156,7 +156,7 @@ const doubled = BrandedUint.times(u256, BrandedUint(2n))
 ## Constants
 
 ```typescript
-import { WEI_PER_GWEI, WEI_PER_ETHER } from '@tevm/voltaire/BrandedWei'
+import { WEI_PER_GWEI, WEI_PER_ETHER } from 'tevm/BrandedWei'
 
 WEI_PER_GWEI   // 1_000_000_000n (10^9)
 WEI_PER_ETHER  // 1_000_000_000_000_000_000n (10^18)
@@ -167,9 +167,9 @@ WEI_PER_ETHER  // 1_000_000_000_000_000_000n (10^18)
 ### Gas Cost Calculation
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
-import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
-import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+import * as BrandedWei from 'tevm/BrandedWei'
+import * as BrandedGwei from 'tevm/BrandedGwei'
+import * as BrandedUint from 'tevm/BrandedUint'
 
 const gasPrice = BrandedGwei(50n)  // 50 Gwei
 const gasUsed = BrandedUint(21_000n)
@@ -187,8 +187,8 @@ console.log(`Cost: ${totalCostWei} Wei`)
 ### Transaction Value
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
-import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+import * as BrandedWei from 'tevm/BrandedWei'
+import * as BrandedEther from 'tevm/BrandedEther'
 
 const valueEther = BrandedEther(1n)  // 1 ETH
 const valueWei = BrandedEther.toWei(valueEther)
@@ -202,9 +202,9 @@ const tx = {
 ### Conversion Chain
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
-import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
-import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+import * as BrandedWei from 'tevm/BrandedWei'
+import * as BrandedGwei from 'tevm/BrandedGwei'
+import * as BrandedEther from 'tevm/BrandedEther'
 
 // Start with Ether
 const ether = BrandedEther(1n)
@@ -224,8 +224,8 @@ const etherAgain = BrandedGwei.toEther(gwei)  // 1n
 BrandedWei prevents mixing denominations at compile time:
 
 ```typescript
-import * as BrandedWei from '@tevm/voltaire/BrandedWei'
-import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from 'tevm/BrandedWei'
+import * as BrandedGwei from 'tevm/BrandedGwei'
 
 const wei = BrandedWei(1_000_000_000n)
 const gwei = BrandedGwei(1n)

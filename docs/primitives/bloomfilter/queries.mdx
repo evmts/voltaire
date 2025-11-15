@@ -21,7 +21,7 @@ Methods for testing set membership and checking bloom filter state.
 Checks if an item might be in the set. Returns `false` if definitely not present, `true` if possibly present.
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -74,7 +74,7 @@ filter.add(item)
 filter.contains(item)  // true
 ```
 
-Defined in: [BrandedBloomFilter/contains.js:3-30](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/contains.js#L3-L30)
+Defined in: [BrandedBloomFilter/contains.js:3-30](https://github.com/evmts/tevm/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/contains.js#L3-L30)
 
 </Tab>
 
@@ -108,7 +108,7 @@ console.log(filter.contains(mightCollide))  // false or true (false positive)
 ### Checking Ethereum Logs
 
 ```typescript
-import { BloomFilter, Address } from '@tevm/voltaire'
+import { BloomFilter, Address } from 'tevm'
 
 // Load block bloom filter
 const blockFilter = BloomFilter(block.logsBloom, 2048, 3)
@@ -140,7 +140,7 @@ Checks if bloom filter is empty (all bits are zero). Empty filter has never had 
 <Tabs>
 <Tab title="Instance Method">
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -154,7 +154,7 @@ console.log(filter.isEmpty())  // false
 </Tab>
 <Tab title="Static Method">
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -184,7 +184,7 @@ return true
 
 **Performance:** O(m/8) where m is bit count - checks all bytes.
 
-Defined in: [BrandedBloomFilter/isEmpty.js:3-20](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/isEmpty.js#L3-L20)
+Defined in: [BrandedBloomFilter/isEmpty.js:3-20](https://github.com/evmts/tevm/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/isEmpty.js#L3-L20)
 
 ### Use Cases
 
@@ -219,7 +219,7 @@ function mergeIfNotEmpty(f1: BloomFilter, f2: BloomFilter): BloomFilter {
 ### Filtering Block Ranges
 
 ```typescript
-import { BloomFilter, Address } from '@tevm/voltaire'
+import { BloomFilter, Address } from 'tevm'
 
 // Find blocks that might contain address
 async function findRelevantBlocks(

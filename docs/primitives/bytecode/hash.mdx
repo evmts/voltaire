@@ -23,7 +23,7 @@ Compute keccak256 hash of bytecode (with auto-injected crypto).
 **Example:**
 
 ```typescript
-import * as Bytecode from '@tevm/voltaire/Bytecode'
+import * as Bytecode from 'tevm/Bytecode'
 
 const code = Bytecode('0x6001')
 const hash = Bytecode.hash(code)
@@ -49,8 +49,8 @@ Tree-shakeable factory pattern with explicit crypto dependencies.
 **Example:**
 
 ```typescript
-import { Hash } from '@tevm/voltaire/Bytecode'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { Hash } from 'tevm/Bytecode'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 const hashFn = Hash({ keccak256 })
 const code = new Uint8Array([0x60, 0x01])
@@ -69,7 +69,7 @@ const hash = hashFn(code)
 Compute keccak256 hash of bytecode.
 
 ```c
-#include "voltaire.h"
+#include "tevm.h"
 
 uint8_t code[] = {0x60, 0x01};
 bytecode_t bc = bytecode_init(code, 2);
@@ -85,7 +85,7 @@ bytecode_free(bc);
 hash_free(hash_result);
 ```
 
-**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+**Defined in:** [src/primitives.h](https://github.com/evmts/tevm/blob/main/src/primitives.h)
 
 </Tab>
 </Tabs>

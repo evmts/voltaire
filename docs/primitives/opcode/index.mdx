@@ -37,7 +37,7 @@ import {
   disassemble,
   jumpDests,
   isValidJumpDest
-} from '@tevm/voltaire/Opcode'
+} from 'tevm/Opcode'
 
 // Check opcode validity
 const valid = isValid(0x60)  // true (PUSH1)
@@ -66,7 +66,7 @@ const isValidJump = isValidJumpDest(bytecode, 0x0042)
 </Tab>
 <Tab title="Bytecode Parsing">
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x80,           // PUSH1 0x80
@@ -91,7 +91,7 @@ const instructions = Opcode.parse(bytecode)
 </Tab>
 <Tab title="Disassembly">
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x80,           // PUSH1 0x80
@@ -153,7 +153,7 @@ export type Info = {
 }
 ```
 
-Source: [BrandedOpcode.ts:1-31](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/BrandedOpcode.ts#L1-L31)
+Source: [BrandedOpcode.ts:1-31](https://github.com/evmts/tevm/blob/main/src/primitives/Opcode/BrandedOpcode/BrandedOpcode.ts#L1-L31)
 
 ## Core Methods
 

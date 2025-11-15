@@ -46,7 +46,7 @@ typeof checksummed // "string"
 
 **Type:**
 ```typescript
-import type { Hex } from '@tevm/voltaire'
+import type { Hex } from 'tevm'
 
 type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -54,7 +54,7 @@ type Checksummed = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
 
 **Note:** Uses keccak256 internally.
 
@@ -80,7 +80,7 @@ Address.Checksummed.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E") // tru
 
 **Returns:** `boolean`
 
-Defined in: [primitives/Address/AddressType/ChecksumAddress.js:55](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:55](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
 
 **EIP-55 Logic:**
 - If all letters same case (all lower or all upper), valid
@@ -108,7 +108,7 @@ const lowercase = Address.Lowercase(addr)
 
 **Type:**
 ```typescript
-import type { Hex } from '@tevm/voltaire'
+import type { Hex } from 'tevm'
 
 type Lowercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -116,7 +116,7 @@ type Lowercase = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/AddressType/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/LowercaseAddress.js)
+Defined in: [primitives/Address/AddressType/LowercaseAddress.js:20](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/LowercaseAddress.js)
 
 ## UppercaseAddress
 
@@ -140,7 +140,7 @@ const uppercase = Address.Uppercase(addr)
 
 **Type:**
 ```typescript
-import type { Hex } from '@tevm/voltaire'
+import type { Hex } from 'tevm'
 
 type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -148,7 +148,7 @@ type Uppercase = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/AddressType/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/UppercaseAddress.js)
+Defined in: [primitives/Address/AddressType/UppercaseAddress.js:20](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/UppercaseAddress.js)
 
 ## Variant Comparison
 

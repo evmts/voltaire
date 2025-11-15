@@ -38,7 +38,7 @@ import {
   validate,
   getGasCost,
   verify
-} from '@tevm/voltaire/Authorization';
+} from 'tevm/Authorization';
 
 // Create unsigned authorization
 const unsigned = {
@@ -422,10 +422,10 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific methods
-import { sign, verify, validate } from '@tevm/primitives/Authorization'
+import { sign, verify, validate } from 'tevm/primitives/Authorization'
 
 // Or import entire namespace
-import * as Authorization from '@tevm/primitives/Authorization'
+import * as Authorization from 'tevm/primitives/Authorization'
 
 // Selective imports reduce bundle size
 const auth = sign.call(unsigned, privateKey)

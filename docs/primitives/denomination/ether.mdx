@@ -20,7 +20,7 @@ Ether (ETH) is the native cryptocurrency of Ethereum. `Ether.Type` is a [branded
 ## Type Definition
 
 ```typescript
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Uint from 'tevm/Uint'
 
 const etherSymbol = Symbol("Ether")
 
@@ -34,7 +34,7 @@ export type Type = Uint.Type & { __brand: typeof etherSymbol }
 Create Ether from numeric value.
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 
 const ether1 = Ether(1n)       // 1 ETH
 const ether2 = Ether(10n)      // 10 ETH
@@ -50,7 +50,7 @@ const ether5 = Ether(2)        // Number input
 
 **Note:** Uses `Uint.from` internally for conversion.
 
-Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions From Other Units
 
@@ -59,8 +59,8 @@ Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/volta
 Convert Wei to Ether (divide by 10^18).
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from 'tevm/Wei'
+import * as Ether from 'tevm/Ether'
 
 const wei = Wei(1_000_000_000_000_000_000n)  // 1 quintillion Wei
 const ether = Ether.fromWei(wei)  // 1n Ether
@@ -77,15 +77,15 @@ const ether2 = Ether.fromWei(wei2)  // 0n (truncates)
 
 **Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Ether.ts:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:14](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ### `Ether.fromGwei(gwei)`
 
 Convert Gwei to Ether (divide by 10^9).
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Gwei from 'tevm/Gwei'
+import * as Ether from 'tevm/Ether'
 
 const gwei = Gwei(1_000_000_000n)  // 1 billion Gwei
 const ether = Ether.fromGwei(gwei)  // 1n Ether
@@ -102,7 +102,7 @@ const ether2 = Ether.fromGwei(gwei2)  // 0n (truncates)
 
 **Formula:** `ether = gwei / 1_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions To Other Units
 
@@ -111,7 +111,7 @@ Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/volta
 Convert Ether to Wei (multiply by 10^18).
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 
 const ether = Ether(1n)  // 1 ETH
 const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n Wei
@@ -127,14 +127,14 @@ const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n Wei
 
 **Formula:** `wei = ether * 1_000_000_000_000_000_000`
 
-Defined in: [primitives/Denomination/Ether.ts:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:24](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ### `Ether.toGwei(ether)`
 
 Convert Ether to Gwei (multiply by 10^9).
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 
 const ether = Ether(1n)  // 1 ETH
 const gwei = Ether.toGwei(ether)  // 1_000_000_000n Gwei
@@ -147,7 +147,7 @@ const gwei = Ether.toGwei(ether)  // 1_000_000_000n Gwei
 
 **Formula:** `gwei = ether * 1_000_000_000`
 
-Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions To Base Type
 
@@ -156,8 +156,8 @@ Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/volta
 Convert Ether to raw Uint256 (removes branding).
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Ether from 'tevm/Ether'
+import * as Uint from 'tevm/Uint'
 
 const ether = Ether(10n)
 const u256 = Ether.toU256(ether)  // Uint.Type (unbranded)
@@ -173,15 +173,15 @@ const doubled = Uint.times(u256, Uint(2n))
 
 **Note:** Removes type safety. Use for arithmetic operations requiring `Uint.Type`.
 
-Defined in: [primitives/Denomination/Ether.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:34](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Usage Examples
 
 ### Account Balance
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
 
 // Get balance from RPC (returns Wei)
 const balanceWei = Wei(5_250_000_000_000_000_000n)
@@ -196,7 +196,7 @@ console.log(`Balance: ${balanceEther} ETH`)
 ### Transaction Value
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 
 // User wants to send 2 ETH
 const valueEther = Ether(2n)
@@ -213,9 +213,9 @@ const tx = {
 ### Balance Comparison
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 const minimumEther = Ether(1n)  // Require at least 1 ETH
 const balanceWei = Wei(2_500_000_000_000_000_000n)  // 2.5 ETH in Wei
@@ -233,8 +233,8 @@ if (balanceU`256 >= minimumU256`) {
 ### Total Value Calculation
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Ether from 'tevm/Ether'
+import * as Uint from 'tevm/Uint'
 
 // Multiple balances
 const balances = [
@@ -257,8 +257,8 @@ console.log(`Total: ${total} ETH`)  // 16 ETH
 ### Fractional Ether Display
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 // Balance has fractional Ether
 const balanceWei = Wei(1_250_000_000_000_000_000n)  // 1.25 ETH
@@ -287,7 +287,7 @@ const GWEI_PER_ETHER = 1_000_000_000n  // 10^9
 ## Common Ether Values
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 
 // Standard amounts
 const ZERO = Ether(0n)
@@ -305,8 +305,8 @@ const MIN_STAKING = Ether(32n)  // Validator stake
 Ether type prevents mixing with other denominations:
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Ether from 'tevm/Ether'
+import * as Gwei from 'tevm/Gwei'
 
 const balance = Ether(10n)
 const gasPrice = Gwei(50n)
@@ -324,8 +324,8 @@ const gasPriceEther = Gwei.toEther(gasPrice)
 Ether uses integer arithmetic. For fractional Ether:
 
 ```typescript
-import * as Ether from '@tevm/voltaire/Ether'
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from 'tevm/Ether'
+import * as Wei from 'tevm/Wei'
 
 // ✗ Fractional Ether lost
 const ether = Ether(1n)  // Can only represent whole Ether
@@ -343,7 +343,7 @@ const ether = Wei.toEther(halfEtherWei)  // 0n (truncates)
 ## Display Best Practices
 
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
+import * as Wei from 'tevm/Wei'
 
 // Store in Wei
 const balanceWei = Wei(1_234_567_890_123_456_789n)
@@ -365,7 +365,7 @@ console.log(formatEther(balanceWei))  // "1.234567890123456789 ETH"
 Ether conversions available in WebAssembly for performance:
 
 ```typescript
-import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
+import * as EtherWasm from 'tevm/Ether.wasm'
 
 const ether = EtherWasm(10n)
 const wei = EtherWasm.toWei(ether)

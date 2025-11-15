@@ -109,7 +109,7 @@ Full authentication flow from message creation to verification:
 <Tab title="Frontend">
 
 ```typescript
-import { Siwe, Address } from '@tevm/voltaire';
+import { Siwe, Address } from 'tevm';
 
 // 1. Request nonce from backend
 const { nonce } = await fetch('/auth/nonce').then(r => r.json());
@@ -150,7 +150,7 @@ if (response.ok) {
 <Tab title="Backend">
 
 ```typescript
-import { Siwe, Address } from '@tevm/voltaire';
+import { Siwe, Address } from 'tevm';
 
 // Generate nonce endpoint
 app.get('/auth/nonce', (req, res) => {
@@ -207,7 +207,7 @@ app.post('/auth/verify', async (req, res) => {
 SIWE uses EIP-191 personal sign standard:
 
 ```typescript
-import { Siwe, Address } from '@tevm/voltaire';
+import { Siwe, Address } from 'tevm';
 
 const message = Siwe.create({
   domain: "example.com",

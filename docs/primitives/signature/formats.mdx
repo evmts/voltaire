@@ -39,7 +39,7 @@ With Recovery ID (65 bytes):
 ### Usage
 
 ```typescript
-import { Signature } from '@tevm/voltaire';
+import { Signature } from 'tevm';
 
 // Create from compact (64 bytes)
 const compact64 = Bytes64();
@@ -111,7 +111,7 @@ Example (hex):
 ### Usage
 
 ```typescript
-import { Signature } from '@tevm/voltaire';
+import { Signature } from 'tevm';
 
 // Create from DER
 const derBytes = Hex.toBytes('0x3045...');
@@ -176,7 +176,7 @@ interface RSVSignature {
 ### Usage
 
 ```typescript
-import { Signature } from '@tevm/voltaire';
+import { Signature } from 'tevm';
 
 // Create from RSV object
 const sig = Signature({

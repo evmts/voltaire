@@ -26,7 +26,7 @@ Currently, Uint256 WASM support focuses on byte-level conversions with the WASM 
 Convert hex string to 32-byte U256 representation (big-endian).
 
 ```typescript
-import { u256FromHex } from '@tevm/voltaire/Uint256.wasm'
+import { u256FromHex } from 'tevm/Uint256.wasm'
 
 // Convert hex to bytes
 const bytes = u256FromHex("0xff")
@@ -47,14 +47,14 @@ const bytes3 = u256FromHex("ff")
 **Throws:**
 - If hex contains invalid characters
 
-Source: [Uint256.wasm.ts:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L13)
+Source: [Uint256.wasm.ts:13](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint256.wasm.ts#L13)
 
 #### `u256ToHex(value)`
 
 Convert 32-byte U256 value to hex string.
 
 ```typescript
-import { u256ToHex } from '@tevm/voltaire/Uint256.wasm'
+import { u256ToHex } from 'tevm/Uint256.wasm'
 
 const bytes = Bytes32()
 bytes[31] = 0xff
@@ -74,14 +74,14 @@ u256ToHex(wrong)  // Error: must be 32 bytes
 **Throws:**
 - If value is not exactly 32 bytes
 
-Source: [Uint256.wasm.ts:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L22)
+Source: [Uint256.wasm.ts:22](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint256.wasm.ts#L22)
 
 #### `u256FromBigInt(value)`
 
 Convert bigint to 32-byte U256 representation.
 
 ```typescript
-import { u256FromBigInt } from '@tevm/voltaire/Uint256.wasm'
+import { u256FromBigInt } from 'tevm/Uint256.wasm'
 
 const bytes = u256FromBigInt(255n)
 // Uint8Array(32) [0, 0, ..., 0, 255]
@@ -103,14 +103,14 @@ u256FromBigInt(2n ** 256n)   // Error: exceeds maximum
 - If value is negative
 - If value exceeds 2^256 - 1
 
-Source: [Uint256.wasm.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L34)
+Source: [Uint256.wasm.ts:34](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint256.wasm.ts#L34)
 
 #### `u256ToBigInt(value)`
 
 Convert 32-byte U256 value to bigint.
 
 ```typescript
-import { u256ToBigInt } from '@tevm/voltaire/Uint256.wasm'
+import { u256ToBigInt } from 'tevm/Uint256.wasm'
 
 const bytes = Bytes32()
 bytes[31] = 0xff
@@ -130,14 +130,14 @@ u256ToBigInt(wrong)  // Error: must be 32 bytes
 **Throws:**
 - If value is not exactly 32 bytes
 
-Source: [Uint256.wasm.ts:52](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L52)
+Source: [Uint256.wasm.ts:52](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint256.wasm.ts#L52)
 
 ## Usage Patterns
 
 ### Using WASM Conversions
 
 ```typescript
-import { u256FromHex, u256ToHex, u256FromBigInt, u256ToBigInt } from '@tevm/voltaire/Uint256.wasm'
+import { u256FromHex, u256ToHex, u256FromBigInt, u256ToBigInt } from 'tevm/Uint256.wasm'
 
 // Hex round-trip
 const hex = "0xff"
@@ -158,8 +158,8 @@ const bigint3 = u256ToBigInt(bytes3)
 ### Integration with Uint
 
 ```typescript
-import { Uint } from '@tevm/voltaire'
-import { u256FromHex, u256ToBigInt } from '@tevm/voltaire/Uint256.wasm'
+import { Uint } from 'tevm'
+import { u256FromHex, u256ToBigInt } from 'tevm/Uint256.wasm'
 
 // Parse hex using WASM, then create Uint
 const hex = "0xff"
@@ -174,8 +174,8 @@ const uint2 = Uint(hex)  // Equivalent, uses JS implementation
 ### Performance Testing
 
 ```typescript
-import { u256FromHex, u256ToHex } from '@tevm/voltaire/Uint256.wasm'
-import { Uint } from '@tevm/voltaire'
+import { u256FromHex, u256ToHex } from 'tevm/Uint256.wasm'
+import { Uint } from 'tevm'
 
 // Benchmark WASM vs JS
 const iterations = 10000
@@ -225,10 +225,10 @@ WASM module compiled with ReleaseSmall targeting minimal bundle size. Only inclu
 
 ```typescript
 // Includes WASM module
-import { u256FromHex } from '@tevm/voltaire/Uint256.wasm'
+import { u256FromHex } from 'tevm/Uint256.wasm'
 
 // No WASM module
-import { fromHex } from '@tevm/voltaire/BrandedUint256'
+import { fromHex } from 'tevm/BrandedUint256'
 ```
 
 WASM loader infrastructure is shared across all primitives, so first WASM import includes loader (~2-4KB gzipped), subsequent WASM primitives add only their specific implementations.
@@ -239,9 +239,9 @@ WASM module adds ~2-4KB gzipped for loader + primitive-specific code. Use when p
 
 ## Files
 
-- **[Uint256.wasm.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts)** - TypeScript exports with WASM bindings
-- **[Uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint.zig)** - Zig source implementation
-- **[loader.js](https://github.com/evmts/voltaire/blob/main/src/wasm-loader/loader.js)** - Shared WASM loader
+- **[Uint256.wasm.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint256.wasm.ts)** - TypeScript exports with WASM bindings
+- **[Uint.zig](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/Uint.zig)** - Zig source implementation
+- **[loader.js](https://github.com/evmts/tevm/blob/main/src/wasm-loader/loader.js)** - Shared WASM loader
 
 ## Browser Support
 

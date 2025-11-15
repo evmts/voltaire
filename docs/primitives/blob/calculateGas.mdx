@@ -14,7 +14,7 @@ description: Calculate blob gas cost for number of blobs
 ## Gas Constants
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 console.log(Blob.GAS_PER_BLOB);        // 131,072 (2^17)
 console.log(Blob.TARGET_GAS_PER_BLOCK); // 393,216 (3 blobs)
@@ -30,7 +30,7 @@ console.log(maxGas); // 786,432
 Blob base fee adjusts based on block usage:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Target: 3 blobs per block
 const target = Blob.TARGET_GAS_PER_BLOCK;
@@ -62,7 +62,7 @@ if (highUsage > targetGas) {
 ## Complete Transaction Cost
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Transaction costs
 const executionGas = 21000n; // Base transaction

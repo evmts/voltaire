@@ -16,7 +16,7 @@ description: Parse multiple event logs using full ABI
 ### Parse All Contract Events
 
 ```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
 
 const abi = [...] // Full ERC20 ABI
 
@@ -41,7 +41,7 @@ for (const log of decoded) {
 ### Filter Specific Event Type
 
 ```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
 
 const abi = [...]
 const logs = await provider.getLogs({ address: contractAddress })

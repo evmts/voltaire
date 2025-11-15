@@ -14,7 +14,7 @@ Bytes32 is a branded `Uint8Array` specialization of the generic `Bytes<N>` type,
 See the [Bytes overview](/primitives/bytes) for generic `Bytes<N>` documentation and other size specializations.
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Storage slot
 const slot = Bytes32(0);
@@ -57,8 +57,8 @@ const right = Bytes32('0x...');
 Both are 32 bytes, but semantic meaning differs:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Keccak256 } from 'tevm/Keccak256';
+import { Bytes32 } from 'tevm/Bytes32';
 
 // Keccak256Hash = keccak256 output (semantic)
 const hash = Keccak256.hash(data);
@@ -108,7 +108,7 @@ This branding system provides:
 For hex string representations, use the `HexBytes32` type which extends branded hex strings with size information:
 
 ```typescript
-import type { HexBytes32 } from '@tevm/voltaire/primitives/Hex';
+import type { HexBytes32 } from 'tevm/primitives/Hex';
 
 // HexBytes32 is a string type with branding
 type HexBytes32 = `0x${string}` & {

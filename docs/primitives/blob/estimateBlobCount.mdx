@@ -16,7 +16,7 @@ description: Estimate number of blobs needed for data
 Each blob stores up to 131,064 bytes of data:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const maxPerBlob = Blob.SIZE - 8; // 131,064 bytes
 console.log(`Max per blob: ${maxPerBlob}`);
@@ -38,7 +38,7 @@ console.log(estimate(786_384));   // 6 blobs (max)
 ## Size Limits
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const maxPerBlob = Blob.SIZE - 8;
 const maxData = maxPerBlob * Blob.MAX_PER_TRANSACTION;
@@ -59,7 +59,7 @@ console.log(Blob.estimateBlobCount(maxData + 1)); // 7
 ### Pre-Flight Validation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 function canFitInTransaction(data: Uint8Array): boolean {
   const blobCount = Blob.estimateBlobCount(data);
@@ -75,7 +75,7 @@ if (!canFitInTransaction(largeData)) {
 ### Cost Estimation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 async function estimateBlobCost(
   data: Uint8Array,
@@ -94,7 +94,7 @@ console.log(`Estimated cost: ${cost / 10n**9n} gwei`);
 ### Batch Planning
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 function planBatches(items: Uint8Array[]): Uint8Array[][] {
   const batches: Uint8Array[][] = [];
@@ -127,7 +127,7 @@ function planBatches(items: Uint8Array[]): Uint8Array[][] {
 ## Edge Cases
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Empty data
 console.log(Blob.estimateBlobCount(0)); // 1 blob (minimum)

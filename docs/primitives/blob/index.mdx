@@ -137,7 +137,7 @@ export type VersionedHash = Uint8Array & {
 ### Creating Blobs from Data
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Small data - single blob
 const data = new TextEncoder().encode("Rollup batch #1234");
@@ -154,7 +154,7 @@ console.log(new TextDecoder().decode(decoded)); // "Rollup batch #1234"
 ### Handling Large Data
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Large data spanning multiple blobs
 const largeData = new Uint8Array(300_000); // 300 KB
@@ -175,7 +175,7 @@ console.log(`Reconstructed ${reconstructed.length} bytes`);
 ### Versioned Hashes for Transactions
 
 ```typescript
-import { Kzg, Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from 'tevm';
 
 // Create blob and get versioned hash
 const blob = Blob.fromData(data);
@@ -198,7 +198,7 @@ console.log(Blob.VersionedHash.getVersion(versionedHash)); // 1
 ### Gas Cost Estimation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Calculate gas cost for blob transaction
 const blobBaseFee = 50000000n; // 50 gwei (example)
@@ -217,7 +217,7 @@ console.log(`Savings: ${((1 - Number(blobGas) / Number(calldataGas)) * 100).toFi
 ### Batch Verification
 
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from 'tevm';
 
 // Multiple blobs with commitments and proofs
 const blobs = [blob1, blob2, blob3];
@@ -244,7 +244,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { fromData, toData, estimateBlobCount } from '@tevm/voltaire/BrandedBlob';
+import { fromData, toData, estimateBlobCount } from 'tevm/BrandedBlob';
 
 const blob = fromData(data);
 const decoded = toData(blob);

@@ -15,7 +15,7 @@ Parse bytecode into array of instructions with offsets and immediates.
 
 <Tab title="Functional API">
 ```typescript
-import { parse } from '@tevm/voltaire/Opcode'
+import { parse } from 'tevm/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x80,           // PUSH1 0x80
@@ -62,7 +62,7 @@ type Instruction = {
 ### Disassemble Bytecode
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 function disassemble(bytecode: Uint8Array): string[] {
   const instructions = Opcode.parse(bytecode)

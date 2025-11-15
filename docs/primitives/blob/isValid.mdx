@@ -16,7 +16,7 @@ description: Check if data is valid blob (exactly 131,072 bytes)
 ### Before Blob Operations
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Validate before expensive operations
 if (Blob.isValid(data)) {
@@ -31,7 +31,7 @@ if (Blob.isValid(data)) {
 ### Type Guard Pattern
 
 ```typescript
-import { Blob, type BrandedBlob } from '@tevm/voltaire';
+import { Blob, type BrandedBlob } from 'tevm';
 
 function assertBlob(value: Uint8Array): asserts value is BrandedBlob {
   if (!Blob.isValid(value)) {

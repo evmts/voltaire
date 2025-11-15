@@ -90,7 +90,7 @@ This means access lists only save 100 gas per item on the **first access**. They
 ### Adding Multiple Addresses
 
 ```typescript
-import { AccessList, Address } from '@tevm/voltaire';
+import { AccessList, Address } from 'tevm';
 
 let list = AccessList.create();
 
@@ -110,7 +110,7 @@ console.log(`Total items: ${list.storageKeyCount()}`); // 0 (no keys yet)
 ### Querying Access Lists
 
 ```typescript
-import { AccessList, Address, Hash } from '@tevm/voltaire';
+import { AccessList, Address, Hash } from 'tevm';
 
 const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
 const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
@@ -136,7 +136,7 @@ console.log(list.isEmpty()); // false
 Here's a real-world example analyzing whether an access list saves gas:
 
 ```typescript
-import { AccessList, Address, Hash } from '@tevm/voltaire';
+import { AccessList, Address, Hash } from 'tevm';
 
 // Uniswap V3 swap accessing USDC and WETH
 const router = Address('0xE592427A0AEce92De3Edee1F18E0157C05861564');
@@ -181,7 +181,7 @@ if (list.hasSavings()) {
 Access lists become beneficial when you access the same slots **multiple times**:
 
 ```typescript
-import { AccessList, Address, Hash } from '@tevm/voltaire';
+import { AccessList, Address, Hash } from 'tevm';
 
 const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
 const balanceSlot = Hash('0x0000000000000000000000000000000000000000000000000000000000000003');
@@ -324,7 +324,7 @@ Most applications should use libraries like `@ethersproject/abi` or `viem` to ca
 Always deduplicate before using an access list:
 
 ```typescript
-import { AccessList, Address } from '@tevm/voltaire';
+import { AccessList, Address } from 'tevm';
 
 const token = Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
 
@@ -348,7 +348,7 @@ console.log(list.addressCount()); // 1
 Combine multiple access lists for complex operations:
 
 ```typescript
-import { AccessList, Address } from '@tevm/voltaire';
+import { AccessList, Address } from 'tevm';
 
 const tokenList = AccessList.create()
   .withAddress(Address('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e'));

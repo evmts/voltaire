@@ -14,7 +14,7 @@ Tevm provides WASM builds for blob operations with some limitations. This page c
 ### Supported Operations
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // ✅ Data encoding/decoding
 const blob = Blob.fromData(data);
@@ -38,7 +38,7 @@ const gas = Blob.calculateGas(blobCount);
 KZG operations require c-kzg-4844 native library (not available in WASM):
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // ❌ KZG commitment (requires native library)
 try {
@@ -69,7 +69,7 @@ try {
 Use WASM for data encoding/decoding, compute KZG operations server-side:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class BrowserL2Client {
   async prepareBlob(data: Uint8Array): Promise<PreparedBlob> {
@@ -103,7 +103,7 @@ class BrowserL2Client {
 ### Backend KZG Service
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 import express from 'express';
 
 const app = express();
@@ -165,7 +165,7 @@ const blob = Blob.fromData(data);
 WASM performs well for data encoding/decoding:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Benchmark: fromData (WASM)
 console.time('fromData');
@@ -209,7 +209,7 @@ console.timeEnd('verify'); // ~5ms
 Use WASM for data operations, native for KZG:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class HybridBlobProcessor {
   async process(data: Uint8Array): Promise<BlobTransaction> {
@@ -257,7 +257,7 @@ class HybridBlobProcessor {
 For known data, pre-compute commitments:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Generate commitments ahead of time (native)
 const precomputed = new Map<string, KZGData>();
@@ -292,7 +292,7 @@ function getKZGData(data: Uint8Array): KZGData {
 ### WASM-Specific Tests
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 import { describe, it, expect } from 'vitest';
 
 describe('Blob WASM', () => {
@@ -367,7 +367,7 @@ Follow progress on WASM KZG support:
 WASM has stricter memory limits:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Large data may fail in WASM
 try {

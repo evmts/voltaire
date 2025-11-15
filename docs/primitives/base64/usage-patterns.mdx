@@ -16,7 +16,7 @@ Practical patterns for Base64 encoding and decoding in Ethereum applications.
 ### Binary to Base64
 
 ```typescript
-import * as Base64 from '@tevm/voltaire/Base64';
+import * as Base64 from 'tevm/Base64';
 
 // Encode binary data
 const binaryData = new Uint8Array([1, 2, 3, 4, 5]);
@@ -24,7 +24,7 @@ const encoded = Base64.encode(binaryData);
 console.log(encoded);  // "AQIDBAU="
 
 // Encode hex to Base64
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Hex from 'tevm/Hex';
 const hexData = Hex("0x48656c6c6f");  // "Hello"
 const base64 = Base64.encode(Hex.toBytes(hexData));
 console.log(base64);  // "SGVsbG8="

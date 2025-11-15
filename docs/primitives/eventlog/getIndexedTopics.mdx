@@ -41,7 +41,7 @@ event AnonymousEvent(
 ### Extracting Transfer Parameters
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_SIG = Hash('0xddf252ad...');
@@ -73,7 +73,7 @@ console.log('Value:', transfer.value);
 ### Validating Parameter Count
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function validateEventStructure(log: EventLog, expectedCount: number): boolean {
   const indexed = log.getIndexedTopics();
@@ -98,7 +98,7 @@ validateEventStructure(approvalLog, 2); // true
 ### Destructuring Parameters
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Approval(address indexed owner, address indexed spender, uint256 value)
 const log = EventLog({ /* ... */ });
@@ -112,7 +112,7 @@ console.log('Spender:', Hash.toHex(spenderHash));
 ### Empty Indexed Topics
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Event with no indexed parameters
 const log = EventLog({
@@ -128,7 +128,7 @@ console.log(indexed.length); // 0 (empty array)
 ### Anonymous Event Handling
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Anonymous events: topic0 is first indexed param, NOT signature
 const anonymousLog = EventLog({
@@ -151,7 +151,7 @@ console.log(allParams.length); // 3
 Addresses in topics are left-padded to 32 bytes. Extract the address by taking the last 20 bytes:
 
 ```typescript
-import { Address, Hash } from '@tevm/voltaire';
+import { Address, Hash } from 'tevm';
 
 const topicHash = Hash('0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12');
 

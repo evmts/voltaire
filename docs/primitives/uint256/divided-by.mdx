@@ -20,7 +20,7 @@ Divide Uint256 values. Floor division (rounds down).
 **Example:**
 
 ```typescript
-import { Uint } from '@tevm/voltaire'
+import { Uint } from 'tevm'
 
 const a = Uint(100n)
 const b = Uint(10n)
@@ -35,7 +35,7 @@ Uint.dividedBy(c, d)  // 3 (not 3.5)
 Uint.dividedBy(a, Uint.ZERO)  // Error
 ```
 
-**Defined in:** [primitives/Uint/BrandedUint256/dividedBy.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256/dividedBy.ts#L19)
+**Defined in:** [primitives/Uint/BrandedUint256/dividedBy.ts:19](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/BrandedUint256/dividedBy.ts#L19)
 
 <Warning title="Division by Zero">
 Throws error if divisor is zero.

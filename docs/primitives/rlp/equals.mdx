@@ -24,7 +24,7 @@ type BrandedRlp =
 Compares byte-by-byte:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
 const b = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -53,7 +53,7 @@ Rlp.equals(empty1, empty2)
 Compares recursively:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const list1 = {
   type: 'list',
@@ -101,7 +101,7 @@ Rlp.equals(list1, list4)
 Deeply nested structures are compared recursively:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const nested1 = {
   type: 'list',
@@ -142,7 +142,7 @@ Rlp.equals(nested1, nested2)
 Compare decoded transactions:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const tx1Bytes = new Uint8Array([...])
 const tx2Bytes = new Uint8Array([...])
@@ -160,7 +160,7 @@ if (Rlp.equals(tx1.data, tx2.data)) {
 Deduplicate RLP data structures:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function deduplicate(items: BrandedRlp[]): BrandedRlp[] {
   const unique: BrandedRlp[] = []
@@ -192,7 +192,7 @@ const unique = deduplicate(items)
 Use equality for cache lookups:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 class RlpCache {
   private cache: Array<{ key: BrandedRlp; value: any }> = []
@@ -215,7 +215,7 @@ class RlpCache {
 Compare expected vs actual in tests:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 import { expect } from 'vitest'
 
 test('encodes transaction correctly', () => {
@@ -244,7 +244,7 @@ test('encodes transaction correctly', () => {
 Compare proof nodes:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function verifyProof(
   leaf: BrandedRlp,
@@ -311,7 +311,7 @@ function equals(a: BrandedRlp, b: BrandedRlp): boolean {
 Comparison short-circuits on first difference:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Large lists with difference at start
 const list1 = {
@@ -340,7 +340,7 @@ Rlp.equals(list1, list2)
 For faster comparison, compare encoded bytes:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 function fastEquals(a: BrandedRlp, b: BrandedRlp): boolean {
   const aEncoded = Rlp.encode(a)

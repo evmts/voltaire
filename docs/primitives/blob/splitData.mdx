@@ -27,7 +27,7 @@ Max per blob: 131,064 bytes (SIZE - 8 for length prefix)
 ### Example: Size Calculation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const maxPerBlob = Blob.SIZE - 8; // 131,064 bytes
 console.log(`Max data per blob: ${maxPerBlob}`);
@@ -43,7 +43,7 @@ console.log(Blob.estimateBlobCount(data)); // 3
 ## Maximum Data Size
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const maxPerBlob = Blob.SIZE - 8;
 const maxData = maxPerBlob * Blob.MAX_PER_TRANSACTION;
@@ -71,7 +71,7 @@ try {
 Use `joinData()` to reconstruct original data:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const original = new Uint8Array(300_000);
 // ... fill with data ...
@@ -90,7 +90,7 @@ console.log(Blob.equals(reconstructed, original)); // true
 ## Gas Estimation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const data = new Uint8Array(300_000);
 const blobCount = Blob.estimateBlobCount(data);

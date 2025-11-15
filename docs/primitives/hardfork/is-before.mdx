@@ -18,7 +18,7 @@ description: Check if hardfork is before a target version (strictly less than)
 Exclude features not yet available:
 
 ```typescript
-import { Hardfork, LONDON } from '@tevm/voltaire'
+import { Hardfork, LONDON } from 'tevm'
 
 const fork = Hardfork(config.hardfork)
 
@@ -43,7 +43,7 @@ return {
 Check for pre-feature versions:
 
 ```typescript
-import { Hardfork, SHANGHAI } from '@tevm/voltaire'
+import { Hardfork, SHANGHAI } from 'tevm'
 
 function checkPUSH0Support(fork: BrandedHardfork) {
   if (fork.isBefore(SHANGHAI)) {
@@ -59,7 +59,7 @@ function checkPUSH0Support(fork: BrandedHardfork) {
 Validate against breaking changes:
 
 ```typescript
-import { Hardfork, MERGE } from '@tevm/voltaire'
+import { Hardfork, MERGE } from 'tevm'
 
 function validateMiningConfig(fork: BrandedHardfork, config: MiningConfig) {
   if (!fork.isBefore(MERGE) && config.mining) {
@@ -81,7 +81,7 @@ BERLIN (10) < LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16)
 **Important:** `isBefore` returns false when versions are equal:
 
 ```typescript
-import { LONDON } from '@tevm/voltaire'
+import { LONDON } from 'tevm'
 
 LONDON.isBefore(LONDON)  // false - not strictly before itself
 ```
@@ -89,7 +89,7 @@ LONDON.isBefore(LONDON)  // false - not strictly before itself
 For "less than or equal", use [lte](/primitives/hardfork/lte) or negate [isAfter](/primitives/hardfork/is-after):
 
 ```typescript
-import { LONDON, CANCUN } from '@tevm/voltaire'
+import { LONDON, CANCUN } from 'tevm'
 
 // Less than or equal
 LONDON.lte(LONDON)           // true

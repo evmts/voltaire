@@ -24,7 +24,7 @@ Blobs are fixed-size data containers (exactly 131,072 bytes = 128 KB) attached t
 ### Key Properties
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 console.log(Blob.SIZE);                    // 131,072 bytes (128 KB)
 console.log(Blob.FIELD_ELEMENTS_PER_BLOB); // 4,096 field elements
@@ -63,7 +63,7 @@ Blob (131,072 bytes)
 <Tab title="From Data (Standard)">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Encode arbitrary data with length prefix
 const data = new TextEncoder().encode("L2 batch transactions");
@@ -87,7 +87,7 @@ Standard encoding format:
 <Tab title="From Raw Bytes">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Pre-formatted blob data (exactly 131,072 bytes)
 const rawBlob = new Uint8Array(131072);
@@ -121,7 +121,7 @@ KZG (Kate-Zaverucha-Goldberg) commitments prove blob data integrity without reve
 <Tab title="TypeScript">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const blob = Blob.fromData(data);
 
@@ -147,7 +147,7 @@ console.log(`Valid: ${isValid}`); // true
 Transactions reference blobs using versioned hashes, not raw commitments:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const blob = Blob.fromData(data);
 const commitment = Blob.toCommitment(blob);
@@ -173,7 +173,7 @@ L2 rollup posting batch data to Ethereum:
 <Tab title="TypeScript">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Step 1: L2 creates transaction batch
 const batchData = new TextEncoder().encode(JSON.stringify({
@@ -273,7 +273,7 @@ Large data requires multiple blobs (max 6 per transaction):
 <Tab title="TypeScript">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Large L2 batch (300 KB)
 const largeBatch = new Uint8Array(300_000);
@@ -328,7 +328,7 @@ Blobs use a separate gas market from regular transactions:
 ### Gas Pricing
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Gas per blob (fixed)
 console.log(Blob.GAS_PER_BLOB); // 131,072 (2^17)
@@ -382,7 +382,7 @@ Modulus: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 Invalid field elements cause transaction rejection. Tevm handles this automatically in `fromData()`:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 // Data encoding ensures field element validity
 const blob = Blob.fromData(data);
@@ -402,7 +402,7 @@ if (!Blob.isValid(rawBlob)) {
 Blobs are temporary (~18 days = 4096 epochs):
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const BLOB_RETENTION_EPOCHS = 4096;
 const SECONDS_PER_EPOCH = 384; // 32 slots * 12 seconds
@@ -455,7 +455,7 @@ See [KZG Ceremony](https://ceremony.ethereum.org/) for details.
 ### Single Blob Transaction
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const data = new TextEncoder().encode("Rollup batch");
 const blob = Blob.fromData(data);
@@ -476,7 +476,7 @@ const tx = {
 ### Multi-Blob Transaction
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 const blobs = Blob.splitData(largeData);
 const commitments = blobs.map(b => Blob.toCommitment(b));
@@ -496,7 +496,7 @@ const tx = {
 ### Gas Estimation
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 async function estimateBlobCost(data, provider) {
   const blobCount = Blob.estimateBlobCount(data);

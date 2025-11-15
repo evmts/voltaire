@@ -25,7 +25,7 @@ Binary State Tree uses 32-byte keys split into 31-byte stems (tree path) and 1-b
 Convert 20-byte Ethereum address to 32-byte tree key by prepending 12 zero bytes.
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const address = new Uint8Array(20)
 address[0] = 0x74
@@ -58,7 +58,7 @@ key = [0,0,0,0,0,0,0,0,0,0,0,0, a0,a1,a2,...,a19]
 
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/addressToKey.js#L17-L22)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/addressToKey.js#L17-L22)
 
 ## Split Key
 
@@ -67,7 +67,7 @@ Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](http
 Split 32-byte key into 31-byte stem (tree path) and 1-byte subindex (value selector).
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const key = Bytes32()
 key[0] = 0xAA
@@ -100,7 +100,7 @@ key[31]     → idx (1 byte, 0-255)
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const key = Bytes32()
 key[31] = 5  // Subindex 5
@@ -112,7 +112,7 @@ console.log(stem.length) // 31
 </Tab>
 <Tab title="Tree Operations">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 // Insert uses splitKey internally
 const key = Bytes32()
@@ -124,7 +124,7 @@ const { stem, idx } = BinaryTree.splitKey(key)
 </Tab>
 <Tab title="Multiple Subindices">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const address = new Uint8Array(20)
 const baseKey = BinaryTree.addressToKey(address)
@@ -143,7 +143,7 @@ for (let i = 0; i < 10; i++) {
 </Tab>
 <Tab title="Validation">
 ```typescript
-import { BinaryTree, InvalidKeyLengthError } from '@tevm/voltaire'
+import { BinaryTree, InvalidKeyLengthError } from 'tevm'
 
 try {
   const invalidKey = new Uint8Array(31) // Wrong length
@@ -158,7 +158,7 @@ try {
 
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/splitKey.js#L19-L25)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/splitKey.js#L19-L25)
 
 ## Stem Bit Extraction
 
@@ -167,7 +167,7 @@ Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://
 Extract bit at position in 31-byte stem (0-247 bits). Used for tree traversal to determine left (0) or right (1) branch.
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 stem[0] = 0b10101010  // Binary: 1-0-1-0-1-0-1-0
@@ -196,7 +196,7 @@ console.log(BinaryTree.getStemBit(stem, 4)) // 1
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 stem[0] = 0xFF  // All bits set to 1
@@ -208,7 +208,7 @@ console.log(BinaryTree.getStemBit(stem, 8)) // 0 (next byte is 0x00)
 </Tab>
 <Tab title="Tree Traversal">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 stem[0] = 0b10000000
@@ -227,7 +227,7 @@ console.log(bit1) // 0 → go left
 </Tab>
 <Tab title="All Bits">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 stem[0] = 0xAA  // 10101010
@@ -250,7 +250,7 @@ for (let pos = 0; pos < 8; pos++) {
 </Tab>
 <Tab title="Out of Range">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 
@@ -263,7 +263,7 @@ console.log(BinaryTree.getStemBit(stem, 999)) // 0 (out of range)
 
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/getStemBit.js#L16-L23)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/getStemBit.js#L16-L23)
 
 ## Key Patterns
 
@@ -272,7 +272,7 @@ Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https:
 Ethereum accounts mapped to keys with 12 zero byte prefix:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const address = new Uint8Array(20)
 // ... set address
@@ -293,7 +293,7 @@ const { stem, idx } = BinaryTree.splitKey(accountKey)
 Storage slots accessed via subindices 1-255:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const address = new Uint8Array(20)
 const baseKey = BinaryTree.addressToKey(address)
@@ -326,7 +326,7 @@ storageSlotKey[31] = 1 + slotNumber  // slot 0 at idx 1, etc.
 Using stem bits for tree navigation:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 function traversePath(stem: Uint8Array, maxDepth: number = 10) {
   const path = []
@@ -400,7 +400,7 @@ Byte 30: [bit7 bit6 bit5 bit4 bit3 bit2 bit1 bit0]
 Example with specific byte:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const stem = new Uint8Array(31)
 stem[0] = 0b11110000  // Binary value
@@ -426,7 +426,7 @@ console.log(BinaryTree.getStemBit(stem, 7)) // 0
 Combining all key utilities:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 // 1. Start with Ethereum address
 const address = new Uint8Array(20)
@@ -468,7 +468,7 @@ import {
   BinaryTree,
   InvalidAddressLengthError,
   InvalidKeyLengthError
-} from '@tevm/voltaire'
+} from 'tevm'
 
 // Address validation
 try {

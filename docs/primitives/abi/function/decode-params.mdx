@@ -12,7 +12,7 @@ description: Decode function parameters from calldata
 ### Basic Decoding
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",
@@ -29,7 +29,7 @@ console.log(owner)  // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ### Multiple Parameters
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFromFn = new Function({
   type: "function",
@@ -55,7 +55,7 @@ console.log({ from, to, amount })
 ### Destructuring with Names
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -80,7 +80,7 @@ const amount = params[1]
 ### Dynamic Types (Strings)
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const setNameFn = new Function({
   type: "function",
@@ -97,7 +97,7 @@ console.log(name)  // "Alice"
 ### Arrays
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const batchTransferFn = new Function({
   type: "function",
@@ -118,7 +118,7 @@ console.log(amounts)     // [1000n, 2000n]
 ### Tuples (Structs)
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const createOrderFn = new Function({
   type: "function",
@@ -150,7 +150,7 @@ console.log(order)
 ### Decoding Transaction Calldata
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -177,7 +177,7 @@ if (selector === transferFn.getSelector()) {
 The decoder automatically handles both formats:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -206,7 +206,7 @@ console.log(params2)  // ["0x742d...", 1000n]
 TypeScript infers return types from function definition:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",
@@ -224,8 +224,8 @@ const [owner] = params
 ## Error Handling
 
 ```typescript
-import { Function } from '@tevm/voltaire'
-import { AbiDecodingError } from '@tevm/voltaire'
+import { Function } from 'tevm'
+import { AbiDecodingError } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -260,7 +260,7 @@ try {
 Decode function calls from event logs or traces:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",

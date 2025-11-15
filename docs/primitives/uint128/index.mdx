@@ -15,7 +15,7 @@ description: 128-bit unsigned integer primitive for large counters and intermedi
 
 ## Overview
 
-Uint128 provides a bigint-based implementation for 128-bit unsigned integers with a comprehensive API for arithmetic, bitwise operations, and conversions. It follows Voltaire's branded type pattern for type safety.
+Uint128 provides a bigint-based implementation for 128-bit unsigned integers with a comprehensive API for arithmetic, bitwise operations, and conversions. It follows Tevm's branded type pattern for type safety.
 
 ### Range
 
@@ -34,13 +34,13 @@ Uint128 provides a bigint-based implementation for 128-bit unsigned integers wit
 ## Installation
 
 ```bash
-bun add @voltaire/primitives
+bun add tevm
 ```
 
 ## Basic Usage
 
 ```typescript
-import * as Uint128 from '@voltaire/primitives/Uint128';
+import * as Uint128 from 'tevm/Uint128';
 
 // Create from various sources
 const a = Uint128(100n);
@@ -507,8 +507,8 @@ const hasB = !Uint128.isZero(Uint128.bitwiseAnd(flags, FLAG_B));
 Uint128 uses branded types to prevent mixing with other numeric types:
 
 ```typescript
-import * as Uint128 from '@voltaire/primitives/Uint128';
-import * as Uint64 from '@voltaire/primitives/Uint64';
+import * as Uint128 from 'tevm/Uint128';
+import * as Uint64 from 'tevm/Uint64';
 
 const a = Uint128(100n);
 const b = Uint64(50n);

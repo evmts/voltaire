@@ -79,7 +79,7 @@ function routeTransaction(data: Uint8Array) {
 ### Conditional Deserialization
 
 ```typescript
-import { detectType, deserialize, Type } from '@tevm/voltaire/Transaction'
+import { detectType, deserialize, Type } from 'tevm/Transaction'
 
 function parseTransaction(data: Uint8Array) {
   const type = detectType(data)
@@ -232,7 +232,7 @@ const blobTxs = filterByType(allTransactions, Type.EIP4844)
 ## Error Handling
 
 ```typescript
-import { detectType } from '@tevm/voltaire/Transaction'
+import { detectType } from 'tevm/Transaction'
 
 function safeDetectType(data: Uint8Array): Transaction.Type | null {
   try {

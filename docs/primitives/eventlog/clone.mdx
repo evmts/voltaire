@@ -20,7 +20,7 @@ description: Deep clone event log including topics and data
 - **Immutable fields** - Shared references (address, hashes, numbers)
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const original = EventLog({
   address: contractAddress,
@@ -48,7 +48,7 @@ console.log(original.blockNumber === cloned.blockNumber); // true
 ### Cloning for Modification
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const log = EventLog({
   address: contractAddress,
@@ -68,7 +68,7 @@ console.log(modified.removed); // true
 ### Cloning Collection
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const logs = [log1, log2, log3];
 
@@ -82,7 +82,7 @@ const cloned2 = logs.map(EventLog.clone);
 ### Preventing Mutation
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function processLog(log: EventLog) {
   // Clone to prevent external mutations

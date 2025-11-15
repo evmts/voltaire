@@ -16,7 +16,7 @@ description: Check if two hardforks are equal (handles aliases)
 `isEqual` correctly handles hardfork aliases:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const merge = Hardfork("merge")
 const paris = Hardfork("paris")
@@ -39,7 +39,7 @@ merge.isEqual(paris)  // true
 Compare user input against expected version:
 
 ```typescript
-import { Hardfork, CANCUN } from '@tevm/voltaire'
+import { Hardfork, CANCUN } from 'tevm'
 
 function validateConfig(config: Config) {
   const fork = Hardfork(config.hardfork)
@@ -55,7 +55,7 @@ function validateConfig(config: Config) {
 Check if networks use same hardfork:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function networksCompatible(net1: Network, net2: Network): boolean {
   const fork1 = Hardfork(net1.hardfork)
@@ -70,7 +70,7 @@ function networksCompatible(net1: Network, net2: Network): boolean {
 Branch based on specific hardfork:
 
 ```typescript
-import { Hardfork, MERGE } from '@tevm/voltaire'
+import { Hardfork, MERGE } from 'tevm'
 
 function getConsensusInfo(fork: BrandedHardfork) {
   if (fork.isEqual(MERGE)) {
@@ -89,7 +89,7 @@ function getConsensusInfo(fork: BrandedHardfork) {
 **Don't** compare hardfork strings directly with `===`:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const merge = Hardfork("merge")
 const paris = Hardfork("paris")
@@ -106,7 +106,7 @@ merge.isEqual(paris)  // true (same hardfork)
 For storing or comparing, normalize to canonical name:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function normalizeHardfork(input: string): string {
   const fork = Hardfork(input)

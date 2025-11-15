@@ -18,7 +18,7 @@ description: Sort logs by block number then log index
 Logs sorted by block number ascending (earliest blocks first):
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs([
   { blockNumber: 18000003n, logIndex: 0 },
@@ -37,7 +37,7 @@ const sorted = EventLog.sortLogs([
 Within same block, sorted by log index ascending:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs([
   { blockNumber: 18000000n, logIndex: 10 },
@@ -56,7 +56,7 @@ const sorted = EventLog.sortLogs([
 Logs without `blockNumber` or `logIndex` treated as 0:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs([
   { blockNumber: 100n, logIndex: 5 },
@@ -75,7 +75,7 @@ const sorted = EventLog.sortLogs([
 ### Chronological Processing
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Sort before processing
 const sorted = EventLog.sortLogs(allLogs);
@@ -89,7 +89,7 @@ for (const log of sorted) {
 ### Combining with Filtering
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -107,7 +107,7 @@ console.log(`Found ${sorted.length} transfers in chronological order`);
 ### Finding Latest Log
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs(logs);
 const latest = sorted[sorted.length - 1];
@@ -120,7 +120,7 @@ if (latest) {
 ### Finding Earliest Log
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs(logs);
 const earliest = sorted[0];
@@ -133,7 +133,7 @@ if (earliest) {
 ### Grouping by Block
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const sorted = EventLog.sortLogs(allLogs);
 
@@ -160,7 +160,7 @@ for (const [blockNumber, blockLogs] of byBlock) {
 ### Time-Ordered Event Replay
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function replayEvents(logs: EventLog[]): void {
   const sorted = EventLog.sortLogs(logs);
@@ -187,7 +187,7 @@ replayEvents(allLogs);
 ### Detecting Missing Logs
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function detectGaps(logs: EventLog[]): void {
   const sorted = EventLog.sortLogs(logs);
@@ -215,7 +215,7 @@ function detectGaps(logs: EventLog[]): void {
 ### Pagination
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function paginateLogs(logs: EventLog[], page: number, pageSize: number) {
   const sorted = EventLog.sortLogs(logs);
@@ -273,7 +273,7 @@ function sortLogs(logs: readonly EventLog[]): EventLog[] {
 For large arrays, sort once and reuse:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Sort once
 const sorted = EventLog.sortLogs(allLogs);

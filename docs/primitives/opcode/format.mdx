@@ -15,7 +15,7 @@ Format single instruction as human-readable assembly string.
 
 <Tab title="Functional API">
 ```typescript
-import { format, PUSH1 } from '@tevm/voltaire/Opcode'
+import { format, PUSH1 } from 'tevm/Opcode'
 
 const instruction = {
   offset: 42,
@@ -59,7 +59,7 @@ Format: `"<offset>: <mnemonic> [immediate]"`
 ### Format Different Opcodes
 
 ```typescript
-import * as Opcode from '@tevm/voltaire/Opcode'
+import * as Opcode from 'tevm/Opcode'
 
 // Simple opcode (no immediate)
 const add = Opcode.format({

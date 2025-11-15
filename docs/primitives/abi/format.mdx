@@ -16,7 +16,7 @@ description: Format ABI item to human-readable signature string
 ### Format Function
 
 ```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
 
 const fn = {
   type: "function",
@@ -32,7 +32,7 @@ console.log(BrandedAbi.format(fn))
 ### Format Event
 
 ```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
 
 const event = {
   type: "event",
@@ -51,7 +51,7 @@ console.log(BrandedAbi.format(event))
 ### Format Error
 
 ```typescript
-import * as BrandedAbi from '@tevm/voltaire/Abi/BrandedAbi'
+import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
 
 const error = {
   type: "error",

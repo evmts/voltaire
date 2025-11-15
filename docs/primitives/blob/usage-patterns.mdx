@@ -14,7 +14,7 @@ This page demonstrates common patterns for working with blob transactions in pro
 ### Basic L2 Batch
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class L2Rollup {
   async postBatch(transactions: Transaction[]) {
@@ -60,7 +60,7 @@ class L2Rollup {
 ### Multi-Blob Batch
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class L2Rollup {
   async postLargeBatch(transactions: Transaction[]) {
@@ -105,7 +105,7 @@ class L2Rollup {
 ### Dynamic Blob vs Calldata
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class CostOptimizer {
   async selectDataAvailability(
@@ -150,7 +150,7 @@ class CostOptimizer {
 ### Gas Price Monitoring
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class GasMonitor {
   private readonly TARGET_COST_GWEI = 10_000_000n; // 0.01 ETH
@@ -186,7 +186,7 @@ class GasMonitor {
 ### L2 Node Sync
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class L2Sync {
   async syncFromBeacon(
@@ -239,7 +239,7 @@ class L2Sync {
 ### Historical Data Access
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class HistoricalDataProvider {
   private db: Database;
@@ -286,7 +286,7 @@ class HistoricalDataProvider {
 ### Adaptive Batching
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class AdaptiveBatcher {
   private pending: Transaction[] = [];
@@ -330,7 +330,7 @@ class AdaptiveBatcher {
 ### Multi-Transaction Splitting
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class BatchSplitter {
   async splitIntoBatches(
@@ -377,7 +377,7 @@ class BatchSplitter {
 ### Retry Logic
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class ResilientSubmitter {
   async submitWithRetry(
@@ -431,7 +431,7 @@ class ResilientSubmitter {
 ### Validation Guards
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class BlobValidator {
   validateBeforeSending(
@@ -500,7 +500,7 @@ class BlobValidator {
 ### Cost Tracking
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Blob } from 'tevm';
 
 class CostTracker {
   private totalBlobCost = 0n;

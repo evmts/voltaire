@@ -15,7 +15,7 @@ WebAssembly-accelerated implementations of denomination conversions, compiled fr
 
 WASM implementations provide performance-critical denomination operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements for the JavaScript implementations with identical APIs.
 
-All WASM methods are compiled from [denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
+All WASM methods are compiled from [denomination.zig](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/denomination.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
 
 ## Quick Start
 
@@ -23,9 +23,9 @@ All WASM methods are compiled from [denomination.zig](https://github.com/evmts/v
 <Tab title="Direct Import">
 ```typescript
 // Import WASM implementation instead of JS version
-import * as Wei from '@tevm/voltaire/Wei.wasm'
-import * as Gwei from '@tevm/voltaire/Gwei.wasm'
-import * as Ether from '@tevm/voltaire/Ether.wasm'
+import * as Wei from 'tevm/Wei.wasm'
+import * as Gwei from 'tevm/Gwei.wasm'
+import * as Ether from 'tevm/Ether.wasm'
 
 // API is identical to JS version
 const gwei = Gwei(50n)
@@ -36,8 +36,8 @@ const ether = Wei.toEther(wei)  // Uses WASM acceleration
 
 <Tab title="Selective Import">
 ```typescript
-import * as Wei from '@tevm/voltaire/Wei'
-import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+import * as Wei from 'tevm/Wei'
+import * as WeiWasm from 'tevm/Wei.wasm'
 
 // Override specific methods with WASM versions
 const weiToGwei = WeiWasm.toGwei
@@ -77,7 +77,7 @@ All denomination conversions implemented in Zig:
 ### Wei
 
 ```typescript
-import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+import * as WeiWasm from 'tevm/Wei.wasm'
 
 // Construction
 const wei = WeiWasm(1_000_000_000n)
@@ -95,7 +95,7 @@ const wei3 = WeiWasm.fromEther(ether) // Ether → Wei (multiplication)
 ### Gwei
 
 ```typescript
-import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
+import * as GweiWasm from 'tevm/Gwei.wasm'
 
 // Construction
 const gwei = GweiWasm(50n)
@@ -113,7 +113,7 @@ const gwei3 = GweiWasm.fromEther(ether) // Ether → Gwei (multiplication)
 ### Ether
 
 ```typescript
-import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
+import * as EtherWasm from 'tevm/Ether.wasm'
 
 // Construction
 const ether = EtherWasm(1n)
@@ -133,8 +133,8 @@ const ether3 = EtherWasm.fromGwei(gwei) // Gwei → Ether (division)
 ### Bulk Gas Calculations
 
 ```typescript
-import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as GweiWasm from 'tevm/Gwei.wasm'
+import * as Uint from 'tevm/Uint'
 
 const gasPrices = [
   GweiWasm(10n),
@@ -155,7 +155,7 @@ const costs = gasPrices.map(price => {
 ### Balance Conversions
 
 ```typescript
-import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+import * as WeiWasm from 'tevm/Wei.wasm'
 
 const balancesWei = [
   WeiWasm(1_000_000_000_000_000_000n),
@@ -170,8 +170,8 @@ const balancesEther = balancesWei.map(WeiWasm.toEther)
 ### Real-Time Gas Price Tracking
 
 ```typescript
-import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
-import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+import * as GweiWasm from 'tevm/Gwei.wasm'
+import * as WeiWasm from 'tevm/Wei.wasm'
 
 interface GasEstimate {
   fast: bigint
@@ -219,7 +219,7 @@ Conversions that divide are compute-bound:
 ## Files
 
 - **denomination.zig** - Zig source implementation
-  - Location: [src/primitives/Denomination/denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
+  - Location: [src/primitives/Denomination/denomination.zig](https://github.com/evmts/tevm/blob/main/src/primitives/Denomination/denomination.zig)
   - Defines `Wei`, `Gwei`, `Ether` structs
   - Implements all conversion methods
   - Includes test suite
@@ -264,8 +264,8 @@ zig build test -Dtest-filter="denomination"
 Compare JS vs WASM performance:
 
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
+import * as Gwei from 'tevm/Gwei'
+import * as GweiWasm from 'tevm/Gwei.wasm'
 
 const iterations = 100_000
 const gwei = Gwei(50n)

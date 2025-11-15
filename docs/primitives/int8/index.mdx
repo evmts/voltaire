@@ -16,7 +16,7 @@ Type-safe signed 8-bit integers with two's complement encoding and EVM SDIV/SMOD
 <Tabs>
 <Tab title="Basic Operations">
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // Create signed integers
 const a = Int8(-42)
@@ -38,7 +38,7 @@ try {
 </Tab>
 <Tab title="Two's Complement">
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // Two's complement conversions
 const negOne = Int8(-1)
@@ -58,7 +58,7 @@ const bytes = Int8.toBytes(Int8(-1))
 </Tab>
 <Tab title="EVM Semantics">
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // SDIV: truncate toward zero
 Int8.dividedBy(-10, 3)   // -3 (not -4)
@@ -79,7 +79,7 @@ try {
 </Tab>
 <Tab title="Comparison & Sign">
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // Comparison
 Int8.lessThan(-42, 10)     // true
@@ -219,7 +219,7 @@ Int8.shiftLeft(64, 1)  // -128 (0b01000000 → 0b10000000)
 ## Constructors
 
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // From number (most common)
 const a = Int8(-42)
@@ -239,7 +239,7 @@ const f = Int8(new Uint8Array([0xFF]))  // -1
 ## Conversions
 
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 const value = Int8(-42)
 
@@ -262,7 +262,7 @@ Int8.toString(value)  // "-42"
 ## Validation
 
 ```typescript
-import * as Int8 from '@tevm/voltaire/Int8'
+import * as Int8 from 'tevm/Int8'
 
 // Check if valid Int8
 Int8.isValid(127)    // true

@@ -26,7 +26,7 @@ description: Three-way comparison of hardforks returning -1, 0, or 1
 Sort hardforks chronologically:
 
 ```typescript
-import { Hardfork, CANCUN, BERLIN, SHANGHAI, LONDON, MERGE } from '@tevm/voltaire'
+import { Hardfork, CANCUN, BERLIN, SHANGHAI, LONDON, MERGE } from 'tevm'
 
 const forks = [CANCUN, BERLIN, SHANGHAI, LONDON, MERGE]
 
@@ -44,7 +44,7 @@ forks.sort((a, b) => -Hardfork.compare(a, b))
 Sort supported versions:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function getSortedSupportedVersions(config: NetworkConfig): BrandedHardfork[] {
   return config.supportedHardforks
@@ -58,7 +58,7 @@ function getSortedSupportedVersions(config: NetworkConfig): BrandedHardfork[] {
 Use in binary search algorithms:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function binarySearchHardfork(
   sorted: BrandedHardfork[],
@@ -85,7 +85,7 @@ function binarySearchHardfork(
 Implement range validation:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 function isInRange(
   fork: BrandedHardfork,
@@ -126,7 +126,7 @@ function compare(a, b) {
 Correctly handles aliases:
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire'
+import { Hardfork } from 'tevm'
 
 const merge = Hardfork("merge")
 const paris = Hardfork("paris")

@@ -12,7 +12,7 @@ description: Encode function return values into ABI format
 ### Single Return Value
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const totalSupplyFn = new Function({
   type: "function",
@@ -27,7 +27,7 @@ const encoded = totalSupplyFn.encodeResult([1000000n])
 ### Multiple Return Values
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getReservesFn = new Function({
   type: "function",
@@ -45,7 +45,7 @@ const encoded = getReservesFn.encodeResult([1000n, 2000n, 1234567n])
 ### Boolean Return
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -63,7 +63,7 @@ const encoded = transferFn.encodeResult([true])
 ### Dynamic Return Types
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const getNameFn = new Function({
   type: "function",
@@ -77,7 +77,7 @@ const encoded = getNameFn.encodeResult(["MyToken"])
 ### Testing Contract Behavior
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",

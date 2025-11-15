@@ -1,14 +1,14 @@
 ---
 title: Bytes (N-byte)
-description: Foundation of Voltaire's type system - generic fixed-size byte types with compile-time length validation
+description: Foundation of Tevm's type system - generic fixed-size byte types with compile-time length validation
 ---
 
 # Bytes (N-byte)
 
-Generic fixed-size byte types that form the foundation of Voltaire's type system. Bytes represents N bytes with compile-time type safety through TypeScript branding and hardcoded length properties.
+Generic fixed-size byte types that form the foundation of Tevm's type system. Bytes represents N bytes with compile-time type safety through TypeScript branding and hardcoded length properties.
 
 <Info>
-**Type System Foundation** - Bytes is the base pattern for all fixed-size types in Voltaire. Address (Bytes20), Keccak256Hash (Bytes32), and all other fixed-size primitives extend this pattern.
+**Type System Foundation** - Bytes is the base pattern for all fixed-size types in Tevm. Address (Bytes20), Keccak256Hash (Bytes32), and all other fixed-size primitives extend this pattern.
 </Info>
 
 ## Overview
@@ -20,7 +20,7 @@ Bytes&lt;N&gt; is a branded `Uint8Array` with:
 - **Curried implementation** - `Bytes(32)` returns `Bytes32` type
 
 ```typescript
-import * as Bytes from '@tevm/voltaire/primitives/Bytes';
+import * as Bytes from 'tevm/primitives/Bytes';
 
 // Generic bytes
 const data = Bytes.from('0x1234');
@@ -36,7 +36,7 @@ const hex = Bytes32.toHex(b32);
 
 ## Type Definition
 
-All Bytes<N> types use symbol-based branding:
+All Bytes\<N> types use symbol-based branding:
 
 ```typescript
 import { brand } from './brand.js';
@@ -62,7 +62,7 @@ export type BrandedBytes20 = Uint8Array & {
 **Symbol branding:**
 ```typescript
 // Import and use the brand symbol
-import { brand } from '@tevm/voltaire/brand';
+import { brand } from 'tevm/brand';
 
 type MyBytes = Uint8Array & {
   readonly [brand]: "MyCustomBytes";
@@ -78,8 +78,8 @@ export declare const brand: unique symbol;
 <Tab title="Namespace API">
 
 ```typescript
-import * as Bytes from '@tevm/voltaire/primitives/Bytes/BrandedBytes';
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes from 'tevm/primitives/Bytes/BrandedBytes';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Generic bytes
 const generic = Bytes.from('0x1234');
@@ -95,7 +95,7 @@ const bigint = Bytes32.toBigint(fixed);
 <Tab title="Class API">
 
 ```typescript
-import { Bytes, Bytes32 } from '@tevm/voltaire';
+import { Bytes, Bytes32 } from 'tevm';
 
 // Generic bytes
 const generic = Bytes('0x1234');
@@ -168,11 +168,11 @@ Bytes8       → Bytes<8> concrete type
 
 ## Common Sizes
 
-Voltaire provides pre-defined Bytes&lt;N&gt; types:
+Tevm provides pre-defined Bytes&lt;N&gt; types:
 
 ### Bytes8 (64-bit)
 ```typescript
-import * as Bytes8 from '@tevm/voltaire/primitives/Bytes/Bytes8';
+import * as Bytes8 from 'tevm/primitives/Bytes/Bytes8';
 
 const b8 = Bytes8.from('0x1234567890abcdef');
 console.log(Bytes8.size(b8)); // 8
@@ -180,7 +180,7 @@ console.log(Bytes8.size(b8)); // 8
 
 ### Bytes16 (128-bit)
 ```typescript
-import * as Bytes16 from '@tevm/voltaire/primitives/Bytes/Bytes16';
+import * as Bytes16 from 'tevm/primitives/Bytes/Bytes16';
 
 const b16 = Bytes16.from('0x' + '12'.repeat(16));
 console.log(Bytes16.size(b16)); // 16
@@ -188,7 +188,7 @@ console.log(Bytes16.size(b16)); // 16
 
 ### Bytes20 (160-bit)
 ```typescript
-import * as Bytes20 from '@tevm/voltaire/primitives/Bytes/Bytes20';
+import * as Bytes20 from 'tevm/primitives/Bytes/Bytes20';
 
 const b20 = Bytes20.from('0x' + '12'.repeat(20));
 
@@ -199,7 +199,7 @@ console.log(addr.length); // 20
 
 ### Bytes32 (256-bit)
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 const b32 = Bytes32.from(42);
 const value = Bytes32.toBigint(b32);
@@ -209,7 +209,7 @@ const value = Bytes32.toBigint(b32);
 
 ### Bytes64 (512-bit)
 ```typescript
-import * as Bytes64 from '@tevm/voltaire/primitives/Bytes/Bytes64';
+import * as Bytes64 from 'tevm/primitives/Bytes/Bytes64';
 
 const b64 = Bytes64.from('0x' + 'ab'.repeat(64));
 console.log(Bytes64.size(b64)); // 64
@@ -222,7 +222,7 @@ console.log(Bytes64.size(b64)); // 64
 All Bytes&lt;N&gt; types use the global `brand` symbol:
 
 ```typescript
-import { brand } from '@tevm/voltaire/brand';
+import { brand } from 'tevm/brand';
 
 // The symbol is unique and global
 export declare const brand: unique symbol;
@@ -316,7 +316,7 @@ function acceptBytes32(b: Bytes32.Bytes32Type) {
 
 ### Generic Byte Manipulation
 ```typescript
-import * as Bytes from '@tevm/voltaire/primitives/Bytes/BrandedBytes';
+import * as Bytes from 'tevm/primitives/Bytes/BrandedBytes';
 
 // Concatenate multiple byte arrays
 const a = Bytes.from('0x1234');
@@ -331,7 +331,7 @@ console.log(Bytes.toHex(slice)); // "0x3456"
 
 ### Fixed-Size Operations
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
 
 // Storage slot
 const slot = Bytes32.zero();
@@ -349,8 +349,8 @@ console.log(addrBytes.length); // 20
 
 ### Type Hierarchy
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
+import * as Hash from 'tevm/primitives/Hash';
 
 // Hash extends Bytes32 semantically
 const hash = Hash.keccak256(data);
@@ -367,8 +367,8 @@ Import specific sizes for optimal bundles:
 
 ```typescript
 // Import only what you need
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
-import * as Bytes20 from '@tevm/voltaire/primitives/Bytes/Bytes20';
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
+import * as Bytes20 from 'tevm/primitives/Bytes/Bytes20';
 
 // Only Bytes32 and Bytes20 included in bundle
 // Bytes8, Bytes16, Bytes64 excluded

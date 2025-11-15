@@ -18,7 +18,7 @@ Common patterns for log filtering, event indexing, and optimization with bloom f
 Monitor blockchain for specific events in real-time:
 
 ```typescript
-import { BloomFilter, Address } from '@tevm/voltaire'
+import { BloomFilter, Address } from 'tevm'
 
 class EventWatcher {
   private watching = new Set<string>()

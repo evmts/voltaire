@@ -119,7 +119,7 @@ Delegation is removed. EOA returns to normal state.
 Define what to delegate and where:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 const unsigned = {
   chainId: 1n,                          // Mainnet
@@ -196,7 +196,7 @@ User wants to swap tokens but has no ETH for gas. Relayer sponsors the transacti
 ### Step 1: User Creates Authorization
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 // User's EOA: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2
 // Sponsor contract: 0x1234567890123456789012345678901234567890
@@ -333,7 +333,7 @@ contract SponsorContract {
 Always validate before processing:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 function processAuthorization(auth: unknown) {
   // Type guard
@@ -430,7 +430,7 @@ const safeAuth = {
 Each authorization costs gas to process:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 // Base cost: 12,500 gas per authorization
 const BASE_COST = 12_500n;
@@ -589,7 +589,7 @@ User                 Relayer              Network              Smart Contract
 Understanding how the signing hash is computed:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 const unsigned = {
   chainId: 1n,
@@ -631,7 +631,7 @@ This hash is what gets signed with secp256k1 to produce `(yParity, r, s)`.
 Extract the EOA address that signed an authorization:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 const auth = {
   chainId: 1n,
@@ -664,7 +664,7 @@ console.log(`Delegated to: ${result.delegatedAddress}`);
 Process multiple authorizations efficiently:
 
 ```typescript
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 const authList = [auth1, auth2, auth3];
 

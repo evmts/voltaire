@@ -36,7 +36,7 @@ The canonical signature follows strict formatting rules:
 ### Basic Signature
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",
@@ -51,7 +51,7 @@ console.log(balanceOfFn.getSignature())  // "balanceOf(address)"
 ### No Parameters
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const totalSupplyFn = new Function({
   type: "function",
@@ -66,7 +66,7 @@ console.log(totalSupplyFn.getSignature())  // "totalSupply()"
 ### Complex Parameter Types
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const swapFn = new Function({
   type: "function",
@@ -92,7 +92,7 @@ console.log(swapFn.getSignature())
 ### Tuple Arrays
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const batchTransferFn = new Function({
   type: "function",
@@ -116,8 +116,8 @@ console.log(batchTransferFn.getSignature())
 ### Computing Selector from Signature
 
 ```typescript
-import { Function } from '@tevm/voltaire'
-import { Keccak256 } from '@tevm/voltaire'
+import { Function } from 'tevm'
+import { Keccak256 } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -146,7 +146,7 @@ console.log(transferFn.getSelector())  // "0xa9059cbb"
 TypeScript can infer the exact signature type:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -166,7 +166,7 @@ const signature = transferFn.getSignature()
 Signatures are used to identify function uniqueness:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const fn1 = new Function({
   type: "function",
@@ -196,7 +196,7 @@ console.log(fn1.getSignature())  // "transfer(address,uint256)"
 For display purposes, you may want a human-readable format:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -223,7 +223,7 @@ console.log(readable)
 Array notation in signatures:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const fn = new Function({
   type: "function",
@@ -243,7 +243,7 @@ console.log(fn.getSignature())
 ## Error Handling
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 try {
   const fn = new Function({

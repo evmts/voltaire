@@ -12,7 +12,7 @@ description: Create parameter definition from type string
 ### Build Function Definition
 
 ```typescript
-import * as Parameter from '@tevm/voltaire/Abi/parameter'
+import * as Parameter from 'tevm/Abi/parameter'
 
 const transferFn = {
   type: "function",
@@ -30,7 +30,7 @@ const transferFn = {
 ### Complex Types
 
 ```typescript
-import * as Parameter from '@tevm/voltaire/Abi/parameter'
+import * as Parameter from 'tevm/Abi/parameter'
 
 // Array types
 const addressesParam = Parameter("address[]", "recipients")

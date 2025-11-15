@@ -16,7 +16,7 @@ description: Check if one address is greater than another lexicographically
 Filter addresses above a threshold:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const MIN_ADDRESS = Address("0x0000000000000000000000000000000000001000")
 
@@ -30,7 +30,7 @@ function filterHighAddresses(addresses: Address[]): Address[] {
 Validate addresses within a range:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function isInRange(
   address: Address,
@@ -52,7 +52,7 @@ console.log(isInRange(addr, minRange, maxRange))
 Implement cursor-based pagination:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 interface PaginationParams {
   cursor?: Address
@@ -105,7 +105,7 @@ console.log(page2.items) // [300n, 400n]
 Select database shard based on address range:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 interface Shard {
   id: number
@@ -154,7 +154,7 @@ function selectShard(address: Address): number {
 Find maximum address in collection:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function findMaxAddress(addresses: Address[]): Address | undefined {
   if (addresses.length === 0) return undefined
@@ -179,7 +179,7 @@ console.log(max?.toHex()) // 0x00...c8 (200)
 Maintain sorted order when inserting:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 class SortedAddressList {
   private addresses: Address[] = []
@@ -227,7 +227,7 @@ console.log(list.toArray()) // [50n, 100n, 200n] in sorted order
 
 **Example ordering:**
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const a1 = Address("0x0000000000000000000000000000000000000001")
 const a2 = Address("0x0000000000000000000000000000000000000002")
@@ -244,7 +244,7 @@ console.log(a1.greaterThan(a1)) // false (equal)
 `greaterThan()` is built on top of `compare()`:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const addr1 = Address(100n)
 const addr2 = Address(50n)
@@ -268,7 +268,7 @@ addr1.equals(addr2)      === (addr1.compare(addr2) === 0) // false
 **Optimization:** For repeated comparisons, consider sorting once:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const threshold = Address(1000n)
 

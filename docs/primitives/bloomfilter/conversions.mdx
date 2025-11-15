@@ -20,7 +20,7 @@ Converts bloom filter to hex string representation for storage and transmission.
 <Tabs>
 <Tab title="Instance Method">
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const filter = BloomFilter.create(2048, 3)
 filter.add(new TextEncoder().encode("Transfer"))
@@ -36,7 +36,7 @@ console.log(hex.length)  // 514
 </Tab>
 <Tab title="Static Method">
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -73,12 +73,12 @@ console.log(filter.toHex())
 //     Set bits from hash functions
 ```
 
-Defined in: [BrandedBloomFilter/toHex.js:3-20](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/toHex.js#L3-L20)
+Defined in: [BrandedBloomFilter/toHex.js:3-20](https://github.com/evmts/tevm/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/toHex.js#L3-L20)
 
 ### Round-Trip Serialization
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 // Create and populate filter
 const original = BloomFilter.create(2048, 3)
@@ -146,7 +146,7 @@ function createBlockBloom(logs: Log[]): string {
 Internal hash function for computing bit positions. Exposed for testing and custom implementations.
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 const item = new TextEncoder().encode("Transfer")
 const m = 2048  // Number of bits
@@ -186,12 +186,12 @@ return h % m
 - **Uniform**: Hash values distributed across `[0, m)`
 - **Fast**: O(n) where n is item length
 
-Defined in: [BrandedBloomFilter/hash.js:3-16](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/hash.js#L3-L16)
+Defined in: [BrandedBloomFilter/hash.js:3-16](https://github.com/evmts/tevm/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/hash.js#L3-L16)
 
 ### Computing Bit Positions
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from 'tevm'
 
 // Understand which bits an item sets
 function analyzeBitPositions(item: Uint8Array, k: number, m: number) {

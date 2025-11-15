@@ -37,7 +37,7 @@ Authorization.validateWasm(auth: Authorization.Item): void
 ### Usage
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -113,7 +113,7 @@ Authorization.signingHashWasm(
 ### Usage
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const sigHash = Authorization.signingHashWasm(
   1n,
@@ -177,7 +177,7 @@ Authorization.authorityWasm(auth: Authorization.Item): Address
 ### Usage
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -249,7 +249,7 @@ Authorization.gasCostWasm(
 ### Usage
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const gas = Authorization.gasCostWasm(5, 2);
 console.log(`Gas cost (WASM): ${gas}`);
@@ -314,7 +314,7 @@ pub fn gasCost(auth_count: u64, empty_accounts: u64) u64 {
 Use WASM when available, fallback to JS:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateAuth(auth: Authorization.Item): void {
   if (typeof Authorization.validateWasm === 'function') {
@@ -332,7 +332,7 @@ function validateAuth(auth: Authorization.Item): void {
 Process multiple authorizations efficiently:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function validateBatchWasm(authList: Authorization.Item[]): void {
   for (const auth of authList) {
@@ -349,7 +349,7 @@ validateBatchWasm(largeAuthList);
 Combine WASM and JS operations:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function processAuthWasm(auth: Authorization.Item): {
   authority: Address;
@@ -373,7 +373,7 @@ function processAuthWasm(auth: Authorization.Item): {
 Compare WASM vs JS performance:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 function benchmarkWasm(auth: Authorization.Item): void {
   // Benchmark JS
@@ -402,7 +402,7 @@ function benchmarkWasm(auth: Authorization.Item): void {
 WASM functions throw JavaScript errors:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 try {
   Authorization.validateWasm(invalidAuth);
@@ -439,7 +439,7 @@ try {
 WASM module loads automatically:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 // WASM loaded automatically
 Authorization.validateWasm(auth);
@@ -450,7 +450,7 @@ Authorization.validateWasm(auth);
 Load WASM explicitly if needed:
 
 ```typescript
-import * as loader from '@tevm/voltaire/wasm-loader';
+import * as loader from 'tevm/wasm-loader';
 
 // Load WASM module
 await loader.init();
@@ -502,7 +502,7 @@ if (supportsWasm()) {
 ### Test WASM Functions
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 // Test validation
 const validAuth = { /* valid authorization */ };
@@ -531,7 +531,7 @@ expect(gas).toBe(112500n);
 Verify WASM produces same results as JS:
 
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import { Authorization } from 'tevm';
 
 const unsigned = { chainId: 1n, address: contractAddress, nonce: 0n };
 

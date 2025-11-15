@@ -45,8 +45,8 @@ function StorageKey(
 ### Multiple Slots
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
 
 const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
@@ -61,7 +61,7 @@ const pausedKey = State.StorageKey(usdcAddress, 4n);       // Slot 4
 ### Storage Map Usage
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // Track storage across multiple contracts
 const storage = new Map<string, bigint>();
@@ -81,9 +81,9 @@ const value2 = storage.get(State.StorageKey.toString(key2)); // 2000000000n
 ### Computed Mapping Slots
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
-import * as Address from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/crypto';
+import * as State from 'tevm/State';
+import * as Address from 'tevm/Address';
+import { Keccak256 } from 'tevm/crypto';
 
 // Compute storage slot for mapping: balances[userAddress]
 function computeMappingSlot(key: Uint8Array, baseSlot: bigint): bigint {

@@ -24,7 +24,7 @@ EIP-55 checksummed address type providing mixed-case format for display and inte
 ## Type Definition
 
 ```typescript
-import type { Hex } from '@tevm/voltaire'
+import type { Hex } from 'tevm'
 
 type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -34,7 +34,7 @@ type Checksummed = Hex.Sized<20> & {
 
 Branded string with EIP-55 mixed-case checksum extending `Hex.Sized<20>`.
 
-Defined in: [primitives/Address/AddressType/ChecksumAddress.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L8)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:8](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L8)
 
 ## ChecksumAddress API
 
@@ -53,13 +53,13 @@ Create checksummed address from any input format.
 
 **Note:** Uses keccak256 internally. Import keccak256 hash function to use this API.
 
-Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L23)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L23)
 
 **Example:**
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import * as ChecksumAddress from 'tevm/Address/ChecksumAddress'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 // Create factory function with crypto dependency
 const from = ChecksumAddress.From({ keccak256 })
@@ -93,8 +93,8 @@ Factory function that creates a checksummed address converter with explicit cryp
 **Example:**
 
 ```typescript
-import { From } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { From } from 'tevm/Address/ChecksumAddress'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 // Create factory with explicit crypto dependency
 const from = From({ keccak256 })
@@ -123,7 +123,7 @@ Validate EIP-55 checksum of address string.
 
 **Note:** Uses keccak256 internally. Import keccak256 hash function to use this API.
 
-Defined in: [primitives/Address/AddressType/ChecksumAddress.js:63](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L63)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:63](https://github.com/evmts/tevm/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L63)
 
 **EIP-55 Logic:**
 - If all letters same case (all lower OR all upper), valid
@@ -133,8 +133,8 @@ Defined in: [primitives/Address/AddressType/ChecksumAddress.js:63](https://githu
 **Example:**
 
 ```typescript
-import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import * as ChecksumAddress from 'tevm/Address/ChecksumAddress'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 // Create factory function with crypto dependency
 const isValid = ChecksumAddress.IsValid({ keccak256 })
@@ -174,8 +174,8 @@ Factory function that creates a checksum validator with explicit crypto dependen
 **Example:**
 
 ```typescript
-import { IsValid } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { IsValid } from 'tevm/Address/ChecksumAddress'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 // Create factory with explicit crypto dependency
 const isValid = IsValid({ keccak256 })
@@ -226,7 +226,7 @@ for i in 0..39:
 Display addresses with integrity verification:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function AddressDisplay({ address }: { address: Address }) {
   const checksummed = address.toChecksummed()
@@ -247,8 +247,8 @@ function AddressDisplay({ address }: { address: Address }) {
 Validate user-provided addresses and detect typos:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
-import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
+import { Address } from 'tevm'
+import * as ChecksumAddress from 'tevm/Address/ChecksumAddress'
 
 function validateUserInput(input: string): { valid: boolean; error?: string; address?: Address } {
   const trimmed = input.trim()
@@ -287,7 +287,7 @@ if (!result.valid) {
 Use checksummed addresses in QR codes for error detection:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 import QRCode from 'qrcode'
 
 async function generateAddressQR(address: Address): Promise<string> {
@@ -306,7 +306,7 @@ const qrDataUrl = await generateAddressQR(addr)
 Wallets expect checksummed addresses:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 async function requestPayment(recipient: Address, amount: bigint) {
   const checksummed = recipient.toChecksummed()
@@ -326,8 +326,8 @@ async function requestPayment(recipient: Address, amount: bigint) {
 Store addresses with checksums for verification on retrieval:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
-import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
+import { Address } from 'tevm'
+import * as ChecksumAddress from 'tevm/Address/ChecksumAddress'
 
 // Store
 function saveAddress(key: string, address: Address) {
@@ -353,7 +353,7 @@ function loadAddress(key: string): Address | null {
 ## Comparison with Other Formats
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 
@@ -377,7 +377,7 @@ Address(addr.toHex()).equals(Address(addr.toChecksummed()))
 ## Example Walkthrough
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Input address (lowercase)
 const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
@@ -407,8 +407,8 @@ console.log(addr.toChecksummed())
 For repeated conversions, consider caching:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
-import type { Checksummed } from '@tevm/voltaire/Address/ChecksumAddress'
+import { Address } from 'tevm'
+import type { Checksummed } from 'tevm/Address/ChecksumAddress'
 
 class CachedAddress {
   private _checksumCache?: Checksummed
@@ -440,11 +440,11 @@ With the factory pattern, keccak256 is only bundled if you explicitly import it.
 
 ```typescript
 // Minimal bundle (no crypto)
-import { from, toHex } from '@tevm/voltaire/Address'
+import { from, toHex } from 'tevm/Address'
 
 // With checksumming - explicit crypto import
-import { From } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { From } from 'tevm/Address/ChecksumAddress'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
 
 const from = From({ keccak256 })
 ```

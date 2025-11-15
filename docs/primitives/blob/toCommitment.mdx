@@ -12,7 +12,7 @@ description: Compute 48-byte KZG commitment for blob
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from 'tevm';
 
 const blob = Blob.fromData(data);
 const commitment = Kzg.Commitment(blob);
@@ -37,7 +37,7 @@ Tree-shakeable factory pattern with explicit KZG dependency.
 **Example:**
 
 ```typescript
-import { Kzg } from '@tevm/voltaire'
+import { Kzg } from 'tevm'
 import { blobToKzgCommitment } from 'c-kzg'
 
 const Commitment = Kzg.CommitmentFactory({ blobToKzgCommitment })
@@ -63,7 +63,7 @@ KZG commitments use polynomial commitment scheme over BLS12-381 curve:
 ### Security Properties
 
 ```typescript
-import { Kzg, Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from 'tevm';
 
 // Different data = different commitments
 const blob1 = Blob.fromData(data1);
@@ -86,7 +86,7 @@ console.log(Kzg.verify(blob2, commitment1, proof1)); // false (wrong blob)
 ### Blob.Commitment Namespace
 
 ```typescript
-import { Kzg, Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from 'tevm';
 
 const commitment = Kzg.Commitment(blob);
 

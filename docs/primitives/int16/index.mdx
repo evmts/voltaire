@@ -16,7 +16,7 @@ Type-safe signed 16-bit integers with two's complement encoding and EVM SDIV/SMO
 <Tabs>
 <Tab title="Basic Operations">
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // Create signed integers
 const a = Int16(-1000)
@@ -38,7 +38,7 @@ try {
 </Tab>
 <Tab title="Two's Complement">
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // Two's complement conversions
 const negOne = Int16(-1)
@@ -61,7 +61,7 @@ Int16.toNumber(value)  // 4660 (0x1234)
 </Tab>
 <Tab title="EVM Semantics">
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // SDIV: truncate toward zero
 Int16.dividedBy(-1000, 3)   // -333 (not -334)
@@ -82,7 +82,7 @@ try {
 </Tab>
 <Tab title="Comparison & Sign">
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // Comparison
 Int16.lessThan(-1000, 500)     // true
@@ -222,7 +222,7 @@ Int16.shiftLeft(16384, 1)  // -32768 (0x4000 → 0x8000)
 ## Constructors
 
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // From number (most common)
 const a = Int16(-1000)
@@ -243,7 +243,7 @@ const g = Int16(new Uint8Array([0x12, 0x34]))  // 4660
 ## Conversions
 
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 const value = Int16(-1000)
 
@@ -266,7 +266,7 @@ Int16.toString(value)  // "-1000"
 ## Validation
 
 ```typescript
-import * as Int16 from '@tevm/voltaire/Int16'
+import * as Int16 from 'tevm/Int16'
 
 // Check if valid Int16
 Int16.isValid(32767)    // true

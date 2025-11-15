@@ -40,7 +40,7 @@ This compiles to:
 <Tab title="TypeScript">
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+import { EventLog, Address, Hash, Hex } from 'tevm';
 
 // ERC-20 Transfer event signature
 const TRANSFER_SIG = Hash(
@@ -92,7 +92,7 @@ console.log('Value:', value); // 1000000000000000000n
 Event signatures are computed by hashing the canonical event declaration:
 
 ```typescript
-import { Hash, Hex } from '@tevm/voltaire';
+import { Hash, Hex } from 'tevm';
 
 // Compute event signature
 function eventSignature(declaration: string): Hash {
@@ -121,7 +121,7 @@ Event signatures must use canonical types: `uint256` (not `uint`), `address` (20
 ### Address Filtering
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 const usdcAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
 const daiAddress = Address('0x6B175474E89094C44Da98b954EedeAC495271d0F');
@@ -143,7 +143,7 @@ const filtered = EventLog.filterLogs(allLogs, {
 ### Topic Filtering
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const userHash = Hash('0x000000000000000000000000a1b2c3d4...');
@@ -175,7 +175,7 @@ const transfersBetweenUsers = allLogs.filter(log =>
 ### Complete Filter
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const filtered = EventLog.filterLogs(allLogs, {
   address: [usdcAddress, daiAddress, wethAddress],
@@ -204,7 +204,7 @@ Block headers contain a 2048-bit bloom filter enabling efficient log queries wit
 4. False positives possible, false negatives impossible
 
 ```typescript
-import { BloomFilter, Address, Hash } from '@tevm/voltaire';
+import { BloomFilter, Address, Hash } from 'tevm';
 
 // Create block bloom filter
 const bloom = BloomFilter.create();
@@ -231,7 +231,7 @@ See [BloomFilter documentation](/primitives/bloomfilter) for details.
 Event data requires ABI decoding for non-indexed parameters:
 
 ```typescript
-import { EventLog, Abi, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Abi, Address, Hash } from 'tevm';
 
 // Event ABI
 const transferAbi = {
@@ -289,7 +289,7 @@ This produces:
 - **data** - Empty (all parameters indexed)
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const anonymousLog = EventLog({
   address: contractAddress,
@@ -307,7 +307,7 @@ const remaining = anonymousLog.getIndexedTopics(); // [to, tokenId, price]
 ## Complete Example: ERC-20 Transfer Tracking
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+import { EventLog, Address, Hash, Hex } from 'tevm';
 
 // Event signature
 const TRANSFER_SIG = Hash(
@@ -367,7 +367,7 @@ console.log(`Outgoing: ${outgoing.length} transfers`);
 Logs can be marked as `removed: true` when chain reorganizations invalidate their blocks:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Filter active logs only
 const activeLogs = allLogs.filter(log => !log.isRemoved());

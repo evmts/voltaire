@@ -12,7 +12,7 @@ description: Fixed-size 64-byte (512-bit) values for extended hashes and concate
 Bytes64 is a branded `Uint8Array` type representing exactly 64 bytes (512 bits). It provides strict size validation and type safety for large fixed-size byte values.
 
 ```typescript
-import * as Bytes64 from '@tevm/voltaire/primitives/Bytes/Bytes64';
+import * as Bytes64 from 'tevm/primitives/Bytes/Bytes64';
 
 // Create from hex
 const bytes = Bytes64('0x' + '12'.repeat(64));
@@ -257,7 +257,7 @@ try {
 Common pattern: concatenate two 32-byte hashes:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Keccak256 } from 'tevm/Keccak256';
 
 // Two hashes to concatenate
 const hash1 = Keccak256.hash(data1);

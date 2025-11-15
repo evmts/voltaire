@@ -25,9 +25,9 @@ Factory function that creates an address-to-checksum converter with explicit cry
 **Example:**
 
 ```typescript
-import { ToChecksummed } from '@tevm/voltaire/Address/AddressType'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
-import { Address } from '@tevm/voltaire'
+import { ToChecksummed } from 'tevm/Address/AddressType'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+import { Address } from 'tevm'
 
 // Create factory with explicit crypto dependency
 const toChecksummed = ToChecksummed({ keccak256 })
@@ -55,7 +55,7 @@ Convert address to EIP-55 checksummed hex string.
 **Example:**
 
 ```c
-#include <voltaire/primitives.h>
+#include <tevm/primitives.h>
 #include <stdio.h>
 
 PrimitivesAddress addr;
@@ -69,7 +69,7 @@ if (result == PRIMITIVES_SUCCESS) {
 }
 ```
 
-**Defined in:** [primitives.h:115](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L115)
+**Defined in:** [primitives.h:115](https://github.com/evmts/tevm/blob/main/src/primitives.h#L115)
 
 </Tab>
 </Tabs>
@@ -105,7 +105,7 @@ for i in 0..39:
 ## Example Walkthrough
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 // Input address (lowercase)
 const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
@@ -125,7 +125,7 @@ console.log(addr.toChecksummed())
 Display addresses with integrity verification:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function displayAddress(address: Address) {
   const checksummed = address.toChecksummed()
@@ -143,7 +143,7 @@ function displayAddress(address: Address) {
 Users can manually verify addresses by comparing checksums:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const expected = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 const addr = Address(expected)
@@ -161,7 +161,7 @@ if (addr.toChecksummed() === expected) {
 Use checksummed addresses in QR codes for better error detection:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 import QRCode from 'qrcode'
 
 async function generateAddressQR(address: Address) {
@@ -176,7 +176,7 @@ async function generateAddressQR(address: Address) {
 Wallets expect checksummed addresses:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 async function requestPayment(recipient: Address, amount: bigint) {
   const checksummed = recipient.toChecksummed()
@@ -211,7 +211,7 @@ For minimal bundle size without crypto, use `toHex()` instead if checksums aren'
 For repeated conversions, consider caching:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 class CachedAddress {
   private _checksumCache?: string
@@ -232,7 +232,7 @@ class CachedAddress {
 Validate checksum before using an address:
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 function parseChecksummedAddress(input: string): Address {
   if (!Address.isValidChecksum(input)) {
@@ -246,7 +246,7 @@ function parseChecksummedAddress(input: string): Address {
 ## Comparison with Other Formats
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'tevm'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 

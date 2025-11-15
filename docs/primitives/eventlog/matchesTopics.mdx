@@ -18,7 +18,7 @@ description: Check if log matches topic filter with null wildcards and OR logic
 `null` at any position matches any topic value:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -35,7 +35,7 @@ const matches = log.matchesTopics([
 Specific hash must match exactly at that position:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const userHash = Hash('0x000000000000000000000000a1b2c3d4...');
@@ -53,7 +53,7 @@ const matches = log.matchesTopics([
 Matches if log topic equals ANY hash in the array:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -69,7 +69,7 @@ const matches = log.matchesTopics([
 Empty filter matches all logs:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Matches all logs
 const matches = log.matchesTopics([]);
@@ -114,7 +114,7 @@ console.log(`Total: ${userTransfers.length}`);
 ### Multiple Event Types
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -131,7 +131,7 @@ console.log(`Found ${relevantLogs.length} relevant events`);
 ### Intra-Group Transfers
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -157,7 +157,7 @@ console.log(`Intra-group transfers: ${intraGroupTransfers.length}`);
 ### DEX Swap Monitoring
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 // Uniswap V2 Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)
 const SWAP_SIG = Hash('0xd78ad95f...');
@@ -172,7 +172,7 @@ const routerSwaps = allLogs.filter(log =>
 ### NFT Transfer Tracking
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 const TRANSFER_SIG = Hash('0xddf252ad...');
@@ -195,7 +195,7 @@ console.log(`Burns: ${burns.length}`);
 ### Anonymous Event Handling
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Anonymous events: topic0 is first indexed param, not signature
 const anonymousLog = EventLog({
@@ -217,7 +217,7 @@ const matches = anonymousLog.matchesTopics([
 ### Complex Boolean Logic
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const user1Hash = Hash('0x000...user1');
@@ -236,7 +236,7 @@ const complexFilter = allLogs.filter(log =>
 Filter can have fewer topics than log:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const log = EventLog({
   address: contractAddress,
@@ -252,7 +252,7 @@ console.log(matches); // true (remaining topics ignored)
 ### Empty Topics Check
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const log = EventLog({
   address: contractAddress,
@@ -274,7 +274,7 @@ console.log(matches2); // true
 Uses constant-time hash comparison for security:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Comparison time doesn't leak which topics match
 const matches = log.matchesTopics([sig, null, userHash]);
@@ -283,7 +283,7 @@ const matches = log.matchesTopics([sig, null, userHash]);
 For large datasets, use `filterLogs` for optimized batch filtering:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Efficient batch filtering
 const filtered = EventLog.filterLogs(allLogs, {

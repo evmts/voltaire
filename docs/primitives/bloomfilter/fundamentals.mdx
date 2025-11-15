@@ -75,7 +75,7 @@ To add item to filter:
 3. Set all `k` bits to 1
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire';
+import { BloomFilter } from 'tevm';
 
 const filter = BloomFilter.create(2048, 3); // m=2048 bits, k=3 hashes
 
@@ -111,7 +111,7 @@ To test if item might be in filter:
 3. Return true only if ALL bits are set
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire';
+import { BloomFilter } from 'tevm';
 
 const filter = BloomFilter.create(2048, 3);
 const topic = new TextEncoder().encode("Transfer(address,address,uint256)");
@@ -278,7 +278,7 @@ type Log = {
 ### What Gets Added to Bloom Filter
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire';
+import { BloomFilter } from 'tevm';
 
 const bloom = BloomFilter.create(2048, 3);
 
@@ -346,7 +346,7 @@ function transfersToAddress(
 
 ## Hash Function Implementation
 
-Voltaire's bloom filter uses three hash functions based on keccak256:
+Tevm's bloom filter uses three hash functions based on keccak256:
 
 ```typescript
 class BloomFilter extends Uint8Array {
@@ -394,7 +394,7 @@ console.log(pos1a !== pos2 && pos2 !== pos3); // true - different results
 Bloom filters can be merged using bitwise OR to represent the union of two sets:
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire';
+import { BloomFilter } from 'tevm';
 
 // Block 1 logs
 const bloom1 = BloomFilter.create(2048, 3);
@@ -465,7 +465,7 @@ console.log(`Found ${matches.length} blocks with potential Transfer events`);
 Check if filter has any items:
 
 ```typescript
-import { BloomFilter } from '@tevm/voltaire';
+import { BloomFilter } from 'tevm';
 
 const filter = BloomFilter.create(2048, 3);
 

@@ -21,7 +21,7 @@ Core operations for manipulating and querying Binary State Tree.
 Insert value at 32-byte key. Returns new tree with value inserted. Immutable operation.
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 let tree = BinaryTree.init()
 
@@ -54,7 +54,7 @@ console.log(tree.root.type) // Still 'stem'
 **Throws:**
 - `InvalidTreeStateError` - If tree structure is invalid (leaf node encountered)
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/insert.js:22-26](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/insert.js#L22-L26)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/insert.js:22-26](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/insert.js#L22-L26)
 
 </Tab>
 
@@ -151,7 +151,7 @@ if (tree.root.type === 'internal') {
 Retrieve value at 32-byte key. Returns `null` if key not found.
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 let tree = BinaryTree.init()
 
@@ -182,7 +182,7 @@ console.log(BinaryTree.get(tree, key2)) // null
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 let tree = BinaryTree.init()
 
@@ -199,7 +199,7 @@ console.log(result?.[0]) // 0xFF
 </Tab>
 <Tab title="Check Existence">
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 const tree = BinaryTree.init()
 const key = Bytes32()
@@ -215,7 +215,7 @@ if (value === null) {
 
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/get.js:18-21](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/get.js#L18-L21)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/get.js:18-21](https://github.com/evmts/tevm/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/get.js#L18-L21)
 
 ## Get Behavior
 
@@ -301,7 +301,7 @@ console.log(BinaryTree.get(tree, key)?.[0]) // 0x02
 Efficient batch insertion:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 function batchInsert(
   tree: BinaryTree,
@@ -331,7 +331,7 @@ tree = batchInsert(tree, entries)
 Inserting account data and storage:
 
 ```typescript
-import { BinaryTree } from '@tevm/voltaire'
+import { BinaryTree } from 'tevm'
 
 let tree = BinaryTree.init()
 
@@ -388,7 +388,7 @@ console.log(tree1.root !== tree2.root) // true
 ## Error Handling
 
 ```typescript
-import { BinaryTree, InvalidTreeStateError } from '@tevm/voltaire'
+import { BinaryTree, InvalidTreeStateError } from 'tevm'
 
 try {
   let tree = BinaryTree.init()

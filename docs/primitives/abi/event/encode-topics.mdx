@@ -12,7 +12,7 @@ description: Encode indexed event parameters as topics for filtering
 ### Filter by Single Address
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -38,7 +38,7 @@ const logs = await provider.getLogs({
 ### Filter by Multiple Criteria
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -65,7 +65,7 @@ const logs = await provider.getLogs({
 ### Partial Filtering
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",

@@ -18,7 +18,7 @@ description: Check if log matches complete filter with address, topics, and bloc
 Single address or array (OR logic):
 
 ```typescript
-import { EventLog, Address } from '@tevm/voltaire';
+import { EventLog, Address } from 'tevm';
 
 // Single address
 const matches1 = log.matchesFilter({
@@ -41,7 +41,7 @@ const matches3 = log.matchesFilter({
 Array with null wildcards and OR logic:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const userHash = Hash('0x000...user');
@@ -60,7 +60,7 @@ const matches = log.matchesFilter({
 Inclusive bounds on block number:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Blocks 18M to 18.5M (inclusive)
 const matches = log.matchesFilter({
@@ -76,7 +76,7 @@ const matches = log.matchesFilter({
 Exact block match:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 const blockHash = Hash('0xabc...');
 
@@ -92,7 +92,7 @@ const matches = log.matchesFilter({
 All specified filters use AND logic:
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Must match ALL conditions
 const matches = log.matchesFilter({
@@ -108,7 +108,7 @@ const matches = log.matchesFilter({
 ### Complete RPC-Style Filter
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const userHash = Hash('0x000...user');
@@ -138,7 +138,7 @@ console.log(`Found ${filtered.length} matching logs`);
 Omit unnecessary fields:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Only address filter
 const byAddress = log.matchesFilter({
@@ -162,7 +162,7 @@ const byBlock = log.matchesFilter({
 Block hash is alternative to from/to block:
 
 ```typescript
-import { EventLog, Hash } from '@tevm/voltaire';
+import { EventLog, Hash } from 'tevm';
 
 // Option 1: Block range
 const range = log.matchesFilter({
@@ -186,7 +186,7 @@ const mixed = log.matchesFilter({
 ### Multi-Stage Filtering
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Stage 1: Coarse filter (address + block range)
 const coarse = allLogs.filter(log =>
@@ -210,7 +210,7 @@ console.log(`Coarse: ${coarse.length}, Refined: ${refined.length}`);
 ### Validating Log Completeness
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 function requiresBlockNumber(filter: Filter): boolean {
   return filter.fromBlock !== undefined || filter.toBlock !== undefined;
@@ -233,7 +233,7 @@ if (requiresBlockNumber(filter) && log.blockNumber === undefined) {
 For multiple logs, use `filterLogs` instead:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Efficient: Single pass with optimizations
 const filtered = EventLog.filterLogs(allLogs, {
@@ -259,7 +259,7 @@ const filtered2 = allLogs.filter(log =>
 Filter checks only apply if log has required fields:
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 const pendingLog = EventLog({
   address: contractAddress,

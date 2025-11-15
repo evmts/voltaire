@@ -34,7 +34,7 @@ Runtime type guard that checks if a value is a valid `BrandedStorageKey`.
 ### Runtime Validation
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 function processStorage(value: unknown): void {
   if (!State.StorageKey.is(value)) {
@@ -59,7 +59,7 @@ processStorage(null);                            // Throws
 ### API Input Validation
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 class StorageManager {
   async getValue(key: unknown): Promise<bigint | undefined> {
@@ -86,7 +86,7 @@ await manager.getValue({ address: contractAddr, slot: 0n }); // Throws TypeError
 ### Type Narrowing
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 function logValue(value: unknown): void {
   if (State.StorageKey.is(value)) {
@@ -109,7 +109,7 @@ logValue(123);                                 // "Unknown type: number"
 ### Array Filtering
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // Filter valid storage keys from mixed array
 function filterStorageKeys(values: unknown[]): BrandedStorageKey[] {
@@ -132,7 +132,7 @@ console.log(storageKeys.length); // 3
 ### Optional Parameters
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 function getStorageValue(
   key: BrandedStorageKey | string,
@@ -162,7 +162,7 @@ const value2 = getStorageValue("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0", s
 ### Deserialization Validation
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 // Parse and validate storage keys from JSON
 function parseStorageKeys(json: string): BrandedStorageKey[] {
@@ -202,7 +202,7 @@ console.log(keys.length); // 2
 ### Error Messages
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 
 function requireStorageKey(value: unknown): BrandedStorageKey {
   if (!State.StorageKey.is(value)) {
@@ -224,7 +224,7 @@ try {
 ### Testing
 
 ```typescript
-import * as State from '@tevm/voltaire/State';
+import * as State from 'tevm/State';
 import { expect } from 'vitest';
 
 test('is() returns true for valid StorageKey', () => {

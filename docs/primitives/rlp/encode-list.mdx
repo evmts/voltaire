@@ -20,7 +20,7 @@ RLP list encoding has two cases based on total payload length:
 For lists with total payload < 56 bytes, prefix with `0xc0 + total_length`:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Empty list
 const empty = []
@@ -49,7 +49,7 @@ const encoded = Rlp.encodeList(strings)
 For lists with total payload >= 56 bytes, use long form: `[0xf7 + length_of_length, ...length_bytes, ...encoded_items]`
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Create list with 60 bytes total payload
 const items = Array({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
@@ -109,7 +109,7 @@ function encodeList(items) {
 Ethereum transactions are RLP-encoded lists:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Legacy transaction: [nonce, gasPrice, gas, to, value, data, v, r, s]
 const txData = [
@@ -133,7 +133,7 @@ const encoded = Rlp.encodeList(txData)
 Block headers are RLP-encoded lists:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Simplified block header
 const header = [
@@ -160,7 +160,7 @@ const encoded = Rlp.encodeList(header)
 RLP handles arbitrary nesting:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Deeply nested structure
 const nested = [
@@ -193,7 +193,7 @@ const encoded = Rlp.encodeList(matrix)
 Encode Merkle proof as list of hashes:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const proof = [
   Bytes32().fill(0x01),  // Node 1
@@ -218,7 +218,7 @@ Use `encodeList` instead of generic `encode` when:
 3. **Performance** - Skips type dispatch overhead
 
 ```typescript
-import { encodeList } from '@tevm/voltaire/BrandedRlp'
+import { encodeList } from 'tevm/BrandedRlp'
 
 // More efficient
 const encoded = encodeList(items)
@@ -233,7 +233,7 @@ const encoded = encode(items)
 Calculate total size before encoding:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const items = [
   new Uint8Array([1, 2, 3]),
@@ -253,7 +253,7 @@ const encoded = Rlp.encodeList(items)
 Cache encoded results when encoding the same data multiple times:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const list = [new Uint8Array([1]), new Uint8Array([2])]
 const encoded = Rlp.encodeList(list)

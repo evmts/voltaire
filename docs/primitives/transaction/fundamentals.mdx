@@ -172,7 +172,7 @@ Blob transactions for L2 data availability from Dencun hard fork (2024).
 ```typescript
 import * as Transaction from 'tevm/Transaction';
 import * as Address from 'tevm/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Hash from 'tevm/Hash';
 
 const eip4844: Transaction.EIP4844 = {
   type: Transaction.Type.EIP4844,
@@ -230,7 +230,7 @@ EOA delegation transactions from Pectra hard fork (2024).
 ```typescript
 import * as Transaction from 'tevm/Transaction';
 import * as Address from 'tevm/Address';
-import * as Authorization from '@tevm/voltaire/Authorization';
+import * as Authorization from 'tevm/Authorization';
 
 const eip7702: Transaction.EIP7702 = {
   type: Transaction.Type.EIP7702,
@@ -312,7 +312,7 @@ Each authorization temporarily delegates an EOA's code to a contract:
 ```typescript
 import * as Transaction from 'tevm/Transaction';
 import * as Address from 'tevm/Address';
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import * as Secp256k1 from 'tevm/Secp256k1';
 
 // 1. CONSTRUCT - Create unsigned transaction
 const tx: Transaction.EIP1559 = {
@@ -369,9 +369,9 @@ The signing hash is what gets signed by the sender's private key. It proves the 
 <Tabs>
 <Tab title="EIP-1559">
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Rlp from '@tevm/voltaire/Rlp';
-import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import * as Transaction from 'tevm/Transaction';
+import * as Rlp from 'tevm/Rlp';
+import * as Keccak256 from 'tevm/Keccak256';
 
 const tx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -414,9 +414,9 @@ const signingHashDirect = Transaction.getSigningHash(tx);
 </Tab>
 <Tab title="Legacy">
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Rlp from '@tevm/voltaire/Rlp';
-import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import * as Transaction from 'tevm/Transaction';
+import * as Rlp from 'tevm/Rlp';
+import * as Keccak256 from 'tevm/Keccak256';
 
 const tx: Transaction.Legacy = {
   type: Transaction.Type.Legacy,
@@ -588,7 +588,7 @@ const totalCost = executionCost + blobCost + value;
 Transactions must satisfy multiple validation rules:
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Transaction from 'tevm/Transaction';
 
 const tx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -668,7 +668,7 @@ function intrinsicGas(tx: Transaction.EIP1559): bigint {
 ## Detecting Transaction Type
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Transaction from 'tevm/Transaction';
 
 // From serialized bytes
 const serialized = new Uint8Array([0x02, /* ... */]);
@@ -709,8 +709,8 @@ If first byte >= 0xc0:
 ### Sign Transaction
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import * as Transaction from 'tevm/Transaction';
+import * as Secp256k1 from 'tevm/Secp256k1';
 
 // Unsigned transaction
 const unsigned: Transaction.EIP1559 = {
@@ -748,7 +748,7 @@ const signed: Transaction.EIP1559 = {
 ### Verify Signature
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Transaction from 'tevm/Transaction';
 
 // Verify signature is valid
 const isValid = Transaction.verifySignature(signed);
@@ -763,7 +763,7 @@ console.log(sender);
 ### Assert Signed
 
 ```typescript
-import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Transaction from 'tevm/Transaction';
 
 // Check if transaction is signed
 if (!Transaction.isSigned(tx)) {

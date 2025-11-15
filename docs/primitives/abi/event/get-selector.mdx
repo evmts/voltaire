@@ -12,7 +12,7 @@ description: Get event signature hash (topic 0) for event filtering
 ### Event Filtering
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -35,7 +35,7 @@ const logs = await provider.getLogs({
 ### Multiple Event Types
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const transferEvent = new Event({
   type: "event",
@@ -70,7 +70,7 @@ const logs = await provider.getLogs({
 ### Event Registry
 
 ```typescript
-import { Event } from '@tevm/voltaire'
+import { Event } from 'tevm'
 
 const events = [
   new Event({

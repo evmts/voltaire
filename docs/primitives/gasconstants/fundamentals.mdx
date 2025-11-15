@@ -17,7 +17,7 @@ Gas is the unit that measures computational work on the Ethereum Virtual Machine
 Gas constants are fixed costs assigned to EVM operations. They determine how much gas each instruction consumes during execution.
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Basic arithmetic
 GasConstants.VeryLowGas        // 3n - ADD, SUB, NOT
@@ -49,7 +49,7 @@ GasConstants.CallValueTransfer // 9000n - ETH transfer cost
 Costs based on CPU complexity:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Zero cost (data access)
 GasConstants.Zero              // 0n - STOP, RETURN data portion
@@ -72,7 +72,7 @@ Most expensive category due to persistent state changes:
 <Tabs>
 <Tab title="SSTORE Costs">
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Storage write costs (post-EIP-2929)
 GasConstants.SstoreSet         // 20000n - Zero to non-zero
@@ -86,7 +86,7 @@ GasConstants.SstoreClearRefund // 4800n - Refund for clearing storage (EIP-3529)
 </Tab>
 <Tab title="Calculating SSTORE">
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Writing 100 to empty slot (cold access)
 const result = GasConstants.calculateSstoreCost(
@@ -116,7 +116,7 @@ console.log(clearResult.refund); // 4800n (refund for clearing)
 Memory grows dynamically. Expansion costs increase quadratically to discourage excessive allocation:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Expand memory from 0 to 128 bytes (4 words)
 const expansion = GasConstants.calculateMemoryExpansionCost(0n, 128n);
@@ -135,7 +135,7 @@ console.log(expansion.words);        // 4n
 Every transaction consumes gas before execution begins:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Base transaction cost
 GasConstants.Tx                // 21000n - Base cost for any transaction
@@ -153,7 +153,7 @@ GasConstants.InitcodeWord      // 2n per word (EIP-3860, Shanghai+)
 <Tabs>
 <Tab title="Calculate Intrinsic Gas">
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Simple ETH transfer (no data)
 const simpleTransfer = GasConstants.calculateTxIntrinsicGas(
@@ -178,7 +178,7 @@ const erc20Transfer = GasConstants.calculateTxIntrinsicGas(
 </Tab>
 <Tab title="Contract Deployment">
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Deploy contract with 1KB initcode
 const initcode = new Uint8Array(1024);
@@ -203,7 +203,7 @@ Gas costs evolve across network upgrades:
 Introduced access sets to reduce costs for repeated access:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Pre-Berlin: All SLOAD cost 800n
 // Post-Berlin: First access costs 2100n, subsequent cost 100n
@@ -220,7 +220,7 @@ console.log(GasConstants.getColdSloadCost('berlin'));   // 2100n
 Limited refunds to prevent gas token abuse:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Pre-London: Max refund = gasUsed / 2 (50%)
 // Post-London: Max refund = gasUsed / 5 (20%)
@@ -239,7 +239,7 @@ console.log(GasConstants.getSstoreRefund('london'));   // 4800n
 Added per-word cost for contract initcode:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 console.log(GasConstants.hasEIP3860('berlin'));    // false
 console.log(GasConstants.hasEIP3860('shanghai'));  // true
@@ -253,7 +253,7 @@ console.log(GasConstants.InitcodeWord); // 2n
 Estimate total gas for ERC-20 transfer:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 function estimateERC20Transfer(): bigint {
   // 1. Intrinsic gas (21000 + calldata)
@@ -312,7 +312,7 @@ console.log(estimateERC20Transfer()); // 37522n (~37.5k gas)
 Calculate gas for CALL operation with value transfer:
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // CALL to transfer 1 ETH to EOA (cold access)
 const callResult = GasConstants.calculateCallCost(
@@ -339,7 +339,7 @@ console.log(newAccountCall.total); // 36200n (11200n + 25000n)
 ## Common Constants Used in Practice
 
 ```typescript
-import * as GasConstants from '@tevm/voltaire/GasConstants';
+import * as GasConstants from 'tevm/GasConstants';
 
 // Most frequent operations
 GasConstants.VeryLowGas        // 3n - Arithmetic (ADD, SUB)

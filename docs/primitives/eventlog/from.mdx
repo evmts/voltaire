@@ -16,7 +16,7 @@ description: Primary constructor for event logs
 ### From RPC Response
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+import { EventLog, Address, Hash, Hex } from 'tevm';
 
 // Transform eth_getLogs response
 const rpcLog = {
@@ -66,7 +66,7 @@ console.log(testLog.removed); // undefined (defaults to false)
 ### Complete Log with Metadata
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+import { EventLog, Address, Hash, Hex } from 'tevm';
 
 const log = EventLog({
   address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),

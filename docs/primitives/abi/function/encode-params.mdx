@@ -26,7 +26,7 @@ Example for `transfer(address,uint256)`:
 ### Basic Function Call
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const balanceOfFn = new Function({
   type: "function",
@@ -49,7 +49,7 @@ const tx = {
 ### Multiple Parameters
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFromFn = new Function({
   type: "function",
@@ -71,7 +71,7 @@ const calldata = transferFromFn.encodeParams([
 ### Dynamic Types (String)
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const setNameFn = new Function({
   type: "function",
@@ -86,7 +86,7 @@ const calldata = setNameFn.encodeParams(["Alice"])
 ### Arrays
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const batchTransferFn = new Function({
   type: "function",
@@ -109,7 +109,7 @@ const calldata = batchTransferFn.encodeParams([
 ### Tuples (Structs)
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const createOrderFn = new Function({
   type: "function",
@@ -139,7 +139,7 @@ const calldata = createOrderFn.encodeParams([
 ### No Parameters
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const totalSupplyFn = new Function({
   type: "function",
@@ -156,7 +156,7 @@ const calldata = totalSupplyFn.encodeParams([])
 TypeScript infers parameter types from function definition:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -182,7 +182,7 @@ const calldata = transferFn.encodeParams([
 Multiple address input formats accepted:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const setOwnerFn = new Function({
   type: "function",
@@ -201,7 +201,7 @@ setOwnerFn.encodeParams([new Uint8Array(20)])  // raw bytes
 Use `bigint` for all integer types:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
+import { Function } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -225,8 +225,8 @@ transferFn.encodeParams(["0x...", 1000000000000000000n])
 ## Error Handling
 
 ```typescript
-import { Function } from '@tevm/voltaire'
-import { AbiEncodingError, AbiParameterMismatchError } from '@tevm/voltaire'
+import { Function } from 'tevm'
+import { AbiEncodingError, AbiParameterMismatchError } from 'tevm'
 
 const transferFn = new Function({
   type: "function",
@@ -261,8 +261,8 @@ try {
 To encode only parameters without selector, use parameter encoding directly:
 
 ```typescript
-import { Function } from '@tevm/voltaire'
-import { encodeParameters } from '@tevm/voltaire/Abi'
+import { Function } from 'tevm'
+import { encodeParameters } from 'tevm/Abi'
 
 const transferFn = new Function({
   type: "function",

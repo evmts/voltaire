@@ -203,9 +203,9 @@ Urgent:  4,200,000 Gwei   = 0.0042 ETH
 <Tabs>
 <Tab title="Cost Impact">
 ```typescript
-import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Wei from '@tevm/voltaire/Wei'
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Gwei from 'tevm/Gwei'
+import * as Wei from 'tevm/Wei'
+import * as Uint from 'tevm/Uint'
 
 function showCostScale(gasUsed: bigint) {
   const prices = [10, 20, 50, 100, 200]
@@ -264,7 +264,7 @@ Transfer (21,000 gas) - Cost in Ether:
 ```typescript
 import * as Wei from '@tevm/voltaire/Wei'
 import * as Gwei from '@tevm/voltaire/Gwei'
-import * as Ether from '@tevm/voltaire/Ether'
+import * as Ether from 'tevm/Ether'
 import * as Uint from '@tevm/voltaire/Uint'
 
 // How much in Wei?

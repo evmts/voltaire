@@ -135,7 +135,7 @@ Constructor parameters.
 ### ERC-20 Transfer Event Filtering
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_SIG = Hash(
@@ -175,7 +175,7 @@ for (const log of sorted) {
 ### Multi-Contract Log Parsing
 
 ```typescript
-import { EventLog, Address, Hash } from '@tevm/voltaire';
+import { EventLog, Address, Hash } from 'tevm';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -210,7 +210,7 @@ console.log(`Found ${transfers.length} transfers, ${approvals.length} approvals`
 ### Chain Reorganization Handling
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Filter active (non-removed) logs
 const activeLogs = allLogs.filter(log => !log.isRemoved());
@@ -232,7 +232,7 @@ const sorted = EventLog.sortLogs(activeLogs);
 ### Block Range Analysis
 
 ```typescript
-import { EventLog } from '@tevm/voltaire';
+import { EventLog } from 'tevm';
 
 // Group logs by block
 const byBlock = new Map<bigint, typeof allLogs>();

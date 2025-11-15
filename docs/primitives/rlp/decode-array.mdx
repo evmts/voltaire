@@ -16,7 +16,7 @@ description: Decode RLP-encoded bytes to array
 `decodeArray` returns a JavaScript array with decoded elements:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const encoded = Rlp.encodeArray([
   new Uint8Array([1, 2, 3]),
@@ -44,7 +44,7 @@ for (const item of arr) {
 Decode transaction fields:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 interface LegacyTx {
   nonce: bigint
@@ -85,7 +85,7 @@ console.log('To:', tx.to)
 Decode block header:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 interface BlockHeader {
   parentHash: Uint8Array
@@ -143,7 +143,7 @@ function decodeBlockHeader(bytes: Uint8Array): BlockHeader {
 Decode event logs:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 interface Log {
   address: Uint8Array
@@ -172,7 +172,7 @@ console.log('Topics:', log.topics)
 Decode account state:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 interface AccountState {
   nonce: bigint
@@ -202,7 +202,7 @@ console.log('Balance:', account.balance)
 Decode trie nodes:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 type TrieNode =
   | { type: 'branch'; children: Uint8Array[]; value: Uint8Array }
@@ -250,7 +250,7 @@ function decodeTrieNode(bytes: Uint8Array): TrieNode {
 `decodeArray` validates RLP encoding:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Valid encoding
 const valid = new Uint8Array([0xc4, 0x01, 0x02, 0x03])
@@ -279,7 +279,7 @@ try {
 Define typed decoders:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 // Define schema
 type Schema<T> = {
@@ -327,7 +327,7 @@ const decoded = uint256ArraySchema.decode(encoded)
 `decodeArray` returns a plain JavaScript array for efficient access:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const encoded = Rlp.encodeArray([
   new Uint8Array([1]),
@@ -352,7 +352,7 @@ for (const item of arr) {
 `decodeArray` is more convenient than `decode` for array access:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 const encoded = new Uint8Array([...])
 
@@ -375,7 +375,7 @@ if (decoded.data.type === 'list') {
 Cache decoded results for repeated access:
 
 ```typescript
-import { Rlp } from '@tevm/voltaire'
+import { Rlp } from 'tevm'
 
 class TxCache {
   private cache = new Map<string, any[]>()
