@@ -2,7 +2,7 @@ import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../../errors/ValidationError.js";
-import type { BrandedPublicKey } from "./BrandedPublicKey.js";
+import type { PublicKeyType } from "../PublicKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
 
@@ -19,7 +19,7 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
  * const pk = PublicKey.from("0x1234...");
  * ```
  */
-export function from(hex: string): BrandedPublicKey {
+export function from(hex: string): PublicKeyType {
 	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!HEX_REGEX.test(hexStr)) {
 		throw new InvalidFormatError("Invalid hex string", {
@@ -44,5 +44,5 @@ export function from(hex: string): BrandedPublicKey {
 	for (let i = 0; i < 64; i++) {
 		bytes[i] = Number.parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
 	}
-	return bytes as BrandedPublicKey;
+	return bytes as PublicKeyType;
 }

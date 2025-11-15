@@ -1,4 +1,4 @@
-import type { BrandedPublicKey } from "./BrandedPublicKey.js";
+import type { PublicKeyType } from "../PublicKeyType.js";
 
 /**
  * Convert PublicKey to hex string
@@ -11,6 +11,6 @@ import type { BrandedPublicKey } from "./BrandedPublicKey.js";
  * const hex = PublicKey._toHex.call(pk);
  * ```
  */
-export function toHex(this: BrandedPublicKey): string {
+export function toHex(this: PublicKeyType): string {
 	return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
