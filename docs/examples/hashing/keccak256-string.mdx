@@ -10,8 +10,8 @@ description: "Hash a UTF-8 string using Keccak256 and get the result as hex"
 Hash a UTF-8 string using Keccak256 and get the result as hex
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Hash a simple string
 const message = 'Hello, World!';
@@ -29,7 +29,7 @@ console.log('Hash length:', hash.length, 'bytes');
 ```
 
 <Tip>
-This is a fully executable example. View the complete source with test assertions at [`examples/hashing/keccak256-string.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/hashing/keccak256-string.ts).
+This is a fully executable example. View the complete source with test assertions at [`examples/hashing/keccak256-string.ts`](https://github.com/roninjin10/tevm/blob/main/examples/hashing/keccak256-string.ts).
 </Tip>
 
 ## Related

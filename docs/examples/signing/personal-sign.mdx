@@ -10,9 +10,9 @@ description: "Sign a message using Ethereum personal_sign (EIP-191) format"
 Sign a message using Ethereum personal_sign (EIP-191) format
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Hex } from '@tevm/voltaire/Hex';
+import { Secp256k1 } from 'tevm/Secp256k1';
+import { Keccak256 } from 'tevm/Keccak256';
+import { Hex } from 'tevm/Hex';
 
 // Create a private key (32 bytes)
 const privateKey = Hex.toBytes('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
@@ -36,7 +36,7 @@ console.log('Signature (v):', signature.v);
 ```
 
 <Tip>
-This is a fully executable example. View the complete source with test assertions at [`examples/signing/personal-sign.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/signing/personal-sign.ts).
+This is a fully executable example. View the complete source with test assertions at [`examples/signing/personal-sign.ts`](https://github.com/roninjin10/tevm/blob/main/examples/signing/personal-sign.ts).
 </Tip>
 
 ## Related

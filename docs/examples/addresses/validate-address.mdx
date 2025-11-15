@@ -10,7 +10,7 @@ description: "Check if a string is a valid Ethereum address with EIP-55 checksum
 Check if a string is a valid Ethereum address with EIP-55 checksum validation
 
 ```typescript
-import { Address } from '@tevm/voltaire/Address';
+import { Address } from 'tevm/Address';
 
 // Valid checksummed address
 const validAddr = '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3';
@@ -28,7 +28,7 @@ console.log(`${notAddress} is valid:`, Address.isValid(notAddress));
 ```
 
 <Tip>
-This is a fully executable example. View the complete source with test assertions at [`examples/addresses/validate-address.ts`](https://github.com/roninjin10/voltaire/blob/main/examples/addresses/validate-address.ts).
+This is a fully executable example. View the complete source with test assertions at [`examples/addresses/validate-address.ts`](https://github.com/roninjin10/tevm/blob/main/examples/addresses/validate-address.ts).
 </Tip>
 
 ## Related
