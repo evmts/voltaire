@@ -1,5 +1,5 @@
 // Export type definition
-export type { BrandedPublicKey } from "./BrandedPublicKey.js";
+export type { PublicKeyType } from "../PublicKeyType.js";
 
 // Import crypto dependencies
 import { verify as secp256k1Verify } from "../../../crypto/Secp256k1/verify.js";
