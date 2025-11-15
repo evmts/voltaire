@@ -1,11 +1,11 @@
 // @ts-nocheck
-import * as BrandedHash from "./BrandedHash/index.js";
+import * as HashType from "./BrandedHash/index.js";
 
 // Re-export constants
 export * from "./BrandedHash/constants.js";
 
 /**
- * @typedef {import('./BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
+ * @typedef {import('./HashType.js').HashType} HashType
  */
 
 /**
@@ -23,7 +23,7 @@ export * from "./BrandedHash/constants.js";
  * ```
  */
 export function Hash(value) {
-	const result = BrandedHash.from(value);
+	const result = HashType.from(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 }
@@ -34,103 +34,103 @@ export function Hash(value) {
  * Prefer using Hash() directly.
  */
 Hash.from = (value) => {
-	const result = BrandedHash.from(value);
+	const result = HashType.from(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 
 Hash.fromBytes = (value) => {
-	const result = BrandedHash.fromBytes(value);
+	const result = HashType.fromBytes(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 
 Hash.fromHex = (value) => {
-	const result = BrandedHash.fromHex(value);
+	const result = HashType.fromHex(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 
 // Static utility methods
-Hash.isHash = BrandedHash.isHash;
-Hash.isValidHex = BrandedHash.isValidHex;
-Hash.assert = BrandedHash.assert;
+Hash.isHash = HashType.isHash;
+Hash.isValidHex = HashType.isValidHex;
+Hash.assert = HashType.assert;
 Hash.keccak256 = (value) => {
-	const result = BrandedHash.keccak256(value);
+	const result = HashType.keccak256(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.keccak256String = (value) => {
-	const result = BrandedHash.keccak256String(value);
+	const result = HashType.keccak256String(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.keccak256Hex = (value) => {
-	const result = BrandedHash.keccak256Hex(value);
+	const result = HashType.keccak256Hex(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.random = () => {
-	const result = BrandedHash.random();
+	const result = HashType.random();
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
-Hash.toBytes = BrandedHash.toBytes;
-Hash.toHex = BrandedHash.toHex;
-Hash.toString = BrandedHash.toString;
-Hash.equals = BrandedHash.equals;
-Hash.isZero = BrandedHash.isZero;
+Hash.toBytes = HashType.toBytes;
+Hash.toHex = HashType.toHex;
+Hash.toString = HashType.toString;
+Hash.equals = HashType.equals;
+Hash.isZero = HashType.isZero;
 Hash.clone = (value) => {
-	const result = BrandedHash.clone(value);
+	const result = HashType.clone(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.slice = (value, start, end) => {
-	const result = BrandedHash.slice(value, start, end);
+	const result = HashType.slice(value, start, end);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
-Hash.format = BrandedHash.format;
+Hash.format = HashType.format;
 Hash.concat = (...hashes) => {
-	const result = BrandedHash.concat(...hashes);
+	const result = HashType.concat(...hashes);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.merkleRoot = (hashes) => {
-	const result = BrandedHash.merkleRoot(hashes);
+	const result = HashType.merkleRoot(hashes);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 
-Hash.ZERO = BrandedHash.ZERO;
-Hash.SIZE = BrandedHash.SIZE;
+Hash.ZERO = HashType.ZERO;
+Hash.SIZE = HashType.SIZE;
 
 // Set up Hash.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(Hash.prototype, Uint8Array.prototype);
 
 // Instance methods
 Hash.prototype.toBytes = function () {
-	return BrandedHash.toBytes(this);
+	return HashType.toBytes(this);
 };
 Hash.prototype.toString = function () {
-	return BrandedHash.toString(this);
+	return HashType.toString(this);
 };
 Hash.prototype.equals = function (other) {
-	return BrandedHash.equals(this, other);
+	return HashType.equals(this, other);
 };
 Hash.prototype.isZero = function () {
-	return BrandedHash.isZero(this);
+	return HashType.isZero(this);
 };
 Hash.prototype.clone = function () {
-	const result = BrandedHash.clone(this);
+	const result = HashType.clone(this);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.prototype.slice = function (start, end) {
-	const result = BrandedHash.slice(this, start, end);
+	const result = HashType.slice(this, start, end);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
 Hash.prototype.format = function () {
-	return BrandedHash.format(this);
+	return HashType.format(this);
 };

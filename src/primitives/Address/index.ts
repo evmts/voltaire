@@ -200,13 +200,13 @@ Address.isValid = BrandedAddress.isValid;
 Address.isValidChecksum = BrandedAddress.isValidChecksum;
 Address.is = BrandedAddress.is;
 
-Address.zero = (): BrandedAddressType => {
+Address.zero = (): AddressType => {
 	const result = BrandedAddress.zero();
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
-Address.of = (...items: number[]): BrandedAddressType => {
+Address.of = (...items: number[]): AddressType => {
 	const result = Uint8Array.of(...items);
 	if (result.length !== BrandedAddress.SIZE) {
 		throw new InvalidAddressLengthError(
@@ -219,7 +219,7 @@ Address.of = (...items: number[]): BrandedAddressType => {
 		);
 	}
 	Object.setPrototypeOf(result, Address.prototype);
-	return result as BrandedAddressType;
+	return result as AddressType;
 };
 
 Address.compare = BrandedAddress.compare;
@@ -227,8 +227,8 @@ Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
 Address.sortAddresses = (
-	addresses: BrandedAddressType[],
-): BrandedAddressType[] => {
+	addresses: AddressType[],
+): AddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
@@ -236,34 +236,34 @@ Address.sortAddresses = (
 };
 
 Address.deduplicateAddresses = (
-	addresses: BrandedAddressType[],
-): BrandedAddressType[] => {
+	addresses: AddressType[],
+): AddressType[] => {
 	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
 	});
 };
 
-Address.clone = (address: BrandedAddressType): BrandedAddressType => {
+Address.clone = (address: AddressType): AddressType => {
 	const result = BrandedAddress.clone(address);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
 Address.calculateCreateAddress = (
-	address: BrandedAddressType,
+	address: AddressType,
 	nonce: bigint,
-): BrandedAddressType => {
+): AddressType => {
 	const result = BrandedAddress.calculateCreateAddress(address, nonce);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
 Address.calculateCreate2Address = (
-	address: BrandedAddressType,
+	address: AddressType,
 	salt: BrandedHash,
 	initCode: BrandedBytecode,
-): BrandedAddressType => {
+): AddressType => {
 	const result = BrandedAddress.calculateCreate2Address(
 		address,
 		salt,
