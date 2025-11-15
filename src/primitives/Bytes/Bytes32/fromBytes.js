@@ -7,7 +7,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
- * @returns {import('./BrandedBytes32.ts').BrandedBytes32} Bytes32
+ * @returns {import('./Bytes32Type.ts').Bytes32Type} Bytes32
  * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript
@@ -28,7 +28,7 @@ export function fromBytes(bytes) {
 			},
 		);
 	}
-	return /** @type {import('./BrandedBytes32.ts').BrandedBytes32} */ (
+	return /** @type {import('./Bytes32Type.ts').Bytes32Type} */ (
 		new Uint8Array(bytes)
 	);
 }
