@@ -9,17 +9,17 @@ description: Install and make your first JSON-RPC requests with type-safe provid
 
 # Getting Started
 
-Install Voltaire and start making type-safe JSON-RPC requests to Ethereum nodes.
+Install Tevm and start making type-safe JSON-RPC requests to Ethereum nodes.
 
 ## Installation
 
 ```bash
-npm install @tevm/voltaire
+npm install tevm
 ```
 
 ## Creating a Provider
 
-Voltaire provides the `Provider` interface but doesn't include transport implementations. Create providers using adapters or third-party libraries.
+Tevm provides the `Provider` interface but doesn't include transport implementations. Create providers using adapters or third-party libraries.
 
 ###
 
@@ -27,7 +27,7 @@ Voltaire provides the `Provider` interface but doesn't include transport impleme
 
 ```typescript
 import { createPublicClient, http } from 'viem';
-import type { Provider } from '@tevm/voltaire/provider';
+import type { Provider } from 'tevm/provider';
 
 // Create viem client
 const client = createPublicClient({
@@ -51,8 +51,8 @@ const provider = createPublicClient({
 ### From Window Ethereum (MetaMask)
 
 ```typescript
-import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
-import type { Provider } from '@tevm/voltaire/provider';
+import { Eip1193Provider } from 'tevm/provider/adapters';
+import type { Provider } from 'tevm/provider';
 
 // Wrap window.ethereum with EIP-1193 adapter
 const provider: Provider = Eip1193Provider(window.ethereum);
@@ -63,8 +63,8 @@ const provider: Provider = Eip1193Provider(window.ethereum);
 Implement the `Provider` interface for custom transports:
 
 ```typescript
-import type { Provider, Response } from '@tevm/voltaire/provider';
-import * as Address from '@tevm/voltaire/Address';
+import type { Provider, Response } from 'tevm/provider';
+import * as Address from 'tevm/Address';
 
 class CustomProvider implements Provider {
   async eth_blockNumber(): Promise<Response<string>> {
@@ -91,7 +91,7 @@ See [Adapters](/jsonrpc-provider/adapters) for detailed implementation patterns.
 Simplest request - no parameters:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 // Create request using constructor
 const request = Rpc.Eth.BlockNumberRequest();
@@ -111,8 +111,8 @@ if (response.error) {
 Request with branded Address parameter:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 // Create branded Address
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
@@ -135,9 +135,9 @@ if (!response.error) {
 Execute read-only contract call:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hex from 'tevm/Hex';
 
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
 const methodSignature = Hex('0x18160ddd'); // totalSupply()
@@ -170,7 +170,7 @@ type Response<T> =
 Always check for errors before using results:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 const request = Rpc.Eth.BlockNumberRequest();
 const response = await provider.request(request);
@@ -193,8 +193,8 @@ console.log('Block:', response.result);
 TypeScript narrows the type after checking:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 const request = Rpc.Eth.GetBalanceRequest(address, 'latest');
@@ -216,7 +216,7 @@ if (response.error) {
 Subscribe to blockchain events using async generators:
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
+import type { Provider } from 'tevm/provider';
 
 const provider: Provider = /* ... */;
 
@@ -233,8 +233,8 @@ for await (const block of provider.events.newHeads()) {
 Monitor specific contract events:
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Address from 'tevm/Address';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
 const transferSignature = Keccak256.from(
@@ -276,8 +276,8 @@ console.log('Subscription stopped');
 Get balance, nonce, and code in parallel:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -303,9 +303,9 @@ if (!balance.error && !nonce.error && !code.error) {
 ### Estimate Gas for Transaction
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hex from 'tevm/Hex';
 
 const request = Rpc.Eth.EstimateGasRequest({
   from: Address('0x...'),
@@ -331,8 +331,8 @@ if (!gasEstimate.error) {
 Use block numbers to query historical data:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
@@ -372,8 +372,8 @@ if (!response.error) {
 Use branded primitive constructors:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 // ❌ Error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -387,7 +387,7 @@ const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 Check for errors before accessing result:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 // ❌ TypeScript error: result may be undefined
 const request = Rpc.Eth.BlockNumberRequest();

@@ -14,8 +14,8 @@ Practical recipes for common blockchain interaction patterns.
 ## Getting Account State
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 async function getAccountState(
   provider: Provider,
@@ -47,8 +47,8 @@ async function getAccountState(
 ## Monitoring Contract Events
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
 
 const contractAddress = Address('0x...');
 const transferSig = Hash(
@@ -68,8 +68,8 @@ for await (const log of provider.events.logs({
 ## Waiting for Transaction Confirmation
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Hash from 'tevm/Hash';
 
 async function waitForConfirmation(
   provider: Provider,
@@ -96,9 +96,9 @@ async function waitForConfirmation(
 ## Estimating Gas with Buffer
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hex from 'tevm/Hex';
 
 async function estimateGasWithBuffer(
   provider: Provider,

@@ -55,7 +55,7 @@ jsonrpc/
 Core types used throughout the JSON-RPC API:
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
+import type { brand } from 'tevm/brand';
 
 // Address - 20-byte Ethereum address
 type Address = Uint8Array & { readonly [brand]: "Address" };
@@ -77,7 +77,7 @@ These types are hand-written in `jsonrpc/types/` and used by generated method de
 
 ## Branded Primitives Integration
 
-Generated types use Voltaire's branded primitive system:
+Generated types use Tevm's branded primitive system:
 
 ```typescript
 // Generated eth_getBalance params
@@ -150,8 +150,8 @@ This enforces error checking before accessing results.
 ### Compile-Time Validation
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import * as Address from 'tevm/Address';
+import { Keccak256 } from 'tevm/Keccak256';
 
 // ✅ Correct: Address type
 await provider.eth_getBalance(Address('0x...'), 'latest');
@@ -205,7 +205,7 @@ Types are generated for both TypeScript and Zig:
 
 ```typescript
 // TypeScript types
-import * as eth from '@tevm/voltaire/jsonrpc/eth';
+import * as eth from 'tevm/jsonrpc/eth';
 
 type BalanceParams = typeof eth.eth_getBalance.Params;
 type BalanceResult = typeof eth.eth_getBalance.Result;
@@ -252,8 +252,8 @@ Generated types match the version of ethereum/execution-apis used during generat
 While most types are generated, you can extend them for application-specific needs:
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
-import * as Address from '@tevm/voltaire/Address';
+import type { Provider } from 'tevm/provider';
+import * as Address from 'tevm/Address';
 
 // Custom wrapper type
 interface AccountInfo {

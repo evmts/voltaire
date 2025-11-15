@@ -47,13 +47,13 @@ Rpc.Eth.MethodNameRequest(params, options?) → JsonRpcRequest<T>
 
 ## Branded Primitive Parameters
 
-All parameters use Voltaire's branded primitive types for compile-time safety:
+All parameters use Tevm's branded primitive types for compile-time safety:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
+import * as Hex from 'tevm/Hex';
 
 // Construct branded types
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
@@ -74,8 +74,8 @@ const block = await provider.request(blockReq);
 TypeScript catches errors at compile time:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 // ❌ Compile error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -113,7 +113,7 @@ interface RpcError {
 Always check for errors before using result:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 const request = Rpc.Eth.CallRequest(params);
 const response = await provider.request(request);
@@ -133,7 +133,7 @@ console.log('Call result:', result);
 Return types are automatically inferred:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 // TypeScript knows blockNumber is Response<Quantity>
 const blockNumReq = Rpc.Eth.BlockNumberRequest();
@@ -153,8 +153,8 @@ const callResult = await provider.request(callReq);
 Many requests accept `BlockTag` to specify block context:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 type BlockTag =
   | 'latest'      // Most recent block
@@ -197,8 +197,8 @@ const result = await provider.request(request);
 ### Read Operations
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 const address = Address('0x...');
 
@@ -226,9 +226,9 @@ const storage = await provider.request(storageReq);
 ### Contract Calls
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hex from 'tevm/Hex';
 
 // Execute read-only contract call
 const callReq = Rpc.Eth.CallRequest({
@@ -250,9 +250,9 @@ const gasEstimate = await provider.request(gasReq);
 ### Transaction Operations
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Hash from '@tevm/voltaire/Hash';
-import * as Hex from '@tevm/voltaire/Hex';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Hash from 'tevm/Hash';
+import * as Hex from 'tevm/Hex';
 
 // Submit signed transaction
 const sendReq = Rpc.Eth.SendRawTransactionRequest(
@@ -272,7 +272,7 @@ const receipt = await provider.request(receiptReq);
 ### Block Operations
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Rpc from 'tevm/jsonrpc';
 
 // Get block by number
 const blockReq = Rpc.Eth.GetBlockByNumberRequest('latest', true);
@@ -290,9 +290,9 @@ const uncleCount = await provider.request(uncleReq);
 ### Log Queries
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
 
 // Query logs
 const logsReq = Rpc.Eth.GetLogsRequest({
@@ -329,8 +329,8 @@ See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patter
 6. **Batch independent requests** with Promise.all
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
 
 const address = Address('0x...');
 

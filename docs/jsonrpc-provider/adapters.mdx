@@ -9,7 +9,7 @@ description: Convert between Provider formats and create custom providers
 
 # Adapters
 
-Adapters enable conversion between Voltaire's Provider interface and other provider formats.
+Adapters enable conversion between Tevm's Provider interface and other provider formats.
 
 ## Overview
 
@@ -21,17 +21,17 @@ Provider adapters allow you to:
 
 ## EIP-1193 Adapter
 
-Convert Voltaire's Provider to a standard EIP-1193 provider.
+Convert Tevm's Provider to a standard EIP-1193 provider.
 
 ### Eip1193Provider.from
 
-Wrap a Voltaire Provider to expose an EIP-1193 compatible interface:
+Wrap a Tevm Provider to expose an EIP-1193 compatible interface:
 
 ```typescript
-import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
-import type { Provider } from '@tevm/voltaire/provider';
+import { Eip1193Provider } from 'tevm/provider/adapters';
+import type { Provider } from 'tevm/provider';
 
-// Your Voltaire provider
+// Your Tevm provider
 const provider: Provider = /* ... */;
 
 // Convert to EIP-1193
@@ -49,7 +49,7 @@ await eip1193.request({
 
 The adapter handles conversion between the two APIs:
 
-| Voltaire | EIP-1193 |
+| Tevm | EIP-1193 |
 |----------|----------|
 | `provider.eth_blockNumber()` | `request({ method: 'eth_blockNumber', params: [] })` |
 | `provider.eth_getBalance(addr, 'latest')` | `request({ method: 'eth_getBalance', params: [addr, 'latest'] })` |
@@ -60,7 +60,7 @@ The adapter handles conversion between the two APIs:
 The adapter automatically converts between branded primitives and plain types:
 
 ```typescript
-import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Address from 'tevm/primitives/Address';
 
 // EIP-1193 accepts plain strings
 const balance = await eip1193.request({
@@ -77,7 +77,7 @@ const balance = await eip1193.request({
 Async generator events are converted to standard event emitters:
 
 ```typescript
-// Voltaire style
+// Tevm style
 for await (const block of provider.events.newHeads()) {
   console.log('Block:', block.number);
 }
@@ -96,10 +96,10 @@ eip1193.removeListener('newHeads', listener);
 Use the adapter with libraries that expect EIP-1193 providers:
 
 ```typescript
-import { Eip1193Provider } from '@tevm/voltaire/provider/adapters';
+import { Eip1193Provider } from 'tevm/provider/adapters';
 import { createWalletClient, custom } from 'viem';
 
-const eip1193 = Eip1193Provider(voltaireProvider);
+const eip1193 = Eip1193Provider(tevmProvider);
 
 // Use with viem
 const client = createWalletClient({
@@ -120,8 +120,8 @@ Convert provider calls to HTTP JSON-RPC requests.
 Create an HTTP handler that wraps a Provider:
 
 ```typescript
-import { HttpHandler } from '@tevm/voltaire/provider/adapters';
-import type { Provider } from '@tevm/voltaire/provider';
+import { HttpHandler } from 'tevm/provider/adapters';
+import type { Provider } from 'tevm/provider';
 
 const provider: Provider = /* ... */;
 
@@ -188,7 +188,7 @@ Use with HTTP servers:
 
 ```typescript
 import { createServer } from 'node:http';
-import { HttpHandler } from '@tevm/voltaire/provider/adapters';
+import { HttpHandler } from 'tevm/provider/adapters';
 
 const handler = HttpHandler(provider);
 
@@ -218,9 +218,9 @@ Implement the Provider interface for custom transports or functionality.
 ### Provider Interface
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
-import type * as Address from '@tevm/voltaire/primitives/Address';
-import type * as Hash from '@tevm/voltaire/primitives/Hash';
+import type { Provider } from 'tevm/provider';
+import type * as Address from 'tevm/primitives/Address';
+import type * as Hash from 'tevm/primitives/Hash';
 
 class CustomProvider implements Provider {
   // Implement all 65 methods
@@ -261,7 +261,7 @@ Custom provider using WebSocket transport:
 
 ```typescript
 import { WebSocket } from 'ws';
-import type { Provider } from '@tevm/voltaire/provider';
+import type { Provider } from 'tevm/provider';
 
 export class WebSocketProvider implements Provider {
   private ws: WebSocket;
@@ -489,7 +489,7 @@ export class MockProvider implements Provider {
 Adapters preserve type safety with branded primitives:
 
 ```typescript
-// Voltaire Provider - type safe
+// Tevm Provider - type safe
 const address = Address('0x...');
 await provider.eth_getBalance(address, 'latest');
 
