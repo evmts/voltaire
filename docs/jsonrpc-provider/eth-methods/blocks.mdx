@@ -24,7 +24,7 @@ Get the most recent block number.
 **Returns:** `Response<Quantity>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const response = await provider.eth_blockNumber();
@@ -50,7 +50,7 @@ Get block by number with full transactions or hashes.
 **Returns:** `Response<Block>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -79,8 +79,8 @@ Get block by hash with full transactions or hashes.
 **Returns:** `Response<Block>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Provider } from 'tevm/provider';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -107,7 +107,7 @@ Get all transaction receipts for a block.
 **Returns:** `Response<TransactionReceipt[]>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const receipts = await provider.eth_getBlockReceipts('latest');
@@ -135,8 +135,8 @@ Get transaction count in a block by hash.
 **Returns:** `Response<Quantity>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Provider } from 'tevm/provider';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -163,7 +163,7 @@ Get transaction count in a block by number.
 **Returns:** `Response<Quantity>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const count = await provider.eth_getBlockTransactionCountByNumber('latest');
@@ -188,8 +188,8 @@ Get uncle count for a block by hash.
 **Returns:** `Response<Quantity>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Provider } from 'tevm/provider';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -220,7 +220,7 @@ Get uncle count for a block by number.
 **Returns:** `Response<Quantity>`
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const count = await provider.eth_getUncleCountByBlockNumber('latest');
@@ -241,7 +241,7 @@ Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge)
 ### Get Latest Block with Transactions
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -267,8 +267,8 @@ if (!block.error) {
 ### Query Historical Block
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
-import * as Quantity from '@tevm/voltaire/primitives/Quantity';
+import { Provider } from 'tevm/provider';
+import * as Quantity from 'tevm/primitives/Quantity';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -291,7 +291,7 @@ if (!block.error) {
 ### Check Block Finality
 
 ```typescript
-import { Provider } from '@tevm/voltaire/provider';
+import { Provider } from 'tevm/provider';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
