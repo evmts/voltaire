@@ -1,152 +1,327 @@
 ---
 title: Model Context Protocol (MCP)
-description: Connect AI assistants to Voltaire documentation and tools via MCP
+description: Connect AI assistants to live local documentation using MCP servers
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
+[Model Context Protocol](https://modelcontextprotocol.io) allows AI assistants to access external tools and data sources. Use MCP servers to give Claude and other AI assistants access to your local documentation as you work.
 
-The Tevm MCP server exposes Tevm tools and APIs via the [Model Context Protocol](https://modelcontextprotocol.io). Register it with Claude, Codex, or Cursor to access Tevm features from your IDE or CLI assistant.
+## Live Documentation Viewer
 
-**Endpoint:** `https://tevm.sh/mcp`
+The Playwright MCP server enables Claude to view your local documentation in real-time by:
+- Navigating to your local Mintlify dev server
+- Taking screenshots of documentation pages
+- Inspecting page content and structure
+- Verifying visual rendering and layout
 
-## Adding the MCP Server
+This is especially useful for:
+- Reviewing documentation changes as you write
+- Validating component rendering (tabs, accordions, code blocks)
+- Checking visual hierarchy and layout
+- Ensuring examples display correctly
+
+## Setup
 
 <Tabs>
-<Tab title="Claude CLI">
+<Tab title="Claude Code (CLI)">
 
-Claude provides a simple one-line command to register MCP servers.
+<Steps>
+<Step title="Add MCP Server">
+
+Add the Playwright MCP server using the Claude Code CLI:
 
 ```bash
-claude mcp add --transport http tevm https://tevm.sh/mcp
+claude mcp add playwright npx @playwright/mcp@latest
 ```
 
-**Parameters:**
-- `--transport http` - Use HTTP-based MCP
-- `tevm` - Logical name for the server
-- `https://tevm.sh/mcp` - Tevm MCP endpoint
-
-**Verify installation:**
+Verify it's connected:
 
 ```bash
 claude mcp list
 ```
 
-Expected output:
+You should see `playwright: npx @playwright/mcp@latest - ✓ Connected`.
 
-```
-tevm  (http)  https://tevm.sh/mcp
-```
+</Step>
 
-</Tab>
-<Tab title="Codex">
+<Step title="Install Playwright Browsers">
 
-Codex uses a TOML config file at `~/.codex/config.toml`.
-
-**Create or edit the config:**
+Install the Chromium browser:
 
 ```bash
-mkdir -p ~/.codex
-nano ~/.codex/config.toml
+npx playwright install chromium
 ```
 
-**Add the MCP server:**
+This downloads the browser that Playwright uses to render pages.
 
-```toml
-[mcp_servers.tevm]
-url = "https://tevm.sh/mcp"
+</Step>
 
-[features]
-rmcp_client = true
-```
+<Step title="Start Local Docs Server">
 
-The `rmcp_client` feature enables HTTP/remote MCP support in newer Codex builds.
-
-**Restart Codex** or reload the VS Code Codex extension.
-
-**Verify installation:**
+Start the Mintlify dev server:
 
 ```bash
-codex mcp list
+bun run docs:dev
 ```
 
+Server typically runs at `http://localhost:3002` (or 3000 if available).
+
+</Step>
+
+<Step title="Use in Claude Code">
+
+In Claude Code, ask Claude to view your documentation:
+
+```
+Navigate to http://localhost:3002/primitives/bytecode
+and take a screenshot
+```
+
+Claude can now view, screenshot, and interact with your local docs.
+
+</Step>
+</Steps>
+
 </Tab>
-<Tab title="Cursor">
+<Tab title="Claude Desktop">
 
-Cursor doesn't have a CLI for adding MCP servers. Configure manually by editing the MCP configuration file.
+<Steps>
+<Step title="Install Playwright Browsers">
 
-### Project-specific Config
+Install the Chromium browser:
 
-Create `.cursor/mcp.json` in your project root:
+```bash
+npx playwright install chromium
+```
+
+</Step>
+
+<Step title="Configure Claude Desktop">
+
+Edit your Claude Desktop config file:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+**Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+Add the Playwright MCP server:
 
 ```json
 {
   "mcpServers": {
-    "tevm": {
-      "url": "https://tevm.sh/mcp"
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
     }
   }
 }
 ```
 
-### Global Config
+</Step>
 
-Edit or create `~/.cursor/mcp.json` for all projects:
+<Step title="Restart Claude Desktop">
 
-```json
-{
-  "mcpServers": {
-    "tevm": {
-      "url": "https://tevm.sh/mcp"
-    }
-  }
-}
+Restart Claude Desktop to load the MCP server.
+
+</Step>
+
+<Step title="Start Local Docs Server">
+
+```bash
+bun run docs:dev
 ```
 
-**Restart Cursor.** The Tevm MCP tools should appear in the "MCP Tools" or "Connected Services" panel.
+Server runs at `http://localhost:3000`.
 
-**Verify installation:**
-
-Open **Developer → MCP Tools** section and look for `tevm` or `Tevm MCP`.
+</Step>
+</Steps>
 
 </Tab>
 </Tabs>
 
-## What's Available
+## Usage
 
-Once connected, AI assistants can:
-- Query Tevm documentation in real-time
-- Access API references and examples
-- Get code snippets for primitives and crypto functions
-- Search across all 316 documentation pages
+Ask Claude to view your documentation pages. Examples:
+
+**View a specific page:**
+```
+Can you navigate to http://localhost:3000/primitives/bytecode/analyze
+and take a screenshot?
+```
+
+**Review page structure:**
+```
+Please visit http://localhost:3000/crypto/keccak256 and tell me
+if the code examples are displaying correctly.
+```
+
+**Check navigation:**
+```
+Navigate to http://localhost:3000 and verify the sidebar navigation
+includes all primitive modules.
+```
+
+**Validate component rendering:**
+```
+Go to http://localhost:3000/primitives/address and check if the
+tabs are working for Class API vs Namespace API examples.
+```
+
+Claude can:
+- Navigate to any documentation page
+- Take screenshots to visualize layout
+- Inspect page content and DOM structure
+- Click elements and interact with the page
+- Verify links and navigation
+- Check responsive design at different viewport sizes
+
+## Available MCP Tools
+
+The Playwright MCP server provides these tools:
+
+**Navigation:**
+- `browser_navigate` - Navigate to URL
+- `browser_navigate_back` - Go back to previous page
+
+**Screenshots:**
+- `browser_take_screenshot` - Capture full page or specific elements
+- `browser_snapshot` - Get accessibility tree snapshot
+
+**Interaction:**
+- `browser_click` - Click elements
+- `browser_type` - Type into input fields
+- `browser_fill_form` - Fill multiple form fields
+- `browser_hover` - Hover over elements
+
+**Inspection:**
+- `browser_evaluate` - Run JavaScript on page
+- `browser_console_messages` - Get console output
+- `browser_network_requests` - View network activity
+
+See the [Playwright MCP documentation](https://github.com/microsoft/playwright-mcp) for complete tool reference.
+
+## Workflow Example
+
+Typical workflow for reviewing documentation changes:
+
+<Steps>
+<Step title="Start docs server">
+
+```bash
+bun run docs:dev
+```
+
+Server runs at `http://localhost:3000`.
+
+</Step>
+
+<Step title="Make documentation changes">
+
+Edit MDX files in `docs/` directory. Mintlify hot-reloads automatically.
+
+</Step>
+
+<Step title="Ask Claude to review">
+
+```
+Navigate to http://localhost:3000/primitives/bytecode
+and take a screenshot. Does the layout look correct?
+```
+
+Claude navigates to the page, captures a screenshot, and provides visual feedback.
+
+</Step>
+
+<Step title="Iterate based on feedback">
+
+Make adjustments based on Claude's observations and repeat.
+
+</Step>
+</Steps>
 
 ## Troubleshooting
 
-<Accordion title="Server not appearing in MCP list">
-- Verify the endpoint URL is correct: `https://tevm.sh/mcp`
-- Check your internet connection
-- Restart the AI assistant or IDE
-- For Cursor, ensure the JSON syntax is valid
+<Accordion title="MCP server not appearing in Claude Desktop">
+
+**Check config file location:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+**Verify JSON syntax:**
+```bash
+# macOS
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq .
+```
+
+**Restart Claude Desktop** after config changes.
+
+**Check logs** (if available in Claude Desktop developer tools).
+
 </Accordion>
 
-<Accordion title="Tools not working">
-- Ensure you're using the latest version of Claude/Codex/Cursor
-- Check that HTTP transport is enabled
-- Try removing and re-adding the server
+<Accordion title="Cannot connect to localhost:3000">
+
+**Verify Mintlify server is running:**
+```bash
+lsof -i :3000
+```
+
+**Restart the dev server:**
+```bash
+# Stop existing server (Ctrl+C)
+bun run docs:dev
+```
+
+**Check browser manually:**
+Visit `http://localhost:3000` in your browser to confirm it's accessible.
+
 </Accordion>
 
-<Accordion title="Connection timeout">
-- The MCP server may be temporarily unavailable
-- Check [status.tevm.sh](https://status.tevm.sh) (if available)
-- Try again in a few minutes
+<Accordion title="Playwright browser not launching">
+
+**Install Playwright browsers:**
+```bash
+npx playwright install
+```
+
+**Check installation:**
+```bash
+npx playwright --version
+```
+
+**Try running Playwright directly:**
+```bash
+npx playwright test --help
+```
+
+</Accordion>
+
+<Accordion title="Screenshot quality issues">
+
+**Adjust viewport size:**
+Ask Claude to resize the browser:
+```
+Resize the browser to 1920x1080 before taking the screenshot.
+```
+
+**Capture specific elements:**
+```
+Take a screenshot of just the code block with the keccak256 example.
+```
+
+**Use full page screenshots:**
+```
+Take a full page screenshot to capture everything.
+```
+
 </Accordion>
 
 ## Technical Details
 
-**Transport:** HTTP
-**Protocol Version:** MCP 1.0
-**Authentication:** None (public endpoint)
-**Rate Limiting:** Fair use policy applies
+**MCP Protocol:** Model Context Protocol 1.0
+**Transport:** stdio (standard input/output)
+**Browser Engine:** Chromium (via Playwright)
+**Viewport:** Default 1280x720 (configurable)
+**Permissions:** Local network access required for localhost
 
-The MCP server provides read-only access to documentation and does not execute code or access your local filesystem.
+The Playwright MCP server runs locally and connects to your local documentation server. No external network access required except for initial package installation.
