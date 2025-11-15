@@ -6,7 +6,7 @@ description: Learn ENS structure, normalization, and name resolution
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [ENS API](/primitives/ens/index).
 </Info>
-ENS (Ethereum Name Service) is the decentralized naming system for Ethereum. This guide teaches ENS fundamentals using Voltaire.
+ENS (Ethereum Name Service) is the decentralized naming system for Ethereum. This guide teaches ENS fundamentals using Tevm.
 
 ## What is ENS?
 
@@ -61,7 +61,7 @@ wallet.vitalik.eth
 <Tabs>
 <Tab title="Why Normalize">
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 // Different Unicode, same appearance
 const name1 = "аpple.eth";  // Cyrillic 'а' (U+0430)
@@ -77,7 +77,7 @@ console.log(Ens.normalize(name2)); // "apple.eth"
 </Tab>
 <Tab title="ENSIP-15">
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 // Normalization rules (ENSIP-15):
 // 1. Lowercase (except emoji)
@@ -108,7 +108,7 @@ try {
 5. **Confusable Detection** - Reject characters that look identical
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 // Case normalization
 Ens.normalize("ALICE.eth");        // "alice.eth"
@@ -134,7 +134,7 @@ ENS resolution is a multi-step process from human-readable name to on-chain data
 ### 1. Normalize Name
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 const input = "Vitalik.ETH";
 const normalized = Ens.normalize(input);
@@ -146,7 +146,7 @@ const normalized = Ens.normalize(input);
 Namehash converts names to deterministic 32-byte identifiers:
 
 ```typescript
-import { Ens, Hash } from '@tevm/voltaire';
+import { Ens, Hash } from 'tevm';
 
 const name = "vitalik.eth";
 const node = Ens.namehash(name);
@@ -191,7 +191,7 @@ const avatar = await resolver.text(node, "avatar");  // Avatar URL
 ## Complete Example
 
 ```typescript
-import { Ens, Hash, Keccak256 } from '@tevm/voltaire';
+import { Ens, Hash, Keccak256 } from 'tevm';
 
 // Step 1: Normalize user input
 const userInput = "Alice.ETH";
@@ -220,7 +220,7 @@ console.log(Hash.toHex(computed) === Hash.toHex(node)); // true
 Most common ENS usage - map names to Ethereum addresses:
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 const name = Ens.normalize("vitalik.eth");
 const node = Ens.namehash(name);
@@ -234,7 +234,7 @@ const node = Ens.namehash(name);
 Point names to IPFS content:
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 const name = Ens.normalize("vitalik.eth");
 const node = Ens.namehash(name);
@@ -248,7 +248,7 @@ const node = Ens.namehash(name);
 Store arbitrary key-value data:
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 const name = Ens.normalize("vitalik.eth");
 const node = Ens.namehash(name);
@@ -285,7 +285,7 @@ const reverseNode = Ens.namehash(
 **Problem:** Visually identical characters from different scripts
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 // These look identical but are different:
 const latin = "apple.eth";       // Latin 'a' (U+0061)
@@ -301,7 +301,7 @@ Ens.normalize(cyrillic); // Error: mixed scripts ✓
 **Problem:** Characters that look similar (I vs l vs 1)
 
 ```typescript
-import { Ens } from '@tevm/voltaire';
+import { Ens } from 'tevm';
 
 // Zero-width joiners, invisible characters
 const normal = "nick.eth";
