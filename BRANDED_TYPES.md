@@ -199,14 +199,14 @@ const max = Uint256.maximum(a, b);
 
 ```typescript
 // Type definition (compile-time only)
-export type BrandedUint8 = number & { readonly __tag: "Uint8" };
+export type Uint8Type = number & { readonly __tag: "Uint8" };
 
 // Runtime value is plain number
-const value: BrandedUint8 = 42; // Actually just 42
+const value: Uint8Type = 42; // Actually just 42
 
 // But TypeScript prevents mixing
-const u8: BrandedUint8 = Uint8.from(42);
-const u16: BrandedUint16 = u8; // ❌ Type error
+const u8: Uint8Type = Uint8.from(42);
+const u16: Uint16Type = u8; // ❌ Type error
 
 // Explicit conversion required
 const u16 = Uint16.from(Number(u8)); // ✅

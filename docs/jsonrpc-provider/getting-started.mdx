@@ -91,11 +91,13 @@ See [Adapters](/jsonrpc-provider/adapters) for detailed implementation patterns.
 Simplest request - no parameters:
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
-const provider: Provider = /* ... */;
+// Create request using constructor
+const request = Rpc.Eth.BlockNumberRequest();
 
-const response = await provider.eth_blockNumber();
+// Send request through provider
+const response = await provider.request(request);
 
 if (response.error) {
   console.error('Error:', response.error.message);
@@ -109,15 +111,17 @@ if (response.error) {
 Request with branded Address parameter:
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
-
-const provider: Provider = /* ... */;
 
 // Create branded Address
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-const response = await provider.eth_getBalance(address, 'latest');
+// Create request using constructor
+const request = Rpc.Eth.GetBalanceRequest(address, 'latest');
+
+// Send request
+const response = await provider.request(request);
 
 if (!response.error) {
   const balanceWei = BigInt(response.result);
@@ -131,19 +135,21 @@ if (!response.error) {
 Execute read-only contract call:
 
 ```typescript
-import type { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
 import * as Hex from '@tevm/voltaire/Hex';
 
-const provider: Provider = /* ... */;
-
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
-const methodSignature = '0x18160ddd'; // totalSupply()
+const methodSignature = Hex('0x18160ddd'); // totalSupply()
 
-const response = await provider.eth_call({
+// Create call request
+const request = Rpc.Eth.CallRequest({
   to: contractAddress,
-  data: Hex(methodSignature)
+  data: methodSignature
 }, 'latest');
+
+// Send request
+const response = await provider.request(request);
 
 if (!response.error) {
   const totalSupply = BigInt(response.result);
@@ -164,7 +170,10 @@ type Response<T> =
 Always check for errors before using results:
 
 ```typescript
-const response = await provider.eth_blockNumber();
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const request = Rpc.Eth.BlockNumberRequest();
+const response = await provider.request(request);
 
 // ❌ Don't access result directly
 console.log(response.result); // May be undefined!
@@ -184,7 +193,12 @@ console.log('Block:', response.result);
 TypeScript narrows the type after checking:
 
 ```typescript
-const response = await provider.eth_getBalance(address, 'latest');
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const request = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const response = await provider.request(request);
 
 if (response.error) {
   // response.error is RpcError
@@ -262,14 +276,21 @@ console.log('Subscription stopped');
 Get balance, nonce, and code in parallel:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
+// Create requests
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, 'latest');
+const codeReq = Rpc.Eth.GetCodeRequest(address, 'latest');
+
+// Send in parallel
 const [balance, nonce, code] = await Promise.all([
-  provider.eth_getBalance(address, 'latest'),
-  provider.eth_getTransactionCount(address, 'latest'),
-  provider.eth_getCode(address, 'latest')
+  provider.request(balanceReq),
+  provider.request(nonceReq),
+  provider.request(codeReq)
 ]);
 
 if (!balance.error && !nonce.error && !code.error) {
@@ -282,15 +303,18 @@ if (!balance.error && !nonce.error && !code.error) {
 ### Estimate Gas for Transaction
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
 import * as Hex from '@tevm/voltaire/Hex';
 
-const gasEstimate = await provider.eth_estimateGas({
+const request = Rpc.Eth.EstimateGasRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   value: '0x0',
   data: Hex('0xa9059cbb...') // transfer(address,uint256)
 });
+
+const gasEstimate = await provider.request(request);
 
 if (!gasEstimate.error) {
   const gas = BigInt(gasEstimate.result);
@@ -307,12 +331,14 @@ if (!gasEstimate.error) {
 Use block numbers to query historical data:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
 
-const response = await provider.eth_getBalance(address, blockNumber);
+const request = Rpc.Eth.GetBalanceRequest(address, blockNumber);
+const response = await provider.request(request);
 
 if (!response.error) {
   console.log('Balance at block 1M:', response.result);
@@ -346,12 +372,14 @@ if (!response.error) {
 Use branded primitive constructors:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
 // ❌ Error: string not assignable to Address
-await provider.eth_getBalance('0x...', 'latest');
+const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
 
 // ✅ Correct: use Address constructor
-import * as Address from '@tevm/voltaire/Address';
-await provider.eth_getBalance(Address('0x...'), 'latest');
+const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 ```
 
 ### "response.result is possibly undefined"
@@ -359,8 +387,11 @@ await provider.eth_getBalance(Address('0x...'), 'latest');
 Check for errors before accessing result:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
 // ❌ TypeScript error: result may be undefined
-const response = await provider.eth_blockNumber();
+const request = Rpc.Eth.BlockNumberRequest();
+const response = await provider.request(request);
 console.log(response.result);
 
 // ✅ Correct: check error first

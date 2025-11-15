@@ -13,7 +13,7 @@ A branded type for 8-bit unsigned integers (range: 0-255) represented as JavaScr
 
 ## Overview
 
-`BrandedUint8` provides type-safe operations on 8-bit unsigned integers with:
+`Uint8Type` provides type-safe operations on 8-bit unsigned integers with:
 - Compile-time type branding for type safety
 - Runtime validation and overflow/underflow checking
 - Zero runtime overhead (just a number internally)
@@ -24,7 +24,7 @@ A branded type for 8-bit unsigned integers (range: 0-255) represented as JavaScr
 ```typescript
 import type { brand } from '../../../brand.js';
 
-export type BrandedUint8 = number & { readonly [brand]: "Uint8" };
+export type Uint8Type = number & { readonly [brand]: "Uint8" };
 ```
 
 ## Range

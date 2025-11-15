@@ -9,39 +9,50 @@ description: Direct method calls with branded primitive parameters and type-safe
 
 # Method-Based API
 
-Provider exposes JSON-RPC methods as direct function calls with strongly-typed branded primitive parameters.
+Request constructors create type-safe JSON-RPC requests with branded primitive parameters.
 
-## Direct Method Calls
+## Request Constructors
 
-Call methods directly on the provider instead of using generic `request()`:
-
-```typescript
-// Direct method calls
-await provider.eth_blockNumber();
-await provider.eth_getBalance(address, 'latest');
-await provider.eth_call(params, 'latest');
-```
-
-### Method Pattern
-
-All methods follow this signature:
+Create requests using data-first constructors:
 
 ```typescript
-provider.methodName(params, options?) → Promise<Response<T>>
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+// Create requests using constructors
+const blockRequest = Rpc.Eth.BlockNumberRequest();
+const balanceRequest = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const callRequest = Rpc.Eth.CallRequest(params, 'latest');
+
+// Send through provider
+const blockResponse = await provider.request(blockRequest);
+const balanceResponse = await provider.request(balanceRequest);
+const callResponse = await provider.request(callRequest);
 ```
 
-- **`methodName`** - JSON-RPC method (e.g., `eth_call`, `eth_getBalance`)
+### Request Pattern
+
+All request constructors follow this signature:
+
+```typescript
+Rpc.Eth.MethodNameRequest(params, options?) → JsonRpcRequest<T>
+```
+
+- **`Rpc.Eth.MethodName`** - Request constructor (e.g., `CallRequest`, `GetBalanceRequest`)
 - **`params`** - Branded primitive types (Address, Hash, Hex, etc.)
 - **`options`** - Optional request configuration
-- **Returns** - Promise resolving to Response containing result or error
+- **Returns** - Branded request type containing method and params
 
 ## Branded Primitive Parameters
 
 All parameters use Voltaire's branded primitive types for compile-time safety:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Hash from '@tevm/voltaire/Hash';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Construct branded types
@@ -49,9 +60,13 @@ const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 const blockHash = Hash('0x...');
 const data = Hex('0x70a08231...');
 
-// Use in method calls - type-checked at compile time
-const balance = await provider.eth_getBalance(address, 'latest');
-const block = await provider.eth_getBlockByHash(blockHash, true);
+// Create requests - type-checked at compile time
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const blockReq = Rpc.Eth.GetBlockByHashRequest(blockHash, true);
+
+// Send requests
+const balance = await provider.request(balanceReq);
+const block = await provider.request(blockReq);
 ```
 
 ### Type Safety Benefits
@@ -59,17 +74,20 @@ const block = await provider.eth_getBlockByHash(blockHash, true);
 TypeScript catches errors at compile time:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
 // ❌ Compile error: string not assignable to Address
-await provider.eth_getBalance('0x...', 'latest');
+const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
 
 // ✅ Correct: use branded Address
-await provider.eth_getBalance(Address('0x...'), 'latest');
+const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 
 // ❌ Compile error: can't mix Hash and Address
-await provider.eth_getBlockByHash(address, true);
+const mixedReq = Rpc.Eth.GetBlockByHashRequest(address, true);
 
 // ✅ Correct: use proper type
-await provider.eth_getBlockByHash(hash, true);
+const hashReq = Rpc.Eth.GetBlockByHashRequest(hash, true);
 ```
 
 ## Response Handling
@@ -95,7 +113,10 @@ interface RpcError {
 Always check for errors before using result:
 
 ```typescript
-const response = await provider.eth_call(params);
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const request = Rpc.Eth.CallRequest(params);
+const response = await provider.request(request);
 
 if (response.error) {
   console.error('RPC error:', response.error.code, response.error.message);
@@ -112,21 +133,29 @@ console.log('Call result:', result);
 Return types are automatically inferred:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
 // TypeScript knows blockNumber is Response<Quantity>
-const blockNumber = await provider.eth_blockNumber();
+const blockNumReq = Rpc.Eth.BlockNumberRequest();
+const blockNumber = await provider.request(blockNumReq);
 
 // TypeScript knows balance is Response<Quantity>
-const balance = await provider.eth_getBalance(address, 'latest');
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const balance = await provider.request(balanceReq);
 
 // TypeScript knows callResult is Response<Hex>
-const callResult = await provider.eth_call(params);
+const callReq = Rpc.Eth.CallRequest(params);
+const callResult = await provider.request(callReq);
 ```
 
 ## BlockTag Parameter
 
-Many methods accept `BlockTag` to specify block context:
+Many requests accept `BlockTag` to specify block context:
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
 type BlockTag =
   | 'latest'      // Most recent block
   | 'earliest'    // Genesis block
@@ -135,15 +164,17 @@ type BlockTag =
   | 'finalized'   // Finalized block
   | string;       // Specific block number (hex)
 
-// Usage
-await provider.eth_getBalance(address, 'latest');
-await provider.eth_getBalance(address, 'finalized');
-await provider.eth_getBalance(address, '0x112A880'); // Block 18,000,000
+const address = Address('0x...');
+
+// Usage with different block tags
+const latestReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const finalizedReq = Rpc.Eth.GetBalanceRequest(address, 'finalized');
+const historicalReq = Rpc.Eth.GetBalanceRequest(address, '0x112A880'); // Block 18,000,000
 ```
 
 ## Request Options
 
-Optional configuration for method calls:
+Optional configuration for requests:
 
 ```typescript
 interface RequestOptions {
@@ -152,12 +183,13 @@ interface RequestOptions {
   retryDelay?: number;   // Delay between retries in ms
 }
 
-// Usage
-const result = await provider.eth_call(params, {
+// Usage (if supported by request constructor)
+const request = Rpc.Eth.CallRequest(params, {
   timeout: 5000,
   retry: 3,
   retryDelay: 1000
 });
+const result = await provider.request(request);
 ```
 
 ## Method Categories
@@ -165,88 +197,111 @@ const result = await provider.eth_call(params, {
 ### Read Operations
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x...');
+
 // Get block number
-const blockNum = await provider.eth_blockNumber();
+const blockNumReq = Rpc.Eth.BlockNumberRequest();
+const blockNum = await provider.request(blockNumReq);
 
 // Get balance
-const balance = await provider.eth_getBalance(address, 'latest');
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const balance = await provider.request(balanceReq);
 
 // Get transaction count (nonce)
-const nonce = await provider.eth_getTransactionCount(address, 'latest');
+const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, 'latest');
+const nonce = await provider.request(nonceReq);
 
 // Get contract code
-const code = await provider.eth_getCode(address, 'latest');
+const codeReq = Rpc.Eth.GetCodeRequest(address, 'latest');
+const code = await provider.request(codeReq);
 
 // Get storage slot
-const storage = await provider.eth_getStorageAt(address, slot, 'latest');
+const storageReq = Rpc.Eth.GetStorageAtRequest(address, slot, 'latest');
+const storage = await provider.request(storageReq);
 ```
 
 ### Contract Calls
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import * as Address from '@tevm/voltaire/Address';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Execute read-only contract call
-const result = await provider.eth_call({
+const callReq = Rpc.Eth.CallRequest({
   to: Address('0x...'),
   data: Hex('0x70a08231...')  // Function selector + encoded params
 }, 'latest');
+const result = await provider.request(callReq);
 
 // Estimate gas for transaction
-const gasEstimate = await provider.eth_estimateGas({
+const gasReq = Rpc.Eth.EstimateGasRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   value: '0xDE0B6B3A7640000',  // 1 ETH in wei
   data: Hex('0x...')
 });
+const gasEstimate = await provider.request(gasReq);
 ```
 
 ### Transaction Operations
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Hash from '@tevm/voltaire/Hash';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Submit signed transaction
-const txHash = await provider.eth_sendRawTransaction(
+const sendReq = Rpc.Eth.SendRawTransactionRequest(
   Hex('0x...')  // Signed transaction bytes
 );
+const txHash = await provider.request(sendReq);
 
 // Get transaction by hash
-const tx = await provider.eth_getTransactionByHash(
-  Hash('0x...')
-);
+const txReq = Rpc.Eth.GetTransactionByHashRequest(Hash('0x...'));
+const tx = await provider.request(txReq);
 
 // Get transaction receipt
-const receipt = await provider.eth_getTransactionReceipt(
-  Hash('0x...')
-);
+const receiptReq = Rpc.Eth.GetTransactionReceiptRequest(Hash('0x...'));
+const receipt = await provider.request(receiptReq);
 ```
 
 ### Block Operations
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
 // Get block by number
-const block = await provider.eth_getBlockByNumber('latest', true);
+const blockReq = Rpc.Eth.GetBlockByNumberRequest('latest', true);
+const block = await provider.request(blockReq);
 
 // Get block by hash
-const block = await provider.eth_getBlockByHash(blockHash, false);
+const blockHashReq = Rpc.Eth.GetBlockByHashRequest(blockHash, false);
+const blockByHash = await provider.request(blockHashReq);
 
 // Get uncle count
-const uncleCount = await provider.eth_getUncleCountByBlockNumber('latest');
+const uncleReq = Rpc.Eth.GetUncleCountByBlockNumberRequest('latest');
+const uncleCount = await provider.request(uncleReq);
 ```
 
 ### Log Queries
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
 // Query logs
-const logs = await provider.eth_getLogs({
+const logsReq = Rpc.Eth.GetLogsRequest({
   fromBlock: 'earliest',
   toBlock: 'latest',
   address: Address('0x...'),
   topics: [Hash('0x...')]
 });
+const logs = await provider.request(logsReq);
 ```
 
 ## Error Codes
@@ -274,17 +329,26 @@ See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patter
 6. **Batch independent requests** with Promise.all
 
 ```typescript
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address('0x...');
+
 // ✅ Good: batch independent requests
+const blockReq = Rpc.Eth.BlockNumberRequest();
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, 'latest');
+
 const [block, balance, nonce] = await Promise.all([
-  provider.eth_blockNumber(),
-  provider.eth_getBalance(address, 'latest'),
-  provider.eth_getTransactionCount(address, 'latest')
+  provider.request(blockReq),
+  provider.request(balanceReq),
+  provider.request(nonceReq)
 ]);
 
 // ❌ Bad: sequential requests (slower)
-const block = await provider.eth_blockNumber();
-const balance = await provider.eth_getBalance(address, 'latest');
-const nonce = await provider.eth_getTransactionCount(address, 'latest');
+const block = await provider.request(Rpc.Eth.BlockNumberRequest());
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
 ```
 
 ## Method Reference

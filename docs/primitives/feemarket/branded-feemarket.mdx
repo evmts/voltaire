@@ -201,7 +201,7 @@ Calculate next block's complete state.
 
 **Implementation:**
 ```javascript
-const nextBaseFee = calculateBaseFee(
+const nextBaseFee = BaseFee(
   state.gasUsed,
   state.gasLimit,
   state.baseFee
@@ -250,7 +250,7 @@ Get current blob base fee from state.
 
 **Implementation:**
 ```javascript
-return calculateBlobBaseFee(state.excessBlobGas);
+return BlobBaseFee(state.excessBlobGas);
 ```
 
 **getGasTarget.js**
