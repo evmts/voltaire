@@ -35,12 +35,12 @@ const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 const checksummed = Address.Checksummed(addr)
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e" (mixed case)
 
-// Type is branded Checksummed, not BrandedAddress
+// Type is branded Checksummed, not AddressType
 typeof checksummed // "string"
 ```
 
 **Parameters:**
-- `addr: BrandedAddress` - Address to checksum
+- `addr: AddressType` - Address to checksum
 
 **Returns:** `Checksummed` - Branded checksummed hex string
 
@@ -54,7 +54,7 @@ type Checksummed = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
 
 **Note:** Uses keccak256 internally.
 
@@ -80,7 +80,7 @@ Address.Checksummed.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E") // tru
 
 **Returns:** `boolean`
 
-Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:55](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:55](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js)
 
 **EIP-55 Logic:**
 - If all letters same case (all lower or all upper), valid
@@ -102,7 +102,7 @@ const lowercase = Address.Lowercase(addr)
 ```
 
 **Parameters:**
-- `addr: BrandedAddress` - Address to convert
+- `addr: AddressType` - Address to convert
 
 **Returns:** `Lowercase` - Branded lowercase hex string
 
@@ -116,7 +116,7 @@ type Lowercase = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/BrandedAddress/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/LowercaseAddress.js)
+Defined in: [primitives/Address/AddressType/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/LowercaseAddress.js)
 
 ## UppercaseAddress
 
@@ -134,7 +134,7 @@ const uppercase = Address.Uppercase(addr)
 ```
 
 **Parameters:**
-- `addr: BrandedAddress` - Address to convert
+- `addr: AddressType` - Address to convert
 
 **Returns:** `Uppercase` - Branded uppercase hex string
 
@@ -148,7 +148,7 @@ type Uppercase = Hex.Sized<20> & {
 }
 ```
 
-Defined in: [primitives/Address/BrandedAddress/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/UppercaseAddress.js)
+Defined in: [primitives/Address/AddressType/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/UppercaseAddress.js)
 
 ## Variant Comparison
 

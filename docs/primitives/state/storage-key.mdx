@@ -16,7 +16,7 @@ Factory function for creating `BrandedStorageKey` instances from contract addres
 
 ```typescript
 function StorageKey(
-  address: BrandedAddress,
+  address: AddressType,
   slot: bigint
 ): BrandedStorageKey
 ```
@@ -27,7 +27,7 @@ function StorageKey(
 
 ## Parameters
 
-- **address** (`BrandedAddress`) - 20-byte contract address owning the storage slot
+- **address** (`AddressType`) - 20-byte contract address owning the storage slot
 - **slot** (`bigint`) - 256-bit storage slot number within the contract's storage space
 
 ## Returns

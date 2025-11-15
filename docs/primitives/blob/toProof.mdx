@@ -12,11 +12,11 @@ description: Generate 48-byte KZG proof for blob
 <Tab title="Standard API">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
-const proof = Blob.toProof(blob, commitment);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob, commitment);
 
 console.log(proof.length); // 48
 console.log(Blob.Proof.isValid(proof)); // true
@@ -38,11 +38,11 @@ Tree-shakeable factory pattern with explicit KZG dependency.
 **Example:**
 
 ```typescript
-import { ToProof } from '@tevm/voltaire/Blob'
+import { Kzg } from '@tevm/voltaire'
 import { computeBlobKzgProof } from 'c-kzg'
 
-const toProof = ToProof({ computeBlobKzgProof })
-const proof = toProof(blob, commitment)
+const Proof = Kzg.ProofFactory({ computeBlobKzgProof })
+const proof = Proof(blob, commitment)
 ```
 
 **Bundle size:** KZG crypto only included if you import it explicitly.

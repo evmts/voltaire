@@ -12,10 +12,10 @@ description: Compute 48-byte KZG commitment for blob
 <Tab title="Standard API">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 console.log(commitment.length); // 48
 console.log(Blob.Commitment.isValid(commitment)); // true
@@ -37,11 +37,11 @@ Tree-shakeable factory pattern with explicit KZG dependency.
 **Example:**
 
 ```typescript
-import { ToCommitment } from '@tevm/voltaire/Blob'
+import { Kzg } from '@tevm/voltaire'
 import { blobToKzgCommitment } from 'c-kzg'
 
-const toCommitment = ToCommitment({ blobToKzgCommitment })
-const commitment = toCommitment(blob)
+const Commitment = Kzg.CommitmentFactory({ blobToKzgCommitment })
+const commitment = Commitment(blob)
 ```
 
 **Bundle size:** KZG crypto only included if you import it explicitly.
@@ -63,22 +63,22 @@ KZG commitments use polynomial commitment scheme over BLS12-381 curve:
 ### Security Properties
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Different data = different commitments
 const blob1 = Blob.fromData(data1);
 const blob2 = Blob.fromData(data2);
 
-const commitment1 = blob1.toCommitment();
-const commitment2 = blob2.toCommitment();
+const commitment1 = Kzg.Commitment(blob1);
+const commitment2 = Kzg.Commitment(blob2);
 
 // Commitments differ (binding property)
 console.log(Blob.equals(commitment1, commitment2)); // false
 
 // Cannot forge commitment for different data
-const proof1 = blob1.toProof();
-console.log(Blob.verify(blob1, commitment1, proof1)); // true
-console.log(Blob.verify(blob2, commitment1, proof1)); // false (wrong blob)
+const proof1 = Kzg.Proof(blob1);
+console.log(Kzg.verify(blob1, commitment1, proof1)); // true
+console.log(Kzg.verify(blob2, commitment1, proof1)); // false (wrong blob)
 ```
 
 ## Commitment Utilities
@@ -86,15 +86,15 @@ console.log(Blob.verify(blob2, commitment1, proof1)); // false (wrong blob)
 ### Blob.Commitment Namespace
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
-const commitment = blob.toCommitment();
+const commitment = Kzg.Commitment(blob);
 
 // Validate commitment size
 console.log(Blob.Commitment.isValid(commitment)); // true
 
 // Convert to versioned hash
-const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+const versionedHash = Blob.toVersionedHash(commitment);
 console.log(versionedHash[0]); // 0x01 (version byte)
 ```
 

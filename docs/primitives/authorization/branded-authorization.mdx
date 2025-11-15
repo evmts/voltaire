@@ -29,7 +29,7 @@ export type BrandedAuthorization = {
   /** Chain ID where authorization is valid */
   chainId: bigint;
   /** Address to delegate code execution to */
-  address: BrandedAddress;
+  address: AddressType;
   /** Nonce of the authorizing account */
   nonce: bigint;
   /** Signature Y parity (0 or 1) */
@@ -127,7 +127,7 @@ Branded type prevents mixing with plain objects:
 ```typescript
 type BrandedAuthorization = {
   chainId: bigint;
-  address: BrandedAddress;
+  address: AddressType;
   nonce: bigint;
   yParity: number;
   r: bigint;
@@ -155,7 +155,7 @@ import * as BrandedAuthorization from '@tevm/primitives/Authorization/BrandedAut
 // Create from authorization data
 const auth = BrandedAuthorization.create({
   chainId: 1n,
-  address: BrandedAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e'),
+  address: AddressType('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e'),
   nonce: 5n,
   yParity: 0,
   r: 0x123456789abcdef0n,
@@ -202,7 +202,7 @@ console.log(`Nonce: ${auth.nonce}`)
 ```typescript
 type BrandedAuthorization = {
   chainId: bigint;
-  address: BrandedAddress;
+  address: AddressType;
   nonce: bigint;
   yParity: number;
   r: bigint;

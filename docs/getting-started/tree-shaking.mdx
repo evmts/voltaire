@@ -36,18 +36,18 @@ Voltaire's Class API uses `Object.setPrototypeOf()` to add methods without encap
 ```typescript
 // Factory function creates instance
 export function Address(value) {
-  const result = BrandedAddress(value);
+  const result = AddressType(value);
   Object.setPrototypeOf(result, Address.prototype);
   return result;
 }
 
 // Instance method delegates to functional implementation
 Address.prototype.toChecksummed = function() {
-  return BrandedAddress.toChecksummed(this);
+  return AddressType.toChecksummed(this);
 };
 
 // Static method delegates to functional implementation
-Address.toChecksummed = BrandedAddress.toChecksummed;
+Address.toChecksummed = AddressType.toChecksummed;
 ```
 
 This architecture:

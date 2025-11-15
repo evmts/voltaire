@@ -31,7 +31,7 @@ Recover the 64-byte public key from a signature and message hash.
 
 **Parameters:**
 - `signature` (`BrandedSignature`) - Signature with r, s, v components
-- `messageHash` (`BrandedHash`) - 32-byte hash that was signed
+- `messageHash` (`HashType`) - 32-byte hash that was signed
 
 **Returns:** `Uint8Array` - 64-byte uncompressed public key (x || y)
 

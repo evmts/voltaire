@@ -37,7 +37,7 @@ type Legacy = {
   nonce: bigint
   gasPrice: bigint
   gasLimit: bigint
-  to: BrandedAddress | null  // null for contract creation
+  to: AddressType | null  // null for contract creation
   value: bigint
   data: Uint8Array
   v: bigint               // EIP-155: chainId or 27/28
@@ -65,7 +65,7 @@ type EIP2930 = {
   nonce: bigint
   gasPrice: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -95,7 +95,7 @@ type EIP1559 = {
   maxPriorityFeePerGas: bigint  // Tip for miner
   maxFeePerGas: bigint          // Max total fee willing to pay
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -125,7 +125,7 @@ type EIP4844 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress      // Cannot be null for blob transactions
+  to: AddressType      // Cannot be null for blob transactions
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -159,7 +159,7 @@ type EIP7702 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -186,8 +186,8 @@ Pre-declared account and storage slot access for gas optimization.
 
 ```typescript
 type AccessListItem = {
-  address: BrandedAddress
-  storageKeys: readonly BrandedHash[]
+  address: AddressType
+  storageKeys: readonly HashType[]
 }
 
 type AccessList = readonly AccessListItem[]
@@ -216,7 +216,7 @@ Delegation authorization for EIP-7702 transactions.
 ```typescript
 type Authorization = {
   chainId: bigint
-  address: BrandedAddress      // Contract address to delegate to
+  address: AddressType      // Contract address to delegate to
   nonce: bigint                // EOA nonce at time of authorization
   yParity: number              // 0 or 1
   r: Uint8Array                // 32 bytes
@@ -245,7 +245,7 @@ Source: [types.ts:29-43](https://github.com/evmts/voltaire/blob/main/src/primiti
 KZG commitment hash for EIP-4844 blob transactions.
 
 ```typescript
-type VersionedHash = BrandedHash  // 32-byte hash
+type VersionedHash = HashType  // 32-byte hash
 ```
 
 First byte indicates version (currently 0x01 for SHA-256).

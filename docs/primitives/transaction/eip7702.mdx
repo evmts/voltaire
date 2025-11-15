@@ -25,7 +25,7 @@ type EIP7702 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -37,7 +37,7 @@ type EIP7702 = {
 
 type Authorization = {
   chainId: bigint
-  address: BrandedAddress      // Contract to delegate to
+  address: AddressType      // Contract to delegate to
   nonce: bigint                // EOA nonce at time of signing
   yParity: number
   r: Uint8Array

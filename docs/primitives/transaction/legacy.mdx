@@ -23,7 +23,7 @@ type Legacy = {
   nonce: bigint
   gasPrice: bigint        // Fixed gas price in wei
   gasLimit: bigint
-  to: BrandedAddress | null  // null for contract creation
+  to: AddressType | null  // null for contract creation
   value: bigint           // Amount in wei
   data: Uint8Array        // Contract data or empty
   v: bigint               // Signature component + chain ID

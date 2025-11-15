@@ -26,7 +26,7 @@ The signature proves knowledge of the private key without revealing it. RFC 6979
 Sign a 32-byte message hash with deterministic ECDSA.
 
 **Parameters:**
-- `messageHash` (`BrandedHash`) - 32-byte hash to sign
+- `messageHash` (`HashType`) - 32-byte hash to sign
 - `privateKey` (`Uint8Array`) - 32-byte private key (0 < key < n)
 
 **Returns:** `BrandedSignature`

@@ -39,112 +39,110 @@ SHA256 is fundamental to blockchain technology and cryptography, used for:
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-// Hash bytes
+// Hash bytes - constructor returns branded Sha256 type
 const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash = SHA256.hash(data);
-// Uint8Array(32) [...]
+const hash = Sha256(data);
+// BrandedSha256 (extends Uint8Array(32))
 
 // Hash string (UTF-8 encoded)
-const stringHash = SHA256.hashString('hello world');
-// Uint8Array(32) [...]
+const stringHash = Sha256('hello world');
+// BrandedSha256
 
 // Hash hex string
-const hexHash = SHA256.hashHex('0xdeadbeef');
-// Uint8Array(32) [...]
+const hexData = Hex('0xdeadbeef');
+const hexHash = Sha256(hexData);
+// BrandedSha256
+
+// Convert to hex
+const hexString = Hex.fromBytes(hash);
+// "0x..." (hex representation)
 ```
 </Tab>
 
 <Tab title="Incremental Hashing">
 ```typescript
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
 
 // Create incremental hasher for streaming data
-const hasher = SHA256.create();
+const hasher = Sha256.create();
 
 // Update with chunks as they arrive
 hasher.update(chunk1);
 hasher.update(chunk2);
 hasher.update(chunk3);
 
-// Finalize and get hash
+// Finalize and get branded hash
 const hash = hasher.digest();
-// Uint8Array(32) [...]
+// BrandedSha256 (Uint8Array(32))
 ```
 </Tab>
 
-<Tab title="Convert to Hex">
+<Tab title="Data-First Methods">
 ```typescript
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-const data = new Uint8Array([1, 2, 3]);
-const hash = SHA256.hash(data);
+// Constructor (most common)
+const hash1 = Sha256(data);
 
-// Convert to hex string
-const hexString = SHA256.toHex(hash);
-// "0x..." (hex representation)
+// Or use hash method for namespace API
+const hash2 = Sha256.hash(data);
+
+// Both return branded Sha256 type
+const hexString = Hex.fromBytes(hash1);
 ```
 </Tab>
 </Tabs>
 
 ## API Reference
 
-### `SHA256.hash(data: Uint8Array): Uint8Array`
+### `Sha256(data: Uint8Array | string): BrandedSha256`
 
-Compute SHA256 hash of input data.
+Compute SHA256 hash of input data using constructor pattern.
 
 **Parameters:**
-- `data`: Input data to hash (Uint8Array)
+- `data`: Input data to hash (Uint8Array or string)
 
-**Returns:** 32-byte hash (Uint8Array)
+**Returns:** BrandedSha256 - 32-byte hash with branded type
 
 **Example:**
 ```typescript
-const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
+import * as Hex from '@tevm/voltaire/primitives/Hex';
+
+// Hash bytes
+const hash = Sha256(new Uint8Array([1, 2, 3]));
 console.log(hash.length); // 32
+
+// Hash string (UTF-8 encoded automatically)
+const stringHash = Sha256('hello world');
+
+// Hash hex data
+const hexHash = Sha256(Hex('0xdeadbeef'));
 ```
 
 ---
 
-### `SHA256.hashString(str: string): Uint8Array`
+### `Sha256.hash(data: Uint8Array | string): BrandedSha256`
 
-Hash UTF-8 string with SHA256.
-
-String is UTF-8 encoded before hashing using TextEncoder.
+Alternative namespace API for computing SHA256 hash.
 
 **Parameters:**
-- `str`: String to hash
+- `data`: Input data to hash (Uint8Array or string)
 
-**Returns:** 32-byte hash (Uint8Array)
+**Returns:** BrandedSha256 - 32-byte branded hash
 
 **Example:**
 ```typescript
-const hash = SHA256.hashString('hello world');
-// Equivalent to: SHA256.hash(new TextEncoder().encode('hello world'))
+// Equivalent to Sha256(data) constructor
+const hash = Sha256.hash(new Uint8Array([1, 2, 3]));
 ```
 
 ---
 
-### `SHA256.hashHex(hex: string): Uint8Array`
-
-Hash hex-encoded string with SHA256.
-
-Hex string is decoded to bytes before hashing. Supports both "0x"-prefixed and unprefixed hex.
-
-**Parameters:**
-- `hex`: Hex string to hash
-
-**Returns:** 32-byte hash (Uint8Array)
-
-**Example:**
-```typescript
-const hash = SHA256.hashHex('0xdeadbeef');
-```
-
----
-
-### `SHA256.create(): Hasher`
+### `Sha256.create(): Hasher`
 
 Create incremental hasher for streaming data.
 
@@ -154,43 +152,32 @@ Useful when data arrives in chunks or is too large to hold in memory at once. Re
 
 **Example:**
 ```typescript
-const hasher = SHA256.create();
+const hasher = Sha256.create();
 hasher.update(new Uint8Array([1, 2, 3]));
 hasher.update(new Uint8Array([4, 5, 6]));
-const hash = hasher.digest(); // Uint8Array(32)
+const hash = hasher.digest(); // BrandedSha256
 ```
 
 **Hasher Interface:**
 ```typescript
 interface Hasher {
   update(data: Uint8Array): void;
-  digest(): Uint8Array;
+  digest(): BrandedSha256;
 }
 ```
 
----
+## Type Definition
 
-### `SHA256.toHex(hash: Uint8Array): string`
-
-Convert hash bytes to hex string.
-
-**Parameters:**
-- `hash`: Hash bytes to convert
-
-**Returns:** Hex string with "0x" prefix
-
-**Example:**
 ```typescript
-const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
-const hex = SHA256.toHex(hash);
-// "0x039058c6f2c0cb492c533b0a4d14ef77cc0f78ab..."
+// Branded 32-byte SHA256 hash for type safety
+export type BrandedSha256 = Uint8Array & { readonly __tag: "Sha256" };
 ```
 
 ## Constants
 
 ```typescript
-SHA256.OUTPUT_SIZE  // 32 - Output size in bytes (256 bits)
-SHA256.BLOCK_SIZE   // 64 - Internal block size in bytes (512 bits)
+Sha256.OUTPUT_SIZE  // 32 - Output size in bytes (256 bits)
+Sha256.BLOCK_SIZE   // 64 - Internal block size in bytes (512 bits)
 ```
 
 ## Test Vectors
@@ -199,7 +186,7 @@ NIST SHA256 test vectors for validation:
 
 ```typescript
 // Empty string
-SHA256.hashString("")
+Sha256("")
 // Uint8Array(32) [
 //   0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
 //   0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
@@ -208,7 +195,7 @@ SHA256.hashString("")
 // ]
 
 // "abc"
-SHA256.hashString("abc")
+Sha256("abc")
 // Uint8Array(32) [
 //   0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
 //   0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
@@ -217,7 +204,7 @@ SHA256.hashString("abc")
 // ]
 
 // "hello world"
-SHA256.hashString("hello world")
+Sha256("hello world")
 // Uint8Array(32) [
 //   0xb9, 0x4d, 0x27, 0xb9, 0x93, 0x4d, 0x3e, 0x08,
 //   0xa5, 0x2e, 0x52, 0xd7, 0xda, 0x7d, 0xab, 0xfa,
@@ -226,7 +213,7 @@ SHA256.hashString("hello world")
 // ]
 
 // 448-bit message
-SHA256.hashString("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
 // Uint8Array(32) [
 //   0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8,
 //   0xe5, 0xc0, 0x26, 0x93, 0x0c, 0x3e, 0x60, 0x39,
@@ -235,7 +222,7 @@ SHA256.hashString("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
 // ]
 
 // 896-bit message
-SHA256.hashString("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu")
+Sha256("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu")
 // Uint8Array(32) [
 //   0xcf, 0x5b, 0x16, 0xa7, 0x78, 0xaf, 0x83, 0x80,
 //   0x03, 0x6c, 0xe5, 0x9e, 0x7b, 0x04, 0x92, 0x37,
@@ -332,44 +319,45 @@ const hash = Sha256Wasm.hash(data);
 ### Bitcoin Address Derivation
 Bitcoin addresses combine SHA256 and RIPEMD160:
 ```typescript
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Simplified Bitcoin P2PKH address derivation
 const publicKey = Hex('0x04' + '1234...'); // 65-byte uncompressed secp256k1 public key
-const sha256Hash = SHA256.hash(publicKey);
-const ripemd160Hash = Ripemd160.hash(sha256Hash);
+const sha256Hash = Sha256(publicKey);      // BrandedSha256
+const ripemd160Hash = Ripemd160(sha256Hash); // BrandedRipemd160
 // Then Base58Check encode with version byte
 ```
 
 ### Double SHA256
 Bitcoin uses double SHA256 for block and transaction hashing:
 ```typescript
-function doubleSha256(data: Uint8Array): Uint8Array {
-  return SHA256.hash(SHA256.hash(data));
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+
+function doubleSha256(data: Uint8Array): BrandedSha256 {
+  return Sha256(Sha256(data));
 }
 ```
 
 ### Merkle Trees
 Build authenticated data structures:
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-function merkleRoot(leaves: Uint8Array[]): Uint8Array {
+function merkleRoot(leaves: Uint8Array[]): BrandedSha256 {
   if (leaves.length === 0) throw new Error("No leaves");
-  if (leaves.length === 1) return leaves[0];
+  if (leaves.length === 1) return Sha256(leaves[0]);
 
-  const hashes = leaves.map(leaf => SHA256.hash(leaf));
+  const hashes = leaves.map(leaf => Sha256(leaf));
   while (hashes.length > 1) {
-    const nextLevel: Uint8Array[] = [];
+    const nextLevel: BrandedSha256[] = [];
     for (let i = 0; i < hashes.length; i += 2) {
       const left = hashes[i];
       const right = hashes[i + 1] || left; // Duplicate if odd
-      const combined = Hex('0x' +
-        Array(left).map(b => b.toString(16).padStart(2, '0')).join('') +
-        Array(right).map(b => b.toString(16).padStart(2, '0')).join('')
-      );
-      nextLevel.push(SHA256.hash(combined));
+      const combined = new Uint8Array([...left, ...right]);
+      nextLevel.push(Sha256(combined));
     }
     hashes.length = 0;
     hashes.push(...nextLevel);
@@ -381,8 +369,10 @@ function merkleRoot(leaves: Uint8Array[]): Uint8Array {
 ### Streaming Large Files
 Process data in chunks:
 ```typescript
-async function hashFile(file: File): Promise<Uint8Array> {
-  const hasher = SHA256.create();
+import { Sha256 } from '@tevm/voltaire/crypto/sha256';
+
+async function hashFile(file: File): Promise<BrandedSha256> {
+  const hasher = Sha256.create();
   const chunkSize = 1024 * 1024; // 1MB chunks
 
   for (let offset = 0; offset < file.size; offset += chunkSize) {

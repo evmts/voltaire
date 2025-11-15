@@ -130,14 +130,14 @@ console.log(`Signing hash (WASM): ${sigHash}`);
 ```typescript
 export function signingHashWasm(
   chainId: bigint,
-  address: BrandedAddress,
+  address: AddressType,
   nonce: bigint,
-): BrandedHash {
+): HashType {
   return loader.authorizationSigningHash(
     chainId,
     address,
     nonce,
-  ) as BrandedHash;
+  ) as HashType;
 }
 ```
 
@@ -200,7 +200,7 @@ try {
 
 **TypeScript Binding:**
 ```typescript
-export function authorityWasm(auth: BrandedAuthorization): BrandedAddress {
+export function authorityWasm(auth: BrandedAuthorization): AddressType {
   return loader.authorizationAuthority({
     chainId: auth.chainId,
     address: auth.address,
@@ -208,7 +208,7 @@ export function authorityWasm(auth: BrandedAuthorization): BrandedAddress {
     yParity: auth.yParity,
     r: auth.r,
     s: auth.s,
-  }) as BrandedAddress;
+  }) as AddressType;
 }
 ```
 

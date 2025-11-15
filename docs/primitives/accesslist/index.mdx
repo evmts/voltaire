@@ -19,8 +19,8 @@ Array of items where each item specifies a contract address and storage keys to 
 export type AccessList = readonly Item[];
 
 export type Item = {
-  address: BrandedAddress;              // 20-byte contract address
-  storageKeys: readonly BrandedHash[];  // 32-byte storage slot keys
+  address: AddressType;              // 20-byte contract address
+  storageKeys: readonly HashType[];  // 32-byte storage slot keys
 };
 ```
 

@@ -47,7 +47,7 @@ export type BrandedBytes = Uint8Array & {
 };
 
 // Fixed-size Bytes32
-export type BrandedBytes32 = Uint8Array & {
+export type Bytes32Type = Uint8Array & {
   readonly [brand]: "Bytes32";
   readonly size: 32;  // Hardcoded, not number
 };
@@ -148,7 +148,7 @@ type BrandedBytes<N> = Uint8Array & {
 };
 
 // Specialized types extend the pattern
-type BrandedAddress = Uint8Array & {
+type AddressType = Uint8Array & {
   readonly [brand]: "Address";
   readonly size: 20;  // Bytes20
 };
@@ -232,7 +232,7 @@ type BrandedBytes = Uint8Array & {
   readonly [brand]: "Bytes";
 };
 
-type BrandedBytes32 = Uint8Array & {
+type Bytes32Type = Uint8Array & {
   readonly [brand]: "Bytes32";
   readonly size: 32;
 };
@@ -290,10 +290,10 @@ const b16 = Bytes16('0x' + '12'.repeat(16));
 const b8 = Bytes8('0x1234567890abcdef');
 
 // Type error: cannot assign Bytes16 to Bytes32
-const wrong1: Bytes32.BrandedBytes32 = b16;
+const wrong1: Bytes32.Bytes32Type = b16;
 
 // Type error: cannot assign Bytes8 to Bytes32
-const wrong2: Bytes32.BrandedBytes32 = b8;
+const wrong2: Bytes32.Bytes32Type = b8;
 
 // Must convert explicitly
 const converted = Bytes32(concat([b16, b16]));
@@ -307,7 +307,7 @@ type Bytes32 = Uint8Array & {
 };
 
 // TypeScript enforces exact size
-function acceptBytes32(b: Bytes32.BrandedBytes32) {
+function acceptBytes32(b: Bytes32.Bytes32Type) {
   console.log(b.length); // Always 32
 }
 ```

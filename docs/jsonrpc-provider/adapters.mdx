@@ -229,7 +229,7 @@ class CustomProvider implements Provider {
   }
 
   async eth_getBalance(
-    address: Address.BrandedAddress,
+    address: Address.AddressType,
     blockTag: BlockTag
   ): Promise<Response<Quantity>> {
     // Your implementation
@@ -303,7 +303,7 @@ export class WebSocketProvider implements Provider {
   }
 
   async eth_getBalance(
-    address: Address.BrandedAddress,
+    address: Address.AddressType,
     blockTag: BlockTag
   ): Promise<Response<Quantity>> {
     const response = await this.request('eth_getBalance', [
@@ -353,7 +353,7 @@ export class CachingProvider implements Provider {
   }
 
   async eth_getCode(
-    address: Address.BrandedAddress,
+    address: Address.AddressType,
     blockTag: BlockTag
   ): Promise<Response<Hex>> {
     const key = `code:${Address.toHex(address)}:${blockTag}`;
@@ -463,7 +463,7 @@ export class MockProvider implements Provider {
   }
 
   async eth_getBalance(
-    address: Address.BrandedAddress,
+    address: Address.AddressType,
     blockTag: BlockTag
   ): Promise<Response<Quantity>> {
     const key = Address.toHex(address);
@@ -472,7 +472,7 @@ export class MockProvider implements Provider {
   }
 
   // Test helper methods
-  setBalance(address: Address.BrandedAddress, balance: bigint) {
+  setBalance(address: Address.AddressType, balance: bigint) {
     this.balances.set(Address.toHex(address), balance);
   }
 

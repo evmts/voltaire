@@ -320,7 +320,7 @@ import * as Address from '@tevm/voltaire/primitives/Address';
 import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 async function monitorContractEvents(
-  contractAddress: Address.BrandedAddress,
+  contractAddress: Address.AddressType,
   eventSignature: Keccak256.Keccak256Hash
 ) {
   console.log('Monitoring events for', contractAddress);
@@ -402,7 +402,7 @@ interface EventStats {
 }
 
 async function aggregateEvents(
-  contractAddress: Address.BrandedAddress,
+  contractAddress: Address.AddressType,
   duration: number
 ): Promise<EventStats> {
   const stats: EventStats = {

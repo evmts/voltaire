@@ -18,14 +18,14 @@ Factory function that creates an address-to-checksum converter with explicit cry
 **Parameters:**
 - `deps: { keccak256: (data: Uint8Array) => Uint8Array }` - Crypto dependencies
 
-**Returns:** `(address: BrandedAddress) => Checksummed`
+**Returns:** `(address: AddressType) => Checksummed`
 
 **Bundle size benefit:** Crypto dependencies explicit - only bundled if you import them.
 
 **Example:**
 
 ```typescript
-import { ToChecksummed } from '@tevm/voltaire/Address/BrandedAddress'
+import { ToChecksummed } from '@tevm/voltaire/Address/AddressType'
 import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
 import { Address } from '@tevm/voltaire'
 

@@ -64,7 +64,7 @@ type AddressLike =
   | bigint
   | string
   | Uint8Array
-  | BrandedAddress
+  | AddressType
   | Address
 ```
 
@@ -99,11 +99,11 @@ For hex strings, always include `0x` prefix to avoid ambiguity. Strings without 
 
 ## Performance
 
-**Zero-copy** for `Uint8Array` and `BrandedAddress` (no allocation).
+**Zero-copy** for `Uint8Array` and `AddressType` (no allocation).
 
 **Conversion required** for numbers, bigints, and strings (allocates new Uint8Array).
 
-For performance-critical code, prefer passing `Uint8Array` or `BrandedAddress` directly.
+For performance-critical code, prefer passing `Uint8Array` or `AddressType` directly.
 
 ## See Also
 

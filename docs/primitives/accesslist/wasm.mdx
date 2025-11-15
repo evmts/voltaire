@@ -86,7 +86,7 @@ Check if address exists using WASM implementation.
 ```typescript
 includesAddressWasm(
   accessList: BrandedAccessList,
-  address: BrandedAddress
+  address: AddressType
 ): boolean
 ```
 
@@ -118,8 +118,8 @@ Check if storage key exists using WASM implementation.
 ```typescript
 includesStorageKeyWasm(
   accessList: BrandedAccessList,
-  address: BrandedAddress,
-  storageKey: BrandedHash
+  address: AddressType,
+  storageKey: HashType
 ): boolean
 ```
 

@@ -18,12 +18,12 @@ Create Address from secp256k1 public key coordinates using factory pattern. Enab
 **Parameters:**
 - `deps.keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
 
-**Returns:** `(x: bigint, y: bigint) => BrandedAddress` - Function that creates Address from public key
+**Returns:** `(x: bigint, y: bigint) => AddressType` - Function that creates Address from public key
 
 **Example:**
 
 ```typescript
-import { FromPublicKey } from '@tevm/voltaire/Address/BrandedAddress'
+import { FromPublicKey } from '@tevm/voltaire/Address/AddressType'
 import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
 
 // Create factory with injected crypto
@@ -52,7 +52,7 @@ Create Address from secp256k1 public key coordinates (auto-injected keccak256).
 - `x: bigint` - Public key x coordinate
 - `y: bigint` - Public key y coordinate
 
-**Returns:** `BrandedAddress` - Address derived from keccak256(pubkey)[12:32]
+**Returns:** `AddressType` - Address derived from keccak256(pubkey)[12:32]
 
 **Example:**
 

@@ -18,7 +18,7 @@ import * as Address from '@tevm/voltaire/Address';
 
 async function getAccountState(
   provider: Provider,
-  address: Address.BrandedAddress
+  address: Address.AddressType
 ) {
   const [balance, nonce, code] = await Promise.all([
     provider.eth_getBalance(address, 'latest'),
@@ -93,9 +93,9 @@ import * as Hex from '@tevm/voltaire/Hex';
 async function estimateGasWithBuffer(
   provider: Provider,
   params: {
-    from: Address.BrandedAddress;
-    to: Address.BrandedAddress;
-    data: Hex.BrandedHex;
+    from: Address.AddressType;
+    to: Address.AddressType;
+    data: Hex.HexType;
   }
 ): Promise<bigint | null> {
   const response = await provider.eth_estimateGas(params);

@@ -175,11 +175,12 @@ console.log(`Reconstructed ${reconstructed.length} bytes`);
 ### Versioned Hashes for Transactions
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Create blob and get versioned hash
 const blob = Blob.fromData(data);
-const versionedHash = Blob.toVersionedHash(blob);
+const commitment = Kzg.Commitment(blob);
+const versionedHash = Blob.toVersionedHash(commitment);
 
 // Use in EIP-4844 transaction
 const tx = {
@@ -216,20 +217,20 @@ console.log(`Savings: ${((1 - Number(blobGas) / Number(calldataGas)) * 100).toFi
 ### Batch Verification
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg } from '@tevm/voltaire';
 
 // Multiple blobs with commitments and proofs
 const blobs = [blob1, blob2, blob3];
-const commitments = blobs.map(b => Blob.toCommitment(b));
-const proofs = blobs.map(b => Blob.toProof(b));
+const commitments = blobs.map(b => Kzg.Commitment(b));
+const proofs = blobs.map(b => Kzg.Proof(b));
 
 // Verify all at once (more efficient)
-const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
 
 if (!allValid) {
   // Fall back to individual verification to find invalid blob
   for (let i = 0; i < blobs.length; i++) {
-    const valid = Blob.verify(blobs[i], commitments[i], proofs[i]);
+    const valid = Kzg.verify(blobs[i], commitments[i], proofs[i]);
     if (!valid) {
       console.error(`Blob ${i} failed verification`);
     }

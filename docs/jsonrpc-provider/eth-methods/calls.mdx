@@ -91,9 +91,9 @@ if (!gas.error) {
 async function estimateGasWithBuffer(
   provider: Provider,
   params: {
-    from: Address.BrandedAddress;
-    to: Address.BrandedAddress;
-    data: Hex.BrandedHex;
+    from: Address.AddressType;
+    to: Address.AddressType;
+    data: Hex.HexType;
   }
 ): Promise<bigint | null> {
   const response = await provider.eth_estimateGas(params);

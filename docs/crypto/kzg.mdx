@@ -26,30 +26,30 @@ KZG (Kate-Zaverucha-Goldberg) commitments are cryptographic commitments to polyn
 ## Quick Start
 
 ```typescript
-import * as KZG from '@tevm/voltaire/crypto/KZG';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // 1. Load trusted setup (required once)
-await KZG.loadTrustedSetup(trustedSetupData);
+await Kzg.loadTrustedSetup(trustedSetupData);
 
-// 2. Create a blob (128 KB of data)
-const blob = KZG.createEmptyBlob();
+// 2. Create a blob (131,072 bytes = 128 KB)
+const blob = Blob(131072);
 // ... fill blob with rollup transaction data
 
 // 3. Generate commitment
-const commitment = await KZG.blobToKzgCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 // 4. Prove evaluation at point z
 const z = Bytes32(); // Evaluation point
-const { proof, y } = await KZG.computeKzgProof(blob, z);
+const { proof, y } = Kzg.Proof(blob, z);
 
 // 5. Verify proof
-const isValid = await KZG.verifyKzgProof(commitment, z, y, proof);
+const isValid = Kzg.verify(commitment, z, y, proof);
 
 // 6. Verify blob against commitment (EIP-4844)
-const isValidBlob = await KZG.verifyBlobKzgProof(blob, commitment, proof);
+const isValidBlob = Kzg.verifyBlob(blob, commitment, proof);
 
 // 7. Cleanup
-await KZG.freeTrustedSetup();
+await Kzg.freeTrustedSetup();
 ```
 
 ## KZG Polynomial Commitments
@@ -131,9 +131,9 @@ await freeTrustedSetup();
 #### Create Empty Blob
 
 ```typescript
-import { createEmptyBlob } from '@tevm/voltaire/crypto/KZG';
+import { Blob } from '@tevm/voltaire';
 
-const blob = createEmptyBlob(); // Uint8Array(131072) - all zeros
+const blob = Blob(131072); // Uint8Array(131072) - all zeros
 ```
 
 **Blob Format**:
@@ -145,9 +145,9 @@ const blob = createEmptyBlob(); // Uint8Array(131072) - all zeros
 #### Generate Random Blob
 
 ```typescript
-import { generateRandomBlob } from '@tevm/voltaire/crypto/KZG';
+import { Kzg } from '@tevm/voltaire';
 
-const blob = generateRandomBlob(); // Random valid blob for testing
+const blob = Kzg.generateRandomBlob(); // Random valid blob for testing
 ```
 
 **Use case**: Testing, benchmarking
@@ -155,10 +155,10 @@ const blob = generateRandomBlob(); // Random valid blob for testing
 #### Validate Blob
 
 ```typescript
-import { validateBlob } from '@tevm/voltaire/crypto/KZG';
+import { Blob } from '@tevm/voltaire';
 
 try {
-  validateBlob(blob);
+  Blob.validate(blob);
   console.log("Blob is valid");
 } catch (error) {
   console.error("Invalid blob:", error);
@@ -175,10 +175,10 @@ try {
 #### Blob to KZG Commitment
 
 ```typescript
-import { blobToKzgCommitment } from '@tevm/voltaire/crypto/KZG';
+import { Kzg } from '@tevm/voltaire';
 
 // Commit to blob (interprets blob as polynomial coefficients)
-const commitment = await blobToKzgCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 // commitment: Uint8Array(48) - BLS12-381 G1 point (compressed)
 ```
 
@@ -197,11 +197,11 @@ const commitment = await blobToKzgCommitment(blob);
 #### Compute KZG Proof
 
 ```typescript
-import { computeKzgProof } from '@tevm/voltaire/crypto/KZG';
+import { Kzg, Bytes32 } from '@tevm/voltaire';
 
 // Prove p(z) = y
 const z = Bytes32(); // Evaluation point (field element)
-const { proof, y } = await computeKzgProof(blob, z);
+const { proof, y } = Kzg.Proof(blob, z);
 
 // proof: Uint8Array(48) - G1 point proving evaluation
 // y: Uint8Array(32) - Evaluation result p(z)
@@ -219,10 +219,10 @@ const { proof, y } = await computeKzgProof(blob, z);
 #### Verify KZG Proof
 
 ```typescript
-import { verifyKzgProof } from '@tevm/voltaire/crypto/KZG';
+import { Kzg } from '@tevm/voltaire';
 
 // Verify evaluation proof
-const isValid = await verifyKzgProof(
+const isValid = Kzg.verify(
   commitment,  // Uint8Array(48) - Commitment to blob
   z,          // Uint8Array(32) - Evaluation point
   y,          // Uint8Array(32) - Claimed evaluation
@@ -245,10 +245,10 @@ e(commitment - [y]_1, [1]_2) = e(proof, [τ]_2 - [z]_2)
 #### Verify Blob KZG Proof
 
 ```typescript
-import { verifyBlobKzgProof } from '@tevm/voltaire/crypto/KZG';
+import { Kzg } from '@tevm/voltaire';
 
 // Verify blob against commitment (EIP-4844 verification)
-const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+const isValid = Kzg.verifyBlob(blob, commitment, proof);
 ```
 
 **Use case**: Validators verify blob transaction data matches commitment
@@ -261,14 +261,14 @@ const isValid = await verifyBlobKzgProof(blob, commitment, proof);
 #### Batch Verify Blob KZG Proofs
 
 ```typescript
-import { verifyBlobKzgProofBatch } from '@tevm/voltaire/crypto/KZG';
+import { Kzg } from '@tevm/voltaire';
 
 // Efficiently verify multiple blobs at once
 const blobs = [blob1, blob2, blob3];
 const commitments = [commit1, commit2, commit3];
 const proofs = [proof1, proof2, proof3];
 
-const allValid = await verifyBlobKzgProofBatch(blobs, commitments, proofs);
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
 ```
 
 **Optimization**: Batch verification uses fewer pairing operations than individual checks.
@@ -332,22 +332,22 @@ transaction.blobVersionedHashes.push(versionedHash);
 const rollupData = compressRollupBatch(transactions); // Rollup-specific
 
 // 2. Create blob
-const blob = createEmptyBlob();
+const blob = Blob(131072);
 blob.set(rollupData, 0); // Fill with rollup data
 
 // 3. Generate commitment
-const commitment = await blobToKzgCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 // 4. Generate proof
-const challengePoint = keccak256(commitment); // Fiat-Shamir transform
-const { proof, y } = await computeKzgProof(blob, challengePoint);
+const challengePoint = Keccak256(commitment); // Fiat-Shamir transform
+const { proof, y } = Kzg.Proof(blob, challengePoint);
 
 // 5. Verify locally
-const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+const isValid = Kzg.verifyBlob(blob, commitment, proof);
 if (!isValid) throw new Error("Invalid blob proof");
 
 // 6. Compute versioned hash
-const versionedHash = computeVersionedHash(commitment);
+const versionedHash = Blob.toVersionedHash(commitment);
 
 // 7. Create transaction
 const blobTx = {
@@ -375,18 +375,18 @@ await sendBlobTransaction(blobTx, {
 async function postRollupBatch(batch: L2Transaction[]) {
   // 1. Compress batch into blob
   const blobData = compressBatch(batch);
-  const blob = createEmptyBlob();
+  const blob = Blob(131072);
   blob.set(blobData, 0);
 
   // 2. Generate commitment and proof
-  const commitment = await blobToKzgCommitment(blob);
+  const commitment = Kzg.Commitment(blob);
   const challengePoint = deriveChallenge(commitment);
-  const { proof, y } = await computeKzgProof(blob, challengePoint);
+  const { proof, y } = Kzg.Proof(blob, challengePoint);
 
   // 3. Post blob transaction
   const tx = await createBlobTransaction({
     to: l1RollupContract,
-    blobVersionedHashes: [computeVersionedHash(commitment)],
+    blobVersionedHashes: [Blob.toVersionedHash(commitment)],
     blobs: [blob],
     commitments: [commitment],
     proofs: [proof]
@@ -415,7 +415,7 @@ async function sampleBlobAvailability(
     const { y, proof } = await fetchEvaluationProof(versionedHash, randomPoint);
 
     // 4. Verify proof
-    const isValid = await verifyKzgProof(commitment, randomPoint, y, proof);
+    const isValid = Kzg.verify(commitment, randomPoint, y, proof);
     if (!isValid) return false;
   }
 
@@ -488,7 +488,7 @@ c-kzg-4844 requires:
 ```typescript
 // WASM will fail
 try {
-  await blobToKzgCommitment(blob);
+  Kzg.Commitment(blob);
 } catch (error) {
   console.error("KZG not available in WASM build");
 }
@@ -506,7 +506,7 @@ try {
 **Blob Validation**:
 ```typescript
 // Always validate blobs before commitment
-validateBlob(blob);
+Blob.validate(blob);
 
 // Validate commitments before verification
 if (commitment.length !== 48) {
@@ -517,7 +517,7 @@ if (commitment.length !== 48) {
 **Proof Verification**:
 ```typescript
 // Always verify proofs before accepting data
-const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+const isValid = Kzg.verifyBlob(blob, commitment, proof);
 if (!isValid) {
   throw new Error("Blob proof verification failed");
 }

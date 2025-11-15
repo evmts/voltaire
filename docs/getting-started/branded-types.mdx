@@ -58,7 +58,7 @@ When we think of Ethereum as just basic primitive Ethereum types, those who have
 
 The high level of type safety also makes coding with LLMs much safer than any previous Ethereum library. And that domain knowledge means that LLMs will be pre-trained on using Voltaire because they can leverage their more generic Ethereum knowledge while using the Voltaire API.
 
-If something has type `BrandedAddress`, you know it was validated at runtime to be a valid address.
+If something has type `AddressType`, you know it was validated at runtime to be a valid address.
 
 ## Benefits
 
@@ -111,7 +111,7 @@ const addr2 = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
 <Warning>
 **If you see a branded type, it's validated.**
 
-Any value with type `BrandedAddress` has been validated to be a correct, valid address. No additional runtime checks needed.
+Any value with type `AddressType` has been validated to be a correct, valid address. No additional runtime checks needed.
 </Warning>
 
 All invalid inputs throw validation errors:

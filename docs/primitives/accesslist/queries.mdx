@@ -16,7 +16,7 @@ Operations for inspecting AccessList contents.
 Check if address exists in access list.
 
 ```typescript
-AccessList.includesAddress(list: BrandedAccessList, address: BrandedAddress): boolean
+AccessList.includesAddress(list: BrandedAccessList, address: AddressType): boolean
 ```
 
 **Parameters:**
@@ -43,8 +43,8 @@ Check if storage key exists for address.
 ```typescript
 AccessList.includesStorageKey(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  key: BrandedHash
+  address: AddressType,
+  key: HashType
 ): boolean
 ```
 
@@ -79,8 +79,8 @@ Get all storage keys for an address.
 ```typescript
 AccessList.keysFor(
   list: BrandedAccessList,
-  address: BrandedAddress
-): readonly BrandedHash[] | undefined
+  address: AddressType
+): readonly HashType[] | undefined
 ```
 
 **Parameters:**
@@ -256,9 +256,9 @@ for (const token of tokens) {
 ```typescript
 function findMissingKeys(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  requiredKeys: BrandedHash[]
-): BrandedHash[] {
+  address: AddressType,
+  requiredKeys: HashType[]
+): HashType[] {
   return requiredKeys.filter(
     key => !list.includesStorageKey(address, key)
   );
@@ -291,7 +291,7 @@ function summarize(list: BrandedAccessList): string {
 ```typescript
 function ensureComplete(
   list: BrandedAccessList,
-  required: { address: BrandedAddress; keys: BrandedHash[] }[]
+  required: { address: AddressType; keys: HashType[] }[]
 ): boolean {
   for (const { address, keys } of required) {
     if (!list.includesAddress(address)) {

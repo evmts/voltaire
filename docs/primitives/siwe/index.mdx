@@ -93,7 +93,7 @@ Creates Siwe message instance from parameters.
 
 **Parameters:**
 - `params.domain`: RFC 4501 dns authority
-- `params.address`: BrandedAddress performing signing
+- `params.address`: AddressType performing signing
 - `params.uri`: RFC 3986 URI
 - `params.chainId`: EIP-155 Chain ID
 - `params.statement?`: Human-readable assertion (optional)
@@ -205,7 +205,7 @@ Instance methods delegate to BrandedSiwe namespace functions.
 ```typescript
 type BrandedMessage = {
   domain: string;
-  address: BrandedAddress;
+  address: AddressType;
   uri: string;
   version: string;
   chainId: number;

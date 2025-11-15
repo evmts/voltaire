@@ -1,6 +1,6 @@
 ---
 title: Address.is
-description: Type guard for runtime validation of BrandedAddress values
+description: Type guard for runtime validation of AddressType values
 ---
 
 <Warning>
@@ -50,7 +50,7 @@ Type guards use TypeScript's `is` operator to narrow types:
 import * as Address from '@tevm/voltaire/Address'
 
 // Type predicate signature
-function is(value: unknown): value is BrandedAddress {
+function is(value: unknown): value is AddressType {
   return value instanceof Uint8Array && value.length === 20
 }
 
@@ -62,7 +62,7 @@ function example1(value: unknown) {
 // After type guard
 function example2(value: unknown) {
   if (Address.is(value)) {
-    // Type narrowed to BrandedAddress
+    // Type narrowed to AddressType
     const hex = Address.toHex(value) // OK
     const checksummed = Address.toChecksummed(value) // OK
   }
@@ -86,7 +86,7 @@ import * as Address from '@tevm/voltaire/Address'
 
 function handleUnknown(value: unknown) {
   if (Address.is(value)) {
-    // Type: BrandedAddress
+    // Type: AddressType
     console.log(value.length) // 20
     const hex = Address.toHex(value)
   } else {
@@ -102,11 +102,11 @@ function handleUnknown(value: unknown) {
 import * as Address from '@tevm/voltaire/Address'
 import * as Hash from '@tevm/voltaire/Hash'
 
-type AddressOrHash = BrandedAddress | Hash
+type AddressOrHash = AddressType | Hash
 
 function process(value: AddressOrHash) {
   if (Address.is(value)) {
-    // Narrowed to BrandedAddress
+    // Narrowed to AddressType
     console.log("Address:", Address.toHex(value))
   } else {
     // Narrowed to Hash
@@ -130,7 +130,7 @@ const mixed: unknown[] = [
 
 // Filter to only addresses
 const addresses = mixed.filter(Address.is)
-// Type: BrandedAddress[]
+// Type: AddressType[]
 
 addresses.forEach(addr => {
   console.log(Address.toHex(addr)) // Type-safe
@@ -165,7 +165,7 @@ function transferTokens(to: unknown, amount: bigint) {
 ```typescript
 import * as Address from '@tevm/voltaire/Address'
 
-function parseUserInput(input: string): BrandedAddress {
+function parseUserInput(input: string): AddressType {
   try {
     const addr = Address(input)
 
@@ -245,7 +245,7 @@ Address.is(new Array(20).fill(0))       // false (Array not Uint8Array)
 ```typescript
 import * as Address from '@tevm/voltaire/Address'
 
-function normalize(value: unknown): BrandedAddress {
+function normalize(value: unknown): AddressType {
   if (Address.is(value)) {
     // Already valid address
     return value
@@ -297,8 +297,8 @@ function deserialize(data: unknown): Transaction | null {
 ```typescript
 import * as Address from '@tevm/voltaire/Address'
 
-function validateWhitelist(addresses: unknown[]): BrandedAddress[] {
-  const valid: BrandedAddress[] = []
+function validateWhitelist(addresses: unknown[]): AddressType[] {
+  const valid: AddressType[] = []
 
   for (const addr of addresses) {
     if (Address.is(addr)) {
@@ -322,10 +322,10 @@ Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3") // true
 Address.is("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")      // false (string)
 ```
 
-`is` validates BrandedAddress type:
+`is` validates AddressType type:
 ```typescript
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
-Address.is(addr)      // true (BrandedAddress)
+Address.is(addr)      // true (AddressType)
 Address.isValid(addr) // false (not string)
 ```
 
@@ -341,12 +341,12 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // false
 ```typescript
 const lower = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 const checksum = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
-Address.is(lower)    // true (valid BrandedAddress)
-Address.is(checksum) // true (valid BrandedAddress)
+Address.is(lower)    // true (valid AddressType)
+Address.is(checksum) // true (valid AddressType)
 ```
 
 **Summary:**
-- `Address.is(value)` - Runtime type guard for BrandedAddress
+- `Address.is(value)` - Runtime type guard for AddressType
 - `Address.isValid(hex)` - Validates hex string format
 - `Address.isValidChecksum(hex)` - Validates EIP-55 checksum
 
@@ -356,4 +356,4 @@ Address.is(checksum) // true (valid BrandedAddress)
 - [isValid](/primitives/address/is-valid) - Validate hex string format
 - [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
 - [equals](/primitives/address/equals) - Compare two addresses
-- [BrandedAddress](/primitives/address/branded-address) - Type definition
+- [AddressType](/primitives/address/branded-address) - Type definition

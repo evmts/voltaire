@@ -28,8 +28,8 @@ export type BrandedAccessList = readonly Item[] & {
 
 ```typescript
 export type Item<
-  TAddress extends BrandedAddress = BrandedAddress,
-  TStorageKeys extends readonly BrandedHash[] = readonly BrandedHash[],
+  TAddress extends AddressType = AddressType,
+  TStorageKeys extends readonly HashType[] = readonly HashType[],
 > = {
   address: TAddress;
   storageKeys: TStorageKeys;
@@ -37,12 +37,12 @@ export type Item<
 ```
 
 **Properties:**
-- `address`: 20-byte BrandedAddress
-- `storageKeys`: Readonly array of 32-byte BrandedHash
+- `address`: 20-byte AddressType
+- `storageKeys`: Readonly array of 32-byte HashType
 
 **Generic Parameters:**
-- `TAddress`: Address type (defaults to BrandedAddress)
-- `TStorageKeys`: Storage keys type (defaults to readonly BrandedHash[])
+- `TAddress`: Address type (defaults to AddressType)
+- `TStorageKeys`: Storage keys type (defaults to readonly HashType[])
 
 ## Brand Symbol
 
@@ -116,7 +116,7 @@ const cost = list.gasCost();
 // All methods in BrandedAccessList namespace
 namespace BrandedAccessList {
   export function gasCost(list: BrandedAccessList): bigint;
-  export function withAddress(list: BrandedAccessList, addr: BrandedAddress): BrandedAccessList;
+  export function withAddress(list: BrandedAccessList, addr: AddressType): BrandedAccessList;
   // ...
 }
 
@@ -153,7 +153,7 @@ if (AccessList.is(array)) {
 // Specific address types
 type SpecificItem = Item<
   ChecksumAddress,
-  readonly BrandedHash[]
+  readonly HashType[]
 >;
 
 // Generic item

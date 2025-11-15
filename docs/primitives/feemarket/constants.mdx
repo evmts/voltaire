@@ -24,7 +24,7 @@ Minimum base fee per gas (wei). Base fee cannot go below this value.
 
 **Usage:**
 ```typescript
-const baseFee = FeeMarket.calculateBaseFee(0n, 30_000_000n, 5n);
+const baseFee = FeeMarket.BaseFee(0n, 30_000_000n, 5n);
 // baseFee >= FeeMarket.Eip1559.MIN_BASE_FEE
 // baseFee === 7n (enforced minimum)
 ```
@@ -89,7 +89,7 @@ Minimum blob base fee per blob gas (wei).
 
 **Usage:**
 ```typescript
-const blobFee = FeeMarket.calculateBlobBaseFee(0n);
+const blobFee = FeeMarket.BlobBaseFee(0n);
 // blobFee === FeeMarket.Eip4844.MIN_BLOB_BASE_FEE
 // blobFee === 1n
 ```
@@ -106,7 +106,7 @@ Denominator for blob base fee exponential update. Used in fake exponential calcu
 
 **Usage:**
 ```typescript
-// Used internally in calculateBlobBaseFee
+// Used internally in BlobBaseFee
 const blobFee = fakeExponential(
   MIN_BLOB_BASE_FEE,
   excessBlobGas,

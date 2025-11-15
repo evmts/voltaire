@@ -57,12 +57,12 @@ const MODULUS =
 ### Computing Commitments
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
 
 // Compute commitment (requires c-kzg-4844 library)
-const commitment = Blob.toCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 console.log(commitment.length); // 48 bytes
 console.log(commitment instanceof Uint8Array); // true
@@ -95,18 +95,18 @@ function computeKZGCommitment(blob: Uint8Array): Uint8Array {
 ### Generating Proofs
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 // Generate KZG proof
-const proof = Blob.toProof(blob);
+const proof = Kzg.Proof(blob);
 
 console.log(proof.length); // 48 bytes
 
 // Verify proof
-const isValid = Blob.verify(blob, commitment, proof);
+const isValid = Kzg.verify(blob, commitment, proof);
 console.log(isValid); // true
 ```
 
@@ -157,15 +157,15 @@ loadTrustedSetup(setupData);
 ### Proof Verification
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Create blob and proof
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
-const proof = Blob.toProof(blob);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob);
 
 // Verify (uses pairing check)
-const isValid = Blob.verify(blob, commitment, proof);
+const isValid = Kzg.verify(blob, commitment, proof);
 console.log(isValid); // true
 ```
 
@@ -189,14 +189,14 @@ Where:
 More efficient for multiple blobs:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2, blob3];
-const commitments = blobs.map(b => Blob.toCommitment(b));
-const proofs = blobs.map(b => Blob.toProof(b));
+const commitments = blobs.map(b => Kzg.Commitment(b));
+const proofs = blobs.map(b => Kzg.Proof(b));
 
 // Batch verify (single pairing check)
-const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
 console.log(allValid); // true
 ```
 
@@ -207,21 +207,21 @@ console.log(allValid); // true
 Cannot find two different blobs with same commitment:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob1 = Blob.fromData(data1);
 const blob2 = Blob.fromData(data2); // Different data
 
-const commitment1 = Blob.toCommitment(blob1);
-const commitment2 = Blob.toCommitment(blob2);
+const commitment1 = Kzg.Commitment(blob1);
+const commitment2 = Kzg.Commitment(blob2);
 
 // Commitments differ (except with negligible probability)
 console.log(Blob.equals(commitment1, commitment2)); // false
 
 // Cannot create valid proof for wrong blob
-const proof1 = Blob.toProof(blob1);
-console.log(Blob.verify(blob1, commitment1, proof1)); // true
-console.log(Blob.verify(blob2, commitment1, proof1)); // false
+const proof1 = Kzg.Proof(blob1);
+console.log(Kzg.verify(blob1, commitment1, proof1)); // true
+console.log(Kzg.verify(blob2, commitment1, proof1)); // false
 ```
 
 ### Hiding (Partial)
@@ -232,17 +232,17 @@ Commitment doesn't directly reveal blob contents, but:
 - Use versioned hash (SHA256) for additional hiding
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
+const commitment = Kzg.Commitment(blob);
 
 // Commitment doesn't reveal data (48 bytes for 131 KB)
 console.log(`Blob: ${blob.length} bytes`);
 console.log(`Commitment: ${commitment.length} bytes`);
 
 // But versioned hash adds additional hiding
-const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+const versionedHash = Blob.toVersionedHash(commitment);
 console.log(`Versioned hash: ${versionedHash.length} bytes`);
 ```
 
@@ -251,18 +251,18 @@ console.log(`Versioned hash: ${versionedHash.length} bytes`);
 Valid proofs always verify:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
-const proof = Blob.toProof(blob);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob);
 
 // Always verifies for correctly generated proof
-console.log(Blob.verify(blob, commitment, proof)); // true (always)
+console.log(Kzg.verify(blob, commitment, proof)); // true (always)
 
 // Cannot create fake proof
 const fakeProof = new Uint8Array(48);
-console.log(Blob.verify(blob, commitment, fakeProof)); // false (except negligible probability)
+console.log(Kzg.verify(blob, commitment, fakeProof)); // false (except negligible probability)
 ```
 
 ## Field Element Validation
@@ -331,7 +331,7 @@ WASM builds stub KZG operations (not yet supported):
 ```typescript
 // In WASM environment
 try {
-  const commitment = Blob.toCommitment(blob);
+  const commitment = Kzg.Commitment(blob);
 } catch (e) {
   console.error(e); // "Not implemented: requires c-kzg-4844 library"
 }
@@ -355,18 +355,18 @@ Approximate timing (single-threaded):
 ### Optimization
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg } from '@tevm/voltaire';
 
 // Individual verification (slower)
 console.time('individual');
 for (const [blob, commitment, proof] of items) {
-  Blob.verify(blob, commitment, proof);
+  Kzg.verify(blob, commitment, proof);
 }
 console.timeEnd('individual'); // ~30ms
 
 // Batch verification (faster)
 console.time('batch');
-Blob.verifyBatch(blobs, commitments, proofs);
+Kzg.verifyBatch(blobs, commitments, proofs);
 console.timeEnd('batch'); // ~15ms
 ```
 

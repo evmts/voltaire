@@ -112,12 +112,12 @@ const firstParam = anonymousLog.getTopic0();
 
 ```typescript
 interface EventLogParams {
-  address: BrandedAddress;
-  topics: readonly (BrandedHash | null | undefined)[];
-  data: BrandedHex;
+  address: AddressType;
+  topics: readonly (HashType | null | undefined)[];
+  data: HexType;
   blockNumber?: bigint;
-  blockHash?: BrandedHash;
-  transactionHash?: BrandedHash;
+  blockHash?: HashType;
+  transactionHash?: HashType;
   transactionIndex?: number;
   logIndex?: number;
   removed?: boolean;

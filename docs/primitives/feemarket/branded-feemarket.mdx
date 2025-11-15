@@ -20,11 +20,11 @@ All functions exported through `FeeMarket.js` namespace.
 
 ```typescript
 // Import individual function
-import { calculateBaseFee } from './BrandedFeeMarket/calculateBaseFee.js';
+import { BaseFee } from './BrandedFeeMarket/BaseFee.js';
 
 // Or use via namespace
 import * as FeeMarket from './FeeMarket.js';
-FeeMarket.calculateBaseFee(/* ... */);
+FeeMarket.BaseFee(/* ... */);
 ```
 
 Tree-shakable: bundlers only include functions you use.
@@ -33,16 +33,16 @@ Tree-shakable: bundlers only include functions you use.
 
 ### EIP-1559 Base Fee
 
-**calculateBaseFee.js**
+**BaseFee.js**
 ```typescript
-calculateBaseFee(
+BaseFee(
   parentGasUsed: bigint,
   parentGasLimit: bigint,
   parentBaseFee: bigint
-): bigint
+): BaseFee
 ```
 
-Calculate next block's base fee using EIP-1559 formula.
+Construct next block's base fee using EIP-1559 formula.
 
 **Implementation:** Standard form per EIP-1559 spec.
 
@@ -62,20 +62,20 @@ if (gasUsed > gasTarget) {
 }
 ```
 
-See [eip1559.mdx#calculatebasefee](./eip1559.mdx#calculatebasefee)
+See [eip1559.mdx#basefee](./eip1559.mdx#basefee)
 
 ### EIP-4844 Blob Fees
 
-**calculateBlobBaseFee.js**
+**BlobBaseFee.js**
 ```typescript
-calculateBlobBaseFee(excessBlobGas: bigint): bigint
+BlobBaseFee(excessBlobGas: bigint): BlobBaseFee
 ```
 
-Calculate blob base fee using exponential formula.
+Construct blob base fee using exponential formula.
 
 **Implementation:** Uses `fakeExponential` helper for Taylor series approximation.
 
-See [eip4844.mdx#calculateblobbasefee](./eip4844.mdx#calculateblobbasefee)
+See [eip4844.mdx#blobbasefee](./eip4844.mdx#blobbasefee)
 
 **fakeExponential.js**
 ```typescript
@@ -357,8 +357,8 @@ See [utilities.mdx](./utilities.mdx)
 
 ```
 BrandedFeeMarket/
-├── calculateBaseFee.js          # EIP-1559 base fee
-├── calculateBlobBaseFee.js      # EIP-4844 blob fee
+├── BaseFee.js                   # EIP-1559 base fee constructor
+├── BlobBaseFee.js               # EIP-4844 blob fee constructor
 ├── calculateExcessBlobGas.js    # Blob excess calculation
 ├── fakeExponential.js           # Exponential helper
 ├── calculateTxFee.js            # Transaction fee
@@ -400,10 +400,10 @@ bun test src/primitives/FeeMarket/BrandedFeeMarket/FeeMarket.test.ts
 Bundlers include only what you use:
 
 ```typescript
-// Only calculateBaseFee and weiToGwei included in bundle
-import { calculateBaseFee, weiToGwei } from './FeeMarket.js';
+// Only BaseFee and weiToGwei included in bundle
+import { BaseFee, weiToGwei } from './FeeMarket.js';
 
-const nextFee = calculateBaseFee(30_000_000n, 30_000_000n, 1_000_000_000n);
+const nextFee = BaseFee(30_000_000n, 30_000_000n, 1_000_000_000n);
 console.log(weiToGwei(nextFee));
 ```
 
@@ -412,7 +412,7 @@ console.log(weiToGwei(nextFee));
 Import specific functions for minimal bundle size:
 
 ```typescript
-import { calculateBaseFee } from './BrandedFeeMarket/calculateBaseFee.js';
+import { BaseFee } from './BrandedFeeMarket/BaseFee.js';
 import { weiToGwei } from './BrandedFeeMarket/weiToGwei.js';
 
 // Only these 2 functions in bundle
@@ -426,7 +426,7 @@ Import all via namespace (convenient but larger bundle):
 import * as FeeMarket from './FeeMarket.js';
 
 // All functions available, but bundler still tree-shakes unused
-FeeMarket.calculateBaseFee(/* ... */);
+FeeMarket.BaseFee(/* ... */);
 FeeMarket.weiToGwei(/* ... */);
 ```
 

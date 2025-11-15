@@ -59,7 +59,7 @@ const sharedSecret = P256.ecdh(myPrivateKey, theirPublicKey);
 Sign a 32-byte message hash with a private key using deterministic ECDSA (RFC 6979).
 
 **Parameters**:
-- `messageHash` (`BrandedHash`) - 32-byte hash to sign
+- `messageHash` (`HashType`) - 32-byte hash to sign
 - `privateKey` (`Uint8Array`) - 32-byte private key (0 < key < curve order)
 
 **Returns**: `BrandedP256Signature` with components:
@@ -84,7 +84,7 @@ Verify an ECDSA signature against a message hash and public key.
 
 **Parameters**:
 - `signature` (`BrandedP256Signature`) - Signature with r, s components
-- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+- `messageHash` (`HashType`) - 32-byte message hash that was signed
 - `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y coordinates)
 
 **Returns**: `boolean` - `true` if signature is valid, `false` otherwise

@@ -29,7 +29,7 @@ type Lowercase = Hex.Sized<20> & {
 }
 ```
 
-The `Lowercase` type is a **branded string** extending `Hex.Sized<20>`, not a `Uint8Array` like `BrandedAddress`.
+The `Lowercase` type is a **branded string** extending `Hex.Sized<20>`, not a `Uint8Array` like `AddressType`.
 
 ## LowercaseAddress.from()
 
@@ -40,13 +40,13 @@ Create lowercase hex string from Address.
 </Tabs>
 
 **Parameters:**
-- `addr: BrandedAddress` - Address to convert
+- `addr: AddressType` - Address to convert
 
 **Returns:** `Lowercase` - Branded lowercase hex string (42 characters)
 
 **Format:** `0x` + 40 lowercase hexadecimal characters
 
-Defined in: [primitives/Address/BrandedAddress/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/LowercaseAddress.js#L20)
+Defined in: [primitives/Address/AddressType/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/LowercaseAddress.js#L20)
 
 ## When to Use
 
@@ -103,7 +103,7 @@ isSameAddress(addr1, addr2)  // true
 ```
 
 <Note>
-For `BrandedAddress` instances, use `Address.equals()` instead - more efficient than string comparison.
+For `AddressType` instances, use `Address.equals()` instead - more efficient than string comparison.
 </Note>
 
 ### Map/Set Keys
@@ -242,12 +242,12 @@ For repeated conversions, cache the result:
 
 ```typescript
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
-import type { BrandedAddress, Lowercase } from '@tevm/voltaire/Address'
+import type { AddressType, Lowercase } from '@tevm/voltaire/Address'
 
 class CachedAddress {
   private _lowercaseCache?: Lowercase
 
-  constructor(private address: BrandedAddress) {}
+  constructor(private address: AddressType) {}
 
   toLowercase(): Lowercase {
     if (!this._lowercaseCache) {
@@ -326,7 +326,7 @@ See [Address Variants](/primitives/address/variants) for comparison of all addre
 ## See Also
 
 - [Address Variants](/primitives/address/variants) - Overview of Checksummed, Lowercase, Uppercase
-- [toLowercase](/primitives/address/to-lowercase) - Convert BrandedAddress to lowercase string
+- [toLowercase](/primitives/address/to-lowercase) - Convert AddressType to lowercase string
 - [toChecksummed](/primitives/address/to-checksummed) - Convert to EIP-55 checksummed hex
-- [BrandedAddress](/primitives/address/branded-address) - Tree-shakeable address API
+- [AddressType](/primitives/address/branded-address) - Tree-shakeable address API
 - [equals](/primitives/address/equals) - Case-insensitive equality comparison

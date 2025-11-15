@@ -359,7 +359,7 @@ console.log(serialized);
 // 7. VERIFICATION - Recover sender from signature
 const sender = Transaction.getSender(signedTx);
 console.log(sender);
-// BrandedAddress - Matches signing key's address
+// AddressType - Matches signing key's address
 ```
 
 ### Signing Hash Computation
@@ -621,7 +621,7 @@ if (!isValid) {
 // 3. Recover sender address
 const sender = Transaction.getSender(tx);
 console.log(sender);
-// BrandedAddress
+// AddressType
 
 // 4. Validate field constraints
 // - maxPriorityFeePerGas <= maxFeePerGas
@@ -757,7 +757,7 @@ console.log(isValid);  // true
 // Recover sender address
 const sender = Transaction.getSender(signed);
 console.log(sender);
-// BrandedAddress matching private key
+// AddressType matching private key
 ```
 
 ### Assert Signed

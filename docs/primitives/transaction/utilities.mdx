@@ -346,8 +346,8 @@ function validateChainId(
 ```typescript
 import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
 
-function extractAddresses(tx: Transaction.Any): Set<BrandedAddress> {
-  const addresses = new Set<BrandedAddress>()
+function extractAddresses(tx: Transaction.Any): Set<AddressType> {
+  const addresses = new Set<AddressType>()
 
   // Add sender
   if (isSigned(tx)) {
@@ -408,8 +408,8 @@ import { isSigned, assertSigned, verifySignature, getSender } from '@tevm/voltai
 
 function validateTransaction(
   tx: Transaction.Any,
-  expectedSender?: BrandedAddress
-): { valid: boolean; sender?: BrandedAddress; error?: string } {
+  expectedSender?: AddressType
+): { valid: boolean; sender?: AddressType; error?: string } {
   // Check if signed
   if (!isSigned(tx)) {
     return { valid: false, error: 'Transaction not signed' }
@@ -448,8 +448,8 @@ import {
 
 interface PoolEntry {
   tx: Transaction.Any
-  hash: BrandedHash
-  sender: BrandedAddress
+  hash: HashType
+  sender: AddressType
   gasPrice: bigint
   timestamp: number
 }

@@ -21,7 +21,7 @@ The legacy `Hex` type provided a generic hex string representation. It has been 
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Generic untyped hex
-const hex: BrandedHex = Hex.from("0x1234");
+const hex: HexType = Hex.from("0x1234");
 const bytes = Hex.toBytes(hex);
 ```
 

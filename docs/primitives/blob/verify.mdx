@@ -12,13 +12,13 @@ description: Verify KZG proof for blob and commitment
 <Tab title="Standard API">
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = Blob.toCommitment(blob);
-const proof = Blob.toProof(blob, commitment);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob, commitment);
 
-const isValid = Blob.verify(blob, commitment, proof);
+const isValid = Kzg.verify(blob, commitment, proof);
 console.log(isValid); // true
 ```
 
@@ -38,10 +38,10 @@ Tree-shakeable factory pattern with explicit KZG dependency.
 **Example:**
 
 ```typescript
-import { Verify } from '@tevm/voltaire/Blob'
+import { Kzg } from '@tevm/voltaire'
 import { verifyBlobKzgProof } from 'c-kzg'
 
-const verify = Verify({ verifyBlobKzgProof })
+const verify = Kzg.VerifyFactory({ verifyBlobKzgProof })
 const isValid = verify(blob, commitment, proof)
 ```
 
@@ -66,7 +66,7 @@ KZG proof verification checks that blob data matches commitment:
 ### Why Verify?
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg } from '@tevm/voltaire';
 
 // Scenario: Received blob transaction from network
 const receivedBlob = /* from network */;
@@ -74,7 +74,7 @@ const receivedCommitment = /* from transaction */;
 const receivedProof = /* from transaction */;
 
 // Verify without recomputing commitment (faster)
-const isValid = Blob.verify(receivedBlob, receivedCommitment, receivedProof);
+const isValid = Kzg.verify(receivedBlob, receivedCommitment, receivedProof);
 
 if (!isValid) {
   throw new Error('Blob data does not match commitment');
@@ -88,19 +88,19 @@ if (!isValid) {
 For multiple blobs, use `verifyBatch()` (more efficient):
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2, blob3];
-const commitments = blobs.map(b => b.toCommitment());
-const proofs = blobs.map(b => b.toProof());
+const commitments = blobs.map(b => Kzg.Commitment(b));
+const proofs = blobs.map(b => Kzg.Proof(b));
 
 // Single batch verification (faster than 3 individual verifications)
-const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
 
 if (!allValid) {
   // Fallback: find which blob failed
   for (let i = 0; i < blobs.length; i++) {
-    if (!blobs[i].verify(commitments[i], proofs[i])) {
+    if (!Kzg.verify(blobs[i], commitments[i], proofs[i])) {
       console.error(`Blob ${i} failed verification`);
     }
   }
@@ -114,21 +114,21 @@ if (!allValid) {
 Cannot create valid proof for wrong blob:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob1 = Blob.fromData(data1);
-const commitment1 = blob1.toCommitment();
-const proof1 = blob1.toProof();
+const commitment1 = Kzg.Commitment(blob1);
+const proof1 = Kzg.Proof(blob1);
 
 const blob2 = Blob.fromData(data2); // Different data
 
 // Proof for blob1 doesn't work with blob2
-console.log(Blob.verify(blob1, commitment1, proof1)); // true
-console.log(Blob.verify(blob2, commitment1, proof1)); // false
+console.log(Kzg.verify(blob1, commitment1, proof1)); // true
+console.log(Kzg.verify(blob2, commitment1, proof1)); // false
 
 // Cannot forge proof
 const fakeProof = new Uint8Array(48);
-console.log(Blob.verify(blob1, commitment1, fakeProof)); // false
+console.log(Kzg.verify(blob1, commitment1, fakeProof)); // false
 ```
 
 ### Completeness
@@ -136,14 +136,14 @@ console.log(Blob.verify(blob1, commitment1, fakeProof)); // false
 Valid proofs always verify:
 
 ```typescript
-import { Blob } from '@tevm/voltaire';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
-const commitment = blob.toCommitment();
-const proof = blob.toProof();
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob);
 
 // Always verifies for correctly generated proof
-console.log(Blob.verify(blob, commitment, proof)); // true (always)
+console.log(Kzg.verify(blob, commitment, proof)); // true (always)
 ```
 
 ## See Also

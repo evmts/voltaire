@@ -24,8 +24,8 @@ By declaring these upfront in the transaction, you "warm up" the addresses and s
 type AccessList = readonly Item[];
 
 type Item = {
-  address: BrandedAddress;              // 20-byte contract address
-  storageKeys: readonly BrandedHash[];  // 32-byte storage slot keys
+  address: AddressType;              // 20-byte contract address
+  storageKeys: readonly HashType[];  // 32-byte storage slot keys
 };
 ```
 

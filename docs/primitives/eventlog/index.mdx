@@ -17,13 +17,13 @@ New to event logs? Start with [Fundamentals](/primitives/eventlog/fundamentals) 
 
 ```typescript
 export type BrandedEventLog = {
-  address: BrandedAddress;
-  topics: readonly BrandedHash[];
+  address: AddressType;
+  topics: readonly HashType[];
   data: Uint8Array;
   blockNumber?: bigint;
-  transactionHash?: BrandedHash;
+  transactionHash?: HashType;
   transactionIndex?: number;
-  blockHash?: BrandedHash;
+  blockHash?: HashType;
   logIndex?: number;
   removed?: boolean;
 } & { readonly __tag: "EventLog" };
@@ -66,19 +66,19 @@ export type BrandedEventLog = {
 ```typescript
 export type BrandedEventLog = {
   /** Contract address that emitted the log */
-  address: BrandedAddress;
+  address: AddressType;
   /** Event topics (topic0 = signature, topic1-3 = indexed params) */
-  topics: readonly BrandedHash[];
+  topics: readonly HashType[];
   /** Non-indexed event data */
   data: Uint8Array;
   /** Block number where log was emitted */
   blockNumber?: bigint;
   /** Transaction hash that generated the log */
-  transactionHash?: BrandedHash;
+  transactionHash?: HashType;
   /** Transaction index in block */
   transactionIndex?: number;
   /** Block hash */
-  blockHash?: BrandedHash;
+  blockHash?: HashType;
   /** Log index in block */
   logIndex?: number;
   /** Log removed due to chain reorganization */
@@ -94,15 +94,15 @@ Main branded type with all log metadata.
 ```typescript
 export type Filter = {
   /** Single address or array of addresses (OR logic) */
-  address?: BrandedAddress | BrandedAddress[];
+  address?: AddressType | AddressType[];
   /** Topic filters (null = match any, array = OR logic) */
-  topics?: readonly (BrandedHash | BrandedHash[] | null)[];
+  topics?: readonly (HashType | HashType[] | null)[];
   /** Starting block number (inclusive) */
   fromBlock?: bigint;
   /** Ending block number (inclusive) */
   toBlock?: bigint;
   /** Specific block hash */
-  blockHash?: BrandedHash;
+  blockHash?: HashType;
 };
 ```
 
@@ -113,12 +113,12 @@ Filter criteria for log queries.
 
 ```typescript
 interface EventLogParams {
-  address: BrandedAddress;
-  topics: readonly (BrandedHash | null | undefined)[];
-  data: BrandedHex;
+  address: AddressType;
+  topics: readonly (HashType | null | undefined)[];
+  data: HexType;
   blockNumber?: bigint;
-  blockHash?: BrandedHash;
-  transactionHash?: BrandedHash;
+  blockHash?: HashType;
+  transactionHash?: HashType;
   transactionIndex?: number;
   logIndex?: number;
   removed?: boolean;

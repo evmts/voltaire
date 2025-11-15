@@ -78,7 +78,7 @@ Used for:
 ### Transaction.Legacy.hash
 
 ```typescript
-function hash(tx: BrandedTransactionLegacy): BrandedHash
+function hash(tx: BrandedTransactionLegacy): HashType
 
 // Usage
 import { Legacy } from '@tevm/voltaire/Transaction'
@@ -88,7 +88,7 @@ const txHash = Legacy.hash.call(legacyTx)
 ### Transaction.Legacy.getSigningHash
 
 ```typescript
-function getSigningHash(tx: BrandedTransactionLegacy): BrandedHash
+function getSigningHash(tx: BrandedTransactionLegacy): HashType
 
 // Usage
 import { Legacy } from '@tevm/voltaire/Transaction'
@@ -98,7 +98,7 @@ const signingHash = Legacy.getSigningHash.call(legacyTx)
 ### Transaction.EIP1559.hash
 
 ```typescript
-function hash(tx: BrandedTransactionEIP1559): BrandedHash
+function hash(tx: BrandedTransactionEIP1559): HashType
 
 // Usage
 import { EIP1559 } from '@tevm/voltaire/Transaction'
@@ -108,7 +108,7 @@ const txHash = EIP1559.hash(eip1559Tx)
 ### Transaction.EIP1559.getSigningHash
 
 ```typescript
-function getSigningHash(tx: BrandedTransactionEIP1559): BrandedHash
+function getSigningHash(tx: BrandedTransactionEIP1559): HashType
 
 // Usage
 import { EIP1559 } from '@tevm/voltaire/Transaction'
@@ -283,9 +283,9 @@ Hashing is cryptographically expensive (keccak256):
 import { hash } from '@tevm/voltaire/Transaction'
 
 // Cache hashes for repeated use
-const cache = new Map<Transaction.Any, BrandedHash>()
+const cache = new Map<Transaction.Any, HashType>()
 
-function getCachedHash(tx: Transaction.Any): BrandedHash {
+function getCachedHash(tx: Transaction.Any): HashType {
   if (!cache.has(tx)) {
     cache.set(tx, hash(tx))
   }

@@ -25,7 +25,7 @@ type EIP1559 = {
   maxPriorityFeePerGas: bigint  // Tip to miner
   maxFeePerGas: bigint          // Maximum total fee
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList

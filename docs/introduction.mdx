@@ -1,24 +1,104 @@
 ---
 title: What is Voltaire?
-description: Fast, small, and feature-rich for building TypeScript applications
+description: Modern general-purpose Ethereum library for TypeScript
 ---
 
-Voltaire is a modern general-purpose Ethereum library. Built to be extremely type-safe, high-performance, and optimized for LLMs. Has a powerful feature set.
+Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
+
+## Simple, Intuitive API
+
+Voltaire's API mirrors Ethereum specifications. Each primitive is a simple constructor:
+
+```typescript
+import {
+  Address, Hash, Bytes32, Uint256, Denomination,
+  Transaction, Signature, Bytecode, Opcode,
+  Rlp, Abi, FeeMarket, AccessList, Blob,
+  Keccak256, Secp256k1, Sha256, Kzg,
+  Chain, Hardfork, Rpc
+} from "@tevm/voltaire";
+
+// Addresses
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addressHex = address.toHex();          // "0x742d35cc..."
+const checksummed = address.toChecksummed(); // "0x742d35Cc..."
+
+// Hashes and bytes
+const hash = Keccak256.hashHex("0x1234");
+const hashHex = Hex.fromBytes(hash);         // "0x..."
+const bytes = Bytes32("0x" + "0".repeat(64));
+const bytesHex = Hex.fromBytes(bytes);
+
+// Numbers and denominations
+const value = Uint256(1000000000000000000n); // 1 ETH in wei
+const inEther = Denomination.weiToEther(value); // 1n
+const inGwei = Denomination.weiToGwei(value);   // 1000000000n
+
+// Bytecode and opcodes
+const code = Bytecode("0x6080604052");
+const analysis = code.analyze();
+const pushOp = Opcode.PUSH1;                 // 0x60
+
+// Transactions
+const tx = Transaction({
+  to: address,
+  value: value,
+  data: bytes,
+  gasLimit: 21000n
+});
+
+// Signatures
+const privateKey = Bytes32("0x" + "1".repeat(64));
+const signature = Secp256k1.sign(hash, privateKey);
+const recovered = signature.recover(hash);
+
+// RLP encoding
+const encoded = Rlp.encode([address, value]);
+const decoded = Rlp.decode(encoded);
+
+// ABI encoding
+const funcSig = Abi.FunctionSignature("transfer(address,uint256)");
+const params = Abi.Parameters(["address", "uint256"], [address, value]);
+
+// Fee market (EIP-1559)
+const baseFee = FeeMarket.BaseFee(/* ... */);
+
+// Access lists (EIP-2930)
+const accessList = AccessList([{
+  address: address,
+  storageKeys: [bytes]
+}]);
+
+// Blobs (EIP-4844)
+const blob = Blob(131072); // 128KB
+const commitment = Kzg.Commitment(blob);
+
+// Cryptography
+const keccak = Keccak256.hashString("hello");
+const sha = Sha256.hashString("world");
+
+// Chain configuration
+const chain = Chain.mainnet;
+const hardfork = Hardfork.cancun;
+
+// JSON-RPC requests
+const balanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
+```
 
 ## What's Included
 
-<Card title="Highly Customizable JSON-RPC Provider" icon="network-wired" href="/jsonrpc-provider/index" horizontal />
-<Card title="Type-Safe and Feature-Full Ethereum Primitives" icon="cube" href="/primitives/abi/index" horizontal />
+<Card title="Highly Customizable JSON-RPC Provider" icon="network-wired" href="/jsonrpc-provider" horizontal />
+<Card title="Type-Safe and Feature-Full Ethereum Primitives" icon="cube" href="/primitives/abi" horizontal />
 <Card title="High Performance Cryptography" icon="lock" href="/crypto/comparison" horizontal />
-<Card title="Advanced Bytecode and EVM Capabilities" icon="bolt" href="/evm/index" horizontal />
-<Card title="ENS (Ethereum Name Service)" icon="globe" href="/primitives/ens/index" horizontal />
-<Card title="Sign-in with Ethereum" icon="user-shield" href="/primitives/siwe/index" horizontal />
+<Card title="Advanced Bytecode and EVM Capabilities" icon="bolt" href="/evm" horizontal />
+<Card title="ENS (Ethereum Name Service)" icon="globe" href="/primitives/ens" horizontal />
+<Card title="Sign-in with Ethereum" icon="user-shield" href="/primitives/siwe" horizontal />
 
 ## What's Unique?
 
-- **[Branded Types](/getting-started/branded-types)** - Ethereum TypeScript types that are strongly validated at runtime. Eliminates bugs common to Ethereum applications such as casing errors, comparing addresses, or passing in a hex where it expects an address.
+- **[Branded Types](/getting-started/branded-types)** - Runtime-validated TypeScript types. Prevents passing hex strings where addresses are expected, address casing errors, and type confusion.
 - **[WASM-Accelerated](/getting-started/wasm)** - High-performance implementations for cryptography, encoding, and EVM execution written in Zig.
 - **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/mcp) and [llms.txt](/llms.txt) along with the docs themselves.
-- **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Utilizes advances in AI to maintain consistent API across multiple programming languages and platforms.
+- **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
 - **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Voltaire such as EVM execution and bytecode analysis.
 

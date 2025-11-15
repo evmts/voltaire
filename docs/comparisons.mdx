@@ -393,8 +393,8 @@ const decoded = iface.parseLog({
 **Voltaire** uses [branded types](/getting-started/branded-types) for compile-time type safety with zero runtime overhead:
 
 ```typescript
-type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
-type BrandedHash = Uint8Array & { readonly __tag: "Hash" };
+type AddressType = Uint8Array & { readonly __tag: "Address" };
+type HashType = Uint8Array & { readonly __tag: "Hash" };
 ```
 
 **Viem** uses plain strings and hex types:
@@ -418,7 +418,7 @@ const hash: string = ethers.keccak256('0x...');
 
 ```typescript
 // Import only what you need
-import { from, toHex } from '@tevm/voltaire/BrandedAddress';
+import { from, toHex } from '@tevm/voltaire/AddressType';
 ```
 
 **Viem** has tree-shakeable functions by default:

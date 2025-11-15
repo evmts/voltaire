@@ -29,7 +29,7 @@ Universal constructor for creating `BrandedStorageKey` from various input types.
 type StorageKeyLike =
   | BrandedStorageKey
   | {
-      address: BrandedAddress;
+      address: AddressType;
       slot: bigint;
     };
 ```
@@ -94,7 +94,7 @@ State({ address: contractAddr, slot: 0n });
 State(existingStorageKey);
 
 // ❌ Invalid inputs (compile-time errors)
-State({ address: "0x...", slot: 0n }); // address must be BrandedAddress
+State({ address: "0x...", slot: 0n }); // address must be AddressType
 State({ address: contractAddr });       // missing slot
 State({ address: contractAddr, slot: 0 }); // slot must be bigint
 State({ slot: 0n });                    // missing address

@@ -25,7 +25,7 @@ Address is a specialized [branded](/getting-started/branded-types) [`Uint8Array`
 ```typescript
 import type { brand } from './brand.js'
 
-export type BrandedAddress = Uint8Array & {
+export type AddressType = Uint8Array & {
   readonly [brand]: "Address"
 }
 ```
@@ -159,7 +159,7 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 
 - [Fundamentals](./fundamentals) - Address derivation, checksumming, and deployment
 - [Usage Patterns](./usage-patterns) - Common patterns and best practices
-- [BrandedAddress](./branded-address) - Type definition and branded type pattern
+- [AddressType](./branded-address) - Type definition and branded type pattern
 - [Variants](./variants) - Additional utilities and variants
 - [WASM](./wasm) - WebAssembly implementation details
 
@@ -172,12 +172,12 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 ## Types
 
 <Tabs>
-<Tab title="BrandedAddress">
+<Tab title="AddressType">
 
 ```typescript
 import type { brand } from './brand.js'
 
-export type BrandedAddress = Uint8Array & {
+export type AddressType = Uint8Array & {
   readonly [brand]: "Address"
 }
 ```
@@ -190,7 +190,7 @@ Main branded type. Runtime is `Uint8Array` (20 bytes), TypeScript enforces type 
 ```typescript
 type AddressLike =
   | Uint8Array
-  | BrandedAddress
+  | AddressType
   | Address
   | string
   | number

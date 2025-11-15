@@ -18,7 +18,7 @@ Practical patterns for address validation, conversion, and contract address calc
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
 
-function validateUserInput(input: string): BrandedAddress {
+function validateUserInput(input: string): AddressType {
   // Check format
   if (!Address.isValid(input)) {
     throw new Error(`Invalid address format: ${input}`);
@@ -29,7 +29,7 @@ function validateUserInput(input: string): BrandedAddress {
 }
 
 // Safe construction
-function safeFromAddress(input: unknown): BrandedAddress | null {
+function safeFromAddress(input: unknown): AddressType | null {
   try {
     if (typeof input === 'string') {
       return Address(input);
@@ -48,7 +48,7 @@ function safeFromAddress(input: unknown): BrandedAddress | null {
 
 ```typescript
 // Verify checksum before use
-function requireChecksummed(addr: string): BrandedAddress {
+function requireChecksummed(addr: string): AddressType {
   if (!Address.isValidChecksum(addr)) {
     throw new Error(
       `Address checksum invalid. Expected: ${Address.toChecksummed(Address(addr))}`
@@ -71,19 +71,19 @@ function normalizeAddress(addr: string): string {
 ```typescript
 // Predict next contract address
 function predictNextContract(
-  deployer: BrandedAddress,
+  deployer: AddressType,
   currentNonce: bigint
-): BrandedAddress {
+): AddressType {
   return Address.calculateCreateAddress(deployer, currentNonce);
 }
 
 // Batch prediction
 function predictMultipleDeployments(
-  deployer: BrandedAddress,
+  deployer: AddressType,
   startNonce: bigint,
   count: number
-): BrandedAddress[] {
-  const addresses: BrandedAddress[] = [];
+): AddressType[] {
+  const addresses: AddressType[] = [];
 
   for (let i = 0; i < count; i++) {
     addresses.push(
@@ -102,20 +102,20 @@ import * as Hash from '@tevm/voltaire/Hash';
 
 // Calculate CREATE2 address
 function calculateCreate2(
-  deployer: BrandedAddress,
-  salt: BrandedHash,
+  deployer: AddressType,
+  salt: HashType,
   initCode: Uint8Array
-): BrandedAddress {
+): AddressType {
   return Address.calculateCreate2Address(deployer, salt, initCode);
 }
 
 // Find vanity address
 function findVanityCreate2(
-  deployer: BrandedAddress,
+  deployer: AddressType,
   initCode: Uint8Array,
   prefix: string,
   maxAttempts = 1000000
-): { salt: BrandedHash; address: BrandedAddress } | null {
+): { salt: HashType; address: AddressType } | null {
   for (let i = 0; i < maxAttempts; i++) {
     const salt = Hash.keccak256(new TextEncoder().encode(`salt${i}`));
     const addr = Address.calculateCreate2Address(deployer, salt, initCode);
@@ -138,7 +138,7 @@ function findVanityCreate2(
 import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
 
 // Derive address from private key
-function deriveAddress(privateKey: Uint8Array): BrandedAddress {
+function deriveAddress(privateKey: Uint8Array): AddressType {
   const publicKey = Secp256k1.getPublicKey(privateKey, false);
   return Address.fromPublicKey(publicKey);
 }
@@ -146,7 +146,7 @@ function deriveAddress(privateKey: Uint8Array): BrandedAddress {
 // Generate random address
 function generateRandomAddress(): {
   privateKey: Uint8Array;
-  address: BrandedAddress;
+  address: AddressType;
 } {
   const privateKey = Secp256k1.randomPrivateKey();
   const address = deriveAddress(privateKey);
@@ -158,7 +158,7 @@ function generateRandomAddress(): {
 
 ```typescript
 // Uncompressed public key (65 bytes)
-function fromUncompressedPublicKey(pubkey: Uint8Array): BrandedAddress {
+function fromUncompressedPublicKey(pubkey: Uint8Array): AddressType {
   if (pubkey.length !== 65) {
     throw new Error("Expected 65-byte uncompressed public key");
   }
@@ -166,7 +166,7 @@ function fromUncompressedPublicKey(pubkey: Uint8Array): BrandedAddress {
 }
 
 // Compressed public key (33 bytes) - decompress first
-function fromCompressedPublicKey(pubkey: Uint8Array): BrandedAddress {
+function fromCompressedPublicKey(pubkey: Uint8Array): AddressType {
   if (pubkey.length !== 33) {
     throw new Error("Expected 33-byte compressed public key");
   }
@@ -182,9 +182,9 @@ function fromCompressedPublicKey(pubkey: Uint8Array): BrandedAddress {
 
 ```typescript
 // Deduplicate addresses
-function deduplicateAddresses(addresses: BrandedAddress[]): BrandedAddress[] {
+function deduplicateAddresses(addresses: AddressType[]): AddressType[] {
   const seen = new Set<string>();
-  const unique: BrandedAddress[] = [];
+  const unique: AddressType[] = [];
 
   for (const addr of addresses) {
     const hex = Address.toHex(addr);
@@ -199,8 +199,8 @@ function deduplicateAddresses(addresses: BrandedAddress[]): BrandedAddress[] {
 
 // Check membership
 function containsAddress(
-  addresses: BrandedAddress[],
-  target: BrandedAddress
+  addresses: AddressType[],
+  target: AddressType
 ): boolean {
   return addresses.some(addr => Address.equals(addr, target));
 }
@@ -210,12 +210,12 @@ function containsAddress(
 
 ```typescript
 // Sort addresses lexicographically
-function sortAddresses(addresses: BrandedAddress[]): BrandedAddress[] {
+function sortAddresses(addresses: AddressType[]): AddressType[] {
   return [...addresses].sort((a, b) => Address.compare(a, b));
 }
 
 // Find min/max address
-function getAddressRange(addresses: BrandedAddress[]) {
+function getAddressRange(addresses: AddressType[]) {
   if (addresses.length === 0) return null;
 
   let min = addresses[0];
@@ -236,13 +236,13 @@ function getAddressRange(addresses: BrandedAddress[]) {
 
 ```typescript
 // Short format for UI
-function formatAddressShort(addr: BrandedAddress): string {
+function formatAddressShort(addr: AddressType): string {
   return Address.toShortHex(addr);  // "0x742d…1e3e"
 }
 
 // Custom truncation
 function formatAddressCustom(
-  addr: BrandedAddress,
+  addr: AddressType,
   prefixLen: number,
   suffixLen: number
 ): string {
@@ -257,13 +257,13 @@ function formatAddressCustom(
 
 ```typescript
 // Always display checksummed
-function displayAddress(addr: BrandedAddress): string {
+function displayAddress(addr: AddressType): string {
   return Address.toChecksummed(addr);
 }
 
 // With ENS fallback
 async function displayAddressWithENS(
-  addr: BrandedAddress,
+  addr: AddressType,
   provider: Provider
 ): Promise<string> {
   try {
@@ -281,12 +281,12 @@ async function displayAddressWithENS(
 
 ```typescript
 // Check for zero address (burn address)
-function isBurnAddress(addr: BrandedAddress): boolean {
+function isBurnAddress(addr: AddressType): boolean {
   return Address.equals(addr, Address.zero());
 }
 
 // Filter out zero addresses
-function removeZeroAddresses(addresses: BrandedAddress[]): BrandedAddress[] {
+function removeZeroAddresses(addresses: AddressType[]): AddressType[] {
   return addresses.filter(addr => !Address.equals(addr, Address.zero()));
 }
 ```
@@ -302,7 +302,7 @@ const KNOWN_ADDRESSES = {
   dai: Address("0x6B175474E89094C44Da98b954EedeAC495271d0F")
 };
 
-function isKnownAddress(addr: BrandedAddress): string | null {
+function isKnownAddress(addr: AddressType): string | null {
   for (const [name, known] of Object.entries(KNOWN_ADDRESSES)) {
     if (Address.equals(addr, known)) {
       return name;
@@ -324,7 +324,7 @@ const TEST_ADDRESSES = {
 };
 
 // Generate test address from seed
-function testAddress(seed: number): BrandedAddress {
+function testAddress(seed: number): AddressType {
   const bytes = new Uint8Array(20);
   bytes[0] = seed & 0xff;
   bytes[1] = (seed >> 8) & 0xff;
@@ -336,12 +336,12 @@ function testAddress(seed: number): BrandedAddress {
 
 ```typescript
 // Generate sequential test addresses
-function generateTestAddresses(count: number): BrandedAddress[] {
+function generateTestAddresses(count: number): AddressType[] {
   return Array({ length: count }, (_, i) => testAddress(i));
 }
 
 // Random test address
-function randomTestAddress(): BrandedAddress {
+function randomTestAddress(): AddressType {
   const bytes = new Uint8Array(20);
   crypto.getRandomValues(bytes);
   return Address(bytes);

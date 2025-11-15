@@ -17,7 +17,7 @@ Extract access list from transaction.
 type AccessList = readonly Item[]
 
 type Item = {
-  address: BrandedAddress       // 20-byte contract address
+  address: AddressType       // 20-byte contract address
   storageKeys: readonly Hash[]  // 32-byte storage slot keys
 }
 ```
@@ -163,7 +163,7 @@ import * as AccessList from '@tevm/voltaire/AccessList'
 
 function buildOptimalAccessList(
   existingTx: Transaction.Any,
-  additionalAddresses: BrandedAddress[]
+  additionalAddresses: AddressType[]
 ): AccessList.AccessList {
   // Start with existing access list
   let list = getAccessList(existingTx)

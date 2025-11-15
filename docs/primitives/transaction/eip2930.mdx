@@ -24,7 +24,7 @@ type EIP2930 = {
   nonce: bigint
   gasPrice: bigint        // Fixed gas price (like Legacy)
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList  // Pre-declared access
@@ -34,8 +34,8 @@ type EIP2930 = {
 }
 
 type AccessListItem = {
-  address: BrandedAddress
-  storageKeys: readonly BrandedHash[]
+  address: AddressType
+  storageKeys: readonly HashType[]
 }
 
 type AccessList = readonly AccessListItem[]
@@ -103,8 +103,8 @@ Access lists reduce gas costs by pre-declaring account and storage access:
 
 ```typescript
 type AccessListItem = {
-  address: BrandedAddress      // Contract address
-  storageKeys: readonly BrandedHash[]  // Storage slot hashes
+  address: AddressType      // Contract address
+  storageKeys: readonly HashType[]  // Storage slot hashes
 }
 
 type AccessList = readonly AccessListItem[]
@@ -175,11 +175,11 @@ const result = await provider.send('eth_createAccessList', [{
 import * as Transaction from '@tevm/voltaire/Transaction'
 
 // Calculate storage slot for mapping
-function mapSlot(key: BrandedAddress, slot: bigint): BrandedHash {
+function mapSlot(key: AddressType, slot: bigint): HashType {
   return keccak256(concat([
     zeroPadLeft(key, 32),
     zeroPadLeft(toBytes(slot), 32)
-  ])) as BrandedHash
+  ])) as HashType
 }
 
 // Build access list for ERC20 transfer

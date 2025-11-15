@@ -321,10 +321,10 @@ const sender = Transaction(tx);
 Voltaire provides opt-in type safety through branded types:
 
 ```typescript
-import type { BrandedAddress } from "@tevm/voltaire/Address";
+import type { AddressType } from "@tevm/voltaire/Address";
 import type { Keccak256Hash } from "@tevm/voltaire/Keccak256";
 
-function processAddress(addr: BrandedAddress) {
+function processAddress(addr: AddressType) {
   // TypeScript ensures addr is a valid Address
 }
 
@@ -429,7 +429,7 @@ Make sure you're using the correct import paths:
 ```typescript
 // ✅ Correct
 import { Address } from "@tevm/voltaire";
-import { BrandedAddress } from "@tevm/voltaire/Address";
+import { AddressType } from "@tevm/voltaire/Address";
 
 // ❌ Wrong
 import { Address } from "@tevm/voltaire/primitives/Address";
@@ -439,16 +439,16 @@ Check your `tsconfig.json` has `"moduleResolution": "bundler"` or `"node16"`.
 
 #### Type errors with branded types
 
-If you get type errors like "Type 'Uint8Array' is not assignable to type 'BrandedAddress'", you need to construct the branded type properly:
+If you get type errors like "Type 'Uint8Array' is not assignable to type 'AddressType'", you need to construct the branded type properly:
 
 ```typescript
 // ❌ Won't work - raw Uint8Array doesn't have the brand
-const addr: BrandedAddress = new Uint8Array(20);
+const addr: AddressType = new Uint8Array(20);
 
 // ✅ Correct
 const addr = Address("0x...");
 // or
-const addr = BrandedAddress("0x...");
+const addr = AddressType("0x...");
 ```
 
 #### WASM initialization errors

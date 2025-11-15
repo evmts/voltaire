@@ -19,13 +19,13 @@ EIP-4844 introduced blob transactions with separate fee market:
 - Pricing: Exponential based on excess blob gas
 - Minimum: 1 wei per blob gas
 
-## calculateBlobBaseFee
+## BlobBaseFee
 
 ```typescript
-calculateBlobBaseFee(excessBlobGas: bigint): bigint
+BlobBaseFee(excessBlobGas: bigint): BlobBaseFee
 ```
 
-Calculate blob base fee using exponential formula.
+Construct blob base fee using exponential formula.
 
 **Parameters:**
 - `excessBlobGas` - Accumulated excess blob gas from previous blocks
@@ -51,19 +51,19 @@ Uses Taylor series approximation for exponential.
 import * as FeeMarket from './FeeMarket.js';
 
 // No excess: minimum fee
-const fee1 = FeeMarket.calculateBlobBaseFee(0n);
+const fee1 = FeeMarket.BlobBaseFee(0n);
 // fee1 === 1n
 
 // At target excess (3 blobs worth)
-const fee2 = FeeMarket.calculateBlobBaseFee(393216n);
+const fee2 = FeeMarket.BlobBaseFee(393216n);
 // fee2 ≈ 1.125n (slightly above minimum)
 
 // High excess: exponentially higher
-const fee3 = FeeMarket.calculateBlobBaseFee(1_000_000n);
+const fee3 = FeeMarket.BlobBaseFee(1_000_000n);
 // fee3 >> 1n (much higher)
 
 // Very high excess
-const fee4 = FeeMarket.calculateBlobBaseFee(10_000_000n);
+const fee4 = FeeMarket.BlobBaseFee(10_000_000n);
 // fee4 >>> fee3 (exponential growth)
 ```
 
@@ -72,7 +72,7 @@ const fee4 = FeeMarket.calculateBlobBaseFee(10_000_000n);
 ```typescript
 // Fees grow exponentially with excess
 const excesses = [0n, 393216n, 786432n, 1179648n, 1572864n];
-const fees = excesses.map(e => FeeMarket.calculateBlobBaseFee(e));
+const fees = excesses.map(e => FeeMarket.BlobBaseFee(e));
 // fees[0] === 1n
 // fees[1] > fees[0]
 // fees[2] > fees[1] * ratio
@@ -176,7 +176,7 @@ const state: FeeMarket.State = {
 };
 
 const blobFee = FeeMarket.getBlobBaseFee(state);
-// blobFee === calculateBlobBaseFee(393216n)
+// blobFee === BlobBaseFee(393216n)
 ```
 
 **State method:**
@@ -248,7 +248,7 @@ const blobGasUsed = 524288n; // 4 blobs per block (above target)
 const fees: bigint[] = [];
 
 for (let i = 0; i < 10; i++) {
-  fees.push(FeeMarket.calculateBlobBaseFee(excessBlobGas));
+  fees.push(FeeMarket.BlobBaseFee(excessBlobGas));
   excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
 }
 
@@ -269,7 +269,7 @@ const blobGasUsed = 131072n;   // 1 blob per block (below target)
 const fees: bigint[] = [];
 
 for (let i = 0; i < 10; i++) {
-  fees.push(FeeMarket.calculateBlobBaseFee(excessBlobGas));
+  fees.push(FeeMarket.BlobBaseFee(excessBlobGas));
   excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
   if (excessBlobGas === 0n) break;
 }
@@ -287,7 +287,7 @@ let excessBlobGas = 0n;
 const blobGasUsed = 393216n; // Exactly at target (3 blobs)
 
 for (let i = 0; i < 100; i++) {
-  const fee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+  const fee = FeeMarket.BlobBaseFee(excessBlobGas);
   excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
 }
 
@@ -395,7 +395,7 @@ console.log(`Blob fee: ${blobFee.totalBlobFee} wei`);
 ## Implementation
 
 Locations:
-- `BrandedFeeMarket/calculateBlobBaseFee.js`
+- `BrandedFeeMarket/BlobBaseFee.js`
 - `BrandedFeeMarket/calculateExcessBlobGas.js`
 - `BrandedFeeMarket/fakeExponential.js`
 

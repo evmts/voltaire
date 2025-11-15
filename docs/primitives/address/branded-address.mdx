@@ -1,5 +1,5 @@
 ---
-title: BrandedAddress
+title: AddressType
 description: Tree-shakeable functional API for Address operations
 ---
 
@@ -7,13 +7,13 @@ description: Tree-shakeable functional API for Address operations
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
 
-# BrandedAddress
+# AddressType
 
 Tree-shakeable functional API for Address operations with optimal bundle size.
 
 ## Overview
 
-`BrandedAddress` is the functional layer underlying the `Address` class. It provides:
+`AddressType` is the functional layer underlying the `Address` class. It provides:
 - **Zero-overhead** [branded type](/getting-started/branded-types) wrapping `Uint8Array` (20 bytes)
 - **Tree-shakeable** individual function exports
 - **Data-first** unopinionated methods taking address as first parameter
@@ -23,14 +23,14 @@ Primary benefit: When using tree-shakeable imports and avoiding methods that use
 
 ## Type Definition
 
-### BrandedAddress (Uint8Array)
+### AddressType (Uint8Array)
 
 The core Address type is a branded 20-byte `Uint8Array`:
 
 ```typescript
 import type { brand } from '@tevm/voltaire/brand';
 
-export type BrandedAddress = Uint8Array & {
+export type AddressType = Uint8Array & {
   readonly [brand]: "Address";
 };
 ```
@@ -41,7 +41,7 @@ export type BrandedAddress = Uint8Array & {
 - **Conceptual relation:** Represents a fixed 20-byte value (conceptually like `BrandedBytes<20>`)
 - **Type safety:** Prevents accidental mixing with other Uint8Arrays
 
-Defined in: [primitives/Address/BrandedAddress/BrandedAddress.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.ts)
+Defined in: [primitives/Address/AddressType/AddressType.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/AddressType.ts)
 
 Related: [Bytes32](/primitives/bytes/bytes32) - Similar pattern for 32-byte fixed values
 
@@ -201,7 +201,7 @@ import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
 import * as LowercaseAddress from '@tevm/voltaire/Address/LowercaseAddress'
 import * as UppercaseAddress from '@tevm/voltaire/Address/UppercaseAddress'
 
-// Create hex string variants from BrandedAddress (Uint8Array)
+// Create hex string variants from AddressType (Uint8Array)
 const checksummed = ChecksumAddress.from(addr) // uses keccak256
 const lowercase = LowercaseAddress.from(addr)
 const uppercase = UppercaseAddress.from(addr)
@@ -210,16 +210,16 @@ const uppercase = UppercaseAddress.from(addr)
 ChecksumAddress.isValid("0x742d35Cc...") // uses keccak256
 ```
 
-These functions convert from `BrandedAddress` (Uint8Array) to hex string variants (`ChecksumAddress`, `LowercaseAddress`, `UppercaseAddress`).
+These functions convert from `AddressType` (Uint8Array) to hex string variants (`ChecksumAddress`, `LowercaseAddress`, `UppercaseAddress`).
 
 See [Variants](/primitives/address/variants) for details.
 
 ## Data-First Pattern
 
-All BrandedAddress functions follow data-first pattern:
+All AddressType functions follow data-first pattern:
 
 ```typescript
-// BrandedAddress: address is first parameter
+// AddressType: address is first parameter
 toHex(addr)
 equals(addr1, addr2)
 calculateCreateAddress(deployerAddr, nonce)
@@ -236,10 +236,10 @@ This enables functional composition and partial application:
 import { toHex, equals, isZero } from '@tevm/voltaire/Address'
 
 // Function composition
-const formatAddress = (addr: BrandedAddress) => toHex(addr).toUpperCase()
+const formatAddress = (addr: AddressType) => toHex(addr).toUpperCase()
 
 // Partial application
-const isEqualToZero = (addr: BrandedAddress) => equals(addr, zero())
+const isEqualToZero = (addr: AddressType) => equals(addr, zero())
 
 // Array methods
 addresses.map(toHex)
@@ -313,9 +313,9 @@ const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 | `calculateCreate2Address` | ✓ | ✗ | ✗ | CREATE2 opcode |
 | **Address class** | ✓ | ✓ | ✓ | All methods on prototype |
 
-## When to Use BrandedAddress vs Address
+## When to Use AddressType vs Address
 
-### Use BrandedAddress When:
+### Use AddressType When:
 - **Bundle size critical** (mobile, embedded)
 - **Avoiding crypto** dependencies
 - **Functional style** preferred
@@ -331,44 +331,44 @@ const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 ## Interoperability
 
-### BrandedAddress and Address Class
+### AddressType and Address Class
 
-BrandedAddress and Address are fully compatible:
+AddressType and Address are fully compatible:
 
 ```typescript
 import { Address } from '@tevm/voltaire'
 import { toHex, equals } from '@tevm/voltaire/Address'
-import type { BrandedAddress } from '@tevm/voltaire/Address'
+import type { AddressType } from '@tevm/voltaire/Address'
 
-// Address IS a BrandedAddress
+// Address IS a AddressType
 const addr = Address(69n)
 const hex = toHex(addr) // ✓ works
 
-// BrandedAddress works with Address static methods
-const branded: BrandedAddress = addr
+// AddressType works with Address static methods
+const branded: AddressType = addr
 const checksummed = Address.toChecksummed(branded) // ✓ works
 ```
 
-### BrandedAddress and Hex Variants
+### AddressType and Hex Variants
 
-BrandedAddress (Uint8Array) and hex string variants are separate types with conversion functions:
+AddressType (Uint8Array) and hex string variants are separate types with conversion functions:
 
 ```typescript
-import type { BrandedAddress } from '@tevm/voltaire/Address'
+import type { AddressType } from '@tevm/voltaire/Address'
 import type { ChecksumAddress, LowercaseAddress } from '@tevm/voltaire/Address'
 
-// BrandedAddress = Uint8Array & { [brand]: "Address" }
-const addr: BrandedAddress = Address.from("0x742d35Cc...")
+// AddressType = Uint8Array & { [brand]: "Address" }
+const addr: AddressType = Address.from("0x742d35Cc...")
 
 // ChecksumAddress = Hex.Sized<20> & { __variant: 'Address', [Symbol.for('checksum')]: boolean }
 const checksumHex: ChecksumAddress = ChecksumAddress.from(addr)
 
 // Convert between them
-const backToBytes: BrandedAddress = Address.from(checksumHex) // hex string → Uint8Array
+const backToBytes: AddressType = Address.from(checksumHex) // hex string → Uint8Array
 ```
 
 **Type relationship:**
-- **BrandedAddress:** 20-byte Uint8Array (runtime data)
+- **AddressType:** 20-byte Uint8Array (runtime data)
 - **HexAddress variants:** Hex.Sized (20-byte) strings (display/serialization)
 
 ## Constants

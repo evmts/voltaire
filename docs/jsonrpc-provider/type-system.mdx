@@ -257,7 +257,7 @@ import * as Address from '@tevm/voltaire/Address';
 
 // Custom wrapper type
 interface AccountInfo {
-  address: Address.BrandedAddress;
+  address: Address.AddressType;
   balance: bigint;
   nonce: number;
   isContract: boolean;
@@ -266,7 +266,7 @@ interface AccountInfo {
 // Helper function using generated types
 async function getAccountInfo(
   provider: Provider,
-  address: Address.BrandedAddress
+  address: Address.AddressType
 ): Promise<AccountInfo | null> {
   const [balanceRes, nonceRes, codeRes] = await Promise.all([
     provider.eth_getBalance(address, 'latest'),

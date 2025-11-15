@@ -72,7 +72,7 @@ class CustomProvider implements Provider {
   }
 
   async eth_getBalance(
-    address: Address.BrandedAddress,
+    address: Address.AddressType,
     blockTag: string
   ): Promise<Response<string>> {
     // Your implementation

@@ -74,17 +74,17 @@ function buildAccessList(config: Config): BrandedAccessList {
 class AccessListBuilder {
   private list: BrandedAccessList = AccessList.create();
 
-  addAddress(address: BrandedAddress): this {
+  addAddress(address: AddressType): this {
     this.list = this.list.withAddress(address);
     return this;
   }
 
-  addStorageKey(address: BrandedAddress, key: BrandedHash): this {
+  addStorageKey(address: AddressType, key: HashType): this {
     this.list = this.list.withStorageKey(address, key);
     return this;
   }
 
-  addKeys(address: BrandedAddress, keys: BrandedHash[]): this {
+  addKeys(address: AddressType, keys: HashType[]): this {
     for (const key of keys) {
       this.list = this.list.withStorageKey(address, key);
     }
@@ -109,11 +109,11 @@ const list = new AccessListBuilder()
 
 ```typescript
 function buildSwapAccessList(
-  router: BrandedAddress,
-  pair: BrandedAddress,
-  token0: BrandedAddress,
-  token1: BrandedAddress,
-  user: BrandedAddress
+  router: AddressType,
+  pair: AddressType,
+  token0: AddressType,
+  token1: AddressType,
+  user: AddressType
 ): BrandedAccessList {
   const balanceSlot0 = calculateBalanceSlot(token0, user);
   const balanceSlot1 = calculateBalanceSlot(token1, user);
@@ -145,9 +145,9 @@ function buildSwapAccessList(
 
 ```typescript
 function buildBorrowAccessList(
-  pool: BrandedAddress,
-  asset: BrandedAddress,
-  user: BrandedAddress
+  pool: AddressType,
+  asset: AddressType,
+  user: AddressType
 ): BrandedAccessList {
   // Calculate storage slots
   const userConfig = calculateUserConfigSlot(pool, user);
@@ -169,9 +169,9 @@ function buildBorrowAccessList(
 
 ```typescript
 function buildBatchTransferAccessList(
-  token: BrandedAddress,
-  sender: BrandedAddress,
-  recipients: BrandedAddress[]
+  token: AddressType,
+  sender: AddressType,
+  recipients: AddressType[]
 ): BrandedAccessList {
   let list = AccessList.create();
 

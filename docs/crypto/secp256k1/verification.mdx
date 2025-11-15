@@ -28,7 +28,7 @@ Verify an ECDSA signature against a message hash and public key.
 
 **Parameters:**
 - `signature` (`BrandedSignature`) - Signature with r, s, v components
-- `messageHash` (`BrandedHash`) - 32-byte hash that was signed
+- `messageHash` (`HashType`) - 32-byte hash that was signed
 - `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y)
 
 **Returns:** `boolean`

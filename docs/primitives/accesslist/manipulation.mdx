@@ -18,7 +18,7 @@ Add address to access list if not already present.
 ```typescript
 AccessList.withAddress(
   list: BrandedAccessList,
-  address: BrandedAddress
+  address: AddressType
 ): BrandedAccessList
 ```
 
@@ -48,8 +48,8 @@ Add storage key for address (adds address if needed).
 ```typescript
 AccessList.withStorageKey(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  key: BrandedHash
+  address: AddressType,
+  key: HashType
 ): BrandedAccessList
 ```
 
@@ -171,7 +171,7 @@ list = list.deduplicate();
 ```typescript
 function addIfMissing(
   list: BrandedAccessList,
-  address: BrandedAddress
+  address: AddressType
 ): BrandedAccessList {
   if (list.includesAddress(address)) {
     return list;
@@ -185,7 +185,7 @@ function addIfMissing(
 ```typescript
 function withAddresses(
   list: BrandedAccessList,
-  addresses: BrandedAddress[]
+  addresses: AddressType[]
 ): BrandedAccessList {
   let result = list;
   for (const addr of addresses) {
@@ -196,8 +196,8 @@ function withAddresses(
 
 function withKeys(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  keys: BrandedHash[]
+  address: AddressType,
+  keys: HashType[]
 ): BrandedAccessList {
   let result = list;
   for (const key of keys) {
@@ -245,12 +245,12 @@ class AccessListBuilder {
     this.list = AccessList.create();
   }
 
-  addAddress(address: BrandedAddress): this {
+  addAddress(address: AddressType): this {
     this.list = this.list.withAddress(address);
     return this;
   }
 
-  addKey(address: BrandedAddress, key: BrandedHash): this {
+  addKey(address: AddressType, key: HashType): this {
     this.list = this.list.withStorageKey(address, key);
     return this;
   }

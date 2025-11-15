@@ -20,7 +20,7 @@ Create new SIWE message with automatic defaults.
 ```typescript
 function create<
   TDomain extends string,
-  TAddress extends BrandedAddress,
+  TAddress extends AddressType,
   TUri extends string,
   TChainId extends number
 >(params: {
@@ -42,7 +42,7 @@ function create<
 
 **Required:**
 - `domain` - RFC 4501 dns authority requesting signing
-- `address` - BrandedAddress performing signing (20 bytes)
+- `address` - AddressType performing signing (20 bytes)
 - `uri` - RFC 3986 URI referring to subject of signing
 - `chainId` - EIP-155 Chain ID (positive integer)
 
@@ -131,7 +131,7 @@ const message = Siwe.create({
 - **Timestamp format**: ISO 8601 format required for all timestamps
 - **Version**: Always "1" per EIP-4361 current specification
 - **Optional fields**: Only present in returned object if provided (no undefined)
-- **Address format**: Must be valid 20-byte BrandedAddress
+- **Address format**: Must be valid 20-byte AddressType
 
 ### Common Use Cases
 

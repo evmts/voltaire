@@ -20,7 +20,7 @@ BrandedMessage provides type-safe SIWE message representation using TypeScript's
 ```typescript
 type BrandedMessage<
   TDomain extends string = string,
-  TAddress extends BrandedAddress = BrandedAddress,
+  TAddress extends AddressType = AddressType,
   TUri extends string = string,
   TVersion extends string = string,
   TChainId extends number = number,
@@ -49,8 +49,8 @@ type BrandedMessage<
 - **Example:** `"example.com"` vs `string`
 
 ### TAddress
-- **Type:** `BrandedAddress`
-- **Default:** `BrandedAddress`
+- **Type:** `AddressType`
+- **Default:** `AddressType`
 - **Purpose:** Type-safe Ethereum address (20 bytes)
 
 ### TUri
@@ -304,7 +304,7 @@ const message = Siwe.create({
   uri: "https://example.com",
   chainId: 1,
 });
-// message type: BrandedMessage<string, BrandedAddress, string, "1", number>
+// message type: BrandedMessage<string, AddressType, string, "1", number>
 
 // Function parameters infer type
 function processMessage(msg: BrandedMessage) {
@@ -376,6 +376,6 @@ All follow `Branded*` or `*Result` naming.
 
 ## See Also
 
-- [BrandedAddress](/primitives/address/branded-address) - Address type
+- [AddressType](/primitives/address/branded-address) - Address type
 - [Siwe.create](/primitives/siwe/constructors) - Create messages
 - [Message Format](/primitives/siwe/message-format) - Field specifications

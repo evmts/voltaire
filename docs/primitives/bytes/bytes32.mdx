@@ -82,7 +82,7 @@ Bytes32 is a specialization of `Bytes<32>` using Symbol-based branding for compi
 ```typescript
 import type { brand } from './brand.js';
 
-type BrandedBytes32 = Uint8Array & {
+type Bytes32Type = Uint8Array & {
   readonly [brand]: "Bytes32";
   readonly size: 32;
 };
@@ -95,7 +95,7 @@ const bytes32 = Bytes32(42);
 const bytes16 = Bytes16('0x' + '12'.repeat(16));
 
 // Type error: cannot assign Bytes16 to Bytes32
-const wrong: Bytes32.BrandedBytes32 = bytes16;
+const wrong: Bytes32.Bytes32Type = bytes16;
 ```
 
 This branding system provides:

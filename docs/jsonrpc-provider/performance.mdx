@@ -38,7 +38,7 @@ const cache = new Map<string, any>();
 
 async function getCachedCode(
   provider: Provider,
-  address: Address.BrandedAddress,
+  address: Address.AddressType,
   blockTag: BlockTag
 ): Promise<Response<Hex>> {
   // Only cache historical blocks (immutable)

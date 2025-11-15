@@ -207,7 +207,7 @@ type Legacy = {
   nonce: bigint
   gasPrice: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   v: bigint
@@ -222,7 +222,7 @@ type EIP2930 = {
   nonce: bigint
   gasPrice: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -239,7 +239,7 @@ type EIP1559 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -256,7 +256,7 @@ type EIP4844 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress  // Cannot be null for blob transactions
+  to: AddressType  // Cannot be null for blob transactions
   value: bigint
   data: Uint8Array
   accessList: AccessList
@@ -275,7 +275,7 @@ type EIP7702 = {
   maxPriorityFeePerGas: bigint
   maxFeePerGas: bigint
   gasLimit: bigint
-  to: BrandedAddress | null
+  to: AddressType | null
   value: bigint
   data: Uint8Array
   accessList: AccessList

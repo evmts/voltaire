@@ -26,22 +26,22 @@ FeeMarket provides complete fee calculation and projection for Ethereum's two fe
 ```typescript
 import * as FeeMarket from '@tevm/voltaire';
 
-// Calculate next base fee
-const nextBaseFee = FeeMarket.calculateBaseFee(
+// Construct next base fee
+const nextBaseFee = FeeMarket.BaseFee(
   15_000_000n,     // gas used
   30_000_000n,     // gas limit
   1_000_000_000n   // current base fee (1 gwei)
 );
 
-// Calculate transaction fee
-const txFee = FeeMarket.calculateTxFee({
+// Construct priority fee
+const priorityFee = FeeMarket.PriorityFee({
   maxFeePerGas: 2_000_000_000n,
   maxPriorityFeePerGas: 1_000_000_000n,
   baseFee: 1_000_000_000n
 });
 
-// Calculate blob fee
-const blobBaseFee = FeeMarket.calculateBlobBaseFee(262_144n);
+// Construct blob base fee
+const blobBaseFee = FeeMarket.BlobBaseFee(262_144n);
 ```
 
 ## API Methods

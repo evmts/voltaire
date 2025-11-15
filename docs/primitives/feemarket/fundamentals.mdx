@@ -52,7 +52,7 @@ Block utilization → Next block adjustment:
 import * as FeeMarket from '@tevm/voltaire';
 
 // Block with 50% utilization (at target)
-const nextFee1 = FeeMarket.calculateBaseFee(
+const nextFee1 = FeeMarket.BaseFee(
   15_000_000n, // gas used (50% of limit)
   30_000_000n, // gas limit
   1_000_000_000n // current base fee (1 gwei)
@@ -60,7 +60,7 @@ const nextFee1 = FeeMarket.calculateBaseFee(
 console.log(nextFee1); // 1_000_000_000n (unchanged)
 
 // Block with 100% utilization (over target)
-const nextFee2 = FeeMarket.calculateBaseFee(
+const nextFee2 = FeeMarket.BaseFee(
   30_000_000n, // gas used (100% of limit)
   30_000_000n, // gas limit
   1_000_000_000n // current base fee (1 gwei)
@@ -68,7 +68,7 @@ const nextFee2 = FeeMarket.calculateBaseFee(
 console.log(nextFee2); // 1_125_000_000n (increased by 12.5%)
 
 // Block with 0% utilization (under target)
-const nextFee3 = FeeMarket.calculateBaseFee(
+const nextFee3 = FeeMarket.BaseFee(
   0n,            // gas used (0% of limit)
   30_000_000n,   // gas limit
   1_000_000_000n // current base fee (1 gwei)
@@ -244,7 +244,7 @@ const gasLimit = 30_000_000n;
 const gasUsed = 21_000_000n; // 70% utilization (above target)
 
 // Project next block's base fee
-const nextBaseFee = FeeMarket.calculateBaseFee(
+const nextBaseFee = FeeMarket.BaseFee(
   gasUsed,
   gasLimit,
   currentBaseFee
@@ -328,7 +328,7 @@ const MAX_BLOBS = 6n;               // Max: 6 blobs per block
 
 // Calculate blob base fee from excess blob gas
 const excessBlobGas = 262_144n; // 2 blobs above target
-const blobBaseFee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+const blobBaseFee = FeeMarket.BlobBaseFee(excessBlobGas);
 
 console.log(`Blob base fee: ${blobBaseFee} wei per blob gas`);
 ```
@@ -350,7 +350,7 @@ const scenarios = [
 ];
 
 scenarios.forEach(({ blobs, excessBlobGas }) => {
-  const fee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+  const fee = FeeMarket.BlobBaseFee(excessBlobGas);
   console.log(`${blobs} blobs: ${fee} wei/gas`);
 });
 // 0 blobs: 1 wei/gas (minimum)
@@ -373,7 +373,7 @@ const excessBlobGas = FeeMarket.calculateExcessBlobGas(
   parentExcessBlobGas,
   parentBlobGasUsed
 );
-const blobBaseFee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+const blobBaseFee = FeeMarket.BlobBaseFee(excessBlobGas);
 
 console.log(`Excess blob gas: ${excessBlobGas}`);
 console.log(`Blob base fee: ${blobBaseFee} wei/gas`);
@@ -475,7 +475,7 @@ Sustained high usage → exponential growth:
 ## Next Steps
 
 - [Overview](/primitives/feemarket) - Type definitions and API reference
-- [calculateBaseFee](/primitives/feemarket/eip1559#calculatebasefee) - Calculate next base fee
+- [BaseFee](/primitives/feemarket/eip1559#basefee) - Construct next base fee
 - [calculateTxFee](/primitives/feemarket/calculations#calculatetxfee) - Estimate transaction cost
-- [calculateBlobBaseFee](/primitives/feemarket/eip4844#calculateblobbasefee) - Calculate blob fees
+- [BlobBaseFee](/primitives/feemarket/eip4844#blobbasefee) - Construct blob fees
 - [projectBaseFees](/primitives/feemarket/calculations#projectbasefees) - Project future fees

@@ -142,17 +142,17 @@ Manage state across multiple contracts:
 class StateManager {
   private storage = new Map<string, bigint>();
 
-  get(address: BrandedAddress, slot: bigint): bigint {
+  get(address: AddressType, slot: bigint): bigint {
     const key = State.StorageKey(address, slot);
     return this.storage.get(State.StorageKey.toString(key)) ?? 0n;
   }
 
-  set(address: BrandedAddress, slot: bigint, value: bigint): void {
+  set(address: AddressType, slot: bigint, value: bigint): void {
     const key = State.StorageKey(address, slot);
     this.storage.set(State.StorageKey.toString(key), value);
   }
 
-  getContractStorage(address: BrandedAddress): Map<bigint, bigint> {
+  getContractStorage(address: AddressType): Map<bigint, bigint> {
     const result = new Map<bigint, bigint>();
 
     for (const [keyStr, value] of this.storage) {
@@ -165,7 +165,7 @@ class StateManager {
     return result;
   }
 
-  clear(address: BrandedAddress): void {
+  clear(address: AddressType): void {
     const toDelete: string[] = [];
 
     for (const keyStr of this.storage.keys()) {

@@ -19,8 +19,8 @@ Common patterns and best practices for working with Ethereum transactions.
 import * as Transaction from '@tevm/voltaire/Transaction'
 
 async function createTransfer(
-  from: BrandedAddress,
-  to: BrandedAddress,
+  from: AddressType,
+  to: AddressType,
   value: bigint,
   nonce: bigint
 ): Promise<Transaction.EIP1559> {
@@ -50,7 +50,7 @@ async function createTransfer(
 
 ```typescript
 async function createDeployment(
-  deployer: BrandedAddress,
+  deployer: AddressType,
   bytecode: Uint8Array,
   nonce: bigint
 ): Promise<Transaction.EIP1559> {
@@ -85,8 +85,8 @@ async function createDeployment(
 
 ```typescript
 async function createContractCall(
-  from: BrandedAddress,
-  to: BrandedAddress,
+  from: AddressType,
+  to: AddressType,
   data: Uint8Array,
   nonce: bigint
 ): Promise<Transaction.EIP1559> {
@@ -385,7 +385,7 @@ class TransactionPool {
     this.byNonce.get(sender)?.delete(tx.nonce)
   }
 
-  getByNonce(sender: BrandedAddress, nonce: bigint): Transaction.Any | undefined {
+  getByNonce(sender: AddressType, nonce: bigint): Transaction.Any | undefined {
     return this.byNonce.get(Address.toHex(sender))?.get(nonce)
   }
 
@@ -393,7 +393,7 @@ class TransactionPool {
     return Array(this.pending.values())
   }
 
-  getPending(sender: BrandedAddress): Transaction.Any[] {
+  getPending(sender: AddressType): Transaction.Any[] {
     const senderNonces = this.byNonce.get(Address.toHex(sender))
     if (!senderNonces) return []
 

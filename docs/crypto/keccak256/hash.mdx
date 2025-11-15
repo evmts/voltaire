@@ -68,7 +68,7 @@ import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
 const txHash: Keccak256Hash = Keccak256.hash(txData);
 
 // Bytes32 = generic 32-byte value
-const storageSlot: BrandedBytes32 = Bytes32.from(0);
+const storageSlot: Bytes32Type = Bytes32.from(0);
 
 // Same runtime representation
 console.log(txHash instanceof Uint8Array);      // true
@@ -76,7 +76,7 @@ console.log(storageSlot instanceof Uint8Array); // true
 
 // Different compile-time types
 type HashType = typeof txHash;      // Keccak256Hash
-type BytesType = typeof storageSlot; // BrandedBytes32
+type BytesType = typeof storageSlot; // Bytes32Type
 ```
 
 **When to use each:**
@@ -101,7 +101,7 @@ const hash = Keccak256.hash(data);
 
 **Migration steps:**
 1. Replace `Keccak256.hash()` with `Keccak256.hash()`
-2. Replace `BrandedHash` type with `Keccak256Hash`
+2. Replace `HashType` type with `Keccak256Hash`
 3. All operations remain the same (same 32-byte structure)
 
 The new approach is more explicit about which hash algorithm produced the value.
@@ -142,7 +142,7 @@ const padding = Bytes32.zero();
 const value = Bytes32.from(42n);
 
 // When hash algorithm doesn't matter
-const genericHash: Bytes32.BrandedBytes32 = Bytes32.from(anyHash);
+const genericHash: Bytes32.Bytes32Type = Bytes32.from(anyHash);
 ```
 
 ## Constructors

@@ -33,8 +33,8 @@ These operations are:
 Pure TypeScript benchmarks:
 
 ```
-calculateBaseFee:        ~250ns per call   (~4M ops/sec)
-calculateBlobBaseFee:    ~10μs per call    (~100K ops/sec)
+BaseFee:                 ~250ns per call   (~4M ops/sec)
+BlobBaseFee:             ~10μs per call    (~100K ops/sec)
 calculateTxFee:          ~50ns per call    (~20M ops/sec)
 nextState:               ~500ns per call   (~2M ops/sec)
 validateState:           ~50ns per call    (~20M ops/sec)
@@ -117,7 +117,7 @@ Simply use FeeMarket.js directly:
 // Optimal - use pure TypeScript
 import * as FeeMarket from './FeeMarket.js';
 
-const baseFee = FeeMarket.calculateBaseFee(
+const baseFee = FeeMarket.BaseFee(
   30_000_000n,
   30_000_000n,
   1_000_000_000n
@@ -140,8 +140,8 @@ bun run src/primitives/FeeMarket/FeeMarket.bench.ts
 ```
 
 Results show TypeScript is optimal:
-- `calculateBaseFee`: ~4M ops/sec
-- `calculateBlobBaseFee`: ~100K ops/sec (Taylor series)
+- `BaseFee`: ~4M ops/sec
+- `BlobBaseFee`: ~100K ops/sec (Taylor series)
 - `calculateTxFee`: ~20M ops/sec
 - `nextState`: ~2M ops/sec
 

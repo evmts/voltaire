@@ -60,18 +60,12 @@
 		{
 			"group": "Getting Started",
 			"icon": "rocket",
-			"pages": [
-				"getting-started",
-				"comparisons",
-				"mcp"
-			]
+			"pages": ["getting-started", "comparisons", "mcp"]
 		},
 		{
 			"group": "Core Concepts",
 			"icon": "book",
-			"pages": [
-				"concepts/branded-types"
-			]
+			"pages": ["concepts/branded-types"]
 		},
 		{
 			"group": "JSONRPCProvider",
@@ -651,17 +645,13 @@
 							"group": "RIPEMD160 (Bitcoin Compatibility)",
 							"icon": "fingerprint",
 							"iconType": "light",
-							"pages": [
-								"crypto/ripemd160/index"
-							]
+							"pages": ["crypto/ripemd160/index"]
 						},
 						{
 							"group": "Blake2 (Modern Alternative)",
 							"icon": "bolt",
 							"iconType": "light",
-							"pages": [
-								"crypto/blake2/index"
-							]
+							"pages": ["crypto/blake2/index"]
 						}
 					]
 				},
@@ -691,17 +681,13 @@
 							"group": "EIP-712 (Typed Messages)",
 							"icon": "file-signature",
 							"iconType": "regular",
-							"pages": [
-								"crypto/eip712/index"
-							]
+							"pages": ["crypto/eip712/index"]
 						},
 						{
 							"group": "Ed25519 (Alternative)",
 							"icon": "pen-nib",
 							"iconType": "regular",
-							"pages": [
-								"crypto/ed25519/index"
-							]
+							"pages": ["crypto/ed25519/index"]
 						}
 					]
 				},
@@ -825,25 +811,19 @@
 							"group": "ChaCha20Poly1305 (Symmetric)",
 							"icon": "shield-alt",
 							"iconType": "regular",
-							"pages": [
-								"crypto/chacha20poly1305/index"
-							]
+							"pages": ["crypto/chacha20poly1305/index"]
 						},
 						{
 							"group": "X25519 (Key Exchange)",
 							"icon": "arrows-left-right",
 							"iconType": "regular",
-							"pages": [
-								"crypto/x25519/index"
-							]
+							"pages": ["crypto/x25519/index"]
 						},
 						{
 							"group": "P256 (Hardware Wallets)",
 							"icon": "microchip",
 							"iconType": "regular",
-							"pages": [
-								"crypto/p256/index"
-							]
+							"pages": ["crypto/p256/index"]
 						}
 					]
 				}
@@ -1159,9 +1139,7 @@
 			"pages": [
 				{
 					"group": "Getting Started",
-					"pages": [
-						"examples/getting-started/hello-voltaire"
-					]
+					"pages": ["examples/getting-started/hello-voltaire"]
 				},
 				{
 					"group": "Addresses",
@@ -1188,15 +1166,11 @@
 				},
 				{
 					"group": "Signing",
-					"pages": [
-						"examples/signing/personal-sign"
-					]
+					"pages": ["examples/signing/personal-sign"]
 				},
 				{
 					"group": "RLP Encoding",
-					"pages": [
-						"examples/rlp/rlp-encode-list"
-					]
+					"pages": ["examples/rlp/rlp-encode-list"]
 				}
 			]
 		}
@@ -1214,15 +1188,7 @@
 		"prompt": "Search Voltaire docs..."
 	},
 	"contextual": {
-		"options": [
-			"copy",
-			"view",
-			"claude",
-			"chatgpt",
-			"cursor",
-			"vscode",
-			"mcp"
-		]
+		"options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
 	},
 	"assistant": {
 		"enabled": true

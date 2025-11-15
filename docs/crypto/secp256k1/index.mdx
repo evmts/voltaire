@@ -50,7 +50,7 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 Sign a 32-byte message hash with a private key using deterministic ECDSA (RFC 6979).
 
 **Parameters**:
-- `messageHash` (`BrandedHash`) - 32-byte Keccak256 hash to sign
+- `messageHash` (`HashType`) - 32-byte Keccak256 hash to sign
 - `privateKey` (`Uint8Array`) - 32-byte private key (must be > 0 and < curve order)
 
 **Returns**: `BrandedSignature` with components:
@@ -77,7 +77,7 @@ Verify an ECDSA signature against a message hash and public key.
 
 **Parameters**:
 - `signature` (`BrandedSignature`) - Signature with r, s, v components
-- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+- `messageHash` (`HashType`) - 32-byte message hash that was signed
 - `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y coordinates)
 
 **Returns**: `boolean` - `true` if signature is valid, `false` otherwise
@@ -99,7 +99,7 @@ Recover the public key from a signature and message hash. This is the core of Et
 
 **Parameters**:
 - `signature` (`BrandedSignature`) - Signature with r, s, v components
-- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+- `messageHash` (`HashType`) - 32-byte message hash that was signed
 
 **Returns**: `Uint8Array` - 64-byte uncompressed public key
 

@@ -17,7 +17,7 @@ Composite key primitive uniquely identifying storage locations in the Ethereum V
 
 ```typescript
 export type BrandedStorageKey = {
-  readonly address: BrandedAddress;
+  readonly address: AddressType;
   readonly slot: bigint;
 };
 ```
@@ -58,7 +58,7 @@ StorageKey combines a 20-byte contract address with a 256-bit storage slot numbe
 
 ```typescript
 export type BrandedStorageKey = {
-  readonly address: BrandedAddress;
+  readonly address: AddressType;
   readonly slot: bigint;
 };
 ```
@@ -75,7 +75,7 @@ Main type combining contract address with storage slot. Design rationale:
 type StorageKeyLike =
   | BrandedStorageKey
   | {
-      address: BrandedAddress;
+      address: AddressType;
       slot: bigint;
     };
 ```
@@ -120,7 +120,7 @@ const keyStr = State.StorageKey.toString(key);
 
 // Parse from string
 const parsed = State.StorageKey(keyStr);
-// { address: BrandedAddress(...), slot: 42n }
+// { address: AddressType(...), slot: 42n }
 
 // Round-trip conversion
 State.StorageKey.equals(key, parsed); // true

@@ -14,9 +14,9 @@ Voltaire provides three levels of types for each primitive:
 The base branded type - a validated, immutable value:
 
 ```typescript
-import type { BrandedAddress } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 
-type BrandedAddress = Uint8Array & { readonly [brand]: "Address" };
+type AddressType = Uint8Array & { readonly [brand]: "Address" };
 ```
 
 **Use when:**
@@ -34,9 +34,9 @@ type BrandedAddress = Uint8Array & { readonly [brand]: "Address" };
 
 ```typescript
 import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
-import type { BrandedAddress } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 
-const addr: BrandedAddress = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr: AddressType = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const hex = toHex(addr);
 const same = equals(addr, addr); // true
 ```
@@ -101,7 +101,7 @@ For function parameters accepting flexible input, use the same union:
 ```typescript
 function process(input: string | Uint8Array | number | bigint) {
   const addr = Address(input);
-  // Now you have a validated BrandedAddress
+  // Now you have a validated AddressType
 }
 ```
 
@@ -182,8 +182,8 @@ All branded types use a shared `brand` symbol:
 import { brand } from '@tevm/voltaire/brand';
 
 // This is what makes it "branded"
-type BrandedAddress = Uint8Array & { readonly [brand]: "Address" };
-type BrandedHash = Uint8Array & { readonly [brand]: "Hash" };
+type AddressType = Uint8Array & { readonly [brand]: "Address" };
+type HashType = Uint8Array & { readonly [brand]: "Hash" };
 ```
 
 The `brand` symbol:
@@ -232,7 +232,7 @@ All branded types are validated at construction:
 ```typescript
 import { Address } from '@tevm/voltaire';
 
-// Valid - creates BrandedAddress
+// Valid - creates AddressType
 Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // Invalid - throws error
@@ -241,7 +241,7 @@ Address("0x123");        // Error: Invalid length
 Address(new Uint8Array(10)); // Error: Must be 20 bytes
 ```
 
-**If you have a `BrandedAddress`, it's valid.** No need for runtime validation libraries like Zod.
+**If you have a `AddressType`, it's valid.** No need for runtime validation libraries like Zod.
 
 ## Console Formatting
 
@@ -262,7 +262,7 @@ This improves debugging while maintaining full `Uint8Array` performance.
 | Import | `import { Address }` | `import * as Address` | `import { fromHex, toHex }` |
 | Bundle Size | ~18 KB | ~18 KB | ~500 bytes (3 functions) |
 | Syntax | `addr.toHex()` | `Address.toHex(addr)` | `toHex(addr)` |
-| Type | Class instance | BrandedAddress | BrandedAddress |
+| Type | Class instance | AddressType | AddressType |
 | Methods | Prototype | Functions | Functions |
 | Tree-shaking | ✗ No | ✗ No | ✓ Yes |
 | Performance | Fast | Fast | Fastest |
@@ -290,8 +290,8 @@ const hash = keccak256(data);
 transfer(hash, 100n); // Compiles but wrong!
 
 // After - type safe
-import type { BrandedAddress } from '@tevm/voltaire/Address';
-function transfer(to: BrandedAddress, amount: bigint) { }
+import type { AddressType } from '@tevm/voltaire/Address';
+function transfer(to: AddressType, amount: bigint) { }
 const hash = keccak256(data);
 transfer(hash, 100n); // ✗ Type error
 ```
@@ -301,11 +301,11 @@ transfer(hash, 100n); // ✗ Type error
 ### Use Branded Types for Function Parameters
 
 ```typescript
-import type { BrandedAddress } from '@tevm/voltaire/Address';
-import type { BrandedHash } from '@tevm/voltaire/Hash';
+import type { AddressType } from '@tevm/voltaire/Address';
+import type { HashType } from '@tevm/voltaire/Hash';
 
 // ✓ Good - explicit types
-function verify(addr: BrandedAddress, hash: BrandedHash) {
+function verify(addr: AddressType, hash: HashType) {
   // addr and hash cannot be swapped
 }
 
@@ -343,7 +343,7 @@ export function formatAddress(input: string) {
 
 ```typescript
 import { Address } from '@tevm/voltaire';
-import type { BrandedAddress } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 
 // Validate external input at boundary
 export function processRequest(req: { to: string, amount: string }) {
@@ -352,7 +352,7 @@ export function processRequest(req: { to: string, amount: string }) {
 }
 
 // Internal functions trust the type
-function transfer(to: BrandedAddress, amount: bigint) {
+function transfer(to: AddressType, amount: bigint) {
   // No validation needed - type guarantees it's valid
 }
 ```

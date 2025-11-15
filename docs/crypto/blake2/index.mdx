@@ -50,18 +50,18 @@ Used in:
 import { Blake2 } from '@tevm/voltaire/crypto/blake2';
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
-// Hash bytes with default 64-byte output
+// Hash bytes with default 64-byte output - constructor pattern
 const data = Hex('0x0102030405');
-const hash = Blake2.hash(data);
-// Uint8Array(64) [...]
+const hash = Blake2(data);
+// BrandedBlake2 (Uint8Array(64))
 
 // Hash with custom output length (32 bytes)
-const hash32 = Blake2.hash(data, 32);
-// Uint8Array(32) [...]
+const hash32 = Blake2(data, 32);
+// Uint8Array(32) with Blake2b-256
 
 // Hash with 20-byte output (same size as RIPEMD160)
-const hash20 = Blake2.hash(data, 20);
-// Uint8Array(20) [...]
+const hash20 = Blake2(data, 20);
+// Uint8Array(20)
 ```
 </Tab>
 
@@ -70,16 +70,16 @@ const hash20 = Blake2.hash(data, 20);
 import { Blake2 } from '@tevm/voltaire/crypto/blake2';
 
 // Hash string with default 64-byte output
-const hash = Blake2.hashString('hello world');
-// Uint8Array(64) [...]
+const hash = Blake2('hello world');
+// BrandedBlake2 (Uint8Array(64))
 
 // Hash string with 32-byte output (BLAKE2b-256)
-const hash32 = Blake2.hashString('hello', 32);
-// Uint8Array(32) [...]
+const hash32 = Blake2('hello', 32);
+// Uint8Array(32)
 
-// Hash also accepts strings directly
-const directHash = Blake2.hash('hello world', 48);
-// Uint8Array(48) [...]
+// Constructor accepts both Uint8Array and strings
+const directHash = Blake2('hello world', 48);
+// Uint8Array(48)
 ```
 </Tab>
 
@@ -91,11 +91,11 @@ import * as Hex from '@tevm/voltaire/primitives/Hex';
 const data = Hex('0x010203');
 
 // Different output lengths for different use cases
-const hash1 = Blake2.hash(data, 1);   // 1 byte (minimal)
-const hash20 = Blake2.hash(data, 20); // 20 bytes (address-sized)
-const hash32 = Blake2.hash(data, 32); // 32 bytes (SHA256-equivalent)
-const hash48 = Blake2.hash(data, 48); // 48 bytes
-const hash64 = Blake2.hash(data, 64); // 64 bytes (maximum/default)
+const hash1 = Blake2(data, 1);   // 1 byte (minimal)
+const hash20 = Blake2(data, 20); // 20 bytes (address-sized)
+const hash32 = Blake2(data, 32); // 32 bytes (SHA256-equivalent)
+const hash48 = Blake2(data, 48); // 48 bytes
+const hash64 = Blake2(data, 64); // 64 bytes (maximum/default)
 
 // Each length produces a completely different hash
 // NOT just truncation of longer output
@@ -105,9 +105,9 @@ const hash64 = Blake2.hash(data, 64); // 64 bytes (maximum/default)
 
 ## API Reference
 
-### `Blake2.hash(data: Uint8Array | string, outputLength?: number): Uint8Array`
+### `Blake2(data: Uint8Array | string, outputLength?: number): Uint8Array`
 
-Hash data with BLAKE2b.
+Hash data with BLAKE2b using constructor pattern.
 
 Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hashing. Output length can be customized from 1 to 64 bytes.
 
@@ -115,7 +115,7 @@ Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hash
 - `data`: Input data to hash (Uint8Array or string)
 - `outputLength`: Output length in bytes (1-64, default 64)
 
-**Returns:** BLAKE2b hash of specified length (Uint8Array)
+**Returns:** BLAKE2b hash of specified length (Uint8Array, branded as BrandedBlake2 when 64 bytes)
 
 **Throws:** Error if outputLength is not between 1 and 64
 
@@ -124,43 +124,42 @@ Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hash
 import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Default 64-byte output
-const hash64 = Blake2.hash(Hex('0x010203'));
+const hash64 = Blake2(Hex('0x010203'));
 console.log(hash64.length); // 64
 
 // 32-byte output (BLAKE2b-256)
-const hash32 = Blake2.hash(Hex('0x010203'), 32);
+const hash32 = Blake2(Hex('0x010203'), 32);
 console.log(hash32.length); // 32
 
 // String input
-const stringHash = Blake2.hash('hello', 20);
+const stringHash = Blake2('hello', 20);
 console.log(stringHash.length); // 20
 ```
 
 ---
 
-### `Blake2.hashString(str: string, outputLength?: number): Uint8Array`
+### `Blake2.hash(data: Uint8Array | string, outputLength?: number): Uint8Array`
 
-Hash UTF-8 string with BLAKE2b.
-
-Convenience method that explicitly documents string input. Functionally equivalent to `Blake2.hash(str, outputLength)`.
+Alternative namespace API for computing BLAKE2b hash.
 
 **Parameters:**
-- `str`: String to hash
+- `data`: Input data to hash (Uint8Array or string)
 - `outputLength`: Output length in bytes (1-64, default 64)
 
 **Returns:** BLAKE2b hash of specified length (Uint8Array)
 
-**Throws:** Error if outputLength is not between 1 and 64
-
 **Example:**
 ```typescript
-// Hash string with default 64-byte output
-const hash = Blake2.hashString('message');
-console.log(hash.length); // 64
+// Equivalent to Blake2(data) constructor
+const hash = Blake2.hash('message', 32);
+console.log(hash.length); // 32
+```
 
-// Hash string with custom 32-byte output
-const hash32 = Blake2.hashString('test', 32);
-console.log(hash32.length); // 32
+## Type Definition
+
+```typescript
+// Branded 64-byte BLAKE2b hash for type safety
+export type BrandedBlake2 = Uint8Array & { readonly __tag: "Blake2" };
 ```
 
 ## Test Vectors
@@ -169,7 +168,7 @@ RFC 7693 BLAKE2b test vectors:
 
 ```typescript
 // Empty input (64-byte output)
-Blake2.hash(Bytes())
+Blake2(new Uint8Array(0))
 // Uint8Array(64) [
 //   0x78, 0x6a, 0x02, 0xf7, 0x42, 0x01, 0x59, 0x03,
 //   0xc6, 0xc6, 0xfd, 0x85, 0x25, 0x52, 0xd2, 0x72,
@@ -182,7 +181,7 @@ Blake2.hash(Bytes())
 // ]
 
 // "abc" (64-byte output)
-Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
+Blake2(new Uint8Array([0x61, 0x62, 0x63]))
 // Uint8Array(64) [
 //   0xba, 0x80, 0xa5, 0x3f, 0x98, 0x1c, 0x4d, 0x0d,
 //   0x6a, 0x27, 0x97, 0xb6, 0x9f, 0x12, 0xf6, 0xe9,
@@ -195,7 +194,7 @@ Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
 // ]
 
 // Empty input (32-byte output, BLAKE2b-256)
-Blake2.hash(Bytes(), 32)
+Blake2(new Uint8Array(0), 32)
 // Uint8Array(32) [
 //   0x0e, 0x57, 0x51, 0xc0, 0x26, 0xe5, 0x43, 0xb2,
 //   0xe8, 0xab, 0x2e, 0xb0, 0x60, 0x99, 0xda, 0xa1,
@@ -204,7 +203,7 @@ Blake2.hash(Bytes(), 32)
 // ]
 
 // Single byte 0x00 (64-byte output)
-Blake2.hash(new Uint8Array([0x00]))
+Blake2(new Uint8Array([0x00]))
 // Uint8Array(64) [
 //   0x2f, 0xa3, 0xf6, 0x86, 0xdf, 0x87, 0x69, 0x95,
 //   0x16, 0x7e, 0x7c, 0x2e, 0x5d, 0x74, 0xc4, 0xc7,
@@ -217,7 +216,7 @@ Blake2.hash(new Uint8Array([0x00]))
 // ]
 
 // Two bytes 0x00 0x01 (64-byte output)
-Blake2.hash(new Uint8Array([0x00, 0x01]))
+Blake2(new Uint8Array([0x00, 0x01]))
 // Uint8Array(64) [
 //   0x1c, 0x08, 0x79, 0x8d, 0xc6, 0x41, 0xab, 0xa9,
 //   0xde, 0xe4, 0x35, 0xe2, 0x25, 0x19, 0xa4, 0x72,
@@ -344,6 +343,8 @@ const hash = Blake2Wasm.hash(data, 32);
 ### Fast File Integrity
 BLAKE2 excels at high-throughput hashing:
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 async function hashLargeFile(file: File): Promise<Uint8Array> {
   const chunkSize = 1024 * 1024; // 1MB chunks
   const chunks: Uint8Array[] = [];
@@ -361,14 +362,16 @@ async function hashLargeFile(file: File): Promise<Uint8Array> {
     position += chunk.length;
   }
 
-  return Blake2.hash(combined, 32);
+  return Blake2(combined, 32);
 }
 ```
 
 ### Content Addressing (IPFS-style)
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 function contentAddress(data: Uint8Array): string {
-  const hash = Blake2.hash(data, 32); // 32-byte output
+  const hash = Blake2(data, 32); // 32-byte output
   // Convert to base58 or base32 for IPFS CIDv1
   return toBase58(hash);
 }
@@ -376,11 +379,13 @@ function contentAddress(data: Uint8Array): string {
 
 ### Merkle Trees with Custom Size
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
   if (leaves.length === 0) throw new Error("No leaves");
-  if (leaves.length === 1) return Blake2.hash(leaves[0], outputSize);
+  if (leaves.length === 1) return Blake2(leaves[0], outputSize);
 
-  const hashes = leaves.map(leaf => Blake2.hash(leaf, outputSize));
+  const hashes = leaves.map(leaf => Blake2(leaf, outputSize));
 
   while (hashes.length > 1) {
     const nextLevel: Uint8Array[] = [];
@@ -390,7 +395,7 @@ function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
       const combined = new Uint8Array(outputSize * 2);
       combined.set(left, 0);
       combined.set(right, outputSize);
-      nextLevel.push(Blake2.hash(combined, outputSize));
+      nextLevel.push(Blake2(combined, outputSize));
     }
     hashes.length = 0;
     hashes.push(...nextLevel);
@@ -402,23 +407,27 @@ function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
 
 ### Fast Checksums
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 // 16-byte checksum for data deduplication
 function checksum(data: Uint8Array): Uint8Array {
-  return Blake2.hash(data, 16); // Faster than full 64-byte hash
+  return Blake2(data, 16); // Faster than full 64-byte hash
 }
 
 // 32-byte cryptographic checksum
 function cryptoChecksum(data: Uint8Array): Uint8Array {
-  return Blake2.hash(data, 32); // SHA-256 equivalent security
+  return Blake2(data, 32); // SHA-256 equivalent security
 }
 ```
 
 ### Variable-Length Hashes
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 // Custom output sizes for different purposes
-const addressHash = Blake2.hash(data, 20);    // 20 bytes (address-sized)
-const signatureHash = Blake2.hash(data, 32);  // 32 bytes (signature)
-const fullHash = Blake2.hash(data, 64);       // 64 bytes (maximum security)
+const addressHash = Blake2(data, 20);    // 20 bytes (address-sized)
+const signatureHash = Blake2(data, 32);  // 32 bytes (signature)
+const fullHash = Blake2(data, 64);       // 64 bytes (maximum security)
 ```
 
 ## Variants
@@ -536,22 +545,28 @@ export function hash(
 
 Zcash uses Blake2 in its Equihash proof-of-work algorithm:
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 // Simplified Zcash-style usage
 const header = new Uint8Array(140);
-const hash = Blake2.hash(header, 32);
+const hash = Blake2(header, 32);
 ```
 
 ### IPFS Content Addressing
 
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 function contentHash(data: Uint8Array): Uint8Array {
-  return Blake2.hash(data, 32);
+  return Blake2(data, 32);
 }
 ```
 
 ### Fast File Checksums
 
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 async function checksumFile(file: File): Promise<Uint8Array> {
   const chunkSize = 1024 * 1024; // 1MB chunks
   const chunks: Uint8Array[] = [];
@@ -568,17 +583,19 @@ async function checksumFile(file: File): Promise<Uint8Array> {
     position += chunk.length;
   }
 
-  return Blake2.hash(combined, 32);
+  return Blake2(combined, 32);
 }
 ```
 
 ### Variable-Length Hashes
 
 ```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
 // Different hash sizes for different purposes
-const addressHash = Blake2.hash(data, 20);    // 20 bytes
-const signatureHash = Blake2.hash(data, 32);  // 32 bytes
-const maxHash = Blake2.hash(data, 64);        // 64 bytes (max security)
+const addressHash = Blake2(data, 20);    // 20 bytes
+const signatureHash = Blake2(data, 32);  // 32 bytes
+const maxHash = Blake2(data, 64);        // 64 bytes (max security)
 ```
 
 ## Comparison

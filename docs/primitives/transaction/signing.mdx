@@ -16,7 +16,7 @@ Signature verification and sender address recovery using secp256k1.
 Recover sender address from transaction signature.
 
 ```typescript
-function getSender(tx: Any): BrandedAddress
+function getSender(tx: Any): AddressType
 ```
 
 ### Parameters
@@ -25,7 +25,7 @@ function getSender(tx: Any): BrandedAddress
 
 ### Returns
 
-`BrandedAddress` - 20-byte sender address recovered from signature
+`AddressType` - 20-byte sender address recovered from signature
 
 ### Throws
 
@@ -232,7 +232,7 @@ function getSender(tx: Transaction) {
   const publicKeyHash = keccak256(publicKey.slice(1))  // Skip 0x04 prefix
 
   // 4. Take last 20 bytes
-  return publicKeyHash.slice(12) as BrandedAddress
+  return publicKeyHash.slice(12) as AddressType
 }
 ```
 
@@ -287,7 +287,7 @@ class TransactionPool {
 ```typescript
 import { getSender } from '@tevm/voltaire/Transaction'
 
-function requireSender(tx: Transaction.Any, expectedSender: BrandedAddress) {
+function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
   const actualSender = getSender(tx)
 
   if (!Address.equals(actualSender, expectedSender)) {
@@ -350,7 +350,7 @@ txs.forEach((tx, i) => {
 ```typescript
 import { isSigned, getSender } from '@tevm/voltaire/Transaction'
 
-function safGetSender(tx: Transaction.Any): BrandedAddress | null {
+function safGetSender(tx: Transaction.Any): AddressType | null {
   try {
     if (!isSigned(tx)) {
       return null
@@ -387,9 +387,9 @@ Signature recovery is expensive (elliptic curve operations):
 
 ```typescript
 // Cache sender addresses
-const senderCache = new WeakMap<Transaction.Any, BrandedAddress>()
+const senderCache = new WeakMap<Transaction.Any, AddressType>()
 
-function getCachedSender(tx: Transaction.Any): BrandedAddress {
+function getCachedSender(tx: Transaction.Any): AddressType {
   let sender = senderCache.get(tx)
   if (!sender) {
     sender = getSender(tx)

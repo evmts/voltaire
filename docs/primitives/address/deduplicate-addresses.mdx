@@ -163,11 +163,11 @@ Remove duplicates from collected addresses:
 import * as Address from '@tevm/voltaire/Address'
 
 interface Transaction {
-  from: BrandedAddress
-  to: BrandedAddress
+  from: AddressType
+  to: AddressType
 }
 
-function getUniqueParticipants(txs: Transaction[]): BrandedAddress[] {
+function getUniqueParticipants(txs: Transaction[]): AddressType[] {
   const allAddresses = txs.flatMap(tx => [tx.from, tx.to])
   return Address.deduplicateAddresses(allAddresses)
 }
@@ -191,25 +191,25 @@ Clean up allowlists with duplicate entries:
 import * as Address from '@tevm/voltaire/Address'
 
 class Allowlist {
-  private addresses: BrandedAddress[]
+  private addresses: AddressType[]
 
-  constructor(addresses: BrandedAddress[]) {
+  constructor(addresses: AddressType[]) {
     // Automatically deduplicate on construction
     this.addresses = Address.deduplicateAddresses(addresses)
   }
 
-  add(address: BrandedAddress): void {
+  add(address: AddressType): void {
     // Only add if not already present
     if (!this.addresses.some(addr => Address.equals(addr, address))) {
       this.addresses.push(address)
     }
   }
 
-  contains(address: BrandedAddress): boolean {
+  contains(address: AddressType): boolean {
     return this.addresses.some(addr => Address.equals(addr, address))
   }
 
-  get unique(): BrandedAddress[] {
+  get unique(): AddressType[] {
     return [...this.addresses]
   }
 }
@@ -233,7 +233,7 @@ import * as Address from '@tevm/voltaire/Address'
 
 interface UserAccount {
   id: string
-  address: BrandedAddress
+  address: AddressType
   balance: bigint
 }
 
@@ -281,8 +281,8 @@ Extract unique addresses from event logs:
 import * as Address from '@tevm/voltaire/Address'
 import type { EventLog } from '@tevm/voltaire'
 
-function getUniqueTokenHolders(logs: EventLog[]): BrandedAddress[] {
-  const holders: BrandedAddress[] = []
+function getUniqueTokenHolders(logs: EventLog[]): AddressType[] {
+  const holders: AddressType[] = []
 
   for (const log of logs) {
     // Extract addresses from Transfer events
@@ -318,7 +318,7 @@ Prepare unique addresses for batch RPC calls:
 import * as Address from '@tevm/voltaire/Address'
 
 async function getBalances(
-  addresses: BrandedAddress[],
+  addresses: AddressType[],
   provider: any
 ): Promise<Map<string, bigint>> {
   // Deduplicate to avoid redundant RPC calls
@@ -366,10 +366,10 @@ const unique = Address.deduplicateAddresses(addresses)
 import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateAddressesOptimized(
-  addresses: BrandedAddress[]
-): BrandedAddress[] {
+  addresses: AddressType[]
+): AddressType[] {
   const seen = new Set<string>()
-  const result: BrandedAddress[] = []
+  const result: AddressType[] = []
 
   for (const addr of addresses) {
     const hex = Address.toHex(addr)
@@ -419,8 +419,8 @@ Alternative implementation using `filter`:
 import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithFilter(
-  addresses: BrandedAddress[]
-): BrandedAddress[] {
+  addresses: AddressType[]
+): AddressType[] {
   return addresses.filter((addr, index, arr) =>
     // Keep only first occurrence
     arr.findIndex(a => Address.equals(a, addr)) === index
@@ -439,25 +439,25 @@ Implement set union, intersection, difference:
 import * as Address from '@tevm/voltaire/Address'
 
 function union(
-  a: BrandedAddress[],
-  b: BrandedAddress[]
-): BrandedAddress[] {
+  a: AddressType[],
+  b: AddressType[]
+): AddressType[] {
   return Address.deduplicateAddresses([...a, ...b])
 }
 
 function intersection(
-  a: BrandedAddress[],
-  b: BrandedAddress[]
-): BrandedAddress[] {
+  a: AddressType[],
+  b: AddressType[]
+): AddressType[] {
   return a.filter(addrA =>
     b.some(addrB => Address.equals(addrA, addrB))
   )
 }
 
 function difference(
-  a: BrandedAddress[],
-  b: BrandedAddress[]
-): BrandedAddress[] {
+  a: AddressType[],
+  b: AddressType[]
+): AddressType[] {
   return a.filter(addrA =>
     !b.some(addrB => Address.equals(addrA, addrB))
   )
@@ -482,9 +482,9 @@ Track seen addresses with Map for O(n) complexity:
 import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithMap(
-  addresses: BrandedAddress[]
-): BrandedAddress[] {
-  const seen = new Map<string, BrandedAddress>()
+  addresses: AddressType[]
+): AddressType[] {
+  const seen = new Map<string, AddressType>()
 
   for (const addr of addresses) {
     const hex = Address.toHex(addr)
@@ -505,8 +505,8 @@ Most efficient for large datasets:
 import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithSet(
-  addresses: BrandedAddress[]
-): BrandedAddress[] {
+  addresses: AddressType[]
+): AddressType[] {
   const seen = new Set<string>()
   return addresses.filter(addr => {
     const hex = Address.toHex(addr)

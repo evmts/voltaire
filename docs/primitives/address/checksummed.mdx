@@ -13,7 +13,7 @@ EIP-55 checksummed address type providing mixed-case format for display and inte
 
 ## Overview
 
-`Checksummed` is a branded hex string type representing an Ethereum address with EIP-55 checksum encoding. Unlike `BrandedAddress` (a `Uint8Array`), `Checksummed` is a `string` with mixed casing that encodes integrity verification in the character case.
+`Checksummed` is a branded hex string type representing an Ethereum address with EIP-55 checksum encoding. Unlike `AddressType` (a `Uint8Array`), `Checksummed` is a `string` with mixed casing that encodes integrity verification in the character case.
 
 **Key characteristics:**
 - **Type:** Branded string (not `Uint8Array`)
@@ -34,7 +34,7 @@ type Checksummed = Hex.Sized<20> & {
 
 Branded string with EIP-55 mixed-case checksum extending `Hex.Sized<20>`.
 
-Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L8)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L8)
 
 ## ChecksumAddress API
 
@@ -53,7 +53,7 @@ Create checksummed address from any input format.
 
 **Note:** Uses keccak256 internally. Import keccak256 hash function to use this API.
 
-Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L23)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L23)
 
 **Example:**
 
@@ -71,7 +71,7 @@ from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 from(69n)
 // "0x0000000000000000000000000000000000000045"
 
-from(addr)  // BrandedAddress
+from(addr)  // AddressType
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ```
 
@@ -123,7 +123,7 @@ Validate EIP-55 checksum of address string.
 
 **Note:** Uses keccak256 internally. Import keccak256 hash function to use this API.
 
-Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:63](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js#L63)
+Defined in: [primitives/Address/AddressType/ChecksumAddress.js:63](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/ChecksumAddress.js#L63)
 
 **EIP-55 Logic:**
 - If all letters same case (all lower OR all upper), valid
@@ -455,6 +455,6 @@ const from = From({ keccak256 })
 - [toChecksummed](/primitives/address/to-checksummed) - Convert address to checksummed format
 - [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
 - [Variants](/primitives/address/variants) - Overview of all address variants
-- [BrandedAddress](/primitives/address/branded-address) - Functional API and tree-shaking
+- [AddressType](/primitives/address/branded-address) - Functional API and tree-shaking
 - [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55) - Specification
 - [Keccak256](/crypto/keccak256) - Keccak256 hash function

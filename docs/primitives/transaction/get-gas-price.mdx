@@ -121,7 +121,7 @@ import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 async function validateBalance(
   tx: Transaction.Any,
-  senderAddress: BrandedAddress,
+  senderAddress: AddressType,
   baseFee: bigint
 ): Promise<boolean> {
   const balance = await getBalance(senderAddress)

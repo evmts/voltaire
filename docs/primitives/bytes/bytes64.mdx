@@ -65,7 +65,7 @@ const signature = Bytes64('0x...');
 Bytes64 uses Symbol branding for compile-time safety:
 
 ```typescript
-type BrandedBytes64 = Uint8Array & {
+type Bytes64Type = Uint8Array & {
   readonly [Symbol.for("Bytes64")]: true;
   readonly length: 64;
 };
@@ -78,7 +78,7 @@ const bytes64 = Bytes64('0x' + '12'.repeat(64));
 const bytes32 = Bytes32('0x' + '12'.repeat(32));
 
 // Type error: cannot assign Bytes32 to Bytes64
-const wrong: Bytes64.BrandedBytes64 = bytes32;
+const wrong: Bytes64.Bytes64Type = bytes32;
 ```
 
 ### Hex Variants

@@ -80,27 +80,27 @@ import { KZG } from '@tevm/voltaire/crypto/KZG';
 <Tab title="Standard API">
 
 ```typescript
-import { KZG } from '@tevm/voltaire/crypto/KZG';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Load trusted setup (once, required before operations)
-KZG.loadTrustedSetup();
+Kzg.loadTrustedSetup();
 
 // Create blob (131,072 bytes = 4096 field elements × 32 bytes)
-const blob = new Uint8Array(131072);
+const blob = Blob(131072);
 // ... fill with rollup data
 
-// blobToKzgCommitment(blob) → 48-byte commitment
-const commitment = KZG.blobToKzgCommitment(blob);
+// Kzg.Commitment(blob) → 48-byte commitment
+const commitment = Kzg.Commitment(blob);
 
-// computeKzgProof(blob, z) → proof at evaluation point
+// Kzg.Proof(blob, z) → proof at evaluation point
 const z = randomFieldElement();
-const { proof, y } = KZG.computeKzgProof(blob, z);
+const { proof, y } = Kzg.Proof(blob, z);
 
-// verifyKzgProof(commitment, z, y, proof) → boolean
-const valid = KZG.verifyKzgProof(commitment, z, y, proof);
+// Kzg.verify(commitment, z, y, proof) → boolean
+const valid = Kzg.verify(commitment, z, y, proof);
 
-// verifyBlobKzgProofBatch(blobs[], commitments[], proofs[]) → boolean
-const batchValid = KZG.verifyBlobKzgProofBatch(
+// Kzg.verifyBatch(blobs[], commitments[], proofs[]) → boolean
+const batchValid = Kzg.verifyBatch(
   blobs, commitments, proofs
 );
 ```
@@ -109,38 +109,32 @@ const batchValid = KZG.verifyBlobKzgProofBatch(
 <Tab title="Factory API">
 
 ```typescript
-import {
-  BlobToKzgCommitment,
-  ComputeKzgProof,
-  VerifyKzgProof,
-  VerifyBlobKzgProofBatch,
-  loadTrustedSetup
-} from '@tevm/voltaire/crypto/KZG';
+import { Kzg, Blob } from '@tevm/voltaire';
 import * as ckzg from 'c-kzg';
 
 // Load trusted setup (once)
-loadTrustedSetup();
+Kzg.loadTrustedSetup();
 
 // Create factories with c-kzg dependency injection
-const blobToKzgCommitment = BlobToKzgCommitment({
+const Commitment = Kzg.CommitmentFactory({
   blobToKzgCommitment: ckzg.blobToKzgCommitment
 });
-const computeKzgProof = ComputeKzgProof({
+const Proof = Kzg.ProofFactory({
   computeKzgProof: ckzg.computeKzgProof
 });
-const verifyKzgProof = VerifyKzgProof({
+const verify = Kzg.VerifyFactory({
   verifyKzgProof: ckzg.verifyKzgProof
 });
-const verifyBatch = VerifyBlobKzgProofBatch({
+const verifyBatch = Kzg.VerifyBatchFactory({
   verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch
 });
 
 // Use factories
-const blob = new Uint8Array(131072);
-const commitment = blobToKzgCommitment(blob);
+const blob = Blob(131072);
+const commitment = Commitment(blob);
 const z = randomFieldElement();
-const { proof, y } = computeKzgProof(blob, z);
-const valid = verifyKzgProof(commitment, z, y, proof);
+const { proof, y } = Proof(blob, z);
+const valid = verify(commitment, z, y, proof);
 const batchValid = verifyBatch(blobs, commitments, proofs);
 ```
 

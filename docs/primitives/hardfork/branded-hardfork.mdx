@@ -269,13 +269,13 @@ Similar pattern used throughout primitives:
 
 ```typescript
 // Address primitive
-type BrandedAddress = Uint8Array & { __tag: "Address" };
+type AddressType = Uint8Array & { __tag: "Address" };
 
 // Hex primitive
-type BrandedHex = string & { __tag: "Hex" };
+type HexType = string & { __tag: "Hex" };
 
 // Hash primitive
-type BrandedHash = Uint8Array & { __tag: "Hash" };
+type HashType = Uint8Array & { __tag: "Hash" };
 ```
 
 **Consistency Benefits:**
