@@ -1,6 +1,6 @@
 import type { brand } from "../../../brand.js";
 
-export type BrandedBytes32 = Uint8Array & {
+export type Bytes32Type = Uint8Array & {
 	readonly [brand]: "Bytes32";
 	readonly size: 32;
 };
@@ -9,7 +9,7 @@ export type BrandedBytes32 = Uint8Array & {
  * Inputs that can be converted to Bytes32
  */
 export type Bytes32Like =
-	| BrandedBytes32
+	| Bytes32Type
 	| string
 	| Uint8Array
 	| bigint

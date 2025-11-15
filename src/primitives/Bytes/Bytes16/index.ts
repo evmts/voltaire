@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./constants.js";
-export * from "./BrandedBytes16.js";
+export * from "./Bytes16Type.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";

@@ -5,7 +5,7 @@ import * as BrandedBytes from "../BrandedBytes/index.js";
  * Create Bytes1 from various input types with size validation
  *
  * @param {Uint8Array | string} value - Uint8Array, hex string, or UTF-8 string (must be exactly 1 byte)
- * @returns {import('./BrandedBytes1.js').BrandedBytes1} Bytes1
+ * @returns {import('./Bytes1Type.js').Bytes1Type} Bytes1
  * @throws {InvalidBytesLengthError} If length is not 1 byte
  *
  * @example
@@ -22,5 +22,5 @@ export function from(value) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./BrandedBytes1.js').BrandedBytes1} */ (bytes);
+	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (bytes);
 }

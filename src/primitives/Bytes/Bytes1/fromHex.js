@@ -5,7 +5,7 @@ import * as BrandedBytes from "../BrandedBytes/index.js";
  * Create Bytes1 from hex string with size validation
  *
  * @param {string} hex - Hex string (must be exactly 2 hex chars + 0x prefix)
- * @returns {import('./BrandedBytes1.js').BrandedBytes1} Bytes1
+ * @returns {import('./Bytes1Type.js').Bytes1Type} Bytes1
  * @throws {InvalidBytesLengthError} If length is not 1 byte
  *
  * @example
@@ -21,5 +21,5 @@ export function fromHex(hex) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./BrandedBytes1.js').BrandedBytes1} */ (bytes);
+	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (bytes);
 }

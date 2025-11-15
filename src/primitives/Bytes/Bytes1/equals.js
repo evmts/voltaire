@@ -1,8 +1,8 @@
 /**
  * Check if two Bytes1 are equal
  *
- * @param {import('./BrandedBytes1.js').BrandedBytes1} a - First Bytes1
- * @param {import('./BrandedBytes1.js').BrandedBytes1} b - Second Bytes1
+ * @param {import('./Bytes1Type.js').Bytes1Type} a - First Bytes1
+ * @param {import('./Bytes1Type.js').Bytes1Type} b - Second Bytes1
  * @returns {boolean} True if equal
  *
  * @example
