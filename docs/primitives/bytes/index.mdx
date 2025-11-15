@@ -13,7 +13,7 @@ Generic fixed-size byte types that form the foundation of Voltaire's type system
 
 ## Overview
 
-Bytes<N> is a branded `Uint8Array` with:
+Bytes&lt;N&gt; is a branded `Uint8Array` with:
 - **Symbol-based branding** - Uses `Symbol.for("type")` for nominal typing
 - **Hardcoded length** - Type-level `{ readonly length: N }` (not `number`)
 - **Zero runtime overhead** - Pure TypeScript compile-time checking
@@ -138,7 +138,7 @@ const bytes = Bytes32.fromHex(hex);
 
 ## Type Hierarchy
 
-Bytes<N> is the foundation for all fixed-size types:
+Bytes&lt;N&gt; is the foundation for all fixed-size types:
 
 ```typescript
 // Base pattern: Bytes<N>
@@ -168,7 +168,7 @@ Bytes8       → Bytes<8> concrete type
 
 ## Common Sizes
 
-Voltaire provides pre-defined Bytes<N> types:
+Voltaire provides pre-defined Bytes&lt;N&gt; types:
 
 ### Bytes8 (64-bit)
 ```typescript
@@ -219,7 +219,7 @@ console.log(Bytes64.size(b64)); // 64
 
 ## Symbol Branding
 
-All Bytes<N> types use the global `brand` symbol:
+All Bytes&lt;N&gt; types use the global `brand` symbol:
 
 ```typescript
 import { brand } from '@tevm/voltaire/brand';
@@ -250,7 +250,7 @@ type MyBytes = Uint8Array & { readonly [brand]: "MyType" };
 
 ## API Methods
 
-All Bytes<N> types share common methods:
+All Bytes&lt;N&gt; types share common methods:
 
 ### Constructors
 - `from(value)` - Universal constructor
@@ -282,7 +282,7 @@ All Bytes<N> types share common methods:
 
 ## Type Safety
 
-Bytes<N> prevents mixing different sizes:
+Bytes&lt;N&gt; prevents mixing different sizes:
 
 ```typescript
 const b32 = Bytes32(42);

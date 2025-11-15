@@ -19,7 +19,9 @@ mode: "custom"
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
     <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-      <span style={{ display: 'block' }}>Ethereum</span>
+      <span style={{ display: 'block', overflow: 'hidden', height: 'clamp(3rem, 8vw, 6rem)' }}>
+        <span id="animated-text" style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', transition: 'transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }}>Voltaire</span>
+      </span>
       <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
     </h1>
 
@@ -273,7 +275,38 @@ url = "https://voltaire.tevm.sh/mcp"
       // Wait for full page load and React hydration
       window.addEventListener('load', function() {
         setTimeout(initMonaco, 500);
+        setTimeout(initTextAnimation, 500);
       });
+
+      function initTextAnimation() {
+        let isVoltaire = true;
+        const animatedText = document.getElementById('animated-text');
+
+        if (!animatedText) {
+          console.error('animated-text element not found');
+          return;
+        }
+
+        function animate() {
+          // Slide up (exit)
+          animatedText.style.transform = 'translateY(-100%)';
+
+          // Change text and slide in from bottom after exit animation
+          setTimeout(() => {
+            isVoltaire = !isVoltaire;
+            animatedText.textContent = isVoltaire ? 'Voltaire' : 'Ethereum primitives';
+            animatedText.style.transform = 'translateY(100%)';
+
+            // Slide to center
+            setTimeout(() => {
+              animatedText.style.transform = 'translateY(0)';
+            }, 50);
+          }, 600);
+        }
+
+        // Start animation cycle
+        setInterval(animate, 2000);
+      }
 
       async function initMonaco() {
         const mountPoint = document.getElementById('editor-mount-point');
