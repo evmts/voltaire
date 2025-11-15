@@ -120,7 +120,7 @@ console.log(encoded);
 ### Encode Hex to Base64
 
 ```typescript
-import { Base64, Hex } from '@tevm/voltaire';
+import { Base64, Hex } from 'tevm';
 
 // Start with hex
 const hexData = "0x48656c6c6f";
@@ -216,7 +216,7 @@ const url = `https://api.example.com/data/${encoded}`;
 Ethereum JSON-RPC often requires Base64 for binary data:
 
 ```typescript
-import { Base64, Hex } from '@tevm/voltaire';
+import { Base64, Hex } from 'tevm';
 
 // Encode transaction data for JSON-RPC
 const calldata = Hex.toBytes("0xa9059cbb...");

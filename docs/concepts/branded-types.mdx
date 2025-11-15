@@ -225,13 +225,6 @@ requireChecksum(checksummed);  // ✓ Valid
 requireChecksum(lowercase);    // ✗ Error: missing checksum flag
 ```
 
-## Validation
-
-All branded types are validated at construction:
-
-```typescript
-import { Address } from 'tevm';
-
 // Valid - creates AddressType
 Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
