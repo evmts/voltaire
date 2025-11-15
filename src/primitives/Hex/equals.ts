@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 
 /**
  * Check if two hex strings are equal
@@ -16,6 +16,6 @@ import type { BrandedHex } from "./BrandedHex.js";
  * Hex.equals(hex, Hex.from('0x1234')); // true
  * ```
  */
-export function equals(hex: BrandedHex, other: BrandedHex): boolean {
+export function equals(hex: HexType, other: HexType): boolean {
 	return hex.toLowerCase() === other.toLowerCase();
 }

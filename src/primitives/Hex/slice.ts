@@ -1,5 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -22,10 +22,10 @@ import { hexCharToValue } from "./utils.js";
  * ```
  */
 export function slice(
-	hex: BrandedHex,
+	hex: HexType,
 	start: number,
 	end?: number,
-): BrandedHex {
+): HexType {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",

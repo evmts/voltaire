@@ -1,5 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -18,7 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
  * ```
  */
-export function toBytes(hex: BrandedHex): Uint8Array {
+export function toBytes(hex: HexType): Uint8Array {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",

@@ -1,5 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -18,7 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * Hex.concat('0x12', '0x34', '0x56'); // '0x123456'
  * ```
  */
-export function concat(...hexes: BrandedHex[]): BrandedHex {
+export function concat(...hexes: HexType[]): HexType {
 	const allBytes = hexes.flatMap((h) => {
 		if (!h.startsWith("0x"))
 			throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
