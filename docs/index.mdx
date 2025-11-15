@@ -23,8 +23,12 @@ mode: "custom"
       <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Primitives</span>
     </h1>
 
-    <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
+    <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 1rem', lineHeight: '1.6' }}>
       Modern, high-performance Ethereum library for TypeScript
+    </p>
+
+    <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.2rem)', color: '#666', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
+      Core building blocks for Ethereum development: addresses, transactions, signatures, hashing, and EVM execution.
     </p>
 
     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -56,18 +60,18 @@ mode: "custom"
 
     <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+        <a href="/getting-started/llm-optimized" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
           <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Intuitive API</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Primitives map one-to-one to the official Ethereum specs, making Voltaire intuitive for anyone with Ethereum domain knowledge</p>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Spec-Aligned API</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Primitives map directly to Ethereum specifications</p>
           </div>
         </a>
         <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
           <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Voltaire's branded types make it the most type-safe Ethereum library for TypeScript</p>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Zero-Cost Type Safety</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Branded types provide compile-time safety with zero runtime overhead</p>
           </div>
         </a>
         <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -80,8 +84,8 @@ mode: "custom"
         <a href="/getting-started/llm-optimized" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🤖</div>
           <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>LLM-Optimized</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API and docs designed for LLMs with llms.txt and MCP server. Tested to handle one-shot prompts</p>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>AI-Native</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>MCP server integration and llms.txt for seamless AI tool usage</p>
           </div>
         </a>
         <a href="/getting-started/powerful-features" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -102,8 +106,8 @@ mode: "custom"
     </div>
 
     <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
-      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
-        <button id="claude-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid #E6A23C', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+      <div role="tablist" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
+        <button role="tab" aria-selected="true" aria-controls="claude-code" aria-label="Claude MCP installation" id="claude-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid #E6A23C', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
           document.getElementById('claude-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
           document.getElementById('claude-btn').style.color = 'white';
           document.getElementById('claude-btn').style.borderColor = '#E6A23C';
@@ -119,7 +123,7 @@ mode: "custom"
         }}>
           Claude
         </button>
-        <button id="cursor-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+        <button role="tab" aria-selected="false" aria-controls="cursor-code" aria-label="Cursor MCP installation" id="cursor-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
           document.getElementById('cursor-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
           document.getElementById('cursor-btn').style.color = 'white';
           document.getElementById('cursor-btn').style.borderColor = '#E6A23C';
@@ -135,7 +139,7 @@ mode: "custom"
         }}>
           Cursor
         </button>
-        <button id="codex-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
+        <button role="tab" aria-selected="false" aria-controls="codex-code" aria-label="Codex MCP installation" id="codex-btn" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', border: '2px solid rgba(128, 128, 128, 0.3)', background: 'transparent', color: 'currentColor', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }} onClick={(e) => {
           document.getElementById('codex-btn').style.background = 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)';
           document.getElementById('codex-btn').style.color = 'white';
           document.getElementById('codex-btn').style.borderColor = '#E6A23C';
@@ -292,16 +296,15 @@ url = "https://voltaire.tevm.sh/mcp"
           });
 
           const code = \`// Generate Ethereum address from private key
-import { Address } from "@tevm/voltaire/Address";
-import { Hex } from "@tevm/voltaire/Hex";
+import { Address, Hex } from "@tevm/voltaire";
 
-const privateKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-const privateKey = Hex.toBytes(privateKeyHex);
+const privateKey = Hex.toBytes(
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+);
 
 const address = Address.fromPrivateKey(privateKey);
-const checksummed = Address.toHex(address);
 
-console.log("Address:", checksummed);\`;
+console.log("Address:", address.toHex());\`;
 
           const model = monaco.editor.createModel(code, 'typescript');
           editor.setModel(model);
