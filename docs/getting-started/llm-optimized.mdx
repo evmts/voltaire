@@ -3,11 +3,9 @@ title: LLM-Optimized
 description: Built from the ground up to be great for LLMs and humans alike
 ---
 
-Voltaire is built from the ground up to be great for LLMs and humans alike.
-
 ## Mirrors Official Specifications
 
-Voltaire's API mirrors Ethereum specifications and standards instead of creating bespoke abstractions. This leverages existing knowledge - both for humans and LLMs.
+Voltaire's API mirrors Ethereum specifications and standards. It contains minimal amounts of bespoke abstractions. Wherever possible, we try to use the most simple JavaScript data type, the most simple TypeScript data type. And we try to make both as close to official Ethereum documentation and specifications, including code generating from the specification itself wherever possible.
 
 **Why this matters for LLMs:**
 
@@ -16,31 +14,37 @@ In the past, libraries optimized for developers who would use them continuously 
 LLMs are different. They don't have long-term learning - they only have pre-existing training data. When your API differs from official specs:
 - LLMs can't leverage training data from Ethereum documentation
 - Breaking changes create a larger gap between training data and reality
-- Debugging requires understanding library-specific abstractions
+- LLMs will only be able to use APIs in the most common way showing up in their training data, and will struggle when going off the well-beaten path compared to when there's minimal abstractions or when all the context of the abstraction is present
+- Debugging requires understanding library-specific abstractions - this is friction for both LLMs and humans alike
 
 By staying close to specs, we minimize the diff between the LLM's training data and Voltaire's API.
 
 **Example - Contract Calls:**
 
 ```typescript
-// Other libraries (bespoke abstraction)
-const result = await contract.read.balanceOf([address]);
+import * as Abi from '@tevm/voltaire/Abi';
 
-// Voltaire (close to JSON-RPC spec)
+// Other libraries (great API, but bespoke abstraction)
+const result = await contract.balanceOf(address, { blockTag: 'latest' });
+
+// Voltaire (much closer to the JSON RPC spec in this example)
+const balanceOfFunction = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256" }]
+};
+
 const result = await client.request({
   method: 'eth_call',
   params: [{
     to: contractAddress,
-    data: encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: [address]
-    })
+    data: Abi.Function.encodeParams(balanceOfFunction, [address])
   }, 'latest']
 });
 ```
 
-Voltaire's approach looks more like the underlying JSON-RPC request. This is intentional - when debugging, there's no missing context.
+This is intentional. When debugging, there's no missing context. What you pass in as the params is what's gonna show up in the JSON RPC request that gets made over the network.
 
 ## Minimal Abstraction
 

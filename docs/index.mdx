@@ -24,7 +24,7 @@ mode: "custom"
     </h1>
 
     <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-      Modern, high-performance WASM-based Ethereum library
+      Modern, high-performance WASM-based Ethereum library for TypeScript
     </p>
 
     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -52,6 +52,53 @@ mode: "custom"
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
         View on GitHub
       </a>
+    </div>
+
+    <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Have confidence your Ethereum types are correct, validated, and type safe</p>
+          </div>
+        </a>
+        <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>⚡</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>High Performance Zig</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>High-performance implementations for cryptography, encoding, and EVM execution written in Zig</p>
+          </div>
+        </a>
+        <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Simple API</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Faithful implementations of Ethereum specs using minimal TypeScript types and native JavaScript data structures</p>
+          </div>
+        </a>
+        <a href="/getting-started/llm-optimized" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🤖</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>LLM-Optimized</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API and docs designed for LLMs with llms.txt and MCP server. Tested to handle one-shot prompts</p>
+          </div>
+        </a>
+        <a href="/getting-started/powerful-features" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📦</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Powerful Features</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis</p>
+          </div>
+        </a>
+        <a href="/getting-started/multiplatform" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works in browser, mobile, Node.js, and native environments</p>
+          </div>
+        </a>
+      </div>
     </div>
 
     <div style={{ maxWidth: '900px', margin: '0 auto 4rem', position: 'relative' }}>
@@ -213,53 +260,6 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 [mcp_servers.voltaire]
 url = "https://voltaire.tevm.sh/mcp"
 ```
-      </div>
-    </div>
-
-    <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Never accidentally pass a hex string where an Address is expected. The compiler catches these bugs before they ship.</p>
-          </div>
-        </a>
-        <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>⚡</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Written in Zig</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>High-performance implementations for cryptography, encoding, and EVM execution written in Zig</p>
-          </div>
-        </a>
-        <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Simple API</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Faithful implementations of Ethereum specs using minimal TypeScript types and native JavaScript data structures</p>
-          </div>
-        </a>
-        <a href="/getting-started/llm-optimized" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🤖</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>LLM-Optimized</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>API and docs designed for LLMs with llms.txt and MCP server. Tested to handle one-shot prompts</p>
-          </div>
-        </a>
-        <a href="/getting-started/powerful-features" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📦</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Powerful Features</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Unique features such as EVM execution and bytecode analysis</p>
-          </div>
-        </a>
-        <a href="/getting-started/multiplatform" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works in browser, mobile, Node.js, and native environments</p>
-          </div>
-        </a>
       </div>
     </div>
 
