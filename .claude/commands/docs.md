@@ -2008,6 +2008,8 @@ bun run docs:dev              # Or via package.json script
 
 # Preview on localhost:3000
 # Hot reload automatically updates on file changes
+# NEVER suggest restarting the dev server - it auto-reloads
+# If changes don't appear, it's a code issue, not a server issue
 ```
 
 **VSCode Extension**:

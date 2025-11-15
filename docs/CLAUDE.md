@@ -1,4 +1,4 @@
-# Voltaire Mintlify Documentation
+# Tevm Mintlify Documentation
 
 ## Migration Status
 
@@ -21,7 +21,7 @@
 - **Config**: mint.json for navigation, theme, settings
 - **Components**: Mintlify built-in components (Tabs, Tab, Accordion, Tip, Warning, Note, etc.)
 - **Architecture**: Ethereum primitives + crypto library for TypeScript and Zig
-- **Main docs location**: `/Users/williamcory/voltaire/docs/`
+- **Main docs location**: `/Users/williamcory/tevm/docs/`
 
 ## Content strategy
 - Document just enough for user success - not too much, not too little
@@ -99,7 +99,7 @@ When converting from Starlight to Mintlify:
 - Create files unnecessarily - prefer editing existing files
 - Use Starlight-specific components or imports in Mintlify docs
 
-## Voltaire-specific patterns
+## Tevm-specific patterns
 
 ### Branded Types
 - All primitives use branded `Uint8Array` types for type safety
