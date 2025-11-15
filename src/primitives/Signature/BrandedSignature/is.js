@@ -1,8 +1,8 @@
 /**
- * Check if value is a BrandedSignature
+ * Check if value is a SignatureType
  *
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedSignature.js').BrandedSignature} True if value is a BrandedSignature
+ * @returns {value is import('../SignatureType.js').SignatureType} True if value is a SignatureType
  *
  * @example
  * ```typescript

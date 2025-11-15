@@ -8,8 +8,8 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
 /**
  * Create Signature from various input types (universal constructor)
  *
- * @param {Uint8Array | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: import('./BrandedSignature.js').SignatureAlgorithm } | { signature: Uint8Array; algorithm: 'ed25519' }} value - Signature data
- * @returns {import('./BrandedSignature.js').BrandedSignature} Signature
+ * @param {Uint8Array | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: import('../SignatureType.js').SignatureAlgorithm } | { signature: Uint8Array; algorithm: 'ed25519' }} value - Signature data
+ * @returns {import('../SignatureType.js').SignatureType} Signature
  * @throws {InvalidSignatureFormatError} If value format is unsupported or invalid
  * @throws {InvalidSignatureLengthError} If signature length is invalid
  *
@@ -26,7 +26,7 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * ```
  */
 export function from(value) {
-	// If it's already a BrandedSignature, return it
+	// If it's already a SignatureType, return it
 	const val = /** @type {any} */ (value);
 	if (
 		value instanceof Uint8Array &&
@@ -35,7 +35,7 @@ export function from(value) {
 			val.algorithm === "p256" ||
 			val.algorithm === "ed25519")
 	) {
-		return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
+		return /** @type {import('../SignatureType.js').SignatureType} */ (
 			value
 		);
 	}
