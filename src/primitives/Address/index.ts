@@ -387,7 +387,7 @@ Address.prototype.calculateCreateAddress = function (
 	const nonceBytes = encodeNonce(nonce);
 	const encoded = crypto.rlpEncode([this, nonceBytes]);
 	const hash = crypto.keccak256(encoded);
-	const result = hash.slice(12) as BrandedAddressType;
+	const result = hash.slice(12) as AddressType;
 	Object.setPrototypeOf(result, Address.prototype);
 	Object.defineProperty(result, "_crypto", {
 		value: crypto,
@@ -400,7 +400,7 @@ Address.prototype.calculateCreateAddress = function (
 Address.prototype.calculateCreate2Address = function (
 	salt: BrandedHash,
 	initCode: BrandedBytecode,
-): BrandedAddressType {
+): AddressType {
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
 		throw new Error(
@@ -411,11 +411,11 @@ Address.prototype.calculateCreate2Address = function (
 	const initCodeHash = crypto.keccak256(initCode);
 	const data = new Uint8Array(1 + 20 + 32 + 32);
 	data[0] = 0xff;
-	data.set(this as BrandedAddressType, 1);
+	data.set(this as AddressType, 1);
 	data.set(salt, 21);
 	data.set(initCodeHash, 53);
 	const hash = crypto.keccak256(data);
-	const result = hash.slice(12) as BrandedAddressType;
+	const result = hash.slice(12) as AddressType;
 	Object.setPrototypeOf(result, Address.prototype);
 	Object.defineProperty(result, "_crypto", {
 		value: crypto,
