@@ -1,43 +1,39 @@
-import type { BrandedHex } from "./BrandedHex/BrandedHex.js";
+import type { HexType } from "./HexType/HexType.js";
 
-export function Hex(value: string | Uint8Array | BrandedHex): BrandedHex;
+export function Hex(value: string | Uint8Array | HexType): HexType;
 export namespace Hex {
-	export function from(value: string | Uint8Array | BrandedHex): BrandedHex;
-	export function fromBytes(value: Uint8Array): BrandedHex;
-	export function fromNumber(value: number, size?: number): BrandedHex;
-	export function fromBigInt(value: bigint, size?: number): BrandedHex;
-	export function fromString(value: string): BrandedHex;
-	export function fromBoolean(value: boolean): BrandedHex;
-	export function isHex(value: unknown): value is BrandedHex;
-	export function concat(...hexes: BrandedHex[]): BrandedHex;
-	export function random(size: number): BrandedHex;
-	export function zero(size: number): BrandedHex;
-	export function validate(value: string): BrandedHex;
-	export function toBytes(hex: BrandedHex): Uint8Array;
-	export function toNumber(hex: BrandedHex): number;
-	export function toBigInt(hex: BrandedHex): bigint;
-	export function toString(hex: BrandedHex): string;
-	export function toBoolean(hex: BrandedHex): boolean;
-	export function size(hex: BrandedHex): number;
+	export function from(value: string | Uint8Array | HexType): HexType;
+	export function fromBytes(value: Uint8Array): HexType;
+	export function fromNumber(value: number, size?: number): HexType;
+	export function fromBigInt(value: bigint, size?: number): HexType;
+	export function fromString(value: string): HexType;
+	export function fromBoolean(value: boolean): HexType;
+	export function isHex(value: unknown): value is HexType;
+	export function concat(...hexes: HexType[]): HexType;
+	export function random(size: number): HexType;
+	export function zero(size: number): HexType;
+	export function validate(value: string): HexType;
+	export function toBytes(hex: HexType): Uint8Array;
+	export function toNumber(hex: HexType): number;
+	export function toBigInt(hex: HexType): bigint;
+	export function toString(hex: HexType): string;
+	export function toBoolean(hex: HexType): boolean;
+	export function size(hex: HexType): number;
 	export function isSized<TSize extends number>(
-		hex: BrandedHex,
+		hex: HexType,
 		size: TSize,
 	): boolean;
 	export function assertSize<TSize extends number>(
-		hex: BrandedHex,
+		hex: HexType,
 		size: TSize,
 	): void;
-	export function slice(
-		hex: BrandedHex,
-		start?: number,
-		end?: number,
-	): BrandedHex;
-	export function pad(hex: BrandedHex, size: number): BrandedHex;
-	export function padRight(hex: BrandedHex, size: number): BrandedHex;
-	export function trim(hex: BrandedHex): BrandedHex;
-	export function equals(a: BrandedHex, b: BrandedHex): boolean;
-	export function xor(a: BrandedHex, b: BrandedHex): BrandedHex;
+	export function slice(hex: HexType, start?: number, end?: number): HexType;
+	export function pad(hex: HexType, size: number): HexType;
+	export function padRight(hex: HexType, size: number): HexType;
+	export function trim(hex: HexType): HexType;
+	export function equals(a: HexType, b: HexType): boolean;
+	export function xor(a: HexType, b: HexType): HexType;
 }
 
-export * from "./BrandedHex/errors.js";
-export type { BrandedHex } from "./BrandedHex/BrandedHex.js";
+export * from "./HexType/errors.js";
+export type { HexType } from "./HexType/HexType.js";

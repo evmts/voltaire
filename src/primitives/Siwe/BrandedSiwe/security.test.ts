@@ -5,9 +5,9 @@
 
 import { describe, expect, it } from "vitest";
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import * as Address from "../../Address/BrandedAddress/index.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
+import type { HashType } from "../../Hash/HashType/HashType.js";
 import type { BrandedMessage, Signature } from "./BrandedMessage.js";
 import { format } from "./format.js";
 import * as Siwe from "./index.js";
@@ -72,7 +72,7 @@ function createValidSignedMessage(): {
 		issuedAt: "2021-09-30T16:25:24.000Z",
 	};
 
-	const messageHash = getMessageHash(message) as BrandedHash;
+	const messageHash = getMessageHash(message) as HashType;
 	const sig = Secp256k1.sign(messageHash, privateKey);
 
 	const signature = new Uint8Array(65);

@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { from } from "./from.js";
 
 /**
@@ -13,7 +13,7 @@ import { from } from "./from.js";
  * const value = Uint.fromNumber(255);
  * ```
  */
-export function fromNumber(value: number): BrandedUint256 {
+export function fromNumber(value: number): Uint256Type {
 	if (!Number.isInteger(value)) {
 		throw new Error(`Uint256 value must be an integer: ${value}`);
 	}

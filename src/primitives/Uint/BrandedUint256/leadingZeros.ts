@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { bitLength } from "./bitLength.js";
 
 /**
@@ -14,6 +14,6 @@ import { bitLength } from "./bitLength.js";
  * const zeros2 = a.leadingZeros(); // 255
  * ```
  */
-export function leadingZeros(uint: BrandedUint256): number {
+export function leadingZeros(uint: Uint256Type): number {
 	return 256 - bitLength(uint);
 }

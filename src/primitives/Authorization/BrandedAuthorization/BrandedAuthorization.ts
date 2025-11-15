@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 
 /**
  * EIP-7702 Authorization branded type

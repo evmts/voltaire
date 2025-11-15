@@ -24,7 +24,7 @@ State module provides fundamental primitives for EVM world state:
 ## Factory
 
 ```typescript
-StorageKey(address: BrandedAddress, slot: bigint): BrandedStorageKey
+StorageKey(address: AddressType, slot: bigint): BrandedStorageKey
 ```
 
 Creates StorageKey instance from address and slot.
@@ -46,7 +46,7 @@ from(value: StorageKeyLike): BrandedStorageKey
 
 ### [StorageKey.create(address, slot)](./BrandedState/create.js.md)
 ```typescript
-create(address: BrandedAddress, slot: bigint): BrandedStorageKey
+create(address: AddressType, slot: bigint): BrandedStorageKey
 ```
 Creates StorageKey from address and slot.
 
@@ -86,7 +86,7 @@ Type guard checking if value is BrandedStorageKey.
 
 ### [EMPTY_CODE_HASH](./BrandedState/constants.js.md#empty_code_hash)
 ```typescript
-const EMPTY_CODE_HASH: BrandedHash
+const EMPTY_CODE_HASH: HashType
 ```
 Value: `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`
 
@@ -94,7 +94,7 @@ Hash of empty EVM bytecode. Identifies accounts with no contract code.
 
 ### [EMPTY_TRIE_ROOT](./BrandedState/constants.js.md#empty_trie_root)
 ```typescript
-const EMPTY_TRIE_ROOT: BrandedHash
+const EMPTY_TRIE_ROOT: HashType
 ```
 Value: `0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421`
 

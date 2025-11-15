@@ -1,5 +1,5 @@
 import type { BrandedBytecode } from "../Bytecode/BrandedBytecode/BrandedBytecode.js";
-import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
+import type { HashType } from "../Hash/HashType/HashType.js";
 import type { AddressType } from "./AddressType.js";
 import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
@@ -48,7 +48,7 @@ export interface BaseAddress extends AddressType {
 export interface AddressWithKeccak extends BaseAddress {
 	toChecksummed(): string;
 	calculateCreate2Address(
-		salt: BrandedHash,
+		salt: HashType,
 		initCode: BrandedBytecode,
 	): AddressType;
 }
@@ -125,9 +125,7 @@ export function Address(
 }
 
 // Alias for Address()
-Address.from = (
-	value: number | bigint | string | Uint8Array,
-): AddressType => {
+Address.from = (value: number | bigint | string | Uint8Array): AddressType => {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
@@ -226,18 +224,14 @@ Address.compare = BrandedAddress.compare;
 Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
-Address.sortAddresses = (
-	addresses: AddressType[],
-): AddressType[] => {
+Address.sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
 	});
 };
 
-Address.deduplicateAddresses = (
-	addresses: AddressType[],
-): AddressType[] => {
+Address.deduplicateAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
@@ -261,7 +255,7 @@ Address.calculateCreateAddress = (
 
 Address.calculateCreate2Address = (
 	address: AddressType,
-	salt: BrandedHash,
+	salt: HashType,
 	initCode: BrandedBytecode,
 ): AddressType => {
 	const result = BrandedAddress.calculateCreate2Address(
@@ -398,7 +392,7 @@ Address.prototype.calculateCreateAddress = function (
 	return result;
 };
 Address.prototype.calculateCreate2Address = function (
-	salt: BrandedHash,
+	salt: HashType,
 	initCode: BrandedBytecode,
 ): AddressType {
 	const crypto = (this as any)._crypto;

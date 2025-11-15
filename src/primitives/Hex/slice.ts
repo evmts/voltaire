@@ -21,11 +21,7 @@ import { hexCharToValue } from "./utils.js";
  * const sliced = Hex.slice(hex, 1); // '0x3456'
  * ```
  */
-export function slice(
-	hex: HexType,
-	start: number,
-	end?: number,
-): HexType {
+export function slice(hex: HexType, start: number, end?: number): HexType {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",

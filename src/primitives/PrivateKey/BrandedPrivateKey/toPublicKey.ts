@@ -1,5 +1,5 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import type { BrandedPublicKey } from "../../PublicKey/BrandedPublicKey/BrandedPublicKey.js";
+import type { PublicKeyType } from "../../PublicKey/PublicKeyType.js";
 import type { PrivateKeyType } from "../PrivateKeyType.js";
 
 /**
@@ -13,9 +13,9 @@ import type { PrivateKeyType } from "../PrivateKeyType.js";
  * const publicKey = PrivateKey._toPublicKey.call(pk);
  * ```
  */
-export function toPublicKey(this: PrivateKeyType): BrandedPublicKey {
+export function toPublicKey(this: PrivateKeyType): PublicKeyType {
 	// Get uncompressed public key (65 bytes with 0x04 prefix)
 	const fullKey = secp256k1.getPublicKey(this, false);
 	// Remove 0x04 prefix to get 64 bytes
-	return fullKey.slice(1) as BrandedPublicKey;
+	return fullKey.slice(1) as PublicKeyType;
 }

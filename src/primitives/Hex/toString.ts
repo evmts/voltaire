@@ -1,5 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -18,7 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * const str = Hex.toString(hex); // 'hello'
  * ```
  */
-export function toString(hex: BrandedHex): string {
+export function toString(hex: HexType): string {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",

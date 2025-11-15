@@ -13,7 +13,7 @@
  * ```
  */
 
-import type { BrandedHash } from "../primitives/Hash/index.js";
+import type { HashType } from "../primitives/Hash/index.js";
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let memory: WebAssembly.Memory | null = null;
@@ -54,7 +54,7 @@ function alloc(size: number): number {
 /**
  * Hash bytes using standalone keccak256 WASM
  */
-export function hash(data: Uint8Array): BrandedHash {
+export function hash(data: Uint8Array): HashType {
 	if (!wasmInstance) {
 		throw new Error("WASM not initialized. Call init() first.");
 	}
@@ -86,13 +86,13 @@ export function hash(data: Uint8Array): BrandedHash {
 	// Reset allocator for next call
 	memoryOffset = 0;
 
-	return result as BrandedHash;
+	return result as HashType;
 }
 
 /**
  * Hash UTF-8 string
  */
-export function hashString(str: string): BrandedHash {
+export function hashString(str: string): HashType {
 	const bytes = new TextEncoder().encode(str);
 	return hash(bytes);
 }
@@ -100,7 +100,7 @@ export function hashString(str: string): BrandedHash {
 /**
  * Hash hex string
  */
-export function hashHex(hex: string): BrandedHash {
+export function hashHex(hex: string): HashType {
 	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(cleanHex.length / 2);
 	for (let i = 0; i < cleanHex.length; i += 2) {

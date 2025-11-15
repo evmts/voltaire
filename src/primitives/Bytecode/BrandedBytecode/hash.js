@@ -2,14 +2,14 @@
  * Factory: Compute bytecode hash (keccak256)
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(code: import('./BrandedBytecode.js').BrandedBytecode) => import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} Function that computes bytecode hash
+ * @returns {(code: import('./BrandedBytecode.js').BrandedBytecode) => import('../../Hash/HashType/HashType.js').HashType} Function that computes bytecode hash
  */
 export function Hash({ keccak256 }) {
 	/**
 	 * Compute bytecode hash (keccak256)
 	 *
 	 * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to hash
-	 * @returns {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} Bytecode hash (32 bytes)
+	 * @returns {import('../../Hash/HashType/HashType.js').HashType} Bytecode hash (32 bytes)
 	 *
 	 * @example
 	 * ```typescript

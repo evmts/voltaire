@@ -20,7 +20,7 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function slice(hex, start, end) {
 	const bytes = OxHex.toBytes(/** @type {`0x${string}`} */ (hex));
-	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+	return /** @type {import('./HexType.js').HexType} */ (
 		fromBytes(bytes.slice(start, end))
 	);
 }

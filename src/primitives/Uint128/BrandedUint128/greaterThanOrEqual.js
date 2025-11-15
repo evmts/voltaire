@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint128.js').BrandedUint128} uint - First operand
- * @param {import('./BrandedUint128.js').BrandedUint128} b - Second operand
+ * @param {import('./../Uint128Type.js').Uint128Type} uint - First operand
+ * @param {import('./../Uint128Type.js').Uint128Type} b - Second operand
  * @returns {boolean} True if uint >= b
  * @throws {never}
  * @example

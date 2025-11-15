@@ -4,8 +4,8 @@
  * Measures performance of access list operations
  */
 
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../../Hash/HashType/HashType.js";
 import type { Item } from "../BrandedAccessList.js";
 import { addressCount } from "./addressCount.js";
 import { assertValid } from "./assertValid.js";
@@ -87,10 +87,10 @@ function createAddress(byte: number): BrandedAddress {
 }
 
 // Helper to create test storage keys
-function createStorageKey(byte: number): BrandedHash {
+function createStorageKey(byte: number): HashType {
 	const key = new Uint8Array(32);
 	key.fill(byte);
-	return key as BrandedHash;
+	return key as HashType;
 }
 
 const addr1 = createAddress(1);

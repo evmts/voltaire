@@ -1,5 +1,5 @@
 import { InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex, Sized } from "./BrandedHex.js";
+import type { HexType, Sized } from "./HexType.js";
 
 /**
  * Assert hex has specific size
@@ -18,7 +18,7 @@ import type { BrandedHex, Sized } from "./BrandedHex.js";
  * ```
  */
 export function assertSize<TSize extends number>(
-	hex: BrandedHex,
+	hex: HexType,
 	targetSize: TSize,
 ): Sized<TSize> {
 	const actualSize = (hex.length - 2) / 2;

@@ -5,8 +5,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./BrandedHash.js').BrandedHash} hash - First hash
- * @param {import('./BrandedHash.js').BrandedHash} other - Hash to compare with
+ * @param {import('../HashType.js').HashType} hash - First hash
+ * @param {import('../HashType.js').HashType} other - Hash to compare with
  * @returns {boolean} True if hashes are equal
  * @throws {never}
  * @example

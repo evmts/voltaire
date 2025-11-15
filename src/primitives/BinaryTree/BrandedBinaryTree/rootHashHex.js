@@ -4,7 +4,7 @@ import { rootHash } from "./rootHash.js";
  * Convert root hash to hex string
  *
  * @param {import('./BrandedBinaryTree.js').BinaryTree} tree - Binary tree
- * @returns {import('../../Hex/BrandedHex/index.js').BrandedHex} Root hash as hex string
+ * @returns {import('../../Hex/BrandedHex/index.js').HexType} Root hash as hex string
  *
  * @example
  * ```typescript
@@ -15,7 +15,7 @@ import { rootHash } from "./rootHash.js";
  */
 export function rootHashHex(tree) {
 	const h = rootHash(tree);
-	return /** @type {import('../../Hex/BrandedHex/index.js').BrandedHex} */ (
+	return /** @type {import('../../Hex/BrandedHex/index.js').HexType} */ (
 		`0x${Array.from(h)
 			.map((b) => b.toString(16).padStart(2, "0"))
 			.join("")}`

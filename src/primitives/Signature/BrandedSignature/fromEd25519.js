@@ -30,7 +30,5 @@ export function fromEd25519(signature) {
 	// Add metadata (algorithm)
 	Object.assign(result, { algorithm: "ed25519" });
 
-	return /** @type {import('../SignatureType.js').SignatureType} */ (
-		result
-	);
+	return /** @type {import('../SignatureType.js').SignatureType} */ (result);
 }

@@ -6,12 +6,12 @@
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import { equals } from "../primitives/Hash/BrandedHash/equals.js";
-import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
-import { isZero } from "../primitives/Hash/BrandedHash/isZero.js";
-import { keccak256 } from "../primitives/Hash/BrandedHash/keccak256.js";
-import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import { equals } from "../primitives/Hash/HashType/equals.js";
+import { fromHex } from "../primitives/Hash/HashType/fromHex.js";
+import { isZero } from "../primitives/Hash/HashType/isZero.js";
+import { keccak256 } from "../primitives/Hash/HashType/keccak256.js";
+import { keccak256String } from "../primitives/Hash/HashType/index.js";
 import {
 	type Domain,
 	EIP712,
@@ -214,7 +214,7 @@ describe("EIP712", () => {
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the string
 			const expected = keccak256String("Hello, World!");
-			expect(equals(encoded as BrandedHash, expected)).toBe(true);
+			expect(equals(encoded as HashType, expected)).toBe(true);
 		});
 
 		it("encodes dynamic bytes (as hash)", () => {
@@ -224,7 +224,7 @@ describe("EIP712", () => {
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the bytes
 			const expected = keccak256(bytes);
-			expect(equals(encoded as BrandedHash, expected)).toBe(true);
+			expect(equals(encoded as HashType, expected)).toBe(true);
 		});
 
 		it("encodes fixed bytes", () => {
@@ -248,7 +248,7 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of concatenated encoded elements
-			expect(isZero(encoded as BrandedHash)).toBe(false);
+			expect(isZero(encoded as HashType)).toBe(false);
 		});
 
 		it("encodes custom struct", () => {
@@ -268,7 +268,7 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of struct
-			expect(isZero(encoded as BrandedHash)).toBe(false);
+			expect(isZero(encoded as HashType)).toBe(false);
 		});
 
 		it("throws on unsupported type", () => {

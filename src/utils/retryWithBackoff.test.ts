@@ -36,7 +36,7 @@ describe("retryWithBackoff", () => {
 				maxRetries: 2,
 				initialDelay: 10,
 				jitter: false,
-			})
+			}),
 		).rejects.toThrow("persistent failure");
 
 		expect(fn).toHaveBeenCalledTimes(3); // Initial + 2 retries
@@ -54,7 +54,7 @@ describe("retryWithBackoff", () => {
 				maxRetries: 5,
 				initialDelay: 10,
 				shouldRetry: (error: any) => error.message !== "non-retryable",
-			})
+			}),
 		).rejects.toThrow("non-retryable");
 
 		expect(fn).toHaveBeenCalledTimes(2); // Stopped at non-retryable
@@ -79,7 +79,7 @@ describe("retryWithBackoff", () => {
 		expect(onRetry).toHaveBeenCalledWith(
 			expect.any(Error),
 			1, // Attempt number
-			10 // Delay
+			10, // Delay
 		);
 	});
 
@@ -185,10 +185,10 @@ describe("withRetry", () => {
 			.mockRejectedValueOnce(new Error("fail"))
 			.mockResolvedValue("result");
 
-		const wrapped = withRetry(
-			(a: string, b: number) => fn(a, b),
-			{ maxRetries: 3, initialDelay: 10 }
-		);
+		const wrapped = withRetry((a: string, b: number) => fn(a, b), {
+			maxRetries: 3,
+			initialDelay: 10,
+		});
 
 		await wrapped("test", 123);
 

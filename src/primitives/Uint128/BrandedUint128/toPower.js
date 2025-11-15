@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint128.js').BrandedUint128} uint - Base
- * @param {import('./BrandedUint128.js').BrandedUint128} exponent - Exponent
- * @returns {import('./BrandedUint128.js').BrandedUint128} Result (uint ^ exponent) mod 2^128
+ * @param {import('./../Uint128Type.js').Uint128Type} uint - Base
+ * @param {import('./../Uint128Type.js').Uint128Type} exponent - Exponent
+ * @returns {import('./../Uint128Type.js').Uint128Type} Result (uint ^ exponent) mod 2^128
  * @throws {never}
  * @example
  * ```javascript

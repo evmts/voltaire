@@ -12,8 +12,8 @@
 
 import { p256 } from "@noble/curves/nist.js";
 import { describe, expect, it } from "vitest";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import { keccak256String } from "../primitives/Hash/HashType/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { P256 } from "./P256/index.js";
 import { P256Wasm } from "./p256.wasm.js";
@@ -145,7 +145,7 @@ describe("P256 WASM Implementation", () => {
 		});
 
 		it("signs all-zero message hash", () => {
-			const zero = new Uint8Array(32) as BrandedHash;
+			const zero = new Uint8Array(32) as HashType;
 			const signature = P256Wasm.sign(zero, TEST_PRIVATE_KEY);
 
 			expect(signature.r.length).toBe(32);
@@ -153,7 +153,7 @@ describe("P256 WASM Implementation", () => {
 		});
 
 		it("signs all-ones message hash", () => {
-			const ones = new Uint8Array(32) as BrandedHash;
+			const ones = new Uint8Array(32) as HashType;
 			ones.fill(0xff);
 			const signature = P256Wasm.sign(ones, TEST_PRIVATE_KEY);
 

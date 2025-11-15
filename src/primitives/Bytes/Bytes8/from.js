@@ -1,8 +1,8 @@
-import { InvalidBytesLengthError } from "../BrandedBytes/errors.js";
-import * as BrandedBytes from "../BrandedBytes/index.js";
+import { InvalidBytesLengthError } from "../BytesType/errors.js";
+import * as BytesType from "../BytesType/index.js";
 
 export function from(value) {
-	const bytes = BrandedBytes.from(value);
+	const bytes = BytesType.from(value);
 	if (bytes.length !== 8) {
 		throw new InvalidBytesLengthError("Bytes8 must be exactly 8 bytes", {
 			expected: 8,

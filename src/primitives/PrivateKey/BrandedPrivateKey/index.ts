@@ -37,7 +37,7 @@ export function toAddress(privateKey: string) {
 
 export function sign(
 	privateKey: string,
-	hash: import("../../Hash/BrandedHash/BrandedHash.js").BrandedHash,
+	hash: import("../../Hash/HashType/HashType.js").HashType,
 ) {
 	return _sign(from(privateKey), hash);
 }

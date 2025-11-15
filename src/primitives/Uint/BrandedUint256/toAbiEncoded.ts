@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { toBytes } from "./toBytes.js";
 
 /**
@@ -17,6 +17,6 @@ import { toBytes } from "./toBytes.js";
  * const encoded2 = value.toAbiEncoded();
  * ```
  */
-export function toAbiEncoded(uint: BrandedUint256): Uint8Array {
+export function toAbiEncoded(uint: Uint256Type): Uint8Array {
 	return toBytes(uint);
 }

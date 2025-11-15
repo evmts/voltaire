@@ -2,7 +2,7 @@
  * Create zero Bytes of specified size
  *
  * @param {number} size - Size in bytes
- * @returns {import('./BrandedBytes.js').BrandedBytes} Zero Bytes
+ * @returns {import('./../BytesType.js').BytesType} Zero Bytes
  *
  * @example
  * ```typescript
@@ -10,7 +10,7 @@
  * ```
  */
 export function zero(size) {
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (
+	return /** @type {import('./../BytesType.js').BytesType} */ (
 		new Uint8Array(size)
 	);
 }

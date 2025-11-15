@@ -5,7 +5,7 @@ import { Keccak256 } from "./keccak256.js";
  * Factory: Calculate Merkle root of hash array
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(hashes: import('./BrandedHash.ts').BrandedHash[]) => import('./BrandedHash.ts').BrandedHash} Function that calculates Merkle root
+ * @returns {(hashes: import('../HashType.js').HashType[]) => import('../HashType.js').HashType} Function that calculates Merkle root
  */
 export function MerkleRoot({ keccak256 }) {
 	const hash = Keccak256({ keccak256 });
@@ -16,8 +16,8 @@ export function MerkleRoot({ keccak256 }) {
 	 *
 	 * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
 	 * @since 0.0.0
-	 * @param {import('./BrandedHash.ts').BrandedHash[]} hashes - Array of hashes (leaf nodes)
-	 * @returns {import('./BrandedHash.ts').BrandedHash} Merkle root hash
+	 * @param {import('../HashType.js').HashType[]} hashes - Array of hashes (leaf nodes)
+	 * @returns {import('../HashType.js').HashType} Merkle root hash
 	 * @throws {never}
 	 * @example
 	 * ```javascript

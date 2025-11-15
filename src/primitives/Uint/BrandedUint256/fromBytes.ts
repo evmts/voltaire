@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Create Uint256 from bytes (big-endian)
@@ -13,7 +13,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const value = Uint.fromBytes(bytes);
  * ```
  */
-export function fromBytes(bytes: Uint8Array): BrandedUint256 {
+export function fromBytes(bytes: Uint8Array): Uint256Type {
 	if (bytes.length > 32) {
 		throw new Error(
 			`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`,
@@ -25,5 +25,5 @@ export function fromBytes(bytes: Uint8Array): BrandedUint256 {
 		value = (value << 8n) | BigInt(bytes[i] ?? 0);
 	}
 
-	return value as BrandedUint256;
+	return value as Uint256Type;
 }

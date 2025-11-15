@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
  * @param {bigint} value - bigint value
- * @returns {import('./BrandedUint8.js').BrandedUint8} Uint8 value
+ * @returns {import('./../Uint8Type.js').Uint8Type} Uint8 value
  * @throws {Error} If value is out of range
  * @example
  * ```javascript
@@ -23,7 +23,5 @@ export function fromBigint(value) {
 		throw new Error(`Uint8 value exceeds maximum (255): ${value}`);
 	}
 
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
-		Number(value)
-	);
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (Number(value));
 }

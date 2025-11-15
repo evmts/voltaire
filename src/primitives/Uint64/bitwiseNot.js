@@ -5,8 +5,8 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - Operand
- * @returns {import('./BrandedUint64.js').BrandedUint64} Result (~uint)
+ * @param {import('./Uint64Type.js').Uint64Type} uint - Operand
+ * @returns {import('./Uint64Type.js').Uint64Type} Result (~uint)
  * @throws {never}
  * @example
  * ```javascript

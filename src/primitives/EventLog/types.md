@@ -12,8 +12,8 @@ Branded type representing an Ethereum event log.
 
 ```typescript
 type BrandedEventLog<
-  TAddress extends BrandedAddress = BrandedAddress,
-  TTopics extends readonly BrandedHash[] = readonly BrandedHash[],
+  TAddress extends AddressType = AddressType,
+  TTopics extends readonly HashType[] = readonly HashType[],
 > = {
   /** Contract address that emitted the log */
   address: TAddress;
@@ -24,11 +24,11 @@ type BrandedEventLog<
   /** Block number where log was emitted */
   blockNumber?: bigint;
   /** Transaction hash that generated the log */
-  transactionHash?: BrandedHash;
+  transactionHash?: HashType;
   /** Transaction index in block */
   transactionIndex?: number;
   /** Block hash */
-  blockHash?: BrandedHash;
+  blockHash?: HashType;
   /** Log index in block */
   logIndex?: number;
   /** Log removed due to chain reorganization */
@@ -37,19 +37,19 @@ type BrandedEventLog<
 ```
 
 **Type Parameters:**
-- `TAddress`: Address type (defaults to BrandedAddress)
-- `TTopics`: Topics array type (defaults to readonly BrandedHash[])
+- `TAddress`: Address type (defaults to AddressType)
+- `TTopics`: Topics array type (defaults to readonly HashType[])
 
 **Fields:**
 
 ### Required Fields
 
-**address**: `BrandedAddress`
+**address**: `AddressType`
 - Contract address that emitted the log
 - 20-byte Ethereum address
-- Must be valid BrandedAddress instance
+- Must be valid AddressType instance
 
-**topics**: `readonly BrandedHash[]`
+**topics**: `readonly HashType[]`
 - Array of 32-byte topic hashes
 - topic[0]: Event signature hash (for non-anonymous events)
 - topic[1-3]: Indexed event parameters
@@ -68,7 +68,7 @@ type BrandedEventLog<
 - Unsigned 256-bit integer
 - Undefined for pending transactions
 
-**transactionHash**: `BrandedHash | undefined`
+**transactionHash**: `HashType | undefined`
 - Hash of transaction that generated the log
 - 32-byte hash
 - Undefined for pending transactions
@@ -78,7 +78,7 @@ type BrandedEventLog<
 - Zero-based integer
 - Undefined for pending transactions
 
-**blockHash**: `BrandedHash | undefined`
+**blockHash**: `HashType | undefined`
 - Hash of block containing the log
 - 32-byte hash
 - Undefined for pending transactions
@@ -108,12 +108,12 @@ Type for filtering event logs.
 
 ```typescript
 type Filter<
-  TAddress extends BrandedAddress | BrandedAddress[] | undefined =
-    | BrandedAddress
-    | BrandedAddress[]
+  TAddress extends AddressType | AddressType[] | undefined =
+    | AddressType
+    | AddressType[]
     | undefined,
-  TTopics extends readonly (BrandedHash | BrandedHash[] | null)[] | undefined =
-    | readonly (BrandedHash | BrandedHash[] | null)[]
+  TTopics extends readonly (HashType | HashType[] | null)[] | undefined =
+    | readonly (HashType | HashType[] | null)[]
     | undefined,
 > = {
   /** Contract address(es) to filter by */
@@ -125,7 +125,7 @@ type Filter<
   /** Ending block number */
   toBlock?: bigint;
   /** Block hash to filter by (alternative to fromBlock/toBlock) */
-  blockHash?: BrandedHash;
+  blockHash?: HashType;
 };
 ```
 
@@ -135,12 +135,12 @@ type Filter<
 
 **Fields:**
 
-**address**: `BrandedAddress | BrandedAddress[] | undefined`
+**address**: `AddressType | AddressType[] | undefined`
 - Single address: Matches exact address
 - Array of addresses: Matches any address (OR logic)
 - Undefined: Matches all addresses
 
-**topics**: `readonly (BrandedHash | BrandedHash[] | null)[] | undefined`
+**topics**: `readonly (HashType | HashType[] | null)[] | undefined`
 - Array of topic filters corresponding to log topic positions
 - `null` element: Matches any topic at that position
 - Single hash: Matches exact hash at that position
@@ -158,7 +158,7 @@ type Filter<
 - Only matches logs with blockNumber <= toBlock
 - Undefined: No upper bound
 
-**blockHash**: `BrandedHash | undefined`
+**blockHash**: `HashType | undefined`
 - Specific block hash to match
 - Alternative to fromBlock/toBlock range
 - Only matches logs with exact blockHash
@@ -170,12 +170,12 @@ Input parameters for creating event logs.
 
 ```typescript
 interface EventLogParams {
-  address: BrandedAddress;
-  topics: readonly (BrandedHash | null | undefined)[];
-  data: BrandedHex;
+  address: AddressType;
+  topics: readonly (HashType | null | undefined)[];
+  data: HexType;
   blockNumber?: bigint;
-  blockHash?: BrandedHash;
-  transactionHash?: BrandedHash;
+  blockHash?: HashType;
+  transactionHash?: HashType;
   transactionIndex?: number;
   logIndex?: number;
   removed?: boolean;
@@ -203,8 +203,8 @@ const log: BrandedEventLog = EventLog({
 ```typescript
 // Transfer event with known topic structure
 type TransferLog = BrandedEventLog<
-  BrandedAddress,
-  readonly [BrandedHash, BrandedHash, BrandedHash] // signature, from, to
+  AddressType,
+  readonly [HashType, HashType, HashType] // signature, from, to
 >;
 
 function decodeTransfer(log: TransferLog) {
@@ -219,13 +219,13 @@ function decodeTransfer(log: TransferLog) {
 import type { Filter } from './EventLog.js';
 
 // Single address filter
-const filter1: Filter<BrandedAddress> = {
+const filter1: Filter<AddressType> = {
   address: tokenAddress,
   topics: [TRANSFER_SIG],
 };
 
 // Multiple addresses filter
-const filter2: Filter<BrandedAddress[]> = {
+const filter2: Filter<AddressType[]> = {
   address: [usdc, dai, weth],
   topics: [TRANSFER_SIG, null, userHash],
 };
@@ -242,7 +242,7 @@ const filter3: Filter<undefined> = {
 
 ```typescript
 // Generic over address type
-function filterByAddress<TAddr extends BrandedAddress>(
+function filterByAddress<TAddr extends AddressType>(
   logs: BrandedEventLog[],
   address: TAddr
 ): BrandedEventLog<TAddr>[] {
@@ -254,7 +254,7 @@ function filterByAddress<TAddr extends BrandedAddress>(
 // Generic over topic structure
 function getLogsWith3Topics(
   logs: BrandedEventLog[]
-): BrandedEventLog<BrandedAddress, readonly [BrandedHash, BrandedHash, BrandedHash]>[] {
+): BrandedEventLog<AddressType, readonly [HashType, HashType, HashType]>[] {
   return logs.filter(log =>
     log.topics.length === 3
   ) as any;
@@ -312,12 +312,12 @@ function requireCompleteLog(log: BrandedEventLog): asserts log is CompleteLog {
 class FilterBuilder {
   private filter: Filter = {};
 
-  forAddress(addr: BrandedAddress | BrandedAddress[]): this {
+  forAddress(addr: AddressType | AddressType[]): this {
     this.filter.address = addr;
     return this;
   }
 
-  withTopics(topics: readonly (BrandedHash | BrandedHash[] | null)[]): this {
+  withTopics(topics: readonly (HashType | HashType[] | null)[]): this {
     this.filter.topics = topics;
     return this;
   }
@@ -371,9 +371,9 @@ const notLog = {
 
 ```typescript
 // Re-exported from other modules
-import type { BrandedAddress } from '../Address/BrandedAddress/BrandedAddress.js';
-import type { BrandedHash } from '../Hash/BrandedHash/BrandedHash.js';
-import type { BrandedHex } from '../Hex/BrandedHex/BrandedHex.js';
+import type { AddressType } from '../Address/AddressType/AddressType.js';
+import type { HashType } from '../Hash/HashType/HashType.js';
+import type { HexType } from '../Hex/HexType/HexType.js';
 ```
 
 ## Type Aliases

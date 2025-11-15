@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./errors.js";
-export * from "./BrandedBytes.js";
+export * from "../BytesType.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
@@ -34,7 +34,7 @@ export {
 };
 
 // Namespace export
-export const BrandedBytes = {
+export const BytesType = {
 	from,
 	fromHex,
 	fromString,

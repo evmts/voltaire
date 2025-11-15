@@ -11,7 +11,7 @@ import { encodeBigintCompact } from "../utils.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @param {import('./BrandedAuthorization.js').BrandedAuthorization} auth - Authorization to hash
- * @returns {import('../../Hash/index.js').BrandedHash} Signing hash
+ * @returns {import('../../Hash/index.js').HashType} Signing hash
  * @throws {never} Never throws
  * @example
  * ```javascript

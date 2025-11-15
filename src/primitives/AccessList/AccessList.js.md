@@ -66,19 +66,19 @@ Validates access list structure.
 
 ### [AccessList.includesAddress(list, address)](./BrandedAccessList/includesAddress.js.md)
 ```typescript
-includesAddress(list: BrandedAccessList, address: BrandedAddress): boolean
+includesAddress(list: BrandedAccessList, address: AddressType): boolean
 ```
 Checks if address exists in access list.
 
 ### [AccessList.includesStorageKey(list, address, key)](./BrandedAccessList/includesStorageKey.js.md)
 ```typescript
-includesStorageKey(list: BrandedAccessList, address: BrandedAddress, key: BrandedHash): boolean
+includesStorageKey(list: BrandedAccessList, address: AddressType, key: HashType): boolean
 ```
 Checks if storage key exists for address in access list.
 
 ### [AccessList.keysFor(list, address)](./BrandedAccessList/keysFor.js.md)
 ```typescript
-keysFor(list: BrandedAccessList, address: BrandedAddress): readonly BrandedHash[] | undefined
+keysFor(list: BrandedAccessList, address: AddressType): readonly HashType[] | undefined
 ```
 Returns all storage keys for address, or undefined if address not in list.
 
@@ -110,13 +110,13 @@ Returns new list with duplicate addresses and storage keys removed.
 
 ### [AccessList.withAddress(list, address)](./BrandedAccessList/withAddress.js.md)
 ```typescript
-withAddress(list: BrandedAccessList, address: BrandedAddress): BrandedAccessList
+withAddress(list: BrandedAccessList, address: AddressType): BrandedAccessList
 ```
 Returns new list with address added (if not already present).
 
 ### [AccessList.withStorageKey(list, address, key)](./BrandedAccessList/withStorageKey.js.md)
 ```typescript
-withStorageKey(list: BrandedAccessList, address: BrandedAddress, key: BrandedHash): BrandedAccessList
+withStorageKey(list: BrandedAccessList, address: AddressType, key: HashType): BrandedAccessList
 ```
 Returns new list with storage key added for address (adds address if needed).
 
@@ -166,7 +166,7 @@ const cost = withKey.gasCost();
 const savings = withKey.gasSavings();
 withKey.hasSavings()        // boolean
 withKey.includesAddress(addr) // boolean
-withKey.keysFor(addr)       // BrandedHash[] | undefined
+withKey.keysFor(addr)       // HashType[] | undefined
 withKey.deduplicate()       // BrandedAccessList
 withKey.addressCount()      // number
 withKey.storageKeyCount()   // number
@@ -190,7 +190,7 @@ See [constants.js.md](./BrandedAccessList/constants.js.md)
 ## Implementation
 
 - Array of Item objects
-- Item: { address: BrandedAddress, storageKeys: readonly BrandedHash[] }
+- Item: { address: AddressType, storageKeys: readonly HashType[] }
 - Delegates to BrandedAccessList namespace
 - Instance methods return AccessList-prototype objects
 

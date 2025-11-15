@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 
 /**
  * Transaction type discriminator
@@ -17,7 +17,7 @@ export enum Type {
  */
 export type AccessListItem = {
 	address: BrandedAddress;
-	storageKeys: readonly BrandedHash[];
+	storageKeys: readonly HashType[];
 };
 
 /**
@@ -45,7 +45,7 @@ export type AuthorizationList = readonly Authorization[];
 /**
  * Versioned hash for EIP-4844 blob transactions
  */
-export type VersionedHash = BrandedHash;
+export type VersionedHash = HashType;
 
 /**
  * Signature components (ECDSA secp256k1)

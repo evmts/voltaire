@@ -2,7 +2,7 @@
  * Create Bytes from UTF-8 string
  *
  * @param {string} str - UTF-8 string
- * @returns {import('./BrandedBytes.js').BrandedBytes} Bytes
+ * @returns {import('./../BytesType.js').BytesType} Bytes
  *
  * @example
  * ```typescript
@@ -12,7 +12,7 @@
  */
 export function fromString(str) {
 	const encoder = new TextEncoder();
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (
+	return /** @type {import('./../BytesType.js').BytesType} */ (
 		encoder.encode(str)
 	);
 }

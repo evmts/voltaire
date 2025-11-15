@@ -58,11 +58,11 @@ export function parseLogs(logs) {
 			}
 
 			try {
-				// Cast topicBytes to BrandedHash[] for Event.decodeLog
+				// Cast topicBytes to HashType[] for Event.decodeLog
 				const args = Event.decodeLog(
 					event,
 					dataBytes,
-					/** @type {readonly import('../../Hash/index.js').BrandedHash[]} */ (
+					/** @type {readonly import('../../Hash/index.js').HashType[]} */ (
 						/** @type {unknown} */ (topicBytes)
 					),
 				);

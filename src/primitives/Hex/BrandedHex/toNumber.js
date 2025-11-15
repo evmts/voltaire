@@ -5,7 +5,7 @@ import { InvalidRangeError } from "../../errors/index.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
  * @since 0.0.0
- * @param {import('./BrandedHex.js').BrandedHex} hex - Hex string to convert
+ * @param {import('./HexType.js').HexType} hex - Hex string to convert
  * @returns {number} Number value
  * @throws {InvalidRangeError} If hex represents value larger than MAX_SAFE_INTEGER
  * @example

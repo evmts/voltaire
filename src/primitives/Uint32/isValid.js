@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedUint32.js').BrandedUint32} true if valid Uint32
+ * @returns {value is import('./Uint32Type.js').Uint32Type} true if valid Uint32
  * @throws {never}
  * @example
  * ```javascript

@@ -6,7 +6,7 @@ import { fromBytes } from "./fromBytes.js";
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - 32-byte ABI-encoded value
- * @returns {import('./BrandedUint128.js').BrandedUint128} Uint128 value
+ * @returns {import('./../Uint128Type.js').Uint128Type} Uint128 value
  * @throws {Error} If bytes length is not 32
  * @example
  * ```javascript

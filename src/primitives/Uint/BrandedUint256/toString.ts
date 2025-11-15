@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to string representation
@@ -15,6 +15,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const hex = value.toString(16); // "ff"
  * ```
  */
-export function toString(uint: BrandedUint256, radix = 10): string {
+export function toString(uint: Uint256Type, radix = 10): string {
 	return (uint as bigint).toString(radix);
 }

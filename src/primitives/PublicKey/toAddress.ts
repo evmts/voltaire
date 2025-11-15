@@ -1,6 +1,6 @@
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import { Hash } from "../../Hash/index.js";
-import type { PublicKeyType } from "../PublicKeyType.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import { Hash } from "../Hash/index.js";
+import type { PublicKeyType } from "./PublicKeyType.js";
 
 /**
  * Derive Ethereum address from public key

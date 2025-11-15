@@ -6,7 +6,7 @@ import { fromString } from "./fromString.js";
  * Create Bytes from various input types (universal constructor)
  *
  * @param {Uint8Array | string} value - Uint8Array, hex string, or UTF-8 string
- * @returns {import('./BrandedBytes.js').BrandedBytes} Bytes
+ * @returns {import('./../BytesType.js').BytesType} Bytes
  * @throws {InvalidValueError} If value type is unsupported or invalid
  *
  * @example
@@ -18,7 +18,7 @@ import { fromString } from "./fromString.js";
  */
 export function from(value) {
 	if (value instanceof Uint8Array) {
-		return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (value);
+		return /** @type {import('./../BytesType.js').BytesType} */ (value);
 	}
 	if (typeof value === "string") {
 		if (value.startsWith("0x")) {

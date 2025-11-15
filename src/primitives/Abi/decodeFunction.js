@@ -6,7 +6,7 @@ import * as Function from "./function/index.js";
  * Decode function call data using ABI
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
- * @param {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array} data - Encoded function call data
+ * @param {import("../Hex/BrandedHex/BrandedHex.js").HexType | Uint8Array} data - Encoded function call data
  * @returns {{ name: string, params: readonly unknown[] }} Decoded function name and parameters
  * @throws {AbiInvalidSelectorError} If data too short for selector
  * @throws {AbiItemNotFoundError} If function selector not found in ABI

@@ -4,8 +4,8 @@
  */
 
 import * as loader from "../../../wasm-loader/loader.js";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../../Hash/index.js";
 import type { BrandedAuthorization } from "./BrandedAuthorization.js";
 
 /**
@@ -35,12 +35,8 @@ export function signingHashWasm(
 	chainId: bigint,
 	address: BrandedAddress,
 	nonce: bigint,
-): BrandedHash {
-	return loader.authorizationSigningHash(
-		chainId,
-		address,
-		nonce,
-	) as BrandedHash;
+): HashType {
+	return loader.authorizationSigningHash(chainId, address, nonce) as HashType;
 }
 
 /**

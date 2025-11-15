@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint32.js').BrandedUint32} uint - Uint32 value to convert
+ * @param {import('./Uint32Type.js').Uint32Type} uint - Uint32 value to convert
  * @returns {string} decimal string representation
  * @throws {never}
  * @example

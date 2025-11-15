@@ -21,16 +21,16 @@ title: "BrandedAccessList Module"
 - `assertValid(list: unknown): asserts list is BrandedAccessList` - Validate with throws
 
 ### Queries
-- `includesAddress(list: BrandedAccessList, address: BrandedAddress): boolean`
-- `includesStorageKey(list: BrandedAccessList, address: BrandedAddress, key: BrandedHash): boolean`
-- `keysFor(list: BrandedAccessList, address: BrandedAddress): readonly BrandedHash[] | undefined`
+- `includesAddress(list: BrandedAccessList, address: AddressType): boolean`
+- `includesStorageKey(list: BrandedAccessList, address: AddressType, key: HashType): boolean`
+- `keysFor(list: BrandedAccessList, address: AddressType): readonly HashType[] | undefined`
 - `addressCount(list: BrandedAccessList): number`
 - `storageKeyCount(list: BrandedAccessList): number`
 - `isEmpty(list: BrandedAccessList): boolean`
 
 ### Manipulation
-- `withAddress(list: BrandedAccessList, address: BrandedAddress): BrandedAccessList`
-- `withStorageKey(list: BrandedAccessList, address: BrandedAddress, key: BrandedHash): BrandedAccessList`
+- `withAddress(list: BrandedAccessList, address: AddressType): BrandedAccessList`
+- `withStorageKey(list: BrandedAccessList, address: AddressType, key: HashType): BrandedAccessList`
 - `deduplicate(list: BrandedAccessList): BrandedAccessList`
 - `merge(...lists: readonly BrandedAccessList[]): BrandedAccessList`
 

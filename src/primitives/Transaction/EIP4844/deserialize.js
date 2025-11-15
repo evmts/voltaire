@@ -112,7 +112,7 @@ export function deserialize(data) {
 						"/primitives/transaction/eip4844/deserialize#error-handling",
 				});
 			}
-			return /** @type {import('../../Hash/index.js').BrandedHash} */ (
+			return /** @type {import('../../Hash/index.js').HashType} */ (
 				hashData.value
 			);
 		},

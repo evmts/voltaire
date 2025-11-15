@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 
 /**
  * Convert bytes to hex
@@ -14,12 +14,12 @@ import type { BrandedHex } from "./BrandedHex.js";
  * const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34])); // '0x1234'
  * ```
  */
-export function fromBytes(bytes: Uint8Array): BrandedHex {
+export function fromBytes(bytes: Uint8Array): HexType {
 	const hexChars = "0123456789abcdef";
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {
 		const b = bytes[i]!;
 		result += hexChars[b >> 4]! + hexChars[b & 0x0f]!;
 	}
-	return result as BrandedHex;
+	return result as HexType;
 }

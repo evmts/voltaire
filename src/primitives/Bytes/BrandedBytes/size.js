@@ -1,7 +1,7 @@
 /**
  * Get size of Bytes
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes
  * @returns {number} Size in bytes
  *
  * @example

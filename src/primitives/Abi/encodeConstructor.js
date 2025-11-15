@@ -7,7 +7,7 @@ import * as Constructor from "./constructor/index.js";
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {readonly unknown[]} args - Constructor arguments
- * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Encoded constructor parameters (hex string)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").HexType} Encoded constructor parameters (hex string)
  * @throws {AbiItemNotFoundError} If constructor not found in ABI
  *
  * @example

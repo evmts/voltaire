@@ -11,8 +11,8 @@ Check if storage key exists for address in access list.
 ```typescript
 function includesStorageKey(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  key: BrandedHash
+  address: AddressType,
+  key: HashType
 ): boolean
 ```
 

@@ -4,7 +4,7 @@ import { InvalidBytesFormatError } from "./errors.js";
  * Create Bytes from hex string
  *
  * @param {string} hex - Hex string with 0x prefix
- * @returns {import('./BrandedBytes.js').BrandedBytes} Bytes
+ * @returns {import('./../BytesType.js').BytesType} Bytes
  * @throws {InvalidBytesFormatError} If hex string is invalid
  *
  * @example
@@ -31,5 +31,5 @@ export function fromHex(hex) {
 		}
 		bytes[i] = byte;
 	}
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (bytes);
+	return /** @type {import('./../BytesType.js').BytesType} */ (bytes);
 }

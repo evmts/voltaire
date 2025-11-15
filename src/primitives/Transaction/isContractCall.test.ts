@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import { isContractCall } from "./isContractCall.js";
 import { Type } from "./types.js";
 import type { EIP1559, EIP2930, EIP4844, EIP7702, Legacy } from "./types.js";
@@ -15,10 +15,10 @@ function createAddress(byte: number): BrandedAddress {
 	return addr as BrandedAddress;
 }
 
-function createHash(byte: number): BrandedHash {
+function createHash(byte: number): HashType {
 	const hash = new Uint8Array(32);
 	hash.fill(byte);
-	return hash as BrandedHash;
+	return hash as HashType;
 }
 
 function createBytes(length: number, fill = 0): Uint8Array {

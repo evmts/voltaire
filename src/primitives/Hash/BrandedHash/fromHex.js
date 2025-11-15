@@ -10,7 +10,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {string} hex - Hex string with optional 0x prefix
- * @returns {import('./BrandedHash.js').BrandedHash} Hash bytes
+ * @returns {import('../HashType.js').HashType} Hash bytes
  * @throws {InvalidLengthError} If hex is wrong length
  * @throws {InvalidFormatError} If hex contains invalid characters
  * @example
@@ -46,5 +46,5 @@ export function fromHex(hex) {
 	for (let i = 0; i < SIZE; i++) {
 		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-	return /** @type {import('./BrandedHash.ts').BrandedHash} */ (bytes);
+	return /** @type {import('../HashType.js').HashType} */ (bytes);
 }

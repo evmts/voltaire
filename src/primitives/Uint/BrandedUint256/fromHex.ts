@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 import { UintNegativeError, UintOverflowError } from "./errors.js";
 
@@ -16,7 +16,7 @@ import { UintNegativeError, UintOverflowError } from "./errors.js";
  * const value2 = Uint.fromHex("ff");
  * ```
  */
-export function fromHex(hex: string): BrandedUint256 {
+export function fromHex(hex: string): Uint256Type {
 	const normalized = hex.startsWith("0x") ? hex : `0x${hex}`;
 	const value = BigInt(normalized);
 
@@ -33,5 +33,5 @@ export function fromHex(hex: string): BrandedUint256 {
 		});
 	}
 
-	return value as BrandedUint256;
+	return value as Uint256Type;
 }

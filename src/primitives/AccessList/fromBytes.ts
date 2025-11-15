@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import { decode } from "../Rlp/BrandedRlp/decode.js";
 import { DecodingError } from "../errors/SerializationError.js";
 import {
@@ -75,7 +75,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 		}
 
 		const address = addressData.value as BrandedAddress;
-		const storageKeys: BrandedHash[] = [];
+		const storageKeys: HashType[] = [];
 
 		for (const keyData of keysData.value) {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
@@ -90,7 +90,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 					docsPath: "/primitives/access-list",
 				});
 			}
-			storageKeys.push(keyData.value as BrandedHash);
+			storageKeys.push(keyData.value as HashType);
 		}
 
 		result.push({ address, storageKeys });

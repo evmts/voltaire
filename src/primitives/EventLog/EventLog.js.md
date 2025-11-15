@@ -54,25 +54,25 @@ Creates shallow copy of event log.
 
 ### [EventLog.getTopic0(log)](./BrandedEventLog/getTopic0.js.md)
 ```typescript
-getTopic0(log: BrandedEventLog): BrandedHash | undefined
+getTopic0(log: BrandedEventLog): HashType | undefined
 ```
 Returns topic0 (event signature hash). Returns undefined if no topics.
 
 ### [EventLog.getSignature(log)](./BrandedEventLog/getSignature.js.md)
 ```typescript
-getSignature(log: BrandedEventLog): BrandedHash | undefined
+getSignature(log: BrandedEventLog): HashType | undefined
 ```
 Alias for getTopic0. Returns event signature hash.
 
 ### [EventLog.getIndexedTopics(log)](./BrandedEventLog/getIndexedTopics.js.md)
 ```typescript
-getIndexedTopics(log: BrandedEventLog): readonly BrandedHash[]
+getIndexedTopics(log: BrandedEventLog): readonly HashType[]
 ```
 Returns indexed parameters (topic1-topic3). Excludes topic0.
 
 ### [EventLog.getIndexed(log)](./BrandedEventLog/getIndexed.js.md)
 ```typescript
-getIndexed(log: BrandedEventLog): readonly BrandedHash[]
+getIndexed(log: BrandedEventLog): readonly HashType[]
 ```
 Alias for getIndexedTopics.
 
@@ -80,13 +80,13 @@ Alias for getIndexedTopics.
 
 ### [EventLog.matchesAddress(log, address)](./BrandedEventLog/matchesAddress.js.md)
 ```typescript
-matchesAddress(log: BrandedEventLog, address: BrandedAddress | BrandedAddress[]): boolean
+matchesAddress(log: BrandedEventLog, address: AddressType | AddressType[]): boolean
 ```
 Checks if log matches address filter. Accepts single address or array.
 
 ### [EventLog.matchesTopics(log, topics)](./BrandedEventLog/matchesTopics.js.md)
 ```typescript
-matchesTopics(log: BrandedEventLog, topics: readonly (BrandedHash | BrandedHash[] | null)[]): boolean
+matchesTopics(log: BrandedEventLog, topics: readonly (HashType | HashType[] | null)[]): boolean
 ```
 Checks if log matches topic filter. `null` entries match any topic. Array entries match any of the hashes.
 
@@ -141,10 +141,10 @@ const log = EventLog({
 });
 
 // Accessors
-log.getTopic0()          // BrandedHash | undefined
-log.getSignature()       // BrandedHash | undefined
-log.getIndexedTopics()   // readonly BrandedHash[]
-log.getIndexed()         // readonly BrandedHash[]
+log.getTopic0()          // HashType | undefined
+log.getSignature()       // HashType | undefined
+log.getIndexedTopics()   // readonly HashType[]
+log.getIndexed()         // readonly HashType[]
 
 // Filtering
 log.matchesAddress(addr)       // boolean

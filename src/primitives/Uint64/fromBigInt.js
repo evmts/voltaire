@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {bigint} value - bigint value
- * @returns {import('./BrandedUint64.js').BrandedUint64} Uint64 value
+ * @returns {import('./Uint64Type.js').Uint64Type} Uint64 value
  * @throws {Error} If value is out of range
  * @example
  * ```javascript

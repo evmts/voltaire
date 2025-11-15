@@ -8,7 +8,7 @@ import { hash } from "./hash.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {readonly Uint8Array[]} chunks - Array of data chunks to hash
- * @returns {import('../../primitives/Hash/index.js').BrandedHash} 32-byte hash
+ * @returns {import('../../primitives/Hash/index.js').HashType} 32-byte hash
  * @throws {never}
  * @example
  * ```javascript

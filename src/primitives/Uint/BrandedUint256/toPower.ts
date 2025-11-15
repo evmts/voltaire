@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -16,10 +16,7 @@ import { MAX } from "./constants.js";
  * const result2 = base.toPower(exp); // 256
  * ```
  */
-export function toPower(
-	uint: BrandedUint256,
-	exponent: BrandedUint256,
-): BrandedUint256 {
+export function toPower(uint: Uint256Type, exponent: Uint256Type): Uint256Type {
 	let result = 1n;
 	let b = uint as bigint;
 	let e = exponent as bigint;
@@ -32,5 +29,5 @@ export function toPower(
 		e = e >> 1n;
 	}
 
-	return result as BrandedUint256;
+	return result as Uint256Type;
 }

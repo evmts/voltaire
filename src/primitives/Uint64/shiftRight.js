@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - Value to shift
+ * @param {import('./Uint64Type.js').Uint64Type} uint - Value to shift
  * @param {bigint | number} bits - Number of bits to shift (0-63)
- * @returns {import('./BrandedUint64.js').BrandedUint64} Result (uint >> bits)
+ * @returns {import('./Uint64Type.js').Uint64Type} Result (uint >> bits)
  * @throws {never}
  * @example
  * ```javascript

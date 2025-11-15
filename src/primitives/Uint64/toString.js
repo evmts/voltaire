@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - Uint64 value to convert
+ * @param {import('./Uint64Type.js').Uint64Type} uint - Uint64 value to convert
  * @returns {string} decimal string representation
  * @throws {never}
  * @example

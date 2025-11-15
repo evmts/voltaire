@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -14,6 +14,6 @@ import { MAX } from "./constants.js";
  * const result2 = a.bitwiseNot(); // MAX
  * ```
  */
-export function bitwiseNot(uint: BrandedUint256): BrandedUint256 {
-	return (~(uint as bigint) & (MAX as bigint)) as BrandedUint256;
+export function bitwiseNot(uint: Uint256Type): Uint256Type {
+	return (~(uint as bigint) & (MAX as bigint)) as Uint256Type;
 }

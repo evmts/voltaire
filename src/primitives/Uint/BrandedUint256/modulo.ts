@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Modulo operation
@@ -16,12 +16,9 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const remainder2 = a.modulo(b); // 10
  * ```
  */
-export function modulo(
-	uint: BrandedUint256,
-	b: BrandedUint256,
-): BrandedUint256 {
+export function modulo(uint: Uint256Type, b: Uint256Type): Uint256Type {
 	if ((b as bigint) === 0n) {
 		throw new Error("Modulo by zero");
 	}
-	return ((uint as bigint) % (b as bigint)) as BrandedUint256;
+	return ((uint as bigint) % (b as bigint)) as Uint256Type;
 }

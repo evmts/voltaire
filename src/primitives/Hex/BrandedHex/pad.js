@@ -20,13 +20,9 @@ import { fromBytes } from "./fromBytes.js";
 export function pad(hex, targetSize) {
 	const bytes = OxHex.toBytes(/** @type {`0x${string}`} */ (hex));
 	if (bytes.length >= targetSize) {
-		return /** @type {import('./BrandedHex.js').BrandedHex} */ (
-			fromBytes(bytes)
-		);
+		return /** @type {import('./HexType.js').HexType} */ (fromBytes(bytes));
 	}
 	const padded = new Uint8Array(targetSize);
 	padded.set(bytes, targetSize - bytes.length);
-	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
-		fromBytes(padded)
-	);
+	return /** @type {import('./HexType.js').HexType} */ (fromBytes(padded));
 }

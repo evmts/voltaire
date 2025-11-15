@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to bytes (big-endian, 32 bytes)
@@ -13,7 +13,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const bytes2 = value.toBytes();
  * ```
  */
-export function toBytes(uint: BrandedUint256): Uint8Array {
+export function toBytes(uint: Uint256Type): Uint8Array {
 	const bytes = new Uint8Array(32);
 	let val = uint as bigint;
 

@@ -1,5 +1,5 @@
 /**
- * @typedef {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
+ * @typedef {import('../../Hash/HashType/HashType.js').HashType} HashType
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
 
@@ -12,7 +12,7 @@ import { hashEquals } from "./utils.js";
  * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log to check
- * @param {readonly (BrandedHash | BrandedHash[] | null)[]} filterTopics - Topic filter array
+ * @param {readonly (HashType | HashType[] | null)[]} filterTopics - Topic filter array
  * @returns {boolean} True if log matches topic filter
  * @throws {never}
  * @example

@@ -231,7 +231,7 @@ export class BatchQueue<T, R> {
 export function createBatchedFunction<T, R>(
 	fn: (items: T[]) => Promise<R[]>,
 	maxBatchSize: number,
-	maxWaitTime: number
+	maxWaitTime: number,
 ): (item: T) => Promise<R> {
 	const queue = new BatchQueue<T, R>({
 		maxBatchSize,
@@ -281,7 +281,10 @@ export class AsyncQueue<T, R> {
 	}> = [];
 	private active = 0;
 
-	constructor(processFn: (item: T) => Promise<R>, options: { concurrency: number }) {
+	constructor(
+		processFn: (item: T) => Promise<R>,
+		options: { concurrency: number },
+	) {
 		this.processFn = processFn;
 		this.concurrency = options.concurrency;
 	}

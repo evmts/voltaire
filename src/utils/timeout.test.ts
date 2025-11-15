@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-	withTimeout,
-	TimeoutError,
-	sleep,
-	createDeferred,
-} from "./timeout.js";
+import { withTimeout, TimeoutError, sleep, createDeferred } from "./timeout.js";
 
 describe("withTimeout", () => {
 	it("returns result when promise resolves before timeout", async () => {
@@ -19,7 +14,7 @@ describe("withTimeout", () => {
 		const promise = new Promise((resolve) => setTimeout(resolve, 1000));
 
 		await expect(withTimeout(promise, { ms: 50 })).rejects.toThrow(
-			TimeoutError
+			TimeoutError,
 		);
 	});
 
@@ -30,7 +25,7 @@ describe("withTimeout", () => {
 			withTimeout(promise, {
 				ms: 50,
 				message: "Custom timeout message",
-			})
+			}),
 		).rejects.toThrow("Custom timeout message");
 	});
 
@@ -58,7 +53,7 @@ describe("withTimeout", () => {
 			withTimeout(promise, {
 				ms: 1000,
 				signal: controller.signal,
-			})
+			}),
 		).rejects.toThrow("Operation aborted");
 	});
 });

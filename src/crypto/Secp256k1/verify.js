@@ -24,8 +24,8 @@ function concat(...arrays) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components (r and s are BrandedHash)
- * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
+ * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature with r, s, v components (r and s are HashType)
+ * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash that was signed
  * @param {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} publicKey - 64-byte uncompressed public key
  * @returns {boolean} true if signature is valid, false otherwise
  * @throws {InvalidSignatureError} If signature v is invalid

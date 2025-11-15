@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Get number of bits required to represent value
@@ -13,7 +13,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const bits2 = a.bitLength(); // 8
  * ```
  */
-export function bitLength(uint: BrandedUint256): number {
+export function bitLength(uint: Uint256Type): number {
 	if ((uint as bigint) === 0n) return 0;
 	return (uint as bigint).toString(2).length;
 }

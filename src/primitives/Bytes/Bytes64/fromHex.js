@@ -10,7 +10,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
  * @param {string} hex - Hex string with optional 0x prefix
- * @returns {import('./BrandedBytes64.ts').BrandedBytes64} Bytes64
+ * @returns {import('./Bytes64Type.ts').Bytes64Type} Bytes64
  * @throws {InvalidLengthError} If hex is wrong length
  * @throws {InvalidFormatError} If hex contains invalid characters
  * @example
@@ -45,5 +45,5 @@ export function fromHex(hex) {
 	for (let i = 0; i < SIZE; i++) {
 		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-	return /** @type {import('./BrandedBytes64.ts').BrandedBytes64} */ (bytes);
+	return /** @type {import('./Bytes64Type.ts').Bytes64Type} */ (bytes);
 }

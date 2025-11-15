@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint32.js').BrandedUint32} uint - Value to clone
- * @returns {import('./BrandedUint32.js').BrandedUint32} Cloned value
+ * @param {import('./Uint32Type.js').Uint32Type} uint - Value to clone
+ * @returns {import('./Uint32Type.js').Uint32Type} Cloned value
  * @throws {never}
  * @example
  * ```javascript

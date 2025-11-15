@@ -1,8 +1,8 @@
 /**
  * Compare two Bytes (lexicographic)
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} a - First Bytes
- * @param {import('./BrandedBytes.js').BrandedBytes} b - Second Bytes
+ * @param {import('./../BytesType.js').BytesType} a - First Bytes
+ * @param {import('./../BytesType.js').BytesType} b - Second Bytes
  * @returns {number} -1 if a < b, 0 if equal, 1 if a > b
  *
  * @example

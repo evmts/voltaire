@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes64.ts').BrandedBytes64} a - First value
- * @param {import('./BrandedBytes64.ts').BrandedBytes64} b - Second value
+ * @param {import('./Bytes64Type.ts').Bytes64Type} a - First value
+ * @param {import('./Bytes64Type.ts').Bytes64Type} b - Second value
  * @returns {number} -1 if a < b, 0 if equal, 1 if a > b
  * @example
  * ```javascript

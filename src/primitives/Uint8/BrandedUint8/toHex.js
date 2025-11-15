@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} uint - Uint8 value
+ * @param {import('./../Uint8Type.js').Uint8Type} uint - Uint8 value
  * @param {boolean} [padded=true] - Whether to pad to 2 characters (1 byte)
  * @returns {string} Hex string with 0x prefix
  * @throws {never}

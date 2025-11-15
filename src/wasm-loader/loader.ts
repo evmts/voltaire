@@ -7,9 +7,9 @@
  */
 
 import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
-import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import type { BrandedPrivateKey } from "../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js";
+import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
 import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
@@ -690,7 +690,7 @@ export function calculateCreate2Address(
  * const hash = keccak256(new Uint8Array([1, 2, 3]));
  * ```
  */
-export function keccak256(data: Uint8Array): BrandedHash {
+export function keccak256(data: Uint8Array): HashType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -700,7 +700,7 @@ export function keccak256(data: Uint8Array): BrandedHash {
 		writeBytes(data, dataPtr);
 		const result = exports.primitives_keccak256(dataPtr, data.length, outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32) as BrandedHash;
+		return readBytes(outPtr, 32) as HashType;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -732,7 +732,7 @@ export function hashToHex(hash: Uint8Array): string {
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 32-byte hash
  */
-export function hashFromHex(hex: string): BrandedHash {
+export function hashFromHex(hex: string): HashType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -741,7 +741,7 @@ export function hashFromHex(hex: string): BrandedHash {
 
 		const result = exports.primitives_hash_from_hex(hexPtr, outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32) as BrandedHash;
+		return readBytes(outPtr, 32) as HashType;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -773,7 +773,7 @@ export function hashEquals(a: Uint8Array, b: Uint8Array): boolean {
  * @param message - Message to hash
  * @returns 32-byte hash
  */
-export function eip191HashMessage(message: Uint8Array): BrandedHash {
+export function eip191HashMessage(message: Uint8Array): HashType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -787,7 +787,7 @@ export function eip191HashMessage(message: Uint8Array): BrandedHash {
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 32) as BrandedHash;
+		return readBytes(outPtr, 32) as HashType;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1487,14 +1487,14 @@ export function txDetectType(data: Uint8Array): number {
  * const privateKey = generatePrivateKey();
  * ```
  */
-export function generatePrivateKey(): BrandedPrivateKey {
+export function generatePrivateKey(): PrivateKeyType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
 		const outPtr = malloc(32);
 		const result = exports.primitives_generate_private_key(outPtr);
 		checkResult(result);
-		return readBytes(outPtr, 32) as BrandedPrivateKey;
+		return readBytes(outPtr, 32) as PrivateKeyType;
 	} finally {
 		memoryOffset = savedOffset;
 	}

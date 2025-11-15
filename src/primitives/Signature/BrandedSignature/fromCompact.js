@@ -13,8 +13,8 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * Create Signature from compact format
  *
  * @param {Uint8Array} bytes - Compact signature bytes (64 or 65 bytes)
- * @param {import('./BrandedSignature.js').SignatureAlgorithm} algorithm - Signature algorithm
- * @returns {import('./BrandedSignature.js').BrandedSignature} Signature
+ * @param {import('../SignatureType.js').SignatureAlgorithm} algorithm - Signature algorithm
+ * @returns {import('../SignatureType.js').SignatureType} Signature
  * @throws {InvalidSignatureLengthError} If bytes length is invalid
  *
  * @example

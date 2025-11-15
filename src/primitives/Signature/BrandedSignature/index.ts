@@ -1,8 +1,8 @@
 // Type exports
 export type {
-	BrandedSignature,
+	SignatureType,
 	SignatureAlgorithm,
-} from "./BrandedSignature.js";
+} from "../SignatureType.js";
 
 // Export errors and constants
 export * from "./errors.js";

@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint32.js').BrandedUint32} uint - Dividend
- * @param {import('./BrandedUint32.js').BrandedUint32} b - Divisor
- * @returns {import('./BrandedUint32.js').BrandedUint32} Quotient (uint / b) truncated
+ * @param {import('./Uint32Type.js').Uint32Type} uint - Dividend
+ * @param {import('./Uint32Type.js').Uint32Type} b - Divisor
+ * @returns {import('./Uint32Type.js').Uint32Type} Quotient (uint / b) truncated
  * @throws {Error} If divisor is zero
  * @example
  * ```javascript

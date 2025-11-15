@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint32.js').BrandedUint32} uint - Base
- * @param {import('./BrandedUint32.js').BrandedUint32} exp - Exponent
- * @returns {import('./BrandedUint32.js').BrandedUint32} Result (uint ^ exp) mod 2^32
+ * @param {import('./Uint32Type.js').Uint32Type} uint - Base
+ * @param {import('./Uint32Type.js').Uint32Type} exp - Exponent
+ * @returns {import('./Uint32Type.js').Uint32Type} Result (uint ^ exp) mod 2^32
  * @throws {never}
  * @example
  * ```javascript
@@ -16,8 +16,7 @@
  * ```
  */
 export function toPower(uint, exp) {
-	if (exp === 0)
-		return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (1);
+	if (exp === 0) return /** @type {import('./Uint32Type.js').Uint32Type} */ (1);
 	if (exp === 1) return uint;
 
 	let result = 1;
@@ -32,5 +31,5 @@ export function toPower(uint, exp) {
 		exponent = exponent >>> 1;
 	}
 
-	return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (result);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (result);
 }

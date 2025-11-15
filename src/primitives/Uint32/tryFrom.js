@@ -6,7 +6,7 @@ import { isValid } from "./isValid.js";
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {unknown} value - Value to convert
- * @returns {import('./BrandedUint32.js').BrandedUint32 | null} Uint32 value or null
+ * @returns {import('./Uint32Type.js').Uint32Type | null} Uint32 value or null
  * @throws {never}
  * @example
  * ```javascript
@@ -18,7 +18,7 @@ import { isValid } from "./isValid.js";
  */
 export function tryFrom(value) {
 	if (isValid(value)) {
-		return /** @type {import('./BrandedUint32.js').BrandedUint32} */ (value);
+		return /** @type {import('./Uint32Type.js').Uint32Type} */ (value);
 	}
 	return null;
 }

@@ -1,8 +1,8 @@
 /**
  * Convert Bytes2 to generic Bytes
  *
- * @param {import('./Bytes2Type.js').BrandedBytes2} bytes - Bytes2 to convert
- * @returns {import('../BrandedBytes/BrandedBytes.js').BrandedBytes} Generic Bytes
+ * @param {import('./Bytes2Type.js').BytesType2} bytes - Bytes2 to convert
+ * @returns {import('../BytesType.js').BytesType} Generic Bytes
  *
  * @example
  * ```typescript
@@ -10,7 +10,5 @@
  * ```
  */
 export function toBytes(bytes) {
-	return /** @type {import('../BrandedBytes/BrandedBytes.js').BrandedBytes} */ (
-		bytes
-	);
+	return /** @type {import('../BytesType.js').BytesType} */ (bytes);
 }

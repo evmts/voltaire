@@ -173,7 +173,7 @@ describe("Bytes32", () => {
 			bytes[1] = 0xab;
 			bytes[31] = 0xff;
 			const hex = Bytes32.toHex(
-				Bytes32.fromBytes(bytes) as Bytes32.BrandedBytes32,
+				Bytes32.fromBytes(bytes) as Bytes32.Bytes32Type,
 			);
 			expect(hex).toMatch(/^0x[0-9a-f]{64}$/);
 			expect(hex.slice(0, 6)).toBe("0x12ab");
@@ -185,7 +185,7 @@ describe("Bytes32", () => {
 			bytes[0] = 0x01;
 			bytes[1] = 0x0f;
 			const hex = Bytes32.toHex(
-				Bytes32.fromBytes(bytes) as Bytes32.BrandedBytes32,
+				Bytes32.fromBytes(bytes) as Bytes32.Bytes32Type,
 			);
 			expect(hex.slice(2, 6)).toBe("010f");
 		});
@@ -297,8 +297,8 @@ describe("Bytes32", () => {
 			b[0] = 2;
 			expect(
 				Bytes32.equals(
-					Bytes32.fromBytes(a) as Bytes32.BrandedBytes32,
-					Bytes32.fromBytes(b) as Bytes32.BrandedBytes32,
+					Bytes32.fromBytes(a) as Bytes32.Bytes32Type,
+					Bytes32.fromBytes(b) as Bytes32.Bytes32Type,
 				),
 			).toBe(false);
 		});
@@ -323,8 +323,8 @@ describe("Bytes32", () => {
 			b[0] = 2;
 			expect(
 				Bytes32.compare(
-					Bytes32.fromBytes(a) as Bytes32.BrandedBytes32,
-					Bytes32.fromBytes(b) as Bytes32.BrandedBytes32,
+					Bytes32.fromBytes(a) as Bytes32.Bytes32Type,
+					Bytes32.fromBytes(b) as Bytes32.Bytes32Type,
 				),
 			).toBe(-1);
 		});
@@ -336,8 +336,8 @@ describe("Bytes32", () => {
 			b[0] = 1;
 			expect(
 				Bytes32.compare(
-					Bytes32.fromBytes(a) as Bytes32.BrandedBytes32,
-					Bytes32.fromBytes(b) as Bytes32.BrandedBytes32,
+					Bytes32.fromBytes(a) as Bytes32.Bytes32Type,
+					Bytes32.fromBytes(b) as Bytes32.Bytes32Type,
 				),
 			).toBe(1);
 		});
@@ -349,8 +349,8 @@ describe("Bytes32", () => {
 			b[31] = 2;
 			expect(
 				Bytes32.compare(
-					Bytes32.fromBytes(a) as Bytes32.BrandedBytes32,
-					Bytes32.fromBytes(b) as Bytes32.BrandedBytes32,
+					Bytes32.fromBytes(a) as Bytes32.Bytes32Type,
+					Bytes32.fromBytes(b) as Bytes32.Bytes32Type,
 				),
 			).toBe(-1);
 		});

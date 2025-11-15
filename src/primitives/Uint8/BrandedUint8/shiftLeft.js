@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} uint - Value to shift
+ * @param {import('./../Uint8Type.js').Uint8Type} uint - Value to shift
  * @param {number} shift - Number of bits to shift (0-7)
- * @returns {import('./BrandedUint8.js').BrandedUint8} Left-shifted value (masked to 8 bits)
+ * @returns {import('./../Uint8Type.js').Uint8Type} Left-shifted value (masked to 8 bits)
  * @throws {never}
  * @example
  * ```javascript
@@ -17,7 +17,7 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function shiftLeft(uint, shift) {
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (
 		(uint << shift) & MAX
 	);
 }

@@ -8,7 +8,7 @@ import { Eip712Error } from "./errors.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
- * @param {(typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Hash/index.js').BrandedHash} deps.hashTypedData - Hash typed data function
+ * @param {(typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Hash/index.js').HashType} deps.hashTypedData - Hash typed data function
  * @param {(hash: Uint8Array, privateKey: Uint8Array) => import('./BrandedEIP712.js').Signature} deps.sign - Secp256k1 sign function
  * @returns {(typedData: import('./BrandedEIP712.js').TypedData, privateKey: Uint8Array) => import('./BrandedEIP712.js').Signature} Function that signs typed data
  * @throws {Eip712Error} If private key length is invalid or signing fails

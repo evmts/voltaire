@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import * as Uint from "./index.js";
 
 // ============================================================================
@@ -241,7 +241,7 @@ describe("Uint comparison edge cases", () => {
 	});
 
 	it("handles comparison ordering", () => {
-		const values: BrandedUint256[] = [
+		const values: Uint256Type[] = [
 			Uint.ZERO,
 			Uint.ONE,
 			Uint.from(100),
@@ -419,7 +419,7 @@ describe("Uint special cases", () => {
 	});
 
 	it("handles commutative property of addition", () => {
-		const pairs: [BrandedUint256, BrandedUint256][] = [
+		const pairs: [Uint256Type, Uint256Type][] = [
 			[Uint.from(100), Uint.from(200)],
 			[Uint.from(2n ** 64n), Uint.from(2n ** 128n)],
 			[Uint.MAX, Uint.ONE],

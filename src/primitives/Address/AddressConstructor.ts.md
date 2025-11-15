@@ -13,7 +13,7 @@ Both `new Address(value)` and `Address(value)` syntax supported. Accept numeric,
 
 ## AddressPrototype
 
-Extends `BrandedAddress` with instance methods:
+Extends `AddressType` with instance methods:
 
 **Inherited from Uint8Array:**
 - `toBase64()` - encode to base64

@@ -1,4 +1,4 @@
-import type { BrandedHash } from "../../Hash/index.js";
+import type { HashType } from "../../Hash/index.js";
 import type {
 	DecodeLogResult,
 	EncodeTopicsArgs,
@@ -7,14 +7,14 @@ import type {
 
 export interface EventConstructor {
 	getSignature<T extends Event>(event: T): string;
-	getSelector<T extends Event>(event: T): BrandedHash;
+	getSelector<T extends Event>(event: T): HashType;
 	encodeTopics<T extends Event>(
 		event: T,
 		args: EncodeTopicsArgs<T["inputs"]>,
-	): (BrandedHash | null)[];
+	): (HashType | null)[];
 	decodeLog<T extends Event>(
 		event: T,
 		data: Uint8Array,
-		topics: readonly BrandedHash[],
+		topics: readonly HashType[],
 	): DecodeLogResult<T["inputs"]>;
 }

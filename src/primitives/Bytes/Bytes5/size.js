@@ -1,7 +1,7 @@
 /**
  * Get size of Bytes5 (always 5)
  *
- * @param {import('./BrandedBytes5.js').BrandedBytes5} _bytes - Bytes5
+ * @param {import('./Bytes5Type.js').BytesType5} _bytes - Bytes5
  * @returns {5} Size (always 5)
  *
  * @example

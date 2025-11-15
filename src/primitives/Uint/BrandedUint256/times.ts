@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -16,7 +16,7 @@ import { MAX } from "./constants.js";
  * const product2 = a.times(b); // 50
  * ```
  */
-export function times(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function times(uint: Uint256Type, b: Uint256Type): Uint256Type {
 	const product = (uint as bigint) * (b as bigint);
-	return (product & MAX) as BrandedUint256;
+	return (product & MAX) as Uint256Type;
 }

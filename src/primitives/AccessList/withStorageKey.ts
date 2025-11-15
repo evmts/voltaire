@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
 /**
@@ -16,7 +16,7 @@ function addressEquals(a: BrandedAddress, b: BrandedAddress): boolean {
 /**
  * Compare two hashes for equality (byte-by-byte)
  */
-function hashEquals(a: BrandedHash, b: BrandedHash): boolean {
+function hashEquals(a: HashType, b: HashType): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;
@@ -44,7 +44,7 @@ function hashEquals(a: BrandedHash, b: BrandedHash): boolean {
 export function withStorageKey(
 	list: BrandedAccessList,
 	address: BrandedAddress,
-	storageKey: BrandedHash,
+	storageKey: HashType,
 ): BrandedAccessList {
 	const result: Item[] = [];
 	let found = false;

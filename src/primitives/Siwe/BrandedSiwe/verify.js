@@ -73,7 +73,7 @@ export function Verify({
 			// Recover public key from signature
 			const publicKey = secp256k1RecoverPublicKey(
 				{ r, s, v: recoveryId },
-				/** @type {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} */ (
+				/** @type {import('../../Hash/HashType/HashType.js').HashType} */ (
 					messageHash
 				),
 			);

@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to hex string
@@ -15,7 +15,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const hex3 = value.toHex(false); // "0xff"
  * ```
  */
-export function toHex(uint: BrandedUint256, padded = true): string {
+export function toHex(uint: Uint256Type, padded = true): string {
 	const hex = (uint as bigint).toString(16);
 	return padded ? `0x${hex.padStart(64, "0")}` : `0x${hex}`;
 }

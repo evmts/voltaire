@@ -8,11 +8,6 @@ export type Bytes32Type = Uint8Array & {
 /**
  * Inputs that can be converted to Bytes32
  */
-export type Bytes32Like =
-	| Bytes32Type
-	| string
-	| Uint8Array
-	| bigint
-	| number;
+export type Bytes32Like = Bytes32Type | string | Uint8Array | bigint | number;
 
 export const SIZE = 32;

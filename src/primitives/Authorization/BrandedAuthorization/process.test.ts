@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { process } from "./process.js";
 import { sign } from "./index.js";
 

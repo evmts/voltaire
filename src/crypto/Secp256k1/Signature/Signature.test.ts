@@ -61,7 +61,7 @@ describe("Secp256k1.Signature methods", () => {
 			const bytes = toBytes(signature);
 
 			expect(bytes.length).toBe(65);
-			// Compare using Array.from since BrandedHash is Uint8Array
+			// Compare using Array.from since HashType is Uint8Array
 			expect(Array.from(bytes.slice(0, 32))).toEqual(Array.from(signature.r));
 			expect(Array.from(bytes.slice(32, 64))).toEqual(Array.from(signature.s));
 			expect(bytes[64]).toBe(signature.v);
@@ -194,7 +194,7 @@ describe("Secp256k1.Signature methods", () => {
 			const compact = toCompact(signature);
 
 			expect(compact.length).toBe(64);
-			// Compare using Array.from since BrandedHash is Uint8Array
+			// Compare using Array.from since HashType is Uint8Array
 			expect(Array.from(compact.slice(0, 32))).toEqual(Array.from(signature.r));
 			expect(Array.from(compact.slice(32, 64))).toEqual(
 				Array.from(signature.s),
@@ -313,7 +313,7 @@ describe("Secp256k1.Signature methods", () => {
 			const fromFull = fromBytes(fullBytes);
 			const fromCompactSig = fromCompact(compact, original.v);
 
-			// All should be equivalent (use Array.from for BrandedHash comparison)
+			// All should be equivalent (use Array.from for HashType comparison)
 			expect(Array.from(fromFull.r)).toEqual(Array.from(original.r));
 			expect(Array.from(fromFull.s)).toEqual(Array.from(original.s));
 			expect(fromFull.v).toEqual(original.v);

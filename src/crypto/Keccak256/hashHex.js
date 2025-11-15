@@ -7,7 +7,7 @@ import { hash } from "./hash.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} hex - Hex string to hash (with or without 0x prefix)
- * @returns {import('../../primitives/Hash/index.js').BrandedHash} 32-byte hash
+ * @returns {import('../../primitives/Hash/index.js').HashType} 32-byte hash
  * @throws {InvalidFormatError} If hex string is invalid or has odd length
  * @example
  * ```javascript

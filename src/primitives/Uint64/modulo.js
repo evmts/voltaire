@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - Dividend
- * @param {import('./BrandedUint64.js').BrandedUint64} b - Divisor
- * @returns {import('./BrandedUint64.js').BrandedUint64} Remainder (uint % b)
+ * @param {import('./Uint64Type.js').Uint64Type} uint - Dividend
+ * @param {import('./Uint64Type.js').Uint64Type} b - Divisor
+ * @returns {import('./Uint64Type.js').Uint64Type} Remainder (uint % b)
  * @throws {Error} If divisor is zero
  * @example
  * ```javascript

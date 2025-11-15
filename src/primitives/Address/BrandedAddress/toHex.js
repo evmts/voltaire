@@ -2,7 +2,7 @@
  * Convert Address to hex string
  *
  * @param {import('./BrandedAddress.js').BrandedAddress} address - Address to convert
- * @returns {import('../../Hex/index.js').BrandedHex} Lowercase hex string with 0x prefix
+ * @returns {import('../../Hex/index.js').HexType} Lowercase hex string with 0x prefix
  *
  * @example
  * ```typescript
@@ -11,7 +11,7 @@
  * ```
  */
 export function toHex(address) {
-	return /** @type {import('../../Hex/index.js').BrandedHex} */ (
+	return /** @type {import('../../Hex/index.js').HexType} */ (
 		`0x${Array.from(address, (b) => b.toString(16).padStart(2, "0")).join("")}`
 	);
 }

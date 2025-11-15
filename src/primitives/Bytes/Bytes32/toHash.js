@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes32.ts').BrandedBytes32} bytes - Bytes32 to convert
- * @returns {import('../../Hash/BrandedHash/BrandedHash.ts').BrandedHash} Hash
+ * @param {import('./Bytes32Type.ts').Bytes32Type} bytes - Bytes32 to convert
+ * @returns {import('../../Hash/HashType/HashType.ts').HashType} Hash
  * @example
  * ```javascript
  * import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
@@ -12,7 +12,7 @@
  * ```
  */
 export function toHash(bytes) {
-	return /** @type {import('../../Hash/BrandedHash/BrandedHash.ts').BrandedHash} */ (
+	return /** @type {import('../../Hash/HashType/HashType.ts').HashType} */ (
 		new Uint8Array(bytes)
 	);
 }

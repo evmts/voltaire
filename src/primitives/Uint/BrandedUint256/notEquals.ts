@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Check inequality
@@ -15,6 +15,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const isNotEq2 = a.notEquals(b); // true
  * ```
  */
-export function notEquals(uint: BrandedUint256, b: BrandedUint256): boolean {
+export function notEquals(uint: Uint256Type, b: Uint256Type): boolean {
 	return (uint as bigint) !== (b as bigint);
 }

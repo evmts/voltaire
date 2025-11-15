@@ -1,5 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 import { hexCharToValue } from "./utils.js";
 
@@ -20,7 +20,7 @@ import { hexCharToValue } from "./utils.js";
  * const result = Hex.xor(hex, Hex.from('0x34')); // '0x26'
  * ```
  */
-export function xor(hex: BrandedHex, other: BrandedHex): BrandedHex {
+export function xor(hex: HexType, other: HexType): HexType {
 	// Convert hex to bytes
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {

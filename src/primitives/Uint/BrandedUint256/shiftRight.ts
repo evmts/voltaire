@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Right shift
@@ -15,9 +15,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const result2 = a.shiftRight(b); // 1
  * ```
  */
-export function shiftRight(
-	uint: BrandedUint256,
-	bits: BrandedUint256,
-): BrandedUint256 {
-	return ((uint as bigint) >> (bits as bigint)) as BrandedUint256;
+export function shiftRight(uint: Uint256Type, bits: Uint256Type): Uint256Type {
+	return ((uint as bigint) >> (bits as bigint)) as Uint256Type;
 }

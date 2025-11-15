@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { BrandedStorageKey } from "./BrandedStorageKey.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./constants.js";
 import * as StorageKey from "./index.js";

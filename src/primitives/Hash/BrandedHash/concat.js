@@ -4,7 +4,7 @@ import { Keccak256 } from "./keccak256.js";
  * Factory: Concatenate multiple hashes and hash the result
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(...hashes: import('./BrandedHash.ts').BrandedHash[]) => import('./BrandedHash.ts').BrandedHash} Function that concatenates and hashes
+ * @returns {(...hashes: import('../HashType.js').HashType[]) => import('../HashType.js').HashType} Function that concatenates and hashes
  */
 export function Concat({ keccak256 }) {
 	const hash = Keccak256({ keccak256 });
@@ -14,8 +14,8 @@ export function Concat({ keccak256 }) {
 	 *
 	 * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
 	 * @since 0.0.0
-	 * @param {...import('./BrandedHash.ts').BrandedHash} hashes - Hashes to concatenate
-	 * @returns {import('./BrandedHash.ts').BrandedHash} Hash of concatenated hashes
+	 * @param {...import('../HashType.js').HashType} hashes - Hashes to concatenate
+	 * @returns {import('../HashType.js').HashType} Hash of concatenated hashes
 	 * @throws {never}
 	 * @example
 	 * ```javascript

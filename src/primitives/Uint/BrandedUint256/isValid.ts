@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -13,7 +13,7 @@ import { MAX } from "./constants.js";
  * const isInvalid = Uint.isValid(-1n); // false
  * ```
  */
-export function isValid(value: unknown): value is BrandedUint256 {
+export function isValid(value: unknown): value is Uint256Type {
 	if (typeof value !== "bigint") return false;
 	return value >= 0n && value <= (MAX as bigint);
 }

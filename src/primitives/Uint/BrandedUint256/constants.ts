@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Size in bytes (32 bytes for Uint256)
@@ -14,7 +14,7 @@ export const SIZE = 32;
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  */
-export const MAX: BrandedUint256 = ((1n << 256n) - 1n) as BrandedUint256;
+export const MAX: Uint256Type = ((1n << 256n) - 1n) as Uint256Type;
 
 /**
  * Minimum Uint256 value: 0
@@ -22,7 +22,7 @@ export const MAX: BrandedUint256 = ((1n << 256n) - 1n) as BrandedUint256;
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  */
-export const MIN: BrandedUint256 = 0n as BrandedUint256;
+export const MIN: Uint256Type = 0n as Uint256Type;
 
 /**
  * Zero value
@@ -30,7 +30,7 @@ export const MIN: BrandedUint256 = 0n as BrandedUint256;
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  */
-export const ZERO: BrandedUint256 = 0n as BrandedUint256;
+export const ZERO: Uint256Type = 0n as Uint256Type;
 
 /**
  * One value
@@ -38,4 +38,4 @@ export const ZERO: BrandedUint256 = 0n as BrandedUint256;
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  */
-export const ONE: BrandedUint256 = 1n as BrandedUint256;
+export const ONE: Uint256Type = 1n as Uint256Type;

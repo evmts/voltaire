@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -15,7 +15,7 @@ import { fromBytes } from "./fromBytes.js";
  * Hex.fromString('hello'); // '0x68656c6c6f'
  * ```
  */
-export function fromString(str: string): BrandedHex {
+export function fromString(str: string): HexType {
 	const encoder = new TextEncoder();
 	return fromBytes(encoder.encode(str));
 }

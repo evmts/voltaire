@@ -24,14 +24,14 @@ export const SIZE = 8;
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint64.ts').BrandedUint64}
+ * @type {import('./Uint64Type.ts').Uint64Type}
  * @example
  * ```javascript
  * import { MAX } from './primitives/Uint64/index.js';
  * console.log(MAX); // 18446744073709551615n
  * ```
  */
-export const MAX = /** @type {import('./BrandedUint64.ts').BrandedUint64} */ (
+export const MAX = /** @type {import('./Uint64Type.ts').Uint64Type} */ (
 	18446744073709551615n
 );
 
@@ -40,45 +40,39 @@ export const MAX = /** @type {import('./BrandedUint64.ts').BrandedUint64} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint64.ts').BrandedUint64}
+ * @type {import('./Uint64Type.ts').Uint64Type}
  * @example
  * ```javascript
  * import { MIN } from './primitives/Uint64/index.js';
  * console.log(MIN); // 0n
  * ```
  */
-export const MIN = /** @type {import('./BrandedUint64.ts').BrandedUint64} */ (
-	0n
-);
+export const MIN = /** @type {import('./Uint64Type.ts').Uint64Type} */ (0n);
 
 /**
  * Zero value
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint64.ts').BrandedUint64}
+ * @type {import('./Uint64Type.ts').Uint64Type}
  * @example
  * ```javascript
  * import { ZERO } from './primitives/Uint64/index.js';
  * console.log(ZERO); // 0n
  * ```
  */
-export const ZERO = /** @type {import('./BrandedUint64.ts').BrandedUint64} */ (
-	0n
-);
+export const ZERO = /** @type {import('./Uint64Type.ts').Uint64Type} */ (0n);
 
 /**
  * One value
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint64.ts').BrandedUint64}
+ * @type {import('./Uint64Type.ts').Uint64Type}
  * @example
  * ```javascript
  * import { ONE } from './primitives/Uint64/index.js';
  * console.log(ONE); // 1n
  * ```
  */
-export const ONE = /** @type {import('./BrandedUint64.ts').BrandedUint64} */ (
-	1n
-);
+export const ONE = /** @type {import('./Uint64Type.ts').Uint64Type} */ (1n);

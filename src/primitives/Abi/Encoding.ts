@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import * as Uint from "../Uint/index.js";

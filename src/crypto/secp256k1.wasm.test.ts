@@ -12,8 +12,8 @@
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import { keccak256String } from "../primitives/Hash/HashType/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 as NobleSecp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -155,7 +155,7 @@ describe("Secp256k1 WASM Implementation", () => {
 		});
 
 		it("signs empty message hash", () => {
-			const empty = new Uint8Array(32) as BrandedHash;
+			const empty = new Uint8Array(32) as HashType;
 			const signature = Secp256k1Wasm.sign(empty, TEST_PRIVATE_KEY);
 
 			expect(signature.r.length).toBe(32);
@@ -163,7 +163,7 @@ describe("Secp256k1 WASM Implementation", () => {
 		});
 
 		it("signs all-ones message hash", () => {
-			const ones = new Uint8Array(32) as BrandedHash;
+			const ones = new Uint8Array(32) as HashType;
 			ones.fill(0xff);
 			const signature = Secp256k1Wasm.sign(ones, TEST_PRIVATE_KEY);
 

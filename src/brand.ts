@@ -7,7 +7,7 @@
  * Example:
  * ```typescript
  * import { brand } from './brand.js';
- * type BrandedAddress = Uint8Array & { readonly [brand]: 'Address' };
+ * type AddressType = Uint8Array & { readonly [brand]: 'Address' };
  * ```
  *
  * This provides zero-runtime overhead type safety, as the brand only exists

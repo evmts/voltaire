@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes32.ts').BrandedBytes32} bytes - Bytes32 to extract from
+ * @param {import('./Bytes32Type.ts').Bytes32Type} bytes - Bytes32 to extract from
  * @returns {import('../../Address/BrandedAddress/index.ts').BrandedAddress} Address
  * @example
  * ```javascript

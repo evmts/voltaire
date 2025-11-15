@@ -1,31 +1,31 @@
-import type { BrandedHex } from "./BrandedHex/BrandedHex.js";
-import type { assertSize } from "./BrandedHex/assertSize.js";
-import type { concat } from "./BrandedHex/concat.js";
-import type { equals } from "./BrandedHex/equals.js";
-import type { from } from "./BrandedHex/from.js";
-import type { fromBigInt } from "./BrandedHex/fromBigInt.js";
-import type { fromBoolean } from "./BrandedHex/fromBoolean.js";
-import type { fromBytes } from "./BrandedHex/fromBytes.js";
-import type { fromNumber } from "./BrandedHex/fromNumber.js";
-import type { fromString } from "./BrandedHex/fromString.js";
-import type { isHex } from "./BrandedHex/isHex.js";
-import type { isSized } from "./BrandedHex/isSized.js";
-import type { pad } from "./BrandedHex/pad.js";
-import type { padRight } from "./BrandedHex/padRight.js";
-import type { random } from "./BrandedHex/random.js";
-import type { size } from "./BrandedHex/size.js";
-import type { slice } from "./BrandedHex/slice.js";
-import type { toBigInt } from "./BrandedHex/toBigInt.js";
-import type { toBoolean } from "./BrandedHex/toBoolean.js";
-import type { toBytes } from "./BrandedHex/toBytes.js";
-import type { toNumber } from "./BrandedHex/toNumber.js";
-import type { toString } from "./BrandedHex/toString.js";
-import type { trim } from "./BrandedHex/trim.js";
-import type { validate } from "./BrandedHex/validate.js";
-import type { xor } from "./BrandedHex/xor.js";
-import type { zero } from "./BrandedHex/zero.js";
+import type { HexType } from "./HexType/HexType.js";
+import type { assertSize } from "./HexType/assertSize.js";
+import type { concat } from "./HexType/concat.js";
+import type { equals } from "./HexType/equals.js";
+import type { from } from "./HexType/from.js";
+import type { fromBigInt } from "./HexType/fromBigInt.js";
+import type { fromBoolean } from "./HexType/fromBoolean.js";
+import type { fromBytes } from "./HexType/fromBytes.js";
+import type { fromNumber } from "./HexType/fromNumber.js";
+import type { fromString } from "./HexType/fromString.js";
+import type { isHex } from "./HexType/isHex.js";
+import type { isSized } from "./HexType/isSized.js";
+import type { pad } from "./HexType/pad.js";
+import type { padRight } from "./HexType/padRight.js";
+import type { random } from "./HexType/random.js";
+import type { size } from "./HexType/size.js";
+import type { slice } from "./HexType/slice.js";
+import type { toBigInt } from "./HexType/toBigInt.js";
+import type { toBoolean } from "./HexType/toBoolean.js";
+import type { toBytes } from "./HexType/toBytes.js";
+import type { toNumber } from "./HexType/toNumber.js";
+import type { toString } from "./HexType/toString.js";
+import type { trim } from "./HexType/trim.js";
+import type { validate } from "./HexType/validate.js";
+import type { xor } from "./HexType/xor.js";
+import type { zero } from "./HexType/zero.js";
 
-type HexPrototype = BrandedHex & {
+type HexPrototype = HexType & {
 	toBytes: typeof toBytes;
 	toNumber: typeof toNumber;
 	toBigInt: typeof toBigInt;
@@ -44,7 +44,7 @@ type HexPrototype = BrandedHex & {
 };
 
 export interface HexConstructor {
-	(value: string | Uint8Array): BrandedHex;
+	(value: string | Uint8Array): HexType;
 	prototype: HexPrototype;
 	from: typeof from;
 	fromBytes: typeof fromBytes;

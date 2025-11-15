@@ -8,7 +8,7 @@ title: "State Constants"
 
 Hash of empty EVM bytecode.
 
-- Type: `BrandedHash`
+- Type: `HashType`
 - Length: 32 bytes
 - Value: `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`
 
@@ -21,7 +21,7 @@ Hash of empty EVM bytecode.
 
 ```typescript
 // Check if account has no code
-function isEOA(codeHash: BrandedHash): boolean {
+function isEOA(codeHash: HashType): boolean {
   for (let i = 0; i < 32; i++) {
     if (codeHash[i] !== EMPTY_CODE_HASH[i]) return false;
   }
@@ -41,7 +41,7 @@ const account = {
 
 Root hash of empty Merkle Patricia Trie.
 
-- Type: `BrandedHash`
+- Type: `HashType`
 - Length: 32 bytes
 - Value: `0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421`
 
@@ -54,7 +54,7 @@ Root hash of empty Merkle Patricia Trie.
 
 ```typescript
 // Check if account has storage
-function hasStorage(storageRoot: BrandedHash): boolean {
+function hasStorage(storageRoot: HashType): boolean {
   for (let i = 0; i < 32; i++) {
     if (storageRoot[i] !== EMPTY_TRIE_ROOT[i]) return true;
   }

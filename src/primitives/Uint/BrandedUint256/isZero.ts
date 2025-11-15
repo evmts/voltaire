@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Check if value is zero
@@ -13,6 +13,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const isZero2 = a.isZero(); // true
  * ```
  */
-export function isZero(uint: BrandedUint256): boolean {
+export function isZero(uint: Uint256Type): boolean {
 	return (uint as bigint) === 0n;
 }

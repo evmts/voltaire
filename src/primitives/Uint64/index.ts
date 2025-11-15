@@ -1,4 +1,4 @@
-export * from "./BrandedUint64.js";
+export * from "./Uint64Type.js";
 export * from "./constants.js";
 
 import { bitLength } from "./bitLength.js";

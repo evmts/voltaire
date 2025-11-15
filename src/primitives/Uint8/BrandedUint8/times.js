@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} a - First operand
- * @param {import('./BrandedUint8.js').BrandedUint8} b - Second operand
- * @returns {import('./BrandedUint8.js').BrandedUint8} Product (a * b)
+ * @param {import('./../Uint8Type.js').Uint8Type} a - First operand
+ * @param {import('./../Uint8Type.js').Uint8Type} b - Second operand
+ * @returns {import('./../Uint8Type.js').Uint8Type} Product (a * b)
  * @throws {Error} If result exceeds maximum value
  * @example
  * ```javascript
@@ -24,5 +24,5 @@ export function times(a, b) {
 			`Uint8 overflow: ${a} * ${b} = ${product} exceeds maximum (255)`,
 		);
 	}
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (product);
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (product);
 }

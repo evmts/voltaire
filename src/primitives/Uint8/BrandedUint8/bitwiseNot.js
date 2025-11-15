@@ -5,8 +5,8 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} uint - Input value
- * @returns {import('./BrandedUint8.js').BrandedUint8} Bitwise NOT result
+ * @param {import('./../Uint8Type.js').Uint8Type} uint - Input value
+ * @returns {import('./../Uint8Type.js').Uint8Type} Bitwise NOT result
  * @throws {never}
  * @example
  * ```javascript
@@ -16,5 +16,5 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function bitwiseNot(uint) {
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (~uint & MAX);
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (~uint & MAX);
 }

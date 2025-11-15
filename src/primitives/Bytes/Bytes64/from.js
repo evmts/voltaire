@@ -7,7 +7,7 @@ import { fromHex } from "./fromHex.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
  * @param {string | Uint8Array} value - Hex string with optional 0x prefix or Uint8Array
- * @returns {import('./BrandedBytes64.ts').BrandedBytes64} Bytes64
+ * @returns {import('./Bytes64Type.ts').Bytes64Type} Bytes64
  * @throws {Error} If input is invalid or wrong length
  * @example
  * ```javascript

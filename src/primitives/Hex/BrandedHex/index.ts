@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedHex.js";
+export * from "./HexType.js";
 
 import { assertSize } from "./assertSize.js";
 import { clone } from "./clone.js";
@@ -59,7 +59,7 @@ export {
 };
 
 // Namespace export
-export const BrandedHex = {
+export const HexType = {
 	from,
 	fromBytes,
 	fromNumber,

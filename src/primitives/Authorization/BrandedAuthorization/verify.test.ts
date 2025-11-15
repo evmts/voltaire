@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../../../crypto/Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../../../crypto/Secp256k1/sign.js";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { FromPublicKey } from "../../Address/BrandedAddress/fromPublicKey.js";
 import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import type { BrandedAuthorization } from "./BrandedAuthorization.js";

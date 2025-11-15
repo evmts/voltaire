@@ -1,8 +1,8 @@
 /**
  * Convert Bytes to hex string
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes to convert
- * @returns {import('../../Hex/index.js').BrandedHex} Hex string with 0x prefix
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes to convert
+ * @returns {import('../../Hex/index.js').HexType} Hex string with 0x prefix
  *
  * @example
  * ```typescript
@@ -11,7 +11,7 @@
  * ```
  */
 export function toHex(bytes) {
-	return /** @type {import('../../Hex/index.js').BrandedHex} */ (
+	return /** @type {import('../../Hex/index.js').HexType} */ (
 		`0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`
 	);
 }

@@ -1,8 +1,8 @@
 // Export type definition
-export type { PublicKeyType } from "../PublicKeyType.js";
+export type { PublicKeyType } from "./PublicKeyType.js";
 
 // Import crypto dependencies
-import { verify as secp256k1Verify } from "../../../crypto/Secp256k1/verify.js";
+import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
 
 // Import all functions
 import { from } from "./from.js";
@@ -31,9 +31,9 @@ export function toAddress(publicKey: string) {
 
 export function verify(
 	publicKey: string,
-	hash: import("../../Hash/BrandedHash/BrandedHash.js").BrandedHash,
+	hash: import("../Hash/BrandedHash/BrandedHash.js").BrandedHash,
 	signature: import(
-		"../../Signature/BrandedSignature/BrandedSignature.js",
+		"../Signature/BrandedSignature/BrandedSignature.js",
 	).BrandedSignature,
 ): boolean {
 	return _verify(from(publicKey), hash, signature);

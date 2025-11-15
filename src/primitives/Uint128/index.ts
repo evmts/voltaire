@@ -2,4 +2,4 @@
 export * from "./BrandedUint128/index.js";
 
 // Export type definitions
-export type { BrandedUint128 as Type } from "./BrandedUint128/BrandedUint128.js";
+export type { Uint128Type as Type } from "./Uint128Type.js";

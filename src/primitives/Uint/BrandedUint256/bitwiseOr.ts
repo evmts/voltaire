@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Bitwise OR
@@ -15,9 +15,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const result2 = a.bitwiseOr(b); // 0xff
  * ```
  */
-export function bitwiseOr(
-	uint: BrandedUint256,
-	b: BrandedUint256,
-): BrandedUint256 {
-	return ((uint as bigint) | (b as bigint)) as BrandedUint256;
+export function bitwiseOr(uint: Uint256Type, b: Uint256Type): Uint256Type {
+	return ((uint as bigint) | (b as bigint)) as Uint256Type;
 }

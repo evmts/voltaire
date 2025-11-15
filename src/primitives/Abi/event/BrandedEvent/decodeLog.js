@@ -13,7 +13,7 @@ import { getSelector } from "./index.js";
  * @since 0.0.0
  * @param {import('./BrandedEvent.js').Event} event - Event definition
  * @param {Uint8Array} data - Log data bytes
- * @param {readonly import('../../../Hash/index.js').BrandedHash[]} topics - Log topics
+ * @param {readonly import('../../../Hash/index.js').HashType[]} topics - Log topics
  * @returns {import('./BrandedEvent.js').DecodeLogResult<any>} Decoded event arguments
  * @throws {AbiDecodingError} If topics are missing or invalid
  * @throws {AbiInvalidSelectorError} If event selector doesn't match topic0

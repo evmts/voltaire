@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 
 /**
  * Composite key for EVM storage operations combining address and slot.

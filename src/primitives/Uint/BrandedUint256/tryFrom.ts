@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { from } from "./from.js";
 
 /**
@@ -16,7 +16,7 @@ import { from } from "./from.js";
  */
 export function tryFrom(
 	value: bigint | number | string,
-): BrandedUint256 | undefined {
+): Uint256Type | undefined {
 	try {
 		return from(value);
 	} catch {

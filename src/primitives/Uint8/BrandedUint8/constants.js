@@ -5,16 +5,16 @@
  * @since 0.0.0
  */
 
-/** @type {import('./BrandedUint8.js').BrandedUint8} */
+/** @type {import('./../Uint8Type.js').Uint8Type} */
 export const MIN = /** @type {any} */ (0);
 
-/** @type {import('./BrandedUint8.js').BrandedUint8} */
+/** @type {import('./../Uint8Type.js').Uint8Type} */
 export const MAX = /** @type {any} */ (255);
 
-/** @type {import('./BrandedUint8.js').BrandedUint8} */
+/** @type {import('./../Uint8Type.js').Uint8Type} */
 export const ZERO = /** @type {any} */ (0);
 
-/** @type {import('./BrandedUint8.js').BrandedUint8} */
+/** @type {import('./../Uint8Type.js').Uint8Type} */
 export const ONE = /** @type {any} */ (1);
 
 /** @type {number} */

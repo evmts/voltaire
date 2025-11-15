@@ -3,7 +3,7 @@
  */
 
 import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { HashType } from "../Hash/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
 export declare function from(
@@ -26,12 +26,12 @@ export declare function includesAddress(
 export declare function includesStorageKey(
 	list: BrandedAccessList,
 	address: BrandedAddress,
-	key: BrandedHash,
+	key: HashType,
 ): boolean;
 export declare function keysFor(
 	list: BrandedAccessList,
 	address: BrandedAddress,
-): readonly BrandedHash[] | undefined;
+): readonly HashType[] | undefined;
 export declare function deduplicate(list: BrandedAccessList): BrandedAccessList;
 export declare function withAddress(
 	list: BrandedAccessList,
@@ -40,7 +40,7 @@ export declare function withAddress(
 export declare function withStorageKey(
 	list: BrandedAccessList,
 	address: BrandedAddress,
-	key: BrandedHash,
+	key: HashType,
 ): BrandedAccessList;
 export declare function assertValid(
 	list: unknown,

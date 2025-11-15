@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/Hash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/Hash.js";
 
 /**
  * Brand symbol for type safety
@@ -12,7 +12,7 @@ export const accessListSymbol = Symbol("AccessList");
  */
 export type Item<
 	TAddress extends BrandedAddress = BrandedAddress,
-	TStorageKeys extends readonly BrandedHash[] = readonly BrandedHash[],
+	TStorageKeys extends readonly HashType[] = readonly HashType[],
 > = {
 	/** Contract address */
 	address: TAddress;

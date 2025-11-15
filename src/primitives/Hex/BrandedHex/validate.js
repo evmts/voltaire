@@ -12,7 +12,7 @@ import { hexCharToValue } from "./utils.js";
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
- * const hex = Hex.validate('0x1234'); // BrandedHex
+ * const hex = Hex.validate('0x1234'); // HexType
  * ```
  */
 export function validate(value) {

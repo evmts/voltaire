@@ -1,6 +1,6 @@
 /**
  * @typedef {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} BrandedAddress
- * @typedef {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
+ * @typedef {import('../../Hash/HashType/HashType.js').HashType} HashType
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
 
@@ -11,12 +11,12 @@
  * @since 0.0.0
  * @param {Object} params - Event log parameters
  * @param {BrandedAddress} params.address - Contract address
- * @param {readonly BrandedHash[]} params.topics - Event topics
+ * @param {readonly HashType[]} params.topics - Event topics
  * @param {Uint8Array} params.data - Event data
  * @param {bigint} [params.blockNumber] - Block number
- * @param {BrandedHash} [params.transactionHash] - Transaction hash
+ * @param {HashType} [params.transactionHash] - Transaction hash
  * @param {number} [params.transactionIndex] - Transaction index
- * @param {BrandedHash} [params.blockHash] - Block hash
+ * @param {HashType} [params.blockHash] - Block hash
  * @param {number} [params.logIndex] - Log index
  * @param {boolean} [params.removed] - Whether log was removed
  * @returns {BrandedEventLog} EventLog object

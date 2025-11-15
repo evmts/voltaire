@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 
 /**
  * Convert hex to bigint
@@ -15,6 +15,6 @@ import type { BrandedHex } from "./BrandedHex.js";
  * const big = Hex.toBigInt(hex); // 255n
  * ```
  */
-export function toBigInt(hex: BrandedHex): bigint {
+export function toBigInt(hex: HexType): bigint {
 	return BigInt(hex);
 }

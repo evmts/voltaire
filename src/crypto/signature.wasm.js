@@ -25,8 +25,8 @@ export const ParsedSignature = undefined;
  */
 export function secp256k1RecoverPubkey(messageHash, signature) {
 	const parsed = signatureParse(signature);
-	// Cast to BrandedHash for type safety
-	/** @type {import("../primitives/Hash/index.js").BrandedHash} */
+	// Cast to HashType for type safety
+	/** @type {import("../primitives/Hash/index.js").HashType} */
 	const hash = /** @type {any} */ (messageHash);
 	return Secp256k1Wasm.recoverPublicKey(parsed, hash);
 }
@@ -61,8 +61,8 @@ export function secp256k1PubkeyFromPrivate(privateKey) {
  */
 export function secp256k1ValidateSignature(signature, messageHash, publicKey) {
 	const parsed = signatureParse(signature);
-	// Cast to BrandedHash for type safety
-	/** @type {import("../primitives/Hash/index.js").BrandedHash} */
+	// Cast to HashType for type safety
+	/** @type {import("../primitives/Hash/index.js").HashType} */
 	const hash = /** @type {any} */ (messageHash);
 	return Secp256k1Wasm.verify(parsed, hash, publicKey);
 }

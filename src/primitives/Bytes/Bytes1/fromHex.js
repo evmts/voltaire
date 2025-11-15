@@ -1,5 +1,5 @@
-import { InvalidBytesLengthError } from "../BrandedBytes/errors.js";
-import * as BrandedBytes from "../BrandedBytes/index.js";
+import { InvalidBytesLengthError } from "../BytesType/errors.js";
+import * as BytesType from "../BytesType/index.js";
 
 /**
  * Create Bytes1 from hex string with size validation
@@ -14,7 +14,7 @@ import * as BrandedBytes from "../BrandedBytes/index.js";
  * ```
  */
 export function fromHex(hex) {
-	const bytes = BrandedBytes.fromHex(hex);
+	const bytes = BytesType.fromHex(hex);
 	if (bytes.length !== 1) {
 		throw new InvalidBytesLengthError("Bytes1 must be exactly 1 byte", {
 			expected: 1,

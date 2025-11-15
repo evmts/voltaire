@@ -4,8 +4,8 @@ import { InvalidSignatureLengthError } from "./errors.js";
 /**
  * Create Signature from P-256 ECDSA signature
  *
- * @param {import('../../Hash/index.js').BrandedHash} r - r component (32 bytes, BrandedHash)
- * @param {import('../../Hash/index.js').BrandedHash} s - s component (32 bytes, BrandedHash)
+ * @param {import('../../Hash/index.js').HashType} r - r component (32 bytes, HashType)
+ * @param {import('../../Hash/index.js').HashType} s - s component (32 bytes, HashType)
  * @returns {import('../SignatureType.js').SignatureType} Signature
  *
  * @example
@@ -24,7 +24,5 @@ export function fromP256(r, s) {
 	// Add metadata (algorithm)
 	Object.assign(result, { algorithm: "p256" });
 
-	return /** @type {import('../SignatureType.js').SignatureType} */ (
-		result
-	);
+	return /** @type {import('../SignatureType.js').SignatureType} */ (result);
 }

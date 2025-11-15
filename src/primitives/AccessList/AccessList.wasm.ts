@@ -4,8 +4,8 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/Hash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/Hash.js";
 import type * as AccessList from "./AccessList.js";
 
 /**
@@ -49,7 +49,7 @@ export function includesAddressWasm(
 export function includesStorageKeyWasm(
 	accessList: AccessList.Type,
 	address: BrandedAddress,
-	storageKey: BrandedHash,
+	storageKey: HashType,
 ): boolean {
 	return loader.accessListIncludesStorageKey(
 		accessList as any,

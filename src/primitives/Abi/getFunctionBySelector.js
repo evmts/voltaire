@@ -6,7 +6,7 @@ import * as Function from "./function/index.js";
  * Find function in ABI by selector
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
- * @param {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array} selector - 4-byte function selector
+ * @param {import("../Hex/BrandedHex/BrandedHex.js").HexType | Uint8Array} selector - 4-byte function selector
  * @returns {import('./function/BrandedFunction.js').Function} Function ABI item
  * @throws {AbiItemNotFoundError} If selector invalid length or function not found in ABI
  *

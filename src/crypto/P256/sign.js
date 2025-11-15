@@ -11,7 +11,7 @@ import { InvalidPrivateKeyError, P256Error } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash to sign
+ * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash to sign
  * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - 32-byte private key
  * @returns {import('./BrandedP256Signature.js').BrandedP256Signature} ECDSA signature with r, s components
  * @throws {InvalidPrivateKeyError} If private key is invalid

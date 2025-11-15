@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./constants.js";
-export * from "./BrandedBytes64.js";
+export * from "./Bytes64Type.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
@@ -31,7 +31,7 @@ export {
 };
 
 // Namespace export
-export const BrandedBytes64 = {
+export const BytesType64 = {
 	from,
 	fromBytes,
 	fromHex,

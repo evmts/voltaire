@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
 import type { getChainId } from "./getChainId.js";
 import type { getSender } from "./getSender.js";

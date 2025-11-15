@@ -232,7 +232,7 @@ export function fromAbiEncoded(value) {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {BrandedAddress} address - Address to convert
- * @returns {import('../Hex/index.js').BrandedHex} Lowercase hex string with 0x prefix
+ * @returns {import('../Hex/index.js').HexType} Lowercase hex string with 0x prefix
  * @throws {never} Never throws
  * @example
  * ```javascript
@@ -242,7 +242,7 @@ export function fromAbiEncoded(value) {
  * ```
  */
 export function toHex(address) {
-	return /** @type {import('../Hex/index.js').BrandedHex} */ (
+	return /** @type {import('../Hex/index.js').HexType} */ (
 		loader.addressToHex(address)
 	);
 }

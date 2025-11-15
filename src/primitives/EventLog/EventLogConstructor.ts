@@ -24,16 +24,16 @@ type EventLogPrototype = BrandedEventLog & {
 // Import function signatures (these don't exist yet, will create stubs)
 declare function getTopic0<T extends BrandedEventLog>(
 	log: T,
-): import("../Hash/BrandedHash/BrandedHash.js").BrandedHash | undefined;
+): import("../Hash/HashType/HashType.js").HashType | undefined;
 declare function getIndexedTopics<T extends BrandedEventLog>(
 	log: T,
-): readonly import("../Hash/BrandedHash/BrandedHash.js").BrandedHash[];
+): readonly import("../Hash/HashType/HashType.js").HashType[];
 declare function getSignature<T extends BrandedEventLog>(
 	log: T,
-): import("../Hash/BrandedHash/BrandedHash.js").BrandedHash | undefined;
+): import("../Hash/HashType/HashType.js").HashType | undefined;
 declare function getIndexed<T extends BrandedEventLog>(
 	log: T,
-): readonly import("../Hash/BrandedHash/BrandedHash.js").BrandedHash[];
+): readonly import("../Hash/HashType/HashType.js").HashType[];
 declare function isRemoved<T extends BrandedEventLog>(log: T): boolean;
 declare function wasRemoved<T extends BrandedEventLog>(log: T): boolean;
 declare function clone<T extends BrandedEventLog>(log: T): T;

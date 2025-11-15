@@ -8,8 +8,8 @@ import * as Event from "./event/index.js";
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {Object} log - Log object with data and topics
- * @param {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array} log.data - Log data bytes
- * @param {readonly (import("../Hex/BrandedHex/BrandedHex.js").BrandedHex | Uint8Array)[]} log.topics - Log topics (topic0 is event selector)
+ * @param {import("../Hex/BrandedHex/BrandedHex.js").HexType | Uint8Array} log.data - Log data bytes
+ * @param {readonly (import("../Hex/BrandedHex/BrandedHex.js").HexType | Uint8Array)[]} log.topics - Log topics (topic0 is event selector)
  * @returns {{ event: string, params: Record<string, unknown> }} Decoded event name and parameters
  * @throws {AbiItemNotFoundError} If no topics, missing topic0, or event not found in ABI
  *

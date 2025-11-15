@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - ABI-encoded byte array (32 bytes)
- * @returns {import('./BrandedUint64.js').BrandedUint64} Uint64 value
+ * @returns {import('./Uint64Type.js').Uint64Type} Uint64 value
  * @throws {Error} If bytes length is not 32
  * @example
  * ```javascript

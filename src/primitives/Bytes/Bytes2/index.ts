@@ -14,7 +14,7 @@ import { toHex } from "./toHex.js";
 export { from, fromHex, toHex, toBytes, equals, compare, size, clone };
 
 // Namespace export
-export const BrandedBytes2 = {
+export const BytesType2 = {
 	from,
 	fromHex,
 	toHex,

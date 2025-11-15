@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -15,7 +15,7 @@ import { fromBytes } from "./fromBytes.js";
  * const random = Hex.random(32); // random 32-byte hex
  * ```
  */
-export function random(size: number): BrandedHex {
+export function random(size: number): HexType {
 	const bytes = new Uint8Array(size);
 	crypto.getRandomValues(bytes);
 	return fromBytes(bytes);

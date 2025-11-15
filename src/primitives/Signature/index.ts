@@ -1,6 +1,6 @@
 // Re-export everything from BrandedSignature
 export type {
-	BrandedSignature,
+	SignatureType,
 	SignatureAlgorithm,
 } from "./BrandedSignature/index.js";
 

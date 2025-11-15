@@ -8,7 +8,7 @@ import * as Function from "./function/index.js";
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {string} functionName - Function name to encode
  * @param {readonly unknown[]} args - Function arguments
- * @returns {import("../Hex/BrandedHex/BrandedHex.js").BrandedHex} Encoded function call data (hex string)
+ * @returns {import("../Hex/BrandedHex/BrandedHex.js").HexType} Encoded function call data (hex string)
  * @throws {AbiItemNotFoundError} If function not found in ABI
  *
  * @example

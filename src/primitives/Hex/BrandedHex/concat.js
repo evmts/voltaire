@@ -19,7 +19,7 @@ export function concat(...hexes) {
 	const allBytes = hexes.flatMap((h) =>
 		Array.from(OxHex.toBytes(/** @type {`0x${string}`} */ (h))),
 	);
-	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+	return /** @type {import('./HexType.js').HexType} */ (
 		fromBytes(new Uint8Array(allBytes))
 	);
 }

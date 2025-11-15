@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} a - First operand
- * @param {import('./BrandedUint8.js').BrandedUint8} b - Second operand
- * @returns {import('./BrandedUint8.js').BrandedUint8} Difference (a - b)
+ * @param {import('./../Uint8Type.js').Uint8Type} a - First operand
+ * @param {import('./../Uint8Type.js').Uint8Type} b - Second operand
+ * @returns {import('./../Uint8Type.js').Uint8Type} Difference (a - b)
  * @throws {Error} If result is negative
  * @example
  * ```javascript
@@ -19,5 +19,5 @@ export function minus(a, b) {
 	if (a < b) {
 		throw new Error(`Uint8 underflow: ${a} - ${b} = ${a - b} is negative`);
 	}
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (a - b);
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (a - b);
 }

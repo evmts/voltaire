@@ -4,7 +4,7 @@
  * Measures performance of hex operations
  */
 
-import type { BrandedHex } from "./BrandedHex/BrandedHex.js";
+import type { HexType } from "./HexType/HexType.js";
 import {
 	assertSize,
 	concat,
@@ -30,7 +30,7 @@ import {
 	validate,
 	xor,
 	zero,
-} from "./BrandedHex/index.js";
+} from "./HexType/index.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -86,12 +86,12 @@ function benchmark(
 // ============================================================================
 
 // Small data (4 bytes)
-const smallHex: BrandedHex = "0x12345678" as BrandedHex;
+const smallHex: HexType = "0x12345678" as HexType;
 const smallBytes = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
 
 // Medium data (32 bytes)
-const mediumHex: BrandedHex =
-	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as BrandedHex;
+const mediumHex: HexType =
+	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as HexType;
 const mediumBytes = new Uint8Array(32);
 for (let i = 0; i < 32; i++) mediumBytes[i] = i;
 
@@ -100,7 +100,7 @@ let largeHexStr = "0x";
 for (let i = 0; i < 256; i++) {
 	largeHexStr += (i % 256).toString(16).padStart(2, "0");
 }
-const largeHex: BrandedHex = largeHexStr as BrandedHex;
+const largeHex: HexType = largeHexStr as HexType;
 const largeBytes = new Uint8Array(256);
 for (let i = 0; i < 256; i++) largeBytes[i] = i % 256;
 
@@ -185,9 +185,7 @@ results.push(
 results.push(benchmark("fromNumber - medium", () => fromNumber(numMedium)));
 results.push(benchmark("fromNumber - large", () => fromNumber(numLarge)));
 const hexFromNum = fromNumber(0x123456);
-results.push(
-	benchmark("toNumber - small", () => toNumber("0xff" as BrandedHex)),
-);
+results.push(benchmark("toNumber - small", () => toNumber("0xff" as HexType)));
 results.push(benchmark("toNumber - medium", () => toNumber(hexFromNum)));
 results.push(benchmark("toNumber - large", () => toNumber(smallHex)));
 
@@ -204,14 +202,12 @@ results.push(benchmark("fromBigInt - medium", () => fromBigInt(bigMedium)));
 results.push(
 	benchmark("fromBigInt - large (256 bits)", () => fromBigInt(bigLarge)),
 );
-results.push(
-	benchmark("toBigInt - small", () => toBigInt("0xff" as BrandedHex)),
-);
+results.push(benchmark("toBigInt - small", () => toBigInt("0xff" as HexType)));
 results.push(benchmark("toBigInt - medium", () => toBigInt(mediumHex)));
 results.push(benchmark("toBigInt - large", () => toBigInt(largeHex)));
 
-const hexFromString = fromString(testString) as BrandedHex;
-const hexFromLongString = fromString(longString) as BrandedHex;
+const hexFromString = fromString(testString) as HexType;
+const hexFromLongString = fromString(longString) as HexType;
 results.push(benchmark("fromString - short", () => fromString(testString)));
 results.push(benchmark("fromString - long", () => fromString(longString)));
 results.push(benchmark("toString - short", () => toString(hexFromString)));
@@ -219,15 +215,13 @@ results.push(benchmark("toString - long", () => toString(hexFromLongString)));
 results.push(benchmark("fromBoolean - true", () => fromBoolean(true)));
 results.push(benchmark("fromBoolean - false", () => fromBoolean(false)));
 results.push(
-	benchmark("toBoolean - true (0x01)", () => toBoolean("0x01" as BrandedHex)),
+	benchmark("toBoolean - true (0x01)", () => toBoolean("0x01" as HexType)),
 );
 results.push(
-	benchmark("toBoolean - false (0x00)", () => toBoolean("0x00" as BrandedHex)),
+	benchmark("toBoolean - false (0x00)", () => toBoolean("0x00" as HexType)),
 );
 results.push(
-	benchmark("toBoolean - true (non-zero)", () =>
-		toBoolean("0xff" as BrandedHex),
-	),
+	benchmark("toBoolean - true (non-zero)", () => toBoolean("0xff" as HexType)),
 );
 results.push(benchmark("size - small (4 bytes)", () => size(smallHex)));
 results.push(benchmark("size - medium (32 bytes)", () => size(mediumHex)));
@@ -270,9 +264,9 @@ results.push(benchmark("trim - padded small", () => trim(paddedSmall)));
 results.push(benchmark("trim - padded medium", () => trim(paddedMedium)));
 results.push(benchmark("trim - all zeros", () => trim(zero(32))));
 
-const hexUpper: BrandedHex = "0xABCDEF" as BrandedHex;
-const hexLower: BrandedHex = "0xabcdef" as BrandedHex;
-const hexDifferent: BrandedHex = "0x123456" as BrandedHex;
+const hexUpper: HexType = "0xABCDEF" as HexType;
+const hexLower: HexType = "0xabcdef" as HexType;
+const hexDifferent: HexType = "0x123456" as HexType;
 results.push(
 	benchmark("equals - same (exact)", () => equals(smallHex, smallHex)),
 );
@@ -284,10 +278,10 @@ results.push(
 );
 results.push(benchmark("equals - large", () => equals(largeHex, largeHex)));
 
-const xorA: BrandedHex = "0x12345678" as BrandedHex;
-const xorB: BrandedHex = "0xabcdef01" as BrandedHex;
+const xorA: HexType = "0x12345678" as HexType;
+const xorB: HexType = "0xabcdef01" as HexType;
 const xorMediumA = mediumHex;
-const xorMediumB = random(32) as BrandedHex;
+const xorMediumB = random(32) as HexType;
 results.push(benchmark("xor - small (4 bytes)", () => xor(xorA, xorB)));
 results.push(
 	benchmark("xor - medium (32 bytes)", () => xor(xorMediumA, xorMediumB)),

@@ -9,8 +9,8 @@ export function Sign({ secp256k1Sign }) {
 	 * Sign a message hash with private key
 	 *
 	 * @param {import('../PrivateKeyType.js').PrivateKeyType} privateKey - Private key (32 bytes)
-	 * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} hash - Message hash to sign
-	 * @returns {import('../../Signature/BrandedSignature/BrandedSignature.js').BrandedSignature} ECDSA signature
+	 * @param {import('../../Hash/HashType/HashType.js').HashType} hash - Message hash to sign
+	 * @returns {import('../../Signature/SignatureType.js').SignatureType} ECDSA signature
 	 *
 	 * @example
 	 * ```typescript
@@ -22,7 +22,7 @@ export function Sign({ secp256k1Sign }) {
 	 * ```
 	 */
 	return function sign(privateKey, hash) {
-		return /** @type {import('../../Signature/BrandedSignature/BrandedSignature.js').BrandedSignature} */ (
+		return /** @type {import('../../Signature/SignatureType.js').SignatureType} */ (
 			secp256k1Sign(hash, privateKey)
 		);
 	};

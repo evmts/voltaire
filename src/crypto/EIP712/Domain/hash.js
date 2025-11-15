@@ -17,8 +17,8 @@ const DOMAIN_FIELD_TYPES = {
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
- * @param {(primaryType: string, data: import('../BrandedEIP712.js').Message, types: import('../BrandedEIP712.js').TypeDefinitions) => import('../../../primitives/Hash/index.js').BrandedHash} deps.hashStruct - Hash struct function
- * @returns {(domain: import('../BrandedEIP712.js').Domain) => import('../../../primitives/Hash/index.js').BrandedHash} Function that hashes domain
+ * @param {(primaryType: string, data: import('../BrandedEIP712.js').Message, types: import('../BrandedEIP712.js').TypeDefinitions) => import('../../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
+ * @returns {(domain: import('../BrandedEIP712.js').Domain) => import('../../../primitives/Hash/index.js').HashType} Function that hashes domain
  * @throws {Eip712TypeNotFoundError} If domain type encoding fails
  * @example
  * ```javascript

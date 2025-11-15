@@ -1,8 +1,8 @@
 import {
 	InvalidFormatError,
 	InvalidLengthError,
-} from "../../errors/ValidationError.js";
-import type { PublicKeyType } from "../PublicKeyType.js";
+} from "../errors/ValidationError.js";
+import type { PublicKeyType } from "./PublicKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
 

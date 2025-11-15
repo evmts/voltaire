@@ -11,7 +11,7 @@ Methods for accessing event log data and extracting specific fields.
 Returns topic0 (event signature hash) from log.
 
 ```typescript
-getTopic0(log: BrandedEventLog): BrandedHash | undefined
+getTopic0(log: BrandedEventLog): HashType | undefined
 ```
 
 **Parameters:**
@@ -48,7 +48,7 @@ console.log(Hash.toHex(topic0));
 Alias for getTopic0. Returns event signature hash.
 
 ```typescript
-getSignature(log: BrandedEventLog): BrandedHash | undefined
+getSignature(log: BrandedEventLog): HashType | undefined
 ```
 
 **Parameters:**
@@ -72,7 +72,7 @@ const signature = log.getSignature();
 Returns indexed parameters (topic1-topic3), excluding topic0.
 
 ```typescript
-getIndexedTopics(log: BrandedEventLog): readonly BrandedHash[]
+getIndexedTopics(log: BrandedEventLog): readonly HashType[]
 ```
 
 **Parameters:**
@@ -112,7 +112,7 @@ console.log(Hash.toHex(indexed[1])); // to address
 Alias for getIndexedTopics.
 
 ```typescript
-getIndexed(log: BrandedEventLog): readonly BrandedHash[]
+getIndexed(log: BrandedEventLog): readonly HashType[]
 ```
 
 **Parameters:**
@@ -248,4 +248,4 @@ console.log(log.getIndexedTopics()); // [topic1, topic2, ...]
 - Returned arrays from getIndexedTopics are read-only
 - No validation performed on topic structure
 - Works with both named and anonymous events
-- Topic hashes are 32-byte BrandedHash values
+- Topic hashes are 32-byte HashType values

@@ -1,4 +1,4 @@
-import type { BrandedHash } from "../Hash/index.js";
+import type { HashType } from "../Hash/index.js";
 import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/getSigningHash.js";
 import * as EIP2930 from "./EIP2930/getSigningHash.js";
@@ -20,7 +20,7 @@ import { type Any, Type } from "./types.js";
  * const signingHash = getSigningHash.call(tx);
  * ```
  */
-export function getSigningHash(this: Any): BrandedHash {
+export function getSigningHash(this: Any): HashType {
 	switch (this.type) {
 		case Type.Legacy:
 			return Legacy.getSigningHash.call(this as any);

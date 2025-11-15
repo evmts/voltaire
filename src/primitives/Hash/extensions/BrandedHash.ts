@@ -1,6 +1,6 @@
 import type { brand } from "../../../brand.js";
 
-export type BrandedHash = Uint8Array & {
+export type HashType = Uint8Array & {
 	readonly [brand]: "Hash";
 };
 

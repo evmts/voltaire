@@ -5,16 +5,16 @@
  * @since 0.0.0
  */
 
-/** @type {import('./BrandedUint16.js').BrandedUint16} */
+/** @type {import('./Uint16Type.js').Uint16Type} */
 export const MIN = /** @type {any} */ (0);
 
-/** @type {import('./BrandedUint16.js').BrandedUint16} */
+/** @type {import('./Uint16Type.js').Uint16Type} */
 export const MAX = /** @type {any} */ (65535);
 
-/** @type {import('./BrandedUint16.js').BrandedUint16} */
+/** @type {import('./Uint16Type.js').Uint16Type} */
 export const ZERO = /** @type {any} */ (0);
 
-/** @type {import('./BrandedUint16.js').BrandedUint16} */
+/** @type {import('./Uint16Type.js').Uint16Type} */
 export const ONE = /** @type {any} */ (1);
 
 /** @type {number} */

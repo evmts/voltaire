@@ -2,8 +2,8 @@
  * ECDSA signature with Ethereum-compatible v value
  *
  * Components:
- * - r: x-coordinate of the ephemeral public key (32 bytes, BrandedHash)
- * - s: signature proof value (32 bytes, BrandedHash)
+ * - r: x-coordinate of the ephemeral public key (32 bytes, HashType)
+ * - s: signature proof value (32 bytes, HashType)
  * - v: recovery id (27 or 28 for Ethereum)
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
@@ -20,7 +20,7 @@
  * ```
  */
 export interface BrandedSignature {
-	r: import("../../primitives/Hash/index.js").BrandedHash;
-	s: import("../../primitives/Hash/index.js").BrandedHash;
+	r: import("../../primitives/Hash/index.js").HashType;
+	s: import("../../primitives/Hash/index.js").HashType;
 	v: number;
 }

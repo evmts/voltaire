@@ -1,4 +1,4 @@
-import type { BrandedHex, Sized } from "./BrandedHex.js";
+import type { HexType, Sized } from "./HexType.js";
 
 /**
  * Check if hex has specific byte size
@@ -17,7 +17,7 @@ import type { BrandedHex, Sized } from "./BrandedHex.js";
  * ```
  */
 export function isSized<TSize extends number>(
-	hex: BrandedHex,
+	hex: HexType,
 	targetSize: TSize,
 ): hex is Sized<TSize> {
 	return (hex.length - 2) / 2 === targetSize;

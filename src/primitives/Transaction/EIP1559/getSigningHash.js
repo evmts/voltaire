@@ -12,12 +12,12 @@ import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
  *
  * Computes the Keccak256 hash of the RLP-encoded transaction fields that need
  * to be signed. The transaction uses BrandedAddress for `to` field, assumed to be
- * validated (20 bytes). Returns a BrandedHash (32 bytes).
+ * validated (20 bytes). Returns a HashType (32 bytes).
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Hash/index.js').BrandedHash} Function that computes signing hash
+ * @returns {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Hash/index.js').HashType} Function that computes signing hash
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0

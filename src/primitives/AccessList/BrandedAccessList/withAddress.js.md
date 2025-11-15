@@ -11,7 +11,7 @@ Add address to access list if not already present.
 ```typescript
 function withAddress(
   list: BrandedAccessList,
-  address: BrandedAddress
+  address: AddressType
 ): BrandedAccessList
 ```
 

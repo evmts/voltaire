@@ -1,10 +1,10 @@
 /**
  * Slice Bytes
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes to slice
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes to slice
  * @param {number} start - Start index
  * @param {number} [end] - End index (optional)
- * @returns {import('./BrandedBytes.js').BrandedBytes} Sliced Bytes
+ * @returns {import('./../BytesType.js').BytesType} Sliced Bytes
  *
  * @example
  * ```typescript
@@ -12,7 +12,7 @@
  * ```
  */
 export function slice(bytes, start, end) {
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (
+	return /** @type {import('./../BytesType.js').BytesType} */ (
 		bytes.slice(start, end)
 	);
 }

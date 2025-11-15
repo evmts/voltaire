@@ -4,8 +4,8 @@ import { InvalidAlgorithmError } from "./errors.js";
 /**
  * Get r component from ECDSA signature
  *
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - Signature
- * @returns {import('../../Hash/index.js').BrandedHash} r component (32 bytes, BrandedHash)
+ * @param {import('../SignatureType.js').BrandedSignature} signature - Signature
+ * @returns {import('../../Hash/index.js').HashType} r component (32 bytes, HashType)
  * @throws {InvalidAlgorithmError} If signature is not ECDSA
  *
  * @example
@@ -25,7 +25,7 @@ export function getR(signature) {
 		);
 	}
 
-	return /** @type {import('../../Hash/index.js').BrandedHash} */ (
+	return /** @type {import('../../Hash/index.js').HashType} */ (
 		signature.slice(0, COMPONENT_SIZE)
 	);
 }

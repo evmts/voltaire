@@ -1,7 +1,7 @@
 /**
  * Convert Bytes to UTF-8 string
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes to convert
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes to convert
  * @returns {string} UTF-8 string
  *
  * @example

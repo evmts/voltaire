@@ -1,8 +1,8 @@
 /**
  * Clone Bytes
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes to clone
- * @returns {import('./BrandedBytes.js').BrandedBytes} Cloned Bytes
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes to clone
+ * @returns {import('./../BytesType.js').BytesType} Cloned Bytes
  *
  * @example
  * ```typescript
@@ -10,7 +10,7 @@
  * ```
  */
 export function clone(bytes) {
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (
+	return /** @type {import('./../BytesType.js').BytesType} */ (
 		new Uint8Array(bytes)
 	);
 }

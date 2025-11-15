@@ -7,9 +7,9 @@
  */
 
 import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
-import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import type { BrandedPrivateKey } from "../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js";
+import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
 
 /**
  * Load and instantiate the WASM module.
@@ -123,7 +123,7 @@ export function calculateCreate2Address(
  * @param data - Input data
  * @returns 32-byte hash
  */
-export function keccak256(data: Uint8Array): BrandedHash;
+export function keccak256(data: Uint8Array): HashType;
 
 /**
  * Convert hash to hex string
@@ -137,7 +137,7 @@ export function hashToHex(hash: Uint8Array): string;
  * @param hex - Hex string (with or without 0x prefix)
  * @returns 32-byte hash
  */
-export function hashFromHex(hex: string): BrandedHash;
+export function hashFromHex(hex: string): HashType;
 
 /**
  * Compare two hashes for equality (constant-time)
@@ -152,7 +152,7 @@ export function hashEquals(a: Uint8Array, b: Uint8Array): boolean;
  * @param message - Message to hash
  * @returns 32-byte hash
  */
-export function eip191HashMessage(message: Uint8Array): BrandedHash;
+export function eip191HashMessage(message: Uint8Array): HashType;
 
 // ============================================================================
 // Hash Algorithms API
@@ -317,7 +317,7 @@ export function txDetectType(data: Uint8Array): number;
  * Generate a cryptographically secure random private key
  * @returns 32-byte private key
  */
-export function generatePrivateKey(): BrandedPrivateKey;
+export function generatePrivateKey(): PrivateKeyType;
 
 /**
  * Compress uncompressed secp256k1 public key

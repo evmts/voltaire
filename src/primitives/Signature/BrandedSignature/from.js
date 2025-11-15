@@ -35,9 +35,7 @@ export function from(value) {
 			val.algorithm === "p256" ||
 			val.algorithm === "ed25519")
 	) {
-		return /** @type {import('../SignatureType.js').SignatureType} */ (
-			value
-		);
+		return /** @type {import('../SignatureType.js').SignatureType} */ (value);
 	}
 
 	// Handle Uint8Array (compact format)

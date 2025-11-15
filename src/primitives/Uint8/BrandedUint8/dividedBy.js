@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} a - Dividend
- * @param {import('./BrandedUint8.js').BrandedUint8} b - Divisor
- * @returns {import('./BrandedUint8.js').BrandedUint8} Quotient (floor(a / b))
+ * @param {import('./../Uint8Type.js').Uint8Type} a - Dividend
+ * @param {import('./../Uint8Type.js').Uint8Type} b - Divisor
+ * @returns {import('./../Uint8Type.js').Uint8Type} Quotient (floor(a / b))
  * @throws {Error} If divisor is zero
  * @example
  * ```javascript
@@ -19,7 +19,7 @@ export function dividedBy(a, b) {
 	if (b === 0) {
 		throw new Error("Division by zero");
 	}
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (
 		Math.floor(a / b)
 	);
 }

@@ -710,7 +710,7 @@ describe("Address", () => {
 
 		it("throws on invalid salt length", () => {
 			// Previously, calculateCreate2Address would validate salt internally
-			// Now validation happens at the boundary when creating BrandedHash
+			// Now validation happens at the boundary when creating HashType
 			const invalidSalt = new Uint8Array(31); // Not 32 bytes
 
 			// Validation now happens when creating the Hash, not in calculateCreate2Address

@@ -9,7 +9,7 @@ import * as Bytes6 from "./Bytes6/index.js";
 import * as Bytes7 from "./Bytes7/index.js";
 import * as Bytes8 from "./Bytes8/index.js";
 
-describe("BrandedBytes", () => {
+describe("BytesType", () => {
 	describe("from", () => {
 		it("should create from Uint8Array", () => {
 			const input = new Uint8Array([0x01, 0x02, 0x03]);
@@ -77,19 +77,19 @@ describe("BrandedBytes", () => {
 
 	describe("toHex", () => {
 		it("should convert to hex string", () => {
-			const bytes = new Uint8Array([0x12, 0x34]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x12, 0x34]) as Bytes.BytesType;
 			const result = Bytes.toHex(bytes);
 			expect(result).toBe("0x1234");
 		});
 
 		it("should pad single digit bytes", () => {
-			const bytes = new Uint8Array([0x01, 0x0a]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01, 0x0a]) as Bytes.BytesType;
 			const result = Bytes.toHex(bytes);
 			expect(result).toBe("0x010a");
 		});
 
 		it("should handle empty bytes", () => {
-			const bytes = new Uint8Array([]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([]) as Bytes.BytesType;
 			const result = Bytes.toHex(bytes);
 			expect(result).toBe("0x");
 		});
@@ -99,13 +99,13 @@ describe("BrandedBytes", () => {
 		it("should convert to UTF-8 string", () => {
 			const bytes = new Uint8Array([
 				0x68, 0x65, 0x6c, 0x6c, 0x6f,
-			]) as Bytes.BrandedBytes;
+			]) as Bytes.BytesType;
 			const result = Bytes.toString(bytes);
 			expect(result).toBe("hello");
 		});
 
 		it("should handle empty bytes", () => {
-			const bytes = new Uint8Array([]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([]) as Bytes.BytesType;
 			const result = Bytes.toString(bytes);
 			expect(result).toBe("");
 		});
@@ -113,22 +113,22 @@ describe("BrandedBytes", () => {
 
 	describe("concat", () => {
 		it("should concatenate multiple bytes", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x03, 0x04]) as Bytes.BrandedBytes;
-			const c = new Uint8Array([0x05]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x03, 0x04]) as Bytes.BytesType;
+			const c = new Uint8Array([0x05]) as Bytes.BytesType;
 			const result = Bytes.concat(a, b, c);
 			expect(result).toEqual(new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05]));
 		});
 
 		it("should handle empty arrays", () => {
-			const a = new Uint8Array([0x01]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01]) as Bytes.BytesType;
+			const b = new Uint8Array([]) as Bytes.BytesType;
 			const result = Bytes.concat(a, b);
 			expect(result).toEqual(new Uint8Array([0x01]));
 		});
 
 		it("should work with single array", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			const result = Bytes.concat(a);
 			expect(result).toEqual(new Uint8Array([0x01, 0x02]));
 		});
@@ -136,21 +136,19 @@ describe("BrandedBytes", () => {
 
 	describe("slice", () => {
 		it("should slice bytes", () => {
-			const bytes = new Uint8Array([
-				0x01, 0x02, 0x03, 0x04,
-			]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01, 0x02, 0x03, 0x04]) as Bytes.BytesType;
 			const result = Bytes.slice(bytes, 1, 3);
 			expect(result).toEqual(new Uint8Array([0x02, 0x03]));
 		});
 
 		it("should slice to end", () => {
-			const bytes = new Uint8Array([0x01, 0x02, 0x03]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01, 0x02, 0x03]) as Bytes.BytesType;
 			const result = Bytes.slice(bytes, 1);
 			expect(result).toEqual(new Uint8Array([0x02, 0x03]));
 		});
 
 		it("should handle empty slice", () => {
-			const bytes = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			const result = Bytes.slice(bytes, 1, 1);
 			expect(result).toEqual(new Uint8Array([]));
 		});
@@ -158,77 +156,77 @@ describe("BrandedBytes", () => {
 
 	describe("equals", () => {
 		it("should return true for equal bytes", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			expect(Bytes.equals(a, b)).toBe(true);
 		});
 
 		it("should return false for different bytes", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x03]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x03]) as Bytes.BytesType;
 			expect(Bytes.equals(a, b)).toBe(false);
 		});
 
 		it("should return false for different lengths", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01]) as Bytes.BytesType;
 			expect(Bytes.equals(a, b)).toBe(false);
 		});
 
 		it("should return true for empty bytes", () => {
-			const a = new Uint8Array([]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([]) as Bytes.BytesType;
+			const b = new Uint8Array([]) as Bytes.BytesType;
 			expect(Bytes.equals(a, b)).toBe(true);
 		});
 	});
 
 	describe("compare", () => {
 		it("should return 0 for equal bytes", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(0);
 		});
 
 		it("should return -1 when first is less", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x03]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x03]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(-1);
 		});
 
 		it("should return 1 when first is greater", () => {
-			const a = new Uint8Array([0x01, 0x03]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x03]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(1);
 		});
 
 		it("should return -1 when first is shorter", () => {
-			const a = new Uint8Array([0x01]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(-1);
 		});
 
 		it("should return 1 when first is longer", () => {
-			const a = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
-			const b = new Uint8Array([0x01]) as Bytes.BrandedBytes;
+			const a = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(1);
 		});
 	});
 
 	describe("size", () => {
 		it("should return byte length", () => {
-			const bytes = new Uint8Array([0x01, 0x02, 0x03]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01, 0x02, 0x03]) as Bytes.BytesType;
 			expect(Bytes.size(bytes)).toBe(3);
 		});
 
 		it("should return 0 for empty", () => {
-			const bytes = new Uint8Array([]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([]) as Bytes.BytesType;
 			expect(Bytes.size(bytes)).toBe(0);
 		});
 	});
 
 	describe("clone", () => {
 		it("should create independent copy", () => {
-			const original = new Uint8Array([0x01, 0x02]) as Bytes.BrandedBytes;
+			const original = new Uint8Array([0x01, 0x02]) as Bytes.BytesType;
 			const copy = Bytes.clone(original);
 			expect(copy).toEqual(original);
 			expect(copy).not.toBe(original);
@@ -239,12 +237,12 @@ describe("BrandedBytes", () => {
 
 	describe("isEmpty", () => {
 		it("should return true for empty bytes", () => {
-			const bytes = new Uint8Array([]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([]) as Bytes.BytesType;
 			expect(Bytes.isEmpty(bytes)).toBe(true);
 		});
 
 		it("should return false for non-empty bytes", () => {
-			const bytes = new Uint8Array([0x01]) as Bytes.BrandedBytes;
+			const bytes = new Uint8Array([0x01]) as Bytes.BytesType;
 			expect(Bytes.isEmpty(bytes)).toBe(false);
 		});
 	});
@@ -323,77 +321,77 @@ describe("Bytes1", () => {
 
 	describe("toNumber", () => {
 		it("should convert to number", () => {
-			const bytes = new Uint8Array([42]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([42]) as Bytes1.Bytes1Type;
 			expect(Bytes1.toNumber(bytes)).toBe(42);
 		});
 
 		it("should handle 0", () => {
-			const bytes = new Uint8Array([0]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([0]) as Bytes1.Bytes1Type;
 			expect(Bytes1.toNumber(bytes)).toBe(0);
 		});
 
 		it("should handle 255", () => {
-			const bytes = new Uint8Array([255]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([255]) as Bytes1.Bytes1Type;
 			expect(Bytes1.toNumber(bytes)).toBe(255);
 		});
 	});
 
 	describe("toHex", () => {
 		it("should convert to hex", () => {
-			const bytes = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			expect(Bytes1.toHex(bytes)).toBe("0x12");
 		});
 
 		it("should pad single digit", () => {
-			const bytes = new Uint8Array([0x01]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([0x01]) as Bytes1.Bytes1Type;
 			expect(Bytes1.toHex(bytes)).toBe("0x01");
 		});
 	});
 
 	describe("equals", () => {
 		it("should return true for equal", () => {
-			const a = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
-			const b = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const a = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
+			const b = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			expect(Bytes1.equals(a, b)).toBe(true);
 		});
 
 		it("should return false for different", () => {
-			const a = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
-			const b = new Uint8Array([0x34]) as Bytes1.BrandedBytes1;
+			const a = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
+			const b = new Uint8Array([0x34]) as Bytes1.Bytes1Type;
 			expect(Bytes1.equals(a, b)).toBe(false);
 		});
 	});
 
 	describe("compare", () => {
 		it("should return 0 for equal", () => {
-			const a = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
-			const b = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const a = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
+			const b = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			expect(Bytes1.compare(a, b)).toBe(0);
 		});
 
 		it("should return -1 when first is less", () => {
-			const a = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
-			const b = new Uint8Array([0x34]) as Bytes1.BrandedBytes1;
+			const a = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
+			const b = new Uint8Array([0x34]) as Bytes1.Bytes1Type;
 			expect(Bytes1.compare(a, b)).toBe(-1);
 		});
 
 		it("should return 1 when first is greater", () => {
-			const a = new Uint8Array([0x34]) as Bytes1.BrandedBytes1;
-			const b = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const a = new Uint8Array([0x34]) as Bytes1.Bytes1Type;
+			const b = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			expect(Bytes1.compare(a, b)).toBe(1);
 		});
 	});
 
 	describe("size", () => {
 		it("should always return 1", () => {
-			const bytes = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const bytes = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			expect(Bytes1.size(bytes)).toBe(1);
 		});
 	});
 
 	describe("clone", () => {
 		it("should create independent copy", () => {
-			const original = new Uint8Array([0x12]) as Bytes1.BrandedBytes1;
+			const original = new Uint8Array([0x12]) as Bytes1.Bytes1Type;
 			const copy = Bytes1.clone(original);
 			expect(copy).toEqual(original);
 			expect(copy).not.toBe(original);
@@ -435,29 +433,21 @@ describe("Bytes4", () => {
 		it("should convert to hex", () => {
 			const bytes = new Uint8Array([
 				0xa9, 0x05, 0x9c, 0xbb,
-			]) as Bytes4.BrandedBytes4;
+			]) as Bytes4.Bytes4Type;
 			expect(Bytes4.toHex(bytes)).toBe("0xa9059cbb");
 		});
 	});
 
 	describe("equals", () => {
 		it("should return true for equal", () => {
-			const a = new Uint8Array([
-				0x12, 0x34, 0x56, 0x78,
-			]) as Bytes4.BrandedBytes4;
-			const b = new Uint8Array([
-				0x12, 0x34, 0x56, 0x78,
-			]) as Bytes4.BrandedBytes4;
+			const a = new Uint8Array([0x12, 0x34, 0x56, 0x78]) as Bytes4.Bytes4Type;
+			const b = new Uint8Array([0x12, 0x34, 0x56, 0x78]) as Bytes4.Bytes4Type;
 			expect(Bytes4.equals(a, b)).toBe(true);
 		});
 
 		it("should return false for different", () => {
-			const a = new Uint8Array([
-				0x12, 0x34, 0x56, 0x78,
-			]) as Bytes4.BrandedBytes4;
-			const b = new Uint8Array([
-				0x12, 0x34, 0x56, 0x79,
-			]) as Bytes4.BrandedBytes4;
+			const a = new Uint8Array([0x12, 0x34, 0x56, 0x78]) as Bytes4.Bytes4Type;
+			const b = new Uint8Array([0x12, 0x34, 0x56, 0x79]) as Bytes4.Bytes4Type;
 			expect(Bytes4.equals(a, b)).toBe(false);
 		});
 	});
@@ -466,7 +456,7 @@ describe("Bytes4", () => {
 		it("should always return 4", () => {
 			const bytes = new Uint8Array([
 				0x12, 0x34, 0x56, 0x78,
-			]) as Bytes4.BrandedBytes4;
+			]) as Bytes4.Bytes4Type;
 			expect(Bytes4.size(bytes)).toBe(4);
 		});
 	});
@@ -579,7 +569,7 @@ describe("Bytes8", () => {
 		it("should convert to hex", () => {
 			const bytes = new Uint8Array([
 				0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-			]) as Bytes8.BrandedBytes8;
+			]) as Bytes8.Bytes8Type;
 			expect(Bytes8.toHex(bytes)).toBe("0x123456789abcdef0");
 		});
 	});
@@ -588,7 +578,7 @@ describe("Bytes8", () => {
 		it("should always return 8", () => {
 			const bytes = new Uint8Array([
 				0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-			]) as Bytes8.BrandedBytes8;
+			]) as Bytes8.Bytes8Type;
 			expect(Bytes8.size(bytes)).toBe(8);
 		});
 	});

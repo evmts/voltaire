@@ -10,10 +10,10 @@ export const SIZE = 32;
 
 /**
  * Zero hash constant (32 zero bytes)
- * @type {import('./BrandedHash.ts').BrandedHash}
+ * @type {import('../HashType.js').HashType}
  */
 export const ZERO = new Uint8Array(SIZE);
 
 /**
- * @typedef {import('./BrandedHash.ts').BrandedHash} BrandedHash
+ * @typedef {import('../HashType.js').HashType} BrandedHash
  */

@@ -6,7 +6,7 @@ import { from } from "./from.js";
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Byte array (up to 16 bytes)
- * @returns {import('./BrandedUint128.js').BrandedUint128} Uint128 value
+ * @returns {import('./../Uint128Type.js').Uint128Type} Uint128 value
  * @throws {Error} If bytes length exceeds 16
  * @example
  * ```javascript

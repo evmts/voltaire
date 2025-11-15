@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -13,7 +13,7 @@ import { MAX } from "./constants.js";
  * const value = Uint.fromBigInt(100n);
  * ```
  */
-export function fromBigInt(value: bigint): BrandedUint256 {
+export function fromBigInt(value: bigint): Uint256Type {
 	if (value < 0n) {
 		throw new Error(`Uint256 value cannot be negative: ${value}`);
 	}
@@ -22,5 +22,5 @@ export function fromBigInt(value: bigint): BrandedUint256 {
 		throw new Error(`Uint256 value exceeds maximum: ${value}`);
 	}
 
-	return value as BrandedUint256;
+	return value as Uint256Type;
 }

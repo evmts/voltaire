@@ -4,7 +4,7 @@ import { getTopic0 } from "./getTopic0.js";
  * Get event signature (alias for getTopic0)
  *
  * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
- * @returns {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash | undefined}
+ * @returns {import('../../Hash/HashType/HashType.js').HashType | undefined}
  *
  * @example
  * ```typescript

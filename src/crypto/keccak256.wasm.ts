@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { BrandedHash } from "../primitives/Hash/index.js";
+import type { HashType } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
 
 let isInitialized = false;
@@ -44,11 +44,11 @@ async function ensureInit(): Promise<void> {
  * @param data - Input bytes to hash
  * @returns 32-byte Keccak256 hash
  */
-export function hash(data: Uint8Array): BrandedHash {
+export function hash(data: Uint8Array): HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
-	return loader.keccak256(data) as BrandedHash;
+	return loader.keccak256(data) as HashType;
 }
 
 /**
@@ -56,12 +56,12 @@ export function hash(data: Uint8Array): BrandedHash {
  * @param str - String to hash
  * @returns 32-byte Keccak256 hash
  */
-export function hashString(str: string): BrandedHash {
+export function hashString(str: string): HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	const bytes = new TextEncoder().encode(str);
-	return loader.keccak256(bytes) as BrandedHash;
+	return loader.keccak256(bytes) as HashType;
 }
 
 /**
@@ -69,7 +69,7 @@ export function hashString(str: string): BrandedHash {
  * @param hex - Hex string to hash (with or without 0x prefix)
  * @returns 32-byte Keccak256 hash
  */
-export function hashHex(hex: string): BrandedHash {
+export function hashHex(hex: string): HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
@@ -84,7 +84,7 @@ export function hashHex(hex: string): BrandedHash {
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-	return loader.keccak256(bytes) as BrandedHash;
+	return loader.keccak256(bytes) as HashType;
 }
 
 /**
@@ -92,7 +92,7 @@ export function hashHex(hex: string): BrandedHash {
  * @param chunks - Array of byte arrays to hash
  * @returns 32-byte Keccak256 hash
  */
-export function hashMultiple(chunks: Uint8Array[]): BrandedHash {
+export function hashMultiple(chunks: Uint8Array[]): HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
@@ -104,7 +104,7 @@ export function hashMultiple(chunks: Uint8Array[]): BrandedHash {
 		combined.set(chunk, offset);
 		offset += chunk.length;
 	}
-	return loader.keccak256(combined) as BrandedHash;
+	return loader.keccak256(combined) as HashType;
 }
 
 // ============================================================================
@@ -128,17 +128,17 @@ export function selector(signature: string): Uint8Array {
 /**
  * Compute event topic (full 32-byte hash)
  * @param signature - Event signature string (e.g., "Transfer(address,address,uint256)")
- * @returns 32-byte event topic as BrandedHash
+ * @returns 32-byte event topic as HashType
  */
 export function topic(
 	signature: string,
-): import("../primitives/Hash/BrandedHash/BrandedHash.js").BrandedHash {
+): import("../primitives/Hash/HashType/HashType.js").HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	const bytes = new TextEncoder().encode(signature);
 	const hash = loader.keccak256(bytes);
-	return hash as BrandedHash;
+	return hash as HashType;
 }
 
 /**

@@ -6,7 +6,7 @@ import { GetSelector } from "./getSelector.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(str: string) => Uint8Array} deps.keccak256String - Keccak256 hash function for strings
- * @returns {(event: any, args: any) => (import('../../../Hash/BrandedHash/BrandedHash.js').BrandedHash | null)[]} Function that encodes event topics
+ * @returns {(event: any, args: any) => (import('../../../Hash/HashType/HashType.js').HashType | null)[]} Function that encodes event topics
  *
  * @example
  * ```typescript
@@ -27,7 +27,7 @@ export function EncodeTopics({ keccak256, keccak256String }) {
 	 *
 	 * @param {import('./BrandedEvent.js').Event} event - Event definition
 	 * @param {import('./BrandedEvent.js').EncodeTopicsArgs<any>} args - Event arguments to encode
-	 * @returns {(import('../../../Hash/BrandedHash/BrandedHash.js').BrandedHash | null)[]} Topics array (nulls for unspecified indexed params)
+	 * @returns {(import('../../../Hash/HashType/HashType.js').HashType | null)[]} Topics array (nulls for unspecified indexed params)
 	 */
 	return function encodeTopics(event, args) {
 		const topics = [];
@@ -54,7 +54,7 @@ export function EncodeTopics({ keccak256, keccak256String }) {
 			}
 		}
 
-		return /** @type {(import('../../../Hash/BrandedHash/BrandedHash.js').BrandedHash | null)[]} */ (
+		return /** @type {(import('../../../Hash/HashType/HashType.js').HashType | null)[]} */ (
 			topics
 		);
 	};

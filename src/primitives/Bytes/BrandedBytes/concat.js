@@ -1,8 +1,8 @@
 /**
  * Concatenate multiple Bytes
  *
- * @param {...import('./BrandedBytes.js').BrandedBytes} arrays - Bytes to concatenate
- * @returns {import('./BrandedBytes.js').BrandedBytes} Concatenated Bytes
+ * @param {...import('./../BytesType.js').BytesType} arrays - Bytes to concatenate
+ * @returns {import('./../BytesType.js').BytesType} Concatenated Bytes
  *
  * @example
  * ```typescript
@@ -17,5 +17,5 @@ export function concat(...arrays) {
 		result.set(arr, offset);
 		offset += arr.length;
 	}
-	return /** @type {import('./BrandedBytes.js').BrandedBytes} */ (result);
+	return /** @type {import('./../BytesType.js').BytesType} */ (result);
 }

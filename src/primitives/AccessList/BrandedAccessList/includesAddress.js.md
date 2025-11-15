@@ -9,7 +9,7 @@ Check if address exists in access list.
 ## Signature
 
 ```typescript
-function includesAddress(list: BrandedAccessList, address: BrandedAddress): boolean
+function includesAddress(list: BrandedAccessList, address: AddressType): boolean
 ```
 
 ## Parameters

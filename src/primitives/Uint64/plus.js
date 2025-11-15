@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - First operand
- * @param {import('./BrandedUint64.js').BrandedUint64} b - Second operand
- * @returns {import('./BrandedUint64.js').BrandedUint64} Sum (uint + b) mod 2^64
+ * @param {import('./Uint64Type.js').Uint64Type} uint - First operand
+ * @param {import('./Uint64Type.js').Uint64Type} b - Second operand
+ * @returns {import('./Uint64Type.js').Uint64Type} Sum (uint + b) mod 2^64
  * @throws {never}
  * @example
  * ```javascript

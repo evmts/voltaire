@@ -8,7 +8,7 @@ import { isHash } from "./isHash.js";
  * @since 0.0.0
  * @param {unknown} value - Value to assert
  * @param {string} [message] - Optional error message
- * @returns {asserts value is import('./BrandedHash.js').BrandedHash}
+ * @returns {asserts value is import('../HashType.js').HashType}
  * @throws {InvalidFormatError} If value is not a Hash
  * @example
  * ```javascript

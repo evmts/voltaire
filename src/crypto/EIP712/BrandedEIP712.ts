@@ -1,6 +1,6 @@
 import type { brand } from "../../brand.js";
-import type { BrandedAddress } from "../../primitives/Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../primitives/Hash/Hash.js";
+import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
+import type { HashType } from "../../primitives/Hash/Hash.js";
 
 /**
  * EIP-712 Domain separator fields
@@ -10,7 +10,7 @@ export type Domain = {
 	version?: string;
 	chainId?: bigint;
 	verifyingContract?: BrandedAddress;
-	salt?: BrandedHash;
+	salt?: HashType;
 };
 
 /**

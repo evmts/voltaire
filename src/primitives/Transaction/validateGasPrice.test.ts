@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { InvalidRangeError } from "../errors/index.js";
 import { Type } from "./types.js";
 import type { EIP1559, EIP2930, EIP4844, EIP7702, Legacy } from "./types.js";

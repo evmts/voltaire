@@ -1,5 +1,5 @@
 import { InvalidFormatError } from "../errors/index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -13,10 +13,10 @@ import { hexCharToValue } from "./utils.js";
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';
- * const hex = Hex.validate('0x1234'); // BrandedHex
+ * const hex = Hex.validate('0x1234'); // HexType
  * ```
  */
-export function validate(value: string): BrandedHex {
+export function validate(value: string): HexType {
 	if (value.length < 2 || !value.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",
@@ -38,5 +38,5 @@ export function validate(value: string): BrandedHex {
 				},
 			);
 	}
-	return value as BrandedHex;
+	return value as HexType;
 }

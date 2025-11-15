@@ -16,8 +16,8 @@
  * ```
  */
 
-import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../primitives/Hash/index.js";
+import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
+import type { HashType } from "../primitives/Hash/index.js";
 import {
 	Eip712EncodingError,
 	Eip712Error,
@@ -65,7 +65,7 @@ export namespace Eip712Wasm {
 		 * @param domain - Domain separator fields
 		 * @returns 32-byte domain hash
 		 */
-		export function hash(domain: Domain): BrandedHash {
+		export function hash(domain: Domain): HashType {
 			const types: Types = {
 				EIP712Domain: [],
 			};
@@ -148,7 +148,7 @@ export namespace Eip712Wasm {
 	 * @param types - Type definitions
 	 * @returns 32-byte type hash
 	 */
-	export function hashType(primaryType: string, types: Types): BrandedHash {
+	export function hashType(primaryType: string, types: Types): HashType {
 		const encoded = encodeType(primaryType, types);
 		return Keccak256Wasm.hashString(encoded);
 	}
@@ -294,7 +294,7 @@ export namespace Eip712Wasm {
 		primaryType: string,
 		message: Message,
 		types: Types,
-	): BrandedHash {
+	): HashType {
 		const encoded = encodeData(primaryType, message, types);
 		return Keccak256Wasm.hash(encoded);
 	}
@@ -309,7 +309,7 @@ export namespace Eip712Wasm {
 	 * @param typedData - Complete typed data structure
 	 * @returns 32-byte hash ready for signing
 	 */
-	export function hashTypedData(typedData: TypedData): BrandedHash {
+	export function hashTypedData(typedData: TypedData): HashType {
 		const domainHash = Domain.hash(typedData.domain);
 		const messageHash = hashStruct(
 			typedData.primaryType,

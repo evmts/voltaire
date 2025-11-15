@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/getSender.js";
 import * as EIP2930 from "./EIP2930/getSender.js";

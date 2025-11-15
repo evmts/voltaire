@@ -4,7 +4,7 @@
  * Measures performance of StorageKey operations and state constants
  */
 
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { BrandedStorageKey } from "./BrandedStorageKey.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./constants.js";
 import * as StorageKey from "./index.js";

@@ -10,7 +10,7 @@ import { Eip712EncodingError } from "./errors.js";
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @param {(type: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').BrandedHash} deps.hashStruct - Hash struct function
+ * @param {(type: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
  * @returns {(type: string, value: import('./BrandedEIP712.js').MessageValue, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} Function that encodes value
  * @throws {Eip712EncodingError} If type is unsupported or value format is invalid
  * @example

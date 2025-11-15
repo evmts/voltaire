@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to number
@@ -14,7 +14,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const num2 = value.toNumber();
  * ```
  */
-export function toNumber(uint: BrandedUint256): number {
+export function toNumber(uint: Uint256Type): number {
 	const bigint = uint as bigint;
 	if (bigint > BigInt(Number.MAX_SAFE_INTEGER)) {
 		throw new Error(`Uint256 value exceeds MAX_SAFE_INTEGER: ${bigint}`);

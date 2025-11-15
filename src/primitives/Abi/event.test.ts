@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress as Address } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedAddress as Address } from "../Address/AddressType.js";
 import * as Hex from "../Hex/index.js";
 import * as Abi from "./index.js";
 import type { Event as AbiEvent } from "./types.js";

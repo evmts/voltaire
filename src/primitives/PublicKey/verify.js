@@ -8,9 +8,9 @@ export function Verify({ secp256k1Verify }) {
 	/**
 	 * Verify signature against public key
 	 *
-	 * @param {import('../PublicKeyType.js').PublicKeyType} publicKey - Public key (64 bytes, uncompressed x,y)
-	 * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} hash - Message hash
-	 * @param {import('../../Signature/BrandedSignature/BrandedSignature.js').BrandedSignature} signature - ECDSA signature
+	 * @param {import('./PublicKeyType.js').PublicKeyType} publicKey - Public key (64 bytes, uncompressed x,y)
+	 * @param {import('../Hash/BrandedHash/BrandedHash.js').BrandedHash} hash - Message hash
+	 * @param {import('../Signature/BrandedSignature/BrandedSignature.js').BrandedSignature} signature - ECDSA signature
 	 * @returns {boolean} True if signature is valid
 	 *
 	 * @example

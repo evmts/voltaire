@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import { Hash } from "./hash.js";
 

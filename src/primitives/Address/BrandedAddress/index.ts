@@ -1,8 +1,8 @@
 // @ts-nocheck
 export * from "./errors.js";
 export * from "./constants.js";
-export type { AddressType } from "../AddressType.js";
-export type { AddressType as BrandedAddress } from "../AddressType.js";
+export type { AddressType } from "../Address/AddressType.js";
+export type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 
 // Export factory functions from ChecksumAddress
 export { From, IsValid } from "./ChecksumAddress.js";

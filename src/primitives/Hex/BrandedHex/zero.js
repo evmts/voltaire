@@ -6,7 +6,7 @@ import { fromBytes } from "./fromBytes.js";
  * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
  * @since 0.0.0
  * @param {number} size - Size in bytes
- * @returns {import('./BrandedHex.js').BrandedHex} Zero-filled hex string
+ * @returns {import('./HexType.js').HexType} Zero-filled hex string
  * @throws {never}
  * @example
  * ```javascript
@@ -15,7 +15,7 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function zero(size) {
-	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+	return /** @type {import('./HexType.js').HexType} */ (
 		fromBytes(new Uint8Array(size))
 	);
 }

@@ -87,11 +87,11 @@ describe("Keccak256.hash", () => {
 			expect(result).toBeInstanceOf(Uint8Array);
 		});
 
-		it("should return BrandedHash type", () => {
+		it("should return HashType type", () => {
 			const input = new Uint8Array([1, 2, 3]);
 			const result = hash(input);
 
-			// Should be a BrandedHash (Uint8Array with 32 bytes)
+			// Should be a HashType (Uint8Array with 32 bytes)
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(32);
 		});

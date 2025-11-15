@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {unknown} value - Value to convert
- * @returns {import('./BrandedUint64.js').BrandedUint64 | null} Uint64 value or null
+ * @returns {import('./Uint64Type.js').Uint64Type | null} Uint64 value or null
  * @throws {never}
  * @example
  * ```javascript
@@ -20,9 +20,7 @@ export function tryFrom(value) {
 	try {
 		if (typeof value === "bigint") {
 			if (value >= 0n && value <= MAX) {
-				return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (
-					value
-				);
+				return /** @type {import('./Uint64Type.js').Uint64Type} */ (value);
 			}
 		}
 		return null;

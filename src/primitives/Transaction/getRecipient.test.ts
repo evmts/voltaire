@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import { getRecipient } from "./getRecipient.js";
 import { Type } from "./types.js";
 import type {
@@ -33,11 +33,11 @@ function createAddress(byte: number): BrandedAddress {
  * In production, use Hash.from() which validates input.
  * Tests can unsafely cast because we control the input.
  */
-function createHash(byte: number): BrandedHash {
+function createHash(byte: number): HashType {
 	const hash = new Uint8Array(32);
 	hash.fill(byte);
 	// Safe: we create exactly 32 bytes
-	return hash as BrandedHash;
+	return hash as HashType;
 }
 
 /**

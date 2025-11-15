@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -16,7 +16,7 @@ import { MAX } from "./constants.js";
  * const sum2 = a.plus(b); // 150
  * ```
  */
-export function plus(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function plus(uint: Uint256Type, b: Uint256Type): Uint256Type {
 	const sum = (uint as bigint) + (b as bigint);
-	return (sum & MAX) as BrandedUint256;
+	return (sum & MAX) as Uint256Type;
 }

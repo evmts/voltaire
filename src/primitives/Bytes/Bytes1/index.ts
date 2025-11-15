@@ -27,7 +27,7 @@ export {
 };
 
 // Namespace export
-export const BrandedBytes1 = {
+export const BytesType1 = {
 	from,
 	fromHex,
 	fromNumber,

@@ -10,7 +10,7 @@ Composite key type for EVM storage operations.
 
 ```typescript
 type BrandedStorageKey = {
-  readonly address: BrandedAddress;
+  readonly address: AddressType;
   readonly slot: bigint;
 }
 ```
@@ -18,7 +18,7 @@ type BrandedStorageKey = {
 ## Properties
 
 ### address
-- Type: `BrandedAddress`
+- Type: `AddressType`
 - 20-byte contract address
 - Identifies which contract's storage space
 
@@ -33,7 +33,7 @@ type BrandedStorageKey = {
 ### StorageKeyLike
 ```typescript
 type StorageKeyLike = BrandedStorageKey | {
-  address: BrandedAddress;
+  address: AddressType;
   slot: bigint;
 }
 ```

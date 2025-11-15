@@ -1,4 +1,4 @@
-import type { BrandedHex } from "./BrandedHex.js";
+import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -16,9 +16,9 @@ import { fromBytes } from "./fromBytes.js";
  * const hex2 = Hex.from(new Uint8Array([0x12, 0x34]));
  * ```
  */
-export function from(value: string | Uint8Array): BrandedHex {
+export function from(value: string | Uint8Array): HexType {
 	if (typeof value === "string") {
-		return value as BrandedHex;
+		return value as HexType;
 	}
 	return fromBytes(value);
 }

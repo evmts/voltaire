@@ -1,7 +1,7 @@
 import type { brand } from "../../brand.js";
 
 /**
- * Branded Uint64 type
+ * Uint64 type
  *
  * 64-bit unsigned integer (0 to 18446744073709551615).
  * Uses bigint to handle values beyond Number.MAX_SAFE_INTEGER.
@@ -10,4 +10,4 @@ import type { brand } from "../../brand.js";
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  */
-export type BrandedUint64 = bigint & { readonly [brand]: "Uint64" };
+export type Uint64Type = bigint & { readonly [brand]: "Uint64" };

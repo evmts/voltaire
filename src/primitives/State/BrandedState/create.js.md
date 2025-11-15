@@ -9,7 +9,7 @@ Create a new StorageKey from address and slot.
 ## Signature
 
 ```typescript
-function create(address: BrandedAddress, slot: bigint): BrandedStorageKey
+function create(address: AddressType, slot: bigint): BrandedStorageKey
 ```
 
 ## Parameters

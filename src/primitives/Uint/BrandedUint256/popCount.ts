@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Count number of set bits (population count)
@@ -13,7 +13,7 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const count2 = a.popCount(); // 8
  * ```
  */
-export function popCount(uint: BrandedUint256): number {
+export function popCount(uint: Uint256Type): number {
 	let count = 0;
 	let v = uint as bigint;
 	while (v > 0n) {

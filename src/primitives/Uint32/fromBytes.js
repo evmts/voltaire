@@ -6,7 +6,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - byte array (must be exactly 4 bytes)
- * @returns {import('./BrandedUint32.js').BrandedUint32} Uint32 value
+ * @returns {import('./Uint32Type.js').Uint32Type} Uint32 value
  * @throws {Error} If bytes length is not 4
  * @example
  * ```javascript

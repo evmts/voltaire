@@ -11,7 +11,7 @@ Methods for filtering event logs by address, topics, and complete filter criteri
 Checks if log matches address filter.
 
 ```typescript
-matchesAddress(log: BrandedEventLog, address: BrandedAddress | BrandedAddress[]): boolean
+matchesAddress(log: BrandedEventLog, address: AddressType | AddressType[]): boolean
 ```
 
 **Parameters:**
@@ -47,7 +47,7 @@ Checks if log matches topic filter.
 ```typescript
 matchesTopics(
   log: BrandedEventLog,
-  topics: readonly (BrandedHash | BrandedHash[] | null)[]
+  topics: readonly (HashType | HashType[] | null)[]
 ): boolean
 ```
 

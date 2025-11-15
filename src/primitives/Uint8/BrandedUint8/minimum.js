@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} a - First operand
- * @param {import('./BrandedUint8.js').BrandedUint8} b - Second operand
- * @returns {import('./BrandedUint8.js').BrandedUint8} Minimum value
+ * @param {import('./../Uint8Type.js').Uint8Type} a - First operand
+ * @param {import('./../Uint8Type.js').Uint8Type} b - Second operand
+ * @returns {import('./../Uint8Type.js').Uint8Type} Minimum value
  * @throws {never}
  * @example
  * ```javascript
@@ -16,7 +16,5 @@
  * ```
  */
 export function minimum(a, b) {
-	return /** @type {import('./BrandedUint8.js').BrandedUint8} */ (
-		a < b ? a : b
-	);
+	return /** @type {import('./../Uint8Type.js').Uint8Type} */ (a < b ? a : b);
 }

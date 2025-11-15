@@ -7,8 +7,8 @@
 export * from "./EventLog.js";
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 
 // ============================================================================
 // WASM-Accelerated Functions
@@ -51,8 +51,8 @@ export function matchesAddressWasm(
  * ```
  */
 export function matchesTopicWasm(
-	logTopic: BrandedHash,
-	filterTopic: BrandedHash | null,
+	logTopic: HashType,
+	filterTopic: HashType | null,
 ): boolean {
 	return loader.eventLogMatchesTopic(
 		logTopic as Uint8Array,
@@ -75,8 +75,8 @@ export function matchesTopicWasm(
  * ```
  */
 export function matchesTopicsWasm(
-	logTopics: BrandedHash[],
-	filterTopics: (BrandedHash | null)[],
+	logTopics: HashType[],
+	filterTopics: (HashType | null)[],
 ): boolean {
 	return loader.eventLogMatchesTopics(
 		logTopics.map((t) => t as Uint8Array),
@@ -121,9 +121,9 @@ export function filterByAddressWasm<T extends { address: BrandedAddress }>(
  * ]);
  * ```
  */
-export function filterByTopicsWasm<T extends { topics: BrandedHash[] }>(
+export function filterByTopicsWasm<T extends { topics: HashType[] }>(
 	logs: T[],
-	filterTopics: (BrandedHash | null)[],
+	filterTopics: (HashType | null)[],
 ): T[] {
 	return logs.filter((log) => matchesTopicsWasm(log.topics, filterTopics));
 }
@@ -145,11 +145,11 @@ export function filterByTopicsWasm<T extends { topics: BrandedHash[] }>(
  * ```
  */
 export function filterLogsWasm<
-	T extends { address: BrandedAddress; topics: BrandedHash[] },
+	T extends { address: BrandedAddress; topics: HashType[] },
 >(
 	logs: T[],
 	filterAddresses: BrandedAddress[],
-	filterTopics: (BrandedHash | null)[],
+	filterTopics: (HashType | null)[],
 ): T[] {
 	return logs.filter(
 		(log) =>

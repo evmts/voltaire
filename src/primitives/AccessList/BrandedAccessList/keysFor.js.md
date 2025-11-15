@@ -11,8 +11,8 @@ Get all storage keys for an address.
 ```typescript
 function keysFor(
   list: BrandedAccessList,
-  address: BrandedAddress
-): readonly BrandedHash[] | undefined
+  address: AddressType
+): readonly HashType[] | undefined
 ```
 
 ## Parameters
@@ -22,7 +22,7 @@ function keysFor(
 
 ## Returns
 
-`readonly BrandedHash[] | undefined` - Array of keys, or undefined if address not in list
+`readonly HashType[] | undefined` - Array of keys, or undefined if address not in list
 
 ## Example
 

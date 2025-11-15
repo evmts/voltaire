@@ -6,7 +6,7 @@ import { MAX } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedUint64.js').BrandedUint64} true if valid Uint64
+ * @returns {value is import('./Uint64Type.js').Uint64Type} true if valid Uint64
  * @throws {never}
  * @example
  * ```javascript

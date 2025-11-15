@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedUint256.js";
+export * from "../Uint256Type.js";
 export * from "./constants.js";
 
 import { bitLength } from "./bitLength.js";
@@ -101,7 +101,7 @@ export {
 };
 
 // Namespace export
-export const BrandedUint256 = {
+export const Uint256Type = {
 	from,
 	fromHex,
 	fromBigInt,

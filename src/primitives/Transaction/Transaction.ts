@@ -6,11 +6,11 @@
  *
  * Uses branded types throughout:
  * - `BrandedAddress` for `to` fields (20 bytes, validated at Address.from())
- * - `BrandedHash` for hashes (32 bytes, validated at Hash.from())
+ * - `HashType` for hashes (32 bytes, validated at Hash.from())
  * - Transaction signature components (r, s) validated at signature creation time
  *
  * Validation strategy: Type safety at boundaries. Once you have a BrandedAddress,
- * internal utilities trust it's 20 bytes. Same for BrandedHash (32 bytes).
+ * internal utilities trust it's 20 bytes. Same for HashType (32 bytes).
  *
  * Supports:
  * - Legacy (Type 0): Original format with fixed gas price
@@ -88,8 +88,8 @@ export { getBlobVersionedHashes as getBlobVersionedHashes_internal } from "./get
 export { getAuthorizationCount as getAuthorizationCount_internal } from "./getAuthorizationCount.js";
 export { getAuthorizations as getAuthorizations_internal } from "./getAuthorizations.js";
 
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import { assertSigned as _assertSigned } from "./assertSigned.js";
 import { format as _format } from "./format.js";
 import { getAccessList as _getAccessList } from "./getAccessList.js";
@@ -167,14 +167,14 @@ export function serialize(tx: Any): Uint8Array {
 /**
  * Compute transaction hash
  */
-export function hash(tx: Any): BrandedHash {
+export function hash(tx: Any): HashType {
 	return _hash.call(tx);
 }
 
 /**
  * Get signing hash for transaction
  */
-export function getSigningHash(tx: Any): BrandedHash {
+export function getSigningHash(tx: Any): HashType {
 	return _getSigningHash.call(tx);
 }
 

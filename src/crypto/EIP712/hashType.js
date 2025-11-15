@@ -9,7 +9,7 @@ import { encodeType } from "./encodeType.js";
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(primaryType: string, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').BrandedHash} Function that hashes type string
+ * @returns {(primaryType: string, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} Function that hashes type string
  * @throws {Eip712TypeNotFoundError} If type is not found
  * @example
  * ```javascript
@@ -24,7 +24,7 @@ export function HashType({ keccak256 }) {
 	return function hashType(primaryType, types) {
 		const encoded = encodeType(primaryType, types);
 		const encodedBytes = new TextEncoder().encode(encoded);
-		return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+		return /** @type {import('../../primitives/Hash/index.js').HashType} */ (
 			keccak256(encodedBytes)
 		);
 	};

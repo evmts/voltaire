@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./BrandedHash.js').BrandedHash} hash - Hash to convert
+ * @param {import('../HashType.js').HashType} hash - Hash to convert
  * @returns {string} Hex string with 0x prefix
  * @throws {never}
  * @example

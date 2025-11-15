@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -15,7 +15,7 @@ import { fromBytes } from "./fromBytes.js";
  * const value = Uint.fromAbiEncoded(encoded); // 255n
  * ```
  */
-export function fromAbiEncoded(bytes: Uint8Array): BrandedUint256 {
+export function fromAbiEncoded(bytes: Uint8Array): Uint256Type {
 	if (bytes.length !== 32) {
 		throw new Error(
 			`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`,

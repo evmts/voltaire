@@ -5,8 +5,8 @@ import { plus } from "./plus.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint128.js').BrandedUint128[]} values - Array of values
- * @returns {import('./BrandedUint128.js').BrandedUint128} Sum with wrapping
+ * @param {import('./../Uint128Type.js').BrandedUint128[]} values - Array of values
+ * @returns {import('./../Uint128Type.js').Uint128Type} Sum with wrapping
  * @throws {never}
  * @example
  * ```javascript

@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint32.js').BrandedUint32} uint - First value
- * @param {import('./BrandedUint32.js').BrandedUint32} b - Second value
- * @returns {import('./BrandedUint32.js').BrandedUint32} Minimum value
+ * @param {import('./Uint32Type.js').Uint32Type} uint - First value
+ * @param {import('./Uint32Type.js').Uint32Type} b - Second value
+ * @returns {import('./Uint32Type.js').Uint32Type} Minimum value
  * @throws {never}
  * @example
  * ```javascript

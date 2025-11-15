@@ -32,7 +32,7 @@ function concat(...arrays) {
  * @param {Uint8Array} signature.r - 32-byte signature component r
  * @param {Uint8Array} signature.s - 32-byte signature component s
  * @param {number} signature.v - Recovery id (27/28 or 0/1)
- * @param {import('../../primitives/Hash/index.js').BrandedHash} messageHash - 32-byte message hash that was signed
+ * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash that was signed
  * @returns {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} 64-byte uncompressed public key
  * @throws {InvalidSignatureError} If signature or recovery fails
  * @example

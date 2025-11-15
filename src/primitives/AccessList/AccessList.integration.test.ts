@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/HashType/HashType.js";
 import type {
 	BrandedAccessList as AccessListType,
 	Item,
@@ -20,10 +20,10 @@ function createAddress(byte: number): BrandedAddress {
 }
 
 // Helper to create test storage keys
-function createStorageKey(byte: number): BrandedHash {
+function createStorageKey(byte: number): HashType {
 	const key = new Uint8Array(32);
 	key.fill(byte);
-	return key as BrandedHash;
+	return key as HashType;
 }
 
 // ============================================================================
@@ -169,7 +169,7 @@ describe("AccessList RLP encoding integration", () => {
 
 	it("should handle RLP encoding with many storage keys", () => {
 		const addr1 = createAddress(1);
-		const keys: BrandedHash[] = [];
+		const keys: HashType[] = [];
 		for (let i = 0; i < 20; i++) {
 			keys.push(createStorageKey(i));
 		}
@@ -276,7 +276,7 @@ describe("AccessList gas optimization scenarios", () => {
 		// 1. Many storage slots are accessed per address
 		// 2. Storage slots are accessed multiple times in transaction
 		const contract = createAddress(0xff);
-		const storageKeys: BrandedHash[] = [];
+		const storageKeys: HashType[] = [];
 
 		// Accessing 10 storage slots
 		for (let i = 0; i < 10; i++) {

@@ -1,13 +1,13 @@
 import type { brand } from "../../../brand.js";
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../../Hash/HashType/HashType.js";
 
 /**
  * Branded EventLog type
  */
 export type BrandedEventLog<
 	TAddress extends BrandedAddress = BrandedAddress,
-	TTopics extends readonly BrandedHash[] = readonly BrandedHash[],
+	TTopics extends readonly HashType[] = readonly HashType[],
 > = {
 	/** Contract address that emitted the log */
 	address: TAddress;
@@ -18,11 +18,11 @@ export type BrandedEventLog<
 	/** Block number where log was emitted */
 	blockNumber?: bigint;
 	/** Transaction hash that generated the log */
-	transactionHash?: BrandedHash;
+	transactionHash?: HashType;
 	/** Transaction index in block */
 	transactionIndex?: number;
 	/** Block hash */
-	blockHash?: BrandedHash;
+	blockHash?: HashType;
 	/** Log index in block */
 	logIndex?: number;
 	/** Log removed due to chain reorganization */
@@ -37,8 +37,8 @@ export type Filter<
 		| BrandedAddress
 		| BrandedAddress[]
 		| undefined,
-	TTopics extends readonly (BrandedHash | BrandedHash[] | null)[] | undefined =
-		| readonly (BrandedHash | BrandedHash[] | null)[]
+	TTopics extends readonly (HashType | HashType[] | null)[] | undefined =
+		| readonly (HashType | HashType[] | null)[]
 		| undefined,
 > = {
 	/** Contract address(es) to filter by */
@@ -50,5 +50,5 @@ export type Filter<
 	/** Ending block number */
 	toBlock?: bigint;
 	/** Block hash to filter by (alternative to fromBlock/toBlock) */
-	blockHash?: BrandedHash;
+	blockHash?: HashType;
 };

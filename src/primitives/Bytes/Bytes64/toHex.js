@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
- * @param {import('./BrandedBytes64.ts').BrandedBytes64} bytes - Bytes64 to convert
+ * @param {import('./Bytes64Type.ts').Bytes64Type} bytes - Bytes64 to convert
  * @returns {string} Hex string with 0x prefix
  * @example
  * ```javascript

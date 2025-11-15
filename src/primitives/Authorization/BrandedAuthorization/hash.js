@@ -5,7 +5,7 @@ import { MAGIC_BYTE } from "./constants.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: Array<Uint8Array>) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(unsigned: {chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}) => import("../../Hash/index.js").BrandedHash} Function that hashes unsigned authorization
+ * @returns {(unsigned: {chainId: bigint, address: import("../../Address/BrandedAddress/BrandedAddress.js").BrandedAddress, nonce: bigint}) => import("../../Hash/index.js").HashType} Function that hashes unsigned authorization
  */
 export function Hash({ keccak256, rlpEncode }) {
 	return function hash(unsigned) {

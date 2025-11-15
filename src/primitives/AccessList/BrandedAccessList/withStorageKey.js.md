@@ -11,8 +11,8 @@ Add storage key for address (adds address if needed).
 ```typescript
 function withStorageKey(
   list: BrandedAccessList,
-  address: BrandedAddress,
-  key: BrandedHash
+  address: AddressType,
+  key: HashType
 ): BrandedAccessList
 ```
 

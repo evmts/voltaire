@@ -1,7 +1,7 @@
 /**
  * Check if Bytes is empty
  *
- * @param {import('./BrandedBytes.js').BrandedBytes} bytes - Bytes to check
+ * @param {import('./../BytesType.js').BytesType} bytes - Bytes to check
  * @returns {boolean} True if empty
  *
  * @example

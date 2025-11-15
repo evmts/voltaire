@@ -1,5 +1,5 @@
 import type { AbiParameter as AbiTypeParameter } from "abitype";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { AbiType } from "./Type.js";
 import type { AbiParameterToPrimitiveTypeWithUint8Array } from "./abitype-uint8array.js";
 

@@ -4,8 +4,8 @@
  * Measures performance of event log operations
  */
 
-import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../../Hash/HashType/HashType.js";
 import { clone } from "./clone.js";
 import { copy } from "./copy.js";
 import { create } from "./create.js";
@@ -77,18 +77,18 @@ const addr3 =
 	"0x0000000000000000000000000000000000000003" as unknown as BrandedAddress;
 
 const topic0 =
-	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as HashType;
 const topic1 =
-	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as HashType;
 const topic2 =
-	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as HashType;
 const topic3 =
-	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as HashType;
 
 const blockHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as HashType;
 const txHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as HashType;
 
 const testLog = create({
 	address: addr1,

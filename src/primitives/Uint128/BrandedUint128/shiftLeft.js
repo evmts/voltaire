@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint128.js').BrandedUint128} uint - Value to shift
+ * @param {import('./../Uint128Type.js').Uint128Type} uint - Value to shift
  * @param {number | bigint} bits - Number of bits to shift
- * @returns {import('./BrandedUint128.js').BrandedUint128} uint << bits (masked to 128 bits)
+ * @returns {import('./../Uint128Type.js').Uint128Type} uint << bits (masked to 128 bits)
  * @throws {never}
  * @example
  * ```javascript

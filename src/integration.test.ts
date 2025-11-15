@@ -22,7 +22,7 @@ import {
 } from "./evm/precompiles/precompiles.js";
 import { Address } from "./primitives/Address/index.js";
 import * as Hardfork from "./primitives/Hardfork/index.js";
-import type { BrandedHash } from "./primitives/Hash/index.js";
+import type { HashType } from "./primitives/Hash/index.js";
 import * as Rlp from "./primitives/Rlp/index.js";
 import * as Signature from "./primitives/Signature/index.js";
 
@@ -760,7 +760,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 
 	describe("Signature Primitive Integration", () => {
 		it("should create and verify signature using primitives", () => {
-			const messageHash = Keccak256.hashString("test message") as BrandedHash;
+			const messageHash = Keccak256.hashString("test message") as HashType;
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 11;
 

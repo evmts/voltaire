@@ -57,7 +57,7 @@ export function VerifySignature({
 				v = Number(this.v);
 			}
 
-			// Create BrandedHash for r and s
+			// Create HashType for r and s
 			const r = Hash.from(this.r);
 			const s = Hash.from(this.s);
 

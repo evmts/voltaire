@@ -10,8 +10,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
-import { keccak256String } from "../primitives/Hash/BrandedHash/index.js";
+import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import { keccak256String } from "../primitives/Hash/HashType/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -667,7 +667,7 @@ for (const { name, impl } of implementations) {
 
 		describe("Edge Cases", () => {
 			it("handles all-zeros message hash", () => {
-				const zeroHash = new Uint8Array(32) as BrandedHash;
+				const zeroHash = new Uint8Array(32) as HashType;
 				const signature = Secp256k1Impl.sign(zeroHash, TEST_PRIVATE_KEY);
 				const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
@@ -675,7 +675,7 @@ for (const { name, impl } of implementations) {
 			});
 
 			it("handles all-ones message hash", () => {
-				const onesHash = new Uint8Array(32) as BrandedHash;
+				const onesHash = new Uint8Array(32) as HashType;
 				onesHash.fill(0xff);
 				const signature = Secp256k1Impl.sign(onesHash, TEST_PRIVATE_KEY);
 				const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);

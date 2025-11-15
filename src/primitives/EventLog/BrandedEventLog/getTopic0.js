@@ -1,5 +1,5 @@
 /**
- * @typedef {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
+ * @typedef {import('../../Hash/HashType/HashType.js').HashType} HashType
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
 
@@ -10,7 +10,7 @@
  * @since 0.0.0
  * @template {BrandedEventLog} T
  * @param {T} log - Event log
- * @returns {BrandedHash | undefined} Topic0 hash or undefined if no topics
+ * @returns {HashType | undefined} Topic0 hash or undefined if no topics
  * @throws {never}
  * @example
  * ```javascript

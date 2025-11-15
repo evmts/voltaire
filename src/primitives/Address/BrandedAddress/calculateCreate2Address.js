@@ -3,7 +3,7 @@
  *
  * @param {Object} deps - Dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {function(import('./BrandedAddress.js').BrandedAddress, import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash, import('../../Bytecode/BrandedBytecode/BrandedBytecode.js').BrandedBytecode): import('./BrandedAddress.js').BrandedAddress}
+ * @returns {function(import('./BrandedAddress.js').BrandedAddress, import('../../Hash/HashType/HashType.js').HashType, import('../../Bytecode/BrandedBytecode/BrandedBytecode.js').BrandedBytecode): import('./BrandedAddress.js').BrandedAddress}
  */
 export function CalculateCreate2Address({ keccak256 }) {
 	/**
@@ -12,7 +12,7 @@ export function CalculateCreate2Address({ keccak256 }) {
 	 * address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
 	 *
 	 * @param {import('./BrandedAddress.js').BrandedAddress} address - Sender address
-	 * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} salt - 32-byte salt (use Hash.from to create)
+	 * @param {import('../../Hash/HashType/HashType.js').HashType} salt - 32-byte salt (use Hash.from to create)
 	 * @param {import('../../Bytecode/BrandedBytecode/BrandedBytecode.js').BrandedBytecode} initCode - Contract initialization code
 	 * @returns {import('./BrandedAddress.js').BrandedAddress} Calculated contract address
 	 *

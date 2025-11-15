@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -16,10 +16,7 @@ import { MAX } from "./constants.js";
  * const result2 = a.shiftLeft(b); // 256
  * ```
  */
-export function shiftLeft(
-	uint: BrandedUint256,
-	bits: BrandedUint256,
-): BrandedUint256 {
+export function shiftLeft(uint: Uint256Type, bits: Uint256Type): Uint256Type {
 	const shifted = (uint as bigint) << (bits as bigint);
-	return (shifted & (MAX as bigint)) as BrandedUint256;
+	return (shifted & (MAX as bigint)) as Uint256Type;
 }

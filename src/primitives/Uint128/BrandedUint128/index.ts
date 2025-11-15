@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedUint128.js";
+export * from "../Uint128Type.js";
 export * from "./constants.js";
 
 import { bitLength } from "./bitLength.js";

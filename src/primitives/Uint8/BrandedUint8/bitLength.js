@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint8.js').BrandedUint8} uint - Input value
+ * @param {import('./../Uint8Type.js').Uint8Type} uint - Input value
  * @returns {number} Number of bits needed to represent value (0-8)
  * @throws {never}
  * @example

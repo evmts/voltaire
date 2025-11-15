@@ -11,7 +11,7 @@ import { bench, group, run } from "mitata";
 const OxHex = {} as any;
 
 // Import current Voltaire implementation
-import * as VoltaireHex from "./BrandedHex/index.js";
+import * as VoltaireHex from "./HexType/index.js";
 
 // Test data
 const testBytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);

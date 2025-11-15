@@ -20,8 +20,8 @@ Checks if log address matches filter using WASM.
 
 ```typescript
 matchesAddressWasm(
-  logAddress: BrandedAddress,
-  filterAddresses: BrandedAddress[]
+  logAddress: AddressType,
+  filterAddresses: AddressType[]
 ): boolean
 ```
 
@@ -50,8 +50,8 @@ Checks if log topic matches filter using WASM.
 
 ```typescript
 matchesTopicWasm(
-  logTopic: BrandedHash,
-  filterTopic: BrandedHash | null
+  logTopic: HashType,
+  filterTopic: HashType | null
 ): boolean
 ```
 
@@ -81,8 +81,8 @@ Checks if log topics array matches filter array using WASM.
 
 ```typescript
 matchesTopicsWasm(
-  logTopics: BrandedHash[],
-  filterTopics: (BrandedHash | null)[]
+  logTopics: HashType[],
+  filterTopics: (HashType | null)[]
 ): boolean
 ```
 
@@ -115,9 +115,9 @@ const matches = matchesTopicsWasm(logTopics, [
 Filters logs by address using WASM (batch operation).
 
 ```typescript
-filterByAddressWasm<T extends { address: BrandedAddress }>(
+filterByAddressWasm<T extends { address: AddressType }>(
   logs: T[],
-  filterAddresses: BrandedAddress[]
+  filterAddresses: AddressType[]
 ): T[]
 ```
 
@@ -142,9 +142,9 @@ const tokenLogs = filterByAddressWasm(allLogs, [usdcAddress, daiAddress]);
 Filters logs by topics using WASM (batch operation).
 
 ```typescript
-filterByTopicsWasm<T extends { topics: BrandedHash[] }>(
+filterByTopicsWasm<T extends { topics: HashType[] }>(
   logs: T[],
-  filterTopics: (BrandedHash | null)[]
+  filterTopics: (HashType | null)[]
 ): T[]
 ```
 
@@ -173,10 +173,10 @@ const filtered = filterByTopicsWasm(allLogs, [
 Filters logs by both address and topics using WASM.
 
 ```typescript
-filterLogsWasm<T extends { address: BrandedAddress; topics: BrandedHash[] }>(
+filterLogsWasm<T extends { address: AddressType; topics: HashType[] }>(
   logs: T[],
-  filterAddresses: BrandedAddress[],
-  filterTopics: (BrandedHash | null)[]
+  filterAddresses: AddressType[],
+  filterTopics: (HashType | null)[]
 ): T[]
 ```
 

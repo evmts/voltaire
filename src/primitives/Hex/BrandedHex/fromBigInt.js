@@ -5,7 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - BigInt to convert
  * @param {number} [size] - Optional byte size for padding
- * @returns {import('./BrandedHex.js').BrandedHex} Hex string
+ * @returns {import('./HexType.js').HexType} Hex string
  * @throws {never}
  * @example
  * ```javascript
@@ -19,5 +19,5 @@ export function fromBigInt(value, size) {
 	if (size !== undefined) {
 		hex = hex.padStart(size * 2, "0");
 	}
-	return /** @type {import('./BrandedHex.js').BrandedHex} */ (`0x${hex}`);
+	return /** @type {import('./HexType.js').HexType} */ (`0x${hex}`);
 }

@@ -104,7 +104,7 @@ describe("Bytes16", () => {
 			bytes[1] = 0xab;
 			bytes[15] = 0xff;
 			const hex = Bytes16.toHex(
-				Bytes16.fromBytes(bytes) as Bytes16.BrandedBytes16,
+				Bytes16.fromBytes(bytes) as Bytes16.Bytes16Type,
 			);
 			expect(hex).toMatch(/^0x[0-9a-f]{32}$/);
 			expect(hex.slice(0, 6)).toBe("0x12ab");
@@ -116,7 +116,7 @@ describe("Bytes16", () => {
 			bytes[0] = 0x01;
 			bytes[1] = 0x0f;
 			const hex = Bytes16.toHex(
-				Bytes16.fromBytes(bytes) as Bytes16.BrandedBytes16,
+				Bytes16.fromBytes(bytes) as Bytes16.Bytes16Type,
 			);
 			expect(hex.slice(2, 6)).toBe("010f");
 		});
@@ -155,8 +155,8 @@ describe("Bytes16", () => {
 			b[0] = 2;
 			expect(
 				Bytes16.equals(
-					Bytes16.fromBytes(a) as Bytes16.BrandedBytes16,
-					Bytes16.fromBytes(b) as Bytes16.BrandedBytes16,
+					Bytes16.fromBytes(a) as Bytes16.Bytes16Type,
+					Bytes16.fromBytes(b) as Bytes16.Bytes16Type,
 				),
 			).toBe(false);
 		});
@@ -181,8 +181,8 @@ describe("Bytes16", () => {
 			b[0] = 2;
 			expect(
 				Bytes16.compare(
-					Bytes16.fromBytes(a) as Bytes16.BrandedBytes16,
-					Bytes16.fromBytes(b) as Bytes16.BrandedBytes16,
+					Bytes16.fromBytes(a) as Bytes16.Bytes16Type,
+					Bytes16.fromBytes(b) as Bytes16.Bytes16Type,
 				),
 			).toBe(-1);
 		});
@@ -194,8 +194,8 @@ describe("Bytes16", () => {
 			b[0] = 1;
 			expect(
 				Bytes16.compare(
-					Bytes16.fromBytes(a) as Bytes16.BrandedBytes16,
-					Bytes16.fromBytes(b) as Bytes16.BrandedBytes16,
+					Bytes16.fromBytes(a) as Bytes16.Bytes16Type,
+					Bytes16.fromBytes(b) as Bytes16.Bytes16Type,
 				),
 			).toBe(1);
 		});
@@ -207,8 +207,8 @@ describe("Bytes16", () => {
 			b[15] = 2;
 			expect(
 				Bytes16.compare(
-					Bytes16.fromBytes(a) as Bytes16.BrandedBytes16,
-					Bytes16.fromBytes(b) as Bytes16.BrandedBytes16,
+					Bytes16.fromBytes(a) as Bytes16.Bytes16Type,
+					Bytes16.fromBytes(b) as Bytes16.Bytes16Type,
 				),
 			).toBe(-1);
 		});

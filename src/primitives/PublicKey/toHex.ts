@@ -1,4 +1,4 @@
-import type { PublicKeyType } from "../PublicKeyType.js";
+import type { PublicKeyType } from "./PublicKeyType.js";
 
 /**
  * Convert PublicKey to hex string

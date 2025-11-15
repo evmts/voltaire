@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
- * @param {import('./BrandedUint64.js').BrandedUint64} uint - Base
- * @param {import('./BrandedUint64.js').BrandedUint64} exp - Exponent
- * @returns {import('./BrandedUint64.js').BrandedUint64} Result (uint ^ exp) mod 2^64
+ * @param {import('./Uint64Type.js').Uint64Type} uint - Base
+ * @param {import('./Uint64Type.js').Uint64Type} exp - Exponent
+ * @returns {import('./Uint64Type.js').Uint64Type} Result (uint ^ exp) mod 2^64
  * @throws {never}
  * @example
  * ```javascript
@@ -19,7 +19,7 @@ import { MAX } from "./constants.js";
  */
 export function toPower(uint, exp) {
 	if (exp === 0n)
-		return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (1n);
+		return /** @type {import('./Uint64Type.js').Uint64Type} */ (1n);
 	if (exp === 1n) return uint;
 
 	let result = 1n;
@@ -34,5 +34,5 @@ export function toPower(uint, exp) {
 		exponent = exponent >> 1n;
 	}
 
-	return /** @type {import('./BrandedUint64.js').BrandedUint64} */ (result);
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (result);
 }

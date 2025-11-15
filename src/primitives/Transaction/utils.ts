@@ -1,7 +1,7 @@
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { fromPublicKey } from "../Address/BrandedAddress/index.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { HashType } from "../Hash/index.js";
 import type { BrandedRlp } from "../Rlp/BrandedRlp/BrandedRlp.js";
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 
@@ -95,12 +95,12 @@ export function decodeBigint(bytes: Uint8Array): bigint {
  * Validation happens at the boundary when creating branded types.
  *
  * @param signature Signature components (r, s, v)
- * @param messageHash BrandedHash (32 bytes) of the signed message
+ * @param messageHash HashType (32 bytes) of the signed message
  * @returns BrandedAddress recovered from the signature
  */
 export function recoverAddress(
 	signature: { r: Uint8Array; s: Uint8Array; v: number },
-	messageHash: BrandedHash,
+	messageHash: HashType,
 ): BrandedAddress {
 	const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 
@@ -118,14 +118,14 @@ export function recoverAddress(
  * Encode access list for RLP
  * @internal
  *
- * Encodes an access list of BrandedAddress and BrandedHash entries for RLP serialization.
+ * Encodes an access list of BrandedAddress and HashType entries for RLP serialization.
  * Assumes all addresses are valid BrandedAddress (20 bytes) and storage keys are
- * valid BrandedHash (32 bytes). Validation happens at the boundary.
+ * valid HashType (32 bytes). Validation happens at the boundary.
  */
 export function encodeAccessList(
 	accessList: readonly {
 		address: BrandedAddress;
-		storageKeys: readonly BrandedHash[];
+		storageKeys: readonly HashType[];
 	}[],
 ): Encodable[] {
 	return accessList.map((item) => [
@@ -138,7 +138,7 @@ export function encodeAccessList(
  * Decode access list from RLP
  * @internal
  *
- * Decodes RLP-encoded access list items into BrandedAddress and BrandedHash arrays.
+ * Decodes RLP-encoded access list items into BrandedAddress and HashType arrays.
  * Validates format and length during decoding - this is a boundary between RLP data
  * and typed primitives.
  *
@@ -147,7 +147,7 @@ export function encodeAccessList(
  */
 export function decodeAccessList(
 	data: BrandedRlp[],
-): { address: BrandedAddress; storageKeys: BrandedHash[] }[] {
+): { address: BrandedAddress; storageKeys: HashType[] }[] {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 2) {
 			throw new InvalidFormatError("Invalid access list item", {
@@ -193,7 +193,7 @@ export function decodeAccessList(
 				});
 			}
 			// Safe cast: validates length above
-			return keyData.value as BrandedHash;
+			return keyData.value as HashType;
 		});
 
 		return { address, storageKeys };

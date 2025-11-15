@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to bigint
@@ -13,6 +13,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const bigint2 = value.toBigInt();
  * ```
  */
-export function toBigInt(uint: BrandedUint256): bigint {
+export function toBigInt(uint: Uint256Type): bigint {
 	return uint as bigint;
 }

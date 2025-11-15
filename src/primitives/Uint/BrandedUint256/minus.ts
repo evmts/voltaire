@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 
 /**
@@ -16,10 +16,10 @@ import { MAX } from "./constants.js";
  * const diff2 = a.minus(b); // 50
  * ```
  */
-export function minus(uint: BrandedUint256, b: BrandedUint256): BrandedUint256 {
+export function minus(uint: Uint256Type, b: Uint256Type): Uint256Type {
 	const diff = (uint as bigint) - (b as bigint);
 	if (diff < 0n) {
-		return ((MAX as bigint) + 1n + diff) as BrandedUint256;
+		return ((MAX as bigint) + 1n + diff) as Uint256Type;
 	}
-	return diff as BrandedUint256;
+	return diff as Uint256Type;
 }

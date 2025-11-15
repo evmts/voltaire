@@ -1,4 +1,4 @@
-import type { BrandedUint256 } from "./BrandedUint256.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Check equality
@@ -15,6 +15,6 @@ import type { BrandedUint256 } from "./BrandedUint256.js";
  * const eq2 = a.equals(b); // true
  * ```
  */
-export function equals(uint: BrandedUint256, b: BrandedUint256): boolean {
+export function equals(uint: Uint256Type, b: Uint256Type): boolean {
 	return (uint as bigint) === (b as bigint);
 }

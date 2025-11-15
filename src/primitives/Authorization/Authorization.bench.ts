@@ -4,7 +4,7 @@
  * Measures performance of EIP-7702 authorization operations
  */
 
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { BrandedAuthorization } from "../Authorization/BrandedAuthorization/BrandedAuthorization.js";
 import * as Authorization from "../Authorization/index.js";
 
