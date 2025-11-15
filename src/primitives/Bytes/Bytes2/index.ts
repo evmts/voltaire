@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedBytes2.js";
+export * from "./Bytes2Type.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
