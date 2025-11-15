@@ -3,17 +3,15 @@ title: Powerful Features
 description: Unique features beyond standard Ethereum libraries
 ---
 
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
 Voltaire provides all standard features including primitive types (Address, Hash, Transaction, etc.), JSON-RPC provider, and cryptography. But we also offer **unique features not found in any other TypeScript-based Ethereum library**.
 
 ## EVM Execution
 
 Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate gas, and debug contracts without network calls.
-
-**Why this is powerful:**
-- **Zero latency** - Execute instantly without network round-trips
-- **Deep inspection** - Step through opcodes, inspect memory and stack
-- **Programmable hooks** - Run callbacks on every instruction
-- **Local simulation** - Test contract interactions before sending transactions
 
 ### Simulate Transactions
 
@@ -114,12 +112,6 @@ evm.injectContract(oracleAddress, {
 ## Bytecode Analysis
 
 Parse and analyze EVM bytecode without executing it. Essential for security analysis, optimization, and tooling.
-
-**Why this is powerful:**
-- **Static analysis** - Understand contracts without execution
-- **Security auditing** - Find suspicious patterns and vulnerabilities
-- **Gas optimization** - Identify inefficient bytecode
-- **Decompilation** - Reverse engineer unverified contracts
 
 ### Parse Instructions
 

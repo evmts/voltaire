@@ -24,7 +24,7 @@ mode: "custom"
     </h1>
 
     <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-      Modern, high-performance WASM-based Ethereum library for TypeScript
+      Modern, high-performance Ethereum library for TypeScript
     </p>
 
     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
@@ -56,11 +56,18 @@ mode: "custom"
 
     <div style={{ maxWidth: '1000px', margin: '0 auto 5rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
+          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Intuitive API</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Primitives map one-to-one to the official Ethereum specs, making Voltaire intuitive for anyone with Ethereum domain knowledge</p>
+          </div>
+        </a>
         <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Typesafety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Have confidence your Ethereum types are correct, validated, and type safe</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Voltaire's branded types make it the most type-safe Ethereum library for TypeScript</p>
           </div>
         </a>
         <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -68,13 +75,6 @@ mode: "custom"
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>High Performance Zig</h3>
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>High-performance implementations for cryptography, encoding, and EVM execution written in Zig</p>
-          </div>
-        </a>
-        <a href="/getting-started/simple-api" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
-          <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Simple API</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Faithful implementations of Ethereum specs using minimal TypeScript types and native JavaScript data structures</p>
           </div>
         </a>
         <a href="/getting-started/llm-optimized" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -95,7 +95,7 @@ mode: "custom"
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works in browser, mobile, Node.js, and native environments</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Works in browser, mobile, Node.js, and native environments. Supports Zig and C-FFI</p>
           </div>
         </a>
       </div>
