@@ -80,9 +80,9 @@ Output is always a valid G1 point on the curve. The mapping ensures:
 ### TypeScript
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
+import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 // Map a hash to a G1 point for signature schemes
 function hashToG1Point(message: Uint8Array): Uint8Array {

@@ -11,7 +11,7 @@ description: "Complete reference for all Ethereum precompiled contracts with imp
 
 Precompiled contracts are special Ethereum addresses (0x01-0x13+) that execute optimized native code instead of EVM bytecode. They provide gas-efficient implementations of computationally expensive operations like cryptographic primitives, hashing, and elliptic curve operations.
 
-Voltaire provides low-level tree-shakable implementations of all standard precompiles in both TypeScript and Zig, with WASM compilation support for portable high-performance execution. For complete spec-compliant EVM implementations that use these precompiles, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
+Tevm provides low-level tree-shakable implementations of all standard precompiles in both TypeScript and Zig, with WASM compilation support for portable high-performance execution. For complete spec-compliant EVM implementations that use these precompiles, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
 
 ## Complete Precompile Reference
 
@@ -181,8 +181,8 @@ Least used:
 ### TypeScript
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
 
 // Execute any precompile
 const result = execute(
@@ -273,7 +273,7 @@ Dynamic gas prevents abuse:
 ## Hardfork Availability
 
 ```typescript
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { Hardfork } from 'tevm/primitives/Hardfork';
 
 // Check precompile availability
 const precompiles = {
@@ -326,7 +326,7 @@ bun run bench
 bun run scripts/run-benchmarks.ts
 ```
 
-See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed results.
+See [BENCHMARKING.md](https://github.com/evmts/tevm/blob/main/BENCHMARKING.md) for detailed results.
 
 ## Building
 
@@ -413,4 +413,4 @@ Precompile implementations require:
 - Security audits for crypto operations
 - Cross-language parity (TypeScript ↔ Zig)
 
-See [CONTRIBUTING.md](https://github.com/evmts/voltaire/blob/main/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/evmts/tevm/blob/main/CONTRIBUTING.md)

@@ -9,7 +9,7 @@ description: "Complete reference for all 166 Ethereum Virtual Machine opcode han
 
 ## Overview
 
-EVM instructions are the atomic operations that smart contract bytecode compiles to. Voltaire implements all 166 opcodes from the Ethereum Yellow Paper, organized into 11 functional categories.
+EVM instructions are the atomic operations that smart contract bytecode compiles to. Tevm implements all 166 opcodes from the Ethereum Yellow Paper, organized into 11 functional categories.
 
 Each instruction operates on a 256-bit word stack with precise gas costs and well-defined semantics. All implementations are zero-copy, tree-shakeable, and tested against official Ethereum test vectors.
 
@@ -300,7 +300,7 @@ Expansion cost is incremental from previous maximum size.
 ### TypeScript
 
 ```typescript
-import * as Instructions from '@tevm/voltaire/evm/instructions';
+import * as Instructions from 'tevm/evm/instructions';
 
 // Stack operations
 const stack = new Stack();

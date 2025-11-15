@@ -66,9 +66,9 @@ Output is the updated Blake2b state after applying the compression function.
 ## Usage Example
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Blake2b compression with 12 rounds (standard)
 const input = new Uint8Array(213);
@@ -230,9 +230,9 @@ Comparison (per 128 bytes):
 From RFC 7693 and EIP-152 official test suite:
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Vector 1: Empty message hash
 // Hash of empty string with Blake2b should produce specific known output

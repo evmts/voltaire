@@ -52,9 +52,9 @@ Returns 32 zero bytes if signature is invalid.
 ## Usage Example
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Prepare input (hash || v || r || s)
 // Message hash (keccak256 of signed data)
@@ -129,7 +129,7 @@ EIP-2 solved this by requiring `s ≤ secp256k1_n/2`, where secp256k1_n = `0xFFF
 ## Test Vectors
 
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Valid signature recovery
 const hash = Hex('0x4747474747474747474747474747474747474747474747474747474747474747');

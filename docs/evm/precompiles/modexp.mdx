@@ -67,9 +67,9 @@ Returns empty output if `modulus_length = 0`.
 ## Usage Example
 
 ```typescript
-import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import { execute, PrecompileAddress } from 'tevm/precompiles';
+import { Hardfork } from 'tevm/primitives/Hardfork';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Compute 2^3 mod 5 = 8 mod 5 = 3
 const input = Hex(
@@ -122,7 +122,7 @@ if (result.success) {
 ## RSA Verification Example
 
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from 'tevm/primitives/Hex';
 
 // RSA-2048 verification (256-byte values)
 const baseLen = 256;
@@ -176,7 +176,7 @@ This made RSA verification practical for many use cases.
 ## Test Vectors
 
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from 'tevm/primitives/Hex';
 
 // Test 1: 2^3 mod 5 = 3
 const input1 = Hex(

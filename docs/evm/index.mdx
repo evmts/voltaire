@@ -9,7 +9,7 @@ description: "Complete reference for EVM instruction handlers and precompiled co
 
 ## Overview
 
-The Ethereum Virtual Machine is a stack-based virtual machine that executes smart contract bytecode. Voltaire provides low-level implementations of all EVM opcodes and precompiled contracts in both TypeScript and Zig, enabling high-performance execution for EVM-compatible chains.
+The Ethereum Virtual Machine is a stack-based virtual machine that executes smart contract bytecode. Tevm provides low-level implementations of all EVM opcodes and precompiled contracts in both TypeScript and Zig, enabling high-performance execution for EVM-compatible chains.
 
 This section documents 166 instruction handlers across 11 categories plus 21 precompiled contracts, all implemented with:
 - Zero-copy operations
@@ -53,7 +53,7 @@ For complete spec-compliant EVM implementations that use these primitives, see [
 #### TypeScript Implementation
 
 ```typescript
-import * as EVM from '@tevm/voltaire/evm';
+import * as EVM from 'tevm/evm';
 
 // Execute instruction
 const result = EVM.Instructions.Arithmetic.add(stack);
@@ -206,7 +206,7 @@ bun run bench
 bun run scripts/run-benchmarks.ts
 ```
 
-See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for performance data.
+See [BENCHMARKING.md](https://github.com/evmts/tevm/blob/main/BENCHMARKING.md) for performance data.
 
 ## Security
 
@@ -254,4 +254,4 @@ EVM implementations require:
 - Gas cost validation for all hardforks
 - Cross-language parity (TypeScript ↔ Zig)
 
-See [CONTRIBUTING.md](https://github.com/evmts/voltaire/blob/main/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/evmts/tevm/blob/main/CONTRIBUTING.md)
