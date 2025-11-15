@@ -2,12 +2,15 @@
  * @fileoverview eth_sign JSON-RPC method
  */
 
+import { createRequest } from "../../types/JsonRpcRequest.js";
+
 /**
  * @typedef {import('../../types/index.js').Address} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
  */
 
 /**
@@ -30,3 +33,21 @@ export const method = "eth_sign";
  *
  * @typedef {Quantity} Result
  */
+
+/**
+ * Request for `eth_sign`
+ *
+ * @typedef {JsonRpcRequest<'eth_sign', [Address, `0x${string}`]>} Request
+ */
+
+/**
+ * Creates a eth_sign JSON-RPC request
+ *
+ * @param {Address} address
+ * @param {`0x${string}`} block
+ * @param {number | string | null} [id] - Optional request ID
+ * @returns {Request}
+ */
+export function SignRequest(address, block, id = null) {
+	return /** @type {Request} */ (createRequest(method, [address, block], id));
+}

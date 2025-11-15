@@ -503,14 +503,14 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const blob = Kzg.generateRandomBlob();
 
 			// Generate commitment
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 
 			// Use fixed z value (32 bytes)
 			const z = new Uint8Array(32);
 			z[31] = 1; // Small value
 
 			// Compute proof at point z
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Build precompile input (160 bytes)
 			const input = new Uint8Array(160);
@@ -533,8 +533,8 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const blob = Kzg.generateRandomBlob();
 
 			// Generate commitment twice
-			const commitment1 = Kzg.blobToKzgCommitment(blob);
-			const commitment2 = Kzg.blobToKzgCommitment(blob);
+			const commitment1 = Kzg.KZG.Commitment(blob);
+			const commitment2 = Kzg.KZG.Commitment(blob);
 
 			// Should be deterministic
 			expect(Buffer.from(commitment1).equals(Buffer.from(commitment2))).toBe(
@@ -715,9 +715,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			}
 
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = new Uint8Array(32);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);

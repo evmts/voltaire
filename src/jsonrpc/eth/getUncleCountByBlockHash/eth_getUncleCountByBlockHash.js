@@ -2,12 +2,15 @@
  * @fileoverview eth_getUncleCountByBlockHash JSON-RPC method
  */
 
+import { createRequest } from "../../types/JsonRpcRequest.js";
+
 /**
  * @typedef {import('../../types/index.js').Address} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
  */
 
 /**
@@ -27,3 +30,20 @@ export const method = "eth_getUncleCountByBlockHash";
  *
  * @typedef {Quantity} Result
  */
+
+/**
+ * Request for `eth_getUncleCountByBlockHash`
+ *
+ * @typedef {JsonRpcRequest<'eth_getUncleCountByBlockHash', [Hash]>} Request
+ */
+
+/**
+ * Creates a eth_getUncleCountByBlockHash JSON-RPC request
+ *
+ * @param {Hash} address
+ * @param {number | string | null} [id] - Optional request ID
+ * @returns {Request}
+ */
+export function GetUncleCountByBlockHashRequest(address, id = null) {
+	return /** @type {Request} */ (createRequest(method, [address], id));
+}

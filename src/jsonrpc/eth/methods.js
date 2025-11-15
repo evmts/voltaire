@@ -140,3 +140,70 @@ export {
 	eth_syncing,
 	eth_uninstallFilter,
 };
+
+// ============================================================================
+// Request Constructors - Branded Request Types
+// ============================================================================
+
+/**
+ * Request constructor functions for type-safe JSON-RPC requests
+ */
+export const AccountsRequest = eth_accounts.AccountsRequest;
+export const BlobBaseFeeRequest = eth_blobBaseFee.BlobBaseFeeRequest;
+export const BlockNumberRequest = eth_blockNumber.BlockNumberRequest;
+export const CallRequest = eth_call.CallRequest;
+export const ChainIdRequest = eth_chainId.ChainIdRequest;
+export const CoinbaseRequest = eth_coinbase.CoinbaseRequest;
+export const CreateAccessListRequest =
+	eth_createAccessList.CreateAccessListRequest;
+export const EstimateGasRequest = eth_estimateGas.EstimateGasRequest;
+export const FeeHistoryRequest = eth_feeHistory.FeeHistoryRequest;
+export const GasPriceRequest = eth_gasPrice.GasPriceRequest;
+export const GetBalanceRequest = eth_getBalance.GetBalanceRequest;
+export const GetBlockByHashRequest = eth_getBlockByHash.GetBlockByHashRequest;
+export const GetBlockByNumberRequest =
+	eth_getBlockByNumber.GetBlockByNumberRequest;
+export const GetBlockReceiptsRequest =
+	eth_getBlockReceipts.GetBlockReceiptsRequest;
+export const GetBlockTransactionCountByHashRequest =
+	eth_getBlockTransactionCountByHash.GetBlockTransactionCountByHashRequest;
+export const GetBlockTransactionCountByNumberRequest =
+	eth_getBlockTransactionCountByNumber.GetBlockTransactionCountByNumberRequest;
+export const GetCodeRequest = eth_getCode.GetCodeRequest;
+export const GetFilterChangesRequest =
+	eth_getFilterChanges.GetFilterChangesRequest;
+export const GetFilterLogsRequest = eth_getFilterLogs.GetFilterLogsRequest;
+export const GetLogsRequest = eth_getLogs.GetLogsRequest;
+export const GetProofRequest = eth_getProof.GetProofRequest;
+export const GetStorageAtRequest = eth_getStorageAt.GetStorageAtRequest;
+export const GetTransactionByBlockHashAndIndexRequest =
+	eth_getTransactionByBlockHashAndIndex.GetTransactionByBlockHashAndIndexRequest;
+export const GetTransactionByBlockNumberAndIndexRequest =
+	eth_getTransactionByBlockNumberAndIndex.GetTransactionByBlockNumberAndIndexRequest;
+export const GetTransactionByHashRequest =
+	eth_getTransactionByHash.GetTransactionByHashRequest;
+export const GetTransactionCountRequest =
+	eth_getTransactionCount.GetTransactionCountRequest;
+export const GetTransactionReceiptRequest =
+	eth_getTransactionReceipt.GetTransactionReceiptRequest;
+export const GetUncleCountByBlockHashRequest =
+	eth_getUncleCountByBlockHash.GetUncleCountByBlockHashRequest;
+export const GetUncleCountByBlockNumberRequest =
+	eth_getUncleCountByBlockNumber.GetUncleCountByBlockNumberRequest;
+export const MaxPriorityFeePerGasRequest =
+	eth_maxPriorityFeePerGas.MaxPriorityFeePerGasRequest;
+export const NewBlockFilterRequest = eth_newBlockFilter.NewBlockFilterRequest;
+export const NewFilterRequest = eth_newFilter.NewFilterRequest;
+export const NewPendingTransactionFilterRequest =
+	eth_newPendingTransactionFilter.NewPendingTransactionFilterRequest;
+export const SendRawTransactionRequest =
+	eth_sendRawTransaction.SendRawTransactionRequest;
+export const SendTransactionRequest =
+	eth_sendTransaction.SendTransactionRequest;
+export const SignRequest = eth_sign.SignRequest;
+export const SignTransactionRequest =
+	eth_signTransaction.SignTransactionRequest;
+export const SimulateV1Request = eth_simulateV1.SimulateV1Request;
+export const SyncingRequest = eth_syncing.SyncingRequest;
+export const UninstallFilterRequest =
+	eth_uninstallFilter.UninstallFilterRequest;

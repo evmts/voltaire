@@ -42,9 +42,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Gas Costs", () => {
 		it("should charge exactly 50000 gas for valid proof", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -77,9 +77,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Input Validation", () => {
 		it("should accept exactly 160 bytes input", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -93,9 +93,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should accept exactly 192 bytes input (with trailing zeros)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(192);
 			input.set(commitment, 0);
@@ -144,9 +144,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Valid KZG Proof Verification", () => {
 		it("should verify valid KZG proof with standard blob", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x55);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -162,9 +162,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should verify valid proof with empty blob", () => {
 			const blob = Kzg.createEmptyBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x00);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -178,9 +178,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should verify proof at zero evaluation point", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = new Uint8Array(32); // All zeros
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -194,12 +194,12 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should verify proof with different evaluation points", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 
 			const testPoints = [0x01, 0x42, 0xff];
 			for (const point of testPoints) {
 				const z = createValidFieldElement(point);
-				const { proof, y } = Kzg.computeKzgProof(blob, z);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 				const input = new Uint8Array(160);
 				input.set(commitment, 0);
@@ -216,9 +216,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Output Format Verification", () => {
 		it("should return 64 bytes output for valid proof", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -233,9 +233,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should output FIELD_ELEMENTS_PER_BLOB in first 32 bytes", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -253,9 +253,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should output BLS_MODULUS in last 32 bytes", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -273,9 +273,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should return zeros for invalid proof", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Corrupt proof
 			const corruptedProof = new Uint8Array(proof);
@@ -300,9 +300,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Input Field Parsing", () => {
 		it("should parse versioned hash (first 32 bytes of commitment)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Test with commitment having specific pattern
 			const patternedCommitment = new Uint8Array(commitment);
@@ -323,9 +323,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should parse z value (bytes 48-80)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0xff);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -339,9 +339,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should parse y value (bytes 80-112)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -355,9 +355,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should parse commitment (bytes 0-48)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 
@@ -373,9 +373,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should parse proof (bytes 112-160)", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			expect(proof.length).toBe(BYTES_PER_PROOF);
 
@@ -394,7 +394,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 		it("should reject commitment not on curve", () => {
 			const blob = Kzg.generateRandomBlob();
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Create invalid commitment (not a valid G1 point)
 			const invalidCommitment = new Uint8Array(48);
@@ -414,7 +414,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 		it("should reject all-zero commitment", () => {
 			const blob = Kzg.generateRandomBlob();
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const zeroCommitment = new Uint8Array(48); // All zeros
 
@@ -433,9 +433,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const blob1 = Kzg.generateRandomBlob();
 			const blob2 = Kzg.generateRandomBlob();
 
-			const wrongCommitment = Kzg.blobToKzgCommitment(blob2);
+			const wrongCommitment = Kzg.KZG.Commitment(blob2);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob1, z);
+			const { proof, y } = Kzg.KZG.Proof(blob1, z);
 
 			const input = new Uint8Array(160);
 			input.set(wrongCommitment, 0);
@@ -453,9 +453,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	describe("Invalid Proof", () => {
 		it("should reject corrupted proof bytes", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Corrupt proof by flipping bits
 			const corruptedProof = new Uint8Array(proof);
@@ -475,9 +475,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should reject all-zero proof", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { y } = Kzg.computeKzgProof(blob, z);
+			const { y } = Kzg.KZG.Proof(blob, z);
 
 			const zeroProof = new Uint8Array(48);
 
@@ -494,9 +494,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should reject all-ones proof", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { y } = Kzg.computeKzgProof(blob, z);
+			const { y } = Kzg.KZG.Proof(blob, z);
 
 			const onesProof = new Uint8Array(48);
 			onesProof.fill(0xff);
@@ -514,12 +514,12 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should reject proof from different evaluation point", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z1 = createValidFieldElement(0x42);
 			const z2 = createValidFieldElement(0x99);
 
 			// Generate proof for z2, but use z1 in verification
-			const { proof, y } = Kzg.computeKzgProof(blob, z2);
+			const { proof, y } = Kzg.KZG.Proof(blob, z2);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -535,9 +535,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should reject proof with wrong y value", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			// Corrupt y value
 			const wrongY = new Uint8Array(y);
@@ -568,9 +568,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 				}
 			}
 
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x01);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -584,7 +584,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should handle proof verification with identical commitment and proof bytes", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
 
 			// Use commitment bytes as proof (invalid but tests parsing)
@@ -601,9 +601,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should handle 192-byte input with non-zero trailing bytes", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(192);
 			input.set(commitment, 0);
@@ -660,9 +660,9 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 				}
 			}
 
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x12);
-			const { proof, y } = Kzg.computeKzgProof(blob, z);
+			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			const input = new Uint8Array(160);
 			input.set(commitment, 0);
@@ -678,12 +678,12 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 		it("should verify multiple proofs for same blob", () => {
 			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.blobToKzgCommitment(blob);
+			const commitment = Kzg.KZG.Commitment(blob);
 
 			// Test multiple evaluation points
 			for (let i = 0; i < 5; i++) {
 				const z = createValidFieldElement(i * 0x11);
-				const { proof, y } = Kzg.computeKzgProof(blob, z);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 				const input = new Uint8Array(160);
 				input.set(commitment, 0);

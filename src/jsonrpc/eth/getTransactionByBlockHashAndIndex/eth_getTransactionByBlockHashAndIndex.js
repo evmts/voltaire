@@ -2,12 +2,15 @@
  * @fileoverview eth_getTransactionByBlockHashAndIndex JSON-RPC method
  */
 
+import { createRequest } from "../../types/JsonRpcRequest.js";
+
 /**
  * @typedef {import('../../types/index.js').Address} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
  */
 
 /**
@@ -28,3 +31,25 @@ export const method = "eth_getTransactionByBlockHashAndIndex";
  *
  * @typedef {Quantity} Result
  */
+
+/**
+ * Request for `eth_getTransactionByBlockHashAndIndex`
+ *
+ * @typedef {JsonRpcRequest<'eth_getTransactionByBlockHashAndIndex', [Hash, Quantity]>} Request
+ */
+
+/**
+ * Creates a eth_getTransactionByBlockHashAndIndex JSON-RPC request
+ *
+ * @param {Hash} address
+ * @param {Quantity} block
+ * @param {number | string | null} [id] - Optional request ID
+ * @returns {Request}
+ */
+export function GetTransactionByBlockHashAndIndexRequest(
+	address,
+	block,
+	id = null,
+) {
+	return /** @type {Request} */ (createRequest(method, [address, block], id));
+}

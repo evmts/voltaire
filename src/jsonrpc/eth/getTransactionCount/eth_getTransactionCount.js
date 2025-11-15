@@ -2,12 +2,15 @@
  * @fileoverview eth_getTransactionCount JSON-RPC method
  */
 
+import { createRequest } from "../../types/JsonRpcRequest.js";
+
 /**
  * @typedef {import('../../types/index.js').Address} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
  */
 
 /**
@@ -30,3 +33,25 @@ export const method = "eth_getTransactionCount";
  *
  * @typedef {Quantity} Result
  */
+
+/**
+ * Request for `eth_getTransactionCount`
+ *
+ * @typedef {JsonRpcRequest<'eth_getTransactionCount', [Address, BlockSpec]>} Request
+ */
+
+/**
+ * Creates a eth_getTransactionCount JSON-RPC request
+ *
+ * @param {Address} address
+ * @param {BlockSpec} [block]
+ * @param {number | string | null} [id] - Optional request ID
+ * @returns {Request}
+ */
+export function GetTransactionCountRequest(
+	address,
+	block = "latest",
+	id = null,
+) {
+	return /** @type {Request} */ (createRequest(method, [address, block], id));
+}
