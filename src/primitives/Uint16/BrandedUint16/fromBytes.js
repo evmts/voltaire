@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Uint8Array (must be exactly 2 bytes)
- * @returns {import('./Uint16Type.js').BrandedUint16} Uint16 value
+ * @returns {import('./Uint16Type.js').Uint16Type} Uint16 value
  * @throws {Error} If bytes length is not 2
  * @example
  * ```javascript
@@ -19,5 +19,5 @@ export function fromBytes(bytes) {
 	}
 
 	const value = (bytes[0] << 8) | bytes[1];
-	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (value);
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (value);
 }

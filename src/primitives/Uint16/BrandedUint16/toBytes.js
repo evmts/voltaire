@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} uint - Uint16 value
+ * @param {import('./Uint16Type.js').Uint16Type} uint - Uint16 value
  * @returns {Uint8Array} Uint8Array of length 2
  * @throws {never}
  * @example

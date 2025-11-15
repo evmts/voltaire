@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} a - First operand
- * @param {import('./Uint16Type.js').BrandedUint16} b - Second operand
+ * @param {import('./Uint16Type.js').Uint16Type} a - First operand
+ * @param {import('./Uint16Type.js').Uint16Type} b - Second operand
  * @returns {boolean} true if a > b
  * @throws {never}
  * @example

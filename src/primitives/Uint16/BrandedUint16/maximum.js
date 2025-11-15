@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} a - First operand
- * @param {import('./Uint16Type.js').BrandedUint16} b - Second operand
- * @returns {import('./Uint16Type.js').BrandedUint16} Maximum value
+ * @param {import('./Uint16Type.js').Uint16Type} a - First operand
+ * @param {import('./Uint16Type.js').Uint16Type} b - Second operand
+ * @returns {import('./Uint16Type.js').Uint16Type} Maximum value
  * @throws {never}
  * @example
  * ```javascript
@@ -16,7 +16,7 @@
  * ```
  */
 export function maximum(a, b) {
-	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
 		a > b ? a : b
 	);
 }

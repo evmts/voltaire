@@ -5,9 +5,9 @@ import { MAX } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} uint - Value to shift
+ * @param {import('./Uint16Type.js').Uint16Type} uint - Value to shift
  * @param {number} shift - Number of bits to shift (0-15)
- * @returns {import('./Uint16Type.js').BrandedUint16} Left-shifted value (masked to 16 bits)
+ * @returns {import('./Uint16Type.js').Uint16Type} Left-shifted value (masked to 16 bits)
  * @throws {never}
  * @example
  * ```javascript
@@ -17,7 +17,7 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function shiftLeft(uint, shift) {
-	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
 		(uint << shift) & MAX
 	);
 }

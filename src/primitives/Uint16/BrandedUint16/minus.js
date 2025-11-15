@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} a - First operand
- * @param {import('./Uint16Type.js').BrandedUint16} b - Second operand
- * @returns {import('./Uint16Type.js').BrandedUint16} Difference (a - b)
+ * @param {import('./Uint16Type.js').Uint16Type} a - First operand
+ * @param {import('./Uint16Type.js').Uint16Type} b - Second operand
+ * @returns {import('./Uint16Type.js').Uint16Type} Difference (a - b)
  * @throws {Error} If result is negative
  * @example
  * ```javascript
@@ -19,5 +19,5 @@ export function minus(a, b) {
 	if (a < b) {
 		throw new Error(`Uint16 underflow: ${a} - ${b} = ${a - b} is negative`);
 	}
-	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (a - b);
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (a - b);
 }

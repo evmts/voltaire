@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} uint - Input value
+ * @param {import('./Uint16Type.js').Uint16Type} uint - Input value
  * @returns {number} Number of set bits (0-16)
  * @throws {never}
  * @example

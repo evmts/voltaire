@@ -3,9 +3,9 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {import('./Uint16Type.js').BrandedUint16} uint - Value to shift
+ * @param {import('./Uint16Type.js').Uint16Type} uint - Value to shift
  * @param {number} shift - Number of bits to shift (0-15)
- * @returns {import('./Uint16Type.js').BrandedUint16} Right-shifted value
+ * @returns {import('./Uint16Type.js').Uint16Type} Right-shifted value
  * @throws {never}
  * @example
  * ```javascript
@@ -15,7 +15,7 @@
  * ```
  */
 export function shiftRight(uint, shift) {
-	return /** @type {import('./Uint16Type.js').BrandedUint16} */ (
+	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
 		uint >>> shift
 	);
 }
