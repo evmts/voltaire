@@ -1,6 +1,6 @@
 import type { BrandedBytecode } from "../Bytecode/BrandedBytecode/BrandedBytecode.js";
 import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
-import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
+import type { AddressType } from "./AddressType.js";
 import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
@@ -9,8 +9,9 @@ import {
 	toBase64Polyfill,
 } from "./BrandedAddress/polyfills.js";
 
-// Re-export BrandedAddress type and errors
-export type { BrandedAddress } from "./BrandedAddress/index.js";
+// Re-export AddressType and backward-compatible BrandedAddress alias
+export type { AddressType } from "./AddressType.js";
+export type { AddressType as BrandedAddress } from "./AddressType.js";
 export * from "./BrandedAddress/errors.js";
 export * from "./BrandedAddress/constants.js";
 
