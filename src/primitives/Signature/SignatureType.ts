@@ -14,7 +14,7 @@ export type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
  *
  * Algorithm is tracked in metadata, not in the bytes
  */
-export type BrandedSignature = Uint8Array & {
+export type SignatureType = Uint8Array & {
 	readonly [brand]: "Signature";
 	readonly algorithm: SignatureAlgorithm;
 	readonly v?: number; // Recovery ID for secp256k1 (27 or 28)

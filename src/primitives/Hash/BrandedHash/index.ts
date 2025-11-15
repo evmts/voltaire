@@ -1,5 +1,6 @@
 // @ts-nocheck
-export * from "./BrandedHash.js";
+export type { HashType, HashLike } from "../HashType.js";
+export { SIZE, ZERO } from "./constants.js";
 
 // Import crypto dependencies
 import { hash as keccak256Impl } from "../../../crypto/Keccak256/hash.js";
@@ -58,7 +59,7 @@ export {
 };
 
 // Namespace export
-export const BrandedHash = {
+export const HashType = {
 	from,
 	fromBytes,
 	fromHex,
