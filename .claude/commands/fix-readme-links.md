@@ -10,7 +10,7 @@ Fix all broken documentation links in README.md.
 ## Issue
 Links reference files like:
 - `./src/primitives/Address/Address.js.md` (doesn't exist)
-- `./src/primitives/Address/BrandedAddress/index.ts.md` (wrong format)
+- `./src/primitives/Address/AddressType/index.ts.md` (wrong format)
 
 Should reference actual docs:
 - `./src/content/docs/primitives/address/index.mdx`

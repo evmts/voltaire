@@ -215,7 +215,7 @@ docs/                           # All documentation (Mintlify)
 src/                           # Source code (no docs)
 ├── primitives/
 │   ├── Address/
-│   │   ├── BrandedAddress.ts
+│   │   ├── AddressType.ts
 │   │   ├── Address.ts
 │   │   └── *.test.ts
 │   └── ...
@@ -2158,7 +2158,7 @@ Mintlify supports multiple analytics platforms via `docs.json`:
 4. `docs/getting-started.mdx` - Top-level architecture intro
 
 **Code organization examples**:
-- `src/primitives/Address/BrandedAddress/` - Functional API organization
+- `src/primitives/Address/AddressType/` - Functional API organization
 - `src/primitives/Abi/` - Complex primitive with sub-namespaces
 - `src/crypto/x25519.zig` - Well-documented Zig module
 

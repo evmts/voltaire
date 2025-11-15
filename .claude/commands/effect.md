@@ -26,14 +26,14 @@ Effect provides:
 
 ```typescript
 // Existing (unchanged)
-type BrandedAddress = Uint8Array & { readonly __tag: "Address" }
-function from(value: string | number | Uint8Array): BrandedAddress
+type AddressType = Uint8Array & { readonly __tag: "Address" }
+function from(value: string | number | Uint8Array): AddressType
 
 // Effect wrapper (new)
 class AddressSchema extends Schema.Class<AddressSchema>("Address") {
-  value: Schema.Uint8ArrayFromSelf // wraps BrandedAddress
+  value: Schema.Uint8ArrayFromSelf // wraps AddressType
   static from(value: string | number | Uint8Array): AddressSchema {
-    return new AddressSchema({ value: BrandedAddressImpl.from(value) })
+    return new AddressSchema({ value: AddressTypeImpl.from(value) })
   }
 }
 
@@ -440,8 +440,8 @@ export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
     }),
   ),
 }) {
-  get address(): BrandedAddress {
-    return this.value as BrandedAddress;
+  get address(): AddressType {
+    return this.value as AddressType;
   }
 
   get branded(): AddressBrand {
@@ -738,7 +738,7 @@ get thing(): BrandedThing {
 import * as Address from "./index.js"; // Circular!
 
 // Good
-import * as BrandedAddressImpl from "./BrandedAddress/index.js";
+import * as AddressTypeImpl from "./AddressType/index.js";
 ```
 
 ## Primitive Priority List

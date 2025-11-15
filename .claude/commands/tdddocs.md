@@ -329,7 +329,7 @@
         })
         ```
 
-        Study `BrandedAddress/fromHex.test.ts` for complete example.
+        Study `AddressType/fromHex.test.ts` for complete example.
       </test_structure>
 
       <test_data>
