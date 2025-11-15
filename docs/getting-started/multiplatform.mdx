@@ -20,13 +20,13 @@ C-FFI bindings require manual memory management. Always call corresponding `_fre
 
 ## Consistent API
 
-The Voltaire API is consistent across all languages.
+The Tevm API is consistent across all languages.
 
 <Tabs>
 <Tab title="TypeScript">
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from 'tevm';
 
 function main() {
   const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
@@ -63,17 +63,17 @@ pub fn main() !void {
 #include "primitives.h"
 
 int main() {
-    Address* address = voltaire_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+    Address* address = tevm_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
-    char* checksummed = voltaire_address_to_checksummed(address);
-    char* hex = voltaire_address_to_hex(address);
-    bool is_zero = voltaire_address_is_zero(address);
-    bool equal = voltaire_address_equals(address, other_address);
+    char* checksummed = tevm_address_to_checksummed(address);
+    char* hex = tevm_address_to_hex(address);
+    bool is_zero = tevm_address_is_zero(address);
+    bool equal = tevm_address_equals(address, other_address);
 
     // Free memory
-    voltaire_string_free(checksummed);
-    voltaire_string_free(hex);
-    voltaire_address_free(address);
+    tevm_string_free(checksummed);
+    tevm_string_free(hex);
+    tevm_address_free(address);
 }
 ```
 
