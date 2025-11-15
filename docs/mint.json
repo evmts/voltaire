@@ -1,11 +1,11 @@
 {
 	"$schema": "https://mintlify.com/schema.json",
-	"name": "Voltaire",
+	"name": "Tevm",
 	"openapi": [],
 	"logo": {
 		"light": "/logo-light.png",
 		"dark": "/logo-dark.png",
-		"href": "https://voltaire.tevm.sh",
+		"href": "https://tevm.sh",
 		"height": 40
 	},
 	"favicon": "/favicon.png",
@@ -25,7 +25,7 @@
 	"topbarLinks": [
 		{
 			"name": "GitHub",
-			"url": "https://github.com/evmts/voltaire"
+			"url": "https://github.com/evmts/tevm"
 		}
 	],
 	"topbarCtaButton": {
@@ -36,7 +36,7 @@
 		{
 			"name": "GitHub",
 			"icon": "github",
-			"url": "https://github.com/evmts/voltaire"
+			"url": "https://github.com/evmts/tevm"
 		},
 		{
 			"name": "Twitter",
@@ -46,7 +46,7 @@
 	],
 	"navigation": [
 		{
-			"group": "Why Voltaire?",
+			"group": "Why Tevm?",
 			"icon": "lightbulb",
 			"pages": [
 				"introduction",
@@ -1176,7 +1176,7 @@
 		}
 	],
 	"footerSocials": {
-		"github": "https://github.com/evmts/voltaire",
+		"github": "https://github.com/evmts/tevm",
 		"twitter": "https://twitter.com/tevmtools"
 	},
 	"feedback": {
@@ -1185,7 +1185,7 @@
 		"raiseIssue": true
 	},
 	"search": {
-		"prompt": "Search Voltaire docs..."
+		"prompt": "Search Tevm docs..."
 	},
 	"contextual": {
 		"options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]

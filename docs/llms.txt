@@ -1,4 +1,4 @@
-# Voltaire
+# Tevm
 
 Ethereum primitives and cryptography library for TypeScript and Zig. Multi-language, tree-shakeable, WASM-accelerated.
 
@@ -7,10 +7,10 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 - [Home](/): Overview, installation, quick examples, and performance benchmarks
 - [Quick Start](/quick-start): Get running in 3 minutes with complete examples
 - [Getting Started](/getting-started): Installation, core patterns, architecture, and migration guides
-- [Overview](/overview): Comprehensive overview of Voltaire features and capabilities
-- [Why Voltaire](/why-voltaire): Comparison with other Ethereum libraries and design philosophy
+- [Overview](/overview): Comprehensive overview of Tevm features and capabilities
+- [Why Tevm](/why-tevm): Comparison with other Ethereum libraries and design philosophy
 - [Architecture](/architecture): System architecture, module structure, and design decisions
-- [External Dependencies](/external-dependencies): C, Rust, and Zig dependencies used by Voltaire
+- [External Dependencies](/external-dependencies): C, Rust, and Zig dependencies used by Tevm
 - [WASM](/wasm): WASM integration, performance characteristics, and usage patterns
 
 ## Concepts
