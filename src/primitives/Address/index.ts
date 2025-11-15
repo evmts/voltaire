@@ -295,7 +295,7 @@ Address.prototype.toChecksummed = function () {
 		);
 	}
 	const factory = BrandedAddress.ToChecksummed({ keccak256: crypto.keccak256 });
-	return factory(this as BrandedAddressType);
+	return factory(this as AddressType);
 };
 Address.prototype.toLowercase = function () {
 	return BrandedAddress.toLowercase(this);
