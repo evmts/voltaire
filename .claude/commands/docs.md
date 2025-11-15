@@ -2210,3 +2210,63 @@ The user will specify documentation changes. You should:
 - Front-load important information
 
 **Execute the user's docs update request now.**
+
+---
+
+## VERIFICATION WITH MCP
+
+After completing documentation updates, verify changes using the Playwright MCP server:
+
+**Prerequisites:**
+- Mintlify dev server running at `http://localhost:3002` (or 3000)
+- Playwright MCP connected (`claude mcp list` shows `playwright: ✓ Connected`)
+
+**Verification Steps:**
+
+1. **Navigate to updated page:**
+```
+Navigate to http://localhost:3002/[path-to-updated-page]
+```
+
+2. **Take screenshot for visual review:**
+```
+Take a screenshot of the current page
+```
+
+3. **Verify specific elements:**
+- Check that code examples render correctly in tabs
+- Verify component rendering (accordions, cards, callouts)
+- Inspect navigation structure
+- Validate internal links work
+- Review visual hierarchy and layout
+
+4. **Test interactive components:**
+```
+Click on the first tab to verify tab switching works
+```
+
+**Example Verification Workflow:**
+
+After updating `/primitives/bytecode/analyze.mdx`:
+
+```
+1. Navigate to http://localhost:3002/primitives/bytecode/analyze
+2. Take a screenshot
+3. Click on the "Namespace API" tab
+4. Take another screenshot to verify tab content
+```
+
+**What to Check:**
+- ✓ Code blocks display with proper syntax highlighting
+- ✓ Tabs switch between Class API and Namespace API
+- ✓ Callouts (Note, Tip, Warning) render correctly
+- ✓ Cards and CardGroups have proper spacing
+- ✓ Internal links are clickable
+- ✓ Navigation sidebar shows updated structure
+- ✓ Mobile responsiveness (resize browser if needed)
+
+**Report to User:**
+- Confirm which pages were updated
+- Show screenshot of key changes
+- Note any rendering issues found
+- Verify all components work as expected
