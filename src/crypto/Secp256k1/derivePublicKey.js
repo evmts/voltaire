@@ -10,7 +10,7 @@ import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('../../primitives/PrivateKey/BrandedPrivateKey/BrandedPrivateKey.js').BrandedPrivateKey} privateKey - 32-byte private key
+ * @param {import('../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType} privateKey - 32-byte private key
  * @returns {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} 64-byte uncompressed public key
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @example
