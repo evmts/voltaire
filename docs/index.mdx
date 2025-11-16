@@ -365,19 +365,19 @@ console.log("Address:", address.toHex());\`;
             if (viewLines) {
               const computed = getComputedStyle(viewLines);
               debugInfo += '<div style="margin-bottom: 0.5rem;"><strong style="color: #dcdcaa;">view-lines:</strong></div>';
-              debugInfo += `<div>letterSpacing: <span style="color: #ce9178;">${computed.letterSpacing}</span></div>`;
-              debugInfo += `<div>wordSpacing: <span style="color: #ce9178;">${computed.wordSpacing}</span></div>`;
-              debugInfo += `<div>fontVariantLigatures: <span style="color: #ce9178;">${computed.fontVariantLigatures}</span></div>`;
-              debugInfo += `<div>textRendering: <span style="color: #ce9178;">${computed.textRendering}</span></div>`;
-              debugInfo += `<div>fontFamily: <span style="color: #ce9178;">${computed.fontFamily}</span></div>`;
-              debugInfo += `<div>lineHeight: <span style="color: #ce9178;">${computed.lineHeight}</span></div>`;
+              debugInfo += '<div>letterSpacing: <span style="color: #ce9178;">' + computed.letterSpacing + '</span></div>';
+              debugInfo += '<div>wordSpacing: <span style="color: #ce9178;">' + computed.wordSpacing + '</span></div>';
+              debugInfo += '<div>fontVariantLigatures: <span style="color: #ce9178;">' + computed.fontVariantLigatures + '</span></div>';
+              debugInfo += '<div>textRendering: <span style="color: #ce9178;">' + computed.textRendering + '</span></div>';
+              debugInfo += '<div>fontFamily: <span style="color: #ce9178;">' + computed.fontFamily + '</span></div>';
+              debugInfo += '<div>lineHeight: <span style="color: #ce9178;">' + computed.lineHeight + '</span></div>';
             }
 
             if (linesContent) {
               const computed = getComputedStyle(linesContent);
               debugInfo += '<div style="margin-top: 0.5rem;"><strong style="color: #dcdcaa;">lines-content:</strong></div>';
-              debugInfo += `<div>transform: <span style="color: #ce9178;">${computed.transform}</span></div>`;
-              debugInfo += `<div>left: <span style="color: #ce9178;">${computed.left}</span></div>`;
+              debugInfo += '<div>transform: <span style="color: #ce9178;">' + computed.transform + '</span></div>';
+              debugInfo += '<div>left: <span style="color: #ce9178;">' + computed.left + '</span></div>';
             }
 
             debugInfo += '<button onclick="this.parentElement.remove()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>';
