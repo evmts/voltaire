@@ -15,6 +15,20 @@ mode: "custom"
   .dark nav {
     background-color: #280D2E !important;
   }
+
+  /* Monaco editor CSS reset to fix text alignment */
+  #editor-container * {
+    font-feature-settings: normal !important;
+    font-variant-ligatures: none !important;
+    text-rendering: optimizeSpeed !important;
+    -webkit-font-smoothing: subpixel-antialiased !important;
+  }
+
+  #editor-container .monaco-editor,
+  #editor-container .monaco-editor * {
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+  }
 `}</style>
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
@@ -315,7 +329,7 @@ url = "https://tevm.sh/mcp"
           <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
             Edit and experiment with live Tevm code examples.
           </p>
-          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;"></div>
+          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; position: relative;"></div>
         \`;
 
         try {
@@ -339,6 +353,41 @@ console.log("Address:", address.toHex());\`;
 
           const model = monaco.editor.createModel(code, 'typescript');
           editor.setModel(model);
+
+          // Debug CSS after editor loads - display on page
+          setTimeout(() => {
+            const viewLines = document.querySelector('.view-lines');
+            const linesContent = document.querySelector('.lines-content');
+
+            let debugInfo = '<div style="position: fixed; top: 10px; right: 10px; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 12px; max-width: 400px; z-index: 9999; border: 1px solid #333;">';
+            debugInfo += '<div style="font-weight: bold; margin-bottom: 0.5rem; color: #4ec9b0;">Monaco CSS Debug</div>';
+
+            if (viewLines) {
+              const computed = getComputedStyle(viewLines);
+              debugInfo += '<div style="margin-bottom: 0.5rem;"><strong style="color: #dcdcaa;">view-lines:</strong></div>';
+              debugInfo += `<div>letterSpacing: <span style="color: #ce9178;">${computed.letterSpacing}</span></div>`;
+              debugInfo += `<div>wordSpacing: <span style="color: #ce9178;">${computed.wordSpacing}</span></div>`;
+              debugInfo += `<div>fontVariantLigatures: <span style="color: #ce9178;">${computed.fontVariantLigatures}</span></div>`;
+              debugInfo += `<div>textRendering: <span style="color: #ce9178;">${computed.textRendering}</span></div>`;
+              debugInfo += `<div>fontFamily: <span style="color: #ce9178;">${computed.fontFamily}</span></div>`;
+              debugInfo += `<div>lineHeight: <span style="color: #ce9178;">${computed.lineHeight}</span></div>`;
+            }
+
+            if (linesContent) {
+              const computed = getComputedStyle(linesContent);
+              debugInfo += '<div style="margin-top: 0.5rem;"><strong style="color: #dcdcaa;">lines-content:</strong></div>';
+              debugInfo += `<div>transform: <span style="color: #ce9178;">${computed.transform}</span></div>`;
+              debugInfo += `<div>left: <span style="color: #ce9178;">${computed.left}</span></div>`;
+            }
+
+            debugInfo += '<button onclick="this.parentElement.remove()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>';
+            debugInfo += '</div>';
+
+            document.body.insertAdjacentHTML('beforeend', debugInfo);
+
+            console.log('[Monaco Debug] view-lines:', viewLines ? getComputedStyle(viewLines) : 'not found');
+            console.log('[Monaco Debug] lines-content:', linesContent ? getComputedStyle(linesContent) : 'not found');
+          }, 1000);
         } catch (e) {
           document.getElementById('editor-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Failed to load editor</div>';
         }
