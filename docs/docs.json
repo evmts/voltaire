@@ -1314,5 +1314,16 @@
       "github": "https://github.com/evmts/tevm",
       "twitter": "https://twitter.com/tevmtools"
     }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "contextual": {
+    "options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
+  },
+  "assistant": {
+    "enabled": true
   }
 }
