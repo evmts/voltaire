@@ -9,7 +9,7 @@
  * @param {bigint} params.value - Value transferred
  * @param {Uint8Array} params.calldata - Call data
  * @param {boolean} [params.isStatic=false] - Static call flag
- * @returns {import("./BrandedFrame.js").BrandedFrame} New Frame instance
+ * @returns {import("./FrameType.js").BrandedFrame} New Frame instance
  */
 export function from({
 	bytecode,
@@ -20,7 +20,7 @@ export function from({
 	calldata,
 	isStatic = false,
 }) {
-	return /** @type {import("./BrandedFrame.js").BrandedFrame} */ ({
+	return /** @type {import("./FrameType.js").BrandedFrame} */ ({
 		stack: [],
 		memory: new Map(),
 		memorySize: 0,

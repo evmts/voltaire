@@ -12,7 +12,7 @@ function wordCount(bytes) {
  *
  * EVM memory cost formula: 3n + n²/512 where n is word count
  *
- * @param {import("./BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("./FrameType.js").BrandedFrame} frame - Frame instance
  * @param {number} endBytes - Target memory size in bytes
  * @returns {bigint} Additional gas cost for expansion
  */

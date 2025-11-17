@@ -1,9 +1,9 @@
 /**
  * Consume gas from frame
  *
- * @param {import("./BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("./FrameType.js").BrandedFrame} frame - Frame instance
  * @param {bigint} amount - Gas amount to consume
- * @returns {import("./BrandedFrame.js").EvmError | null} Error if out of gas
+ * @returns {import("./FrameType.js").EvmError | null} Error if out of gas
  */
 export function consumeGas(frame, amount) {
 	// Ensure both values are bigint

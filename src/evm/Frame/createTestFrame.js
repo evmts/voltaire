@@ -12,7 +12,7 @@ import { from } from "./from.js";
  * @param {bigint} [options.value] - Value transferred
  * @param {Uint8Array} [options.calldata] - Call data
  * @param {boolean} [options.isStatic] - Static call flag
- * @returns {import("./BrandedFrame.js").BrandedFrame} Test frame instance
+ * @returns {import("./FrameType.js").BrandedFrame} Test frame instance
  */
 export function createTestFrame(options = {}) {
 	const defaultCaller = Address.from(

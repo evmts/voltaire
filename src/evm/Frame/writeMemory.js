@@ -11,7 +11,7 @@ function wordAlignedSize(bytes) {
 /**
  * Write byte to memory
  *
- * @param {import("./BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("./FrameType.js").BrandedFrame} frame - Frame instance
  * @param {number} offset - Byte offset
  * @param {number} value - Byte value
  */

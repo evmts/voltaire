@@ -1,5 +1,5 @@
 // Type exports
-export type { BrandedFrame, EvmError } from "./BrandedFrame.js";
+export type { BrandedFrame, EvmError } from "./FrameType.js";
 
 // Direct exports for easy access
 export { from } from "./from.js";

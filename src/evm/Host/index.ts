@@ -1,12 +1,12 @@
 // Type exports
-export type { BrandedHost } from "./BrandedHost.js";
+export type { BrandedHost } from "./HostType.js";
 
 // Internal exports
 export { from as _from } from "./from.js";
 export { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 
 // Re-export as Host namespace
-import type { BrandedHost } from "./BrandedHost.js";
+import type { BrandedHost } from "./HostType.js";
 import { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 import { from as _from } from "./from.js";
 
