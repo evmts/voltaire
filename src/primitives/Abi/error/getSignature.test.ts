@@ -1,0 +1,288 @@
+/**
+ * Unit tests for getSignature function
+ */
+
+import { describe, expect, it } from "vitest";
+import { getSignature } from "./getSignature.js";
+
+describe("getSignature", () => {
+	it("generates signature for error with no parameters", () => {
+		const error = {
+			type: "error",
+			name: "Unauthorized",
+			inputs: [],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("Unauthorized()");
+	});
+
+	it("generates signature for error with single parameter", () => {
+		const error = {
+			type: "error",
+			name: "InsufficientBalance",
+			inputs: [{ type: "uint256", name: "balance" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InsufficientBalance(uint256)");
+	});
+
+	it("generates signature for error with multiple parameters", () => {
+		const error = {
+			type: "error",
+			name: "TransferFailed",
+			inputs: [
+				{ type: "address", name: "from" },
+				{ type: "address", name: "to" },
+				{ type: "uint256", name: "amount" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("TransferFailed(address,address,uint256)");
+	});
+
+	it("generates signature with address parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidAddress",
+			inputs: [{ type: "address", name: "addr" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidAddress(address)");
+	});
+
+	it("generates signature with bool parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidState",
+			inputs: [{ type: "bool", name: "expected" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidState(bool)");
+	});
+
+	it("generates signature with string parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidInput",
+			inputs: [{ type: "string", name: "reason" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidInput(string)");
+	});
+
+	it("generates signature with bytes parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidData",
+			inputs: [{ type: "bytes", name: "data" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidData(bytes)");
+	});
+
+	it("generates signature with fixed bytes parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidHash",
+			inputs: [{ type: "bytes32", name: "hash" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidHash(bytes32)");
+	});
+
+	it("generates signature with array parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidArray",
+			inputs: [{ type: "uint256[]", name: "values" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidArray(uint256[])");
+	});
+
+	it("generates signature with fixed array parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidFixedArray",
+			inputs: [{ type: "uint256[3]", name: "values" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidFixedArray(uint256[3])");
+	});
+
+	it("generates signature with tuple parameter", () => {
+		const error = {
+			type: "error",
+			name: "InvalidTuple",
+			inputs: [
+				{
+					type: "tuple",
+					name: "config",
+					components: [
+						{ type: "address", name: "owner" },
+						{ type: "uint256", name: "fee" },
+					],
+				},
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("InvalidTuple(tuple)");
+	});
+
+	it("generates signature with nested tuple parameter", () => {
+		const error = {
+			type: "error",
+			name: "ComplexError",
+			inputs: [
+				{
+					type: "tuple",
+					name: "data",
+					components: [
+						{ type: "address", name: "user" },
+						{
+							type: "tuple",
+							name: "nested",
+							components: [
+								{ type: "uint256", name: "x" },
+								{ type: "uint256", name: "y" },
+							],
+						},
+					],
+				},
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("ComplexError(tuple)");
+	});
+
+	it("generates signature with mixed parameter types", () => {
+		const error = {
+			type: "error",
+			name: "MixedParams",
+			inputs: [
+				{ type: "address", name: "addr" },
+				{ type: "uint256", name: "amount" },
+				{ type: "bool", name: "flag" },
+				{ type: "string", name: "message" },
+				{ type: "bytes", name: "data" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("MixedParams(address,uint256,bool,string,bytes)");
+	});
+
+	it("generates signature with different uint sizes", () => {
+		const error = {
+			type: "error",
+			name: "UintSizes",
+			inputs: [
+				{ type: "uint8", name: "a" },
+				{ type: "uint16", name: "b" },
+				{ type: "uint32", name: "c" },
+				{ type: "uint256", name: "d" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("UintSizes(uint8,uint16,uint32,uint256)");
+	});
+
+	it("generates signature with different int sizes", () => {
+		const error = {
+			type: "error",
+			name: "IntSizes",
+			inputs: [
+				{ type: "int8", name: "a" },
+				{ type: "int16", name: "b" },
+				{ type: "int256", name: "c" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("IntSizes(int8,int16,int256)");
+	});
+
+	it("ignores parameter names in signature", () => {
+		const error = {
+			type: "error",
+			name: "TestError",
+			inputs: [
+				{ type: "uint256", name: "firstParam" },
+				{ type: "uint256", name: "secondParam" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("TestError(uint256,uint256)");
+	});
+
+	it("generates signature for ERC20 error example", () => {
+		const error = {
+			type: "error",
+			name: "ERC20InsufficientBalance",
+			inputs: [
+				{ type: "address", name: "sender" },
+				{ type: "uint256", name: "balance" },
+				{ type: "uint256", name: "needed" },
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("ERC20InsufficientBalance(address,uint256,uint256)");
+	});
+
+	it("generates signature for error with tuple array", () => {
+		const error = {
+			type: "error",
+			name: "BatchError",
+			inputs: [
+				{
+					type: "tuple[]",
+					name: "errors",
+					components: [
+						{ type: "uint256", name: "code" },
+						{ type: "string", name: "message" },
+					],
+				},
+			],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("BatchError(tuple[])");
+	});
+
+	it("handles error names with underscores", () => {
+		const error = {
+			type: "error",
+			name: "Invalid_Input_Error",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("Invalid_Input_Error(uint256)");
+	});
+
+	it("handles error names with numbers", () => {
+		const error = {
+			type: "error",
+			name: "Error123",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const signature = getSignature(error);
+		expect(signature).toBe("Error123(uint256)");
+	});
+});

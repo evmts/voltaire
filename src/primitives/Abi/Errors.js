@@ -1,3 +1,5 @@
+// @ts-check
+
 import {
 	DecodingError,
 	EncodingError,
@@ -18,15 +20,16 @@ import {
  * ```
  */
 export class AbiEncodingError extends EncodingError {
-	constructor(
-		message: string,
-		options?: {
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }=} options
+	 */
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "ABI_ENCODING_ERROR",
 			context: options?.context,
@@ -50,15 +53,16 @@ export class AbiEncodingError extends EncodingError {
  * ```
  */
 export class AbiDecodingError extends DecodingError {
-	constructor(
-		message: string,
-		options?: {
-			code?: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }=} options
+	 */
+	constructor(message, options) {
 		super(message, {
 			code: options?.code || "ABI_DECODING_ERROR",
 			context: options?.context,
@@ -82,17 +86,18 @@ export class AbiDecodingError extends DecodingError {
  * ```
  */
 export class AbiParameterMismatchError extends InvalidLengthError {
-	constructor(
-		message: string,
-		options: {
-			code?: string;
-			value: unknown;
-			expected: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: string;
+	 *   value: unknown;
+	 *   expected: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }} options
+	 */
+	constructor(message, options) {
 		super(message, {
 			code: options.code || "ABI_PARAMETER_MISMATCH",
 			value: options.value,
@@ -118,17 +123,18 @@ export class AbiParameterMismatchError extends InvalidLengthError {
  * ```
  */
 export class AbiItemNotFoundError extends InvalidFormatError {
-	constructor(
-		message: string,
-		options: {
-			code?: string;
-			value: unknown;
-			expected: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: string;
+	 *   value: unknown;
+	 *   expected: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }} options
+	 */
+	constructor(message, options) {
 		super(message, {
 			code: options.code || "ABI_ITEM_NOT_FOUND",
 			value: options.value,
@@ -154,17 +160,18 @@ export class AbiItemNotFoundError extends InvalidFormatError {
  * ```
  */
 export class AbiInvalidSelectorError extends InvalidFormatError {
-	constructor(
-		message: string,
-		options: {
-			code?: string;
-			value: unknown;
-			expected: string;
-			context?: Record<string, unknown>;
-			docsPath?: string;
-			cause?: Error;
-		},
-	) {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: string;
+	 *   value: unknown;
+	 *   expected: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }} options
+	 */
+	constructor(message, options) {
 		super(message, {
 			code: options.code || "ABI_INVALID_SELECTOR",
 			value: options.value,

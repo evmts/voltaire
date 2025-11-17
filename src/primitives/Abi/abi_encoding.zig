@@ -133,11 +133,17 @@ pub const AbiType = enum {
     // Dynamic types
     bytes,
     string,
-    // Array types - using @"" syntax for names with special characters
+    // Dynamic array types - using @"" syntax for names with special characters
     @"uint256[]",
     @"bytes32[]",
     @"address[]",
     @"string[]",
+    // Fixed-size array types
+    @"uint256[2]",
+    @"uint256[3]",
+    @"address[2]",
+    @"bool[4]",
+    @"bytes4[2]",
 
     pub fn is_dynamic(self: AbiType) bool {
         return switch (self) {
@@ -163,6 +169,13 @@ pub const AbiType = enum {
             .bytes8 => 8,
             .bytes16 => 16,
             .bytes32 => 32,
+            // Fixed arrays: return total size (element_size * count)
+            .@"uint256[2]" => 64,
+            .@"uint256[3]" => 96,
+            .@"address[2]" => 64,
+            .@"bool[4]" => 128,
+            .@"bytes4[2]" => 64,
+            // Dynamic types: no fixed size
             .bytes, .string, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => null,
         };
     }
@@ -200,6 +213,12 @@ pub const AbiValue = union(AbiType) {
     @"bytes32[]": []const [32]u8,
     @"address[]": []const address.Address,
     @"string[]": []const []const u8,
+    // Fixed-size arrays
+    @"uint256[2]": [2]u256,
+    @"uint256[3]": [3]u256,
+    @"address[2]": [2]address.Address,
+    @"bool[4]": [4]bool,
+    @"bytes4[2]": [2][4]u8,
 
     pub fn get_type(self: AbiValue) AbiType {
         return self;
@@ -3516,4 +3535,166 @@ test "Security - string array total size validation" {
     // Should fail with MaxLengthExceeded due to total size
     const result = encodeAbiParameters(allocator, values);
     try std.testing.expectError(AbiError.MaxLengthExceeded, result);
+}
+
+// ============================================================================
+// Fixed-Size Array Tests
+// ============================================================================
+
+test "Fixed array - uint256[2] encoding" {
+    const allocator = std.testing.allocator;
+
+    const arr = [2]u256{ 1, 2 };
+    const values = [_]AbiValue{
+        .{ .@"uint256[2]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // Fixed array is encoded inline: 2 * 32 = 64 bytes (NO offset pointer)
+    try std.testing.expectEqual(@as(usize, 64), encoded.len);
+    try std.testing.expectEqual(@as(u8, 1), encoded[31]);
+    try std.testing.expectEqual(@as(u8, 2), encoded[63]);
+}
+
+test "Fixed array - uint256[3] encoding and decoding" {
+    const allocator = std.testing.allocator;
+
+    const arr = [3]u256{ 10, 20, 30 };
+    const values = [_]AbiValue{
+        .{ .@"uint256[3]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // 3 * 32 = 96 bytes
+    try std.testing.expectEqual(@as(usize, 96), encoded.len);
+    try std.testing.expectEqual(@as(u8, 10), encoded[31]);
+    try std.testing.expectEqual(@as(u8, 20), encoded[63]);
+    try std.testing.expectEqual(@as(u8, 30), encoded[95]);
+
+    // Decode round-trip
+    const types = [_]AbiType{.@"uint256[3]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u256, 10), decoded[0].@"uint256[3]"[0]);
+    try std.testing.expectEqual(@as(u256, 20), decoded[0].@"uint256[3]"[1]);
+    try std.testing.expectEqual(@as(u256, 30), decoded[0].@"uint256[3]"[2]);
+}
+
+test "Fixed array - address[2] encoding" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
+    const addr2 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} };
+    const arr = [2]address.Address{ addr1, addr2 };
+    const values = [_]AbiValue{
+        .{ .@"address[2]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // 2 * 32 = 64 bytes
+    try std.testing.expectEqual(@as(usize, 64), encoded.len);
+    try std.testing.expectEqual(@as(u8, 1), encoded[31]);
+    try std.testing.expectEqual(@as(u8, 2), encoded[63]);
+}
+
+test "Fixed array - bool[4] encoding" {
+    const allocator = std.testing.allocator;
+
+    const arr = [4]bool{ true, false, true, true };
+    const values = [_]AbiValue{
+        .{ .@"bool[4]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // 4 * 32 = 128 bytes
+    try std.testing.expectEqual(@as(usize, 128), encoded.len);
+    try std.testing.expectEqual(@as(u8, 1), encoded[31]);
+    try std.testing.expectEqual(@as(u8, 0), encoded[63]);
+    try std.testing.expectEqual(@as(u8, 1), encoded[95]);
+    try std.testing.expectEqual(@as(u8, 1), encoded[127]);
+}
+
+test "Fixed array - bytes4[2] encoding" {
+    const allocator = std.testing.allocator;
+
+    const b1 = [4]u8{ 0x12, 0x34, 0x56, 0x78 };
+    const b2 = [4]u8{ 0x9a, 0xbc, 0xde, 0xf0 };
+    const arr = [2][4]u8{ b1, b2 };
+    const values = [_]AbiValue{
+        .{ .@"bytes4[2]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // 2 * 32 = 64 bytes (each bytes4 left-aligned in 32-byte slot)
+    try std.testing.expectEqual(@as(usize, 64), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x12), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x78), encoded[3]);
+    try std.testing.expectEqual(@as(u8, 0x9a), encoded[32]);
+    try std.testing.expectEqual(@as(u8, 0xf0), encoded[35]);
+}
+
+test "Fixed array - mixed with other params (uint256, address[2], bool)" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
+    const addr2 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} };
+    const arr = [2]address.Address{ addr1, addr2 };
+
+    const values = [_]AbiValue{
+        .{ .uint256 = 42 },
+        .{ .@"address[2]" = arr },
+        .{ .bool = true },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // uint256 (32) + address[2] (64) + bool (32) = 128 bytes
+    try std.testing.expectEqual(@as(usize, 128), encoded.len);
+    try std.testing.expectEqual(@as(u8, 42), encoded[31]); // uint256
+    try std.testing.expectEqual(@as(u8, 1), encoded[63]); // address[2][0]
+    try std.testing.expectEqual(@as(u8, 2), encoded[95]); // address[2][1]
+    try std.testing.expectEqual(@as(u8, 1), encoded[127]); // bool
+}
+
+test "Fixed array - empty vs populated" {
+    const allocator = std.testing.allocator;
+
+    // Zero values
+    const arr_zeros = [2]u256{ 0, 0 };
+    const values_zeros = [_]AbiValue{
+        .{ .@"uint256[2]" = arr_zeros },
+    };
+
+    const encoded_zeros = try encodeAbiParameters(allocator, &values_zeros);
+    defer allocator.free(encoded_zeros);
+
+    try std.testing.expectEqual(@as(usize, 64), encoded_zeros.len);
+    for (encoded_zeros) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+
+    // Non-zero values
+    const arr_vals = [2]u256{ 100, 200 };
+    const values_vals = [_]AbiValue{
+        .{ .@"uint256[2]" = arr_vals },
+    };
+
+    const encoded_vals = try encodeAbiParameters(allocator, &values_vals);
+    defer allocator.free(encoded_vals);
+
+    try std.testing.expectEqual(@as(usize, 64), encoded_vals.len);
+    try std.testing.expectEqual(@as(u8, 100), encoded_vals[31]);
+    try std.testing.expectEqual(@as(u8, 200), encoded_vals[63]);
 }

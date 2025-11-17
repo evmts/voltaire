@@ -1,4 +1,9 @@
-import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+// @ts-check
+
+/** @import { AddressType as BrandedAddress } from "../Address/AddressType.js" */
+/** @import { Parameter } from "./Parameter.js" */
+/** @import { ParametersToPrimitiveTypes } from "./Parameter.js" */
+
 import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import * as Uint from "../Uint/index.js";
@@ -7,13 +12,21 @@ import {
 	AbiEncodingError,
 	AbiParameterMismatchError,
 } from "./Errors.js";
-import type { Parameter } from "./Parameter.js";
 
-function encodeUint256(value: bigint): Uint8Array {
+/**
+ * @param {bigint} value
+ * @returns {Uint8Array}
+ */
+function encodeUint256(value) {
 	return Uint.toAbiEncoded(Uint.from(value));
 }
 
-function encodeUint(value: bigint | number, bits: number): Uint8Array {
+/**
+ * @param {bigint | number} value
+ * @param {number} bits
+ * @returns {Uint8Array}
+ */
+function encodeUint(value, bits) {
 	const bigintValue = typeof value === "number" ? BigInt(value) : value;
 	const max = (1n << BigInt(bits)) - 1n;
 	if (bigintValue < 0n || bigintValue > max) {
@@ -24,7 +37,12 @@ function encodeUint(value: bigint | number, bits: number): Uint8Array {
 	return encodeUint256(bigintValue);
 }
 
-function encodeInt(value: bigint | number, bits: number): Uint8Array {
+/**
+ * @param {bigint | number} value
+ * @param {number} bits
+ * @returns {Uint8Array}
+ */
+function encodeInt(value, bits) {
 	const bigintValue = typeof value === "number" ? BigInt(value) : value;
 	const min = -(1n << (BigInt(bits) - 1n));
 	const max = (1n << (BigInt(bits) - 1n)) - 1n;
@@ -37,7 +55,11 @@ function encodeInt(value: bigint | number, bits: number): Uint8Array {
 	return encodeUint256(unsigned);
 }
 
-function padRight(data: Uint8Array): Uint8Array {
+/**
+ * @param {Uint8Array} data
+ * @returns {Uint8Array}
+ */
+function padRight(data) {
 	const paddedLength = Math.ceil(data.length / 32) * 32;
 	if (paddedLength === data.length) return data;
 	const result = new Uint8Array(paddedLength);
@@ -45,10 +67,12 @@ function padRight(data: Uint8Array): Uint8Array {
 	return result;
 }
 
-function isDynamicType(
-	type: Parameter["type"],
-	components?: readonly Parameter[],
-): boolean {
+/**
+ * @param {Parameter["type"]} type
+ * @param {readonly Parameter[]=} components
+ * @returns {boolean}
+ */
+function isDynamicType(type, components) {
 	if (type === "string" || type === "bytes") return true;
 	if (type.endsWith("[]")) return true;
 	if (type === "tuple" && components) {
@@ -57,22 +81,27 @@ function isDynamicType(
 	if (type.includes("[") && type.endsWith("]")) {
 		const match = type.match(/^(.+)\[(\d+)\]$/);
 		if (match?.[1]) {
-			const elementType = match[1] as Parameter["type"];
+			const elementType = /** @type {Parameter["type"]} */ (match[1]);
 			return isDynamicType(elementType);
 		}
 	}
 	return false;
 }
 
-function encodeValue(
-	type: Parameter["type"],
-	value: unknown,
-	components?: readonly Parameter[],
-): { encoded: Uint8Array; isDynamic: boolean } {
+/**
+ * @param {Parameter["type"]} type
+ * @param {unknown} value
+ * @param {readonly Parameter[]=} components
+ * @returns {{ encoded: Uint8Array; isDynamic: boolean }}
+ */
+function encodeValue(type, value, components) {
 	// Handle tuples FIRST
 	if (type === "tuple" && components) {
-		const tuple = value as unknown[];
-		const encoded = encodeParameters(components as any, tuple as any);
+		const tuple = /** @type {unknown[]} */ (value);
+		const encoded = encodeParameters(
+			/** @type {any} */ (components),
+			/** @type {any} */ (tuple),
+		);
 		const isDynamic = isDynamicType(type, components);
 		return { encoded, isDynamic };
 	}
@@ -80,8 +109,8 @@ function encodeValue(
 	// Check for arrays FIRST before other types
 	// Dynamic arrays: uint256[], address[], etc.
 	if (type.endsWith("[]")) {
-		const elementType = type.slice(0, -2) as Parameter["type"];
-		const array = value as unknown[];
+		const elementType = /** @type {Parameter["type"]} */ (type.slice(0, -2));
+		const array = /** @type {unknown[]} */ (value);
 		const length = encodeUint256(BigInt(array.length));
 
 		const elementParams = array.map(() => ({
@@ -89,8 +118,8 @@ function encodeValue(
 			components,
 		}));
 		const encodedElements = encodeParameters(
-			elementParams as any,
-			array as any,
+			/** @type {any} */ (elementParams),
+			/** @type {any} */ (array),
 		);
 
 		const result = new Uint8Array(length.length + encodedElements.length);
@@ -103,9 +132,9 @@ function encodeValue(
 	// MUST check before uint/int to avoid matching "uint256[3]" as "uint"
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
 	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
-		const elementType = fixedArrayMatch[1] as Parameter["type"];
+		const elementType = /** @type {Parameter["type"]} */ (fixedArrayMatch[1]);
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
-		const array = value as unknown[];
+		const array = /** @type {unknown[]} */ (value);
 
 		if (array.length !== arraySize) {
 			throw new AbiEncodingError(
@@ -117,25 +146,28 @@ function encodeValue(
 			type: elementType,
 			components,
 		}));
-		const encoded = encodeParameters(elementParams as any, array as any);
+		const encoded = encodeParameters(
+			/** @type {any} */ (elementParams),
+			/** @type {any} */ (array),
+		);
 		const isDynamic = isDynamicType(elementType, components);
 		return { encoded, isDynamic };
 	}
 
 	if (type.startsWith("uint")) {
 		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
-		const encoded = encodeUint(value as bigint | number, bits);
+		const encoded = encodeUint(/** @type {bigint | number} */ (value), bits);
 		return { encoded, isDynamic: false };
 	}
 
 	if (type.startsWith("int")) {
 		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
-		const encoded = encodeInt(value as bigint | number, bits);
+		const encoded = encodeInt(/** @type {bigint | number} */ (value), bits);
 		return { encoded, isDynamic: false };
 	}
 
 	if (type === "address") {
-		const addr = value as BrandedAddress | string;
+		const addr = /** @type {BrandedAddress | string} */ (value);
 		if (typeof addr === "string") {
 			const addressValue = Address.fromHex(addr);
 			return {
@@ -155,11 +187,11 @@ function encodeValue(
 	if (type.startsWith("bytes") && type.length > 5) {
 		const size = Number.parseInt(type.slice(5));
 		if (size >= 1 && size <= 32) {
-			let bytes: Uint8Array;
+			let bytes;
 			if (typeof value === "string") {
-				bytes = Hex.toBytes(value as any);
+				bytes = Hex.toBytes(/** @type {any} */ (value));
 			} else {
-				bytes = value as Uint8Array;
+				bytes = /** @type {Uint8Array} */ (value);
 			}
 			if (bytes.length !== size) {
 				throw new AbiEncodingError(
@@ -175,8 +207,8 @@ function encodeValue(
 	if (type === "bytes") {
 		const bytes =
 			typeof value === "string"
-				? Hex.toBytes(value as any)
-				: (value as Uint8Array);
+				? Hex.toBytes(/** @type {any} */ (value))
+				: /** @type {Uint8Array} */ (value);
 		const length = encodeUint256(BigInt(bytes.length));
 		const data = padRight(bytes);
 		const result = new Uint8Array(length.length + data.length);
@@ -186,7 +218,7 @@ function encodeValue(
 	}
 
 	if (type === "string") {
-		const str = value as string;
+		const str = /** @type {string} */ (value);
 		const bytes = new TextEncoder().encode(str);
 		const length = encodeUint256(BigInt(bytes.length));
 		const data = padRight(bytes);
@@ -199,7 +231,12 @@ function encodeValue(
 	throw new AbiEncodingError(`Unsupported type: ${type}`);
 }
 
-function decodeUint256(data: Uint8Array, offset: number): bigint {
+/**
+ * @param {Uint8Array} data
+ * @param {number} offset
+ * @returns {bigint}
+ */
+function decodeUint256(data, offset) {
 	if (offset + 32 > data.length) {
 		throw new AbiDecodingError("Data too small for uint256");
 	}
@@ -207,22 +244,30 @@ function decodeUint256(data: Uint8Array, offset: number): bigint {
 	return Uint.toBigInt(Uint.fromAbiEncoded(slice));
 }
 
-function decodeValue(
-	type: Parameter["type"],
-	data: Uint8Array,
-	offset: number,
-	components?: readonly Parameter[],
-): { value: unknown; newOffset: number } {
+/**
+ * @param {Parameter["type"]} type
+ * @param {Uint8Array} data
+ * @param {number} offset
+ * @param {readonly Parameter[]=} components
+ * @returns {{ value: unknown; newOffset: number }}
+ */
+function decodeValue(type, data, offset, components) {
 	// Handle tuples
 	if (type === "tuple" && components) {
 		const isDynamic = isDynamicType(type, components);
 		if (isDynamic) {
 			const dataOffset = Number(decodeUint256(data, offset));
-			const value = decodeParameters(components as any, data.slice(dataOffset));
+			const value = decodeParameters(
+				/** @type {any} */ (components),
+				data.slice(dataOffset),
+			);
 			return { value, newOffset: offset + 32 };
 		}
 		// Static tuple - decode inline
-		const value = decodeParameters(components as any, data.slice(offset));
+		const value = decodeParameters(
+			/** @type {any} */ (components),
+			data.slice(offset),
+		);
 		// Calculate static size by summing component sizes
 		let staticSize = 0;
 		for (const comp of components) {
@@ -232,7 +277,7 @@ function decodeValue(
 	}
 
 	if (type.endsWith("[]")) {
-		const elementType = type.slice(0, -2) as Parameter["type"];
+		const elementType = /** @type {Parameter["type"]} */ (type.slice(0, -2));
 		const dataOffset = Number(decodeUint256(data, offset));
 		const length = Number(decodeUint256(data, dataOffset));
 
@@ -241,7 +286,7 @@ function decodeValue(
 			components,
 		});
 		const value = decodeParameters(
-			elementParams as any,
+			/** @type {any} */ (elementParams),
 			data.slice(dataOffset + 32),
 		);
 		return { value, newOffset: offset + 32 };
@@ -249,7 +294,7 @@ function decodeValue(
 
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
 	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
-		const elementType = fixedArrayMatch[1] as Parameter["type"];
+		const elementType = /** @type {Parameter["type"]} */ (fixedArrayMatch[1]);
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
 
 		const elementParams = Array(arraySize).fill({
@@ -259,12 +304,15 @@ function decodeValue(
 		if (isDynamicType(elementType, components)) {
 			const dataOffset = Number(decodeUint256(data, offset));
 			const value = decodeParameters(
-				elementParams as any,
+				/** @type {any} */ (elementParams),
 				data.slice(dataOffset),
 			);
 			return { value, newOffset: offset + 32 };
 		}
-		const value = decodeParameters(elementParams as any, data.slice(offset));
+		const value = decodeParameters(
+			/** @type {any} */ (elementParams),
+			data.slice(offset),
+		);
 		return { value, newOffset: offset + arraySize * 32 };
 	}
 
@@ -286,7 +334,7 @@ function decodeValue(
 		const masked = unsigned & mask;
 
 		const signBitMask = 1n << (BigInt(bits) - 1n);
-		let value: bigint;
+		let value;
 		if (masked >= signBitMask) {
 			value = masked - (1n << BigInt(bits));
 		} else {
@@ -354,10 +402,13 @@ function decodeValue(
 	throw new AbiDecodingError(`Unsupported type: ${type}`);
 }
 
-export function encodeParameters<const TParams extends readonly Parameter[]>(
-	params: TParams,
-	values: import("./Parameter.js").ParametersToPrimitiveTypes<TParams>,
-): Uint8Array {
+/**
+ * @template {readonly Parameter[]} TParams
+ * @param {TParams} params
+ * @param {ParametersToPrimitiveTypes<TParams>} values
+ * @returns {Uint8Array}
+ */
+export function encodeParameters(params, values) {
 	if (params.length !== values.length) {
 		throw new AbiParameterMismatchError(
 			`Parameter count mismatch: expected ${params.length}, got ${values.length}`,
@@ -368,10 +419,13 @@ export function encodeParameters<const TParams extends readonly Parameter[]>(
 		);
 	}
 
-	const staticParts: Uint8Array[] = [];
-	const dynamicParts: Uint8Array[] = [];
+	/** @type {Uint8Array[]} */
+	const staticParts = [];
+	/** @type {Uint8Array[]} */
+	const dynamicParts = [];
 
-	const encodings: Array<{ encoded: Uint8Array; isDynamic: boolean }> = [];
+	/** @type {Array<{ encoded: Uint8Array; isDynamic: boolean }>} */
+	const encodings = [];
 	for (let i = 0; i < params.length; i++) {
 		const param = params[i];
 		if (!param) continue;
@@ -409,11 +463,15 @@ export function encodeParameters<const TParams extends readonly Parameter[]>(
 	return result;
 }
 
-export function decodeParameters<const TParams extends readonly Parameter[]>(
-	params: TParams,
-	data: Uint8Array,
-): import("./Parameter.js").ParametersToPrimitiveTypes<TParams> {
-	const result: unknown[] = [];
+/**
+ * @template {readonly Parameter[]} TParams
+ * @param {TParams} params
+ * @param {Uint8Array} data
+ * @returns {ParametersToPrimitiveTypes<TParams>}
+ */
+export function decodeParameters(params, data) {
+	/** @type {unknown[]} */
+	const result = [];
 	let offset = 0;
 
 	for (const param of params) {
@@ -427,7 +485,7 @@ export function decodeParameters<const TParams extends readonly Parameter[]>(
 		offset = newOffset;
 	}
 
-	return result as import("./Parameter.js").ParametersToPrimitiveTypes<TParams>;
+	return /** @type {ParametersToPrimitiveTypes<TParams>} */ (result);
 }
 
 export {

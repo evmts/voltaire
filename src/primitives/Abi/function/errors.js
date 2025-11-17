@@ -2,7 +2,7 @@ import {
 	AbiDecodingError,
 	AbiEncodingError,
 	AbiInvalidSelectorError,
-} from "../../Errors.js";
+} from "../Errors.js";
 
 /**
  * Error thrown when encoding function data fails

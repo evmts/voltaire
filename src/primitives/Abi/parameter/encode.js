@@ -1,4 +1,4 @@
-import { AbiEncodingError } from "../../Errors.js";
+import { AbiEncodingError } from "../Errors.js";
 
 /**
  * Encode single parameter (branded method - not implemented)

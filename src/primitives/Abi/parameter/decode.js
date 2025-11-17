@@ -1,4 +1,4 @@
-import { AbiDecodingError } from "../../Errors.js";
+import { AbiDecodingError } from "../Errors.js";
 
 /**
  * Decode single parameter (branded method - not implemented)
