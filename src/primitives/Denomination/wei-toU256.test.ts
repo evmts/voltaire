@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as Uint from "../../Uint/index.js";
+import * as Uint from "../Uint/index.js";
 import { from } from "./wei-from.js";
 import { toU256 } from "./wei-toU256.js";
 

@@ -6,7 +6,7 @@ import { serialize } from "./serialize.js";
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(tx: import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930) => import('../../Hash/index.js').HashType} Function that computes transaction hash
+ * @returns {(tx: import('./TransactionEIP2930Type.js').TransactionEIP2930Type) => import('../../Hash/index.js').HashType} Function that computes transaction hash
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0

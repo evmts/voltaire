@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
+import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import * as TransactionLegacy from "./index.js";
 
 describe("TransactionLegacy.serialize", () => {
 	it("serializes basic legacy transaction", () => {
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -26,7 +26,7 @@ describe("TransactionLegacy.serialize", () => {
 	});
 
 	it("serializes contract creation (to = null)", () => {
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -45,7 +45,7 @@ describe("TransactionLegacy.serialize", () => {
 	});
 
 	it("serializes transaction with EIP-155 v value", () => {
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 5n,
@@ -67,7 +67,7 @@ describe("TransactionLegacy.serialize", () => {
 		const largeData = new Uint8Array(10000);
 		largeData.fill(0xff);
 
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -86,7 +86,7 @@ describe("TransactionLegacy.serialize", () => {
 	});
 
 	it("serializes transaction with zero values", () => {
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -106,7 +106,7 @@ describe("TransactionLegacy.serialize", () => {
 
 	it("serializes transaction with max uint64 gas values", () => {
 		const maxUint64 = 2n ** 64n - 1n;
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -125,7 +125,7 @@ describe("TransactionLegacy.serialize", () => {
 	});
 
 	it("serializes transaction with large nonce", () => {
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 999999999n,
@@ -146,7 +146,7 @@ describe("TransactionLegacy.serialize", () => {
 	it("serializes transaction with large chain ID", () => {
 		const largeChainId = 1000000n;
 		const v = largeChainId * 2n + 35n;
-		const tx: BrandedTransactionLegacy = {
+		const tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,

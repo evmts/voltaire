@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
+import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
 import { serialize } from "./index.js";
 
 describe("TransactionEIP4844.serialize", () => {
 	it("serializes basic EIP-4844 transaction", () => {
-		const tx: BrandedTransactionEIP4844 = {
+		const tx: TransactionEIP4844Type = {
 			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
@@ -37,7 +37,7 @@ describe("TransactionEIP4844.serialize", () => {
 	});
 
 	it("serializes transaction with multiple blob hashes", () => {
-		const tx: BrandedTransactionEIP4844 = {
+		const tx: TransactionEIP4844Type = {
 			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
@@ -71,7 +71,7 @@ describe("TransactionEIP4844.serialize", () => {
 	});
 
 	it("serializes transaction with access list", () => {
-		const tx: BrandedTransactionEIP4844 = {
+		const tx: TransactionEIP4844Type = {
 			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
@@ -105,7 +105,7 @@ describe("TransactionEIP4844.serialize", () => {
 
 	it("serializes transaction with max blob fee", () => {
 		const maxUint256 = 2n ** 256n - 1n;
-		const tx: BrandedTransactionEIP4844 = {
+		const tx: TransactionEIP4844Type = {
 			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
@@ -139,7 +139,7 @@ describe("TransactionEIP4844.serialize", () => {
 			),
 		);
 
-		const tx: BrandedTransactionEIP4844 = {
+		const tx: TransactionEIP4844Type = {
 			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,

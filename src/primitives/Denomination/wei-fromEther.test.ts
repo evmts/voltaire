@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import { WEI_PER_ETHER } from "./wei-constants.js";
-import { fromEther } from "./fromEther.js";
+import { fromEther } from "./wei-fromEther.js";
 
 describe("fromEther", () => {
 	it("converts 1 Ether to Wei", () => {

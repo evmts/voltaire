@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import { GWEI_PER_ETHER } from "./gwei-constants.js";
-import { fromEther } from "./fromEther.js";
+import { fromEther } from "./gwei-fromEther.js";
 
 describe("fromEther", () => {
 	it("converts 1 Ether to Gwei", () => {

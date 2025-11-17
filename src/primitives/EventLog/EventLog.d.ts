@@ -1,12 +1,12 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { HashType } from "../Hash/HashType/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { HexType } from "../Hex/HexType.js";
 import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
 
 export interface EventLogParams {
 	address: BrandedAddress;
 	topics: readonly (HashType | null | undefined)[];
-	data: BrandedHex;
+	data: HexType;
 	blockNumber?: bigint;
 	blockHash?: HashType;
 	transactionHash?: HashType;

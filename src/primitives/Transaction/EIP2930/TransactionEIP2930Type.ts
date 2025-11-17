@@ -3,15 +3,17 @@ import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { AccessList, Type } from "../types.js";
 
 /**
- * Branded EIP-1559 Transaction type
+ * EIP-2930 Transaction type (Access List Transaction)
+ *
+ * @see https://eips.ethereum.org/EIPS/eip-2930
+ * @since 0.0.0
  */
-export type BrandedTransactionEIP1559 = {
-	readonly [brand]: "TransactionEIP1559";
-	type: Type.EIP1559;
+export type TransactionEIP2930Type = {
+	readonly [brand]: "TransactionEIP2930";
+	type: Type.EIP2930;
 	chainId: bigint;
 	nonce: bigint;
-	maxPriorityFeePerGas: bigint;
-	maxFeePerGas: bigint;
+	gasPrice: bigint;
 	gasLimit: bigint;
 	to: BrandedAddress | null;
 	value: bigint;

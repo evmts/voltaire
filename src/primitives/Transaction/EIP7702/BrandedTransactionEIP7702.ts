@@ -1,24 +1,6 @@
-import type { brand } from "../../../brand.js";
-import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { AccessList, AuthorizationList, Type } from "../types.js";
+import type { TransactionEIP7702Type } from "./TransactionEIP7702Type.js";
 
 /**
- * Branded EIP-7702 Transaction type
+ * Branded EIP-7702 Transaction type (alias for TransactionEIP7702Type)
  */
-export type BrandedTransactionEIP7702 = {
-	readonly [brand]: "TransactionEIP7702";
-	type: Type.EIP7702;
-	chainId: bigint;
-	nonce: bigint;
-	maxPriorityFeePerGas: bigint;
-	maxFeePerGas: bigint;
-	gasLimit: bigint;
-	to: BrandedAddress | null;
-	value: bigint;
-	data: Uint8Array;
-	accessList: AccessList;
-	authorizationList: AuthorizationList;
-	yParity: number;
-	r: Uint8Array;
-	s: Uint8Array;
-};
+export type BrandedTransactionEIP7702 = TransactionEIP7702Type;

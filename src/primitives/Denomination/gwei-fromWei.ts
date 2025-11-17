@@ -1,6 +1,6 @@
 import type { WeiType as BrandedWei } from "./WeiType.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
-import { WEI_PER_GWEI } from "./constants.js";
+import { WEI_PER_GWEI } from "./gwei-constants.js";
 
 /**
  * Convert Wei to Gwei

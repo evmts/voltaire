@@ -5,8 +5,8 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
-import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
-import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
+import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/TransactionEIP1559Type.js";
+import type { TransactionEIP4844Type } from "../Transaction/EIP4844/TransactionEIP4844Type.js";
 import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
@@ -581,7 +581,7 @@ describe("EIP4844", () => {
 		it("calculates cost for single blob", () => {
 			const blobBaseFee = 1n;
 			const cost = Transaction.EIP4844.getBlobGasCost(
-				eip4844Tx as BrandedTransactionEIP4844,
+				eip4844Tx as TransactionEIP4844Type,
 				blobBaseFee,
 			);
 			// 1 blob * 131072 gas/blob * 1 = 131072
@@ -595,7 +595,7 @@ describe("EIP4844", () => {
 			};
 			const blobBaseFee = 10n;
 			const cost = Transaction.EIP4844.getBlobGasCost(
-				tx as BrandedTransactionEIP4844,
+				tx as TransactionEIP4844Type,
 				blobBaseFee,
 			);
 			// 3 blobs * 131072 gas/blob * 10 = 3932160
@@ -605,7 +605,7 @@ describe("EIP4844", () => {
 		it("handles zero blob base fee", () => {
 			const blobBaseFee = 0n;
 			const cost = Transaction.EIP4844.getBlobGasCost(
-				eip4844Tx as BrandedTransactionEIP4844,
+				eip4844Tx as TransactionEIP4844Type,
 				blobBaseFee,
 			);
 			expect(cost).toBe(0n);
@@ -614,7 +614,7 @@ describe("EIP4844", () => {
 		it("handles high blob base fee", () => {
 			const blobBaseFee = 1000000n;
 			const cost = Transaction.EIP4844.getBlobGasCost(
-				eip4844Tx as BrandedTransactionEIP4844,
+				eip4844Tx as TransactionEIP4844Type,
 				blobBaseFee,
 			);
 			expect(cost).toBe(131072000000n);
@@ -624,7 +624,7 @@ describe("EIP4844", () => {
 	it("getEffectiveGasPrice works same as EIP-1559", () => {
 		const baseFee = 10000000000n;
 		const result = Transaction.EIP4844.getEffectiveGasPrice(
-			eip4844Tx as BrandedTransactionEIP4844,
+			eip4844Tx as TransactionEIP4844Type,
 			baseFee,
 		);
 		expect(result).toBe(11000000000n);
@@ -1237,7 +1237,7 @@ describe("Transaction edge cases", () => {
 		};
 		expect(tx.blobVersionedHashes.length).toBe(6);
 		const cost = Transaction.EIP4844.getBlobGasCost(
-			tx as BrandedTransactionEIP4844,
+			tx as TransactionEIP4844Type,
 			1n,
 		);
 		expect(cost).toBe(786432n); // 6 * 131072

@@ -1,13 +1,13 @@
 import { InvalidTransactionTypeError } from "../errors/index.js";
-import type { BrandedTransactionEIP1559 } from "./EIP1559/BrandedTransactionEIP1559.js";
+import type { BrandedTransactionEIP1559 } from "./EIP1559/TransactionEIP1559Type.js";
 import * as EIP1559 from "./EIP1559/verifySignature.js";
-import type { BrandedTransactionEIP2930 } from "./EIP2930/BrandedTransactionEIP2930.js";
+import type { TransactionEIP2930Type } from "./EIP2930/TransactionEIP2930Type.js";
 import * as EIP2930 from "./EIP2930/verifySignature.js";
-import type { BrandedTransactionEIP4844 } from "./EIP4844/BrandedTransactionEIP4844.js";
+import type { TransactionEIP4844Type } from "./EIP4844/TransactionEIP4844Type.js";
 import * as EIP4844 from "./EIP4844/verifySignature.js";
-import type { BrandedTransactionEIP7702 } from "./EIP7702/BrandedTransactionEIP7702.js";
+import type { TransactionEIP7702Type } from "./EIP7702/TransactionEIP7702Type.js";
 import * as EIP7702 from "./EIP7702/verifySignature.js";
-import type { BrandedTransactionLegacy } from "./Legacy/BrandedTransactionLegacy.js";
+import type { TransactionLegacyType } from "./Legacy/TransactionLegacyType.js";
 import * as Legacy from "./Legacy/verifySignature.js";
 import { type Any, Type } from "./types.js";
 
@@ -28,24 +28,18 @@ export function verifySignature(this: Any): boolean {
 	switch (this.type) {
 		case Type.Legacy:
 			return Legacy.verifySignature.call(
-				this as unknown as BrandedTransactionLegacy,
+				this as unknown as TransactionLegacyType,
 			);
 		case Type.EIP2930:
-			return EIP2930.verifySignature(
-				this as unknown as BrandedTransactionEIP2930,
-			);
+			return EIP2930.verifySignature(this as unknown as TransactionEIP2930Type);
 		case Type.EIP1559:
 			return EIP1559.verifySignature(
 				this as unknown as BrandedTransactionEIP1559,
 			);
 		case Type.EIP4844:
-			return EIP4844.verifySignature(
-				this as unknown as BrandedTransactionEIP4844,
-			);
+			return EIP4844.verifySignature(this as unknown as TransactionEIP4844Type);
 		case Type.EIP7702:
-			return EIP7702.verifySignature(
-				this as unknown as BrandedTransactionEIP7702,
-			);
+			return EIP7702.verifySignature(this as unknown as TransactionEIP7702Type);
 		default:
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${(this as any).type}`,

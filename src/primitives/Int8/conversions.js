@@ -1,6 +1,6 @@
 /**
  * Convert BrandedInt8 to number
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {number}
  */
 export function toNumber(value) {
@@ -9,7 +9,7 @@ export function toNumber(value) {
 
 /**
  * Convert BrandedInt8 to bigint
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {bigint}
  */
 export function toBigint(value) {
@@ -18,7 +18,7 @@ export function toBigint(value) {
 
 /**
  * Convert BrandedInt8 to hex string (two's complement)
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {string}
  */
 export function toHex(value) {
@@ -29,7 +29,7 @@ export function toHex(value) {
 
 /**
  * Convert BrandedInt8 to bytes (two's complement)
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {Uint8Array}
  */
 export function toBytes(value) {
@@ -39,7 +39,7 @@ export function toBytes(value) {
 
 /**
  * Convert BrandedInt8 to string
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {string}
  */
 export function toString(value) {

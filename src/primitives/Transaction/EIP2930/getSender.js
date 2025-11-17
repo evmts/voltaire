@@ -6,7 +6,7 @@ import { getSigningHash } from "./getSigningHash.js";
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @param {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} tx - Transaction
+ * @param {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} tx - Transaction
  * @returns {import('../../Address/index.js').AddressType} Sender address
  * @throws {Error} If signature recovery fails
  * @example

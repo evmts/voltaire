@@ -1,24 +1,23 @@
 import type { brand } from "../../../brand.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { AccessList, Type, VersionedHash } from "../types.js";
+import type { AccessList, AuthorizationList, Type } from "../types.js";
 
 /**
- * Branded EIP-4844 Transaction type
+ * Branded EIP-7702 Transaction type
  */
-export type BrandedTransactionEIP4844 = {
-	readonly [brand]: "TransactionEIP4844";
-	type: Type.EIP4844;
+export type TransactionEIP7702Type = {
+	readonly [brand]: "TransactionEIP7702";
+	type: Type.EIP7702;
 	chainId: bigint;
 	nonce: bigint;
 	maxPriorityFeePerGas: bigint;
 	maxFeePerGas: bigint;
 	gasLimit: bigint;
-	to: BrandedAddress;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;
-	maxFeePerBlobGas: bigint;
-	blobVersionedHashes: readonly VersionedHash[];
+	authorizationList: AuthorizationList;
 	yParity: number;
 	r: Uint8Array;
 	s: Uint8Array;

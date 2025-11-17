@@ -11,7 +11,7 @@ import {
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @param {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} tx - Transaction to serialize
+ * @param {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} tx - Transaction to serialize
  * @returns {Uint8Array} RLP encoded transaction bytes
  * @throws {never} Never throws
  * @example

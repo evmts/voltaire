@@ -1,4 +1,4 @@
-import * as Uint from "../../Uint/index.js";
+import * as Uint from "../Uint/index.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
 
 /**

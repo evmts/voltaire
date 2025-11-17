@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
 import { WEI_PER_GWEI } from "./wei-constants.js";
-import { fromGwei } from "./fromGwei.js";
+import { fromGwei } from "./wei-fromGwei.js";
 
 describe("fromGwei", () => {
 	it("converts 1 Gwei to Wei", () => {

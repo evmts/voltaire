@@ -9,7 +9,7 @@ import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction with type byte prefix
- * @returns {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} Deserialized transaction
+ * @returns {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} Deserialized transaction
  * @throws {DecodingError} If transaction format is invalid
  * @example
  * ```javascript
@@ -87,7 +87,7 @@ export function deserialize(data) {
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[11])
 		.value;
 
-	return /** @type {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} */ (
+	return /** @type {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} */ (
 		/** @type {any} */ ({
 			type: Type.EIP1559,
 			chainId,

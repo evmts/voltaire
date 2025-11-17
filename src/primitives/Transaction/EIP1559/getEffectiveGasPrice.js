@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @param {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} tx - Transaction
+ * @param {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} tx - Transaction
  * @param {bigint} baseFee - Block base fee
  * @returns {bigint} Effective gas price
  * @throws {never} Never throws

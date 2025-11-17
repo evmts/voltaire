@@ -1,6 +1,6 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { AccessList, VersionedHash } from "../types.js";
-import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
+import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
 import type { getBlobGasCost } from "./getBlobGasCost.js";
 import type { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
 import type { getSender } from "./getSender.js";
@@ -9,7 +9,7 @@ import type { hash } from "./hash.js";
 import type { serialize } from "./serialize.js";
 import type { verifySignature } from "./verifySignature.js";
 
-type TransactionEIP4844Prototype = BrandedTransactionEIP4844 & {
+type TransactionEIP4844Prototype = TransactionEIP4844Type & {
 	serialize: typeof serialize;
 	hash: typeof hash;
 	getSigningHash: typeof getSigningHash;

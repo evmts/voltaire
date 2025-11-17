@@ -1,7 +1,7 @@
-import * as Uint from "../../Uint/index.js";
+import * as Uint from "../Uint/index.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
-import { WEI_PER_GWEI } from "./constants.js";
+import { WEI_PER_GWEI } from "./wei-constants.js";
 
 /**
  * Convert Gwei to Wei

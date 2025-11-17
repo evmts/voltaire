@@ -6,10 +6,10 @@
 
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
-import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
-import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
-import type { BrandedTransactionEIP7702 } from "../Transaction/EIP7702/BrandedTransactionEIP7702.js";
-import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
+import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/TransactionEIP1559Type.js";
+import type { TransactionEIP4844Type } from "../Transaction/EIP4844/TransactionEIP4844Type.js";
+import type { TransactionEIP7702Type } from "../Transaction/EIP7702/TransactionEIP7702Type.js";
+import type { TransactionLegacyType } from "../Transaction/Legacy/TransactionLegacyType.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	EIP1559,
@@ -215,34 +215,32 @@ results.push(
 );
 results.push(
 	benchmark("Legacy.getChainId - EIP-155", () =>
-		Transaction.Legacy.getChainId.call(eip155Tx as BrandedTransactionLegacy),
+		Transaction.Legacy.getChainId.call(eip155Tx as TransactionLegacyType),
 	),
 );
 results.push(
 	benchmark("Legacy.getChainId - pre-EIP-155", () =>
-		Transaction.Legacy.getChainId.call(legacyTx as BrandedTransactionLegacy),
+		Transaction.Legacy.getChainId.call(legacyTx as TransactionLegacyType),
 	),
 );
 results.push(
 	benchmark("Legacy.serialize", () => {
 		try {
-			Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy);
+			Transaction.Legacy.serialize.call(legacyTx as TransactionLegacyType);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.hash", () => {
 		try {
-			Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy);
+			Transaction.Legacy.hash.call(legacyTx as TransactionLegacyType);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.getSigningHash", () => {
 		try {
-			Transaction.Legacy.getSigningHash.call(
-				legacyTx as BrandedTransactionLegacy,
-			);
+			Transaction.Legacy.getSigningHash.call(legacyTx as TransactionLegacyType);
 		} catch {}
 	}),
 );
@@ -282,7 +280,7 @@ const blobBaseFee = 1n;
 results.push(
 	benchmark("EIP4844.getBlobGasCost", () =>
 		Transaction.EIP4844.getBlobGasCost(
-			eip4844Tx as BrandedTransactionEIP4844,
+			eip4844Tx as TransactionEIP4844Type,
 			blobBaseFee,
 		),
 	),
@@ -290,7 +288,7 @@ results.push(
 results.push(
 	benchmark("EIP4844.getEffectiveGasPrice", () =>
 		Transaction.EIP4844.getEffectiveGasPrice(
-			eip4844Tx as BrandedTransactionEIP4844,
+			eip4844Tx as TransactionEIP4844Type,
 			baseFee,
 		),
 	),
@@ -298,14 +296,14 @@ results.push(
 results.push(
 	benchmark("EIP4844.serialize", () => {
 		try {
-			Transaction.EIP4844.serialize(eip4844Tx as BrandedTransactionEIP4844);
+			Transaction.EIP4844.serialize(eip4844Tx as TransactionEIP4844Type);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("EIP7702.getEffectiveGasPrice", () =>
 		Transaction.EIP7702.getEffectiveGasPrice(
-			eip7702Tx as BrandedTransactionEIP7702,
+			eip7702Tx as TransactionEIP7702Type,
 			baseFee,
 		),
 	),

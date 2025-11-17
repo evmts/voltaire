@@ -2,7 +2,7 @@ import { INT8_MAX, INT8_MIN } from "./Int8Type.ts";
 
 /**
  * Get bit length (number of bits needed to represent value)
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {number}
  */
 export function bitLength(value) {
@@ -14,7 +14,7 @@ export function bitLength(value) {
 
 /**
  * Count leading zeros in binary representation
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {number}
  */
 export function leadingZeros(value) {
@@ -31,7 +31,7 @@ export function leadingZeros(value) {
 
 /**
  * Count set bits (population count)
- * @param {import('./BrandedInt8.ts').BrandedInt8} value
+ * @param {import("./Int8Type.ts").BrandedInt8} value
  * @returns {number}
  */
 export function popCount(value) {

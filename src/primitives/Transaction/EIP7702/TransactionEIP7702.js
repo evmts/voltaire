@@ -43,7 +43,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702} BrandedTransactionEIP7702
+ * @typedef {import('./TransactionEIP7702Type.js').TransactionEIP7702Type} TransactionEIP7702Type
  * @typedef {import('./TransactionEIP7702Constructor.js').TransactionEIP7702Constructor} TransactionEIP7702Constructor
  */
 
@@ -53,7 +53,7 @@ export {
  * @type {TransactionEIP7702Constructor}
  */
 export function TransactionEIP7702(tx) {
-	return /** @type {BrandedTransactionEIP7702} */ ({
+	return /** @type {TransactionEIP7702Type} */ ({
 		type: Type.EIP7702,
 		chainId: tx.chainId,
 		nonce: tx.nonce,

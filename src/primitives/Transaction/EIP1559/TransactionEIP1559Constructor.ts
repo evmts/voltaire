@@ -1,6 +1,6 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { AccessList } from "../types.js";
-import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
+import type { TransactionEIP1559Type } from "./TransactionEIP1559Type.js";
 import type { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
 import type { getSender } from "./getSender.js";
 import type { getSigningHash } from "./getSigningHash.js";
@@ -8,7 +8,7 @@ import type { hash } from "./hash.js";
 import type { serialize } from "./serialize.js";
 import type { verifySignature } from "./verifySignature.js";
 
-type TransactionEIP1559Prototype = BrandedTransactionEIP1559 & {
+type TransactionEIP1559Prototype = TransactionEIP1559Type & {
 	serialize: typeof serialize;
 	hash: typeof hash;
 	getSigningHash: typeof getSigningHash;

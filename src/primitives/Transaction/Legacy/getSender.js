@@ -12,7 +12,7 @@ import { getSigningHash } from "./getSigningHash.js";
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
+ * @this {import('./TransactionLegacyType.js').TransactionLegacyType}
  * @returns {import('../../Address/index.js').AddressType} Sender address (20 bytes, branded)
  * @throws {Error} If signature recovery fails
  * @example

@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedTransactionEIP1559.js";
+export * from "./TransactionEIP1559Type.js";
 
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
@@ -43,7 +43,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} BrandedTransactionEIP1559
+ * @typedef {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} BrandedTransactionEIP1559
  * @typedef {import('./TransactionEIP1559Constructor.js').TransactionEIP1559Constructor} TransactionEIP1559Constructor
  */
 

@@ -76,7 +76,7 @@ export * as Hardfork from "./Hardfork/index.js";
 
 // Events & Logs
 export * from "./EventLog/index.js";
-export * as BrandedEventLog from "./EventLog/BrandedEventLog/index.js";
+export * as BrandedEventLog from "./EventLog/index.js";
 
 // Standards
 export { Siwe } from "./Siwe/index.js";

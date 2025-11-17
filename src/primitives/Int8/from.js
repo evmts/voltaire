@@ -2,8 +2,8 @@ import { INT8_MAX, INT8_MIN } from "./Int8Type.ts";
 
 /**
  * Create a BrandedInt8 from a number, bigint, hex string, or another BrandedInt8
- * @param {number | bigint | string | import('./BrandedInt8.ts').BrandedInt8} value
- * @returns {import('./BrandedInt8.ts').BrandedInt8}
+ * @param {number | bigint | string | import("./Int8Type.ts").BrandedInt8} value
+ * @returns {import("./Int8Type.ts").BrandedInt8}
  */
 export function from(value) {
 	if (typeof value === "number") {
@@ -22,7 +22,7 @@ export function from(value) {
 /**
  * Create a BrandedInt8 from a number
  * @param {number} value
- * @returns {import('./BrandedInt8.ts').BrandedInt8}
+ * @returns {import("./Int8Type.ts").BrandedInt8}
  */
 export function fromNumber(value) {
 	if (!Number.isInteger(value)) {
@@ -33,13 +33,13 @@ export function fromNumber(value) {
 			`Int8: value ${value} out of range [${INT8_MIN}, ${INT8_MAX}]`,
 		);
 	}
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (value);
+	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (value);
 }
 
 /**
  * Create a BrandedInt8 from a bigint
  * @param {bigint} value
- * @returns {import('./BrandedInt8.ts').BrandedInt8}
+ * @returns {import("./Int8Type.ts").BrandedInt8}
  */
 export function fromBigint(value) {
 	if (value < BigInt(INT8_MIN) || value > BigInt(INT8_MAX)) {
@@ -47,13 +47,13 @@ export function fromBigint(value) {
 			`Int8: value ${value} out of range [${INT8_MIN}, ${INT8_MAX}]`,
 		);
 	}
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (Number(value));
+	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (Number(value));
 }
 
 /**
  * Create a BrandedInt8 from a hex string (two's complement)
  * @param {string} hex - "0xFF" for -1, "0x80" for -128, "0x7F" for 127
- * @returns {import('./BrandedInt8.ts').BrandedInt8}
+ * @returns {import("./Int8Type.ts").BrandedInt8}
  */
 export function fromHex(hex) {
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -63,13 +63,13 @@ export function fromHex(hex) {
 	const unsigned = Number.parseInt(cleaned, 16);
 	// Two's complement conversion: if bit 7 is set, it's negative
 	const signed = unsigned >= 128 ? unsigned - 256 : unsigned;
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
 }
 
 /**
  * Create a BrandedInt8 from bytes (two's complement)
  * @param {Uint8Array} bytes - single byte
- * @returns {import('./BrandedInt8.ts').BrandedInt8}
+ * @returns {import("./Int8Type.ts").BrandedInt8}
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== 1) {
@@ -78,5 +78,5 @@ export function fromBytes(bytes) {
 	const unsigned = bytes[0];
 	// Two's complement conversion
 	const signed = unsigned >= 128 ? unsigned - 256 : unsigned;
-	return /** @type {import('./BrandedInt8.ts').BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
 }

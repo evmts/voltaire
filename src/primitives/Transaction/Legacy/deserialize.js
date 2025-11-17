@@ -9,7 +9,7 @@ import { decodeAddress, decodeBigint } from "../utils.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @param {Uint8Array} data - RLP encoded transaction data
- * @returns {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} Deserialized legacy transaction
+ * @returns {import('./TransactionLegacyType.js').TransactionLegacyType} Deserialized legacy transaction
  * @throws {DecodingError} If data is invalid or not a valid legacy transaction
  * @example
  * ```javascript
@@ -80,7 +80,7 @@ export function deserialize(data) {
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[8])
 		.value;
 
-	return /** @type {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} */ (
+	return /** @type {import('./TransactionLegacyType.js').TransactionLegacyType} */ (
 		/** @type {any} */ ({
 			type: Type.Legacy,
 			nonce,

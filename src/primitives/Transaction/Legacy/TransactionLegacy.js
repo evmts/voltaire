@@ -50,7 +50,7 @@ const verifySignature = VerifySignature({
 });
 
 // Re-export types
-export * from "./BrandedTransactionLegacy.js";
+export * from "./TransactionLegacyType.js";
 
 // Re-export factories for tree-shaking
 export { Hash, GetSigningHash, VerifySignature };
@@ -67,7 +67,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} BrandedTransactionLegacy
+ * @typedef {import('./TransactionLegacyType.js').TransactionLegacyType} TransactionLegacyType
  * @typedef {import('./TransactionLegacyConstructor.js').TransactionLegacyConstructor} TransactionLegacyConstructor
  */
 
@@ -77,7 +77,7 @@ export {
  * @type {TransactionLegacyConstructor}
  */
 export function TransactionLegacy(tx) {
-	return /** @type {BrandedTransactionLegacy} */ ({
+	return /** @type {TransactionLegacyType} */ ({
 		type: Type.Legacy,
 		nonce: tx.nonce,
 		gasPrice: tx.gasPrice,

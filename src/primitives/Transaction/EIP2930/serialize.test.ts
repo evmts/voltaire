@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
+import type { TransactionEIP2930Type } from "./TransactionEIP2930Type.js";
 import { serialize } from "./index.js";
 
 describe("TransactionEIP2930.serialize", () => {
 	it("serializes basic EIP-2930 transaction", () => {
-		const tx: BrandedTransactionEIP2930 = {
+		const tx: TransactionEIP2930Type = {
 			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
@@ -30,7 +30,7 @@ describe("TransactionEIP2930.serialize", () => {
 	});
 
 	it("serializes transaction with access list", () => {
-		const tx: BrandedTransactionEIP2930 = {
+		const tx: TransactionEIP2930Type = {
 			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
@@ -59,7 +59,7 @@ describe("TransactionEIP2930.serialize", () => {
 	});
 
 	it("serializes contract creation", () => {
-		const tx: BrandedTransactionEIP2930 = {
+		const tx: TransactionEIP2930Type = {
 			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,

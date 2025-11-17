@@ -1,22 +1,5 @@
-import type { brand } from "../../../brand.js";
-import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { AccessList, Type } from "../types.js";
-
 /**
- * Branded EIP-2930 Transaction type
+ * @deprecated Use TransactionEIP2930Type instead
+ * @see TransactionEIP2930Type
  */
-export type BrandedTransactionEIP2930 = {
-	readonly [brand]: "TransactionEIP2930";
-	type: Type.EIP2930;
-	chainId: bigint;
-	nonce: bigint;
-	gasPrice: bigint;
-	gasLimit: bigint;
-	to: BrandedAddress | null;
-	value: bigint;
-	data: Uint8Array;
-	accessList: AccessList;
-	yParity: number;
-	r: Uint8Array;
-	s: Uint8Array;
-};
+export type { TransactionEIP2930Type as BrandedTransactionEIP2930 } from "./TransactionEIP2930Type.js";

@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
- * @this {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy}
+ * @this {import('./TransactionLegacyType.js').TransactionLegacyType}
  * @returns {bigint | null} Chain ID if EIP-155, null if pre-EIP-155
  * @throws {never} Never throws
  * @example

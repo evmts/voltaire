@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedTransactionEIP2930.js";
+export * from "./TransactionEIP2930Type.js";
 
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
@@ -41,7 +41,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} BrandedTransactionEIP2930
+ * @typedef {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} TransactionEIP2930Type
  * @typedef {import('./TransactionEIP2930Constructor.js').TransactionEIP2930Constructor} TransactionEIP2930Constructor
  */
 
@@ -51,7 +51,7 @@ export {
  * @type {TransactionEIP2930Constructor}
  */
 export function TransactionEIP2930(tx) {
-	return /** @type {BrandedTransactionEIP2930} */ ({
+	return /** @type {TransactionEIP2930Type} */ ({
 		type: Type.EIP2930,
 		chainId: tx.chainId,
 		nonce: tx.nonce,
