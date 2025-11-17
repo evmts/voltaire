@@ -16,19 +16,6 @@ mode: "custom"
     background-color: #280D2E !important;
   }
 
-  /* Monaco editor CSS reset to fix text alignment */
-  #editor-container * {
-    font-feature-settings: normal !important;
-    font-variant-ligatures: none !important;
-    text-rendering: optimizeSpeed !important;
-    -webkit-font-smoothing: subpixel-antialiased !important;
-  }
-
-  #editor-container .monaco-editor,
-  #editor-container .monaco-editor * {
-    letter-spacing: 0 !important;
-    word-spacing: 0 !important;
-  }
 `}</style>
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
@@ -366,7 +353,9 @@ url = "https://tevm.sh/mcp"
       </div>
     </div>
 
-    <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
+    <div style={{ textAlign: 'left' }}>
+      <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
+    </div>
 
     <script dangerouslySetInnerHTML={{__html: `
       // Wait for full page load and React hydration
