@@ -6,7 +6,7 @@
  * @since 0.0.0
  */
 
-import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
+import type { Secp256k1PublicKeyType } from "../crypto/Secp256k1/Secp256k1PublicKeyType.js";
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/HashType/HashType.js";
 import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
@@ -1502,7 +1502,7 @@ export function generatePrivateKey(): PrivateKeyType {
 
 /**
  * Compress uncompressed secp256k1 public key
- * @param uncompressed - 64-byte uncompressed public key (BrandedSecp256k1PublicKey guarantees correctness)
+ * @param uncompressed - 64-byte uncompressed public key (Secp256k1PublicKeyType guarantees correctness)
  * @returns 33-byte compressed public key (0x02/0x03 prefix + x coordinate)
  */
 export function compressPublicKey(uncompressed: Uint8Array): Uint8Array {
@@ -1624,7 +1624,7 @@ export function secp256k1RecoverPubkey(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): BrandedSecp256k1PublicKey {
+): Secp256k1PublicKeyType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1645,7 +1645,7 @@ export function secp256k1RecoverPubkey(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 64) as BrandedSecp256k1PublicKey;
+		return readBytes(outPtr, 64) as Secp256k1PublicKeyType;
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1698,7 +1698,7 @@ export function secp256k1RecoverAddress(
  */
 export function secp256k1PubkeyFromPrivate(
 	privateKey: Uint8Array,
-): BrandedSecp256k1PublicKey {
+): Secp256k1PublicKeyType {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -1712,7 +1712,7 @@ export function secp256k1PubkeyFromPrivate(
 			outPtr,
 		);
 		checkResult(result);
-		return readBytes(outPtr, 64) as BrandedSecp256k1PublicKey;
+		return readBytes(outPtr, 64) as Secp256k1PublicKeyType;
 	} finally {
 		memoryOffset = savedOffset;
 	}

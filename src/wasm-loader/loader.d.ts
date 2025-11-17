@@ -6,7 +6,7 @@
  * @since 0.0.0
  */
 
-import type { BrandedSecp256k1PublicKey } from "../crypto/Secp256k1/BrandedSecp256k1PublicKey.js";
+import type { Secp256k1PublicKeyType } from "../crypto/Secp256k1/Secp256k1PublicKeyType.js";
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/HashType/HashType.js";
 import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
@@ -343,7 +343,7 @@ export function secp256k1RecoverPubkey(
 	r: Uint8Array,
 	s: Uint8Array,
 	v: number,
-): BrandedSecp256k1PublicKey;
+): Secp256k1PublicKeyType;
 
 /**
  * Recover Ethereum address from ECDSA signature
@@ -367,7 +367,7 @@ export function secp256k1RecoverAddress(
  */
 export function secp256k1PubkeyFromPrivate(
 	privateKey: Uint8Array,
-): BrandedSecp256k1PublicKey;
+): Secp256k1PublicKeyType;
 
 /**
  * Validate ECDSA signature components
