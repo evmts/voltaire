@@ -1,5 +1,6 @@
 // @ts-nocheck
-import * as BrandedConstructor from "./BrandedConstructor/index.ts";
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
 
 /**
  * Factory function for creating Constructor instances
@@ -15,19 +16,19 @@ export function Constructor({ type = "constructor", stateMutability, inputs }) {
 }
 
 // Static methods
-Constructor.encodeParams = BrandedConstructor.encodeParams;
-Constructor.decodeParams = BrandedConstructor.decodeParams;
+Constructor.encodeParams = encodeParams;
+Constructor.decodeParams = decodeParams;
 
 // Set up Constructor.prototype to inherit from Object.prototype
 Object.setPrototypeOf(Constructor.prototype, Object.prototype);
 
 // Instance methods
 Constructor.prototype.encodeParams = function (args) {
-	return BrandedConstructor.encodeParams(this, args);
+	return encodeParams(this, args);
 };
 
 Constructor.prototype.decodeParams = function (data) {
-	return BrandedConstructor.decodeParams(this, data);
+	return decodeParams(this, data);
 };
 
 Constructor.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (

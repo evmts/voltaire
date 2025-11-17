@@ -2,8 +2,8 @@
  * Sort logs by block number and log index
  *
  * @template T
- * @param {readonly (T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog)[]} logs
- * @returns {(T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog)[]}
+ * @param {readonly (T & import('../EventLogType.js').BrandedEventLog)[]} logs
+ * @returns {(T & import('../EventLogType.js').BrandedEventLog)[]}
  *
  * @example
  * ```typescript

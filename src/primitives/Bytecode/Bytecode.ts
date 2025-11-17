@@ -10,4 +10,4 @@ export type {
 	JumpDest,
 	Opcode,
 	OpcodeMetadata,
-} from "./BrandedBytecode/BrandedBytecode.js";
+} from "./BytecodeType.js";

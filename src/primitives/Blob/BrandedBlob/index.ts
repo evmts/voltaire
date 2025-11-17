@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./constants.js";
-export type * from "../BrandedBlob.js";
+export type * from "../BlobType.js";
 
 import { calculateGas } from "./calculateGas.js";
 import {

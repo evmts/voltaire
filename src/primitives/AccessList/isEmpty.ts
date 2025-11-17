@@ -1,4 +1,4 @@
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 
 /**
  * Check if access list is empty

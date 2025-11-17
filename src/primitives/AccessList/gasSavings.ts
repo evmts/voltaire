@@ -1,4 +1,4 @@
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 
 /** Gas cost for cold account access (without access list) */
 export const COLD_ACCOUNT_ACCESS_COST = 2600n;

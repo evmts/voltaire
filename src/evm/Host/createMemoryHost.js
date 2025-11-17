@@ -23,7 +23,7 @@ export function createMemoryHost() {
 
 	/**
 	 * Get storage key
-	 * @param {import("../../primitives/Address/BrandedAddress.js").Address} address - Address
+	 * @param {import("../../primitives/Address/AddressType.js").AddressType} address - Address
 	 * @param {bigint} slot - Slot
 	 * @returns {string} Storage key
 	 */

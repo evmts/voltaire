@@ -9,7 +9,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Gas: 2 (GasQuickStep)
  *
  * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @param {import("../../primitives/Address/BrandedAddress.js").Address} origin - Transaction origin address
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} origin - Transaction origin address
  * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
  */
 export function origin(frame, origin) {

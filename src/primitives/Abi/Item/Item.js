@@ -1,5 +1,13 @@
 // @ts-nocheck
-import * as BrandedItem from "./BrandedItem/index.js";
+import { format } from "./format.js";
+import { formatWithArgs } from "./formatWithArgs.js";
+import { getItem } from "./getItem.js";
+import { isConstructor } from "./isConstructor.js";
+import { isError } from "./isError.js";
+import { isEvent } from "./isEvent.js";
+import { isFallback } from "./isFallback.js";
+import { isFunction } from "./isFunction.js";
+import { isReceive } from "./isReceive.js";
 
 /**
  * Item namespace - provides type guards and utilities for ABI items
@@ -8,17 +16,10 @@ import * as BrandedItem from "./BrandedItem/index.js";
  */
 
 // Static type guard methods
-export const isFunction = BrandedItem.isFunction;
-export const isEvent = BrandedItem.isEvent;
-export const isError = BrandedItem.isError;
-export const isConstructor = BrandedItem.isConstructor;
-export const isFallback = BrandedItem.isFallback;
-export const isReceive = BrandedItem.isReceive;
+export { isFunction, isEvent, isError, isConstructor, isFallback, isReceive };
 
 // Static utility methods
-export const format = BrandedItem.format;
-export const formatWithArgs = BrandedItem.formatWithArgs;
-export const getItem = BrandedItem.getItem;
+export { format, formatWithArgs, getItem };
 
 /**
  * Item "class" - a namespace object for ABI item operations

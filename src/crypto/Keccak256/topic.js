@@ -8,12 +8,12 @@ import { hashString } from "./hashString.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} signature - Event signature string
- * @returns {import('../../primitives/Hash/index.js').HashType} 32-byte topic
+ * @returns {import('./Keccak256HashType.js').Keccak256Hash} 32-byte topic
  * @throws {never}
  * @example
  * ```javascript
- * import * as Keccak256 from './crypto/Keccak256/index.js';
- * const topic = Keccak256.topic('Transfer(address,address,uint256)');
+ * import { Keccak256Hash } from './crypto/Keccak256/index.js';
+ * const topic = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
  * ```
  */
 export function topic(signature) {

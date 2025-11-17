@@ -3,8 +3,8 @@ import { addressEquals } from "./utils.js";
 /**
  * Check if log matches address filter
  *
- * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log
- * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress | import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress[]} filterAddress
+ * @param {import('../EventLogType.js').BrandedEventLog} log
+ * @param {import('../../Address/AddressType.js').AddressType.BrandedAddress | import('../../Address/AddressType.js').AddressType.BrandedAddress[]} filterAddress
  * @returns {boolean}
  *
  * @example

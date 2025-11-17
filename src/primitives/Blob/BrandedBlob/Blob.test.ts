@@ -4,7 +4,7 @@ import type {
 	Commitment,
 	Proof,
 	VersionedHash,
-} from "../BrandedBlob.js";
+} from "../BlobType.js";
 import { calculateGas } from "./calculateGas.js";
 import {
 	BYTES_PER_FIELD_ELEMENT,

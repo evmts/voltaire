@@ -7,7 +7,7 @@ import { hash } from "./hash.js";
  * @since 0.0.0
  * @param {string} str - Input string to hash
  * @param {number} [outputLength=64] - Output length in bytes (1-64, default 64)
- * @returns {Uint8Array} BLAKE2b hash
+ * @returns {import('./Blake2HashType.js').Blake2Hash} BLAKE2b hash
  * @throws {Error} If outputLength is invalid
  * @example
  * ```javascript

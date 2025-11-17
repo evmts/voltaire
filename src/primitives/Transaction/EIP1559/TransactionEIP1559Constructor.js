@@ -18,7 +18,7 @@
  * @property {() => Uint8Array} serialize
  * @property {() => import('../../Hash/index.js').HashType} hash
  * @property {() => import('../../Hash/index.js').HashType} getSigningHash
- * @property {() => import('../../Address/index.js').BrandedAddress} getSender
+ * @property {() => import('../../Address/index.js').AddressType} getSender
  * @property {() => boolean} verifySignature
  * @property {(baseFee: bigint) => bigint} getEffectiveGasPrice
  */
@@ -44,7 +44,7 @@
  * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => Uint8Array} serialize
  * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Hash/index.js').HashType} hash
  * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Hash/index.js').HashType} getSigningHash
- * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Address/index.js').BrandedAddress} getSender
+ * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => import('../../Address/index.js').AddressType} getSender
  * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559) => boolean} verifySignature
  * @property {(tx: import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559, baseFee: bigint) => bigint} getEffectiveGasPrice
  */

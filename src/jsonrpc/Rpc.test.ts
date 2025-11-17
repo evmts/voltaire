@@ -2,7 +2,7 @@
  * Tests for Rpc namespace - Request constructor API
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Rpc } from "./index.js";
 
 describe("Rpc.Eth Request Constructors", () => {

@@ -1,8 +1,107 @@
 // @ts-nocheck
-import * as BrandedBytecode from "./BrandedBytecode/index.js";
+import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 
-// Re-export BrandedBytecode type
-export type { BrandedBytecode } from "./BrandedBytecode/index.js";
+import { analyze } from "./analyze.js";
+import { analyzeBlocks } from "./analyzeBlocks.js";
+import { analyzeGas } from "./analyzeGas.js";
+import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import { analyzeStack } from "./analyzeStack.js";
+import { detectFusions } from "./detectFusions.js";
+import { equals } from "./equals.js";
+import { extractRuntime } from "./extractRuntime.js";
+import { formatInstruction } from "./formatInstruction.js";
+import { formatInstructions } from "./formatInstructions.js";
+import { from } from "./from.js";
+import { fromHex } from "./fromHex.js";
+import { getBlock } from "./getBlock.js";
+import { getNextPc as _getNextPc } from "./getNextPc.js";
+import { getPushSize } from "./getPushSize.js";
+import { hasMetadata } from "./hasMetadata.js";
+import { Hash } from "./hash.js";
+import { isPush } from "./isPush.js";
+import { isTerminator } from "./isTerminator.js";
+import { isValidJumpDest } from "./isValidJumpDest.js";
+import { parseInstructions } from "./parseInstructions.js";
+import { prettyPrint } from "./prettyPrint.js";
+import { scan } from "./scan.js";
+import { size } from "./size.js";
+import { stripMetadata } from "./stripMetadata.js";
+import { toAbi } from "./toAbi.js";
+import { toHex } from "./toHex.js";
+import { validate } from "./validate.js";
+
+// Re-export types
+export type * from "./BytecodeType.js";
+
+// Factory export (tree-shakeable)
+export { Hash } from "./hash.js";
+
+// Hash convenience function
+const hash = Hash({ keccak256 });
+
+// Export individual functions
+export {
+	from,
+	fromHex,
+	analyze,
+	analyzeBlocks,
+	analyzeGas,
+	analyzeJumpDestinations,
+	analyzeStack,
+	detectFusions,
+	equals,
+	extractRuntime,
+	formatInstruction,
+	formatInstructions,
+	getBlock,
+	getPushSize,
+	hasMetadata,
+	isPush,
+	isTerminator,
+	isValidJumpDest,
+	parseInstructions,
+	prettyPrint,
+	scan,
+	size,
+	stripMetadata,
+	toHex,
+	toAbi,
+	validate,
+	_getNextPc,
+	hash,
+};
+
+// Wrapper export (convenient, backward compat)
+const BrandedBytecode = {
+	from,
+	fromHex,
+	analyze,
+	analyzeBlocks,
+	analyzeGas,
+	analyzeJumpDestinations,
+	analyzeStack,
+	detectFusions,
+	equals,
+	extractRuntime,
+	formatInstruction,
+	formatInstructions,
+	getBlock,
+	getPushSize,
+	hash,
+	hasMetadata,
+	isPush,
+	isTerminator,
+	isValidJumpDest,
+	parseInstructions,
+	prettyPrint,
+	scan,
+	toAbi,
+	size,
+	stripMetadata,
+	toHex,
+	validate,
+	_getNextPc,
+};
 
 /**
  * Create a Bytecode instance from various input types
@@ -13,7 +112,7 @@ export type { BrandedBytecode } from "./BrandedBytecode/index.js";
  * const code = Bytecode("0x6001")
  * ```
  *
- * @param {import('./BrandedBytecode/index.js').BytecodeLike} value - Bytecode input
+ * @param {import('./index.js').BytecodeLike} value - Bytecode input
  * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
  */
 export function Bytecode(value) {
@@ -26,7 +125,7 @@ export function Bytecode(value) {
  * Alias for Bytecode() constructor
  *
  * @deprecated Use `Bytecode(value)` directly instead
- * @param {import('./BrandedBytecode/index.js').BytecodeLike} value - Bytecode input
+ * @param {import('./index.js').BytecodeLike} value - Bytecode input
  * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
  */
 Bytecode.from = (value) => {
@@ -145,3 +244,6 @@ Bytecode.prototype.toHex = function () {
 Bytecode.prototype.validate = function () {
 	return BrandedBytecode.validate(this);
 };
+
+// Namespace export
+export { BrandedBytecode };

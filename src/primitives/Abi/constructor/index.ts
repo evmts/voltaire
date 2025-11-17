@@ -1,6 +1,12 @@
-export * from "./BrandedConstructor/BrandedConstructor.js";
-export * from "./BrandedConstructor/index.js";
-export * from "./Constructor.js";
 export * from "./ConstructorType.js";
-export type { BrandedConstructor } from "./BrandedConstructor/BrandedConstructor.js";
+export * from "./Constructor.js";
 export type { ConstructorType } from "./ConstructorType.js";
+
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
+
+// Export individual functions
+export { encodeParams, decodeParams };
+
+// Type alias for backward compatibility
+export type { ConstructorType as BrandedConstructor } from "./ConstructorType.js";

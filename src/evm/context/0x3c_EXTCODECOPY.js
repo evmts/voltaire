@@ -1,4 +1,4 @@
-import { fromNumber } from "../../primitives/Address/BrandedAddress/fromNumber.js";
+import { fromNumber } from "../../primitives/Address/fromNumber.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { popStack } from "../Frame/popStack.js";

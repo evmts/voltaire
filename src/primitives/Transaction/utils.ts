@@ -1,8 +1,8 @@
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import { fromPublicKey } from "../Address/BrandedAddress/index.js";
+import { fromPublicKey } from "../Address/internal-index.js";
 import type { HashType } from "../Hash/index.js";
-import type { BrandedRlp } from "../Rlp/BrandedRlp/BrandedRlp.js";
+import type { BrandedRlp } from "../Rlp/RlpType.js";
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 
 type Encodable = Uint8Array | BrandedRlp | Encodable[];

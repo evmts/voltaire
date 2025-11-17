@@ -228,7 +228,7 @@ WASM module compiled with ReleaseSmall targeting minimal bundle size. Only inclu
 import { u256FromHex } from 'tevm/Uint256.wasm'
 
 // No WASM module
-import { fromHex } from 'tevm/BrandedUint256'
+import { fromHex } from 'tevm/Uint'
 ```
 
 WASM loader infrastructure is shared across all primitives, so first WASM import includes loader (~2-4KB gzipped), subsequent WASM primitives add only their specific implementations.

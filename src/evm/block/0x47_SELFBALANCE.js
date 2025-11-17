@@ -1,4 +1,4 @@
-import { FastStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { FastStep } from "../../primitives/GasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
 

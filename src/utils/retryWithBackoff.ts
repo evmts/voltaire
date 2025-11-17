@@ -35,8 +35,7 @@ function calculateDelay(
 	options: Required<Omit<RetryOptions, "shouldRetry" | "onRetry">>,
 ): number {
 	// Calculate exponential delay: initialDelay * factor^attempt
-	const exponentialDelay =
-		options.initialDelay * Math.pow(options.factor, attempt);
+	const exponentialDelay = options.initialDelay * options.factor ** attempt;
 
 	// Cap at maxDelay
 	let delay = Math.min(exponentialDelay, options.maxDelay);

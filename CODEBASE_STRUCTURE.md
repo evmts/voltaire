@@ -53,7 +53,7 @@ Total Source Files: 1,001
 Ethereum data types & encoding - mostly TypeScript with Zig implementations
 
 **Primitives Modules (A-Z):**
-- Abi (ABI encoding/decoding) - 31 files, includes BrandedAbi, parameter types, functions, events, constructors, error handling
+- Abi (ABI encoding/decoding) - 31 files, includes parameter types, functions, events, constructors, error handling
 - AccessList (EIP-2930 access lists) - 38 files, includes gas optimization, deduplication, validation
 - Address (Ethereum addresses) - 25+ files, EIP-55 checksumming, contract address generation, validation
 - Authorization (EIP-7702) - 12 files, EIP-7702 authorization handling, signing, validation

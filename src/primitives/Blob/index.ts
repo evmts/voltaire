@@ -7,7 +7,7 @@ export type {
 	Commitment,
 	Proof,
 	VersionedHash,
-} from "./BrandedBlob.js";
+} from "./BlobType.js";
 export * from "./BrandedBlob/constants.js";
 
 // Re-export factory functions for tree-shaking

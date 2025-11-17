@@ -2,7 +2,7 @@
  * Clone event log with deep copy of arrays
  *
  * @template T
- * @param {T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
+ * @param {T & import('../EventLogType.js').BrandedEventLog} log - Event log
  * @returns {T}
  *
  * @example

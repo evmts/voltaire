@@ -3,8 +3,8 @@
  * Add Request constructor functions to all eth JSON-RPC method files
  */
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const ETH_DIR = "/Users/williamcory/voltaire/src/jsonrpc/eth";
 
@@ -232,7 +232,6 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 	const filePath = join(ETH_DIR, dir, `${config.name}.js`);
 
 	if (!existsSync(filePath)) {
-		console.log(`Skipping ${dir}: file not found`);
 		return;
 	}
 
@@ -240,7 +239,6 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 
 	// Skip if already has import
 	if (content.includes("createRequest")) {
-		console.log(`Skipping ${dir}: already has Request constructor`);
 		return;
 	}
 
@@ -272,9 +270,9 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 	if (config.params.length === 0) {
 		requestConstructor += `/**\n * Creates a ${config.name} JSON-RPC request\n *\n * @param {number | string | null} [id] - Optional request ID\n * @returns {Request}\n */\n`;
 		requestConstructor += `export function ${config.requestName}(id = null) {\n`;
-		requestConstructor += `\treturn /** @type {Request} */ (\n`;
-		requestConstructor += `\t\tcreateRequest(method, [], id)\n`;
-		requestConstructor += `\t)\n}\n`;
+		requestConstructor += "\treturn /** @type {Request} */ (\n";
+		requestConstructor += "\t\tcreateRequest(method, [], id)\n";
+		requestConstructor += "\t)\n}\n";
 	} else {
 		requestConstructor += `/**\n * Creates a ${config.name} JSON-RPC request\n *\n`;
 
@@ -303,7 +301,8 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 				(paramName === "block" || paramName === "fullTransactions");
 			requestConstructor += ` * @param {${param}} ${hasDefault ? `[${paramName}]` : paramName}\n`;
 		});
-		requestConstructor += ` * @param {number | string | null} [id] - Optional request ID\n * @returns {Request}\n */\n`;
+		requestConstructor +=
+			" * @param {number | string | null} [id] - Optional request ID\n * @returns {Request}\n */\n";
 
 		// Function signature
 		const funcParams = config.params.map((_, i) => {
@@ -356,16 +355,15 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 				][i] || `param${i}`,
 		);
 
-		requestConstructor += `\treturn /** @type {Request} */ (\n`;
+		requestConstructor += "\treturn /** @type {Request} */ (\n";
 		requestConstructor += `\t\tcreateRequest(method, [${callParams.join(", ")}], id)\n`;
-		requestConstructor += `\t)\n}\n`;
+		requestConstructor += "\t)\n}\n";
 	}
 
 	// Add before last line
-	content = content.trimEnd() + "\n" + requestConstructor;
+	content = `${content.trimEnd()}\n${requestConstructor}`;
 
 	writeFileSync(filePath, content);
-	console.log(`✓ Updated ${dir}`);
 }
 
 // Process all method directories
@@ -379,5 +377,3 @@ for (const dir of dirs) {
 		addRequestConstructor(dir, config);
 	}
 }
-
-console.log("\nDone!");

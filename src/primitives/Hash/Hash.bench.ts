@@ -5,24 +5,24 @@
  * conversion, comparison, validation, hashing, and utilities
  */
 
-import { assert } from "./BrandedHash/assert.js";
-import { clone } from "./BrandedHash/clone.js";
-import { ZERO } from "./BrandedHash/constants.js";
-import { equals } from "./BrandedHash/equals.js";
-import { format } from "./BrandedHash/format.js";
-import { fromBytes } from "./BrandedHash/fromBytes.js";
-import { fromHex } from "./BrandedHash/fromHex.js";
-import { isHash } from "./BrandedHash/isHash.js";
-import { isValidHex } from "./BrandedHash/isValidHex.js";
-import { isZero } from "./BrandedHash/isZero.js";
-import { keccak256 } from "./BrandedHash/keccak256.js";
-import { keccak256Hex } from "./BrandedHash/keccak256Hex.js";
-import { keccak256String } from "./BrandedHash/index.js";
-import { random } from "./BrandedHash/random.js";
-import { slice } from "./BrandedHash/slice.js";
-import { toBytes } from "./BrandedHash/toBytes.js";
-import { toHex } from "./BrandedHash/toHex.js";
-import { toString } from "./BrandedHash/toString.js";
+import { keccak256String } from "./BrandedHashIndex.js";
+import { assert } from "./assert.js";
+import { clone } from "./clone.js";
+import { ZERO } from "./constants.js";
+import { equals } from "./equals.js";
+import { format } from "./format.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { isHash } from "./isHash.js";
+import { isValidHex } from "./isValidHex.js";
+import { isZero } from "./isZero.js";
+import { keccak256 } from "./keccak256.js";
+import { keccak256Hex } from "./keccak256Hex.js";
+import { random } from "./random.js";
+import { slice } from "./slice.js";
+import { toBytes } from "./toBytes.js";
+import { toHex } from "./toHex.js";
+import { toString } from "./toString.js";
 
 // Benchmark runner
 interface BenchmarkResult {

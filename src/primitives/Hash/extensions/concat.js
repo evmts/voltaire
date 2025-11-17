@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {...import('./BrandedHash.ts').BrandedHash} hashes - Hashes to concatenate
+ * @param {...import('./../BrandedHash.ts').BrandedHash} hashes - Hashes to concatenate
  * @returns {Uint8Array} Concatenated bytes
  * @throws {never}
  * @example

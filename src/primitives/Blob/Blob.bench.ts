@@ -4,7 +4,7 @@
  * Measures performance of blob encoding, validation, and utility functions
  */
 
-import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
+import type { Commitment, Proof, VersionedHash } from "./BlobType.js";
 import { calculateGas } from "./BrandedBlob/calculateGas.js";
 import {
 	COMMITMENT_VERSION_KZG,

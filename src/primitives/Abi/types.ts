@@ -1,6 +1,6 @@
 // Re-export types for convenience
-export type { BrandedError as Error } from "./error/BrandedError/BrandedError.js";
-export type { Event } from "./event/BrandedEvent/BrandedEvent.js";
-export type { Function } from "./function/BrandedFunction.js";
-export type { BrandedConstructor as Constructor } from "./constructor/BrandedConstructor/BrandedConstructor.js";
+export type { ErrorType as Error } from "./error/ErrorType.js";
+export type { EventType } from "./event/EventType.js";
+export type { FunctionType as Function } from "./function/FunctionType.js";
+export type { ConstructorType as Constructor } from "./constructor/ConstructorType.js";
 export type { Fallback, Receive } from "./Item/index.js";

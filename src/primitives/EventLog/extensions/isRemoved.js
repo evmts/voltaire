@@ -1,7 +1,7 @@
 /**
  * Check if log was removed due to chain reorganization
  *
- * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
+ * @param {import('../EventLogType.js').BrandedEventLog} log - Event log
  * @returns {boolean}
  *
  * @example

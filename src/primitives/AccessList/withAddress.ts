@@ -1,5 +1,5 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 import { includesAddress } from "./includesAddress.js";
 
 /**

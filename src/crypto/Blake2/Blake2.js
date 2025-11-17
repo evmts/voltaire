@@ -1,33 +1,53 @@
 // @ts-nocheck
+export { SIZE } from "./Blake2HashType.js";
+
+import { SIZE } from "./Blake2HashType.js";
+import { from } from "./from.js";
 import { hash } from "./hash.js";
 import { hashString } from "./hashString.js";
 
 // Export individual functions
-export { hash, hashString };
+export { from, hash, hashString };
 
 /**
- * Blake2 constructor - auto-detects input type (string or bytes)
+ * Blake2Hash - Type-safe BLAKE2b hash namespace
  *
- * @see https://voltaire.tevm.sh/crypto for crypto documentation
- * @since 0.0.0
- * @param {string | Uint8Array} data - Data to hash (auto-detects type)
- * @param {number} [outputLength=64] - Output length in bytes (1-64, default 64)
- * @returns {Uint8Array} BLAKE2b hash
- * @throws {Error} If outputLength is invalid
+ * Pure TypeScript BLAKE2b implementation using @noble/hashes.
+ * All methods return branded Blake2Hash type.
+ * Supports variable output lengths (1-64 bytes, default 64).
+ *
  * @example
- * ```javascript
- * import { Blake2 } from './crypto/Blake2/index.js';
- * const hash1 = Blake2("hello");           // String, 64 bytes
- * const hash2 = Blake2("hello", 32);       // String, 32 bytes
- * const hash3 = Blake2(new Uint8Array([1, 2, 3]), 32); // Bytes, 32 bytes
+ * ```typescript
+ * import { Blake2Hash } from './Blake2.js';
+ *
+ * // Preferred: Type-safe constructors
+ * const hash1 = Blake2Hash.from("hello");              // String, 64 bytes
+ * const hash2 = Blake2Hash.fromString("hello", 32);    // String, 32 bytes
+ * const hash3 = Blake2Hash.from(uint8array);           // Bytes, 64 bytes
+ * const hash4 = Blake2Hash.from(uint8array, 48);       // Bytes, 48 bytes
+ *
+ * // Also available: legacy method names
+ * const hash5 = Blake2Hash.hash(data, 32);
+ * const hash6 = Blake2Hash.hashString('hello', 32);
  * ```
  */
-export function Blake2(data, outputLength = 64) {
-	return hash(data, outputLength);
-}
+export const Blake2Hash = Object.assign(from, {
+	// Primary API (type-safe constructors)
+	from,
+	fromString: hashString,
 
-// Attach namespace methods for backward compatibility
-Blake2.hash = hash;
-Blake2.hashString = hashString;
+	// Legacy API (kept for compatibility)
+	hash,
+	hashString,
 
-export default Blake2;
+	// Constants
+	SIZE,
+});
+
+/**
+ * @deprecated Use Blake2Hash instead
+ * Blake2 alias maintained for backward compatibility
+ */
+export const Blake2 = Blake2Hash;
+
+export default Blake2Hash;

@@ -1,4 +1,4 @@
-import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**

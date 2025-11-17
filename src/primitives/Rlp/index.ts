@@ -1,9 +1,9 @@
-import type { BrandedRlp } from "./BrandedRlp/BrandedRlp.js";
-import * as BrandedRlpNs from "./BrandedRlp/index.js";
+import type { BrandedRlp } from "./RlpType.js";
+import * as BrandedRlpNs from "./internal-index.js";
 
 // Re-export BrandedRlp type and errors
-export * from "./BrandedRlp/errors.js";
-export * from "./BrandedRlp/constants.js";
+export * from "./errors.js";
+export * from "./constants.js";
 export type { BrandedRlp };
 
 type RlpInput = Uint8Array | BrandedRlp | BrandedRlp[];
@@ -61,5 +61,5 @@ Rlp.prototype.getEncodedLength = Function.prototype.call.bind(
 	BrandedRlpNs.getEncodedLength,
 );
 
-// Export all from BrandedRlp for direct imports
-export * from "./BrandedRlp/index.js";
+// Export all from internal index for direct imports
+export * from "./internal-index.js";

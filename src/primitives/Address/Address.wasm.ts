@@ -4,7 +4,7 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
+import type { BrandedAddress } from "./BrandedAddress/AddressType.js";
 import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
 import type { Lowercase } from "./BrandedAddress/LowercaseAddress.js";
 import type { Uppercase } from "./BrandedAddress/UppercaseAddress.js";

@@ -1,4 +1,4 @@
-import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 import type { addressCount } from "./addressCount.js";
 import type { assertValid } from "./assertValid.js";
 import type { create } from "./create.js";

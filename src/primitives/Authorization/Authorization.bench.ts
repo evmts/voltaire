@@ -5,7 +5,7 @@
  */
 
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { BrandedAuthorization } from "../Authorization/BrandedAuthorization/BrandedAuthorization.js";
+import type { AuthorizationType } from "../Authorization/AuthorizationType.js";
 import * as Authorization from "../Authorization/index.js";
 
 // Benchmark runner

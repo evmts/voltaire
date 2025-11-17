@@ -1,5 +1,5 @@
 import type { brand } from "../../brand.js";
-import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
+import type { AddressType as BrandedAddress } from "../../primitives/Address/AddressType.js";
 import type { HashType } from "../../primitives/Hash/Hash.js";
 
 /**

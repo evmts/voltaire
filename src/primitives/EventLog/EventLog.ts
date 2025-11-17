@@ -3,7 +3,7 @@
  */
 
 // Re-export types
-export type { BrandedEventLog, Filter } from "./BrandedEventLog.js";
+export type { EventLogType, Filter } from "./EventLogType.js";
 
 // Re-export runtime functions
 export { clone } from "./clone.js";

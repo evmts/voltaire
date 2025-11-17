@@ -1,8 +1,2 @@
-import type { brand } from "../../../brand.js";
-import type { Uint256Type } from "../../Uint/Uint256Type.js";
-
-/**
- * Branded GasLimit type - prevents gas parameter confusion
- * Variable-length Uint8Array representing maximum gas units for a transaction
- */
-export type BrandedGasLimit = Uint256Type & { readonly [brand]: "GasLimit" };
+// Backward compatibility - GasLimitType has moved to parent directory
+export type { GasLimitType as BrandedGasLimit } from "../GasLimitType.js";

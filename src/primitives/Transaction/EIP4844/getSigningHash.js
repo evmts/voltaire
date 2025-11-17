@@ -1,5 +1,5 @@
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
@@ -18,7 +18,7 @@ import { encodeAccessList, encodeBigintCompact } from "../utils.js";
  * ```javascript
  * import { GetSigningHash } from './primitives/Transaction/EIP4844/getSigningHash.js';
  * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
- * import { encode as rlpEncode } from '../../Rlp/BrandedRlp/encode.js';
+ * import { encode as rlpEncode } from '../../Rlp/encode.js';
  * const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
  * const sigHash = getSigningHash(tx);
  * ```

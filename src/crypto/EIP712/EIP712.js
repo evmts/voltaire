@@ -4,8 +4,8 @@ export * from "./BrandedEIP712.js";
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../Keccak256/hash.js";
-import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
 import { recoverPublicKey as secp256k1RecoverPublicKey } from "../Secp256k1/recoverPublicKey.js";
+import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
 
 // Import factories
 import { Hash as HashDomain } from "./Domain/hash.js";

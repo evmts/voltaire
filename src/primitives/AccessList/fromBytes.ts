@@ -1,12 +1,12 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
-import { decode } from "../Rlp/BrandedRlp/decode.js";
+import { decode } from "../Rlp/decode.js";
 import { DecodingError } from "../errors/SerializationError.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/ValidationError.js";
-import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 
 /**
  * Decode RLP bytes to access list

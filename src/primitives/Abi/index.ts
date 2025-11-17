@@ -5,7 +5,10 @@ export * from "./Abi.js";
 export type * from "./Abi.ts";
 
 // Re-export encoding/decoding methods
-export { encode, decode, decodeData, parseLogs } from "./BrandedAbi/index.js";
+export { encode } from "./encode.js";
+export { decode } from "./decode.js";
+export { decodeData } from "./decodeData.js";
+export { parseLogs } from "./parseLogs.js";
 export {
 	encodeParameters,
 	decodeParameters,

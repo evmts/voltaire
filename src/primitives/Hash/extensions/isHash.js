@@ -6,7 +6,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedHash.ts').BrandedHash} True if value is Hash type
+ * @returns {value is import('./../BrandedHash.ts').BrandedHash} True if value is Hash type
  * @throws {never}
  * @example
  * ```javascript

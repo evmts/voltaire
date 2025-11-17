@@ -10,9 +10,9 @@
  */
 
 import { beforeAll, describe, expect, test } from "vitest";
-import { equals } from "../primitives/Hash/HashType/equals.js";
-import { fromHex } from "../primitives/Hash/HashType/fromHex.js";
-import { isHash } from "../primitives/Hash/HashType/isHash.js";
+import { equals } from "../primitives/Hash/equals.js";
+import { fromHex } from "../primitives/Hash/fromHex.js";
+import { isHash } from "../primitives/Hash/isHash.js";
 import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 

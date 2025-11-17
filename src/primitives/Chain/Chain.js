@@ -1,5 +1,3 @@
-// @ts-nocheck
-import * as BrandedChain from "./BrandedChain/index.js";
 import { getBlockTime } from "./getBlockTime.js";
 import { getExplorerUrl } from "./getExplorerUrl.js";
 import { getGasLimit } from "./getGasLimit.js";
@@ -11,6 +9,8 @@ import { getRpcUrl } from "./getRpcUrl.js";
 import { getShortName } from "./getShortName.js";
 import { getSymbol } from "./getSymbol.js";
 import { getWebsocketUrl } from "./getWebsocketUrl.js";
+// @ts-nocheck
+import { byId, from, fromId } from "./index.js";
 import { isL2 } from "./isL2.js";
 import { isTestnet } from "./isTestnet.js";
 import { supportsHardfork } from "./supportsHardfork.js";
@@ -35,26 +35,26 @@ import { supportsHardfork } from "./supportsHardfork.js";
  * ```
  */
 export function Chain(chain) {
-	const result = BrandedChain.from(chain);
+	const result = from(chain);
 	Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 }
 
 // Static constructors
 Chain.from = (chain) => {
-	const result = BrandedChain.from(chain);
+	const result = from(chain);
 	Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
 
 Chain.fromId = (id) => {
-	const result = BrandedChain.fromId(id);
+	const result = fromId(id);
 	if (result) Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
 
 // Static utility property (doesn't return Chain instances)
-Chain.byId = BrandedChain.byId;
+Chain.byId = byId;
 
 // Basic info
 Chain.getName = getName;

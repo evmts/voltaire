@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./BrandedHash.ts').BrandedHash} hash - Hash to clone
- * @returns {import('./BrandedHash.ts').BrandedHash} Copy of hash
+ * @param {import('./../BrandedHash.ts').BrandedHash} hash - Hash to clone
+ * @returns {import('./../BrandedHash.ts').BrandedHash} Copy of hash
  * @throws {never}
  * @example
  * ```javascript
@@ -14,7 +14,7 @@
  * ```
  */
 export function clone(hash) {
-	return /** @type {import('./BrandedHash.ts').BrandedHash} */ (
+	return /** @type {import('./../BrandedHash.ts').BrandedHash} */ (
 		new Uint8Array(hash)
 	);
 }

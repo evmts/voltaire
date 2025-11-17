@@ -2,9 +2,12 @@
 export type { ParameterConstructor } from "./ParameterConstructor.js";
 export { Parameter } from "./Parameter.js";
 
-// Re-export BrandedParameter types
-export type { BrandedParameter } from "./BrandedParameter/BrandedParameter.js";
-export type { BrandedParameter as AbiParameter } from "./BrandedParameter/BrandedParameter.js";
+// Re-export ParameterType types
+export type { ParameterType } from "./ParameterType.js";
+export type { ParameterType as BrandedParameter } from "./ParameterType.js";
+export type { ParameterType as AbiParameter } from "./ParameterType.js";
 
-// Export methods from BrandedParameter
-export { encode, decode, from } from "./BrandedParameter/index.js";
+// Export methods
+export { encode } from "./encode.js";
+export { decode } from "./decode.js";
+export { from } from "./from.js";

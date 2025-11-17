@@ -1,8 +1,8 @@
 // @ts-nocheck
-import * as HashType from "./BrandedHash/index.js";
+import * as HashType from "./BrandedHashIndex.js";
 
 // Re-export constants
-export * from "./BrandedHash/constants.js";
+export * from "./constants.js";
 
 /**
  * @typedef {import('./HashType.js').HashType} HashType

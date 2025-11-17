@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
+import type { BrandedAddress } from "./BrandedAddress/AddressType.js";
 import type { compare } from "./BrandedAddress/compare.js";
 import type { SIZE } from "./BrandedAddress/constants.js";
 import type { equals } from "./BrandedAddress/equals.js";

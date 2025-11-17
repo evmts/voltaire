@@ -1,4 +1,4 @@
-import type { BrandedEventLog } from "./BrandedEventLog/BrandedEventLog.js";
+import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
 import type { create } from "./create.js";
 import type { matchesAddress } from "./matchesAddress.js";
 import type { matchesFilter } from "./matchesFilter.js";
@@ -66,11 +66,11 @@ export interface EventLogConstructor {
 // Array operation stubs
 declare function filterLogs<T extends BrandedEventLog>(
 	logs: readonly T[],
-	filter: import("./BrandedEventLog.js").Filter,
+	filter: import("./EventLogType.js").Filter,
 ): T[];
 declare function filter<T extends BrandedEventLog>(
 	logs: readonly T[],
-	filter: import("./BrandedEventLog.js").Filter,
+	filter: import("./EventLogType.js").Filter,
 ): T[];
 declare function sortLogs<T extends BrandedEventLog>(logs: readonly T[]): T[];
 declare function sort<T extends BrandedEventLog>(logs: readonly T[]): T[];

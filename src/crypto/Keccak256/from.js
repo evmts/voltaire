@@ -13,15 +13,15 @@ import { hashString } from "./hashString.js";
  * @see https://voltaire.tevm.sh/crypto/keccak256 for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array | string} input - Data to hash
- * @returns {import('../../primitives/Hash/index.js').HashType} 32-byte hash
+ * @returns {import('./Keccak256HashType.js').Keccak256Hash} 32-byte hash
  * @throws {import('../../primitives/errors/ValidationError.js').InvalidFormatError} If hex string is invalid
  * @example
  * ```javascript
- * import { Keccak256 } from './crypto/Keccak256/index.js';
+ * import { Keccak256Hash } from './crypto/Keccak256/index.js';
  *
- * const hash1 = Keccak256("0x1234");      // Hex
- * const hash2 = Keccak256("hello");       // String
- * const hash3 = Keccak256(uint8array);    // Bytes
+ * const hash1 = Keccak256Hash.from("0x1234");      // Hex
+ * const hash2 = Keccak256Hash.from("hello");       // String
+ * const hash3 = Keccak256Hash.from(uint8array);    // Bytes
  * ```
  */
 export function from(input) {

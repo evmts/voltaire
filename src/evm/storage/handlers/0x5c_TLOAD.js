@@ -1,4 +1,4 @@
-import { TLoad } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { TLoad } from "../../../primitives/GasConstants/constants.js";
 import * as Frame from "../../Frame/index.js";
 
 /**

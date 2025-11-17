@@ -3,8 +3,8 @@
  * Fix typedef comment blocks in eth method files
  */
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const ETH_DIR = "/Users/williamcory/voltaire/src/jsonrpc/eth";
 
@@ -31,8 +31,5 @@ for (const dir of dirs) {
 	if (jsFile) {
 		const filePath = join(ETH_DIR, dir, jsFile);
 		fixFile(filePath);
-		console.log(`✓ Fixed ${dir}`);
 	}
 }
-
-console.log("\nDone!");

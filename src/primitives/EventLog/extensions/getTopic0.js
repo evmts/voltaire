@@ -1,7 +1,7 @@
 /**
  * Get topic0 (event signature) from log
  *
- * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
+ * @param {import('../EventLogType.js').BrandedEventLog} log - Event log
  * @returns {import('../../Hash/HashType/HashType.js').HashType | undefined}
  *
  * @example

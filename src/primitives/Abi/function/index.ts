@@ -1,22 +1,42 @@
 import { Function } from "./Function.js";
 
-// Re-export BrandedFunction namespace and types
-export type { Function as BrandedFunction } from "./BrandedFunction/BrandedFunction.js";
-export * from "./BrandedFunction/errors.js";
-export * from "./BrandedFunction/statemutability.js";
-import * as BrandedFunctionNs from "./BrandedFunction/index.js";
-export { BrandedFunctionNs as BrandedFunctionConstants };
+// Re-export FunctionType and types
+export type { FunctionType } from "./FunctionType.js";
+export type { ExtractNames, Get } from "./FunctionType.js";
+export * from "./errors.js";
+export * from "./statemutability.js";
 
-// Export Function methods directly for namespace usage (Abi.Function.*)
-export const getSelector = Function.getSelector;
-export const getSignature = Function.getSignature;
-export const encodeParams = Function.encodeParams;
-export const decodeParams = Function.decodeParams;
-export const encodeResult = Function.encodeResult;
-export const decodeResult = Function.decodeResult;
+// Import crypto dependencies
+import { keccak256String as keccak256StringImpl } from "../../Hash/BrandedHashIndex.js";
 
-// Export factories
-export const GetSelector = Function.GetSelector;
+import { decodeParams as _decodeParams } from "./decodeParams.js";
+import { decodeResult as _decodeResult } from "./decodeResult.js";
+import { encodeParams as _encodeParams } from "./encodeParams.js";
+import { encodeResult as _encodeResult } from "./encodeResult.js";
+import { GetSelector } from "./getSelector.js";
+import { getSignature as _getSignature } from "./getSignature.js";
+
+// Factory export (tree-shakeable)
+export { GetSelector };
+
+// Wrapper export (convenient, backward compat)
+export const getSelector = GetSelector({
+	keccak256String: keccak256StringImpl,
+});
+
+// Export individual functions
+export const getSignature = _getSignature;
+export const encodeParams = _encodeParams;
+export const decodeParams = _decodeParams;
+export const encodeResult = _encodeResult;
+export const decodeResult = _decodeResult;
+
+// Constructor-style aliases (data-first pattern)
+export { getSignature as Signature };
+export { encodeParams as Params };
+export { decodeParams as DecodeParams };
+export { encodeResult as Result };
+export { decodeResult as DecodeResult };
 
 // Also export the Function factory itself
 export { Function };

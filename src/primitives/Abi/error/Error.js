@@ -1,5 +1,9 @@
 // @ts-nocheck
-import * as BrandedError from "./BrandedError/index.ts";
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
+import { GetSelector } from "./getSelector.js";
+import { getSignature } from "./getSignature.js";
+import { getSelector } from "./index.js";
 
 /**
  * Factory function for creating Error instances
@@ -23,10 +27,10 @@ import * as BrandedError from "./BrandedError/index.ts";
 
 // Static utility methods
 export const Error = {
-	getSignature: BrandedError.getSignature,
-	getSelector: BrandedError.getSelector,
-	encodeParams: BrandedError.encodeParams,
-	decodeParams: BrandedError.decodeParams,
+	getSignature,
+	getSelector,
+	encodeParams,
+	decodeParams,
 	// Factory
-	GetSelector: BrandedError.GetSelector,
+	GetSelector,
 };

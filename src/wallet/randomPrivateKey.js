@@ -5,7 +5,7 @@ import { Address } from "../primitives/Address/index.js";
  * Uses secp256k1 to generate random private key, derives public key,
  * and returns the address (last 20 bytes of keccak256(pubkey))
  *
- * @returns {import('../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress} Randomly generated address
+ * @returns {import('../primitives/Address/AddressType.js').AddressType.AddressType} Randomly generated address
  *
  * @example
  * ```typescript

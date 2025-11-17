@@ -2,7 +2,7 @@ import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/ValidationError.js";
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 import { isItem } from "./isItem.js";
 
 /**

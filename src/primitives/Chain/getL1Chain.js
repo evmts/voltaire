@@ -1,4 +1,4 @@
-import { fromId } from "./BrandedChain/fromId.js";
+import { fromId } from "./fromId.js";
 import { CHAIN_METADATA } from "./metadata.js";
 
 /**

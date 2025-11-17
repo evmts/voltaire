@@ -1,6 +1,6 @@
 import type { Hex } from "ox";
 import * as OxHex from "ox/Hex";
-import { InvalidLengthError } from "../../errors/index.js";
+import { InvalidLengthError } from "../errors/index.js";
 
 /**
  * Assert that hex value has a specific size, throws if not

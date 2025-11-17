@@ -1,4 +1,4 @@
-import { decode } from "../../Rlp/BrandedRlp/decode.js";
+import { decode } from "../../Rlp/decode.js";
 import { DecodingError } from "../../errors/index.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
@@ -80,7 +80,7 @@ export function deserialize(data) {
 			},
 		);
 	}
-	const to = /** @type {import('../../Address/index.js').BrandedAddress} */ (
+	const to = /** @type {import('../../Address/index.js').AddressType} */ (
 		toBytes
 	);
 	const value = decodeBigint(

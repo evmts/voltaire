@@ -1,19 +1,5 @@
-import * as Uint from "../../Uint/index.js";
-import type { BrandedGasPrice } from "./BrandedGasPrice.js";
+// Backward compatibility - exported from parent directory
+export { gasPriceToGwei as _toGwei } from "../gasPriceToGwei.js";
 
-const GWEI = 1_000_000_000n;
-
-/**
- * Convert GasPrice to gwei
- *
- * @param this - Gas price
- * @returns Value in gwei
- *
- * @example
- * ```typescript
- * const gwei = GasPrice._toGwei.call(price);
- * ```
- */
-export function toGwei(this: BrandedGasPrice): bigint {
-	return Uint.toBigInt(this) / GWEI;
-}
+// Also export as toGwei for backward compatibility with tests
+export { gasPriceToGwei as toGwei } from "../gasPriceToGwei.js";

@@ -1,4 +1,4 @@
-import { TStore } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { TStore } from "../../../primitives/GasConstants/constants.js";
 import * as Frame from "../../Frame/index.js";
 
 /**

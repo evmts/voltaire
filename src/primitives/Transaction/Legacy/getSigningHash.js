@@ -1,7 +1,7 @@
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
-import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 
 /**
  * Factory: Get signing hash for Legacy transaction.
@@ -23,7 +23,7 @@ import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
  * ```javascript
  * import { GetSigningHash } from './primitives/Transaction/Legacy/getSigningHash.js';
  * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
- * import { encode as rlpEncode } from '../../Rlp/BrandedRlp/encode.js';
+ * import { encode as rlpEncode } from '../../Rlp/encode.js';
  * const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
  * const signingHash = getSigningHash.call(tx);
  * ```

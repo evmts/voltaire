@@ -7,7 +7,7 @@ import { blake2b } from "@noble/hashes/blake2.js";
  * @since 0.0.0
  * @param {Uint8Array | string} data - Input data to hash (Uint8Array or string)
  * @param {number} [outputLength=64] - Output length in bytes (1-64, default 64)
- * @returns {Uint8Array} BLAKE2b hash
+ * @returns {import('./Blake2HashType.js').Blake2Hash} BLAKE2b hash
  * @throws {Error} If outputLength is invalid
  * @example
  * ```javascript
@@ -25,5 +25,7 @@ export function hash(data, outputLength = 64) {
 
 	const input =
 		typeof data === "string" ? new TextEncoder().encode(data) : data;
-	return blake2b(input, { dkLen: outputLength });
+	return /** @type {import('./Blake2HashType.js').Blake2Hash} */ (
+		blake2b(input, { dkLen: outputLength })
+	);
 }

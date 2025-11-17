@@ -1,4 +1,4 @@
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 
 /** Gas cost per address in access list */
 export const ADDRESS_COST = 2400n;

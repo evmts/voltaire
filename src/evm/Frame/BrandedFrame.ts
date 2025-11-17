@@ -1,6 +1,6 @@
 import type { brand } from "../../brand.js";
-import type { Address } from "../../primitives/Address/BrandedAddress.js";
-import type { Hex } from "../../primitives/Hex/BrandedHex.js";
+import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
+import type { Hex } from "../../primitives/Hex/index.js";
 
 /**
  * BrandedFrame - EVM execution frame

@@ -37,7 +37,13 @@ export * from "./getSelector.js";
 export * from "./getFunctionBySelector.js";
 
 // Branded ABI methods (with this: parameter)
-export { encode, decode, decodeData, parseLogs } from "./BrandedAbi/index.js";
+export { encode } from "./encode.js";
+export { decode } from "./decode.js";
+export { decodeData } from "./decodeData.js";
+export { parseLogs } from "./parseLogs.js";
+export { format } from "./format.js";
+export { formatWithArgs } from "./formatWithArgs.js";
+export { getItem } from "./getItem.js";
 
 // Re-export sub-namespaces
 export * as Item from "./Item/index.js";
@@ -47,17 +53,16 @@ export * as Event from "./event/index.js";
 export * as Error from "./error/index.js";
 export * as Constructor from "./constructor/index.js";
 export * as Wasm from "./wasm/index.js";
-export * as BrandedAbi from "./BrandedAbi/index.js";
 
 import type { Fallback, Receive } from "./Item/index.js";
-import type { BrandedConstructor as Constructor } from "./constructor/index.js";
-import type { BrandedError } from "./error/index.js";
-import type { Event } from "./event/BrandedEvent/BrandedEvent.js";
-import type { BrandedFunction } from "./function/index.js";
+import type { ConstructorType as Constructor } from "./constructor/index.js";
+import type { ErrorType } from "./error/index.js";
+import type { EventType } from "./event/EventType.js";
+import type { FunctionType } from "./function/index.js";
 
 /**
  * ABI type: Array of ABI items (functions, events, errors, constructor, fallback, receive)
  */
 export type Abi = ReadonlyArray<
-	BrandedFunction | Event | BrandedError | Constructor | Fallback | Receive
+	FunctionType | EventType | ErrorType | Constructor | Fallback | Receive
 >;

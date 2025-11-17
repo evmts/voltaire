@@ -7,7 +7,7 @@ import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array | string} data - Input data (Uint8Array or string)
- * @returns {Uint8Array} 20-byte hash
+ * @returns {import('./Ripemd160HashType.js').Ripemd160Hash} 20-byte hash
  * @throws {never}
  * @example
  * ```javascript

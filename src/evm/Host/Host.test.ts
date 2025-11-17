@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { from as addressFrom } from "../../primitives/Address/BrandedAddress/from.js";
+import { from as addressFrom } from "../../primitives/Address/from.js";
 import { Host } from "./index.js";
 
 describe("Host", () => {

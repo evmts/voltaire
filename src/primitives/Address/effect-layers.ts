@@ -2,7 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { hash as keccak256Native } from "../../crypto/Keccak256/hash.js";
 import { derivePublicKey as derivePublicKeyNative } from "../../crypto/Secp256k1/derivePublicKey.js";
-import { encode as rlpEncodeNative } from "../Rlp/BrandedRlp/encode.js";
+import { encode as rlpEncodeNative } from "../Rlp/encode.js";
 import { CryptoOperationError, RlpEncodingError } from "./effect-errors.js";
 import {
 	Keccak256Service,

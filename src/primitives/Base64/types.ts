@@ -1,7 +1,7 @@
-export type { BrandedBase64 } from "./BrandedBase64/BrandedBase64.js";
-export type { BrandedBase64Url } from "./BrandedBase64/BrandedBase64Url.js";
-export type { Base64Like } from "./BrandedBase64/BrandedBase64.js";
-export type { Base64UrlLike } from "./BrandedBase64/BrandedBase64Url.js";
+export type { BrandedBase64 } from "./Base64Type.js";
+export type { BrandedBase64Url } from "./Base64Type.js";
+export type { Base64Like } from "./Base64Type.js";
+export type { Base64UrlLike } from "./Base64Type.js";
 
 /**
  * @deprecated Use BrandedBase64 instead

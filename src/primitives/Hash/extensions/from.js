@@ -7,7 +7,7 @@ import { fromHex } from "./fromHex.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {string | Uint8Array} value - Hex string with optional 0x prefix or Uint8Array
- * @returns {import('./BrandedHash.ts').BrandedHash} Hash bytes
+ * @returns {import('./../BrandedHash.ts').BrandedHash} Hash bytes
  * @throws {Error} If input is invalid or wrong length
  * @example
  * ```javascript

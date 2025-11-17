@@ -1,34 +1,50 @@
 // @ts-nocheck
-import { CryptoError } from "../../primitives/errors/CryptoError.js";
-import { SIZE } from "./constants.js";
+export { SIZE, HEX_SIZE } from "./constants.js";
+
+import { HEX_SIZE, SIZE } from "./constants.js";
+import { from } from "./from.js";
 import { hash } from "./hash.js";
 import { hashString } from "./hashString.js";
 
-export { SIZE };
-export { hash };
-export { hashString };
+// Export individual functions
+export { from, hash, hashString };
 
 /**
- * Ripemd160 constructor - auto-detects input type (string or bytes)
+ * Ripemd160Hash - Type-safe RIPEMD160 hash namespace
  *
- * @see https://voltaire.tevm.sh/crypto for crypto documentation
- * @since 0.0.0
- * @param {string | Uint8Array} data - Data to hash (auto-detects type)
- * @returns {Uint8Array} 20-byte hash
- * @throws {never}
+ * Pure TypeScript RIPEMD160 implementation using @noble/hashes.
+ * All methods return branded Ripemd160Hash type.
+ *
  * @example
- * ```javascript
- * import { Ripemd160 } from './crypto/Ripemd160/index.js';
- * const hash1 = Ripemd160("hello");        // String
- * const hash2 = Ripemd160(new Uint8Array([1, 2, 3])); // Bytes
- * console.log(hash1.length); // 20
+ * ```typescript
+ * import { Ripemd160Hash } from './Ripemd160.js';
+ *
+ * // Preferred: Type-safe constructors
+ * const hash1 = Ripemd160Hash.from("hello");           // String
+ * const hash2 = Ripemd160Hash.fromString("hello");     // String
+ * const hash3 = Ripemd160Hash.from(uint8array);        // Bytes
+ *
+ * // Also available: legacy method names
+ * const hash4 = Ripemd160Hash.hash(data);
+ * const hash5 = Ripemd160Hash.hashString('hello');
  * ```
  */
-export function Ripemd160(data) {
-	return hash(data);
-}
+export const Ripemd160Hash = Object.assign(from, {
+	// Primary API (type-safe constructors)
+	from,
+	fromString: hashString,
 
-// Attach namespace methods for backward compatibility
-Ripemd160.hash = hash;
-Ripemd160.hashString = hashString;
-Ripemd160.SIZE = SIZE;
+	// Legacy API (kept for compatibility)
+	hash,
+	hashString,
+
+	// Constants
+	SIZE,
+	HEX_SIZE,
+});
+
+/**
+ * @deprecated Use Ripemd160Hash instead
+ * Ripemd160 alias maintained for backward compatibility
+ */
+export const Ripemd160 = Ripemd160Hash;

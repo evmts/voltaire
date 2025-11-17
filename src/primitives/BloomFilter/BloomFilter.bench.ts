@@ -1,6 +1,6 @@
 import { bench, run } from "mitata";
-import { BITS, DEFAULT_HASH_COUNT } from "./BrandedBloomFilter/constants.js";
-import * as BloomFilter from "./BrandedBloomFilter/index.js";
+import { BITS, DEFAULT_HASH_COUNT } from "./constants.js";
+import * as BloomFilter from "./index.js";
 
 const encoder = new TextEncoder();
 

@@ -6,8 +6,8 @@ import * as Function from "./function/index.js";
  * Find function in ABI by selector
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
- * @param {import("../Hex/BrandedHex/BrandedHex.js").HexType | Uint8Array} selector - 4-byte function selector
- * @returns {import('./function/BrandedFunction.js').Function} Function ABI item
+ * @param {import("../Hex/index.js").HexType | Uint8Array} selector - 4-byte function selector
+ * @returns {import('./function/FunctionType.js').FunctionType} Function ABI item
  * @throws {AbiItemNotFoundError} If selector invalid length or function not found in ABI
  *
  * @example
@@ -43,9 +43,7 @@ export function getFunctionBySelector(abi, selector) {
 
 	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
-		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
-			item
-		);
+		const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
 
 		const itemSelector = Function.getSelector(fn);
 		// Compare bytes
@@ -67,5 +65,5 @@ export function getFunctionBySelector(abi, selector) {
 	}
 
 	// Type assertion after guard
-	return /** @type {import('./function/index.js').BrandedFunction} */ (item);
+	return /** @type {import('./function/index.js').FunctionType} */ (item);
 }

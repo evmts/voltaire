@@ -1,5 +1,5 @@
 import type { brand } from "../../brand.js";
-import type { Address } from "../../primitives/Address/BrandedAddress.js";
+import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
 
 /**
  * BrandedHost - EVM host interface for external state access

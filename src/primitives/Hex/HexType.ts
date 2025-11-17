@@ -6,6 +6,11 @@ import type { brand } from "../../brand.js";
 export type HexType = `0x${string}` & { readonly [brand]: "Hex" };
 
 /**
+ * Alias for HexType
+ */
+export type Hex = HexType;
+
+/**
  * Sized Hex type with specific byte size
  * @example HexType.Sized<4> = '0x12345678' (4 bytes = 8 hex chars)
  */

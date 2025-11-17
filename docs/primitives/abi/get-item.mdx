@@ -16,14 +16,14 @@ description: Find ABI item by name and type from ABI array
 ### Find and Use Function
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const abi = [...] // Full contract ABI
 
-const transferFn = BrandedAbi.getItem(abi, "transfer", "function")
+const transferFn = Abi.getItem(abi, "transfer", "function")
 
 if (transferFn && transferFn.type === "function") {
-  const calldata = BrandedAbi.Function.encodeParams(transferFn, [to, amount])
+  const calldata = Abi.Function.encodeParams(transferFn, [to, amount])
   await provider.call({ to: contractAddress, data: calldata })
 }
 ```
@@ -31,11 +31,11 @@ if (transferFn && transferFn.type === "function") {
 ### Error Handling
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const abi = [...]
 
-const item = BrandedAbi.getItem(abi, "nonExistent", "function")
+const item = Abi.getItem(abi, "nonExistent", "function")
 if (!item) {
   throw new Error("Function not found in ABI")
 }

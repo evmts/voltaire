@@ -4,9 +4,9 @@ import { matchesFilter } from "./matchesFilter.js";
  * Filter array of logs by criteria
  *
  * @template T
- * @param {readonly (T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog)[]} logs
- * @param {import('../BrandedEventLog/BrandedEventLog.js').Filter} filter
- * @returns {(T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog)[]}
+ * @param {readonly (T & import('../EventLogType.js').BrandedEventLog)[]} logs
+ * @param {import('../EventLogType.js').Filter} filter
+ * @returns {(T & import('../EventLogType.js').BrandedEventLog)[]}
  *
  * @example
  * ```typescript

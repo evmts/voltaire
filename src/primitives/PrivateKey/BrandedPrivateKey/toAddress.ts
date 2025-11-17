@@ -1,5 +1,5 @@
-import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { Hash } from "../../Hash/index.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { PrivateKeyType } from "../PrivateKeyType.js";
 import { toPublicKey } from "./toPublicKey.js";
 

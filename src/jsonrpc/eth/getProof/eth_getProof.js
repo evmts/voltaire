@@ -5,7 +5,7 @@
 import { createRequest } from "../../types/JsonRpcRequest.js";
 
 /**
- * @typedef {import('../../types/index.js').Address} Address
+ * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
@@ -50,7 +50,7 @@ export const method = "eth_getProof";
  * @param {number | string | null} [id] - Optional request ID
  * @returns {Request}
  */
-export function GetProofRequest(address, block = "latest", params, id = null) {
+export function GetProofRequest(address, block, params, id = null) {
 	return /** @type {Request} */ (
 		createRequest(method, [address, block, params], id)
 	);

@@ -1,7 +1,7 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType/HashType.js";
 import type { HexType } from "../Hex/HexType.js";
-import type { BrandedEventLog } from "./BrandedEventLog/index.js";
+import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
 
 export interface EventLogParams {
 	address: BrandedAddress;
@@ -54,4 +54,4 @@ export namespace EventLog {
 	export function sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[];
 }
 
-export type { BrandedEventLog } from "./BrandedEventLog/index.js";
+export type { EventLogType as BrandedEventLog } from "./EventLogType.js";

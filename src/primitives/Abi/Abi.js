@@ -1,17 +1,28 @@
-import { BrandedAbi } from "./BrandedAbi/index.js";
 import {
-	encodeParameters,
-	decodeParameters,
-	Parameters,
 	DecodeParameters,
+	Parameters,
+	decodeParameters,
+	encodeParameters,
 } from "./Encoding.js";
+import * as ItemNs from "./Item/index.js";
+import * as ConstructorNs from "./constructor/index.js";
+import { decode } from "./decode.js";
+import { decodeData } from "./decodeData.js";
+import { encode } from "./encode.js";
+import * as ErrorNs from "./error/index.js";
+import * as EventNs from "./event/index.js";
+import { format } from "./format.js";
+import { formatWithArgs } from "./formatWithArgs.js";
+import * as FunctionNs from "./function/index.js";
+import { getItem } from "./getItem.js";
+import { parseLogs } from "./parseLogs.js";
 
 /**
  * Factory function for creating Abi instances
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
- * @param {readonly import('./BrandedAbi/BrandedAbi.js').Item[]} items - ABI items
+ * @param {readonly import('./AbiType.js').Item[]} items - ABI items
  * @returns {import('./AbiConstructor.js').Abi} Abi instance
  * @throws {never}
  * @example
@@ -36,13 +47,13 @@ Abi.from = (items) => {
 };
 
 // Static utility methods
-Abi.getItem = BrandedAbi.getItem;
-Abi.format = BrandedAbi.format;
-Abi.formatWithArgs = BrandedAbi.formatWithArgs;
-Abi.encode = BrandedAbi.encode;
-Abi.decode = BrandedAbi.decode;
-Abi.decodeData = BrandedAbi.decodeData;
-Abi.parseLogs = BrandedAbi.parseLogs;
+Abi.getItem = getItem;
+Abi.format = format;
+Abi.formatWithArgs = formatWithArgs;
+Abi.encode = encode;
+Abi.decode = decode;
+Abi.decodeData = decodeData;
+Abi.parseLogs = parseLogs;
 
 // Parameter encoding/decoding methods
 Abi.encodeParameters = encodeParameters;
@@ -53,55 +64,60 @@ Abi.Parameters = Parameters;
 Abi.DecodeParameters = DecodeParameters;
 
 // Sub-namespaces
-Abi.Function = BrandedAbi.Function;
-Abi.Event = BrandedAbi.Event;
-Abi.Error = BrandedAbi.Error;
-Abi.Constructor = BrandedAbi.Constructor;
-Abi.Item = BrandedAbi.Item;
+Abi.Function = FunctionNs.Function;
+Abi.Event = EventNs.Event;
+Abi.Error = ErrorNs.Error;
+Abi.Constructor = ConstructorNs;
+Abi.Item = ItemNs;
 
 // Set up Abi.prototype to inherit from Array.prototype
 Object.setPrototypeOf(Abi.prototype, Array.prototype);
 
 // Instance methods for ABI operations
 Abi.prototype.getItem = function (name, type) {
-	return BrandedAbi.getItem(this, name, type);
+	return getItem(this, name, type);
 };
 
 Abi.prototype.format = function () {
-	return BrandedAbi.format(this);
+	return this.map((item) => format(item));
 };
 
 Abi.prototype.formatWithArgs = function (args) {
-	return BrandedAbi.formatWithArgs(this, args);
+	return this.map((item) => {
+		if ("name" in item && item.name in args) {
+			return formatWithArgs(item, args[item.name]);
+		}
+		return format(item);
+	});
 };
 
 Abi.prototype.encode = function (functionName, args) {
-	return BrandedAbi.encode(this, functionName, args);
+	return encode.call(this, functionName, args);
 };
 
 Abi.prototype.decode = function (functionName, data) {
-	return BrandedAbi.decode(this, functionName, data);
+	return decode.call(this, functionName, data);
 };
 
 Abi.prototype.decodeData = function (data) {
-	return BrandedAbi.decodeData(this, data);
+	return decodeData.call(this, data);
 };
 
 Abi.prototype.parseLogs = function (logs) {
-	return BrandedAbi.parseLogs(this, logs);
+	return parseLogs.call(this, logs);
 };
 
 // Convenience methods for getting specific item types
 Abi.prototype.getFunction = function (name) {
-	return BrandedAbi.getItem(this, name, "function");
+	return getItem(this, name, "function");
 };
 
 Abi.prototype.getEvent = function (name) {
-	return BrandedAbi.getItem(this, name, "event");
+	return getItem(this, name, "event");
 };
 
 Abi.prototype.getError = function (name) {
-	return BrandedAbi.getItem(this, name, "error");
+	return getItem(this, name, "error");
 };
 
 Abi.prototype.getConstructor = function () {

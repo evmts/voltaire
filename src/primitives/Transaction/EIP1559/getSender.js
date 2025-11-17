@@ -11,7 +11,7 @@ import { getSigningHash } from "./getSigningHash.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @param {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} tx - Signed transaction with BrandedAddress fields
- * @returns {import('../../Address/index.js').BrandedAddress} Sender address (20 bytes, branded)
+ * @returns {import('../../Address/index.js').AddressType} Sender address (20 bytes, branded)
  * @throws {Error} If signature recovery fails
  * @example
  * ```javascript

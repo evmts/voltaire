@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { RlpDecodingError } from "./BrandedRlp/RlpError.js";
-import { MAX_DEPTH } from "./BrandedRlp/constants.js";
+import { RlpDecodingError } from "./RlpError.js";
+import { MAX_DEPTH } from "./constants.js";
 import * as Rlp from "./index.js";
 
 /**

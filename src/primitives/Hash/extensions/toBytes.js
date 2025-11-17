@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./BrandedHash.ts').BrandedHash} hash - Hash to convert
+ * @param {import('./../BrandedHash.ts').BrandedHash} hash - Hash to convert
  * @returns {Uint8Array} Copy of hash bytes
  * @throws {never}
  * @example

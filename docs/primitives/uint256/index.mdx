@@ -157,7 +157,7 @@ export type BrandedUint256 = bigint & {
 
 [Branded type](/getting-started/branded-types) wrapping `bigint`, runtime validated to `0 <= value <= 2^256-1`. Used as underlying type for Uint class and tree-shakeable functions.
 
-Source: [BrandedUint256.ts:1-4](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/BrandedUint256/BrandedUint256.ts#L1-L4)
+Source: [BrandedUint256.ts:1-4](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/BrandedUint256.ts#L1-L4)
 </Tab>
 </Tabs>
 
@@ -192,7 +192,7 @@ const buffer = new Uint8Array(Uint.SIZE)  // 32-byte buffer
 - `Uint.ONE = 1` - One constant
 - `Uint.SIZE = 32` - Size in bytes
 
-Source: [constants.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/BrandedUint256/constants.ts)
+Source: [constants.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/constants.ts)
 
 ## Wrapping Arithmetic
 
@@ -219,7 +219,7 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { fromHex, plus, toHex } from 'tevm/BrandedUint256';
+import { fromHex, plus, toHex } from 'tevm/Uint';
 
 const a = fromHex("0x64");
 const b = fromHex("0x32");

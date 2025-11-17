@@ -22,8 +22,8 @@ export function hashEquals(a, b) {
  * @internal
  * Compare two addresses for equality (byte-wise)
  *
- * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} a
- * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../../Address/AddressType.js').AddressType.AddressType} a
+ * @param {import('../../Address/AddressType.js').AddressType.AddressType} b
  * @returns {boolean}
  */
 export function addressEquals(a, b) {

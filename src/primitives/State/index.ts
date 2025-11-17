@@ -1,28 +1,49 @@
 // @ts-nocheck
-import * as BrandedStorageKey from "./BrandedState/index.js";
+export * from "./StorageKeyType.js";
+export * from "./constants.js";
 
-// Re-export types and constants
-export type { BrandedStorageKey } from "./BrandedState/index.js";
-export * from "./BrandedState/constants.js";
+import { create } from "./create.js";
+import { equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromString } from "./fromString.js";
+import { hashCode } from "./hashCode.js";
+import { is } from "./is.js";
+import { toString } from "./toString.js";
+
+// Export individual functions (public API)
+export { from, create, is, equals, toString, fromString, hashCode };
+
+// Export internal functions (tree-shakeable)
+export {
+	from as _from,
+	create as _create,
+	is as _is,
+	equals as _equals,
+	toString as _toString,
+	fromString as _fromString,
+	hashCode as _hashCode,
+};
+
+// Namespace export
+export const StorageKey = {
+	from,
+	create,
+	is,
+	equals,
+	toString,
+	fromString,
+	hashCode,
+};
 
 /**
  * Factory function for creating StorageKey instances
  *
- * @param {import('./BrandedState/BrandedStorageKey.js').BrandedAddress} address - Contract address
+ * @param {import('./StorageKeyType.js').StorageKeyType} address - Contract address
  * @param {bigint} slot - Storage slot number
- * @returns {import('./BrandedState/BrandedStorageKey.js').BrandedStorageKey} A new StorageKey
+ * @returns {import('./StorageKeyType.js').StorageKeyType} A new StorageKey
  */
-export function StorageKey(address, slot) {
-	return BrandedStorageKey.create(address, slot);
+export function StorageKeyFactory(address, slot) {
+	return create(address, slot);
 }
 
-// Static methods
-StorageKey.from = BrandedStorageKey.from;
-StorageKey.create = BrandedStorageKey.create;
-StorageKey.is = BrandedStorageKey.is;
-StorageKey.equals = BrandedStorageKey.equals;
-StorageKey.toString = BrandedStorageKey.toString;
-StorageKey.fromString = BrandedStorageKey.fromString;
-StorageKey.hashCode = BrandedStorageKey.hashCode;
-
-export { StorageKey as default };
+export { StorageKeyFactory as default };

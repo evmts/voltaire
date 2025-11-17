@@ -12,7 +12,7 @@ import {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint | string | Uint8Array} value - Value to convert to Address
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance with prototype methods
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance with prototype methods
  * @throws {Error} If value format is invalid
  * @example
  * ```javascript
@@ -34,7 +34,7 @@ export function Address(value) {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint | string | Uint8Array} value - Value to convert (hex string, bytes, or number)
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If value format is invalid
  * @example
  * ```javascript
@@ -56,7 +56,7 @@ Address.from = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {string} value - Base64-encoded address string
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If base64 format is invalid
  * @example
  * ```javascript
@@ -76,7 +76,7 @@ Address.fromBase64 = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {string} value - Hex string address (40 or 42 characters)
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If hex format is invalid or length incorrect
  * @example
  * ```javascript
@@ -96,7 +96,7 @@ Address.fromHex = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 20-byte array representing address
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If not exactly 20 bytes
  * @example
  * ```javascript
@@ -117,7 +117,7 @@ Address.fromBytes = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint} value - Numeric value to convert
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {never} Never throws - accepts any valid number/bigint
  * @example
  * ```javascript
@@ -138,7 +138,7 @@ Address.fromNumber = (value) => {
  * @since 0.0.0
  * @param {bigint} x - Public key X coordinate (32 bytes)
  * @param {bigint} y - Public key Y coordinate (32 bytes)
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Derived address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Derived address
  * @throws {never} Never throws - accepts any valid bigint coordinates
  * @example
  * ```javascript
@@ -160,7 +160,7 @@ Address.fromPublicKey = (x, y) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 32-byte private key
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Derived address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Derived address
  * @throws {Error} If private key is invalid
  * @example
  * ```javascript
@@ -181,7 +181,7 @@ Address.fromPrivateKey = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 32-byte ABI-encoded address (12 zero bytes + 20 address bytes)
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If not exactly 32 bytes
  * @example
  * ```javascript
@@ -215,7 +215,7 @@ Address.is = BrandedAddress.is;
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Zero address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Zero address
  * @throws {never} Never throws
  * @example
  * ```javascript
@@ -236,7 +236,7 @@ Address.zero = () => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {...number} items - Byte values (must be exactly 20 bytes)
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Address instance
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Address instance
  * @throws {Error} If not exactly 20 byte values provided
  * @example
  * ```javascript
@@ -257,7 +257,7 @@ Address.of = (...items) => {
 		);
 	}
 	Object.setPrototypeOf(result, Address.prototype);
-	return /** @type {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+	return /** @type {import('./BrandedAddress/AddressType.js').AddressType.AddressType} */ (
 		result
 	);
 };
@@ -271,9 +271,9 @@ Address.greaterThan = BrandedAddress.greaterThan;
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address - Deployer address
+ * @param {import('./BrandedAddress/AddressType.js').AddressType.AddressType} address - Deployer address
  * @param {bigint} nonce - Account nonce at deployment
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Computed contract address
  * @throws {never} Never throws - accepts any valid inputs
  * @example
  * ```javascript
@@ -293,10 +293,10 @@ Address.calculateCreateAddress = (address, nonce) => {
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @param {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} address - Deployer address
+ * @param {import('./BrandedAddress/AddressType.js').AddressType.AddressType} address - Deployer address
  * @param {bigint | Uint8Array} salt - 32-byte salt value
  * @param {Uint8Array} initCode - Contract initialization code
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Computed contract address
  * @throws {never} Never throws - accepts any valid inputs
  * @example
  * ```javascript
@@ -367,9 +367,9 @@ Address.prototype.equals = BrandedAddress.equals.call.bind(
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @this {import('./BrandedAddress/AddressType.js').AddressType.AddressType}
  * @param {bigint} nonce - Account nonce at deployment
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Computed contract address
  * @throws {never} Never throws
  * @example
  * ```javascript
@@ -380,7 +380,7 @@ Address.prototype.equals = BrandedAddress.equals.call.bind(
  */
 Address.prototype.calculateCreateAddress = function (nonce) {
 	const result = BrandedAddress.calculateCreateAddress(
-		/** @type {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		/** @type {import('./BrandedAddress/AddressType.js').AddressType.AddressType} */ (
 			this
 		),
 		nonce,
@@ -393,10 +393,10 @@ Address.prototype.calculateCreateAddress = function (nonce) {
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @this {import('./BrandedAddress/AddressType.js').AddressType.AddressType}
  * @param {bigint | Uint8Array} salt - 32-byte salt value
  * @param {Uint8Array} initCode - Contract initialization code
- * @returns {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} Computed contract address
+ * @returns {import('./BrandedAddress/AddressType.js').AddressType.AddressType} Computed contract address
  * @throws {never} Never throws
  * @example
  * ```javascript
@@ -409,7 +409,7 @@ Address.prototype.calculateCreateAddress = function (nonce) {
  */
 Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(
-		/** @type {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		/** @type {import('./BrandedAddress/AddressType.js').AddressType.AddressType} */ (
 			this
 		),
 		salt,
@@ -424,7 +424,7 @@ Address.prototype.calculateCreate2Address = function (salt, initCode) {
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @this {import('./BrandedAddress/AddressType.js').AddressType.AddressType}
  * @param {number} _depth - Inspection depth (unused)
  * @param {object} _options - Inspection options (unused)
  * @returns {string} Formatted string representation
@@ -441,7 +441,7 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	_options,
 ) {
 	return `Address(${BrandedAddress.toChecksummed(
-		/** @type {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		/** @type {import('./BrandedAddress/AddressType.js').AddressType.AddressType} */ (
 			this
 		),
 	)})`;
@@ -452,7 +452,7 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
  *
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
- * @this {import('./BrandedAddress/BrandedAddress.js').BrandedAddress}
+ * @this {import('./BrandedAddress/AddressType.js').AddressType.AddressType}
  * @returns {string} String representation of address
  * @throws {never} Never throws
  * @example
@@ -464,7 +464,7 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
  */
 Address.prototype.toString = function () {
 	return `Address(${BrandedAddress.toHex(
-		/** @type {import('./BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		/** @type {import('./BrandedAddress/AddressType.js').AddressType.AddressType} */ (
 			this
 		),
 	)})`;

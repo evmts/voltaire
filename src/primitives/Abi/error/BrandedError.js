@@ -1,2 +1,2 @@
-// Barrel export for BrandedError
-export * from "./BrandedError/BrandedError.js";
+// Barrel export for ErrorType (backward compat as BrandedError)
+export * from "./ErrorType.js";

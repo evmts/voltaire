@@ -9,7 +9,7 @@ import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
  *
  * @param {readonly string[]} types - Array of type strings
  * @param {readonly unknown[]} values - Array of values to encode
- * @returns {import("../Hex/BrandedHex/BrandedHex.js").HexType} Encoded data (hex string)
+ * @returns {import("../Hex/index.js").HexType} Encoded data (hex string)
  * @throws {AbiParameterMismatchError} If types and values length mismatch
  * @throws {AbiEncodingError} If encoding fails or unsupported type
  *

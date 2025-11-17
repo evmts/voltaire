@@ -1,11 +1,11 @@
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import {
 	encodeAccessList,
 	encodeAddress,
 	encodeBigintCompact,
 } from "../utils.js";
-import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 
 /**
  * Factory: Get signing hash for EIP-2930 transaction.
@@ -22,7 +22,7 @@ import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
  * ```javascript
  * import { GetSigningHash } from './primitives/Transaction/EIP2930/getSigningHash.js';
  * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
- * import { encode as rlpEncode } from '../../Rlp/BrandedRlp/encode.js';
+ * import { encode as rlpEncode } from '../../Rlp/encode.js';
  * const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
  * const signingHash = getSigningHash(tx);
  * ```

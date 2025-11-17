@@ -7,8 +7,8 @@ import { from } from "./from.js";
  * @param {object} [options] - Optional overrides
  * @param {Uint8Array} [options.bytecode] - Bytecode to execute
  * @param {bigint} [options.gas] - Initial gas
- * @param {import("../../primitives/Address/BrandedAddress/BrandedAddress.js").BrandedAddress} [options.caller] - Caller address
- * @param {import("../../primitives/Address/BrandedAddress/BrandedAddress.js").BrandedAddress} [options.address] - Current address
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} [options.caller] - Caller address
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} [options.address] - Current address
  * @param {bigint} [options.value] - Value transferred
  * @param {Uint8Array} [options.calldata] - Call data
  * @param {boolean} [options.isStatic] - Static call flag

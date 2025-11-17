@@ -20,6 +20,8 @@ LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
 Never make time or work estimates of how long work will take it is not useful context
 
+**WIP Status**: Library not yet released. No such thing as breaking changes - refactor/rename freely.
+
 ### Workflow
 
 - Run from repo root (never `cd` unless user requests it)

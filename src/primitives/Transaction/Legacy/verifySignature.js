@@ -1,12 +1,12 @@
-import { Hash } from "../../Hash/index.js";
-import { getChainId } from "./getChainId.js";
-import { GetSigningHash } from "./getSigningHash.js";
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import {
 	recoverPublicKey as secp256k1RecoverPublicKey,
 	verify as secp256k1Verify,
 } from "../../../crypto/Secp256k1/index.js";
+import { Hash } from "../../Hash/index.js";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
+import { getChainId } from "./getChainId.js";
+import { GetSigningHash } from "./getSigningHash.js";
 
 /**
  * Factory: Verify transaction signature.
@@ -25,7 +25,7 @@ import {
  * ```javascript
  * import { VerifySignature } from './primitives/Transaction/Legacy/verifySignature.js';
  * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
- * import { encode as rlpEncode } from '../../Rlp/BrandedRlp/encode.js';
+ * import { encode as rlpEncode } from '../../Rlp/encode.js';
  * import { recoverPublicKey, verify } from '../../../crypto/Secp256k1/index.js';
  * const verifySignature = VerifySignature({
  *   keccak256,

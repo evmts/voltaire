@@ -1,5 +1,8 @@
 // @ts-nocheck
-import * as BrandedError from "./BrandedError/index.ts";
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
+import { getSignature } from "./getSignature.js";
+import { getSelector } from "./index.js";
 
 /**
  * Factory function for creating AbiError instances
@@ -17,26 +20,22 @@ export function AbiError(error) {
 }
 
 // Static methods that don't return AbiError instances
-AbiError.getSelector = BrandedError.getSelector;
-AbiError.getSignature = BrandedError.getSignature;
-AbiError.encodeParams = BrandedError.encodeParams;
-AbiError.decodeParams = BrandedError.decodeParams;
+AbiError.getSelector = getSelector;
+AbiError.getSignature = getSignature;
+AbiError.encodeParams = encodeParams;
+AbiError.decodeParams = decodeParams;
 
 // Set up AbiError.prototype to inherit from Object.prototype
 Object.setPrototypeOf(AbiError.prototype, Object.prototype);
 
 // Instance methods using .call.bind pattern
-AbiError.prototype.getSelector = BrandedError.getSelector.call.bind(
-	BrandedError.getSelector,
-);
-AbiError.prototype.getSignature = BrandedError.getSignature.call.bind(
-	BrandedError.getSignature,
-);
+AbiError.prototype.getSelector = getSelector.call.bind(getSelector);
+AbiError.prototype.getSignature = getSignature.call.bind(getSignature);
 AbiError.prototype.encodeParams = function (args) {
-	return BrandedError.encodeParams(this, args);
+	return encodeParams(this, args);
 };
 AbiError.prototype.decodeParams = function (data) {
-	return BrandedError.decodeParams(this, data);
+	return decodeParams(this, data);
 };
 
 AbiError.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
@@ -47,5 +46,5 @@ AbiError.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 };
 
 AbiError.prototype.toString = function () {
-	return `AbiError(${BrandedError.getSignature(this)})`;
+	return `AbiError(${getSignature(this)})`;
 };

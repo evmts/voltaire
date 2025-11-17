@@ -3,44 +3,60 @@ export * from "./constants.js";
 
 import { BLOCK_SIZE, OUTPUT_SIZE } from "./constants.js";
 import { create } from "./create.js";
+import { from } from "./from.js";
 import { hash } from "./hash.js";
 import { hashHex } from "./hashHex.js";
 import { hashString } from "./hashString.js";
 import { toHex } from "./toHex.js";
 
 // Export individual functions
-export { hash, hashString, hashHex, toHex, create };
+export { from, hash, hashString, hashHex, toHex, create };
 
 /**
- * SHA256 constructor - auto-detects input type (string, hex, or bytes)
+ * SHA256Hash - Type-safe SHA256 hash namespace
+ *
+ * Pure TypeScript SHA256 implementation using @noble/hashes.
+ * All methods return branded SHA256Hash type.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {string | Uint8Array} data - Data to hash (auto-detects type)
- * @returns {Uint8Array} 32-byte hash
- * @throws {never}
  * @example
  * ```javascript
- * import { SHA256 } from './crypto/SHA256/index.js';
- * const hash1 = SHA256("hello");           // String
- * const hash2 = SHA256("0xdeadbeef");      // Hex
- * const hash3 = SHA256(new Uint8Array([1, 2, 3])); // Bytes
+ * import { SHA256Hash } from './crypto/SHA256/index.js';
+ *
+ * // Preferred: Type-safe constructors
+ * const hash1 = SHA256Hash.from("0x1234");        // Hex string
+ * const hash2 = SHA256Hash.fromString("hello");   // UTF-8 string
+ * const hash3 = SHA256Hash.from(uint8array);      // Bytes
+ *
+ * // Also available: legacy method names
+ * const hash4 = SHA256Hash.hash(data);
+ * const hash5 = SHA256Hash.hashString('hello');
+ * const hash6 = SHA256Hash.hashHex('0x1234');
  * ```
  */
-export function SHA256(data) {
-	if (typeof data === "string") {
-		if (data.startsWith("0x") || /^[0-9a-fA-F]+$/.test(data)) {
-			return hashHex(data);
-		}
-		return hashString(data);
-	}
-	return hash(data);
-}
+export const SHA256Hash = Object.assign(from, {
+	// Primary API (type-safe constructors)
+	from,
+	fromString: hashString,
+	fromHex: hashHex,
 
-SHA256.hash = hash;
-SHA256.hashString = hashString;
-SHA256.hashHex = hashHex;
-SHA256.toHex = toHex;
-SHA256.create = create;
-SHA256.OUTPUT_SIZE = OUTPUT_SIZE;
-SHA256.BLOCK_SIZE = BLOCK_SIZE;
+	// Legacy API (kept for compatibility)
+	hash,
+	hashString,
+	hashHex,
+
+	// Utilities
+	toHex,
+	create,
+
+	// Constants
+	OUTPUT_SIZE,
+	BLOCK_SIZE,
+});
+
+/**
+ * @deprecated Use SHA256Hash instead
+ * SHA256 alias maintained for backward compatibility
+ */
+export const SHA256 = SHA256Hash;

@@ -8,7 +8,7 @@ import * as Function from "./function/index.js";
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {string} functionName - Function name to encode
  * @param {readonly unknown[]} args - Function arguments
- * @returns {import("../Hex/BrandedHex/BrandedHex.js").HexType} Encoded function call data (hex string)
+ * @returns {import("../Hex/index.js").HexType} Encoded function call data (hex string)
  * @throws {AbiItemNotFoundError} If function not found in ABI
  *
  * @example
@@ -32,9 +32,7 @@ import * as Function from "./function/index.js";
 export function encodeFunction(abi, functionName, args) {
 	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
-		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
-			item
-		);
+		const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
 		return fn.name === functionName;
 	});
 
@@ -50,9 +48,7 @@ export function encodeFunction(abi, functionName, args) {
 	}
 
 	// Type assertion after guard
-	const fn = /** @type {import('./function/index.js').BrandedFunction} */ (
-		item
-	);
+	const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
 	const encoded = Function.encodeParams(fn, args);
 	return Hex.fromBytes(encoded);
 }

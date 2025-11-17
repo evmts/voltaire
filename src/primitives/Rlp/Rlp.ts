@@ -3,6 +3,6 @@
  */
 
 // Re-export types
-export type { BrandedRlp } from "./BrandedRlp/BrandedRlp.js";
-export type { Decoded } from "./BrandedRlp/decode.js";
-export type { Encodable } from "./BrandedRlp/encode.js";
+export type { BrandedRlp } from "./RlpType.js";
+export type { Decoded } from "./decode.js";
+export type { Encodable } from "./encode.js";

@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedEventLog.js";
+export * from "./EventLogType.js";
 export * from "./EventLogConstructor.js";
 
 import { clone } from "./clone.js";
@@ -42,7 +42,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedEventLog/index.js').BrandedEventLog} BrandedEventLog
+ * @typedef {import('./EventLogType.js').EventLogType} BrandedEventLog
  * @typedef {import('./EventLogConstructor.js').EventLogConstructor} EventLogConstructor
  */
 

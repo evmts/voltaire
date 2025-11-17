@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { withTimeout, TimeoutError, sleep, createDeferred } from "./timeout.js";
+import { describe, expect, it } from "vitest";
+import { TimeoutError, createDeferred, sleep, withTimeout } from "./timeout.js";
 
 describe("withTimeout", () => {
 	it("returns result when promise resolves before timeout", async () => {

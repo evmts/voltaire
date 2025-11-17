@@ -1,5 +1,5 @@
-import { isValidJumpDest } from "../../primitives/Bytecode/BrandedBytecode/isValidJumpDest.js";
-import { MidStep } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { isValidJumpDest } from "../../primitives/Bytecode/isValidJumpDest.js";
+import { MidStep } from "../../primitives/GasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 

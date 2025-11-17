@@ -19,4 +19,4 @@ export {
 	// Size utilities
 	calcEncodedSize,
 	calcDecodedSize,
-} from "../BrandedBase64/index.js";
+} from "../index.js";

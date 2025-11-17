@@ -2,10 +2,10 @@ import * as Brand from "effect/Brand";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
-import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
-import { IsValid as IsValidChecksumFactory } from "./BrandedAddress/ChecksumAddress.js";
-import * as BrandedAddressImpl from "./BrandedAddress/index.js";
+import type { AddressType as BrandedAddress } from "./AddressType.js";
+import type { Checksummed } from "./ChecksumAddress.js";
+import { IsValid as IsValidChecksumFactory } from "./ChecksumAddress.js";
+import * as BrandedAddressImpl from "./internal-index.js";
 
 // Create isValidChecksum function for Schema validation (synchronous)
 const isValidChecksum = IsValidChecksumFactory({ keccak256 });

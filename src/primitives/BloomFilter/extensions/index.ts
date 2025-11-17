@@ -3,13 +3,13 @@
  * Functions not available in Ox that are unique to Voltaire
  */
 
-export { create } from "../BrandedBloomFilter/create.js";
-export { add } from "../BrandedBloomFilter/add.js";
-export { merge } from "../BrandedBloomFilter/merge.js";
-export { combine } from "../BrandedBloomFilter/combine.js";
-export { fromHex } from "../BrandedBloomFilter/fromHex.js";
-export { toHex } from "../BrandedBloomFilter/toHex.js";
-export { isEmpty } from "../BrandedBloomFilter/isEmpty.js";
-export { hash } from "../BrandedBloomFilter/hash.js";
-export { density } from "../BrandedBloomFilter/density.js";
-export { expectedFalsePositiveRate } from "../BrandedBloomFilter/expectedFalsePositiveRate.js";
+export { create } from "../create.js";
+export { add } from "../add.js";
+export { merge } from "../merge.js";
+export { combine } from "../combine.js";
+export { fromHex } from "../fromHex.js";
+export { toHex } from "../toHex.js";
+export { isEmpty } from "../isEmpty.js";
+export { hash } from "../hash.js";
+export { density } from "../density.js";
+export { expectedFalsePositiveRate } from "../expectedFalsePositiveRate.js";

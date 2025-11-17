@@ -1,6 +1,6 @@
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/Hash.js";
-import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 
 /**
  * Compare two addresses for equality (byte-by-byte)

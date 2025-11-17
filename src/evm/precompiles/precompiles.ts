@@ -10,7 +10,7 @@ import { SHA256 } from "../../crypto/SHA256/index.js";
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import { BN254 as Bn254 } from "../../crypto/bn254/BN254.js";
 import * as Gas from "../../primitives/GasConstants/index.js";
-import type { BrandedHardfork } from "../../primitives/Hardfork/BrandedHardfork/BrandedHardfork.js";
+import type { HardforkType } from "../../primitives/Hardfork/HardforkType.js";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
 import type { HashType } from "../../primitives/Hash/index.js";
 
@@ -196,10 +196,7 @@ function serializeG2(
  * Check if an address is a precompile for a given hardfork
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile checks require branching per hardfork
-export function isPrecompile(
-	address: string,
-	hardfork: BrandedHardfork,
-): boolean {
+export function isPrecompile(address: string, hardfork: HardforkType): boolean {
 	const normalized = address.toLowerCase();
 
 	// Available in all hardforks
@@ -277,7 +274,7 @@ export function execute(
 	address: string,
 	input: Uint8Array,
 	gasLimit: bigint,
-	_hardfork: BrandedHardfork,
+	_hardfork: HardforkType,
 ): PrecompileResult {
 	const normalized = address.toLowerCase();
 

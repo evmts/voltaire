@@ -1,7 +1,7 @@
-import * as BrandedFunction from "./BrandedFunction/index.js";
+import * as FunctionNs from "./index.js";
 
 /**
- * @typedef {import('./BrandedFunction/BrandedFunction.js').Function} BrandedFunction
+ * @typedef {import('./FunctionType.js').FunctionType} FunctionType
  */
 
 /**
@@ -11,11 +11,11 @@ import * as BrandedFunction from "./BrandedFunction/index.js";
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
  * @template {string} TName
- * @template {import('./BrandedFunction/statemutability.js').StateMutability} TStateMutability
- * @template {readonly import('../parameter/index.js').BrandedParameter[]} TInputs
- * @template {readonly import('../parameter/index.js').BrandedParameter[]} TOutputs
- * @param {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
- * @returns {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} Validated function item
+ * @template {import('./statemutability.js').StateMutability} TStateMutability
+ * @template {readonly import('../parameter/index.js').ParameterType[]} TInputs
+ * @template {readonly import('../parameter/index.js').ParameterType[]} TOutputs
+ * @param {import('./FunctionType.js').FunctionType<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
+ * @returns {import('./FunctionType.js').FunctionType<TName, TStateMutability, TInputs, TOutputs>} Validated function item
  * @throws {never}
  * @example
  * ```javascript
@@ -33,20 +33,20 @@ export function Function(fn) {
 	return fn;
 }
 
-// Static methods delegate to BrandedFunction namespace
-Function.getSelector = BrandedFunction.getSelector;
-Function.getSignature = BrandedFunction.getSignature;
-Function.encodeParams = BrandedFunction.encodeParams;
-Function.decodeParams = BrandedFunction.decodeParams;
-Function.encodeResult = BrandedFunction.encodeResult;
-Function.decodeResult = BrandedFunction.decodeResult;
+// Static methods delegate to function namespace
+Function.getSelector = FunctionNs.getSelector;
+Function.getSignature = FunctionNs.getSignature;
+Function.encodeParams = FunctionNs.encodeParams;
+Function.decodeParams = FunctionNs.decodeParams;
+Function.encodeResult = FunctionNs.encodeResult;
+Function.decodeResult = FunctionNs.decodeResult;
 
 // Constructor-style aliases (data-first pattern)
-Function.Signature = BrandedFunction.Signature;
-Function.Params = BrandedFunction.Params;
-Function.DecodeParams = BrandedFunction.DecodeParams;
-Function.Result = BrandedFunction.Result;
-Function.DecodeResult = BrandedFunction.DecodeResult;
+Function.Signature = FunctionNs.Signature;
+Function.Params = FunctionNs.Params;
+Function.DecodeParams = FunctionNs.DecodeParams;
+Function.Result = FunctionNs.Result;
+Function.DecodeResult = FunctionNs.DecodeResult;
 
 // Factories
-Function.GetSelector = BrandedFunction.GetSelector;
+Function.GetSelector = FunctionNs.GetSelector;

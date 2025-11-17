@@ -1,7 +1,7 @@
 import {
 	ColdSload,
 	WarmStorageRead,
-} from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+} from "../../../primitives/GasConstants/constants.js";
 import * as Frame from "../../Frame/index.js";
 
 /**

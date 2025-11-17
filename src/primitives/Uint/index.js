@@ -1,1 +1,1 @@
-export * from "./BrandedUint256/index.js";
+export * from "./index.ts";

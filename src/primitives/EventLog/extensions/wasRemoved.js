@@ -3,7 +3,7 @@ import { isRemoved } from "./isRemoved.js";
 /**
  * Check if log was removed (alias for isRemoved)
  *
- * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
+ * @param {import('../EventLogType.js').BrandedEventLog} log - Event log
  * @returns {boolean}
  *
  * @example

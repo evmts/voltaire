@@ -1,19 +1,19 @@
-import type { BrandedBytecode } from "../Bytecode/BrandedBytecode/BrandedBytecode.js";
+import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
 import type { HashType } from "../Hash/HashType/HashType.js";
 import type { AddressType } from "./AddressType.js";
-import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
-import * as BrandedAddress from "./BrandedAddress/index.js";
+import { InvalidAddressLengthError } from "./errors.js";
+import * as BrandedAddress from "./internal-index.js";
 import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
 	toBase64Polyfill,
-} from "./BrandedAddress/polyfills.js";
+} from "./polyfills.js";
 
 // Re-export AddressType and backward-compatible BrandedAddress alias
 export type { AddressType } from "./AddressType.js";
 export type { AddressType as BrandedAddress } from "./AddressType.js";
-export * from "./BrandedAddress/errors.js";
-export * from "./BrandedAddress/constants.js";
+export * from "./errors.js";
+export * from "./constants.js";
 
 /**
  * Crypto dependencies for Address operations

@@ -11,7 +11,7 @@ import { Eip712Error } from "./errors.js";
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(signature: Uint8Array, hash: Uint8Array, recoveryBit: number) => Uint8Array} deps.recoverPublicKey - Secp256k1 public key recovery function
  * @param {(typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Hash/index.js').HashType} deps.hashTypedData - Hash typed data function
- * @returns {(signature: import('./BrandedEIP712.js').Signature, typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Address/index.js').BrandedAddress} Function that recovers address
+ * @returns {(signature: import('./BrandedEIP712.js').Signature, typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Address/index.js').AddressType} Function that recovers address
  * @throws {Eip712Error} If signature recovery fails or public key format is invalid
  * @example
  * ```javascript
@@ -50,7 +50,7 @@ export function RecoverAddress({ keccak256, recoverPublicKey, hashTypedData }) {
 
 		// Address is last 20 bytes of keccak256(publicKey)
 		const pubKeyHash = keccak256(uncompressedPubKey);
-		return /** @type {import('../../primitives/Address/index.js').BrandedAddress} */ (
+		return /** @type {import('../../primitives/Address/index.js').AddressType} */ (
 			pubKeyHash.slice(-20)
 		);
 	};

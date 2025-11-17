@@ -14,7 +14,7 @@ import type { TimeoutOptions } from "./types.js";
  * Timeout error class
  */
 export class TimeoutError extends Error {
-	constructor(message: string = "Operation timed out") {
+	constructor(message = "Operation timed out") {
 		super(message);
 		this.name = "TimeoutError";
 	}
@@ -275,7 +275,7 @@ export function createDeferred<T>(): {
 export async function executeWithTimeout<T>(
 	fn: () => Promise<T>,
 	timeoutMs: number,
-	maxRetries: number = 0,
+	maxRetries = 0,
 ): Promise<T> {
 	let lastError: unknown;
 

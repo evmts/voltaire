@@ -4,5 +4,60 @@ export * from "./EventLog.js";
 // Export type definitions
 export type * from "./EventLogConstructor.js";
 
-// Re-export BrandedEventLog type
-export type { BrandedEventLog } from "./BrandedEventLog/index.js";
+// Re-export type as BrandedEventLog for backward compatibility
+export type { EventLogType as BrandedEventLog } from "./EventLogType.js";
+
+// Import all methods and create namespace export
+import { clone } from "./clone.js";
+import { copy } from "./copy.js";
+import { create } from "./create.js";
+import { filterLogs } from "./filterLogs.js";
+import { from } from "./from.js";
+import { getIndexed } from "./getIndexed.js";
+import { getIndexedTopics } from "./getIndexedTopics.js";
+import { getSignature } from "./getSignature.js";
+import { getTopic0 } from "./getTopic0.js";
+import { isRemoved } from "./isRemoved.js";
+import { matchesAddress } from "./matchesAddress.js";
+import { matchesFilter } from "./matchesFilter.js";
+import { matchesTopics } from "./matchesTopics.js";
+import { sortLogs } from "./sortLogs.js";
+import { wasRemoved } from "./wasRemoved.js";
+
+// Export individual functions
+export {
+	clone,
+	copy,
+	create,
+	filterLogs,
+	from,
+	getIndexed,
+	getIndexedTopics,
+	getSignature,
+	getTopic0,
+	isRemoved,
+	matchesAddress,
+	matchesFilter,
+	matchesTopics,
+	sortLogs,
+	wasRemoved,
+};
+
+// Namespace export for backward compatibility
+export const BrandedEventLog = {
+	clone,
+	copy,
+	create,
+	filterLogs,
+	from,
+	getIndexed,
+	getIndexedTopics,
+	getSignature,
+	getTopic0,
+	isRemoved,
+	matchesAddress,
+	matchesFilter,
+	matchesTopics,
+	sortLogs,
+	wasRemoved,
+};

@@ -3,7 +3,7 @@
  */
 
 /**
- * @typedef {import('../../types/index.js').Address} Address
+ * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag

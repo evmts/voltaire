@@ -4,8 +4,8 @@
  * @param {object} params - Frame initialization parameters
  * @param {Uint8Array} params.bytecode - Bytecode to execute
  * @param {bigint} params.gas - Initial gas
- * @param {import("../../primitives/Address/BrandedAddress.js").Address} params.caller - Caller address
- * @param {import("../../primitives/Address/BrandedAddress.js").Address} params.address - Current address
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} params.caller - Caller address
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} params.address - Current address
  * @param {bigint} params.value - Value transferred
  * @param {Uint8Array} params.calldata - Call data
  * @param {boolean} [params.isStatic=false] - Static call flag

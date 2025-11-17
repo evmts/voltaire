@@ -22,6 +22,7 @@
  */
 
 // Export branded types
+export * from "./FeeMarketType.js";
 export * from "./BrandedState.js";
 export * from "./State.js";
 export * from "./Eip1559State.js";
@@ -39,22 +40,22 @@ export const Eip1559 = Eip1559Constants;
 export const Eip4844 = Eip4844Constants;
 
 // Import methods
-import { BaseFee } from "./BrandedFeeMarket/BaseFee.js";
-import { BlobBaseFee } from "./BrandedFeeMarket/BlobBaseFee.js";
-import { calculateBlobTxFee } from "./BrandedFeeMarket/calculateBlobTxFee.js";
-import { calculateExcessBlobGas } from "./BrandedFeeMarket/calculateExcessBlobGas.js";
-import { calculateTxFee } from "./BrandedFeeMarket/calculateTxFee.js";
-import { canIncludeTx } from "./BrandedFeeMarket/canIncludeTx.js";
-import { getBlobBaseFee as _getBlobBaseFee } from "./BrandedFeeMarket/getBlobBaseFee.js";
-import { getGasTarget as _getGasTarget } from "./BrandedFeeMarket/getGasTarget.js";
-import { gweiToWei } from "./BrandedFeeMarket/gweiToWei.js";
-import { isAboveBlobGasTarget as _isAboveBlobGasTarget } from "./BrandedFeeMarket/isAboveBlobGasTarget.js";
-import { isAboveGasTarget as _isAboveGasTarget } from "./BrandedFeeMarket/isAboveGasTarget.js";
-import { nextState as _nextState } from "./BrandedFeeMarket/nextState.js";
-import { projectBaseFees } from "./BrandedFeeMarket/projectBaseFees.js";
-import { validateState } from "./BrandedFeeMarket/validateState.js";
-import { validateTxFeeParams } from "./BrandedFeeMarket/validateTxFeeParams.js";
-import { weiToGwei } from "./BrandedFeeMarket/weiToGwei.js";
+import { BaseFee } from "./BaseFee.js";
+import { BlobBaseFee } from "./BlobBaseFee.js";
+import { calculateBlobTxFee } from "./calculateBlobTxFee.js";
+import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
+import { calculateTxFee } from "./calculateTxFee.js";
+import { canIncludeTx } from "./canIncludeTx.js";
+import { getBlobBaseFee as _getBlobBaseFee } from "./getBlobBaseFee.js";
+import { getGasTarget as _getGasTarget } from "./getGasTarget.js";
+import { gweiToWei } from "./gweiToWei.js";
+import { isAboveBlobGasTarget as _isAboveBlobGasTarget } from "./isAboveBlobGasTarget.js";
+import { isAboveGasTarget as _isAboveGasTarget } from "./isAboveGasTarget.js";
+import { nextState as _nextState } from "./nextState.js";
+import { projectBaseFees } from "./projectBaseFees.js";
+import { validateState } from "./validateState.js";
+import { validateTxFeeParams } from "./validateTxFeeParams.js";
+import { weiToGwei } from "./weiToGwei.js";
 
 // Export individual functions
 export {
@@ -73,7 +74,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedState.js').BrandedState} State
+ * @typedef {import('./FeeMarketType.js').FeeMarketType} State
  */
 
 /**

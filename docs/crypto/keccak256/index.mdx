@@ -41,9 +41,9 @@ Tevm provides two Keccak256 implementations:
 Compiled from Zig's stdlib Keccak256 - both faster and smaller than pure JavaScript alternatives.
 
 ```typescript
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256Hash } from 'tevm/crypto/Keccak256';
 
-const hash = Keccak256.hash(data);
+const hash: Keccak256Hash = Keccak256Hash.from(data);
 // WASM implementation
 // Works everywhere: browsers, Node.js, Deno, Bun, edge workers
 ```
@@ -57,9 +57,9 @@ const hash = Keccak256.hash(data);
 Uses @noble/hashes - zero WASM dependency, maximum compatibility.
 
 ```typescript
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
 
-const hash = Keccak256Ts.hash(data);
+const hash: Keccak256Hash = Keccak256HashTs.from(data);
 // Pure TypeScript
 // No WASM dependency
 ```
@@ -74,14 +74,14 @@ const hash = Keccak256Ts.hash(data);
 The APIs are identical across implementations - you can swap them without changing your code:
 
 ```typescript
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Hash } from 'tevm/crypto/Keccak256';
+import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
+import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
 
 // All have identical API
-const hash1 = Keccak256.hash(data);      // Default (WASM)
-const hash2 = Keccak256Ts.hash(data);    // TypeScript
-const hash3 = Keccak256Wasm.hash(data);  // Explicit WASM
+const hash1: Keccak256Hash = Keccak256Hash.from(data);      // Default (WASM)
+const hash2: Keccak256Hash = Keccak256HashTs.from(data);    // TypeScript
+const hash3: Keccak256Hash = Keccak256HashWasm.from(data);  // Explicit WASM
 ```
 
 ## Quick Start
@@ -89,34 +89,34 @@ const hash3 = Keccak256Wasm.hash(data);  // Explicit WASM
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Keccak256 } from 'tevm/crypto/keccak256';
+import { Keccak256Hash } from 'tevm/crypto/keccak256';
 import { Hex } from 'tevm/primitives/Hex';
 
 // Hash bytes
 const data = Hex.toBytes('0x0102030405');
-const hash = Keccak256.hash(data);
+const hash: Keccak256Hash = Keccak256Hash.from(data);
 // Uint8Array(32) [...]
 
 // Hash string (UTF-8 encoded)
-const stringHash = Keccak256.hashString('hello');
+const stringHash: Keccak256Hash = Keccak256Hash.fromString('hello');
 // Uint8Array(32) [...]
 
 // Hash hex string
-const hexHash = Keccak256.hashHex('0x1234abcd');
+const hexHash: Keccak256Hash = Keccak256Hash.fromHex('0x1234abcd');
 // Uint8Array(32) [...]
 ```
 </Tab>
 
 <Tab title="Ethereum Functions">
 ```typescript
-import { Keccak256 } from 'tevm/crypto/keccak256';
+import { Keccak256Hash } from 'tevm/crypto/keccak256';
 
 // Compute function selector
-const selector = Keccak256.selector('transfer(address,uint256)');
+const selector = Keccak256Hash.selector('transfer(address,uint256)');
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 
 // Compute event topic
-const topic = Keccak256.topic('Transfer(address,address,uint256)');
+const topic: Keccak256Hash = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
 // Uint8Array(32) [full 32-byte hash]
 
 // Calculate contract address (CREATE)
@@ -124,7 +124,7 @@ import { Address } from 'tevm/primitives/Address';
 
 const deployerAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
-const contractAddr = Keccak256.contractAddress(deployerAddress, nonce);
+const contractAddr = Keccak256Hash.contractAddress(deployerAddress, nonce);
 // Uint8Array(20) [contract address]
 
 // Calculate contract address (CREATE2)
@@ -133,14 +133,14 @@ import { Bytecode } from 'tevm/primitives/Bytecode';
 
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
-const create2Addr = Keccak256.create2Address(deployerAddress, salt, initCode);
+const create2Addr = Keccak256Hash.create2Address(deployerAddress, salt, initCode);
 // Uint8Array(20) [deterministic contract address]
 ```
 </Tab>
 
 <Tab title="Multiple Chunks">
 ```typescript
-import { Keccak256 } from 'tevm/crypto/keccak256';
+import { Keccak256Hash } from 'tevm/crypto/keccak256';
 import { Hex } from 'tevm/primitives/Hex';
 
 // Hash multiple data chunks (equivalent to concatenating them first)
@@ -148,8 +148,8 @@ const chunk1 = Hex.toBytes('0x010203');
 const chunk2 = Hex.toBytes('0x040506');
 const chunk3 = Hex.toBytes('0x070809');
 
-const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
-// Same as: Keccak256.hash(Hex.toBytes('0x010203040506070809'))
+const hash: Keccak256Hash = Keccak256Hash.fromMultiple([chunk1, chunk2, chunk3]);
+// Same as: Keccak256Hash.from(Hex.toBytes('0x010203040506070809'))
 ```
 </Tab>
 </Tabs>
@@ -158,7 +158,7 @@ const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 All Keccak256 implementations share the same API. Return type is `Keccak256Hash` (32-byte `Uint8Array` with type branding).
 
-### `Keccak256.hash(data: Uint8Array): Keccak256Hash`
+### `Keccak256Hash.from(data: Uint8Array): Keccak256Hash`
 
 Hash arbitrary bytes with Keccak-256.
 
@@ -171,13 +171,17 @@ Hash arbitrary bytes with Keccak-256.
 ```typescript
 import { Hex } from 'tevm/primitives/Hex';
 
-const hash = Keccak256.hash(Hex.toBytes('0x010203'));
+const hash: Keccak256Hash = Keccak256Hash.from(Hex.toBytes('0x010203'));
 console.log(hash.length); // 32
 ```
 
+<Note>
+Legacy method `Keccak256.hash(data)` still works but `Keccak256Hash.from(data)` is preferred.
+</Note>
+
 ---
 
-### `Keccak256.hashString(str: string): Keccak256Hash`
+### `Keccak256Hash.fromString(str: string): Keccak256Hash`
 
 Hash UTF-8 string with Keccak-256.
 
@@ -190,13 +194,17 @@ String is UTF-8 encoded before hashing using TextEncoder.
 
 **Example:**
 ```typescript
-const hash = Keccak256.hashString('hello');
-// Equivalent to: Keccak256.hash(new TextEncoder().encode('hello'))
+const hash: Keccak256Hash = Keccak256Hash.fromString('hello');
+// Equivalent to: Keccak256Hash.from(new TextEncoder().encode('hello'))
 ```
+
+<Note>
+Legacy method `Keccak256.hashString(str)` still works but `Keccak256Hash.fromString(str)` is preferred.
+</Note>
 
 ---
 
-### `Keccak256.hashHex(hex: string): Keccak256Hash`
+### `Keccak256Hash.fromHex(hex: string): Keccak256Hash`
 
 Hash hex-encoded string with Keccak-256.
 
@@ -209,12 +217,16 @@ Hex string is decoded to bytes before hashing. Supports both "0x"-prefixed and u
 
 **Example:**
 ```typescript
-const hash = Keccak256.hashHex('0x1234');
+const hash: Keccak256Hash = Keccak256Hash.fromHex('0x1234');
 ```
+
+<Note>
+Legacy method `Keccak256.hashHex(hex)` still works but `Keccak256Hash.fromHex(hex)` is preferred.
+</Note>
 
 ---
 
-### `Keccak256.hashMultiple(chunks: readonly Uint8Array[]): Keccak256Hash`
+### `Keccak256Hash.fromMultiple(chunks: readonly Uint8Array[]): Keccak256Hash`
 
 Hash multiple data chunks in sequence.
 
@@ -229,16 +241,20 @@ Equivalent to hashing the concatenation of all chunks, but can be more efficient
 ```typescript
 import { Hex } from 'tevm/primitives/Hex';
 
-const hash = Keccak256.hashMultiple([
+const hash: Keccak256Hash = Keccak256Hash.fromMultiple([
   Hex.toBytes('0x0102'),
   Hex.toBytes('0x0304'),
   Hex.toBytes('0x0506')
 ]);
 ```
 
+<Note>
+Legacy method `Keccak256.hashMultiple(chunks)` still works but `Keccak256Hash.fromMultiple(chunks)` is preferred.
+</Note>
+
 ---
 
-### `Keccak256.selector(signature: string): Uint8Array`
+### `Keccak256Hash.selector(signature: string): Uint8Array`
 
 Compute function selector (first 4 bytes of Keccak-256 hash).
 
@@ -251,7 +267,7 @@ Used in Ethereum to identify contract functions in transaction calldata. The fun
 
 **Example:**
 ```typescript
-const selector = Keccak256.selector('transfer(address,uint256)');
+const selector = Keccak256Hash.selector('transfer(address,uint256)');
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 
 // Used in transaction calldata:
@@ -260,7 +276,7 @@ const selector = Keccak256.selector('transfer(address,uint256)');
 
 ---
 
-### `Keccak256.topic(signature: string): Keccak256Hash`
+### `Keccak256Hash.fromTopic(signature: string): Keccak256Hash`
 
 Compute event topic (32-byte Keccak-256 hash).
 
@@ -273,13 +289,17 @@ Used for Ethereum event signatures in logs. Topics are the full 32-byte hash of 
 
 **Example:**
 ```typescript
-const topic = Keccak256.topic('Transfer(address,address,uint256)');
+const topic: Keccak256Hash = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
 // Full 32-byte hash used in logs.topics[0]
 ```
 
+<Note>
+Legacy method `Keccak256.topic(signature)` still works but `Keccak256Hash.fromTopic(signature)` is preferred.
+</Note>
+
 ---
 
-### `Keccak256.contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array`
+### `Keccak256Hash.contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array`
 
 Compute contract address from deployer and nonce (CREATE).
 
@@ -299,12 +319,12 @@ import { Address } from 'tevm/primitives/Address';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
-const contractAddr = Keccak256.contractAddress(deployer, nonce);
+const contractAddr = Keccak256Hash.contractAddress(deployer, nonce);
 ```
 
 ---
 
-### `Keccak256.create2Address(deployer: Uint8Array, salt: Uint8Array | bigint, initCode: Uint8Array): Uint8Array`
+### `Keccak256Hash.create2Address(deployer: Uint8Array, salt: Uint8Array | bigint, initCode: Uint8Array): Uint8Array`
 
 Compute contract address using CREATE2.
 
@@ -328,15 +348,15 @@ import { Bytecode } from 'tevm/primitives/Bytecode';
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
-const create2Addr = Keccak256.create2Address(deployer, salt, initCode);
+const create2Addr = Keccak256Hash.create2Address(deployer, salt, initCode);
 ```
 
 ## Constants
 
 ```typescript
-Keccak256.DIGEST_SIZE  // 32 - Output size in bytes
-Keccak256.RATE         // 136 - Rate in bytes (1088 bits)
-Keccak256.STATE_SIZE   // 25 - State size (25 u64 words)
+Keccak256Hash.DIGEST_SIZE  // 32 - Output size in bytes
+Keccak256Hash.RATE         // 136 - Rate in bytes (1088 bits)
+Keccak256Hash.STATE_SIZE   // 25 - State size (25 u64 words)
 ```
 
 ## Type Alias
@@ -347,11 +367,11 @@ All Keccak256 functions return `Keccak256Hash`, a branded `Uint8Array` type:
 import type { Keccak256Hash } from 'tevm/crypto/Keccak256';
 
 // Keccak256Hash is a Uint8Array with type branding for compile-time safety
-type Keccak256Hash = Uint8Array & { readonly __tag: "Hash" };
+type Keccak256Hash = Uint8Array & { readonly __tag: "Keccak256Hash" };
 
 // All hash functions return this type
-const hash: Keccak256Hash = Keccak256.hash(data);
-const topic: Keccak256Hash = Keccak256.topic("Transfer(address,address,uint256)");
+const hash: Keccak256Hash = Keccak256Hash.from(data);
+const topic: Keccak256Hash = Keccak256Hash.fromTopic("Transfer(address,address,uint256)");
 
 // Zero runtime overhead - just TypeScript compile-time checking
 console.log(hash instanceof Uint8Array); // true
@@ -365,23 +385,23 @@ Known Keccak256 test vectors for validation:
 
 ```typescript
 // Empty string
-Keccak256.hashString("")
+Keccak256Hash.fromString("")
 // 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
 // "abc"
-Keccak256.hashString("abc")
+Keccak256Hash.fromString("abc")
 // 0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45
 
 // "hello"
-Keccak256.hashString("hello")
+Keccak256Hash.fromString("hello")
 // 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
 
 // "The quick brown fox jumps over the lazy dog"
-Keccak256.hashString("The quick brown fox jumps over the lazy dog")
+Keccak256Hash.fromString("The quick brown fox jumps over the lazy dog")
 // 0x4d741b6f1eb29cb2a9b9911c82f56fa8d73b04959d3d9d222895df6c0b28aa15
 
 // transfer(address,uint256) selector
-Keccak256.selector("transfer(address,uint256)")
+Keccak256Hash.selector("transfer(address,uint256)")
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 ```
 
@@ -408,10 +428,10 @@ Given an input and its hash, finding a different input with the same hash requir
 Compiled from Zig's stdlib Keccak-256 via unified loader (ReleaseSmall):
 
 ```typescript
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
 
-await Keccak256Wasm.init(); // Load primitives.wasm
-const hash = Keccak256Wasm.hash(data);
+await Keccak256HashWasm.init(); // Load primitives.wasm
+const hash: Keccak256Hash = Keccak256HashWasm.from(data);
 ```
 
 **Characteristics:**
@@ -428,7 +448,7 @@ Direct wrapper around @noble/hashes battle-tested implementation:
 ```typescript
 import { keccak_256 } from "@noble/hashes/sha3.js";
 
-export function hash(data: Uint8Array): Keccak256Hash {
+export function from(data: Uint8Array): Keccak256Hash {
   return keccak_256(data) as Keccak256Hash;
 }
 ```

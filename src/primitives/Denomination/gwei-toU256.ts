@@ -1,0 +1,21 @@
+import type { Uint256Type } from "../../Uint/Uint256Type.js";
+import type { GweiType as BrandedGwei } from "./GweiType.js";
+
+/**
+ * Convert Gwei to base Uint256 type
+ *
+ * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
+ * @since 0.0.0
+ * @param gwei - Amount in Gwei
+ * @returns Uint256 value (type cast, no conversion)
+ * @throws {never}
+ * @example
+ * ```typescript
+ * const gwei = Gwei.from(1000000000n);
+ * const u256 = Gwei.toU256(gwei);
+ * // u256 = 1000000000n (as Uint256)
+ * ```
+ */
+export function toU256(gwei: BrandedGwei): Uint256Type {
+	return gwei as Uint256Type;
+}

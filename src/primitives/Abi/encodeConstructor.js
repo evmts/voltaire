@@ -7,7 +7,7 @@ import * as Constructor from "./constructor/index.js";
  *
  * @param {import('./Abi.js').Abi} abi - Full ABI array
  * @param {readonly unknown[]} args - Constructor arguments
- * @returns {import("../Hex/BrandedHex/BrandedHex.js").HexType} Encoded constructor parameters (hex string)
+ * @returns {import("../Hex/index.js").HexType} Encoded constructor parameters (hex string)
  * @throws {AbiItemNotFoundError} If constructor not found in ABI
  *
  * @example
@@ -37,8 +37,9 @@ export function encodeConstructor(abi, args) {
 	}
 
 	// Type assertion after guard
-	const ctor =
-		/** @type {import('./constructor/index.js').BrandedConstructor} */ (item);
+	const ctor = /** @type {import('./constructor/index.js').ConstructorType} */ (
+		item
+	);
 	const encoded = Constructor.encodeParams(ctor, [...args]);
 	return Hex.fromBytes(encoded);
 }

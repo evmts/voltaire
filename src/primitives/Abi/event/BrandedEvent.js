@@ -1,2 +1,2 @@
-// Barrel export for BrandedEvent
-export * from "./BrandedEvent/BrandedEvent.js";
+// Deprecated: Use EventType instead
+export * from "./EventType.js";

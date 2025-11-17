@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedBytecode } from "./BrandedBytecode/BrandedBytecode.js";
-import * as Bytecode from "./BrandedBytecode/index.js";
+import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
+import * as Bytecode from "../Bytecode/index.js";
 
 // Helper to brand Uint8Array as BrandedBytecode
 const bc = (arr: Uint8Array): BrandedBytecode => arr as BrandedBytecode;

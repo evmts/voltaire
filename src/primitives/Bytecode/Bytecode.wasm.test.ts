@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadWasm } from "../../wasm-loader/loader.js";
-import * as BytecodeTS from "./BrandedBytecode/index.js";
-import type { BrandedBytecode } from "./BrandedBytecode/index.js";
 import * as BytecodeWasm from "./Bytecode.wasm.js";
+import type { BrandedBytecode } from "./BytecodeType.js";
+import * as BytecodeTS from "./index.js";
 
 // Load WASM before running tests
 beforeAll(async () => {

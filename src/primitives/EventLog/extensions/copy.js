@@ -4,7 +4,7 @@ import { clone } from "./clone.js";
  * Copy event log (alias for clone)
  *
  * @template T
- * @param {T & import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log - Event log
+ * @param {T & import('../EventLogType.js').BrandedEventLog} log - Event log
  * @returns {T}
  *
  * @example

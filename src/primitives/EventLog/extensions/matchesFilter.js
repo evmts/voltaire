@@ -5,8 +5,8 @@ import { hashEquals } from "./utils.js";
 /**
  * Check if log matches complete filter criteria
  *
- * @param {import('../BrandedEventLog/BrandedEventLog.js').BrandedEventLog} log
- * @param {import('../BrandedEventLog/BrandedEventLog.js').Filter} filter
+ * @param {import('../EventLogType.js').BrandedEventLog} log
+ * @param {import('../EventLogType.js').Filter} filter
  * @returns {boolean}
  *
  * @example

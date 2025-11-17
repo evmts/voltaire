@@ -4,7 +4,7 @@ import * as Hex from "../Hex/index.js";
  * Factory: Get function/event/error selector from signature string
  * @param {Object} deps - Crypto dependencies
  * @param {(str: string) => Uint8Array} deps.keccak256String - Keccak256 hash function for strings
- * @returns {(signature: string, options?: { type?: "function" | "event" | "error" }) => import("../Hex/BrandedHex/BrandedHex.js").HexType} Function that computes selector from signature
+ * @returns {(signature: string, options?: { type?: "function" | "event" | "error" }) => import("../Hex/index.js").HexType} Function that computes selector from signature
  *
  * @example
  * ```typescript

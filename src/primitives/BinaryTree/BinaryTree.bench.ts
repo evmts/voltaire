@@ -1,5 +1,5 @@
 import { bench, run } from "mitata";
-import * as BinaryTree from "./BrandedBinaryTree/index.js";
+import * as BinaryTree from "./index.js";
 
 bench("BinaryTree.init", () => {
 	BinaryTree.init();

@@ -1,13 +1,11 @@
-import * as BrandedAccessList from "./BrandedAccessList/index.js";
 import {
 	ADDRESS_COST,
 	COLD_ACCOUNT_ACCESS_COST,
 	COLD_STORAGE_ACCESS_COST,
 	STORAGE_KEY_COST,
 	WARM_STORAGE_ACCESS_COST,
-} from "./BrandedAccessList/index.js";
-
-const {
+} from "./constants.js";
+import {
 	addressCount,
 	assertValid,
 	create,
@@ -28,7 +26,7 @@ const {
 	toBytes,
 	withAddress,
 	withStorageKey,
-} = BrandedAccessList;
+} from "./index.js";
 
 // Export individual functions
 export {
@@ -55,8 +53,8 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedAccessList.js').BrandedAccessList} BrandedAccessList
- * @typedef {import('./BrandedAccessList.js').Item} Item
+ * @typedef {import('./AccessListType.js').BrandedAccessList} BrandedAccessList
+ * @typedef {import('./AccessListType.js').Item} Item
  */
 
 /**

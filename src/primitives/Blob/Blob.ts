@@ -8,4 +8,4 @@ export type {
 	Commitment,
 	Proof,
 	VersionedHash,
-} from "./BrandedBlob.js";
+} from "./BlobType.js";

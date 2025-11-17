@@ -2,17 +2,17 @@ import type { HashType } from "../../Hash/index.js";
 import type {
 	DecodeLogResult,
 	EncodeTopicsArgs,
-	Event,
-} from "./BrandedEvent/BrandedEvent.js";
+	EventType,
+} from "./EventType.js";
 
 export interface EventConstructor {
-	getSignature<T extends Event>(event: T): string;
-	getSelector<T extends Event>(event: T): HashType;
-	encodeTopics<T extends Event>(
+	getSignature<T extends EventType>(event: T): string;
+	getSelector<T extends EventType>(event: T): HashType;
+	encodeTopics<T extends EventType>(
 		event: T,
 		args: EncodeTopicsArgs<T["inputs"]>,
 	): (HashType | null)[];
-	decodeLog<T extends Event>(
+	decodeLog<T extends EventType>(
 		event: T,
 		data: Uint8Array,
 		topics: readonly HashType[],

@@ -1,4 +1,4 @@
-import type { Item } from "./BrandedAccessList.js";
+import type { Item } from "./AccessListType.js";
 
 /**
  * Type guard: Check if value is AccessListItem

@@ -1,8 +1,8 @@
 // @ts-nocheck
-import * as HexType from "./BrandedHex/index.js";
+import * as HexType from "./index.js";
 
 // Re-export errors
-export * from "./BrandedHex/errors.js";
+export * from "./errors.js";
 
 // Re-export commonly used functions at module level for convenience
 export const fromBytes = HexType.fromBytes;

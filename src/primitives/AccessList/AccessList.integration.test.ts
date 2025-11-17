@@ -9,8 +9,8 @@ import type { HashType } from "../Hash/HashType/HashType.js";
 import type {
 	BrandedAccessList as AccessListType,
 	Item,
-} from "./BrandedAccessList.js";
-import * as AccessList from "./BrandedAccessList/index.js";
+} from "./AccessListType.js";
+import * as AccessList from "./index.js";
 
 // Helper to create test addresses
 function createAddress(byte: number): BrandedAddress {
@@ -586,7 +586,7 @@ function equals(a: AccessListType, b: AccessListType): boolean {
 }
 
 // Add equals to AccessList namespace for testing
-declare module "./BrandedAccessList/index.js" {
+declare module "./index.js" {
 	export function equals(a: AccessListType, b: AccessListType): boolean;
 }
 

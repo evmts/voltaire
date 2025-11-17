@@ -1,2 +1,2 @@
-// Barrel export for BrandedFunction
-export * from "./BrandedFunction/BrandedFunction.js";
+// Barrel export for BrandedFunction (backward compat)
+export * from "./index.js";

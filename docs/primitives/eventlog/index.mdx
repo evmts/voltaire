@@ -16,7 +16,7 @@ New to event logs? Start with [Fundamentals](/primitives/eventlog/fundamentals) 
 [Branded](/getting-started/branded-types) type representing an Ethereum event log with contract address, indexed topics, and event data.
 
 ```typescript
-export type BrandedEventLog = {
+export type EventLogType = {
   address: AddressType;
   topics: readonly HashType[];
   data: Uint8Array;
@@ -61,10 +61,10 @@ export type BrandedEventLog = {
 ## Types
 
 <Tabs>
-<Tab title="BrandedEventLog">
+<Tab title="EventLogType">
 
 ```typescript
-export type BrandedEventLog = {
+export type EventLogType = {
   /** Contract address that emitted the log */
   address: AddressType;
   /** Event topics (topic0 = signature, topic1-3 = indexed params) */

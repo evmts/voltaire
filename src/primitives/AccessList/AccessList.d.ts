@@ -4,7 +4,7 @@
 
 import type { BrandedAddress } from "../Address/index.js";
 import type { HashType } from "../Hash/index.js";
-import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 
 export declare function from(
 	value: readonly Item[] | Uint8Array,

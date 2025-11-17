@@ -16,7 +16,7 @@ description: Format ABI item to human-readable signature string
 ### Format Function
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const fn = {
   type: "function",
@@ -25,14 +25,14 @@ const fn = {
   outputs: [{ type: "uint256", name: "balance" }]
 }
 
-console.log(BrandedAbi.format(fn))
+console.log(Abi.format(fn))
 // "function balanceOf(address owner) returns (uint256 balance)"
 ```
 
 ### Format Event
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const event = {
   type: "event",
@@ -44,14 +44,14 @@ const event = {
   ]
 }
 
-console.log(BrandedAbi.format(event))
+console.log(Abi.format(event))
 // "event Transfer(address indexed from, address indexed to, uint256 value)"
 ```
 
 ### Format Error
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const error = {
   type: "error",
@@ -62,7 +62,7 @@ const error = {
   ]
 }
 
-console.log(BrandedAbi.format(error))
+console.log(Abi.format(error))
 // "error InsufficientBalance(uint256 balance, uint256 required)"
 ```
 

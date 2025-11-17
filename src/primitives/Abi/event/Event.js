@@ -1,5 +1,12 @@
 // @ts-nocheck
-import * as BrandedEvent from "./BrandedEvent/index.ts";
+import {
+	EncodeTopics,
+	GetSelector,
+	decodeLog,
+	encodeTopics,
+	getSelector,
+	getSignature,
+} from "./index.js";
 
 /**
  * Factory function for creating Event instances
@@ -27,15 +34,15 @@ import * as BrandedEvent from "./BrandedEvent/index.ts";
 
 // Static utility methods
 export const Event = {
-	getSignature: BrandedEvent.getSignature,
-	getSelector: BrandedEvent.getSelector,
-	encodeTopics: BrandedEvent.encodeTopics,
-	decodeLog: BrandedEvent.decodeLog,
+	getSignature,
+	getSelector,
+	encodeTopics,
+	decodeLog,
 	// Constructor-style aliases
-	Signature: BrandedEvent.Signature,
-	Topics: BrandedEvent.Topics,
-	DecodeLog: BrandedEvent.DecodeLog,
+	Signature: getSignature,
+	Topics: encodeTopics,
+	DecodeLog: decodeLog,
 	// Factories
-	GetSelector: BrandedEvent.GetSelector,
-	EncodeTopics: BrandedEvent.EncodeTopics,
+	GetSelector,
+	EncodeTopics,
 };

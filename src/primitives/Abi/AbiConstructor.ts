@@ -1,4 +1,4 @@
-import type { BrandedAbi, Item } from "./BrandedAbi/BrandedAbi.js";
+import type { AbiType, Item } from "./AbiType.js";
 import type * as AbiConstructorNs from "./constructor/index.js";
 import type * as AbiError from "./error/index.js";
 import type * as AbiEvent from "./event/index.js";
@@ -21,12 +21,12 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	parseLogs(logs: any[]): any[];
 
 	// Convenience getters for specific item types
-	getFunction(name: string): AbiFunction.BrandedFunction | undefined;
+	getFunction(name: string): AbiFunction.FunctionType | undefined;
 	getEvent(
 		name: string,
 	): import("./event/BrandedEvent/BrandedEvent.js").Event | undefined;
-	getError(name: string): AbiError.BrandedError | undefined;
-	getConstructor(): AbiConstructorNs.BrandedConstructor | undefined;
+	getError(name: string): AbiError.ErrorType | undefined;
+	getConstructor(): AbiConstructorNs.ConstructorType | undefined;
 	getFallback(): any;
 	getReceive(): any;
 }
@@ -47,16 +47,16 @@ export interface AbiConstructor {
 
 	// Static utility methods
 	getItem(
-		abi: BrandedAbi,
+		abi: AbiType,
 		name: string,
 		type: "function" | "event" | "error",
 	): Item | undefined;
-	format(abi: BrandedAbi): string[];
-	formatWithArgs(abi: BrandedAbi, args: Record<string, any>): string[];
-	encode(abi: BrandedAbi, functionName: string, args: any[]): Uint8Array;
-	decode(abi: BrandedAbi, functionName: string, data: Uint8Array): any[];
-	decodeData(abi: BrandedAbi, data: Uint8Array): { item: Item; decoded: any[] };
-	parseLogs(abi: BrandedAbi, logs: any[]): any[];
+	format(abi: AbiType): string[];
+	formatWithArgs(abi: AbiType, args: Record<string, any>): string[];
+	encode(abi: AbiType, functionName: string, args: any[]): Uint8Array;
+	decode(abi: AbiType, functionName: string, data: Uint8Array): any[];
+	decodeData(abi: AbiType, data: Uint8Array): { item: Item; decoded: any[] };
+	parseLogs(abi: AbiType, logs: any[]): any[];
 
 	// Sub-namespaces
 	Function: typeof AbiFunction;

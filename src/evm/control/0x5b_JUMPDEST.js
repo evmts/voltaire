@@ -1,4 +1,4 @@
-import { Jumpdest } from "../../primitives/GasConstants/BrandedGasConstants/constants.js";
+import { Jumpdest } from "../../primitives/GasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 
 /**

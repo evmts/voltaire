@@ -4,7 +4,7 @@ import { HDWalletError } from "./errors.js";
  * Get Ethereum address from HD node
  *
  * @param {import('./types.js').HDNode} node - HD node
- * @returns {Promise<import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress>} Ethereum address
+ * @returns {Promise<import('../../primitives/Address/AddressType.js').AddressType.BrandedAddress>} Ethereum address
  * @throws {HDWalletError} If address derivation fails
  */
 export async function getAddress(node) {
@@ -21,7 +21,7 @@ export async function getAddress(node) {
 		});
 	}
 
-	return /** @type {import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+	return /** @type {import('../../primitives/Address/AddressType.js').AddressType.AddressType} */ (
 		new Uint8Array(address)
 	);
 }

@@ -1,5 +1,5 @@
-import { serialize } from "./serialize.js";
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { serialize } from "./serialize.js";
 
 /**
  * Factory: Compute transaction hash.

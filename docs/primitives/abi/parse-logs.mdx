@@ -16,7 +16,7 @@ description: Parse multiple event logs using full ABI
 ### Parse All Contract Events
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const abi = [...] // Full ERC20 ABI
 
@@ -26,7 +26,7 @@ const logs = await provider.getLogs({
   toBlock: endBlock
 })
 
-const decoded = BrandedAbi.parseLogs(abi, logs)
+const decoded = Abi.parseLogs(abi, logs)
 
 // Process decoded events
 for (const log of decoded) {
@@ -41,12 +41,12 @@ for (const log of decoded) {
 ### Filter Specific Event Type
 
 ```typescript
-import * as BrandedAbi from 'tevm/Abi/BrandedAbi'
+import * as Abi from 'tevm/Abi'
 
 const abi = [...]
 const logs = await provider.getLogs({ address: contractAddress })
 
-const decoded = BrandedAbi.parseLogs(abi, logs)
+const decoded = Abi.parseLogs(abi, logs)
 
 // Get only Transfer events
 const transfers = decoded.filter(log => log.eventName === "Transfer")

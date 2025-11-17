@@ -6,7 +6,6 @@
 
 export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedAddress.js";
 import * as Checksummed from "./ChecksumAddress.js";
 export { Checksummed };
 import * as Lowercase from "./LowercaseAddress.js";
@@ -30,7 +29,7 @@ import {
 } from "./polyfills.js";
 
 /**
- * @typedef {import('./BrandedAddress.js').BrandedAddress} BrandedAddress
+ * @typedef {import('./AddressType.js').AddressType} BrandedAddress
  * @typedef {import('./AddressConstructor.js').AddressConstructor} AddressConstructor
  */
 

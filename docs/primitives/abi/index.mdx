@@ -409,9 +409,6 @@ import { Function } from '@tevm/primitives/Abi'
 
 // Or import individual functions
 import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
-
-// Tree-shakeable functional API
-import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
 ```
 
 ## Sub-Namespaces
@@ -422,7 +419,6 @@ The Abi module is organized into specialized sub-namespaces:
 - **Event** - Event log encoding/decoding and topics
 - **Error** - Custom error encoding/decoding
 - **Constructor** - Constructor parameter encoding
-- **BrandedAbi** - Functional API with ABI array operations
 - **Wasm** - WASM-accelerated implementations
 
 Each namespace provides focused functionality with tree-shakeable exports.

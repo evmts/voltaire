@@ -1,24 +1,24 @@
 // @ts-nocheck
-import { calcDecodedSize } from "./BrandedBase64/calcDecodedSize.js";
-import { calcEncodedSize } from "./BrandedBase64/calcEncodedSize.js";
-import { decode } from "./BrandedBase64/decode.js";
-import { decodeToString } from "./BrandedBase64/decodeToString.js";
-import { decodeUrlSafe } from "./BrandedBase64/decodeUrlSafe.js";
-import { decodeUrlSafeToString } from "./BrandedBase64/decodeUrlSafeToString.js";
-import { encode } from "./BrandedBase64/encode.js";
-import { encodeString } from "./BrandedBase64/encodeString.js";
-import { encodeStringUrlSafe } from "./BrandedBase64/encodeStringUrlSafe.js";
-import { encodeUrlSafe } from "./BrandedBase64/encodeUrlSafe.js";
-import { from } from "./BrandedBase64/from.js";
-import { fromUrlSafe } from "./BrandedBase64/fromUrlSafe.js";
-import { isValid } from "./BrandedBase64/isValid.js";
-import { isValidUrlSafe } from "./BrandedBase64/isValidUrlSafe.js";
-import { toBase64 } from "./BrandedBase64/toBase64.js";
-import { toBase64Url } from "./BrandedBase64/toBase64Url.js";
-import { toBytes } from "./BrandedBase64/toBytes.js";
-import { toBytesUrlSafe } from "./BrandedBase64/toBytesUrlSafe.js";
-import { toString } from "./BrandedBase64/toString.js";
-import { toStringUrlSafe } from "./BrandedBase64/toStringUrlSafe.js";
+import { calcDecodedSize } from "./calcDecodedSize.js";
+import { calcEncodedSize } from "./calcEncodedSize.js";
+import { decode } from "./decode.js";
+import { decodeToString } from "./decodeToString.js";
+import { decodeUrlSafe } from "./decodeUrlSafe.js";
+import { decodeUrlSafeToString } from "./decodeUrlSafeToString.js";
+import { encode } from "./encode.js";
+import { encodeString } from "./encodeString.js";
+import { encodeStringUrlSafe } from "./encodeStringUrlSafe.js";
+import { encodeUrlSafe } from "./encodeUrlSafe.js";
+import { from } from "./from.js";
+import { fromUrlSafe } from "./fromUrlSafe.js";
+import { isValid } from "./isValid.js";
+import { isValidUrlSafe } from "./isValidUrlSafe.js";
+import { toBase64 } from "./toBase64.js";
+import { toBase64Url } from "./toBase64Url.js";
+import { toBytes } from "./toBytes.js";
+import { toBytesUrlSafe } from "./toBytesUrlSafe.js";
+import { toString } from "./toString.js";
+import { toStringUrlSafe } from "./toStringUrlSafe.js";
 
 // Export individual functions
 export {

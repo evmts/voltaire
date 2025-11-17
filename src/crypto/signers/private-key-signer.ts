@@ -4,8 +4,8 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import * as BrandedAddress from "../../primitives/Address/BrandedAddress/index.js";
 import { Address } from "../../primitives/Address/index.js";
+import * as BrandedAddress from "../../primitives/Address/internal-index.js";
 import * as primitives from "../../wasm-loader/loader.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
 

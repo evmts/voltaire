@@ -1,4 +1,4 @@
-import { decode } from "../../Rlp/BrandedRlp/decode.js";
+import { decode } from "../../Rlp/decode.js";
 import { DecodingError } from "../../errors/index.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
@@ -80,7 +80,7 @@ export function deserialize(data) {
 		);
 	}
 	const accessList = decodeAccessList(
-		/** @type {import('../../Rlp/BrandedRlp/BrandedRlp.js').BrandedRlp[]} */ (
+		/** @type {import('../../Rlp/BrandedRlp.js').BrandedRlp[]} */ (
 			accessListField.value
 		),
 	);

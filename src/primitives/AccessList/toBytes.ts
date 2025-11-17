@@ -1,5 +1,5 @@
-import { encode } from "../Rlp/BrandedRlp/encode.js";
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import { encode } from "../Rlp/encode.js";
+import type { BrandedAccessList } from "./AccessListType.js";
 
 /**
  * Encode access list to RLP

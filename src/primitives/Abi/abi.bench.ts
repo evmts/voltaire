@@ -5,10 +5,10 @@
  */
 
 import { Address } from "../Address/index.js";
-import type { BrandedItem as Item } from "./Item/index.js";
-import type { BrandedError } from "./error/BrandedError/BrandedError.js";
-import type { Event as AbiEvent } from "./event/BrandedEvent/BrandedEvent.js";
-import type { Function as AbiFunction } from "./function/BrandedFunction/BrandedFunction.js";
+import type { ItemType as Item } from "./Item/index.js";
+import type { ErrorType } from "./error/ErrorType.js";
+import type { EventType as AbiEvent } from "./event/EventType.js";
+import type { FunctionType as AbiFunction } from "./function/FunctionType.js";
 import * as Abi from "./index.js";
 import * as Parameter from "./parameter/index.js";
 
@@ -130,7 +130,7 @@ const insufficientBalanceError = {
 		Parameter.from({ type: "uint256", name: "available" }),
 		Parameter.from({ type: "uint256", name: "required" }),
 	],
-} satisfies BrandedError;
+} satisfies ErrorType;
 
 const results: BenchmarkResult[] = [];
 results.push(

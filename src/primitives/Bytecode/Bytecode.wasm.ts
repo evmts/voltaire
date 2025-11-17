@@ -5,13 +5,13 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedBytecode } from "./BrandedBytecode/BrandedBytecode.js";
+import type { BrandedBytecode } from "./BytecodeType.js";
 
 // ============================================================================
 // Re-export constructors (no WASM benefit)
 // ============================================================================
 
-export { from, fromHex } from "./BrandedBytecode/index.js";
+export { from, fromHex } from "./index.js";
 
 // ============================================================================
 // WASM-accelerated analysis methods
@@ -123,4 +123,4 @@ export {
 	toAbi,
 	toHex,
 	_getNextPc,
-} from "./BrandedBytecode/index.js";
+} from "./index.js";

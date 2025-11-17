@@ -10,6 +10,6 @@ export type {
 	BrandedAccessList,
 	BrandedAccessList as Type,
 	Item,
-} from "./BrandedAccessList.js";
+} from "./AccessListType.js";
 
 export type { AccessListConstructor } from "./AccessListConstructor.js";
