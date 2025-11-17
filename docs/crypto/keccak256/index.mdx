@@ -402,42 +402,9 @@ Given an input and its hash, finding a different input with the same hash requir
 - **Avalanche effect**: Small input changes cause large output changes
 - **Constant-time**: Implementation avoids timing side-channels
 
-## Performance
-
-### Performance Comparison
-Typical throughput on modern hardware (varies by platform and CPU):
-
-| Implementation | Throughput | Use Case |
-|---------------|-----------|----------|
-| Native/Assembly | ~500-1000 MB/s | Node.js/Bun/Deno with FFI |
-| WASM (Unified/Standalone) | ~200-400 MB/s | Browsers, edge workers |
-| Pure JS (@noble) | ~100-200 MB/s | Universal compatibility |
-
-Hardware acceleration provides 3-10x speedup over pure JavaScript. WASM offers 2-4x improvement with broader compatibility than native bindings.
-
 ## Implementation Details
 
-### 1. Pure TypeScript (Default)
-Direct wrapper around @noble/hashes battle-tested implementation:
-
-```typescript
-import { keccak_256 } from "@noble/hashes/sha3.js";
-
-export function hash(data: Uint8Array): Keccak256Hash {
-  return keccak_256(data) as Keccak256Hash;
-}
-```
-
-**Characteristics:**
-- Zero native dependencies
-- Constant-time implementation
-- Runs everywhere (Node.js, browsers, Deno, Bun, edge workers)
-- ~100-200 MB/s throughput
-- Thoroughly audited and tested
-
-**Source:** `src/crypto/Keccak256/hash.js`
-
-### 2. WASM Implementation
+### WASM (Default)
 Compiled from Zig's stdlib Keccak-256 via unified loader (ReleaseSmall):
 
 ```typescript
@@ -451,64 +418,28 @@ const hash = Keccak256Wasm.hash(data);
 - Part of main `primitives.wasm` bundle
 - Includes all Tevm primitives and crypto
 - Requires async `init()` before use
-- ~200-400 MB/s throughput
-- 2-4x faster than pure JS
+- Both faster and smaller than pure JavaScript alternatives
 
 **Source:** `src/crypto/keccak256.wasm.ts` + `wasm/primitives.wasm`
 
-### 3. Native Assembly (keccak-asm)
-Platform-optimized assembly via keccak-asm Rust crate with FFI bindings:
+### Pure TypeScript
+Direct wrapper around @noble/hashes battle-tested implementation:
 
-```zig
-// src/crypto/keccak_asm.zig
-pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
-    if (builtin.target.cpu.arch == .wasm32) {
-        // WASM fallback: use standard library
-        std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
-        return;
-    }
-    // Native: use assembly-optimized Rust wrapper
-    const result = c.keccak256(data.ptr, data.len, out_hash, 32);
-    try keccakResultToError(result);
+```typescript
+import { keccak_256 } from "@noble/hashes/sha3.js";
+
+export function hash(data: Uint8Array): Keccak256Hash {
+  return keccak_256(data) as Keccak256Hash;
 }
 ```
 
 **Characteristics:**
-- x86-64: AVX2/SSE2 vector instructions
-- ARM: NEON vector instructions
-- Rust keccak-asm crate (portable and asm features)
-- ~500-1000 MB/s throughput
-- Requires native FFI bindings
+- Zero WASM dependencies
+- Constant-time implementation
+- Runs everywhere (Node.js, browsers, Deno, Bun, edge workers)
+- Thoroughly audited and tested
 
-**Source:** `src/crypto/keccak_asm.zig` + `Cargo.toml` (keccak-asm)
-
-### 4. Hardware Acceleration (SIMD/AVX2)
-SIMD-accelerated implementation using AVX2 vector operations (x86-64):
-
-```zig
-// src/crypto/keccak256_accel.zig
-pub fn hash(data: []const u8, output: *[DIGEST_SIZE]u8) void {
-    const features = cpu_features.cpu_features;
-
-    if (features.has_avx2 and builtin.target.cpu.arch == .x86_64) {
-        // Use AVX2 SIMD implementation
-        hash_avx2(data, output);
-    } else {
-        // Fall back to optimized software implementation
-        hash_software_optimized(data, output);
-    }
-}
-```
-
-**Characteristics:**
-- Runtime CPU feature detection
-- Uses AVX2 vector instructions for parallel state transformation
-- Optimized bit rotation using BMI2 instructions
-- Vectorized XOR operations for theta step
-- ~800+ MB/s throughput on x86-64 with AVX2
-- Auto-fallback to standard library on unsupported platforms
-
-**Source:** `src/crypto/keccak256_accel.zig`
+**Source:** `src/crypto/Keccak256/hash.js`
 
 ## Related
 
