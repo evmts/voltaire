@@ -3,54 +3,81 @@ title: Safe Ethereum
 description: Modern type safety with branded types
 ---
 
-Tevm's API is completely based around branded Ethereum types. Branded Common Ethereum types are simple data structures that represent common Ethereum primitives such as addresses, call data, keccak256 hashes, JSON-RPC requests and responses, etc., that are both strongly typed in TypeScript and also validated at runtime.
-
-> Those who would give up type safety to gain performance deserve neither safety nor performance.
->
-> — Adapted from Benjamin Franklin
+Tevm's API is built data first. Every concept in Ethereum is given a name and a TypeScript data structure. We utilize branded types to discriminate between types that otherwise might have the same structure, such as Gwei and Ether.
 
 ## The Problem
 
-TypeScript uses structural typing - types with same structure are interchangeable. Template literal types like `0x${string}` don't prevent type errors and provide no runtime validation:
+### Example 1: Type Confusion
+
+TypeScript uses structural typing - types with same structure are interchangeable. This leads to dangerous type confusion:
 
 ```typescript
 type Address = `0x${string}`;
 type Bytecode = `0x${string}`;
 
-function transfer(to: Address, amount: bigint) {
-  // Send funds to address
+function simulateTransfer(to: Address, bytecode: Bytecode) {
+  // Simulate contract execution
 }
 
 const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
 const bytecode: Bytecode = "0x60806040";
 
-// Structural typing allows wrong types
-transfer(bytecode, 100n); // ✓ Compiles - breaks downstream!
-
-// No runtime validation
-const invalid: Address = "0xnot_valid_hex"; // ✓ Compiles - invalid hex!
-const wrong: Address = "0x123"; // ✓ Compiles - wrong length!
-
-transfer(invalid, 100n); // Runtime error or lost funds
+// Easy to accidentally flip arguments - both are `0x${string}`!
+simulateTransfer(bytecode, address); // ✓ Compiles - breaks at runtime!
 ```
+
+Both `Address` and `Bytecode` are just `0x${string}`, so TypeScript can't catch when you swap them.
+
+### Example 2: Casing Bugs
+
+String-based addresses suffer from casing inconsistencies:
+
+```typescript
+const addr1 = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase
+const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"; // checksummed
+const addr3 = "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"; // uppercase
+
+// All represent same address but !== in JavaScript
+addr1 === addr2; // false
+```
+
+This leads to bugs when comparing addresses, using them as map keys, or validating signatures.
 
 ## The Solution
 
-[Branded types](https://prosopo.io/blog/typescript-branding/) and strong validators.
+[Branded types](https://prosopo.io/blog/typescript-branding/) and strong validators eliminate both problems.
 
 A branded type is a native JavaScript type, like `Uint8Array` or `string`, with a compile-time-only tag that prevents mixing incompatible types that would otherwise match:
 
 ```typescript
-import { Address, Bytecode, SignatureSalt } from 'tevm';
+import { Address, Bytecode } from 'tevm';
 
-function verifySignature(addr: Address, salt: SignatureSalt) { /* ... */ }
+function simulateTransfer(to: Address, bytecode: Bytecode) {
+  // Simulate contract execution
+}
 
-const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-const bytecode = Bytecode("0x6001")
-const salt = SignatureSalt("0x1234...")
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const bytecode = Bytecode("0x60806040");
 
-verifySignature(bytecode, salt) // ✗ Error: Type 'Bytecode' is not assignable to type 'Address'
+// Type system catches the error!
+simulateTransfer(bytecode, address);
+// ✗ Error: Type 'Bytecode' is not assignable to parameter of type 'Address'
+// ✗ Error: Type 'Address' is not assignable to parameter of type 'Bytecode'
 ```
+
+For casing issues, Tevm uses `Uint8Array` as the underlying type, eliminating this entire class of bugs:
+
+```typescript
+const addr1 = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+const addr2 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Both are same Uint8Array internally
+addr1.equals(addr2); // true
+```
+
+<Note>
+`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Tevm's philosophy of using the simplest JavaScript data structure that correctly represents the type.
+</Note>
 
 Every Ethereum type is provided by Tevm. Tevm takes a data-first approach to Ethereum, thinking of Ethereum as just data that gets transformed in a stream of blocks. This allows you to focus on representing data types with strong validation, declarative transformations, and robust runtime safety.
 
@@ -77,24 +104,6 @@ If something has type `AddressType`, you know it was validated at runtime to be 
   </Card>
 </CardGroup>
 
-## Example: Casing Bugs
-
-String-based addresses suffer from casing inconsistencies:
-
-```typescript
-const addr1 = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase
-const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"; // checksummed
-const addr3 = "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"; // uppercase
-
-// All represent same address but !== in JavaScript
-addr1 === addr2; // false
-```
-
-This leads to bugs when comparing addresses, using them as map keys, or validating signatures. Tevm eliminates this entire class of bugs by using `Uint8Array` as the underlying type.
-
-<Note>
-`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Tevm's philosophy of using the simplest JavaScript data structure that correctly represents the type.
-</Note>
 
 ## Validation at Construction
 

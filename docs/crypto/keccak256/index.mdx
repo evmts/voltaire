@@ -15,14 +15,12 @@ Keccak256 is a **cryptographic one-way hash function** based on the sponge const
 
 **Mainnet-critical algorithm** - Used in Ethereum execution layer for transaction hashing, address derivation (last 20 bytes of hash), function selectors (first 4 bytes), event topics, and Merkle Patricia tree state roots.
 
-Tevm provides Keccak256 as a **namespace with multiple implementation variants**:
-- `Keccak256` - Default pure TypeScript (auto-selected)
-- `Keccak256.noble` - Explicit @noble/hashes reference
-- `Keccak256.wasm` - WASM implementation
-- `Keccak256.native` - Assembly-optimized (Node.js/Bun/Deno FFI)
-- `Keccak256.accel` - SIMD/AVX2 hardware acceleration (x86-64)
+Tevm provides Keccak256 with **two implementation options**:
+- `Keccak256` - Default WASM implementation (auto-selected based on benchmarks)
+- `Keccak256Ts` - Pure TypeScript implementation (@noble/hashes)
+- `Keccak256Wasm` - Explicit WASM implementation
 
-All variants share the same data-first API and return `Keccak256Hash` type.
+All implementations share the same data-first API and return `Keccak256Hash` type. The default uses WASM because it's both faster and smaller than pure JavaScript alternatives.
 
 Keccak256 is fundamental to Ethereum's security model:
 - **Address derivation**: Computing Ethereum addresses from public keys (last 20 bytes of Keccak256(publicKey))
@@ -35,136 +33,55 @@ Keccak256 is fundamental to Ethereum's security model:
 Ethereum uses the original Keccak-256 algorithm (pre-NIST), NOT the finalized SHA-3 standard. They differ in padding scheme: SHA-3 uses `0x06` padding while Keccak uses `0x01`. Do not use SHA-3 libraries for Ethereum - they will produce incorrect results. Use Keccak-256 specifically.
 </Warning>
 
-## Implementation Variants
+## Implementation Options
 
-Tevm provides four Keccak256 implementations, each optimized for different use cases:
+Tevm provides two Keccak256 implementations:
 
-### 1. Default (Pure TypeScript)
-Uses @noble/hashes - zero native dependencies, maximum compatibility.
+### 1. Default (WASM)
+Compiled from Zig's stdlib Keccak256 - both faster and smaller than pure JavaScript alternatives.
 
 ```typescript
 import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const hash = Keccak256.hash(data);
-// Pure TypeScript, ~100-200 MB/s
+// WASM implementation
 // Works everywhere: browsers, Node.js, Deno, Bun, edge workers
 ```
 
 **When to use:**
-- Universal compatibility required
-- No build complexity
 - Default choice for most applications
-- Trust in @noble/hashes battle-tested implementation
+- Better performance than pure JavaScript
+- Smaller bundle size than pure JavaScript alternatives
 
-### 2. WASM Implementation
-Compiled from Zig's stdlib Keccak256 via unified loader (ReleaseSmall).
+### 2. Pure TypeScript
+Uses @noble/hashes - zero WASM dependency, maximum compatibility.
 
 ```typescript
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
 
-await Keccak256Wasm.init();
-const hash = Keccak256Wasm.hash(data);
-// WASM, ~200-400 MB/s
-// 2-4x faster than pure JS
+const hash = Keccak256Ts.hash(data);
+// Pure TypeScript
+// No WASM dependency
 ```
 
 **When to use:**
-- Need better performance than pure JS
-- Browser/edge environments
-- Acceptable init() overhead
-- Bundled as part of Tevm primitives.wasm
+- Need to avoid WASM dependency
+- Debugging or development scenarios
+- Specific compatibility requirements
 
-### 3. Native Assembly (keccak-asm)
-Platform-optimized assembly via keccak-asm Rust crate with FFI bindings.
+## Implementation Selection
 
-```typescript
-import { Keccak256Native } from 'tevm/native/crypto/keccak256';
-
-const hash = Keccak256Native.hash(data);
-// Assembly-optimized, ~500-1000 MB/s
-// x86-64: AVX2/SSE2 instructions
-// ARM: NEON instructions
-```
-
-**When to use:**
-- Node.js, Bun, or Deno with native modules
-- Maximum throughput required
-- Processing large volumes of data
-- 3-10x faster than pure JavaScript
-
-### 4. Hardware Acceleration (SIMD/AVX2)
-SIMD-accelerated implementation using AVX2 vector operations (x86-64 only).
-
-```typescript
-import { Keccak256Accel } from 'tevm/native/crypto/keccak256-accel';
-
-const hash = Keccak256Accel.hash(data);
-// SIMD/AVX2, ~800+ MB/s (x86-64 only)
-// Auto-detects CPU features, falls back to software
-```
-
-**When to use:**
-- x86-64 processors with AVX2 support
-- EVM node implementations
-- High-throughput blockchain applications
-- CPU feature detection at runtime
-
-## Implementation Selection Guide
-
-Choose the right implementation based on your environment and performance needs:
-
-| Environment | Recommended | Why |
-|------------|-------------|-----|
-| **Browser** | Keccak256 (default) | Universal compatibility, zero setup |
-| **Browser + Performance** | Keccak256Wasm | 2-4x faster, small bundle overhead |
-| **Node.js/Bun/Deno** | Keccak256Native | 3-10x faster with native FFI |
-| **High-throughput** | Keccak256Accel | Maximum performance on x86-64 AVX2 |
-| **Edge Workers** | Keccak256 or Keccak256Wasm | Depends on WASM support |
-| **Universal Library** | Keccak256 (default) | Works everywhere |
-
-### Performance Comparison
-
-Typical throughput on modern hardware (M1 Pro, i7-12700K):
-
-| Implementation | Small (32B) | Medium (256B) | Large (4KB) | Platform |
-|---------------|-------------|---------------|-------------|----------|
-| **Keccak256** (noble) | ~150 MB/s | ~180 MB/s | ~200 MB/s | Universal |
-| **Keccak256Wasm** | ~300 MB/s | ~350 MB/s | ~400 MB/s | WASM |
-| **Keccak256Native** | ~600 MB/s | ~800 MB/s | ~1000 MB/s | x86-64/ARM |
-| **Keccak256Accel** | ~700 MB/s | ~850 MB/s | ~1100 MB/s | x86-64 AVX2 |
-
-*Benchmarks vary by CPU, input size, and runtime environment.*
-
-## Dependency Injection Pattern
-
-All implementations share the same data-first API, enabling runtime algorithm selection:
+The APIs are identical across implementations - you can swap them without changing your code:
 
 ```typescript
 import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
 import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
-import { Keccak256Native } from 'tevm/native/crypto/keccak256';
 
 // All have identical API
-const hash1 = Keccak256.hash(data);
-const hash2 = Keccak256Wasm.hash(data);
-const hash3 = Keccak256Native.hash(data);
-
-// Dynamic selection based on environment
-function selectImplementation() {
-  // Check for native FFI support
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return Keccak256Native;
-  }
-  // Check for WASM support
-  if (typeof WebAssembly !== 'undefined') {
-    return Keccak256Wasm;
-  }
-  // Fallback to pure JS
-  return Keccak256;
-}
-
-const impl = selectImplementation();
-const result = impl.hash(data);
+const hash1 = Keccak256.hash(data);      // Default (WASM)
+const hash2 = Keccak256Ts.hash(data);    // TypeScript
+const hash3 = Keccak256Wasm.hash(data);  // Explicit WASM
 ```
 
 ## Quick Start

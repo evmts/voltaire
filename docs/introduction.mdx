@@ -21,8 +21,8 @@ import {
 
 // Addresses
 const address: Address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const addressHex = address.toHex();          // "0x742d35cc..."
-const checksummed = address.toChecksummed(); // "0x742d35Cc..."
+const addressHex: Address.Hex = address.toHex();                 // "0x742d35cc..."
+const checksummed: Address.Checksummed = address.toChecksummed(); // "0x742d35Cc..."
 
 // Hashes and bytes
 const hash: Keccak256 = Keccak256("0x1234");
@@ -31,16 +31,20 @@ const bytesHex: Bytes32.Hex = bytes.toHex();
 
 // Numbers and denominations
 const value: Wei = Wei(1000000000000000000n);
-const inEther = value.toEther();  // 1n (type: Ether)
-const inGwei = value.toGwei();    // 1000000000n (type: Gwei)
+const inEther: Ether = value.toEther();  // 1n
+const inGwei: Gwei = value.toGwei();    // 1000000000n
+
+// Type safety prevents denomination confusion
+// ❌ This won't compile - Wei and Gwei are incompatible types
+// const confusion: Wei = inGwei; // Type Error!
 
 // Bytecode and opcodes
-const code = Bytecode("0x6080604052");
-const analysis = code.analyze();
-const pushOp = Opcode.PUSH1;                 // 0x60
+const code: Bytecode = Bytecode("0x6080604052");
+const analysis: Bytecode.Analysis = code.analyze();
+const pushOp: Opcode = Opcode.PUSH1; // 0x60
 
 // Transactions
-const tx = Transaction({
+const tx: Transaction = Transaction({
   to: address,
   value: value,
   data: bytes,
@@ -49,41 +53,41 @@ const tx = Transaction({
 
 // Private keys and signatures
 const privateKey: PrivateKey = PrivateKey.fromRandom();
-const signer = Signer.fromPrivateKey(privateKey);
+const signer: Signer = Signer.fromPrivateKey(privateKey);
 const signature: Secp256k1.Signature = signer.sign(hash);
 const recovered: Address = signer.recover(hash);
 
 // RLP encoding
-const encoded = Rlp([address, value]);
-const decoded = Rlp.decode(encoded);
+const encoded: Rlp = Rlp([address, value]);
+const decoded: Rlp.Decoded = Rlp.decode(encoded);
 
 // ABI encoding
-const funcSig = Abi.encodeParams("transfer(address,uint256)", [address, value]);
-const encoded = funcSig.toAbiEncoded();
+const funcSig: Abi.FunctionSig = Abi.encodeParams("transfer(address,uint256)", [address, value]);
+const abiEncoded: Abi.FunctionSig = funcSig.toAbiEncoded();
 
 // Fee market (EIP-1559)
-const baseFee = FeeMarket.BaseFee(/* ... */);
+const baseFee: FeeMarket.BaseFee = FeeMarket.BaseFee(/* ... */);
 
 // Access lists (EIP-2930)
-const accessList = AccessList([{
+const accessList: AccessList = AccessList([{
   address: address,
   storageKeys: [bytes]
 }]);
 
 // Blobs (EIP-4844)
-const blob = Blob(131072); // 128KB
-const commitment = Kzg.Commitment(blob);
+const blob: Blob = Blob(131072); // 128KB
+const commitment: Kzg.Commitment = Kzg.Commitment(blob);
 
 // Cryptography
-const keccak = Keccak256.hashString("hello");
-const sha = Sha256.hashString("world");
+const keccak: Keccak256 = Keccak256.hashString("hello");
+const sha: Sha256 = Sha256.hashString("world");
 
 // Chain configuration
-const chain = Chain.mainnet;
-const hardfork = Hardfork.cancun;
+const chain: Chain = Chain.mainnet;
+const hardfork: Hardfork = Hardfork.cancun;
 
 // JSON-RPC requests
-const balanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
+const balanceRequest: Rpc.Eth.BalanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
 ```
 
 ## What's Included
@@ -98,7 +102,7 @@ const balanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
 ## What's Unique?
 
 - **[Branded Types](/getting-started/branded-types)** - Runtime-validated TypeScript types. Prevents passing hex strings where addresses are expected, address casing errors, and type confusion.
-- **[WASM-Accelerated](/getting-started/wasm)** - High-performance implementations for cryptography, encoding, and EVM execution written in Zig.
+- **[High-Performance](/getting-started/wasm)** - Optimized implementations balancing performance and bundle size. For example, Keccak256 is both faster and smaller than pure JavaScript alternatives.
 - **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/mcp) and [llms.txt](/llms.txt) along with the docs themselves.
 - **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
 - **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Tevm such as EVM execution and bytecode analysis.

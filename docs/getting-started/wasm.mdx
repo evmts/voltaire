@@ -1,37 +1,34 @@
 ---
-title: Zig Accelerated
-description: 3x performance boosts for common cryptography, such as keccak256, with 100x performance improvements for EVM execution
+title: High-Performance Implementations
+description: Optimized implementations balancing performance and bundle size
 ---
 
-3x performance boosts for common cryptography, such as keccak256, with 100x performance improvements for EVM execution.
+High-performance implementations that minimize bundle size while maximizing performance.
 
-Tevm is built with high performance WASM implementations built in Zig for computationally expensive operations, along with regular JavaScript implementations where using WASM doesn't make as much sense, such as simple hex encoding.
+Tevm provides WASM implementations built in Zig for computationally expensive operations, along with pure TypeScript implementations where WASM overhead doesn't justify the complexity.
 
 ## Implementation Options
 
-Tevm provides multiple implementation choices:
+Tevm usually provides at least two implementation options for most APIs:
 
-1. **Default (WASM)** - Balanced performance and bundle size
-2. **WASM (explicit)** - Same as default, explicit import path
-3. **TypeScript** - Pure TypeScript, no WASM dependency
-4. **Assembly** - Maximum speed using native assembly
+1. **Default** - What we think is the best trade-off between performance, bundle size, and other considerations
+2. **TypeScript** - Pure TypeScript implementation with no WASM dependency
+3. **WASM** - WASM-accelerated implementation for better performance
+
+Based on our benchmarks and bundle size analysis, we pick the default for each API. For example, Keccak256 uses WASM by default because it's both faster and smaller than pure JavaScript alternatives.
 
 ```typescript
-import { keccak256 } from 'tevm/crypto';        // Default (WASM)
-import { keccak256 } from 'tevm/crypto/wasm';  // WASM (explicit)
-import { keccak256 } from 'tevm/crypto/ts';    // TypeScript
-import { keccak256 } from 'tevm/crypto/asm';   // Assembly
+import { Keccak256 } from 'tevm/crypto';           // Default (WASM for Keccak256)
+import { Keccak256 } from 'tevm/crypto/Keccak256'; // Explicit default
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';   // TypeScript
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm'; // WASM
 ```
 
-The APIs are identical - you can swap implementations without changing your code. Start with the default WASM for balanced performance, switch to TypeScript when you need no WASM dependency, or use assembly for maximum raw performance.
+The APIs are identical across implementations - you can swap them without changing your code.
 
 <Note>
-By default, Tevm chooses what we believe to be the most balanced trade-offs between performance, bundle size, and other concerns like debuggability.
+By default, Tevm chooses what we believe to be the best trade-off between performance, bundle size, and other concerns like debuggability.
 </Note>
-
-<Warning>
-The assembly version (`/asm`) uses native assembly optimizations and is not audited. Use only when you need absolute maximum performance and understand the security implications.
-</Warning>
 
 ### Benchmarks
 
