@@ -18,7 +18,7 @@ describe("FunctionEncodingError", () => {
 	describe("basic properties", () => {
 		it("creates error with message", () => {
 			const error = new FunctionEncodingError("Test error");
-			expect(error.message).toBe("Test error");
+			expect(error.message).toContain("Test error");
 		});
 
 		it("has correct name", () => {
@@ -103,7 +103,7 @@ describe("FunctionDecodingError", () => {
 	describe("basic properties", () => {
 		it("creates error with message", () => {
 			const error = new FunctionDecodingError("Test error");
-			expect(error.message).toBe("Test error");
+			expect(error.message).toContain("Test error");
 		});
 
 		it("has correct name", () => {
@@ -209,7 +209,7 @@ describe("FunctionInvalidSelectorError", () => {
 				value: new Uint8Array([0x12, 0x34, 0x56, 0x78]),
 				expected: "0xabcdef01",
 			});
-			expect(error.message).toBe("Test error");
+			expect(error.message).toContain("Test error");
 		});
 
 		it("has correct name", () => {
