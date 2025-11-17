@@ -1,24 +1,20 @@
 ---
 title: Getting Started
-description: Learn the core patterns and architecture of Tevm
+description: Install Tevm and explore the API
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
-# Getting Started
-
-Tevm is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities. This guide will teach you the core concepts and patterns that make Tevm different.
+<Tip>
+Looking to learn more about why to use Tevm? Check out [What is Tevm?](/introduction)
+</Tip>
 
 ## Prerequisites
 
-- **Node.js:** 18.x or higher (20.x recommended)
+- **Node.js:** 24.x or higher
 - **Package Manager:** npm, bun, pnpm, or yarn
-- **Knowledge:** Familiarity with JavaScript/TypeScript and basic Ethereum concepts (addresses, transactions, signatures)
+- **Knowledge:** Basic JavaScript/TypeScript
 
 <Tip>
-New to Ethereum? Check out [ethereum.org/developers](https://ethereum.org/en/developers/) for fundamentals.
+New to Ethereum? Check out our [Guides](/guides) for example-based educational content with no assumption of prior Ethereum knowledge.
 </Tip>
 
 ## Installation
@@ -46,609 +42,371 @@ New to Ethereum? Check out [ethereum.org/developers](https://ethereum.org/en/dev
   </Tab>
 </Tabs>
 
-## Quick Start (5 Minutes)
-
-Let's build a simple example that demonstrates Tevm's core capabilities: hashing, signing, and address validation.
-
-### 1. Create a new file `example.ts`
+## Imports
 
 <Tabs>
-  <Tab title="Node.js/Bun">
-    ```typescript
-    import { Keccak256, Secp256k1, Address } from "tevm";
-
-    // Hash a message
-    const message = "Welcome to Tevm";
-    const messageHash = Keccak256.hash(message);
-    console.log("Message hash:", messageHash);
-
-    // Generate a keypair (using crypto.getRandomValues or similar)
-    const privateKey = crypto.getRandomValues(Bytes32());
-    const publicKey = Secp256k1.derivePublicKey(privateKey);
-
-    // Sign the hash
-    const signature = Secp256k1.sign(messageHash, privateKey);
-
-    // Recover the signer's address
-    const recoveredPublicKey = Secp256k1.recoverPublicKey(signature, messageHash);
-    const signerAddress = Address.fromPublicKey(recoveredPublicKey);
-    console.log("Signer address:", Address.toChecksummed(signerAddress));
-
-    // Verify the signature
-    const isValid = Secp256k1.verify(signature, messageHash, publicKey);
-    console.log("Signature valid:", isValid);
-    ```
+  <Tab title="Primitives">
+```typescript
+import {
+  Abi,
+  AccessList,
+  Address,
+  Authorization,
+  Base64,
+  BinaryTree,
+  Blob,
+  BloomFilter,
+  Bytecode,
+  Chain,
+  ChainId,
+  Denomination,
+  Ens,
+  EventLog,
+  FeeMarket,
+  GasConstants,
+  Hardfork,
+  Hash,
+  Hex,
+  Int,
+  Nonce,
+  Opcode,
+  PrivateKey,
+  PublicKey,
+  Rlp,
+  Signature,
+  Siwe,
+  State,
+  Transaction,
+  Uint
+} from "tevm";
+```
   </Tab>
-  <Tab title="Browser (Vite)">
-    ```typescript
-    import { Keccak256, Secp256k1, Address } from "tevm";
-
-    // Hash a message
-    const message = "Welcome to Tevm";
-    const messageHash = Keccak256.hash(message);
-    document.body.innerHTML += `<p>Hash: ${messageHash}</p>`;
-
-    // Generate a keypair (using crypto.getRandomValues or similar)
-    const privateKey = crypto.getRandomValues(Bytes32());
-    const publicKey = Secp256k1.derivePublicKey(privateKey);
-
-    // Sign and verify
-    const signature = Secp256k1.sign(messageHash, privateKey);
-    const recoveredPublicKey = Secp256k1.recoverPublicKey(signature, messageHash);
-    const signerAddress = Address.fromPublicKey(recoveredPublicKey);
-
-    document.body.innerHTML += `
-      <p>Signer: ${Address.toChecksummed(signerAddress)}</p>
-      <p>Valid: ${Secp256k1.verify(signature, messageHash, publicKey)}</p>
-    `;
-    ```
+  <Tab title="Cryptography">
+```typescript
+import {
+  AesGcm,
+  Bip39,
+  Blake2,
+  Bls12381,
+  Bn254,
+  Ed25519,
+  EIP712,
+  HDWallet,
+  Keccak256,
+  Kzg,
+  P256,
+  Pbkdf2,
+  Poseidon,
+  Ripemd160,
+  Schnorr,
+  Secp256k1,
+  Secp256r1,
+  Sha256,
+  Sha3,
+  Sha512,
+  X25519
+} from "tevm";
+```
+  </Tab>
+  <Tab title="EVM">
+```typescript
+import {
+  Opcode,
+  Bytecode,
+  GasConstants
+} from "tevm";
+```
+  </Tab>
+  <Tab title="Utils">
+```typescript
+import {
+  Base64,
+  Hex,
+  Rlp
+} from "tevm";
+```
+  </Tab>
+  <Tab title="JSON-RPC Provider">
+```typescript
+import { Provider } from "tevm";
+```
   </Tab>
 </Tabs>
 
-### 2. Run the example
+## Learn More
 
-<Tabs>
-  <Tab title="Node.js">
-    ```bash
-    tsx example.ts
-    ```
-  </Tab>
-  <Tab title="Bun">
-    ```bash
-    bun run example.ts
-    ```
-  </Tab>
-  <Tab title="Browser (Vite)">
-    ```bash
-    npm run dev
-    ```
-  </Tab>
-</Tabs>
+<CardGroup cols={2}>
+  <Card title="Guides" icon="book" href="/guides">
+    Example-based educational content for learning Ethereum concepts
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Code examples and common usage patterns
+  </Card>
+  <Card title="What is Tevm?" icon="circle-question" href="/introduction">
+    Learn why to use Tevm and what makes it unique
+  </Card>
+  <Card title="Core Concepts" icon="lightbulb" href="/getting-started/branded-types">
+    Understand branded types and the data-first design pattern
+  </Card>
+</CardGroup>
 
-### 3. See the output
+## API Reference
 
-```
-Message hash: Uint8Array(32) [...]
-Signer address: 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
-Signature valid: true
-```
+### Primitives
 
-You've just hashed data, signed a message, and recovered an Ethereum address using Tevm.
+#### ABI
+ABI encoding and decoding. Supports functions, events, errors, and constructors per the [ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html).
 
-## Core Architecture
+[View docs →](/primitives/abi)
 
-Tevm uses a **data-first architecture** with two complementary APIs:
+#### AccessList
+EIP-2930 transaction access lists for optimized state access costs.
 
-1. **Branded Types with Namespaced Methods** — Tree-shakeable, zero-overhead primitives
-2. **Class APIs** — Convenient wrappers for familiar OOP patterns
+[View docs →](/primitives/accesslist)
 
-Both APIs operate on the same underlying data, giving you flexibility to choose based on your needs.
+#### Address
+20-byte Ethereum addresses with EIP-55 checksumming and CREATE/CREATE2 calculation.
 
-## Branded Types Pattern
+[View docs →](/primitives/address)
 
-At the core of Tevm are **branded primitives** — native JavaScript types (Uint8Array, bigint, string) with TypeScript brands for type safety.
+#### Authorization
+EIP-7702 authorization lists for account abstraction code delegation.
 
-### What is a Branded Type?
+[View docs →](/primitives/authorization)
 
-A branded type is a primitive with a compile-time tag that prevents mixing incompatible values:
+#### Base64
+RFC 4648 Base64 encoding and decoding.
 
-```typescript
-import type { brand } from 'tevm/brand';
+[View docs →](/primitives/base64)
 
-// Branded type definition
-type Address = Uint8Array & { readonly [brand]: "Address" };
-type Keccak256Hash = Uint8Array & { readonly [brand]: "Keccak256Hash" };
-type Uint = bigint & { readonly [brand]: "Uint256" };
+#### BinaryTree
+Binary tree structures for Merkle trees and similar data structures.
 
-// These prevent accidents like:
-const address: Address = someHash; // ❌ Type error
-const hash: Keccak256Hash = someAddress;     // ❌ Type error
-```
+[View docs →](/primitives/binarytree)
 
-**Benefits:**
-- **Zero runtime overhead** — Just primitives at runtime
-- **Type safety** — Compiler prevents mixing incompatible types
-- **Serialization** — Natural JSON serialization (no classes to unwrap)
-- **Interop** — Works seamlessly with other libraries
+#### Blob
+EIP-4844 blob transaction data (128KB blobs).
 
-## Class API Pattern
+[View docs →](/primitives/blob)
 
-For familiar OOP ergonomics, Tevm provides class wrappers:
+#### BloomFilter
+Ethereum log bloom filters for efficient log filtering.
 
-```typescript
-import { Address } from "tevm";
+[View docs →](/primitives/bloomfilter)
 
-// Constructor accepts multiple formats
-const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+#### Bytecode
+Contract bytecode manipulation, analysis, and metadata handling.
 
-// Instance methods
-addr.toHex();           // "0xa0cf..."
-addr.toChecksummed();   // "0xA0Cf..."
-addr.isZero();          // false
-addr.equals(other);     // boolean
+[View docs →](/primitives/bytecode)
 
-// Static methods
-Address("0x...");
-Address(bytes);
-Address.zero();
-```
+#### Chain
+Chain configuration and network parameters.
 
-**Under the Hood:** Class instances are just branded Uint8Arrays with methods attached to the prototype. Zero overhead.
+[View docs →](/primitives/chain)
 
-The Class API provides all you need for most use cases with familiar OOP patterns.
+#### ChainId
+Network identifiers (mainnet, testnets, L2s).
 
-## Method Naming Convention
+[View docs →](/primitives/chainid)
 
-Tevm follows consistent naming patterns across all types:
+#### Denomination
+Ether denomination conversions (wei, gwei, ether).
 
-### Construction
-- `Type.from(value)` — Universal constructor (accepts multiple formats)
-- `Type.fromHex(hex)` — From hex string
-- `Type.fromBytes(bytes)` — From byte array
-- `Type.fromNumber(n)` — From number/bigint
-- `Type.zero()` — Zero value
-
-### Conversion
-- `Type.toHex(value)` — To hex string
-- `Type.toBytes(value)` — To byte array
-- `Type.toNumber(value)` — To number/bigint
+[View docs →](/primitives/denomination)
 
-### Validation
-- `Type.isValid(value)` — Check if value is valid
-- `Type.is(value)` — Type guard
-- `Type.isZero(value)` — Check if zero
+#### Ens
+ENS name normalization per ENSIP-15.
 
-### Comparison
-- `Type.equals(a, b)` — Equality check
-- `Type.compare(a, b)` — Comparison for sorting
+[View docs →](/primitives/ens)
 
-## Quick Examples
+#### EventLog
+Transaction event log parsing and filtering.
 
-### Working with Addresses
+[View docs →](/primitives/eventlog)
 
-```typescript
-import { Address } from "tevm";
+#### FeeMarket
+EIP-1559 fee market calculations (base fee, priority fee).
 
-// Create from hex
-const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+[View docs →](/primitives/feemarket)
 
-// EIP-55 checksumming
-const checksummed = addr.toChecksummed();
-console.log(checksummed); // "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"
+#### GasConstants
+EVM gas costs per the Yellow Paper specification.
 
-// Check if zero
-const isZero = addr.isZero(); // false
+[View docs →](/primitives/gasconstants)
 
-// Calculate contract addresses
-const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
-const contractAddr = deployer.calculateCreateAddress(0n);
-```
+#### Hardfork
+Network hardfork detection and feature flags.
 
-### Working with Hashes
+[View docs →](/primitives/hardfork)
 
-```typescript
-import { Keccak256, Hex } from "tevm";
+#### Hash
+32-byte hash type with constant-time operations.
 
-// Hash data
-const data = Hex("0x010203");
-const hash = Keccak256.hash(data);
+[View docs →](/primitives/hash)
 
-// Convert to hex
-const hex = Keccak256.toHex(hash);
+#### Hex
+Hexadecimal encoding with sized types and manipulation utilities.
 
-// Constant-time comparison
-const hash2 = Keccak256.hash(data);
-Keccak256.equals(hash, hash2); // true
-```
+[View docs →](/primitives/hex)
 
-### Working with Uint256
+#### Int
+Signed integer types (Int8, Int16, Int32, Int64, Int128, Int256).
 
-```typescript
-import { Uint } from "tevm";
+[View docs →](/primitives/int)
 
-// Create from various formats
-const a = Uint(100n);
-const b = Uint("0xff");
-const c = Uint("0x200");
+#### Nonce
+Transaction nonce management.
 
-// Arithmetic (wrapping on overflow)
-const sum = Uint.plus(a, b);      // 100 + 255 = 355
-const product = Uint.times(a, b); // 100 * 255 = 25500
-const quotient = Uint.dividedBy(product, b); // 25500 / 255 = 100
+[View docs →](/primitives/nonce)
 
-// Comparison
-Uint.greaterThan(sum, a); // true
-Uint.lessThan(a, b);      // true
+#### Opcode
+EVM opcodes with gas costs and metadata.
 
-// Convert to hex
-const hex = Uint.toHex(sum); // "0x0000...0163"
-```
+[View docs →](/primitives/opcode)
 
-### Working with Transactions
+#### PrivateKey
+Private key operations including signing and address derivation.
 
-```typescript
-import { Transaction, Hex } from "tevm";
+[View docs →](/primitives/privatekey)
 
-// EIP-1559 transaction
-const tx: Transaction.EIP1559 = {
-  type: 2,
-  chainId: 1n,
-  nonce: 0n,
-  maxFeePerGas: 30000000000n,
-  maxPriorityFeePerGas: 1000000000n,
-  gasLimit: 21000n,
-  to: recipientAddress,
-  value: 1000000000000000000n,
-  data: Hex("0x"),
-  accessList: [],
-  r: signature.r,
-  s: signature.s,
-  v: signature.v,
-};
+#### PublicKey
+Public key operations including verification and address derivation.
 
-// Serialize
-const serialized = Transaction.serialize(tx);
+[View docs →](/primitives/publickey)
 
-// Hash
-const txHash = Transaction.hash(tx);
+#### Rlp
+Recursive Length Prefix encoding and decoding.
 
-// Recover sender
-const sender = Transaction(tx);
-```
+[View docs →](/primitives/rlp)
 
-## Type Safety
+#### Signature
+ECDSA signatures (secp256k1, P-256, Ed25519) with recovery and normalization.
 
-Tevm provides opt-in type safety through branded types:
+[View docs →](/primitives/signature)
 
-```typescript
-import type { AddressType } from "tevm/Address";
-import type { Keccak256Hash } from "tevm/Keccak256";
+#### Siwe
+Sign-In with Ethereum (EIP-4361) authentication.
 
-function processAddress(addr: AddressType) {
-  // TypeScript ensures addr is a valid Address
-}
+[View docs →](/primitives/siwe)
 
-function processHash(hash: Keccak256Hash) {
-  // TypeScript ensures hash is a Keccak256 output
-}
+#### State
+Account state management and storage slots.
 
-// Type errors prevent mistakes
-const addr = Address("0x...");
-const hash = Keccak256.hash(data);
+[View docs →](/primitives/state)
 
-processAddress(addr);  // ✅ OK
-processAddress(hash);  // ❌ Type error
-processHash(hash);     // ✅ OK
-processHash(addr);     // ❌ Type error
-```
+#### Transaction
+All Ethereum transaction types (Legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702).
 
-## Performance
+[View docs →](/primitives/transaction)
 
-Tevm is optimized for performance:
+#### Uint
+Unsigned integer types (Uint8, Uint16, Uint32, Uint64, Uint128, Uint256).
 
-- **Zero overhead abstractions** — Branded types compile to primitives
-- **Tree-shaking** — Only bundle what you use
-- **WASM acceleration** — Optional Zig-compiled WASM for minimal bundle impact and maximum performance
-- **Native browser methods** — Uses native toHex/toBase64 when available
-- **Constant-time operations** — Security-critical comparisons are constant-time
-
-## First Real Task: Sign a Transaction (15 Minutes)
-
-Now let's build something practical: create and sign an EIP-1559 transaction.
-
-### 1. Create a transaction
-
-```typescript
-import { Transaction, Address, Hex } from "tevm";
-
-const tx = {
-  type: 2, // EIP-1559
-  chainId: 1n, // Ethereum mainnet
-  nonce: 0n,
-  maxFeePerGas: 30_000_000_000n, // 30 gwei
-  maxPriorityFeePerGas: 1_000_000_000n, // 1 gwei
-  gasLimit: 21_000n,
-  to: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
-  value: 1_000_000_000_000_000_000n, // 1 ether
-  data: Hex("0x"),
-};
-```
-
-### 2. Sign the transaction
-
-```typescript
-import { Secp256k1 } from "tevm";
-
-// Your private key (NEVER share or commit this!)
-const privateKey = "0x...";
-
-// Sign
-const signedTx = Transaction.sign(tx, privateKey);
-console.log("Signed transaction:", signedTx);
-```
-
-### 3. Serialize for broadcasting
-
-```typescript
-import { Hex } from "tevm";
-
-// Serialize to RLP-encoded bytes
-const serialized = Transaction.serialize(signedTx);
-
-// Convert to hex for RPC
-const txHex = Hex.from(serialized);
-console.log("Transaction hex:", txHex);
-
-// You can now send this via eth_sendRawTransaction
-```
-
-### 4. Verify the signature
-
-```typescript
-// Recover the sender address
-const sender = Transaction.recoverSender(signedTx);
-console.log("Sender address:", Address.toChecksummed(sender));
-
-// Calculate transaction hash
-const txHash = Transaction.hash(signedTx);
-console.log("Transaction hash:", Keccak256.toHex(txHash));
-```
-
-<Warning>
-**Never** use real private keys in test code. Always use test networks (Sepolia, Holesky) or local development chains.
-</Warning>
-
-## Troubleshooting
-
-### Common Issues
-
-#### Import errors: "Cannot find module"
-
-Make sure you're using the correct import paths:
-
-```typescript
-// ✅ Correct
-import { Address } from "tevm";
-import { AddressType } from "tevm/Address";
-
-// ❌ Wrong
-import { Address } from "tevm/primitives/Address";
-```
-
-Check your `tsconfig.json` has `"moduleResolution": "bundler"` or `"node16"`.
-
-#### Type errors with branded types
-
-If you get type errors like "Type 'Uint8Array' is not assignable to type 'AddressType'", you need to construct the branded type properly:
-
-```typescript
-// ❌ Won't work - raw Uint8Array doesn't have the brand
-const addr: AddressType = new Uint8Array(20);
-
-// ✅ Correct
-const addr = Address("0x...");
-// or
-const addr = AddressType("0x...");
-```
-
-#### WASM initialization errors
-
-If using WASM modules, make sure to await initialization:
-
-```typescript
-import { Keccak256Wasm } from "tevm/crypto/keccak256.wasm";
-
-// Must initialize before use
-await Keccak256Wasm.init();
-
-// Now you can use it
-const hash = Keccak256Wasm.hash(data);
-```
-
-#### Bundle size is too large
-
-Use tree-shakeable imports to reduce bundle size:
-
-```typescript
-// ❌ Imports entire Address class (~18 KB)
-import { Address } from "tevm";
-
-// ✅ Only imports specific functions (~500 bytes)
-import { fromHex, toChecksummed } from "tevm/Address";
-```
-
-## Migration Guides
-
-### From ethers.js
-
-<Tabs>
-  <Tab title="Addresses">
-    ```typescript
-    // ethers
-    import { getAddress } from "ethers";
-    const addr = getAddress("0xa0cf...");
-
-    // Tevm
-    import { Address } from "tevm";
-    const addr = Address("0xa0cf...");
-    const checksum = addr.toChecksummed();
-    ```
-  </Tab>
-
-  <Tab title="Hashing">
-    ```typescript
-    // ethers
-    import { keccak256, toUtf8Bytes } from "ethers";
-    const hash = keccak256(toUtf8Bytes("hello"));
-
-    // Tevm
-    import { Keccak256 } from "tevm";
-    const hash = Keccak256.hash("hello");
-    ```
-  </Tab>
-
-  <Tab title="Signing">
-    ```typescript
-    // ethers
-    import { Wallet } from "ethers";
-    const wallet = new Wallet(privateKey);
-    const sig = await wallet.signMessage("hello");
-
-    // Tevm
-    import { Keccak256, Secp256k1 } from "tevm";
-    const hash = Keccak256.hash("hello");
-    const sig = Secp256k1.sign(hash, privateKey);
-    ```
-  </Tab>
-
-  <Tab title="Transactions">
-    ```typescript
-    // ethers
-    import { Wallet } from "ethers";
-    const wallet = new Wallet(privateKey);
-    const tx = await wallet.signTransaction({
-      to: "0x...",
-      value: parseEther("1.0"),
-      // ...
-    });
-
-    // Tevm
-    import { Transaction } from "tevm";
-    const signed = Transaction.sign({
-      type: 2,
-      to: Address("0x..."),
-      value: Uint("1 ether"),
-      // ...
-    }, privateKey);
-    const serialized = Transaction.serialize(signed);
-    ```
-  </Tab>
-</Tabs>
-
-### From viem
-
-<Tabs>
-  <Tab title="Addresses">
-    ```typescript
-    // viem
-    import { getAddress } from "viem";
-    const addr = getAddress("0xa0cf...");
-
-    // Tevm
-    import { Address } from "tevm";
-    const addr = Address("0xa0cf...");
-    ```
-  </Tab>
-
-  <Tab title="Hashing">
-    ```typescript
-    // viem
-    import { keccak256 } from "viem";
-    const hash = keccak256("0x...");
-
-    // Tevm
-    import { Keccak256 } from "tevm";
-    const hash = Keccak256.hash("0x...");
-    ```
-  </Tab>
-
-  <Tab title="ABI Encoding">
-    ```typescript
-    // viem
-    import { encodeFunctionData } from "viem";
-    const data = encodeFunctionData({
-      abi: [...],
-      functionName: "transfer",
-      args: [address, amount],
-    });
-
-    // Tevm
-    import { Abi } from "tevm";
-    const data = Abi.encodeFunction(
-      { name: "transfer", inputs: [...] },
-      [address, amount]
-    );
-    ```
-  </Tab>
-</Tabs>
-
-### From web3.js
-
-<Tabs>
-  <Tab title="Addresses">
-    ```typescript
-    // web3.js
-    import { toChecksumAddress } from "web3-utils";
-    const addr = toChecksumAddress("0xa0cf...");
-
-    // Tevm
-    import { Address } from "tevm";
-    const addr = Address("0xa0cf...");
-    const checksum = addr.toChecksummed();
-    ```
-  </Tab>
-
-  <Tab title="Hashing">
-    ```typescript
-    // web3.js
-    import { sha3 } from "web3-utils";
-    const hash = sha3("hello");
-
-    // Tevm
-    import { Keccak256 } from "tevm";
-    const hash = Keccak256.hash("hello");
-    ```
-  </Tab>
-</Tabs>
-
-## Next Steps
-
-### Core Primitives
-Deep dive into Address, Hash, Uint, Transaction, RLP, ABI.
-
-[Explore primitives →](/primitives/address)
+[View docs →](/primitives/uint)
 
 ### Cryptography
-Learn Keccak-256, secp256k1, EIP-712, BIP-39, HD Wallets.
 
-[View crypto docs →](/crypto/keccak256)
+#### AesGcm
+AES-GCM authenticated encryption per NIST SP 800-38D.
 
-### Branded Types
-Understand the branded type pattern for type safety.
+[View docs →](/crypto/aesgcm)
 
-[Read guide →](/getting-started/branded-types)
+#### Bip39
+BIP-39 mnemonic phrase generation and validation.
 
-### WASM Acceleration
-Optimize performance with Zig-compiled WASM modules.
+[View docs →](/crypto/bip39)
 
-[View benchmarks →](/wasm/)
+#### Blake2
+Blake2 hash function per RFC 7693.
 
-## Design Principles
+[View docs →](/crypto/blake2)
 
-1. **Simple data structures** — Built on native JavaScript primitives (Uint8Array, bigint, string)
-2. **Close-to-spec APIs** — Minimal abstraction over Ethereum primitives
-3. **Built for humans and LLMs** — APIs and documentation designed for both developers and AI assistants
-4. **Performance first** — Zero-overhead abstractions and optional WASM
-5. **Type safety** — Branded types prevent common mistakes
-6. **Tree-shakeable** — Pay only for what you use
-7. **Multi-language** — TypeScript and Zig implementations
+#### Bls12381
+BLS12-381 elliptic curve operations for Ethereum consensus layer.
+
+[View docs →](/crypto/bls12381)
+
+#### Bn254
+BN254 (alt_bn128) elliptic curve for zkSNARK verification.
+
+[View docs →](/crypto/bn254)
+
+#### Ed25519
+Ed25519 EdDSA signatures per RFC 8032.
+
+[View docs →](/crypto/ed25519)
+
+#### EIP712
+EIP-712 typed structured data signing.
+
+[View docs →](/crypto/eip712)
+
+#### HDWallet
+BIP-32/BIP-44 hierarchical deterministic wallet key derivation.
+
+[View docs →](/crypto/hdwallet)
+
+#### Keccak256
+Keccak-256 hash function (primary Ethereum hash) per FIPS 202.
+
+[View docs →](/crypto/keccak256)
+
+#### Kzg
+KZG polynomial commitments for EIP-4844 blob verification.
+
+[View docs →](/crypto/kzg)
+
+#### P256
+NIST P-256 (secp256r1) elliptic curve per FIPS 186-5.
+
+[View docs →](/crypto/p256)
+
+#### Pbkdf2
+PBKDF2 key derivation function.
+
+[View docs →](/crypto/pbkdf2)
+
+#### Poseidon
+Poseidon hash function for zero-knowledge proofs.
+
+[View docs →](/crypto/poseidon)
+
+#### Ripemd160
+RIPEMD-160 hash function.
+
+[View docs →](/crypto/ripemd160)
+
+#### Schnorr
+Schnorr signatures for Bitcoin compatibility.
+
+[View docs →](/crypto/schnorr)
+
+#### Secp256k1
+Secp256k1 ECDSA for Ethereum transaction signing.
+
+[View docs →](/crypto/secp256k1)
+
+#### Secp256r1
+Secp256r1 (P-256) ECDSA signatures.
+
+[View docs →](/crypto/secp256r1)
+
+#### Sha256
+SHA-256 hash function per FIPS 180-4.
+
+[View docs →](/crypto/sha256)
+
+#### Sha3
+SHA-3 hash function family per FIPS 202.
+
+[View docs →](/crypto/sha3)
+
+#### Sha512
+SHA-512 hash function per FIPS 180-4.
+
+[View docs →](/crypto/sha512)
+
+#### X25519
+X25519 ECDH key exchange per RFC 7748.
+
+[View docs →](/crypto/x25519)

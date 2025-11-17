@@ -16,18 +16,22 @@ Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate ga
 ### Simulate Transactions
 
 ```typescript
-import { createEvm } from 'tevm/evm';
+import { Evm, ForkStateManager, Provider } from 'tevm';
 import { Address } from 'tevm/primitives';
 
-const evm = createEvm({
-  fork: {
-    url: 'https://eth.llamarpc.com',
-    blockNumber: 18_000_000n
-  }
+// Create EVM with fork state manager
+const stateManager = ForkStateManager({
+  url: 'https://eth.llamarpc.com',
+  blockNumber: 18_000_000n
 });
 
+const evm = Evm({ stateManager });
+
+// Create JSON-RPC provider from EVM
+const provider = Provider.fromEvm(evm);
+
 // Simulate a transfer before sending
-const result = await evm.call({
+const result = await provider.eth_call({
   to: Address('0x...token'),
   data: encodeFunctionData({
     abi: erc20Abi,
@@ -46,7 +50,7 @@ if (result.executionGasUsed > gasLimit) {
 
 ```typescript
 // Show users expected outcome before confirmation
-const simulatedBalance = await evm.call({
+const simulatedBalance = await provider.eth_call({
   to: tokenAddress,
   data: encodeFunctionData({
     abi: erc20Abi,
@@ -65,9 +69,10 @@ await wallet.sendTransaction(tx);
 ### Step Through Execution
 
 ```typescript
-import { createEvm } from 'tevm/evm';
+import { Evm, Provider } from 'tevm';
 
-const evm = createEvm();
+const evm = Evm();
+const provider = Provider.fromEvm(evm);
 
 // Hook into every opcode
 evm.on('step', (step) => {
@@ -78,7 +83,7 @@ evm.on('step', (step) => {
 });
 
 // Execute and debug
-await evm.call({
+await provider.eth_call({
   to: contractAddress,
   data: calldata
 });
@@ -229,18 +234,20 @@ console.log('Runtime code hash:', codeHash);
 Create local forks of any Ethereum network for testing and simulation:
 
 ```typescript
-import { createEvm } from 'tevm/evm';
+import { Evm, ForkStateManager, Provider } from 'tevm';
+import { Address } from 'tevm/primitives';
 
 // Fork mainnet at specific block
-const mainnetFork = createEvm({
-  fork: {
-    url: 'https://eth.llamarpc.com',
-    blockNumber: 18_000_000n
-  }
+const stateManager = ForkStateManager({
+  url: 'https://eth.llamarpc.com',
+  blockNumber: 18_000_000n
 });
 
+const mainnetFork = Evm({ stateManager });
+const provider = Provider.fromEvm(mainnetFork);
+
 // Test against real state
-const balance = await mainnetFork.call({
+const balance = await provider.eth_call({
   to: Address('0x...'),
   data: encodeFunctionData({
     abi: erc20Abi,
@@ -264,8 +271,11 @@ await mainnetFork.setBalance(testAddress, parseEther('1000'));
 Everything runs in-memory. No external services, no API keys, no rate limits:
 
 ```typescript
+import { Evm, Provider } from 'tevm';
+
 // All execution is local and instant
-const evm = createEvm();
+const evm = Evm();
+const provider = Provider.fromEvm(evm);
 
 // Deploy contracts
 await evm.deploy({
@@ -274,7 +284,7 @@ await evm.deploy({
 });
 
 // Call contracts
-await evm.call({ to, data });
+await provider.eth_call({ to, data });
 
 // Inspect state
 const storage = await evm.getStorageAt(address, slot);

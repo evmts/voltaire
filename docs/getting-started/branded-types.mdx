@@ -83,9 +83,62 @@ Every Ethereum type is provided by Tevm. Tevm takes a data-first approach to Eth
 
 When we think of Ethereum as just basic primitive Ethereum types, those who have Ethereum domain knowledge will find using Tevm to be intuitive and easy to get in the flow state.
 
-The high level of type safety also makes coding with LLMs much safer than any previous Ethereum library. And that domain knowledge means that LLMs will be pre-trained on using Tevm because they can leverage their more generic Ethereum knowledge while using the Tevm API.
-
 If something has type `AddressType`, you know it was validated at runtime to be a valid address.
+
+## Enhanced Safety for LLM-Assisted Development
+
+Tevm's branded types provide critical guardrails when working with AI coding assistants like Claude Code, Cursor, or GitHub Copilot.
+
+**The Problem with Structural Typing:**
+
+Traditional Ethereum libraries use structural typing (`type Address = \`0x${string}\``), which creates a dangerous situation for LLM-generated code:
+
+```typescript
+// Traditional approach - structurally typed
+type Address = `0x${string}`;
+type Bytecode = `0x${string}`;
+type Hash = `0x${string}`;
+
+// LLM generates this code - compiles fine, breaks at runtime
+function transfer(to: Address, contract: Address) {
+  simulateCall(contract, to); // ❌ Arguments swapped - TypeScript can't catch it!
+}
+```
+
+**Why LLMs struggle with structural types:**
+1. **No runtime feedback** - Code compiles successfully even when semantically wrong
+2. **Context confusion** - LLMs can't differentiate between identical structural types across large codebases
+3. **Silent failures** - Type system provides false confidence; bugs only surface at runtime
+
+**Tevm's Solution:**
+
+Branded types create **nominal typing** that LLMs can track and validate:
+
+```typescript
+import { Address, Bytecode, Keccak256 } from 'tevm';
+
+// LLM generates this code
+function transfer(to: Address, contract: Address) {
+  simulateCall(contract, to);
+  // ✓ TypeScript enforces semantic correctness
+}
+
+// LLM tries to pass wrong type
+const bytecode = Bytecode("0x6080");
+transfer(bytecode, someAddress);
+// ✗ Compile error: Type 'Bytecode' is not assignable to type 'Address'
+// ↳ LLM gets immediate feedback and self-corrects
+```
+
+**Real-World Impact:**
+
+When an LLM generates code with Tevm:
+- **Compile-time validation** catches semantic errors before execution
+- **Type names provide context** - `Keccak256` is more meaningful than `\`0x${string}\``
+- **Self-documenting code** - function signatures clearly communicate intent
+- **Fewer iterations** - LLM gets the types right on first attempt instead of requiring runtime debugging
+
+This makes LLM-assisted Ethereum development **significantly safer** than with traditional libraries. See [LLM-Optimized](/getting-started/llm-optimized) for how Tevm's API design further enhances AI-assisted development.
 
 ## Benefits
 
