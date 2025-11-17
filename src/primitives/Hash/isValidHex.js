@@ -1,4 +1,4 @@
-import { SIZE } from "../HashType.js";
+import { SIZE } from "./HashType.js";
 
 /**
  * Validate hex string is valid hash format

@@ -1,4 +1,4 @@
-import { InvalidFormatError } from "../../errors/ValidationError.js";
+import { InvalidFormatError } from "../errors/index.js";
 import { isHash } from "./isHash.js";
 
 /**

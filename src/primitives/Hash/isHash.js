@@ -1,4 +1,4 @@
-import { SIZE } from "../HashType.js";
+import { SIZE } from "./HashType.js";
 
 /**
  * Check if value is a valid Hash

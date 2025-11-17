@@ -1,5 +1,5 @@
 import { PrimitiveError } from "../../errors/PrimitiveError.js";
-import { InvalidLengthError } from "../../errors/ValidationError.js";
+import { InvalidLengthError } from "../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**

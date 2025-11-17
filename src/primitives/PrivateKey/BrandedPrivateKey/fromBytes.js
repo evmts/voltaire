@@ -1,4 +1,4 @@
-import { InvalidLengthError } from "../../errors/ValidationError.js";
+import { InvalidLengthError } from "../errors/index.js";
 
 /**
  * Create PrivateKey from raw bytes

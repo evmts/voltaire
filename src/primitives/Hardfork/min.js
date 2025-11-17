@@ -1,4 +1,4 @@
-import { ValidationError } from "../../errors/ValidationError.js";
+import { ValidationError } from "../errors/index.js";
 import { compare } from "./compare.js";
 
 /**

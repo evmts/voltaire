@@ -1,4 +1,4 @@
-import { InvalidFormatError } from "../../errors/ValidationError.js";
+import { InvalidFormatError } from "../errors/index.js";
 import { Keccak256 } from "./keccak256.js";
 
 /**

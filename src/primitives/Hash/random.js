@@ -1,5 +1,5 @@
-import { ValidationError } from "../../errors/ValidationError.js";
-import { SIZE } from "../HashType.js";
+import { ValidationError } from "../errors/index.js";
+import { SIZE } from "./HashType.js";
 
 /**
  * Generate random hash

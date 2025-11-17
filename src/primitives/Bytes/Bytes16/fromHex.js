@@ -1,7 +1,7 @@
 import {
 	InvalidFormatError,
 	InvalidLengthError,
-} from "../../errors/ValidationError.js";
+} from "../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**

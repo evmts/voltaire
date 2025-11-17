@@ -3,7 +3,7 @@ import { DecodingError } from "../../errors/SerializationError.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
-} from "../../errors/ValidationError.js";
+} from "../errors/index.js";
 
 /**
  * Decode RLP bytes to access list (EIP-2930)
