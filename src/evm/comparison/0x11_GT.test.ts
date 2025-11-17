@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { handle as GT } from "./0x11_GT.js";
 
 /**

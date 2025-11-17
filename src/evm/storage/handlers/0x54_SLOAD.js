@@ -13,9 +13,9 @@ import * as Frame from "../../Frame/index.js";
  *
  * Gas: 100 (warm) or 2100 (cold) - EIP-2929
  *
- * @param {import("../../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function sload(frame, host) {
 	// Pop key from stack

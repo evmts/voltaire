@@ -8,9 +8,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * Stack: [] => [origin]
  * Gas: 2 (GasQuickStep)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../../primitives/Address/AddressType.js").AddressType} origin - Transaction origin address
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function origin(frame, origin) {
 	const gasErr = consumeGas(frame, 2n);

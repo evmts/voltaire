@@ -9,9 +9,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * Stack: [address] => [codeSize]
  * Gas: Variable (hardfork-dependent: 20/700/2600/100)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodesize(frame, host) {
 	const addrResult = popStack(frame);

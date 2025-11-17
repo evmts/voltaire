@@ -27,9 +27,9 @@ import * as Frame from "../../Frame/index.js";
  * - Otherwise: 5000 gas
  * - Refund 15000 when clearing
  *
- * @param {import("../../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function sstore(frame, host) {
 	// EIP-214: Cannot modify state in static call

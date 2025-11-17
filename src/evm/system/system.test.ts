@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { create } from "./0xf0_CREATE.js";
 import { call } from "./0xf1_CALL.js";
 import { delegatecall } from "./0xf4_DELEGATECALL.js";

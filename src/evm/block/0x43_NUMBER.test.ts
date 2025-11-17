@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { handler_0x43_NUMBER } from "./0x43_NUMBER.js";
 
 describe("NUMBER (0x43)", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { signextend } from "./0x0b_SIGNEXTEND.js";
 
 function createFrame(stack: bigint[], gasRemaining = 1000000n): BrandedFrame {

@@ -7,7 +7,7 @@ import { writeMemory } from "../Frame/writeMemory.js";
  * Add two u32 values with overflow checking
  * @param {number} a - First value
  * @param {number} b - Second value
- * @returns {{value: number, error: null} | {value: null, error: import("../Frame/BrandedFrame.js").EvmError}}
+ * @returns {{value: number, error: null} | {value: null, error: import("../Frame/FrameType.js").EvmError}}
  */
 function addU32(a, b) {
 	const result = a + b;
@@ -47,8 +47,8 @@ function wordAlignedSize(bytes) {
  * Copies length bytes from returnData[offset:offset+length] to memory[destOffset:destOffset+length].
  * Throws OutOfBounds if offset + length > returnData.length.
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function returndatacopy(frame) {
 	// TODO: Add hardfork check for Byzantium+

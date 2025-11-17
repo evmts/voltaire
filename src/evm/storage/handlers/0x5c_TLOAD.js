@@ -14,9 +14,9 @@ import * as Frame from "../../Frame/index.js";
  * - Transaction-scoped storage, cleared at end of transaction
  * - No refunds or complex gas metering
  *
- * @param {import("../../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function tload(frame, host) {
 	// TODO: Hardfork check - TLOAD requires Cancun+

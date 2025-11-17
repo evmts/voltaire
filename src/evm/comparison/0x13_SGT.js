@@ -13,8 +13,8 @@ import { toSigned256 } from "./toSigned256.js";
  * Gas: 3 (GasFastestStep)
  * Stack: a b -> (signed(a) > signed(b) ? 1 : 0)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Execution frame
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Execution frame
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handle(frame) {
 	// Consume gas

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { handler_0x42_TIMESTAMP } from "./0x42_TIMESTAMP.js";
 
 describe("TIMESTAMP (0x42)", () => {

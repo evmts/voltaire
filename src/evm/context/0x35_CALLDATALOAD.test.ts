@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { calldataload } from "./0x35_CALLDATALOAD.js";
 
 function createFrame(

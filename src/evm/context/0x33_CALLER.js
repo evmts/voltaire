@@ -8,8 +8,8 @@ import { pushStack } from "../Frame/pushStack.js";
  * Stack: [] => [caller]
  * Gas: 2 (GasQuickStep)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function caller(frame) {
 	const gasErr = consumeGas(frame, 2n);

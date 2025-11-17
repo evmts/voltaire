@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../primitives/Address/index.js";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { mstore } from "./0x52_MSTORE.js";
 
 /**

@@ -1,8 +1,8 @@
 /**
  * AND opcode (0x16) - Bitwise AND
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function handle(frame) {
 	// Consume gas (GasFastestStep = 3)

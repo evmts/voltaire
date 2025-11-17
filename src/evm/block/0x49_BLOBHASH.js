@@ -9,8 +9,8 @@ import { pushStack } from "../Frame/pushStack.js";
  * Per Python reference (cancun/vm/gas.py:68):
  * - GAS_BLOBHASH_OPCODE = 3 (same as GasFastestStep)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x49_BLOBHASH(frame) {
 	// TODO: Check hardfork when available

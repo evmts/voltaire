@@ -11,8 +11,8 @@ import { pushStack } from "../Frame/pushStack.js";
  * - Returns hash of one of the 256 most recent complete blocks
  * - Returns 0 if block number is out of range (too old or >= current)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x40_BLOCKHASH(frame) {
 	const gasErr = consumeGas(frame, ExtStep);

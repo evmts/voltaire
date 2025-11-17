@@ -1,8 +1,8 @@
 /**
  * MOD opcode (0x06) - Modulo operation (mod by zero returns 0)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function mod(frame) {
 	const gasErr = consumeGas(frame, 5n);
@@ -26,9 +26,9 @@ export function mod(frame) {
 }
 
 /**
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
  * @param {bigint} amount
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null}
+ * @returns {import("../Frame/FrameType.js").EvmError | null}
  */
 function consumeGas(frame, amount) {
 	if (frame.gasRemaining < amount) {
@@ -40,8 +40,8 @@ function consumeGas(frame, amount) {
 }
 
 /**
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame
- * @returns {{value: bigint, error: null} | {value: null, error: import("../Frame/BrandedFrame.js").EvmError}}
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
+ * @returns {{value: bigint, error: null} | {value: null, error: import("../Frame/FrameType.js").EvmError}}
  */
 function popStack(frame) {
 	if (frame.stack.length === 0) {
@@ -52,9 +52,9 @@ function popStack(frame) {
 }
 
 /**
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
  * @param {bigint} value
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null}
+ * @returns {import("../Frame/FrameType.js").EvmError | null}
  */
 function pushStack(frame, value) {
 	if (frame.stack.length >= 1024) {

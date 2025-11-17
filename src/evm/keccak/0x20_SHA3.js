@@ -18,8 +18,8 @@ import { readMemory } from "../Frame/readMemory.js";
  * Gas cost: 30 (base) + 6 * word_count + memory expansion
  * where word_count = ceil(length / 32)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function sha3(frame) {
 	// Pop offset from stack

@@ -4,8 +4,8 @@ import { consumeGas } from "../../Frame/consumeGas.js";
 /**
  * SWAP9 opcode (0x98) - Swap top with (9+1)th item
  *
- * @param {import("../../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x98_SWAP9(frame) {
 	const gasErr = consumeGas(frame, FastestStep);

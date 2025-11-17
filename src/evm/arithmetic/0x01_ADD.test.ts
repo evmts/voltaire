@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { add } from "./0x01_ADD.js";
 
 /**

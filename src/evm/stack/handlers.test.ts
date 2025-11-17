@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedFrame } from "../Frame/BrandedFrame.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { handler_0x7F_PUSH32 } from "./handlers/0x7F_PUSH32.js";
 import { handler_0x50_POP } from "./handlers/0x50_POP.js";
 import { handler_0x60_PUSH1 } from "./handlers/0x60_PUSH1.js";

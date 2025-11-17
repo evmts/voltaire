@@ -8,8 +8,8 @@
  * Pre-Cancun: Marks account for deletion, transfers balance to beneficiary
  * Post-Cancun: Only deletes if account was created in same transaction, always transfers balance
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function selfdestruct(frame) {
 	// Pop beneficiary address
@@ -66,9 +66,9 @@ export function selfdestruct(frame) {
 }
 
 /**
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
  * @param {bigint} amount
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null}
+ * @returns {import("../Frame/FrameType.js").EvmError | null}
  */
 function consumeGas(frame, amount) {
 	if (frame.gasRemaining < amount) {
@@ -80,8 +80,8 @@ function consumeGas(frame, amount) {
 }
 
 /**
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame
- * @returns {{value: bigint, error: null} | {value: null, error: import("../Frame/BrandedFrame.js").EvmError}}
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
+ * @returns {{value: bigint, error: null} | {value: null, error: import("../Frame/FrameType.js").EvmError}}
  */
 function popStack(frame) {
 	if (frame.stack.length === 0) {

@@ -13,9 +13,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * EIP-1052: Introduced in Constantinople hardfork
  * Returns keccak256 hash of the account's code, or 0 if account is empty.
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodehash(frame, host) {
 	// TODO: Add hardfork check for Constantinople+

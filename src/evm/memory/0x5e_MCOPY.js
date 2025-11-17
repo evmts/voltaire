@@ -34,8 +34,8 @@ function copyGasCost(sizeBytes) {
  * Note: This opcode was introduced in the Cancun hardfork (EIP-5656).
  * Implementation assumes hardfork check is done externally.
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function mcopy(frame) {
 	// Pop dest, src, len from stack

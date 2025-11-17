@@ -5,8 +5,8 @@ import { pushStack } from "../Frame/pushStack.js";
 /**
  * GASLIMIT opcode (0x45) - Get block gas limit
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x45_GASLIMIT(frame) {
 	const gasErr = consumeGas(frame, QuickStep);

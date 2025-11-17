@@ -12,8 +12,8 @@ import { pushStack } from "../Frame/pushStack.js";
  * Gas: 3 (GasFastestStep)
  * Stack: a b -> (a == b ? 1 : 0)
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Execution frame
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Execution frame
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handle(frame) {
 	// Consume gas

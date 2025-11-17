@@ -25,8 +25,8 @@ function wordAlignedSize(bytes) {
 /**
  * RETURN opcode (0xf3) - Halt execution and return output data
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if operation fails
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0xf3_RETURN(frame) {
 	const offsetResult = popStack(frame);

@@ -8,7 +8,7 @@ import { writeMemory } from "../Frame/writeMemory.js";
  * Add two u32 values with overflow checking
  * @param {number} a - First value
  * @param {number} b - Second value
- * @returns {{value: number, error: null} | {value: null, error: import("../Frame/BrandedFrame.js").EvmError}}
+ * @returns {{value: number, error: null} | {value: null, error: import("../Frame/FrameType.js").EvmError}}
  */
 function addU32(a, b) {
 	const result = a + b;
@@ -37,9 +37,9 @@ function copyGasCost(size) {
  * Copies size bytes from external account's code[offset:offset+size] to memory[destOffset:destOffset+size].
  * If offset + i >= code.length, remaining bytes are zero-padded.
  *
- * @param {import("../Frame/BrandedFrame.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
- * @returns {import("../Frame/BrandedFrame.js").EvmError | null} Error if any
+ * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodecopy(frame, host) {
 	const addrResult = popStack(frame);
