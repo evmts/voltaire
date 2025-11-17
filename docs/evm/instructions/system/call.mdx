@@ -596,7 +596,7 @@ function safeSend(address to, uint256 amount) external {
 /**
  * CALL opcode (0xf1) - Message call into an account
  */
-export function call(frame: BrandedFrame): EvmError | null {
+export function call(frame: FrameType): EvmError | null {
   // Pop 7 arguments
   const gas = popStack(frame);
   const address = popStack(frame);

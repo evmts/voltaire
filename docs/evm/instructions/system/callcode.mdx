@@ -354,7 +354,7 @@ contract ConfusingValue {
  * CALLCODE opcode (0xf2) - DEPRECATED
  * Execute code in current context
  */
-export function callcode(frame: BrandedFrame): EvmError | null {
+export function callcode(frame: FrameType): EvmError | null {
   // Pop 7 arguments (same as CALL)
   const gas = popStack(frame);
   const address = popStack(frame);

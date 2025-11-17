@@ -292,7 +292,7 @@ uint256 futureBlock = block.number + 1_000_000_000;
 /**
  * NUMBER opcode (0x43) - Get block number
  */
-export function number(frame: BrandedFrame): EvmError | null {
+export function number(frame: FrameType): EvmError | null {
   // Consume gas (GasQuickStep = 2)
   frame.gasRemaining -= 2n;
   if (frame.gasRemaining < 0n) {

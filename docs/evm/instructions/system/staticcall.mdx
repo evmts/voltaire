@@ -617,7 +617,7 @@ contract Attacker {
  * STATICCALL opcode (0xfa)
  * Read-only message call with state protection
  */
-export function staticcall(frame: BrandedFrame): EvmError | null {
+export function staticcall(frame: FrameType): EvmError | null {
   // Pop 6 arguments (no value)
   const gas = popStack(frame);
   const address = popStack(frame);

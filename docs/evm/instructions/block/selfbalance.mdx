@@ -322,7 +322,7 @@ contract GasAware {
  * SELFBALANCE opcode (0x47) - Get balance of executing contract
  * Available: Istanbul+
  */
-export function selfbalance(frame: BrandedFrame): EvmError | null {
+export function selfbalance(frame: FrameType): EvmError | null {
   // Check hardfork availability
   if (frame.evm.hardfork.isBefore('ISTANBUL')) {
     return { type: "InvalidOpcode" };

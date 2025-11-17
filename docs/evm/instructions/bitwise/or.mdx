@@ -268,7 +268,7 @@ function packRGB(uint8 r, uint8 g, uint8 b) pure returns (uint24) {
 /**
  * OR opcode (0x17) - Bitwise OR operation
  */
-export function op_or(frame: BrandedFrame): EvmError | null {
+export function op_or(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

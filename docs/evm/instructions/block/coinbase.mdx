@@ -323,7 +323,7 @@ contract CrossChainSafe {
 /**
  * COINBASE opcode (0x41) - Get block coinbase address
  */
-export function coinbase(frame: BrandedFrame): EvmError | null {
+export function coinbase(frame: FrameType): EvmError | null {
   // Consume gas (GasQuickStep = 2)
   frame.gasRemaining -= 2n;
   if (frame.gasRemaining < 0n) {

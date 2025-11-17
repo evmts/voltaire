@@ -413,7 +413,7 @@ uint256 constant BLOB_SIZE = 128 * 1024; // 128 KB per blob
  * BLOBHASH opcode (0x49) - Get versioned blob hash
  * Available: Cancun+ (EIP-4844)
  */
-export function blobhash(frame: BrandedFrame): EvmError | null {
+export function blobhash(frame: FrameType): EvmError | null {
   // Check hardfork availability
   if (frame.evm.hardfork.isBefore('CANCUN')) {
     return { type: "InvalidOpcode" };

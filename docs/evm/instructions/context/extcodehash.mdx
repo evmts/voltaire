@@ -276,7 +276,7 @@ import { Keccak256 } from "../../crypto/Keccak256/Keccak256.js";
  * Gas: 700 (Istanbul+) / 2600/100 (Berlin+ cold/warm)
  */
 export function extcodehash(
-  frame: BrandedFrame,
+  frame: FrameType,
   host: BrandedHost
 ): EvmError | null {
   const addrResult = popStack(frame);

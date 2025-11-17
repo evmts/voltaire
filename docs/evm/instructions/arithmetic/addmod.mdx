@@ -237,7 +237,7 @@ assembly {
 /**
  * ADDMOD opcode (0x08) - Addition modulo N
  */
-export function addmod(frame: BrandedFrame): EvmError | null {
+export function addmod(frame: FrameType): EvmError | null {
   // Consume gas (GasMidStep = 8)
   frame.gasRemaining -= 8n;
   if (frame.gasRemaining < 0n) {

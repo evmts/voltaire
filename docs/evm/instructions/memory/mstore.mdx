@@ -312,7 +312,7 @@ mstore(0x100, value)  // Assumes offset 0x100 is free
 /**
  * MSTORE opcode (0x52) - Write 32-byte word to memory
  */
-export function mstore(frame: BrandedFrame): EvmError | null {
+export function mstore(frame: FrameType): EvmError | null {
   // Pop offset and value from stack
   if (frame.stack.length < 2) {
     return { type: "StackUnderflow" };

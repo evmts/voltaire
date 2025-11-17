@@ -78,7 +78,7 @@ During contract construction, CODESIZE includes constructor code. After deployme
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function codesize(frame: BrandedFrame): EvmError | null {
+export function codesize(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 2n);
   if (gasErr) return gasErr;
 

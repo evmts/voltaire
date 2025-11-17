@@ -497,7 +497,7 @@ import { SlowStep } from "../../primitives/GasConstants/constants.js";
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0x57_JUMPI(frame: BrandedFrame): EvmError | null {
+export function handler_0x57_JUMPI(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, SlowStep);
   if (gasErr) return gasErr;
 

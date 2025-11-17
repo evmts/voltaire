@@ -266,7 +266,7 @@ import { toU256 } from "../../primitives/Address/AddressType/toU256.js";
  * Stack: [] => [address]
  * Gas: 2 (GasQuickStep)
  */
-export function address(frame: BrandedFrame): EvmError | null {
+export function address(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 2n);
   if (gasErr) return gasErr;
 

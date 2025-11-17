@@ -396,7 +396,7 @@ assembly {
 /**
  * MCOPY opcode (0x5e) - Copy memory (Cancun+, EIP-5656)
  */
-export function mcopy(frame: BrandedFrame): EvmError | null {
+export function mcopy(frame: FrameType): EvmError | null {
   // Check Cancun availability
   if (frame.evm.hardfork.isBefore('CANCUN')) {
     return { type: "InvalidOpcode" };

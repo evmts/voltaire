@@ -304,7 +304,7 @@ assembly {
 /**
  * SGT opcode (0x13) - Signed greater than comparison
  */
-export function handle(frame: BrandedFrame): EvmError | null {
+export function handle(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   const gasErr = consumeGas(frame, FastestStep);
   if (gasErr) return gasErr;

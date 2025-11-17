@@ -329,7 +329,7 @@ contract Pausable {
 /**
  * SELFDESTRUCT opcode (0xff)
  */
-export function selfdestruct(frame: BrandedFrame): EvmError | null {
+export function selfdestruct(frame: FrameType): EvmError | null {
   // Pop recipient address
   if (frame.stack.length < 1) return { type: "StackUnderflow" };
   const recipient = frame.stack.pop()!;

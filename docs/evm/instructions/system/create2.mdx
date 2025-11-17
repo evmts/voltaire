@@ -617,7 +617,7 @@ contract Vulnerable {
  * CREATE2 opcode (0xf5)
  * Create contract at deterministic address
  */
-export function create2(frame: BrandedFrame): EvmError | null {
+export function create2(frame: FrameType): EvmError | null {
   // EIP-214: Cannot be called in static context
   if (frame.isStatic) {
     return { type: "WriteProtection" };

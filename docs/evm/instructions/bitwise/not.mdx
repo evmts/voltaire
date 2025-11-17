@@ -302,7 +302,7 @@ function isNotMember(uint256 value, uint256 bitmap) pure returns (bool) {
 /**
  * NOT opcode (0x19) - Bitwise NOT operation (one's complement)
  */
-export function op_not(frame: BrandedFrame): EvmError | null {
+export function op_not(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

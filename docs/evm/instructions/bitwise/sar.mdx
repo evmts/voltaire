@@ -359,7 +359,7 @@ function isNegative(uint256 packed, uint256 bitWidth) pure returns (bool) {
 /**
  * SAR opcode (0x1d) - Arithmetic shift right operation (EIP-145)
  */
-export function sar(frame: BrandedFrame): EvmError | null {
+export function sar(frame: FrameType): EvmError | null {
   // Check hardfork (Constantinople or later)
   if (frame.hardfork.isBefore('constantinople')) {
     return { type: "InvalidOpcode" };

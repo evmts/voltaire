@@ -392,7 +392,7 @@ function fake_exponential(
  * BLOBBASEFEE opcode (0x4A) - Get blob base fee
  * Available: Cancun+ (EIP-7516)
  */
-export function blobbasefee(frame: BrandedFrame): EvmError | null {
+export function blobbasefee(frame: FrameType): EvmError | null {
   // Check hardfork availability
   if (frame.evm.hardfork.isBefore('CANCUN')) {
     return { type: "InvalidOpcode" };

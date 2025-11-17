@@ -123,7 +123,7 @@ Safe opcode - just returns buffer size.
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function returndatasize(frame: BrandedFrame): EvmError | null {
+export function returndatasize(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 2n);
   if (gasErr) return gasErr;
 

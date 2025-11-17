@@ -300,7 +300,7 @@ function logUninitialized() public {
 /**
  * LOG0 opcode (0xa0) - Emit log with no indexed topics
  */
-export function handler_0xa0_LOG0(frame: BrandedFrame): EvmError | null {
+export function handler_0xa0_LOG0(frame: FrameType): EvmError | null {
   // Check static call (EIP-214)
   if (frame.isStatic) {
     return { type: "WriteProtection" };

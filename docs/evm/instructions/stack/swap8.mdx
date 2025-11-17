@@ -223,7 +223,7 @@ assembly {
  * Stack: [..., valueN, ..., top] => [..., top, ..., valueN]
  * Gas: 3 (GasFastestStep)
  */
-export function handler_0x97_SWAP8(frame: BrandedFrame): EvmError | null {
+export function handler_0x97_SWAP8(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, FastestStep);
   if (gasErr) return gasErr;
 

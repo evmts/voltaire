@@ -312,7 +312,7 @@ function toInt8(int256 value) pure returns (int8) {
 /**
  * SIGNEXTEND opcode (0x0b) - Sign extension
  */
-export function signextend(frame: BrandedFrame): EvmError | null {
+export function signextend(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

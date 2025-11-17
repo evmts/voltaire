@@ -241,7 +241,7 @@ function convertToUSDC(uint256 tokenAmount, uint256 price)
 /**
  * DIV opcode (0x04) - Integer division (division by zero returns 0)
  */
-export function div(frame: BrandedFrame): EvmError | null {
+export function div(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

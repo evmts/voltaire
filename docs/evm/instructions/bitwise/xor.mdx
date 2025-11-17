@@ -324,7 +324,7 @@ function clearBits(uint256 value, uint256 mask) pure returns (uint256) {
 /**
  * XOR opcode (0x18) - Bitwise XOR operation
  */
-export function op_xor(frame: BrandedFrame): EvmError | null {
+export function op_xor(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

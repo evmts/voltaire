@@ -231,7 +231,7 @@ function convertDecimals(
 /**
  * MUL opcode (0x02) - Multiplication with overflow wrapping
  */
-export function mul(frame: BrandedFrame): EvmError | null {
+export function mul(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

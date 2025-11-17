@@ -317,7 +317,7 @@ contract SecureLottery {
  * Pre-Merge: Block difficulty
  * Post-Merge: PREVRANDAO
  */
-export function difficulty(frame: BrandedFrame): EvmError | null {
+export function difficulty(frame: FrameType): EvmError | null {
   // Consume gas (GasQuickStep = 2)
   frame.gasRemaining -= 2n;
   if (frame.gasRemaining < 0n) {

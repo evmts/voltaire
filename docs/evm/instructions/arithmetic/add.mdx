@@ -226,7 +226,7 @@ unchecked {
 /**
  * ADD opcode (0x01) - Addition with overflow wrapping
  */
-export function add(frame: BrandedFrame): EvmError | null {
+export function add(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

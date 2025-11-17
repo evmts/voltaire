@@ -351,7 +351,7 @@ bytes32 previousHash = blockhash(block.number - 1);
 /**
  * BLOCKHASH opcode (0x40) - Get hash of recent block
  */
-export function blockhash(frame: BrandedFrame): EvmError | null {
+export function blockhash(frame: FrameType): EvmError | null {
   // Consume gas (GasExtStep = 20)
   frame.gasRemaining -= 20n;
   if (frame.gasRemaining < 0n) {

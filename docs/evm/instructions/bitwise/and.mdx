@@ -267,7 +267,7 @@ function unpackRGB(uint24 color) pure returns (uint8 r, uint8 g, uint8 b) {
 /**
  * AND opcode (0x16) - Bitwise AND operation
  */
-export function op_and(frame: BrandedFrame): EvmError | null {
+export function op_and(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

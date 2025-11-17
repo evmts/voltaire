@@ -245,7 +245,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Stack: [offset] => [data]
  * Gas: 3 (GasFastestStep)
  */
-export function calldataload(frame: BrandedFrame): EvmError | null {
+export function calldataload(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 3n);
   if (gasErr) return gasErr;
 

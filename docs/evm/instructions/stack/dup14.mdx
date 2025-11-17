@@ -235,7 +235,7 @@ assembly {
  * Stack: [..., value, ...] => [..., value, ..., value]
  * Gas: 3 (GasFastestStep)
  */
-export function handler_0x8D_DUP14(frame: BrandedFrame): EvmError | null {
+export function handler_0x8D_DUP14(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, FastestStep);
   if (gasErr) return gasErr;
 

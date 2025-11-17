@@ -288,7 +288,7 @@ function polyEval(uint256[] memory coeffs, uint256 x, uint256 p)
 /**
  * MULMOD opcode (0x09) - Multiplication modulo N
  */
-export function mulmod(frame: BrandedFrame): EvmError | null {
+export function mulmod(frame: FrameType): EvmError | null {
   // Consume gas (GasMidStep = 8)
   frame.gasRemaining -= 8n;
   if (frame.gasRemaining < 0n) {

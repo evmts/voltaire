@@ -356,7 +356,7 @@ import { MidStep } from "../../primitives/GasConstants/constants.js";
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0x56_JUMP(frame: BrandedFrame): EvmError | null {
+export function handler_0x56_JUMP(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, MidStep);
   if (gasErr) return gasErr;
 

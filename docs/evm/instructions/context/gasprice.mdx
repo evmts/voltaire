@@ -155,7 +155,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Gas: 2 (GasQuickStep)
  */
 export function gasprice(
-  frame: BrandedFrame,
+  frame: FrameType,
   gasPrice: bigint
 ): EvmError | null {
   const gasErr = consumeGas(frame, 2n);

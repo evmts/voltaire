@@ -428,7 +428,7 @@ import { readMemory } from "../Frame/readMemory.js";
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0xf3_RETURN(frame: BrandedFrame): EvmError | null {
+export function handler_0xf3_RETURN(frame: FrameType): EvmError | null {
   const offsetResult = popStack(frame);
   if (offsetResult.error) return offsetResult.error;
   const offset = offsetResult.value;

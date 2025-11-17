@@ -145,7 +145,7 @@ modifier onlyEOA() {
 <Tab title="TypeScript">
 ```typescript
 export function extcodesize(
-  frame: BrandedFrame,
+  frame: FrameType,
   host: BrandedHost
 ): EvmError | null {
   const addrResult = popStack(frame);

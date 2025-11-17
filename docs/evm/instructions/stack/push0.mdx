@@ -314,7 +314,7 @@ import { QuickStep } from "../../../primitives/GasConstants/BrandedGasConstants/
  * Stack: [] => [0]
  * Gas: 2 (GasQuickStep)
  */
-export function handler_0x5f_PUSH0(frame: BrandedFrame): EvmError | null {
+export function handler_0x5f_PUSH0(frame: FrameType): EvmError | null {
   // TODO: Add hardfork check when Hardfork module is available
   // if (evm.hardfork.isBefore(.SHANGHAI)) {
   //   return { type: "InvalidOpcode" };

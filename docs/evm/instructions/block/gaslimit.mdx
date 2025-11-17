@@ -291,7 +291,7 @@ contract EIP1559Aware {
 /**
  * GASLIMIT opcode (0x45) - Get block gas limit
  */
-export function gaslimit(frame: BrandedFrame): EvmError | null {
+export function gaslimit(frame: FrameType): EvmError | null {
   // Consume gas (GasQuickStep = 2)
   frame.gasRemaining -= 2n;
   if (frame.gasRemaining < 0n) {

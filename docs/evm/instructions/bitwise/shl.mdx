@@ -325,7 +325,7 @@ function getArraySlot(uint256 baseSlot, uint256 index) pure returns (uint256) {
 /**
  * SHL opcode (0x1b) - Shift left operation (EIP-145)
  */
-export function shl(frame: BrandedFrame): EvmError | null {
+export function shl(frame: FrameType): EvmError | null {
   // Check hardfork (Constantinople or later)
   if (frame.hardfork.isBefore('constantinople')) {
     return { type: "InvalidOpcode" };

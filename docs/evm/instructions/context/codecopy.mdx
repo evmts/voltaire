@@ -75,7 +75,7 @@ function deploy() public returns (address) {
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function codecopy(frame: BrandedFrame): EvmError | null {
+export function codecopy(frame: FrameType): EvmError | null {
   // Pop destOffset, offset, length
   // Calculate gas (base + memory + copy cost)
   // Copy bytecode to memory

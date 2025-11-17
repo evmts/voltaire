@@ -101,7 +101,7 @@ Check offsets don't overflow when adding length.
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function calldatacopy(frame: BrandedFrame): EvmError | null {
+export function calldatacopy(frame: FrameType): EvmError | null {
   const destOffsetResult = popStack(frame);
   if (destOffsetResult.error) return destOffsetResult.error;
 

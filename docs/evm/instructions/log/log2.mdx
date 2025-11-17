@@ -399,7 +399,7 @@ function goodNonView(address a, address b) external {
 /**
  * LOG2 opcode (0xa2) - Emit log with 2 indexed topics
  */
-export function handler_0xa2_LOG2(frame: BrandedFrame): EvmError | null {
+export function handler_0xa2_LOG2(frame: FrameType): EvmError | null {
   if (frame.isStatic) {
     return { type: "WriteProtection" };
   }

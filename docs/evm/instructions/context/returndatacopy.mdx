@@ -152,7 +152,7 @@ function safeReturnCopy(uint256 offset, uint256 length) public {
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function returndatacopy(frame: BrandedFrame): EvmError | null {
+export function returndatacopy(frame: FrameType): EvmError | null {
   const destOffsetResult = popStack(frame);
   if (destOffsetResult.error) return destOffsetResult.error;
 

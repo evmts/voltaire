@@ -268,7 +268,7 @@ assembly {
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0x00_STOP(frame: BrandedFrame): EvmError | null {
+export function handler_0x00_STOP(frame: FrameType): EvmError | null {
   frame.stopped = true;
   return null;
 }

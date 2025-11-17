@@ -340,7 +340,7 @@ mstore8(userOffset, value);  // Can overwrite important data
 /**
  * MSTORE8 opcode (0x53) - Write single byte to memory
  */
-export function mstore8(frame: BrandedFrame): EvmError | null {
+export function mstore8(frame: FrameType): EvmError | null {
   // Pop offset and value from stack
   if (frame.stack.length < 2) {
     return { type: "StackUnderflow" };

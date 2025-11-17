@@ -479,7 +479,7 @@ function goodNonView(address a, address b, address c, bytes32 d) external {
 /**
  * LOG4 opcode (0xa4) - Emit log with 4 indexed topics (maximum)
  */
-export function handler_0xa4_LOG4(frame: BrandedFrame): EvmError | null {
+export function handler_0xa4_LOG4(frame: FrameType): EvmError | null {
   if (frame.isStatic) {
     return { type: "WriteProtection" };
   }

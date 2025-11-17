@@ -326,7 +326,7 @@ import { Jumpdest } from "../../primitives/GasConstants/constants.js";
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0x5b_JUMPDEST(frame: BrandedFrame): EvmError | null {
+export function handler_0x5b_JUMPDEST(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, Jumpdest);
   if (gasErr) return gasErr;
 

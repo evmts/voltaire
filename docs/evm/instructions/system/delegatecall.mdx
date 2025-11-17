@@ -551,7 +551,7 @@ contract Safe {
  * DELEGATECALL opcode (0xf4)
  * Execute code preserving msg.sender and msg.value
  */
-export function delegatecall(frame: BrandedFrame): EvmError | null {
+export function delegatecall(frame: FrameType): EvmError | null {
   // Pop 6 arguments (no value)
   const gas = popStack(frame);
   const address = popStack(frame);

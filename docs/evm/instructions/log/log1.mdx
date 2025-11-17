@@ -340,7 +340,7 @@ event LogSmallValue(uint8 indexed value);
 /**
  * LOG1 opcode (0xa1) - Emit log with 1 indexed topic
  */
-export function handler_0xa1_LOG1(frame: BrandedFrame): EvmError | null {
+export function handler_0xa1_LOG1(frame: FrameType): EvmError | null {
   if (frame.isStatic) {
     return { type: "WriteProtection" };
   }

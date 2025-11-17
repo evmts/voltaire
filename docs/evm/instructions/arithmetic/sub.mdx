@@ -235,7 +235,7 @@ unchecked {
 /**
  * SUB opcode (0x03) - Subtraction with underflow wrapping
  */
-export function sub(frame: BrandedFrame): EvmError | null {
+export function sub(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

@@ -315,7 +315,7 @@ import { fromNumber } from "../../primitives/Address/AddressType/fromNumber.js";
  * Gas: Variable (hardfork-dependent: 20/400/700/2600/100)
  */
 export function balance(
-  frame: BrandedFrame,
+  frame: FrameType,
   host: BrandedHost
 ): EvmError | null {
   const addrResult = popStack(frame);

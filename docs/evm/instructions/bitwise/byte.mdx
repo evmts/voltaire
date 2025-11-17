@@ -340,7 +340,7 @@ function isUtf8Continuation(bytes32 data, uint256 byteIndex) pure returns (bool)
 /**
  * BYTE opcode (0x1a) - Extract byte at index i from value x
  */
-export function byte(frame: BrandedFrame): EvmError | null {
+export function byte(frame: FrameType): EvmError | null {
   // Consume gas (GasFastestStep = 3)
   frame.gasRemaining -= 3n;
   if (frame.gasRemaining < 0n) {

@@ -122,7 +122,7 @@ Safe opcode, no vulnerabilities.
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-export function calldatasize(frame: BrandedFrame): EvmError | null {
+export function calldatasize(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 2n);
   if (gasErr) return gasErr;
 

@@ -303,7 +303,7 @@ function bitMask(uint256 bits) pure returns (uint256) {
 /**
  * EXP opcode (0x0a) - Exponential operation
  */
-export function exp(frame: BrandedFrame): EvmError | null {
+export function exp(frame: FrameType): EvmError | null {
   // Pop operands
   if (frame.stack.length < 2) return { type: "StackUnderflow" };
   const base = frame.stack.pop();

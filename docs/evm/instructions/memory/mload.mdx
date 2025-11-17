@@ -265,7 +265,7 @@ let value := mload(userSuppliedOffset);  // Can read beyond allocated
 /**
  * MLOAD opcode (0x51) - Load 32-byte word from memory
  */
-export function mload(frame: BrandedFrame): EvmError | null {
+export function mload(frame: FrameType): EvmError | null {
   // Pop offset from stack
   if (frame.stack.length < 1) {
     return { type: "StackUnderflow" };

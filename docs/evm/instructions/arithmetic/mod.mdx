@@ -272,7 +272,7 @@ function extractByte(uint256 n, uint8 position)
 /**
  * MOD opcode (0x06) - Modulo operation (mod by zero returns 0)
  */
-export function mod(frame: BrandedFrame): EvmError | null {
+export function mod(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

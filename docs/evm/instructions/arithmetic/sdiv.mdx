@@ -263,7 +263,7 @@ function signedWdiv(int256 x, int256 y) pure returns (int256) {
 /**
  * SDIV opcode (0x05) - Signed integer division
  */
-export function sdiv(frame: BrandedFrame): EvmError | null {
+export function sdiv(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

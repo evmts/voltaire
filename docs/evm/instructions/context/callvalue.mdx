@@ -323,7 +323,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Stack: [] => [value]
  * Gas: 2 (GasQuickStep)
  */
-export function callvalue(frame: BrandedFrame): EvmError | null {
+export function callvalue(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, 2n);
   if (gasErr) return gasErr;
 

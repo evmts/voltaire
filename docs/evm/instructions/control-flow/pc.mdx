@@ -282,7 +282,7 @@ import { QuickStep } from "../../primitives/GasConstants/constants.js";
  * @param frame - Frame instance
  * @returns Error if operation fails
  */
-export function handler_0x58_PC(frame: BrandedFrame): EvmError | null {
+export function handler_0x58_PC(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, QuickStep);
   if (gasErr) return gasErr;
 

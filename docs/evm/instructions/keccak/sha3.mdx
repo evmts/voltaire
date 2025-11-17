@@ -242,7 +242,7 @@ require(roles[ADMIN_ROLE][msg.sender], "Not admin");
 /**
  * SHA3/KECCAK256 opcode (0x20) - Hash memory region
  */
-export function sha3(frame: BrandedFrame): EvmError | null {
+export function sha3(frame: FrameType): EvmError | null {
   // Pop offset and size from stack
   const offsetResult = popStack(frame);
   if (offsetResult.error) return offsetResult.error;

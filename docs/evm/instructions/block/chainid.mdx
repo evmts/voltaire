@@ -387,7 +387,7 @@ contract BackwardCompatible {
  * CHAINID opcode (0x46) - Get chain ID
  * Available: Istanbul+
  */
-export function chainid(frame: BrandedFrame): EvmError | null {
+export function chainid(frame: FrameType): EvmError | null {
   // Check hardfork availability
   if (frame.evm.hardfork.isBefore('ISTANBUL')) {
     return { type: "InvalidOpcode" };

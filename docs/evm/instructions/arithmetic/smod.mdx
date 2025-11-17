@@ -253,7 +253,7 @@ function cyclicSignedIndex(int256 index, uint256 arrayLength)
 /**
  * SMOD opcode (0x07) - Signed modulo operation
  */
-export function smod(frame: BrandedFrame): EvmError | null {
+export function smod(frame: FrameType): EvmError | null {
   // Consume gas (GasFastStep = 5)
   frame.gasRemaining -= 5n;
   if (frame.gasRemaining < 0n) {

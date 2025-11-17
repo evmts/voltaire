@@ -328,7 +328,7 @@ function getNibble(uint256 value, uint256 nibblePos) pure returns (uint8) {
 /**
  * SHR opcode (0x1c) - Logical shift right operation (EIP-145)
  */
-export function shr(frame: BrandedFrame): EvmError | null {
+export function shr(frame: FrameType): EvmError | null {
   // Check hardfork (Constantinople or later)
   if (frame.hardfork.isBefore('constantinople')) {
     return { type: "InvalidOpcode" };

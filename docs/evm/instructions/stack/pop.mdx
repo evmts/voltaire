@@ -274,7 +274,7 @@ import { FastestStep } from "../../../primitives/GasConstants/BrandedGasConstant
  * Stack: [value] => []
  * Gas: 2 (GasQuickStep)
  */
-export function handler_0x50_POP(frame: BrandedFrame): EvmError | null {
+export function handler_0x50_POP(frame: FrameType): EvmError | null {
   const gasErr = consumeGas(frame, FastestStep);
   if (gasErr) return gasErr;
 

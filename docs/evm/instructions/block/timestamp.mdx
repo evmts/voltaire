@@ -312,7 +312,7 @@ contract TimingAware {
 /**
  * TIMESTAMP opcode (0x42) - Get block timestamp
  */
-export function timestamp(frame: BrandedFrame): EvmError | null {
+export function timestamp(frame: FrameType): EvmError | null {
   // Consume gas (GasQuickStep = 2)
   frame.gasRemaining -= 2n;
   if (frame.gasRemaining < 0n) {
