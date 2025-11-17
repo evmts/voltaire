@@ -53,7 +53,6 @@ mode: "custom"
     </div>
 
     <div style={{ maxWidth: '900px', margin: '0 auto 4rem' }}>
-      <h3 style={{ fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999', textAlign: 'center', marginBottom: '0.5rem' }}>Choose your AI assistant</h3>
       <div role="tablist" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1rem', position: 'relative' }}>
         <div id="tab-indicator" style={{ position: 'absolute', bottom: '-8px', height: '2px', background: 'linear-gradient(90deg, #E6A23C 0%, #A0522D 100%)', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', borderRadius: '2px', left: '0', width: '0' }}></div>
         <button role="tab" aria-selected="true" aria-controls="claude-code" aria-label="Claude MCP installation" id="claude-btn" style={{ padding: '0.75rem 0', background: 'transparent', border: 'none', color: '#E6A23C', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', opacity: '1' }} onMouseEnter={(e) => { const isActive = e.currentTarget.getAttribute('aria-selected') === 'true'; if (!isActive) { e.currentTarget.style.opacity = '0.7'; } }} onMouseLeave={(e) => { const isActive = e.currentTarget.getAttribute('aria-selected') === 'true'; e.currentTarget.style.opacity = isActive ? '1' : '0.5'; }} onClick={(e) => {
