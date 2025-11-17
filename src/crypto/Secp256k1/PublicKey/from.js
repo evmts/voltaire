@@ -3,14 +3,14 @@ import { isValidPublicKey } from "../isValidPublicKey.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
- * Create a BrandedSecp256k1PublicKey from various input formats
+ * Create a Secp256k1PublicKeyType from various input formats
  *
  * Accepts either a Uint8Array (raw bytes) or hex string.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array | string} input - Public key as raw bytes or hex string (with or without 0x prefix)
- * @returns {import('../BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} Branded public key
+ * @returns {import('../Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} Branded public key
  * @throws {Error} If input format or public key is invalid
  * @example
  * ```javascript

@@ -9,8 +9,8 @@ import { pairingResultOne } from "./pairingResult.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG1Point.js').BrandedG1Point} p - G1 point
- * @param {import('../BrandedG2Point.js').BrandedG2Point} q - G2 point
+ * @param {import('../G1PointType.js').G1PointType} p - G1 point
+ * @param {import('../G2PointType.js').G2PointType} q - G2 point
  * @returns {{value: bigint}} Miller loop result
  * @throws {never}
  * @example

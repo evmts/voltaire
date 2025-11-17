@@ -8,7 +8,7 @@ import { InvalidSignatureError } from "../../../primitives/errors/index.js";
  * @since 0.0.0
  * @param {Uint8Array} compact - 64-byte compact signature
  * @param {number} v - Recovery id (0, 1, 27, or 28)
- * @returns {import('../BrandedSignature.js').BrandedSignature} ECDSA signature
+ * @returns {import('../SignatureType.js').Secp256k1SignatureType} ECDSA signature
  * @throws {InvalidSignatureError} If compact data is wrong length
  * @example
  * ```javascript

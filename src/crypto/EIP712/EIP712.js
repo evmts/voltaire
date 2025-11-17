@@ -1,6 +1,6 @@
 // @ts-nocheck
 export * from "./errors.js";
-export * from "./BrandedEIP712.js";
+export * from "./EIP712Type.js";
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../Keccak256/hash.js";
@@ -87,14 +87,14 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedEIP712.js').TypedData} TypedData
- * @typedef {import('./BrandedEIP712.js').Domain} Domain
- * @typedef {import('./BrandedEIP712.js').TypeProperty} TypeProperty
- * @typedef {import('./BrandedEIP712.js').TypeDefinitions} TypeDefinitions
- * @typedef {import('./BrandedEIP712.js').Message} Message
- * @typedef {import('./BrandedEIP712.js').MessageValue} MessageValue
- * @typedef {import('./BrandedEIP712.js').Signature} Signature
- * @typedef {import('./BrandedEIP712.js').BrandedEIP712} BrandedEIP712
+ * @typedef {import('./EIP712Type.js').TypedData} TypedData
+ * @typedef {import('./EIP712Type.js').Domain} Domain
+ * @typedef {import('./EIP712Type.js').TypeProperty} TypeProperty
+ * @typedef {import('./EIP712Type.js').TypeDefinitions} TypeDefinitions
+ * @typedef {import('./EIP712Type.js').Message} Message
+ * @typedef {import('./EIP712Type.js').MessageValue} MessageValue
+ * @typedef {import('./EIP712Type.js').Signature} Signature
+ * @typedef {import('./EIP712Type.js').BrandedEIP712} BrandedEIP712
  */
 
 /**

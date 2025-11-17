@@ -9,7 +9,7 @@ import { PRIVATE_KEY_SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - Private key to validate
+ * @param {import('./P256PrivateKeyType.js').P256PrivateKeyType} privateKey - Private key to validate
  * @returns {boolean} True if valid, false otherwise
  * @throws {never}
  * @example

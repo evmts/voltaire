@@ -8,9 +8,9 @@ import { isZero } from "./isZero.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG2Point.js').BrandedG2Point} point - First point
- * @param {import('../BrandedG2Point.js').BrandedG2Point} other - Second point
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} Sum
+ * @param {import('../G2PointType.js').G2PointType} point - First point
+ * @param {import('../G2PointType.js').G2PointType} other - Second point
+ * @returns {import('../G2PointType.js').G2PointType} Sum
  * @throws {never}
  * @example
  * ```javascript
@@ -58,7 +58,7 @@ export function add(point, other) {
 	);
 	const z_result = Fp2.mul(Fp2.mul(point.z, other.z), h);
 
-	return /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+	return /** @type {import('../G2PointType.js').G2PointType} */ ({
 		x: x_result,
 		y: y_result,
 		z: z_result,

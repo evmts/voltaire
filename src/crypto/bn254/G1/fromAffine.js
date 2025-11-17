@@ -9,7 +9,7 @@ import { Bn254InvalidPointError } from "../errors.js";
  * @since 0.0.0
  * @param {bigint} x - X coordinate
  * @param {bigint} y - Y coordinate
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} G1 point
+ * @returns {import('../G1PointType.js').G1PointType} G1 point
  * @throws {Bn254InvalidPointError} If point not on bn254 G1 curve
  * @example
  * ```javascript
@@ -33,7 +33,7 @@ export function fromAffine(x, y) {
 		});
 	}
 
-	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({
+	return /** @type {import('../G1PointType.js').G1PointType} */ ({
 		x: x_mod,
 		y: y_mod,
 		z: 1n,

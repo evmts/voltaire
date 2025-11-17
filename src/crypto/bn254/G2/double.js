@@ -7,8 +7,8 @@ import { isZero } from "./isZero.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG2Point.js').BrandedG2Point} point - Point to double
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} Doubled point
+ * @param {import('../G2PointType.js').G2PointType} point - Point to double
+ * @returns {import('../G2PointType.js').G2PointType} Doubled point
  * @throws {never}
  * @example
  * ```javascript
@@ -37,7 +37,7 @@ export function double(point) {
 
 	const z_result = Fp2.mulScalar(Fp2.mul(point.y, point.z), 2n);
 
-	return /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+	return /** @type {import('../G2PointType.js').G2PointType} */ ({
 		x: x_result,
 		y: y_result,
 		z: z_result,

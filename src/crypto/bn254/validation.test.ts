@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrandedG1Point } from "./BrandedG1Point.js";
-import type { BrandedG2Point } from "./BrandedG2Point.js";
+import type { G1PointType } from "./G1PointType.js";
+import type { G2PointType } from "./G2PointType.js";
 import * as Fp from "./Fp/index.js";
 import * as Fp2 from "./Fp2/index.js";
 import * as G1 from "./G1/index.js";
@@ -22,7 +22,7 @@ describe("BN254 Point Validation", () => {
 
 			it("should reject point not satisfying curve equation", () => {
 				// Create invalid point: (1, 1, 1) - not on curve y^2 = x^3 + 3
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: 1n,
 					y: 1n,
 					z: 1n,
@@ -36,7 +36,7 @@ describe("BN254 Point Validation", () => {
 				const gen = G1.generator();
 
 				// Corrupt x coordinate
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: gen.x + 1n,
 					y: gen.y,
 					z: gen.z,
@@ -50,7 +50,7 @@ describe("BN254 Point Validation", () => {
 				const gen = G1.generator();
 
 				// Corrupt y coordinate
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: gen.x,
 					y: gen.y + 1n,
 					z: gen.z,
@@ -64,7 +64,7 @@ describe("BN254 Point Validation", () => {
 		describe("field boundary validation", () => {
 			it("should reject x-coordinate >= field modulus", () => {
 				// Create point with x >= FP_MOD
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: FP_MOD,
 					y: 1n,
 					z: 1n,
@@ -78,7 +78,7 @@ describe("BN254 Point Validation", () => {
 				const gen = G1.generator();
 
 				// Create point with y >= FP_MOD
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: gen.x,
 					y: FP_MOD,
 					z: gen.z,
@@ -122,7 +122,7 @@ describe("BN254 Point Validation", () => {
 				// Points with z >= FP_MOD are reduced mod p
 				// The point (1, 1, FP_MOD) becomes (1, 1, 0) after reduction
 				// which is the point at infinity
-				const point: BrandedG1Point = {
+				const point: G1PointType = {
 					x: 1n,
 					y: 1n,
 					z: FP_MOD,
@@ -137,7 +137,7 @@ describe("BN254 Point Validation", () => {
 
 		describe("degenerate point validation", () => {
 			it("should reject (0, 0, 1) - not on curve", () => {
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: 0n,
 					y: 0n,
 					z: 1n,
@@ -148,7 +148,7 @@ describe("BN254 Point Validation", () => {
 			});
 
 			it("should reject (1, 0, 1) - not on curve", () => {
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: 1n,
 					y: 0n,
 					z: 1n,
@@ -159,7 +159,7 @@ describe("BN254 Point Validation", () => {
 			});
 
 			it("should reject (0, 1, 1) - not on curve", () => {
-				const invalidPoint: BrandedG1Point = {
+				const invalidPoint: G1PointType = {
 					x: 0n,
 					y: 1n,
 					z: 1n,
@@ -226,7 +226,7 @@ describe("BN254 Point Validation", () => {
 				const invalidY = Fp2.create(1n, 0n);
 				const z = Fp2.create(1n, 0n);
 
-				const invalidPoint: BrandedG2Point = {
+				const invalidPoint: G2PointType = {
 					x: invalidX,
 					y: invalidY,
 					z: z,
@@ -241,7 +241,7 @@ describe("BN254 Point Validation", () => {
 
 				// Corrupt x coordinate
 				const corruptedX = Fp2.create(gen.x.c0 + 1n, gen.x.c1);
-				const invalidPoint: BrandedG2Point = {
+				const invalidPoint: G2PointType = {
 					x: corruptedX,
 					y: gen.y,
 					z: gen.z,
@@ -256,7 +256,7 @@ describe("BN254 Point Validation", () => {
 
 				// Corrupt y coordinate
 				const corruptedY = Fp2.create(gen.y.c0, gen.y.c1 + 1n);
-				const invalidPoint: BrandedG2Point = {
+				const invalidPoint: G2PointType = {
 					x: gen.x,
 					y: corruptedY,
 					z: gen.z,
@@ -345,7 +345,7 @@ describe("BN254 Point Validation", () => {
 	describe("constant-time validation", () => {
 		it("should validate G1 points without timing-dependent branches", () => {
 			// Test various points - validation should complete consistently
-			const testPoints: BrandedG1Point[] = [
+			const testPoints: G1PointType[] = [
 				G1.generator(),
 				G1.infinity(),
 				G1.double(G1.generator()),
@@ -360,7 +360,7 @@ describe("BN254 Point Validation", () => {
 		});
 
 		it("should validate G2 points without timing-dependent branches", () => {
-			const testPoints: BrandedG2Point[] = [
+			const testPoints: G2PointType[] = [
 				G2.generator(),
 				G2.infinity(),
 				G2.double(G2.generator()),
@@ -404,7 +404,7 @@ describe("BN254 Point Validation", () => {
 			// This prevents invalid curve attacks
 
 			const gen = G1.generator();
-			const invalidPoint: BrandedG1Point = {
+			const invalidPoint: G1PointType = {
 				x: 1n,
 				y: 1n,
 				z: 1n,

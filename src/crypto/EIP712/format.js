@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedEIP712.js').TypedData} typedData - Typed data to format
+ * @param {import('./EIP712Type.js').TypedData} typedData - Typed data to format
  * @returns {string} Human-readable multi-line string representation
  * @throws {never}
  * @example

@@ -8,7 +8,7 @@ import { Bn254Error } from "./errors.js";
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - 128-byte serialization
- * @returns {import('./BrandedG2Point.js').BrandedG2Point} G2 point
+ * @returns {import('./G2PointType.js').G2PointType} G2 point
  * @throws {Bn254Error} If bytes length is invalid (must be 128 bytes)
  * @example
  * ```javascript

@@ -28,9 +28,9 @@
 export { KZG } from "./KZG.js";
 export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedBlob.js";
-export * from "./BrandedKzgCommitment.js";
-export * from "./BrandedKzgProof.js";
+export * from "./BlobType.js";
+export * from "./KzgCommitmentType.js";
+export * from "./KzgProofType.js";
 
 // Export factory functions (tree-shakeable)
 export {

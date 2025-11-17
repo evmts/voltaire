@@ -20,8 +20,8 @@ import path from "node:path";
 import { bench, describe } from "vitest";
 import {
 	BN254 as Bn254,
-	type BrandedG1Point,
-	type BrandedG2Point,
+	type G1PointType,
+	type G2PointType,
 } from "./bn254/BN254.js";
 
 const results: Record<string, { ops_per_sec: number; avg_time_ms: number }> =
@@ -242,7 +242,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"Pairing.multiPairing (4 pairs)",
 		() => {
-			const pairs: Array<[BrandedG1Point, BrandedG2Point]> = [];
+			const pairs: Array<[G1PointType, G2PointType]> = [];
 			for (let i = 0; i < 4; i++) {
 				const p = Bn254.G1.mul(g1, scalar + BigInt(i));
 				const q = Bn254.G2.mul(g2, scalar2 + BigInt(i));

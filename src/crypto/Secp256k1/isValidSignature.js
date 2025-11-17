@@ -25,7 +25,7 @@ function bytes32ToBigInt(bytes) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedSignature.js').BrandedSignature} signature - ECDSA signature to validate (r and s are HashType)
+ * @param {import('./SignatureType.js').Secp256k1SignatureType} signature - ECDSA signature to validate (r and s are HashType)
  * @returns {boolean} true if signature is valid, false otherwise
  * @throws {never}
  * @example

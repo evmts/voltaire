@@ -15,9 +15,9 @@ const frob_y_coeff = Fp2.create(
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG2Point.js').BrandedG2Point} point - Point
+ * @param {import('../G2PointType.js').G2PointType} point - Point
  * @param {bigint} power - Number of times to apply frobenius
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} Frobenius map result
+ * @returns {import('../G2PointType.js').G2PointType} Frobenius map result
  * @throws {never}
  * @example
  * ```javascript
@@ -35,7 +35,7 @@ export function frobenius(point, power = 1n) {
 		const y_frob = Fp2.frobeniusMap(result.y);
 		const z_frob = Fp2.frobeniusMap(result.z);
 
-		result = /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+		result = /** @type {import('../G2PointType.js').G2PointType} */ ({
 			x: Fp2.mul(x_frob, frob_x_coeff),
 			y: Fp2.mul(y_frob, frob_y_coeff),
 			z: z_frob,

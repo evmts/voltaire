@@ -5,7 +5,7 @@ import { G1_GENERATOR_X, G1_GENERATOR_Y } from "../constants.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} Generator point
+ * @returns {import('../G1PointType.js').G1PointType} Generator point
  * @throws {never}
  * @example
  * ```javascript
@@ -14,7 +14,7 @@ import { G1_GENERATOR_X, G1_GENERATOR_Y } from "../constants.js";
  * ```
  */
 export function generator() {
-	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({
+	return /** @type {import('../G1PointType.js').G1PointType} */ ({
 		x: G1_GENERATOR_X,
 		y: G1_GENERATOR_Y,
 		z: 1n,

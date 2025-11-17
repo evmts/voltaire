@@ -33,7 +33,7 @@ function concat(...arrays) {
  * @param {Uint8Array} signature.s - 32-byte signature component s
  * @param {number} signature.v - Recovery id (27/28 or 0/1)
  * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash that was signed
- * @returns {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} 64-byte uncompressed public key
+ * @returns {import('./Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} 64-byte uncompressed public key
  * @throws {InvalidSignatureError} If signature or recovery fails
  * @example
  * ```javascript
@@ -83,7 +83,7 @@ export function recoverPublicKey(signature, messageHash) {
 		}
 
 		// Return 64 bytes without the 0x04 prefix
-		return /** @type {import('./BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} */ (
+		return /** @type {import('./Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} */ (
 			uncompressed.slice(1)
 		);
 	} catch (error) {

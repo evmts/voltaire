@@ -7,9 +7,9 @@
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @param {(domain: import('./BrandedEIP712.js').Domain) => import('../../primitives/Hash/index.js').HashType} deps.hashDomain - Hash domain function
- * @param {(primaryType: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
- * @returns {(typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Hash/index.js').HashType} Function that hashes typed data
+ * @param {(domain: import('./EIP712Type.js').Domain) => import('../../primitives/Hash/index.js').HashType} deps.hashDomain - Hash domain function
+ * @param {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
+ * @returns {(typedData: import('./EIP712Type.js').TypedData) => import('../../primitives/Hash/index.js').HashType} Function that hashes typed data
  * @throws {Eip712TypeNotFoundError} If types are not found
  * @throws {Eip712InvalidMessageError} If message data is invalid
  * @example

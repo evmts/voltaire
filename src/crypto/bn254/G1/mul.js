@@ -9,9 +9,9 @@ import { isZero } from "./isZero.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG1Point.js').BrandedG1Point} point - Point to multiply
+ * @param {import('../G1PointType.js').G1PointType} point - Point to multiply
  * @param {bigint} scalar - Scalar multiplier
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} Result
+ * @returns {import('../G1PointType.js').G1PointType} Result
  * @throws {never}
  * @example
  * ```javascript

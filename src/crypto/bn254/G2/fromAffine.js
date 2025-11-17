@@ -10,7 +10,7 @@ import { isOnCurve } from "./isOnCurve.js";
  * @since 0.0.0
  * @param {import('../Fp2.js').Fp2} x - X coordinate (Fp2 element)
  * @param {import('../Fp2.js').Fp2} y - Y coordinate (Fp2 element)
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} G2 point
+ * @returns {import('../G2PointType.js').G2PointType} G2 point
  * @throws {Bn254InvalidPointError} If point not on bn254 G2 curve
  * @throws {Bn254SubgroupCheckError} If point not in G2 subgroup
  * @example
@@ -23,7 +23,7 @@ import { isOnCurve } from "./isOnCurve.js";
  * ```
  */
 export function fromAffine(x, y) {
-	const point = /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+	const point = /** @type {import('../G2PointType.js').G2PointType} */ ({
 		x,
 		y,
 		z: Fp2.ONE,

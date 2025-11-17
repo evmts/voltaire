@@ -62,7 +62,7 @@ Sign a 32-byte message hash with a private key using deterministic ECDSA (RFC 69
 - `messageHash` (`HashType`) - 32-byte hash to sign
 - `privateKey` (`Uint8Array`) - 32-byte private key (0 < key < curve order)
 
-**Returns**: `BrandedP256Signature` with components:
+**Returns**: `P256SignatureType` with components:
 - `r` (`Uint8Array`) - 32-byte signature component
 - `s` (`Uint8Array`) - 32-byte signature component
 
@@ -83,7 +83,7 @@ console.log(signature.s.length); // 32
 Verify an ECDSA signature against a message hash and public key.
 
 **Parameters**:
-- `signature` (`BrandedP256Signature`) - Signature with r, s components
+- `signature` (`P256SignatureType`) - Signature with r, s components
 - `messageHash` (`HashType`) - 32-byte message hash that was signed
 - `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y coordinates)
 

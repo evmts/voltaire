@@ -5,7 +5,7 @@ import * as G2 from "./G2/index.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('./BrandedG2Point.js').BrandedG2Point} point - G2 point
+ * @param {import('./G2PointType.js').G2PointType} point - G2 point
  * @returns {Uint8Array} 128-byte serialization
  * @throws {never}
  * @example

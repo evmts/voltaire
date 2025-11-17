@@ -11,7 +11,7 @@ import {
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} Generator point
+ * @returns {import('../G2PointType.js').G2PointType} Generator point
  * @throws {never}
  * @example
  * ```javascript
@@ -20,7 +20,7 @@ import {
  * ```
  */
 export function generator() {
-	return /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+	return /** @type {import('../G2PointType.js').G2PointType} */ ({
 		x: Fp2.create(G2_GENERATOR_X_C0, G2_GENERATOR_X_C1),
 		y: Fp2.create(G2_GENERATOR_Y_C0, G2_GENERATOR_Y_C1),
 		z: Fp2.ONE,

@@ -7,7 +7,7 @@ import { InvalidSignatureError } from "../../../primitives/errors/index.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - 65-byte signature
- * @returns {import('../BrandedSignature.js').BrandedSignature} ECDSA signature
+ * @returns {import('../SignatureType.js').Secp256k1SignatureType} ECDSA signature
  * @throws {InvalidSignatureError} If bytes is wrong length
  * @example
  * ```javascript

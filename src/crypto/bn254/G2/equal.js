@@ -6,8 +6,8 @@ import { isZero } from "./isZero.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG2Point.js').BrandedG2Point} point - First point
- * @param {import('../BrandedG2Point.js').BrandedG2Point} other - Second point
+ * @param {import('../G2PointType.js').G2PointType} point - First point
+ * @param {import('../G2PointType.js').G2PointType} other - Second point
  * @returns {boolean} True if equal
  * @throws {never}
  * @example

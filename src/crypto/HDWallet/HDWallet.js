@@ -68,11 +68,15 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedExtendedKey.js').BrandedExtendedKey} BrandedExtendedKey
+ * @typedef {import('./ExtendedKeyType.js').ExtendedKeyType} ExtendedKeyType
  */
 
 /**
- * @typedef {import('./BrandedExtendedKey.js').BrandedExtendedKey} HDWallet
+ * @typedef {import('./ExtendedKeyType.js').BrandedExtendedKey} BrandedExtendedKey
+ */
+
+/**
+ * @typedef {import('./ExtendedKeyType.js').ExtendedKeyType} HDWallet
  */
 
 /**

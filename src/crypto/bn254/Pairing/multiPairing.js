@@ -10,7 +10,7 @@ import { pairingResultOne } from "./pairingResult.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {Array<[import('../BrandedG1Point.js').BrandedG1Point, import('../BrandedG2Point.js').BrandedG2Point]>} pairs - Array of G1/G2 point pairs
+ * @param {Array<[import('../G1PointType.js').G1PointType, import('../G2PointType.js').G2PointType]>} pairs - Array of G1/G2 point pairs
  * @returns {{value: bigint}} Pairing result
  * @throws {never}
  * @example

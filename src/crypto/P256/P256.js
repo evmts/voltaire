@@ -27,9 +27,9 @@
 
 export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedP256Signature.js";
-export * from "./BrandedP256PublicKey.js";
-export * from "./BrandedP256PrivateKey.js";
+export * from "./P256SignatureType.js";
+export * from "./P256PublicKeyType.js";
+export * from "./P256PrivateKeyType.js";
 
 import {
 	CURVE_ORDER,

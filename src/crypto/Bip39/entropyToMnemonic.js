@@ -7,9 +7,9 @@ import { Bip39Error, InvalidEntropyError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedEntropy.js').Entropy} entropy - Entropy bytes (16, 20, 24, 28, or 32 bytes)
+ * @param {import('./EntropyType.js').Entropy} entropy - Entropy bytes (16, 20, 24, 28, or 32 bytes)
  * @param {string[]} [wl] - Optional wordlist (defaults to English)
- * @returns {import('./BrandedMnemonic.js').Mnemonic} Mnemonic phrase
+ * @returns {import('./MnemonicType.js').Mnemonic} Mnemonic phrase
  * @throws {InvalidEntropyError} If entropy size is invalid
  * @throws {Bip39Error} If conversion fails
  * @example
@@ -33,7 +33,7 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 	}
 
 	try {
-		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (
+		return /** @type {import('./MnemonicType.js').Mnemonic} */ (
 			_entropyToMnemonic(entropy, wl)
 		);
 	} catch (error) {

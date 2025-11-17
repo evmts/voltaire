@@ -28,8 +28,8 @@
 
 export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedG1Point.js";
-export * from "./BrandedG2Point.js";
+export * from "./G1PointType.js";
+export * from "./G2PointType.js";
 export * from "./Fp2.js";
 
 import * as Fp from "./Fp/index.js";

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { KZG } from "./KZG.js";
+import type { KzgProofType } from "./KzgProofType.js";
 import {
 	BYTES_PER_BLOB,
 	BYTES_PER_COMMITMENT,
@@ -302,10 +303,10 @@ describe("KZG Validation - Edge Cases", () => {
 
 			// Swap commitment and proof (both 48 bytes)
 			const isValid = KZG.verifyKzgProof(
-				proof as unknown as BrandedKzgProof,
+				proof as unknown as KzgProofType,
 				z,
 				y,
-				commitment as unknown as BrandedKzgProof,
+				commitment as unknown as KzgProofType,
 			);
 			expect(isValid).toBe(false);
 		});

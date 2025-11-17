@@ -6,8 +6,8 @@
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
- * @param {(signature: import('./BrandedEIP712.js').Signature, typedData: import('./BrandedEIP712.js').TypedData) => import('../../primitives/Address/index.js').AddressType} deps.recoverAddress - Recover address function
- * @returns {(signature: import('./BrandedEIP712.js').Signature, typedData: import('./BrandedEIP712.js').TypedData, address: import('../../primitives/Address/index.js').BrandedAddress) => boolean} Function that verifies signature
+ * @param {(signature: import('./EIP712Type.js').Signature, typedData: import('./EIP712Type.js').TypedData) => import('../../primitives/Address/index.js').AddressType} deps.recoverAddress - Recover address function
+ * @returns {(signature: import('./EIP712Type.js').Signature, typedData: import('./EIP712Type.js').TypedData, address: import('../../primitives/Address/index.js').BrandedAddress) => boolean} Function that verifies signature
  * @throws {never}
  * @example
  * ```javascript

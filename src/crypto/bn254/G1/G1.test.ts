@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { BrandedG1Point } from "../BrandedG1Point.js";
+import type { G1PointType } from "../G1PointType.js";
 import * as Fp from "../Fp/index.js";
 import {
 	B_G1,
@@ -59,7 +59,7 @@ describe("G1 curve operations", () => {
 		});
 
 		test("point with z=0 is zero", () => {
-			const point: BrandedG1Point = { x: 1n, y: 2n, z: 0n, __tag: "G1Point" };
+			const point: G1PointType = { x: 1n, y: 2n, z: 0n, __tag: "G1Point" };
 			expect(G1.isZero(point)).toBe(true);
 		});
 	});
@@ -118,7 +118,7 @@ describe("G1 curve operations", () => {
 
 		test("same point in different representations are equal", () => {
 			const gen = G1.generator();
-			const scaled: BrandedG1Point = {
+			const scaled: G1PointType = {
 				x: Fp.mul(gen.x, 4n),
 				y: Fp.mul(gen.y, 8n),
 				z: 2n,
@@ -377,7 +377,7 @@ describe("G1 curve operations", () => {
 
 		test("affine form is unique", () => {
 			const gen = G1.generator();
-			const scaled: BrandedG1Point = {
+			const scaled: G1PointType = {
 				x: Fp.mul(gen.x, 4n),
 				y: Fp.mul(gen.y, 8n),
 				z: 2n,
@@ -431,7 +431,7 @@ describe("G1 curve operations", () => {
 
 		test("group is cyclic", () => {
 			const gen = G1.generator();
-			const multiples: BrandedG1Point[] = [];
+			const multiples: G1PointType[] = [];
 			for (let i = 1n; i <= 10n; i++) {
 				multiples.push(G1.mul(gen, i));
 			}
@@ -452,7 +452,7 @@ describe("G1 curve operations", () => {
 
 	describe("edge cases", () => {
 		test("handles maximum field elements", () => {
-			const point: BrandedG1Point = {
+			const point: G1PointType = {
 				x: FP_MOD - 1n,
 				y: FP_MOD - 1n,
 				z: 1n,
@@ -463,7 +463,7 @@ describe("G1 curve operations", () => {
 		});
 
 		test("handles zero coordinates", () => {
-			const point: BrandedG1Point = { x: 0n, y: 0n, z: 1n, __tag: "G1Point" };
+			const point: G1PointType = { x: 0n, y: 0n, z: 1n, __tag: "G1Point" };
 			G1.isOnCurve(point);
 		});
 

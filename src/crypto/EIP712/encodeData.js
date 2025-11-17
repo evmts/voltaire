@@ -9,9 +9,9 @@ import {
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
- * @param {(primaryType: string, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashType - Hash type function
- * @param {(type: string, value: import('./BrandedEIP712.js').MessageValue, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} deps.encodeValue - Encode value function
- * @returns {(primaryType: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} Function that encodes data
+ * @param {(primaryType: string, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashType - Hash type function
+ * @param {(type: string, value: import('./EIP712Type.js').MessageValue, types: import('./EIP712Type.js').TypeDefinitions) => Uint8Array} deps.encodeValue - Encode value function
+ * @returns {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => Uint8Array} Function that encodes data
  * @throws {Eip712TypeNotFoundError} If primaryType is not found in types
  * @throws {Eip712InvalidMessageError} If required field is missing from data
  * @example

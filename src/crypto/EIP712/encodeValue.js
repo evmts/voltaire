@@ -10,8 +10,8 @@ import { Eip712EncodingError } from "./errors.js";
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @param {(type: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
- * @returns {(type: string, value: import('./BrandedEIP712.js').MessageValue, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} Function that encodes value
+ * @param {(type: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
+ * @returns {(type: string, value: import('./EIP712Type.js').MessageValue, types: import('./EIP712Type.js').TypeDefinitions) => Uint8Array} Function that encodes value
  * @throws {Eip712EncodingError} If type is unsupported or value format is invalid
  * @example
  * ```javascript
@@ -30,7 +30,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 		// array types (hash the array encoding) - CHECK BEFORE uint/int to avoid matching "uint256[]"
 		if (type.endsWith("[]")) {
 			const baseType = type.slice(0, -2);
-			const arr = /** @type {import('./BrandedEIP712.js').MessageValue[]} */ (
+			const arr = /** @type {import('./EIP712Type.js').MessageValue[]} */ (
 				value
 			);
 			/** @type {Uint8Array[]} */
@@ -132,7 +132,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 
 		// Custom struct type (hash the struct)
 		if (types[type]) {
-			const obj = /** @type {import('./BrandedEIP712.js').Message} */ (value);
+			const obj = /** @type {import('./EIP712Type.js').Message} */ (value);
 			const hash = hashStruct(type, obj, types);
 			return hash;
 		}

@@ -9,7 +9,7 @@ import { PUBLIC_KEY_SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - Public key to validate
+ * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - Public key to validate
  * @returns {boolean} True if valid, false otherwise
  * @throws {never}
  * @example

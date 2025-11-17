@@ -15,8 +15,8 @@ import {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedP256PrivateKey.js').BrandedP256PrivateKey} privateKey - Your 32-byte private key
- * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - Their 64-byte uncompressed public key
+ * @param {import('./P256PrivateKeyType.js').P256PrivateKeyType} privateKey - Your 32-byte private key
+ * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - Their 64-byte uncompressed public key
  * @returns {Uint8Array} 32-byte shared secret
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {InvalidPublicKeyError} If public key is invalid

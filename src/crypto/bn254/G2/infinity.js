@@ -5,7 +5,7 @@ import * as Fp2 from "../Fp2/index.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @returns {import('../BrandedG2Point.js').BrandedG2Point} Point at infinity
+ * @returns {import('../G2PointType.js').G2PointType} Point at infinity
  * @throws {never}
  * @example
  * ```javascript
@@ -14,7 +14,7 @@ import * as Fp2 from "../Fp2/index.js";
  * ```
  */
 export function infinity() {
-	return /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({
+	return /** @type {import('../G2PointType.js').G2PointType} */ ({
 		x: Fp2.ZERO,
 		y: Fp2.ZERO,
 		z: Fp2.ZERO,

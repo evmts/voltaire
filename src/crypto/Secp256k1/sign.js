@@ -16,7 +16,7 @@ import {
  * @since 0.0.0
  * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash to sign
  * @param {import('../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType} privateKey - 32-byte private key
- * @returns {import('./BrandedSignature.js').BrandedSignature} ECDSA signature with r, s, v components
+ * @returns {import('./SignatureType.js').Secp256k1SignatureType} ECDSA signature with r, s, v components
  * @throws {InvalidPrivateKeyError} If private key is invalid
  * @throws {CryptoError} If signing fails
  * @example

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { BrandedG2Point } from "../BrandedG2Point.js";
+import type { G2PointType } from "../G2PointType.js";
 import * as Fp2 from "../Fp2/index.js";
 import {
 	FR_MOD,
@@ -66,7 +66,7 @@ describe("G2 curve operations", () => {
 		});
 
 		test("point with z=0 is zero", () => {
-			const point: BrandedG2Point = {
+			const point: G2PointType = {
 				x: Fp2.create(1n, 2n),
 				y: Fp2.create(3n, 4n),
 				z: Fp2.create(0n, 0n),
@@ -122,7 +122,7 @@ describe("G2 curve operations", () => {
 		test("same point in different representations are equal", () => {
 			const gen = G2.generator();
 			const two = Fp2.create(2n, 0n);
-			const scaled: BrandedG2Point = {
+			const scaled: G2PointType = {
 				x: Fp2.mul(gen.x, Fp2.square(two)),
 				y: Fp2.mul(gen.y, Fp2.mul(Fp2.square(two), two)),
 				z: two,
@@ -443,7 +443,7 @@ describe("G2 curve operations", () => {
 
 	describe("edge cases", () => {
 		test("handles zero Fp2 elements", () => {
-			const point: BrandedG2Point = {
+			const point: G2PointType = {
 				x: Fp2.create(0n, 0n),
 				y: Fp2.create(0n, 0n),
 				z: Fp2.create(1n, 0n),

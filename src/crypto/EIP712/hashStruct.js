@@ -7,8 +7,8 @@
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @param {(primaryType: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => Uint8Array} deps.encodeData - Encode data function
- * @returns {(primaryType: string, data: import('./BrandedEIP712.js').Message, types: import('./BrandedEIP712.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} Function that hashes struct
+ * @param {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => Uint8Array} deps.encodeData - Encode data function
+ * @returns {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} Function that hashes struct
  * @throws {Eip712TypeNotFoundError} If type is not found
  * @throws {Eip712InvalidMessageError} If message data is invalid
  * @example

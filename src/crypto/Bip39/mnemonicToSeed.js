@@ -7,9 +7,9 @@ import { Bip39Error } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedMnemonic.js').Mnemonic} mnemonic - BIP-39 mnemonic phrase
+ * @param {import('./MnemonicType.js').Mnemonic} mnemonic - BIP-39 mnemonic phrase
  * @param {string} [passphrase=""] - Optional passphrase for additional security
- * @returns {Promise<import('./BrandedSeed.js').Seed>} 64-byte seed
+ * @returns {Promise<import('./SeedType.js').Seed>} 64-byte seed
  * @throws {InvalidMnemonicError} If mnemonic is invalid
  * @throws {Bip39Error} If seed derivation fails
  * @example
@@ -22,7 +22,7 @@ export async function mnemonicToSeed(mnemonic, passphrase = "") {
 	assertValidMnemonic(mnemonic);
 
 	try {
-		return /** @type {import('./BrandedSeed.js').Seed} */ (
+		return /** @type {import('./SeedType.js').Seed} */ (
 			await _mnemonicToSeed(mnemonic, passphrase)
 		);
 	} catch (error) {

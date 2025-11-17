@@ -2,12 +2,12 @@
 import { isValidPublicKey } from "../isValidPublicKey.js";
 
 /**
- * Create a BrandedSecp256k1PublicKey from 64 raw bytes
+ * Create a Secp256k1PublicKeyType from 64 raw bytes
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - 64-byte uncompressed public key
- * @returns {import('../BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} Branded public key
+ * @returns {import('../Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} Branded public key
  * @throws {Error} If public key is invalid
  * @example
  * ```javascript
@@ -21,7 +21,7 @@ export function fromBytes(bytes) {
 			`Invalid public key: expected 64 bytes, got ${bytes.length}`,
 		);
 	}
-	return /** @type {import('../BrandedSecp256k1PublicKey.js').BrandedSecp256k1PublicKey} */ (
+	return /** @type {import('../Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} */ (
 		bytes
 	);
 }

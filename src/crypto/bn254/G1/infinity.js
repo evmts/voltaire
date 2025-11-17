@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} Point at infinity
+ * @returns {import('../G1PointType.js').G1PointType} Point at infinity
  * @throws {never}
  * @example
  * ```javascript
@@ -12,7 +12,7 @@
  * ```
  */
 export function infinity() {
-	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({
+	return /** @type {import('../G1PointType.js').G1PointType} */ ({
 		x: 0n,
 		y: 0n,
 		z: 0n,

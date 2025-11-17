@@ -17,8 +17,8 @@ const DOMAIN_FIELD_TYPES = {
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
- * @param {(primaryType: string, data: import('../BrandedEIP712.js').Message, types: import('../BrandedEIP712.js').TypeDefinitions) => import('../../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
- * @returns {(domain: import('../BrandedEIP712.js').Domain) => import('../../../primitives/Hash/index.js').HashType} Function that hashes domain
+ * @param {(primaryType: string, data: import('../EIP712Type.js').Message, types: import('../EIP712Type.js').TypeDefinitions) => import('../../../primitives/Hash/index.js').HashType} deps.hashStruct - Hash struct function
+ * @returns {(domain: import('../EIP712Type.js').Domain) => import('../../../primitives/Hash/index.js').HashType} Function that hashes domain
  * @throws {Eip712TypeNotFoundError} If domain type encoding fails
  * @example
  * ```javascript
@@ -51,14 +51,14 @@ export function Hash({ hashStruct }) {
 			}
 		}
 
-		/** @type {import('../BrandedEIP712.js').TypeDefinitions} */
+		/** @type {import('../EIP712Type.js').TypeDefinitions} */
 		const domainTypes = {
 			EIP712Domain: domainFields,
 		};
 
 		return hashStruct(
 			"EIP712Domain",
-			/** @type {import('../BrandedEIP712.js').Message} */ (filteredDomain),
+			/** @type {import('../EIP712Type.js').Message} */ (filteredDomain),
 			domainTypes,
 		);
 	};

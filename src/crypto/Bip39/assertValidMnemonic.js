@@ -7,7 +7,7 @@ import { validateMnemonic } from "./validateMnemonic.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedMnemonic.js').Mnemonic} mnemonic - Mnemonic phrase to validate
+ * @param {import('./MnemonicType.js').Mnemonic} mnemonic - Mnemonic phrase to validate
  * @param {string[]} [wl] - Optional wordlist (defaults to English)
  * @returns {void}
  * @throws {InvalidMnemonicError} If mnemonic is invalid

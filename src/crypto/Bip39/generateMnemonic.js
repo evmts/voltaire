@@ -9,7 +9,7 @@ import { Bip39Error } from "./errors.js";
  * @since 0.0.0
  * @param {128 | 160 | 192 | 224 | 256} [strength=256] - Entropy strength in bits (128=12 words, 256=24 words)
  * @param {string[]} [wl] - Optional wordlist (defaults to English)
- * @returns {import('./BrandedMnemonic.js').Mnemonic} Mnemonic phrase
+ * @returns {import('./MnemonicType.js').Mnemonic} Mnemonic phrase
  * @throws {Bip39Error} If mnemonic generation fails
  * @example
  * ```javascript
@@ -22,7 +22,7 @@ import { Bip39Error } from "./errors.js";
  */
 export function generateMnemonic(strength = 256, wl = wordlist) {
 	try {
-		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (
+		return /** @type {import('./MnemonicType.js').Mnemonic} */ (
 			_generateMnemonic(wl, strength)
 		);
 	} catch (error) {

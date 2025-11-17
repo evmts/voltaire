@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Bip39 from "./Bip39/index.js";
-import type { BrandedExtendedKey } from "./HDWallet/BrandedExtendedKey.js";
+import type { BrandedExtendedKey } from "./HDWallet/ExtendedKeyType.js";
 import * as HDWallet from "./HDWallet/HDWallet.js";
 
 describe("HDWallet", () => {

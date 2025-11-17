@@ -17,8 +17,8 @@ import { describe, expect, it } from "vitest";
 import {
 	BN254 as Bn254,
 	Bn254InvalidPointError,
-	type BrandedG1Point,
-	type BrandedG2Point,
+	type G1PointType,
+	type G2PointType,
 } from "./bn254/BN254.js";
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
@@ -507,7 +507,7 @@ describe("Bn254.Pairing", () => {
 			const g1 = Bn254.G1.generator();
 			const g2 = Bn254.G2.generator();
 
-			const pairs: Array<[BrandedG1Point, BrandedG2Point]> = [
+			const pairs: Array<[G1PointType, G2PointType]> = [
 				[Bn254.G1.mul(g1, 2n), Bn254.G2.mul(g2, 3n)],
 				[Bn254.G1.mul(g1, 5n), Bn254.G2.mul(g2, 7n)],
 			];

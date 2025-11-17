@@ -8,9 +8,9 @@ import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedP256Signature.js').BrandedP256Signature} signature - ECDSA signature to verify (r and s are HashType)
+ * @param {import('./P256SignatureType.js').P256SignatureType} signature - ECDSA signature to verify (r and s are HashType)
  * @param {import('../../primitives/Hash/index.js').HashType} messageHash - 32-byte message hash that was signed
- * @param {import('./BrandedP256PublicKey.js').BrandedP256PublicKey} publicKey - 64-byte uncompressed public key
+ * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - 64-byte uncompressed public key
  * @returns {boolean} True if signature is valid, false otherwise
  * @throws {InvalidPublicKeyError} If public key format is invalid
  * @example

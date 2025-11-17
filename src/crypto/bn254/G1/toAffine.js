@@ -7,8 +7,8 @@ import { isZero } from "./isZero.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG1Point.js').BrandedG1Point} point - Point in projective coordinates
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} Point in affine coordinates
+ * @param {import('../G1PointType.js').G1PointType} point - Point in projective coordinates
+ * @returns {import('../G1PointType.js').G1PointType} Point in affine coordinates
  * @throws {never}
  * @example
  * ```javascript
@@ -24,7 +24,7 @@ export function toAffine(point) {
 	const zInv2 = Fp.mul(zInv, zInv);
 	const zInv3 = Fp.mul(zInv2, zInv);
 
-	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({
+	return /** @type {import('../G1PointType.js').G1PointType} */ ({
 		x: Fp.mul(point.x, zInv2),
 		y: Fp.mul(point.y, zInv3),
 		z: 1n,

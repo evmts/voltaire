@@ -8,7 +8,7 @@ import { Eip712TypeNotFoundError } from "./errors.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} primaryType - Primary type name to encode
- * @param {import('./BrandedEIP712.js').TypeDefinitions} types - Type definitions mapping
+ * @param {import('./EIP712Type.js').TypeDefinitions} types - Type definitions mapping
  * @returns {string} Encoded type string with primary type followed by referenced types in alphabetical order
  * @throws {Eip712TypeNotFoundError} If primaryType or any referenced type is not found
  * @example

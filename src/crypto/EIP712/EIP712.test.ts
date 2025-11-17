@@ -1,7 +1,7 @@
 import { hexToBytes, randomBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it } from "vitest";
 import * as Address from "../../primitives/Address/internal-index.js";
-import type { Domain, TypeDefinitions, TypedData } from "./BrandedEIP712.js";
+import type { Domain, TypeDefinitions, TypedData } from "./EIP712Type.js";
 import { EIP712 } from "./EIP712.js";
 import {
 	Eip712EncodingError,

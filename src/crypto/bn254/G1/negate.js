@@ -5,8 +5,8 @@ import * as Fp from "../Fp/index.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG1Point.js').BrandedG1Point} point - Point to negate
- * @returns {import('../BrandedG1Point.js').BrandedG1Point} Negated point
+ * @param {import('../G1PointType.js').G1PointType} point - Point to negate
+ * @returns {import('../G1PointType.js').G1PointType} Negated point
  * @throws {never}
  * @example
  * ```javascript
@@ -16,7 +16,7 @@ import * as Fp from "../Fp/index.js";
  * ```
  */
 export function negate(point) {
-	return /** @type {import('../BrandedG1Point.js').BrandedG1Point} */ ({
+	return /** @type {import('../G1PointType.js').G1PointType} */ ({
 		x: point.x,
 		y: Fp.neg(point.y),
 		z: point.z,

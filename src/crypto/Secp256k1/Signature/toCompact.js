@@ -20,7 +20,7 @@ function concat(...arrays) {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('../BrandedSignature.js').BrandedSignature} signature - ECDSA signature
+ * @param {import('../SignatureType.js').Secp256k1SignatureType} signature - ECDSA signature
  * @returns {Uint8Array} 64-byte compact signature
  * @throws {never}
  * @example

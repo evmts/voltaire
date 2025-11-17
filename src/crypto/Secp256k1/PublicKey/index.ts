@@ -9,4 +9,4 @@
 
 export { from } from "./from.js";
 export { fromBytes } from "./fromBytes.js";
-export type { BrandedSecp256k1PublicKey } from "../BrandedSecp256k1PublicKey.js";
+export type { Secp256k1PublicKeyType } from "../Secp256k1PublicKeyType.js";

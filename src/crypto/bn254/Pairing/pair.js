@@ -6,8 +6,8 @@ import { millerLoop } from "./millerLoop.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {import('../BrandedG1Point.js').BrandedG1Point} p - Point in G1
- * @param {import('../BrandedG2Point.js').BrandedG2Point} q - Point in G2
+ * @param {import('../G1PointType.js').G1PointType} p - Point in G1
+ * @param {import('../G2PointType.js').G2PointType} q - Point in G2
  * @returns {{value: bigint}} Pairing result
  * @throws {never}
  * @example

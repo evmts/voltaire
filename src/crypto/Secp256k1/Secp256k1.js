@@ -1,7 +1,7 @@
 // @ts-nocheck
 export * from "./constants.js";
-export * from "./BrandedSignature.js";
-export * from "./BrandedSecp256k1PublicKey.js";
+export * from "./SignatureType.js";
+export * from "./Secp256k1PublicKeyType.js";
 export * from "./errors.js";
 
 import * as PublicKeyMethods from "./PublicKey/index.js";
@@ -35,7 +35,7 @@ export const Signature = SignatureMethods;
 export const PublicKey = PublicKeyMethods;
 
 /**
- * @typedef {import('./BrandedSignature.js').BrandedSignature} BrandedSignature
+ * @typedef {import('./SignatureType.js').Secp256k1SignatureType} Secp256k1SignatureType
  */
 
 /**
