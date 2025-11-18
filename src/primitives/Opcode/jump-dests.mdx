@@ -1,0 +1,79 @@
+---
+title: jumpDests()
+description: Find all valid JUMPDEST positions in EVM bytecode
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+## Opcode.jumpDests()
+
+Find all valid JUMPDEST positions in bytecode.
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { jumpDests } from 'tevm/Opcode'
+
+const dests = jumpDests(bytecode)
+console.log(Array(dests))  // [3]
+```
+</Tab>
+
+</Tabs>
+
+## Parameters
+
+- `bytecode: Uint8Array` - Contract bytecode
+
+## Returns
+
+`Set<number>` - Set of valid JUMPDEST offsets
+
+## Behavior
+
+- **Correctly skips PUSH data**: JUMPDEST inside PUSH immediate bytes is NOT valid
+- **Only JUMPDEST opcodes**: Only returns positions where opcode is 0x5B
+- **Empty if none found**: Returns empty Set if no JUMPDESTs
+
+## Use Cases
+
+### Build Jump Table
+
+```typescript
+function buildJumpTable(bytecode: Uint8Array): Map<number, string> {
+  const dests = Opcode.jumpDests(bytecode)
+  const table = new Map<number, string>()
+
+  for (const offset of dests) {
+    table.set(offset, `JUMPDEST_${offset.toString(16)}`)
+  }
+
+  return table
+}
+```
+
+### Validate Jump Target
+
+```typescript
+function isValidJumpTarget(bytecode: Uint8Array, target: number): boolean {
+  const validDests = Opcode.jumpDests(bytecode)
+  return validDests.has(target)
+}
+```
+
+### Count Jump Destinations
+
+```typescript
+function countJumpDests(bytecode: Uint8Array): number {
+  return Opcode.jumpDests(bytecode).size
+}
+```
+
+## Related
+
+- [isValidJumpDest()](/primitives/opcode/is-valid-jump-dest) - Check specific offset
+- [parse()](/primitives/opcode/parse) - Parse bytecode
+- [isJump()](/primitives/opcode/is-jump) - Check if JUMP/JUMPI

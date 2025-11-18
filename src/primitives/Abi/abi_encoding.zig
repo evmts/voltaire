@@ -5999,3 +5999,574 @@ test "constructor - decode params" {
     try std.testing.expectEqual(@as(u256, 999), decoded[0].uint256);
     try std.testing.expectEqualSlices(u8, &addr, &decoded[1].address);
 }
+
+// ============================================================================
+// Event Namespace APIs
+// ============================================================================
+
+/// Event parameter definition
+pub const EventParameter = struct {
+    type_name: []const u8, // e.g., "address", "uint256", "string"
+    indexed: bool,
+    name: ?[]const u8 = null,
+};
+
+/// Event definition
+pub const EventDefinition = struct {
+    name: []const u8,
+    inputs: []const EventParameter,
+    anonymous: bool = false,
+};
+
+/// Create event signature string (e.g., "Transfer(address,address,uint256)")
+pub fn createEventSignature(allocator: std.mem.Allocator, event: EventDefinition) ![]const u8 {
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer result.deinit();
+
+    try result.appendSlice(event.name);
+    try result.append('(');
+
+    for (event.inputs, 0..) |param, i| {
+        if (i > 0) try result.append(',');
+        try result.appendSlice(param.type_name);
+    }
+
+    try result.append(')');
+    return result.toOwnedSlice();
+}
+
+/// Get event selector (keccak256 hash of signature) - FULL 32 bytes
+pub fn getEventSelector(allocator: std.mem.Allocator, event: EventDefinition) ![32]u8 {
+    const signature = try createEventSignature(allocator, event);
+    defer allocator.free(signature);
+
+    var selector: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector, .{});
+    return selector;
+}
+
+/// Check if a type is dynamic (needs hashing when indexed)
+fn isDynamicEventType(type_name: []const u8) bool {
+    return std.mem.eql(u8, type_name, "string") or
+        std.mem.eql(u8, type_name, "bytes") or
+        std.mem.indexOf(u8, type_name, "[") != null; // Arrays
+}
+
+/// Encode indexed parameters as topics (with topic0 for non-anonymous events)
+pub fn encodeEventTopicsFromDef(
+    allocator: std.mem.Allocator,
+    event: EventDefinition,
+    indexed_values: []const AbiValue,
+) ![][]u8 {
+    var topics = std.array_list.AlignedManaged([]u8, null).init(allocator);
+    defer topics.deinit();
+
+    // Add topic0 for non-anonymous events
+    if (!event.anonymous) {
+        const selector = try getEventSelector(allocator, event);
+        const topic0 = try allocator.alloc(u8, 32);
+        @memcpy(topic0, &selector);
+        try topics.append(topic0);
+    }
+
+    // Track indexed parameter index
+    var indexed_idx: usize = 0;
+
+    for (event.inputs) |param| {
+        if (!param.indexed) continue;
+
+        if (indexed_idx >= indexed_values.len) {
+            return AbiError.InvalidData;
+        }
+
+        var topic = try allocator.alloc(u8, 32);
+        @memset(topic, 0);
+
+        const value = indexed_values[indexed_idx];
+        indexed_idx += 1;
+
+        // For dynamic types, hash the encoded value
+        if (isDynamicEventType(param.type_name)) {
+            // Encode the value first
+            const single_val = [_]AbiValue{value};
+            const encoded_val = try encodeAbiParameters(allocator, &single_val);
+            defer allocator.free(encoded_val);
+
+            // Hash it
+            var hash_result: [32]u8 = undefined;
+            std.crypto.hash.sha3.Keccak256.hash(encoded_val, &hash_result, .{});
+            @memcpy(topic, &hash_result);
+        } else {
+            // For static types, encode normally
+            switch (value) {
+                .address => |addr| {
+                    @memcpy(topic[12..32], &addr);
+                },
+                .uint256 => |val| {
+                    var bytes: [32]u8 = undefined;
+                    std.mem.writeInt(u256, &bytes, val, .big);
+                    @memcpy(topic, &bytes);
+                },
+                .uint8 => |val| {
+                    topic[31] = val;
+                },
+                .uint16 => |val| {
+                    var bytes: [2]u8 = undefined;
+                    std.mem.writeInt(u16, &bytes, val, .big);
+                    @memcpy(topic[30..32], &bytes);
+                },
+                .uint32 => |val| {
+                    var bytes: [4]u8 = undefined;
+                    std.mem.writeInt(u32, &bytes, val, .big);
+                    @memcpy(topic[28..32], &bytes);
+                },
+                .uint64 => |val| {
+                    var bytes: [8]u8 = undefined;
+                    std.mem.writeInt(u64, &bytes, val, .big);
+                    @memcpy(topic[24..32], &bytes);
+                },
+                .bool => |val| {
+                    topic[31] = if (val) 1 else 0;
+                },
+                .bytes32 => |val| {
+                    @memcpy(topic, &val);
+                },
+                else => {
+                    // Unsupported type, leave as zeros
+                },
+            }
+        }
+
+        try topics.append(topic);
+    }
+
+    return topics.toOwnedSlice();
+}
+
+/// Decode event log from data and topics
+pub fn decodeEventLog(
+    allocator: std.mem.Allocator,
+    event: EventDefinition,
+    data: []const u8,
+    topics: []const []const u8,
+) ![]AbiValue {
+    var topic_idx: usize = 0;
+
+    // Verify topic0 for non-anonymous events
+    if (!event.anonymous) {
+        if (topics.len == 0) {
+            return AbiError.InvalidData;
+        }
+
+        const expected_selector = try getEventSelector(allocator, event);
+        defer {} // selector is on stack
+
+        if (topics[0].len != 32) {
+            return AbiError.InvalidData;
+        }
+
+        // Compare selector
+        for (topics[0], expected_selector) |topic_byte, sel_byte| {
+            if (topic_byte != sel_byte) {
+                return AbiError.InvalidSelector;
+            }
+        }
+
+        topic_idx = 1;
+    }
+
+    var result = std.array_list.AlignedManaged(AbiValue, null).init(allocator);
+    defer result.deinit();
+
+    // Collect non-indexed types for decoding from data
+    var non_indexed_types = std.array_list.AlignedManaged(AbiType, null).init(allocator);
+    defer non_indexed_types.deinit();
+
+    for (event.inputs) |param| {
+        if (param.indexed) {
+            if (topic_idx >= topics.len) {
+                return AbiError.InvalidData;
+            }
+
+            const topic = topics[topic_idx];
+            topic_idx += 1;
+
+            if (topic.len != 32) {
+                return AbiError.InvalidData;
+            }
+
+            // For dynamic indexed params, return the hash itself
+            if (isDynamicEventType(param.type_name)) {
+                var topic_hash: [32]u8 = undefined;
+                @memcpy(&topic_hash, topic);
+                try result.append(.{ .bytes32 = topic_hash });
+            } else {
+                // Decode static indexed param from topic
+                if (std.mem.eql(u8, param.type_name, "address")) {
+                    var addr: [20]u8 = undefined;
+                    @memcpy(&addr, topic[12..32]);
+                    try result.append(addressValue(addr));
+                } else if (std.mem.eql(u8, param.type_name, "uint256")) {
+                    const val = std.mem.readInt(u256, topic[0..32], .big);
+                    try result.append(.{ .uint256 = val });
+                } else if (std.mem.eql(u8, param.type_name, "bool")) {
+                    const val = topic[31] != 0;
+                    try result.append(boolValue(val));
+                } else if (std.mem.eql(u8, param.type_name, "bytes32")) {
+                    var bytes: [32]u8 = undefined;
+                    @memcpy(&bytes, topic);
+                    try result.append(.{ .bytes32 = bytes });
+                } else {
+                    // Unsupported type
+                    return AbiError.UnsupportedType;
+                }
+            }
+        } else {
+            // Non-indexed parameter - will decode from data
+            if (std.mem.eql(u8, param.type_name, "address")) {
+                try non_indexed_types.append(.address);
+            } else if (std.mem.eql(u8, param.type_name, "uint256")) {
+                try non_indexed_types.append(.uint256);
+            } else if (std.mem.eql(u8, param.type_name, "bool")) {
+                try non_indexed_types.append(.bool);
+            } else if (std.mem.eql(u8, param.type_name, "bytes32")) {
+                try non_indexed_types.append(.bytes32);
+            } else if (std.mem.eql(u8, param.type_name, "string")) {
+                try non_indexed_types.append(.string);
+            } else {
+                return AbiError.UnsupportedType;
+            }
+        }
+    }
+
+    // Decode non-indexed parameters from data if any
+    if (non_indexed_types.items.len > 0) {
+        const decoded = try decodeAbiParameters(allocator, data, non_indexed_types.items);
+        defer allocator.free(decoded);
+
+        // Insert decoded values in the correct positions
+        var decoded_idx: usize = 0;
+        var new_result = std.array_list.AlignedManaged(AbiValue, null).init(allocator);
+        defer new_result.deinit();
+
+        var result_idx: usize = 0;
+        for (event.inputs) |param| {
+            if (param.indexed) {
+                try new_result.append(result.items[result_idx]);
+                result_idx += 1;
+            } else {
+                if (decoded_idx >= decoded.len) {
+                    return AbiError.InvalidData;
+                }
+                try new_result.append(decoded[decoded_idx]);
+                decoded_idx += 1;
+            }
+        }
+
+        return new_result.toOwnedSlice();
+    }
+
+    return result.toOwnedSlice();
+}
+
+// ============================================================================
+// Event Tests
+// ============================================================================
+
+test "Event - signature generation" {
+    const allocator = std.testing.allocator;
+
+    // Test ERC20 Transfer event
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true, .name = "from" },
+        .{ .type_name = "address", .indexed = true, .name = "to" },
+        .{ .type_name = "uint256", .indexed = false, .name = "value" },
+    };
+
+    const event = EventDefinition{
+        .name = "Transfer",
+        .inputs = &params,
+        .anonymous = false,
+    };
+
+    const signature = try createEventSignature(allocator, event);
+    defer allocator.free(signature);
+
+    try std.testing.expectEqualStrings("Transfer(address,address,uint256)", signature);
+}
+
+test "Event - selector for Transfer event" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+    };
+
+    const event = EventDefinition{
+        .name = "Transfer",
+        .inputs = &params,
+    };
+
+    const selector = try getEventSelector(allocator, event);
+
+    // Known Transfer event selector
+    // keccak256("Transfer(address,address,uint256)") =
+    // 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+    const expected = [_]u8{
+        0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b,
+        0x69, 0xc2, 0xb0, 0x68, 0xfc, 0x37, 0x8d, 0xaa,
+        0x95, 0x2b, 0xa7, 0x7f, 0x16, 0x3c, 0x4a, 0x11,
+        0x62, 0x8f, 0x55, 0xa4, 0xdf, 0x52, 0x3b, 0x3e,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "Event - selector for Approval event" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+    };
+
+    const event = EventDefinition{
+        .name = "Approval",
+        .inputs = &params,
+    };
+
+    const selector = try getEventSelector(allocator, event);
+
+    // Known Approval event selector
+    // keccak256("Approval(address,address,uint256)") =
+    // 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925
+    const expected = [_]u8{
+        0x8c, 0x5b, 0xe1, 0xe5, 0xeb, 0xec, 0x7d, 0x5b,
+        0xd1, 0x4f, 0x71, 0x42, 0x7d, 0x1e, 0x84, 0xf3,
+        0xdd, 0x03, 0x14, 0xc0, 0xf7, 0xb2, 0x29, 0x1e,
+        0x5b, 0x20, 0x0a, 0xc8, 0xc7, 0xc3, 0xb9, 0x25,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "Event - encode topics with 2 indexed addresses" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+    };
+
+    const event = EventDefinition{
+        .name = "Transfer",
+        .inputs = &params,
+    };
+
+    const from_addr: [20]u8 = [_]u8{0x11} ** 20;
+    const to_addr: [20]u8 = [_]u8{0x22} ** 20;
+
+    const indexed = [_]AbiValue{
+        addressValue(from_addr),
+        addressValue(to_addr),
+    };
+
+    const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    defer {
+        for (topics) |topic| {
+            allocator.free(topic);
+        }
+        allocator.free(topics);
+    }
+
+    // Should have topic0 + 2 indexed params = 3 topics
+    try std.testing.expectEqual(@as(usize, 3), topics.len);
+    try std.testing.expectEqual(@as(usize, 32), topics[0].len);
+    try std.testing.expectEqual(@as(usize, 32), topics[1].len);
+    try std.testing.expectEqual(@as(usize, 32), topics[2].len);
+
+    // Verify topic0 is event selector
+    const selector = try getEventSelector(allocator, event);
+    try std.testing.expectEqualSlices(u8, &selector, topics[0]);
+
+    // Verify topic1 is from address (padded)
+    for (topics[1][0..12]) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+    try std.testing.expectEqualSlices(u8, &from_addr, topics[1][12..32]);
+
+    // Verify topic2 is to address (padded)
+    for (topics[2][0..12]) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+    try std.testing.expectEqualSlices(u8, &to_addr, topics[2][12..32]);
+}
+
+test "Event - anonymous event (no topic0)" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "uint256", .indexed = true },
+    };
+
+    const event = EventDefinition{
+        .name = "AnonymousEvent",
+        .inputs = &params,
+        .anonymous = true,
+    };
+
+    const addr: [20]u8 = [_]u8{0xaa} ** 20;
+    const indexed = [_]AbiValue{
+        addressValue(addr),
+        .{ .uint256 = 42 },
+    };
+
+    const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    defer {
+        for (topics) |topic| {
+            allocator.free(topic);
+        }
+        allocator.free(topics);
+    }
+
+    // Anonymous event has NO topic0, just indexed params
+    try std.testing.expectEqual(@as(usize, 2), topics.len);
+}
+
+test "Event - dynamic indexed param (string) is hashed" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "string", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+    };
+
+    const event = EventDefinition{
+        .name = "StringEvent",
+        .inputs = &params,
+        .anonymous = false,
+    };
+
+    const test_string = "hello";
+    const str_value = stringValue(test_string);
+    const indexed = [_]AbiValue{str_value};
+
+    const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    defer {
+        for (topics) |topic| {
+            allocator.free(topic);
+        }
+        allocator.free(topics);
+    }
+
+    // topic0 + 1 indexed string param
+    try std.testing.expectEqual(@as(usize, 2), topics.len);
+
+    // topic1 should be hash of the encoded string (not the string itself)
+    // Verify it's not just zeros
+    var all_zeros = true;
+    for (topics[1]) |byte| {
+        if (byte != 0) {
+            all_zeros = false;
+            break;
+        }
+    }
+    try std.testing.expect(!all_zeros); // Should be a hash, not zeros
+}
+
+test "Event - decode log with indexed and non-indexed params" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "address", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+    };
+
+    const event = EventDefinition{
+        .name = "Transfer",
+        .inputs = &params,
+    };
+
+    // Create topics
+    const from_addr: [20]u8 = [_]u8{0x11} ** 20;
+    const to_addr: [20]u8 = [_]u8{0x22} ** 20;
+    const indexed = [_]AbiValue{
+        addressValue(from_addr),
+        addressValue(to_addr),
+    };
+
+    const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    defer {
+        for (topics) |topic| {
+            allocator.free(topic);
+        }
+        allocator.free(topics);
+    }
+
+    // Create data with non-indexed uint256 value
+    const value: u256 = 1000;
+    const data_values = [_]AbiValue{.{ .uint256 = value }};
+    const data = try encodeAbiParameters(allocator, &data_values);
+    defer allocator.free(data);
+
+    // Decode the log
+    const decoded = try decodeEventLog(allocator, event, data, topics);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(usize, 3), decoded.len);
+
+    // Check decoded values
+    try std.testing.expectEqualSlices(u8, &from_addr, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &to_addr, &decoded[1].address);
+    try std.testing.expectEqual(value, decoded[2].uint256);
+}
+
+test "Event - decode log invalid selector" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+    };
+
+    const event = EventDefinition{
+        .name = "Transfer",
+        .inputs = &params,
+    };
+
+    // Create wrong topic0
+    const wrong_topic0 = [_]u8{0xff} ** 32;
+    const topic0_copy = try allocator.alloc(u8, 32);
+    defer allocator.free(topic0_copy);
+    @memcpy(topic0_copy, &wrong_topic0);
+
+    const topics = [_][]u8{topic0_copy};
+    const data = [_]u8{};
+
+    // Should error on invalid selector
+    const result = decodeEventLog(allocator, event, &data, &topics);
+    try std.testing.expectError(AbiError.InvalidSelector, result);
+}
+
+test "Event - full selector is 32 bytes (not 4 bytes)" {
+    const allocator = std.testing.allocator;
+
+    const params = [_]EventParameter{
+        .{ .type_name = "address", .indexed = true },
+    };
+
+    const event = EventDefinition{
+        .name = "Test",
+        .inputs = &params,
+    };
+
+    const selector = try getEventSelector(allocator, event);
+
+    // Event selector is FULL 32 bytes (unlike function selector which is 4 bytes)
+    try std.testing.expectEqual(@as(usize, 32), selector.len);
+}

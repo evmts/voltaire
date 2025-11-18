@@ -74,53 +74,31 @@ export function decodeParametersWasm<const TParams extends readonly Parameter[]>
 }
 
 export function encodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
-  _signature: string,
-  _params: TParams,
-  _values: ParametersToPrimitiveTypes<TParams>,
+  signature: string,
+  params: TParams,
+  values: ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
-  throw new Error(
-    "encodeFunctionDataWasm not yet implemented - waiting for C ABI layer"
-  );
+  const types = params.map((p: Parameter) => p.type);
+  const valueStrs = values.map((v: unknown, i: number) => formatValueForWasm(params[i]!.type, v));
+  return loader.abiEncodeFunctionData(signature, types, valueStrs);
 }
 
 export function decodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
-  _signature: string,
-  _params: TParams,
-  _data: Uint8Array,
+  signature: string,
+  params: TParams,
+  data: Uint8Array,
 ): ParametersToPrimitiveTypes<TParams> {
-  throw new Error(
-    "decodeFunctionDataWasm not yet implemented - waiting for C ABI layer"
-  );
-}
-
-export function encodeEventTopicsWasm(
-  _signature: string,
-  _params: readonly Parameter[],
-  _values: Record<string, unknown>,
-): Uint8Array[] {
-  throw new Error(
-    "encodeEventTopicsWasm not yet implemented - waiting for C ABI layer"
-  );
-}
-
-export function decodeEventLogWasm(
-  _signature: string,
-  _params: readonly Parameter[],
-  _data: Uint8Array,
-  _topics: readonly Uint8Array[],
-): Record<string, unknown> {
-  throw new Error(
-    "decodeEventLogWasm not yet implemented - waiting for C ABI layer"
-  );
+  const types = params.map((p: Parameter) => p.type);
+  const result = loader.abiDecodeFunctionData(data, types);
+  return result.parameters.map((d: string, i: number) => parseValueFromWasm(params[i]!.type, d)) as any;
 }
 
 export function encodePackedWasm(
-  _types: readonly string[],
-  _values: readonly unknown[],
+  types: readonly string[],
+  values: readonly unknown[],
 ): Uint8Array {
-  throw new Error(
-    "encodePackedWasm not yet implemented - waiting for C ABI layer"
-  );
+  const valueStrs = values.map((v, i) => formatValueForWasm(types[i]!, v));
+  return loader.abiEncodePacked([...types], valueStrs);
 }
 
 export const encodeParameters = abiTs.encodeParameters;
@@ -132,21 +110,19 @@ export function isWasmAbiAvailable(): boolean {
 
 export function getImplementationStatus() {
   return {
-    wasmAvailable: false,
-    reason: "C ABI encoding/decoding layer not yet implemented",
-    requiredFiles: [
-      "src/c/abi_encoding.zig - Core ABI encoding/decoding logic",
-      "src/wasm-loader/types.ts - Add ABI function signatures to WasmExports",
-      "src/wasm-loader/loader.ts - Add ABI wrapper functions"
-    ],
-    estimatedFunctions: [
+    wasmAvailable: true,
+    implemented: [
       "primitives_abi_encode_parameters",
       "primitives_abi_decode_parameters",
       "primitives_abi_encode_function_data",
       "primitives_abi_decode_function_data",
-      "primitives_abi_encode_event_topics",
-      "primitives_abi_decode_event_log",
-      "primitives_abi_encode_packed"
+      "primitives_abi_encode_packed",
+      "primitives_abi_estimate_gas",
+      "primitives_abi_compute_selector"
+    ],
+    notImplemented: [
+      "primitives_abi_encode_event_topics - Event topic encoding not yet exposed",
+      "primitives_abi_decode_event_log - Event log decoding not yet exposed"
     ]
   };
 }

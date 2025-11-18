@@ -1,0 +1,50 @@
+---
+title: Blob.toData
+description: Extract original data from blob (reads length prefix)
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+</Tabs>
+
+## Encoding Format
+
+Blobs created with `fromData()` use this format:
+
+```
+┌─────────────────┬──────────────┬─────────────┐
+│  Length (8 B)   │  Data (N B)  │  Padding    │
+├─────────────────┼──────────────┼─────────────┤
+│ Little-endian   │ Original     │ Zero bytes  │
+│ uint64          │ data         │             │
+└─────────────────┴──────────────┴─────────────┘
+  Bytes 0-7         Bytes 8-N      Bytes N+1-131071
+
+Total: 131,072 bytes (Blob.SIZE)
+```
+
+### Example: Manual Decoding
+
+```typescript
+import { Blob } from 'tevm';
+
+const blob = Blob.fromData(new TextEncoder().encode("test"));
+
+// Manual extraction (equivalent to toData())
+const view = new DataView(blob.buffer, blob.byteOffset);
+const length = Number(view.getBigUint64(0, true)); // Little-endian
+const data = blob.slice(8, 8 + length);
+
+console.log(length); // 4
+console.log(new TextDecoder().decode(data)); // "test"
+```
+
+## See Also
+
+- [fromData](./fromData) - Encode data into blob
+- [from](./from) - Universal constructor
+- [joinData](./joinData) - Join data from multiple blobs

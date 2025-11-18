@@ -1,0 +1,60 @@
+---
+title: BrandedBloomFilter Type
+description: Bloom filter type definition and implementation details
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# BrandedBloomFilter Type
+
+`BrandedBloomFilter` is the underlying branded type for bloom filter operations used throughout Tevm's BloomFilter module.
+
+## Type Definition
+
+```typescript
+export type BrandedBloomFilter = Uint8Array & {
+  readonly __tag: "BloomFilter"
+  readonly k: number  // Number of hash functions
+  readonly m: number  // Number of bits
+}
+```
+
+Runtime-validated `Uint8Array` with bloom filter parameters. The brand prevents accidental mixing with other Uint8Arrays.
+
+## Usage
+
+Use through the `BloomFilter` class:
+
+```typescript
+import { BloomFilter } from 'tevm'
+
+// Create new filter
+const filter = BloomFilter.create(2048, 3)
+
+// Add items
+filter.add(new TextEncoder().encode("Transfer"))
+
+// Check membership
+const hasTransfer = filter.contains(new TextEncoder().encode("Transfer"))
+
+// Serialize
+const hex = filter.toHex()
+```
+
+## Type Checking
+
+```typescript
+import type { BrandedBloomFilter } from 'tevm'
+
+function processFilter(filter: BrandedBloomFilter) {
+  // filter is guaranteed to be valid BloomFilter
+  console.log(`Filter size: ${filter.m} bits`)
+}
+```
+
+## Related
+
+- [BloomFilter](/primitives/bloomfilter) - Main BloomFilter class documentation
+- [Branded Types](/getting-started/branded-types) - Zero-overhead type branding

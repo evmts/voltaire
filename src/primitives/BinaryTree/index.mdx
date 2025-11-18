@@ -1,0 +1,245 @@
+---
+title: Overview
+description: Binary State Tree implementation for Ethereum state (EIP-7864)
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tip>
+New to binary merkle trees? Start with [Fundamentals](/primitives/binarytree/fundamentals) to learn tree construction, merkle proofs, SSZ, and EIP-7864 Binary State Trees.
+</Tip>
+
+## Type Definition
+
+[Branded](/getting-started/branded-types) binary tree data structure with four node types (Internal, Stem, Leaf, Empty). Designed for Ethereum state trees with 32-byte keys split into 31-byte stems and 1-byte subindices. Uses BLAKE3 hashing.
+
+```typescript
+export interface BinaryTree {
+  readonly root: Node;
+}
+
+export type Node =
+  | { readonly type: "empty" }
+  | { readonly type: "internal"; readonly left: Uint8Array; readonly right: Uint8Array }
+  | { readonly type: "stem"; readonly stem: Uint8Array; readonly values: (Uint8Array | null)[] }
+  | { readonly type: "leaf"; readonly value: Uint8Array };
+```
+
+### Node Types
+
+Binary State Tree uses four distinct node types for efficient state representation:
+
+- **Empty Node** - Represents empty tree/subtree (hash = 32 zero bytes)
+- **Internal Node** - Branch with left/right 32-byte child hashes
+- **Stem Node** - Leaf storing up to 256 values at 31-byte stem
+- **Leaf Node** - Simple leaf with single 32-byte value
+
+## Quick Reference
+
+<Tabs>
+
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`init()`](./constructors#init) - Create empty tree with empty root node
+
+### Operations
+
+- [`insert(tree, key, value)`](./operations#insert) - Insert value at 32-byte key
+- [`get(tree, key)`](./operations#get) - Retrieve value at key
+- [`update(tree, key, value)`](./operations#insert) - Update existing value (alias for insert)
+- [`delete(tree, key)`](./operations#delete) - Remove value at key
+
+### Hashing
+
+- [`hashNode(node)`](./hashing#hashnode) - Compute 32-byte BLAKE3 hash of node
+- [`hashInternal(left, right)`](./hashing#hashinternal) - Hash internal node from child hashes
+- [`hashStem(stem, values)`](./hashing#hashstem) - Hash stem node from stem and values
+- [`hashLeaf(value)`](./hashing#hashleaf) - Hash leaf node from value
+- [`rootHash(tree)`](./hashing#roothash) - Compute root hash as Uint8Array
+- [`rootHashHex(tree)`](./hashing#roothashhex) - Compute root hash as hex string
+
+### Key Utilities
+
+- [`addressToKey(address)`](./key-utilities#addresstokey) - Convert 20-byte address to 32-byte key
+- [`splitKey(key)`](./key-utilities#splitkey) - Split key into 31-byte stem and 1-byte index
+- [`getStemBit(stem, depth)`](./key-utilities#getstembit) - Extract bit at depth for tree traversal
+
+### Reference
+
+- [WASM Implementation](./wasm) - WebAssembly-accelerated methods from Zig
+- [BrandedBinaryTree](./branded-binarytree) - Tree-shakeable functional API
+
+## Types
+
+<Tabs>
+<Tab title="BinaryTree">
+
+```typescript
+export interface BinaryTree {
+  readonly root: Node;
+}
+```
+
+Main tree structure containing the root node. All operations return new tree instances (immutable).
+
+</Tab>
+<Tab title="Node Types">
+
+```typescript
+export type Node =
+  | { readonly type: "empty" }
+  | { readonly type: "internal"; readonly left: Uint8Array; readonly right: Uint8Array }
+  | { readonly type: "stem"; readonly stem: Uint8Array; readonly values: (Uint8Array | null)[] }
+  | { readonly type: "leaf"; readonly value: Uint8Array };
+
+export type InternalNode = Extract<Node, { type: "internal" }>;
+export type StemNode = Extract<Node, { type: "stem" }>;
+export type LeafNode = Extract<Node, { type: "leaf" }>;
+export type EmptyNode = Extract<Node, { type: "empty" }>;
+```
+
+Four node types for tree structure. Internal nodes branch, stem nodes store values, leaf nodes hold single values, empty nodes represent unused space.
+
+</Tab>
+<Tab title="AccountData">
+
+```typescript
+export interface AccountData {
+  readonly version: number;    // 1 byte
+  readonly codeSize: number;   // 3 bytes
+  readonly nonce: bigint;      // 8 bytes
+  readonly balance: bigint;    // 16 bytes
+}
+```
+
+Account basic data layout stored at index 0 in stem node. Total 28 bytes defining Ethereum account state.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Creating and Populating Trees
+
+```typescript
+// Create empty tree
+const tree = BinaryTree.init();
+console.log(tree.root.type); // 'empty'
+
+// Insert values
+const key1 = Bytes32();
+const value1 = Bytes32();
+value1[0] = 0x42;
+
+const tree2 = BinaryTree.insert(tree, key1, value1);
+
+// Insert more values
+const key2 = Bytes32();
+key2[0] = 0x01;
+const value2 = Bytes32();
+value2[0] = 0xff;
+
+const tree3 = BinaryTree.insert(tree2, key2, value2);
+```
+
+### Reading Values
+
+```typescript
+// Get value at key
+const retrieved = BinaryTree.get(tree3, key1);
+console.log(retrieved); // Uint8Array [0x42, 0, 0, ...]
+
+// Check for missing keys
+const missing = BinaryTree.get(tree3, Bytes32());
+console.log(missing); // null
+```
+
+### Computing Root Hashes
+
+```typescript
+// Get root hash as bytes
+const hash = BinaryTree.rootHash(tree3);
+console.log(hash); // Uint8Array (32 bytes)
+
+// Get root hash as hex
+const hex = BinaryTree.rootHashHex(tree3);
+console.log(hex); // "0x..."
+
+// Compare root hashes
+const tree4 = BinaryTree.insert(tree3, key1, value2);
+console.log(BinaryTree.rootHashHex(tree3) !== BinaryTree.rootHashHex(tree4)); // true
+```
+
+### Working with Ethereum Addresses
+
+```typescript
+// Convert address to tree key
+const address = new Uint8Array(20);
+address[0] = 0xff;
+const treeKey = BinaryTree.addressToKey(address);
+console.log(treeKey.length); // 32 bytes
+
+// Split key into stem and index
+const { stem, idx } = BinaryTree.splitKey(treeKey);
+console.log(stem.length); // 31 bytes
+console.log(idx); // 0-255
+
+// Store account data
+const accountValue = Bytes32();
+const tree5 = BinaryTree.insert(tree, treeKey, accountValue);
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { init, insert, get, rootHash } from 'tevm/BrandedBinaryTree';
+
+const tree = init();
+const tree2 = insert(tree, key, value);
+const retrieved = get(tree2, key);
+const hash = rootHash(tree2);
+
+// Only these 4 functions + BLAKE3 dependency included in bundle
+```
+
+**Bundle size impact:**
+- Core operations: ~2KB
+- BLAKE3 hashing: ~15KB
+- Full BinaryTree namespace: ~17KB
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/binarytree/fundamentals) - Learn tree structure and EIP-7864
+- [Constructors](/primitives/binarytree/constructors) - Creating tree instances
+- [Operations](/primitives/binarytree/operations) - Insert, get, update, delete
+- [Hashing](/primitives/binarytree/hashing) - BLAKE3 hashing and merkle roots
+
+### Advanced Features
+
+- [Key Utilities](/primitives/binarytree/key-utilities) - Address conversion and key splitting
+- [WASM Implementation](/primitives/binarytree/wasm) - WebAssembly-accelerated methods
+- [Usage Patterns](/primitives/binarytree/usage-patterns) - Common implementation patterns
+
+### Related Primitives
+
+- [State](/primitives/state) - Ethereum state representation
+- [Keccak256](/crypto/keccak256) - BLAKE3 hashing for merkle trees
+- [Hex](/primitives/hex) - Hex string utilities for root hashes
+
+## Specification
+
+- [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864) - Binary State Tree specification
+- [BLAKE3](https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf) - Hashing algorithm
+- [Simple Serialize (SSZ)](https://ethereum.org/en/developers/docs/data-structures-and-encoding/ssz/) - Binary encoding
+- [Verkle Trees](https://vitalik.ca/general/2021/06/18/verkle.html) - Future evolution of binary trees

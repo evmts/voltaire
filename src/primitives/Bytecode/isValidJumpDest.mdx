@@ -1,0 +1,44 @@
+---
+title: Bytecode.isValidJumpDest
+description: Check if specific position is a valid JUMPDEST
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+<Tab title="C">
+
+## `bool bytecode_is_valid_jump_dest(bytecode_t bytecode, size_t pc)`
+
+Check if specific position is valid JUMPDEST.
+
+**Parameters:**
+- `bytecode: bytecode_t` - Bytecode to check
+- `pc: size_t` - Program counter (position to check)
+
+**Returns:** `bool` - `true` if position is valid JUMPDEST
+
+**Example:**
+
+```c
+#include <voltaire/primitives.h>
+
+bytecode_t bc = bytecode_from_hex("0x5b60005b", allocator);
+
+bool valid0 = bytecode_is_valid_jump_dest(bc, 0);  // true  - JUMPDEST at start
+bool valid1 = bytecode_is_valid_jump_dest(bc, 1);  // false - PUSH1 opcode
+bool valid2 = bytecode_is_valid_jump_dest(bc, 2);  // false - PUSH1 data
+bool valid3 = bytecode_is_valid_jump_dest(bc, 3);  // true  - JUMPDEST at end
+```
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [analyzeJumpDestinations](/primitives/bytecode/analyzejumpdestinations) - Get all valid JUMPDEST positions

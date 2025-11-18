@@ -1,0 +1,425 @@
+---
+title: Bytes20
+description: 20-byte (160-bit) values - Ethereum addresses and packed data
+---
+
+<Info>
+**Address Foundation** - Bytes20 is the 160-bit type underlying Ethereum addresses. Used directly for addresses and 20-byte packed data.
+</Info>
+
+## Overview
+
+Bytes20 is a branded `Uint8Array` type representing exactly 20 bytes (160 bits). It's the fundamental type for Ethereum addresses and provides strict size validation for fixed 20-byte values.
+
+```typescript
+import * as Bytes20 from 'tevm/primitives/Bytes/Bytes20';
+
+// Create from hex
+const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+console.log(bytes.length); // 20
+
+// Zero-filled
+const zeros = Bytes20.zero();
+
+// Size is strictly enforced
+Bytes20(new Uint8Array(19)); // Error: must be 20 bytes
+```
+
+## Primary Use: Ethereum Addresses
+
+**Bytes20 = Address Type** - All Ethereum addresses are 20 bytes:
+
+```typescript
+// Address extends Bytes20
+import * as Address from 'tevm/primitives/Address';
+
+const addr = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+console.log(addr.length); // 20
+
+// Convert between Address and Bytes20
+const bytes20 = Bytes20(addr);
+const backToAddr = Address(bytes20);
+```
+
+**Semantic difference:**
+- **Address** - Ethereum account identifier with checksum support
+- **Bytes20** - Generic 20-byte value without address-specific semantics
+
+## Type Safety
+
+Bytes20 uses TypeScript branding with symbol:
+
+```typescript
+type BrandedBytes20 = Uint8Array & {
+  readonly [Symbol.for("type")]: "Bytes20";
+  readonly length: 20;
+};
+```
+
+Prevents mixing incompatible types:
+
+```typescript
+const bytes20 = Bytes20('0x' + '12'.repeat(20));
+const bytes32 = Bytes32('0x' + '12'.repeat(32));
+
+// Type error: cannot assign Bytes32 to Bytes20
+const wrong: Bytes20.BrandedBytes20 = bytes32;
+```
+
+## Hex String Variants
+
+### HexBytes20
+
+Branded hex string type for type-safe hex representation:
+
+```typescript
+// Lowercase hex (with 0x prefix)
+type HexBytes20Lowercase = `0x${string}` & {
+  readonly [Symbol.for("type")]: "HexBytes20";
+  readonly case: "lowercase";
+  readonly length: 42; // 0x + 40 chars
+};
+
+// Uppercase hex (with 0x prefix)
+type HexBytes20Uppercase = `0x${string}` & {
+  readonly [Symbol.for("type")]: "HexBytes20";
+  readonly case: "uppercase";
+  readonly length: 42;
+};
+
+// Union type
+type HexBytes20 = HexBytes20Lowercase | HexBytes20Uppercase;
+```
+
+Usage:
+
+```typescript
+// Create hex string
+const hex = Bytes20.toHex(bytes20); // HexBytes20Lowercase
+console.log(hex); // "0x742d35cc..."
+
+// Uppercase variant
+const upper = Bytes20.toUppercase(bytes20); // HexBytes20Uppercase
+console.log(upper); // "0x742D35CC..."
+```
+
+## Relationship to Address
+
+Address is a semantic extension of Bytes20 with EIP-55 checksum support:
+
+```typescript
+// Both are 20 bytes
+const bytes20 = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const address = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+
+console.log(bytes20.length === address.length); // true
+
+// Address adds checksum semantics
+const checksummed = address.toChecksummed();
+console.log(checksummed); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Bytes20 is lowercase only
+const hex = Bytes20.toHex(bytes20);
+console.log(hex); // "0x742d35cc..." (all lowercase)
+```
+
+**When to use each:**
+- **Address** - For Ethereum account identifiers, checksums, contract addresses
+- **Bytes20** - For generic 20-byte data, packed values, raw bytes
+
+## Constructors
+
+### from
+
+Universal constructor accepting multiple types:
+
+```typescript
+// From hex string
+const b1 = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+
+// From bytes
+const b2 = Bytes20(new Uint8Array(20));
+
+// From number (padded big-endian)
+const b3 = Bytes20(42);
+
+// From bigint
+const b4 = Bytes20(123456789n);
+```
+
+### fromHex
+
+Create from hex string with strict validation:
+
+```typescript
+const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+
+// Without 0x prefix
+const bytes2 = Bytes20('742d35cc6634c0532925a3b844bc9e7595f51e3e');
+
+// Throws on wrong length
+Bytes20('0x1234'); // Error: must be 40 hex chars
+```
+
+### fromBytes
+
+Create from Uint8Array with size check:
+
+```typescript
+const arr = new Uint8Array(20);
+const bytes = Bytes20(arr);
+
+// Throws on wrong size
+Bytes20(new Uint8Array(19)); // Error: must be 20 bytes
+```
+
+### fromNumber
+
+Create from number with big-endian padding:
+
+```typescript
+const value = Bytes20(42);
+console.log(value[19]); // 42 (last byte)
+console.log(value[0]);  // 0 (padded)
+```
+
+### fromBigint
+
+Create from bigint with padding:
+
+```typescript
+const large = Bytes20(123456789012345678901234567890n);
+
+// Roundtrip conversion
+const original = 42n;
+const bytes = Bytes20(original);
+const restored = Bytes20.toBigint(bytes);
+console.log(restored === original); // true
+```
+
+### zero
+
+Create zero-filled Bytes20:
+
+```typescript
+const zeros = Bytes20.zero();
+console.log(Bytes20.isZero(zeros)); // true
+```
+
+## Conversions
+
+### toHex
+
+Convert to lowercase hex string:
+
+```typescript
+const bytes = Bytes20(255);
+const hex = Bytes20.toHex(bytes);
+console.log(hex); // "0x00000000000000000000000000000000000000ff"
+```
+
+### toBytes
+
+Convert to raw Uint8Array:
+
+```typescript
+const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const arr = Bytes20.toBytes(bytes);
+console.log(arr instanceof Uint8Array); // true
+console.log(arr.length); // 20
+```
+
+### toBigint
+
+Convert to bigint (big-endian):
+
+```typescript
+const bytes = Bytes20(42);
+const value = Bytes20.toBigint(bytes);
+console.log(value); // 42n
+```
+
+### toNumber
+
+Convert to number (caution: max safe integer):
+
+```typescript
+const bytes = Bytes20(42);
+const num = Bytes20.toNumber(bytes);
+console.log(num); // 42
+
+// Use toBigint for large values
+const large = Bytes20('0x' + 'ff'.repeat(20));
+const bigValue = Bytes20.toBigint(large); // Safe
+```
+
+## Operations
+
+### equals
+
+Check equality:
+
+```typescript
+const a = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const b = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+console.log(Bytes20.equals(a, b)); // true
+```
+
+### compare
+
+Compare two values (lexicographic):
+
+```typescript
+const a = Bytes20('0x' + '01'.repeat(20));
+const b = Bytes20('0x' + '02'.repeat(20));
+console.log(Bytes20.compare(a, b)); // -1 (a < b)
+```
+
+### clone
+
+Create independent copy:
+
+```typescript
+const original = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const copy = Bytes20.clone(original);
+copy[0] = 0xff; // Doesn't affect original
+```
+
+### isZero
+
+Check if all zeros:
+
+```typescript
+const zeros = Bytes20.zero();
+console.log(Bytes20.isZero(zeros)); // true
+
+const nonZero = Bytes20(1);
+console.log(Bytes20.isZero(nonZero)); // false
+```
+
+### size
+
+Get size (always 20):
+
+```typescript
+const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+console.log(Bytes20.size(bytes)); // 20
+```
+
+## Constants
+
+### SIZE
+
+Bytes20 size in bytes:
+
+```typescript
+console.log(Bytes20.SIZE); // 20
+```
+
+### ZERO
+
+Zero-filled constant:
+
+```typescript
+console.log(Bytes20.ZERO.length); // 20
+console.log(Bytes20.isZero(Bytes20.ZERO)); // true
+```
+
+## Error Handling
+
+Bytes20 validates size strictly:
+
+```typescript
+try {
+  Bytes20(new Uint8Array(19));
+} catch (error) {
+  console.log(error.code); // "BYTES20_INVALID_LENGTH"
+  console.log(error.message); // "Bytes20 must be 20 bytes, got 19"
+}
+
+try {
+  Bytes20('0x1234');
+} catch (error) {
+  console.log(error.code); // "BYTES20_INVALID_HEX_LENGTH"
+  console.log(error.message); // "Bytes20 hex must be 40 characters..."
+}
+```
+
+## Ethereum Use Cases
+
+### Address Storage
+
+```typescript
+// Store address as Bytes20
+const addressBytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+
+// Convert to Address when checksumming needed
+import * as Address from 'tevm/primitives/Address';
+const addr = Address(addressBytes);
+console.log(addr.toChecksummed()); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### Packed Data
+
+```typescript
+// Pack multiple addresses into single buffer
+const addr1 = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const addr2 = Bytes20('0x1234567890123456789012345678901234567890');
+
+const packed = new Uint8Array(40);
+packed.set(addr1, 0);
+packed.set(addr2, 20);
+
+// Unpack
+const unpacked1 = Bytes20(packed.slice(0, 20));
+const unpacked2 = Bytes20(packed.slice(20, 40));
+```
+
+### ABI Encoding
+
+```typescript
+// Addresses in ABI are 32 bytes (20 bytes padded with 12 zeros)
+const addr = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const abiEncoded = new Uint8Array(32);
+abiEncoded.set(new Uint8Array(12), 0); // 12 zero bytes
+abiEncoded.set(addr, 12); // 20 address bytes
+
+console.log(abiEncoded.length); // 32
+```
+
+### Storage Slot Extraction
+
+```typescript
+// Extract address from Bytes32 storage slot (last 20 bytes)
+import * as Bytes32 from 'tevm/primitives/Bytes/Bytes32';
+
+const slot = Bytes32('0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const extractedAddr = Bytes20(slot.slice(12)); // Last 20 bytes
+console.log(Bytes20.toHex(extractedAddr)); // "0x742d35cc..."
+```
+
+## Symbol Branding
+
+Bytes20 uses JavaScript Symbol for runtime branding:
+
+```typescript
+// Check type at runtime
+const bytes = Bytes20('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+console.log(bytes[Symbol.for("type")]); // "Bytes20"
+console.log(bytes.length); // 20
+
+// Type guard
+function isBytes20(value: unknown): value is BrandedBytes20 {
+  return value instanceof Uint8Array &&
+         value.length === 20 &&
+         (value as any)[Symbol.for("type")] === "Bytes20";
+}
+```
+
+## Related
+
+- [Address](/primitives/address) - Ethereum addresses (extends Bytes20 with checksum)
+- [Bytes32](/primitives/bytes/bytes32) - 256-bit fixed-size bytes (most common)
+- [Bytes16](/primitives/bytes/bytes16) - 128-bit fixed-size bytes
+- [Keccak256](/crypto/keccak256) - 256-bit cryptographic hashes
+- [Hex](/primitives/hex) - Variable-length hex strings

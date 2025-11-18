@@ -1,0 +1,95 @@
+---
+title: Bytecode.hash
+description: Compute keccak256 hash of bytecode
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+<Tab title="Namespace API">
+
+## `Bytecode.hash(code): Hash`
+
+Compute keccak256 hash of bytecode (with auto-injected crypto).
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to hash
+
+**Returns:** `HashType` - Bytecode hash (32 bytes)
+
+**Example:**
+
+```typescript
+import * as Bytecode from 'tevm/Bytecode'
+
+const code = Bytecode('0x6001')
+const hash = Bytecode.hash(code)
+// Uint8Array(32) [...]
+```
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Hash({ keccak256 })(code): Hash`
+
+Tree-shakeable factory pattern with explicit crypto dependencies.
+
+**Dependencies:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to hash
+
+**Returns:** `HashType` - Bytecode hash (32 bytes)
+
+**Example:**
+
+```typescript
+import { Hash } from 'tevm/Bytecode'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+
+const hashFn = Hash({ keccak256 })
+const code = new Uint8Array([0x60, 0x01])
+const hash = hashFn(code)
+// Uint8Array(32) [...]
+```
+
+**Bundle size:** Crypto only included if you import it.
+
+</Tab>
+
+<Tab title="C">
+
+## `hash_t bytecode_hash(bytecode_t bytecode)`
+
+Compute keccak256 hash of bytecode.
+
+```c
+#include "tevm.h"
+
+uint8_t code[] = {0x60, 0x01};
+bytecode_t bc = bytecode_init(code, 2);
+
+hash_t hash_result = bytecode_hash(bc);
+printf("Hash: ");
+for (size_t i = 0; i < 32; i++) {
+    printf("%02x", hash_result.bytes[i]);
+}
+printf("\n");
+
+bytecode_free(bc);
+hash_free(hash_result);
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/tevm/blob/main/src/primitives.h)
+
+</Tab>
+</Tabs>
+
+## Performance
+
+Hash computation depends on imported keccak256 implementation. Factory API enables explicit control over crypto bundling.

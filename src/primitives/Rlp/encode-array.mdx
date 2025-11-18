@@ -1,0 +1,327 @@
+---
+title: Rlp.encodeArray
+description: Encode array of values to RLP format
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+</Tabs>
+
+## encodeArray vs encodeList
+
+`encodeArray` is functionally identical to `encodeList` - it's provided as an alias for semantic clarity:
+
+```typescript
+import { Rlp } from 'tevm'
+
+const items = [new Uint8Array([1]), new Uint8Array([2])]
+
+// These are equivalent
+const encoded1 = Rlp.encodeArray(items)
+const encoded2 = Rlp.encodeList(items)
+// Both => Uint8Array([0xc4, 0x01, 0x02])
+```
+
+Use `encodeArray` when thinking of the input as an **array of values** (e.g., transaction fields, block components).
+
+Use `encodeList` when thinking of the input as a **list structure** (e.g., nested lists, tree structures).
+
+## Usage Patterns
+
+### Transaction Encoding
+
+Encode transaction fields as array:
+
+```typescript
+import { Rlp } from 'tevm'
+
+interface LegacyTx {
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: Uint8Array
+  value: bigint
+  data: Uint8Array
+  v: bigint
+  r: Uint8Array
+  s: Uint8Array
+}
+
+function encodeLegacyTx(tx: LegacyTx): Uint8Array {
+  const fields = [
+    bigintToBytes(tx.nonce),
+    bigintToBytes(tx.gasPrice),
+    bigintToBytes(tx.gasLimit),
+    tx.to,
+    bigintToBytes(tx.value),
+    tx.data,
+    bigintToBytes(tx.v),
+    tx.r,
+    tx.s
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+
+const tx: LegacyTx = {
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: new Uint8Array(20).fill(0x01),
+  value: 1000000000000000000n,
+  data: Bytes(),
+  v: 27n,
+  r: Bytes32().fill(0x02),
+  s: Bytes32().fill(0x03)
+}
+
+const encoded = encodeLegacyTx(tx)
+```
+
+### Block Header Encoding
+
+Encode block header fields:
+
+```typescript
+import { Rlp } from 'tevm'
+
+interface BlockHeader {
+  parentHash: Uint8Array
+  uncleHash: Uint8Array
+  coinbase: Uint8Array
+  stateRoot: Uint8Array
+  transactionsRoot: Uint8Array
+  receiptsRoot: Uint8Array
+  logsBloom: Uint8Array
+  difficulty: bigint
+  number: bigint
+  gasLimit: bigint
+  gasUsed: bigint
+  timestamp: bigint
+  extraData: Uint8Array
+}
+
+function encodeBlockHeader(header: BlockHeader): Uint8Array {
+  const fields = [
+    header.parentHash,
+    header.uncleHash,
+    header.coinbase,
+    header.stateRoot,
+    header.transactionsRoot,
+    header.receiptsRoot,
+    header.logsBloom,
+    bigintToBytes(header.difficulty),
+    bigintToBytes(header.number),
+    bigintToBytes(header.gasLimit),
+    bigintToBytes(header.gasUsed),
+    bigintToBytes(header.timestamp),
+    header.extraData
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+```
+
+### Log Entry Encoding
+
+Encode event log entries:
+
+```typescript
+import { Rlp } from 'tevm'
+
+interface Log {
+  address: Uint8Array
+  topics: Uint8Array[]
+  data: Uint8Array
+}
+
+function encodeLog(log: Log): Uint8Array {
+  const fields = [
+    log.address,
+    log.topics,  // Nested array
+    log.data
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+
+const log: Log = {
+  address: new Uint8Array(20).fill(0x01),
+  topics: [
+    Bytes32().fill(0x02),
+    Bytes32().fill(0x03)
+  ],
+  data: new Uint8Array([0x04, 0x05, 0x06])
+}
+
+const encoded = encodeLog(log)
+```
+
+### Receipt Encoding
+
+Encode transaction receipts:
+
+```typescript
+import { Rlp } from 'tevm'
+
+interface Receipt {
+  status: bigint
+  gasUsed: bigint
+  logsBloom: Uint8Array
+  logs: Log[]
+}
+
+function encodeReceipt(receipt: Receipt): Uint8Array {
+  const encodedLogs = receipt.logs.map(log => encodeLog(log))
+
+  const fields = [
+    bigintToBytes(receipt.status),
+    bigintToBytes(receipt.gasUsed),
+    receipt.logsBloom,
+    encodedLogs
+  ]
+
+  return Rlp.encodeArray(fields)
+}
+```
+
+### Merkle Patricia Trie Node
+
+Encode trie nodes:
+
+```typescript
+import { Rlp } from 'tevm'
+
+type TrieNode =
+  | { type: 'branch'; children: Uint8Array[]; value: Uint8Array }
+  | { type: 'extension'; path: Uint8Array; child: Uint8Array }
+  | { type: 'leaf'; path: Uint8Array; value: Uint8Array }
+
+function encodeTrieNode(node: TrieNode): Uint8Array {
+  if (node.type === 'branch') {
+    // Branch node: [child0, child1, ..., child15, value]
+    return Rlp.encodeArray([...node.children, node.value])
+  }
+
+  if (node.type === 'extension') {
+    // Extension node: [path, child]
+    return Rlp.encodeArray([node.path, node.child])
+  }
+
+  // Leaf node: [path, value]
+  return Rlp.encodeArray([node.path, node.value])
+}
+```
+
+## Schema-based Encoding
+
+Define typed schemas for RLP encoding:
+
+```typescript
+import { Rlp } from 'tevm'
+
+// Define schema
+interface AccountState {
+  nonce: bigint
+  balance: bigint
+  storageRoot: Uint8Array
+  codeHash: Uint8Array
+}
+
+// Encoder function
+function encodeAccountState(account: AccountState): Uint8Array {
+  return Rlp.encodeArray([
+    bigintToBytes(account.nonce),
+    bigintToBytes(account.balance),
+    account.storageRoot,
+    account.codeHash
+  ])
+}
+
+// Decoder function (see decodeArray)
+function decodeAccountState(bytes: Uint8Array): AccountState {
+  const arr = Rlp.decodeArray(bytes)
+  return {
+    nonce: bytesToBigint(arr[0]),
+    balance: bytesToBigint(arr[1]),
+    storageRoot: arr[2],
+    codeHash: arr[3]
+  }
+}
+```
+
+## Performance
+
+### Pre-calculate Sizes
+
+Calculate total size before encoding:
+
+```typescript
+import { Rlp } from 'tevm'
+
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+
+// Calculate size first
+const size = Rlp.getEncodedLength(items)
+console.log(`Array will encode to ${size} bytes`)
+
+// Then encode
+const encoded = Rlp.encodeArray(items)
+```
+
+### Batch Encoding
+
+Encode multiple arrays efficiently:
+
+```typescript
+import { Rlp } from 'tevm'
+
+const transactions = [
+  [nonce1, gasPrice1, ...],
+  [nonce2, gasPrice2, ...],
+  [nonce3, gasPrice3, ...]
+]
+
+// Encode each transaction
+const encodedTxs = transactions.map(tx => Rlp.encodeArray(tx))
+
+// Encode as list of transactions
+const block = Rlp.encodeArray(encodedTxs)
+```
+
+### Reusable Buffers
+
+For high-frequency encoding, consider pre-allocating buffers:
+
+```typescript
+import { Rlp } from 'tevm'
+
+class TxEncoder {
+  private buffer = new Uint8Array(1024)  // Reusable buffer
+
+  encode(tx: Transaction): Uint8Array {
+    const fields = [
+      bigintToBytes(tx.nonce),
+      bigintToBytes(tx.gasPrice),
+      // ...
+    ]
+
+    return Rlp.encodeArray(fields)
+  }
+}
+```
+
+## See Also
+
+- [encode](/primitives/rlp/encode) - Universal encoder
+- [encodeList](/primitives/rlp/encode-list) - Encode list
+- [decodeArray](/primitives/rlp/decode-array) - Decode to array
+- [encodeObject](/primitives/rlp/encode-object) - Encode object
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification

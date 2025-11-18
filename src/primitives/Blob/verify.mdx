@@ -1,0 +1,154 @@
+---
+title: Blob.verify
+description: Verify KZG proof for blob and commitment
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+<Tab title="Standard API">
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+const blob = Blob.fromData(data);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob, commitment);
+
+const isValid = Kzg.verify(blob, commitment, proof);
+console.log(isValid); // true
+```
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `Verify({ verifyBlobKzgProof })(blob, commitment, proof): boolean`
+
+Tree-shakeable factory pattern with explicit KZG dependency.
+
+**Dependencies:**
+- `verifyBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array) => boolean` - KZG verification function from c-kzg-4844
+
+**Example:**
+
+```typescript
+import { Kzg } from 'tevm'
+import { verifyBlobKzgProof } from 'c-kzg'
+
+const verify = Kzg.VerifyFactory({ verifyBlobKzgProof })
+const isValid = verify(blob, commitment, proof)
+```
+
+**Bundle size:** KZG crypto only included if you import it explicitly.
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+</Tabs>
+
+## Verification Process
+
+KZG proof verification checks that blob data matches commitment:
+
+```
+1. Parse blob as polynomial coefficients (4096 field elements)
+2. Evaluate polynomial at challenge point
+3. Verify pairing equation: e(commitment, G2) = e(proof, challenge_G2)
+```
+
+### Why Verify?
+
+```typescript
+import { Kzg } from 'tevm';
+
+// Scenario: Received blob transaction from network
+const receivedBlob = /* from network */;
+const receivedCommitment = /* from transaction */;
+const receivedProof = /* from transaction */;
+
+// Verify without recomputing commitment (faster)
+const isValid = Kzg.verify(receivedBlob, receivedCommitment, receivedProof);
+
+if (!isValid) {
+  throw new Error('Blob data does not match commitment');
+}
+
+// Can trust blob data matches what sender committed to
+```
+
+## Batch Verification
+
+For multiple blobs, use `verifyBatch()` (more efficient):
+
+```typescript
+import { Kzg } from 'tevm';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => Kzg.Commitment(b));
+const proofs = blobs.map(b => Kzg.Proof(b));
+
+// Single batch verification (faster than 3 individual verifications)
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
+
+if (!allValid) {
+  // Fallback: find which blob failed
+  for (let i = 0; i < blobs.length; i++) {
+    if (!Kzg.verify(blobs[i], commitments[i], proofs[i])) {
+      console.error(`Blob ${i} failed verification`);
+    }
+  }
+}
+```
+
+## Security Properties
+
+### Soundness
+
+Cannot create valid proof for wrong blob:
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+const blob1 = Blob.fromData(data1);
+const commitment1 = Kzg.Commitment(blob1);
+const proof1 = Kzg.Proof(blob1);
+
+const blob2 = Blob.fromData(data2); // Different data
+
+// Proof for blob1 doesn't work with blob2
+console.log(Kzg.verify(blob1, commitment1, proof1)); // true
+console.log(Kzg.verify(blob2, commitment1, proof1)); // false
+
+// Cannot forge proof
+const fakeProof = new Uint8Array(48);
+console.log(Kzg.verify(blob1, commitment1, fakeProof)); // false
+```
+
+### Completeness
+
+Valid proofs always verify:
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+const blob = Blob.fromData(data);
+const commitment = Kzg.Commitment(blob);
+const proof = Kzg.Proof(blob);
+
+// Always verifies for correctly generated proof
+console.log(Kzg.verify(blob, commitment, proof)); // true (always)
+```
+
+## See Also
+
+- [toCommitment](./toCommitment) - Generate commitment
+- [toProof](./toProof) - Generate proof
+- [verifyBatch](./verifyBatch) - Batch verification
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme details

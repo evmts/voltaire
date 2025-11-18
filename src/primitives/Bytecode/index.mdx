@@ -1,0 +1,235 @@
+---
+title: Overview
+description: EVM bytecode analysis and manipulation
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tip>
+New to bytecode? Start with [Fundamentals](/primitives/bytecode/fundamentals) for guided examples and concepts.
+</Tip>
+
+## Type Definition
+
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
+
+```typescript
+import type { brand } from 'tevm/brand';
+
+export type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" };
+```
+
+### Native Uint8Array Methods
+
+JavaScript builtins available on all `Uint8Array` instances:
+
+- `setFromBase64()` - Populate from base64 string
+- `setFromHex()` - Populate from hex string
+- `toBase64()` - Encode to base64 string
+- `toHex()` - Encode to hex string
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
+
+<Note>
+`toHex()` and `setFromHex()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Tevm's `Hex.toHex()` for broader compatibility.
+</Note>
+
+## Quick Reference
+
+
+<Tabs>
+
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+- [`fromUint8Array(bytes)`](./fromUint8Array) - Create from Uint8Array
+
+### Iteration
+
+- [`scan(bytecode, options?)`](./scan) - Iterator for lazy bytecode traversal with fusion detection
+
+### Analysis
+
+- [`analyze(bytecode)`](./analyze) - Complete analysis (validation + jump destinations + instructions)
+- [`analyzeBlocks(bytecode, options?)`](./analyze-blocks) - Split into basic blocks with control flow metadata
+- [`analyzeGas(bytecode, options?)`](./analyze-gas) - Estimate gas costs with instruction/block breakdown
+- [`analyzeStack(bytecode, options?)`](./analyze-stack) - Validate stack depth constraints and track effects
+- [`analyzeJumpDestinations(bytecode)`](./analyzeJumpDestinations) - Find all JUMPDEST positions
+- [`parseInstructions(bytecode)`](./parseInstructions) - Parse all instructions with PUSH data
+- [`isValidJumpDest(bytecode, offset)`](./isValidJumpDest) - Check if position is valid jump target
+- [`detectFusions(bytecode)`](./detect-fusions) - Identify multi-instruction optimization patterns
+
+### Validation
+
+- [`validate(bytecode)`](./validate) - Validate bytecode structure
+
+### Metadata
+
+- [`hasMetadata(bytecode)`](./hasMetadata) - Check for compiler metadata
+- [`stripMetadata(bytecode)`](./stripMetadata) - Remove metadata from bytecode
+
+### Formatting
+
+- [`formatInstructions(bytecode)`](./formatInstructions) - Disassemble to string array
+- [`prettyPrint(bytecode, options?)`](./pretty-print) - Annotated disassembly with colors and metadata
+
+### Conversions
+
+- [`toHex(bytecode)`](./toHex) - Convert to hex string with 0x prefix
+- [`toAbi(bytecode)`](./toAbi) - Extract ABI from bytecode using reverse engineering
+
+### Utilities
+
+- [`size(bytecode)`](./size) - Get byte length
+- [`equals(a, b)`](./equals) - Compare bytecode equality
+- [`hash(bytecode)`](./hash) - Compute keccak256 hash
+- [`extractRuntime(bytecode)`](./extractRuntime) - Extract runtime code from deployment bytecode
+- [`getBlock(bytecode, pc)`](./getBlock) - Get basic block containing a program counter
+- [`getNextPc(bytecode, currentPc)`](./getNextPc) - Get next program counter after instruction
+
+### Reference
+
+- [Instruction Types](./instruction-types) - Complete OpcodeData union reference (40+ types)
+- [Synthetic Opcodes](./synthetic-opcodes) - Extended opcode set for fusion patterns
+
+## Types
+
+<Tabs>
+<Tab title="BrandedBytecode">
+
+```typescript
+import type { brand } from 'tevm/brand';
+
+export type BrandedBytecode = Uint8Array & {
+  readonly [brand]: "Bytecode";
+};
+```
+
+Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety with symbol branding.
+
+</Tab>
+<Tab title="BytecodeLike">
+
+```typescript
+type BytecodeLike =
+  | Uint8Array
+  | BrandedBytecode
+  | Bytecode
+  | Hex
+  | string;
+```
+
+Union type accepting any input that can be coerced to bytecode. Accepted by `Bytecode.from()`.
+
+See [from](./from) for details.
+
+</Tab>
+<Tab title="Analysis Types">
+
+```typescript
+export type Opcode = number;
+
+export type Instruction = {
+  readonly opcode: Opcode;
+  readonly position: number;
+  readonly pushData?: Uint8Array;
+};
+
+export type Analysis = {
+  readonly valid: boolean;
+  readonly jumpDestinations: ReadonlySet<number>;
+  readonly instructions: readonly Instruction[];
+};
+```
+
+Types for bytecode analysis results. See [analyze](./analyze).
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Analyzing Contract Bytecode
+
+```typescript
+const bytecode = await provider.getCode("0x...");
+const code = Bytecode(bytecode);
+
+const analysis = code.analyze();
+console.log(`Valid: ${analysis.valid}`);
+console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
+console.log(`Instructions: ${analysis.instructions.length}`);
+
+const isValidTarget = code.isValidJumpDest(100);
+```
+
+### Comparing Bytecode
+
+```typescript
+const deployed = Bytecode(await provider.getCode(address));
+const expected = Bytecode(compiledBytecode);
+
+if (deployed.equals(expected)) {
+  console.log("Contract verified");
+} else {
+  console.log(`Hash deployed: ${deployed.hash()}`);
+  console.log(`Hash expected: ${expected.hash()}`);
+}
+```
+
+### Extracting Runtime Code
+
+```typescript
+const deploymentCode = Bytecode("0x608060...");
+const runtimeCode = deploymentCode.extractRuntime();
+const cleanCode = runtimeCode.stripMetadata();
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromHex, analyze, formatInstructions } from 'tevm/BrandedBytecode';
+
+const code = fromHex("0x6001");
+const analysis = analyze(code);
+const disassembly = formatInstructions(code);
+
+// Only these 3 functions included in bundle
+```
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/bytecode/fundamentals) - Learn bytecode structure and parsing
+- [Instruction Types](/primitives/bytecode/instruction-types) - Complete OpcodeData union reference
+
+### Advanced Features
+
+- [Pretty Print](/primitives/bytecode/pretty-print) - Annotated disassembly with visualization
+- [Analyze Blocks](/primitives/bytecode/analyze-blocks) - Basic block analysis and CFG
+- [Detect Fusions](/primitives/bytecode/detect-fusions) - Multi-instruction pattern detection
+- [Synthetic Opcodes](/primitives/bytecode/synthetic-opcodes) - Extended opcode set
+
+### Related Primitives
+
+- [Opcode](/primitives/opcode) - EVM instruction definitions and gas costs
+- [Keccak256](/crypto/keccak256) - Keccak256 hashing for bytecode verification
+- [Hex](/primitives/hex) - Hex string encoding and decoding
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
+- [EVM Opcodes](https://www.evm.codes/) - Interactive opcode reference
+- [wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes) - Gas costs and opcode details
+- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Contract metadata format

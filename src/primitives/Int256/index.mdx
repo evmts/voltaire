@@ -1,0 +1,224 @@
+---
+title: Int256
+description: 256-bit signed integer with EVM SDIV/SMOD/SLT/SGT/SAR semantics
+---
+
+<Tip>
+Int256 is critical for EVM signed operations (SDIV, SMOD, SLT, SGT, SAR). All operations match EVM semantics exactly.
+</Tip>
+
+## Type Definition
+
+Branded `bigint` representing signed 256-bit integer (-2^255 to 2^255-1). Implements EVM signed arithmetic with two's complement encoding.
+
+```typescript
+export type BrandedInt256 = bigint & {
+  readonly [brand]: "Int256"
+}
+```
+
+## Range
+
+- **MIN**: -2^255 = `0x8000...0000` (high bit set)
+- **MAX**: 2^255-1 = `0x7fff...ffff`
+- **Size**: 32 bytes (256 bits)
+
+## Quick Start
+
+```typescript
+import * as Int256 from '@voltaire/primitives/Int256';
+
+// EVM SDIV (signed division, truncate toward zero)
+Int256.dividedBy(-10n, 3n); // -3n (not -4n)
+
+// EVM SMOD (signed modulo, sign follows dividend)
+Int256.modulo(-10n, 3n);    // -1n (not 2n)
+
+// EVM SLT/SGT (signed comparison)
+Int256.lessThan(-1n, 0n);   // true (negative < positive)
+
+// EVM SAR (arithmetic right shift, preserves sign)
+Int256.shiftRight(-256n, 1); // -128n (sign preserved)
+
+// Two's complement encoding
+Int256.toHex(-1n);
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+## EVM SDIV (Signed Division)
+
+Truncates toward zero (not floor division):
+
+```typescript
+// -10 / 3 = -3 (truncate toward zero)
+Int256.dividedBy(-10n, 3n); // -3n (NOT -4n)
+
+// 10 / -3 = -3 (truncate toward zero)
+Int256.dividedBy(10n, -3n); // -3n (NOT -4n)
+
+// MIN / -1 overflows (undefined in EVM)
+Int256.dividedBy(Int256.MIN, -1n); // throws "EVM SDIV overflow"
+```
+
+**EVM Opcode**: `0x05 SDIV`
+
+## EVM SMOD (Signed Modulo)
+
+Sign follows dividend (first operand):
+
+```typescript
+// -10 % 3 = -1 (sign of -10)
+Int256.modulo(-10n, 3n);  // -1n (NOT 2n)
+
+// 10 % -3 = 1 (sign of 10)
+Int256.modulo(10n, -3n);  // 1n (NOT -2n)
+
+// Property: a = (a/b)*b + (a%b)
+const a = -10n, b = 3n;
+const q = Int256.dividedBy(a, b);
+const r = Int256.modulo(a, b);
+// q*b + r === a
+```
+
+**EVM Opcode**: `0x07 SMOD`
+
+## EVM SLT/SGT (Signed Comparison)
+
+Treats values as signed (negative < positive):
+
+```typescript
+// SLT: Signed Less Than
+Int256.lessThan(-1n, 0n);  // true (-1 < 0)
+Int256.lessThan(Int256.MIN, Int256.MAX); // true
+
+// SGT: Signed Greater Than
+Int256.greaterThan(0n, -1n); // true (0 > -1)
+Int256.greaterThan(Int256.MAX, Int256.MIN); // true
+
+// In unsigned: 0xFF...FF (MAX_UINT) > 0
+// In signed:   -1 < 0
+```
+
+**EVM Opcodes**: `0x12 SLT`, `0x13 SGT`
+
+## EVM SAR (Arithmetic Right Shift)
+
+Preserves sign bit during shift:
+
+```typescript
+// Negative values stay negative
+Int256.shiftRight(-256n, 1); // -128n (sign preserved)
+Int256.shiftRight(-1n, 8);   // -1n (all bits remain 1)
+
+// Positive shifts normally
+Int256.shiftRight(256n, 1);  // 128n
+
+// Large shifts
+Int256.shiftRight(-100n, 300); // -1n (all 1s)
+Int256.shiftRight(100n, 300);  // 0n
+```
+
+**EVM Opcode**: `0x1D SAR` (EIP-145)
+
+## API Methods
+
+### Constructors
+- `from(value)` - From bigint, number, or string
+- `fromBigInt(value)` - From bigint with validation
+- `fromNumber(value)` - From number (throws if out of range)
+- `fromHex(hex)` - Parse hex (two's complement)
+- `fromBytes(bytes)` - Parse bytes (two's complement, big-endian)
+
+### Conversions
+- `toHex(value)` - To hex (two's complement, 32 bytes)
+- `toBytes(value)` - To bytes (32 bytes, two's complement, big-endian)
+- `toBigInt(value)` - To bigint
+- `toNumber(value)` - To number (throws if unsafe)
+- `toString(value)` - To decimal string
+
+### Arithmetic (EVM Semantics)
+- `plus(a, b)` - Add with wrapping
+- `minus(a, b)` - Subtract with wrapping
+- `times(a, b)` - Multiply with wrapping
+- `dividedBy(a, b)` - **EVM SDIV** (truncate toward zero)
+- `modulo(a, b)` - **EVM SMOD** (sign follows dividend)
+- `abs(value)` - Absolute value (throws on MIN)
+- `negate(value)` - Negate with wrapping
+
+### Comparison (EVM Semantics)
+- `equals(a, b)` - Equality
+- `lessThan(a, b)` - **EVM SLT** (signed less than)
+- `greaterThan(a, b)` - **EVM SGT** (signed greater than)
+- `isZero(value)` - Check if zero
+- `isNegative(value)` - Check if negative
+- `isPositive(value)` - Check if positive
+- `sign(value)` - Sign indicator (-1, 0, 1)
+- `minimum(a, b)` - Minimum value
+- `maximum(a, b)` - Maximum value
+
+### Bitwise (EVM Semantics)
+- `bitwiseAnd(a, b)` - Bitwise AND
+- `bitwiseOr(a, b)` - Bitwise OR
+- `bitwiseXor(a, b)` - Bitwise XOR
+- `bitwiseNot(value)` - Bitwise NOT
+- `shiftLeft(value, shift)` - Left shift
+- `shiftRight(value, shift)` - **EVM SAR** (arithmetic right shift)
+
+### Utilities
+- `bitLength(value)` - Significant bit count
+- `leadingZeros(value)` - Leading zero count
+- `popCount(value)` - Set bit count
+- `isValid(value)` - Range validation
+
+## Two's Complement (EVM Encoding)
+
+```typescript
+// -1 is all bits set (EVM: 0xFF...FF)
+Int256.toHex(-1n);
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// MIN has high bit set (EVM: 0x80...00)
+Int256.toHex(Int256.MIN);
+// "0x8000000000000000000000000000000000000000000000000000000000000000"
+
+// MAX is 0x7f...ff
+Int256.toHex(Int256.MAX);
+// "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+## EVM Edge Cases
+
+```typescript
+// SDIV: MIN / -1 overflows
+Int256.dividedBy(Int256.MIN, -1n); // throws "EVM SDIV overflow"
+
+// abs(MIN) overflows
+Int256.abs(Int256.MIN); // throws "overflow"
+
+// negate(MIN) wraps
+Int256.negate(Int256.MIN); // MIN (wraps around)
+
+// Arithmetic wrapping
+Int256.plus(Int256.MAX, 1n);  // MIN
+Int256.minus(Int256.MIN, 1n); // MAX
+```
+
+## Constants
+
+```typescript
+Int256.MIN     // -2^255
+Int256.MAX     // 2^255-1
+Int256.ZERO    // 0n
+Int256.ONE     // 1n
+Int256.NEG_ONE // -1n (0xFFFF...FFFF)
+Int256.SIZE    // 32 (bytes)
+Int256.BITS    // 256
+Int256.MODULO  // 2^256
+```
+
+## See Also
+
+- [EIP-145: Bitwise shifting instructions](https://eips.ethereum.org/EIPS/eip-145) - SAR specification
+- [EVM Opcodes](https://www.evm.codes/) - SDIV, SMOD, SLT, SGT, SAR
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
+- [Uint256](/primitives/uint256) - Unsigned 256-bit integer
