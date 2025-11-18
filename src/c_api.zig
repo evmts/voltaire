@@ -1566,14 +1566,251 @@ fn freeAbiValue(allocator: std.mem.Allocator, value: *primitives.Abi.AbiValue) v
         .@"uint256[]" => |arr| allocator.free(arr),
         .@"bytes32[]" => |arr| allocator.free(arr),
         .@"address[]" => |arr| allocator.free(arr),
+        .@"bool[]" => |arr| allocator.free(arr),
         .@"string[]" => |arr| {
             for (arr) |s| {
                 allocator.free(s);
             }
             allocator.free(arr);
         },
+        .@"uint256[][]" => |arr| {
+            for (arr) |inner| {
+                allocator.free(inner);
+            }
+            allocator.free(arr);
+        },
         else => {},
     }
+}
+
+/// Encode function data (selector + parameters)
+/// signature: function signature string (e.g., "transfer(address,uint256)")
+/// types_json: JSON array of type strings
+/// values_json: JSON array of value strings
+/// out_buf: output buffer for encoded function data
+/// buf_len: size of output buffer
+/// Returns: number of bytes written, or negative error code
+export fn primitives_abi_encode_function_data(
+    signature: [*:0]const u8,
+    types_json: [*:0]const u8,
+    values_json: [*:0]const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const sig_str = std.mem.span(signature);
+    const types_str = std.mem.span(types_json);
+    const values_str = std.mem.span(values_json);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    var stack_buf: [if (is_wasm) 2 * 1024 * 1024 else 8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    // Compute selector
+    const selector = primitives.Abi.computeSelector(sig_str);
+
+    // Parse types and values
+    var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
+    defer types_list.deinit();
+    if (!parseJsonTypeArray(allocator, types_str, &types_list)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    var values_strs = std.array_list.AlignedManaged([]const u8, null).init(allocator);
+    defer values_strs.deinit();
+    if (!parseJsonStringValueArray(values_str, &values_strs)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    if (types_list.items.len != values_strs.items.len) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Parse ABI values
+    var abi_values = std.array_list.AlignedManaged(primitives.Abi.AbiValue, null).init(allocator);
+    defer {
+        for (abi_values.items) |*v| {
+            freeAbiValue(allocator, v);
+        }
+        abi_values.deinit();
+    }
+
+    for (types_list.items, values_strs.items) |abi_type, value_str| {
+        const abi_value = parseAbiValue(allocator, abi_type, value_str) catch {
+            return PRIMITIVES_ERROR_INVALID_INPUT;
+        };
+        abi_values.append(abi_value) catch {
+            return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+        };
+    }
+
+    // Encode
+    const encoded = primitives.Abi.encodeFunctionData(allocator, selector, abi_values.items) catch |err| {
+        return switch (err) {
+            error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            error.MaxLengthExceeded => PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer allocator.free(encoded);
+
+    if (encoded.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..encoded.len], encoded);
+    return @intCast(encoded.len);
+}
+
+/// Decode function data (extract selector and decode parameters)
+/// data: encoded function data (selector + parameters)
+/// data_len: length of encoded data
+/// types_json: JSON array of expected parameter types
+/// out_selector: output buffer for 4-byte selector
+/// out_buf: output buffer for JSON-encoded parameter values
+/// buf_len: size of output buffer
+/// Returns: number of bytes written to out_buf, or negative error code
+export fn primitives_abi_decode_function_data(
+    data: [*]const u8,
+    data_len: usize,
+    types_json: [*:0]const u8,
+    out_selector: *[4]u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const data_slice = data[0..data_len];
+    const types_str = std.mem.span(types_json);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    var stack_buf: [if (is_wasm) 2 * 1024 * 1024 else 8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    // Parse types
+    var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
+    defer types_list.deinit();
+    if (!parseJsonTypeArray(allocator, types_str, &types_list)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Decode
+    const result = primitives.Abi.decodeFunctionData(allocator, data_slice, types_list.items) catch |err| {
+        return switch (err) {
+            error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            error.InvalidSelector, error.InvalidData => PRIMITIVES_ERROR_INVALID_INPUT,
+            error.DataTooSmall, error.ZeroData => PRIMITIVES_ERROR_INVALID_LENGTH,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer {
+        for (result.parameters) |*v| {
+            freeAbiValue(allocator, v);
+        }
+        allocator.free(result.parameters);
+    }
+
+    // Copy selector
+    @memcpy(out_selector, &result.selector);
+
+    // Convert decoded values to JSON
+    const json_result = formatAbiValuesToJson(allocator, result.parameters) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+    defer allocator.free(json_result);
+
+    if (json_result.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..json_result.len], json_result);
+    return @intCast(json_result.len);
+}
+
+/// Encode packed (non-standard compact encoding)
+/// types_json: JSON array of type strings
+/// values_json: JSON array of value strings
+/// out_buf: output buffer for packed encoding
+/// buf_len: size of output buffer
+/// Returns: number of bytes written, or negative error code
+export fn primitives_abi_encode_packed(
+    types_json: [*:0]const u8,
+    values_json: [*:0]const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const types_str = std.mem.span(types_json);
+    const values_str = std.mem.span(values_json);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    var stack_buf: [if (is_wasm) 2 * 1024 * 1024 else 8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    // Parse types
+    var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
+    defer types_list.deinit();
+    if (!parseJsonTypeArray(allocator, types_str, &types_list)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Parse values
+    var values_strs = std.array_list.AlignedManaged([]const u8, null).init(allocator);
+    defer values_strs.deinit();
+    if (!parseJsonStringValueArray(values_str, &values_strs)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    if (types_list.items.len != values_strs.items.len) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Parse ABI values
+    var abi_values = std.array_list.AlignedManaged(primitives.Abi.AbiValue, null).init(allocator);
+    defer {
+        for (abi_values.items) |*v| {
+            freeAbiValue(allocator, v);
+        }
+        abi_values.deinit();
+    }
+
+    for (types_list.items, values_strs.items) |abi_type, value_str| {
+        const abi_value = parseAbiValue(allocator, abi_type, value_str) catch {
+            return PRIMITIVES_ERROR_INVALID_INPUT;
+        };
+        abi_values.append(abi_value) catch {
+            return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+        };
+    }
+
+    // Encode packed
+    const encoded = primitives.Abi.encodePacked(allocator, abi_values.items) catch |err| {
+        return switch (err) {
+            error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            error.MaxLengthExceeded => PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer allocator.free(encoded);
+
+    if (encoded.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..encoded.len], encoded);
+    return @intCast(encoded.len);
+}
+
+/// Estimate gas cost for calldata
+/// data: calldata bytes
+/// data_len: length of calldata
+/// Returns: estimated gas cost (u64), or negative error code
+export fn primitives_abi_estimate_gas(
+    data: [*]const u8,
+    data_len: usize,
+) c_longlong {
+    const data_slice = data[0..data_len];
+    const gas = primitives.Abi.estimateGasForData(data_slice);
+    return @intCast(gas);
 }
 
 // ============================================================================

@@ -1993,6 +1993,160 @@ export function abiDecodeParameters(
 	}
 }
 
+/**
+ * Encode function data (selector + parameters)
+ * @param signature - Function signature string (e.g., "transfer(address,uint256)")
+ * @param types - Array of parameter type strings
+ * @param values - Array of parameter value strings
+ * @returns Encoded function data with selector prefix
+ */
+export function abiEncodeFunctionData(
+	signature: string,
+	types: string[],
+	values: string[],
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		const sigPtr = writeString(signature);
+		const typesJson = JSON.stringify(types);
+		const valuesJson = JSON.stringify(values);
+		const typesPtr = writeString(typesJson);
+		const valuesPtr = writeString(valuesJson);
+
+		const estimatedSize = 4 + types.length * 64 + 1024;
+		const outPtr = malloc(estimatedSize);
+
+		const resultLen = exports.primitives_abi_encode_function_data(
+			sigPtr,
+			typesPtr,
+			valuesPtr,
+			outPtr,
+			estimatedSize,
+		);
+
+		if (resultLen < 0) {
+			checkResult(resultLen);
+		}
+
+		return readBytes(outPtr, resultLen);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Decode function data (extract selector and decode parameters)
+ * @param data - Encoded function data
+ * @param types - Array of expected parameter types
+ * @returns Object with selector and decoded parameters
+ */
+export function abiDecodeFunctionData(
+	data: Uint8Array,
+	types: string[],
+): { selector: Uint8Array; parameters: string[] } {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		const dataPtr = malloc(data.length);
+		writeBytes(data, dataPtr);
+
+		const typesJson = JSON.stringify(types);
+		const typesPtr = writeString(typesJson);
+
+		const selectorPtr = malloc(4);
+		const estimatedSize = types.length * 128 + 1024;
+		const outPtr = malloc(estimatedSize);
+
+		const resultLen = exports.primitives_abi_decode_function_data(
+			dataPtr,
+			data.length,
+			typesPtr,
+			selectorPtr,
+			outPtr,
+			estimatedSize,
+		);
+
+		if (resultLen < 0) {
+			checkResult(resultLen);
+		}
+
+		const selector = readBytes(selectorPtr, 4);
+		const jsonStr = readFixedString(outPtr, resultLen);
+		const parameters = JSON.parse(jsonStr) as string[];
+
+		return { selector, parameters };
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Encode packed (non-standard compact encoding)
+ * @param types - Array of type strings
+ * @param values - Array of value strings
+ * @returns Packed encoding (no padding)
+ */
+export function abiEncodePacked(
+	types: string[],
+	values: string[],
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		const typesJson = JSON.stringify(types);
+		const valuesJson = JSON.stringify(values);
+		const typesPtr = writeString(typesJson);
+		const valuesPtr = writeString(valuesJson);
+
+		const estimatedSize = types.length * 32 + 1024;
+		const outPtr = malloc(estimatedSize);
+
+		const resultLen = exports.primitives_abi_encode_packed(
+			typesPtr,
+			valuesPtr,
+			outPtr,
+			estimatedSize,
+		);
+
+		if (resultLen < 0) {
+			checkResult(resultLen);
+		}
+
+		return readBytes(outPtr, resultLen);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Estimate gas cost for calldata
+ * @param data - Calldata bytes
+ * @returns Estimated gas cost
+ */
+export function abiEstimateGas(data: Uint8Array): bigint {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		const dataPtr = malloc(data.length);
+		writeBytes(data, dataPtr);
+
+		const gas = exports.primitives_abi_estimate_gas(dataPtr, data.length);
+
+		if (gas < 0) {
+			checkResult(Number(gas));
+		}
+
+		return BigInt(gas);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
 // ============================================================================
 // Access List API (EIP-2930)
 // ============================================================================

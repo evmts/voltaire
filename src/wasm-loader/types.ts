@@ -338,6 +338,31 @@ export interface WasmExports {
 		outPtr: number,
 		outLen: number,
 	) => number;
+	primitives_abi_encode_function_data: (
+		signaturePtr: number,
+		typesJsonPtr: number,
+		valuesJsonPtr: number,
+		outPtr: number,
+		outLen: number,
+	) => number;
+	primitives_abi_decode_function_data: (
+		dataPtr: number,
+		dataLen: number,
+		typesJsonPtr: number,
+		selectorPtr: number,
+		outPtr: number,
+		outLen: number,
+	) => number;
+	primitives_abi_encode_packed: (
+		typesJsonPtr: number,
+		valuesJsonPtr: number,
+		outPtr: number,
+		outLen: number,
+	) => number;
+	primitives_abi_estimate_gas: (
+		dataPtr: number,
+		dataLen: number,
+	) => bigint;
 
 	// Blob functions (EIP-4844)
 	primitives_blob_from_data: (
