@@ -13,7 +13,7 @@ A branded type for 16-bit unsigned integers (range: 0-65535) represented as Java
 
 ## Overview
 
-`BrandedUint16` provides type-safe operations on 16-bit unsigned integers with:
+`Uint16` provides type-safe operations on 16-bit unsigned integers with:
 - Compile-time type branding for type safety
 - Runtime validation and overflow/underflow checking
 - Zero runtime overhead (just a number internally)
@@ -24,7 +24,7 @@ A branded type for 16-bit unsigned integers (range: 0-65535) represented as Java
 ```typescript
 import type { brand } from '../../../brand.js';
 
-export type BrandedUint16 = number & { readonly [brand]: "Uint16" };
+export type Uint16 = number & { readonly [brand]: "Uint16" };
 ```
 
 ## Range
