@@ -7,7 +7,7 @@ export * from "./errors.js";
 export * from "./statemutability.js";
 
 // Import crypto dependencies
-import { keccak256String as keccak256StringImpl } from "../../Hash/BrandedHashIndex.js";
+import { keccak256String as keccak256StringImpl } from "../../Hash/index.js";
 
 import { decodeParams as _decodeParams } from "./decodeParams.js";
 import { decodeResult as _decodeResult } from "./decodeResult.js";

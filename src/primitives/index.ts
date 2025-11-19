@@ -77,7 +77,7 @@ export * as BrandedStorageKey from "./State/index.js";
 
 // Protocol
 export { Blob } from "./Blob/index.js";
-export * as BrandedBlob from "./Blob/BrandedBlob/index.js";
+export * as BrandedBlob from "./Blob/index.js";
 export { Chain } from "./Chain/index.js";
 export * as BrandedChain from "./Chain/index.js";
 export * as FeeMarket from "./FeeMarket/index.js";
@@ -175,7 +175,7 @@ export * as Base64 from "./Base64/index.js";
 export * as BrandedBase64 from "./Base64/Base64.js";
 
 // Utilities - Bytes types
-export * as Bytes from "./Bytes/BrandedBytes/index.js";
+export * as Bytes from "./Bytes/Bytes.index.js";
 export * as Bytes1 from "./Bytes/Bytes1/index.js";
 export * as Bytes2 from "./Bytes/Bytes2/index.js";
 export * as Bytes3 from "./Bytes/Bytes3/index.js";

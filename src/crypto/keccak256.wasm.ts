@@ -132,7 +132,7 @@ export function selector(signature: string): Uint8Array {
  */
 export function topic(
 	signature: string,
-): import("../primitives/Hash/HashType/HashType.js").HashType {
+): import("../primitives/Hash/HashType.js").HashType {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}

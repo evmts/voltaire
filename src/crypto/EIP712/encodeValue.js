@@ -81,7 +81,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 		// address type (must be BrandedAddress - already validated as 20 bytes)
 		if (type === "address") {
 			const addr =
-				/** @type {import('../../primitives/Address/AddressType.js').AddressType.AddressType} */ (
+				/** @type {import('../../primitives/Address/AddressType.js').AddressType} */ (
 					value
 				);
 			result.set(addr, 12); // Right-aligned in 32 bytes

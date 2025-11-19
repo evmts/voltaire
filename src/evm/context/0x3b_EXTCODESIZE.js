@@ -10,7 +10,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Gas: Variable (hardfork-dependent: 20/700/2600/100)
  *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
- * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
+ * @param {import("../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodesize(frame, host) {

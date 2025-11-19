@@ -1,5 +1,5 @@
 import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
-import type { HashType } from "../Hash/HashType/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { AddressType } from "./AddressType.js";
 import { InvalidAddressLengthError } from "./errors.js";
 import * as BrandedAddress from "./internal-index.js";

@@ -1,7 +1,7 @@
 import type { brand } from "../../brand.js";
 import type { AddressType } from "../Address/AddressType.js";
 import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
-import type { HashType } from "../Hash/HashType/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { TopicFilterType } from "../TopicFilter/TopicFilterType.js";
 
 /**

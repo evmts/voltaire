@@ -7,9 +7,9 @@ import { HDWalletError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Parent extended key
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Parent extended key
  * @param {number} index - Child index (add HARDENED_OFFSET for hardened derivation)
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Derived child extended key
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Derived child extended key
  * @throws {HDWalletError} If derivation fails or index is invalid
  * @example
  * ```javascript
@@ -22,7 +22,7 @@ import { HDWalletError } from "./errors.js";
  */
 export function deriveChild(key, index) {
 	try {
-		return /** @type {import('./BrandedExtendedKey.js').BrandedExtendedKey} */ (
+		return /** @type {import('./ExtendedKeyType.js').BrandedExtendedKey} */ (
 			key.deriveChild(index)
 		);
 	} catch (error) {

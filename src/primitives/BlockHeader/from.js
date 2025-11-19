@@ -1,7 +1,7 @@
 import { from as addressFrom } from "../Address/internal-index.js";
 import { from as blockHashFrom } from "../BlockHash/index.js";
 import { from as blockNumberFrom } from "../BlockNumber/index.js";
-import { from as hashFrom } from "../Hash/BrandedHashIndex.js";
+import { from as hashFrom } from "../Hash/index.js";
 import { from as uint256From } from "../Uint/index.js";
 
 /**

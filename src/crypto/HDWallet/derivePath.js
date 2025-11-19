@@ -7,9 +7,9 @@ import { InvalidPathError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Parent extended key
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Parent extended key
  * @param {string} path - BIP-32 derivation path (e.g., "m/44'/60'/0'/0/0")
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Derived child extended key
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Derived child extended key
  * @throws {InvalidPathError} If path format is invalid or derivation fails
  * @example
  * ```javascript
@@ -20,7 +20,7 @@ import { InvalidPathError } from "./errors.js";
  */
 export function derivePath(key, path) {
 	try {
-		return /** @type {import('./BrandedExtendedKey.js').BrandedExtendedKey} */ (
+		return /** @type {import('./ExtendedKeyType.js').BrandedExtendedKey} */ (
 			key.derive(path)
 		);
 	} catch (error) {

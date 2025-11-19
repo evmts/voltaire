@@ -4,7 +4,7 @@ import { AbiError as AbiErrorImpl } from "./AbiError.js";
 import type { AbiErrorConstructor } from "./AbiErrorConstructor.js";
 
 // Import crypto dependencies
-import { keccak256String as keccak256StringImpl } from "../../Hash/BrandedHashIndex.js";
+import { keccak256String as keccak256StringImpl } from "../../Hash/index.js";
 
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";

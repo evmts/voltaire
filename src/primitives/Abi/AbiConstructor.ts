@@ -24,7 +24,7 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	getFunction(name: string): AbiFunction.FunctionType | undefined;
 	getEvent(
 		name: string,
-	): import("./event/BrandedEvent/BrandedEvent.js").Event | undefined;
+	): import("./event/Event.js").Event | undefined;
 	getError(name: string): AbiError.ErrorType | undefined;
 	getConstructor(): AbiConstructorNs.ConstructorType | undefined;
 	getFallback(): any;

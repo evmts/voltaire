@@ -9,7 +9,7 @@ import { HDWalletError } from "./errors.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} xpub - Base58-encoded extended public key (xpub...)
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key with public key only (no private key)
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Extended key with public key only (no private key)
  * @throws {HDWalletError} If extended public key format is invalid or decoding fails
  * @example
  * ```javascript
@@ -20,7 +20,7 @@ import { HDWalletError } from "./errors.js";
  */
 export function fromPublicExtendedKey(xpub) {
 	try {
-		return /** @type {import('./BrandedExtendedKey.js').BrandedExtendedKey} */ (
+		return /** @type {import('./ExtendedKeyType.js').BrandedExtendedKey} */ (
 			HDKey.fromExtendedKey(xpub)
 		);
 	} catch (error) {

@@ -7,7 +7,7 @@ import * as Address from "../Address/internal-index.js";
  * @see https://voltaire.tevm.sh/primitives/siwe for SIWE documentation
  * @since 0.0.0
  * @template {string} TDomain
- * @template {import('../Address/AddressType.js').AddressType.AddressType} TAddress
+ * @template {import('../Address/AddressType.js').AddressType} TAddress
  * @template {string} TUri
  * @template {number} TChainId
  * @param {Object} params - Message parameters (domain, address, uri, chainId are required)

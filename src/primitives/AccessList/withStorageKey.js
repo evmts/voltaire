@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../../Address/AddressType.js').AddressType.AddressType} a
- * @param {import('../../Address/AddressType.js').AddressType.AddressType} b
+ * @param {import('../../Address/AddressType.js').AddressType} a
+ * @param {import('../../Address/AddressType.js').AddressType} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
@@ -36,7 +36,7 @@ function hashEquals(a, b) {
  * @see https://voltaire.tevm.sh/primitives/accesslist
  * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to add to
- * @param {import('../../Address/AddressType.js').AddressType.AddressType} address - Address to add key for
+ * @param {import('../../Address/AddressType.js').AddressType} address - Address to add key for
  * @param {import('../../Hash/HashType/HashType.js').HashType} storageKey - Storage key to add
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} New access list with storage key added
  * @throws {never}

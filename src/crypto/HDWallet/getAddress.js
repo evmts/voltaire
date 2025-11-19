@@ -21,7 +21,7 @@ export async function getAddress(node) {
 		});
 	}
 
-	return /** @type {import('../../primitives/Address/AddressType.js').AddressType.AddressType} */ (
+	return /** @type {import('../../primitives/Address/AddressType.js').AddressType} */ (
 		new Uint8Array(address)
 	);
 }

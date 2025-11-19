@@ -14,7 +14,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * Returns keccak256 hash of the account's code, or 0 if account is empty.
  *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
- * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
+ * @param {import("../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodehash(frame, host) {

@@ -9,7 +9,7 @@ import { HDWalletError } from "./errors.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} xprv - Base58-encoded extended private key (xprv...)
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Extended key with private key material
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Extended key with private key material
  * @throws {HDWalletError} If extended key format is invalid or decoding fails
  * @example
  * ```javascript
@@ -19,7 +19,7 @@ import { HDWalletError } from "./errors.js";
  */
 export function fromExtendedKey(xprv) {
 	try {
-		return /** @type {import('./BrandedExtendedKey.js').BrandedExtendedKey} */ (
+		return /** @type {import('./ExtendedKeyType.js').BrandedExtendedKey} */ (
 			HDKey.fromExtendedKey(xprv)
 		);
 	} catch (error) {

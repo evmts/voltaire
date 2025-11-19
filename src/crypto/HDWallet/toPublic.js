@@ -8,8 +8,8 @@ import { HDWalletError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key with or without private key
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Public-only extended key (cannot derive hardened children)
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Extended key with or without private key
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Public-only extended key (cannot derive hardened children)
  * @throws {HDWalletError} If key does not have public key
  * @example
  * ```javascript
@@ -26,7 +26,7 @@ export function toPublic(key) {
 		});
 	}
 	const xpub = key.publicExtendedKey;
-	return /** @type {import('./BrandedExtendedKey.js').BrandedExtendedKey} */ (
+	return /** @type {import('./ExtendedKeyType.js').BrandedExtendedKey} */ (
 		HDKey.fromExtendedKey(xpub)
 	);
 }

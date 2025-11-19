@@ -1,5 +1,5 @@
 import type { brand } from "../../brand.js";
-import type { HashType } from "../Hash/HashType/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 
 /**
  * Single topic filter entry - either a specific hash, array of hashes (OR), or null (wildcard)

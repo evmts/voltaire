@@ -38,7 +38,7 @@ function copyGasCost(size) {
  * If offset + i >= code.length, remaining bytes are zero-padded.
  *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
- * @param {import("../Host/BrandedHost.js").BrandedHost} host - Host interface
+ * @param {import("../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function extcodecopy(frame, host) {

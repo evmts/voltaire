@@ -8,10 +8,10 @@ import { derivePath } from "./derivePath.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Root HD key with private key
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Root HD key with private key
  * @param {number} [account=0] - BIP-44 account index (default: 0)
  * @param {number} [index=0] - Address index (default: 0)
- * @returns {import('./BrandedExtendedKey.js').BrandedExtendedKey} Derived extended key for Ethereum address
+ * @returns {import('./ExtendedKeyType.js').BrandedExtendedKey} Derived extended key for Ethereum address
  * @throws {InvalidPathError} If derivation path is invalid or derivation fails
  * @example
  * ```javascript

@@ -7,7 +7,7 @@ import { HDWalletError } from "./errors.js";
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key with private key
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Extended key with private key
  * @returns {string} Base58-encoded extended private key (xprv...)
  * @throws {HDWalletError} If key does not have private key material
  * @example

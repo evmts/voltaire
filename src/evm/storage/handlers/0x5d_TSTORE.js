@@ -16,7 +16,7 @@ import * as Frame from "../../Frame/index.js";
  * - Cannot be called in static context
  *
  * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
- * @param {import("../../Host/BrandedHost.js").BrandedHost} host - Host interface
+ * @param {import("../../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function tstore(frame, host) {

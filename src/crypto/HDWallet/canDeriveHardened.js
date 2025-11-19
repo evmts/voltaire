@@ -5,7 +5,7 @@
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key to check
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Extended key to check
  * @returns {boolean} True if key has private key and can derive hardened children, false if public-only
  * @throws {never}
  * @example

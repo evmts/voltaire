@@ -5,7 +5,7 @@
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {import('./BrandedExtendedKey.js').BrandedExtendedKey} key - Extended key
+ * @param {import('./ExtendedKeyType.js').BrandedExtendedKey} key - Extended key
  * @returns {Uint8Array | null} 33-byte compressed secp256k1 public key or null
  * @throws {never}
  * @example
