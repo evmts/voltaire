@@ -5,24 +5,24 @@
  */
 
 import type { Commitment, Proof, VersionedHash } from "./BlobType.js";
-import { calculateGas } from "./BrandedBlob/calculateGas.js";
+import { calculateGas } from "./calculateGas.js";
 import {
 	COMMITMENT_VERSION_KZG,
 	MAX_PER_TRANSACTION,
 	SIZE,
-} from "./BrandedBlob/constants.js";
-import { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
-import { fromData } from "./BrandedBlob/fromData.js";
-import { isValid } from "./BrandedBlob/isValid.js";
-import { isValidVersion } from "./BrandedBlob/isValidVersion.js";
-import { joinData } from "./BrandedBlob/joinData.js";
-import { splitData } from "./BrandedBlob/splitData.js";
-import { toCommitment } from "./BrandedBlob/toCommitment.js";
-import { toData } from "./BrandedBlob/toData.js";
-import { toProof } from "./BrandedBlob/toProof.js";
-import { toVersionedHash } from "./BrandedBlob/toVersionedHash.js";
-import { verify } from "./BrandedBlob/verify.js";
-import { verifyBatch } from "./BrandedBlob/verifyBatch.js";
+} from "./constants.js";
+import { estimateBlobCount } from "./estimateBlobCount.js";
+import { fromData } from "./fromData.js";
+import { isValid } from "./isValid.js";
+import { isValidVersion } from "./isValidVersion.js";
+import { joinData } from "./joinData.js";
+import { splitData } from "./splitData.js";
+import { toCommitment } from "./toCommitment.js";
+import { toData } from "./toData.js";
+import { toProof } from "./toProof.js";
+import { toVersionedHash } from "./toVersionedHash.js";
+import { verify } from "./verify.js";
+import { verifyBatch } from "./verifyBatch.js";
 
 // Benchmark runner
 interface BenchmarkResult {

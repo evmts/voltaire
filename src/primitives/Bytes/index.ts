@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * as Bytes from "./BrandedBytes/index.js";
+export * as Bytes from "./Bytes.index.js";
 export * as Bytes1 from "./Bytes1/index.js";
 export * as Bytes2 from "./Bytes2/index.js";
 export * as Bytes3 from "./Bytes3/index.js";

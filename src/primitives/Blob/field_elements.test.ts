@@ -3,7 +3,7 @@ import {
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
 	SIZE,
-} from "./BrandedBlob/constants.js";
+} from "./constants.js";
 
 describe("Blob Field Elements - Edge Cases", () => {
 	// BLS12-381 modulus (big-endian):

@@ -12,7 +12,7 @@ import {
 	GAS_PER_BLOB,
 	MAX_PER_TRANSACTION,
 	SIZE,
-} from "./BrandedBlob/constants.js";
+} from "./constants.js";
 import { Blob } from "./index.js";
 
 describe("Blob + KZG Integration - EIP-4844 Compliance", () => {

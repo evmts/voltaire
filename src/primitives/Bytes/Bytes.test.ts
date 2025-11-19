@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as Bytes from "./BrandedBytes/index.js";
+import * as Bytes from "./Bytes.index.js";
 import * as Bytes1 from "./Bytes1/index.js";
 import * as Bytes2 from "./Bytes2/index.js";
 import * as Bytes3 from "./Bytes3/index.js";
