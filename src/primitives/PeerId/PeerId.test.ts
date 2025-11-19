@@ -1,0 +1,133 @@
+import { describe, expect, it } from "vitest";
+import * as PeerId from "./index.js";
+
+describe("PeerId", () => {
+	const validEnode =
+		"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@10.3.58.6:30303?discport=30301";
+
+	describe("from", () => {
+		it("creates PeerId from valid enode URL", () => {
+			const peerId = PeerId.from(validEnode);
+			expect(peerId).toBe(validEnode);
+		});
+
+		it("accepts node ID string", () => {
+			const nodeId =
+				"6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0";
+			const peerId = PeerId.from(nodeId);
+			expect(peerId).toBe(nodeId);
+		});
+
+		it("throws on empty string", () => {
+			expect(() => PeerId.from("")).toThrow("Peer ID cannot be empty");
+		});
+
+		it("throws on non-string", () => {
+			expect(() => PeerId.from(123 as any)).toThrow("Peer ID must be a string");
+		});
+	});
+
+	describe("toString", () => {
+		it("converts PeerId to string", () => {
+			const peerId = PeerId.from(validEnode);
+			expect(PeerId.toString(peerId)).toBe(validEnode);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal peer IDs", () => {
+			const peerId1 = PeerId.from(validEnode);
+			const peerId2 = PeerId.from(validEnode);
+			expect(PeerId.equals(peerId1, peerId2)).toBe(true);
+		});
+
+		it("returns false for different peer IDs", () => {
+			const peerId1 = PeerId.from(validEnode);
+			const peerId2 = PeerId.from("different-peer-id");
+			expect(PeerId.equals(peerId1, peerId2)).toBe(false);
+		});
+	});
+
+	describe("parse", () => {
+		it("parses valid enode URL with discovery port", () => {
+			const peerId = PeerId.from(validEnode);
+			const parsed = PeerId.parse(peerId);
+
+			expect(parsed.publicKey).toBe(
+				"6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0",
+			);
+			expect(parsed.ip).toBe("10.3.58.6");
+			expect(parsed.port).toBe(30303);
+			expect(parsed.discoveryPort).toBe(30301);
+		});
+
+		it("parses enode URL without discovery port", () => {
+			const enodeNoDisc =
+				"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.1:30303";
+			const peerId = PeerId.from(enodeNoDisc);
+			const parsed = PeerId.parse(peerId);
+
+			expect(parsed.ip).toBe("192.168.1.1");
+			expect(parsed.port).toBe(30303);
+			expect(parsed.discoveryPort).toBeUndefined();
+		});
+
+		it("parses IPv6 enode URL", () => {
+			const enodeIpv6 =
+				"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@[2001:db8::1]:30303";
+			const peerId = PeerId.from(enodeIpv6);
+			const parsed = PeerId.parse(peerId);
+
+			expect(parsed.ip).toBe("2001:db8::1");
+			expect(parsed.port).toBe(30303);
+		});
+
+		it("throws on non-enode URL", () => {
+			const peerId = PeerId.from("not-an-enode-url");
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Peer ID must start with 'enode://'",
+			);
+		});
+
+		it("throws on missing @ separator", () => {
+			const peerId = PeerId.from("enode://pubkey192.168.1.1:30303");
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Enode URL must contain '@' separator",
+			);
+		});
+
+		it("throws on invalid public key length", () => {
+			const peerId = PeerId.from("enode://abc@192.168.1.1:30303");
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Enode public key must be 128 hex characters",
+			);
+		});
+
+		it("throws on missing port", () => {
+			const peerId = PeerId.from(
+				"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.1",
+			);
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Enode URL must contain port number",
+			);
+		});
+
+		it("throws on invalid port number", () => {
+			const peerId = PeerId.from(
+				"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.1:99999",
+			);
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Invalid port number in enode URL",
+			);
+		});
+
+		it("throws on invalid discovery port", () => {
+			const peerId = PeerId.from(
+				"enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.1:30303?discport=99999",
+			);
+			expect(() => PeerId.parse(peerId)).toThrow(
+				"Invalid discovery port number in enode URL",
+			);
+		});
+	});
+});

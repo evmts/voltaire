@@ -1,0 +1,210 @@
+---
+title: BaseFeePerGas
+description: EIP-1559 base fee per gas - minimum gas price for transaction inclusion
+---
+
+# BaseFeePerGas
+
+EIP-1559 base fee per gas representing the minimum gas price required for transaction inclusion. The base fee is dynamically adjusted each block based on network congestion and is burned (removed from circulation).
+
+## Overview
+
+Branded bigint type representing base fee in Wei. Adjusts ±12.5% per block targeting 50% block fullness (15M gas target, 30M max).
+
+## Quick Start
+
+```typescript
+import * as BaseFeePerGas from './primitives/BaseFeePerGas/index.js';
+
+// From block header
+const baseFee = BaseFeePerGas.from(25000000000n); // 25 Gwei
+console.log(BaseFeePerGas.toGwei(baseFee)); // 25n
+
+// From Gwei
+const fee = BaseFeePerGas.fromGwei(30n);
+console.log(BaseFeePerGas.toWei(fee)); // 30000000000n
+```
+
+## Type Definition
+
+```typescript
+type BaseFeePerGasType = bigint & { readonly [brand]: "BaseFeePerGas" };
+```
+
+Branded bigint preventing misuse with other fee types. All values in Wei.
+
+## API
+
+### Construction
+
+#### `from(value)`
+Create from bigint, number, or hex string.
+
+```typescript
+const fee1 = BaseFeePerGas.from(25000000000n);
+const fee2 = BaseFeePerGas.from("0x5d21dba00");
+const fee3 = BaseFeePerGas.from(25000000000);
+```
+
+#### `fromGwei(gwei)`
+Create from Gwei value.
+
+```typescript
+const fee = BaseFeePerGas.fromGwei(25n); // 25000000000n Wei
+```
+
+#### `fromWei(wei)`
+Create from Wei value (alias for `from`).
+
+```typescript
+const fee = BaseFeePerGas.fromWei(25000000000n);
+```
+
+### Conversion
+
+#### `toGwei(baseFee)`
+Convert to Gwei.
+
+```typescript
+const fee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toGwei(fee); // 25n
+```
+
+#### `toWei(baseFee)`
+Convert to Wei (identity).
+
+```typescript
+const fee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toWei(fee); // 25000000000n
+```
+
+#### `toNumber(baseFee)`
+Convert to number. Warning: precision loss on large values.
+
+```typescript
+BaseFeePerGas.toNumber(fee); // 25000000000
+```
+
+#### `toBigInt(baseFee)`
+Convert to bigint (identity).
+
+```typescript
+BaseFeePerGas.toBigInt(fee); // 25000000000n
+```
+
+### Comparison
+
+#### `equals(baseFee1, baseFee2)`
+Check equality.
+
+```typescript
+const fee1 = BaseFeePerGas.from(25000000000n);
+const fee2 = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.equals(fee1, fee2); // true
+```
+
+#### `compare(baseFee1, baseFee2)`
+Compare values. Returns -1, 0, or 1.
+
+```typescript
+const fee1 = BaseFeePerGas.from(25000000000n);
+const fee2 = BaseFeePerGas.from(30000000000n);
+BaseFeePerGas.compare(fee1, fee2); // -1
+```
+
+## EIP-1559 Base Fee Mechanics
+
+### Dynamic Adjustment
+
+Base fee adjusts each block targeting 50% capacity:
+- **Target gas**: 15M per block
+- **Max gas**: 30M per block
+- **Adjustment**: ±12.5% max per block
+
+```typescript
+// Block over target (congested)
+// Base fee increases by up to 12.5%
+const currentBase = BaseFeePerGas.fromGwei(25n);
+const nextBase = BaseFeePerGas.fromGwei(28n); // +12% increase
+
+// Block under target (uncongested)
+// Base fee decreases by up to 12.5%
+const decreased = BaseFeePerGas.fromGwei(22n); // -12% decrease
+```
+
+### Calculation Formula
+
+```
+nextBaseFee = currentBaseFee * (1 + 0.125 * (blockGasUsed - targetGas) / targetGas)
+```
+
+Clamped to max ±12.5% change per block.
+
+### Fee Burning
+
+Base fee is burned (removed from supply):
+
+```typescript
+const baseFee = BaseFeePerGas.fromGwei(25n);
+const gasUsed = 21000n; // Standard transfer
+const burned = baseFee * gasUsed; // 525000000000000n Wei burned
+```
+
+## Real-world Examples
+
+### Parse Block Header
+
+```typescript
+// From JSON-RPC response
+const block = await provider.getBlock('latest');
+const baseFee = BaseFeePerGas.from(block.baseFeePerGas);
+
+console.log(`Base fee: ${BaseFeePerGas.toGwei(baseFee)} Gwei`);
+```
+
+### Typical Fee Ranges (2024)
+
+```typescript
+// Low congestion
+const low = BaseFeePerGas.fromGwei(10n);
+
+// Medium congestion
+const medium = BaseFeePerGas.fromGwei(25n);
+
+// High congestion
+const high = BaseFeePerGas.fromGwei(100n);
+
+// Extreme congestion (NFT drops, etc)
+const extreme = BaseFeePerGas.fromGwei(500n);
+```
+
+### Fee Monitoring
+
+```typescript
+const history: bigint[] = [];
+
+// Track base fee over time
+setInterval(async () => {
+  const block = await provider.getBlock('latest');
+  const baseFee = BaseFeePerGas.from(block.baseFeePerGas);
+  history.push(baseFee);
+
+  if (history.length > 10) history.shift();
+
+  const avg = history.reduce((a, b) => a + b) / BigInt(history.length);
+  console.log(`Avg base fee: ${BaseFeePerGas.toGwei(avg)} Gwei`);
+}, 12000); // Every block
+```
+
+## Related Types
+
+- [MaxFeePerGas](/primitives/max-fee-per-gas) - Maximum total fee willing to pay
+- [MaxPriorityFeePerGas](/primitives/max-priority-fee-per-gas) - Maximum tip to miner
+- [EffectiveGasPrice](/primitives/effective-gas-price) - Actual price paid
+
+## Specification
+
+- [EIP-1559: Fee market change for ETH 1.0 chain](https://eips.ethereum.org/EIPS/eip-1559)
+- London hard fork (August 2021)
+- Target: 15M gas, Max: 30M gas per block
+- Adjustment: ±12.5% per block

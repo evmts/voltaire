@@ -1,0 +1,112 @@
+import { describe, expect, it } from "vitest";
+import * as Block from "./index.js";
+import * as BlockBody from "../BlockBody/index.js";
+import * as BlockHeader from "../BlockHeader/index.js";
+
+describe("Block", () => {
+	const validHeader = {
+		parentHash: new Uint8Array(32).fill(0x12),
+		ommersHash: new Uint8Array(32).fill(0x34),
+		beneficiary: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		stateRoot: new Uint8Array(32).fill(0x56),
+		transactionsRoot: new Uint8Array(32).fill(0x78),
+		receiptsRoot: new Uint8Array(32).fill(0x9a),
+		logsBloom: new Uint8Array(256),
+		difficulty: 0n,
+		number: 12345n,
+		gasLimit: 30000000n,
+		gasUsed: 21000n,
+		timestamp: 1234567890n,
+		extraData: new Uint8Array(0),
+		mixHash: new Uint8Array(32).fill(0xbc),
+		nonce: new Uint8Array(8),
+	};
+
+	const validBody = {
+		transactions: [],
+		ommers: [],
+	};
+
+	const validHash = new Uint8Array(32).fill(0xab);
+
+	describe("from", () => {
+		it("creates block from components", () => {
+			const header = BlockHeader.from(validHeader);
+			const body = BlockBody.from(validBody);
+
+			const block = Block.from({
+				header,
+				body,
+				hash: validHash,
+				size: 1024n,
+			});
+
+			expect(block.header).toBe(header);
+			expect(block.body).toBe(body);
+			expect(block.hash).toHaveLength(32);
+			expect(block.size).toBe(1024n);
+			expect(block.totalDifficulty).toBeUndefined();
+		});
+
+		it("includes optional totalDifficulty", () => {
+			const header = BlockHeader.from(validHeader);
+			const body = BlockBody.from(validBody);
+
+			const block = Block.from({
+				header,
+				body,
+				hash: validHash,
+				size: 1024n,
+				totalDifficulty: 12345678n,
+			});
+
+			expect(block.totalDifficulty).toBe(12345678n);
+		});
+
+		it("converts hash from string", () => {
+			const header = BlockHeader.from(validHeader);
+			const body = BlockBody.from(validBody);
+
+			const block = Block.from({
+				header,
+				body,
+				hash: "0xabababababababababababababababababababababababababababababababab",
+				size: 1024n,
+			});
+
+			expect(block.hash).toHaveLength(32);
+		});
+
+		it("converts size from number", () => {
+			const header = BlockHeader.from(validHeader);
+			const body = BlockBody.from(validBody);
+
+			const block = Block.from({
+				header,
+				body,
+				hash: validHash,
+				size: 1024,
+			});
+
+			expect(block.size).toBe(1024n);
+		});
+
+		it("creates post-merge block without totalDifficulty", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				difficulty: 0n,
+			});
+			const body = BlockBody.from(validBody);
+
+			const block = Block.from({
+				header,
+				body,
+				hash: validHash,
+				size: 1024n,
+			});
+
+			expect(block.header.difficulty).toBe(0n);
+			expect(block.totalDifficulty).toBeUndefined();
+		});
+	});
+});

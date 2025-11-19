@@ -1,0 +1,18 @@
+import * as Hex from "../Hex/index.js";
+
+/**
+ * Convert EventSignature to hex string
+ *
+ * @param {import('./EventSignatureType.js').EventSignatureType} signature - 32-byte event signature
+ * @returns {string} Hex string with 0x prefix
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as EventSignature from './primitives/EventSignature/index.js';
+ * const hex = EventSignature.toHex(signature);
+ * // '0xddf252ad...'
+ * ```
+ */
+export function toHex(signature) {
+	return Hex.fromBytes(signature);
+}

@@ -1,0 +1,210 @@
+import { describe, it, expect } from "vitest";
+import * as AccountState from "./index.js";
+import { from as nonceFrom } from "../Nonce/from.js";
+import { toBigInt as nonceToBigInt } from "../Nonce/index.js";
+import { from as weiFrom, toU256 as weiToU256 } from "../Denomination/Wei.js";
+import * as StateRoot from "../StateRoot/index.js";
+import { Hash } from "../Hash/index.js";
+
+describe("AccountState", () => {
+	describe("from", () => {
+		it("creates AccountState from object", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(5n),
+				balance: weiFrom(1000000000000000000n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(state).toBeDefined();
+			expect(state.nonce).toBeDefined();
+			expect(state.balance).toBeDefined();
+			expect(state.storageRoot).toBeDefined();
+			expect(state.codeHash).toBeDefined();
+		});
+
+		it("requires all fields", () => {
+			expect(() =>
+				AccountState.from({
+					// @ts-expect-error - testing missing fields
+					nonce: nonceFrom(0n),
+					balance: weiFrom(0n),
+					storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+					// missing codeHash
+				}),
+			).toThrow("codeHash is required");
+
+			expect(() =>
+				AccountState.from({
+					// @ts-expect-error - testing missing fields
+					nonce: nonceFrom(0n),
+					balance: weiFrom(0n),
+					// missing storageRoot
+					codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+				}),
+			).toThrow("storageRoot is required");
+		});
+
+		it("returns immutable object", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(0n),
+				balance: weiFrom(0n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(Object.isFrozen(state)).toBe(true);
+		});
+	});
+
+	describe("createEmpty", () => {
+		it("creates empty EOA state", () => {
+			const state = AccountState.createEmpty();
+
+			expect(state).toBeDefined();
+			expect(state.nonce).toBeDefined();
+			expect(state.balance).toBeDefined();
+			expect(state.storageRoot).toBeDefined();
+			expect(state.codeHash).toBeDefined();
+		});
+
+		it("has zero nonce and balance", () => {
+			const state = AccountState.createEmpty();
+
+			expect(nonceToBigInt(state.nonce)).toBe(0n);
+			expect(weiToU256(state.balance)).toBe(0n);
+		});
+
+		it("has empty trie hash and empty code hash", () => {
+			const state = AccountState.createEmpty();
+
+			expect(StateRoot.toHex(state.storageRoot)).toBe(
+				AccountState.EMPTY_TRIE_HASH,
+			);
+			expect(Hash.toHex(state.codeHash)).toBe(AccountState.EMPTY_CODE_HASH);
+		});
+	});
+
+	describe("isEOA", () => {
+		it("returns true for empty account", () => {
+			const state = AccountState.createEmpty();
+
+			expect(AccountState.isEOA(state)).toBe(true);
+		});
+
+		it("returns true for EOA with balance", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(5n),
+				balance: weiFrom(1000000000000000000n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(AccountState.isEOA(state)).toBe(true);
+		});
+
+		it("returns false for contract account", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(1n),
+				balance: weiFrom(0n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+				),
+			});
+
+			expect(AccountState.isEOA(state)).toBe(false);
+		});
+	});
+
+	describe("isContract", () => {
+		it("returns false for empty account", () => {
+			const state = AccountState.createEmpty();
+
+			expect(AccountState.isContract(state)).toBe(false);
+		});
+
+		it("returns false for EOA", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(5n),
+				balance: weiFrom(1000000000000000000n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(AccountState.isContract(state)).toBe(false);
+		});
+
+		it("returns true for contract account", () => {
+			const state = AccountState.from({
+				nonce: nonceFrom(1n),
+				balance: weiFrom(0n),
+				storageRoot: StateRoot.from(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+				),
+				codeHash: Hash(
+					"0xabcdef1234567890123456789012345678901234567890123456789012345678",
+				),
+			});
+
+			expect(AccountState.isContract(state)).toBe(true);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal states", () => {
+			const state1 = AccountState.createEmpty();
+			const state2 = AccountState.createEmpty();
+
+			expect(AccountState.equals(state1, state2)).toBe(true);
+		});
+
+		it("returns false for different nonces", () => {
+			const state1 = AccountState.from({
+				nonce: nonceFrom(5n),
+				balance: weiFrom(0n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+			const state2 = AccountState.from({
+				nonce: nonceFrom(6n),
+				balance: weiFrom(0n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(AccountState.equals(state1, state2)).toBe(false);
+		});
+
+		it("returns false for different balances", () => {
+			const state1 = AccountState.from({
+				nonce: nonceFrom(0n),
+				balance: weiFrom(100n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+			const state2 = AccountState.from({
+				nonce: nonceFrom(0n),
+				balance: weiFrom(200n),
+				storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
+				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
+			});
+
+			expect(AccountState.equals(state1, state2)).toBe(false);
+		});
+	});
+
+	describe("constants", () => {
+		it("EMPTY_CODE_HASH is correct", () => {
+			expect(AccountState.EMPTY_CODE_HASH).toBe(
+				"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+			);
+		});
+
+		it("EMPTY_TRIE_HASH is correct", () => {
+			expect(AccountState.EMPTY_TRIE_HASH).toBe(
+				"0x56e81f171bcc55a6ff8345e692c0f86e5b47e5b60e2d8c5ab6c7c9fa0e32d3c5",
+			);
+		});
+	});
+});
