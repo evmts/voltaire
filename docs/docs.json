@@ -29,7 +29,11 @@
 					{
 						"group": "Getting Started",
 						"icon": "rocket",
-						"pages": ["getting-started", "comparisons", "mcp"]
+						"pages": [
+							"getting-started",
+							"comparisons",
+							"model-context-protocol"
+						]
 					},
 					{
 						"group": "Core Concepts",
@@ -1387,7 +1391,15 @@
 		"raiseIssue": true
 	},
 	"contextual": {
-		"options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
+		"options": [
+			"copy",
+			"view",
+			"claude",
+			"chatgpt",
+			"cursor",
+			"vscode",
+			"model-context-protocol"
+		]
 	},
 	"assistant": {
 		"enabled": true

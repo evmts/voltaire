@@ -358,6 +358,34 @@ All dependencies are actively maintained and security-audited where applicable.
 
 ---
 
+## MCP Evaluation Tests
+
+Voltaire includes an Advent-of-Code style evaluation suite that tests Claude's ability to use the Voltaire MCP server for solving Ethereum challenges.
+
+### Running MCP Evals
+
+```bash
+# Set up RPC endpoint
+export ETHEREUM_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
+
+# Run all MCP evaluation tests
+bun run test:mcp
+
+# Run specific test
+bun run test:mcp -t "CryptoPunk"
+```
+
+### Example Challenges
+
+- Find block hash where first CryptoPunk minted
+- Calculate total ETH burned via EIP-1559 in block range
+- Verify secp256k1 signatures using Voltaire primitives
+- Query NFT ownership at specific blocks
+
+See [src/mcp-evals/README.md](./src/mcp-evals/README.md) for detailed documentation.
+
+---
+
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details
