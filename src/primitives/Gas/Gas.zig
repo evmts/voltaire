@@ -1,7 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const primitives = @import("primitives");
-const Uint = primitives.Uint;
+const Uint = @import("../Uint/Uint.zig").Uint;
 
 /// Gas limit type - maximum gas units for a transaction
 /// Wraps Uint(256, 4) with semantic gas limit operations

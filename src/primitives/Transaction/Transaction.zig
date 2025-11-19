@@ -2499,7 +2499,7 @@ test "isContractCreation checks" {
         .gas_limit = 21000,
         .to = null,
         .value = 0,
-        .data = &[_]u8{0x60, 0x60, 0x60},
+        .data = &[_]u8{ 0x60, 0x60, 0x60 },
         .v = 27,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
@@ -2644,7 +2644,7 @@ test "getChainId from typed transactions" {
 test "getBlobCount from EIP-4844 transaction" {
     const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
     const versioned_hash = blob.commitmentToVersionedHash(commitment);
-    const hashes = [_]VersionedHash{versioned_hash, versioned_hash, versioned_hash};
+    const hashes = [_]VersionedHash{ versioned_hash, versioned_hash, versioned_hash };
 
     const tx = Eip4844Transaction{
         .chain_id = 1,
@@ -2678,7 +2678,7 @@ test "getAuthorizationCount from EIP-7702 transaction" {
         .address = addr,
         .nonce = 1,
     };
-    const auths = [_]Authorization{auth1, auth2};
+    const auths = [_]Authorization{ auth1, auth2 };
 
     const tx = Eip7702Transaction{
         .chain_id = 1,

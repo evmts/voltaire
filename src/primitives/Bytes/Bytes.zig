@@ -98,7 +98,7 @@ test "concat - basic" {
     const arrays = [_][]const u8{
         &[_]u8{ 0x01, 0x02 },
         &[_]u8{ 0x03, 0x04 },
-        &[_]u8{ 0x05 },
+        &[_]u8{0x05},
     };
     const result = try concat(allocator, &arrays);
     defer allocator.free(result);
@@ -119,9 +119,9 @@ test "concat - empty arrays" {
 test "concat - with empty elements" {
     const allocator = std.testing.allocator;
     const arrays = [_][]const u8{
-        &[_]u8{ 0x01 },
+        &[_]u8{0x01},
         &[_]u8{},
-        &[_]u8{ 0x02 },
+        &[_]u8{0x02},
     };
     const result = try concat(allocator, &arrays);
     defer allocator.free(result);
@@ -289,7 +289,7 @@ test "isEmpty - true" {
 }
 
 test "isEmpty - false" {
-    const bytes = &[_]u8{ 0x01 };
+    const bytes = &[_]u8{0x01};
     try std.testing.expect(!isEmpty(bytes));
 }
 

@@ -105,9 +105,11 @@
 pub const Address = @import("Address/address.zig");
 pub const Bytes = @import("Bytes/Bytes.zig");
 pub const ChainId = @import("ChainId/ChainId.zig");
+pub const Hash = @import("Hash/Hash.zig");
 pub const Nonce = @import("Nonce/Nonce.zig");
 pub const PrivateKey = @import("PrivateKey/PrivateKey.zig");
 pub const PublicKey = @import("PublicKey/PublicKey.zig");
+pub const Signature = @import("Signature/Signature.zig").Signature;
 
 // Encoding/Decoding
 pub const Hex = @import("Hex/Hex.zig");
