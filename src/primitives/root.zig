@@ -103,6 +103,11 @@
 
 // Core types
 pub const Address = @import("Address/address.zig");
+pub const Bytes = @import("Bytes/Bytes.zig");
+pub const ChainId = @import("ChainId/ChainId.zig");
+pub const Nonce = @import("Nonce/Nonce.zig");
+pub const PrivateKey = @import("PrivateKey/PrivateKey.zig");
+pub const PublicKey = @import("PublicKey/PublicKey.zig");
 
 // Encoding/Decoding
 pub const Hex = @import("Hex/Hex.zig");
@@ -114,6 +119,7 @@ pub const Base64 = @import("base64.zig");
 // Utilities
 pub const Numeric = @import("Uint/numeric.zig");
 pub const GasConstants = @import("GasConstants/gas_constants.zig");
+pub const Gas = @import("Gas/Gas.zig");
 pub const Uint = @import("Uint/Uint.zig").Uint;
 // Note: Zig 0.14 includes a builtin `u256` primitive. Avoid exporting
 // a shadowing alias here to prevent name conflicts in tests/builds.
