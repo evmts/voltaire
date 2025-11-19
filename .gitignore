@@ -226,3 +226,6 @@ scripts/*.js
 
 # Temporarily cloned repositories
 tevm-monorepo/
+
+# Playwright MCP (testing artifacts)
+.playwright-mcp/
