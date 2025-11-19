@@ -1,6 +1,13 @@
 /// EVM opcodes enumeration with comprehensive utilities
 const std = @import("std");
 
+/// Instruction represents a parsed opcode with its position and immediate data
+pub const Instruction = struct {
+    offset: usize,
+    opcode: Opcode,
+    immediate: ?[]const u8 = null,
+};
+
 /// EVM opcodes enumeration
 pub const Opcode = enum(u8) {
     // 0x00s: Stop and Arithmetic Operations
@@ -258,6 +265,52 @@ pub const Opcode = enum(u8) {
             .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR => true,
             else => false,
         };
+    }
+
+    /// Check if byte is a valid opcode
+    pub fn isValid(byte: u8) bool {
+        return switch (byte) {
+            // 0x00s: Stop and Arithmetic Operations
+            0x00...0x0b => true,
+            // 0x10s: Comparison & Bitwise Logic Operations
+            0x10...0x1d => true,
+            // 0x20s: Crypto
+            0x20 => true,
+            // 0x30s: Environmental Information
+            0x30...0x3f => true,
+            // 0x40s: Block Information
+            0x40...0x4a => true,
+            // 0x50s: Stack, Memory, Storage and Flow Operations
+            0x50...0x5f => true,
+            // 0x60-0x7f: PUSH1-PUSH32
+            0x60...0x7f => true,
+            // 0x80-0x8f: DUP1-DUP16
+            0x80...0x8f => true,
+            // 0x90-0x9f: SWAP1-SWAP16
+            0x90...0x9f => true,
+            // 0xa0-0xa4: LOG0-LOG4
+            0xa0...0xa4 => true,
+            // 0xf0s: System Operations
+            0xf0...0xf7, 0xfa, 0xfd, 0xfe, 0xff => true,
+            else => false,
+        };
+    }
+
+    /// Check if opcode is a JUMP or JUMPI operation
+    pub fn isJump(self: Opcode) bool {
+        return self == .JUMP or self == .JUMPI;
+    }
+
+    /// Check if opcode is a JUMPDEST operation
+    pub fn isJumpDestination(self: Opcode) bool {
+        return self == .JUMPDEST;
+    }
+
+    /// Get the PUSH opcode for a given byte count (0-32)
+    pub fn pushOpcode(bytes: u8) !Opcode {
+        if (bytes > 32) return error.InvalidPushSize;
+        if (bytes == 0) return .PUSH0;
+        return @enumFromInt(0x5f + bytes);
     }
 
     /// Get opcode name as string
@@ -575,4 +628,372 @@ test "opcode names" {
     try std.testing.expectEqualStrings("SWAP16", Opcode.SWAP16.name());
     try std.testing.expectEqualStrings("LOG4", Opcode.LOG4.name());
     try std.testing.expectEqualStrings("SELFDESTRUCT", Opcode.SELFDESTRUCT.name());
+}
+
+test "opcode isValid detection" {
+    // Valid opcodes
+    try std.testing.expect(Opcode.isValid(0x01)); // ADD
+    try std.testing.expect(Opcode.isValid(0x60)); // PUSH1
+    try std.testing.expect(Opcode.isValid(0xff)); // SELFDESTRUCT
+    try std.testing.expect(Opcode.isValid(0x00)); // STOP
+    try std.testing.expect(Opcode.isValid(0x5f)); // PUSH0
+    try std.testing.expect(Opcode.isValid(0x80)); // DUP1
+    try std.testing.expect(Opcode.isValid(0x90)); // SWAP1
+    try std.testing.expect(Opcode.isValid(0xa0)); // LOG0
+
+    // Invalid opcodes
+    try std.testing.expect(!Opcode.isValid(0x0c));
+    try std.testing.expect(!Opcode.isValid(0x0d));
+    try std.testing.expect(!Opcode.isValid(0x21));
+    try std.testing.expect(!Opcode.isValid(0xf8));
+    try std.testing.expect(!Opcode.isValid(0xfb));
+}
+
+test "opcode isJump detection" {
+    try std.testing.expect(Opcode.JUMP.isJump());
+    try std.testing.expect(Opcode.JUMPI.isJump());
+
+    try std.testing.expect(!Opcode.JUMPDEST.isJump());
+    try std.testing.expect(!Opcode.ADD.isJump());
+    try std.testing.expect(!Opcode.PUSH1.isJump());
+}
+
+test "opcode isJumpDestination detection" {
+    try std.testing.expect(Opcode.JUMPDEST.isJumpDestination());
+
+    try std.testing.expect(!Opcode.JUMP.isJumpDestination());
+    try std.testing.expect(!Opcode.JUMPI.isJumpDestination());
+    try std.testing.expect(!Opcode.ADD.isJumpDestination());
+}
+
+test "opcode pushOpcode function" {
+    try std.testing.expectEqual(Opcode.PUSH0, try Opcode.pushOpcode(0));
+    try std.testing.expectEqual(Opcode.PUSH1, try Opcode.pushOpcode(1));
+    try std.testing.expectEqual(Opcode.PUSH2, try Opcode.pushOpcode(2));
+    try std.testing.expectEqual(Opcode.PUSH16, try Opcode.pushOpcode(16));
+    try std.testing.expectEqual(Opcode.PUSH32, try Opcode.pushOpcode(32));
+
+    // Invalid sizes should error
+    try std.testing.expectError(error.InvalidPushSize, Opcode.pushOpcode(33));
+    try std.testing.expectError(error.InvalidPushSize, Opcode.pushOpcode(255));
+}
+
+/// Parse bytecode into instructions
+/// Caller owns returned slice and must free it
+pub fn parse(allocator: std.mem.Allocator, bytecode: []const u8) ![]Instruction {
+    var instructions = std.ArrayList(Instruction){};
+    defer instructions.deinit(allocator);
+
+    var offset: usize = 0;
+    while (offset < bytecode.len) {
+        const byte = bytecode[offset];
+        const opcode: Opcode = @enumFromInt(byte);
+        const push_size = opcode.pushSize();
+
+        if (push_size > 0) {
+            const immediate_end = @min(offset + 1 + push_size, bytecode.len);
+            const immediate = bytecode[offset + 1 .. immediate_end];
+            try instructions.append(allocator, .{
+                .offset = offset,
+                .opcode = opcode,
+                .immediate = immediate,
+            });
+            offset = immediate_end;
+        } else {
+            try instructions.append(allocator, .{
+                .offset = offset,
+                .opcode = opcode,
+            });
+            offset += 1;
+        }
+    }
+
+    return instructions.toOwnedSlice(allocator);
+}
+
+/// Find all valid JUMPDEST locations
+/// Caller owns returned slice and must free it
+pub fn jumpDests(allocator: std.mem.Allocator, bytecode: []const u8) ![]usize {
+    const instructions = try parse(allocator, bytecode);
+    defer allocator.free(instructions);
+
+    var dests = std.ArrayList(usize){};
+    defer dests.deinit(allocator);
+
+    for (instructions) |inst| {
+        if (inst.opcode == .JUMPDEST) {
+            try dests.append(allocator, inst.offset);
+        }
+    }
+
+    return dests.toOwnedSlice(allocator);
+}
+
+/// Check if offset is a valid jump destination
+pub fn isValidJumpDest(allocator: std.mem.Allocator, bytecode: []const u8, offset: usize) !bool {
+    const dests = try jumpDests(allocator, bytecode);
+    defer allocator.free(dests);
+
+    for (dests) |dest| {
+        if (dest == offset) return true;
+    }
+    return false;
+}
+
+/// Format instruction to human-readable string
+/// Caller owns returned slice and must free it
+pub fn formatInstruction(allocator: std.mem.Allocator, inst: Instruction) ![]u8 {
+    const opcode_name = inst.opcode.name();
+
+    if (inst.immediate) |imm| {
+        // Calculate size needed: "0xXXXX: NAME 0xDATA"
+        const offset_str_len = 6; // "0x0000"
+        const hex_data_len = 2 + imm.len * 2; // "0x" + 2 chars per byte
+        const total_len = offset_str_len + 2 + opcode_name.len + 1 + hex_data_len;
+
+        var buf = try allocator.alloc(u8, total_len);
+        errdefer allocator.free(buf);
+
+        // Format offset
+        _ = try std.fmt.bufPrint(buf[0..6], "0x{x:0>4}", .{inst.offset});
+        buf[6] = ':';
+        buf[7] = ' ';
+
+        // Copy opcode name
+        var pos: usize = 8;
+        @memcpy(buf[pos .. pos + opcode_name.len], opcode_name);
+        pos += opcode_name.len;
+
+        buf[pos] = ' ';
+        pos += 1;
+
+        // Format immediate data as hex
+        buf[pos] = '0';
+        buf[pos + 1] = 'x';
+        pos += 2;
+
+        for (imm) |byte| {
+            _ = try std.fmt.bufPrint(buf[pos .. pos + 2], "{x:0>2}", .{byte});
+            pos += 2;
+        }
+
+        return buf;
+    } else {
+        // Calculate size needed: "0xXXXX: NAME"
+        const offset_str_len = 6; // "0x0000"
+        const total_len = offset_str_len + 2 + opcode_name.len;
+
+        var buf = try allocator.alloc(u8, total_len);
+        errdefer allocator.free(buf);
+
+        // Format offset
+        _ = try std.fmt.bufPrint(buf[0..6], "0x{x:0>4}", .{inst.offset});
+        buf[6] = ':';
+        buf[7] = ' ';
+
+        // Copy opcode name
+        @memcpy(buf[8 .. 8 + opcode_name.len], opcode_name);
+
+        return buf;
+    }
+}
+
+/// Disassemble bytecode to human-readable strings
+/// Caller owns returned slice and inner strings, must free each string and the slice
+pub fn disassemble(allocator: std.mem.Allocator, bytecode: []const u8) ![][]u8 {
+    const instructions = try parse(allocator, bytecode);
+    defer allocator.free(instructions);
+
+    var asm_lines = try allocator.alloc([]u8, instructions.len);
+    errdefer {
+        for (asm_lines, 0..) |line, i| {
+            if (i < instructions.len) allocator.free(line);
+        }
+        allocator.free(asm_lines);
+    }
+
+    for (instructions, 0..) |inst, i| {
+        asm_lines[i] = try formatInstruction(allocator, inst);
+    }
+
+    return asm_lines;
+}
+
+test "parse simple bytecode" {
+    const allocator = std.testing.allocator;
+
+    // PUSH1 0x01, PUSH1 0x02, ADD
+    const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    const instructions = try parse(allocator, &bytecode);
+    defer allocator.free(instructions);
+
+    try std.testing.expectEqual(@as(usize, 3), instructions.len);
+
+    try std.testing.expectEqual(Opcode.PUSH1, instructions[0].opcode);
+    try std.testing.expectEqual(@as(usize, 0), instructions[0].offset);
+    try std.testing.expect(instructions[0].immediate != null);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, instructions[0].immediate.?);
+
+    try std.testing.expectEqual(Opcode.PUSH1, instructions[1].opcode);
+    try std.testing.expectEqual(@as(usize, 2), instructions[1].offset);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x02}, instructions[1].immediate.?);
+
+    try std.testing.expectEqual(Opcode.ADD, instructions[2].opcode);
+    try std.testing.expectEqual(@as(usize, 4), instructions[2].offset);
+    try std.testing.expect(instructions[2].immediate == null);
+}
+
+test "parse PUSH0" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x5f, 0x01 };
+    const instructions = try parse(allocator, &bytecode);
+    defer allocator.free(instructions);
+
+    try std.testing.expectEqual(@as(usize, 2), instructions.len);
+    try std.testing.expectEqual(Opcode.PUSH0, instructions[0].opcode);
+    try std.testing.expect(instructions[0].immediate == null);
+}
+
+test "parse PUSH32" {
+    const allocator = std.testing.allocator;
+
+    var bytecode: [33]u8 = undefined;
+    bytecode[0] = 0x7f; // PUSH32
+    @memset(bytecode[1..], 0xff);
+
+    const instructions = try parse(allocator, &bytecode);
+    defer allocator.free(instructions);
+
+    try std.testing.expectEqual(@as(usize, 1), instructions.len);
+    try std.testing.expectEqual(Opcode.PUSH32, instructions[0].opcode);
+    try std.testing.expect(instructions[0].immediate != null);
+    try std.testing.expectEqual(@as(usize, 32), instructions[0].immediate.?.len);
+}
+
+test "parse truncated PUSH data" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{0x60}; // PUSH1 without data
+    const instructions = try parse(allocator, &bytecode);
+    defer allocator.free(instructions);
+
+    try std.testing.expectEqual(@as(usize, 1), instructions.len);
+    try std.testing.expectEqual(Opcode.PUSH1, instructions[0].opcode);
+    try std.testing.expect(instructions[0].immediate != null);
+    try std.testing.expectEqual(@as(usize, 0), instructions[0].immediate.?.len);
+}
+
+test "parse empty bytecode" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{};
+    const instructions = try parse(allocator, &bytecode);
+    defer allocator.free(instructions);
+
+    try std.testing.expectEqual(@as(usize, 0), instructions.len);
+}
+
+test "jumpDests finds JUMPDEST opcodes" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x5b, 0x60, 0x01, 0x5b };
+    const dests = try jumpDests(allocator, &bytecode);
+    defer allocator.free(dests);
+
+    try std.testing.expectEqual(@as(usize, 2), dests.len);
+    try std.testing.expectEqual(@as(usize, 0), dests[0]);
+    try std.testing.expectEqual(@as(usize, 3), dests[1]);
+}
+
+test "jumpDests ignores JUMPDEST in immediate data" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x60, 0x5b, 0x5b }; // PUSH1 0x5b, JUMPDEST
+    const dests = try jumpDests(allocator, &bytecode);
+    defer allocator.free(dests);
+
+    try std.testing.expectEqual(@as(usize, 1), dests.len);
+    try std.testing.expectEqual(@as(usize, 2), dests[0]);
+}
+
+test "jumpDests handles bytecode with no JUMPDESTs" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    const dests = try jumpDests(allocator, &bytecode);
+    defer allocator.free(dests);
+
+    try std.testing.expectEqual(@as(usize, 0), dests.len);
+}
+
+test "isValidJumpDest validates JUMPDEST locations" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x5b, 0x60, 0x01, 0x5b };
+
+    try std.testing.expect(try isValidJumpDest(allocator, &bytecode, 0));
+    try std.testing.expect(try isValidJumpDest(allocator, &bytecode, 3));
+}
+
+test "isValidJumpDest rejects non-JUMPDEST locations" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x5b, 0x60, 0x01, 0x5b };
+
+    try std.testing.expect(!try isValidJumpDest(allocator, &bytecode, 1));
+    try std.testing.expect(!try isValidJumpDest(allocator, &bytecode, 2));
+}
+
+test "isValidJumpDest rejects JUMPDEST in immediate data" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x60, 0x5b };
+    try std.testing.expect(!try isValidJumpDest(allocator, &bytecode, 1));
+}
+
+test "formatInstruction formats simple opcodes" {
+    const allocator = std.testing.allocator;
+
+    const inst = Instruction{
+        .offset = 0,
+        .opcode = Opcode.ADD,
+    };
+
+    const formatted = try formatInstruction(allocator, inst);
+    defer allocator.free(formatted);
+
+    try std.testing.expectEqualStrings("0x0000: ADD", formatted);
+}
+
+test "formatInstruction formats PUSH with immediate data" {
+    const allocator = std.testing.allocator;
+
+    const immediate = [_]u8{0x42};
+    const inst = Instruction{
+        .offset = 10,
+        .opcode = Opcode.PUSH1,
+        .immediate = &immediate,
+    };
+
+    const formatted = try formatInstruction(allocator, inst);
+    defer allocator.free(formatted);
+
+    try std.testing.expectEqualStrings("0x000a: PUSH1 0x42", formatted);
+}
+
+test "disassemble bytecode to strings" {
+    const allocator = std.testing.allocator;
+
+    const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    const asm_lines = try disassemble(allocator, &bytecode);
+    defer {
+        for (asm_lines) |line| allocator.free(line);
+        allocator.free(asm_lines);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), asm_lines.len);
+    try std.testing.expectEqualStrings("0x0000: PUSH1 0x01", asm_lines[0]);
+    try std.testing.expectEqualStrings("0x0002: PUSH1 0x02", asm_lines[1]);
+    try std.testing.expectEqualStrings("0x0004: ADD", asm_lines[2]);
 }

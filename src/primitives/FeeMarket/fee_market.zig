@@ -19,6 +19,9 @@ pub const MIN_BASE_FEE: u64 = 7;
 /// Base fee change denominator (12.5% max change per block)
 pub const BASE_FEE_CHANGE_DENOMINATOR: u64 = 8;
 
+/// Elasticity multiplier (gas limit = target * elasticity)
+pub const ELASTICITY_MULTIPLIER: u64 = 2;
+
 /// Initialize base fee for first EIP-1559 block based on parent gas usage
 pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
     const parent_gas_target = parent_gas_limit / 2;
@@ -157,7 +160,72 @@ pub fn getEffectiveGasPrice(base_fee_per_gas: u64, max_fee_per_gas: u64, max_pri
 ///
 /// Returns: The gas target for the block
 pub fn getGasTarget(gas_limit: u64) u64 {
-    return gas_limit / 2;
+    return gas_limit / ELASTICITY_MULTIPLIER;
+}
+
+/// Convert gwei (as f64) to wei (u64)
+///
+/// 1 gwei = 1,000,000,000 wei
+///
+/// Parameters:
+/// - gwei: Amount in gwei (as floating point)
+///
+/// Returns: Amount in wei
+pub fn gweiToWei(gwei: f64) u64 {
+    const wei_f64 = gwei * 1_000_000_000.0;
+    return @intFromFloat(@floor(wei_f64));
+}
+
+/// Convert wei (u64) to gwei string representation
+///
+/// 1 gwei = 1,000,000,000 wei
+/// Returns a formatted string with 9 decimal places
+///
+/// Parameters:
+/// - allocator: Memory allocator for string formatting
+/// - wei: Amount in wei
+///
+/// Returns: Formatted gwei string (caller owns memory)
+pub fn weiToGwei(allocator: std.mem.Allocator, wei: u64) ![]const u8 {
+    const gwei_whole = wei / 1_000_000_000;
+    const gwei_fraction = wei % 1_000_000_000;
+    return std.fmt.allocPrint(allocator, "{d}.{d:0>9}", .{ gwei_whole, gwei_fraction });
+}
+
+/// Check if a transaction can be included in a block
+///
+/// A transaction can be included if:
+/// 1. maxFeePerGas >= baseFee (for regular tx)
+/// 2. maxFeePerBlobGas >= blobBaseFee (for blob tx, if applicable)
+///
+/// Parameters:
+/// - max_fee_per_gas: Maximum fee per gas the sender is willing to pay
+/// - base_fee: Current block's base fee
+/// - max_fee_per_blob_gas: Optional max fee per blob gas (for blob transactions)
+/// - blob_base_fee: Optional blob base fee (for blob transactions)
+///
+/// Returns: true if transaction can be included, false otherwise
+pub fn canIncludeTx(
+    max_fee_per_gas: u64,
+    base_fee: u64,
+    max_fee_per_blob_gas: ?u64,
+    blob_base_fee: ?u64,
+) bool {
+    // Check if max fee covers base fee
+    if (max_fee_per_gas < base_fee) {
+        return false;
+    }
+
+    // If blob parameters provided, check blob fee too
+    if (max_fee_per_blob_gas) |max_blob_fee| {
+        if (blob_base_fee) |blob_fee| {
+            if (max_blob_fee < blob_fee) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 // Tests
@@ -792,4 +860,107 @@ test "nextBaseFee sequence descending to minimum" {
 
     // Should eventually reach minimum
     try std.testing.expectEqual(MIN_BASE_FEE, current_fee);
+}
+
+// Tests for new APIs
+
+test "ELASTICITY_MULTIPLIER constant value" {
+    try std.testing.expectEqual(@as(u64, 2), ELASTICITY_MULTIPLIER);
+}
+
+test "gweiToWei converts 1 gwei" {
+    const wei = gweiToWei(1.0);
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), wei);
+}
+
+test "gweiToWei converts fractional gwei" {
+    const wei = gweiToWei(1.5);
+    try std.testing.expectEqual(@as(u64, 1_500_000_000), wei);
+}
+
+test "gweiToWei converts zero" {
+    const wei = gweiToWei(0.0);
+    try std.testing.expectEqual(@as(u64, 0), wei);
+}
+
+test "gweiToWei converts large values" {
+    const wei = gweiToWei(100.0);
+    try std.testing.expectEqual(@as(u64, 100_000_000_000), wei);
+}
+
+test "gweiToWei truncates sub-wei precision" {
+    const wei = gweiToWei(1.0000000001);
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), wei);
+}
+
+test "weiToGwei converts 1 gwei" {
+    const allocator = std.testing.allocator;
+    const gwei = try weiToGwei(allocator, 1_000_000_000);
+    defer allocator.free(gwei);
+    try std.testing.expectEqualStrings("1.000000000", gwei);
+}
+
+test "weiToGwei converts fractional gwei" {
+    const allocator = std.testing.allocator;
+    const gwei = try weiToGwei(allocator, 1_234_567_890);
+    defer allocator.free(gwei);
+    try std.testing.expectEqualStrings("1.234567890", gwei);
+}
+
+test "weiToGwei converts zero" {
+    const allocator = std.testing.allocator;
+    const gwei = try weiToGwei(allocator, 0);
+    defer allocator.free(gwei);
+    try std.testing.expectEqualStrings("0.000000000", gwei);
+}
+
+test "weiToGwei converts large values" {
+    const allocator = std.testing.allocator;
+    const gwei = try weiToGwei(allocator, 100_000_000_000);
+    defer allocator.free(gwei);
+    try std.testing.expectEqualStrings("100.000000000", gwei);
+}
+
+test "weiToGwei converts small values" {
+    const allocator = std.testing.allocator;
+    const gwei = try weiToGwei(allocator, 7);
+    defer allocator.free(gwei);
+    try std.testing.expectEqualStrings("0.000000007", gwei);
+}
+
+test "canIncludeTx returns true when maxFee covers baseFee" {
+    const can_include = canIncludeTx(1_000_000_000, 900_000_000, null, null);
+    try std.testing.expect(can_include);
+}
+
+test "canIncludeTx returns false when maxFee below baseFee" {
+    const can_include = canIncludeTx(800_000_000, 900_000_000, null, null);
+    try std.testing.expect(!can_include);
+}
+
+test "canIncludeTx returns true when maxFee equals baseFee" {
+    const can_include = canIncludeTx(1_000_000_000, 1_000_000_000, null, null);
+    try std.testing.expect(can_include);
+}
+
+test "canIncludeTx returns true for blob tx with sufficient fees" {
+    const can_include = canIncludeTx(2_000_000_000, 1_500_000_000, 10_000_000, 5_000_000);
+    try std.testing.expect(can_include);
+}
+
+test "canIncludeTx returns false for blob tx with insufficient blob fee" {
+    const can_include = canIncludeTx(2_000_000_000, 1_500_000_000, 3_000_000, 5_000_000);
+    try std.testing.expect(!can_include);
+}
+
+test "canIncludeTx returns false for blob tx with insufficient gas fee" {
+    const can_include = canIncludeTx(1_000_000_000, 1_500_000_000, 10_000_000, 5_000_000);
+    try std.testing.expect(!can_include);
+}
+
+test "getGasTarget uses ELASTICITY_MULTIPLIER" {
+    const gas_limit = 30_000_000;
+    const target = getGasTarget(gas_limit);
+    try std.testing.expectEqual(@as(u64, 15_000_000), target);
+    try std.testing.expectEqual(gas_limit / ELASTICITY_MULTIPLIER, target);
 }

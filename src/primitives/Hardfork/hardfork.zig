@@ -133,6 +133,238 @@ pub const Hardfork = enum {
         return self.toInt() < target.toInt();
     }
 
+    /// Check if this hardfork is after the specified version
+    pub fn isAfter(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() > target.toInt();
+    }
+
+    /// Check if this hardfork is equal to the specified version
+    pub fn isEqual(self: Hardfork, other: Hardfork) bool {
+        return self == other;
+    }
+
+    /// Compare two hardforks
+    /// Returns negative if a < b, zero if a == b, positive if a > b
+    pub fn compare(a: Hardfork, b: Hardfork) i32 {
+        const a_val: i32 = @intCast(a.toInt());
+        const b_val: i32 = @intCast(b.toInt());
+        return a_val - b_val;
+    }
+
+    /// Greater than or equal comparison
+    pub fn gte(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() >= target.toInt();
+    }
+
+    /// Less than comparison
+    pub fn lt(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() < target.toInt();
+    }
+
+    /// Greater than comparison
+    pub fn gt(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() > target.toInt();
+    }
+
+    /// Less than or equal comparison
+    pub fn lte(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() <= target.toInt();
+    }
+
+    /// Alias for isEqual
+    pub fn equals(self: Hardfork, other: Hardfork) bool {
+        return self.isEqual(other);
+    }
+
+    /// Get minimum hardfork from slice
+    pub fn min(forks: []const Hardfork) ?Hardfork {
+        if (forks.len == 0) return null;
+        var minimum = forks[0];
+        for (forks[1..]) |fork| {
+            if (fork.toInt() < minimum.toInt()) {
+                minimum = fork;
+            }
+        }
+        return minimum;
+    }
+
+    /// Get maximum hardfork from slice
+    pub fn max(forks: []const Hardfork) ?Hardfork {
+        if (forks.len == 0) return null;
+        var maximum = forks[0];
+        for (forks[1..]) |fork| {
+            if (fork.toInt() > maximum.toInt()) {
+                maximum = fork;
+            }
+        }
+        return maximum;
+    }
+
+    /// Get range of hardforks between start and end (inclusive)
+    /// Returns null if memory allocation fails
+    pub fn range(allocator: std.mem.Allocator, start: Hardfork, end: Hardfork) ![]Hardfork {
+        const start_idx = start.toInt();
+        const end_idx = end.toInt();
+
+        if (start_idx == end_idx) {
+            const result = try allocator.alloc(Hardfork, 1);
+            result[0] = start;
+            return result;
+        }
+
+        if (start_idx < end_idx) {
+            // Ascending order
+            const count = end_idx - start_idx + 1;
+            const result = try allocator.alloc(Hardfork, count);
+            var i: u32 = 0;
+            while (i < count) : (i += 1) {
+                result[i] = @enumFromInt(start_idx + i);
+            }
+            return result;
+        } else {
+            // Descending order
+            const count = start_idx - end_idx + 1;
+            const result = try allocator.alloc(Hardfork, count);
+            var i: u32 = 0;
+            while (i < count) : (i += 1) {
+                result[i] = @enumFromInt(start_idx - i);
+            }
+            return result;
+        }
+    }
+
+    /// Convert hardfork to its string name
+    pub fn toString(self: Hardfork) []const u8 {
+        return switch (self) {
+            .FRONTIER => "frontier",
+            .HOMESTEAD => "homestead",
+            .DAO => "dao",
+            .TANGERINE_WHISTLE => "tangerinewhistle",
+            .SPURIOUS_DRAGON => "spuriousdragon",
+            .BYZANTIUM => "byzantium",
+            .CONSTANTINOPLE => "constantinople",
+            .PETERSBURG => "petersburg",
+            .ISTANBUL => "istanbul",
+            .MUIR_GLACIER => "muirglacier",
+            .BERLIN => "berlin",
+            .LONDON => "london",
+            .ARROW_GLACIER => "arrowglacier",
+            .GRAY_GLACIER => "grayglacier",
+            .MERGE => "merge",
+            .SHANGHAI => "shanghai",
+            .CANCUN => "cancun",
+            .PRAGUE => "prague",
+            .OSAKA => "osaka",
+        };
+    }
+
+    /// Check if a string is a valid hardfork name
+    pub fn isValidName(name: []const u8) bool {
+        return fromString(name) != null;
+    }
+
+    /// Get all hardfork names
+    pub fn allNames() [19][]const u8 {
+        return [_][]const u8{
+            "frontier",
+            "homestead",
+            "dao",
+            "tangerinewhistle",
+            "spuriousdragon",
+            "byzantium",
+            "constantinople",
+            "petersburg",
+            "istanbul",
+            "muirglacier",
+            "berlin",
+            "london",
+            "arrowglacier",
+            "grayglacier",
+            "merge",
+            "shanghai",
+            "cancun",
+            "prague",
+            "osaka",
+        };
+    }
+
+    /// Get all hardfork enum values
+    pub fn allIds() [19]Hardfork {
+        return [_]Hardfork{
+            .FRONTIER,
+            .HOMESTEAD,
+            .DAO,
+            .TANGERINE_WHISTLE,
+            .SPURIOUS_DRAGON,
+            .BYZANTIUM,
+            .CONSTANTINOPLE,
+            .PETERSBURG,
+            .ISTANBUL,
+            .MUIR_GLACIER,
+            .BERLIN,
+            .LONDON,
+            .ARROW_GLACIER,
+            .GRAY_GLACIER,
+            .MERGE,
+            .SHANGHAI,
+            .CANCUN,
+            .PRAGUE,
+            .OSAKA,
+        };
+    }
+
+    // Feature detection convenience methods
+
+    /// Check if EIP-1559 is active (London+)
+    pub fn hasEIP1559(self: Hardfork) bool {
+        return self.isAtLeast(.LONDON);
+    }
+
+    /// Alias for hasEIP1559
+    pub fn supportsEIP1559(self: Hardfork) bool {
+        return self.hasEIP1559();
+    }
+
+    /// Check if EIP-3855 (PUSH0) is active (Shanghai+)
+    pub fn hasEIP3855(self: Hardfork) bool {
+        return self.isAtLeast(.SHANGHAI);
+    }
+
+    /// Alias for hasEIP3855
+    pub fn supportsPUSH0(self: Hardfork) bool {
+        return self.hasEIP3855();
+    }
+
+    /// Check if EIP-4844 (blobs) is active (Cancun+)
+    pub fn hasEIP4844(self: Hardfork) bool {
+        return self.isAtLeast(.CANCUN);
+    }
+
+    /// Alias for hasEIP4844
+    pub fn supportsBlobs(self: Hardfork) bool {
+        return self.hasEIP4844();
+    }
+
+    /// Check if EIP-1153 (transient storage) is active (Cancun+)
+    pub fn hasEIP1153(self: Hardfork) bool {
+        return self.isAtLeast(.CANCUN);
+    }
+
+    /// Alias for hasEIP1153
+    pub fn supportsTransientStorage(self: Hardfork) bool {
+        return self.hasEIP1153();
+    }
+
+    /// Check if hardfork is post-merge (Merge+)
+    pub fn isPostMerge(self: Hardfork) bool {
+        return self.isAtLeast(.MERGE);
+    }
+
+    /// Alias for isPostMerge
+    pub fn isPoS(self: Hardfork) bool {
+        return self.isPostMerge();
+    }
+
     /// Mainnet activation block numbers for each hardfork
     /// Returns null if hardfork hasn't been activated yet or is network-specific
     pub fn mainnetActivationBlock(self: Hardfork) ?u64 {
@@ -877,4 +1109,267 @@ test "constantinople petersburg same block" {
     const petersburg_block = Hardfork.PETERSBURG.mainnetActivationBlock().?;
 
     try testing.expectEqual(constantinople_block, petersburg_block);
+}
+
+// ============================================================================
+// New API Tests - Comparison Operations
+// ============================================================================
+
+test "isAfter" {
+    try testing.expect(Hardfork.CANCUN.isAfter(.SHANGHAI));
+    try testing.expect(Hardfork.PRAGUE.isAfter(.BERLIN));
+    try testing.expect(!Hardfork.BERLIN.isAfter(.LONDON));
+    try testing.expect(!Hardfork.SHANGHAI.isAfter(.SHANGHAI));
+}
+
+test "isEqual" {
+    try testing.expect(Hardfork.CANCUN.isEqual(.CANCUN));
+    try testing.expect(Hardfork.FRONTIER.isEqual(.FRONTIER));
+    try testing.expect(!Hardfork.CANCUN.isEqual(.SHANGHAI));
+    try testing.expect(!Hardfork.BERLIN.isEqual(.LONDON));
+}
+
+test "compare" {
+    try testing.expect(Hardfork.compare(.BERLIN, .LONDON) < 0);
+    try testing.expect(Hardfork.compare(.FRONTIER, .CANCUN) < 0);
+    try testing.expectEqual(@as(i32, 0), Hardfork.compare(.CANCUN, .CANCUN));
+    try testing.expectEqual(@as(i32, 0), Hardfork.compare(.SHANGHAI, .SHANGHAI));
+    try testing.expect(Hardfork.compare(.PRAGUE, .SHANGHAI) > 0);
+    try testing.expect(Hardfork.compare(.LONDON, .BERLIN) > 0);
+}
+
+test "gte" {
+    try testing.expect(Hardfork.CANCUN.gte(.SHANGHAI));
+    try testing.expect(Hardfork.CANCUN.gte(.CANCUN));
+    try testing.expect(!Hardfork.BERLIN.gte(.LONDON));
+}
+
+test "lt" {
+    try testing.expect(Hardfork.BERLIN.lt(.LONDON));
+    try testing.expect(!Hardfork.CANCUN.lt(.SHANGHAI));
+    try testing.expect(!Hardfork.LONDON.lt(.LONDON));
+}
+
+test "gt" {
+    try testing.expect(Hardfork.CANCUN.gt(.SHANGHAI));
+    try testing.expect(!Hardfork.BERLIN.gt(.LONDON));
+    try testing.expect(!Hardfork.BERLIN.gt(.BERLIN));
+}
+
+test "equals" {
+    try testing.expect(Hardfork.CANCUN.equals(.CANCUN));
+    try testing.expect(!Hardfork.CANCUN.equals(.SHANGHAI));
+}
+
+test "lte" {
+    try testing.expect(Hardfork.SHANGHAI.lte(.CANCUN));
+    try testing.expect(Hardfork.SHANGHAI.lte(.SHANGHAI));
+    try testing.expect(!Hardfork.CANCUN.lte(.SHANGHAI));
+}
+
+test "min with valid forks" {
+    const forks = [_]Hardfork{ .CANCUN, .BERLIN, .SHANGHAI };
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.min(&forks).?);
+
+    const single = [_]Hardfork{.CANCUN};
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.min(&single).?);
+}
+
+test "min with empty array" {
+    const empty: []const Hardfork = &[_]Hardfork{};
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.min(empty));
+}
+
+test "max with valid forks" {
+    const forks = [_]Hardfork{ .CANCUN, .BERLIN, .SHANGHAI };
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.max(&forks).?);
+
+    const single = [_]Hardfork{.BERLIN};
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.max(&single).?);
+}
+
+test "max with empty array" {
+    const empty: []const Hardfork = &[_]Hardfork{};
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.max(empty));
+}
+
+test "range ascending" {
+    const r = try Hardfork.range(testing.allocator, .BERLIN, .SHANGHAI);
+    defer testing.allocator.free(r);
+
+    try testing.expectEqual(@as(usize, 6), r.len);
+    try testing.expectEqual(Hardfork.BERLIN, r[0]);
+    try testing.expectEqual(Hardfork.LONDON, r[1]);
+    try testing.expectEqual(Hardfork.ARROW_GLACIER, r[2]);
+    try testing.expectEqual(Hardfork.GRAY_GLACIER, r[3]);
+    try testing.expectEqual(Hardfork.MERGE, r[4]);
+    try testing.expectEqual(Hardfork.SHANGHAI, r[5]);
+}
+
+test "range descending" {
+    const r = try Hardfork.range(testing.allocator, .SHANGHAI, .BERLIN);
+    defer testing.allocator.free(r);
+
+    try testing.expectEqual(@as(usize, 6), r.len);
+    try testing.expectEqual(Hardfork.SHANGHAI, r[0]);
+    try testing.expectEqual(Hardfork.MERGE, r[1]);
+    try testing.expectEqual(Hardfork.GRAY_GLACIER, r[2]);
+    try testing.expectEqual(Hardfork.ARROW_GLACIER, r[3]);
+    try testing.expectEqual(Hardfork.LONDON, r[4]);
+    try testing.expectEqual(Hardfork.BERLIN, r[5]);
+}
+
+test "range single element" {
+    const r = try Hardfork.range(testing.allocator, .CANCUN, .CANCUN);
+    defer testing.allocator.free(r);
+
+    try testing.expectEqual(@as(usize, 1), r.len);
+    try testing.expectEqual(Hardfork.CANCUN, r[0]);
+}
+
+test "range adjacent" {
+    const r = try Hardfork.range(testing.allocator, .BERLIN, .LONDON);
+    defer testing.allocator.free(r);
+
+    try testing.expectEqual(@as(usize, 2), r.len);
+    try testing.expectEqual(Hardfork.BERLIN, r[0]);
+    try testing.expectEqual(Hardfork.LONDON, r[1]);
+}
+
+// ============================================================================
+// New API Tests - String Conversion
+// ============================================================================
+
+test "toString" {
+    try testing.expectEqualStrings("cancun", Hardfork.CANCUN.toString());
+    try testing.expectEqualStrings("shanghai", Hardfork.SHANGHAI.toString());
+    try testing.expectEqualStrings("london", Hardfork.LONDON.toString());
+    try testing.expectEqualStrings("berlin", Hardfork.BERLIN.toString());
+    try testing.expectEqualStrings("merge", Hardfork.MERGE.toString());
+    try testing.expectEqualStrings("petersburg", Hardfork.PETERSBURG.toString());
+}
+
+test "toString all hardforks" {
+    const ids = Hardfork.allIds();
+    for (ids) |id| {
+        const name = id.toString();
+        try testing.expect(name.len > 0);
+    }
+}
+
+test "toString roundtrip with fromString" {
+    const ids = Hardfork.allIds();
+    for (ids) |id| {
+        const name = id.toString();
+        const parsed = Hardfork.fromString(name);
+        try testing.expectEqual(id, parsed.?);
+    }
+}
+
+test "isValidName" {
+    try testing.expect(Hardfork.isValidName("cancun"));
+    try testing.expect(Hardfork.isValidName("shanghai"));
+    try testing.expect(Hardfork.isValidName("paris"));
+    try testing.expect(Hardfork.isValidName("constantinoplefix"));
+    try testing.expect(Hardfork.isValidName("Cancun"));
+    try testing.expect(Hardfork.isValidName("SHANGHAI"));
+    try testing.expect(!Hardfork.isValidName("unknown"));
+    try testing.expect(!Hardfork.isValidName(""));
+    try testing.expect(!Hardfork.isValidName("not-a-fork"));
+}
+
+test "allNames" {
+    const names = Hardfork.allNames();
+    try testing.expectEqual(@as(usize, 19), names.len);
+    try testing.expectEqualStrings("frontier", names[0]);
+    try testing.expectEqualStrings("cancun", names[16]);
+    try testing.expectEqualStrings("osaka", names[18]);
+
+    // All names should be valid
+    for (names) |name| {
+        try testing.expect(Hardfork.isValidName(name));
+    }
+}
+
+test "allIds" {
+    const ids = Hardfork.allIds();
+    try testing.expectEqual(@as(usize, 19), ids.len);
+    try testing.expectEqual(Hardfork.FRONTIER, ids[0]);
+    try testing.expectEqual(Hardfork.CANCUN, ids[16]);
+    try testing.expectEqual(Hardfork.OSAKA, ids[18]);
+}
+
+// ============================================================================
+// New API Tests - Feature Detection
+// ============================================================================
+
+test "hasEIP1559" {
+    try testing.expect(Hardfork.LONDON.hasEIP1559());
+    try testing.expect(Hardfork.MERGE.hasEIP1559());
+    try testing.expect(Hardfork.SHANGHAI.hasEIP1559());
+    try testing.expect(Hardfork.CANCUN.hasEIP1559());
+    try testing.expect(Hardfork.PRAGUE.hasEIP1559());
+    try testing.expect(!Hardfork.BERLIN.hasEIP1559());
+    try testing.expect(!Hardfork.ISTANBUL.hasEIP1559());
+    try testing.expect(!Hardfork.FRONTIER.hasEIP1559());
+}
+
+test "supportsEIP1559" {
+    try testing.expect(Hardfork.LONDON.supportsEIP1559());
+    try testing.expect(!Hardfork.BERLIN.supportsEIP1559());
+}
+
+test "hasEIP3855" {
+    try testing.expect(Hardfork.SHANGHAI.hasEIP3855());
+    try testing.expect(Hardfork.CANCUN.hasEIP3855());
+    try testing.expect(Hardfork.PRAGUE.hasEIP3855());
+    try testing.expect(!Hardfork.MERGE.hasEIP3855());
+    try testing.expect(!Hardfork.LONDON.hasEIP3855());
+    try testing.expect(!Hardfork.BERLIN.hasEIP3855());
+}
+
+test "supportsPUSH0" {
+    try testing.expect(Hardfork.SHANGHAI.supportsPUSH0());
+    try testing.expect(!Hardfork.MERGE.supportsPUSH0());
+}
+
+test "hasEIP4844" {
+    try testing.expect(Hardfork.CANCUN.hasEIP4844());
+    try testing.expect(Hardfork.PRAGUE.hasEIP4844());
+    try testing.expect(Hardfork.OSAKA.hasEIP4844());
+    try testing.expect(!Hardfork.SHANGHAI.hasEIP4844());
+    try testing.expect(!Hardfork.MERGE.hasEIP4844());
+    try testing.expect(!Hardfork.LONDON.hasEIP4844());
+}
+
+test "supportsBlobs" {
+    try testing.expect(Hardfork.CANCUN.supportsBlobs());
+    try testing.expect(!Hardfork.SHANGHAI.supportsBlobs());
+}
+
+test "hasEIP1153" {
+    try testing.expect(Hardfork.CANCUN.hasEIP1153());
+    try testing.expect(Hardfork.PRAGUE.hasEIP1153());
+    try testing.expect(!Hardfork.SHANGHAI.hasEIP1153());
+    try testing.expect(!Hardfork.MERGE.hasEIP1153());
+}
+
+test "supportsTransientStorage" {
+    try testing.expect(Hardfork.CANCUN.supportsTransientStorage());
+    try testing.expect(!Hardfork.SHANGHAI.supportsTransientStorage());
+}
+
+test "isPostMerge" {
+    try testing.expect(Hardfork.MERGE.isPostMerge());
+    try testing.expect(Hardfork.SHANGHAI.isPostMerge());
+    try testing.expect(Hardfork.CANCUN.isPostMerge());
+    try testing.expect(Hardfork.PRAGUE.isPostMerge());
+    try testing.expect(!Hardfork.GRAY_GLACIER.isPostMerge());
+    try testing.expect(!Hardfork.LONDON.isPostMerge());
+    try testing.expect(!Hardfork.BERLIN.isPostMerge());
+}
+
+test "isPoS" {
+    try testing.expect(Hardfork.MERGE.isPoS());
+    try testing.expect(!Hardfork.LONDON.isPoS());
 }

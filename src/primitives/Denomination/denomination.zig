@@ -161,3 +161,82 @@ test "round trip conversions" {
     const back = g.to_wei();
     try testing.expect(back.value.eq(U256.from_u64(5_000_000_000)));
 }
+
+test "wei to gwei truncates fractional values" {
+    const w = Wei.from_u256(U256.from_u64(1_500_000_000)); // 1.5 Gwei
+    const g = w.to_gwei();
+    try testing.expect(g.value.eq(U256.from_u64(1)));
+}
+
+test "wei to ether truncates fractional values" {
+    const limbs: [4]u64 = .{ 0x14D1120D7B160000, 0, 0, 0 }; // 1.5 ETH in wei
+    const w = Wei.from_u256(U256.from_limbs(limbs));
+    const e = w.to_ether();
+    try testing.expect(e.value.eq(U256.from_u64(1)));
+}
+
+test "gwei to ether truncates fractional values" {
+    const g = Gwei.from_u256(U256.from_u64(1_500_000_000)); // 1.5 ETH in gwei
+    const e = g.to_ether();
+    try testing.expect(e.value.eq(U256.from_u64(1)));
+}
+
+test "zero value conversions" {
+    const w = Wei.from_u256(U256.from_u64(0));
+    try testing.expect(w.to_gwei().value.eq(U256.from_u64(0)));
+    try testing.expect(w.to_ether().value.eq(U256.from_u64(0)));
+
+    const g = Gwei.from_u256(U256.from_u64(0));
+    try testing.expect(g.to_wei().value.eq(U256.from_u64(0)));
+    try testing.expect(g.to_ether().value.eq(U256.from_u64(0)));
+
+    const e = Ether.from_u256(U256.from_u64(0));
+    try testing.expect(e.to_wei().value.eq(U256.from_u64(0)));
+    try testing.expect(e.to_gwei().value.eq(U256.from_u64(0)));
+}
+
+test "large value conversions" {
+    // Test with 1 million ETH
+    const e = Ether.from_u256(U256.from_u64(1_000_000));
+    const w = e.to_wei();
+    const back = w.to_ether();
+    try testing.expect(back.value.eq(U256.from_u64(1_000_000)));
+}
+
+test "Wei.from_gwei creates correct value" {
+    const g = Gwei.from_u256(U256.from_u64(123));
+    const w = Wei.from_gwei(g);
+    try testing.expect(w.value.eq(U256.from_u64(123_000_000_000)));
+}
+
+test "Wei.from_ether creates correct value" {
+    const e = Ether.from_u256(U256.from_u64(2));
+    const w = Wei.from_ether(e);
+    const expected_limbs: [4]u64 = .{ 0xde0b6b3a7640000 * 2, 0, 0, 0 };
+    try testing.expect(w.value.eq(U256.from_limbs(expected_limbs)));
+}
+
+test "Gwei.from_wei creates correct value" {
+    const w = Wei.from_u256(U256.from_u64(5_000_000_000));
+    const g = Gwei.from_wei(w);
+    try testing.expect(g.value.eq(U256.from_u64(5)));
+}
+
+test "Gwei.from_ether creates correct value" {
+    const e = Ether.from_u256(U256.from_u64(3));
+    const g = Gwei.from_ether(e);
+    try testing.expect(g.value.eq(U256.from_u64(3_000_000_000)));
+}
+
+test "Ether.from_wei creates correct value" {
+    const limbs: [4]u64 = .{ 0xde0b6b3a7640000, 0, 0, 0 };
+    const w = Wei.from_u256(U256.from_limbs(limbs));
+    const e = Ether.from_wei(w);
+    try testing.expect(e.value.eq(U256.from_u64(1)));
+}
+
+test "Ether.from_gwei creates correct value" {
+    const g = Gwei.from_u256(U256.from_u64(2_000_000_000));
+    const e = Ether.from_gwei(g);
+    try testing.expect(e.value.eq(U256.from_u64(2)));
+}

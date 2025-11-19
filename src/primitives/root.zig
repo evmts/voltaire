@@ -123,6 +123,9 @@ pub const Denomination = @import("Denomination/denomination.zig");
 pub const Wei = Denomination.Wei;
 pub const Gwei = Denomination.Gwei;
 pub const Ether = Denomination.Ether;
+pub const WEI_PER_GWEI = Denomination.WEI_PER_GWEI;
+pub const WEI_PER_ETHER = Denomination.WEI_PER_ETHER;
+pub const GWEI_PER_ETHER = Denomination.GWEI_PER_ETHER;
 
 // State management
 pub const State = @import("State/state.zig");

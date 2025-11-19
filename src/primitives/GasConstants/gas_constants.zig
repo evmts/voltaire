@@ -208,6 +208,10 @@ pub const InitcodeWordGas: u64 = 2;
 /// EIP-3860: Limit is 49152 bytes (2 * MAX_CODE_SIZE)
 pub const MaxInitcodeSize: u64 = 49152;
 
+/// Base gas cost for CALL operations when target account is warm
+/// This is the minimum cost for any call operation (maps to TS: Call)
+pub const CallBaseCost: u64 = 40;
+
 // ============================================================================
 // Transaction Costs
 // ============================================================================
@@ -353,6 +357,8 @@ pub const MODEXP_LINEAR_THRESHOLD: usize = 1024;
 
 /// Base gas cost for CALL operations when target account is warm
 /// This is the minimum cost for any call operation
+/// Note: This represents the warm CALL cost in modern EVM (EIP-2929+)
+/// For the base CALL opcode cost itself, see CallBaseCost (40 gas)
 pub const CALL_BASE_COST: u64 = 100;
 
 /// Gas cost for CALL operations when target account is cold (EIP-2929)
@@ -1617,4 +1623,216 @@ test "hardfork - edge cases across hardforks" {
     // Transient storage (only exists post-Cancun)
     try testing.expectEqual(@as(u64, 100), TLoadGas);
     try testing.expectEqual(@as(u64, 100), TStoreGas);
+}
+
+// ============================================================================
+// TypeScript Parity Tests - Ensure Zig matches TS constants exactly
+// ============================================================================
+
+test "parity - basic opcode costs match TS" {
+    // GasQuickStep matches TS QuickStep
+    try testing.expectEqual(@as(u64, 2), GasQuickStep);
+
+    // GasFastestStep matches TS FastestStep
+    try testing.expectEqual(@as(u64, 3), GasFastestStep);
+
+    // GasFastStep matches TS FastStep
+    try testing.expectEqual(@as(u64, 5), GasFastStep);
+
+    // GasMidStep matches TS MidStep
+    try testing.expectEqual(@as(u64, 8), GasMidStep);
+
+    // GasSlowStep matches TS SlowStep
+    try testing.expectEqual(@as(u64, 10), GasSlowStep);
+
+    // GasExtStep matches TS ExtStep
+    try testing.expectEqual(@as(u64, 20), GasExtStep);
+
+    // JumpdestGas matches TS Jumpdest
+    try testing.expectEqual(@as(u64, 1), JumpdestGas);
+}
+
+test "parity - hashing costs match TS" {
+    // Keccak256Gas matches TS Keccak256Base
+    try testing.expectEqual(@as(u64, 30), Keccak256Gas);
+
+    // Keccak256WordGas matches TS Keccak256Word
+    try testing.expectEqual(@as(u64, 6), Keccak256WordGas);
+}
+
+test "parity - storage costs match TS" {
+    // SloadGas matches TS Sload
+    try testing.expectEqual(@as(u64, 100), SloadGas);
+
+    // ColdSloadCost matches TS ColdSload
+    try testing.expectEqual(@as(u64, 2100), ColdSloadCost);
+
+    // ColdAccountAccessCost matches TS ColdAccountAccess
+    try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost);
+
+    // WarmStorageReadCost matches TS WarmStorageRead
+    try testing.expectEqual(@as(u64, 100), WarmStorageReadCost);
+
+    // SstoreSentryGas matches TS SstoreSentry
+    try testing.expectEqual(@as(u64, 2300), SstoreSentryGas);
+
+    // SstoreSetGas matches TS SstoreSet
+    try testing.expectEqual(@as(u64, 20000), SstoreSetGas);
+
+    // SstoreResetGas matches TS SstoreReset
+    try testing.expectEqual(@as(u64, 5000), SstoreResetGas);
+
+    // SstoreClearGas matches TS SstoreClear
+    try testing.expectEqual(@as(u64, 5000), SstoreClearGas);
+
+    // SstoreRefundGas matches TS SstoreRefund
+    try testing.expectEqual(@as(u64, 4800), SstoreRefundGas);
+}
+
+test "parity - logging costs match TS" {
+    // LogGas matches TS LogBase
+    try testing.expectEqual(@as(u64, 375), LogGas);
+
+    // LogDataGas matches TS LogData
+    try testing.expectEqual(@as(u64, 8), LogDataGas);
+
+    // LogTopicGas matches TS LogTopic
+    try testing.expectEqual(@as(u64, 375), LogTopicGas);
+}
+
+test "parity - call and create costs match TS" {
+    // CreateGas matches TS Create
+    try testing.expectEqual(@as(u64, 32000), CreateGas);
+
+    // CallGas matches TS Call (base CALL opcode cost)
+    try testing.expectEqual(@as(u64, 40), CallGas);
+
+    // CallBaseCost matches TS Call (newly added)
+    try testing.expectEqual(@as(u64, 40), CallBaseCost);
+
+    // CallStipend matches TS CallStipend
+    try testing.expectEqual(@as(u64, 2300), CallStipend);
+
+    // CallValueTransferGas matches TS CallValueTransfer
+    try testing.expectEqual(@as(u64, 9000), CallValueTransferGas);
+
+    // CallNewAccountGas matches TS CallNewAccount
+    try testing.expectEqual(@as(u64, 25000), CallNewAccountGas);
+
+    // CallCodeCost matches TS CallCode
+    try testing.expectEqual(@as(u64, 700), CallCodeCost);
+
+    // DelegateCallCost matches TS DelegateCall
+    try testing.expectEqual(@as(u64, 700), DelegateCallCost);
+
+    // StaticCallCost matches TS StaticCall
+    try testing.expectEqual(@as(u64, 700), StaticCallCost);
+
+    // SelfdestructGas matches TS Selfdestruct
+    try testing.expectEqual(@as(u64, 5000), SelfdestructGas);
+
+    // SelfdestructRefundGas matches TS SelfdestructRefund
+    try testing.expectEqual(@as(u64, 24000), SelfdestructRefundGas);
+
+    // CALL_GAS_RETENTION_DIVISOR matches TS CallGasRetentionDivisor
+    try testing.expectEqual(@as(u64, 64), CALL_GAS_RETENTION_DIVISOR);
+}
+
+test "parity - memory costs match TS" {
+    // MemoryGas matches TS Memory
+    try testing.expectEqual(@as(u64, 3), MemoryGas);
+
+    // QuadCoeffDiv matches TS QuadCoeffDiv
+    try testing.expectEqual(@as(u64, 512), QuadCoeffDiv);
+}
+
+test "parity - contract deployment costs match TS" {
+    // CreateDataGas matches TS CreateData
+    try testing.expectEqual(@as(u64, 200), CreateDataGas);
+
+    // InitcodeWordGas matches TS InitcodeWord
+    try testing.expectEqual(@as(u64, 2), InitcodeWordGas);
+
+    // MaxInitcodeSize matches TS MaxInitcodeSize
+    try testing.expectEqual(@as(u64, 49152), MaxInitcodeSize);
+}
+
+test "parity - transaction costs match TS" {
+    // TxGas matches TS Tx
+    try testing.expectEqual(@as(u64, 21000), TxGas);
+
+    // TxGasContractCreation matches TS TxContractCreation
+    try testing.expectEqual(@as(u64, 53000), TxGasContractCreation);
+
+    // TxDataZeroGas matches TS TxDataZero
+    try testing.expectEqual(@as(u64, 4), TxDataZeroGas);
+
+    // TxDataNonZeroGas matches TS TxDataNonZero
+    try testing.expectEqual(@as(u64, 16), TxDataNonZeroGas);
+
+    // CopyGas matches TS Copy
+    try testing.expectEqual(@as(u64, 3), CopyGas);
+
+    // MaxRefundQuotient matches TS MaxRefundQuotient
+    try testing.expectEqual(@as(u64, 5), MaxRefundQuotient);
+}
+
+test "parity - EIP-4844 costs match TS" {
+    // BlobHashGas matches TS BlobHash
+    try testing.expectEqual(@as(u64, 3), BlobHashGas);
+
+    // BlobBaseFeeGas matches TS BlobBaseFee
+    try testing.expectEqual(@as(u64, 2), BlobBaseFeeGas);
+}
+
+test "parity - EIP-1153 costs match TS" {
+    // TLoadGas matches TS TLoad
+    try testing.expectEqual(@as(u64, 100), TLoadGas);
+
+    // TStoreGas matches TS TStore
+    try testing.expectEqual(@as(u64, 100), TStoreGas);
+}
+
+test "parity - precompile costs match TS" {
+    // ECRECOVER_COST matches TS Precompile.EcRecover
+    try testing.expectEqual(@as(u64, 3000), ECRECOVER_COST);
+
+    // SHA256_BASE_COST matches TS Precompile.Sha256Base
+    try testing.expectEqual(@as(u64, 60), SHA256_BASE_COST);
+
+    // SHA256_WORD_COST matches TS Precompile.Sha256Word
+    try testing.expectEqual(@as(u64, 12), SHA256_WORD_COST);
+
+    // RIPEMD160_BASE_COST matches TS Precompile.Ripemd160Base
+    try testing.expectEqual(@as(u64, 600), RIPEMD160_BASE_COST);
+
+    // RIPEMD160_WORD_COST matches TS Precompile.Ripemd160Word
+    try testing.expectEqual(@as(u64, 120), RIPEMD160_WORD_COST);
+
+    // IDENTITY_BASE_COST matches TS Precompile.IdentityBase
+    try testing.expectEqual(@as(u64, 15), IDENTITY_BASE_COST);
+
+    // IDENTITY_WORD_COST matches TS Precompile.IdentityWord
+    try testing.expectEqual(@as(u64, 3), IDENTITY_WORD_COST);
+
+    // MODEXP_MIN_GAS matches TS Precompile.ModExpMin
+    try testing.expectEqual(@as(u64, 200), MODEXP_MIN_GAS);
+
+    // MODEXP_QUADRATIC_THRESHOLD matches TS Precompile.ModExpQuadraticThreshold
+    try testing.expectEqual(@as(usize, 64), MODEXP_QUADRATIC_THRESHOLD);
+
+    // MODEXP_LINEAR_THRESHOLD matches TS Precompile.ModExpLinearThreshold
+    try testing.expectEqual(@as(usize, 1024), MODEXP_LINEAR_THRESHOLD);
+
+    // BN254 Istanbul costs
+    try testing.expectEqual(@as(u64, 150), ECADD_GAS_COST);
+    try testing.expectEqual(@as(u64, 6000), ECMUL_GAS_COST);
+    try testing.expectEqual(@as(u64, 45000), ECPAIRING_BASE_GAS_COST);
+    try testing.expectEqual(@as(u64, 34000), ECPAIRING_PER_PAIR_GAS_COST);
+
+    // BN254 Byzantium costs
+    try testing.expectEqual(@as(u64, 500), ECADD_GAS_COST_BYZANTIUM);
+    try testing.expectEqual(@as(u64, 40000), ECMUL_GAS_COST_BYZANTIUM);
+    try testing.expectEqual(@as(u64, 100000), ECPAIRING_BASE_GAS_COST_BYZANTIUM);
+    try testing.expectEqual(@as(u64, 80000), ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM);
 }

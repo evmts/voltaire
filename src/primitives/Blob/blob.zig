@@ -168,6 +168,73 @@ pub fn decodeBlobData(allocator: Allocator, blob: Blob) ![]u8 {
     return data;
 }
 
+// Validate blob size
+pub fn isValid(blob: []const u8) bool {
+    return blob.len == BYTES_PER_BLOB;
+}
+
+// Estimate number of blobs needed for data size
+pub fn estimateBlobCount(data_size: usize) usize {
+    const max_data_per_blob = BYTES_PER_BLOB - 8; // Account for length prefix
+    if (data_size == 0) return 0;
+    return (data_size + max_data_per_blob - 1) / max_data_per_blob; // Ceiling division
+}
+
+// Calculate gas for blob count
+pub fn calculateGas(blob_count: usize) !u64 {
+    if (blob_count > MAX_BLOBS_PER_TRANSACTION) {
+        return BlobError.TooManyBlobs;
+    }
+    return @as(u64, @intCast(blob_count)) * BLOB_GAS_PER_BLOB;
+}
+
+// Split data into multiple blobs
+pub fn splitData(allocator: Allocator, data: []const u8) ![]Blob {
+    const max_data_per_blob = BYTES_PER_BLOB - 8;
+    const blob_count = estimateBlobCount(data.len);
+
+    if (blob_count > MAX_BLOBS_PER_TRANSACTION) {
+        return BlobError.TooManyBlobs;
+    }
+
+    const blobs = try allocator.alloc(Blob, blob_count);
+    errdefer allocator.free(blobs);
+
+    for (0..blob_count) |i| {
+        const start = i * max_data_per_blob;
+        const end = @min(start + max_data_per_blob, data.len);
+        const chunk = data[start..end];
+        blobs[i] = try encodeBlobData(allocator, chunk);
+    }
+
+    return blobs;
+}
+
+// Join multiple blobs into single data buffer
+pub fn joinData(allocator: Allocator, blobs: []const Blob) ![]u8 {
+    // Calculate total length
+    var total_len: usize = 0;
+    for (blobs) |blob| {
+        const len = std.mem.bytesToValue(usize, blob[0..8]);
+        if (len > BYTES_PER_BLOB - 8) {
+            return BlobError.InvalidBlobData;
+        }
+        total_len += len;
+    }
+
+    const result = try allocator.alloc(u8, total_len);
+    errdefer allocator.free(result);
+
+    var offset: usize = 0;
+    for (blobs) |blob| {
+        const len = std.mem.bytesToValue(usize, blob[0..8]);
+        @memcpy(result[offset .. offset + len], blob[8 .. 8 + len]);
+        offset += len;
+    }
+
+    return result;
+}
+
 // Tests
 
 test "commitment to versioned hash" {
@@ -848,4 +915,235 @@ test "excess blob gas converges to zero with low usage" {
 
     // Should eventually reach zero
     try testing.expectEqual(@as(u64, 0), excess);
+}
+
+// Tests for isValid
+
+test "isValid with correct size" {
+    const blob: Blob = [_]u8{0x00} ** BYTES_PER_BLOB;
+    try testing.expect(isValid(&blob));
+}
+
+test "isValid with wrong size too small" {
+    const blob = [_]u8{0x00} ** (BYTES_PER_BLOB - 1);
+    try testing.expect(!isValid(&blob));
+}
+
+test "isValid with wrong size too large" {
+    const blob = [_]u8{0x00} ** (BYTES_PER_BLOB + 1);
+    try testing.expect(!isValid(&blob));
+}
+
+test "isValid with zero size" {
+    const blob = [_]u8{};
+    try testing.expect(!isValid(&blob));
+}
+
+// Tests for estimateBlobCount
+
+test "estimateBlobCount with zero data" {
+    const count = estimateBlobCount(0);
+    try testing.expectEqual(@as(usize, 0), count);
+}
+
+test "estimateBlobCount with small data" {
+    const count = estimateBlobCount(100);
+    try testing.expectEqual(@as(usize, 1), count);
+}
+
+test "estimateBlobCount at exact boundary" {
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const count = estimateBlobCount(max_per_blob);
+    try testing.expectEqual(@as(usize, 1), count);
+}
+
+test "estimateBlobCount just over boundary" {
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const count = estimateBlobCount(max_per_blob + 1);
+    try testing.expectEqual(@as(usize, 2), count);
+}
+
+test "estimateBlobCount multiple blobs" {
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const count = estimateBlobCount(max_per_blob * 3 + 1000);
+    try testing.expectEqual(@as(usize, 4), count);
+}
+
+// Tests for calculateGas
+
+test "calculateGas with zero blobs" {
+    const gas = try calculateGas(0);
+    try testing.expectEqual(@as(u64, 0), gas);
+}
+
+test "calculateGas with one blob" {
+    const gas = try calculateGas(1);
+    try testing.expectEqual(BLOB_GAS_PER_BLOB, gas);
+}
+
+test "calculateGas with max blobs" {
+    const gas = try calculateGas(MAX_BLOBS_PER_TRANSACTION);
+    try testing.expectEqual(@as(u64, MAX_BLOBS_PER_TRANSACTION * BLOB_GAS_PER_BLOB), gas);
+}
+
+test "calculateGas fails with too many blobs" {
+    const result = calculateGas(MAX_BLOBS_PER_TRANSACTION + 1);
+    try testing.expectError(BlobError.TooManyBlobs, result);
+}
+
+test "calculateGas with multiple blobs" {
+    const gas = try calculateGas(3);
+    try testing.expectEqual(@as(u64, 3 * BLOB_GAS_PER_BLOB), gas);
+}
+
+// Tests for splitData and joinData
+
+test "splitData and joinData round trip small data" {
+    const allocator = testing.allocator;
+    const data = "Hello, blob world!";
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqualStrings(data, recovered);
+}
+
+test "splitData and joinData round trip large data" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const data_size = max_per_blob * 2 + 1000;
+
+    const data = try allocator.alloc(u8, data_size);
+    defer allocator.free(data);
+
+    for (data, 0..) |*b, i| {
+        b.* = @intCast(i % 256);
+    }
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    try testing.expectEqual(@as(usize, 3), blobs.len);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqualSlices(u8, data, recovered);
+}
+
+test "splitData at exact boundary" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+
+    const data = try allocator.alloc(u8, max_per_blob);
+    defer allocator.free(data);
+    @memset(data, 0x42);
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    try testing.expectEqual(@as(usize, 1), blobs.len);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqualSlices(u8, data, recovered);
+}
+
+test "splitData just over boundary" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+
+    const data = try allocator.alloc(u8, max_per_blob + 1);
+    defer allocator.free(data);
+    @memset(data, 0x33);
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    try testing.expectEqual(@as(usize, 2), blobs.len);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqualSlices(u8, data, recovered);
+}
+
+test "splitData fails with too many blobs needed" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const data_size = max_per_blob * (MAX_BLOBS_PER_TRANSACTION + 1);
+
+    const data = try allocator.alloc(u8, data_size);
+    defer allocator.free(data);
+
+    const result = splitData(allocator, data);
+    try testing.expectError(BlobError.TooManyBlobs, result);
+}
+
+test "splitData empty data" {
+    const allocator = testing.allocator;
+    const data = [_]u8{};
+
+    const blobs = try splitData(allocator, &data);
+    defer allocator.free(blobs);
+
+    try testing.expectEqual(@as(usize, 0), blobs.len);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqual(@as(usize, 0), recovered.len);
+}
+
+test "splitData max blobs exactly" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const data_size = max_per_blob * MAX_BLOBS_PER_TRANSACTION;
+
+    const data = try allocator.alloc(u8, data_size);
+    defer allocator.free(data);
+
+    for (data, 0..) |*b, i| {
+        b.* = @intCast(i % 256);
+    }
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    try testing.expectEqual(@as(usize, MAX_BLOBS_PER_TRANSACTION), blobs.len);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqualSlices(u8, data, recovered);
+}
+
+test "joinData preserves data boundaries" {
+    const allocator = testing.allocator;
+    const max_per_blob = BYTES_PER_BLOB - 8;
+    const data_size = max_per_blob * 2;
+
+    const data = try allocator.alloc(u8, data_size);
+    defer allocator.free(data);
+
+    // Mark boundaries
+    data[0] = 0x01; // Start of first blob
+    data[max_per_blob - 1] = 0x02; // End of first blob
+    data[max_per_blob] = 0x03; // Start of second blob
+    data[data_size - 1] = 0x04; // End of second blob
+
+    const blobs = try splitData(allocator, data);
+    defer allocator.free(blobs);
+
+    const recovered = try joinData(allocator, blobs);
+    defer allocator.free(recovered);
+
+    try testing.expectEqual(@as(u8, 0x01), recovered[0]);
+    try testing.expectEqual(@as(u8, 0x02), recovered[max_per_blob - 1]);
+    try testing.expectEqual(@as(u8, 0x03), recovered[max_per_blob]);
+    try testing.expectEqual(@as(u8, 0x04), recovered[data_size - 1]);
 }

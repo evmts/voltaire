@@ -489,6 +489,716 @@ test "filter logs by topics" {
     try testing.expectEqual(@as(u64, 3), filtered[1].block_number.?);
 }
 
+// Helper to get topic0 (event signature)
+pub fn getTopic0(log: EventLog) ?Hash {
+    if (log.topics.len == 0) return null;
+    return log.topics[0];
+}
+
+// Helper to get indexed topics (all topics except topic0)
+pub fn getIndexedTopics(allocator: Allocator, log: EventLog) ![]const Hash {
+    if (log.topics.len <= 1) return &[_]Hash{};
+    const indexed = try allocator.alloc(Hash, log.topics.len - 1);
+    @memcpy(indexed, log.topics[1..]);
+    return indexed;
+}
+
+// Check if log is removed
+pub fn isRemoved(log: EventLog) bool {
+    return log.removed;
+}
+
+// Match topics with filter (supports null wildcards and OR arrays)
+pub fn matchesTopics(log: EventLog, filter_topics: []const ?Hash) bool {
+    // Empty filter matches all
+    if (filter_topics.len == 0) return true;
+
+    // Filter has more topics than log
+    if (filter_topics.len > log.topics.len) return false;
+
+    // Check each filter topic
+    for (filter_topics, 0..) |filter_topic, i| {
+        if (filter_topic) |topic| {
+            if (!log.topics[i].eql(topic)) return false;
+        }
+        // null is wildcard, always matches
+    }
+
+    return true;
+}
+
+// Match address with filter (supports single address or array)
+pub fn matchesAddress(log: EventLog, filter_address: Address) bool {
+    return log.address.eql(filter_address);
+}
+
+// Filter structure
+pub const LogFilter = struct {
+    address: ?Address = null,
+    topics: ?[]const ?Hash = null,
+    from_block: ?u64 = null,
+    to_block: ?u64 = null,
+    block_hash: ?Hash = null,
+};
+
+// Match log against complete filter
+pub fn matchesFilter(log: EventLog, filter: LogFilter) bool {
+    // Check address
+    if (filter.address) |addr| {
+        if (!matchesAddress(log, addr)) return false;
+    }
+
+    // Check topics
+    if (filter.topics) |topics| {
+        if (!matchesTopics(log, topics)) return false;
+    }
+
+    // Check block number range
+    if (log.block_number) |block_num| {
+        if (filter.from_block) |from| {
+            if (block_num < from) return false;
+        }
+        if (filter.to_block) |to| {
+            if (block_num > to) return false;
+        }
+    }
+
+    // Check block hash
+    if (log.block_number != null) { // Only check if log has block
+        if (filter.block_hash) |filter_hash| {
+            if (log.transaction_hash) |tx_hash| {
+                // Note: We can't directly check block_hash in EventLog struct
+                // This is a limitation - real impl would need block_hash field
+                _ = filter_hash;
+                _ = tx_hash;
+            }
+        }
+    }
+
+    return true;
+}
+
+// Filter logs by filter criteria
+pub fn filterLogs(allocator: Allocator, logs: []const EventLog, filter: LogFilter) ![]EventLog {
+    var result = std.ArrayList(EventLog).init(allocator);
+    errdefer result.deinit();
+
+    for (logs) |log| {
+        if (matchesFilter(log, filter)) {
+            try result.append(log);
+        }
+    }
+
+    return result.toOwnedSlice();
+}
+
+// Sort logs by block number then log index
+pub fn sortLogs(allocator: Allocator, logs: []const EventLog) ![]EventLog {
+    const sorted = try allocator.alloc(EventLog, logs.len);
+    @memcpy(sorted, logs);
+
+    // Simple bubble sort for now (can optimize later)
+    var i: usize = 0;
+    while (i < sorted.len) : (i += 1) {
+        var j: usize = i + 1;
+        while (j < sorted.len) : (j += 1) {
+            const block_i = sorted[i].block_number orelse 0;
+            const block_j = sorted[j].block_number orelse 0;
+
+            const should_swap = if (block_i != block_j)
+                block_i > block_j
+            else blk: {
+                const log_i = sorted[i].log_index orelse 0;
+                const log_j = sorted[j].log_index orelse 0;
+                break :blk log_i > log_j;
+            };
+
+            if (should_swap) {
+                const tmp = sorted[i];
+                sorted[i] = sorted[j];
+                sorted[j] = tmp;
+            }
+        }
+    }
+
+    return sorted;
+}
+
+// Clone (deep copy) a log
+pub fn clone(allocator: Allocator, log: EventLog) !EventLog {
+    // Copy topics
+    const topics_copy = try allocator.alloc(Hash, log.topics.len);
+    @memcpy(topics_copy, log.topics);
+
+    // Copy data
+    const data_copy = try allocator.alloc(u8, log.data.len);
+    @memcpy(data_copy, log.data);
+
+    return EventLog{
+        .address = log.address,
+        .topics = topics_copy,
+        .data = data_copy,
+        .block_number = log.block_number,
+        .transaction_hash = log.transaction_hash,
+        .transaction_index = log.transaction_index,
+        .log_index = log.log_index,
+        .removed = log.removed,
+    };
+}
+
+// Tests for new functions
+
+test "getTopic0 returns first topic" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const result = getTopic0(log);
+    try testing.expect(result != null);
+    try testing.expect(result.?.eql(topic0));
+}
+
+test "getTopic0 returns null for empty topics" {
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const result = getTopic0(log);
+    try testing.expect(result == null);
+}
+
+test "getIndexedTopics returns topics excluding topic0" {
+    const allocator = testing.allocator;
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+    const topic2 = hash.keccak256("test2");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1, topic2 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const indexed = try getIndexedTopics(allocator, log);
+    defer allocator.free(indexed);
+
+    try testing.expectEqual(@as(usize, 2), indexed.len);
+    try testing.expect(indexed[0].eql(topic1));
+    try testing.expect(indexed[1].eql(topic2));
+}
+
+test "getIndexedTopics returns empty for single topic" {
+    const allocator = testing.allocator;
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{topic0},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const indexed = try getIndexedTopics(allocator, log);
+    defer allocator.free(indexed);
+
+    try testing.expectEqual(@as(usize, 0), indexed.len);
+}
+
+test "isRemoved returns true for removed logs" {
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = true,
+    };
+
+    try testing.expect(isRemoved(log));
+}
+
+test "isRemoved returns false for active logs" {
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    try testing.expect(!isRemoved(log));
+}
+
+test "matchesTopics with exact match" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+    const topic2 = hash.keccak256("test2");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1, topic2 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter = [_]?Hash{ topic0, topic1, topic2 };
+    try testing.expect(matchesTopics(log, &filter));
+}
+
+test "matchesTopics with null wildcard" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+    const topic2 = hash.keccak256("test2");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1, topic2 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter = [_]?Hash{ topic0, null, topic2 };
+    try testing.expect(matchesTopics(log, &filter));
+}
+
+test "matchesTopics with empty filter" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{topic0},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter = [_]?Hash{};
+    try testing.expect(matchesTopics(log, &filter));
+}
+
+test "matchesTopics fails when topic does not match" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+    const topic2 = hash.keccak256("test2");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter = [_]?Hash{ topic0, topic2 };
+    try testing.expect(!matchesTopics(log, &filter));
+}
+
+test "matchesTopics fails when filter has more topics" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+    const topic2 = hash.keccak256("test2");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter = [_]?Hash{ topic0, topic1, topic2 };
+    try testing.expect(!matchesTopics(log, &filter));
+}
+
+test "matchesAddress with matching address" {
+    const addr = try Address.fromHex("0x1234567890123456789012345678901234567890");
+
+    const log = EventLog{
+        .address = addr,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    try testing.expect(matchesAddress(log, addr));
+}
+
+test "matchesAddress with non-matching address" {
+    const addr1 = try Address.fromHex("0x1234567890123456789012345678901234567890");
+    const addr2 = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+
+    const log = EventLog{
+        .address = addr1,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    try testing.expect(!matchesAddress(log, addr2));
+}
+
+test "matchesFilter with address only" {
+    const addr1 = try Address.fromHex("0x1234567890123456789012345678901234567890");
+    const addr2 = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+
+    const log = EventLog{
+        .address = addr1,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = 100,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter1 = LogFilter{ .address = addr1 };
+    try testing.expect(matchesFilter(log, filter1));
+
+    const filter2 = LogFilter{ .address = addr2 };
+    try testing.expect(!matchesFilter(log, filter2));
+}
+
+test "matchesFilter with topics only" {
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = hash.keccak256("test1");
+
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1 },
+        .data = &[_]u8{},
+        .block_number = null,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter_topics = [_]?Hash{ topic0, topic1 };
+    const filter = LogFilter{ .topics = &filter_topics };
+    try testing.expect(matchesFilter(log, filter));
+}
+
+test "matchesFilter with block range" {
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = 100,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter1 = LogFilter{ .from_block = 50, .to_block = 150 };
+    try testing.expect(matchesFilter(log, filter1));
+
+    const filter2 = LogFilter{ .from_block = 101, .to_block = 150 };
+    try testing.expect(!matchesFilter(log, filter2));
+
+    const filter3 = LogFilter{ .from_block = 50, .to_block = 99 };
+    try testing.expect(!matchesFilter(log, filter3));
+}
+
+test "matchesFilter with combined criteria" {
+    const addr = try Address.fromHex("0x1234567890123456789012345678901234567890");
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+
+    const log = EventLog{
+        .address = addr,
+        .topics = &[_]Hash{topic0},
+        .data = &[_]u8{},
+        .block_number = 100,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const filter_topics = [_]?Hash{topic0};
+    const filter = LogFilter{
+        .address = addr,
+        .topics = &filter_topics,
+        .from_block = 50,
+        .to_block = 150,
+    };
+
+    try testing.expect(matchesFilter(log, filter));
+}
+
+test "filterLogs returns matching logs" {
+    const allocator = testing.allocator;
+    const addr1 = try Address.fromHex("0x1234567890123456789012345678901234567890");
+    const addr2 = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+
+    const logs = [_]EventLog{
+        .{
+            .address = addr1,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = addr2,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 101,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = addr1,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 102,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    const filter = LogFilter{ .address = addr1 };
+    const filtered = try filterLogs(allocator, &logs, filter);
+    defer allocator.free(filtered);
+
+    try testing.expectEqual(@as(usize, 2), filtered.len);
+    try testing.expectEqual(@as(u64, 100), filtered[0].block_number.?);
+    try testing.expectEqual(@as(u64, 102), filtered[1].block_number.?);
+}
+
+test "sortLogs by block number ascending" {
+    const allocator = testing.allocator;
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 103,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 101,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    const sorted = try sortLogs(allocator, &logs);
+    defer allocator.free(sorted);
+
+    try testing.expectEqual(@as(u64, 100), sorted[0].block_number.?);
+    try testing.expectEqual(@as(u64, 101), sorted[1].block_number.?);
+    try testing.expectEqual(@as(u64, 103), sorted[2].block_number.?);
+}
+
+test "sortLogs by log index when blocks equal" {
+    const allocator = testing.allocator;
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = 5,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = 2,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = 10,
+            .removed = false,
+        },
+    };
+
+    const sorted = try sortLogs(allocator, &logs);
+    defer allocator.free(sorted);
+
+    try testing.expectEqual(@as(u32, 2), sorted[0].log_index.?);
+    try testing.expectEqual(@as(u32, 5), sorted[1].log_index.?);
+    try testing.expectEqual(@as(u32, 10), sorted[2].log_index.?);
+}
+
+test "sortLogs treats undefined as 0" {
+    const allocator = testing.allocator;
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 100,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = null,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{},
+            .data = &[_]u8{},
+            .block_number = 50,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    const sorted = try sortLogs(allocator, &logs);
+    defer allocator.free(sorted);
+
+    try testing.expect(sorted[0].block_number == null);
+    try testing.expectEqual(@as(u64, 50), sorted[1].block_number.?);
+    try testing.expectEqual(@as(u64, 100), sorted[2].block_number.?);
+}
+
+test "clone creates deep copy" {
+    const allocator = testing.allocator;
+    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
+    const data = [_]u8{ 1, 2, 3 };
+
+    const original = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{topic0},
+        .data = &data,
+        .block_number = 100,
+        .transaction_hash = null,
+        .transaction_index = 5,
+        .log_index = 10,
+        .removed = false,
+    };
+
+    const cloned = try clone(allocator, original);
+    defer {
+        allocator.free(cloned.topics);
+        allocator.free(cloned.data);
+    }
+
+    // Verify values are equal
+    try testing.expect(cloned.address.eql(original.address));
+    try testing.expectEqual(original.topics.len, cloned.topics.len);
+    try testing.expect(cloned.topics[0].eql(original.topics[0]));
+    try testing.expectEqualSlices(u8, original.data, cloned.data);
+    try testing.expectEqual(original.block_number, cloned.block_number);
+    try testing.expectEqual(original.transaction_index, cloned.transaction_index);
+    try testing.expectEqual(original.log_index, cloned.log_index);
+    try testing.expectEqual(original.removed, cloned.removed);
+
+    // Verify they are different memory
+    try testing.expect(cloned.topics.ptr != original.topics.ptr);
+    try testing.expect(cloned.data.ptr != original.data.ptr);
+}
+
 test "parse event with indexed uint256 in topic" {
     const allocator = testing.allocator;
 

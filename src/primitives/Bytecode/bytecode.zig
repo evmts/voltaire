@@ -1792,3 +1792,284 @@ test "analyzeGasTotal: JUMPDEST cost 1 gas each" {
 
     try std.testing.expectEqual(@as(u64, 3), bytecode.analyzeGasTotal());
 }
+
+// ========== Additional Utility Functions for TS Parity ==========
+
+/// Check if an opcode is a PUSH instruction (PUSH1-PUSH32)
+pub fn isPush(opcode: u8) bool {
+    return opcode >= 0x60 and opcode <= 0x7f;
+}
+
+/// Get PUSH instruction size (number of bytes pushed)
+/// Returns 0 if not a PUSH opcode
+pub fn getPushSize(opcode: u8) u8 {
+    if (!isPush(opcode)) return 0;
+    return opcode - 0x5f;
+}
+
+/// Compare two bytecode slices for equality
+pub fn equals(a: []const u8, b: []const u8) bool {
+    if (a.len != b.len) return false;
+    for (a, b) |byte_a, byte_b| {
+        if (byte_a != byte_b) return false;
+    }
+    return true;
+}
+
+/// Convert bytecode to hex string
+/// Caller owns returned memory, must free with allocator
+pub fn toHex(allocator: std.mem.Allocator, code: []const u8, prefix: bool) ![]const u8 {
+    const hex_len = if (prefix) code.len * 2 + 2 else code.len * 2;
+    const hex = try allocator.alloc(u8, hex_len);
+    errdefer allocator.free(hex);
+
+    var offset: usize = 0;
+    if (prefix) {
+        hex[0] = '0';
+        hex[1] = 'x';
+        offset = 2;
+    }
+
+    const hex_chars = "0123456789abcdef";
+    for (code, 0..) |byte, i| {
+        hex[offset + i * 2] = hex_chars[byte >> 4];
+        hex[offset + i * 2 + 1] = hex_chars[byte & 0x0f];
+    }
+
+    return hex;
+}
+
+/// Parse hex string to bytecode
+/// Caller owns returned memory, must free with allocator
+/// Returns error if hex string has odd length or invalid characters
+pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) ![]const u8 {
+    // Remove 0x prefix if present
+    const cleaned = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X'))
+        hex[2..]
+    else
+        hex;
+
+    // Check for odd length
+    if (cleaned.len % 2 != 0) {
+        return error.InvalidHexLength;
+    }
+
+    const bytes = try allocator.alloc(u8, cleaned.len / 2);
+    errdefer allocator.free(bytes);
+
+    for (0..bytes.len) |i| {
+        const high = try hexCharToNibble(cleaned[i * 2]);
+        const low = try hexCharToNibble(cleaned[i * 2 + 1]);
+        bytes[i] = (high << 4) | low;
+    }
+
+    return bytes;
+}
+
+fn hexCharToNibble(c: u8) !u8 {
+    return switch (c) {
+        '0'...'9' => c - '0',
+        'a'...'f' => c - 'a' + 10,
+        'A'...'F' => c - 'A' + 10,
+        else => error.InvalidHexChar,
+    };
+}
+
+// ========== Tests for New Functions ==========
+
+test "isPush: PUSH1 through PUSH32" {
+    // Test all PUSH opcodes
+    var opcode: u8 = 0x60; // PUSH1
+    while (opcode <= 0x7f) : (opcode += 1) { // PUSH32
+        try std.testing.expect(isPush(opcode));
+    }
+}
+
+test "isPush: non-PUSH opcodes" {
+    try std.testing.expect(!isPush(0x00)); // STOP
+    try std.testing.expect(!isPush(0x01)); // ADD
+    try std.testing.expect(!isPush(0x5b)); // JUMPDEST
+    try std.testing.expect(!isPush(0x5f)); // One before PUSH1
+    try std.testing.expect(!isPush(0x80)); // DUP1
+    try std.testing.expect(!isPush(0xff)); // SELFDESTRUCT
+}
+
+test "getPushSize: PUSH1" {
+    try std.testing.expectEqual(@as(u8, 1), getPushSize(0x60));
+}
+
+test "getPushSize: PUSH32" {
+    try std.testing.expectEqual(@as(u8, 32), getPushSize(0x7f));
+}
+
+test "getPushSize: PUSH16" {
+    try std.testing.expectEqual(@as(u8, 16), getPushSize(0x6f));
+}
+
+test "getPushSize: non-PUSH opcodes return 0" {
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x00)); // STOP
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x01)); // ADD
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x5b)); // JUMPDEST
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x80)); // DUP1
+}
+
+test "equals: identical bytecode" {
+    const a = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    const b = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    try std.testing.expect(equals(&a, &b));
+}
+
+test "equals: different bytecode" {
+    const a = [_]u8{ 0x60, 0x01 };
+    const b = [_]u8{ 0x60, 0x02 };
+    try std.testing.expect(!equals(&a, &b));
+}
+
+test "equals: different lengths" {
+    const a = [_]u8{ 0x60, 0x01 };
+    const b = [_]u8{ 0x60, 0x01, 0x00 };
+    try std.testing.expect(!equals(&a, &b));
+}
+
+test "equals: empty bytecode" {
+    const a = [_]u8{};
+    const b = [_]u8{};
+    try std.testing.expect(equals(&a, &b));
+}
+
+test "toHex: simple bytecode with prefix" {
+    const code = [_]u8{ 0x60, 0x01 };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x6001", hex);
+}
+
+test "toHex: simple bytecode without prefix" {
+    const code = [_]u8{ 0x60, 0x01 };
+    const hex = try toHex(std.testing.allocator, &code, false);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("6001", hex);
+}
+
+test "toHex: empty bytecode with prefix" {
+    const code = [_]u8{};
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x", hex);
+}
+
+test "toHex: empty bytecode without prefix" {
+    const code = [_]u8{};
+    const hex = try toHex(std.testing.allocator, &code, false);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("", hex);
+}
+
+test "toHex: all byte values" {
+    const code = [_]u8{ 0x00, 0x0f, 0xf0, 0xff };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x000ff0ff", hex);
+}
+
+test "toHex: longer bytecode" {
+    const code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x5b };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x608060405260", hex);
+}
+
+test "fromHex: simple hex with prefix" {
+    const bytes = try fromHex(std.testing.allocator, "0x6001");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x01 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: simple hex without prefix" {
+    const bytes = try fromHex(std.testing.allocator, "6001");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x01 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: uppercase hex" {
+    const bytes = try fromHex(std.testing.allocator, "0xABCD");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0xab, 0xcd };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: mixed case hex" {
+    const bytes = try fromHex(std.testing.allocator, "0xAbCd");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0xab, 0xcd };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: empty hex with prefix" {
+    const bytes = try fromHex(std.testing.allocator, "0x");
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 0), bytes.len);
+}
+
+test "fromHex: empty hex without prefix" {
+    const bytes = try fromHex(std.testing.allocator, "");
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 0), bytes.len);
+}
+
+test "fromHex: all byte values" {
+    const bytes = try fromHex(std.testing.allocator, "0x000ff0ff");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x00, 0x0f, 0xf0, 0xff };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: longer bytecode" {
+    const bytes = try fromHex(std.testing.allocator, "0x608060405260");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x60 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+
+test "fromHex: odd length returns error" {
+    const result = fromHex(std.testing.allocator, "0x123");
+    try std.testing.expectError(error.InvalidHexLength, result);
+}
+
+test "fromHex: invalid hex character" {
+    const result = fromHex(std.testing.allocator, "0x60g1");
+    try std.testing.expectError(error.InvalidHexChar, result);
+}
+
+test "fromHex: invalid hex character (space)" {
+    const result = fromHex(std.testing.allocator, "0x60 01");
+    try std.testing.expectError(error.InvalidHexChar, result);
+}
+
+test "toHex/fromHex: roundtrip" {
+    const original = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 };
+
+    const hex = try toHex(std.testing.allocator, &original, true);
+    defer std.testing.allocator.free(hex);
+
+    const bytes = try fromHex(std.testing.allocator, hex);
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expect(equals(&original, bytes));
+}

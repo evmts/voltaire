@@ -156,11 +156,332 @@ pub const StorageKey = struct {
             return false;
         }
     }
+
+    /// Convert StorageKey to string representation for serialization/storage.
+    ///
+    /// Format: address_hex + "_" + slot_hex (40 hex chars + "_" + 64 hex chars)
+    /// Example: "0101010101010101010101010101010101010101_000000000000000000000000000000000000000000000000000000000000002a"
+    ///
+    /// The string can be parsed back using fromString().
+    ///
+    /// @param self The storage key to convert
+    /// @param allocator Allocator for string memory
+    /// @return Allocated string (caller must free)
+    ///
+    /// Example:
+    /// ```zig
+    /// const key = StorageKey{ .address = addr, .slot = 42 };
+    /// const str = try key.toString(allocator);
+    /// defer allocator.free(str);
+    /// ```
+    pub fn toString(self: StorageKey, allocator: std.mem.Allocator) ![]u8 {
+        // Format: 40 hex chars (address) + 1 underscore + 64 hex chars (slot) = 105 chars
+        var buf = try allocator.alloc(u8, 105);
+        errdefer allocator.free(buf);
+
+        // Convert address to hex (40 chars)
+        for (self.address, 0..) |byte, i| {
+            const hex_chars = "0123456789abcdef";
+            buf[i * 2] = hex_chars[byte >> 4];
+            buf[i * 2 + 1] = hex_chars[byte & 0x0F];
+        }
+
+        // Add separator
+        buf[40] = '_';
+
+        // Convert slot to big-endian bytes then to hex (64 chars)
+        var slot_bytes: [32]u8 = undefined;
+        std.mem.writeInt(u256, &slot_bytes, self.slot, .big);
+        for (slot_bytes, 0..) |byte, i| {
+            const hex_chars = "0123456789abcdef";
+            buf[41 + i * 2] = hex_chars[byte >> 4];
+            buf[41 + i * 2 + 1] = hex_chars[byte & 0x0F];
+        }
+
+        return buf;
+    }
+
+    /// Parse a StorageKey from its string representation.
+    ///
+    /// The string must be in the format produced by toString():
+    /// address_hex (40 chars) + "_" + slot_hex (64 chars)
+    ///
+    /// @param str String to parse
+    /// @return Parsed StorageKey or error if invalid format
+    ///
+    /// Example:
+    /// ```zig
+    /// const str = "0101010101010101010101010101010101010101_000000000000000000000000000000000000000000000000000000000000002a";
+    /// const key = try StorageKey.fromString(str);
+    /// ```
+    pub fn fromString(str: []const u8) !StorageKey {
+        // Validate length: 40 (address) + 1 (separator) + 64 (slot) = 105
+        if (str.len != 105) return error.InvalidStringLength;
+
+        // Find and validate separator
+        if (str[40] != '_') return error.InvalidSeparator;
+
+        const addr_hex = str[0..40];
+        const slot_hex = str[41..105];
+
+        // Parse address from hex
+        var address: [20]u8 = undefined;
+        for (0..20) |i| {
+            const hi = try hexCharToNibble(addr_hex[i * 2]);
+            const lo = try hexCharToNibble(addr_hex[i * 2 + 1]);
+            address[i] = (@as(u8, hi) << 4) | @as(u8, lo);
+        }
+
+        // Parse slot from hex
+        var slot_bytes: [32]u8 = undefined;
+        for (0..32) |i| {
+            const hi = try hexCharToNibble(slot_hex[i * 2]);
+            const lo = try hexCharToNibble(slot_hex[i * 2 + 1]);
+            slot_bytes[i] = (@as(u8, hi) << 4) | @as(u8, lo);
+        }
+        const slot = std.mem.readInt(u256, &slot_bytes, .big);
+
+        return StorageKey{ .address = address, .slot = slot };
+    }
+
+    /// Compute a numeric hash code for the storage key.
+    ///
+    /// This uses a simple but fast hash algorithm compatible with JavaScript's
+    /// hash-based collections. The result is a 32-bit signed integer (i32).
+    ///
+    /// @param self The storage key to hash
+    /// @return Hash code as i32
+    ///
+    /// Example:
+    /// ```zig
+    /// const key = StorageKey{ .address = addr, .slot = 42 };
+    /// const hash = key.hashCode();
+    /// ```
+    pub fn hashCode(self: StorageKey) i32 {
+        var hash_val: i32 = 0;
+
+        // Hash address bytes
+        for (self.address) |byte| {
+            hash_val = (@as(i32, @intCast(hash_val)) << 5) -% hash_val +% @as(i32, @intCast(byte));
+        }
+
+        // Hash slot (lower 64 bits for compatibility with JS)
+        const slot_low: u32 = @truncate(self.slot & 0xFFFFFFFF);
+        const slot_high: u32 = @truncate((self.slot >> 32) & 0xFFFFFFFF);
+
+        hash_val = (hash_val << 5) -% hash_val +% @as(i32, @bitCast(slot_low));
+        hash_val = (hash_val << 5) -% hash_val +% @as(i32, @bitCast(slot_high));
+
+        return hash_val;
+    }
 };
+
+// Helper function for hex parsing
+fn hexCharToNibble(c: u8) !u4 {
+    return switch (c) {
+        '0'...'9' => @intCast(c - '0'),
+        'a'...'f' => @intCast(c - 'a' + 10),
+        'A'...'F' => @intCast(c - 'A' + 10),
+        else => error.InvalidHexCharacter,
+    };
+}
 
 // =============================================================================
 // Tests
 // =============================================================================
+
+test "StorageKey.toString produces correct format" {
+    const addr = [_]u8{0x01} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 42 };
+
+    const str = try key.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    // Should be 105 chars: 40 (address) + 1 (separator) + 64 (slot)
+    try std.testing.expectEqual(@as(usize, 105), str.len);
+
+    // Check separator
+    try std.testing.expectEqual(@as(u8, '_'), str[40]);
+
+    // Check format (address should be all 01s)
+    try std.testing.expectEqualStrings("0101010101010101010101010101010101010101", str[0..40]);
+
+    // Check slot hex (42 decimal = 0x2a)
+    try std.testing.expect(std.mem.endsWith(u8, str[41..], "2a"));
+}
+
+test "StorageKey.toString with zero values" {
+    const addr = [_]u8{0x00} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 0 };
+
+    const str = try key.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    try std.testing.expectEqual(@as(usize, 105), str.len);
+    try std.testing.expectEqualStrings("0000000000000000000000000000000000000000", str[0..40]);
+    try std.testing.expectEqualStrings("0000000000000000000000000000000000000000000000000000000000000000", str[41..]);
+}
+
+test "StorageKey.toString with maximum values" {
+    const addr = [_]u8{0xFF} ** 20;
+    const max_slot: u256 = std.math.maxInt(u256);
+    const key = StorageKey{ .address = addr, .slot = max_slot };
+
+    const str = try key.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    try std.testing.expectEqual(@as(usize, 105), str.len);
+    try std.testing.expectEqualStrings("ffffffffffffffffffffffffffffffffffffffff", str[0..40]);
+    try std.testing.expectEqualStrings("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", str[41..]);
+}
+
+test "StorageKey.toString produces different strings for different keys" {
+    const addr1 = [_]u8{0x01} ** 20;
+    const addr2 = [_]u8{0x02} ** 20;
+    const key1 = StorageKey{ .address = addr1, .slot = 42 };
+    const key2 = StorageKey{ .address = addr2, .slot = 42 };
+
+    const str1 = try key1.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str1);
+    const str2 = try key2.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str2);
+
+    try std.testing.expect(!std.mem.eql(u8, str1, str2));
+}
+
+test "StorageKey.toString produces different strings for different slots" {
+    const addr = [_]u8{0x01} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 42 };
+    const key2 = StorageKey{ .address = addr, .slot = 43 };
+
+    const str1 = try key1.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str1);
+    const str2 = try key2.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str2);
+
+    try std.testing.expect(!std.mem.eql(u8, str1, str2));
+}
+
+test "StorageKey.fromString parses valid string" {
+    const valid_str = "0101010101010101010101010101010101010101_000000000000000000000000000000000000000000000000000000000000002a";
+    const key = try StorageKey.fromString(valid_str);
+
+    try std.testing.expectEqual(@as(u256, 0x2a), key.slot);
+    try std.testing.expectEqual(@as(u8, 0x01), key.address[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), key.address[19]);
+}
+
+test "StorageKey.fromString round-trip with zero values" {
+    const addr = [_]u8{0x00} ** 20;
+    const original = StorageKey{ .address = addr, .slot = 0 };
+
+    const str = try original.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    const parsed = try StorageKey.fromString(str);
+    try std.testing.expect(StorageKey.eql(original, parsed));
+}
+
+test "StorageKey.fromString round-trip with large values" {
+    const addr = [_]u8{0xFF} ** 20;
+    const large_slot: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    const original = StorageKey{ .address = addr, .slot = large_slot };
+
+    const str = try original.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    const parsed = try StorageKey.fromString(str);
+    try std.testing.expect(StorageKey.eql(original, parsed));
+}
+
+test "StorageKey.fromString round-trip with pattern address" {
+    const addr = [20]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14 };
+    const original = StorageKey{ .address = addr, .slot = 123456789 };
+
+    const str = try original.toString(std.testing.allocator);
+    defer std.testing.allocator.free(str);
+
+    const parsed = try StorageKey.fromString(str);
+    try std.testing.expect(StorageKey.eql(original, parsed));
+}
+
+test "StorageKey.fromString rejects invalid length" {
+    try std.testing.expectError(error.InvalidStringLength, StorageKey.fromString("short"));
+    try std.testing.expectError(error.InvalidStringLength, StorageKey.fromString("0101010101010101010101010101010101010101_00000000000000000000000000000000000000000000000000000000000000"));
+}
+
+test "StorageKey.fromString rejects missing separator" {
+    // String has correct length (105) but wrong separator position
+    const no_sep = "0101010101010101010101010101010101010101X0000000000000000000000000000000000000000000000000000000000000000";
+    try std.testing.expectError(error.InvalidSeparator, StorageKey.fromString(no_sep));
+}
+
+test "StorageKey.fromString rejects invalid hex characters" {
+    try std.testing.expectError(error.InvalidHexCharacter, StorageKey.fromString("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ_0000000000000000000000000000000000000000000000000000000000000000"));
+    try std.testing.expectError(error.InvalidHexCharacter, StorageKey.fromString("0101010101010101010101010101010101010101_ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"));
+}
+
+test "StorageKey.fromString accepts both upper and lower case hex" {
+    const lower = "abcdef0123456789abcdef0123456789abcdef01_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const upper = "ABCDEF0123456789ABCDEF0123456789ABCDEF01_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+
+    const key_lower = try StorageKey.fromString(lower);
+    const key_upper = try StorageKey.fromString(upper);
+
+    try std.testing.expect(StorageKey.eql(key_lower, key_upper));
+}
+
+test "StorageKey.hashCode produces consistent results" {
+    const addr = [_]u8{0xAB} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 12345 };
+
+    const hash1 = key.hashCode();
+    const hash2 = key.hashCode();
+
+    try std.testing.expectEqual(hash1, hash2);
+}
+
+test "StorageKey.hashCode produces different values for different addresses" {
+    const addr1 = [_]u8{0x01} ** 20;
+    const addr2 = [_]u8{0x02} ** 20;
+    const key1 = StorageKey{ .address = addr1, .slot = 0 };
+    const key2 = StorageKey{ .address = addr2, .slot = 0 };
+
+    const hash1 = key1.hashCode();
+    const hash2 = key2.hashCode();
+
+    try std.testing.expect(hash1 != hash2);
+}
+
+test "StorageKey.hashCode produces different values for different slots" {
+    const addr = [_]u8{0x01} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 42 };
+    const key2 = StorageKey{ .address = addr, .slot = 43 };
+
+    const hash1 = key1.hashCode();
+    const hash2 = key2.hashCode();
+
+    try std.testing.expect(hash1 != hash2);
+}
+
+test "StorageKey.hashCode handles zero values" {
+    const addr = [_]u8{0x00} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 0 };
+
+    const hash_code = key.hashCode();
+    // Should produce a deterministic value
+    try std.testing.expectEqual(@as(i32, 0), hash_code);
+}
+
+test "StorageKey.hashCode handles maximum values" {
+    const addr = [_]u8{0xFF} ** 20;
+    const max_slot: u256 = std.math.maxInt(u256);
+    const key = StorageKey{ .address = addr, .slot = max_slot };
+
+    const hash_code = key.hashCode();
+    // Should not crash and should produce a valid i32
+    _ = hash_code;
+}
 
 test "EMPTY_CODE_HASH is correct Keccak256 of empty bytes" {
     var hasher = Keccak256.init(.{});
@@ -408,8 +729,9 @@ test "StorageKey memory layout is predictable" {
         .slot = 42,
     };
 
-    // Verify the struct size is as expected (20 bytes address + 32 bytes u256)
-    try std.testing.expectEqual(52, @sizeOf(StorageKey));
+    // Verify the struct size (20 bytes address + padding + 32 bytes u256)
+    // u256 requires 16-byte alignment, so struct gets padded to 64 bytes
+    try std.testing.expectEqual(64, @sizeOf(StorageKey));
 
     // Verify fields are accessible
     try std.testing.expectEqual(@as(u256, 42), key.slot);

@@ -43,6 +43,48 @@ pub fn calcDecodedSize(encoded_len: usize) !usize {
     return std.base64.standard.Decoder.calcSizeForSlice(&[_]u8{0} ** encoded_len);
 }
 
+/// Encode UTF-8 string to standard base64
+///
+/// Caller owns returned memory
+pub fn encodeString(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
+    return encode(allocator, str);
+}
+
+/// Decode standard base64 to UTF-8 string
+///
+/// Caller owns returned memory
+pub fn decodeToString(allocator: std.mem.Allocator, encoded: []const u8) ![]u8 {
+    return decode(allocator, encoded);
+}
+
+/// Validate standard base64 string
+///
+/// Checks for valid alphabet (A-Z, a-z, 0-9, +, /, =) and proper padding
+pub fn isValid(encoded: []const u8) bool {
+    if (encoded.len == 0) return true;
+    if (encoded.len % 4 != 0) return false;
+
+    var padding_count: u8 = 0;
+    for (encoded, 0..) |c, i| {
+        if (c == '=') {
+            padding_count += 1;
+            // Padding can only be at end
+            if (i < encoded.len - 2) return false;
+        } else if (padding_count > 0) {
+            // No chars after padding
+            return false;
+        } else {
+            // Check valid base64 char
+            const valid = (c >= 'A' and c <= 'Z') or
+                (c >= 'a' and c <= 'z') or
+                (c >= '0' and c <= '9') or
+                c == '+' or c == '/';
+            if (!valid) return false;
+        }
+    }
+    return padding_count <= 2;
+}
+
 // ============================================================================
 // URL-Safe Base64 Encoding
 // ============================================================================
@@ -68,6 +110,46 @@ pub fn decodeUrlSafe(allocator: std.mem.Allocator, encoded: []const u8) ![]u8 {
     const decoded = try allocator.alloc(u8, max_decoded_len);
     try decoder.decode(decoded, encoded);
     return decoded;
+}
+
+/// Encode UTF-8 string to URL-safe base64
+///
+/// Caller owns returned memory
+pub fn encodeStringUrlSafe(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
+    return encodeUrlSafe(allocator, str);
+}
+
+/// Decode URL-safe base64 to UTF-8 string
+///
+/// Caller owns returned memory
+pub fn decodeUrlSafeToString(allocator: std.mem.Allocator, encoded: []const u8) ![]u8 {
+    return decodeUrlSafe(allocator, encoded);
+}
+
+/// Validate URL-safe base64 string
+///
+/// Checks for valid alphabet (A-Z, a-z, 0-9, -, _) and no padding
+pub fn isValidUrlSafe(encoded: []const u8) bool {
+    if (encoded.len == 0) return true;
+
+    for (encoded) |c| {
+        const valid = (c >= 'A' and c <= 'Z') or
+            (c >= 'a' and c <= 'z') or
+            (c >= '0' and c <= '9') or
+            c == '-' or c == '_';
+        if (!valid) return false;
+    }
+    return true;
+}
+
+/// Calculate encoded size for URL-safe base64
+pub fn calcEncodedSizeUrlSafe(data_len: usize) usize {
+    return std.base64.url_safe_no_pad.Encoder.calcSize(data_len);
+}
+
+/// Calculate maximum decoded size for URL-safe base64
+pub fn calcDecodedSizeUrlSafe(encoded_len: usize) !usize {
+    return std.base64.url_safe_no_pad.Decoder.calcSizeForSlice(&[_]u8{0} ** encoded_len);
 }
 
 // ============================================================================
@@ -163,4 +245,116 @@ test "calcEncodedSize" {
     try testing.expectEqual(@as(usize, 4), calcEncodedSize(3));
     try testing.expectEqual(@as(usize, 8), calcEncodedSize(4));
     try testing.expectEqual(@as(usize, 8), calcEncodedSize(5));
+}
+
+test "encodeString" {
+    const encoded = try encodeString(testing.allocator, "Hello");
+    defer testing.allocator.free(encoded);
+    try testing.expectEqualStrings("SGVsbG8=", encoded);
+
+    const encoded2 = try encodeString(testing.allocator, "Hello, world!");
+    defer testing.allocator.free(encoded2);
+    try testing.expectEqualStrings("SGVsbG8sIHdvcmxkIQ==", encoded2);
+}
+
+test "decodeToString" {
+    const decoded = try decodeToString(testing.allocator, "SGVsbG8=");
+    defer testing.allocator.free(decoded);
+    try testing.expectEqualStrings("Hello", decoded);
+
+    const decoded2 = try decodeToString(testing.allocator, "SGVsbG8sIHdvcmxkIQ==");
+    defer testing.allocator.free(decoded2);
+    try testing.expectEqualStrings("Hello, world!", decoded2);
+}
+
+test "isValid - valid strings" {
+    try testing.expect(isValid(""));
+    try testing.expect(isValid("SGVsbG8="));
+    try testing.expect(isValid("SGVsbG8sIHdvcmxkIQ=="));
+    try testing.expect(isValid("Zm9v"));
+    try testing.expect(isValid("Zm9vYg=="));
+}
+
+test "isValid - invalid strings" {
+    try testing.expect(!isValid("!!!"));
+    try testing.expect(!isValid("SGVsbG8")); // Missing padding
+    try testing.expect(!isValid("SGVs=bG8")); // Padding in middle
+    try testing.expect(!isValid("SGVsbG8====")); // Too much padding
+    try testing.expect(!isValid("SGVsbG8@")); // Invalid char
+}
+
+test "encodeStringUrlSafe" {
+    const encoded = try encodeStringUrlSafe(testing.allocator, "test");
+    defer testing.allocator.free(encoded);
+
+    // Should not contain + / or =
+    for (encoded) |c| {
+        try testing.expect(c != '+');
+        try testing.expect(c != '/');
+        try testing.expect(c != '=');
+    }
+
+    const decoded = try decodeUrlSafeToString(testing.allocator, encoded);
+    defer testing.allocator.free(decoded);
+    try testing.expectEqualStrings("test", decoded);
+}
+
+test "decodeUrlSafeToString" {
+    const data = &[_]u8{ 72, 101, 108, 108, 111 }; // "Hello"
+    const encoded = try encodeUrlSafe(testing.allocator, data);
+    defer testing.allocator.free(encoded);
+
+    const decoded = try decodeUrlSafeToString(testing.allocator, encoded);
+    defer testing.allocator.free(decoded);
+    try testing.expectEqualStrings("Hello", decoded);
+}
+
+test "isValidUrlSafe - valid strings" {
+    try testing.expect(isValidUrlSafe(""));
+    try testing.expect(isValidUrlSafe("SGVsbG8"));
+    try testing.expect(isValidUrlSafe("YWJj"));
+    try testing.expect(isValidUrlSafe("_-_-"));
+}
+
+test "isValidUrlSafe - invalid strings" {
+    try testing.expect(!isValidUrlSafe("SGVsbG8=")); // Has padding
+    try testing.expect(!isValidUrlSafe("+++")); // Has +
+    try testing.expect(!isValidUrlSafe("///")); // Has /
+    try testing.expect(!isValidUrlSafe("SGVs@bG8")); // Invalid char
+}
+
+test "calcEncodedSizeUrlSafe" {
+    try testing.expectEqual(@as(usize, 0), calcEncodedSizeUrlSafe(0));
+    try testing.expectEqual(@as(usize, 2), calcEncodedSizeUrlSafe(1));
+    try testing.expectEqual(@as(usize, 3), calcEncodedSizeUrlSafe(2));
+    try testing.expectEqual(@as(usize, 4), calcEncodedSizeUrlSafe(3));
+    try testing.expectEqual(@as(usize, 6), calcEncodedSizeUrlSafe(4));
+}
+
+test "string round-trip" {
+    const strings = [_][]const u8{ "", "a", "Hello", "Hello, world!" };
+
+    for (strings) |str| {
+        const encoded = try encodeString(testing.allocator, str);
+        defer testing.allocator.free(encoded);
+
+        const decoded = try decodeToString(testing.allocator, encoded);
+        defer testing.allocator.free(decoded);
+
+        try testing.expectEqualStrings(str, decoded);
+    }
+}
+
+test "url-safe string round-trip" {
+    const strings = [_][]const u8{ "", "test", "Hello", "🚀" };
+
+    for (strings) |str| {
+        const encoded = try encodeStringUrlSafe(testing.allocator, str);
+        defer testing.allocator.free(encoded);
+
+        const decoded = try decodeUrlSafeToString(testing.allocator, encoded);
+        defer testing.allocator.free(decoded);
+
+        try testing.expectEqualStrings(str, decoded);
+    }
 }

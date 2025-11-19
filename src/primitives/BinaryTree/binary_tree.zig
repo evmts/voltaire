@@ -48,6 +48,7 @@ pub const LeafNode = struct {
 };
 
 /// Convert address to 32-byte key format (prepend 12 zero bytes)
+/// Note: This function takes exactly [20]u8, so validation is compile-time enforced
 pub fn addressToKey(addr: [20]u8) [32]u8 {
     var k: [32]u8 = undefined;
     @memset(k[0..12], 0);
@@ -273,6 +274,23 @@ pub fn rootHash(self: *BinaryTree) [32]u8 {
     return hashNode(self.root);
 }
 
+/// Compute root hash as hex string (0x-prefixed lowercase)
+pub fn rootHashHex(self: *BinaryTree, buf: []u8) ![]const u8 {
+    if (buf.len < 66) return error.BufferTooSmall; // "0x" + 64 hex chars
+
+    const h = self.rootHash();
+    buf[0] = '0';
+    buf[1] = 'x';
+
+    const hex_chars = "0123456789abcdef";
+    for (h, 0..) |byte, i| {
+        buf[2 + i * 2] = hex_chars[byte >> 4];
+        buf[2 + i * 2 + 1] = hex_chars[byte & 0x0F];
+    }
+
+    return buf[0..66];
+}
+
 test "BinaryTree - addressToKey" {
     const addr = [_]u8{ 0xf3, 0x9f } ++ [_]u8{0} ** 18;
     const k = addressToKey(addr);
@@ -389,4 +407,105 @@ test "BinaryTree - AccountData layout" {
     try std.testing.expectEqual(@as(u24, 1024), acc.code_size);
     try std.testing.expectEqual(@as(u64, 42), acc.nonce);
     try std.testing.expectEqual(@as(u128, 1000000000000000000), acc.balance);
+}
+
+test "BinaryTree - rootHashHex empty tree" {
+    var tree = init(std.testing.allocator);
+    defer tree.deinit();
+
+    var buf: [66]u8 = undefined;
+    const hex = try tree.rootHashHex(&buf);
+
+    try std.testing.expectEqual(@as(usize, 66), hex.len);
+    try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
+
+    // Empty tree should have all zeros
+    const expected = "0x" ++ "00" ** 32;
+    try std.testing.expectEqualStrings(expected, hex);
+}
+
+test "BinaryTree - rootHashHex after insert" {
+    var tree = init(std.testing.allocator);
+    defer tree.deinit();
+
+    var buf1: [66]u8 = undefined;
+    const h1 = try tree.rootHashHex(&buf1);
+
+    var k: [32]u8 = undefined;
+    @memset(&k, 0);
+    var v: [32]u8 = undefined;
+    @memset(&v, 0);
+    v[0] = 1;
+
+    try tree.insert(k, v);
+
+    var buf2: [66]u8 = undefined;
+    const h2 = try tree.rootHashHex(&buf2);
+
+    // Hash should change after insert
+    try std.testing.expect(!std.mem.eql(u8, h1, h2));
+    try std.testing.expect(std.mem.startsWith(u8, h2, "0x"));
+}
+
+test "BinaryTree - rootHashHex format validation" {
+    var tree = init(std.testing.allocator);
+    defer tree.deinit();
+
+    var k: [32]u8 = undefined;
+    @memset(&k, 0);
+    k[31] = 5;
+    var v: [32]u8 = undefined;
+    @memset(&v, 0);
+    v[31] = 0x42;
+
+    try tree.insert(k, v);
+
+    var buf: [66]u8 = undefined;
+    const hex = try tree.rootHashHex(&buf);
+
+    // Check length
+    try std.testing.expectEqual(@as(usize, 66), hex.len);
+
+    // Check prefix
+    try std.testing.expectEqual(@as(u8, '0'), hex[0]);
+    try std.testing.expectEqual(@as(u8, 'x'), hex[1]);
+
+    // Check all characters are valid hex (lowercase)
+    for (hex[2..]) |c| {
+        const valid = (c >= '0' and c <= '9') or (c >= 'a' and c <= 'f');
+        try std.testing.expect(valid);
+    }
+}
+
+test "BinaryTree - rootHashHex buffer too small" {
+    var tree = init(std.testing.allocator);
+    defer tree.deinit();
+
+    var buf: [65]u8 = undefined; // Too small
+    const result = tree.rootHashHex(&buf);
+
+    try std.testing.expectError(error.BufferTooSmall, result);
+}
+
+test "BinaryTree - rootHashHex determinism" {
+    var tree = init(std.testing.allocator);
+    defer tree.deinit();
+
+    var k: [32]u8 = undefined;
+    @memset(&k, 0);
+    k[31] = 10;
+    var v: [32]u8 = undefined;
+    @memset(&v, 0);
+    v[31] = 0xab;
+
+    try tree.insert(k, v);
+
+    var buf1: [66]u8 = undefined;
+    const h1 = try tree.rootHashHex(&buf1);
+
+    var buf2: [66]u8 = undefined;
+    const h2 = try tree.rootHashHex(&buf2);
+
+    // Same tree should produce same hex
+    try std.testing.expectEqualStrings(h1, h2);
 }
