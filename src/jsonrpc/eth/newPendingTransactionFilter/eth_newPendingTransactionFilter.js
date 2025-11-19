@@ -2,15 +2,13 @@
  * @fileoverview eth_newPendingTransactionFilter JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -33,17 +31,10 @@ export const method = "eth_newPendingTransactionFilter";
  */
 
 /**
- * Request for `eth_newPendingTransactionFilter`
- *
- * @typedef {JsonRpcRequest<'eth_newPendingTransactionFilter', []>} Request
- */
-
-/**
  * Creates a eth_newPendingTransactionFilter JSON-RPC request
  *
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function NewPendingTransactionFilterRequest(id = null) {
-	return /** @type {Request} */ (createRequest(method, [], id));
+export function NewPendingTransactionFilterRequest() {
+	return { method };
 }

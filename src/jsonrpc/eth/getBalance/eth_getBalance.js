@@ -2,15 +2,13 @@
  * @fileoverview eth_getBalance JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -36,18 +34,11 @@ export const method = "eth_getBalance";
  */
 
 /**
- * Request for `eth_getBalance`
- *
- * @typedef {JsonRpcRequest<'eth_getBalance', [Address, BlockSpec]>} Request
- */
-
-/**
  * Creates an eth_getBalance JSON-RPC request
  *
  * @param {Address | `0x${string}`} address - Hex encoded address
  * @param {BlockSpec} [block='latest'] - Block number, tag, or block hash
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  *
  * @example
  * ```js
@@ -55,6 +46,6 @@ export const method = "eth_getBalance";
  * // { jsonrpc: '2.0', method: 'eth_getBalance', params: [...], id: null }
  * ```
  */
-export function GetBalanceRequest(address, block = "latest", id = null) {
-	return /** @type {Request} */ (createRequest(method, [address, block], id));
+export function GetBalanceRequest(address, block = "latest") {
+	return { method, params: [address, block] };
 }

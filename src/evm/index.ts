@@ -14,6 +14,14 @@ export * as Host from "./Host/index.js";
 // Re-export types
 export type { BrandedFrame, EvmError } from "./Frame/FrameType.js";
 export type { BrandedHost } from "./Host/HostType.js";
+export type {
+	InstructionHandler,
+	CallType,
+	CallParams,
+	CallResult,
+	CreateParams,
+	CreateResult,
+} from "./InstructionHandlerType.js";
 
 // Arithmetic opcodes (0x01-0x0b)
 export * as Arithmetic from "./arithmetic/index.js";

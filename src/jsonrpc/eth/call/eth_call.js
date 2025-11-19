@@ -2,15 +2,13 @@
  * @fileoverview eth_call JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -48,18 +46,11 @@ export const method = "eth_call";
  */
 
 /**
- * Request for `eth_call`
- *
- * @typedef {JsonRpcRequest<'eth_call', [CallParams, BlockSpec]>} Request
- */
-
-/**
  * Creates an eth_call JSON-RPC request
  *
  * @param {CallParams} params - Transaction call parameters
  * @param {BlockSpec} [block='latest'] - Block number, tag, or block hash
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  *
  * @example
  * ```js
@@ -69,6 +60,6 @@ export const method = "eth_call";
  * }, 'latest')
  * ```
  */
-export function CallRequest(params, block = "latest", id = null) {
-	return /** @type {Request} */ (createRequest(method, [params, block], id));
+export function CallRequest(params, block = "latest") {
+	return { method, params: [params, block] };
 }

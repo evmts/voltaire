@@ -2,15 +2,13 @@
  * @fileoverview eth_maxPriorityFeePerGas JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -33,17 +31,10 @@ export const method = "eth_maxPriorityFeePerGas";
  */
 
 /**
- * Request for `eth_maxPriorityFeePerGas`
- *
- * @typedef {JsonRpcRequest<'eth_maxPriorityFeePerGas', []>} Request
- */
-
-/**
  * Creates a eth_maxPriorityFeePerGas JSON-RPC request
  *
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function MaxPriorityFeePerGasRequest(id = null) {
-	return /** @type {Request} */ (createRequest(method, [], id));
+export function MaxPriorityFeePerGasRequest() {
+	return { method };
 }

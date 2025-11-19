@@ -2,15 +2,13 @@
  * @fileoverview eth_getProof JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -36,22 +34,13 @@ export const method = "eth_getProof";
  */
 
 /**
- * Request for `eth_getProof`
- *
- * @typedef {JsonRpcRequest<'eth_getProof', [Address, `0x${string}`[], BlockSpec]>} Request
- */
-
-/**
  * Creates a eth_getProof JSON-RPC request
  *
  * @param {Address} address
  * @param {`0x${string}`[]} [block]
  * @param {BlockSpec} params
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function GetProofRequest(address, block, params, id = null) {
-	return /** @type {Request} */ (
-		createRequest(method, [address, block, params], id)
-	);
+export function GetProofRequest(address, block, params) {
+	return { method, params: [address, block, params] };
 }

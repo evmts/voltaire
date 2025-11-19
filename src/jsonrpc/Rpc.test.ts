@@ -1,5 +1,5 @@
 /**
- * Tests for Rpc namespace - Request constructor API
+ * Tests for Rpc namespace - Request constructor API (EIP-1193 compliant)
  */
 
 import { describe, expect, it } from "vitest";
@@ -12,11 +12,8 @@ describe("Rpc.Eth Request Constructors", () => {
 		);
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_getBalance",
 			params: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "latest"],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -27,11 +24,8 @@ describe("Rpc.Eth Request Constructors", () => {
 		);
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_getBalance",
 			params: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x1234"],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -45,7 +39,6 @@ describe("Rpc.Eth Request Constructors", () => {
 		);
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_call",
 			params: [
 				{
@@ -54,8 +47,6 @@ describe("Rpc.Eth Request Constructors", () => {
 				},
 				"latest",
 			],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -63,11 +54,7 @@ describe("Rpc.Eth Request Constructors", () => {
 		const request = Rpc.Eth.BlockNumberRequest();
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_blockNumber",
-			params: [],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -75,11 +62,8 @@ describe("Rpc.Eth Request Constructors", () => {
 		const request = Rpc.Eth.GetBlockByNumberRequest("0x1234");
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_getBlockByNumber",
 			params: ["0x1234", false],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -87,23 +71,8 @@ describe("Rpc.Eth Request Constructors", () => {
 		const request = Rpc.Eth.GetBlockByNumberRequest("0x1234", true);
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_getBlockByNumber",
 			params: ["0x1234", true],
-			id: null,
-			__brand: "JsonRpcRequest",
-		});
-	});
-
-	it("creates request with custom id", () => {
-		const request = Rpc.Eth.BlockNumberRequest(123);
-
-		expect(request).toEqual({
-			jsonrpc: "2.0",
-			method: "eth_blockNumber",
-			params: [],
-			id: 123,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -113,13 +82,10 @@ describe("Rpc.Eth Request Constructors", () => {
 		);
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_getTransactionByHash",
 			params: [
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -127,11 +93,8 @@ describe("Rpc.Eth Request Constructors", () => {
 		const request = Rpc.Eth.SendRawTransactionRequest("0xabcdef");
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_sendRawTransaction",
 			params: ["0xabcdef"],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
 	});
 
@@ -139,11 +102,20 @@ describe("Rpc.Eth Request Constructors", () => {
 		const request = Rpc.Eth.ChainIdRequest();
 
 		expect(request).toEqual({
-			jsonrpc: "2.0",
 			method: "eth_chainId",
-			params: [],
-			id: null,
-			__brand: "JsonRpcRequest",
 		});
+	});
+
+	it("returns RequestArguments structure {method, params?}", () => {
+		const requestWithParams = Rpc.Eth.GetBalanceRequest(
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+		);
+		const requestWithoutParams = Rpc.Eth.BlockNumberRequest();
+
+		expect(requestWithParams).toHaveProperty("method");
+		expect(requestWithParams).toHaveProperty("params");
+
+		expect(requestWithoutParams).toHaveProperty("method");
+		expect(requestWithoutParams).not.toHaveProperty("params");
 	});
 });

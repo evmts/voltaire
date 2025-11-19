@@ -2,15 +2,13 @@
  * @fileoverview eth_getBlockByNumber JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -33,25 +31,12 @@ export const method = "eth_getBlockByNumber";
  */
 
 /**
- * Request for `eth_getBlockByNumber`
- *
- * @typedef {JsonRpcRequest<'eth_getBlockByNumber', [BlockSpec, boolean]>} Request
- */
-
-/**
  * Creates a eth_getBlockByNumber JSON-RPC request
  *
  * @param {BlockSpec} block - Block number, tag, or block hash
  * @param {boolean} [fullTransactions=false] - If true, returns full transaction objects
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function GetBlockByNumberRequest(
-	block,
-	fullTransactions = false,
-	id = null,
-) {
-	return /** @type {Request} */ (
-		createRequest(method, [block, fullTransactions], id)
-	);
+export function GetBlockByNumberRequest(block, fullTransactions = false) {
+	return { method, params: [block, fullTransactions] };
 }

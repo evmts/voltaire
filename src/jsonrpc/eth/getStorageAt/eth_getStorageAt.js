@@ -2,15 +2,13 @@
  * @fileoverview eth_getStorageAt JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -36,22 +34,13 @@ export const method = "eth_getStorageAt";
  */
 
 /**
- * Request for `eth_getStorageAt`
- *
- * @typedef {JsonRpcRequest<'eth_getStorageAt', [Address, Quantity, BlockSpec]>} Request
- */
-
-/**
  * Creates a eth_getStorageAt JSON-RPC request
  *
  * @param {Address} address
  * @param {Quantity} [block]
  * @param {BlockSpec} params
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function GetStorageAtRequest(address, block, params, id = null) {
-	return /** @type {Request} */ (
-		createRequest(method, [address, block, params], id)
-	);
+export function GetStorageAtRequest(address, block, params) {
+	return { method, params: [address, block, params] };
 }

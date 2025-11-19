@@ -2,15 +2,13 @@
  * @fileoverview eth_getTransactionByHash JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -32,18 +30,11 @@ export const method = "eth_getTransactionByHash";
  */
 
 /**
- * Request for `eth_getTransactionByHash`
- *
- * @typedef {JsonRpcRequest<'eth_getTransactionByHash', [Hash]>} Request
- */
-
-/**
  * Creates a eth_getTransactionByHash JSON-RPC request
  *
  * @param {Hash} address
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function GetTransactionByHashRequest(address, id = null) {
-	return /** @type {Request} */ (createRequest(method, [address], id));
+export function GetTransactionByHashRequest(address) {
+	return { method, params: [address] };
 }

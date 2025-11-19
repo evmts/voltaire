@@ -2,15 +2,13 @@
  * @fileoverview eth_getFilterChanges JSON-RPC method
  */
 
-import { createRequest } from "../../types/JsonRpcRequest.js";
-
 /**
  * @typedef {import('../../types/index.js').AddressType} Address
  * @typedef {import('../../types/index.js').Hash} Hash
  * @typedef {import('../../types/index.js').Quantity} Quantity
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
- * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
 /**
@@ -34,18 +32,11 @@ export const method = "eth_getFilterChanges";
  */
 
 /**
- * Request for `eth_getFilterChanges`
- *
- * @typedef {JsonRpcRequest<'eth_getFilterChanges', [Quantity]>} Request
- */
-
-/**
  * Creates a eth_getFilterChanges JSON-RPC request
  *
  * @param {Quantity} address
- * @param {number | string | null} [id] - Optional request ID
- * @returns {Request}
+ * @returns {RequestArguments}
  */
-export function GetFilterChangesRequest(address, id = null) {
-	return /** @type {Request} */ (createRequest(method, [address], id));
+export function GetFilterChangesRequest(address) {
+	return { method, params: [address] };
 }
