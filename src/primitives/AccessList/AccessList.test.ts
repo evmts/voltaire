@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { HashType } from "../../Hash/HashType/HashType.js";
+import type { HashType } from "../../Hash/HashType.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type {
 	BrandedAccessList as AccessListType,

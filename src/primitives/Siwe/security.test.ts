@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import * as Secp256k1 from "../../crypto/Secp256k1/index.js";
 import * as Address from "../Address/internal-index.js";
-import type { HashType } from "../Hash/HashType/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { BrandedMessage, Signature } from "./SiweMessageType.js";
 import { format } from "./format.js";

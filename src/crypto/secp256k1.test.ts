@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import type { HashType } from "../primitives/Hash/HashType.js";
 import { keccak256String } from "../primitives/Hash/HashType/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";

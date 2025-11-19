@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash } from "../../../crypto/Keccak256/hash.js";
 import { derivePublicKey } from "../../../crypto/Secp256k1/derivePublicKey.js";
-import { PrivateKey } from "../../PrivateKey/BrandedPrivateKey/index.js";
+import { PrivateKey } from "../../PrivateKey/index.js";
 import { InvalidLengthError } from "../../errors/ValidationError.js";
 import { Address } from "../index.js";
 import * as AddressNamespace from "./index.js";

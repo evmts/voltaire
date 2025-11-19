@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import type { HashType } from "../primitives/Hash/HashType.js";
 import { equals } from "../primitives/Hash/HashType/equals.js";
 import { fromHex } from "../primitives/Hash/HashType/fromHex.js";
 import { keccak256String } from "../primitives/Hash/HashType/index.js";

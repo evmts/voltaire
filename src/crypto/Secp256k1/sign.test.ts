@@ -5,7 +5,7 @@ import { Hash } from "../../primitives/Hash/index.js";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
 import { sign } from "./sign.js";
 
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 describe("Secp256k1.sign", () => {
 	describe("RFC 6979 deterministic signing", () => {
 		// Test vectors from RFC 6979

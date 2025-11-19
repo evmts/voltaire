@@ -1,6 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 import { CURVE_ORDER } from "./constants.js";
 import { isValidSignature } from "./isValidSignature.js";
 import { sign } from "./sign.js";

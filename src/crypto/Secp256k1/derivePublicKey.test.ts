@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 
-import { PrivateKey } from "../../primitives/PrivateKey/BrandedPrivateKey/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 describe("Secp256k1.derivePublicKey", () => {
 	describe("successful derivation", () => {
 		it("should derive public key from private key", () => {
