@@ -909,32 +909,32 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 const y_norm = if (rhs.ge(modulus)) rhs.wrapping_sub(modulus) else rhs;
 
                 const sum_result = x_norm.overflowing_add(y_norm);
-                const sum = sum_result.result;
+                const sum_val = sum_result.result;
 
-                const mod_result = sum.overflowing_sub(modulus);
+                const mod_result = sum_val.overflowing_sub(modulus);
 
                 if (sum_result.overflow or !mod_result.overflow) {
                     return mod_result.result;
                 } else {
-                    return sum;
+                    return sum_val;
                 }
             }
 
             // Fast path for small values
             if (self.lt(modulus) and rhs.lt(modulus)) {
-                const sum = self.wrapping_add(rhs);
-                if (sum.lt(self) or sum.ge(modulus)) {
+                const sum_result = self.wrapping_add(rhs);
+                if (sum_result.lt(self) or sum_result.ge(modulus)) {
                     // Overflow occurred or sum >= modulus
-                    return sum.wrapping_sub(modulus);
+                    return sum_result.wrapping_sub(modulus);
                 }
-                return sum;
+                return sum_result;
             }
 
             // Reduce operands first
             const a = self.reduce_mod(modulus);
             const b = rhs.reduce_mod(modulus);
-            const sum = a.wrapping_add(b);
-            return sum.reduce_mod(modulus);
+            const sum_val = a.wrapping_add(b);
+            return sum_val.reduce_mod(modulus);
         }
 
         pub fn mul_mod(self: Self, rhs: Self, modulus: Self) Self {
@@ -946,8 +946,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
             // For small modulus, we can use direct multiplication
             if (modulus.bit_len() <= bits / 2) {
-                const product = a.wrapping_mul(b);
-                return product.reduce_mod(modulus);
+                const product_val = a.wrapping_mul(b);
+                return product_val.reduce_mod(modulus);
             }
 
             // Use Russian peasant multiplication for larger values
@@ -1844,6 +1844,56 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 result |= @as(u256, self.limbs[i]) << @intCast(i * 64);
             }
 
+            return result;
+        }
+
+        /// Clone the value (returns a copy)
+        /// Since Uint is a value type, this is effectively a no-op but provided for API parity
+        pub inline fn clone(self: Self) Self {
+            return self;
+        }
+
+        /// Sum multiple Uint values with wrapping
+        /// Returns the sum of all values modulo 2^bits
+        pub fn sum(values: []const Self) Self {
+            var result = ZERO;
+            for (values) |value| {
+                result = result.wrapping_add(value);
+            }
+            return result;
+        }
+
+        /// Multiply multiple Uint values with wrapping
+        /// Returns the product of all values modulo 2^bits
+        pub fn product(values: []const Self) Self {
+            var result = ONE;
+            for (values) |value| {
+                result = result.wrapping_mul(value);
+            }
+            return result;
+        }
+
+        /// Find minimum of multiple Uint values
+        /// Returns the smallest value in the slice
+        /// Returns ZERO if slice is empty
+        pub fn minimum(values: []const Self) Self {
+            if (values.len == 0) return ZERO;
+            var result = values[0];
+            for (values[1..]) |value| {
+                result = result.min(value);
+            }
+            return result;
+        }
+
+        /// Find maximum of multiple Uint values
+        /// Returns the largest value in the slice
+        /// Returns ZERO if slice is empty
+        pub fn maximum(values: []const Self) Self {
+            if (values.len == 0) return ZERO;
+            var result = values[0];
+            for (values[1..]) |value| {
+                result = result.max(value);
+            }
             return result;
         }
     };
@@ -3863,4 +3913,201 @@ test "wrapping_mul" {
     const small_result_native = small_a_native *% small_b_native;
     const small_result = small_a.wrapping_mul(small_b);
     try testing.expectEqual(small_result_native, small_result.to_u256().?);
+}
+
+test "clone" {
+    const U256 = Uint(256, 4);
+
+    const value = U256.from_int(100);
+    const cloned = value.clone();
+    try testing.expect(value.eq(cloned));
+
+    const zero = U256.ZERO.clone();
+    try testing.expect(zero.is_zero());
+
+    const max = U256.MAX.clone();
+    try testing.expect(max.eq(U256.MAX));
+}
+
+test "sum" {
+    const U256 = Uint(256, 4);
+
+    // Sum multiple values
+    const values = [_]U256{
+        U256.from_int(10),
+        U256.from_int(20),
+        U256.from_int(30),
+    };
+    const result = U256.sum(&values);
+    try testing.expectEqual(@as(u256, 60), result.to_native());
+
+    // Sum with empty slice returns ZERO
+    const empty_result = U256.sum(&[_]U256{});
+    try testing.expect(empty_result.is_zero());
+
+    // Sum single value
+    const single = [_]U256{U256.from_int(42)};
+    const single_result = U256.sum(&single);
+    try testing.expectEqual(@as(u256, 42), single_result.to_native());
+
+    // Sum with ZERO
+    const with_zero = [_]U256{
+        U256.from_int(10),
+        U256.ZERO,
+        U256.from_int(20),
+    };
+    const with_zero_result = U256.sum(&with_zero);
+    try testing.expectEqual(@as(u256, 30), with_zero_result.to_native());
+
+    // Wrapping on overflow
+    const overflow = [_]U256{ U256.MAX, U256.ONE };
+    const overflow_result = U256.sum(&overflow);
+    try testing.expect(overflow_result.is_zero());
+
+    // Large overflow
+    const large_overflow = [_]U256{ U256.MAX, U256.from_int(10) };
+    const large_overflow_result = U256.sum(&large_overflow);
+    try testing.expectEqual(@as(u256, 9), large_overflow_result.to_native());
+}
+
+test "product" {
+    const U256 = Uint(256, 4);
+
+    // Multiply multiple values
+    const values = [_]U256{
+        U256.from_int(2),
+        U256.from_int(3),
+        U256.from_int(5),
+    };
+    const result = U256.product(&values);
+    try testing.expectEqual(@as(u256, 30), result.to_native());
+
+    // Product of empty slice returns ONE
+    const empty_result = U256.product(&[_]U256{});
+    try testing.expect(empty_result.eq(U256.ONE));
+
+    // Product single value
+    const single = [_]U256{U256.from_int(42)};
+    const single_result = U256.product(&single);
+    try testing.expectEqual(@as(u256, 42), single_result.to_native());
+
+    // Product with ZERO returns ZERO
+    const with_zero = [_]U256{
+        U256.from_int(10),
+        U256.ZERO,
+        U256.from_int(5),
+    };
+    const with_zero_result = U256.product(&with_zero);
+    try testing.expect(with_zero_result.is_zero());
+
+    // Product with ONE
+    const with_one = [_]U256{
+        U256.from_int(42),
+        U256.ONE,
+        U256.from_int(2),
+    };
+    const with_one_result = U256.product(&with_one);
+    try testing.expectEqual(@as(u256, 84), with_one_result.to_native());
+
+    // Wrapping on overflow
+    const overflow = [_]U256{ U256.MAX, U256.from_int(2) };
+    const overflow_result = U256.product(&overflow);
+    const expected = (std.math.maxInt(u256) *% 2);
+    try testing.expectEqual(expected, overflow_result.to_native());
+}
+
+test "minimum" {
+    const U256 = Uint(256, 4);
+
+    // Find minimum of multiple values
+    const values = [_]U256{
+        U256.from_int(100),
+        U256.from_int(50),
+        U256.from_int(200),
+        U256.from_int(75),
+    };
+    const result = U256.minimum(&values);
+    try testing.expectEqual(@as(u256, 50), result.to_native());
+
+    // Minimum of empty slice returns ZERO
+    const empty_result = U256.minimum(&[_]U256{});
+    try testing.expect(empty_result.is_zero());
+
+    // Minimum single value
+    const single = [_]U256{U256.from_int(42)};
+    const single_result = U256.minimum(&single);
+    try testing.expectEqual(@as(u256, 42), single_result.to_native());
+
+    // Minimum with equal values
+    const equal = [_]U256{
+        U256.from_int(100),
+        U256.from_int(100),
+    };
+    const equal_result = U256.minimum(&equal);
+    try testing.expectEqual(@as(u256, 100), equal_result.to_native());
+
+    // Minimum with ZERO
+    const with_zero = [_]U256{
+        U256.from_int(100),
+        U256.ZERO,
+        U256.from_int(50),
+    };
+    const with_zero_result = U256.minimum(&with_zero);
+    try testing.expect(with_zero_result.is_zero());
+
+    // Minimum with MAX
+    const with_max = [_]U256{
+        U256.MAX,
+        U256.from_int(100),
+    };
+    const with_max_result = U256.minimum(&with_max);
+    try testing.expectEqual(@as(u256, 100), with_max_result.to_native());
+}
+
+test "maximum" {
+    const U256 = Uint(256, 4);
+
+    // Find maximum of multiple values
+    const values = [_]U256{
+        U256.from_int(100),
+        U256.from_int(50),
+        U256.from_int(200),
+        U256.from_int(75),
+    };
+    const result = U256.maximum(&values);
+    try testing.expectEqual(@as(u256, 200), result.to_native());
+
+    // Maximum of empty slice returns ZERO
+    const empty_result = U256.maximum(&[_]U256{});
+    try testing.expect(empty_result.is_zero());
+
+    // Maximum single value
+    const single = [_]U256{U256.from_int(42)};
+    const single_result = U256.maximum(&single);
+    try testing.expectEqual(@as(u256, 42), single_result.to_native());
+
+    // Maximum with equal values
+    const equal = [_]U256{
+        U256.from_int(100),
+        U256.from_int(100),
+    };
+    const equal_result = U256.maximum(&equal);
+    try testing.expectEqual(@as(u256, 100), equal_result.to_native());
+
+    // Maximum with ZERO
+    const with_zero = [_]U256{
+        U256.from_int(100),
+        U256.ZERO,
+        U256.from_int(50),
+    };
+    const with_zero_result = U256.maximum(&with_zero);
+    try testing.expectEqual(@as(u256, 100), with_zero_result.to_native());
+
+    // Maximum with MAX
+    const with_max = [_]U256{
+        U256.MAX,
+        U256.from_int(100),
+    };
+    const with_max_result = U256.maximum(&with_max);
+    try testing.expect(with_max_result.eq(U256.MAX));
 }

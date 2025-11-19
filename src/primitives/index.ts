@@ -60,9 +60,18 @@ export * as BrandedAuthorization from "./Authorization/index.js"; // Re-exported
 // EVM
 export { Bytecode } from "./Bytecode/index.js";
 export * as BrandedBytecode from "./Bytecode/index.js";
+export * as ContractCode from "./ContractCode/index.js";
+export * as InitCode from "./InitCode/index.js";
+export * as RuntimeCode from "./RuntimeCode/index.js";
+export * as Metadata from "./Metadata/index.js";
+export * as SourceMap from "./SourceMap/index.js";
 export * as Opcode from "./Opcode/index.js";
 export * as Gas from "./Gas/index.js";
 export * as GasConstants from "./GasConstants/index.js";
+export * as GasCosts from "./GasCosts/index.js";
+export * as GasUsed from "./GasUsed/index.js";
+export * as GasEstimate from "./GasEstimate/index.js";
+export * as GasRefund from "./GasRefund/index.js";
 export { StorageKey } from "./State/index.js";
 export * as BrandedStorageKey from "./State/index.js";
 
@@ -73,15 +82,87 @@ export { Chain } from "./Chain/index.js";
 export * as BrandedChain from "./Chain/index.js";
 export * as FeeMarket from "./FeeMarket/index.js";
 export * as Hardfork from "./Hardfork/index.js";
+export * as ForkId from "./ForkId/index.js";
+
+// Network & Peer information
+export * as NetworkId from "./NetworkId/index.js";
+export * as ProtocolVersion from "./ProtocolVersion/index.js";
+export * as PeerId from "./PeerId/index.js";
+export * as NodeInfo from "./NodeInfo/index.js";
+export * as PeerInfo from "./PeerInfo/index.js";
+
+// Consensus layer (post-merge)
+export * as Slot from "./Slot/index.js";
+export * as Epoch from "./Epoch/index.js";
+export * as ValidatorIndex from "./ValidatorIndex/index.js";
+export * as WithdrawalIndex from "./WithdrawalIndex/index.js";
+export * as BeaconBlockRoot from "./BeaconBlockRoot/index.js";
+export * as Withdrawal from "./Withdrawal/index.js";
+
+// Block types
+export * as Block from "./Block/index.js";
+export * as BlockBody from "./BlockBody/index.js";
+export * as BlockHeader from "./BlockHeader/index.js";
+export * as Uncle from "./Uncle/index.js";
 
 // Events & Logs
 export * from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 
+// Filters
+export * as FilterId from "./FilterId/index.js";
+export * as TopicFilter from "./TopicFilter/index.js";
+export * as LogFilter from "./LogFilter/index.js";
+export * as BlockFilter from "./BlockFilter/index.js";
+export * as PendingTransactionFilter from "./PendingTransactionFilter/index.js";
+
+// Contract interaction results
+export * as ReturnData from "./ReturnData/index.js";
+export * as RevertReason from "./RevertReason/index.js";
+export * as ContractResult from "./ContractResult/index.js";
+export * as EncodedData from "./EncodedData/index.js";
+export * as DecodedData from "./DecodedData/index.js";
+
+// Compiler & Source metadata
+export * as CompilerVersion from "./CompilerVersion/index.js";
+export * as License from "./License/index.js";
+
+// Execution tracing (debug_trace* methods)
+export * as TraceConfig from "./TraceConfig/index.js";
+export * as OpStep from "./OpStep/index.js";
+export * as StructLog from "./StructLog/index.js";
+export * as CallTrace from "./CallTrace/index.js";
+export * as TraceResult from "./TraceResult/index.js";
+export * as MemoryDump from "./MemoryDump/index.js";
+export * as StorageDiff from "./StorageDiff/index.js";
+export * as StateDiff from "./StateDiff/index.js";
+export * as SyncStatus from "./SyncStatus/index.js";
+export * as ChainHead from "./ChainHead/index.js";
+
+// Function & Event Selectors
+export * as Selector from "./Selector/index.js";
+export * as FunctionSignature from "./FunctionSignature/index.js";
+export * as EventSignature from "./EventSignature/index.js";
+export * as ErrorSignature from "./ErrorSignature/index.js";
+
+// Receipts & Transaction Metadata
+export * as TransactionHash from "./TransactionHash/index.js";
+export * as TransactionIndex from "./TransactionIndex/index.js";
+export * as LogIndex from "./LogIndex/index.js";
+export * as TransactionStatus from "./TransactionStatus/index.js";
+export * as BlockHash from "./BlockHash/index.js";
+export * as BlockNumber from "./BlockNumber/index.js";
+export * as Receipt from "./Receipt/index.js";
+
 // Standards
 export { Siwe } from "./Siwe/index.js";
 export * as BrandedSiwe from "./Siwe/index.js";
 export * as Ens from "./Ens/index.js";
+
+// EIP-712 Typed Data
+export * as DomainSeparator from "./DomainSeparator/index.js";
+export * as Domain from "./Domain/index.js";
+export * as TypedData from "./TypedData/index.js";
 
 // Data structures
 export * as BinaryTree from "./BinaryTree/index.js";

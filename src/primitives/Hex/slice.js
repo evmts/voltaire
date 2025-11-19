@@ -1,5 +1,5 @@
-import * as OxHex from "ox/Hex";
 import { fromBytes } from "./fromBytes.js";
+import { toBytes } from "./toBytes.js";
 
 /**
  * Slice hex string
@@ -19,7 +19,7 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function slice(hex, start, end) {
-	const bytes = OxHex.toBytes(/** @type {`0x${string}`} */ (hex));
+	const bytes = toBytes(/** @type {import('./HexType.js').HexType} */ (hex));
 	return /** @type {import('./HexType.js').HexType} */ (
 		fromBytes(bytes.slice(start, end))
 	);

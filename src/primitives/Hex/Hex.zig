@@ -345,6 +345,146 @@ pub fn u64ToHex(allocator: std.mem.Allocator, value: u64) ![]u8 {
     return u256ToHex(allocator, value);
 }
 
+// Equals comparison (case-insensitive)
+pub fn equals(hex1: []const u8, hex2: []const u8) bool {
+    if (hex1.len != hex2.len) return false;
+    if (hex1.len < 2) return false;
+    if (!std.mem.eql(u8, hex1[0..2], "0x") or !std.mem.eql(u8, hex2[0..2], "0x")) return false;
+
+    // Compare case-insensitively
+    for (hex1[2..], hex2[2..]) |c1, c2| {
+        const lower1 = if (c1 >= 'A' and c1 <= 'F') c1 + 32 else c1;
+        const lower2 = if (c2 >= 'A' and c2 <= 'F') c2 + 32 else c2;
+        if (lower1 != lower2) return false;
+    }
+    return true;
+}
+
+// Clone hex string (duplicates the string)
+pub fn clone(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
+    return allocator.dupe(u8, hex);
+}
+
+// XOR two hex strings (must be same length)
+pub fn xor(allocator: std.mem.Allocator, hex1: []const u8, hex2: []const u8) ![]u8 {
+    if (hex1.len < 2 or !std.mem.eql(u8, hex1[0..2], "0x")) {
+        return HexError.InvalidHexFormat;
+    }
+    if (hex2.len < 2 or !std.mem.eql(u8, hex2[0..2], "0x")) {
+        return HexError.InvalidHexFormat;
+    }
+
+    const hex1_digits = hex1[2..];
+    const hex2_digits = hex2[2..];
+
+    if (hex1_digits.len != hex2_digits.len) {
+        return HexError.InvalidLength;
+    }
+
+    // Empty hex XOR
+    if (hex1_digits.len == 0) {
+        return allocator.dupe(u8, "0x");
+    }
+
+    const bytes1 = try hexToBytes(allocator, hex1);
+    defer allocator.free(bytes1);
+    const bytes2 = try hexToBytes(allocator, hex2);
+    defer allocator.free(bytes2);
+
+    const result_bytes = try allocator.alloc(u8, bytes1.len);
+    defer allocator.free(result_bytes);
+
+    for (bytes1, bytes2, 0..) |b1, b2, i| {
+        result_bytes[i] = b1 ^ b2;
+    }
+
+    return bytesToHex(allocator, result_bytes);
+}
+
+// Generate random hex of specified size
+pub fn random(allocator: std.mem.Allocator, size_bytes: usize) ![]u8 {
+    if (size_bytes == 0) {
+        return allocator.dupe(u8, "0x");
+    }
+
+    const bytes = try allocator.alloc(u8, size_bytes);
+    defer allocator.free(bytes);
+
+    // Use nanosecond timestamp for better entropy
+    const seed = @as(u64, @intCast(std.time.nanoTimestamp()));
+    var prng = std.Random.DefaultPrng.init(seed);
+    const rand = prng.random();
+    rand.bytes(bytes);
+
+    return bytesToHex(allocator, bytes);
+}
+
+// Create zero-filled hex of specified size
+pub fn zero(allocator: std.mem.Allocator, size_bytes: usize) ![]u8 {
+    if (size_bytes == 0) {
+        return allocator.dupe(u8, "0x");
+    }
+
+    const bytes = try allocator.alloc(u8, size_bytes);
+    defer allocator.free(bytes);
+    @memset(bytes, 0);
+
+    return bytesToHex(allocator, bytes);
+}
+
+// Validate hex string (returns input if valid, otherwise error)
+pub fn validate(hex: []const u8) ![]const u8 {
+    if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) {
+        return HexError.InvalidHexFormat;
+    }
+
+    for (hex[2..]) |c| {
+        const valid = switch (c) {
+            '0'...'9', 'a'...'f', 'A'...'F' => true,
+            else => false,
+        };
+        if (!valid) return HexError.InvalidHexCharacter;
+    }
+
+    return hex;
+}
+
+// Check if hex has specific size in bytes
+pub fn isSized(hex: []const u8, size_bytes: usize) bool {
+    if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) return false;
+    const hex_digits = hex[2..];
+    return hex_digits.len == size_bytes * 2;
+}
+
+// Assert hex has specific size (throws if not)
+pub fn assertSize(hex: []const u8, expected_size: usize) ![]const u8 {
+    if (!isSized(hex, expected_size)) {
+        return HexError.InvalidLength;
+    }
+    return hex;
+}
+
+// Convert boolean to hex (true = 0x01, false = 0x00)
+pub fn fromBoolean(allocator: std.mem.Allocator, value: bool) ![]u8 {
+    const byte: u8 = if (value) 1 else 0;
+    return bytesToHex(allocator, &[_]u8{byte});
+}
+
+// Convert hex to boolean (any non-zero = true, all zero = false)
+pub fn toBoolean(hex: []const u8) !bool {
+    if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) {
+        return HexError.InvalidHexFormat;
+    }
+
+    const hex_digits = hex[2..];
+    if (hex_digits.len == 0) return false;
+
+    for (hex_digits) |c| {
+        if (c != '0') return true;
+    }
+    return false;
+}
+
 // Helper functions
 fn hexCharToValue(c: u8) ?u8 {
     return switch (c) {
@@ -562,9 +702,9 @@ test "from u256" {
     const allocator = testing.allocator;
 
     // Zero
-    const zero = try u256ToHex(allocator, 0);
-    defer allocator.free(zero);
-    try testing.expectEqualStrings("0x0", zero);
+    const zero_val = try u256ToHex(allocator, 0);
+    defer allocator.free(zero_val);
+    try testing.expectEqualStrings("0x0", zero_val);
 
     // Small number
     const small = try u256ToHex(allocator, 69420);
@@ -584,8 +724,8 @@ test "from u256" {
 
 test "to u256" {
     // Zero
-    const zero = try hexToU256("0x0");
-    try testing.expectEqual(@as(u256, 0), zero);
+    const zero_val = try hexToU256("0x0");
+    try testing.expectEqual(@as(u256, 0), zero_val);
 
     // Small number
     const small = try hexToU256("0x10f2c");
@@ -761,8 +901,8 @@ test "case sensitivity in hex conversion" {
 }
 
 test "hexToU64 edge cases" {
-    const zero = try hexToU64("0x0");
-    try testing.expectEqual(@as(u64, 0), zero);
+    const zero_val = try hexToU64("0x0");
+    try testing.expectEqual(@as(u64, 0), zero_val);
 
     const max_u64_hex = "0xffffffffffffffff";
     const max_result = try hexToU64(max_u64_hex);
@@ -780,9 +920,9 @@ test "hexToU64 edge cases" {
 test "u64ToHex function" {
     const allocator = testing.allocator;
 
-    const zero = try u64ToHex(allocator, 0);
-    defer allocator.free(zero);
-    try testing.expectEqualStrings("0x0", zero);
+    const zero_val = try u64ToHex(allocator, 0);
+    defer allocator.free(zero_val);
+    try testing.expectEqualStrings("0x0", zero_val);
 
     const small = try u64ToHex(allocator, 255);
     defer allocator.free(small);
@@ -948,4 +1088,242 @@ test "trimRightZeros with all zeros" {
     const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
     const trimmed = trimRightZeros(&all_zeros);
     try testing.expectEqual(@as(usize, 0), trimmed.len);
+}
+
+test "equals function" {
+    // Equal hex strings
+    try testing.expect(equals("0x1234", "0x1234"));
+    try testing.expect(equals("0xabcd", "0xabcd"));
+
+    // Case-insensitive comparison
+    try testing.expect(equals("0xabcd", "0xABCD"));
+    try testing.expect(equals("0xABCD", "0xabcd"));
+    try testing.expect(equals("0xAbCd", "0xaBcD"));
+
+    // Different values
+    try testing.expect(!equals("0x1234", "0x5678"));
+    try testing.expect(!equals("0xabcd", "0xef12"));
+
+    // Different lengths
+    try testing.expect(!equals("0x12", "0x1234"));
+    try testing.expect(!equals("0x1234", "0x12"));
+
+    // Empty hex
+    try testing.expect(equals("0x", "0x"));
+    try testing.expect(!equals("0x", "0x00"));
+    try testing.expect(!equals("0x00", "0x"));
+}
+
+test "clone function" {
+    const allocator = testing.allocator;
+
+    const hex1 = "0x1234";
+    const hex2 = try clone(allocator, hex1);
+    defer allocator.free(hex2);
+
+    try testing.expect(equals(hex1, hex2));
+    try testing.expectEqualStrings(hex1, hex2);
+
+    // Clone empty hex
+    const empty = "0x";
+    const empty_clone = try clone(allocator, empty);
+    defer allocator.free(empty_clone);
+    try testing.expectEqualStrings(empty, empty_clone);
+}
+
+test "xor function" {
+    const allocator = testing.allocator;
+
+    // Same-length XOR
+    const result1 = try xor(allocator, "0x12", "0x34");
+    defer allocator.free(result1);
+    try testing.expectEqualStrings("0x26", result1);
+
+    const result2 = try xor(allocator, "0xab", "0xcd");
+    defer allocator.free(result2);
+    try testing.expectEqualStrings("0x66", result2);
+
+    // XOR with zeros
+    const result3 = try xor(allocator, "0xff", "0x00");
+    defer allocator.free(result3);
+    try testing.expectEqualStrings("0xff", result3);
+
+    // XOR with itself returns zeros
+    const result4 = try xor(allocator, "0xdeadbeef", "0xdeadbeef");
+    defer allocator.free(result4);
+    try testing.expectEqualStrings("0x00000000", result4);
+
+    // Empty hex XOR
+    const result5 = try xor(allocator, "0x", "0x");
+    defer allocator.free(result5);
+    try testing.expectEqualStrings("0x", result5);
+
+    // Mismatched lengths should error
+    const result_err = xor(allocator, "0x12", "0x1234");
+    try testing.expectError(HexError.InvalidLength, result_err);
+}
+
+test "random function" {
+    const allocator = testing.allocator;
+
+    // Generate random hex of various sizes
+    const hex1 = try random(allocator, 4);
+    defer allocator.free(hex1);
+    try testing.expect(isHex(hex1));
+    try testing.expectEqual(@as(usize, 10), hex1.len); // "0x" + 8 hex chars
+
+    const hex2 = try random(allocator, 32);
+    defer allocator.free(hex2);
+    try testing.expect(isHex(hex2));
+    try testing.expectEqual(@as(usize, 66), hex2.len); // "0x" + 64 hex chars
+
+    // Zero size
+    const hex_zero = try random(allocator, 0);
+    defer allocator.free(hex_zero);
+    try testing.expectEqualStrings("0x", hex_zero);
+
+    // Different values each time (probabilistic test - try multiple times)
+    var all_equal = true;
+    var i: usize = 0;
+    while (i < 5) : (i += 1) {
+        const rand1 = try random(allocator, 32);
+        defer allocator.free(rand1);
+        const rand2 = try random(allocator, 32);
+        defer allocator.free(rand2);
+        if (!equals(rand1, rand2)) {
+            all_equal = false;
+            break;
+        }
+    }
+    try testing.expect(!all_equal);
+}
+
+test "zero function" {
+    const allocator = testing.allocator;
+
+    // Create zero-filled hex
+    const hex1 = try zero(allocator, 1);
+    defer allocator.free(hex1);
+    try testing.expectEqualStrings("0x00", hex1);
+
+    const hex2 = try zero(allocator, 2);
+    defer allocator.free(hex2);
+    try testing.expectEqualStrings("0x0000", hex2);
+
+    const hex4 = try zero(allocator, 4);
+    defer allocator.free(hex4);
+    try testing.expectEqualStrings("0x00000000", hex4);
+
+    // Empty hex
+    const hex_empty = try zero(allocator, 0);
+    defer allocator.free(hex_empty);
+    try testing.expectEqualStrings("0x", hex_empty);
+
+    // Large zero hex
+    const hex32 = try zero(allocator, 32);
+    defer allocator.free(hex32);
+    try testing.expectEqualStrings("0x0000000000000000000000000000000000000000000000000000000000000000", hex32);
+}
+
+test "validate function" {
+    // Valid hex strings
+    _ = try validate("0x0");
+    _ = try validate("0x00");
+    _ = try validate("0x1234");
+    _ = try validate("0xabcdef");
+    _ = try validate("0xABCDEF");
+    _ = try validate("0x");
+
+    // Invalid hex strings
+    try testing.expectError(HexError.InvalidHexFormat, validate("1234"));
+    try testing.expectError(HexError.InvalidHexFormat, validate(""));
+    try testing.expectError(HexError.InvalidHexCharacter, validate("0xg"));
+    try testing.expectError(HexError.InvalidHexCharacter, validate("0x123g"));
+    try testing.expectError(HexError.InvalidHexCharacter, validate("0x "));
+}
+
+test "isSized function" {
+    // Correct sizes
+    try testing.expect(isSized("0x", 0));
+    try testing.expect(isSized("0x00", 1));
+    try testing.expect(isSized("0x1234", 2));
+    try testing.expect(isSized("0x123456", 3));
+
+    // Incorrect sizes
+    try testing.expect(!isSized("0x1234", 1));
+    try testing.expect(!isSized("0x1234", 3));
+    try testing.expect(!isSized("0x", 1));
+    try testing.expect(!isSized("0x00", 0));
+
+    // Address size (20 bytes)
+    const address = "0x" ++ "00" ** 20;
+    try testing.expect(isSized(address, 20));
+    try testing.expect(!isSized(address, 19));
+
+    // Hash size (32 bytes)
+    const hash = "0x" ++ "00" ** 32;
+    try testing.expect(isSized(hash, 32));
+    try testing.expect(!isSized(hash, 31));
+}
+
+test "assertSize function" {
+    // Valid sizes
+    _ = try assertSize("0x", 0);
+    _ = try assertSize("0x00", 1);
+    _ = try assertSize("0x1234", 2);
+
+    // Invalid sizes
+    try testing.expectError(HexError.InvalidLength, assertSize("0x1234", 1));
+    try testing.expectError(HexError.InvalidLength, assertSize("0x1234", 3));
+    try testing.expectError(HexError.InvalidLength, assertSize("0x", 1));
+}
+
+test "fromBoolean function" {
+    const allocator = testing.allocator;
+
+    // true -> 0x01
+    const hex_true = try fromBoolean(allocator, true);
+    defer allocator.free(hex_true);
+    try testing.expectEqualStrings("0x01", hex_true);
+
+    // false -> 0x00
+    const hex_false = try fromBoolean(allocator, false);
+    defer allocator.free(hex_false);
+    try testing.expectEqualStrings("0x00", hex_false);
+}
+
+test "toBoolean function" {
+    // 0x01 -> true
+    try testing.expect(try toBoolean("0x01"));
+
+    // 0x00 -> false
+    try testing.expect(!try toBoolean("0x00"));
+
+    // Non-zero -> true
+    try testing.expect(try toBoolean("0xff"));
+    try testing.expect(try toBoolean("0x1234"));
+    try testing.expect(try toBoolean("0x000001"));
+
+    // All zeros -> false
+    try testing.expect(!try toBoolean("0x0000"));
+    try testing.expect(!try toBoolean("0x00000000"));
+
+    // Empty hex -> false
+    try testing.expect(!try toBoolean("0x"));
+
+    // Uppercase
+    try testing.expect(try toBoolean("0xFF"));
+    try testing.expect(!try toBoolean("0x00"));
+}
+
+test "fromBoolean and toBoolean round-trip" {
+    const allocator = testing.allocator;
+
+    const hex_true = try fromBoolean(allocator, true);
+    defer allocator.free(hex_true);
+    try testing.expect(try toBoolean(hex_true));
+
+    const hex_false = try fromBoolean(allocator, false);
+    defer allocator.free(hex_false);
+    try testing.expect(!try toBoolean(hex_false));
 }

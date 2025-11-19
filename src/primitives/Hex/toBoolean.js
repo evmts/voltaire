@@ -1,4 +1,4 @@
-import * as OxHex from "ox/Hex";
+import { toBytes } from "./toBytes.js";
 
 /**
  * Convert hex to boolean
@@ -16,6 +16,6 @@ import * as OxHex from "ox/Hex";
  * ```
  */
 export function toBoolean(hex) {
-	const bytes = OxHex.toBytes(hex);
+	const bytes = toBytes(hex);
 	return bytes.some((b) => b !== 0);
 }

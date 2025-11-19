@@ -741,6 +741,168 @@ pub fn detectTransactionType(data: []const u8) TransactionType {
     };
 }
 
+// Check if a legacy transaction is signed (has non-zero signature)
+pub fn isLegacyTransactionSigned(tx: LegacyTransaction) bool {
+    // Check if r or s is non-zero
+    for (tx.r) |byte| {
+        if (byte != 0) return true;
+    }
+    for (tx.s) |byte| {
+        if (byte != 0) return true;
+    }
+    return false;
+}
+
+// Check if an EIP-1559 transaction is signed
+pub fn isEip1559TransactionSigned(tx: Eip1559Transaction) bool {
+    for (tx.r) |byte| {
+        if (byte != 0) return true;
+    }
+    for (tx.s) |byte| {
+        if (byte != 0) return true;
+    }
+    return false;
+}
+
+// Check if an EIP-4844 transaction is signed
+pub fn isEip4844TransactionSigned(tx: Eip4844Transaction) bool {
+    for (tx.r) |byte| {
+        if (byte != 0) return true;
+    }
+    for (tx.s) |byte| {
+        if (byte != 0) return true;
+    }
+    return false;
+}
+
+// Check if an EIP-7702 transaction is signed
+pub fn isEip7702TransactionSigned(tx: Eip7702Transaction) bool {
+    for (tx.r) |byte| {
+        if (byte != 0) return true;
+    }
+    for (tx.s) |byte| {
+        if (byte != 0) return true;
+    }
+    return false;
+}
+
+// Get recipient address from legacy transaction
+pub fn getLegacyTransactionRecipient(tx: LegacyTransaction) ?Address {
+    return tx.to;
+}
+
+// Get recipient address from EIP-1559 transaction
+pub fn getEip1559TransactionRecipient(tx: Eip1559Transaction) ?Address {
+    return tx.to;
+}
+
+// Get recipient address from EIP-4844 transaction (always non-null for blobs)
+pub fn getEip4844TransactionRecipient(tx: Eip4844Transaction) Address {
+    return tx.to;
+}
+
+// Get recipient address from EIP-7702 transaction
+pub fn getEip7702TransactionRecipient(tx: Eip7702Transaction) ?Address {
+    return tx.to;
+}
+
+// Check if legacy transaction is contract creation (to == null)
+pub fn isLegacyTransactionContractCreation(tx: LegacyTransaction) bool {
+    return tx.to == null;
+}
+
+// Check if EIP-1559 transaction is contract creation
+pub fn isEip1559TransactionContractCreation(tx: Eip1559Transaction) bool {
+    return tx.to == null;
+}
+
+// Check if EIP-4844 transaction is contract creation (always false - blobs require recipient)
+pub fn isEip4844TransactionContractCreation(_: Eip4844Transaction) bool {
+    return false;
+}
+
+// Check if EIP-7702 transaction is contract creation
+pub fn isEip7702TransactionContractCreation(tx: Eip7702Transaction) bool {
+    return tx.to == null;
+}
+
+// Check if legacy transaction is contract call (to != null)
+pub fn isLegacyTransactionContractCall(tx: LegacyTransaction) bool {
+    return tx.to != null;
+}
+
+// Check if EIP-1559 transaction is contract call
+pub fn isEip1559TransactionContractCall(tx: Eip1559Transaction) bool {
+    return tx.to != null;
+}
+
+// Check if EIP-4844 transaction is contract call (always true - blobs require recipient)
+pub fn isEip4844TransactionContractCall(_: Eip4844Transaction) bool {
+    return true;
+}
+
+// Check if EIP-7702 transaction is contract call
+pub fn isEip7702TransactionContractCall(tx: Eip7702Transaction) bool {
+    return tx.to != null;
+}
+
+// Check if EIP-1559 transaction has access list
+pub fn eip1559HasAccessList(tx: Eip1559Transaction) bool {
+    return tx.access_list.len > 0;
+}
+
+// Check if EIP-4844 transaction has access list
+pub fn eip4844HasAccessList(tx: Eip4844Transaction) bool {
+    return tx.access_list.len > 0;
+}
+
+// Check if EIP-7702 transaction has access list
+pub fn eip7702HasAccessList(tx: Eip7702Transaction) bool {
+    return tx.access_list.len > 0;
+}
+
+// Get chain ID from legacy transaction with EIP-155 v value
+pub fn getLegacyTransactionChainId(tx: LegacyTransaction) ?u64 {
+    // EIP-155: v = chainId * 2 + 35 + yParity
+    if (tx.v >= 37) {
+        return (tx.v - 35) / 2;
+    }
+    // Pre-EIP-155 transactions (v = 27 or 28)
+    return null;
+}
+
+// Get chain ID from EIP-1559 transaction
+pub fn getEip1559TransactionChainId(tx: Eip1559Transaction) u64 {
+    return tx.chain_id;
+}
+
+// Get chain ID from EIP-4844 transaction
+pub fn getEip4844TransactionChainId(tx: Eip4844Transaction) u64 {
+    return tx.chain_id;
+}
+
+// Get chain ID from EIP-7702 transaction
+pub fn getEip7702TransactionChainId(tx: Eip7702Transaction) u64 {
+    return tx.chain_id;
+}
+
+// Get blob count from EIP-4844 transaction
+pub fn getEip4844BlobCount(tx: Eip4844Transaction) usize {
+    return tx.blob_versioned_hashes.len;
+}
+
+// Get authorization count from EIP-7702 transaction
+pub fn getEip7702AuthorizationCount(tx: Eip7702Transaction) usize {
+    return tx.authorization_list.len;
+}
+
+// Compute EIP-1559 transaction hash
+pub fn computeEip1559TransactionHash(allocator: Allocator, tx: Eip1559Transaction) !Hash {
+    const encoded = try encodeEip1559ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+    return hash.keccak256(encoded);
+}
+
 // Tests
 
 test "encode legacy transaction" {
@@ -2227,4 +2389,334 @@ test "hash calculation determinism across transaction types" {
     const hash_7702_1 = try computeEip7702TransactionHash(allocator, tx_7702);
     const hash_7702_2 = try computeEip7702TransactionHash(allocator, tx_7702);
     try testing.expectEqual(hash_7702_1, hash_7702_2);
+}
+
+test "isSigned checks for legacy transaction" {
+    // Unsigned transaction (all zeros)
+    const unsigned_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(!isLegacyTransactionSigned(unsigned_tx));
+
+    // Signed transaction (non-zero r)
+    const signed_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+    try testing.expect(isLegacyTransactionSigned(signed_tx));
+}
+
+test "isSigned checks for EIP-1559 transaction" {
+    const unsigned_tx = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(!isEip1559TransactionSigned(unsigned_tx));
+
+    const signed_tx = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0x01} ** 32,
+        .s = [_]u8{0x02} ** 32,
+    };
+    try testing.expect(isEip1559TransactionSigned(signed_tx));
+}
+
+test "getRecipient returns correct address" {
+    const addr = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = addr,
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const recipient = getLegacyTransactionRecipient(tx);
+    try testing.expect(recipient != null);
+    try testing.expectEqual(addr, recipient.?);
+}
+
+test "getRecipient returns null for contract creation" {
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = null,
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const recipient = getLegacyTransactionRecipient(tx);
+    try testing.expect(recipient == null);
+}
+
+test "isContractCreation checks" {
+    const creation_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = null,
+        .value = 0,
+        .data = &[_]u8{0x60, 0x60, 0x60},
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(isLegacyTransactionContractCreation(creation_tx));
+    try testing.expect(!isLegacyTransactionContractCall(creation_tx));
+
+    const call_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(!isLegacyTransactionContractCreation(call_tx));
+    try testing.expect(isLegacyTransactionContractCall(call_tx));
+}
+
+test "EIP-4844 contract checks always correct" {
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    // EIP-4844 transactions always have a recipient
+    try testing.expect(!isEip4844TransactionContractCreation(tx));
+    try testing.expect(isEip4844TransactionContractCall(tx));
+}
+
+test "hasAccessList checks" {
+    const addr = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+    const storage_key: [32]u8 = [_]u8{0x12} ** 32;
+    const access_list_item = AccessListItem{
+        .address = addr,
+        .storage_keys = &[_][32]u8{storage_key},
+    };
+
+    const tx_with_access_list = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = addr,
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{access_list_item},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(eip1559HasAccessList(tx_with_access_list));
+
+    const tx_without_access_list = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = addr,
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expect(!eip1559HasAccessList(tx_without_access_list));
+}
+
+test "getChainId from legacy transaction" {
+    // EIP-155 transaction (v = 37 for chain 1)
+    const eip155_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+    const chain_id = getLegacyTransactionChainId(eip155_tx);
+    try testing.expect(chain_id != null);
+    try testing.expectEqual(@as(u64, 1), chain_id.?);
+
+    // Pre-EIP-155 transaction (v = 27)
+    const pre_eip155_tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+    const pre_chain_id = getLegacyTransactionChainId(pre_eip155_tx);
+    try testing.expect(pre_chain_id == null);
+}
+
+test "getChainId from typed transactions" {
+    const tx = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    try testing.expectEqual(@as(u64, 1), getEip1559TransactionChainId(tx));
+}
+
+test "getBlobCount from EIP-4844 transaction" {
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash, versioned_hash, versioned_hash};
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    try testing.expectEqual(@as(usize, 3), getEip4844BlobCount(tx));
+}
+
+test "getAuthorizationCount from EIP-7702 transaction" {
+    const addr = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+    const auth1 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 0,
+    };
+    const auth2 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 1,
+    };
+    const auths = [_]Authorization{auth1, auth2};
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = addr,
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &auths,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    try testing.expectEqual(@as(usize, 2), getEip7702AuthorizationCount(tx));
+}
+
+test "computeEip1559TransactionHash" {
+    const allocator = testing.allocator;
+
+    const tx = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const tx_hash = try computeEip1559TransactionHash(allocator, tx);
+    try testing.expect(tx_hash.len == 32);
 }

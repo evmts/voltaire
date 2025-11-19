@@ -1,5 +1,5 @@
-import * as OxHex from "ox/Hex";
 import { fromBytes } from "./fromBytes.js";
+import { toBytes } from "./toBytes.js";
 
 /**
  * Concatenate multiple hex strings
@@ -17,7 +17,7 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function concat(...hexes) {
 	const allBytes = hexes.flatMap((h) =>
-		Array.from(OxHex.toBytes(/** @type {`0x${string}`} */ (h))),
+		Array.from(toBytes(/** @type {import('./HexType.js').HexType} */ (h))),
 	);
 	return /** @type {import('./HexType.js').HexType} */ (
 		fromBytes(new Uint8Array(allBytes))

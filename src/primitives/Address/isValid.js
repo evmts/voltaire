@@ -1,5 +1,3 @@
-import * as OxAddress from "ox/Address";
-
 /**
  * Check if string is valid address format (standard form)
  *
@@ -14,7 +12,19 @@ import * as OxAddress from "ox/Address";
  * ```
  */
 export function isValid(str) {
-	// Normalize to 0x format for ox validation
+	// Normalize to 0x format
 	const normalized = str.startsWith("0x") ? str : `0x${str}`;
-	return OxAddress.validate(normalized, { strict: false });
+
+	// Must be 0x + 40 hex chars = 42 chars total
+	if (normalized.length !== 42) return false;
+
+	// Check all characters are valid hex
+	for (let i = 2; i < normalized.length; i++) {
+		const c = normalized.charCodeAt(i);
+		const isHex =
+			(c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
+		if (!isHex) return false;
+	}
+
+	return true;
 }

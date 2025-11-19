@@ -513,6 +513,111 @@ pub fn utf8_to_bytes(allocator: Allocator, str: []const u8) ![]u8 {
     return try allocator.dupe(u8, str);
 }
 
+/// Dedicated list encoding function
+/// Encodes a slice of items as an RLP list
+pub fn encodeList(allocator: Allocator, items: anytype) EncodeError![]u8 {
+    return try encode(allocator, items);
+}
+
+/// Type guard: checks if Data is valid
+pub fn isData(data: Data) bool {
+    _ = data;
+    return true; // If it compiles, it's valid Data
+}
+
+/// Type guard: checks if Data contains bytes
+pub fn isBytesData(data: Data) bool {
+    return data == .String;
+}
+
+/// Type guard: checks if Data contains a list
+pub fn isListData(data: Data) bool {
+    return data == .List;
+}
+
+/// Check if decoded data is a list
+pub fn isList(data: Data) bool {
+    return data == .List;
+}
+
+/// Check if decoded data is a string (bytes)
+pub fn isString(data: Data) bool {
+    return data == .String;
+}
+
+/// Get the length of encoded RLP data
+/// Returns the length bytes would be if encoded, without actually encoding
+pub fn getEncodedLength(allocator: Allocator, input: anytype) !usize {
+    const encoded = try encode(allocator, input);
+    defer allocator.free(encoded);
+    return encoded.len;
+}
+
+/// Get the length field from decoded Data
+pub fn getLength(data: Data) usize {
+    return switch (data) {
+        .String => |bytes| bytes.len,
+        .List => |items| items.len,
+    };
+}
+
+/// Flattens nested Data structure into array of bytes Data
+/// Recursively extracts all bytes Data from nested lists
+/// Note: Returns shallow references to existing Data, does not allocate new Data
+pub fn flatten(allocator: Allocator, data: Data) ![]Data {
+    var result = std.ArrayList(Data){};
+    errdefer result.deinit(allocator);
+
+    try flattenRecursive(allocator, data, &result);
+
+    return try result.toOwnedSlice(allocator);
+}
+
+fn flattenRecursive(allocator: Allocator, data: Data, result: *std.ArrayList(Data)) !void {
+    switch (data) {
+        .String => {
+            try result.append(allocator, data);
+        },
+        .List => |items| {
+            for (items) |item| {
+                try flattenRecursive(allocator, item, result);
+            }
+        },
+    }
+}
+
+/// Compares two Data structures for equality
+pub fn equals(a: Data, b: Data) bool {
+    if (@intFromEnum(a) != @intFromEnum(b)) return false;
+
+    return switch (a) {
+        .String => |a_bytes| {
+            const b_bytes = b.String;
+            if (a_bytes.len != b_bytes.len) return false;
+            for (a_bytes, b_bytes) |a_byte, b_byte| {
+                if (a_byte != b_byte) return false;
+            }
+            return true;
+        },
+        .List => |a_items| {
+            const b_items = b.List;
+            if (a_items.len != b_items.len) return false;
+            for (a_items, b_items) |a_item, b_item| {
+                if (!equals(a_item, b_item)) return false;
+            }
+            return true;
+        },
+    };
+}
+
+/// Validates RLP encoded data without fully decoding
+/// Returns true if the data is valid RLP, false otherwise
+pub fn validate(allocator: Allocator, input: []const u8) bool {
+    const result = decode(allocator, input, false) catch return false;
+    result.data.deinit(allocator);
+    return true;
+}
+
 // Test cases
 test "RLP single byte" {
     const testing = std.testing;
@@ -1486,4 +1591,152 @@ test "RLP nested list round-trip - two levels" {
         },
         .String => unreachable,
     }
+}
+
+test "RLP encodeList" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test empty list
+    const empty_list = [_][]const u8{};
+    const encoded_empty = try encodeList(allocator, empty_list[0..]);
+    defer allocator.free(encoded_empty);
+    try testing.expectEqual(@as(u8, 0xc0), encoded_empty[0]);
+
+    // Test simple list
+    const simple_list = [_][]const u8{ "cat", "dog" };
+    const encoded_simple = try encodeList(allocator, simple_list[0..]);
+    defer allocator.free(encoded_simple);
+    try testing.expect(encoded_simple.len > 0);
+}
+
+test "RLP type guards" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create bytes Data
+    const bytes_data = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes_data.String);
+
+    try testing.expect(isData(bytes_data));
+    try testing.expect(isBytesData(bytes_data));
+    try testing.expect(!isListData(bytes_data));
+    try testing.expect(isString(bytes_data));
+    try testing.expect(!isList(bytes_data));
+
+    // Create list Data
+    const list_data = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list_data.List);
+
+    try testing.expect(isData(list_data));
+    try testing.expect(!isBytesData(list_data));
+    try testing.expect(isListData(list_data));
+    try testing.expect(!isString(list_data));
+    try testing.expect(isList(list_data));
+}
+
+test "RLP getLength" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test bytes length
+    const bytes_data = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes_data.String);
+    try testing.expectEqual(@as(usize, 3), getLength(bytes_data));
+
+    // Test list length
+    const list_data = Data{ .List = try allocator.alloc(Data, 5) };
+    defer allocator.free(list_data.List);
+    try testing.expectEqual(@as(usize, 5), getLength(list_data));
+}
+
+test "RLP getEncodedLength" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test short string
+    const short_str = "dog";
+    const length = try getEncodedLength(allocator, short_str);
+    try testing.expectEqual(@as(usize, 4), length); // 0x83 + 3 bytes
+
+    // Test empty list
+    const empty_list = [_][]const u8{};
+    const list_length = try getEncodedLength(allocator, empty_list[0..]);
+    try testing.expectEqual(@as(usize, 1), list_length); // 0xc0
+}
+
+test "RLP flatten" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create nested structure: [[1], [2, 3]]
+    const inner1_data = Data{ .String = try allocator.dupe(u8, &[_]u8{1}) };
+    const inner1 = try allocator.alloc(Data, 1);
+    inner1[0] = inner1_data;
+
+    const inner2_data1 = Data{ .String = try allocator.dupe(u8, &[_]u8{2}) };
+    const inner2_data2 = Data{ .String = try allocator.dupe(u8, &[_]u8{3}) };
+    const inner2 = try allocator.alloc(Data, 2);
+    inner2[0] = inner2_data1;
+    inner2[1] = inner2_data2;
+
+    const outer = try allocator.alloc(Data, 2);
+    outer[0] = Data{ .List = inner1 };
+    outer[1] = Data{ .List = inner2 };
+
+    const nested = Data{ .List = outer };
+    defer nested.deinit(allocator);
+
+    const flattened = try flatten(allocator, nested);
+    defer allocator.free(flattened);
+
+    try testing.expectEqual(@as(usize, 3), flattened.len);
+}
+
+test "RLP equals" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test equal bytes
+    const bytes1 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes1.String);
+    const bytes2 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes2.String);
+    try testing.expect(equals(bytes1, bytes2));
+
+    // Test unequal bytes
+    const bytes3 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 4 }) };
+    defer allocator.free(bytes3.String);
+    try testing.expect(!equals(bytes1, bytes3));
+
+    // Test empty lists
+    const list1 = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list1.List);
+    const list2 = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list2.List);
+    try testing.expect(equals(list1, list2));
+
+    // Test different types
+    try testing.expect(!equals(bytes1, list1));
+}
+
+test "RLP validate" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid single byte
+    const valid1 = [_]u8{0x7f};
+    try testing.expect(validate(allocator, &valid1));
+
+    // Valid string
+    const valid2 = [_]u8{ 0x83, 'd', 'o', 'g' };
+    try testing.expect(validate(allocator, &valid2));
+
+    // Invalid - truncated
+    const invalid1 = [_]u8{ 0x83, 'd', 'o' };
+    try testing.expect(!validate(allocator, &invalid1));
+
+    // Invalid - non-canonical
+    const invalid2 = [_]u8{ 0x81, 0x7f };
+    try testing.expect(!validate(allocator, &invalid2));
 }

@@ -1,5 +1,4 @@
-import type { Hex } from "ox";
-import * as OxHex from "ox/Hex";
+import type { HexType } from "../HexType.js";
 
 /**
  * Check if hex value has a specific size
@@ -18,6 +17,6 @@ import * as OxHex from "ox/Hex";
  * Hex.isSized('0x1234', 4); // false
  * ```
  */
-export function isSized(value: Hex.Hex, size: number): boolean {
-	return OxHex.size(value) === size;
+export function isSized(value: HexType, size: number): boolean {
+	return (value.length - 2) / 2 === size;
 }

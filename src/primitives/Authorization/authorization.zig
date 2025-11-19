@@ -739,3 +739,199 @@ test "validate() accepts signature with r = N-1 (maximum valid)" {
 
     try auth.validate();
 }
+
+// Type checking functions
+
+/// Check if authorization is fully signed (has signature fields)
+pub fn isItem(auth: *const Authorization) bool {
+    // Check if signature fields are non-zero
+    const r_zero = std.mem.allEqual(u8, &auth.r, 0);
+    const s_zero = std.mem.allEqual(u8, &auth.s, 0);
+    return !r_zero and !s_zero;
+}
+
+/// Check if authorization is unsigned (missing signature)
+pub fn isUnsigned(chain_id: u64, addr: Address, nonce: u64) bool {
+    _ = nonce; // Nonce is part of unsigned auth but not validated here
+    // Unsigned authorization just needs valid chain_id, address, and nonce
+    return chain_id > 0 and !addr.isZero();
+}
+
+/// Compare two authorizations for equality
+pub fn equalsAuth(a: *const Authorization, b: *const Authorization) bool {
+    if (a.chain_id != b.chain_id) return false;
+    if (!a.address.equals(&b.address)) return false;
+    if (a.nonce != b.nonce) return false;
+    if (a.v != b.v) return false;
+    if (!std.mem.eql(u8, &a.r, &b.r)) return false;
+    if (!std.mem.eql(u8, &a.s, &b.s)) return false;
+    return true;
+}
+
+/// Format authorization to human-readable string
+/// Caller owns returned memory and must free it
+pub fn format(allocator: Allocator, auth: *const Authorization) ![]u8 {
+    // Format: "Authorization(chain=1, to=0x1111...1111, nonce=0, r=0x12..., s=0x34..., v=27)"
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    // Build format string
+    try list.appendSlice("Authorization(chain=");
+    const chain_str = try std.fmt.allocPrint(allocator, "{d}", .{auth.chain_id});
+    defer allocator.free(chain_str);
+    try list.appendSlice(chain_str);
+
+    try list.appendSlice(", to=");
+    const addr_hex = try auth.address.toHex();
+    const addr_short = try std.fmt.allocPrint(allocator, "0x{s}...{s}", .{ addr_hex[2..6], addr_hex[38..42] });
+    defer allocator.free(addr_short);
+    try list.appendSlice(addr_short);
+
+    try list.appendSlice(", nonce=");
+    const nonce_str = try std.fmt.allocPrint(allocator, "{d}", .{auth.nonce});
+    defer allocator.free(nonce_str);
+    try list.appendSlice(nonce_str);
+
+    // Format r
+    try list.appendSlice(", r=0x");
+    const r_value = std.mem.readInt(u256, &auth.r, .big);
+    const r_str = try std.fmt.allocPrint(allocator, "{x}", .{r_value});
+    defer allocator.free(r_str);
+    try list.appendSlice(r_str);
+
+    // Format s
+    try list.appendSlice(", s=0x");
+    const s_value = std.mem.readInt(u256, &auth.s, .big);
+    const s_str = try std.fmt.allocPrint(allocator, "{x}", .{s_value});
+    defer allocator.free(s_str);
+    try list.appendSlice(s_str);
+
+    // Format v
+    try list.appendSlice(", v=");
+    const v_str = try std.fmt.allocPrint(allocator, "{d}", .{auth.v});
+    defer allocator.free(v_str);
+    try list.appendSlice(v_str);
+
+    try list.append(')');
+
+    return list.toOwnedSlice();
+}
+
+test "isItem() detects signed authorization" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var signed_auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    try testing.expect(isItem(&signed_auth));
+
+    // Unsigned (zero signature)
+    var unsigned_auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    try testing.expect(!isItem(&unsigned_auth));
+}
+
+test "isUnsigned() validates unsigned authorization fields" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
+
+    // Valid unsigned
+    try testing.expect(isUnsigned(1, addr, 0));
+    try testing.expect(isUnsigned(1, addr, 42));
+
+    // Invalid: zero chain_id
+    try testing.expect(!isUnsigned(0, addr, 0));
+
+    // Invalid: zero address
+    try testing.expect(!isUnsigned(1, Address.ZERO, 0));
+}
+
+test "equalsAuth() compares authorizations" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const addr1 = try Address.fromHex("0x1111111111111111111111111111111111111111");
+    const addr2 = try Address.fromHex("0x2222222222222222222222222222222222222222");
+
+    var auth1 = Authorization{
+        .chain_id = 1,
+        .address = addr1,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    var auth2 = Authorization{
+        .chain_id = 1,
+        .address = addr1,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    var auth3 = Authorization{
+        .chain_id = 1,
+        .address = addr2,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    // Same authorizations
+    try testing.expect(equalsAuth(&auth1, &auth2));
+
+    // Different address
+    try testing.expect(!equalsAuth(&auth1, &auth3));
+
+    // Different nonce
+    auth2.nonce = 1;
+    try testing.expect(!equalsAuth(&auth1, &auth2));
+}
+
+test "format() produces human-readable string" {
+    const allocator = testing.allocator;
+
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, 0x123456, .big);
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, 0x789abc, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 42,
+        .v = 27,
+        .r = r_bytes,
+        .s = s_bytes,
+    };
+
+    const formatted = try format(allocator, &auth);
+    defer allocator.free(formatted);
+
+    // Should contain key components
+    try testing.expect(std.mem.indexOf(u8, formatted, "Authorization") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "chain=1") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "nonce=42") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "v=27") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "0x1111...1111") != null);
+}

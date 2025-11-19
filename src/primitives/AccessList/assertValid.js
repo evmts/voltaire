@@ -1,7 +1,4 @@
-import {
-	InvalidFormatError,
-	InvalidLengthError,
-} from "../errors/index.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 import { isItem } from "./isItem.js";
 
 /**

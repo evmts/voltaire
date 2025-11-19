@@ -1,9 +1,6 @@
 import { decode } from "../../Rlp/decode.js";
 import { DecodingError } from "../../errors/SerializationError.js";
-import {
-	InvalidFormatError,
-	InvalidLengthError,
-} from "../errors/index.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 
 /**
  * Decode RLP bytes to access list (EIP-2930)

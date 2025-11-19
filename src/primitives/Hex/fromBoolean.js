@@ -1,5 +1,3 @@
-import * as OxHex from "ox/Hex";
-
 /**
  * Convert boolean to hex
  *
@@ -17,6 +15,6 @@ import * as OxHex from "ox/Hex";
  */
 export function fromBoolean(value) {
 	return /** @type {import('./HexType.js').Sized<1>} */ (
-		OxHex.padLeft(OxHex.fromBoolean(value), 1)
+		value ? "0x01" : "0x00"
 	);
 }

@@ -1,4 +1,4 @@
-import type { Hex } from "ox";
+import type { HexType } from "../HexType.js";
 
 /**
  * Generate a zero-filled hex value of specified size
@@ -16,6 +16,6 @@ import type { Hex } from "ox";
  * Hex.zero(32); // '0x0000000000000000000000000000000000000000000000000000000000000000'
  * ```
  */
-export function zero(size: number): Hex.Hex {
-	return `0x${"00".repeat(size)}` as Hex.Hex;
+export function zero(size: number): HexType {
+	return `0x${"00".repeat(size)}` as HexType;
 }

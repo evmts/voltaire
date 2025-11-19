@@ -171,9 +171,12 @@ describe("FunctionDecodingError", () => {
 
 	describe("real-world scenarios", () => {
 		it("creates error for data too short", () => {
-			const error = new FunctionDecodingError("Data too short for function selector", {
-				context: { dataLength: 2, functionName: "transfer" },
-			});
+			const error = new FunctionDecodingError(
+				"Data too short for function selector",
+				{
+					context: { dataLength: 2, functionName: "transfer" },
+				},
+			);
 			expect(error.message).toContain("Data too short");
 			expect(error.context?.dataLength).toBe(2);
 		});
@@ -327,15 +330,18 @@ describe("FunctionInvalidSelectorError", () => {
 	describe("real-world scenarios", () => {
 		it("creates error for selector mismatch", () => {
 			const actualSelector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
-			const error = new FunctionInvalidSelectorError("Function selector mismatch", {
-				value: actualSelector,
-				expected: "0x095ea7b3",
-				context: {
-					selector: "0xa9059cbb",
-					expectedSelector: "0x095ea7b3",
-					functionName: "approve",
+			const error = new FunctionInvalidSelectorError(
+				"Function selector mismatch",
+				{
+					value: actualSelector,
+					expected: "0x095ea7b3",
+					context: {
+						selector: "0xa9059cbb",
+						expectedSelector: "0x095ea7b3",
+						functionName: "approve",
+					},
 				},
-			});
+			);
 
 			expect(error.message).toContain("mismatch");
 			expect(error.expected).toBe("0x095ea7b3");
@@ -343,15 +349,18 @@ describe("FunctionInvalidSelectorError", () => {
 		});
 
 		it("creates error with hex-formatted selectors", () => {
-			const error = new FunctionInvalidSelectorError("Function selector mismatch", {
-				value: new Uint8Array([0xff, 0xff, 0xff, 0xff]),
-				expected: "0xa9059cbb",
-				context: {
-					selector: "0xffffffff",
-					expectedSelector: "0xa9059cbb",
-					functionName: "transfer",
+			const error = new FunctionInvalidSelectorError(
+				"Function selector mismatch",
+				{
+					value: new Uint8Array([0xff, 0xff, 0xff, 0xff]),
+					expected: "0xa9059cbb",
+					context: {
+						selector: "0xffffffff",
+						expectedSelector: "0xa9059cbb",
+						functionName: "transfer",
+					},
 				},
-			});
+			);
 
 			expect(error.context?.selector).toBe("0xffffffff");
 			expect(error.context?.expectedSelector).toBe("0xa9059cbb");

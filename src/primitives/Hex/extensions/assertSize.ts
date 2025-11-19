@@ -1,5 +1,4 @@
-import type { Hex } from "ox";
-import * as OxHex from "ox/Hex";
+import type { HexType } from "../HexType.js";
 import { InvalidLengthError } from "../errors/index.js";
 
 /**
@@ -18,8 +17,8 @@ import { InvalidLengthError } from "../errors/index.js";
  * Hex.assertSize('0x1234', 4); // Throws error
  * ```
  */
-export function assertSize(value: Hex.Hex, size: number): void {
-	const actualSize = OxHex.size(value);
+export function assertSize(value: HexType, size: number): void {
+	const actualSize = (value.length - 2) / 2;
 	if (actualSize !== size) {
 		throw new InvalidLengthError(
 			`Expected ${size} bytes, got ${actualSize} bytes`,

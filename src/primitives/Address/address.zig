@@ -178,6 +178,73 @@ pub fn fromBytes(bytes: []const u8) FromBytesError!Address {
     return addr;
 }
 
+pub fn fromBase64(allocator: std.mem.Allocator, b64_str: []const u8) !Address {
+    const base64 = std.base64.standard.Decoder;
+    const decoded_size = try base64.calcSizeForSlice(b64_str);
+
+    if (decoded_size != 20) return error.InvalidAddressLength;
+
+    var buffer: [20]u8 = undefined;
+    try base64.decode(&buffer, b64_str);
+
+    _ = allocator; // unused but kept for consistency with potential future needs
+    return fromBytes(&buffer);
+}
+
+pub fn clone(address: Address) Address {
+    var result: Address = undefined;
+    @memcpy(&result.bytes, &address.bytes);
+    return result;
+}
+
+pub fn toBytes(address: Address) [20]u8 {
+    return address.bytes;
+}
+
+pub fn is(value: anytype) bool {
+    const T = @TypeOf(value);
+    if (T != Address) return false;
+    return true;
+}
+
+pub fn sortAddresses(allocator: std.mem.Allocator, addresses: []const Address) ![]Address {
+    if (addresses.len == 0) {
+        return &[_]Address{};
+    }
+
+    const result = try allocator.alloc(Address, addresses.len);
+    @memcpy(result, addresses);
+
+    std.mem.sort(Address, result, {}, struct {
+        fn lessThan(_: void, a: Address, b: Address) bool {
+            return compare(a, b) < 0;
+        }
+    }.lessThan);
+
+    return result;
+}
+
+pub fn deduplicateAddresses(allocator: std.mem.Allocator, addresses: []const Address) ![]Address {
+    if (addresses.len == 0) {
+        return &[_]Address{};
+    }
+
+    var result = std.ArrayList(Address){};
+    defer result.deinit(allocator);
+
+    var seen = std.AutoHashMap([20]u8, void).init(allocator);
+    defer seen.deinit();
+
+    for (addresses) |addr| {
+        const entry = try seen.getOrPut(addr.bytes);
+        if (!entry.found_existing) {
+            try result.append(allocator, addr);
+        }
+    }
+
+    return result.toOwnedSlice(allocator);
+}
+
 pub fn isValid(addr_str: []const u8) bool {
     return isValidAddress(addr_str);
 }
@@ -1062,6 +1129,65 @@ test "Address - equals and eql functions" {
     try std.testing.expect(eql(ZERO_ADDRESS, ZERO));
 }
 
+test "Address - fromBase64" {
+    const allocator = std.testing.allocator;
+
+    // "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as base64
+    const addr = try fromBase64(allocator, "dC01zGY0wFMpJaO4RLyedZXyUeM=");
+    try std.testing.expect(addr.bytes[0] == 0x74);
+    try std.testing.expect(addr.bytes[1] == 0x2d);
+
+    // Zero address
+    const zero_addr = try fromBase64(allocator, "AAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+    try std.testing.expect(isZero(zero_addr));
+
+    // Max address
+    const max_addr = try fromBase64(allocator, "//////////////////////////8=");
+    try std.testing.expect(max_addr.bytes[0] == 0xff);
+    try std.testing.expect(max_addr.bytes[19] == 0xff);
+}
+
+test "Address - fromBase64 invalid length" {
+    const allocator = std.testing.allocator;
+
+    // Too short
+    const short_result = fromBase64(allocator, "AAAAAAAAAA==");
+    try std.testing.expectError(error.InvalidAddressLength, short_result);
+
+    // Too long
+    const long_result = fromBase64(allocator, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+    try std.testing.expectError(error.InvalidAddressLength, long_result);
+}
+
+test "Address - clone" {
+    const addr1 = try fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const addr2 = clone(addr1);
+
+    try std.testing.expect(equals(addr1, addr2));
+
+    // Verify independence
+    var addr3 = clone(addr1);
+    addr3.bytes[0] = 0xff;
+    try std.testing.expect(!equals(addr1, addr3));
+}
+
+test "Address - toBytes" {
+    const addr = try fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const bytes = toBytes(addr);
+
+    try std.testing.expect(bytes.len == 20);
+    try std.testing.expect(bytes[0] == 0x74);
+    try std.testing.expect(bytes[19] == 0xe3);
+}
+
+test "Address - is type guard" {
+    const addr = try fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    try std.testing.expect(is(addr));
+
+    const zero_addr = zero();
+    try std.testing.expect(is(zero_addr));
+}
+
 test "Address - toHex function" {
     const test_addr = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const hex_result = toHex(test_addr);
@@ -1078,4 +1204,86 @@ test "Address - toChecksummed function" {
 
     const zero_checksum = toChecksummed(zero());
     try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_checksum);
+}
+
+test "Address - sortAddresses" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = try fromHex("0x0000000000000000000000000000000000000001");
+    const addr2 = try fromHex("0x0000000000000000000000000000000000000002");
+    const addr3 = try fromHex("0x0000000000000000000000000000000000000003");
+
+    const addresses = [_]Address{ addr3, addr1, addr2 };
+    const sorted = try sortAddresses(allocator, &addresses);
+    defer allocator.free(sorted);
+
+    try std.testing.expect(equals(sorted[0], addr1));
+    try std.testing.expect(equals(sorted[1], addr2));
+    try std.testing.expect(equals(sorted[2], addr3));
+}
+
+test "Address - sortAddresses empty" {
+    const allocator = std.testing.allocator;
+    const addresses = [_]Address{};
+    const sorted = try sortAddresses(allocator, &addresses);
+    try std.testing.expect(sorted.len == 0);
+}
+
+test "Address - sortAddresses single" {
+    const allocator = std.testing.allocator;
+    const addr = try fromHex("0x0000000000000000000000000000000000000001");
+    const addresses = [_]Address{addr};
+    const sorted = try sortAddresses(allocator, &addresses);
+    defer allocator.free(sorted);
+
+    try std.testing.expect(sorted.len == 1);
+    try std.testing.expect(equals(sorted[0], addr));
+}
+
+test "Address - deduplicateAddresses" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = try fromHex("0x0000000000000000000000000000000000000001");
+    const addr2 = try fromHex("0x0000000000000000000000000000000000000002");
+    const addr3 = try fromHex("0x0000000000000000000000000000000000000001");
+
+    const addresses = [_]Address{ addr1, addr2, addr3 };
+    const unique = try deduplicateAddresses(allocator, &addresses);
+    defer allocator.free(unique);
+
+    try std.testing.expect(unique.len == 2);
+    try std.testing.expect(equals(unique[0], addr1));
+    try std.testing.expect(equals(unique[1], addr2));
+}
+
+test "Address - deduplicateAddresses empty" {
+    const allocator = std.testing.allocator;
+    const addresses = [_]Address{};
+    const unique = try deduplicateAddresses(allocator, &addresses);
+    try std.testing.expect(unique.len == 0);
+}
+
+test "Address - deduplicateAddresses no duplicates" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = try fromHex("0x0000000000000000000000000000000000000001");
+    const addr2 = try fromHex("0x0000000000000000000000000000000000000002");
+
+    const addresses = [_]Address{ addr1, addr2 };
+    const unique = try deduplicateAddresses(allocator, &addresses);
+    defer allocator.free(unique);
+
+    try std.testing.expect(unique.len == 2);
+}
+
+test "Address - deduplicateAddresses all duplicates" {
+    const allocator = std.testing.allocator;
+
+    const addr = try fromHex("0x0000000000000000000000000000000000000001");
+    const addresses = [_]Address{ addr, addr, addr };
+    const unique = try deduplicateAddresses(allocator, &addresses);
+    defer allocator.free(unique);
+
+    try std.testing.expect(unique.len == 1);
+    try std.testing.expect(equals(unique[0], addr));
 }
