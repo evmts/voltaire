@@ -8,7 +8,7 @@
 
 import type { Secp256k1PublicKeyType } from "../crypto/Secp256k1/Secp256k1PublicKeyType.js";
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
-import type { HashType } from "../primitives/Hash/HashType/HashType.js";
+import type { HashType } from "../primitives/Hash/HashType.js";
 import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
 
 /**
