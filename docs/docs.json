@@ -73,9 +73,21 @@
 							{
 								"group": "Advanced",
 								"pages": [
-									"jsonrpc-provider/adapters",
 									"jsonrpc-provider/error-handling",
 									"jsonrpc-provider/performance"
+								]
+							},
+							{
+								"group": "JSON-RPC Types",
+								"pages": [
+									{
+										"group": "JsonRpcError",
+										"icon": {
+											"name": "triangle-exclamation",
+											"style": "solid"
+										},
+										"pages": ["jsonrpc/json-rpc-error/index"]
+									}
 								]
 							},
 							"jsonrpc-provider/usage-patterns",
@@ -99,6 +111,15 @@
 									"primitives/abi/encoding",
 									"primitives/abi/selectors",
 									"primitives/abi/usage-patterns",
+									{
+										"group": "Signature Types",
+										"pages": [
+											"primitives/selector/index",
+											"primitives/function-signature/index",
+											"primitives/event-signature/index",
+											"primitives/error-signature/index"
+										]
+									},
 									{
 										"group": "Top-Level Methods",
 										"pages": [
@@ -311,6 +332,54 @@
 								]
 							},
 							{
+								"group": "CallData",
+								"icon": {
+									"name": "paper-plane",
+									"style": "regular"
+								},
+								"pages": [
+									"primitives/calldata/index",
+									"primitives/calldata/fundamentals",
+									"primitives/calldata/branded-calldata",
+									"primitives/calldata/decoded",
+									"primitives/calldata/encoding",
+									"primitives/calldata/usage-patterns",
+									"primitives/calldata/wasm",
+									{
+										"group": "Constructor Methods",
+										"pages": [
+											"primitives/calldata/from",
+											"primitives/calldata/from-hex",
+											"primitives/calldata/from-bytes",
+											"primitives/calldata/encode"
+										]
+									},
+									{
+										"group": "Conversion Methods",
+										"pages": [
+											"primitives/calldata/to-hex",
+											"primitives/calldata/to-bytes",
+											"primitives/calldata/decode"
+										]
+									},
+									{
+										"group": "Selector Methods",
+										"pages": [
+											"primitives/calldata/get-selector",
+											"primitives/calldata/has-selector"
+										]
+									},
+									{
+										"group": "Validation & Comparison",
+										"pages": [
+											"primitives/calldata/is-valid",
+											"primitives/calldata/is",
+											"primitives/calldata/equals"
+										]
+									}
+								]
+							},
+							{
 								"group": "Chain",
 								"icon": {
 									"name": "link",
@@ -363,6 +432,20 @@
 									"primitives/ens/security",
 									"primitives/ens/usage-patterns",
 									"primitives/ens/wasm"
+								]
+							},
+							{
+								"group": "Filters",
+								"icon": {
+									"name": "filter",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/filter-id/index",
+									"primitives/topic-filter/index",
+									"primitives/log-filter/index",
+									"primitives/block-filter/index",
+									"primitives/pending-transaction-filter/index"
 								]
 							},
 							{
@@ -895,6 +978,7 @@
 						"icon": "microchip",
 						"pages": [
 							"evm/index",
+							"evm/types",
 							{
 								"group": "Instructions",
 								"pages": [
@@ -1178,11 +1262,19 @@
 							"primitives/blob/fundamentals",
 							"primitives/bloomfilter/fundamentals",
 							"primitives/bytecode/fundamentals",
+							"primitives/calldata/fundamentals",
 							"primitives/chain/fundamentals",
 							"primitives/denomination/fundamentals",
 							"primitives/ens/fundamentals",
 							"primitives/eventlog/fundamentals",
 							"primitives/feemarket/fundamentals",
+							"primitives/receipt/index",
+							"primitives/transaction-hash/index",
+							"primitives/transaction-index/index",
+							"primitives/transaction-status/index",
+							"primitives/log-index/index",
+							"primitives/block-hash/index",
+							"primitives/block-number/index",
 							"primitives/gasconstants/fundamentals",
 							"primitives/hardfork/fundamentals",
 							"primitives/opcode/fundamentals",

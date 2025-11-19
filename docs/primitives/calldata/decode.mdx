@@ -1,0 +1,400 @@
+---
+title: decode
+description: Decode CallData to structured form with selector and parameters
+---
+
+Decodes calldata into a structured form with parsed selector, signature, and ABI-decoded parameters.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace">
+
+```typescript
+function decode(
+  calldata: CallDataType,
+  abi: Abi
+): CallDataDecoded
+```
+
+</Tab>
+<Tab title="Class">
+
+```typescript
+CallData.decode(
+  calldata: CallDataType,
+  abi: Abi
+): CallDataDecoded
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **calldata** - CallData instance to decode
+- **abi** - ABI specification with function definitions
+
+## Returns
+
+`CallDataDecoded` - Structured object with:
+- `selector`: 4-byte function identifier
+- `signature`: Human-readable function signature (optional)
+- `parameters`: Array of decoded ABI values
+
+## Examples
+
+<Tabs>
+<Tab title="ERC20 Transfer">
+
+```typescript
+import { CallData, Abi } from 'tevm';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+const calldata = CallData("0xa9059cbb...");
+const decoded = CallData.decode(calldata, abi);
+
+console.log(decoded.selector); // [0xa9, 0x05, 0x9c, 0xbb]
+console.log(decoded.signature); // "transfer(address,uint256)"
+console.log(decoded.parameters[0]); // Address("0x...")
+console.log(decoded.parameters[1]); // Uint256(...)
+```
+
+</Tab>
+<Tab title="Type-Safe Access">
+
+```typescript
+import { CallData, Abi, type Address, type Uint256 } from 'tevm';
+
+const decoded = CallData.decode(calldata, abi);
+
+// Type-safe parameter extraction
+const [to, amount] = decoded.parameters as [Address, Uint256];
+
+console.log("Recipient:", to.toHex());
+console.log("Amount:", TokenBalance.toUnits(amount, 18));
+```
+
+</Tab>
+<Tab title="With Structs">
+
+```typescript
+const abi = Abi([{
+  name: "swap",
+  type: "function",
+  inputs: [{
+    name: "params",
+    type: "tuple",
+    components: [
+      { name: "tokenIn", type: "address" },
+      { name: "tokenOut", type: "address" },
+      { name: "amountIn", type: "uint256" }
+    ]
+  }]
+}]);
+
+const decoded = CallData.decode(calldata, abi);
+const [params] = decoded.parameters;
+
+console.log("Token in:", params.tokenIn);
+console.log("Token out:", params.tokenOut);
+console.log("Amount:", params.amountIn);
+```
+
+</Tab>
+<Tab title="Dynamic Arrays">
+
+```typescript
+const abi = Abi([{
+  name: "batchTransfer",
+  type: "function",
+  inputs: [
+    { name: "recipients", type: "address[]" },
+    { name: "amounts", type: "uint256[]" }
+  ]
+}]);
+
+const decoded = CallData.decode(calldata, abi);
+const [recipients, amounts] = decoded.parameters;
+
+// Iterate dynamic arrays
+for (let i = 0; i < recipients.length; i++) {
+  console.log(`Transfer ${amounts[i]} to ${recipients[i]}`);
+}
+```
+
+</Tab>
+</Tabs>
+
+## CallDataDecoded Structure
+
+```typescript
+export type CallDataDecoded = {
+  selector: [4]u8;        // 4-byte function selector
+  signature: ?[]const u8; // Optional function signature
+  parameters: []AbiValue; // Decoded parameters
+};
+```
+
+### Fields
+
+**selector**: First 4 bytes identifying the function
+- Computed from `keccak256(signature)`
+- Always present even without ABI
+
+**signature**: Human-readable function name and types
+- Example: `"transfer(address,uint256)"`
+- Useful for debugging and logging
+- Optional (null if ABI unavailable)
+
+**parameters**: Typed parameter values
+- Array of decoded ABI values (Address, Uint256, etc.)
+- Preserves type information
+- Empty array if no parameters
+
+## Validation
+
+Validates calldata against ABI:
+
+```typescript
+import { CallData, Abi } from 'tevm';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+// Wrong selector
+try {
+  const calldata = CallData("0x12345678..."); // Unknown function
+  CallData.decode(calldata, abi);
+} catch (error) {
+  console.error("Function not found in ABI");
+}
+
+// Invalid encoding
+try {
+  const calldata = CallData("0xa9059cbb1234"); // Truncated
+  CallData.decode(calldata, abi);
+} catch (error) {
+  console.error("Invalid parameter encoding");
+}
+```
+
+## Use Cases
+
+### Transaction Analysis
+
+```typescript
+import { CallData, Abi } from 'tevm';
+
+const ERC20_ABI = Abi([
+  { name: "transfer", type: "function", inputs: [/*...*/] },
+  { name: "approve", type: "function", inputs: [/*...*/] },
+]);
+
+function analyzeTransaction(tx: Transaction) {
+  try {
+    const decoded = CallData.decode(tx.data, ERC20_ABI);
+
+    console.log("Function:", decoded.signature);
+    console.log("Parameters:");
+    decoded.parameters.forEach((param, i) => {
+      console.log(`  [${i}]:`, param);
+    });
+
+    return decoded;
+  } catch {
+    console.log("Unknown or non-ERC20 transaction");
+    return null;
+  }
+}
+```
+
+### Event Indexing
+
+```typescript
+import { CallData, Abi } from 'tevm';
+
+interface IndexedCall {
+  function: string;
+  params: Record<string, unknown>;
+  timestamp: number;
+}
+
+async function indexCallData(
+  calldata: CallDataType,
+  abi: Abi
+): Promise<IndexedCall> {
+  const decoded = CallData.decode(calldata, abi);
+
+  // Map parameters to names
+  const functionDef = abi.find(decoded.signature);
+  const params: Record<string, unknown> = {};
+
+  functionDef.inputs.forEach((input, i) => {
+    params[input.name] = decoded.parameters[i];
+  });
+
+  return {
+    function: decoded.signature!,
+    params,
+    timestamp: Date.now(),
+  };
+}
+```
+
+### Smart Contract Testing
+
+```typescript
+import { CallData, Abi } from 'tevm';
+import { describe, it, expect } from 'vitest';
+
+describe('Contract decoding', () => {
+  const abi = Abi([/*...*/]);
+
+  it('decodes transfer correctly', () => {
+    const calldata = abi.transfer.encode(recipient, amount);
+    const decoded = CallData.decode(calldata, abi);
+
+    expect(decoded.signature).toBe('transfer(address,uint256)');
+    expect(decoded.parameters[0]).toEqual(recipient);
+    expect(decoded.parameters[1]).toEqual(amount);
+  });
+});
+```
+
+## Performance
+
+Decoding optimized in WASM:
+
+```typescript
+// Benchmark: 1M iterations
+const calldata = abi.transfer.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18)
+);
+
+console.time("decode");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.decode(calldata, abi);
+}
+console.timeEnd("decode");
+
+// Pure JS: ~920ms
+// WASM (ReleaseSmall): ~380ms (2.4x faster)
+// WASM (ReleaseFast): ~210ms (4.4x faster)
+```
+
+## Error Handling
+
+Decode can fail for multiple reasons:
+
+<Tabs>
+<Tab title="Unknown Function">
+
+```typescript
+const abi = Abi([
+  { name: "transfer", type: "function", inputs: [/*...*/] }
+]);
+
+// Selector not in ABI
+const calldata = CallData("0x095ea7b3..."); // approve()
+
+try {
+  CallData.decode(calldata, abi);
+} catch (error) {
+  console.error("Function not found in ABI");
+  // Fallback: Extract selector only
+  const selector = CallData.getSelector(calldata);
+}
+```
+
+</Tab>
+<Tab title="Invalid Encoding">
+
+```typescript
+// Malformed parameter encoding
+const invalid = CallData("0xa9059cbb1234"); // Truncated
+
+try {
+  CallData.decode(invalid, abi);
+} catch (error) {
+  console.error("Invalid ABI encoding");
+}
+```
+
+</Tab>
+<Tab title="Safe Decoding">
+
+```typescript
+function safeDecode(
+  calldata: CallDataType,
+  abi: Abi
+): CallDataDecoded | null {
+  try {
+    return CallData.decode(calldata, abi);
+  } catch (error) {
+    console.warn("Decode failed:", error);
+    return null;
+  }
+}
+
+// Usage with fallback
+const decoded = safeDecode(calldata, abi);
+if (decoded) {
+  processDecoded(decoded);
+} else {
+  // Handle unknown calldata
+  const selector = CallData.getSelector(calldata);
+  processUnknown(selector);
+}
+```
+
+</Tab>
+</Tabs>
+
+## Memory Management (Zig)
+
+In Zig, decoded parameters own allocated memory:
+
+```zig
+const std = @import("std");
+const CallData = @import("primitives").CallData;
+
+pub fn processCallData(
+    allocator: std.mem.Allocator,
+    calldata: CallData,
+) !void {
+    var decoded = try calldata.decode(allocator);
+    defer decoded.deinit(); // Free allocated memory
+
+    // Use decoded parameters
+    for (decoded.parameters) |param| {
+        switch (param) {
+            .address => |addr| try handleAddress(addr),
+            .uint256 => |val| try handleUint256(val),
+            else => {},
+        }
+    }
+}
+```
+
+## Related
+
+- [encode](/primitives/calldata/encode) - Encode function call
+- [Decoded Form](/primitives/calldata/decoded) - CallDataDecoded details
+- [Abi](/primitives/abi) - ABI encoding and decoding
+- [getSelector](/primitives/calldata/get-selector) - Extract selector

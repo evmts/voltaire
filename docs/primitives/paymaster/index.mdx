@@ -1,0 +1,110 @@
+---
+title: Paymaster
+description: ERC-4337 paymaster contract address type
+---
+
+# Paymaster
+
+Paymaster is a branded [Address](/primitives/address) type representing an ERC-4337 paymaster contract. Paymasters sponsor gas fees for user operations, enabling gasless transactions or allowing users to pay gas in ERC-20 tokens.
+
+## Quick Start
+
+```typescript
+import { Paymaster } from 'tevm/primitives/Paymaster';
+
+// Create paymaster address
+const paymaster = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+// Convert to hex
+console.log(Paymaster.toHex(paymaster));
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+
+// Compare addresses
+const same = Paymaster.equals(paymaster, "0x742d35Cc...");
+```
+
+## Type Definition
+
+```typescript
+import type { AddressType } from '../Address/AddressType.js';
+import type { brand } from '../../brand.js';
+
+export type PaymasterType = AddressType & { readonly [brand]: "Paymaster" };
+```
+
+## API Reference
+
+### from
+
+Create Paymaster from address input.
+
+```typescript
+function from(
+  value: number | bigint | string | Uint8Array | AddressType
+): PaymasterType
+```
+
+### toHex
+
+Convert Paymaster to hex string.
+
+```typescript
+function toHex(
+  paymaster: number | bigint | string | Uint8Array | AddressType
+): string
+```
+
+### equals
+
+Check if two Paymaster addresses are equal.
+
+```typescript
+function equals(
+  paymaster1: number | bigint | string | Uint8Array | AddressType,
+  paymaster2: number | bigint | string | Uint8Array | AddressType
+): boolean
+```
+
+## Paymaster Functionality
+
+Paymasters enable:
+
+1. **Gasless transactions**: Sponsor user gas fees completely
+2. **Token payment**: Users pay gas in ERC-20 tokens
+3. **Conditional sponsorship**: Rules-based gas sponsorship
+4. **Rate limiting**: Control spending per account/time period
+
+## Usage with User Operations
+
+```typescript
+import { UserOperation } from 'tevm/primitives/UserOperation';
+import { Paymaster } from 'tevm/primitives/Paymaster';
+
+const paymasterAddr = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+// paymasterAndData format: paymaster (20 bytes) + paymasterData (variable)
+const paymasterAndData = new Uint8Array([
+  ...paymasterAddr,
+  // ...paymasterData (paymaster-specific data)
+]);
+
+const userOp = UserOperation.from({
+  sender: "0x...",
+  nonce: 0n,
+  // ... other fields
+  paymasterAndData,
+  signature: "0x",
+});
+```
+
+## Related Types
+
+- [UserOperation](/primitives/user-operation) - User operation with paymaster field
+- [EntryPoint](/primitives/entry-point) - Entry point contract
+- [Bundler](/primitives/bundler) - Bundler address
+- [Address](/primitives/address) - Base address type
+
+## References
+
+- [ERC-4337 Specification](https://eips.ethereum.org/EIPS/eip-4337)
+- [Paymaster Contracts](https://github.com/eth-infinitism/account-abstraction/tree/develop/contracts/samples)

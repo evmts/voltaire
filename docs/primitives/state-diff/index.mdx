@@ -1,0 +1,267 @@
+---
+title: StateDiff
+description: Complete state changes from debug_traceTransaction prestateTracer
+icon: git-compare
+---
+
+# StateDiff
+
+Complete state changes across all accounts during transaction execution. Primary output from debug_traceTransaction with prestateTracer.
+
+## Overview
+
+StateDiff captures all state modifications: balance changes, nonce increments, code deployments, and storage updates. Essential for state analysis and forensics.
+
+## Type Definition
+
+```typescript
+type AccountDiff = {
+  readonly balance?: {
+    readonly from: Wei | null;
+    readonly to: Wei | null;
+  };
+  readonly nonce?: {
+    readonly from: Nonce | null;
+    readonly to: Nonce | null;
+  };
+  readonly code?: {
+    readonly from: Uint8Array | null;
+    readonly to: Uint8Array | null;
+  };
+  readonly storage?: ReadonlyMap<StorageKey, {
+    readonly from: StorageValue | null;
+    readonly to: StorageValue | null;
+  }>;
+};
+
+type StateDiffType = {
+  readonly accounts: ReadonlyMap<Address, AccountDiff>;
+};
+```
+
+## Usage
+
+### Creating State Diffs
+
+```typescript
+import { StateDiff } from 'voltaire/primitives';
+
+// From Map
+const accounts = new Map([
+  [address, {
+    balance: { from: 0n, to: 100n },
+    nonce: { from: 0n, to: 1n }
+  }]
+]);
+const diff = StateDiff.from(accounts);
+
+// From array
+const accountsArray = [
+  [address1, { balance: { from: 100n, to: 200n } }],
+  [address2, { nonce: { from: 5n, to: 6n } }]
+];
+const diff2 = StateDiff.from(accountsArray);
+
+// From object (prestateTracer format)
+const diff3 = StateDiff.from({ accounts: accountsMap });
+```
+
+### Querying State Changes
+
+```typescript
+// Get account diff
+const accountDiff = StateDiff.getAccount(diff, address);
+if (accountDiff?.balance) {
+  console.log(`Balance: ${accountDiff.balance.from} -> ${accountDiff.balance.to}`);
+}
+
+// Get all modified accounts
+const addresses = StateDiff.getAddresses(diff);
+console.log(`${addresses.length} accounts modified`);
+
+// Check if state was modified
+if (!StateDiff.isEmpty(diff)) {
+  console.log('State was modified');
+}
+```
+
+## prestateTracer Integration
+
+Primary use case for StateDiff:
+
+```typescript
+// Trace transaction with prestateTracer
+const trace = await rpc.debug_traceTransaction(txHash, {
+  tracer: 'prestateTracer',
+  tracerConfig: {
+    diffMode: true  // Show before/after values
+  }
+});
+
+// Parse into StateDiff
+const accounts = new Map();
+for (const [addrHex, accountData] of Object.entries(trace)) {
+  const address = Address.from(addrHex);
+
+  const diff = {
+    balance: accountData.balance ? {
+      from: Wei.from(accountData.balance.from || 0),
+      to: Wei.from(accountData.balance.to || 0)
+    } : undefined,
+
+    nonce: accountData.nonce ? {
+      from: Nonce.from(accountData.nonce.from || 0),
+      to: Nonce.from(accountData.nonce.to || 0)
+    } : undefined,
+
+    storage: accountData.storage ? parseStorage(accountData.storage) : undefined
+  };
+
+  accounts.set(address, diff);
+}
+
+const stateDiff = StateDiff.from(accounts);
+```
+
+## Account Changes
+
+### Balance Changes
+
+ETH transfers modify balances:
+
+```typescript
+const accountDiff = StateDiff.getAccount(diff, address);
+if (accountDiff?.balance) {
+  const delta = accountDiff.balance.to - accountDiff.balance.from;
+  console.log(`Balance delta: ${delta} wei`);
+}
+```
+
+### Nonce Increments
+
+Transaction execution increments sender nonce:
+
+```typescript
+if (accountDiff?.nonce) {
+  console.log(`Nonce: ${accountDiff.nonce.from} -> ${accountDiff.nonce.to}`);
+}
+```
+
+### Contract Deployment
+
+Code deployment creates new contract:
+
+```typescript
+if (accountDiff?.code) {
+  if (accountDiff.code.from === null && accountDiff.code.to !== null) {
+    console.log('Contract deployed');
+    console.log(`Code size: ${accountDiff.code.to.length} bytes`);
+  }
+}
+```
+
+### Storage Updates
+
+Contract storage modifications:
+
+```typescript
+if (accountDiff?.storage) {
+  for (const [key, change] of accountDiff.storage) {
+    console.log(`Slot ${key.slot}: ${change.from} -> ${change.to}`);
+  }
+}
+```
+
+## Analysis Patterns
+
+### Transaction Impact
+
+Analyze full transaction impact:
+
+```typescript
+// Summarize state changes
+const addresses = StateDiff.getAddresses(diff);
+console.log(`Modified ${addresses.length} accounts:`);
+
+for (const addr of addresses) {
+  const accountDiff = StateDiff.getAccount(diff, addr);
+
+  if (accountDiff?.balance) console.log('  - Balance changed');
+  if (accountDiff?.nonce) console.log('  - Nonce incremented');
+  if (accountDiff?.code) console.log('  - Code deployed/modified');
+  if (accountDiff?.storage?.size > 0) {
+    console.log(`  - ${accountDiff.storage.size} storage slots changed`);
+  }
+}
+```
+
+### Gas Cost Estimation
+
+Calculate state change costs:
+
+```typescript
+let totalGas = 0;
+
+for (const addr of StateDiff.getAddresses(diff)) {
+  const accountDiff = StateDiff.getAccount(diff, addr);
+
+  // Balance transfers: 9000 gas (or 2300 for fallback)
+  if (accountDiff?.balance) totalGas += 9000;
+
+  // Storage operations
+  if (accountDiff?.storage) {
+    for (const [key, change] of accountDiff.storage) {
+      if (change.from === null) totalGas += 20000;  // New slot
+      else if (change.to === null) totalGas -= 15000;  // Refund
+      else totalGas += 5000;  // Update
+    }
+  }
+
+  // Contract creation: 32000 + code costs
+  if (accountDiff?.code?.from === null && accountDiff?.code?.to) {
+    totalGas += 32000 + (accountDiff.code.to.length * 200);
+  }
+}
+
+console.log(`Estimated gas: ${totalGas}`);
+```
+
+### Forensics
+
+Investigate suspicious transactions:
+
+```typescript
+// Find accounts with large balance changes
+const addresses = StateDiff.getAddresses(diff);
+for (const addr of addresses) {
+  const accountDiff = StateDiff.getAccount(diff, addr);
+
+  if (accountDiff?.balance) {
+    const delta = accountDiff.balance.to - accountDiff.balance.from;
+    if (delta > 1000000000000000000n) {  // > 1 ETH
+      console.log(`Large transfer to ${Address.toHex(addr)}: ${delta}`);
+    }
+  }
+}
+```
+
+## API Reference
+
+### Constructors
+
+- `StateDiff.from(accounts)` - Create from Map/array
+- `StateDiff.from({ accounts })` - Create from object
+
+### Methods
+
+- `StateDiff.getAccount(diff, address)` - Get account changes
+- `StateDiff.getAddresses(diff)` - Get all modified addresses
+- `StateDiff.isEmpty(diff)` - Check if state was modified
+
+## See Also
+
+- [StorageDiff](/primitives/storage-diff) - Storage slot changes
+- [MemoryDump](/primitives/memory-dump) - Memory snapshots
+- [Wei](/primitives/denomination) - ETH amounts
+- [Nonce](/primitives/nonce) - Transaction counters
+- [Address](/primitives/address) - Account addresses

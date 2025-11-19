@@ -1,0 +1,183 @@
+---
+title: from
+description: Universal CallData constructor from any input
+---
+
+Creates a CallData instance from various input types. Primary constructor that accepts hex strings, Uint8Arrays, or existing CallData instances.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace">
+
+```typescript
+function from(value: string | Uint8Array | CallDataType): CallDataType
+```
+
+</Tab>
+<Tab title="Class">
+
+```typescript
+CallData(value: string | Uint8Array | CallDataType): CallDataType
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **value** - Input to convert to CallData:
+  - `string` - Hex string (with or without `0x` prefix)
+  - `Uint8Array` - Raw byte array
+  - `CallDataType` - Existing CallData instance (returns as-is)
+
+## Returns
+
+`CallDataType` - Branded Uint8Array representing transaction calldata
+
+## Examples
+
+<Tabs>
+<Tab title="From Hex String">
+
+```typescript
+import { CallData } from 'tevm';
+
+// With 0x prefix
+const calldata1 = CallData("0xa9059cbb000000000000000000000000...");
+
+// Without 0x prefix
+const calldata2 = CallData("a9059cbb000000000000000000000000...");
+
+// Both produce identical CallData
+console.log(CallData.equals(calldata1, calldata2)); // true
+```
+
+</Tab>
+<Tab title="From Uint8Array">
+
+```typescript
+import { CallData } from 'tevm';
+
+const bytes = new Uint8Array([
+  0xa9, 0x05, 0x9c, 0xbb, // transfer selector
+  0x00, 0x00, 0x00, 0x00, // ... encoded params
+  // ...
+]);
+
+const calldata = CallData(bytes);
+console.log(CallData.toHex(calldata));
+// "0xa9059cbb00000000..."
+```
+
+</Tab>
+<Tab title="Idempotent">
+
+```typescript
+import { CallData } from 'tevm';
+
+const calldata1 = CallData("0xa9059cbb...");
+const calldata2 = CallData(calldata1); // Returns same instance
+
+console.log(calldata1 === calldata2); // true
+```
+
+</Tab>
+<Tab title="Namespace API">
+
+```typescript
+import * as CallData from 'tevm/CallData';
+
+const calldata = CallData.from("0xa9059cbb...");
+console.log(CallData.toHex(calldata));
+```
+
+</Tab>
+</Tabs>
+
+## Validation
+
+Validates input format and structure:
+
+```typescript
+import { CallData } from 'tevm';
+
+// Must be valid hex
+try {
+  CallData("0xGGGG"); // Invalid hex characters
+} catch (error) {
+  console.error("Invalid hex string");
+}
+
+// Must have at least selector (4 bytes)
+try {
+  CallData("0x1234"); // Only 2 bytes
+} catch (error) {
+  console.error("CallData must be at least 4 bytes");
+}
+
+// Valid
+const calldata = CallData("0xa9059cbb");
+console.log(calldata.length); // 4 (selector only)
+```
+
+## Use Cases
+
+### Parsing Transaction Data
+
+```typescript
+import { CallData } from 'tevm';
+
+interface Transaction {
+  to: string;
+  data: string;
+}
+
+function parseTransaction(tx: Transaction) {
+  const calldata = CallData(tx.data);
+  const selector = CallData.getSelector(calldata);
+
+  console.log("Function selector:", selector);
+  return calldata;
+}
+```
+
+### Normalized Input
+
+```typescript
+import { CallData } from 'tevm';
+
+// Accept various formats, normalize to CallData
+function processCallData(
+  input: string | Uint8Array | CallDataType
+): CallDataType {
+  return CallData(input); // Handles all types
+}
+
+// Usage
+processCallData("0xa9059cbb...");
+processCallData(new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]));
+processCallData(existingCallData);
+```
+
+## Type Safety
+
+TypeScript enforces CallData brand:
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+// Type error: Uint8Array not assignable to CallDataType
+const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+const calldata: CallDataType = bytes; // ❌ Type error
+
+// Correct: Use constructor
+const calldata: CallDataType = CallData(bytes); // ✅
+```
+
+## Related
+
+- [fromHex](/primitives/calldata/from-hex) - Parse hex string specifically
+- [fromBytes](/primitives/calldata/from-bytes) - Create from Uint8Array
+- [encode](/primitives/calldata/encode) - Encode function call
+- [isValid](/primitives/calldata/is-valid) - Validate before constructing

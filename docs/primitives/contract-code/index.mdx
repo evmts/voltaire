@@ -1,0 +1,121 @@
+---
+title: Overview
+description: Deployed contract bytecode with metadata
+---
+
+## Type Definition
+
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing full deployed contract bytecode including Solidity compiler metadata.
+
+```typescript
+import type { brand } from 'tevm/brand';
+
+export type ContractCodeType = Uint8Array & {
+  readonly [brand]: "ContractCode";
+};
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```typescript
+import * as ContractCode from 'tevm/ContractCode';
+
+// From hex string
+const code = ContractCode.from("0x6001600155a26469706673...");
+
+// From Uint8Array
+const code = ContractCode.from(new Uint8Array([0x60, 0x01, ...]));
+```
+
+</Tab>
+<Tab title="Convert">
+
+```typescript
+// To hex
+const hex = ContractCode.toHex(code);
+
+// Strip metadata
+const runtime = ContractCode.stripMetadata(code);
+
+// Extract runtime code
+const runtime = ContractCode.extractRuntime(code);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Metadata
+
+- [`hasMetadata(code)`](./hasMetadata) - Check if code contains compiler metadata
+- [`stripMetadata(code)`](./stripMetadata) - Remove Solidity metadata
+- [`extractRuntime(code)`](./extractRuntime) - Extract runtime code (alias for stripMetadata)
+
+### Utilities
+
+- [`toHex(code)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Verifying Contract Code
+
+```typescript
+import * as ContractCode from 'tevm/ContractCode';
+
+// Get deployed code from blockchain
+const deployed = ContractCode.from(await provider.getCode(address));
+
+// Check for metadata
+if (ContractCode.hasMetadata(deployed)) {
+  console.log("Contract includes Solidity metadata");
+}
+
+// Extract runtime code for comparison
+const runtime = ContractCode.stripMetadata(deployed);
+const expected = ContractCode.from(compiledRuntimeCode);
+
+if (ContractCode.equals(runtime, expected)) {
+  console.log("Contract verified");
+}
+```
+
+### Analyzing Contract Structure
+
+```typescript
+import * as ContractCode from 'tevm/ContractCode';
+import * as Metadata from 'tevm/Metadata';
+
+const code = ContractCode.from(deployedBytecode);
+
+// Extract metadata
+const meta = Metadata.fromBytecode(code);
+if (meta) {
+  console.log(`Compiler: Solidity ${meta.solc}`);
+  console.log(`IPFS: ${meta.ipfs}`);
+}
+
+// Get clean runtime code
+const runtime = ContractCode.extractRuntime(code);
+```
+
+## Related
+
+- [InitCode](/primitives/init-code) - Contract creation bytecode
+- [RuntimeCode](/primitives/runtime-code) - Pure runtime bytecode
+- [Metadata](/primitives/metadata) - Solidity compiler metadata
+- [Bytecode](/primitives/bytecode) - General bytecode analysis
+
+## Specification
+
+- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Compiler metadata format
+- [Contract Verification](https://docs.etherscan.io/tutorials/verifying-contracts-programmatically) - Etherscan verification guide

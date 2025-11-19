@@ -3,10 +3,6 @@ title: Getting Started
 description: Install and make your first JSON-RPC requests with type-safe providers
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
 # Getting Started
 
 Install Tevm and start making type-safe JSON-RPC requests to Ethereum nodes.
@@ -19,70 +15,24 @@ npm install tevm
 
 ## Creating a Provider
 
-Tevm provides the `Provider` interface but doesn't include transport implementations. Create providers using adapters or third-party libraries.
-
-###
-
- From HTTP URL
+Use a standard EIP-1193 provider (like window.ethereum, viem, or ethers):
 
 ```typescript
-import { createPublicClient, http } from 'viem';
-import type { Provider } from 'tevm/provider';
+// From window.ethereum (MetaMask, etc.)
+const provider = window.ethereum;
 
-// Create viem client
-const client = createPublicClient({
+// From viem
+import { createPublicClient, http } from 'viem';
+const provider = createPublicClient({
   transport: http('https://eth.llamarpc.com')
 });
 
-// Use as Provider (viem PublicClient is Provider-compatible)
-const provider: Provider = client as unknown as Provider;
+// From ethers
+import { ethers } from 'ethers';
+const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
 ```
 
-### From WebSocket
-
-```typescript
-import { createPublicClient, webSocket } from 'viem';
-
-const provider = createPublicClient({
-  transport: webSocket('wss://eth.llamarpc.com')
-}) as unknown as Provider;
-```
-
-### From Window Ethereum (MetaMask)
-
-```typescript
-import { Eip1193Provider } from 'tevm/provider/adapters';
-import type { Provider } from 'tevm/provider';
-
-// Wrap window.ethereum with EIP-1193 adapter
-const provider: Provider = Eip1193Provider(window.ethereum);
-```
-
-### Custom Transport
-
-Implement the `Provider` interface for custom transports:
-
-```typescript
-import type { Provider, Response } from 'tevm/provider';
-import * as Address from 'tevm/Address';
-
-class CustomProvider implements Provider {
-  async eth_blockNumber(): Promise<Response<string>> {
-    // Your implementation
-  }
-
-  async eth_getBalance(
-    address: Address.AddressType,
-    blockTag: string
-  ): Promise<Response<string>> {
-    // Your implementation
-  }
-
-  // ... implement remaining 63 methods
-}
-```
-
-See [Adapters](/jsonrpc-provider/adapters) for detailed implementation patterns.
+All EIP-1193 providers work with Tevm's request builders.
 
 ## Your First Request
 
@@ -93,16 +43,11 @@ Simplest request - no parameters:
 ```typescript
 import * as Rpc from 'tevm/jsonrpc';
 
-// Create request using constructor
-const request = Rpc.Eth.BlockNumberRequest();
-
-// Send request through provider
-const response = await provider.request(request);
-
-if (response.error) {
-  console.error('Error:', response.error.message);
-} else {
-  console.log('Current block:', response.result);
+try {
+  const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+  console.log('Current block:', blockNumber);
+} catch (error) {
+  console.error('Error:', error.message);
 }
 ```
 
@@ -114,19 +59,16 @@ Request with branded Address parameter:
 import * as Rpc from 'tevm/jsonrpc';
 import * as Address from 'tevm/Address';
 
-// Create branded Address
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-// Create request using constructor
-const request = Rpc.Eth.GetBalanceRequest(address, 'latest');
-
-// Send request
-const response = await provider.request(request);
-
-if (!response.error) {
-  const balanceWei = BigInt(response.result);
-  const balanceEth = Number(balanceWei) / 1e18;
+try {
+  const balance = await provider.request(
+    Rpc.Eth.GetBalanceRequest(address, 'latest')
+  );
+  const balanceEth = Number(BigInt(balance)) / 1e18;
   console.log(`Balance: ${balanceEth} ETH`);
+} catch (error) {
+  console.error('Failed to get balance:', error);
 }
 ```
 
@@ -142,131 +84,77 @@ import * as Hex from 'tevm/Hex';
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
 const methodSignature = Hex('0x18160ddd'); // totalSupply()
 
-// Create call request
-const request = Rpc.Eth.CallRequest({
-  to: contractAddress,
-  data: methodSignature
-}, 'latest');
-
-// Send request
-const response = await provider.request(request);
-
-if (!response.error) {
-  const totalSupply = BigInt(response.result);
+try {
+  const result = await provider.request(
+    Rpc.Eth.CallRequest({
+      to: contractAddress,
+      data: methodSignature
+    }, 'latest')
+  );
+  const totalSupply = BigInt(result);
   console.log('Total supply:', totalSupply);
+} catch (error) {
+  console.error('Call failed:', error);
 }
 ```
 
-## Handling Responses
+## Error Handling
 
-All provider methods return `Response<T>`:
-
-```typescript
-type Response<T> =
-  | { result: T; error?: never }
-  | { result?: never; error: RpcError };
-```
-
-Always check for errors before using results:
-
-```typescript
-import * as Rpc from 'tevm/jsonrpc';
-
-const request = Rpc.Eth.BlockNumberRequest();
-const response = await provider.request(request);
-
-// ❌ Don't access result directly
-console.log(response.result); // May be undefined!
-
-// ✅ Check for errors first
-if (response.error) {
-  console.error('RPC error:', response.error.code, response.error.message);
-  return;
-}
-
-// Now safe to use result
-console.log('Block:', response.result);
-```
-
-### Type-Safe Error Handling
-
-TypeScript narrows the type after checking:
+Requests throw errors on failure:
 
 ```typescript
 import * as Rpc from 'tevm/jsonrpc';
 import * as Address from 'tevm/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-const request = Rpc.Eth.GetBalanceRequest(address, 'latest');
-const response = await provider.request(request);
 
-if (response.error) {
-  // response.error is RpcError
-  // response.result is undefined
-  console.error(response.error.message);
-} else {
-  // response.result is string (Quantity)
-  // response.error is undefined
-  const balance = BigInt(response.result);
+try {
+  const balance = await provider.request(
+    Rpc.Eth.GetBalanceRequest(address, 'latest')
+  );
+  console.log('Balance:', balance);
+} catch (error) {
+  // Error object contains code and message
+  console.error('RPC error:', error.code, error.message);
 }
 ```
 
 ## Subscribing to Events
 
-Subscribe to blockchain events using async generators:
+Subscribe to blockchain events using EventEmitter pattern:
 
 ```typescript
-import type { Provider } from 'tevm/provider';
-
-const provider: Provider = /* ... */;
-
 // Subscribe to new blocks
-for await (const block of provider.events.newHeads()) {
-  console.log('New block:', block.number);
-  console.log('Hash:', block.hash);
-  console.log('Transactions:', block.transactions.length);
-}
+provider.on('accountsChanged', (accounts) => {
+  console.log('Accounts changed:', accounts);
+});
+
+provider.on('chainChanged', (chainId) => {
+  console.log('Chain changed:', chainId);
+});
+
+provider.on('connect', (connectInfo) => {
+  console.log('Connected to chain:', connectInfo.chainId);
+});
+
+provider.on('disconnect', (error) => {
+  console.log('Disconnected:', error);
+});
 ```
 
-### Subscribe with Filter
+### Unsubscribe
 
-Monitor specific contract events:
-
-```typescript
-import * as Address from 'tevm/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-
-const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
-const transferSignature = Keccak256.from(
-  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-);
-
-for await (const log of provider.events.logs({
-  address: contractAddress,
-  topics: [transferSignature]
-})) {
-  console.log('Transfer event in block:', log.blockNumber);
-  console.log('Transaction:', log.transactionHash);
-}
-```
-
-### Stop Subscription
-
-Break from loop to stop subscription:
+Remove event listeners:
 
 ```typescript
-let count = 0;
+const handler = (accounts) => {
+  console.log('Accounts:', accounts);
+};
 
-for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
+provider.on('accountsChanged', handler);
 
-  count++;
-  if (count >= 10) {
-    break; // Stop after 10 blocks
-  }
-}
-
-console.log('Subscription stopped');
+// Later, remove listener
+provider.removeListener('accountsChanged', handler);
 ```
 
 ## Common Patterns
@@ -281,22 +169,18 @@ import * as Address from 'tevm/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-// Create requests
-const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
-const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, 'latest');
-const codeReq = Rpc.Eth.GetCodeRequest(address, 'latest');
+try {
+  const [balance, nonce, code] = await Promise.all([
+    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest')),
+    provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'))
+  ]);
 
-// Send in parallel
-const [balance, nonce, code] = await Promise.all([
-  provider.request(balanceReq),
-  provider.request(nonceReq),
-  provider.request(codeReq)
-]);
-
-if (!balance.error && !nonce.error && !code.error) {
-  console.log('Balance:', balance.result);
-  console.log('Nonce:', nonce.result);
-  console.log('Is contract:', code.result !== '0x');
+  console.log('Balance:', balance);
+  console.log('Nonce:', nonce);
+  console.log('Is contract:', code !== '0x');
+} catch (error) {
+  console.error('Failed to fetch account state:', error);
 }
 ```
 
@@ -307,22 +191,24 @@ import * as Rpc from 'tevm/jsonrpc';
 import * as Address from 'tevm/Address';
 import * as Hex from 'tevm/Hex';
 
-const request = Rpc.Eth.EstimateGasRequest({
-  from: Address('0x...'),
-  to: Address('0x...'),
-  value: '0x0',
-  data: Hex('0xa9059cbb...') // transfer(address,uint256)
-});
+try {
+  const gasEstimate = await provider.request(
+    Rpc.Eth.EstimateGasRequest({
+      from: Address('0x...'),
+      to: Address('0x...'),
+      value: '0x0',
+      data: Hex('0xa9059cbb...') // transfer(address,uint256)
+    })
+  );
 
-const gasEstimate = await provider.request(request);
-
-if (!gasEstimate.error) {
-  const gas = BigInt(gasEstimate.result);
+  const gas = BigInt(gasEstimate);
   console.log('Estimated gas:', gas);
 
   // Add 20% buffer
   const gasLimit = gas * 120n / 100n;
   console.log('Recommended gas limit:', gasLimit);
+} catch (error) {
+  console.error('Gas estimation failed:', error);
 }
 ```
 
@@ -337,11 +223,13 @@ import * as Address from 'tevm/Address';
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
 
-const request = Rpc.Eth.GetBalanceRequest(address, blockNumber);
-const response = await provider.request(request);
-
-if (!response.error) {
-  console.log('Balance at block 1M:', response.result);
+try {
+  const balance = await provider.request(
+    Rpc.Eth.GetBalanceRequest(address, blockNumber)
+  );
+  console.log('Balance at block 1M:', balance);
+} catch (error) {
+  console.error('Failed to query historical state:', error);
 }
 ```
 
@@ -382,45 +270,26 @@ const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
 const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 ```
 
-### "response.result is possibly undefined"
+### Request returns RequestArguments not result
 
-Check for errors before accessing result:
+Request builders return `{method, params}` objects, not results. Always use with `provider.request()`:
 
 ```typescript
 import * as Rpc from 'tevm/jsonrpc';
 
-// ❌ TypeScript error: result may be undefined
+// ❌ Wrong: request builder doesn't execute anything
 const request = Rpc.Eth.BlockNumberRequest();
-const response = await provider.request(request);
-console.log(response.result);
+console.log(request); // { method: 'eth_blockNumber', params: [] }
 
-// ✅ Correct: check error first
-if (!response.error) {
-  console.log(response.result); // TypeScript knows result is defined
-}
-```
-
-### Events not firing
-
-Ensure transport supports subscriptions (WebSocket required for real-time, HTTP falls back to polling):
-
-```typescript
-// ✅ WebSocket supports real-time subscriptions
-const provider = createPublicClient({
-  transport: webSocket('wss://...')
-});
-
-// ⚠️ HTTP falls back to polling (less efficient)
-const provider = createPublicClient({
-  transport: http('https://...')
-});
+// ✅ Correct: send through provider
+const result = await provider.request(request);
+console.log(result); // '0x112a880'
 ```
 
 ## Related
 
 - [Method API](/jsonrpc-provider/method-api) - Detailed method documentation
 - [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
-- [Adapters](/jsonrpc-provider/adapters) - Creating and using provider adapters
+- [Events](/jsonrpc-provider/events) - Event handling patterns
 - [Address](/primitives/address) - Address primitive documentation
-- [Keccak256](/crypto/keccak256) - Hash primitive documentation
 - [Hex](/primitives/hex) - Hex primitive documentation

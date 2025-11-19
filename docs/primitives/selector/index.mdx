@@ -1,0 +1,140 @@
+---
+title: Selector
+description: 4-byte function selector for Ethereum function signatures
+---
+
+# Selector
+
+A **Selector** is a 4-byte identifier used to uniquely identify Ethereum function calls. It's computed as the first 4 bytes of the Keccak-256 hash of the function signature.
+
+## Type Definition
+
+```typescript
+type SelectorType = Uint8Array & {
+  readonly [brand]: "Selector";
+  readonly length: 4;
+};
+```
+
+## Creating Selectors
+
+### From Signature String
+
+The most common way to create a selector is from a function signature:
+
+```typescript
+import * as Selector from '@tevm/primitives';
+
+const transferSelector = Selector.fromSignature('transfer(address,uint256)');
+console.log(Selector.toHex(transferSelector)); // '0xa9059cbb'
+```
+
+### From Hex String
+
+```typescript
+const selector = Selector.fromHex('0xa9059cbb');
+```
+
+### From Bytes
+
+```typescript
+const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+const selector = Selector.from(bytes);
+```
+
+## Operations
+
+### Convert to Hex
+
+```typescript
+const hex = Selector.toHex(selector);
+// '0xa9059cbb'
+```
+
+### Compare Selectors
+
+```typescript
+const sel1 = Selector.fromSignature('transfer(address,uint256)');
+const sel2 = Selector.fromSignature('approve(address,uint256)');
+const equal = Selector.equals(sel1, sel2); // false
+```
+
+## Common Selectors
+
+### ERC-20
+
+- `transfer(address,uint256)` → `0xa9059cbb`
+- `approve(address,uint256)` → `0x095ea7b3`
+- `balanceOf(address)` → `0x70a08231`
+- `totalSupply()` → `0x18160ddd`
+
+### ERC-721
+
+- `transferFrom(address,address,uint256)` → `0x23b872dd`
+- `safeTransferFrom(address,address,uint256)` → `0x42842e0e`
+- `ownerOf(uint256)` → `0x6352211e`
+
+## Signature Format
+
+Function signatures must use **canonical type names**:
+
+✅ Correct:
+- `transfer(address,uint256)`
+- `swap(uint256,uint256,address,bytes)`
+- `execute((address,uint256,bytes)[])`
+
+❌ Incorrect:
+- `transfer(address, uint256)` (has spaces)
+- `transfer(address,uint)` (should be uint256)
+- `Transfer(address,uint256)` (wrong capitalization)
+
+## How Selectors Work
+
+1. **Function Signature**: Start with the canonical function signature
+2. **Hash**: Compute `keccak256(signature)`
+3. **Truncate**: Take the first 4 bytes
+
+```
+transfer(address,uint256)
+  ↓ keccak256
+0xa9059cbb2fead7aba11f5e0a11af...
+  ↓ slice(0, 4)
+0xa9059cbb
+```
+
+## Selector Collisions
+
+While rare, different function signatures can theoretically produce the same selector (collision). In practice, this is extremely unlikely due to the cryptographic properties of Keccak-256.
+
+If a collision occurs:
+1. One function will override the other in the contract
+2. The EVM will use whichever function is defined first
+3. This is considered a critical contract bug
+
+## Usage in Contracts
+
+Selectors are used in:
+
+1. **Function Calls**: First 4 bytes of transaction data identify the function
+2. **Low-level Calls**: `address.call(abi.encodeWithSelector(selector, args))`
+3. **Function Routing**: Contracts use selectors to route calls to the correct function
+
+## API Reference
+
+### Constructors
+
+- `from(value: SelectorLike): SelectorType` - Create from various inputs
+- `fromHex(hex: string): SelectorType` - Create from hex string
+- `fromSignature(signature: string): SelectorType` - Compute from function signature
+
+### Operations
+
+- `toHex(selector: SelectorType): string` - Convert to hex string
+- `equals(a: SelectorType, b: SelectorType): boolean` - Compare selectors
+
+## See Also
+
+- [FunctionSignature](/primitives/function-signature) - Extended selector with metadata
+- [EventSignature](/primitives/event-signature) - 32-byte event topic
+- [ErrorSignature](/primitives/error-signature) - 4-byte error selector
+- [ABI Encoding](/primitives/abi) - Encoding function calls

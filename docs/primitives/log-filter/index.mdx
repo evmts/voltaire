@@ -1,0 +1,393 @@
+---
+title: LogFilter
+description: Event log filter parameters for eth_getLogs and eth_newFilter
+---
+
+## Overview
+
+`LogFilter` specifies query parameters for filtering Ethereum event logs. Used with `eth_getLogs` (one-time query) and `eth_newFilter` (continuous polling). Supports filtering by block range, contract address, and event topics.
+
+## Type Definition
+
+```typescript
+type BlockTag = "earliest" | "latest" | "pending";
+
+type LogFilterType = {
+  readonly fromBlock?: BlockNumberType | BlockTag;
+  readonly toBlock?: BlockNumberType | BlockTag;
+  readonly address?: AddressType | readonly AddressType[];
+  readonly topics?: TopicFilterType;
+  readonly blockhash?: HashType;
+} & {
+  readonly [brand]: "LogFilter";
+};
+```
+
+## Creating LogFilter
+
+### from
+
+```typescript
+import * as LogFilter from './primitives/LogFilter/index.js';
+import { Address } from './primitives/Address/index.js';
+import * as BlockNumber from './primitives/BlockNumber/index.js';
+import * as TopicFilter from './primitives/TopicFilter/index.js';
+
+// Filter by address and block range
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(1000000),
+  toBlock: "latest",
+  address: Address.from("0x...")
+});
+
+// Filter by specific block hash
+const filter2 = LogFilter.from({
+  blockhash: Hash.from("0x..."),
+  address: Address.from("0x...")
+});
+
+// Filter with topics
+const topics = TopicFilter.from([eventSig, null, recipientHash]);
+const filter3 = LogFilter.from({
+  fromBlock: "latest",
+  address: Address.from("0x..."),
+  topics
+});
+```
+
+**Parameters:**
+- `fromBlock`: Starting block (bigint or tag)
+- `toBlock`: Ending block (bigint or tag)
+- `address`: Contract address(es) to filter
+- `topics`: Topic filter for indexed parameters
+- `blockhash`: Specific block hash (alternative to range)
+
+**Returns:** `LogFilterType`
+
+**Throws:** `InvalidLogFilterError` if:
+- `blockhash` used with `fromBlock`/`toBlock`
+- Invalid block tags
+- Invalid addresses or topics
+
+## Operations
+
+### matches
+
+```typescript
+const isMatch = LogFilter.matches(filter, log);
+```
+
+Tests if a log entry matches the filter criteria. Checks:
+- Address (if specified)
+- Block number range (if specified)
+- Block hash (if specified)
+- Topics (if specified)
+
+### isEmpty
+
+```typescript
+const empty = LogFilter.isEmpty(filter);
+```
+
+Returns `true` if filter has no criteria (would match all logs).
+
+## Block Range Queries
+
+### Block Tags
+
+```typescript
+// Latest mined block
+const filter = LogFilter.from({
+  fromBlock: "latest",
+  toBlock: "latest"
+});
+
+// All historical blocks
+const filter2 = LogFilter.from({
+  fromBlock: "earliest",
+  toBlock: "latest"
+});
+
+// Pending transactions (mempool)
+const filter3 = LogFilter.from({
+  fromBlock: "pending",
+  toBlock: "pending"
+});
+```
+
+### Block Numbers
+
+```typescript
+import * as BlockNumber from './primitives/BlockNumber/index.js';
+
+// Specific range
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(18000000),
+  toBlock: BlockNumber.from(18001000)
+});
+
+// From specific block to latest
+const filter2 = LogFilter.from({
+  fromBlock: BlockNumber.from(18000000),
+  toBlock: "latest"
+});
+```
+
+### Block Hash (Alternative)
+
+Query logs from a specific block by hash (useful after reorgs):
+
+```typescript
+const filter = LogFilter.from({
+  blockhash: blockHash,
+  address: contractAddr
+});
+```
+
+**Important:** `blockhash` is mutually exclusive with `fromBlock`/`toBlock`.
+
+## Address Filtering
+
+### Single Address
+
+```typescript
+const filter = LogFilter.from({
+  address: Address.from("0x...")
+});
+```
+
+### Multiple Addresses (OR logic)
+
+```typescript
+const filter = LogFilter.from({
+  address: [
+    Address.from("0x..."),
+    Address.from("0x..."),
+    Address.from("0x...")
+  ]
+});
+```
+
+Matches logs from ANY of the specified addresses.
+
+## Topic Filtering
+
+See [TopicFilter](/primitives/topic-filter) for detailed topic matching rules.
+
+```typescript
+import * as TopicFilter from './primitives/TopicFilter/index.js';
+import { EventSignature } from './primitives/EventSignature/index.js';
+
+// Specific event
+const transferSig = EventSignature.fromSignature(
+  "Transfer(address,address,uint256)"
+);
+const topics = TopicFilter.from([transferSig]);
+
+// Event with specific parameter
+const recipientHash = Address.from("0x...").toBytes32();
+const topics2 = TopicFilter.from([transferSig, null, recipientHash]);
+
+// Multiple events (OR)
+const topics3 = TopicFilter.from([[transferSig, approvalSig]]);
+
+const filter = LogFilter.from({
+  address: contractAddr,
+  topics: topics2
+});
+```
+
+## Usage with JSON-RPC
+
+### eth_getLogs (one-time query)
+
+```typescript
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(18000000),
+  toBlock: BlockNumber.from(18001000),
+  address: Address.from("0x..."),
+  topics: TopicFilter.from([eventSig])
+});
+
+const logs = await rpc.eth_getLogs(filter);
+console.log(`Found ${logs.length} logs`);
+```
+
+### eth_newFilter (continuous polling)
+
+```typescript
+// Install filter
+const filter = LogFilter.from({
+  fromBlock: "latest",
+  address: Address.from("0x..."),
+  topics: TopicFilter.from([eventSig])
+});
+
+const filterIdStr = await rpc.eth_newFilter(filter);
+const filterId = FilterId.from(filterIdStr);
+
+// Poll for changes
+setInterval(async () => {
+  const logs = await rpc.eth_getFilterChanges(filterId);
+  console.log(`New logs: ${logs.length}`);
+}, 15000);
+```
+
+## Node Resource Limits
+
+Ethereum nodes limit query scope to prevent resource exhaustion:
+
+### Block Range Limits
+
+```typescript
+// GOOD: 1,000 blocks
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(18000000),
+  toBlock: BlockNumber.from(18001000)
+});
+
+// BAD: 1,000,000 blocks (likely rejected)
+const filter2 = LogFilter.from({
+  fromBlock: BlockNumber.from(17000000),
+  toBlock: BlockNumber.from(18000000)
+});
+```
+
+Common limits:
+- **Infura**: 10,000 blocks
+- **Alchemy**: 2,000 blocks
+- **Local node**: Configurable, often 5,000-10,000
+
+### Result Set Limits
+
+Nodes may limit:
+- Number of logs returned (e.g., 10,000 max)
+- Response size (e.g., 150MB max)
+- Query complexity (multiple OR conditions)
+
+**Best practices:**
+- Query smallest block ranges possible
+- Filter by contract address
+- Add topic filters to narrow results
+- Paginate by splitting block ranges
+- Handle errors and retry with smaller ranges
+
+## Example: Paginated Query
+
+```typescript
+async function getLogs(filter: LogFilterType, batchSize = 1000) {
+  const logs = [];
+  let fromBlock = filter.fromBlock as bigint;
+  const toBlock = filter.toBlock as bigint;
+
+  while (fromBlock <= toBlock) {
+    const batchToBlock = fromBlock + BigInt(batchSize) - 1n;
+    const batchFilter = LogFilter.from({
+      ...filter,
+      fromBlock,
+      toBlock: batchToBlock > toBlock ? toBlock : batchToBlock
+    });
+
+    try {
+      const batchLogs = await rpc.eth_getLogs(batchFilter);
+      logs.push(...batchLogs);
+      fromBlock = batchToBlock + 1n;
+    } catch (error) {
+      // Reduce batch size and retry
+      batchSize = Math.floor(batchSize / 2);
+      if (batchSize < 10) throw error;
+    }
+  }
+
+  return logs;
+}
+```
+
+## Example: Token Transfer Monitor
+
+```typescript
+import * as LogFilter from './primitives/LogFilter/index.js';
+import * as TopicFilter from './primitives/TopicFilter/index.js';
+import { EventSignature } from './primitives/EventSignature/index.js';
+import { Address } from './primitives/Address/index.js';
+
+// ERC20 Transfer event
+const transferSig = EventSignature.fromSignature(
+  "Transfer(address,address,uint256)"
+);
+
+// Monitor transfers to specific wallet
+const wallet = Address.from("0x...");
+const walletHash = wallet.toBytes32();
+
+const topics = TopicFilter.from([
+  transferSig,
+  null,       // any sender
+  walletHash  // to our wallet
+]);
+
+const filter = LogFilter.from({
+  fromBlock: "latest",
+  topics
+});
+
+// Install filter
+const filterId = FilterId.from(
+  await rpc.eth_newFilter(filter)
+);
+
+// Poll every 15 seconds
+setInterval(async () => {
+  const logs = await rpc.eth_getFilterChanges(filterId);
+
+  for (const log of logs) {
+    const token = Address.fromBytes(log.address);
+    const amount = decodeTransferData(log.data);
+    console.log(`Received ${amount} of token ${token.toHex()}`);
+  }
+}, 15000);
+```
+
+## Chain Reorganizations
+
+When querying recent blocks, be aware of reorgs:
+
+```typescript
+// Query finalized blocks only (12+ confirmations)
+const latestBlock = await rpc.eth_blockNumber();
+const safeBlock = latestBlock - 12n;
+
+const filter = LogFilter.from({
+  fromBlock: safeBlock,
+  toBlock: latestBlock
+});
+
+// Check removed flag in logs
+for (const log of logs) {
+  if (log.removed) {
+    console.log('Log was removed due to reorg');
+  }
+}
+```
+
+## Related Types
+
+- [TopicFilter](/primitives/topic-filter) - Event topic matching
+- [FilterId](/primitives/filter-id) - Filter identifier for polling
+- [EventLog](/primitives/event-log) - Log entry structure
+- [BlockNumber](/primitives/block-number) - Block number type
+- [Address](/primitives/address) - Contract address type
+
+## JSON-RPC Methods
+
+- `eth_getLogs` - Query logs (one-time)
+- `eth_newFilter` - Create filter for polling
+- `eth_getFilterChanges` - Poll for new logs
+- `eth_getFilterLogs` - Get all logs for filter
+- `eth_uninstallFilter` - Remove filter
+
+## See Also
+
+- [Ethereum JSON-RPC eth_getLogs](https://ethereum.github.io/execution-apis/api-documentation/)
+- [EIP-234: Add `blockHash` to JSON-RPC filter options](https://eips.ethereum.org/EIPS/eip-234)
+- [Solidity Events Documentation](https://docs.soliditylang.org/en/latest/contracts.html#events)

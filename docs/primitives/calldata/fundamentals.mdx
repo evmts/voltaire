@@ -1,0 +1,213 @@
+---
+title: CallData Fundamentals
+description: Understanding how the EVM processes transaction calldata
+---
+
+CallData is the data payload sent with Ethereum transactions to invoke smart contract functions. Understanding how calldata works is essential for working with smart contracts.
+
+## What is CallData?
+
+Transaction calldata contains:
+1. **Function Selector** (4 bytes) - Identifies which function to call
+2. **Encoded Parameters** (variable length) - ABI-encoded function arguments
+
+```
+[4 bytes: selector] + [ABI-encoded parameters]
+```
+
+### Example: ERC20 Transfer
+
+Calling `transfer(address to, uint256 amount)`:
+
+```typescript
+const calldata = CallData.encode("transfer(address,uint256)", [
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18)
+]);
+
+console.log(CallData.toHex(calldata));
+// 0xa9059cbb                                                          // selector
+//   00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8  // address (32 bytes)
+//   0000000000000000000000000000000000000000000000000de0b6b3a7640000  // uint256 (32 bytes)
+```
+
+## Function Selectors
+
+The function selector is the first 4 bytes of the keccak256 hash of the function signature:
+
+```typescript
+const signature = "transfer(address,uint256)";
+const hash = Keccak256.hashString(signature);
+const selector = hash.slice(0, 4);
+// 0xa9059cbb
+```
+
+### Canonical Function Signatures
+
+Function signatures must follow strict formatting:
+- No spaces: `transfer(address,uint256)` ✅ not `transfer(address, uint256)` ❌
+- Full type names: `uint256` ✅ not `uint` ❌
+- No parameter names: `(address,uint256)` ✅ not `(address to, uint256 amount)` ❌
+
+## How the EVM Processes CallData
+
+The EVM does **not** automatically decode calldata. Contract bytecode manually reads calldata using specialized opcodes.
+
+### 1. Transaction Arrives
+
+```
+Transaction {
+  to: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48  // Contract address
+  data: 0xa9059cbb...                             // CallData
+}
+```
+
+### 2. EVM Loads Contract Bytecode
+
+```
+Contract Bytecode (deployed at address)
+  ↓
+Execution starts at beginning of bytecode
+```
+
+### 3. Bytecode Dispatcher Runs
+
+Solidity compilers generate a "dispatcher" that reads the selector and jumps to the appropriate function:
+
+```
+CALLDATALOAD 0        // Load first 32 bytes
+PUSH1 0xE0
+SHR                   // Shift right to get first 4 bytes (selector)
+
+DUP1
+PUSH4 0xa9059cbb     // transfer(address,uint256)
+EQ
+PUSH2 0x0234         // Jump destination for transfer function
+JUMPI
+
+DUP1
+PUSH4 0x70a08231     // balanceOf(address)
+EQ
+PUSH2 0x0456
+JUMPI
+
+REVERT               // Unknown function selector
+```
+
+### 4. Function Code Reads Parameters
+
+When execution jumps to the `transfer` function:
+
+```
+PUSH1 0x04           // Offset 4 (after selector)
+CALLDATALOAD         // Load bytes 4-36 → address
+// Validate address...
+
+PUSH1 0x24           // Offset 36 (0x24)
+CALLDATALOAD         // Load bytes 36-68 → amount
+// Execute transfer logic...
+```
+
+## EVM Opcodes for CallData
+
+The EVM provides three opcodes for accessing calldata:
+
+### CALLDATALOAD
+
+```
+CALLDATALOAD offset → data
+```
+
+Loads 32 bytes from calldata starting at `offset`:
+
+```typescript
+// Solidity: msg.data[4:36]
+PUSH1 0x04
+CALLDATALOAD  // Loads bytes 4-36
+```
+
+### CALLDATASIZE
+
+```
+CALLDATASIZE → size
+```
+
+Returns the total size of calldata in bytes:
+
+```typescript
+CALLDATASIZE  // Returns length of calldata
+```
+
+### CALLDATACOPY
+
+```
+CALLDATACOPY destOffset, offset, length
+```
+
+Copies calldata to memory:
+
+```typescript
+PUSH1 0x20     // length: 32 bytes
+PUSH1 0x04     // offset: start at byte 4
+PUSH1 0x00     // destOffset: memory position 0
+CALLDATACOPY   // Copy calldata[4:36] to memory[0:32]
+```
+
+## CallData vs Bytecode
+
+| CallData | Bytecode |
+|----------|----------|
+| Transaction data field | Contract code deployed at address |
+| Contains function calls | Contains instructions to execute |
+| Read via CALLDATALOAD | Executed instruction-by-instruction |
+| Temporary (per transaction) | Permanent (stored on-chain) |
+| User-provided | Compiler-generated |
+
+## Gas Costs
+
+CallData has specific gas costs (post-EIP-2028):
+
+- **Zero bytes**: 4 gas per byte
+- **Non-zero bytes**: 16 gas per byte
+
+This incentivizes compression and efficient encoding:
+
+```typescript
+// More expensive (non-zero padding)
+0xa9059cbb0000000000000000000000001234567890123456789012345678901234567890
+
+// Cheaper (many zero bytes)
+0xa9059cbb0000000000000000000000000000000000000000000000000000000000000001
+```
+
+## Special Cases
+
+### Empty CallData
+
+Sending ETH to an EOA or calling fallback/receive functions:
+
+```typescript
+const tx = Transaction({
+  to: Address("0x..."),
+  value: Wei(1000000000000000000),
+  data: CallData("0x"),  // Empty
+});
+```
+
+### Constructor CallData
+
+Contract deployment transactions contain bytecode + constructor parameters:
+
+```typescript
+const calldata = CallData.concat(
+  contractBytecode,
+  CallData.encode("(address,uint256)", [owner, initialSupply])
+);
+```
+
+## See Also
+
+- [Encoding](/primitives/calldata/encoding) - Deep dive into ABI encoding
+- [Decoded Form](/primitives/calldata/decoded) - CallDataDecoded structure
+- [Usage Patterns](/primitives/calldata/usage-patterns) - Common patterns
+- [EVM Opcodes](https://www.evm.codes/) - Complete opcode reference

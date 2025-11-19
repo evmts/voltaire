@@ -21,17 +21,16 @@ Block methods provide access to block headers, full blocks, transaction receipts
 
 Get the most recent block number.
 
-**Returns:** `Response<Quantity>`
+**Returns:** `Quantity`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
-const response = await provider.eth_blockNumber();
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
 
-if (!response.error) {
-  console.log('Current block:', response.result);
-}
+console.log('Current block:', blockNumber);
 ```
 
 </Accordion>
@@ -47,20 +46,19 @@ Get block by number with full transactions or hashes.
 | `blockTag` | `BlockTag` | Block to query (`'latest'`, `'earliest'`, `'pending'`, or block number) |
 | `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
 
-**Returns:** `Response<Block>`
+**Returns:** `Block`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
 // Get latest block with full transaction objects
-const block = await provider.eth_getBlockByNumber('latest', true);
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
 
-if (!block.error) {
-  console.log('Block number:', block.result.number);
-  console.log('Transaction count:', block.result.transactions.length);
-}
+console.log('Block number:', block.number);
+console.log('Transaction count:', block.transactions.length);
 ```
 
 </Accordion>
@@ -76,20 +74,19 @@ Get block by hash with full transactions or hashes.
 | `blockHash` | `Hash` | Block hash to query |
 | `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
 
-**Returns:** `Response<Block>`
+**Returns:** `Block`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
 
-const block = await provider.eth_getBlockByHash(blockHash, false);
+const block = await provider.request(Rpc.Eth.GetBlockByHashRequest(blockHash, false));
 
-if (!block.error) {
-  console.log('Block:', block.result);
-}
+console.log('Block:', block);
 ```
 
 </Accordion>
@@ -104,20 +101,19 @@ Get all transaction receipts for a block.
 |-----------|------|-------------|
 | `blockTag` | `BlockTag` | Block to query |
 
-**Returns:** `Response<TransactionReceipt[]>`
+**Returns:** `TransactionReceipt[]`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
-const receipts = await provider.eth_getBlockReceipts('latest');
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
 
-if (!receipts.error) {
-  console.log('Receipts:', receipts.result.length);
-  receipts.result.forEach((receipt, i) => {
-    console.log(`TX ${i} status:`, receipt.status);
-  });
-}
+console.log('Receipts:', receipts.length);
+receipts.forEach((receipt, i) => {
+  console.log(`TX ${i} status:`, receipt.status);
+});
 ```
 
 </Accordion>
@@ -132,20 +128,19 @@ Get transaction count in a block by hash.
 |-----------|------|-------------|
 | `blockHash` | `Hash` | Block hash to query |
 
-**Returns:** `Response<Quantity>`
+**Returns:** `Quantity`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
 
-const count = await provider.eth_getBlockTransactionCountByHash(blockHash);
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByHashRequest(blockHash));
 
-if (!count.error) {
-  console.log('Transaction count:', count.result);
-}
+console.log('Transaction count:', count);
 ```
 
 </Accordion>
@@ -160,17 +155,16 @@ Get transaction count in a block by number.
 |-----------|------|-------------|
 | `blockTag` | `BlockTag` | Block to query |
 
-**Returns:** `Response<Quantity>`
+**Returns:** `Quantity`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
-const count = await provider.eth_getBlockTransactionCountByNumber('latest');
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest('latest'));
 
-if (!count.error) {
-  console.log('Transaction count:', count.result);
-}
+console.log('Transaction count:', count);
 ```
 
 </Accordion>
@@ -185,20 +179,19 @@ Get uncle count for a block by hash.
 |-----------|------|-------------|
 | `blockHash` | `Hash` | Block hash to query |
 
-**Returns:** `Response<Quantity>`
+**Returns:** `Quantity`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 import { Keccak256 } from 'tevm/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
 
-const count = await provider.eth_getUncleCountByBlockHash(blockHash);
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockHashRequest(blockHash));
 
-if (!count.error) {
-  console.log('Uncle count:', count.result);
-}
+console.log('Uncle count:', count);
 ```
 
 <Note>
@@ -217,17 +210,16 @@ Get uncle count for a block by number.
 |-----------|------|-------------|
 | `blockTag` | `BlockTag` | Block to query |
 
-**Returns:** `Response<Quantity>`
+**Returns:** `Quantity`
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
-const count = await provider.eth_getUncleCountByBlockNumber('latest');
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockNumberRequest('latest'));
 
-if (!count.error) {
-  console.log('Uncle count:', count.result);
-}
+console.log('Uncle count:', count);
 ```
 
 <Note>
@@ -242,74 +234,67 @@ Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge)
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
-const block = await provider.eth_getBlockByNumber('latest', true);
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
 
-if (!block.error) {
-  console.log('Block:', block.result.number);
-  console.log('Gas used:', block.result.gasUsed);
-  console.log('Transactions:', block.result.transactions.length);
+console.log('Block:', block.number);
+console.log('Gas used:', block.gasUsed);
+console.log('Transactions:', block.transactions.length);
 
-  // Get receipts for all transactions
-  const receipts = await provider.eth_getBlockReceipts('latest');
-  if (!receipts.error) {
-    const gasUsedTotal = receipts.result.reduce(
-      (sum, r) => sum + BigInt(r.gasUsed),
-      0n
-    );
-    console.log('Total gas used:', gasUsedTotal);
-  }
-}
+// Get receipts for all transactions
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
+const gasUsedTotal = receipts.reduce(
+  (sum, r) => sum + BigInt(r.gasUsed),
+  0n
+);
+console.log('Total gas used:', gasUsedTotal);
 ```
 
 ### Query Historical Block
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 import * as Quantity from 'tevm/primitives/Quantity';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
 // Query specific block number
 const blockNumber = Quantity(18000000n);
-const block = await provider.eth_getBlockByNumber(blockNumber, false);
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest(blockNumber, false));
 
-if (!block.error) {
-  console.log('Timestamp:', block.result.timestamp);
-  console.log('Miner:', block.result.miner);
+console.log('Timestamp:', block.timestamp);
+console.log('Miner:', block.miner);
 
-  // Get transaction count
-  const txCount = await provider.eth_getBlockTransactionCountByNumber(blockNumber);
-  if (!txCount.error) {
-    console.log('Transactions:', txCount.result);
-  }
-}
+// Get transaction count
+const txCount = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest(blockNumber));
+console.log('Transactions:', txCount);
 ```
 
 ### Check Block Finality
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
 // Get latest and finalized blocks
-const [latestRes, finalizedRes] = await Promise.all([
-  provider.eth_getBlockByNumber('latest', false),
-  provider.eth_getBlockByNumber('finalized', false)
+const [latest, finalized] = await Promise.all([
+  provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', false)),
+  provider.request(Rpc.Eth.GetBlockByNumberRequest('finalized', false))
 ]);
 
-if (!latestRes.error && !finalizedRes.error) {
-  const latest = BigInt(latestRes.result.number);
-  const finalized = BigInt(finalizedRes.result.number);
-  const confirmations = latest - finalized;
+const latestNum = BigInt(latest.number);
+const finalizedNum = BigInt(finalized.number);
+const confirmations = latestNum - finalizedNum;
 
-  console.log('Latest block:', latest);
-  console.log('Finalized block:', finalized);
-  console.log('Blocks until finalized:', confirmations);
-}
+console.log('Latest block:', latestNum);
+console.log('Finalized block:', finalizedNum);
+console.log('Blocks until finalized:', confirmations);
 ```
 
 ## Related

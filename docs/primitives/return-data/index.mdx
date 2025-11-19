@@ -1,0 +1,50 @@
+---
+title: "ReturnData"
+description: "Raw bytes returned from contract calls"
+---
+
+# ReturnData
+
+Branded `Uint8Array` representing raw, uninterpreted return data from contract execution.
+
+## Type
+
+```typescript
+type ReturnDataType = Uint8Array & { readonly [brand]: "ReturnData" };
+```
+
+## Construction
+
+```typescript
+import * as ReturnData from 'voltaire/primitives/ReturnData';
+
+// From hex string
+const data = ReturnData.fromHex("0x00000001");
+
+// From bytes
+const bytes = new Uint8Array([0, 0, 0, 1]);
+const data = ReturnData.from(bytes);
+```
+
+## Methods
+
+- `from(value)` - Universal constructor (hex or bytes)
+- `fromHex(hex)` - From hex string
+- `fromBytes(bytes)` - From Uint8Array
+- `toHex(data)` - Convert to hex string
+- `toBytes(data)` - Convert to Uint8Array
+- `equals(a, b)` - Compare equality
+- `isEmpty(data)` - Check if empty
+
+## Example
+
+```typescript
+import * as ReturnData from 'voltaire/primitives/ReturnData';
+
+// Parse contract return data
+const returnData = ReturnData.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+
+if (!ReturnData.isEmpty(returnData)) {
+  console.log("Data:", ReturnData.toHex(returnData));
+}
+```

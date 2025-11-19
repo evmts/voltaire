@@ -9,17 +9,40 @@ description: "Complete reference for EVM instruction handlers and precompiled co
 
 ## Overview
 
-The Ethereum Virtual Machine is a stack-based virtual machine that executes smart contract bytecode. Tevm provides low-level implementations of all EVM opcodes and precompiled contracts in both TypeScript and Zig, enabling high-performance execution for EVM-compatible chains.
+The Ethereum Virtual Machine is a stack-based virtual machine that executes smart contract bytecode. Tevm provides **type-first EVM primitives** - strongly-typed execution types, instruction handlers, and precompiled contracts in both TypeScript and Zig.
+
+Every execution primitive is a branded type:
+- `Opcode` - Branded number (0x00-0xFF)
+- `Instruction` - Opcode + offset + immediate data
+- `BrandedFrame` - Execution frame (stack, memory, gas, state)
+- `InstructionHandler` - Opcode handler function signature
+- `CallParams` / `CallResult` - Cross-contract call types
+- `CreateParams` / `CreateResult` - Contract deployment types
 
 This section documents 166 instruction handlers across 11 categories plus 21 precompiled contracts, all implemented with:
-- Zero-copy operations
-- Tree-shakeable exports
-- WASM compilation support
-- Comprehensive test coverage
+- **Type safety** - Branded types prevent passing wrong values
+- **Zero-copy operations** - Direct Uint8Array manipulation
+- **Tree-shakeable exports** - Import only what you need
+- **WASM compilation support** - High-performance native execution
+- **Comprehensive test coverage** - Every opcode tested against official vectors
 
 For complete spec-compliant EVM implementations that use these primitives, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
 
 ## EVM Components
+
+### [Types](/evm/types)
+
+**Strongly-typed execution primitives:**
+- **Opcode** - Branded number type for instructions (0x00-0xFF)
+- **Instruction** - Opcode with offset and immediate data
+- **BrandedFrame** - Complete execution state (stack, memory, gas, context)
+- **BrandedHost** - Pluggable state backend interface
+- **InstructionHandler** - Function signature for opcode implementations
+- **CallParams/CallResult** - Cross-contract call types
+- **CreateParams/CreateResult** - Contract deployment types
+- **EvmError** - Execution error types
+
+See [EVM Types](/evm/types) for complete type reference with examples.
 
 ### [Instructions](/evm/instructions)
 
@@ -49,6 +72,71 @@ For complete spec-compliant EVM implementations that use these primitives, see [
 - **BLS12-381** (9): G1/G2 operations for Ethereum 2.0 consensus
 
 ## Architecture
+
+### Type-First Design
+
+All EVM operations use strongly-typed primitives:
+
+```typescript
+import {
+  type BrandedFrame,
+  type BrandedHost,
+  type InstructionHandler,
+  type CallParams,
+  type CallResult,
+  Opcode,
+} from 'tevm/evm';
+
+// Execution frame (stack, memory, gas, state)
+const frame: BrandedFrame = {
+  stack: [],
+  memory: new Map(),
+  memorySize: 0,
+  pc: 0,
+  gasRemaining: 1000000n,
+  bytecode: code,
+  caller: callerAddress,
+  address: contractAddress,
+  value: 0n,
+  calldata: input,
+  // ... other fields
+};
+
+// Host interface (pluggable state backend)
+const host: BrandedHost = {
+  getBalance: (addr) => balances.get(addr) || 0n,
+  setBalance: (addr, bal) => balances.set(addr, bal),
+  getStorage: (addr, slot) => storage.get(`${addr}:${slot}`) || 0n,
+  setStorage: (addr, slot, val) => storage.set(`${addr}:${slot}`, val),
+  // ... other methods
+};
+
+// Instruction handler (opcode implementation)
+const addHandler: InstructionHandler = (frame, host) => {
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  if (frame.gasRemaining < 3n) return { type: "OutOfGas" };
+
+  const b = frame.stack.pop()!;
+  const a = frame.stack.pop()!;
+  frame.stack.push((a + b) % 2n**256n); // Mod 2^256 overflow
+  frame.gasRemaining -= 3n;
+  frame.pc += 1;
+
+  return { type: "Success" };
+};
+
+// Cross-contract call parameters
+const callParams: CallParams = {
+  callType: "CALL",
+  target: targetAddress,
+  value: 1000000000000000000n, // 1 ether
+  gasLimit: 100000n,
+  input: calldata,
+  caller: frame.address,
+  isStatic: false,
+  depth: 1,
+};
+```
 
 #### TypeScript Implementation
 

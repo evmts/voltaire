@@ -1,517 +1,322 @@
 ---
 title: Events
-description: Subscribe to blockchain events using async generators
+description: Subscribe to provider events using EventEmitter pattern
 ---
-
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
 
 # Events
 
-Provider events use async generators for consuming blockchain updates in real-time.
+EIP-1193 providers emit events for account changes, chain changes, and connection status using the standard EventEmitter pattern.
 
 ## Overview
 
-Instead of traditional event emitters, Provider uses async generators accessed via `provider.events`:
+Providers emit four standard events:
 
 ```typescript
-// Subscribe to new blocks
-for await (const block of provider.events.newHeads()) {
-  console.log('New block:', block.number, block.hash);
-}
+// Subscribe to account changes
+provider.on('accountsChanged', (accounts) => {
+  console.log('Active accounts:', accounts);
+});
 
-// Subscribe to logs
-for await (const log of provider.events.logs({ address: contractAddress })) {
-  console.log('Event:', log.topics[0]);
-}
-```
+// Subscribe to chain changes
+provider.on('chainChanged', (chainId) => {
+  console.log('Chain ID:', chainId);
+});
 
-## Event API
+// Subscribe to connection
+provider.on('connect', (connectInfo) => {
+  console.log('Connected to chain:', connectInfo.chainId);
+});
 
-Access events through the `events` property:
-
-```typescript
-interface Provider {
-  events: {
-    newHeads(params?: NewHeadsParams): AsyncGenerator<Block>;
-    logs(params?: LogsParams): AsyncGenerator<Log>;
-    newPendingTransactions(): AsyncGenerator<Hash>;
-    syncing(): AsyncGenerator<SyncStatus>;
-  };
-}
+// Subscribe to disconnection
+provider.on('disconnect', (error) => {
+  console.log('Disconnected:', error);
+});
 ```
 
 ## Available Events
 
-### newHeads
+### accountsChanged
 
-Subscribe to new block headers as they're produced.
+Emitted when the active accounts change (e.g., user switches accounts in wallet).
 
-```typescript
-for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
-  console.log('Hash:', block.hash);
-  console.log('Timestamp:', block.timestamp);
-  console.log('Transactions:', block.transactions.length);
-}
-```
-
-**Emits:** `Block` - Full block header with transaction hashes
-
-**Usage:**
+**Event Data:** `string[]` - Array of addresses
 
 ```typescript
-import * as Address from 'tevm/primitives/Address';
-
-// Monitor blocks and check for transactions to specific address
-const targetAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-
-for await (const block of provider.events.newHeads()) {
-  console.log(`Block ${block.number} with ${block.transactions.length} txs`);
-
-  // Could fetch full transactions to check recipients
-  for (const txHash of block.transactions) {
-    const tx = await provider.eth_getTransactionByHash(txHash);
-    if (!tx.error && Address.equals(tx.result.to, targetAddress)) {
-      console.log('Transaction to target address:', txHash);
-    }
+provider.on('accountsChanged', (accounts: string[]) => {
+  if (accounts.length === 0) {
+    console.log('No accounts available');
+  } else {
+    console.log('Active account:', accounts[0]);
   }
-}
+});
 ```
 
-### logs
+**Use cases:**
+- Update UI when user switches wallets
+- Re-fetch user-specific data
+- Prompt user to reconnect
 
-Subscribe to event logs matching a filter.
+### chainChanged
+
+Emitted when the chain changes (e.g., user switches from mainnet to testnet).
+
+**Event Data:** `string` - Chain ID (hex-encoded)
 
 ```typescript
-for await (const log of provider.events.logs({
-  address: contractAddress,
-  topics: [eventSignature]
-})) {
-  console.log('Log:', log);
-  console.log('Block:', log.blockNumber);
-  console.log('Topics:', log.topics);
-  console.log('Data:', log.data);
-}
+provider.on('chainChanged', (chainId: string) => {
+  const chainIdNum = parseInt(chainId, 16);
+  console.log('Chain ID:', chainIdNum);
+
+  // Reload app to avoid stale state
+  window.location.reload();
+});
 ```
 
-**Parameters:**
-
-```typescript
-interface LogsParams {
-  address?: Address | Address[];     // Filter by contract address
-  topics?: (Hash | Hash[] | null)[];  // Filter by topics
-  fromBlock?: BlockTag;              // Start block (default: latest)
-  toBlock?: BlockTag;                // End block (default: latest)
-}
-```
-
-**Emits:** `Log` - Event log entry
-
-**Usage:**
-
-```typescript
-import * as Address from 'tevm/primitives/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-
-// Subscribe to ERC20 Transfer events
-const tokenAddress = Address('0x...');
-const transferSignature = Hash(
-  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-);
-
-for await (const log of provider.events.logs({
-  address: tokenAddress,
-  topics: [transferSignature]
-})) {
-  // Decode transfer event
-  const from = Address('0x' + log.topics[1].slice(26));
-  const to = Address('0x' + log.topics[2].slice(26));
-  const value = log.data;
-
-  console.log(`Transfer from ${from} to ${to}: ${value}`);
-}
-```
-
-### newPendingTransactions
-
-Subscribe to new transactions entering the mempool.
-
-```typescript
-for await (const txHash of provider.events.newPendingTransactions()) {
-  console.log('Pending tx:', txHash);
-
-  // Fetch full transaction
-  const tx = await provider.eth_getTransactionByHash(txHash);
-  if (!tx.error) {
-    console.log('From:', tx.result.from);
-    console.log('To:', tx.result.to);
-  }
-}
-```
-
-**Emits:** `Hash` - Transaction hash
+**Use cases:**
+- Reload application to avoid stale state
+- Update network-specific configurations
+- Display appropriate chain indicator
 
 <Warning>
-Not all providers support pending transaction subscriptions. This feature is commonly available on local development nodes (Hardhat, Anvil) but may be unavailable or rate-limited on public RPC endpoints.
+When chain changes, app state may be invalid. Most apps should reload: `window.location.reload()`.
 </Warning>
 
-**Usage:**
+### connect
+
+Emitted when provider becomes connected to a chain.
+
+**Event Data:** `{chainId: string}` - Connection info
 
 ```typescript
-import * as Address from 'tevm/primitives/Address';
+provider.on('connect', (connectInfo: { chainId: string }) => {
+  const chainId = parseInt(connectInfo.chainId, 16);
+  console.log('Connected to chain:', chainId);
 
-// Monitor pending transactions to a specific address
-const targetAddress = Address('0x...');
-
-for await (const txHash of provider.events.newPendingTransactions()) {
-  const tx = await provider.eth_getTransactionByHash(txHash);
-
-  if (!tx.error && tx.result.to && Address.equals(tx.result.to, targetAddress)) {
-    console.log('Pending transaction to target:', txHash);
-    console.log('Gas price:', tx.result.gasPrice);
-    console.log('Nonce:', tx.result.nonce);
-  }
-}
+  // Initialize app with chain-specific data
+  initializeApp(chainId);
+});
 ```
 
-### syncing
+**Use cases:**
+- Initialize app after connection established
+- Fetch initial blockchain data
+- Enable blockchain-dependent features
 
-Subscribe to node synchronization status changes.
+### disconnect
+
+Emitted when provider disconnects from all chains.
+
+**Event Data:** `{code: number, message: string}` - Error info
 
 ```typescript
-for await (const status of provider.events.syncing()) {
-  if (status === false) {
-    console.log('Node is fully synced');
-  } else {
-    console.log('Syncing:', status.currentBlock, '/', status.highestBlock);
-  }
-}
+provider.on('disconnect', (error: { code: number; message: string }) => {
+  console.log('Disconnected:', error.message);
+
+  // Clean up and show reconnection UI
+  showReconnectDialog();
+});
 ```
 
-**Emits:** `SyncStatus | false`
+**Use cases:**
+- Clean up subscriptions and listeners
+- Show reconnection UI
+- Save user state before disconnect
+
+## Event Management
+
+### Adding Listeners
+
+Use `on()` or `addEventListener()`:
 
 ```typescript
-interface SyncStatus {
-  startingBlock: Quantity;
-  currentBlock: Quantity;
-  highestBlock: Quantity;
-}
+const handler = (accounts) => {
+  console.log('Accounts:', accounts);
+};
+
+// Both work
+provider.on('accountsChanged', handler);
+provider.addEventListener('accountsChanged', handler);
 ```
 
-## Async Generator Pattern
+### Removing Listeners
 
-### Basic Consumption
+Use `removeListener()` or `removeEventListener()`:
 
 ```typescript
-// Infinite loop - runs until manually stopped
-for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
-}
+const handler = (accounts) => {
+  console.log('Accounts:', accounts);
+};
+
+provider.on('accountsChanged', handler);
+
+// Later, remove listener
+provider.removeListener('accountsChanged', handler);
+// or
+provider.removeEventListener('accountsChanged', handler);
 ```
 
-### With Break Condition
+<Warning>
+Always use the same function reference when removing listeners. Arrow functions created inline can't be removed.
+</Warning>
+
+### One-Time Listeners
+
+Use `once()` for single-use handlers:
 
 ```typescript
-// Stop after 10 blocks
-let count = 0;
-for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
-
-  count++;
-  if (count >= 10) {
-    break;  // Exit loop and clean up subscription
-  }
-}
-```
-
-### With Timeout
-
-```typescript
-// Monitor for 1 minute
-const timeout = Date.now() + 60000;
-
-for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
-
-  if (Date.now() > timeout) {
-    break;
-  }
-}
-```
-
-### With Error Handling
-
-```typescript
-try {
-  for await (const block of provider.events.newHeads()) {
-    console.log('Block:', block.number);
-  }
-} catch (error) {
-  console.error('Subscription error:', error);
-}
-```
-
-## Manual Control
-
-### Collecting Events
-
-```typescript
-// Collect first 5 blocks
-const blocks: Block[] = [];
-
-for await (const block of provider.events.newHeads()) {
-  blocks.push(block);
-
-  if (blocks.length >= 5) {
-    break;
-  }
-}
-
-console.log('Collected blocks:', blocks);
-```
-
-### Conditional Processing
-
-```typescript
-// Only process blocks with transactions
-for await (const block of provider.events.newHeads()) {
-  if (block.transactions.length === 0) {
-    console.log('Empty block, skipping');
-    continue;
-  }
-
-  console.log('Processing block with', block.transactions.length, 'txs');
-  // ... process transactions
-}
-```
-
-### Parallel Processing
-
-```typescript
-// Start multiple subscriptions
-await Promise.race([
-  // Monitor blocks
-  (async () => {
-    for await (const block of provider.events.newHeads()) {
-      console.log('Block:', block.number);
-    }
-  })(),
-
-  // Monitor logs
-  (async () => {
-    for await (const log of provider.events.logs({ address: contractAddress })) {
-      console.log('Log:', log.topics[0]);
-    }
-  })(),
-
-  // Timeout after 1 minute
-  new Promise(resolve => setTimeout(resolve, 60000))
-]);
+provider.once('connect', (connectInfo) => {
+  console.log('Initial connection:', connectInfo.chainId);
+  // Handler automatically removed after firing
+});
 ```
 
 ## Usage Patterns
 
-### Monitor Contract Events
+### React Hook
 
 ```typescript
-import * as Address from 'tevm/primitives/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { useEffect, useState } from 'react';
 
-async function monitorContractEvents(
-  contractAddress: Address.AddressType,
-  eventSignature: Keccak256.Keccak256Hash
-) {
-  console.log('Monitoring events for', contractAddress);
+function useAccounts(provider) {
+  const [accounts, setAccounts] = useState<string[]>([]);
 
-  for await (const log of provider.events.logs({
-    address: contractAddress,
-    topics: [eventSignature]
-  })) {
-    console.log('Event emitted:');
-    console.log('  Block:', log.blockNumber);
-    console.log('  Transaction:', log.transactionHash);
-    console.log('  Topics:', log.topics);
-    console.log('  Data:', log.data);
+  useEffect(() => {
+    const handler = (newAccounts: string[]) => {
+      setAccounts(newAccounts);
+    };
 
-    // Decode and process event data
-    // ...
-  }
+    provider.on('accountsChanged', handler);
+
+    // Cleanup
+    return () => {
+      provider.removeListener('accountsChanged', handler);
+    };
+  }, [provider]);
+
+  return accounts;
 }
 ```
 
-### Wait for Transaction Confirmation
+### Chain Change Handler
 
 ```typescript
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+function setupChainHandler(provider, allowedChains: number[]) {
+  provider.on('chainChanged', (chainId: string) => {
+    const chainIdNum = parseInt(chainId, 16);
 
-async function waitForConfirmation(
-  txHash: Keccak256.Keccak256Hash,
-  confirmations: number = 3
-): Promise<void> {
-  const receipt = await provider.eth_getTransactionReceipt(txHash);
-  if (receipt.error || !receipt.result) {
-    throw new Error('Transaction not found');
-  }
-
-  const targetBlock = BigInt(receipt.result.blockNumber) + BigInt(confirmations);
-
-  for await (const block of provider.events.newHeads()) {
-    if (BigInt(block.number) >= targetBlock) {
-      console.log(`Transaction confirmed with ${confirmations} confirmations`);
-      break;
+    if (!allowedChains.includes(chainIdNum)) {
+      alert(`Please switch to supported chain`);
+      return;
     }
+
+    // Chain is valid, reload
+    window.location.reload();
+  });
+}
+```
+
+### Connection Monitor
+
+```typescript
+class ConnectionMonitor {
+  private isConnected = false;
+
+  constructor(private provider: any) {
+    this.setupListeners();
+  }
+
+  private setupListeners() {
+    this.provider.on('connect', (info: { chainId: string }) => {
+      this.isConnected = true;
+      console.log('Connected to chain:', info.chainId);
+    });
+
+    this.provider.on('disconnect', (error: any) => {
+      this.isConnected = false;
+      console.log('Disconnected:', error.message);
+    });
+  }
+
+  async waitForConnection(): Promise<string> {
+    if (this.isConnected) {
+      const chainId = await this.provider.request({
+        method: 'eth_chainId'
+      });
+      return chainId;
+    }
+
+    return new Promise((resolve) => {
+      this.provider.once('connect', (info: { chainId: string }) => {
+        resolve(info.chainId);
+      });
+    });
   }
 }
 ```
 
-### Block Production Monitoring
+### Account Switcher
 
 ```typescript
-async function monitorBlockProduction() {
-  let lastBlock = 0n;
-  let lastTime = Date.now();
+function createAccountSwitcher(provider) {
+  let currentAccount: string | null = null;
 
-  for await (const block of provider.events.newHeads()) {
-    const blockNum = BigInt(block.number);
-    const now = Date.now();
+  provider.on('accountsChanged', async (accounts: string[]) => {
+    const newAccount = accounts[0] || null;
 
-    if (lastBlock > 0n) {
-      const blockTime = (now - lastTime) / 1000;
-      console.log(`Block ${blockNum} in ${blockTime.toFixed(1)}s`);
+    if (newAccount !== currentAccount) {
+      const oldAccount = currentAccount;
+      currentAccount = newAccount;
 
-      if (blockTime > 15) {
-        console.warn('Slow block production!');
+      console.log(`Account changed from ${oldAccount} to ${newAccount}`);
+
+      // Re-fetch account-specific data
+      if (newAccount) {
+        await loadAccountData(newAccount);
       }
     }
+  });
 
-    lastBlock = blockNum;
-    lastTime = now;
-  }
-}
-```
-
-### Event Aggregation
-
-```typescript
-interface EventStats {
-  totalBlocks: number;
-  totalTransactions: number;
-  totalEvents: number;
-}
-
-async function aggregateEvents(
-  contractAddress: Address.AddressType,
-  duration: number
-): Promise<EventStats> {
-  const stats: EventStats = {
-    totalBlocks: 0,
-    totalTransactions: 0,
-    totalEvents: 0
+  return {
+    getCurrentAccount: () => currentAccount
   };
-
-  const endTime = Date.now() + duration;
-
-  await Promise.all([
-    // Count blocks
-    (async () => {
-      for await (const block of provider.events.newHeads()) {
-        stats.totalBlocks++;
-        stats.totalTransactions += block.transactions.length;
-
-        if (Date.now() > endTime) break;
-      }
-    })(),
-
-    // Count events
-    (async () => {
-      for await (const log of provider.events.logs({ address: contractAddress })) {
-        stats.totalEvents++;
-
-        if (Date.now() > endTime) break;
-      }
-    })()
-  ]);
-
-  return stats;
 }
 ```
 
-## Subscription Management
+## Best Practices
 
-### Cleanup
+1. **Always remove listeners** when component unmounts or is no longer needed
+2. **Use same function reference** for add/remove to work correctly
+3. **Reload on chainChanged** to avoid stale state issues
+4. **Handle empty accounts array** - user may disconnect wallet
+5. **Test disconnection scenarios** - network issues, manual disconnects
 
-Breaking from a `for await` loop automatically cleans up the subscription:
+## Error Handling
+
+Events themselves don't throw errors, but you can wrap handlers:
 
 ```typescript
-// Subscription is active
-for await (const block of provider.events.newHeads()) {
-  if (shouldStop) {
-    break;  // ← Cleans up subscription automatically
+provider.on('accountsChanged', (accounts) => {
+  try {
+    updateAccountState(accounts);
+  } catch (error) {
+    console.error('Failed to handle account change:', error);
   }
-}
-// Subscription is now closed
+});
 ```
 
-### Multiple Subscriptions
+## Key Differences from Custom Event Systems
 
-Each call to `provider.events.X()` creates a new subscription:
+| Feature | EIP-1193 Events | Custom Events |
+|---------|-----------------|---------------|
+| Events | accountsChanged, chainChanged, connect, disconnect | Varies by library |
+| Pattern | Standard EventEmitter | Library-specific |
+| Compatibility | All EIP-1193 providers | Provider-specific |
+| Use case | Wallet/chain changes | Blockchain data (blocks, logs) |
 
-```typescript
-// Subscription 1
-const subscription1 = provider.events.newHeads();
+For blockchain data subscriptions (blocks, logs, transactions), use JSON-RPC subscription methods like `eth_subscribe`.
 
-// Subscription 2 (independent)
-const subscription2 = provider.events.newHeads();
+## Related
 
-// Both receive events independently
-```
-
-## Transport Considerations
-
-Event subscriptions require bidirectional communication:
-
-- **WebSocket** - ✅ Full support, recommended
-- **HTTP (polling)** - ⚠️ Falls back to polling (less efficient)
-- **IPC** - ✅ Full support
-
-WebSocket is recommended for real-time event subscriptions.
-
-## Type Safety
-
-Event parameters use branded primitive types:
-
-```typescript
-import * as Address from 'tevm/primitives/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-
-// Type-safe event filtering
-const address = Address('0x...');
-const topic = Hash('0x...');
-
-for await (const log of provider.events.logs({
-  address: address,  // ✅ Branded Address
-  topics: [topic]    // ✅ Branded Hash
-})) {
-  // log.address is Address
-  // log.topics[0] is Hash
-}
-```
-
-## Key Differences from EIP-1193
-
-| Feature | EIP-1193 | Tevm Provider |
-|---------|----------|-------------------|
-| API | `provider.on('event', listener)` | `provider.events.event()` |
-| Pattern | Event emitter | Async generator |
-| Cleanup | `provider.removeListener()` | `break` from loop |
-| Backpressure | Manual | Automatic |
-| Type safety | Basic | Full with branded types |
-
-## Next Steps
-
-- [Method API](/provider/methods) - Learn about method calls
-- [eth Methods](/provider/eth-methods) - Browse all eth methods
-- [Adapters](/provider/adapters) - Convert to EIP-1193 format
-- [Primitives](/primitives/address) - Learn about branded types
+- [Getting Started](/jsonrpc-provider/getting-started) - Installation and setup
+- [Method API](/jsonrpc-provider/method-api) - Making JSON-RPC requests
+- [Error Handling](/jsonrpc-provider/error-handling) - Handling errors

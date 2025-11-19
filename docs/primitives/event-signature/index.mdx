@@ -1,0 +1,212 @@
+---
+title: EventSignature
+description: 32-byte event signature for Ethereum event logs
+---
+
+# EventSignature
+
+An **EventSignature** is a 32-byte identifier used as the first topic (topic[0]) in Ethereum event logs. It's computed as the full Keccak-256 hash of the event signature.
+
+## Type Definition
+
+```typescript
+type EventSignatureType = Uint8Array & {
+  readonly [brand]: "EventSignature";
+  readonly length: 32;
+};
+```
+
+## Creating Event Signatures
+
+### From Signature String
+
+```typescript
+import * as EventSignature from '@tevm/primitives';
+
+const transferEvent = EventSignature.fromSignature(
+  'Transfer(address,address,uint256)'
+);
+
+console.log(EventSignature.toHex(transferEvent));
+// '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+```
+
+### From Hex String
+
+```typescript
+const sig = EventSignature.fromHex(
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+```
+
+### From Bytes
+
+```typescript
+const bytes = new Uint8Array(32); // 32-byte array
+const sig = EventSignature.from(bytes);
+```
+
+## Operations
+
+### Convert to Hex
+
+```typescript
+const hex = EventSignature.toHex(signature);
+// '0xddf252ad...'
+```
+
+### Compare Signatures
+
+```typescript
+const sig1 = EventSignature.fromSignature('Transfer(address,address,uint256)');
+const sig2 = EventSignature.fromSignature('Approval(address,address,uint256)');
+const equal = EventSignature.equals(sig1, sig2); // false
+```
+
+## Common Event Signatures
+
+### ERC-20
+
+```typescript
+// Transfer(address indexed from, address indexed to, uint256 value)
+const transfer = EventSignature.fromSignature('Transfer(address,address,uint256)');
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Approval(address indexed owner, address indexed spender, uint256 value)
+const approval = EventSignature.fromSignature('Approval(address,address,uint256)');
+// 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925
+```
+
+### ERC-721
+
+```typescript
+// Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+const transfer = EventSignature.fromSignature('Transfer(address,address,uint256)');
+// Same signature as ERC-20 Transfer!
+
+// Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
+const approval = EventSignature.fromSignature('Approval(address,address,uint256)');
+// Same signature as ERC-20 Approval!
+```
+
+### Uniswap V2
+
+```typescript
+// Swap(address indexed sender, uint256 amount0In, uint256 amount1In,
+//      uint256 amount0Out, uint256 amount1Out, address indexed to)
+const swap = EventSignature.fromSignature(
+  'Swap(address,uint256,uint256,uint256,uint256,address)'
+);
+// 0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822
+```
+
+## Event Log Structure
+
+Event signatures appear as the first topic in event logs:
+
+```typescript
+{
+  topics: [
+    '0xddf252ad...',  // topic[0] = event signature
+    '0x000...sender', // topic[1] = indexed param 1
+    '0x000...recipient' // topic[2] = indexed param 2
+  ],
+  data: '0x000...amount' // non-indexed params
+}
+```
+
+## Signature Format
+
+Event signatures must use **canonical type names**:
+
+✅ Correct:
+- `Transfer(address,address,uint256)`
+- `Swap(address,uint256,uint256,uint256,uint256,address)`
+- `Deposit(address,(uint256,uint256))`
+
+❌ Incorrect:
+- `Transfer(address, address, uint256)` (has spaces)
+- `Transfer(address,address,uint)` (should be uint256)
+- `transfer(address,address,uint256)` (wrong capitalization)
+
+**Note**: Unlike function signatures, event names conventionally start with uppercase.
+
+## How Event Signatures Work
+
+1. **Event Signature**: Start with the canonical event signature
+2. **Hash**: Compute `keccak256(signature)`
+3. **Use Full Hash**: Unlike function selectors, use all 32 bytes
+
+```
+Transfer(address,address,uint256)
+  ↓ keccak256
+0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  ↓ (no truncation)
+0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+## Indexed vs Non-Indexed Parameters
+
+Event parameters can be indexed or non-indexed:
+
+```solidity
+event Transfer(
+  address indexed from,   // topic[1]
+  address indexed to,     // topic[2]
+  uint256 value           // data
+);
+```
+
+The signature **does not include** the `indexed` keyword:
+- Signature: `Transfer(address,address,uint256)`
+- The `indexed` keyword only affects where data appears in the log
+
+## Anonymous Events
+
+Anonymous events don't include the event signature as topic[0]:
+
+```solidity
+event Transfer(
+  address indexed from,
+  address indexed to,
+  uint256 value
+) anonymous;
+```
+
+For anonymous events:
+- No topic[0] (no event signature)
+- Indexed params use topic[0], topic[1], topic[2]...
+- Saves gas but harder to identify the event
+
+## Filtering Events
+
+Use event signatures to filter logs:
+
+```typescript
+const transferSig = EventSignature.fromSignature('Transfer(address,address,uint256)');
+
+const logs = await eth_getLogs({
+  address: tokenAddress,
+  topics: [EventSignature.toHex(transferSig)]
+});
+```
+
+## API Reference
+
+### Constructors
+
+- `from(value: EventSignatureLike): EventSignatureType` - Create from various inputs
+- `fromHex(hex: string): EventSignatureType` - Create from hex string
+- `fromSignature(signature: string): EventSignatureType` - Compute from event signature
+
+### Operations
+
+- `toHex(sig: EventSignatureType): string` - Convert to hex string
+- `equals(a: EventSignatureType, b: EventSignatureType): boolean` - Compare signatures
+
+## See Also
+
+- [Selector](/primitives/selector) - 4-byte function selector
+- [FunctionSignature](/primitives/function-signature) - Extended function selector
+- [ErrorSignature](/primitives/error-signature) - 4-byte error selector
+- [EventLog](/primitives/event-log) - Event log structure

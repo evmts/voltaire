@@ -362,6 +362,7 @@ url = "https://tevm.sh/mcp"
         setTimeout(initMonaco, 500);
         setTimeout(initTextAnimation, 500);
         setTimeout(initTabIndicator, 500);
+        setTimeout(observeThemeChanges, 500);
       });
 
       function initTabIndicator() {
@@ -377,11 +378,15 @@ url = "https://tevm.sh/mcp"
       }
 
       function initTextAnimation() {
-        // Language animation (TypeScript <-> WASM <-> Zig)
+        // Language and platform animation
         const languages = [
           { name: 'TypeScript', color: '#3178C6' },
           { name: 'WASM', color: '#654FF0' },
-          { name: 'Zig', color: '#F7A41D' }
+          { name: 'Zig', color: '#F7A41D' },
+          { name: 'Browser', color: '#E34F26' },
+          { name: 'Serverless', color: '#FF9900' },
+          { name: 'Bun', color: '#FBF0DF' },
+          { name: 'Node', color: '#68A063' }
         ];
         let langIndex = 0;
         const languageText = document.getElementById('language-text');
@@ -413,6 +418,11 @@ url = "https://tevm.sh/mcp"
         setInterval(animateLanguage, 5000);
       }
 
+      // Detect current theme from Mintlify's DOM
+      function getCurrentTheme() {
+        return document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs';
+      }
+
       async function initMonaco() {
         const mountPoint = document.getElementById('editor-mount-point');
         if (!mountPoint) return;
@@ -429,22 +439,57 @@ url = "https://tevm.sh/mcp"
           const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
           const monaco = await init();
 
-          const code = \`// Generate Ethereum address from private key
-import { Address, Hex } from "tevm";
+          const code = \`// Create and sign an ERC20 transfer transaction
+import {
+  Transaction, Address, Abi, Signer, TokenBalance,
+  CallData, Nonce, GasLimit, Wei, Gwei, ChainId
+} from "tevm";
 
-const privateKey = Hex.toBytes(
+const signer = Signer.fromPrivateKey(
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 );
 
-const address = Address.fromPrivateKey(privateKey);
+// Encode ERC20 transfer function call
+const recipient = Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+const amount = TokenBalance.fromUnits("1", 18);
 
-console.log("Address:", address.toHex());\`;
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+const calldata: CallData = abi.transfer.encode(recipient, amount);
+
+// Create EIP-1559 transaction with type-safe primitives
+const tx = Transaction({
+  type: Transaction.Type.EIP1559,
+  to: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+  value: Wei(0),
+  chainId: ChainId(1),
+  nonce: Nonce(0),
+  maxFeePerGas: Gwei(30),
+  maxPriorityFeePerGas: Gwei(2),
+  gasLimit: GasLimit(100000),
+  data: calldata,
+});
+
+// Sign the transaction
+const signedTx = signer.sign(tx);
+
+// Verify and serialize
+console.log("Signed:", signedTx.isSigned());
+console.log("Sender:", signedTx.getSender().toHex());
+console.log("TxHash:", signedTx.hash().toHex());\`;
 
           const model = monaco.editor.createModel(code, 'typescript');
 
           const editor = monaco.editor.create(document.getElementById('editor-container'), {
             model: model,
-            theme: 'vs-dark',
+            theme: getCurrentTheme(),
             fontSize: 14,
             lineHeight: 21,
             fontFamily: 'Menlo, Monaco, "Courier New", monospace',
@@ -464,12 +509,44 @@ console.log("Address:", address.toHex());\`;
               useShadows: false,
               verticalScrollbarSize: 10,
               horizontalScrollbarSize: 10
-            }
+            },
+            tabSize: 2,
+            insertSpaces: true
           });
+
+          // Store globally for theme updates
+          window.monacoInstance = monaco;
+          window.monacoEditor = editor;
+
+          // Trigger auto-formatting
+          setTimeout(() => {
+            editor.getAction('editor.action.formatDocument')?.run();
+          }, 100);
 
         } catch (e) {
           document.getElementById('editor-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Failed to load editor</div>';
         }
+      }
+
+      // Watch for theme changes
+      function observeThemeChanges() {
+        const observer = new MutationObserver(() => {
+          if (window.monacoInstance && window.monacoEditor) {
+            const container = document.getElementById('editor-container');
+            // Re-initialize if container was destroyed
+            if (!container || !container.parentElement) {
+              initMonaco();
+            } else {
+              // Update theme on existing editor
+              window.monacoInstance.editor.setTheme(getCurrentTheme());
+            }
+          }
+        });
+
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class']
+        });
       }
     `}}>
     </script>

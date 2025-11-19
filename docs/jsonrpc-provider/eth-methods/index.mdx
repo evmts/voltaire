@@ -13,18 +13,19 @@ The `eth` namespace provides 40 standard Ethereum JSON-RPC methods for blocks, t
 
 ## Overview
 
-Access eth methods directly on the provider:
+Access eth methods via the EIP-1193 `request` API:
 
 ```typescript
 import { Provider } from 'tevm/provider';
 import * as Address from 'tevm/primitives/Address';
+import * as Rpc from 'tevm/jsonrpc';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
 // Call eth methods
-const blockNumber = await provider.eth_blockNumber();
-const balance = await provider.eth_getBalance(address, 'latest');
-const tx = await provider.eth_getTransactionByHash(txHash);
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash));
 ```
 
 ## Block Methods
@@ -34,8 +35,8 @@ const tx = await provider.eth_getTransactionByHash(txHash);
 Get the most recent block number.
 
 ```typescript
-const response = await provider.eth_blockNumber();
-// Response<Quantity>
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+// Quantity
 ```
 
 ### eth_getBlockByNumber
@@ -43,8 +44,8 @@ const response = await provider.eth_blockNumber();
 Get block by number with full transactions or hashes.
 
 ```typescript
-const block = await provider.eth_getBlockByNumber('latest', true);
-// Response<Block>
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
+// Block
 ```
 
 **Parameters:**
@@ -56,8 +57,8 @@ const block = await provider.eth_getBlockByNumber('latest', true);
 Get block by hash.
 
 ```typescript
-const block = await provider.eth_getBlockByHash(blockHash, false);
-// Response<Block>
+const block = await provider.request(Rpc.Eth.GetBlockByHashRequest(blockHash, false));
+// Block
 ```
 
 **Parameters:**
@@ -69,8 +70,8 @@ const block = await provider.eth_getBlockByHash(blockHash, false);
 Get all transaction receipts for a block.
 
 ```typescript
-const receipts = await provider.eth_getBlockReceipts('latest');
-// Response<TransactionReceipt[]>
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
+// TransactionReceipt[]
 ```
 
 ### eth_getBlockTransactionCountByHash
@@ -78,8 +79,8 @@ const receipts = await provider.eth_getBlockReceipts('latest');
 Get transaction count in a block by hash.
 
 ```typescript
-const count = await provider.eth_getBlockTransactionCountByHash(blockHash);
-// Response<Quantity>
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByHashRequest(blockHash));
+// Quantity
 ```
 
 ### eth_getBlockTransactionCountByNumber
@@ -87,8 +88,8 @@ const count = await provider.eth_getBlockTransactionCountByHash(blockHash);
 Get transaction count in a block by number.
 
 ```typescript
-const count = await provider.eth_getBlockTransactionCountByNumber('latest');
-// Response<Quantity>
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest('latest'));
+// Quantity
 ```
 
 ### eth_getUncleCountByBlockHash
@@ -96,8 +97,8 @@ const count = await provider.eth_getBlockTransactionCountByNumber('latest');
 Get uncle count for a block by hash.
 
 ```typescript
-const count = await provider.eth_getUncleCountByBlockHash(blockHash);
-// Response<Quantity>
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockHashRequest(blockHash));
+// Quantity
 ```
 
 ### eth_getUncleCountByBlockNumber
@@ -105,8 +106,8 @@ const count = await provider.eth_getUncleCountByBlockHash(blockHash);
 Get uncle count for a block by number.
 
 ```typescript
-const count = await provider.eth_getUncleCountByBlockNumber('latest');
-// Response<Quantity>
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockNumberRequest('latest'));
+// Quantity
 ```
 
 ## Transaction Methods
@@ -116,8 +117,8 @@ const count = await provider.eth_getUncleCountByBlockNumber('latest');
 Submit a signed transaction to the network.
 
 ```typescript
-const txHash = await provider.eth_sendRawTransaction(signedTx);
-// Response<Hash>
+const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(signedTx));
+// Hash
 ```
 
 **Parameters:**
@@ -128,13 +129,13 @@ const txHash = await provider.eth_sendRawTransaction(signedTx);
 Sign and send a transaction (requires unlocked account).
 
 ```typescript
-const txHash = await provider.eth_sendTransaction({
+const txHash = await provider.request(Rpc.Eth.SendTransactionRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   value: Quantity(1000000000000000000n),
   data: Hex('0x...')
-});
-// Response<Hash>
+}));
+// Hash
 ```
 
 ### eth_getTransactionByHash
@@ -142,8 +143,8 @@ const txHash = await provider.eth_sendTransaction({
 Get transaction by hash.
 
 ```typescript
-const tx = await provider.eth_getTransactionByHash(txHash);
-// Response<Transaction>
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash));
+// Transaction
 ```
 
 ### eth_getTransactionByBlockHashAndIndex
@@ -151,11 +152,11 @@ const tx = await provider.eth_getTransactionByHash(txHash);
 Get transaction by block hash and index.
 
 ```typescript
-const tx = await provider.eth_getTransactionByBlockHashAndIndex(
+const tx = await provider.request(Rpc.Eth.GetTransactionByBlockHashAndIndexRequest(
   blockHash,
   Quantity(0)
-);
-// Response<Transaction>
+));
+// Transaction
 ```
 
 ### eth_getTransactionByBlockNumberAndIndex
@@ -163,11 +164,11 @@ const tx = await provider.eth_getTransactionByBlockHashAndIndex(
 Get transaction by block number and index.
 
 ```typescript
-const tx = await provider.eth_getTransactionByBlockNumberAndIndex(
+const tx = await provider.request(Rpc.Eth.GetTransactionByBlockNumberAndIndexRequest(
   'latest',
   Quantity(0)
-);
-// Response<Transaction>
+));
+// Transaction
 ```
 
 ### eth_getTransactionReceipt
@@ -175,8 +176,8 @@ const tx = await provider.eth_getTransactionByBlockNumberAndIndex(
 Get transaction receipt (includes logs and status).
 
 ```typescript
-const receipt = await provider.eth_getTransactionReceipt(txHash);
-// Response<TransactionReceipt>
+const receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash));
+// TransactionReceipt
 ```
 
 ### eth_getTransactionCount
@@ -184,8 +185,8 @@ const receipt = await provider.eth_getTransactionReceipt(txHash);
 Get transaction count (nonce) for an address.
 
 ```typescript
-const nonce = await provider.eth_getTransactionCount(address, 'latest');
-// Response<Quantity>
+const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
+// Quantity
 ```
 
 ## State Methods
@@ -195,8 +196,8 @@ const nonce = await provider.eth_getTransactionCount(address, 'latest');
 Get ether balance of an address.
 
 ```typescript
-const balance = await provider.eth_getBalance(address, 'latest');
-// Response<Quantity>
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+// Quantity
 ```
 
 **Parameters:**
@@ -208,8 +209,8 @@ const balance = await provider.eth_getBalance(address, 'latest');
 Get contract bytecode at an address.
 
 ```typescript
-const code = await provider.eth_getCode(address, 'latest');
-// Response<Hex>
+const code = await provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'));
+// Hex
 ```
 
 **Parameters:**
@@ -221,12 +222,12 @@ const code = await provider.eth_getCode(address, 'latest');
 Get value from a contract storage slot.
 
 ```typescript
-const value = await provider.eth_getStorageAt(
+const value = await provider.request(Rpc.Eth.GetStorageAtRequest(
   address,
   Quantity(0),
   'latest'
-);
-// Response<Hex>
+));
+// Hex
 ```
 
 **Parameters:**
@@ -239,12 +240,12 @@ const value = await provider.eth_getStorageAt(
 Get Merkle proof for account and storage values.
 
 ```typescript
-const proof = await provider.eth_getProof(
+const proof = await provider.request(Rpc.Eth.GetProofRequest(
   address,
   [Quantity(0), Quantity(1)],
   'latest'
-);
-// Response<Proof>
+));
+// Proof
 ```
 
 **Parameters:**
@@ -259,12 +260,12 @@ const proof = await provider.eth_getProof(
 Execute a read-only contract call without creating a transaction.
 
 ```typescript
-const result = await provider.eth_call({
+const result = await provider.request(Rpc.Eth.CallRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   data: Hex('0x70a08231...')  // balanceOf(address)
-}, 'latest');
-// Response<Hex>
+}, 'latest'));
+// Hex
 ```
 
 **Parameters:**
@@ -276,13 +277,13 @@ const result = await provider.eth_call({
 Estimate gas required for a transaction.
 
 ```typescript
-const gas = await provider.eth_estimateGas({
+const gas = await provider.request(Rpc.Eth.EstimateGasRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   value: Quantity(1000000000000000000n),
   data: Hex('0x...')
-});
-// Response<Quantity>
+}));
+// Quantity
 ```
 
 ### eth_createAccessList
@@ -290,12 +291,12 @@ const gas = await provider.eth_estimateGas({
 Generate an access list for a transaction.
 
 ```typescript
-const accessList = await provider.eth_createAccessList({
+const accessList = await provider.request(Rpc.Eth.CreateAccessListRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   data: Hex('0x...')
-}, 'latest');
-// Response<AccessList>
+}, 'latest'));
+// AccessList
 ```
 
 ### eth_simulateV1
@@ -303,8 +304,8 @@ const accessList = await provider.eth_createAccessList({
 Simulate multiple transactions (EIP-not-yet-finalized).
 
 ```typescript
-const simulation = await provider.eth_simulateV1(params);
-// Response<SimulationResult>
+const simulation = await provider.request(Rpc.Eth.SimulateV1Request(params));
+// SimulationResult
 ```
 
 ## Log & Filter Methods
@@ -314,13 +315,13 @@ const simulation = await provider.eth_simulateV1(params);
 Query event logs matching a filter.
 
 ```typescript
-const logs = await provider.eth_getLogs({
+const logs = await provider.request(Rpc.Eth.GetLogsRequest({
   fromBlock: 'earliest',
   toBlock: 'latest',
   address: Address('0x...'),
   topics: [Hash('0x...')]  // Event signature
-});
-// Response<Log[]>
+}));
+// Log[]
 ```
 
 ### eth_newFilter
@@ -328,13 +329,13 @@ const logs = await provider.eth_getLogs({
 Create a new log filter.
 
 ```typescript
-const filterId = await provider.eth_newFilter({
+const filterId = await provider.request(Rpc.Eth.NewFilterRequest({
   fromBlock: 'latest',
   toBlock: 'latest',
   address: Address('0x...'),
   topics: []
-});
-// Response<Quantity>
+}));
+// Quantity
 ```
 
 ### eth_newBlockFilter
@@ -342,8 +343,8 @@ const filterId = await provider.eth_newFilter({
 Create a filter for new blocks.
 
 ```typescript
-const filterId = await provider.eth_newBlockFilter();
-// Response<Quantity>
+const filterId = await provider.request(Rpc.Eth.NewBlockFilterRequest());
+// Quantity
 ```
 
 ### eth_newPendingTransactionFilter
@@ -351,8 +352,8 @@ const filterId = await provider.eth_newBlockFilter();
 Create a filter for pending transactions.
 
 ```typescript
-const filterId = await provider.eth_newPendingTransactionFilter();
-// Response<Quantity>
+const filterId = await provider.request(Rpc.Eth.NewPendingTransactionFilterRequest());
+// Quantity
 ```
 
 ### eth_getFilterChanges
@@ -360,8 +361,8 @@ const filterId = await provider.eth_newPendingTransactionFilter();
 Get new entries for a filter since last poll.
 
 ```typescript
-const changes = await provider.eth_getFilterChanges(filterId);
-// Response<Log[] | Hash[]>
+const changes = await provider.request(Rpc.Eth.GetFilterChangesRequest(filterId));
+// Log[] | Hash[]
 ```
 
 ### eth_getFilterLogs
@@ -369,8 +370,8 @@ const changes = await provider.eth_getFilterChanges(filterId);
 Get all logs matching a filter.
 
 ```typescript
-const logs = await provider.eth_getFilterLogs(filterId);
-// Response<Log[]>
+const logs = await provider.request(Rpc.Eth.GetFilterLogsRequest(filterId));
+// Log[]
 ```
 
 ### eth_uninstallFilter
@@ -378,8 +379,8 @@ const logs = await provider.eth_getFilterLogs(filterId);
 Remove a filter.
 
 ```typescript
-const success = await provider.eth_uninstallFilter(filterId);
-// Response<boolean>
+const success = await provider.request(Rpc.Eth.UninstallFilterRequest(filterId));
+// boolean
 ```
 
 ## Fee Methods
@@ -389,8 +390,8 @@ const success = await provider.eth_uninstallFilter(filterId);
 Get current gas price.
 
 ```typescript
-const gasPrice = await provider.eth_gasPrice();
-// Response<Quantity>
+const gasPrice = await provider.request(Rpc.Eth.GasPriceRequest());
+// Quantity
 ```
 
 ### eth_maxPriorityFeePerGas
@@ -398,8 +399,8 @@ const gasPrice = await provider.eth_gasPrice();
 Get current max priority fee per gas (EIP-1559).
 
 ```typescript
-const priorityFee = await provider.eth_maxPriorityFeePerGas();
-// Response<Quantity>
+const priorityFee = await provider.request(Rpc.Eth.MaxPriorityFeePerGasRequest());
+// Quantity
 ```
 
 ### eth_feeHistory
@@ -407,12 +408,12 @@ const priorityFee = await provider.eth_maxPriorityFeePerGas();
 Get historical gas fee data.
 
 ```typescript
-const history = await provider.eth_feeHistory(
+const history = await provider.request(Rpc.Eth.FeeHistoryRequest(
   Quantity(10),  // Block count
-  'latest',           // Newest block
-  [25, 50, 75]       // Percentiles
-);
-// Response<FeeHistory>
+  'latest',      // Newest block
+  [25, 50, 75]   // Percentiles
+));
+// FeeHistory
 ```
 
 ### eth_blobBaseFee
@@ -420,8 +421,8 @@ const history = await provider.eth_feeHistory(
 Get current blob base fee (EIP-4844).
 
 ```typescript
-const blobFee = await provider.eth_blobBaseFee();
-// Response<Quantity>
+const blobFee = await provider.request(Rpc.Eth.BlobBaseFeeRequest());
+// Quantity
 ```
 
 ## Network Methods
@@ -431,8 +432,8 @@ const blobFee = await provider.eth_blobBaseFee();
 Get the chain ID.
 
 ```typescript
-const chainId = await provider.eth_chainId();
-// Response<Quantity>
+const chainId = await provider.request(Rpc.Eth.ChainIdRequest());
+// Quantity
 ```
 
 ### eth_syncing
@@ -440,8 +441,8 @@ const chainId = await provider.eth_chainId();
 Get sync status (false if not syncing).
 
 ```typescript
-const syncStatus = await provider.eth_syncing();
-// Response<SyncStatus | false>
+const syncStatus = await provider.request(Rpc.Eth.SyncingRequest());
+// SyncStatus | false
 ```
 
 ### eth_coinbase
@@ -449,8 +450,8 @@ const syncStatus = await provider.eth_syncing();
 Get the coinbase address (miner/validator).
 
 ```typescript
-const coinbase = await provider.eth_coinbase();
-// Response<Address>
+const coinbase = await provider.request(Rpc.Eth.CoinbaseRequest());
+// Address
 ```
 
 ## Account Methods
@@ -460,8 +461,8 @@ const coinbase = await provider.eth_coinbase();
 List available accounts (if wallet is connected).
 
 ```typescript
-const accounts = await provider.eth_accounts();
-// Response<Address[]>
+const accounts = await provider.request(Rpc.Eth.AccountsRequest());
+// Address[]
 ```
 
 ### eth_sign
@@ -469,11 +470,11 @@ const accounts = await provider.eth_accounts();
 Sign data with an account (requires unlocked account).
 
 ```typescript
-const signature = await provider.eth_sign(
+const signature = await provider.request(Rpc.Eth.SignRequest(
   Address('0x...'),
   Hex('0x...')
-);
-// Response<Hex>
+));
+// Hex
 ```
 
 <Warning>
@@ -485,12 +486,12 @@ const signature = await provider.eth_sign(
 Sign a transaction (requires unlocked account).
 
 ```typescript
-const signedTx = await provider.eth_signTransaction({
+const signedTx = await provider.request(Rpc.Eth.SignTransactionRequest({
   from: Address('0x...'),
   to: Address('0x...'),
   value: Quantity(1000000000000000000n)
-});
-// Response<Hex>
+}));
+// Hex
 ```
 
 ## Usage Patterns
@@ -500,49 +501,61 @@ const signedTx = await provider.eth_signTransaction({
 ```typescript
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-const [balanceRes, nonceRes] = await Promise.all([
-  provider.eth_getBalance(address, 'latest'),
-  provider.eth_getTransactionCount(address, 'latest')
-]);
+try {
+  const [balance, nonce] = await Promise.all([
+    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'))
+  ]);
 
-if (!balanceRes.error && !nonceRes.error) {
-  console.log('Balance:', balanceRes.result);
-  console.log('Nonce:', nonceRes.result);
+  console.log('Balance:', balance);
+  console.log('Nonce:', nonce);
+} catch (error) {
+  console.error('Failed to fetch account data:', error);
 }
 ```
 
 ### Query Contract State
 
 ```typescript
-// Get contract code
-const codeRes = await provider.eth_getCode(contractAddress, 'latest');
+try {
+  // Get contract code
+  const code = await provider.request(Rpc.Eth.GetCodeRequest(contractAddress, 'latest'));
 
-if (!codeRes.error && codeRes.result !== '0x') {
-  // Contract exists, call a method
-  const result = await provider.eth_call({
-    to: contractAddress,
-    data: Hex('0x18160ddd')  // totalSupply()
-  }, 'latest');
+  if (code !== '0x') {
+    // Contract exists, call a method
+    const result = await provider.request(Rpc.Eth.CallRequest({
+      to: contractAddress,
+      data: Hex('0x18160ddd')  // totalSupply()
+    }, 'latest'));
+    console.log('Total supply:', result);
+  }
+} catch (error) {
+  console.error('Failed to query contract:', error);
 }
 ```
 
 ### Monitor Transaction
 
 ```typescript
-// Submit transaction
-const txHashRes = await provider.eth_sendRawTransaction(signedTx);
+try {
+  // Submit transaction
+  const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(signedTx));
 
-if (!txHashRes.error) {
   // Poll for receipt
   let receipt = null;
   while (!receipt) {
-    const receiptRes = await provider.eth_getTransactionReceipt(txHashRes.result);
-    if (!receiptRes.error && receiptRes.result) {
-      receipt = receiptRes.result;
-      console.log('Transaction mined in block:', receipt.blockNumber);
+    try {
+      receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash));
+      if (receipt) {
+        console.log('Transaction mined in block:', receipt.blockNumber);
+      }
+    } catch (error) {
+      // Receipt not yet available, continue polling
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
+} catch (error) {
+  console.error('Failed to submit transaction:', error);
 }
 ```
 

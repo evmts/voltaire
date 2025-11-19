@@ -1,0 +1,189 @@
+---
+title: Domain
+description: EIP-712 domain separator structure for dApp-specific signatures
+---
+
+# Domain
+
+EIP-712 domain separator structure - creates domain-specific signature contexts for dApps.
+
+## Overview
+
+Domain defines the context for EIP-712 signatures. It prevents replay attacks by ensuring signatures are valid only within a specific domain (contract, chain, or dApp). All EIP-712 signatures include a domain separator.
+
+## Type Definition
+
+```typescript
+type DomainType = {
+  readonly name?: string;           // dApp name
+  readonly version?: string;        // Domain version
+  readonly chainId?: ChainIdType;   // EIP-155 chain ID
+  readonly verifyingContract?: AddressType; // Contract address
+  readonly salt?: HashType;         // Salt for disambiguation
+};
+```
+
+At least one field must be defined.
+
+## Usage
+
+### Create Domain
+
+```typescript
+import * as Domain from './primitives/Domain/index.js';
+
+const domain = Domain.from({
+  name: 'MyDApp',
+  version: '1',
+  chainId: 1,
+  verifyingContract: '0x123...',
+});
+```
+
+### Compute Domain Separator Hash
+
+```typescript
+import { keccak256 } from './crypto/keccak256/index.js';
+
+const domainSep = Domain.toHash(domain, { keccak256 });
+console.log(DomainSeparator.toHex(domainSep));
+```
+
+### Minimal Domain
+
+```typescript
+// Name only
+const domain = Domain.from({ name: 'MyDApp' });
+
+// Contract only
+const domain = Domain.from({
+  verifyingContract: '0x123...'
+});
+```
+
+## Domain Fields
+
+### name
+dApp or protocol name. Used to distinguish different applications.
+
+```typescript
+{ name: 'Uniswap V3' }
+```
+
+### version
+Domain version. Increment when contract logic changes.
+
+```typescript
+{ version: '1' }
+```
+
+### chainId
+EIP-155 chain ID. Prevents cross-chain replay attacks.
+
+```typescript
+{ chainId: 1 }  // Ethereum mainnet
+{ chainId: 137 }  // Polygon
+```
+
+### verifyingContract
+Contract address that will verify signatures. Prevents cross-contract replay.
+
+```typescript
+{ verifyingContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' }
+```
+
+### salt
+Additional entropy for disambiguation. Rarely used.
+
+```typescript
+{ salt: '0x1234...' }
+```
+
+## Encoding
+
+### Type Encoding
+
+```typescript
+const typeString = Domain.encodeType('EIP712Domain', {
+  EIP712Domain: [
+    { name: 'name', type: 'string' },
+    { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' },
+    { name: 'verifyingContract', type: 'address' },
+  ],
+});
+// 'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+```
+
+### Data Encoding
+
+```typescript
+const encoded = Domain.encodeData(
+  'EIP712Domain',
+  domain,
+  types,
+  { keccak256 }
+);
+```
+
+## Examples
+
+### ERC-20 Permit
+
+```typescript
+const domain = Domain.from({
+  name: 'USD Coin',
+  version: '2',
+  chainId: 1,
+  verifyingContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+});
+```
+
+### Uniswap Permit2
+
+```typescript
+const domain = Domain.from({
+  name: 'Permit2',
+  chainId: 1,
+  verifyingContract: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+});
+```
+
+### Custom dApp
+
+```typescript
+const domain = Domain.from({
+  name: 'MyDeFiProtocol',
+  version: '1.0',
+  chainId: 1,
+  verifyingContract: '0x123...',
+});
+```
+
+## Security
+
+### Prevent Replay Attacks
+
+Domain separators prevent signatures from being replayed:
+- **Cross-contract**: Different `verifyingContract` addresses
+- **Cross-chain**: Different `chainId` values
+- **Cross-version**: Different `version` strings
+
+### Best Practices
+
+1. **Always include chainId** - Prevents cross-chain replay
+2. **Always include verifyingContract** - Prevents cross-contract replay
+3. **Use semantic versioning** - Clear version tracking
+4. **Don't change domain** - Breaks existing signatures
+
+## Specification
+
+- **EIP-712**: https://eips.ethereum.org/EIPS/eip-712
+- **Domain Separator**: keccak256(encodeData('EIP712Domain', domain))
+
+## See Also
+
+- [DomainSeparator](/primitives/domain-separator) - Domain separator hash
+- [TypedData](/primitives/typed-data) - Complete typed data structure
+- [ChainId](/primitives/chain-id) - Chain ID primitive
+- [Address](/primitives/address) - Address primitive

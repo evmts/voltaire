@@ -1,6 +1,6 @@
 ---
 title: JSONRPCProvider
-description: Type-safe Ethereum JSON-RPC provider with branded primitives and async generator events
+description: EIP-1193 compliant Ethereum JSON-RPC provider with branded primitives and EventEmitter pattern
 ---
 
 <Warning>
@@ -9,7 +9,7 @@ description: Type-safe Ethereum JSON-RPC provider with branded primitives and as
 
 # JSONRPCProvider
 
-Type-safe Ethereum JSON-RPC provider interface with method-based API, branded primitive types, and async generator events. All types auto-generated from the [official OpenRPC specification](https://github.com/ethereum/execution-apis).
+EIP-1193 compliant Ethereum JSON-RPC provider interface with branded primitive types and standard event emitter pattern. All types auto-generated from the [official OpenRPC specification](https://github.com/ethereum/execution-apis).
 
 <Tip>
 New to JSONRPCProvider? Start with [Getting Started](/jsonrpc-provider/getting-started) for installation and your first requests.
@@ -17,69 +17,67 @@ New to JSONRPCProvider? Start with [Getting Started](/jsonrpc-provider/getting-s
 
 ## Overview
 
-JSONRPCProvider implements a provider interface for interacting with Ethereum nodes via JSON-RPC. Unlike standard EIP-1193 providers, it provides:
+JSONRPCProvider implements the EIP-1193 provider interface for interacting with Ethereum nodes via JSON-RPC:
 
-- **Method-based API** - Call methods directly: `provider.eth_blockNumber()`
+- **EIP-1193 compliant** - Standard `request(args)` method
 - **Branded primitives** - Type-safe params using Address, Hash, Hex, Quantity
-- **Never throws** - Errors returned as values, not exceptions
-- **Async generators** - Events consumed via `for await` loops
+- **Throws on error** - Standard error handling with exceptions
+- **EventEmitter pattern** - Standard on/removeListener for events
 - **Auto-generated types** - Generated from ethereum/execution-apis OpenRPC spec
 
 ### Provider Interface
 
 ```typescript
 export interface Provider {
-  // 65 JSON-RPC methods (eth, debug, engine)
-  eth_blockNumber(): Promise<Response<Quantity>>;
-  eth_getBalance(address: Address, block: BlockTag): Promise<Response<Quantity>>;
-  eth_call(params: CallParams): Promise<Response<Hex>>;
-  // ... 62 more methods
+  // Single request method (EIP-1193)
+  request(args: RequestArguments): Promise<unknown>;
 
-  // Event subscriptions
-  events: {
-    newHeads(): AsyncGenerator<Block>;
-    logs(params?: LogFilter): AsyncGenerator<Log>;
-    newPendingTransactions(): AsyncGenerator<Hash>;
-    syncing(): AsyncGenerator<SyncStatus>;
-  };
+  // Event emitter methods (EIP-1193)
+  on(event: string, listener: (...args: any[]) => void): void;
+  removeListener(event: string, listener: (...args: any[]) => void): void;
 }
 ```
 
-### Response Type
+### Request Arguments
 
-All methods return `Response<T>` containing either result or error:
+Create requests using request builders:
 
 ```typescript
-type Response<T> =
-  | { result: T; error?: never }
-  | { result?: never; error: RpcError };
+import * as Rpc from 'tevm/jsonrpc';
+
+// Request builders return RequestArguments
+const request = Rpc.Eth.BlockNumberRequest();
+// { method: "eth_blockNumber", params: [] }
+
+const result = await provider.request(request);
+// Returns result directly or throws on error
 ```
 
 ## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Method-Based API" icon="code" href="/jsonrpc-provider/method-api">
-    Direct method calls instead of generic request(). Type-safe parameters and return values.
+  <Card title="EIP-1193 Compliant" icon="code" href="/jsonrpc-provider/method-api">
+    Standard request(args) method. Compatible with all EIP-1193 tools and libraries.
   </Card>
 
   <Card title="Branded Primitives" icon="shield-check" href="/jsonrpc-provider/type-system">
     Compile-time type safety with Address, Hash, Hex, and Quantity branded types.
   </Card>
 
-  <Card title="Async Generator Events" icon="bolt" href="/jsonrpc-provider/events">
-    Subscribe to blockchain events using `for await` loops. Automatic backpressure and cleanup.
+  <Card title="EventEmitter Pattern" icon="bolt" href="/jsonrpc-provider/events">
+    Standard on/removeListener for accountsChanged, chainChanged, connect, disconnect events.
   </Card>
 
   <Card title="Auto-Generated Types" icon="code-branch" href="/jsonrpc-provider/type-system">
     All types generated from ethereum/execution-apis OpenRPC specification. Always in sync.
   </Card>
 
-  <Card title="Never Throws" icon="circle-exclamation" href="/jsonrpc-provider/error-handling">
-    Errors returned as values in Response type. No try/catch needed for RPC errors.
+  <Card title="Request Builders" icon="circle-exclamation" href="/jsonrpc-provider/error-handling">
+    Type-safe request constructors that return RequestArguments objects.
   </Card>
 
-  <Card title="Adapters" icon="arrows-rotate" href="/jsonrpc-provider/adapters">
-    Convert to EIP-1193, HTTP handler, or create custom providers for any transport.
+  <Card title="Error Handling" icon="triangle-exclamation" href="/jsonrpc-provider/error-handling">
+    Throws standard EIP-1193 errors. Use try/catch for error handling.
   </Card>
 </CardGroup>
 
@@ -91,8 +89,11 @@ OpenRPC Specification (ethereum/execution-apis)
   JSON-RPC Type Definitions
     (eth, debug, engine)
            ↓
-   Provider Interface
-   (65 method signatures)
+   Request Builders
+   (Rpc.Eth.*, Rpc.Debug.*, Rpc.Engine.*)
+           ↓
+   EIP-1193 Provider Interface
+   (request(args) method)
            ↓
     Transport Layer
  (HTTP, WebSocket, IPC, Custom)
@@ -157,62 +158,76 @@ OpenRPC Specification (ethereum/execution-apis)
 
 ```typescript
 export interface Provider {
-  // eth namespace (40 methods)
-  eth_blockNumber(): Promise<Response<Quantity>>;
-  eth_getBalance(address: Address, block: BlockTag): Promise<Response<Quantity>>;
-  eth_getTransactionCount(address: Address, block: BlockTag): Promise<Response<Quantity>>;
-  eth_getCode(address: Address, block: BlockTag): Promise<Response<Hex>>;
-  eth_getStorageAt(address: Address, slot: Quantity, block: BlockTag): Promise<Response<Hex>>;
-  eth_call(params: CallParams, block?: BlockTag): Promise<Response<Hex>>;
-  eth_estimateGas(params: CallParams): Promise<Response<Quantity>>;
-  eth_sendRawTransaction(signedTx: Hex): Promise<Response<Hash>>;
-  eth_getTransactionByHash(hash: Hash): Promise<Response<Transaction>>;
-  eth_getTransactionReceipt(hash: Hash): Promise<Response<TransactionReceipt>>;
-  eth_getLogs(filter: LogFilter): Promise<Response<Log[]>>;
-  // ... 29 more eth methods
+  // Single request method (EIP-1193)
+  request(args: RequestArguments): Promise<unknown>;
 
-  // debug namespace (5 methods)
-  debug_traceTransaction(hash: Hash, options?: TraceOptions): Promise<Response<Trace>>;
-  // ... 4 more debug methods
+  // Event emitter methods (EIP-1193)
+  on(event: string, listener: (...args: any[]) => void): void;
+  removeListener(event: string, listener: (...args: any[]) => void): void;
+}
 
-  // engine namespace (20 methods)
-  engine_newPayloadV3(payload: ExecutionPayload): Promise<Response<PayloadStatus>>;
-  // ... 19 more engine methods
-
-  // Events
-  events: {
-    newHeads(): AsyncGenerator<Block>;
-    logs(params?: LogFilter): AsyncGenerator<Log>;
-    newPendingTransactions(): AsyncGenerator<Hash>;
-    syncing(): AsyncGenerator<SyncStatus>;
-  };
+interface RequestArguments {
+  readonly method: string;
+  readonly params?: readonly unknown[] | object;
 }
 ```
 
 </Tab>
-<Tab title="Response<T>">
+<Tab title="Request Builders">
 
 ```typescript
-type Response<T> =
-  | { result: T; error?: never }
-  | { result?: never; error: RpcError };
+import * as Rpc from 'tevm/jsonrpc';
 
-interface RpcError {
-  code: number;
-  message: string;
-  data?: unknown;
+// eth namespace (40 methods)
+Rpc.Eth.BlockNumberRequest();
+Rpc.Eth.GetBalanceRequest(address, blockTag);
+Rpc.Eth.GetTransactionCountRequest(address, blockTag);
+Rpc.Eth.GetCodeRequest(address, blockTag);
+Rpc.Eth.GetStorageAtRequest(address, slot, blockTag);
+Rpc.Eth.CallRequest(params, blockTag);
+Rpc.Eth.EstimateGasRequest(params);
+Rpc.Eth.SendRawTransactionRequest(signedTx);
+Rpc.Eth.GetTransactionByHashRequest(hash);
+Rpc.Eth.GetTransactionReceiptRequest(hash);
+Rpc.Eth.GetLogsRequest(filter);
+// ... 29 more eth methods
+
+// debug namespace (5 methods)
+Rpc.Debug.TraceTransactionRequest(hash, options);
+// ... 4 more debug methods
+
+// engine namespace (20 methods)
+Rpc.Engine.NewPayloadV3Request(payload);
+// ... 19 more engine methods
+
+// All return RequestArguments: { method: string, params: unknown[] }
+```
+
+</Tab>
+<Tab title="Error Handling">
+
+```typescript
+// Provider throws on error (EIP-1193)
+try {
+  const blockNumber = await provider.request(
+    Rpc.Eth.BlockNumberRequest()
+  );
+  console.log('Block number:', blockNumber);
+} catch (error) {
+  if (error.code) {
+    console.error('RPC error:', error.code, error.message);
+  } else {
+    console.error('Unexpected error:', error);
+  }
 }
 ```
 
-All provider methods return `Response<T>`. Always check for errors before using result:
+**EIP-1193 Error Structure:**
 
 ```typescript
-const response = await provider.eth_blockNumber();
-
-if (response.error) {
-  console.error('RPC error:', response.error.code, response.error.message);
-} else {
-  console.log('Block number:', response.result);
+interface ProviderRpcError extends Error {
+  code: number;
+  data?: unknown;
 }
 ```
 
@@ -262,18 +277,20 @@ import * as Address from 'tevm/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-// Create requests
+// Create requests using builders
 const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
 const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, 'latest');
 
-const [balanceRes, nonceRes] = await Promise.all([
-  provider.request(balanceReq),
-  provider.request(nonceReq)
-]);
+try {
+  const [balance, nonce] = await Promise.all([
+    provider.request(balanceReq),
+    provider.request(nonceReq)
+  ]);
 
-if (!balanceRes.error && !nonceRes.error) {
-  console.log('Balance:', balanceRes.result);
-  console.log('Nonce:', nonceRes.result);
+  console.log('Balance:', balance);
+  console.log('Nonce:', nonce);
+} catch (error) {
+  console.error('RPC error:', error.message);
 }
 ```
 
@@ -286,22 +303,25 @@ import * as Hex from 'tevm/Hex';
 
 const contractAddress = Address('0x...');
 
-// Check if contract exists
-const codeReq = Rpc.Eth.GetCodeRequest(contractAddress, 'latest');
-const codeRes = await provider.request(codeReq);
+try {
+  // Check if contract exists
+  const code = await provider.request(
+    Rpc.Eth.GetCodeRequest(contractAddress, 'latest')
+  );
 
-if (!codeRes.error && codeRes.result !== '0x') {
-  // Contract exists, call totalSupply()
-  const callReq = Rpc.Eth.CallRequest({
-    to: contractAddress,
-    data: Hex('0x18160ddd')  // totalSupply() selector
-  }, 'latest');
+  if (code !== '0x') {
+    // Contract exists, call totalSupply()
+    const result = await provider.request(
+      Rpc.Eth.CallRequest({
+        to: contractAddress,
+        data: Hex('0x18160ddd')  // totalSupply() selector
+      }, 'latest')
+    );
 
-  const result = await provider.request(callReq);
-
-  if (!result.error) {
-    console.log('Total supply:', result.result);
+    console.log('Total supply:', result);
   }
+} catch (error) {
+  console.error('Query failed:', error.message);
 }
 ```
 
@@ -316,16 +336,22 @@ const transferSignature = Hash(
   '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 );
 
-for await (const log of provider.events.logs({
-  address: contractAddress,
-  topics: [transferSignature]
-})) {
-  console.log('Transfer event:');
-  console.log('  Block:', log.blockNumber);
-  console.log('  Transaction:', log.transactionHash);
-  console.log('  From:', log.topics[1]);
-  console.log('  To:', log.topics[2]);
-}
+// Subscribe using EIP-1193 event emitter
+provider.on('message', (event) => {
+  if (event.type === 'eth_subscription') {
+    const log = event.data.result;
+    console.log('Transfer event:');
+    console.log('  Block:', log.blockNumber);
+    console.log('  Transaction:', log.transactionHash);
+    console.log('  From:', log.topics[1]);
+    console.log('  To:', log.topics[2]);
+  }
+});
+
+// Or use chainChanged, accountsChanged events
+provider.on('chainChanged', (chainId) => {
+  console.log('Chain changed to:', chainId);
+});
 ```
 
 ### Wait for Transaction Confirmation
@@ -338,20 +364,33 @@ async function waitForConfirmation(
   txHash: Hash,
   confirmations: number = 3
 ): Promise<void> {
-  const request = Rpc.Eth.GetTransactionReceiptRequest(txHash);
-  const receiptRes = await provider.request(request);
+  try {
+    const receipt = await provider.request(
+      Rpc.Eth.GetTransactionReceiptRequest(txHash)
+    );
 
-  if (receiptRes.error || !receiptRes.result) {
-    throw new Error('Transaction not found');
-  }
-
-  const targetBlock = BigInt(receiptRes.result.blockNumber) + BigInt(confirmations);
-
-  for await (const block of provider.events.newHeads()) {
-    if (BigInt(block.number) >= targetBlock) {
-      console.log(`Transaction confirmed with ${confirmations} confirmations`);
-      break;
+    if (!receipt) {
+      throw new Error('Transaction not found');
     }
+
+    const targetBlock = BigInt(receipt.blockNumber) + BigInt(confirmations);
+
+    // Poll for block number
+    while (true) {
+      const currentBlock = await provider.request(
+        Rpc.Eth.BlockNumberRequest()
+      );
+
+      if (BigInt(currentBlock) >= targetBlock) {
+        console.log(`Transaction confirmed with ${confirmations} confirmations`);
+        break;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } catch (error) {
+    console.error('Confirmation failed:', error.message);
+    throw error;
   }
 }
 ```
@@ -376,16 +415,16 @@ import * as Hash from 'tevm/Hash';
 Importing primitives individually enables tree-shaking. Unused methods and types are excluded from your bundle.
 </Tip>
 
-## Key Differences from EIP-1193
+## Key Features Compared to Other Libraries
 
-| Feature | EIP-1193 | JSONRPCProvider |
+| Feature | Standard EIP-1193 | Voltaire JSONRPCProvider |
 |---------|----------|-----------------|
-| Method calls | `request({ method, params })` | `provider.method(params)` |
+| Method calls | `request({ method, params })` | `request(Rpc.Eth.MethodRequest())` |
 | Parameters | Plain strings/objects | Branded primitive types |
-| Events | `on(event, listener)` | `events.event()` async generator |
-| Errors | Throws exceptions | Returns error values |
+| Events | `on(event, listener)` | `on(event, listener)` |
+| Errors | Throws exceptions | Throws exceptions |
 | Type safety | Basic inference | Full inference with brands |
-| Response format | Direct result | `Response<T>` union |
+| Request builders | Manual object creation | Type-safe builder functions |
 
 See [Comparison](/jsonrpc-provider/comparison) for detailed differences and migration guides.
 

@@ -1,0 +1,423 @@
+---
+title: CallTrace
+description: Call tree structure from Geth's callTracer
+---
+
+# CallTrace
+
+Hierarchical call tree structure returned by Geth's `callTracer`. Represents the complete call graph of a transaction execution.
+
+## Overview
+
+CallTrace captures the tree of contract calls made during transaction execution. Each node represents a call (CALL, STATICCALL, DELEGATECALL, CREATE, etc.) with its inputs, outputs, gas usage, and nested subcalls.
+
+## Type Definition
+
+```typescript
+type CallTraceType = {
+  readonly type: "CALL" | "STATICCALL" | "DELEGATECALL" | "CALLCODE" | "CREATE" | "CREATE2" | "SELFDESTRUCT";
+  readonly from: AddressType;              // Caller address
+  readonly to?: AddressType;               // Callee address (undefined for CREATE before completion)
+  readonly value?: Uint256Type;            // Call value in wei
+  readonly gas: Uint256Type;               // Gas provided to this call
+  readonly gasUsed: Uint256Type;           // Gas actually used
+  readonly input: Uint8Array;              // Call data or init code
+  readonly output: Uint8Array;             // Return data or deployed code
+  readonly error?: string;                 // Error message if failed
+  readonly revertReason?: string;          // Decoded revert reason
+  readonly calls?: readonly CallTraceType[]; // Nested calls
+};
+```
+
+## Usage
+
+### Creating CallTraces
+
+```typescript
+import * as CallTrace from '@tevm/primitives/CallTrace';
+import * as Address from '@tevm/primitives/Address';
+
+const from = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+const to = Address.from("0xdAC17F958D2ee523a2206206994597C13D831ec7");
+
+// Simple CALL
+const call = CallTrace.from({
+  type: "CALL",
+  from,
+  to,
+  value: 1000000000000000000n, // 1 ETH
+  gas: 100000n,
+  gasUsed: 50000n,
+  input: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]), // transfer(address,uint256)
+  output: new Uint8Array([0x00, 0x00, 0x00, 0x01]), // true
+});
+
+// STATICCALL (no value)
+const staticCall = CallTrace.from({
+  type: "STATICCALL",
+  from,
+  to,
+  gas: 50000n,
+  gasUsed: 25000n,
+  input: new Uint8Array([0x70, 0xa0, 0x82, 0x31]), // balanceOf(address)
+  output: new Uint8Array(32), // uint256 balance
+});
+
+// CREATE
+const create = CallTrace.from({
+  type: "CREATE",
+  from,
+  // to is undefined until contract is deployed
+  value: 0n,
+  gas: 1000000n,
+  gasUsed: 800000n,
+  input: new Uint8Array([0x60, 0x80, 0x60, 0x40]), // Init code
+  output: new Uint8Array([0x60, 0x60, 0x60, 0x40]), // Deployed code
+});
+
+// Failed call
+const failed = CallTrace.from({
+  type: "CALL",
+  from,
+  to,
+  gas: 10000n,
+  gasUsed: 10000n,
+  input: new Uint8Array(),
+  output: new Uint8Array(),
+  error: "out of gas",
+});
+
+// Revert with reason
+const revert = CallTrace.from({
+  type: "CALL",
+  from,
+  to,
+  gas: 50000n,
+  gasUsed: 25000n,
+  input: new Uint8Array(),
+  output: new Uint8Array(),
+  error: "execution reverted",
+  revertReason: "ERC20: transfer amount exceeds balance",
+});
+```
+
+### Nested Calls
+
+```typescript
+// Deep call tree
+const level2Call = CallTrace.from({
+  type: "STATICCALL",
+  from: contractB,
+  to: contractC,
+  gas: 10000n,
+  gasUsed: 5000n,
+  input: new Uint8Array(),
+  output: new Uint8Array(),
+});
+
+const level1Call = CallTrace.from({
+  type: "CALL",
+  from: contractA,
+  to: contractB,
+  gas: 50000n,
+  gasUsed: 25000n,
+  input: new Uint8Array(),
+  output: new Uint8Array(),
+  calls: [level2Call], // Nested call
+});
+
+const rootCall = CallTrace.from({
+  type: "CALL",
+  from: EOA,
+  to: contractA,
+  gas: 100000n,
+  gasUsed: 75000n,
+  input: new Uint8Array(),
+  output: new Uint8Array(),
+  calls: [level1Call],
+});
+```
+
+## Methods
+
+### getCalls
+
+Get immediate child calls:
+
+```typescript
+import * as CallTrace from '@tevm/primitives/CallTrace';
+
+const calls = CallTrace.getCalls(trace);
+console.log(`${calls.length} direct subcalls`);
+
+for (const call of calls) {
+  console.log(`${call.type} to ${Address.toHex(call.to)} - ${call.gasUsed} gas`);
+}
+```
+
+### flatten
+
+Convert tree to flat list:
+
+```typescript
+import * as CallTrace from '@tevm/primitives/CallTrace';
+
+const allCalls = CallTrace.flatten(rootTrace);
+console.log(`${allCalls.length} total calls`);
+
+// Find all failed calls
+const failures = allCalls.filter(CallTrace.hasError);
+for (const fail of failures) {
+  console.log(`Failed: ${fail.error} at ${Address.toHex(fail.to)}`);
+}
+```
+
+### hasError
+
+Check if call failed:
+
+```typescript
+import * as CallTrace from '@tevm/primitives/CallTrace';
+
+if (CallTrace.hasError(trace)) {
+  console.error(`Call failed: ${trace.error}`);
+  if (trace.revertReason) {
+    console.error(`Reason: ${trace.revertReason}`);
+  }
+}
+```
+
+## Common Patterns
+
+### Finding Failing Call
+
+```typescript
+function findFailure(trace: CallTraceType): CallTraceType | undefined {
+  if (CallTrace.hasError(trace)) {
+    return trace;
+  }
+
+  for (const call of CallTrace.getCalls(trace)) {
+    const failure = findFailure(call);
+    if (failure) return failure;
+  }
+
+  return undefined;
+}
+```
+
+### Gas Analysis
+
+```typescript
+function analyzeGas(trace: CallTraceType): {
+  total: bigint;
+  byType: Map<string, bigint>;
+  byContract: Map<string, bigint>;
+} {
+  const allCalls = CallTrace.flatten(trace);
+
+  const total = allCalls.reduce((sum, call) => sum + call.gasUsed, 0n);
+
+  const byType = new Map<string, bigint>();
+  for (const call of allCalls) {
+    const current = byType.get(call.type) ?? 0n;
+    byType.set(call.type, current + call.gasUsed);
+  }
+
+  const byContract = new Map<string, bigint>();
+  for (const call of allCalls) {
+    if (call.to) {
+      const addr = Address.toHex(call.to);
+      const current = byContract.get(addr) ?? 0n;
+      byContract.set(addr, current + call.gasUsed);
+    }
+  }
+
+  return { total, byType, byContract };
+}
+```
+
+### Call Count by Contract
+
+```typescript
+function countCallsByContract(trace: CallTraceType): Map<string, number> {
+  const counts = new Map<string, number>();
+  const allCalls = CallTrace.flatten(trace);
+
+  for (const call of allCalls) {
+    if (call.to) {
+      const addr = Address.toHex(call.to);
+      counts.set(addr, (counts.get(addr) ?? 0) + 1);
+    }
+  }
+
+  return counts;
+}
+```
+
+### Extract All Reverts
+
+```typescript
+function extractReverts(trace: CallTraceType): Array<{
+  address: AddressType | undefined;
+  error: string;
+  reason?: string;
+}> {
+  return CallTrace.flatten(trace)
+    .filter(CallTrace.hasError)
+    .map(call => ({
+      address: call.to,
+      error: call.error!,
+      reason: call.revertReason,
+    }));
+}
+```
+
+### Call Depth Analysis
+
+```typescript
+function analyzeDepth(trace: CallTraceType, depth = 0): {
+  maxDepth: number;
+  depthDistribution: Map<number, number>;
+} {
+  const distribution = new Map<number, number>();
+  distribution.set(depth, 1);
+
+  let maxDepth = depth;
+
+  for (const call of CallTrace.getCalls(trace)) {
+    const result = analyzeDepth(call, depth + 1);
+    maxDepth = Math.max(maxDepth, result.maxDepth);
+
+    for (const [d, count] of result.depthDistribution) {
+      distribution.set(d, (distribution.get(d) ?? 0) + count);
+    }
+  }
+
+  return { maxDepth, depthDistribution: distribution };
+}
+```
+
+### Value Flow Tracking
+
+```typescript
+function trackValueFlow(trace: CallTraceType): bigint {
+  let total = trace.value ?? 0n;
+
+  for (const call of CallTrace.getCalls(trace)) {
+    total += trackValueFlow(call);
+  }
+
+  return total;
+}
+```
+
+## RPC Usage
+
+### With debug_traceTransaction
+
+```typescript
+const config = TraceConfig.withTracer({}, "callTracer");
+const result = await rpc.debug_traceTransaction(txHash, config);
+
+// Result is a CallTrace
+const trace = result as CallTraceType;
+console.log(`Root call: ${trace.type}`);
+console.log(`Gas used: ${trace.gasUsed}`);
+console.log(`Subcalls: ${CallTrace.getCalls(trace).length}`);
+```
+
+### With debug_traceCall
+
+```typescript
+const config = TraceConfig.withTracer({}, "callTracer");
+const result = await rpc.debug_traceCall(
+  {
+    from: "0x...",
+    to: "0x...",
+    data: "0x...",
+  },
+  "latest",
+  config
+);
+
+const trace = result as CallTraceType;
+```
+
+## Call Types
+
+### CALL
+Standard contract call with value transfer.
+
+```typescript
+const call = CallTrace.from({
+  type: "CALL",
+  from, to,
+  value: 1000n,
+  gas: 100000n,
+  gasUsed: 50000n,
+  input, output,
+});
+```
+
+### STATICCALL
+Read-only call (no state changes, no value).
+
+```typescript
+const staticCall = CallTrace.from({
+  type: "STATICCALL",
+  from, to,
+  gas: 50000n,
+  gasUsed: 25000n,
+  input, output,
+});
+```
+
+### DELEGATECALL
+Call preserving caller context (msg.sender, msg.value).
+
+```typescript
+const delegateCall = CallTrace.from({
+  type: "DELEGATECALL",
+  from, to,
+  gas: 75000n,
+  gasUsed: 40000n,
+  input, output,
+});
+```
+
+### CREATE
+Deploy new contract.
+
+```typescript
+const create = CallTrace.from({
+  type: "CREATE",
+  from,
+  value: 0n,
+  gas: 1000000n,
+  gasUsed: 800000n,
+  input: initCode,
+  output: runtimeCode,
+});
+```
+
+### CREATE2
+Deploy with deterministic address.
+
+```typescript
+const create2 = CallTrace.from({
+  type: "CREATE2",
+  from,
+  value: 0n,
+  gas: 1000000n,
+  gasUsed: 800000n,
+  input: initCode,
+  output: runtimeCode,
+});
+```
+
+## See Also
+
+- [TraceResult](/primitives/trace-result) - Complete trace result
+- [TraceConfig](/primitives/trace-config) - Trace configuration
+- [Address](/primitives/address) - Address operations

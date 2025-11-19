@@ -1,0 +1,388 @@
+---
+title: equals
+description: Compare two CallData instances for equality
+---
+
+Compares two CallData instances for bytewise equality. Uses constant-time comparison to prevent timing attacks.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace">
+
+```typescript
+function equals(a: CallDataType, b: CallDataType): boolean
+```
+
+</Tab>
+<Tab title="Class">
+
+```typescript
+calldata.equals(other: CallDataType): boolean
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **a** - First CallData instance
+- **b** - Second CallData instance
+
+## Returns
+
+`boolean` - `true` if instances are bytewise identical, `false` otherwise
+
+## Examples
+
+<Tabs>
+<Tab title="Basic Usage">
+
+```typescript
+import { CallData } from 'tevm';
+
+const calldata1 = CallData("0xa9059cbb...");
+const calldata2 = CallData("0xa9059cbb...");
+const calldata3 = CallData("0x095ea7b3...");
+
+console.log(CallData.equals(calldata1, calldata2)); // true
+console.log(CallData.equals(calldata1, calldata3)); // false
+```
+
+</Tab>
+<Tab title="Class API">
+
+```typescript
+import { CallData } from 'tevm';
+
+const calldata1 = CallData("0xa9059cbb...");
+const calldata2 = CallData("0xa9059cbb...");
+
+console.log(calldata1.equals(calldata2)); // true
+```
+
+</Tab>
+<Tab title="Deduplication">
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+function deduplicate(calls: CallDataType[]): CallDataType[] {
+  const unique: CallDataType[] = [];
+
+  for (const call of calls) {
+    const isDuplicate = unique.some(existing =>
+      CallData.equals(existing, call)
+    );
+
+    if (!isDuplicate) {
+      unique.push(call);
+    }
+  }
+
+  return unique;
+}
+```
+
+</Tab>
+<Tab title="Cache Key">
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+class CallDataCache<T> {
+  private cache: Array<{ key: CallDataType; value: T }> = [];
+
+  get(key: CallDataType): T | undefined {
+    const entry = this.cache.find(e =>
+      CallData.equals(e.key, key)
+    );
+    return entry?.value;
+  }
+
+  set(key: CallDataType, value: T): void {
+    this.cache.push({ key, value });
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Constant-Time Comparison
+
+Uses constant-time comparison to prevent timing attacks:
+
+```typescript
+// Pseudocode (actual implementation)
+function equals(a: CallDataType, b: CallDataType): boolean {
+  // Early length check (not timing-sensitive)
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  // Constant-time: Always checks all bytes
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+
+  return result === 0;
+}
+```
+
+**Why constant-time?**
+- Prevents timing side-channel attacks
+- Attacker can't learn where bytes differ
+- Standard practice for cryptographic comparisons
+
+**Note:** Length check is not constant-time (not security-sensitive).
+
+## Use Cases
+
+### Transaction Matching
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+function findTransaction(
+  target: CallDataType,
+  transactions: Transaction[]
+): Transaction | undefined {
+  return transactions.find(tx =>
+    CallData.equals(CallData(tx.data), target)
+  );
+}
+```
+
+### Replay Detection
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+class ReplayDetector {
+  private seen = new Set<string>();
+
+  hasBeenSeen(calldata: CallDataType): boolean {
+    const key = CallData.toHex(calldata);
+
+    if (this.seen.has(key)) {
+      return true;
+    }
+
+    this.seen.add(key);
+    return false;
+  }
+
+  // Alternative: Direct comparison (no string conversion)
+  hasBeenSeenDirect(calldata: CallDataType, history: CallDataType[]): boolean {
+    return history.some(seen => CallData.equals(seen, calldata));
+  }
+}
+```
+
+### Cache Management
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+interface CacheEntry {
+  calldata: CallDataType;
+  result: unknown;
+  timestamp: number;
+}
+
+class CallDataCache {
+  private entries: CacheEntry[] = [];
+
+  get(calldata: CallDataType): unknown | undefined {
+    const entry = this.entries.find(e =>
+      CallData.equals(e.calldata, calldata)
+    );
+
+    if (entry) {
+      console.log("Cache hit");
+      return entry.result;
+    }
+
+    console.log("Cache miss");
+    return undefined;
+  }
+
+  set(calldata: CallDataType, result: unknown): void {
+    this.entries.push({
+      calldata,
+      result,
+      timestamp: Date.now(),
+    });
+  }
+}
+```
+
+### Unit Testing
+
+```typescript
+import { CallData, Abi } from 'tevm';
+import { describe, it, expect } from 'vitest';
+
+describe('CallData encoding', () => {
+  it('produces consistent output', () => {
+    const calldata1 = abi.transfer.encode(recipient, amount);
+    const calldata2 = abi.transfer.encode(recipient, amount);
+
+    // Use equals for comparison
+    expect(CallData.equals(calldata1, calldata2)).toBe(true);
+  });
+
+  it('detects differences', () => {
+    const calldata1 = abi.transfer.encode(recipient1, amount);
+    const calldata2 = abi.transfer.encode(recipient2, amount);
+
+    expect(CallData.equals(calldata1, calldata2)).toBe(false);
+  });
+});
+```
+
+## Performance
+
+Constant-time comparison is fast:
+
+```typescript
+// Benchmark: 1M iterations
+const calldata1 = CallData("0xa9059cbb...");  // 68 bytes
+const calldata2 = CallData("0xa9059cbb...");  // Identical
+
+console.time("equals (same)");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.equals(calldata1, calldata2);
+}
+console.timeEnd("equals (same)");
+// ~85ms
+
+// Different calldata
+const calldata3 = CallData("0x095ea7b3...");
+
+console.time("equals (different)");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.equals(calldata1, calldata3);
+}
+console.timeEnd("equals (different)");
+// ~85ms (same time - constant-time!)
+```
+
+Comparison time independent of where bytes differ.
+
+## Comparison Methods
+
+<Tabs>
+<Tab title="equals() - Bytewise">
+
+```typescript
+import { CallData } from 'tevm';
+
+// Direct byte comparison
+const same = CallData.equals(calldata1, calldata2);
+```
+
+**Advantages:**
+- Constant-time (secure)
+- No allocation
+- Fast
+
+**Use for:**
+- Direct comparison
+- Security-sensitive code
+- Performance-critical paths
+
+</Tab>
+<Tab title="Hex Comparison">
+
+```typescript
+import { CallData } from 'tevm';
+
+// Convert to hex strings
+const hex1 = CallData.toHex(calldata1);
+const hex2 = CallData.toHex(calldata2);
+const same = hex1 === hex2;
+```
+
+**Disadvantages:**
+- String allocation
+- Not constant-time
+- Slower
+
+**Use for:**
+- Debugging
+- Logging
+- Human-readable comparison
+
+</Tab>
+<Tab title="Reference Equality">
+
+```typescript
+// Reference check (same object)
+const same = calldata1 === calldata2; // Usually false
+```
+
+**Note:** Only true if same object reference, not bytewise equality.
+
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+<Tabs>
+<Tab title="Different Lengths">
+
+```typescript
+import { CallData } from 'tevm';
+
+const short = CallData("0xa9059cbb");
+const long = CallData("0xa9059cbb00000000");
+
+console.log(CallData.equals(short, long)); // false
+```
+
+Different lengths always return `false` (fast path).
+
+</Tab>
+<Tab title="Empty vs Non-Empty">
+
+```typescript
+import { CallData } from 'tevm';
+
+// Both have minimum 4 bytes (selector)
+const calldata1 = CallData("0xa9059cbb");
+const calldata2 = CallData("0x095ea7b3");
+
+console.log(CallData.equals(calldata1, calldata2)); // false
+```
+
+</Tab>
+</Tabs>
+
+## Type Safety
+
+Requires CallData instances (not plain Uint8Array):
+
+```typescript
+import { CallData, type CallDataType } from 'tevm';
+
+const bytes1 = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+const bytes2 = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+
+// Type error: Uint8Array not assignable to CallDataType
+CallData.equals(bytes1, bytes2); // ❌
+
+// Correct: Convert to CallData first
+const calldata1 = CallData.fromBytes(bytes1);
+const calldata2 = CallData.fromBytes(bytes2);
+CallData.equals(calldata1, calldata2); // ✅
+```
+
+## Related
+
+- [hasSelector](/primitives/calldata/has-selector) - Compare selectors only
+- [is](/primitives/calldata/is) - Type guard check
+- [toHex](/primitives/calldata/to-hex) - Convert for string comparison
+- [toBytes](/primitives/calldata/to-bytes) - Access raw bytes

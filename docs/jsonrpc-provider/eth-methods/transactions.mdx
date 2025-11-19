@@ -17,6 +17,7 @@ Transaction methods handle the full lifecycle: submission, retrieval, receipt tr
 
 ```typescript
 import { Provider } from 'tevm/provider';
+import * as Rpc from 'tevm/jsonrpc';
 import * as Address from 'tevm/primitives/Address';
 import * as Hex from 'tevm/primitives/Hex';
 import { Keccak256 } from 'tevm/crypto/Keccak256';
@@ -25,14 +26,14 @@ const provider = new Provider({ url: 'https://eth.llamarpc.com' });
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
 // Submit transaction
-const txHash = await provider.eth_sendRawTransaction(signedTx);
+const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(signedTx));
 
 // Track transaction
-const tx = await provider.eth_getTransactionByHash(txHash.result);
-const receipt = await provider.eth_getTransactionReceipt(txHash.result);
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash));
+const receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash));
 
 // Get nonce
-const nonce = await provider.eth_getTransactionCount(address, 'latest');
+const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
 ```
 
 ## Methods
@@ -44,13 +45,13 @@ Submit a signed transaction to the network for execution.
 **Parameters:**
 - `signedTransaction: Hex` - Signed transaction bytes
 
-**Returns:** `Response<Hash>` - Transaction hash
+**Returns:** `Hash` - Transaction hash
 
 ```typescript
-const txHash = await provider.eth_sendRawTransaction(
+const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(
   Hex('0xf86c808504a817c800825208...')
-);
-// Response<Hash>
+));
+// Hash
 ```
 
 **Use cases:**

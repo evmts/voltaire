@@ -16,7 +16,10 @@ import {
   Transaction, PrivateKey, Signer, Bytecode, Opcode,
   Rlp, Abi, FeeMarket, AccessList, Blob,
   Secp256k1, Sha256, Kzg,
-  Chain, Hardfork, Rpc
+  Chain, Hardfork, Rpc,
+  // EVM execution types
+  type BrandedFrame, type CallParams, type CallResult,
+  type InstructionHandler
 } from "tevm";
 
 // Addresses
@@ -42,6 +45,34 @@ const inGwei: Gwei = value.toGwei();    // 1000000000n
 const code: Bytecode = Bytecode("0x6080604052");
 const analysis: Bytecode.Analysis = code.analyze();
 const pushOp: Opcode = Opcode.PUSH1; // 0x60
+
+// EVM execution (instruction handlers, frames, calls)
+const frame: BrandedFrame = {
+  stack: [],
+  memory: new Map(),
+  pc: 0,
+  gasRemaining: 1000000n,
+  bytecode: code,
+  // ... execution state
+};
+
+const addHandler: InstructionHandler = (frame, host) => {
+  const b = frame.stack.pop()!;
+  const a = frame.stack.pop()!;
+  frame.stack.push((a + b) % 2n**256n);
+  return { type: "Success" };
+};
+
+const callParams: CallParams = {
+  callType: "CALL",
+  target: address,
+  value: Wei(0),
+  gasLimit: 100000n,
+  input: calldata,
+  caller: myAddress,
+  isStatic: false,
+  depth: 1,
+};
 
 // Transactions
 const tx: Transaction = Transaction({
