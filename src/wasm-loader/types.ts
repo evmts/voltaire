@@ -359,10 +359,7 @@ export interface WasmExports {
 		outPtr: number,
 		outLen: number,
 	) => number;
-	primitives_abi_estimate_gas: (
-		dataPtr: number,
-		dataLen: number,
-	) => bigint;
+	primitives_abi_estimate_gas: (dataPtr: number, dataLen: number) => bigint;
 
 	// Blob functions (EIP-4844)
 	primitives_blob_from_data: (

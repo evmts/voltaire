@@ -493,14 +493,10 @@
 		"vitest": "4.0.3"
 	},
 	"peerDependencies": {
-		"abitype": "^1.1.1",
-		"ox": "^0.9.14"
+		"abitype": "^1.1.1"
 	},
 	"peerDependenciesMeta": {
 		"abitype": {
-			"optional": true
-		},
-		"ox": {
 			"optional": true
 		}
 	},

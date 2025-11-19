@@ -2089,10 +2089,7 @@ export function abiDecodeFunctionData(
  * @param values - Array of value strings
  * @returns Packed encoding (no padding)
  */
-export function abiEncodePacked(
-	types: string[],
-	values: string[],
-): Uint8Array {
+export function abiEncodePacked(types: string[], values: string[]): Uint8Array {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();

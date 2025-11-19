@@ -1,11 +1,20 @@
 /**
  * Provider Types
  *
- * Core types for the Provider interface including response handling,
- * request options, and event subscriptions.
+ * EIP-1193 compliant provider types for Ethereum JSON-RPC communication.
  *
  * @module provider/types
  */
+
+/**
+ * EIP-1193 request arguments
+ */
+export interface RequestArguments {
+	/** JSON-RPC method name */
+	readonly method: string;
+	/** Method parameters (array or object) */
+	readonly params?: readonly unknown[] | object;
+}
 
 /**
  * JSON-RPC error response
@@ -20,12 +29,20 @@ export interface RpcError {
 }
 
 /**
- * Response wrapper for provider methods
- * Contains either a result or an error, never both
+ * EIP-1193 error codes
  */
-export type Response<T> =
-	| { result: T; error?: never }
-	| { result?: never; error: RpcError };
+export enum ProviderRpcErrorCode {
+	/** User rejected request */
+	UserRejectedRequest = 4001,
+	/** Requested method/account not authorized */
+	Unauthorized = 4100,
+	/** Provider doesn't support requested method */
+	UnsupportedMethod = 4200,
+	/** Provider disconnected from chains */
+	Disconnected = 4900,
+	/** Provider disconnected from all chains */
+	ChainDisconnected = 4901,
+}
 
 /**
  * Optional configuration for provider requests
@@ -51,29 +68,35 @@ export type BlockTag =
 	| string; // Also accepts hex-encoded block numbers
 
 /**
- * Parameters for log event subscriptions
+ * EIP-1193 event listener
  */
-export interface LogsParams {
-	/** Filter by contract address(es) */
-	address?: string | string[];
-	/** Filter by topics */
-	topics?: (string | string[] | null)[];
-	/** Start block (default: latest) */
-	fromBlock?: BlockTag;
-	/** End block (default: latest) */
-	toBlock?: BlockTag;
+export type ProviderEventListener = (...args: unknown[]) => void;
+
+/**
+ * EIP-1193 chain information for connect event
+ */
+export interface ProviderConnectInfo {
+	/** Chain ID as hex string */
+	chainId: string;
 }
 
 /**
- * Event subscription interface
+ * EIP-1193 provider events
  */
-export interface ProviderEvents {
-	/** Subscribe to new block headers */
-	newHeads(): AsyncGenerator<any>;
-	/** Subscribe to logs matching a filter */
-	logs(params?: LogsParams): AsyncGenerator<any>;
-	/** Subscribe to new pending transactions */
-	newPendingTransactions(): AsyncGenerator<any>;
-	/** Subscribe to sync status changes */
-	syncing(): AsyncGenerator<any>;
+export interface ProviderEventMap {
+	/** Emitted when accounts change */
+	accountsChanged: [accounts: string[]];
+	/** Emitted when chain changes */
+	chainChanged: [chainId: string];
+	/** Emitted when provider connects */
+	connect: [connectInfo: ProviderConnectInfo];
+	/** Emitted when provider disconnects */
+	disconnect: [error: RpcError];
+	/** Emitted for custom messages */
+	message: [message: { type: string; data: unknown }];
 }
+
+/**
+ * Event names for EIP-1193 provider
+ */
+export type ProviderEvent = keyof ProviderEventMap;

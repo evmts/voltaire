@@ -1,15 +1,15 @@
 /**
- * Provider - Type-safe Ethereum JSON-RPC Provider
+ * Provider - EIP-1193 Compliant Ethereum JSON-RPC Provider
  *
- * Provider implementations with branded primitive types and async generator events.
+ * EIP-1193 compliant provider implementations for Ethereum JSON-RPC communication.
  * Supports HTTP, WebSocket, and in-memory (EVM-based) transports.
  *
  * ## Features
  *
- * - **Method-based API** - Call methods directly: `provider.eth_blockNumber()`
- * - **Branded primitives** - Type-safe parameters using Address, Hash, Hex types
- * - **Never throws** - Methods return `Response<T>` with result or error
- * - **Async generator events** - Subscribe with `for await` loops
+ * - **EIP-1193 compliant** - Single `request()` method for all RPC calls
+ * - **EventEmitter** - Standard event handling for blockchain events
+ * - **Throws on error** - Clean error handling with RpcError
+ * - **Type-safe** - Full TypeScript support with branded primitives
  * - **Multiple transports** - HTTP, WebSocket, or in-memory execution
  *
  * ## Quick Start
@@ -19,15 +19,21 @@
  *
  * const provider = new HttpProvider('https://eth.example.com');
  *
- * const result = await provider.eth_blockNumber();
- * if (!result.error) {
- *   console.log('Block:', result.result);
- * }
+ * // Make requests
+ * const blockNumber = await provider.request({
+ *   method: 'eth_blockNumber',
+ *   params: []
+ * });
+ *
+ * // Listen to events
+ * provider.on('chainChanged', (chainId) => {
+ *   console.log('Chain changed:', chainId);
+ * });
  * ```
  *
  * ## Available Providers
  *
- * - **HttpProvider** - HTTP transport with polling-based events
+ * - **HttpProvider** - HTTP transport with EventEmitter
  * - **WebSocketProvider** - WebSocket transport with native pub/sub
  * - **InMemoryProvider** - Local EVM execution (coming with EVM docs)
  *
@@ -38,13 +44,16 @@
 // Core types and interfaces
 export type { Provider } from "./Provider.js";
 export type {
-	Response,
+	RequestArguments,
 	RpcError,
 	RequestOptions,
 	BlockTag,
-	LogsParams,
-	ProviderEvents,
+	ProviderEventListener,
+	ProviderConnectInfo,
+	ProviderEventMap,
+	ProviderEvent,
 } from "./types.js";
+export { ProviderRpcErrorCode } from "./types.js";
 
 // Provider implementations
 export { HttpProvider } from "./HttpProvider.js";
