@@ -1,0 +1,87 @@
+/**
+ * Tests for Hardfork.allIds
+ */
+
+import { describe, expect, it } from "vitest";
+import * as Hardfork from "./index.js";
+import { allIds } from "./allIds.js";
+
+describe("Hardfork.allIds", () => {
+	it("returns array of all hardfork IDs", () => {
+		const ids = allIds();
+		expect(Array.isArray(ids)).toBe(true);
+		expect(ids.length).toBeGreaterThan(0);
+	});
+
+	it("includes Frontier", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.FRONTIER);
+	});
+
+	it("includes London", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.LONDON);
+	});
+
+	it("includes Merge", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.MERGE);
+	});
+
+	it("includes Shanghai", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.SHANGHAI);
+	});
+
+	it("includes Cancun", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.CANCUN);
+	});
+
+	it("includes Prague", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.PRAGUE);
+	});
+
+	it("returns hardforks in chronological order", () => {
+		const ids = allIds();
+		const frontierIdx = ids.indexOf(Hardfork.FRONTIER);
+		const londonIdx = ids.indexOf(Hardfork.LONDON);
+		const cancunIdx = ids.indexOf(Hardfork.CANCUN);
+
+		expect(frontierIdx).toBeLessThan(londonIdx);
+		expect(londonIdx).toBeLessThan(cancunIdx);
+	});
+
+	it("includes all major hardforks", () => {
+		const ids = allIds();
+		const major = [
+			Hardfork.FRONTIER,
+			Hardfork.HOMESTEAD,
+			Hardfork.BYZANTIUM,
+			Hardfork.CONSTANTINOPLE,
+			Hardfork.ISTANBUL,
+			Hardfork.BERLIN,
+			Hardfork.LONDON,
+			Hardfork.MERGE,
+			Hardfork.SHANGHAI,
+			Hardfork.CANCUN,
+		];
+
+		for (const fork of major) {
+			expect(ids).toContain(fork);
+		}
+	});
+
+	it("includes difficulty bomb delays", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.ARROW_GLACIER);
+		expect(ids).toContain(Hardfork.GRAY_GLACIER);
+		expect(ids).toContain(Hardfork.MUIR_GLACIER);
+	});
+
+	it("includes DAO hardfork", () => {
+		const ids = allIds();
+		expect(ids).toContain(Hardfork.DAO);
+	});
+});

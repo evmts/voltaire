@@ -1,0 +1,139 @@
+import { describe, expect, it } from "vitest";
+import { toHex } from "./toHex.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+
+describe("toHex", () => {
+	describe("conversion", () => {
+		it("converts hash to hex string with 0x prefix", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const hex = toHex(hash);
+			expect(hex).toBe(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+		});
+
+		it("converts zero hash", () => {
+			const hash = fromBytes(new Uint8Array(32));
+			const hex = toHex(hash);
+			expect(hex).toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
+		});
+
+		it("converts all-ff hash", () => {
+			const bytes = new Uint8Array(32);
+			bytes.fill(0xff);
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex).toBe(
+				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			);
+		});
+
+		it("pads zeros correctly", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x01;
+			bytes[1] = 0x0a;
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex.slice(0, 8)).toBe("0x010a00");
+		});
+
+		it("pads single digit hex values", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x01;
+			bytes[1] = 0x02;
+			bytes[2] = 0x03;
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex.slice(0, 10)).toBe("0x01020300");
+		});
+
+		it("preserves byte order", () => {
+			const bytes = new Uint8Array(32);
+			for (let i = 0; i < 32; i++) {
+				bytes[i] = i + 1;
+			}
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex).toBe(
+				"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+			);
+		});
+	});
+
+	describe("roundtrip", () => {
+		it("roundtrips through fromHex", () => {
+			const original =
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const hash = fromHex(original);
+			const hex = toHex(hash);
+			expect(hex).toBe(original);
+		});
+
+		it("roundtrips zero hash", () => {
+			const original =
+				"0x0000000000000000000000000000000000000000000000000000000000000000";
+			const hash = fromHex(original);
+			const hex = toHex(hash);
+			expect(hex).toBe(original);
+		});
+
+		it("roundtrips all-ff hash", () => {
+			const original =
+				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+			const hash = fromHex(original);
+			const hex = toHex(hash);
+			expect(hex).toBe(original);
+		});
+	});
+
+	describe("formatting", () => {
+		it("always includes 0x prefix", () => {
+			const hash = fromBytes(new Uint8Array(32));
+			const hex = toHex(hash);
+			expect(hex.startsWith("0x")).toBe(true);
+		});
+
+		it("produces lowercase hex", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0xab;
+			bytes[1] = 0xcd;
+			bytes[2] = 0xef;
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex.slice(2, 8)).toBe("abcdef");
+		});
+
+		it("produces exactly 66 characters (0x + 64 hex)", () => {
+			const hash = fromBytes(new Uint8Array(32));
+			const hex = toHex(hash);
+			expect(hex.length).toBe(66);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles hash with mixed values", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x00;
+			bytes[1] = 0xff;
+			bytes[2] = 0x0a;
+			bytes[3] = 0xa0;
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex.slice(0, 12)).toBe("0x00ff0aa000");
+		});
+
+		it("handles each nibble correctly", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x12;
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
+			expect(hex[2]).toBe("1");
+			expect(hex[3]).toBe("2");
+		});
+	});
+});

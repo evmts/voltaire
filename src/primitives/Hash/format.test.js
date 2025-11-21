@@ -1,0 +1,175 @@
+import { describe, expect, it } from "vitest";
+import { format } from "./format.js";
+import { fromHex } from "./fromHex.js";
+import { fromBytes } from "./fromBytes.js";
+
+describe("format", () => {
+	describe("basic formatting", () => {
+		it("formats hash with truncation", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash);
+			expect(formatted).toContain("0x1234");
+			expect(formatted).toContain("cdef");
+			expect(formatted).toContain("...");
+		});
+
+		it("uses default prefix and suffix lengths", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash);
+			expect(formatted).toBe("0x123456...cdef");
+		});
+
+		it("formats zero hash", () => {
+			const hash = fromBytes(new Uint8Array(32));
+			const formatted = format(hash);
+			expect(formatted).toBe("0x000000...0000");
+		});
+
+		it("formats all-ff hash", () => {
+			const bytes = new Uint8Array(32);
+			bytes.fill(0xff);
+			const hash = fromBytes(bytes);
+			const formatted = format(hash);
+			expect(formatted).toBe("0xffffff...ffff");
+		});
+	});
+
+	describe("custom lengths", () => {
+		it("accepts custom prefix length", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 8);
+			expect(formatted).toContain("0x123456");
+		});
+
+		it("accepts custom suffix length", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 6, 6);
+			expect(formatted).toBe("0x123456...abcdef");
+		});
+
+		it("handles short prefix", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 4, 4);
+			expect(formatted).toBe("0x1234...cdef");
+		});
+
+		it("handles long prefix and suffix", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 10, 10);
+			expect(formatted).toContain("0x12345678");
+			expect(formatted).toContain("90abcdef");
+		});
+
+		it("handles zero prefix length", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 0, 4);
+			expect(formatted).toBe("0x...cdef");
+		});
+
+		it("handles zero suffix length", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 6, 0);
+			expect(formatted).toBe(
+				"0x123456...0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+		});
+	});
+
+	describe("short hash behavior", () => {
+		it("returns full hash when shorter than truncation", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 64, 64);
+			expect(formatted).toBe(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+		});
+	});
+
+	describe("display patterns", () => {
+		it("creates readable display format", () => {
+			const hash = fromHex(
+				"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			);
+			const formatted = format(hash);
+			expect(formatted).toMatch(/^0x[0-9a-f]{6}\.\.\.[0-9a-f]{4}$/);
+		});
+
+		it("includes ellipsis separator", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash);
+			expect(formatted.includes("...")).toBe(true);
+		});
+
+		it("starts with 0x", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash);
+			expect(formatted.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles hash with leading zeros", () => {
+			const hash = fromHex(
+				"0x0000000000000000000000000000000000000000000000000000000000000123",
+			);
+			const formatted = format(hash);
+			expect(formatted).toBe("0x000000...0123");
+		});
+
+		it("handles hash with trailing zeros", () => {
+			const hash = fromHex(
+				"0x1230000000000000000000000000000000000000000000000000000000000000",
+			);
+			const formatted = format(hash);
+			expect(formatted).toBe("0x123000...0000");
+		});
+
+		it("preserves hex formatting", () => {
+			const hash = fromHex(
+				"0x0a0b0c0d0e0f1011121314151617181920212223242526272829303132abcdef",
+			);
+			const formatted = format(hash);
+			expect(formatted).toContain("0x0a0b0c");
+			expect(formatted).toContain("cdef");
+		});
+
+		it("handles very short custom lengths", () => {
+			const hash = fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			const formatted = format(hash, 2, 2);
+			expect(formatted).toBe("0x12...ef");
+		});
+
+		it("pads single digit hex correctly", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x01;
+			bytes[31] = 0x02;
+			const hash = fromBytes(bytes);
+			const formatted = format(hash, 4, 4);
+			expect(formatted).toBe("0x0100...0002");
+		});
+	});
+});

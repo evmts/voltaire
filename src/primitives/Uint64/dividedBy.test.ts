@@ -1,0 +1,69 @@
+import { describe, it, expect } from "vitest";
+import { dividedBy } from "./dividedBy.js";
+import { from } from "./from.js";
+import { ZERO, ONE, MAX } from "./constants.js";
+
+describe("Uint64.dividedBy", () => {
+	describe("known values", () => {
+		it("divides by one", () => {
+			const result = dividedBy(from(42n), ONE);
+			expect(result).toBe(42n);
+		});
+
+		it("divides evenly", () => {
+			const result = dividedBy(from(42n), from(6n));
+			expect(result).toBe(7n);
+		});
+
+		it("truncates decimal result", () => {
+			const result = dividedBy(from(43n), from(6n));
+			expect(result).toBe(7n);
+		});
+
+		it("divides larger values", () => {
+			const result = dividedBy(from(1000000n), from(1000n));
+			expect(result).toBe(1000n);
+		});
+
+		it("divides powers of 2", () => {
+			const result = dividedBy(from(512n), from(16n));
+			expect(result).toBe(32n);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 / n = 0", () => {
+			const result = dividedBy(ZERO, from(42n));
+			expect(result).toBe(0n);
+		});
+
+		it("n / n = 1", () => {
+			const result = dividedBy(from(999n), from(999n));
+			expect(result).toBe(1n);
+		});
+
+		it("n / 1 = n", () => {
+			const result = dividedBy(from(999n), ONE);
+			expect(result).toBe(999n);
+		});
+
+		it("MAX / 1 = MAX", () => {
+			const result = dividedBy(MAX, ONE);
+			expect(result).toBe(MAX);
+		});
+
+		it("MAX / MAX = 1", () => {
+			const result = dividedBy(MAX, MAX);
+			expect(result).toBe(1n);
+		});
+
+		it("small / large = 0", () => {
+			const result = dividedBy(from(5n), from(10n));
+			expect(result).toBe(0n);
+		});
+
+		it("throws on division by zero", () => {
+			expect(() => dividedBy(from(42n), ZERO)).toThrow();
+		});
+	});
+});

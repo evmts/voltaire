@@ -1,0 +1,134 @@
+import { describe, expect, it } from "vitest";
+import * as Slot from "./index.js";
+
+describe("Slot.toEpoch", () => {
+	describe("epoch conversion", () => {
+		it("converts slot 0 to epoch 0", () => {
+			const slot = Slot.from(0);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(0n);
+		});
+
+		it("converts slot 32 to epoch 1", () => {
+			const slot = Slot.from(32);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(1n);
+		});
+
+		it("converts slot 64 to epoch 2", () => {
+			const slot = Slot.from(64);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(2n);
+		});
+
+		it("converts slot 96 to epoch 3", () => {
+			const slot = Slot.from(96);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(3n);
+		});
+
+		it("divides by 32 correctly", () => {
+			const slot = Slot.from(320);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(10n);
+		});
+	});
+
+	describe("rounding behavior", () => {
+		it("rounds down slot 1", () => {
+			const slot = Slot.from(1);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(0n);
+		});
+
+		it("rounds down slot 31", () => {
+			const slot = Slot.from(31);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(0n);
+		});
+
+		it("rounds down slot 33", () => {
+			const slot = Slot.from(33);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(1n);
+		});
+
+		it("rounds down slot 63", () => {
+			const slot = Slot.from(63);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(1n);
+		});
+
+		it("rounds down slot 97", () => {
+			const slot = Slot.from(97);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(3n);
+		});
+	});
+
+	describe("epoch boundaries", () => {
+		it("first slot of epoch 0", () => {
+			const slot = Slot.from(0);
+			expect(Slot.toEpoch(slot)).toBe(0n);
+		});
+
+		it("last slot of epoch 0", () => {
+			const slot = Slot.from(31);
+			expect(Slot.toEpoch(slot)).toBe(0n);
+		});
+
+		it("first slot of epoch 1", () => {
+			const slot = Slot.from(32);
+			expect(Slot.toEpoch(slot)).toBe(1n);
+		});
+
+		it("last slot of epoch 1", () => {
+			const slot = Slot.from(63);
+			expect(Slot.toEpoch(slot)).toBe(1n);
+		});
+
+		it("first slot of epoch 100", () => {
+			const slot = Slot.from(3200);
+			expect(Slot.toEpoch(slot)).toBe(100n);
+		});
+	});
+
+	describe("large values", () => {
+		it("handles large slot numbers", () => {
+			const slot = Slot.from(1000000);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(31250n);
+		});
+
+		it("handles very large slot numbers", () => {
+			const slot = Slot.from(10000000n);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(312500n);
+		});
+
+		it("correctly divides massive values", () => {
+			const slot = Slot.from(2n ** 40n);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(2n ** 40n / 32n);
+		});
+	});
+
+	describe("realistic scenarios", () => {
+		it("genesis epoch", () => {
+			const slot = Slot.from(0);
+			expect(Slot.toEpoch(slot)).toBe(0n);
+		});
+
+		it("merge epoch approximately", () => {
+			const slot = Slot.from(4700013);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(146875n);
+		});
+
+		it("current-ish slot", () => {
+			const slot = Slot.from(7000000);
+			const epoch = Slot.toEpoch(slot);
+			expect(epoch).toBe(218750n);
+		});
+	});
+});
