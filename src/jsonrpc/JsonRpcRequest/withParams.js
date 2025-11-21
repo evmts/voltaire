@@ -12,10 +12,8 @@
  * ```
  */
 export function withParams(request) {
-	return function (params) {
-		return {
-			...request,
-			params,
-		};
-	};
+	return (params) => ({
+		...request,
+		params,
+	});
 }

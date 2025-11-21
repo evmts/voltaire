@@ -47,9 +47,13 @@ export function from(request) {
 
 	const result = {
 		jsonrpc: "2.0",
-		id: id ?? null,
 		method,
 	};
+
+	// Only include id if provided (notifications have no id field)
+	if (id !== undefined) {
+		result.id = id;
+	}
 
 	if (params !== undefined) {
 		result.params = params;

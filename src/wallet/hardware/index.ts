@@ -1,0 +1,23 @@
+export * from "./HardwareWallet.js";
+export { LedgerWallet } from "./LedgerWallet.js";
+export { TrezorWallet } from "./TrezorWallet.js";
+
+/**
+ * Create a new Ledger hardware wallet instance
+ * @returns LedgerWallet instance
+ */
+export function createLedger() {
+	return new LedgerWallet();
+}
+
+/**
+ * Create a new Trezor hardware wallet instance
+ * @param options - Configuration options
+ * @param options.manifest - App manifest for Trezor Connect
+ * @returns TrezorWallet instance
+ */
+export function createTrezor(options?: {
+	manifest?: { email: string; appUrl: string };
+}) {
+	return new TrezorWallet(options);
+}

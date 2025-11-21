@@ -11,7 +11,7 @@
  * ```
  */
 export function add(batch) {
-	return function (request) {
+	return (request) => {
 		if (!request || typeof request !== "object") {
 			throw new TypeError("Request must be an object");
 		}

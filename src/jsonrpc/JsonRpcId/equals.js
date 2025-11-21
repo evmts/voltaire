@@ -13,7 +13,5 @@
  * ```
  */
 export function equals(id) {
-	return function (other) {
-		return id === other;
-	};
+	return (other) => id === other;
 }

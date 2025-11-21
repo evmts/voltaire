@@ -15,7 +15,5 @@
  * ```
  */
 export function findById(batch) {
-	return function (id) {
-		return batch.find((res) => res.id === id);
-	};
+	return (id) => batch.find((res) => res.id === id);
 }

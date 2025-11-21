@@ -19,6 +19,9 @@ import { isValidSignature } from "./isValidSignature.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
 import { sign } from "./sign.js";
 import { verify } from "./verify.js";
+import { ecdh } from "./ecdh.js";
+import { addPoints } from "./addPoints.js";
+import { scalarMultiply } from "./scalarMultiply.js";
 
 // Export individual functions
 export {
@@ -29,6 +32,9 @@ export {
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
+	ecdh,
+	addPoints,
+	scalarMultiply,
 };
 
 export const Signature = SignatureMethods;
@@ -74,6 +80,9 @@ export const Secp256k1 = {
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
+	ecdh,
+	addPoints,
+	scalarMultiply,
 	Signature: SignatureMethods,
 	PublicKey: PublicKeyMethods,
 	CURVE_ORDER,
