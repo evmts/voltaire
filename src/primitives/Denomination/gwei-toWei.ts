@@ -1,5 +1,5 @@
-import type { WeiType as BrandedWei } from "./WeiType.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
+import type { WeiType as BrandedWei } from "./WeiType.js";
 import { WEI_PER_GWEI } from "./gwei-constants.js";
 
 /**

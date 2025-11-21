@@ -4,8 +4,8 @@ export type {
 } from "./SyncStatusType.js";
 
 import { from as _from } from "./from.js";
-import { isSyncing as _isSyncing } from "./isSyncing.js";
 import { getProgress as _getProgress } from "./getProgress.js";
+import { isSyncing as _isSyncing } from "./isSyncing.js";
 
 // Export constructors
 export { from } from "./from.js";

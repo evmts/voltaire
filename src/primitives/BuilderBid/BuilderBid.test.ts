@@ -65,8 +65,8 @@ describe("BuilderBid", () => {
 		it("converts pubkeys from hex strings", () => {
 			const bid = BuilderBid.from({
 				...validBid,
-				builderPubkey: "0x" + "33".repeat(48),
-				proposerPubkey: "0x" + "44".repeat(48),
+				builderPubkey: `0x${"33".repeat(48)}`,
+				proposerPubkey: `0x${"44".repeat(48)}`,
 			});
 
 			expect(bid.builderPubkey[0]).toBe(0x33);
@@ -76,7 +76,7 @@ describe("BuilderBid", () => {
 		it("converts fee recipient from hex string", () => {
 			const bid = BuilderBid.from({
 				...validBid,
-				proposerFeeRecipient: "0x" + "55".repeat(20),
+				proposerFeeRecipient: `0x${"55".repeat(20)}`,
 			});
 
 			expect(bid.proposerFeeRecipient[0]).toBe(0x55);
@@ -85,7 +85,7 @@ describe("BuilderBid", () => {
 		it("converts signature from hex string", () => {
 			const bid = BuilderBid.from({
 				...validBid,
-				signature: "0x" + "66".repeat(96),
+				signature: `0x${"66".repeat(96)}`,
 			});
 
 			expect(bid.signature[0]).toBe(0x66);
@@ -179,15 +179,15 @@ describe("BuilderBid", () => {
 			const hex = BuilderBid.toHex(bid);
 
 			expect(hex.slot).toBe("0x1e240");
-			expect(hex.parent_hash).toBe("0x" + "01".repeat(32));
-			expect(hex.block_hash).toBe("0x" + "02".repeat(32));
-			expect(hex.builder_pubkey).toBe("0x" + "03".repeat(48));
-			expect(hex.proposer_pubkey).toBe("0x" + "04".repeat(48));
-			expect(hex.proposer_fee_recipient).toBe("0x" + "05".repeat(20));
+			expect(hex.parent_hash).toBe(`0x${"01".repeat(32)}`);
+			expect(hex.block_hash).toBe(`0x${"02".repeat(32)}`);
+			expect(hex.builder_pubkey).toBe(`0x${"03".repeat(48)}`);
+			expect(hex.proposer_pubkey).toBe(`0x${"04".repeat(48)}`);
+			expect(hex.proposer_fee_recipient).toBe(`0x${"05".repeat(20)}`);
 			expect(hex.gas_limit).toBe("0x1c9c380");
 			expect(hex.gas_used).toBe("0x17d7840");
 			expect(hex.value).toBe("0xde0b6b3a7640000");
-			expect(hex.signature).toBe("0x" + "06".repeat(96));
+			expect(hex.signature).toBe(`0x${"06".repeat(96)}`);
 		});
 
 		it("uses snake_case for RPC compatibility", () => {

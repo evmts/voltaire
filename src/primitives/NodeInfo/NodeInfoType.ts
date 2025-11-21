@@ -1,6 +1,6 @@
-import type { PeerIdType } from "../PeerId/PeerIdType.js";
-import type { NetworkIdType } from "../NetworkId/NetworkIdType.js";
 import type { BlockHashType } from "../BlockHash/BlockHashType.js";
+import type { NetworkIdType } from "../NetworkId/NetworkIdType.js";
+import type { PeerIdType } from "../PeerId/PeerIdType.js";
 import type { BrandedUint } from "../Uint/Uint256Type.js";
 
 /**

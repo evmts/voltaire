@@ -1,5 +1,5 @@
-import { fromBytes } from "./fromBytes.js";
 import { InvalidTransactionHashFormatError } from "./errors.js";
+import { fromBytes } from "./fromBytes.js";
 
 /**
  * Create TransactionHash from hex string

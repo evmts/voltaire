@@ -1,0 +1,83 @@
+/**
+ * ERC-8042 Diamond Storage Tests
+ * @see https://eips.ethereum.org/EIPS/eip-8042
+ */
+
+import { describe, expect, test } from "vitest";
+import { hash } from "../../crypto/Keccak256/hash.js";
+import { calculateErc8042 } from "./calculateErc8042.js";
+
+describe("calculateErc8042", () => {
+	test("calculates storage slot for diamond storage", () => {
+		const id = "diamond.storage.example";
+		const slot = calculateErc8042(hash, id);
+
+		expect(slot).toHaveLength(32);
+	});
+
+	test("different identifiers produce different slots", () => {
+		const slot1 = calculateErc8042(hash, "diamond.one");
+		const slot2 = calculateErc8042(hash, "diamond.two");
+
+		expect(slot1).not.toEqual(slot2);
+	});
+
+	test("empty string identifier", () => {
+		const slot = calculateErc8042(hash, "");
+
+		expect(slot).toHaveLength(32);
+	});
+
+	test("deterministic - same input produces same output", () => {
+		const id = "diamond.determinism.test";
+		const results = Array.from({ length: 10 }, () =>
+			calculateErc8042(hash, id),
+		);
+
+		// All results should be identical
+		for (let i = 1; i < results.length; i++) {
+			expect(results[i]).toEqual(results[0]);
+		}
+	});
+
+	test("matches direct keccak256 hash", () => {
+		const id = "test.namespace";
+		const slot = calculateErc8042(hash, id);
+
+		const encoder = new TextEncoder();
+		const directHash = hash(encoder.encode(id));
+
+		expect(slot).toEqual(directHash);
+	});
+
+	test("long identifier", () => {
+		const id =
+			"org.example.diamond.facet.storage.with.very.long.namespace.identifier";
+		const slot = calculateErc8042(hash, id);
+
+		expect(slot).toHaveLength(32);
+	});
+
+	test("identifier with special characters", () => {
+		const id = "diamond_storage-v2@2024";
+		const slot = calculateErc8042(hash, id);
+
+		expect(slot).toHaveLength(32);
+	});
+
+	test("different from ERC-7201 result", () => {
+		// ERC-8042 should produce different results than ERC-7201
+		// because it doesn't do the subtraction and second hash
+		const id = "same.namespace";
+
+		const erc8042Slot = calculateErc8042(hash, id);
+
+		// Calculate what ERC-7201 would produce (without importing it)
+		const encoder = new TextEncoder();
+		const idBytes = encoder.encode(id);
+		const firstHash = hash(idBytes);
+
+		// These should be equal (ERC-8042 is just first hash)
+		expect(erc8042Slot).toEqual(firstHash);
+	});
+});

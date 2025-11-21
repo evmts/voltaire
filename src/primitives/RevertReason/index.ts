@@ -1,5 +1,5 @@
-import type { RevertReasonType } from "./RevertReasonType.js";
 import type { ReturnDataType } from "../ReturnData/ReturnDataType.js";
+import type { RevertReasonType } from "./RevertReasonType.js";
 import { from as _from } from "./from.js";
 import { fromReturnData as _fromReturnData } from "./fromReturnData.js";
 import { toString as _toString } from "./toString.js";

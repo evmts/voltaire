@@ -1,5 +1,5 @@
-import type { AddressType } from "../Address/AddressType.js";
 import type { brand } from "../../brand.js";
+import type { AddressType } from "../Address/AddressType.js";
 
 /**
  * Bundler address type - ERC-4337 bundler node

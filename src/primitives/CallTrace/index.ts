@@ -5,10 +5,10 @@ export { hasError as _hasError } from "./hasError.js";
 export { flatten as _flatten } from "./flatten.js";
 
 import type { CallTraceType } from "./CallTraceType.js";
+import { flatten as _flatten } from "./flatten.js";
 import { from as _from } from "./from.js";
 import { getCalls as _getCalls } from "./getCalls.js";
 import { hasError as _hasError } from "./hasError.js";
-import { flatten as _flatten } from "./flatten.js";
 
 /**
  * Creates a CallTrace from raw data

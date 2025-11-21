@@ -4,15 +4,15 @@
 
 import { describe, expect, it } from "vitest";
 import {
-	FunctionDecodingError,
-	FunctionEncodingError,
-	FunctionInvalidSelectorError,
-} from "./errors.js";
-import {
 	AbiDecodingError,
 	AbiEncodingError,
 	AbiInvalidSelectorError,
 } from "../Errors.js";
+import {
+	FunctionDecodingError,
+	FunctionEncodingError,
+	FunctionInvalidSelectorError,
+} from "./errors.js";
 
 describe("FunctionEncodingError", () => {
 	describe("basic properties", () => {

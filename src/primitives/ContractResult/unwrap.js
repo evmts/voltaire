@@ -1,5 +1,5 @@
-import { ContractRevertError } from "./errors.js";
 import * as RevertReason from "../RevertReason/index.js";
+import { ContractRevertError } from "./errors.js";
 
 /**
  * Unwrap successful result or throw on failure

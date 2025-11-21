@@ -98,32 +98,40 @@ describe("Authorization.sign - chainId boundaries", () => {
 		const unsigned = { chainId: 1n, address, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(1n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with chainId = 0n", () => {
 		const unsigned = { chainId: 0n, address, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(0n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with chainId = MAX_UINT64", () => {
 		const unsigned = { chainId: MAX_UINT64, address, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(MAX_UINT64);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with very large chainId", () => {
 		const unsigned = { chainId: 2n ** 256n - 1n, address, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(2n ** 256n - 1n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 });
 
@@ -140,32 +148,40 @@ describe("Authorization.sign - nonce boundaries", () => {
 		const unsigned = { chainId: 1n, address, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.nonce).toBe(0n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with nonce = 1n", () => {
 		const unsigned = { chainId: 1n, address, nonce: 1n };
 		const result = sign(unsigned, privateKey);
 		expect(result.nonce).toBe(1n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with nonce = MAX_UINT64", () => {
 		const unsigned = { chainId: 1n, address, nonce: MAX_UINT64 };
 		const result = sign(unsigned, privateKey);
 		expect(result.nonce).toBe(MAX_UINT64);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with very large nonce", () => {
 		const unsigned = { chainId: 1n, address, nonce: 2n ** 256n - 1n };
 		const result = sign(unsigned, privateKey);
 		expect(result.nonce).toBe(2n ** 256n - 1n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("different nonces produce different signatures", () => {
@@ -173,7 +189,20 @@ describe("Authorization.sign - nonce boundaries", () => {
 		const unsigned2 = { chainId: 1n, address, nonce: 1n };
 		const result1 = sign(unsigned1, privateKey);
 		const result2 = sign(unsigned2, privateKey);
-		expect(result1.r !== result2.r || result1.s !== result2.s).toBe(true);
+		// Check signatures are different (can't use !== for Uint8Array, check contents)
+		const r1Hex = Array.from(result1.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const r2Hex = Array.from(result2.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s1Hex = Array.from(result1.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s2Hex = Array.from(result2.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		expect(r1Hex !== r2Hex || s1Hex !== s2Hex).toBe(true);
 	});
 });
 
@@ -190,8 +219,10 @@ describe("Authorization.sign - address boundaries", () => {
 		const unsigned = { chainId: 1n, address: zeroAddress, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.address).toBe(zeroAddress);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("signs with max address (0xff...ff)", () => {
@@ -199,8 +230,10 @@ describe("Authorization.sign - address boundaries", () => {
 		const unsigned = { chainId: 1n, address: maxAddress, nonce: 0n };
 		const result = sign(unsigned, privateKey);
 		expect(result.address).toBe(maxAddress);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("different addresses produce different signatures", () => {
@@ -210,7 +243,20 @@ describe("Authorization.sign - address boundaries", () => {
 		const unsigned2 = { chainId: 1n, address: addr2, nonce: 0n };
 		const result1 = sign(unsigned1, privateKey);
 		const result2 = sign(unsigned2, privateKey);
-		expect(result1.r !== result2.r || result1.s !== result2.s).toBe(true);
+		// Check signatures are different (can't use !== for Uint8Array, check contents)
+		const r1Hex = Array.from(result1.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const r2Hex = Array.from(result2.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s1Hex = Array.from(result1.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s2Hex = Array.from(result2.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		expect(r1Hex !== r2Hex || s1Hex !== s2Hex).toBe(true);
 	});
 });
 
@@ -230,8 +276,10 @@ describe("Authorization.sign - all-zero inputs", () => {
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(0n);
 		expect(result.nonce).toBe(0n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 		expect([0, 1]).toContain(result.yParity);
 	});
 });
@@ -264,7 +312,20 @@ describe("Authorization.sign - determinism", () => {
 		privateKey2.fill(2);
 		const result1 = sign(unsigned, privateKey1);
 		const result2 = sign(unsigned, privateKey2);
-		expect(result1.r !== result2.r || result1.s !== result2.s).toBe(true);
+		// Check signatures are different (can't use !== for Uint8Array, check contents)
+		const r1Hex = Array.from(result1.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const r2Hex = Array.from(result2.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s1Hex = Array.from(result1.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const s2Hex = Array.from(result2.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		expect(r1Hex !== r2Hex || s1Hex !== s2Hex).toBe(true);
 	});
 });
 
@@ -321,8 +382,10 @@ describe("Authorization.sign - edge case combinations", () => {
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(MAX_UINT64);
 		expect(result.nonce).toBe(MAX_UINT64);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 
 	it("handles min chainId + min nonce + zero address", () => {
@@ -334,7 +397,9 @@ describe("Authorization.sign - edge case combinations", () => {
 		const result = sign(unsigned, privateKey);
 		expect(result.chainId).toBe(0n);
 		expect(result.nonce).toBe(0n);
-		expect(result.r).toBeGreaterThan(0n);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
 	});
 });

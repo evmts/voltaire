@@ -3,10 +3,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Event } from "./Event.js";
-import * as Hash from "../../Hash/index.js";
+import * as Hash from "../../Hash/index.ts";
 import * as Hex from "../../Hex/index.js";
 import { encodeParameters } from "../Encoding.js";
+import { Event } from "./Event.js";
 
 describe("Event namespace", () => {
 	describe("getSignature", () => {

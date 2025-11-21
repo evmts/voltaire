@@ -1,5 +1,5 @@
-import { fromBytes } from "./fromBytes.js";
 import { InvalidValueError } from "./errors.js";
+import { fromBytes } from "./fromBytes.js";
 
 /**
  * Create EncodedData from various input types

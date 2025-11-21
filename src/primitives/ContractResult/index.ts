@@ -1,15 +1,15 @@
-import type {
-	ContractResultType,
-	SuccessResult,
-	FailureResult,
-} from "./ContractResultType.js";
 import type { ReturnDataType } from "../ReturnData/ReturnDataType.js";
 import type { RevertReasonType } from "../RevertReason/RevertReasonType.js";
-import { from as _from } from "./from.js";
-import { success as _success } from "./success.js";
+import type {
+	ContractResultType,
+	FailureResult,
+	SuccessResult,
+} from "./ContractResultType.js";
 import { failure as _failure } from "./failure.js";
-import { isSuccess as _isSuccess } from "./isSuccess.js";
+import { from as _from } from "./from.js";
 import { isFailure as _isFailure } from "./isFailure.js";
+import { isSuccess as _isSuccess } from "./isSuccess.js";
+import { success as _success } from "./success.js";
 import { unwrap as _unwrap } from "./unwrap.js";
 import { unwrapOr as _unwrapOr } from "./unwrapOr.js";
 

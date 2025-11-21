@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as ContractResult from "./index.js";
 import * as ReturnData from "../ReturnData/index.js";
-import * as RevertReason from "../RevertReason/index.js";
+import type * as RevertReason from "../RevertReason/index.js";
+import * as ContractResult from "./index.js";
 
 describe("ContractResult", () => {
 	describe("success", () => {

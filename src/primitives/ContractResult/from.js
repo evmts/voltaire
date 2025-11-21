@@ -1,7 +1,7 @@
 import * as ReturnData from "../ReturnData/index.js";
 import * as RevertReason from "../RevertReason/index.js";
-import { success } from "./success.js";
 import { failure } from "./failure.js";
+import { success } from "./success.js";
 
 /**
  * Create ContractResult from return data and success flag

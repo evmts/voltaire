@@ -30,20 +30,8 @@ export function Verify({
 		};
 		const messageHash = hash(unsigned);
 
-		// Convert r and s bigints to Uint8Array
-		const r = new Uint8Array(32);
-		const s = new Uint8Array(32);
-		let rVal = auth.r;
-		let sVal = auth.s;
-		for (let i = 31; i >= 0; i--) {
-			r[i] = Number(rVal & 0xffn);
-			s[i] = Number(sVal & 0xffn);
-			rVal >>= 8n;
-			sVal >>= 8n;
-		}
-
 		// Recover public key from signature
-		const signature = { r, s, v: auth.yParity };
+		const signature = { r: auth.r, s: auth.s, v: auth.yParity };
 		const publicKey = recoverPublicKey(signature, messageHash);
 
 		// Derive address from public key (64 bytes, extract x and y)

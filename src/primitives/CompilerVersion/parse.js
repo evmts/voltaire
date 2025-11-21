@@ -15,7 +15,7 @@
  */
 export function parse(version) {
 	// Remove leading 'v' if present
-	let versionStr = version.startsWith("v") ? version.slice(1) : version;
+	const versionStr = version.startsWith("v") ? version.slice(1) : version;
 
 	// Split on '+' to separate version from metadata (commit)
 	const parts = versionStr.split("+");

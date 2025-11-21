@@ -13,10 +13,10 @@ export type AuthorizationType = {
 	nonce: bigint;
 	/** Signature Y parity (0 or 1) */
 	yParity: number;
-	/** Signature r value */
-	r: bigint;
-	/** Signature s value */
-	s: bigint;
+	/** Signature r value (32 bytes) */
+	r: Uint8Array;
+	/** Signature s value (32 bytes) */
+	s: Uint8Array;
 };
 
 /**

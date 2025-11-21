@@ -1,7 +1,7 @@
-import type { NonceType } from "../Nonce/NonceType.js";
 import type { WeiType } from "../Denomination/WeiType.js";
-import type { StateRootType } from "../StateRoot/StateRootType.js";
 import type { HashType } from "../Hash/HashType.js";
+import type { NonceType } from "../Nonce/NonceType.js";
+import type { StateRootType } from "../StateRoot/StateRootType.js";
 
 /**
  * AccountState represents the state of an Ethereum account as defined in the Yellow Paper.

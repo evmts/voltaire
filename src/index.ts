@@ -9,6 +9,9 @@ export * from "./primitives/index.js";
 // Cryptography - Data-first crypto operations
 export * from "./crypto/index.js";
 
+// Standards - Ethereum token standards (ERC-20, ERC-721, ERC-1155, ERC-165)
+export * from "./standards/index.js";
+
 // Core type definitions are exported directly from primitives (no separate types namespace)
 
 // WASM primitives (high-performance WebAssembly bindings)

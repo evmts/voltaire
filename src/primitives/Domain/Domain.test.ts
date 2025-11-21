@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import * as BrandedAddress from "../Address/internal-index.js";
 import * as ChainId from "../ChainId/index.js";
-import * as Hash from "../Hash/index.js";
 import * as DomainSeparator from "../DomainSeparator/index.js";
+import * as Hash from "../Hash/index.js";
 import * as Domain from "./index.js";
 
 // Mock keccak256 for testing

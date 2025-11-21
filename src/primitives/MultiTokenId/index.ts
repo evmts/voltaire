@@ -1,6 +1,7 @@
 export type { MultiTokenIdType } from "./MultiTokenIdType.js";
 export * from "./errors.js";
 
+import type { MultiTokenIdType } from "./MultiTokenIdType.js";
 import { compare as _compare } from "./compare.js";
 import { FUNGIBLE_THRESHOLD, MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";
@@ -10,7 +11,6 @@ import { isValidNonFungible as _isValidNonFungible } from "./isValidNonFungible.
 import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toNumber as _toNumber } from "./toNumber.js";
-import type { MultiTokenIdType } from "./MultiTokenIdType.js";
 
 // Re-export internal methods with underscore prefix
 export {

@@ -1,5 +1,5 @@
-import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
 import type { BlockHashType } from "../BlockHash/BlockHashType.js";
+import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
 
 /**

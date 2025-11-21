@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { from, getAccount, getAddresses, isEmpty } from "./index.js";
-import type { AccountDiff } from "./StateDiffType.js";
 import type { AddressType } from "../Address/AddressType.js";
 import type { WeiType } from "../Denomination/WeiType.js";
 import type { NonceType } from "../Nonce/NonceType.js";
+import type { AccountDiff } from "./StateDiffType.js";
+import { from, getAccount, getAddresses, isEmpty } from "./index.js";
 
 describe("StateDiff", () => {
 	const mockAddress1 = new Uint8Array(20) as AddressType;

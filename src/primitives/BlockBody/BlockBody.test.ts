@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as BlockBody from "./index.js";
 import type { Any as Transaction } from "../Transaction/types.js";
+import * as BlockBody from "./index.js";
 
 describe("BlockBody", () => {
 	// Mock minimal transaction

@@ -1,11 +1,11 @@
 // Export type definitions
 export type { PeerIdType, EnodeComponents } from "./PeerIdType.js";
 
+import { equals as _equals } from "./equals.js";
 // Import all functions
 import { from } from "./from.js";
-import { equals as _equals } from "./equals.js";
-import { toString as _toString } from "./toString.js";
 import { parse as _parse } from "./parse.js";
+import { toString as _toString } from "./toString.js";
 
 // Export constructors
 export { from };

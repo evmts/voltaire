@@ -1,6 +1,6 @@
+import type { BlockHashType } from "../BlockHash/BlockHashType.js";
 import type { PeerIdType } from "../PeerId/PeerIdType.js";
 import type { ProtocolVersionType } from "../ProtocolVersion/ProtocolVersionType.js";
-import type { BlockHashType } from "../BlockHash/BlockHashType.js";
 import type { BrandedUint } from "../Uint/Uint256Type.js";
 
 /**

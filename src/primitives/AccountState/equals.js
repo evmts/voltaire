@@ -1,7 +1,7 @@
+import { Hash } from "../Hash/index.js";
+import * as StateRoot from "../StateRoot/index.js";
 // @ts-nocheck
 import { equals as uintEquals } from "../Uint/equals.js";
-import * as StateRoot from "../StateRoot/index.js";
-import { Hash } from "../Hash/index.js";
 
 /**
  * @typedef {import('./AccountStateType.js').AccountStateType} AccountStateType

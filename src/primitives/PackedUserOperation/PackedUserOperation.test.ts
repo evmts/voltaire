@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import * as PackedUserOperation from "./index.js";
-import * as UserOperation from "../UserOperation/index.js";
 import * as EntryPoint from "../EntryPoint/index.js";
+import * as UserOperation from "../UserOperation/index.js";
+import * as PackedUserOperation from "./index.js";
 
 describe("PackedUserOperation", () => {
 	test("creates PackedUserOperation from params", () => {

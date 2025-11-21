@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import * as TransactionStatus from "./index.js";
+import { describe, expect, it } from "vitest";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
+import * as TransactionStatus from "./index.js";
 
 describe("TransactionStatus", () => {
 	describe("pending", () => {

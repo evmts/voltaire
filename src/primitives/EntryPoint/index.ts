@@ -4,12 +4,12 @@ export type { EntryPointType } from "./EntryPointType.js";
 // Export constants
 export { ENTRYPOINT_V06, ENTRYPOINT_V07 } from "./constants.js";
 
+import type { AddressType } from "../Address/AddressType.js";
+import type { EntryPointType } from "./EntryPointType.js";
 // Import all functions
 import { equals as _equals } from "./equals.js";
 import { from } from "./from.js";
 import { toHex as _toHex } from "./toHex.js";
-import type { AddressType } from "../Address/AddressType.js";
-import type { EntryPointType } from "./EntryPointType.js";
 
 // Export constructors
 export { from };

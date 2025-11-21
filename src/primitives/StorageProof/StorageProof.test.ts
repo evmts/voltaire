@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import * as StorageProof from "./index.js";
+import { describe, expect, it } from "vitest";
+import { Address } from "../Address/index.js";
 import * as StorageKey from "../State/index.js";
 import * as StorageValue from "../StorageValue/index.js";
-import { Address } from "../Address/index.js";
+import * as StorageProof from "./index.js";
 
 describe("StorageProof", () => {
 	const createTestKey = () =>

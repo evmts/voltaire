@@ -1,13 +1,13 @@
 // Export type definition
 export type { PackedUserOperationType } from "./PackedUserOperationType.js";
 
+import type { AddressType } from "../Address/AddressType.js";
+import type { UserOperationType } from "../UserOperation/UserOperationType.js";
+import type { PackedUserOperationType } from "./PackedUserOperationType.js";
 // Import all functions
 import { from } from "./from.js";
 import { hash as _hash } from "./hash.js";
 import { unpack as _unpack } from "./unpack.js";
-import type { AddressType } from "../Address/AddressType.js";
-import type { PackedUserOperationType } from "./PackedUserOperationType.js";
-import type { UserOperationType } from "../UserOperation/UserOperationType.js";
 
 // Export constructors
 export { from };

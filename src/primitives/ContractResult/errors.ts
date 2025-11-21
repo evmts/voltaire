@@ -1,5 +1,5 @@
-import { PrimitiveError } from "../errors/PrimitiveError.js";
 import type { RevertReasonType } from "../RevertReason/RevertReasonType.js";
+import { PrimitiveError } from "../errors/PrimitiveError.js";
 
 /**
  * Error thrown when unwrapping a failed contract result

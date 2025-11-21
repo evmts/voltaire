@@ -1,6 +1,6 @@
+import { InvalidBlockHashFormatError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
-import { InvalidBlockHashFormatError } from "./errors.js";
 
 /**
  * Create BlockHash from various input types

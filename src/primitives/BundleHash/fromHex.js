@@ -1,6 +1,6 @@
+import { SIZE } from "./BundleHashType.js";
 // @ts-nocheck
 import { InvalidBundleHashError } from "./errors.js";
-import { SIZE } from "./BundleHashType.js";
 
 /**
  * @typedef {import('./BundleHashType.js').BundleHashType} BundleHashType

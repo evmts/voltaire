@@ -3,6 +3,7 @@ import type { AddressType } from "../Address/AddressType.js";
 import type { BlockHashType } from "../BlockHash/BlockHashType.js";
 import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
 import type { EventLogType } from "../EventLog/EventLogType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { LogIndexType } from "../LogIndex/LogIndexType.js";
 import type { TransactionHashType } from "../TransactionHash/TransactionHashType.js";
 import type { TransactionIndexType } from "../TransactionIndex/TransactionIndexType.js";
@@ -35,8 +36,10 @@ export type ReceiptType = {
 	readonly logs: readonly EventLogType[];
 	/** Logs bloom filter (256 bytes) */
 	readonly logsBloom: Uint8Array;
-	/** Transaction status */
-	readonly status: TransactionStatusType;
+	/** Transaction status (post-Byzantium) */
+	readonly status?: TransactionStatusType;
+	/** State root (pre-Byzantium only) */
+	readonly root?: HashType;
 	/** Effective gas price */
 	readonly effectiveGasPrice: Uint256Type;
 	/** Transaction type */

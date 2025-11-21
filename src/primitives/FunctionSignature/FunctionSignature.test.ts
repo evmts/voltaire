@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as FunctionSignature from "./index.js";
 import * as Selector from "../Selector/index.js";
+import * as FunctionSignature from "./index.js";
 
 describe("FunctionSignature", () => {
 	describe("from", () => {

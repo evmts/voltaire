@@ -2,8 +2,8 @@ export type { StructLogType } from "./StructLogType.js";
 export { from as _from } from "./from.js";
 export { toOpStep as _toOpStep } from "./toOpStep.js";
 
-import type { StructLogType } from "./StructLogType.js";
 import type { OpStepType } from "../OpStep/OpStepType.js";
+import type { StructLogType } from "./StructLogType.js";
 import { from as _from } from "./from.js";
 import { toOpStep as _toOpStep } from "./toOpStep.js";
 

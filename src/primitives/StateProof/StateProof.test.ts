@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest";
-import * as StateProof from "./index.js";
-import * as StorageProof from "../StorageProof/index.js";
+import { describe, expect, it } from "vitest";
+import * as AccountState from "../AccountState/index.js";
 import { Address } from "../Address/index.js";
 import { Wei } from "../Denomination/Wei.js";
 import { Hash } from "../Hash/index.js";
 import { Nonce } from "../Nonce/index.js";
-import * as StateRoot from "../StateRoot/index.js";
 import * as StorageKey from "../State/index.js";
+import * as StateRoot from "../StateRoot/index.js";
+import * as StorageProof from "../StorageProof/index.js";
 import * as StorageValue from "../StorageValue/index.js";
-import * as AccountState from "../AccountState/index.js";
+import * as StateProof from "./index.js";
 
 describe("StateProof", () => {
 	const createTestAddress = () =>

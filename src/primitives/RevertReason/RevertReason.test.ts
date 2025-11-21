@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as RevertReason from "./index.js";
 import * as ReturnData from "../ReturnData/index.js";
+import * as RevertReason from "./index.js";
 
 describe("RevertReason", () => {
 	describe("fromReturnData - Error(string)", () => {

@@ -3,10 +3,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Abi } from "./Abi.js";
-import { encodeConstructor } from "./encodeConstructor.js";
-import { AbiItemNotFoundError } from "./Errors.js";
 import * as Hex from "../Hex/index.js";
+import type { Abi } from "./Abi.js";
+import { AbiItemNotFoundError } from "./Errors.js";
+import { encodeConstructor } from "./encodeConstructor.js";
 
 describe("encodeConstructor", () => {
 	it("encodes constructor with simple parameters", () => {

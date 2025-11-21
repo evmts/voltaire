@@ -1,5 +1,5 @@
-import { fromBytes } from "./fromBytes.js";
 import { InvalidBlockHashFormatError } from "./errors.js";
+import { fromBytes } from "./fromBytes.js";
 
 /**
  * Create BlockHash from hex string

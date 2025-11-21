@@ -2,12 +2,12 @@
  * Unit tests for decodeParams function
  */
 
+import { keccak_256 as keccak256 } from "@noble/hashes/sha3.js";
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../../Address/AddressType.js";
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";
 import { GetSelector } from "./getSelector.js";
-import { keccak_256 as keccak256 } from "@noble/hashes/sha3.js";
 
 // Create keccak256String function for testing
 const keccak256String = (str: string): Uint8Array => {

@@ -1,6 +1,6 @@
 import { encodeType } from "./encodeType.js";
-import { hashType } from "./hashType.js";
 import { encodeValue } from "./encodeValue.js";
+import { hashType } from "./hashType.js";
 
 /**
  * Encode EIP-712 data structure

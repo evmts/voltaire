@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { from } from "./index.js";
 import type { BlockHashType } from "../BlockHash/BlockHashType.js";
+import { from } from "./index.js";
 
 describe("ChainHead", () => {
 	const mockHash = new Uint8Array(32) as BlockHashType;

@@ -20,3 +20,8 @@ export {
 export { Function } from "./function/Function.js";
 export { Event } from "./event/Event.js";
 export { Error } from "./error/Error.js";
+
+// Re-export ERC standards
+export { Interface } from "./interface/index.js";
+export * from "./error/standards/index.js";
+export * from "./error/wrapped/index.js";

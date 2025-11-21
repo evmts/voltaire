@@ -4,11 +4,11 @@ export type { ProtocolVersionType } from "./ProtocolVersionType.js";
 // Export constants
 export { ETH_66, ETH_67, ETH_68, SNAP_1 } from "./constants.js";
 
+import { compare as _compare } from "./compare.js";
+import { equals as _equals } from "./equals.js";
 // Import all functions
 import { from } from "./from.js";
-import { equals as _equals } from "./equals.js";
 import { toString as _toString } from "./toString.js";
-import { compare as _compare } from "./compare.js";
 
 // Export constructors
 export { from };

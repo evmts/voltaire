@@ -1,8 +1,8 @@
-import { InvalidFormatError } from "../errors/ValidationError.js";
+import * as BlockHash from "../BlockHash/index.js";
 import * as PeerId from "../PeerId/index.js";
 import * as ProtocolVersion from "../ProtocolVersion/index.js";
-import * as BlockHash from "../BlockHash/index.js";
 import * as Uint from "../Uint/index.js";
+import { InvalidFormatError } from "../errors/ValidationError.js";
 
 /**
  * Create PeerInfo from RPC response object

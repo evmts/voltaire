@@ -60,7 +60,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing id", () => {
 			const invalid = { ...validPeerInfo };
-			delete (invalid as any).id;
+			(invalid as any).id = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'id' string field",
 			);
@@ -68,7 +68,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing name", () => {
 			const invalid = { ...validPeerInfo };
-			delete (invalid as any).name;
+			(invalid as any).name = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'name' string field",
 			);
@@ -76,7 +76,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing caps", () => {
 			const invalid = { ...validPeerInfo };
-			delete (invalid as any).caps;
+			(invalid as any).caps = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'caps' array field",
 			);
@@ -84,7 +84,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing network", () => {
 			const invalid = { ...validPeerInfo };
-			delete (invalid as any).network;
+			(invalid as any).network = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'network' object field",
 			);
@@ -108,7 +108,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing protocols", () => {
 			const invalid = { ...validPeerInfo };
-			delete (invalid as any).protocols;
+			(invalid as any).protocols = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'protocols' object field",
 			);

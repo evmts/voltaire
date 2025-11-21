@@ -1,6 +1,7 @@
 export type { TokenIdType } from "./TokenIdType.js";
 export * from "./errors.js";
 
+import type { TokenIdType } from "./TokenIdType.js";
 import { compare as _compare } from "./compare.js";
 import { MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";
@@ -9,7 +10,6 @@ import { isValid as _isValid } from "./isValid.js";
 import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toNumber as _toNumber } from "./toNumber.js";
-import type { TokenIdType } from "./TokenIdType.js";
 
 // Re-export internal methods with underscore prefix
 export { _compare, _equals, _from, _isValid, _toBigInt, _toHex, _toNumber };

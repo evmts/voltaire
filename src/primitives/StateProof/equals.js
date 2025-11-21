@@ -1,9 +1,9 @@
 // @ts-nocheck
 import { equals as addressEquals } from "../Address/equals.js";
-import { equals as uintEquals } from "../Uint/equals.js";
 import { Hash } from "../Hash/index.js";
 import * as StateRoot from "../StateRoot/index.js";
 import * as StorageProof from "../StorageProof/index.js";
+import { equals as uintEquals } from "../Uint/equals.js";
 
 /**
  * @typedef {import('./StateProofType.js').StateProofType} StateProofType

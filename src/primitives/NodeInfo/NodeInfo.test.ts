@@ -63,7 +63,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing enode", () => {
 			const invalid = { ...validNodeInfo };
-			delete (invalid as any).enode;
+			(invalid as any).enode = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'enode' string field",
 			);
@@ -71,7 +71,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing id", () => {
 			const invalid = { ...validNodeInfo };
-			delete (invalid as any).id;
+			(invalid as any).id = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'id' string field",
 			);
@@ -79,7 +79,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing ports", () => {
 			const invalid = { ...validNodeInfo };
-			delete (invalid as any).ports;
+			(invalid as any).ports = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'ports' object field",
 			);
@@ -97,7 +97,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing protocols", () => {
 			const invalid = { ...validNodeInfo };
-			delete (invalid as any).protocols;
+			(invalid as any).protocols = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'protocols' object field",
 			);

@@ -1,8 +1,8 @@
 import type { EncodedDataType } from "./EncodedDataType.js";
+import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
 import { toBytes as _toBytes } from "./toBytes.js";
-import { equals as _equals } from "./equals.js";
 
 export type { EncodedDataType } from "./EncodedDataType.js";
 export * from "./errors.js";

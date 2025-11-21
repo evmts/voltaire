@@ -1,7 +1,7 @@
 import type { brand } from "../../brand.js";
-import type { Uint256Type } from "../Uint/Uint256Type.js";
-import type { StructLogType } from "../StructLog/StructLogType.js";
 import type { CallTraceType } from "../CallTrace/CallTraceType.js";
+import type { StructLogType } from "../StructLog/StructLogType.js";
+import type { Uint256Type } from "../Uint/Uint256Type.js";
 
 /**
  * Complete execution trace result

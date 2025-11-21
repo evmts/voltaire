@@ -231,6 +231,44 @@ Branded hex string types for different address formats. See [variants](./variant
 ```typescript
 Address.SIZE      // 20 - Address size in bytes
 Address.HEX_SIZE  // 42 - Hex string length with "0x" prefix (2 + 40 characters)
+
+// ERC-7528: Native asset address constant
+Address.NATIVE_ASSET_ADDRESS  // "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+```
+
+### NATIVE_ASSET_ADDRESS (ERC-7528)
+
+```typescript
+const NATIVE_ASSET_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+```
+
+Standard address representing native ETH in token-related operations, as defined in [ERC-7528](https://eips.ethereum.org/EIPS/eip-7528).
+
+**Use cases:**
+- Representing ETH in token lists alongside ERC-20 tokens
+- Multicall operations mixing ETH and token transfers
+- DEX interfaces treating ETH as a "token"
+
+**Example:**
+
+```typescript
+import { NATIVE_ASSET_ADDRESS } from '@tevm/voltaire/Address';
+
+// Check if address is native ETH
+function isNativeAsset(tokenAddress: string): boolean {
+  return tokenAddress.toLowerCase() === NATIVE_ASSET_ADDRESS.toLowerCase();
+}
+
+// Handle token or ETH transfer
+async function transfer(token: string, to: string, amount: bigint) {
+  if (isNativeAsset(token)) {
+    // Send ETH
+    await sendTransaction({ to, value: amount });
+  } else {
+    // Send ERC-20
+    await erc20.transfer(to, amount);
+  }
+}
 ```
 
 ## Usage Patterns

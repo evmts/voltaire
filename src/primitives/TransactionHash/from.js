@@ -1,6 +1,6 @@
+import { InvalidTransactionHashFormatError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
-import { InvalidTransactionHashFormatError } from "./errors.js";
 
 /**
  * Create TransactionHash from various input types

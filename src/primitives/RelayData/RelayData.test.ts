@@ -36,7 +36,7 @@ describe("RelayData", () => {
 		it("converts relayPubkey from hex string", () => {
 			const relay = RelayData.from({
 				...validRelay,
-				relayPubkey: "0x" + "11".repeat(48),
+				relayPubkey: `0x${"11".repeat(48)}`,
 			});
 
 			expect(relay.relayPubkey[0]).toBe(0x11);
@@ -46,7 +46,7 @@ describe("RelayData", () => {
 		it("converts builderPubkey from hex string", () => {
 			const relay = RelayData.from({
 				...validRelay,
-				builderPubkey: "0x" + "44".repeat(48),
+				builderPubkey: `0x${"44".repeat(48)}`,
 			});
 
 			expect(relay.builderPubkey?.[0]).toBe(0x44);
@@ -83,7 +83,7 @@ describe("RelayData", () => {
 		it("converts proposerFeeRecipient from hex string", () => {
 			const relay = RelayData.from({
 				...validRelay,
-				proposerFeeRecipient: "0x" + "33".repeat(20),
+				proposerFeeRecipient: `0x${"33".repeat(20)}`,
 			});
 
 			expect(relay.proposerFeeRecipient[0]).toBe(0x33);

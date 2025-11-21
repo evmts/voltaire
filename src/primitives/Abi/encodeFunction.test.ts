@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import type { BrandedAddress as Address } from "../Address/AddressType.js";
 import * as Hex from "../Hex/index.js";
 import type { Abi } from "./Abi.js";
-import { encodeFunction } from "./encodeFunction.js";
 import { AbiItemNotFoundError } from "./Errors.js";
+import { encodeFunction } from "./encodeFunction.js";
 
 const mockAbi = [
 	{

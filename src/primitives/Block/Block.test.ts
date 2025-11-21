@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as Block from "./index.js";
 import * as BlockBody from "../BlockBody/index.js";
 import * as BlockHeader from "../BlockHeader/index.js";
+import * as Block from "./index.js";
 
 describe("Block", () => {
 	const validHeader = {

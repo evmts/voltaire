@@ -442,8 +442,10 @@ describe("Authorization.sign", () => {
 		expect(signed.address).toBe(addr1);
 		expect(signed.nonce).toBe(0n);
 		expect(typeof signed.yParity).toBe("number");
-		expect(typeof signed.r).toBe("bigint");
-		expect(typeof signed.s).toBe("bigint");
+		expect(signed.r).toBeInstanceOf(Uint8Array);
+		expect(signed.r.length).toBe(32);
+		expect(signed.s).toBeInstanceOf(Uint8Array);
+		expect(signed.s.length).toBe(32);
 	});
 });
 

@@ -1,5 +1,5 @@
-import { fromReturnData } from "./fromReturnData.js";
 import * as ReturnData from "../ReturnData/index.js";
+import { fromReturnData } from "./fromReturnData.js";
 
 /**
  * Create RevertReason from various inputs

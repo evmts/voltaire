@@ -18,7 +18,7 @@ import {
 	slice as sliceHash,
 	toBytes,
 	toHex,
-} from "./index.js";
+} from "./index.ts";
 
 describe("Hash", () => {
 	describe("fromHex", () => {

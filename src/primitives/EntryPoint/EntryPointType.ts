@@ -1,5 +1,5 @@
-import type { AddressType } from "../Address/AddressType.js";
 import type { brand } from "../../brand.js";
+import type { AddressType } from "../Address/AddressType.js";
 
 /**
  * EntryPoint address type - ERC-4337 entry point contract

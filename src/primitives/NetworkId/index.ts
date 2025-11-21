@@ -4,9 +4,9 @@ export type { NetworkIdType } from "./NetworkIdType.js";
 // Export constants
 export { MAINNET, GOERLI, SEPOLIA, HOLESKY } from "./constants.js";
 
+import { equals as _equals } from "./equals.js";
 // Import all functions
 import { from } from "./from.js";
-import { equals as _equals } from "./equals.js";
 import { toNumber as _toNumber } from "./toNumber.js";
 
 // Export constructors

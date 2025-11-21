@@ -4,9 +4,9 @@ export { withTracer as _withTracer } from "./withTracer.js";
 export { disableAll as _disableAll } from "./disableAll.js";
 
 import type { TraceConfigType } from "./TraceConfigType.js";
+import { disableAll as _disableAll } from "./disableAll.js";
 import { from as _from } from "./from.js";
 import { withTracer as _withTracer } from "./withTracer.js";
-import { disableAll as _disableAll } from "./disableAll.js";
 
 /**
  * Creates a TraceConfig from configuration options

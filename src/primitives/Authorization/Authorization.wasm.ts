@@ -4,8 +4,8 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { HashType } from "../Hash/index.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
 import type { AuthorizationType } from "./AuthorizationType.js";
 
 /**

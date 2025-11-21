@@ -1,6 +1,6 @@
+import { encode as encodeImpl } from "./encode.js";
 import { from as fromImpl } from "./from.js";
 import { hash as hashImpl } from "./hash.js";
-import { encode as encodeImpl } from "./encode.js";
 import { validate as validateImpl } from "./validate.js";
 
 export type { TypedDataType, TypedDataField } from "./TypedDataType.js";

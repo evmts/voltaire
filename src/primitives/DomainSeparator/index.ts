@@ -1,8 +1,8 @@
+import { equals as equalsImpl } from "./equals.js";
 import { from as fromImpl } from "./from.js";
 import { fromBytes as fromBytesImpl } from "./fromBytes.js";
 import { fromHex as fromHexImpl } from "./fromHex.js";
 import { toHex as toHexImpl } from "./toHex.js";
-import { equals as equalsImpl } from "./equals.js";
 
 export type { DomainSeparatorType } from "./DomainSeparatorType.js";
 export { SIZE } from "./DomainSeparatorType.js";

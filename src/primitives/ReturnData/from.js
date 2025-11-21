@@ -1,6 +1,6 @@
-import { fromHex } from "./fromHex.js";
-import { fromBytes } from "./fromBytes.js";
 import { InvalidValueError } from "./errors.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
 
 /**
  * Create ReturnData from various input types

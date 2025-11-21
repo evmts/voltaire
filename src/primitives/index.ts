@@ -48,6 +48,7 @@ export * as Denomination from "./Denomination/index.js";
 // Encoding
 export { Rlp } from "./Rlp/index.js";
 export * as BrandedRlp from "./Rlp/index.js";
+export * as Ssz from "./Ssz/index.js";
 export * as Abi from "./Abi/index.js";
 
 // Transactions
@@ -74,6 +75,8 @@ export * as GasEstimate from "./GasEstimate/index.js";
 export * as GasRefund from "./GasRefund/index.js";
 export { StorageKey } from "./State/index.js";
 export * as BrandedStorageKey from "./State/index.js";
+export * as Storage from "./Storage/index.js";
+export * as Proxy from "./Proxy/index.js";
 
 // Protocol
 export { Blob } from "./Blob/index.js";
@@ -158,11 +161,20 @@ export * as Receipt from "./Receipt/index.js";
 export { Siwe } from "./Siwe/index.js";
 export * as BrandedSiwe from "./Siwe/index.js";
 export * as Ens from "./Ens/index.js";
+export * as Permit from "./Permit/index.js";
+export * as TransactionUrl from "./TransactionUrl/index.js";
 
 // EIP-712 Typed Data
 export * as DomainSeparator from "./DomainSeparator/index.js";
 export * as Domain from "./Domain/index.js";
 export * as TypedData from "./TypedData/index.js";
+
+// Signatures (EIP-191, EIP-1271)
+export * as SignedData from "./SignedData/index.js";
+export * as ContractSignature from "./ContractSignature/index.js";
+
+// Privacy (ERC-5564)
+export * as StealthAddress from "./StealthAddress/index.js";
 
 // Data structures
 export * as BinaryTree from "./BinaryTree/index.js";

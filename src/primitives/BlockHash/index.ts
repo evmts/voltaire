@@ -1,11 +1,11 @@
 export type { BlockHashType } from "./BlockHashType.js";
 export * from "./errors.js";
 
+import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
 import { fromHex as _fromHex } from "./fromHex.js";
 import { toHex as _toHex } from "./toHex.js";
-import { equals as _equals } from "./equals.js";
 
 export const from = _from;
 export const fromBytes = _fromBytes;

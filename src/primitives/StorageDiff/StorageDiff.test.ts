@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { from, getChange, getKeys, size } from "./index.js";
-import type { StorageChange } from "./StorageDiffType.js";
 import type { AddressType } from "../Address/AddressType.js";
 import type { StorageKeyType } from "../State/StorageKeyType.js";
 import type { StorageValueType } from "../StorageValue/StorageValueType.js";
+import type { StorageChange } from "./StorageDiffType.js";
+import { from, getChange, getKeys, size } from "./index.js";
 
 describe("StorageDiff", () => {
 	const mockAddress = new Uint8Array(20) as AddressType;

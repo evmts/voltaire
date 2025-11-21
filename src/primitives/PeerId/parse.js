@@ -18,14 +18,12 @@ import { InvalidFormatError } from "../errors/ValidationError.js";
  * ```
  */
 export function parse() {
-	const enodeUrl = this;
-
 	// Check for enode:// prefix
-	if (!enodeUrl.startsWith("enode://")) {
+	if (!this.startsWith("enode://")) {
 		throw new InvalidFormatError(
 			"Peer ID must start with 'enode://' to be parsed as enode URL",
 			{
-				value: enodeUrl,
+				value: this,
 				expected: "enode:// prefix",
 				code: "PEER_ID_INVALID_ENODE_PREFIX",
 				docsPath: "/primitives/peer-id/parse#error-handling",
@@ -34,13 +32,13 @@ export function parse() {
 	}
 
 	// Remove enode:// prefix
-	const withoutPrefix = enodeUrl.slice(8);
+	const withoutPrefix = this.slice(8);
 
 	// Split on @ to separate pubkey from address
 	const atIndex = withoutPrefix.indexOf("@");
 	if (atIndex === -1) {
 		throw new InvalidFormatError("Enode URL must contain '@' separator", {
-			value: enodeUrl,
+			value: this,
 			expected: "enode://PUBKEY@IP:PORT format",
 			code: "PEER_ID_MISSING_AT_SEPARATOR",
 			docsPath: "/primitives/peer-id/parse#error-handling",

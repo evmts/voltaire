@@ -1,6 +1,6 @@
 import type { HexType } from "../HexType.js";
-import { toBytes } from "../toBytes.js";
 import { fromBytes } from "../fromBytes.js";
+import { toBytes } from "../toBytes.js";
 
 /**
  * XOR two hex values (bitwise exclusive OR)

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import * as UserOperation from "./index.js";
 import * as EntryPoint from "../EntryPoint/index.js";
+import * as UserOperation from "./index.js";
 
 describe("UserOperation", () => {
 	const mockUserOp = {

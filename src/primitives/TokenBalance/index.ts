@@ -1,6 +1,7 @@
 export type { TokenBalanceType } from "./TokenBalanceType.js";
 export * from "./errors.js";
 
+import type { TokenBalanceType } from "./TokenBalanceType.js";
 import { compare as _compare } from "./compare.js";
 import { DECIMALS, MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";
@@ -11,7 +12,6 @@ import { toBaseUnit as _toBaseUnit } from "./toBaseUnit.js";
 import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toNumber as _toNumber } from "./toNumber.js";
-import type { TokenBalanceType } from "./TokenBalanceType.js";
 
 // Re-export internal methods with underscore prefix
 export {

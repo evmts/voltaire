@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
+import * as Hash from "../../Hash/index.ts";
 import { GetSelector } from "./getSelector.js";
-import * as Hash from "../../Hash/index.js";
 
 describe("GetSelector", () => {
 	const getSelector = GetSelector({ keccak256String: Hash.keccak256String });

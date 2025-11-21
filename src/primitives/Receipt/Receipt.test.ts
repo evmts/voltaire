@@ -1,12 +1,12 @@
-import { describe, it, expect } from "vitest";
-import * as Receipt from "./index.js";
-import * as TransactionHash from "../TransactionHash/index.js";
-import * as TransactionIndex from "../TransactionIndex/index.js";
+import { describe, expect, it } from "vitest";
+import * as Address from "../Address/internal-index.js";
 import * as BlockHash from "../BlockHash/index.js";
 import * as BlockNumber from "../BlockNumber/index.js";
+import * as TransactionHash from "../TransactionHash/index.js";
+import * as TransactionIndex from "../TransactionIndex/index.js";
 import * as TransactionStatus from "../TransactionStatus/index.js";
-import * as Address from "../Address/internal-index.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
+import * as Receipt from "./index.js";
 
 describe("Receipt", () => {
 	const mockReceipt = {

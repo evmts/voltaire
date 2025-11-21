@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { EncodeTopics } from "./encodeTopics.js";
-import * as Hash from "../../Hash/index.js";
+import * as Hash from "../../Hash/index.ts";
 import * as Hex from "../../Hex/index.js";
+import { EncodeTopics } from "./encodeTopics.js";
 
 describe("EncodeTopics", () => {
 	const encodeTopics = EncodeTopics({

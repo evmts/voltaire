@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import * as TraceResult from "./index.js";
-import * as StructLog from "../StructLog/index.js";
+import { describe, expect, it } from "vitest";
 import * as CallTrace from "../CallTrace/index.js";
+import * as StructLog from "../StructLog/index.js";
+import * as TraceResult from "./index.js";
 
 describe("TraceResult", () => {
 	it("creates successful TraceResult", () => {

@@ -1,6 +1,6 @@
 import type { AddressType } from "../Address/AddressType.js";
-import type { NonceType } from "../Nonce/NonceType.js";
 import type { WeiType } from "../Denomination/WeiType.js";
+import type { NonceType } from "../Nonce/NonceType.js";
 import type { StorageKeyType } from "../State/StorageKeyType.js";
 import type { StorageValueType } from "../StorageValue/StorageValueType.js";
 

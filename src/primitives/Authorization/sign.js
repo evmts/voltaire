@@ -27,22 +27,9 @@ export function Sign({
 		// Sign with secp256k1
 		const sig = secp256k1Sign(messageHash, privateKey);
 
-		// Extract r, s, yParity from signature
-		// Signature is { r, s, v }
+		// Extract r, s from signature
 		const r = sig.r;
 		const s = sig.s;
-
-		// Convert r and s to bigint
-		let rBigint = 0n;
-		let sBigint = 0n;
-		for (let i = 0; i < 32; i++) {
-			const rByte = r[i];
-			const sByte = s[i];
-			if (rByte !== undefined && sByte !== undefined) {
-				rBigint = (rBigint << 8n) | BigInt(rByte);
-				sBigint = (sBigint << 8n) | BigInt(sByte);
-			}
-		}
 
 		// Recover yParity by trying both values
 		let yParity = 0;
@@ -72,8 +59,8 @@ export function Sign({
 			address: unsigned.address,
 			nonce: unsigned.nonce,
 			yParity,
-			r: rBigint,
-			s: sBigint,
+			r,
+			s,
 		};
 	};
 }
