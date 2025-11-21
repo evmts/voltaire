@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { G2PointType } from "../G2PointType.js";
 import * as Fp2 from "../Fp2/index.js";
+import type { G2PointType } from "../G2PointType.js";
 import {
 	FR_MOD,
 	G2_GENERATOR_X_C0,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { G1PointType } from "../G1PointType.js";
 import * as Fp from "../Fp/index.js";
+import type { G1PointType } from "../G1PointType.js";
 import {
 	B_G1,
 	FP_MOD,
