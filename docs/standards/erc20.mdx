@@ -1,0 +1,183 @@
+---
+title: ERC-20
+description: ERC-20 fungible token standard interface
+---
+
+# ERC-20
+
+ERC-20 is the standard interface for fungible tokens on Ethereum. This module provides low-level encoding/decoding utilities for interacting with ERC-20 contracts.
+
+## Function Selectors
+
+```typescript
+import { ERC20 } from '@tevm/primitives';
+
+// Core functions
+ERC20.SELECTORS.totalSupply      // 0x18160ddd
+ERC20.SELECTORS.balanceOf        // 0x70a08231
+ERC20.SELECTORS.transfer         // 0xa9059cbb
+ERC20.SELECTORS.transferFrom     // 0x23b872dd
+ERC20.SELECTORS.approve          // 0x095ea7b3
+ERC20.SELECTORS.allowance        // 0xdd62ed3e
+
+// Optional metadata
+ERC20.SELECTORS.name             // 0x06fdde03
+ERC20.SELECTORS.symbol           // 0x95d89b41
+ERC20.SELECTORS.decimals         // 0x313ce567
+
+// EIP-2612 Permit extension
+ERC20.SELECTORS.permit           // 0xd505accf
+ERC20.SELECTORS.nonces           // 0x7ecebe00
+ERC20.SELECTORS.DOMAIN_SEPARATOR // 0x3644e515
+```
+
+## Event Signatures
+
+```typescript
+// Transfer(address indexed from, address indexed to, uint256 value)
+ERC20.EVENTS.Transfer
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Approval(address indexed owner, address indexed spender, uint256 value)
+ERC20.EVENTS.Approval
+// 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925
+```
+
+## Encoding Calldata
+
+### transfer
+
+```typescript
+import { ERC20 } from '@tevm/primitives';
+import * as Address from '@tevm/primitives/Address';
+import * as Uint256 from '@tevm/primitives/Uint256';
+
+const to = Address.fromHex('0x...');
+const amount = Uint256.fromBigInt(1000000n);
+
+const calldata = ERC20.encodeTransfer(to, amount);
+// 0xa9059cbb000000000000000000000000...
+```
+
+### approve
+
+```typescript
+const spender = Address.fromHex('0x...');
+const amount = Uint256.fromBigInt(1000000n);
+
+const calldata = ERC20.encodeApprove(spender, amount);
+```
+
+### transferFrom
+
+```typescript
+const from = Address.fromHex('0x...');
+const to = Address.fromHex('0x...');
+const amount = Uint256.fromBigInt(1000000n);
+
+const calldata = ERC20.encodeTransferFrom(from, to, amount);
+```
+
+### balanceOf
+
+```typescript
+const account = Address.fromHex('0x...');
+const calldata = ERC20.encodeBalanceOf(account);
+```
+
+### allowance
+
+```typescript
+const owner = Address.fromHex('0x...');
+const spender = Address.fromHex('0x...');
+
+const calldata = ERC20.encodeAllowance(owner, spender);
+```
+
+## Decoding Events
+
+### Transfer Event
+
+```typescript
+const log = {
+  topics: [
+    ERC20.EVENTS.Transfer,
+    '0x000...from',
+    '0x000...to',
+  ],
+  data: '0x000...value',
+};
+
+const { from, to, value } = ERC20.decodeTransferEvent(log);
+```
+
+### Approval Event
+
+```typescript
+const log = {
+  topics: [
+    ERC20.EVENTS.Approval,
+    '0x000...owner',
+    '0x000...spender',
+  ],
+  data: '0x000...value',
+};
+
+const { owner, spender, value } = ERC20.decodeApprovalEvent(log);
+```
+
+## Decoding Return Values
+
+```typescript
+// uint256 (balance, allowance, totalSupply)
+const balance = ERC20.decodeUint256(returnData);
+
+// address
+const owner = ERC20.decodeAddress(returnData);
+
+// bool (approve, transfer return)
+const success = ERC20.decodeBool(returnData);
+
+// string (name, symbol)
+const name = ERC20.decodeString(returnData);
+```
+
+## Complete Example
+
+```typescript
+import { ERC20 } from '@tevm/primitives';
+import * as Address from '@tevm/primitives/Address';
+import * as Uint256 from '@tevm/primitives/Uint256';
+
+// Contract and accounts
+const token = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC
+const to = Address.fromHex('0x...');
+const amount = Uint256.fromBigInt(1000000n); // 1 USDC
+
+// Encode transfer call
+const calldata = ERC20.encodeTransfer(to, amount);
+
+// Execute via provider
+const txHash = await provider.request({
+  method: 'eth_sendTransaction',
+  params: [{
+    to: token,
+    data: calldata,
+  }],
+});
+
+// Query balance
+const balanceCalldata = ERC20.encodeBalanceOf(to);
+const result = await provider.request({
+  method: 'eth_call',
+  params: [{ to: token, data: balanceCalldata }, 'latest'],
+});
+
+const balance = ERC20.decodeUint256(result);
+console.log(`Balance: ${balance}`);
+```
+
+## References
+
+- [EIP-20: Token Standard](https://eips.ethereum.org/EIPS/eip-20)
+- [EIP-2612: Permit Extension](/primitives/permit)

@@ -510,10 +510,13 @@
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",
 		"@codesandbox/sandpack-react": "^2.20.0",
+		"@ledgerhq/hw-app-eth": "^6.38.4",
+		"@ledgerhq/hw-transport-webusb": "^6.29.4",
 		"@scure/bip32": "^2.0.1",
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.23.0",
 		"@tevm/chains": "^0.0.1",
+		"@trezor/connect-web": "^9.4.3",
 		"c-kzg": "^4.1.0",
 		"modern-monaco": "./modern-monaco"
 	}

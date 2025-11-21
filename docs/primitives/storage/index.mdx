@@ -1,0 +1,154 @@
+---
+title: Storage
+description: Namespaced storage layout utilities for smart contracts
+icon: database
+---
+
+Utilities for calculating collision-resistant storage slots in upgradeable and modular smart contracts.
+
+<Tip title="ERC References">
+Implements [ERC-7201](https://eips.ethereum.org/EIPS/eip-7201) (Namespaced Storage Layout) and [ERC-8042](https://eips.ethereum.org/EIPS/eip-8042) (Diamond Storage).
+</Tip>
+
+## Overview
+
+Storage collisions are a critical issue in upgradeable proxies, libraries, and diamond patterns. When multiple contracts or versions share storage, overlapping slots cause data corruption.
+
+ERC-7201 and ERC-8042 solve this by deterministically calculating storage slots from namespace identifiers, ensuring each module has isolated storage regions.
+
+## Quick Start
+
+<Tabs>
+<Tab title="ERC-7201 (Recommended)">
+
+```typescript
+import * as Storage from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Calculate namespaced storage slot
+const slot = Storage.calculateErc7201(
+  keccak256,
+  'my.contract.storage'
+);
+
+// Use in contract storage layout
+// contract MyContract {
+//   struct MyStorage {
+//     uint256 value;
+//     mapping(address => uint256) balances;
+//   }
+//
+//   function getStorage() internal pure returns (MyStorage storage $) {
+//     assembly {
+//       $.slot := 0x... // <- Use calculated slot here
+//     }
+//   }
+// }
+```
+
+</Tab>
+<Tab title="ERC-8042 (Diamond Storage)">
+
+```typescript
+import * as Storage from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Calculate diamond storage slot
+const slot = Storage.calculateErc8042(
+  keccak256,
+  'diamond.standard.storage'
+);
+
+// Simpler formula: just keccak256(id)
+// Used by EIP-2535 Diamond Standard
+```
+
+</Tab>
+</Tabs>
+
+## When to Use Each Standard
+
+**ERC-7201** (Namespaced Storage Layout):
+- General purpose upgradeable contracts
+- UUPS proxies
+- Transparent proxies
+- Modular contract architectures
+- Extra collision resistance (last byte cleared)
+
+**ERC-8042** (Diamond Storage):
+- EIP-2535 Diamond Standard contracts
+- Multi-facet proxy patterns
+- Legacy diamond implementations
+- Simpler formula when compatibility required
+
+## API Documentation
+
+<CardGroup cols={2}>
+  <Card title="calculateErc7201" icon="hashtag" href="/primitives/storage/calculate-erc7201">
+    Calculate ERC-7201 namespaced storage slot
+  </Card>
+  <Card title="calculateErc8042" icon="gem" href="/primitives/storage/calculate-erc8042">
+    Calculate ERC-8042 diamond storage slot
+  </Card>
+</CardGroup>
+
+## Storage Collision Prevention
+
+### Without Namespaced Storage
+
+```solidity
+// ❌ DANGEROUS: Storage collision risk
+contract ProxyV1 {
+  uint256 value;        // slot 0
+  address owner;        // slot 1
+}
+
+contract ProxyV2 {
+  address newOwner;     // slot 0 - COLLISION!
+  uint256 value;        // slot 1 - COLLISION!
+}
+```
+
+### With ERC-7201
+
+```solidity
+// ✅ SAFE: Isolated namespaced storage
+contract ProxyV1 {
+  struct V1Storage {
+    uint256 value;
+    address owner;
+  }
+
+  function getStorage() internal pure returns (V1Storage storage $) {
+    assembly {
+      $.slot := 0xabcd... // ERC-7201 slot
+    }
+  }
+}
+
+contract ProxyV2 {
+  struct V2Storage {
+    address newOwner;
+    uint256 value;
+  }
+
+  function getStorage() internal pure returns (V2Storage storage $) {
+    assembly {
+      $.slot := 0x1234... // Different ERC-7201 slot
+    }
+  }
+}
+```
+
+## Specification References
+
+- [ERC-7201](https://eips.ethereum.org/EIPS/eip-7201) - Namespaced Storage Layout
+- [ERC-8042](https://eips.ethereum.org/EIPS/eip-8042) - Diamond Storage (EIP-2535)
+- [EIP-1967](https://eips.ethereum.org/EIPS/eip-1967) - Proxy Storage Slots
+- [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535) - Diamond Standard
+
+## Related
+
+- [Proxy](/primitives/proxy) - Proxy patterns using namespaced storage
+- [Keccak256](/crypto/keccak256) - Hash function for slot calculation
+- [Bytes](/primitives/bytes) - Storage slot byte manipulation

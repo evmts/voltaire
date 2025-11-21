@@ -166,7 +166,9 @@
 											"primitives/abi/error-get-signature",
 											"primitives/abi/error-encode-params",
 											"primitives/abi/error-decode-params",
-											"primitives/abi/error-get-selector-factory"
+											"primitives/abi/error-get-selector-factory",
+											"primitives/abi/error/erc6093",
+											"primitives/abi/error/erc7751"
 										]
 									},
 									{
@@ -189,6 +191,10 @@
 											"primitives/abi/item-format-with-args",
 											"primitives/abi/item-get-item"
 										]
+									},
+									{
+										"group": "Interface Detection (ERC-165)",
+										"pages": ["primitives/abi/interface/erc165"]
 									}
 								]
 							},
@@ -615,6 +621,21 @@
 								]
 							},
 							{
+								"group": "Proxy",
+								"icon": {
+									"name": "arrow-right-arrow-left",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/proxy/index",
+									"primitives/proxy/constants",
+									"primitives/proxy/generate-erc1167",
+									"primitives/proxy/parse-erc1167",
+									"primitives/proxy/generate-erc3448",
+									"primitives/proxy/parse-erc3448"
+								]
+							},
+							{
 								"group": "State",
 								"icon": {
 									"name": "database",
@@ -631,6 +652,26 @@
 									"primitives/state/storage-examples",
 									"primitives/state/usage-patterns",
 									"primitives/state/wasm"
+								]
+							},
+							{
+								"group": "StealthAddress",
+								"icon": {
+									"name": "eye-slash",
+									"style": "solid"
+								},
+								"pages": ["primitives/stealthaddress/index"]
+							},
+							{
+								"group": "Storage",
+								"icon": {
+									"name": "database",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/storage/index",
+									"primitives/storage/calculate-erc7201",
+									"primitives/storage/calculate-erc8042"
 								]
 							},
 							{
@@ -653,6 +694,18 @@
 									"primitives/transaction/signing",
 									"primitives/transaction/utilities",
 									"primitives/transaction/usage-patterns"
+								]
+							},
+							{
+								"group": "TransactionUrl",
+								"icon": {
+									"name": "link",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/transactionurl/index",
+									"primitives/transactionurl/parse",
+									"primitives/transactionurl/format"
 								]
 							},
 							{
@@ -801,7 +854,10 @@
 											"name": "file-signature",
 											"style": "regular"
 										},
-										"pages": ["crypto/eip712/index"]
+										"pages": [
+											"crypto/eip712/index",
+											"primitives/domain/erc5267"
+										]
 									},
 									{
 										"group": "Ed25519 (Alternative)",
