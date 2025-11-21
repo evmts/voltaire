@@ -2,12 +2,12 @@ import { describe, it, expect } from "vitest";
 import * as StorageProof from "./index.js";
 import * as StorageKey from "../State/index.js";
 import * as StorageValue from "../StorageValue/index.js";
-import * as Address from "../Address/index.js";
+import { Address } from "../Address/index.js";
 
 describe("StorageProof", () => {
 	const createTestKey = () =>
 		StorageKey.create(
-			Address.from("0x1234567890123456789012345678901234567890"),
+			Address("0x1234567890123456789012345678901234567890"),
 			0n,
 		);
 
@@ -140,11 +140,11 @@ describe("StorageProof", () => {
 			const proof = createTestProof();
 
 			const key1 = StorageKey.create(
-				Address.from("0x1234567890123456789012345678901234567890"),
+				Address("0x1234567890123456789012345678901234567890"),
 				0n,
 			);
 			const key2 = StorageKey.create(
-				Address.from("0x1234567890123456789012345678901234567890"),
+				Address("0x1234567890123456789012345678901234567890"),
 				1n, // Different slot
 			);
 
