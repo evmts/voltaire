@@ -137,11 +137,11 @@ pub const Signature = struct {
         }
 
         // Read r INTEGER
-        const r = try readDERInteger(der_bytes, &pos);
+        const r = try readDERInteger(allocator, der_bytes, &pos);
         defer allocator.free(r);
 
         // Read s INTEGER
-        const s = try readDERInteger(der_bytes, &pos);
+        const s = try readDERInteger(allocator, der_bytes, &pos);
         defer allocator.free(s);
 
         // Convert to 32-byte arrays
@@ -169,16 +169,19 @@ pub const Signature = struct {
     /// Convert signature to bytes (r || s || v if present)
     pub fn toBytes(self: Self, allocator: std.mem.Allocator) ![]u8 {
         const has_v = self.v != null and self.algorithm == .secp256k1;
-        const len = if (has_v) ECDSA_WITH_V_SIZE else ECDSA_SIZE;
 
-        const bytes = try allocator.alloc(u8, len);
-        @memcpy(bytes[0..32], &self.r);
-        @memcpy(bytes[32..64], &self.s);
         if (has_v) {
+            const bytes = try allocator.alloc(u8, ECDSA_WITH_V_SIZE);
+            @memcpy(bytes[0..32], &self.r);
+            @memcpy(bytes[32..64], &self.s);
             bytes[64] = self.v.?;
+            return bytes;
+        } else {
+            const bytes = try allocator.alloc(u8, ECDSA_SIZE);
+            @memcpy(bytes[0..32], &self.r);
+            @memcpy(bytes[32..64], &self.s);
+            return bytes;
         }
-
-        return bytes;
     }
 
     /// Convert signature to compact format (r || s)
@@ -269,14 +272,19 @@ pub const Signature = struct {
 
         // Calculate s_normalized = n - s
         var s_normalized: [32]u8 = undefined;
-        var borrow: u16 = 0;
+        var borrow: i32 = 0;
 
         var i: usize = COMPONENT_SIZE;
         while (i > 0) {
             i -= 1;
-            const diff: u16 = @as(u16, curve_order[i]) -% @as(u16, self.s[i]) -% borrow;
-            s_normalized[i] = @truncate(diff);
-            borrow = if (diff > 0xff) 1 else 0;
+            const diff: i32 = @as(i32, curve_order[i]) - @as(i32, self.s[i]) - borrow;
+            if (diff < 0) {
+                s_normalized[i] = @intCast(@as(i32, diff + 256));
+                borrow = 1;
+            } else {
+                s_normalized[i] = @intCast(diff);
+                borrow = 0;
+            }
         }
 
         // Flip v if present (27 <-> 28)
@@ -325,7 +333,7 @@ fn readDERLength(bytes: []const u8, pos: *usize) !usize {
     return len;
 }
 
-fn readDERInteger(bytes: []const u8, pos: *usize) ![]u8 {
+fn readDERInteger(allocator: std.mem.Allocator, bytes: []const u8, pos: *usize) ![]u8 {
     if (pos.* >= bytes.len or bytes[pos.*] != 0x02) {
         return error.InvalidDERFormat;
     }
@@ -336,7 +344,6 @@ fn readDERInteger(bytes: []const u8, pos: *usize) ![]u8 {
         return error.InvalidDERFormat;
     }
 
-    const allocator = std.heap.page_allocator;
     const result = try allocator.alloc(u8, len);
     @memcpy(result, bytes[pos.* .. pos.* + len]);
     pos.* += len;
@@ -568,8 +575,13 @@ test "Signature.normalize - already canonical" {
 
 test "Signature.normalize - non-canonical" {
     const r: [32]u8 = [_]u8{1} ** 32;
-    // Non-canonical s
-    const s: [32]u8 = [_]u8{0xff} ** 32;
+    // Non-canonical s (just above SECP256K1_N_DIV_2)
+    const s: [32]u8 = .{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+        0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa1, // Last byte is 0xa1 (>0xa0)
+    };
 
     const sig = Signature.fromSecp256k1(r, s, 27);
     const normalized = sig.normalize();

@@ -61,7 +61,7 @@ test "fromBytes - creates independent copy" {
 /// Create Hash from hex string (with or without 0x prefix).
 /// Returns error if hex is invalid or not 32 bytes.
 pub fn fromHex(hex: []const u8) !Hash {
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
+    const bytes = try Hex.fromHex(std.testing.allocator, hex);
     defer std.testing.allocator.free(bytes);
 
     if (bytes.len != SIZE) {

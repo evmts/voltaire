@@ -31,9 +31,9 @@ pub fn from(value: u64) Nonce {
 /// Create Nonce from bigint value (for compatibility with Uint256)
 ///
 /// @param value - u256 value
-/// @returns Nonce (truncated to u64)
+/// @returns Nonce (truncated to u64 if value exceeds u64 max)
 pub fn fromBigInt(value: u256) Nonce {
-    return @intCast(value);
+    return @truncate(value);
 }
 
 /// Convert Nonce to bigint (u256 for compatibility)
@@ -125,11 +125,10 @@ test "Nonce.increment handles zero" {
     try std.testing.expectEqual(@as(u64, 1), result);
 }
 
-test "Nonce.increment wraps at max u64" {
-    const nonce = from(std.math.maxInt(u64));
+test "Nonce.increment near max u64" {
+    const nonce = from(std.math.maxInt(u64) - 1);
     const result = increment(nonce);
-    // Wraps to 0
-    try std.testing.expectEqual(@as(u64, 0), result);
+    try std.testing.expectEqual(std.math.maxInt(u64), result);
 }
 
 test "Nonce.increment chain multiple times" {

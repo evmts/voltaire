@@ -145,7 +145,7 @@ pub const Eip1559Transaction = struct {
     value: u256,
     data: []const u8,
     access_list: []const AccessListItem,
-    v: u64,
+    y_parity: u8,
     r: [32]u8,
     s: [32]u8,
 };
@@ -163,7 +163,7 @@ pub const Eip4844Transaction = struct {
     access_list: []const AccessListItem,
     max_fee_per_blob_gas: u256,
     blob_versioned_hashes: []const VersionedHash,
-    v: u64,
+    y_parity: u8,
     r: [32]u8,
     s: [32]u8,
 };
@@ -180,7 +180,7 @@ pub const Eip7702Transaction = struct {
     data: []const u8,
     access_list: []const AccessListItem,
     authorization_list: []const Authorization,
-    v: u64,
+    y_parity: u8,
     r: [32]u8,
     s: [32]u8,
 };

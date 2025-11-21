@@ -103,13 +103,21 @@
 
 // Core types
 pub const Address = @import("Address/address.zig");
+pub const BlockHash = @import("BlockHash/BlockHash.zig");
+pub const BlockNumber = @import("BlockNumber/BlockNumber.zig");
 pub const Bytes = @import("Bytes/Bytes.zig");
+pub const Bytes32 = @import("Bytes32/Bytes32.zig");
 pub const ChainId = @import("ChainId/ChainId.zig");
+pub const Epoch = @import("Epoch/Epoch.zig");
 pub const Hash = @import("Hash/Hash.zig");
 pub const Nonce = @import("Nonce/Nonce.zig");
 pub const PrivateKey = @import("PrivateKey/PrivateKey.zig");
 pub const PublicKey = @import("PublicKey/PublicKey.zig");
 pub const Signature = @import("Signature/Signature.zig").Signature;
+pub const Slot = @import("Slot/Slot.zig");
+pub const StateRoot = @import("StateRoot/StateRoot.zig");
+pub const StorageValue = @import("StorageValue/StorageValue.zig");
+pub const TransactionHash = @import("TransactionHash/TransactionHash.zig");
 
 // Encoding/Decoding
 pub const Hex = @import("Hex/Hex.zig");
@@ -117,6 +125,7 @@ pub const Rlp = @import("Rlp/Rlp.zig");
 pub const Abi = @import("Abi/Abi.zig");
 pub const AbiEncoding = @import("Abi/abi_encoding.zig");
 pub const Base64 = @import("base64.zig");
+pub const Ssz = @import("Ssz/root.zig");
 
 // Utilities
 pub const Numeric = @import("Uint/numeric.zig");
@@ -138,6 +147,10 @@ pub const GWEI_PER_ETHER = Denomination.GWEI_PER_ETHER;
 // State management
 pub const State = @import("State/state.zig");
 pub const StorageKey = State.StorageKey;
+pub const Storage = @import("Storage/storage.zig");
+
+// Proxy utilities
+pub const Proxy = @import("Proxy/erc1167.zig");
 
 // Transaction types
 pub const Transaction = @import("Transaction/Transaction.zig");
@@ -147,6 +160,7 @@ pub const Blob = @import("Blob/blob.zig");
 
 // Contract utilities
 pub const EventLog = @import("EventLog/EventLog.zig");
+pub const Receipt = @import("Receipt/Receipt.zig");
 pub const Bytecode = @import("Bytecode/bytecode.zig").Bytecode;
 
 // Opcodes
