@@ -1998,90 +1998,41 @@ export fn primitives_version_string() [*:0]const u8 {
 // ============================================================================
 
 /// Calculate gas cost for access list
-/// Input: JSON array of access list items
-/// Output: u64 gas cost
+/// entries: array of access list entries
+/// entries_len: number of entries
+/// out_cost: output for total gas cost
 export fn primitives_access_list_gas_cost(
-    json_ptr: [*:0]const u8,
+    entries: [*]const PrimitivesAccessListEntry,
+    entries_len: usize,
     out_cost: *u64,
 ) c_int {
-    const json_str = std.mem.span(json_ptr);
+    const AccessList = primitives.AccessList;
 
-    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
-    if (is_wasm) {
-        var stack_buf: [2 * 1024 * 1024]u8 = undefined;
-        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-        const allocator = fba.allocator();
+    var total_cost: u64 = 0;
+    const entries_slice = entries[0..entries_len];
 
-        return accessListGasCostImpl(allocator, json_str, out_cost);
-    } else {
-        var stack_buf: [8192]u8 = undefined;
-        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-        const allocator = fba.allocator();
+    for (entries_slice) |entry| {
+        // Gas cost per address
+        total_cost += AccessList.ACCESS_LIST_ADDRESS_COST;
 
-        return accessListGasCostImpl(allocator, json_str, out_cost);
+        // Gas cost per storage key
+        total_cost += @as(u64, @intCast(entry.storage_keys_len)) * AccessList.ACCESS_LIST_STORAGE_KEY_COST;
     }
-}
 
-fn accessListGasCostImpl(
-    allocator: std.mem.Allocator,
-    json_str: []const u8,
-    out_cost: *u64,
-) c_int {
-    _ = allocator;
-    _ = json_str;
-
-    // Simplified: count addresses and keys from JSON
-    // JSON format: [{"address":"0x...","storageKeys":["0x...","0x..."]}]
-    // For now, return basic calculation
-    // TODO: Parse JSON properly when needed
-    out_cost.* = 0;
-
+    out_cost.* = total_cost;
     return PRIMITIVES_SUCCESS;
 }
 
-/// Calculate gas savings for access list
-export fn primitives_access_list_gas_savings(
-    json_ptr: [*:0]const u8,
-    out_savings: *u64,
-) c_int {
-    const json_str = std.mem.span(json_ptr);
-    _ = json_str;
+// ============================================================================
+// Access List API (EIP-2930) - Structures
+// ============================================================================
 
-    // Simplified implementation
-    out_savings.* = 0;
-
-    return PRIMITIVES_SUCCESS;
-}
-
-/// Check if address is in access list
-/// Returns 1 if found, 0 if not found
-export fn primitives_access_list_includes_address(
-    json_ptr: [*:0]const u8,
-    address_ptr: *const PrimitivesAddress,
-) c_int {
-    const json_str = std.mem.span(json_ptr);
-    _ = json_str;
-    _ = address_ptr;
-
-    // Simplified implementation
-    return 0;
-}
-
-/// Check if storage key is in access list for address
-/// Returns 1 if found, 0 if not found
-export fn primitives_access_list_includes_storage_key(
-    json_ptr: [*:0]const u8,
-    address_ptr: *const PrimitivesAddress,
-    key_ptr: *const PrimitivesHash,
-) c_int {
-    const json_str = std.mem.span(json_ptr);
-    _ = json_str;
-    _ = address_ptr;
-    _ = key_ptr;
-
-    // Simplified implementation
-    return 0;
-}
+/// C-compatible Access List Entry structure
+pub const PrimitivesAccessListEntry = extern struct {
+    address: PrimitivesAddress,
+    storage_keys_ptr: [*]const PrimitivesHash,
+    storage_keys_len: usize,
+};
 
 // ============================================================================
 // Authorization API (EIP-7702)
