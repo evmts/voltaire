@@ -34,8 +34,6 @@ export function ToVersionedHash({ sha256 }) {
 		versionedHash[0] = COMMITMENT_VERSION_KZG;
 		versionedHash.set(hash.slice(1), 1);
 
-		return /** @type {import('./BlobType.js').VersionedHash} */ (
-			versionedHash
-		);
+		return /** @type {import('./BlobType.js').VersionedHash} */ (versionedHash);
 	};
 }

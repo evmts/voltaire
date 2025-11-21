@@ -257,9 +257,7 @@ Address.of = (...items) => {
 		);
 	}
 	Object.setPrototypeOf(result, Address.prototype);
-	return /** @type {import('./AddressType.js').AddressType} */ (
-		result
-	);
+	return /** @type {import('./AddressType.js').AddressType} */ (result);
 };
 
 Address.compare = BrandedAddress.compare;
@@ -380,9 +378,7 @@ Address.prototype.equals = BrandedAddress.equals.call.bind(
  */
 Address.prototype.calculateCreateAddress = function (nonce) {
 	const result = BrandedAddress.calculateCreateAddress(
-		/** @type {import('./AddressType.js').AddressType} */ (
-			this
-		),
+		/** @type {import('./AddressType.js').AddressType} */ (this),
 		nonce,
 	);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -409,9 +405,7 @@ Address.prototype.calculateCreateAddress = function (nonce) {
  */
 Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(
-		/** @type {import('./AddressType.js').AddressType} */ (
-			this
-		),
+		/** @type {import('./AddressType.js').AddressType} */ (this),
 		salt,
 		initCode,
 	);
@@ -441,9 +435,7 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	_options,
 ) {
 	return `Address(${BrandedAddress.toChecksummed(
-		/** @type {import('./AddressType.js').AddressType} */ (
-			this
-		),
+		/** @type {import('./AddressType.js').AddressType} */ (this),
 	)})`;
 };
 
@@ -464,8 +456,6 @@ Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
  */
 Address.prototype.toString = function () {
 	return `Address(${BrandedAddress.toHex(
-		/** @type {import('./AddressType.js').AddressType} */ (
-			this
-		),
+		/** @type {import('./AddressType.js').AddressType} */ (this),
 	)})`;
 };

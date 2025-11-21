@@ -22,9 +22,7 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 
 	// Convenience getters for specific item types
 	getFunction(name: string): AbiFunction.FunctionType | undefined;
-	getEvent(
-		name: string,
-	): import("./event/Event.js").Event | undefined;
+	getEvent(name: string): import("./event/Event.js").Event | undefined;
 	getError(name: string): AbiError.ErrorType | undefined;
 	getConstructor(): AbiConstructorNs.ConstructorType | undefined;
 	getFallback(): any;
