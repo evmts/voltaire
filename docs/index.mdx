@@ -618,36 +618,36 @@ url = "https://tevm.sh/mcp"
           const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
           const monaco = await init();
 
-          const code = \\\`// Try out Tevm primitives in your browser!
-// Click "Run Code" to execute this example
-
-// Simple example: Working with addresses
-console.log("=== Address Example ===");
-const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
-console.log("Address:", address);
-
-// Working with hex values
-console.log("\\\\n=== Hex Example ===");
-const hexValue = "0x48656c6c6f"; // "Hello" in hex
-console.log("Hex:", hexValue);
-
-// Math operations
-console.log("\\\\n=== Math Example ===");
-const a = 100;
-const b = 42;
-console.log(a + " + " + b + " = " + (a + b));
-console.log(a + " * " + b + " = " + (a * b));
-
-// Arrays and objects
-console.log("\\\\n=== Data Structures ===");
-const data = {
-  network: "Ethereum",
-  gasPrice: 30,
-  tokens: ["ETH", "USDC", "DAI"]
-};
-console.log("Network data:", JSON.stringify(data, null, 2));
-
-console.log("\\\\n✓ Execution complete!");\\\`;
+          const code = '// Try out Tevm primitives in your browser!\\n' +
+            '// Click "Run Code" to execute this example\\n' +
+            '\\n' +
+            '// Simple example: Working with addresses\\n' +
+            'console.log("=== Address Example ===");\\n' +
+            'const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";\\n' +
+            'console.log("Address:", address);\\n' +
+            '\\n' +
+            '// Working with hex values\\n' +
+            'console.log("\\\\n=== Hex Example ===");\\n' +
+            'const hexValue = "0x48656c6c6f"; // "Hello" in hex\\n' +
+            'console.log("Hex:", hexValue);\\n' +
+            '\\n' +
+            '// Math operations\\n' +
+            'console.log("\\\\n=== Math Example ===");\\n' +
+            'const a = 100;\\n' +
+            'const b = 42;\\n' +
+            'console.log(a + " + " + b + " = " + (a + b));\\n' +
+            'console.log(a + " * " + b + " = " + (a * b));\\n' +
+            '\\n' +
+            '// Arrays and objects\\n' +
+            'console.log("\\\\n=== Data Structures ===");\\n' +
+            'const data = {\\n' +
+            '  network: "Ethereum",\\n' +
+            '  gasPrice: 30,\\n' +
+            '  tokens: ["ETH", "USDC", "DAI"]\\n' +
+            '};\\n' +
+            'console.log("Network data:", JSON.stringify(data, null, 2));\\n' +
+            '\\n' +
+            'console.log("\\\\n✓ Execution complete!");';
 
           const model = monaco.editor.createModel(code, 'typescript');
 
