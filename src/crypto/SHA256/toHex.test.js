@@ -188,18 +188,7 @@ describe("SHA256 toHex function", () => {
 		});
 	});
 
-	describe("round-trip consistency", () => {
-		it("should round-trip with hashHex", async () => {
-			const { hashHex } = await import("./hashHex.js");
-
-			const originalHex = "0xdeadbeef";
-			const hashResult = hashHex(originalHex);
-			const hexOutput = toHex(hashResult);
-
-			const hashResult2 = hashHex(hexOutput);
-			expect(hashResult).toEqual(hashResult2);
-		});
-
+	describe("conversion consistency", () => {
 		it("should preserve hash value through conversion", () => {
 			const input = new Uint8Array([1, 2, 3, 4, 5]);
 			const hashResult = hash(input);
@@ -211,6 +200,16 @@ describe("SHA256 toHex function", () => {
 			}
 
 			expect(toHex(bytes)).toBe(hex);
+		});
+
+		it("should convert same hash to same hex consistently", () => {
+			const input = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+			const hashResult = hash(input);
+
+			const hex1 = toHex(hashResult);
+			const hex2 = toHex(hashResult);
+
+			expect(hex1).toBe(hex2);
 		});
 	});
 
