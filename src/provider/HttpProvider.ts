@@ -186,6 +186,14 @@ export class HttpProvider implements Provider {
 
 	/**
 	 * Emit event to all listeners (internal use)
+	 *
+	 * NOTE: HttpProvider does not emit events as HTTP is stateless.
+	 * Events like connect/disconnect/chainChanged are only relevant for
+	 * stateful transports like WebSocket. This method is provided for
+	 * interface consistency but is not called by HttpProvider.
+	 *
+	 * For blockchain events (newHeads, logs, etc.), use WebSocketProvider
+	 * or polling with eth_newBlockFilter/eth_getFilterChanges.
 	 */
 	protected emit<E extends ProviderEvent>(
 		event: E,

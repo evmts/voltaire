@@ -100,3 +100,27 @@ export interface ProviderEventMap {
  * Event names for EIP-1193 provider
  */
 export type ProviderEvent = keyof ProviderEventMap;
+
+/**
+ * JSON-RPC response wrapper
+ */
+export interface Response<T> {
+	/** Result data (undefined if error) */
+	result?: T;
+	/** Error data (undefined if success) */
+	error?: RpcError;
+}
+
+/**
+ * WebSocket native event subscriptions
+ */
+export interface ProviderEvents {
+	/** Subscribe to new block headers */
+	newHeads: () => AsyncGenerator<any, void, unknown>;
+	/** Subscribe to log events */
+	logs: (params?: any) => AsyncGenerator<any, void, unknown>;
+	/** Subscribe to pending transactions */
+	newPendingTransactions: () => AsyncGenerator<any, void, unknown>;
+	/** Subscribe to sync status changes */
+	syncing: () => AsyncGenerator<any, void, unknown>;
+}

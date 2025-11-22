@@ -8,7 +8,14 @@
  */
 
 import type { Provider } from "./Provider.js";
-import type { ProviderEvents, RequestOptions, Response } from "./types.js";
+import type {
+	ProviderEvent,
+	ProviderEventMap,
+	ProviderEvents,
+	RequestArguments,
+	RequestOptions,
+	Response,
+} from "./types.js";
 
 /**
  * WebSocket configuration options
@@ -58,6 +65,8 @@ export class WebSocketProvider implements Provider {
 	private reconnectAttempts = 0;
 	private reconnectTimeout?: ReturnType<typeof setTimeout>;
 	private isConnected = false;
+	private eventListeners: Map<ProviderEvent, Set<(...args: any[]) => void>> =
+		new Map();
 
 	constructor(options: WebSocketProviderOptions | string) {
 		if (typeof options === "string") {
@@ -89,6 +98,16 @@ export class WebSocketProvider implements Provider {
 						clearTimeout(this.reconnectTimeout);
 						this.reconnectTimeout = undefined;
 					}
+					// Emit connect event - need to get chainId
+					this._request<string>("eth_chainId")
+						.then((response) => {
+							if (response.result) {
+								this.emit("connect", { chainId: response.result });
+							}
+						})
+						.catch(() => {
+							// Ignore error, just don't emit connect event
+						});
 					resolve();
 				};
 
@@ -123,6 +142,12 @@ export class WebSocketProvider implements Provider {
 
 				this.ws.onclose = () => {
 					this.isConnected = false;
+
+					// Emit disconnect event
+					this.emit("disconnect", {
+						code: 4900,
+						message: "WebSocket connection closed",
+					});
 
 					// Attempt reconnection
 					if (
@@ -160,9 +185,21 @@ export class WebSocketProvider implements Provider {
 	}
 
 	/**
+	 * EIP-1193 request method (public interface)
+	 * Submits JSON-RPC request and returns result or throws RpcError
+	 */
+	async request(args: RequestArguments): Promise<unknown> {
+		const response = await this._request(args.method, args.params as any[]);
+		if (response.error) {
+			throw response.error;
+		}
+		return response.result;
+	}
+
+	/**
 	 * Internal request method that handles JSON-RPC communication
 	 */
-	private async request<T>(
+	private async _request<T>(
 		method: string,
 		params: any[] = [],
 		options?: RequestOptions,
@@ -215,22 +252,62 @@ export class WebSocketProvider implements Provider {
 	 * Subscribe to WebSocket event
 	 */
 	private async subscribe(method: string, params: any[] = []): Promise<string> {
-		const response = await this.request<string>("eth_subscribe", [
+		const response = await this._request<string>("eth_subscribe", [
 			method,
 			...params,
 		]);
 		if (response.error) {
 			throw new Error(response.error.message);
 		}
-		return response.result;
+		return response.result!;
 	}
 
 	/**
 	 * Unsubscribe from WebSocket event
 	 */
 	private async unsubscribe(subscriptionId: string): Promise<void> {
-		await this.request("eth_unsubscribe", [subscriptionId]);
+		await this._request("eth_unsubscribe", [subscriptionId]);
 		this.subscriptions.delete(subscriptionId);
+	}
+
+	/**
+	 * Register event listener (EIP-1193)
+	 */
+	on<E extends ProviderEvent>(
+		event: E,
+		listener: (...args: ProviderEventMap[E]) => void,
+	): this {
+		if (!this.eventListeners.has(event)) {
+			this.eventListeners.set(event, new Set());
+		}
+		this.eventListeners.get(event)?.add(listener as any);
+		return this;
+	}
+
+	/**
+	 * Remove event listener (EIP-1193)
+	 */
+	removeListener<E extends ProviderEvent>(
+		event: E,
+		listener: (...args: ProviderEventMap[E]) => void,
+	): this {
+		this.eventListeners.get(event)?.delete(listener as any);
+		return this;
+	}
+
+	/**
+	 * Emit event to all listeners (internal use)
+	 */
+	protected emit<E extends ProviderEvent>(
+		event: E,
+		...args: ProviderEventMap[E]
+	): void {
+		const listeners = this.eventListeners.get(event);
+		if (listeners) {
+			listeners.forEach((listener) => {
+				listener(...args);
+			});
+		}
 	}
 
 	// ============================================================================
@@ -238,27 +315,27 @@ export class WebSocketProvider implements Provider {
 	// ============================================================================
 
 	eth_accounts(options?: RequestOptions) {
-		return this.request<string[]>("eth_accounts", [], options);
+		return this._request<string[]>("eth_accounts", [], options);
 	}
 
 	eth_blobBaseFee(options?: RequestOptions) {
-		return this.request<string>("eth_blobBaseFee", [], options);
+		return this._request<string>("eth_blobBaseFee", [], options);
 	}
 
 	eth_blockNumber(options?: RequestOptions) {
-		return this.request<string>("eth_blockNumber", [], options);
+		return this._request<string>("eth_blockNumber", [], options);
 	}
 
 	eth_call(params: any, blockTag = "latest", options?: RequestOptions) {
-		return this.request<string>("eth_call", [params, blockTag], options);
+		return this._request<string>("eth_call", [params, blockTag], options);
 	}
 
 	eth_chainId(options?: RequestOptions) {
-		return this.request<string>("eth_chainId", [], options);
+		return this._request<string>("eth_chainId", [], options);
 	}
 
 	eth_coinbase(options?: RequestOptions) {
-		return this.request<string>("eth_coinbase", [], options);
+		return this._request<string>("eth_coinbase", [], options);
 	}
 
 	eth_createAccessList(
@@ -266,7 +343,7 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_createAccessList",
 			[params, blockTag],
 			options,
@@ -274,7 +351,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_estimateGas(params: any, options?: RequestOptions) {
-		return this.request<string>("eth_estimateGas", [params], options);
+		return this._request<string>("eth_estimateGas", [params], options);
 	}
 
 	eth_feeHistory(
@@ -286,11 +363,11 @@ export class WebSocketProvider implements Provider {
 		const params = rewardPercentiles
 			? [blockCount, newestBlock, rewardPercentiles]
 			: [blockCount, newestBlock];
-		return this.request<any>("eth_feeHistory", params, options);
+		return this._request<any>("eth_feeHistory", params, options);
 	}
 
 	eth_gasPrice(options?: RequestOptions) {
-		return this.request<string>("eth_gasPrice", [], options);
+		return this._request<string>("eth_gasPrice", [], options);
 	}
 
 	eth_getBalance(
@@ -298,7 +375,11 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<string>("eth_getBalance", [address, blockTag], options);
+		return this._request<string>(
+			"eth_getBalance",
+			[address, blockTag],
+			options,
+		);
 	}
 
 	eth_getBlockByHash(
@@ -306,7 +387,7 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_getBlockByHash",
 			[blockHash, fullTransactions],
 			options,
@@ -318,7 +399,7 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_getBlockByNumber",
 			[blockTag, fullTransactions],
 			options,
@@ -326,14 +407,14 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getBlockReceipts(blockTag: string, options?: RequestOptions) {
-		return this.request<any[]>("eth_getBlockReceipts", [blockTag], options);
+		return this._request<any[]>("eth_getBlockReceipts", [blockTag], options);
 	}
 
 	eth_getBlockTransactionCountByHash(
 		blockHash: string,
 		options?: RequestOptions,
 	) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getBlockTransactionCountByHash",
 			[blockHash],
 			options,
@@ -344,7 +425,7 @@ export class WebSocketProvider implements Provider {
 		blockTag: string,
 		options?: RequestOptions,
 	) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getBlockTransactionCountByNumber",
 			[blockTag],
 			options,
@@ -352,19 +433,19 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getCode(address: string, blockTag = "latest", options?: RequestOptions) {
-		return this.request<string>("eth_getCode", [address, blockTag], options);
+		return this._request<string>("eth_getCode", [address, blockTag], options);
 	}
 
 	eth_getFilterChanges(filterId: string, options?: RequestOptions) {
-		return this.request<any[]>("eth_getFilterChanges", [filterId], options);
+		return this._request<any[]>("eth_getFilterChanges", [filterId], options);
 	}
 
 	eth_getFilterLogs(filterId: string, options?: RequestOptions) {
-		return this.request<any[]>("eth_getFilterLogs", [filterId], options);
+		return this._request<any[]>("eth_getFilterLogs", [filterId], options);
 	}
 
 	eth_getLogs(params: any, options?: RequestOptions) {
-		return this.request<any[]>("eth_getLogs", [params], options);
+		return this._request<any[]>("eth_getLogs", [params], options);
 	}
 
 	eth_getProof(
@@ -373,7 +454,7 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_getProof",
 			[address, storageKeys, blockTag],
 			options,
@@ -386,7 +467,7 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getStorageAt",
 			[address, position, blockTag],
 			options,
@@ -398,7 +479,7 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_getTransactionByBlockHashAndIndex",
 			[blockHash, index],
 			options,
@@ -410,7 +491,7 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"eth_getTransactionByBlockNumberAndIndex",
 			[blockTag, index],
 			options,
@@ -418,7 +499,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getTransactionByHash(txHash: string, options?: RequestOptions) {
-		return this.request<any>("eth_getTransactionByHash", [txHash], options);
+		return this._request<any>("eth_getTransactionByHash", [txHash], options);
 	}
 
 	eth_getTransactionCount(
@@ -426,7 +507,7 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getTransactionCount",
 			[address, blockTag],
 			options,
@@ -434,11 +515,11 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getTransactionReceipt(txHash: string, options?: RequestOptions) {
-		return this.request<any>("eth_getTransactionReceipt", [txHash], options);
+		return this._request<any>("eth_getTransactionReceipt", [txHash], options);
 	}
 
 	eth_getUncleCountByBlockHash(blockHash: string, options?: RequestOptions) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getUncleCountByBlockHash",
 			[blockHash],
 			options,
@@ -446,7 +527,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getUncleCountByBlockNumber(blockTag: string, options?: RequestOptions) {
-		return this.request<string>(
+		return this._request<string>(
 			"eth_getUncleCountByBlockNumber",
 			[blockTag],
 			options,
@@ -454,47 +535,51 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_maxPriorityFeePerGas(options?: RequestOptions) {
-		return this.request<string>("eth_maxPriorityFeePerGas", [], options);
+		return this._request<string>("eth_maxPriorityFeePerGas", [], options);
 	}
 
 	eth_newBlockFilter(options?: RequestOptions) {
-		return this.request<string>("eth_newBlockFilter", [], options);
+		return this._request<string>("eth_newBlockFilter", [], options);
 	}
 
 	eth_newFilter(params: any, options?: RequestOptions) {
-		return this.request<string>("eth_newFilter", [params], options);
+		return this._request<string>("eth_newFilter", [params], options);
 	}
 
 	eth_newPendingTransactionFilter(options?: RequestOptions) {
-		return this.request<string>("eth_newPendingTransactionFilter", [], options);
+		return this._request<string>(
+			"eth_newPendingTransactionFilter",
+			[],
+			options,
+		);
 	}
 
 	eth_sendRawTransaction(signedTx: string, options?: RequestOptions) {
-		return this.request<string>("eth_sendRawTransaction", [signedTx], options);
+		return this._request<string>("eth_sendRawTransaction", [signedTx], options);
 	}
 
 	eth_sendTransaction(params: any, options?: RequestOptions) {
-		return this.request<string>("eth_sendTransaction", [params], options);
+		return this._request<string>("eth_sendTransaction", [params], options);
 	}
 
 	eth_sign(address: string, data: string, options?: RequestOptions) {
-		return this.request<string>("eth_sign", [address, data], options);
+		return this._request<string>("eth_sign", [address, data], options);
 	}
 
 	eth_signTransaction(params: any, options?: RequestOptions) {
-		return this.request<string>("eth_signTransaction", [params], options);
+		return this._request<string>("eth_signTransaction", [params], options);
 	}
 
 	eth_simulateV1(params: any, options?: RequestOptions) {
-		return this.request<any>("eth_simulateV1", [params], options);
+		return this._request<any>("eth_simulateV1", [params], options);
 	}
 
 	eth_syncing(options?: RequestOptions) {
-		return this.request<any>("eth_syncing", [], options);
+		return this._request<any>("eth_syncing", [], options);
 	}
 
 	eth_uninstallFilter(filterId: string, options?: RequestOptions) {
-		return this.request<boolean>("eth_uninstallFilter", [filterId], options);
+		return this._request<boolean>("eth_uninstallFilter", [filterId], options);
 	}
 
 	// ============================================================================
@@ -507,7 +592,7 @@ export class WebSocketProvider implements Provider {
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [txHash, traceOptions] : [txHash];
-		return this.request<any>("debug_traceTransaction", params, options);
+		return this._request<any>("debug_traceTransaction", params, options);
 	}
 
 	debug_traceBlockByNumber(
@@ -516,7 +601,7 @@ export class WebSocketProvider implements Provider {
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [blockTag, traceOptions] : [blockTag];
-		return this.request<any[]>("debug_traceBlockByNumber", params, options);
+		return this._request<any[]>("debug_traceBlockByNumber", params, options);
 	}
 
 	debug_traceBlockByHash(
@@ -525,7 +610,7 @@ export class WebSocketProvider implements Provider {
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [blockHash, traceOptions] : [blockHash];
-		return this.request<any[]>("debug_traceBlockByHash", params, options);
+		return this._request<any[]>("debug_traceBlockByHash", params, options);
 	}
 
 	debug_traceCall(
@@ -537,11 +622,11 @@ export class WebSocketProvider implements Provider {
 		const rpcParams = traceOptions
 			? [params, blockTag, traceOptions]
 			: [params, blockTag];
-		return this.request<any>("debug_traceCall", rpcParams, options);
+		return this._request<any>("debug_traceCall", rpcParams, options);
 	}
 
 	debug_getRawBlock(blockTag: string, options?: RequestOptions) {
-		return this.request<string>("debug_getRawBlock", [blockTag], options);
+		return this._request<string>("debug_getRawBlock", [blockTag], options);
 	}
 
 	// ============================================================================
@@ -549,11 +634,11 @@ export class WebSocketProvider implements Provider {
 	// ============================================================================
 
 	engine_newPayloadV1(payload: any, options?: RequestOptions) {
-		return this.request<any>("engine_newPayloadV1", [payload], options);
+		return this._request<any>("engine_newPayloadV1", [payload], options);
 	}
 
 	engine_newPayloadV2(payload: any, options?: RequestOptions) {
-		return this.request<any>("engine_newPayloadV2", [payload], options);
+		return this._request<any>("engine_newPayloadV2", [payload], options);
 	}
 
 	engine_newPayloadV3(
@@ -565,7 +650,7 @@ export class WebSocketProvider implements Provider {
 		const params = [payload];
 		if (expectedBlobVersionedHashes) params.push(expectedBlobVersionedHashes);
 		if (parentBeaconBlockRoot) params.push(parentBeaconBlockRoot);
-		return this.request<any>("engine_newPayloadV3", params, options);
+		return this._request<any>("engine_newPayloadV3", params, options);
 	}
 
 	engine_forkchoiceUpdatedV1(
@@ -576,7 +661,7 @@ export class WebSocketProvider implements Provider {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
-		return this.request<any>("engine_forkchoiceUpdatedV1", params, options);
+		return this._request<any>("engine_forkchoiceUpdatedV1", params, options);
 	}
 
 	engine_forkchoiceUpdatedV2(
@@ -587,7 +672,7 @@ export class WebSocketProvider implements Provider {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
-		return this.request<any>("engine_forkchoiceUpdatedV2", params, options);
+		return this._request<any>("engine_forkchoiceUpdatedV2", params, options);
 	}
 
 	engine_forkchoiceUpdatedV3(
@@ -598,23 +683,23 @@ export class WebSocketProvider implements Provider {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
-		return this.request<any>("engine_forkchoiceUpdatedV3", params, options);
+		return this._request<any>("engine_forkchoiceUpdatedV3", params, options);
 	}
 
 	engine_getPayloadV1(payloadId: string, options?: RequestOptions) {
-		return this.request<any>("engine_getPayloadV1", [payloadId], options);
+		return this._request<any>("engine_getPayloadV1", [payloadId], options);
 	}
 
 	engine_getPayloadV2(payloadId: string, options?: RequestOptions) {
-		return this.request<any>("engine_getPayloadV2", [payloadId], options);
+		return this._request<any>("engine_getPayloadV2", [payloadId], options);
 	}
 
 	engine_getPayloadV3(payloadId: string, options?: RequestOptions) {
-		return this.request<any>("engine_getPayloadV3", [payloadId], options);
+		return this._request<any>("engine_getPayloadV3", [payloadId], options);
 	}
 
 	engine_getBlobsV1(blobVersionedHashes: string[], options?: RequestOptions) {
-		return this.request<any[]>(
+		return this._request<any[]>(
 			"engine_getBlobsV1",
 			[blobVersionedHashes],
 			options,
@@ -625,7 +710,7 @@ export class WebSocketProvider implements Provider {
 		capabilities: string[],
 		options?: RequestOptions,
 	) {
-		return this.request<string[]>(
+		return this._request<string[]>(
 			"engine_exchangeCapabilities",
 			[capabilities],
 			options,
@@ -636,7 +721,7 @@ export class WebSocketProvider implements Provider {
 		config: any,
 		options?: RequestOptions,
 	) {
-		return this.request<any>(
+		return this._request<any>(
 			"engine_exchangeTransitionConfigurationV1",
 			[config],
 			options,
@@ -647,7 +732,7 @@ export class WebSocketProvider implements Provider {
 		blockHashes: string[],
 		options?: RequestOptions,
 	) {
-		return this.request<any[]>(
+		return this._request<any[]>(
 			"engine_getPayloadBodiesByHashV1",
 			[blockHashes],
 			options,
@@ -659,7 +744,7 @@ export class WebSocketProvider implements Provider {
 		count: string,
 		options?: RequestOptions,
 	) {
-		return this.request<any[]>(
+		return this._request<any[]>(
 			"engine_getPayloadBodiesByRangeV1",
 			[start, count],
 			options,
