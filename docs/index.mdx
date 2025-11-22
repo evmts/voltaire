@@ -466,7 +466,7 @@ url = "https://tevm.sh/mcp"
             '  if (loadTevm && !Tevm) {' +
             '    try {' +
             '      self.postMessage({ type: "log", args: ["Loading Tevm APIs..."] });' +
-            '      const module = await import("https://esm.sh/@tevm/index@1.0.0-next.100");' +
+            '      const module = await import(new URL("/lib/tevm.js", location.origin).href);' +
             '      Tevm = module;' +
             '      Object.assign(globalThis, module);' +
             '      self.postMessage({ type: "log", args: ["Tevm loaded! Available: Address, Hex, Keccak256, etc."] });' +
