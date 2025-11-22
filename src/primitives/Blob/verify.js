@@ -23,18 +23,46 @@ import { SIZE } from "./constants.js";
  * - Call verifyBlobKzgProof(blob, commitment, proof)
  * - Return boolean result
  */
+import { PrimitiveError } from "../../errors/PrimitiveError.js";
+import { InvalidLengthError } from "../errors/index.js";
+
 export function Verify({ verifyBlobKzgProof }) {
 	return function verify(blob, commitment, proof) {
 		if (blob.length !== SIZE) {
-			throw new Error(`Invalid blob size: ${blob.length}`);
+			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
+				value: blob.length,
+				expected: `${SIZE} bytes`,
+				code: "BLOB_INVALID_SIZE",
+				docsPath: "/primitives/blob/verify#error-handling",
+			});
 		}
 		if (commitment.length !== 48) {
-			throw new Error(`Invalid commitment size: ${commitment.length}`);
+			throw new InvalidLengthError(`Invalid commitment size: ${commitment.length}`, {
+				value: commitment.length,
+				expected: "48 bytes",
+				code: "BLOB_INVALID_COMMITMENT_SIZE",
+				docsPath: "/primitives/blob/verify#error-handling",
+			});
 		}
 		if (proof.length !== 48) {
-			throw new Error(`Invalid proof size: ${proof.length}`);
+			throw new InvalidLengthError(`Invalid proof size: ${proof.length}`, {
+				value: proof.length,
+				expected: "48 bytes",
+				code: "BLOB_INVALID_PROOF_SIZE",
+				docsPath: "/primitives/blob/verify#error-handling",
+			});
 		}
-		// TODO: return verifyBlobKzgProof(blob, commitment, proof);
-		throw new Error("Not implemented: requires c-kzg-4844 library");
+		try {
+			return verifyBlobKzgProof(blob, commitment, proof);
+		} catch (error) {
+			throw new PrimitiveError(
+				`Failed to verify KZG proof: ${error instanceof Error ? error.message : String(error)}`,
+				{
+					code: "BLOB_KZG_VERIFICATION_FAILED",
+					docsPath: "/primitives/blob/verify#error-handling",
+					cause: error instanceof Error ? error : undefined,
+				},
+			);
+		}
 	};
 }

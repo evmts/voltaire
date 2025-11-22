@@ -36,26 +36,22 @@ import { ToProof } from "./toProof.js";
 import { ToVersionedHash } from "./toVersionedHash.js";
 import { Verify } from "./verify.js";
 
-// Stub KZG functions (will throw until c-kzg-4844 is integrated)
-const stubBlobToKzgCommitment = () => {
-	throw new Error("Not implemented: requires c-kzg-4844 library");
-};
-const stubComputeBlobKzgProof = () => {
-	throw new Error("Not implemented: requires c-kzg-4844 library");
-};
-const stubVerifyBlobKzgProof = () => {
-	throw new Error("Not implemented: requires c-kzg-4844 library");
-};
+// Import KZG functions from crypto module
+import {
+	blobToKzgCommitment,
+	computeKzgProof,
+	verifyBlobKzgProof,
+} from "../../crypto/KZG/index.js";
 
 // Create wrapper functions with crypto auto-injected
 export const toVersionedHash = ToVersionedHash({ sha256 });
 export const toCommitment = ToCommitment({
-	blobToKzgCommitment: stubBlobToKzgCommitment,
+	blobToKzgCommitment,
 });
 export const toProof = ToProof({
-	computeBlobKzgProof: stubComputeBlobKzgProof,
+	computeBlobKzgProof: computeKzgProof,
 });
-export const verify = Verify({ verifyBlobKzgProof: stubVerifyBlobKzgProof });
+export const verify = Verify({ verifyBlobKzgProof });
 
 // Export individual functions
 export {
