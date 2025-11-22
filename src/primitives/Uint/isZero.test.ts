@@ -1,0 +1,56 @@
+import { describe, it, expect } from "vitest";
+import { isZero } from "./isZero.js";
+import { from } from "./from.js";
+import { ZERO, MAX, ONE } from "./constants.js";
+
+describe("Uint256.isZero", () => {
+	describe("known values", () => {
+		it("returns true for zero", () => {
+			expect(isZero(ZERO)).toBe(true);
+		});
+
+		it("returns false for one", () => {
+			expect(isZero(ONE)).toBe(false);
+		});
+
+		it("returns false for small values", () => {
+			expect(isZero(from(42n))).toBe(false);
+		});
+
+		it("returns false for large values", () => {
+			expect(isZero(from(1000000n))).toBe(false);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("returns false for MAX", () => {
+			expect(isZero(MAX)).toBe(false);
+		});
+
+		it("returns false for MAX - 1", () => {
+			expect(isZero(MAX - 1n)).toBe(false);
+		});
+
+		it("returns false for 1", () => {
+			expect(isZero(ONE)).toBe(false);
+		});
+	});
+
+	describe("properties", () => {
+		it("isZero(a + b) = false when both non-zero (without wrapping)", () => {
+			const a = from(10n);
+			const b = from(20n);
+			expect(isZero(a + b)).toBe(false);
+		});
+
+		it("isZero(a - a) = true", () => {
+			const a = from(42n);
+			expect(isZero((a - a) & MAX)).toBe(true);
+		});
+
+		it("isZero(a * 0) = true", () => {
+			const a = from(42n);
+			expect(isZero((a * ZERO) & MAX)).toBe(true);
+		});
+	});
+});

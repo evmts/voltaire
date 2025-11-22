@@ -1,0 +1,87 @@
+import { describe, it, expect } from "vitest";
+import { lessThan } from "./lessThan.js";
+import { from } from "./from.js";
+import { ZERO, MAX, ONE } from "./constants.js";
+
+describe("Uint256.lessThan", () => {
+	describe("known values", () => {
+		it("0 < 1", () => {
+			expect(lessThan(ZERO, ONE)).toBe(true);
+		});
+
+		it("1 < 0 is false", () => {
+			expect(lessThan(ONE, ZERO)).toBe(false);
+		});
+
+		it("5 < 10", () => {
+			expect(lessThan(from(5n), from(10n))).toBe(true);
+		});
+
+		it("10 < 5 is false", () => {
+			expect(lessThan(from(10n), from(5n))).toBe(false);
+		});
+
+		it("equal values are not less than", () => {
+			expect(lessThan(from(42n), from(42n))).toBe(false);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 < 0 is false", () => {
+			expect(lessThan(ZERO, ZERO)).toBe(false);
+		});
+
+		it("0 < MAX", () => {
+			expect(lessThan(ZERO, MAX)).toBe(true);
+		});
+
+		it("MAX < 0 is false", () => {
+			expect(lessThan(MAX, ZERO)).toBe(false);
+		});
+
+		it("MAX < MAX is false", () => {
+			expect(lessThan(MAX, MAX)).toBe(false);
+		});
+
+		it("MAX - 1 < MAX", () => {
+			expect(lessThan(MAX - 1n, MAX)).toBe(true);
+		});
+	});
+
+	describe("large values", () => {
+		it("compares across 128-bit boundary", () => {
+			const a = from(1n << 127n);
+			const b = from(1n << 128n);
+			expect(lessThan(a, b)).toBe(true);
+		});
+
+		it("compares high bit set values", () => {
+			const a = from(1n << 255n);
+			const b = from((1n << 255n) + 1n);
+			expect(lessThan(a, b)).toBe(true);
+		});
+	});
+
+	describe("properties", () => {
+		it("asymmetric: if a < b then not b < a", () => {
+			const a = from(10n);
+			const b = from(20n);
+			expect(lessThan(a, b)).toBe(true);
+			expect(lessThan(b, a)).toBe(false);
+		});
+
+		it("irreflexive: a < a is false", () => {
+			const a = from(42n);
+			expect(lessThan(a, a)).toBe(false);
+		});
+
+		it("transitive: if a < b and b < c then a < c", () => {
+			const a = from(10n);
+			const b = from(20n);
+			const c = from(30n);
+			expect(lessThan(a, b)).toBe(true);
+			expect(lessThan(b, c)).toBe(true);
+			expect(lessThan(a, c)).toBe(true);
+		});
+	});
+});

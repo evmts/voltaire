@@ -1,0 +1,94 @@
+import { describe, it, expect } from "vitest";
+import { lessThanOrEqual } from "./lessThanOrEqual.js";
+import { from } from "./from.js";
+import { ZERO, MAX, ONE } from "./constants.js";
+
+describe("Uint256.lessThanOrEqual", () => {
+	describe("known values", () => {
+		it("0 <= 1", () => {
+			expect(lessThanOrEqual(ZERO, ONE)).toBe(true);
+		});
+
+		it("1 <= 0 is false", () => {
+			expect(lessThanOrEqual(ONE, ZERO)).toBe(false);
+		});
+
+		it("5 <= 10", () => {
+			expect(lessThanOrEqual(from(5n), from(10n))).toBe(true);
+		});
+
+		it("10 <= 5 is false", () => {
+			expect(lessThanOrEqual(from(10n), from(5n))).toBe(false);
+		});
+
+		it("equal values are less than or equal", () => {
+			expect(lessThanOrEqual(from(42n), from(42n))).toBe(true);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 <= 0", () => {
+			expect(lessThanOrEqual(ZERO, ZERO)).toBe(true);
+		});
+
+		it("0 <= MAX", () => {
+			expect(lessThanOrEqual(ZERO, MAX)).toBe(true);
+		});
+
+		it("MAX <= 0 is false", () => {
+			expect(lessThanOrEqual(MAX, ZERO)).toBe(false);
+		});
+
+		it("MAX <= MAX", () => {
+			expect(lessThanOrEqual(MAX, MAX)).toBe(true);
+		});
+
+		it("MAX - 1 <= MAX", () => {
+			expect(lessThanOrEqual(MAX - 1n, MAX)).toBe(true);
+		});
+	});
+
+	describe("large values", () => {
+		it("compares across 128-bit boundary", () => {
+			const a = from(1n << 127n);
+			const b = from(1n << 128n);
+			expect(lessThanOrEqual(a, b)).toBe(true);
+		});
+
+		it("equal large values", () => {
+			const a = from(1n << 200n);
+			const b = from(1n << 200n);
+			expect(lessThanOrEqual(a, b)).toBe(true);
+		});
+	});
+
+	describe("properties", () => {
+		it("reflexive: a <= a", () => {
+			const a = from(42n);
+			expect(lessThanOrEqual(a, a)).toBe(true);
+		});
+
+		it("antisymmetric: if a <= b and b <= a then a = b", () => {
+			const a = from(42n);
+			const b = from(42n);
+			expect(lessThanOrEqual(a, b)).toBe(true);
+			expect(lessThanOrEqual(b, a)).toBe(true);
+			expect(a).toBe(b);
+		});
+
+		it("transitive: if a <= b and b <= c then a <= c", () => {
+			const a = from(10n);
+			const b = from(20n);
+			const c = from(30n);
+			expect(lessThanOrEqual(a, b)).toBe(true);
+			expect(lessThanOrEqual(b, c)).toBe(true);
+			expect(lessThanOrEqual(a, c)).toBe(true);
+		});
+
+		it("total: either a <= b or b <= a", () => {
+			const a = from(10n);
+			const b = from(20n);
+			expect(lessThanOrEqual(a, b) || lessThanOrEqual(b, a)).toBe(true);
+		});
+	});
+});

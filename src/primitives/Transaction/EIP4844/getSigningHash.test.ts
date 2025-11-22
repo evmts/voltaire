@@ -1,0 +1,357 @@
+import { describe, expect, it } from "vitest";
+import { Type } from "../types.js";
+import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
+import * as TransactionEIP4844 from "./index.js";
+import { Address } from "../../Address/index.js";
+import { Hash } from "../../Hash/index.js";
+
+describe("TransactionEIP4844.getSigningHash", () => {
+	it("computes signing hash for basic transaction", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	it("produces different hash for different nonce", () => {
+		const tx1: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const tx2: TransactionEIP4844Type = {
+			...tx1,
+			nonce: 1n,
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx1);
+		const hash2 = TransactionEIP4844.getSigningHash(tx2);
+
+		expect(Hash.toHex(hash1)).not.toBe(Hash.toHex(hash2));
+	});
+
+	it("produces different hash for different chainId", () => {
+		const tx1: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const tx2: TransactionEIP4844Type = {
+			...tx1,
+			chainId: 5n,
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx1);
+		const hash2 = TransactionEIP4844.getSigningHash(tx2);
+
+		expect(Hash.toHex(hash1)).not.toBe(Hash.toHex(hash2));
+	});
+
+	it("produces same hash for same transaction", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 5n,
+			maxPriorityFeePerGas: 2000000000n,
+			maxFeePerGas: 30000000000n,
+			gasLimit: 50000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx);
+		const hash2 = TransactionEIP4844.getSigningHash(tx);
+
+		expect(hash1).toEqual(hash2);
+	});
+
+	it("computes hash with multiple blob hashes", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [
+				new Uint8Array(32).fill(1),
+				new Uint8Array(32).fill(2),
+				new Uint8Array(32).fill(3),
+			],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	it("computes hash with access list", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [
+				{
+					address: Address("0x1234567890123456789012345678901234567890"),
+					storageKeys: [new Uint8Array(32).fill(1), new Uint8Array(32).fill(2)],
+				},
+			],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	it("produces different hash with different blob hashes", () => {
+		const tx1: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const tx2: TransactionEIP4844Type = {
+			...tx1,
+			blobVersionedHashes: [new Uint8Array(32).fill(2)],
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx1);
+		const hash2 = TransactionEIP4844.getSigningHash(tx2);
+
+		expect(Hash.toHex(hash1)).not.toBe(Hash.toHex(hash2));
+	});
+
+	it("produces different hash with different maxFeePerBlobGas", () => {
+		const tx1: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const tx2: TransactionEIP4844Type = {
+			...tx1,
+			maxFeePerBlobGas: 2000000000n,
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx1);
+		const hash2 = TransactionEIP4844.getSigningHash(tx2);
+
+		expect(Hash.toHex(hash1)).not.toBe(Hash.toHex(hash2));
+	});
+
+	it("ignores signature components in hash", () => {
+		const tx1: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		};
+
+		const tx2: TransactionEIP4844Type = {
+			...tx1,
+			yParity: 1,
+			r: new Uint8Array(32).fill(3),
+			s: new Uint8Array(32).fill(4),
+		};
+
+		const hash1 = TransactionEIP4844.getSigningHash(tx1);
+		const hash2 = TransactionEIP4844.getSigningHash(tx2);
+
+		expect(hash1).toEqual(hash2);
+	});
+
+	it("handles zero values", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 0n,
+			maxFeePerGas: 0n,
+			gasLimit: 21000n,
+			to: Address("0x0000000000000000000000000000000000000000"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 0n,
+			blobVersionedHashes: [new Uint8Array(32)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	it("handles large data", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 5000000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(10000).fill(0xff),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [new Uint8Array(32).fill(1)],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	it("handles maximum blob count (6)", () => {
+		const tx: TransactionEIP4844Type = {
+			__brand: "TransactionEIP4844",
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 200000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 1000000000n,
+			blobVersionedHashes: [
+				new Uint8Array(32).fill(1),
+				new Uint8Array(32).fill(2),
+				new Uint8Array(32).fill(3),
+				new Uint8Array(32).fill(4),
+				new Uint8Array(32).fill(5),
+				new Uint8Array(32).fill(6),
+			],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const hash = TransactionEIP4844.getSigningHash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+});

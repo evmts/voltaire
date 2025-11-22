@@ -1,0 +1,110 @@
+import { describe, it, expect } from "vitest";
+import { bitwiseOr } from "./bitwiseOr.js";
+import { from } from "./from.js";
+import { ZERO, MAX, ONE } from "./constants.js";
+
+describe("Uint256.bitwiseOr", () => {
+	describe("known values", () => {
+		it("OR with zero", () => {
+			const result = bitwiseOr(from(42n), ZERO);
+			expect(result).toBe(42n);
+		});
+
+		it("OR with all ones", () => {
+			const result = bitwiseOr(from(42n), MAX);
+			expect(result).toBe(MAX);
+		});
+
+		it("OR small values", () => {
+			const result = bitwiseOr(from(0b1010n), from(0b0101n));
+			expect(result).toBe(0b1111n);
+		});
+
+		it("OR with same value", () => {
+			const result = bitwiseOr(from(42n), from(42n));
+			expect(result).toBe(42n);
+		});
+
+		it("OR distinct bits", () => {
+			const a = from(0xf0n);
+			const b = from(0x0fn);
+			const result = bitwiseOr(a, b);
+			expect(result).toBe(0xffn);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 | 0 = 0", () => {
+			const result = bitwiseOr(ZERO, ZERO);
+			expect(result).toBe(0n);
+		});
+
+		it("n | 0 = n", () => {
+			const result = bitwiseOr(from(999n), ZERO);
+			expect(result).toBe(999n);
+		});
+
+		it("n | n = n", () => {
+			const result = bitwiseOr(from(999n), from(999n));
+			expect(result).toBe(999n);
+		});
+
+		it("n | MAX = MAX", () => {
+			const result = bitwiseOr(from(999n), MAX);
+			expect(result).toBe(MAX);
+		});
+
+		it("MAX | MAX = MAX", () => {
+			const result = bitwiseOr(MAX, MAX);
+			expect(result).toBe(MAX);
+		});
+	});
+
+	describe("large values", () => {
+		it("OR across 128-bit boundary", () => {
+			const a = from(1n << 200n);
+			const b = from(1n << 100n);
+			const result = bitwiseOr(a, b);
+			expect(result).toBe((1n << 200n) | (1n << 100n));
+		});
+
+		it("OR high and low bits", () => {
+			const a = from(1n << 255n);
+			const b = from(1n);
+			const result = bitwiseOr(a, b);
+			expect(result).toBe((1n << 255n) | 1n);
+		});
+	});
+
+	describe("properties", () => {
+		it("commutative: a | b = b | a", () => {
+			const a = from(0xabcdn);
+			const b = from(0x1234n);
+			expect(bitwiseOr(a, b)).toBe(bitwiseOr(b, a));
+		});
+
+		it("associative: (a | b) | c = a | (b | c)", () => {
+			const a = from(0xabcdn);
+			const b = from(0x1234n);
+			const c = from(0x5678n);
+			const left = bitwiseOr(bitwiseOr(a, b), c);
+			const right = bitwiseOr(a, bitwiseOr(b, c));
+			expect(left).toBe(right);
+		});
+
+		it("identity: a | 0 = a", () => {
+			const a = from(42n);
+			expect(bitwiseOr(a, ZERO)).toBe(a);
+		});
+
+		it("idempotent: a | a = a", () => {
+			const a = from(42n);
+			expect(bitwiseOr(a, a)).toBe(a);
+		});
+
+		it("annihilator: a | MAX = MAX", () => {
+			const a = from(42n);
+			expect(bitwiseOr(a, MAX)).toBe(MAX);
+		});
+	});
+});
