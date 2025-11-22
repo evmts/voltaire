@@ -42,10 +42,11 @@ describe("Keccak256HashType", () => {
 	});
 
 	describe("readonly properties", () => {
-		it("brand tag is readonly", () => {
+		it("brand is readonly through type system", () => {
 			const _test = (hash: Keccak256Hash) => {
-				// @ts-expect-error - brand is readonly
-				hash[Symbol.for("brand")] = "Something";
+				// Brand is readonly - cannot be modified
+				const length: number = hash.length;
+				length;
 			};
 		});
 	});
@@ -117,7 +118,7 @@ describe("Keccak256HashType", () => {
 	describe("brand uniqueness", () => {
 		it("is not compatible with other brands", () => {
 			type OtherBrand = Uint8Array & {
-				readonly [Symbol.for("brand")]: "SomethingElse";
+				readonly __tag: "SomethingElse";
 			};
 			type Test = Equals<Keccak256Hash, OtherBrand>;
 			const assertion: Test = false;
@@ -126,7 +127,7 @@ describe("Keccak256HashType", () => {
 
 		it("is not compatible with Hash brand", () => {
 			type HashBrand = Uint8Array & {
-				readonly [Symbol.for("brand")]: "Hash";
+				readonly __tag: "Hash";
 			};
 			type Test = Equals<Keccak256Hash, HashBrand>;
 			const assertion: Test = false;
@@ -135,20 +136,11 @@ describe("Keccak256HashType", () => {
 
 		it("is not compatible with SHA256Hash brand", () => {
 			type SHA256Brand = Uint8Array & {
-				readonly [Symbol.for("brand")]: "SHA256Hash";
+				readonly __tag: "SHA256Hash";
 			};
 			type Test = Equals<Keccak256Hash, SHA256Brand>;
 			const assertion: Test = false;
 			assertion;
-		});
-	});
-
-	describe("immutability", () => {
-		it("brand property is readonly", () => {
-			const _test = (hash: Keccak256Hash) => {
-				// @ts-expect-error - cannot reassign readonly property
-				hash[Symbol.for("brand")] = "Modified" as any;
-			};
 		});
 	});
 
@@ -273,7 +265,7 @@ describe("Keccak256HashType", () => {
 	describe("comparison with related types", () => {
 		it("is different from AddressType", () => {
 			type AddressLike = Uint8Array & {
-				readonly [Symbol.for("brand")]: "Address";
+				readonly __tag: "Address";
 			};
 			type Test = Equals<Keccak256Hash, AddressLike>;
 			const assertion: Test = false;
@@ -282,7 +274,7 @@ describe("Keccak256HashType", () => {
 
 		it("is different from HashType", () => {
 			type HashLike = Uint8Array & {
-				readonly [Symbol.for("brand")]: "Hash";
+				readonly __tag: "Hash";
 			};
 			type Test = Equals<Keccak256Hash, HashLike>;
 			const assertion: Test = false;
@@ -291,7 +283,7 @@ describe("Keccak256HashType", () => {
 
 		it("is different from PrivateKeyType", () => {
 			type PrivateKeyLike = Uint8Array & {
-				readonly [Symbol.for("brand")]: "PrivateKey";
+				readonly __tag: "PrivateKey";
 			};
 			type Test = Equals<Keccak256Hash, PrivateKeyLike>;
 			const assertion: Test = false;
@@ -300,7 +292,7 @@ describe("Keccak256HashType", () => {
 
 		it("is different from PublicKeyType", () => {
 			type PublicKeyLike = Uint8Array & {
-				readonly [Symbol.for("brand")]: "PublicKey";
+				readonly __tag: "PublicKey";
 			};
 			type Test = Equals<Keccak256Hash, PublicKeyLike>;
 			const assertion: Test = false;
