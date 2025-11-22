@@ -189,7 +189,7 @@ describe("SHA256 toHex function", () => {
 	});
 
 	describe("round-trip consistency", () => {
-		it("should round-trip with hashHex", () => {
+		it("should round-trip with hashHex", async () => {
 			const { hashHex } = await import("./hashHex.js");
 
 			const originalHex = "0xdeadbeef";

@@ -60,11 +60,11 @@ describe("StateProof", () => {
 			const proof = StateProof.from({
 				address: createTestAddress(),
 				accountProof: createTestAccountProof(),
-				balance: Wei(0n),
+				balance: weiFrom(0n),
 				codeHash: Hash(
 					"0xabcdef1234567890123456789012345678901234567890123456789012345678",
 				),
-				nonce: Nonce(1n),
+				nonce: nonceFrom(1n),
 				storageHash: StateRoot.from(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				),
@@ -89,9 +89,9 @@ describe("StateProof", () => {
 					// @ts-expect-error - testing invalid type
 					address: "not an address",
 					accountProof: [],
-					balance: Wei(0n),
+					balance: weiFrom(0n),
 					codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-					nonce: Nonce(0n),
+					nonce: nonceFrom(0n),
 					storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 					storageProof: [],
 				}),
@@ -104,9 +104,9 @@ describe("StateProof", () => {
 					address: createTestAddress(),
 					// @ts-expect-error - testing invalid type
 					accountProof: "not an array",
-					balance: Wei(0n),
+					balance: weiFrom(0n),
 					codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-					nonce: Nonce(0n),
+					nonce: nonceFrom(0n),
 					storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 					storageProof: [],
 				}),
@@ -119,9 +119,9 @@ describe("StateProof", () => {
 					address: createTestAddress(),
 					// @ts-expect-error - testing invalid element
 					accountProof: [new Uint8Array([1, 2]), "invalid"],
-					balance: Wei(0n),
+					balance: weiFrom(0n),
 					codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-					nonce: Nonce(0n),
+					nonce: nonceFrom(0n),
 					storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 					storageProof: [],
 				}),
@@ -163,9 +163,9 @@ describe("StateProof", () => {
 				StateProof.from({
 					address: createTestAddress(),
 					accountProof: [],
-					balance: Wei(0n),
+					balance: weiFrom(0n),
 					codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-					nonce: Nonce(0n),
+					nonce: nonceFrom(0n),
 					storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 					// @ts-expect-error - testing invalid element
 					storageProof: [{ invalid: "proof" }],
@@ -187,9 +187,9 @@ describe("StateProof", () => {
 			const proof2 = StateProof.from({
 				address: Address("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 				accountProof: createTestAccountProof(),
-				balance: Wei(1000000000000000000n),
+				balance: weiFrom(1000000000000000000n),
 				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-				nonce: Nonce(5n),
+				nonce: nonceFrom(5n),
 				storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 				storageProof: [],
 			});
@@ -202,9 +202,9 @@ describe("StateProof", () => {
 			const proof2 = StateProof.from({
 				address: createTestAddress(),
 				accountProof: createTestAccountProof(),
-				balance: Wei(2000000000000000000n), // Different balance
+				balance: weiFrom(2000000000000000000n), // Different balance
 				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-				nonce: Nonce(5n),
+				nonce: nonceFrom(5n),
 				storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 				storageProof: [],
 			});
@@ -223,9 +223,9 @@ describe("StateProof", () => {
 			const proof1 = StateProof.from({
 				address: createTestAddress(),
 				accountProof: createTestAccountProof(),
-				balance: Wei(0n),
+				balance: weiFrom(0n),
 				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-				nonce: Nonce(0n),
+				nonce: nonceFrom(0n),
 				storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 				storageProof: [storageProof1],
 			});
@@ -233,9 +233,9 @@ describe("StateProof", () => {
 			const proof2 = StateProof.from({
 				address: createTestAddress(),
 				accountProof: createTestAccountProof(),
-				balance: Wei(0n),
+				balance: weiFrom(0n),
 				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-				nonce: Nonce(0n),
+				nonce: nonceFrom(0n),
 				storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 				storageProof: [storageProof2],
 			});
@@ -251,9 +251,9 @@ describe("StateProof", () => {
 				accountProof: [
 					new Uint8Array([0xf8, 0x51]), // RLP-encoded node
 				],
-				balance: Wei(1000000000000000000n), // 1 ETH
+				balance: weiFrom(1000000000000000000n), // 1 ETH
 				codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-				nonce: Nonce(5n),
+				nonce: nonceFrom(5n),
 				storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 				storageProof: [],
 			});
