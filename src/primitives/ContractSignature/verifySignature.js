@@ -88,41 +88,17 @@ export function VerifySignature({
 				// Recover public key
 				const publicKey = recoverPublicKey(sigComponents, hash);
 
-				// Derive address from public key
-				let x = 0n;
-				let y = 0n;
-				for (let i = 0; i < 32; i++) {
-					const xByte = publicKey[i];
-					const yByte = publicKey[32 + i];
-					if (xByte !== undefined && yByte !== undefined) {
-						x = (x << 8n) | BigInt(xByte);
-						y = (y << 8n) | BigInt(yByte);
-					}
-				}
+				// Derive address from public key coordinates
+				const x = bytesToBigInt(publicKey.slice(0, 32));
+				const y = bytesToBigInt(publicKey.slice(32, 64));
 				const recoveredAddress = addressFromPublicKey(x, y);
 
-				// Convert expected address to bytes for comparison
-				let expectedBytes;
-				if (typeof address === "string") {
-					const hex = address.startsWith("0x") ? address.slice(2) : address;
-					expectedBytes = new Uint8Array(20);
-					for (let i = 0; i < 20; i++) {
-						expectedBytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-					}
-				} else {
-					expectedBytes = address;
-				}
+				// Convert expected address to AddressType
+				const expectedAddress =
+					typeof address === "string" ? Address.from(address) : address;
 
-				// Compare addresses
-				if (recoveredAddress.length !== expectedBytes.length) {
-					return false;
-				}
-				for (let i = 0; i < recoveredAddress.length; i++) {
-					if (recoveredAddress[i] !== expectedBytes[i]) {
-						return false;
-					}
-				}
-				return true;
+				// Compare addresses using utility function
+				return Address.equals(recoveredAddress, expectedAddress);
 			}
 			// Contract - use EIP-1271
 			const signatureBytes =
@@ -147,5 +123,18 @@ function concatSignature(sig) {
 	result.set(sig.r, 0);
 	result.set(sig.s, 32);
 	result[64] = sig.v;
+	return result;
+}
+
+/**
+ * Convert bytes to bigint (big-endian)
+ * @param {Uint8Array} bytes - Bytes to convert
+ * @returns {bigint} BigInt value
+ */
+function bytesToBigInt(bytes) {
+	let result = 0n;
+	for (const byte of bytes) {
+		result = (result << 8n) | BigInt(byte);
+	}
 	return result;
 }

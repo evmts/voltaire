@@ -17,15 +17,12 @@ import { InvalidFormatError } from "../errors/index.js";
  */
 export function from(value) {
 	if (typeof value !== "string") {
-		throw new InvalidFormatError(
-			`Expected string, received ${typeof value}`,
-			{
-				code: "HEX_INVALID_TYPE",
-				value,
-				expected: "string",
-				docsPath: "/primitives/hex#error-handling",
-			},
-		);
+		throw new InvalidFormatError(`Expected string, received ${typeof value}`, {
+			code: "HEX_INVALID_TYPE",
+			value,
+			expected: "string",
+			docsPath: "/primitives/hex#error-handling",
+		});
 	}
 
 	const normalized = value.startsWith("0x") ? value : `0x${value}`;

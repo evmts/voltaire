@@ -232,7 +232,9 @@ export const sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	});
 };
 
-export const deduplicateAddresses = (addresses: AddressType[]): AddressType[] => {
+export const deduplicateAddresses = (
+	addresses: AddressType[],
+): AddressType[] => {
 	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
