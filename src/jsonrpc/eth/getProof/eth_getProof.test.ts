@@ -1,0 +1,87 @@
+import { describe, test, expect } from "vitest";
+import { method, GetProofRequest } from "./eth_getProof.js";
+
+describe("eth_getProof", () => {
+	describe("Request Creation", () => {
+		test("creates request with address, empty storage keys and block", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const storageKeys: `0x${string}`[] = [];
+			const block = "latest";
+			const req = GetProofRequest(address, storageKeys, block);
+			expect(req).toEqual({
+				method: "eth_getProof",
+				params: [address, storageKeys, block],
+			});
+		});
+
+		test("creates request with address, storage keys and block", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const storageKeys = ["0x0", "0x1"];
+			const block = "0x1234";
+			const req = GetProofRequest(address, storageKeys, block);
+			expect(req).toEqual({
+				method: "eth_getProof",
+				params: [address, storageKeys, block],
+			});
+		});
+
+		test("creates request with multiple storage keys", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const storageKeys = [
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+				"0x0000000000000000000000000000000000000000000000000000000000000002",
+			];
+			const block = "latest";
+			const req = GetProofRequest(address, storageKeys, block);
+			expect(req.params?.[1]).toHaveLength(3);
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getProof");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "latest");
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(3);
+		});
+
+		test("method matches constant", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "latest");
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles empty storage keys array", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "latest");
+			expect(req.params?.[1]).toEqual([]);
+		});
+
+		test("handles earliest block tag", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "earliest");
+			expect(req.params?.[2]).toBe("earliest");
+		});
+
+		test("handles pending block tag", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "pending");
+			expect(req.params?.[2]).toBe("pending");
+		});
+
+		test("handles specific block number", () => {
+			const address = "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8";
+			const req = GetProofRequest(address, [], "0xabcd");
+			expect(req.params?.[2]).toBe("0xabcd");
+		});
+	});
+});
