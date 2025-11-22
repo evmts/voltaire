@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-export function MonacoEditor({
+export const MonacoEditor = ({
   defaultCode = '// Write your code here\nconsole.log("Hello, Tevm!");',
   height = 600,
   title = "Try It Now",
   description = "Edit and experiment with live Tevm code examples."
-}) {
+}) => {
   const mountRef = useRef(null);
   const editorRef = useRef(null);
   const workerRef = useRef(null);
@@ -372,4 +372,4 @@ export function MonacoEditor({
       </div>
     </div>
   );
-}
+};
