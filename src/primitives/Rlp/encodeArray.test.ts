@@ -55,7 +55,7 @@ describe("Rlp.encodeArray", () => {
 		expect(raw).toHaveLength(2);
 		expect(raw[0]).toEqual(new Uint8Array([1]));
 		expect(Array.isArray(raw[1])).toBe(true);
-		expect((raw[1] as any)).toHaveLength(2);
+		expect(raw[1] as any).toHaveLength(2);
 	});
 
 	it("encodes deeply nested arrays", () => {
@@ -95,7 +95,10 @@ describe("Rlp.encodeArray", () => {
 	});
 
 	it("encodes large array (1000+ elements)", () => {
-		const items = Array.from({ length: 1000 }, (_, i) => new Uint8Array([i % 256]));
+		const items = Array.from(
+			{ length: 1000 },
+			(_, i) => new Uint8Array([i % 256]),
+		);
 		const result = encodeArray(items);
 		const decoded = decode(result);
 		const raw = toRaw(decoded.data);

@@ -55,7 +55,7 @@ describe("Rlp.decodeBatch", () => {
 		const result = decodeBatch(items);
 		expect(result).toHaveLength(2);
 		expect(Array.isArray(result[0]?.[0])).toBe(true);
-		expect((result[0]?.[0] as any)).toHaveLength(2);
+		expect(result[0]?.[0] as any).toHaveLength(2);
 	});
 
 	it("decodes large batch (100+ items)", () => {

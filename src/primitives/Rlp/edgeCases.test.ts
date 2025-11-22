@@ -133,7 +133,10 @@ describe("RLP edge cases - large data", () => {
 	});
 
 	it("handles 1000+ element list", () => {
-		const items = Array.from({ length: 1000 }, (_, i) => new Uint8Array([i % 256]));
+		const items = Array.from(
+			{ length: 1000 },
+			(_, i) => new Uint8Array([i % 256]),
+		);
 		const encoded = encode(items);
 		const decoded = decode(encoded);
 

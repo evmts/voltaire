@@ -71,7 +71,7 @@ describe("Rlp.toRaw", () => {
 		expect(result).toHaveLength(2);
 		expect(result[0]).toEqual(new Uint8Array([1]));
 		expect(Array.isArray(result[1])).toBe(true);
-		expect((result[1] as any)).toHaveLength(2);
+		expect(result[1] as any).toHaveLength(2);
 		expect((result[1] as any)[0]).toEqual(new Uint8Array([2]));
 		expect((result[1] as any)[1]).toEqual(new Uint8Array([3]));
 	});

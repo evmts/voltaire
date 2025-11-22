@@ -100,7 +100,9 @@ describe("Rlp.getLength", () => {
 	it("throws on truncated long string length prefix", () => {
 		const data = new Uint8Array([0xb9]); // Claims 2 bytes of length, has 0
 		expect(() => getLength(data)).toThrow(RlpDecodingError);
-		expect(() => getLength(data)).toThrow("Insufficient data for length prefix");
+		expect(() => getLength(data)).toThrow(
+			"Insufficient data for length prefix",
+		);
 	});
 
 	it("throws on truncated long list length prefix", () => {
