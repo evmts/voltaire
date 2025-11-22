@@ -10,7 +10,9 @@ import { getShortName } from "./getShortName.js";
 import { getSymbol } from "./getSymbol.js";
 import { getWebsocketUrl } from "./getWebsocketUrl.js";
 // @ts-nocheck
-import { byId, from, fromId } from "./index.js";
+import { byId } from "./byId.js";
+import { from } from "./from.js";
+import { fromId } from "./fromId.js";
 import { isL2 } from "./isL2.js";
 import { isTestnet } from "./isTestnet.js";
 import { supportsHardfork } from "./supportsHardfork.js";

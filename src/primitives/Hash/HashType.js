@@ -4,3 +4,5 @@
  *
  * @typedef {import('./HashType.ts').HashType} HashType
  */
+
+export const SIZE = 32;
