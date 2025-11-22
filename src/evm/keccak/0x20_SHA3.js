@@ -1,4 +1,4 @@
-import { hash } from "../../crypto/keccak256/hash.js";
+import { hash } from "../../crypto/Keccak256/hash.js";
 import {
 	Keccak256Base,
 	Keccak256Word,

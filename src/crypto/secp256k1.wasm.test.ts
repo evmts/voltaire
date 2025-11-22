@@ -13,7 +13,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
 import type { HashType } from "../primitives/Hash/HashType.js";
-import { keccak256String } from "../primitives/Hash/HashType/index.js";
+import { keccak256String } from "../primitives/Hash/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 as NobleSecp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";

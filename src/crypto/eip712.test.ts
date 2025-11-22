@@ -7,11 +7,11 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
 import type { HashType } from "../primitives/Hash/HashType.js";
-import { equals } from "../primitives/Hash/HashType/equals.js";
-import { fromHex } from "../primitives/Hash/HashType/fromHex.js";
-import { keccak256String } from "../primitives/Hash/HashType/index.js";
-import { isZero } from "../primitives/Hash/HashType/isZero.js";
-import { keccak256 } from "../primitives/Hash/HashType/keccak256.js";
+import { equals } from "../primitives/Hash/equals.js";
+import { fromHex } from "../primitives/Hash/fromHex.js";
+import { keccak256String } from "../primitives/Hash/index.js";
+import { isZero } from "../primitives/Hash/isZero.js";
+import { keccak256 } from "../primitives/Hash/keccak256.js";
 import {
 	type Domain,
 	EIP712,

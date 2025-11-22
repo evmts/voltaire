@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - RLP data structure
+ * @param {import('./RlpType.js').BrandedRlp} data - RLP data structure
  * @returns {unknown} JSON-serializable representation
  * @throws {never}
  * @example

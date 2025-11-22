@@ -8,7 +8,7 @@
  * - Bitcoin-style double hashing
  */
 
-import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
+import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
 
 // Helper: Double SHA-256 (Bitcoin style)
 function doubleSha256(data: Uint8Array): Uint8Array {

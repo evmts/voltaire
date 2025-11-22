@@ -8,7 +8,7 @@
  * - Comparison with insecure approaches
  */
 
-import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
+import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
 
 // HMAC-SHA256 Implementation
 function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {

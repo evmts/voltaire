@@ -2,7 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Either from "effect/Either";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
-import * as BrandedAddress from "./BrandedAddress/index.js";
+import * as BrandedAddress from "./internal-index.js";
 import {
 	InvalidAddressLengthError,
 	InvalidChecksumError,

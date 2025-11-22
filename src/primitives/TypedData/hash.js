@@ -12,7 +12,7 @@ import * as Hash from "../Hash/index.js";
  * @returns {import('../Hash/HashType.js').HashType} Hash for signing
  * @example
  * ```javascript
- * import { keccak256 } from './crypto/keccak256/index.js';
+ * import { keccak256 } from './crypto/Keccak256/index.js';
  * const hash = TypedData.hash(typedData, { keccak256 });
  * const signature = await wallet.signMessage(hash);
  * ```

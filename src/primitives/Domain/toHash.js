@@ -11,7 +11,7 @@ import { getEIP712DomainType } from "./getEIP712DomainType.js";
  * @returns {import('../DomainSeparator/DomainSeparatorType.js').DomainSeparatorType} Domain separator hash
  * @example
  * ```javascript
- * import { keccak256 } from './crypto/keccak256/index.js';
+ * import { keccak256 } from './crypto/Keccak256/index.js';
  * const domainSep = Domain.toHash(domain, { keccak256 });
  * ```
  */

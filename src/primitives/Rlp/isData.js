@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('./Rlp/Type.js').BrandedRlp} True if value is valid RLP data structure
+ * @returns {value is import('./RlpType.js').BrandedRlp} True if value is valid RLP data structure
  * @throws {never}
  * @example
  * ```javascript

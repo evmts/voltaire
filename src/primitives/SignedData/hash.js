@@ -23,7 +23,7 @@ export function Hash({ keccak256 }) {
 	 * @example
 	 * ```javascript
 	 * import { Hash } from './primitives/SignedData/hash.js';
-	 * import { hash as keccak256 } from './crypto/keccak256/hash.js';
+	 * import { hash as keccak256 } from './crypto/Keccak256/hash.js';
 	 *
 	 * const hashMessage = Hash({ keccak256 });
 	 * const msgHash = hashMessage('Hello, Ethereum!');

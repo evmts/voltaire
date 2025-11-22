@@ -24,7 +24,7 @@ import { splitData } from "./splitData.js";
 import { toData } from "./toData.js";
 import { verifyBatch } from "./verifyBatch.js";
 
-import { hash as sha256 } from "../../../crypto/SHA256/hash.js";
+import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 import { ToCommitment } from "./toCommitment.js";
 import { ToProof } from "./toProof.js";
 // Import factories and crypto dependencies

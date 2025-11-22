@@ -31,7 +31,7 @@ export function VerifySignature({
 	 * @example
 	 * ```javascript
 	 * import { VerifySignature } from './primitives/ContractSignature/verifySignature.js';
-	 * import { hash as keccak256 } from './crypto/keccak256/hash.js';
+	 * import { hash as keccak256 } from './crypto/Keccak256/hash.js';
 	 * import { recoverPublicKey } from './crypto/Secp256k1/recoverPublicKey.js';
 	 * import { fromPublicKey } from './primitives/Address/fromPublicKey.js';
 	 *

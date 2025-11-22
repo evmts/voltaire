@@ -1,10 +1,10 @@
-import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
-import * as BrandedAddress from "./BrandedAddress/index.js";
+import { InvalidAddressLengthError } from "./errors.js";
+import * as BrandedAddress from "./internal-index.js";
 import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
 	toBase64Polyfill,
-} from "./BrandedAddress/polyfills.js";
+} from "./polyfills.js";
 
 /**
  * Creates Address instances with prototype chain

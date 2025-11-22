@@ -5,7 +5,7 @@ import * as OxRlp from "ox/Rlp";
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {Array<Uint8Array | import('./Rlp/Type.js').BrandedRlp | any[]>} items - Array of items to encode
+ * @param {Array<Uint8Array | import('./RlpType.js').BrandedRlp | any[]>} items - Array of items to encode
  * @returns {Uint8Array} RLP-encoded list
  * @throws {Error} If encoding fails
  * @example

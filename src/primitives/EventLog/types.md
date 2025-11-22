@@ -372,7 +372,7 @@ const notLog = {
 ```typescript
 // Re-exported from other modules
 import type { AddressType } from '../Address/AddressType/AddressType.js';
-import type { HashType } from '../Hash/HashType/HashType.js';
+import type { HashType } from '../Hash/HashType.js';
 import type { HexType } from '../Hex/HexType/HexType.js';
 ```
 

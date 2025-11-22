@@ -4,7 +4,7 @@ import { MAX_DEPTH } from "./constants.js";
 
 /**
  * @typedef {{
- *   data: import('./Rlp/Type.js').BrandedRlp;
+ *   data: import('./RlpType.js').BrandedRlp;
  *   remainder: Uint8Array;
  * }} Decoded
  */
@@ -193,7 +193,7 @@ function getRlpItemLength(bytes) {
  * @internal
  * @param {Uint8Array | any[]} value
  * @param {number} depth
- * @returns {import('./Rlp/Type.js').BrandedRlp}
+ * @returns {import('./RlpType.js').BrandedRlp}
  */
 function toData(value, depth = 0) {
 	// Check recursion depth

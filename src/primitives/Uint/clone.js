@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {import('./BrandedUint.js').BrandedUint} uint - Uint256 value to clone
- * @returns {import('./BrandedUint.js').BrandedUint} Copy of the value
+ * @param {import('./Uint256Type.js').Uint256Type} uint - Uint256 value to clone
+ * @returns {import('./Uint256Type.js').Uint256Type} Copy of the value
  * @throws {never}
  * @example
  * ```javascript

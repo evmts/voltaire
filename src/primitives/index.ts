@@ -22,7 +22,7 @@
 export { Address } from "./Address/index.js";
 export * as BrandedAddress from "./Address/internal-index.js";
 export * from "./Hash/index.js";
-export * as HashType from "./Hash/HashType/index.js";
+export * as HashType from "./Hash/HashType.js";
 export * from "./Hex/index.js";
 export * as BrandedHex from "./Hex/index.js";
 

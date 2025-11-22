@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Address from "./Address.wasm.ts";
-import type { BrandedAddress } from "./BrandedAddress/AddressType.js";
+import type { AddressType as BrandedAddress } from "./AddressType.js";
 
 describe("Address WASM", () => {
 	// ==========================================================================

@@ -4,10 +4,10 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "./BrandedAddress/AddressType.js";
-import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
-import type { Lowercase } from "./BrandedAddress/LowercaseAddress.js";
-import type { Uppercase } from "./BrandedAddress/UppercaseAddress.js";
+import type { AddressType as BrandedAddress } from "./AddressType.js";
+import type { Checksummed } from "./ChecksumAddress.js";
+import type { Lowercase } from "./LowercaseAddress.js";
+import type { Uppercase } from "./UppercaseAddress.js";
 
 /**
  * Create Address from hex string (WASM implementation)

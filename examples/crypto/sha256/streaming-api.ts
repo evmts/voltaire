@@ -8,7 +8,7 @@
  * - Progress tracking
  */
 
-import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
+import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
 
 const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 

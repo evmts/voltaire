@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - First RLP data structure
- * @param {import('./Rlp/Type.js').BrandedRlp} other - Second RLP data structure
+ * @param {import('./RlpType.js').BrandedRlp} data - First RLP data structure
+ * @param {import('./RlpType.js').BrandedRlp} other - Second RLP data structure
  * @returns {boolean} True if structures are deeply equal
  * @throws {never}
  * @example

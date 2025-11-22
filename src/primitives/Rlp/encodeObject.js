@@ -1,7 +1,7 @@
 import { encode } from "./encode.js";
 
 /**
- * @typedef {Uint8Array | import('./Rlp/Type.js').BrandedRlp | Array<any>} Encodable
+ * @typedef {Uint8Array | import('./RlpType.js').BrandedRlp | Array<any>} Encodable
  */
 
 /**

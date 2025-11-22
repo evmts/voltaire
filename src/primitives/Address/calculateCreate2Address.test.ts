@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hash } from "../../../crypto/Keccak256/hash.js";
+import { hash } from "../../crypto/Keccak256/hash.js";
 import { Bytecode } from "../../Bytecode/index.js";
 import { Hash } from "../../Hash/index.js";
 import { Address } from "../index.js";

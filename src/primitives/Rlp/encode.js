@@ -3,13 +3,13 @@ import { RlpEncodingError } from "./RlpError.js";
 import { isData } from "./isData.js";
 
 /**
- * @typedef {Uint8Array | import('./Rlp/Type.js').BrandedRlp | Array<Uint8Array | import('./Rlp/Type.js').BrandedRlp | any>} Encodable
+ * @typedef {Uint8Array | import('./RlpType.js').BrandedRlp | Array<Uint8Array | import('./RlpType.js').BrandedRlp | any>} Encodable
  */
 
 /**
  * Convert Data structure to ox/Rlp compatible format
  * @internal
- * @param {import('./Rlp/Type.js').BrandedRlp} data
+ * @param {import('./RlpType.js').BrandedRlp} data
  * @returns {Uint8Array | any[]}
  */
 function dataToEncodable(data) {

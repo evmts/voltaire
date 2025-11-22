@@ -6,7 +6,7 @@ import { encode } from "./encode.js";
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Byte array to wrap
- * @returns {import('./Rlp/Type.js').BrandedRlp & { type: "bytes" }} RLP bytes data structure
+ * @returns {import('./RlpType.js').BrandedRlp & { type: "bytes" }} RLP bytes data structure
  * @throws {never}
  * @example
  * ```javascript
@@ -24,8 +24,8 @@ export function fromBytes(bytes) {
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp[]} items - Array of RLP data items
- * @returns {import('./Rlp/Type.js').BrandedRlp & { type: "list" }} RLP list data structure
+ * @param {import('./RlpType.js').BrandedRlp[]} items - Array of RLP data items
+ * @returns {import('./RlpType.js').BrandedRlp & { type: "list" }} RLP list data structure
  * @throws {never}
  * @example
  * ```javascript
@@ -46,7 +46,7 @@ export function fromList(items) {
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - RLP data structure to encode
+ * @param {import('./RlpType.js').BrandedRlp} data - RLP data structure to encode
  * @returns {Uint8Array} RLP-encoded bytes
  * @throws {Error} If data is invalid or encoding fails
  * @example
@@ -66,7 +66,7 @@ export function encodeData(data) {
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - RLP data structure
+ * @param {import('./RlpType.js').BrandedRlp} data - RLP data structure
  * @returns {Uint8Array | undefined} Byte array if data is bytes type, undefined otherwise
  * @throws {never}
  * @example
@@ -86,8 +86,8 @@ export function toBytes(data) {
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - RLP data structure
- * @returns {import('./Rlp/Type.js').BrandedRlp[] | undefined} Array of RLP data if list type, undefined otherwise
+ * @param {import('./RlpType.js').BrandedRlp} data - RLP data structure
+ * @returns {import('./RlpType.js').BrandedRlp[] | undefined} Array of RLP data if list type, undefined otherwise
  * @throws {never}
  * @example
  * ```javascript

@@ -5,8 +5,8 @@ import { isData } from "./isData.js";
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {Uint8Array | import('./Rlp/Type.js').BrandedRlp | import('./Rlp/Type.js').BrandedRlp[]} value - Uint8Array (bytes), RlpData, or array (list)
- * @returns {import('./Rlp/Type.js').BrandedRlp} RLP data structure
+ * @param {Uint8Array | import('./RlpType.js').BrandedRlp | import('./RlpType.js').BrandedRlp[]} value - Uint8Array (bytes), RlpData, or array (list)
+ * @returns {import('./RlpType.js').BrandedRlp} RLP data structure
  * @throws {Error} If input type is invalid
  * @example
  * ```javascript

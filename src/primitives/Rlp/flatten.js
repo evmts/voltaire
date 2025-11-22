@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {import('./Rlp/Type.js').BrandedRlp} data - RLP data structure to flatten
- * @returns {Array<import('./Rlp/Type.js').BrandedRlp & { type: "bytes" }>} Array of bytes data (all nested lists flattened)
+ * @param {import('./RlpType.js').BrandedRlp} data - RLP data structure to flatten
+ * @returns {Array<import('./RlpType.js').BrandedRlp & { type: "bytes" }>} Array of bytes data (all nested lists flattened)
  * @throws {never}
  * @example
  * ```javascript
@@ -27,11 +27,11 @@
  * ```
  */
 export function flatten(data) {
-	/** @type {Array<import('./Rlp/Type.js').BrandedRlp & { type: "bytes" }>} */
+	/** @type {Array<import('./RlpType.js').BrandedRlp & { type: "bytes" }>} */
 	const result = [];
 
 	/**
-	 * @param {import('./Rlp/Type.js').BrandedRlp} d
+	 * @param {import('./RlpType.js').BrandedRlp} d
 	 */
 	function visit(d) {
 		if (d.type === "bytes") {

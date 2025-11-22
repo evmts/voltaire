@@ -8,7 +8,7 @@
  * - Converting output to hex
  */
 
-import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
+import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 const data = Hex("0x0102030405");

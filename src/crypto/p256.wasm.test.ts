@@ -13,7 +13,7 @@
 import { p256 } from "@noble/curves/nist.js";
 import { describe, expect, it } from "vitest";
 import type { HashType } from "../primitives/Hash/HashType.js";
-import { keccak256String } from "../primitives/Hash/HashType/index.js";
+import { keccak256String } from "../primitives/Hash/index.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { P256 } from "./P256/index.js";
 import { P256Wasm } from "./p256.wasm.js";

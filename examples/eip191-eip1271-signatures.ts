@@ -8,7 +8,7 @@
  */
 
 import { recoverPublicKey } from "../src/crypto/Secp256k1/recoverPublicKey.js";
-import { hash as keccak256 } from "../src/crypto/keccak256/hash.js";
+import { hash as keccak256 } from "../src/crypto/Keccak256/hash.js";
 import { fromPublicKey } from "../src/primitives/Address/fromPublicKey.js";
 import * as ContractSignature from "../src/primitives/ContractSignature/index.js";
 import * as SignedData from "../src/primitives/SignedData/index.js";

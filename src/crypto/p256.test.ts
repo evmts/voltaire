@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keccak256String } from "../primitives/Hash/HashType/index.js";
+import { keccak256String } from "../primitives/Hash/index.js";
 import { P256 } from "./P256/index.js";
 
 describe("P256", () => {

@@ -7,7 +7,7 @@ import { encodeLengthValue } from "./utils.js";
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {Uint8Array | import('./Rlp/Type.js').BrandedRlp | any[]} data - Data to measure
+ * @param {Uint8Array | import('./RlpType.js').BrandedRlp | any[]} data - Data to measure
  * @returns {number} Length in bytes after RLP encoding
  * @throws {RlpEncodingError} If data type is invalid
  * @example

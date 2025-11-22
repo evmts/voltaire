@@ -6,7 +6,7 @@ import { RlpDecodingError } from "./RlpError.js";
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
  * @param {unknown} json - JSON object from toJSON
- * @returns {import('./Rlp/Type.js').BrandedRlp} RLP data structure
+ * @returns {import('./RlpType.js').BrandedRlp} RLP data structure
  * @throws {RlpDecodingError} If JSON format is invalid or type is unrecognized
  * @example
  * ```javascript
