@@ -1,9 +1,9 @@
 // Export type definition
 export type { BatchResponseType } from "./BatchResponseType.js";
 
+import type { JsonRpcIdType } from "../JsonRpcId/JsonRpcIdType.js";
 // Import internal functions
 import type { JsonRpcErrorResponseType } from "../JsonRpcResponse/JsonRpcResponseType.js";
-import type { JsonRpcIdType } from "../JsonRpcId/JsonRpcIdType.js";
 import type { JsonRpcResponseType } from "../JsonRpcResponse/JsonRpcResponseType.js";
 import type { BatchResponseType } from "./BatchResponseType.js";
 import { errors as _errors } from "./errors.js";

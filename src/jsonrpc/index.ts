@@ -14,6 +14,9 @@ export * from "./JsonRpc.js";
 export * as eth from "./eth/methods.js";
 export * as debug from "./debug/methods.js";
 export * as engine from "./engine/methods.js";
+export * as wallet from "./wallet/methods.js";
+export * as anvil from "./anvil/methods.js";
+export * as hardhat from "./hardhat/methods.js";
 
 // Export shared types
 export * as types from "./types/index.js";
@@ -22,6 +25,7 @@ export * as types from "./types/index.js";
 // Rpc Namespace - Request Constructor API
 // ============================================================================
 
+import * as _anvilMethods from "./anvil/methods.js";
 /**
  * Rpc namespace - Modern API for creating JSON-RPC requests
  *
@@ -33,9 +37,12 @@ export * as types from "./types/index.js";
  * const balanceReq = Rpc.Eth.GetBalanceRequest('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 'latest')
  * const callReq = Rpc.Eth.CallRequest({ to: '0x...', data: '0x...' }, 'latest')
  * const blockReq = Rpc.Eth.GetBlockByNumberRequest('0x1', false)
+ * const switchChain = Rpc.Wallet.SwitchEthereumChainRequest('0x1')
  * ```
  */
 import * as _ethMethods from "./eth/methods.js";
+import * as _hardhatMethods from "./hardhat/methods.js";
+import * as _walletMethods from "./wallet/methods.js";
 
 export namespace Rpc {
 	/**
@@ -90,4 +97,26 @@ export namespace Rpc {
 		SyncingRequest: _ethMethods.SyncingRequest,
 		UninstallFilterRequest: _ethMethods.UninstallFilterRequest,
 	};
+
+	/**
+	 * Wallet namespace - Request constructors for wallet_ methods (EIP-3326, EIP-747)
+	 */
+	export const Wallet = {
+		SwitchEthereumChainRequest: _walletMethods.WalletSwitchEthereumChainRequest,
+		AddEthereumChainRequest: _walletMethods.WalletAddEthereumChainRequest,
+		WatchAssetRequest: _walletMethods.WalletWatchAssetRequest,
+		RequestPermissionsRequest: _walletMethods.WalletRequestPermissionsRequest,
+		GetPermissionsRequest: _walletMethods.WalletGetPermissionsRequest,
+		RevokePermissionsRequest: _walletMethods.WalletRevokePermissionsRequest,
+	};
+
+	/**
+	 * Anvil namespace - Request constructors for Anvil/Foundry testing methods
+	 */
+	export const Anvil = _anvilMethods;
+
+	/**
+	 * Hardhat namespace - Request constructors for Hardhat Network methods
+	 */
+	export const Hardhat = _hardhatMethods;
 }
