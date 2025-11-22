@@ -9,8 +9,13 @@
  */
 
 import { Address } from "../../../src/primitives/Address/index.js";
+import * as Keccak256Hash from "../../../src/crypto/Keccak256/index.js";
+import { Rlp } from "../../../src/primitives/Rlp/index.js";
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", {
+	keccak256: Keccak256Hash.hash,
+	rlpEncode: Rlp.encode,
+});
 
 // Calculate contract address for nonce 0 (first deployment)
 const contract0 = deployer.calculateCreateAddress(0n);
@@ -69,7 +74,13 @@ const marketplace = factory.deploy("Marketplace Contract");
 const governance = factory.deploy("Governance Contract");
 
 // Scenario: Deploy contracts that need to know each other's addresses
-const deployer2 = Address.fromHex("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+const deployer2 = Address.fromHex(
+	"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+	{
+		keccak256: Keccak256Hash.hash,
+		rlpEncode: Rlp.encode,
+	},
+);
 let nonce = 100n;
 
 // Calculate all addresses before deployment

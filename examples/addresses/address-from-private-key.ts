@@ -3,7 +3,7 @@
 
 // SNIPPET:START
 import { Address } from "../../src/primitives/Address/index.js";
-import { Hex } from "../../src/primitives/Hex/index.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
 
 // Example private key (32 bytes)
 const privateKey = Hex.toBytes(

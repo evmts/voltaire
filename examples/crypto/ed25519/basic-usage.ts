@@ -4,9 +4,8 @@ import { Hex } from "../../../src/primitives/Hex/index.js";
 // Generate 32-byte seed (in production, use crypto.getRandomValues())
 const seedBytes = new Uint8Array(32);
 crypto.getRandomValues(seedBytes);
-const seed = Hex.fromBytes(seedBytes);
 
-const keypair = Ed25519.keypairFromSeed(seed);
+const keypair = Ed25519.keypairFromSeed(seedBytes);
 
 const message = new TextEncoder().encode("Hello, Ed25519!");
 
@@ -20,8 +19,7 @@ const isInvalid = Ed25519.verify(signature, wrongMessage, keypair.publicKey);
 
 // Wrong public key fails
 const wrongSeedBytes = new Uint8Array(32).fill(0x42);
-const wrongSeed = Hex.fromBytes(wrongSeedBytes);
-const wrongKeypair = Ed25519.keypairFromSeed(wrongSeed as any);
+const wrongKeypair = Ed25519.keypairFromSeed(wrongSeedBytes);
 const wrongKey = Ed25519.verify(signature, message, wrongKeypair.publicKey);
 
 const testMessage = new TextEncoder().encode("test");

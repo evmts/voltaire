@@ -16,15 +16,15 @@ const WEI_PER_ETHER = Uint.from(10n ** 18n); // 1 ether = 10^18 wei
 
 // Conversion helpers
 function weiToGwei(wei: typeof Uint.prototype): typeof Uint.prototype {
-	return wei.dividedBy(WEI_PER_GWEI);
+	return Uint.dividedBy(wei, WEI_PER_GWEI);
 }
 
 function gweiToWei(gwei: typeof Uint.prototype): typeof Uint.prototype {
-	return gwei.times(WEI_PER_GWEI);
+	return Uint.times(gwei, WEI_PER_GWEI);
 }
 
 function weiToEther(wei: typeof Uint.prototype): string {
-	const weiNum = Number(wei.toBigInt());
+	const weiNum = Number(Uint.toBigInt(wei));
 	const etherNum = weiNum / 1e18;
 	return etherNum.toFixed(6);
 }
@@ -59,7 +59,7 @@ function calculateGasCost(
 	gasUsed: typeof Uint.prototype,
 	gasPrice: typeof Uint.prototype,
 ): typeof Uint.prototype {
-	return gasUsed.times(gasPrice);
+	return Uint.times(gasUsed, gasPrice);
 }
 
 const transfers = [
@@ -81,7 +81,7 @@ const priorityFeeWei = gweiToWei(priorityFeeGwei);
 const maxFeeWei = gweiToWei(maxFeeGwei);
 
 // Effective gas price = min(maxFeePerGas, baseFee + priorityFee)
-const effectiveFee = baseFeeWei.plus(priorityFeeWei).minimum(maxFeeWei);
+const effectiveFee = Uint.minimum(Uint.plus(baseFeeWei, priorityFeeWei), maxFeeWei);
 const effectiveFeeGwei = weiToGwei(effectiveFee);
 
 const txGas = Uint.from(21000n);
@@ -94,11 +94,11 @@ const txGasCost = calculateGasCost(
 	gweiToWei(Uint.from(50n)),
 );
 
-const totalCost = txValue.plus(txGasCost);
-const remainingBalance = balance.minus(totalCost);
+const totalCost = Uint.plus(txValue, txGasCost);
+const remainingBalance = Uint.minus(balance, totalCost);
 
 // Check if sufficient balance
-const hasSufficientBalance = balance.greaterThanOrEqual(totalCost);
+const hasSufficientBalance = Uint.greaterThanOrEqual(balance, totalCost);
 
 const stakedAmount = etherToWei(32); // 32 ETH (validator)
 const annualRewardRate = 0.04; // 4% APR
@@ -108,11 +108,12 @@ const daysStaked = 365;
 const rewardMultiplier = Math.floor(
 	annualRewardRate * (daysStaked / 365) * 1e18,
 );
-const rewards = stakedAmount
-	.times(Uint.from(BigInt(rewardMultiplier)))
-	.dividedBy(WEI_PER_ETHER);
+const rewards = Uint.dividedBy(
+	Uint.times(stakedAmount, Uint.from(BigInt(rewardMultiplier))),
+	WEI_PER_ETHER
+);
 
-const totalStaked = stakedAmount.plus(rewards);
+const totalStaked = Uint.plus(stakedAmount, rewards);
 
 const gasPrices = [20n, 50n, 100n, 200n]; // gwei
 const gasAmount = Uint.from(100000n);

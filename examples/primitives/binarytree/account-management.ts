@@ -10,7 +10,7 @@
 
 import { Address } from "../../../src/primitives/Address/index.js";
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // AccountData packing/unpacking utilities
 interface AccountData {
@@ -61,7 +61,7 @@ function unpackAccountData(packed: Uint8Array): AccountData {
 }
 
 // Initialize tree
-let tree = BinaryTree();
+let tree = BinaryTree.init();
 
 const aliceAddress = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"); // Known test address
 
@@ -117,7 +117,7 @@ if (currentPacked) {
 const storageKey = aliceKey.slice();
 storageKey[31] = 1; // Subindex 1 = storage slot 0
 
-const storageValue = Bytes32.from(
+const storageValue = Hash.from(
 	"0x0000000000000000000000000000000000000000000000000000000000000042",
 );
 
@@ -127,7 +127,7 @@ for (let slot = 0; slot < 5; slot++) {
 	const slotKey = aliceKey.slice();
 	slotKey[31] = 1 + slot; // Slots 0-4 at subindices 1-5
 
-	const slotValue = Bytes32.from(
+	const slotValue = Hash.from(
 		`0x${(0x10 + slot).toString(16).padStart(64, "0")}`,
 	);
 

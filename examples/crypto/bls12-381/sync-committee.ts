@@ -22,7 +22,7 @@ const syncCommittee = Array.from({ length: SYNC_COMMITTEE_SIZE }, (_, i) => {
 		index: i,
 		privKey,
 		pubKey,
-		pubKeyBytes: pubKey.toRawBytes(true), // Compressed 96 bytes
+		pubKeyBytes: pubKey.toBytes(true), // Compressed 96 bytes
 	};
 });
 
@@ -68,7 +68,7 @@ interface SyncAggregate {
 
 const syncAggregate: SyncAggregate = {
 	syncCommitteeBits: participationBytes,
-	syncCommitteeSignature: aggregatedSignature.toRawBytes(true),
+	syncCommitteeSignature: aggregatedSignature.toBytes(true),
 };
 
 const totalSize =
@@ -92,7 +92,7 @@ const messageHash = bls12_381.G1.hashToCurve(blockRoot, {
 const startVerify = Date.now();
 const lhs = bls12_381.pairing(aggregatedSignature, bls12_381.G2.Point.BASE);
 const rhs = bls12_381.pairing(messageHash, aggregatedPubKey);
-const valid = lhs.equals(rhs);
+const valid = bls12_381.fields.Fp12.eql(lhs, rhs);
 const verifyTime = Date.now() - startVerify;
 
 const SUPERMAJORITY_THRESHOLD = Math.floor((SYNC_COMMITTEE_SIZE * 2) / 3); // 66.7%

@@ -34,12 +34,12 @@ function generatePoP(
 	publicKey: typeof bls12_381.G2.Point.BASE,
 ): Uint8Array {
 	// Sign the public key itself with domain separation
-	const pubKeyBytes = publicKey.toRawBytes(false); // Uncompressed
+	const pubKeyBytes = publicKey.toBytes(false); // Uncompressed
 	const popHash = bls12_381.G1.hashToCurve(pubKeyBytes, {
 		DST: "BLS_POP_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_",
 	});
 	const pop = popHash.multiply(privateKey);
-	return pop.toRawBytes(true); // Compressed signature
+	return pop.toBytes(true); // Compressed signature
 }
 
 const validator1PrivKey =
@@ -56,7 +56,7 @@ function verifyPoP(
 		const pop = bls12_381.G1.Point.fromHex(popBytes);
 
 		// Hash public key to G1
-		const pubKeyBytes = publicKey.toRawBytes(false);
+		const pubKeyBytes = publicKey.toBytes(false);
 		const popHash = bls12_381.G1.hashToCurve(pubKeyBytes, {
 			DST: "BLS_POP_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_",
 		});
@@ -65,7 +65,7 @@ function verifyPoP(
 		const lhs = bls12_381.pairing(pop, bls12_381.G2.Point.BASE);
 		const rhs = bls12_381.pairing(popHash, publicKey);
 
-		return lhs.equals(rhs);
+		return bls12_381.fields.Fp12.eql(lhs, rhs);
 	} catch {
 		return false;
 	}
@@ -91,14 +91,14 @@ const GWEI = 1_000_000_000n;
 const depositAmount = 32n * GWEI * 1_000_000_000n; // 32 ETH
 
 const deposit: ValidatorDeposit = {
-	pubkey: validator1PubKey.toRawBytes(true),
+	pubkey: validator1PubKey.toBytes(true),
 	withdrawalCredentials: randomBytes(32),
 	amount: depositAmount,
 	signature: validator1PoP,
 };
 
 // Deposit contract verifies PoP
-const depositPubKey = bls12_381.G2.Point.fromHex(deposit.pubkey);
+const depositPubKey = bls12_381.G2.Point.fromHex(validator1PubKey.toHex(true));
 const depositValid = verifyPoP(depositPubKey, deposit.signature);
 
 const validators = Array.from({ length: 5 }, (_, i) => {
@@ -130,7 +130,7 @@ for (let i = 1; i < validators.length; i++) {
 
 const safeLhs = bls12_381.pairing(aggSafeSig, bls12_381.G2.Point.BASE);
 const safeRhs = bls12_381.pairing(safeMsgHash, aggSafePubKey);
-const safeValid = safeLhs.equals(safeRhs);
+const safeValid = bls12_381.fields.Fp12.eql(safeLhs, safeRhs);
 
 const popGenerationTime = 0.1; // ~100 μs
 const popVerificationTime = 2; // ~2 ms (2 pairings)

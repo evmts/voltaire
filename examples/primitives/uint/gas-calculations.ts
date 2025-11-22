@@ -24,9 +24,9 @@ function calculateIntrinsicGas(data: Uint8Array): typeof Uint.prototype {
 
 	for (const byte of data) {
 		if (byte === 0) {
-			gas = gas.plus(TX_DATA_ZERO_COST);
+			gas = Uint.plus(gas, TX_DATA_ZERO_COST);
 		} else {
-			gas = gas.plus(TX_DATA_NONZERO_COST);
+			gas = Uint.plus(gas, TX_DATA_NONZERO_COST);
 		}
 	}
 
@@ -62,22 +62,22 @@ function calculateMemoryCost(
 	// Memory cost = linear + quadratic
 	// cost(size) = (size / 32) * 3 + (size / 32)^2 / 512
 
-	const newWords = newSize.plus(Uint.from(31n)).dividedBy(Uint.from(32n));
-	const oldWords = oldSize.plus(Uint.from(31n)).dividedBy(Uint.from(32n));
+	const newWords = Uint.dividedBy(Uint.plus(newSize, Uint.from(31n)), Uint.from(32n));
+	const oldWords = Uint.dividedBy(Uint.plus(oldSize, Uint.from(31n)), Uint.from(32n));
 
 	// Linear cost
-	const newLinear = newWords.times(MEMORY_COST_PER_WORD);
-	const oldLinear = oldWords.times(MEMORY_COST_PER_WORD);
+	const newLinear = Uint.times(newWords, MEMORY_COST_PER_WORD);
+	const oldLinear = Uint.times(oldWords, MEMORY_COST_PER_WORD);
 
 	// Quadratic cost
-	const newQuad = newWords.times(newWords).dividedBy(QUADRATIC_DENOMINATOR);
-	const oldQuad = oldWords.times(oldWords).dividedBy(QUADRATIC_DENOMINATOR);
+	const newQuad = Uint.dividedBy(Uint.times(newWords, newWords), QUADRATIC_DENOMINATOR);
+	const oldQuad = Uint.dividedBy(Uint.times(oldWords, oldWords), QUADRATIC_DENOMINATOR);
 
-	const newTotal = newLinear.plus(newQuad);
-	const oldTotal = oldLinear.plus(oldQuad);
+	const newTotal = Uint.plus(newLinear, newQuad);
+	const oldTotal = Uint.plus(oldLinear, oldQuad);
 
 	// Return expansion cost (difference)
-	return newTotal.minus(oldTotal);
+	return Uint.minus(newTotal, oldTotal);
 }
 
 const expansions = [
@@ -96,31 +96,31 @@ function calculateNextBaseFee(
 	gasUsed: typeof Uint.prototype,
 	gasTarget: typeof Uint.prototype,
 ): typeof Uint.prototype {
-	if (gasUsed.equals(gasTarget)) {
+	if (Uint.equals(gasUsed, gasTarget)) {
 		return currentBaseFee;
 	}
 
-	if (gasUsed.greaterThan(gasTarget)) {
+	if (Uint.greaterThan(gasUsed, gasTarget)) {
 		// Block is above target - increase base fee
-		const delta = gasUsed.minus(gasTarget);
-		const increase = currentBaseFee
-			.times(delta)
-			.dividedBy(gasTarget)
-			.dividedBy(BASE_FEE_MAX_CHANGE);
-		return currentBaseFee.plus(increase).maximum(Uint.ONE);
+		const delta = Uint.minus(gasUsed, gasTarget);
+		const increase = Uint.dividedBy(
+			Uint.dividedBy(Uint.times(currentBaseFee, delta), gasTarget),
+			BASE_FEE_MAX_CHANGE
+		);
+		return Uint.maximum(Uint.plus(currentBaseFee, increase), Uint.ONE);
 	}
 	// Block is below target - decrease base fee
-	const delta = gasTarget.minus(gasUsed);
-	const decrease = currentBaseFee
-		.times(delta)
-		.dividedBy(gasTarget)
-		.dividedBy(BASE_FEE_MAX_CHANGE);
-	return currentBaseFee.minus(decrease);
+	const delta = Uint.minus(gasTarget, gasUsed);
+	const decrease = Uint.dividedBy(
+		Uint.dividedBy(Uint.times(currentBaseFee, delta), gasTarget),
+		BASE_FEE_MAX_CHANGE
+	);
+	return Uint.minus(currentBaseFee, decrease);
 }
 
 const baseFee = Uint.from(1000000000n); // 1 gwei
 const gasLimit = Uint.from(30000000n); // 30M gas limit
-const gasTarget = gasLimit.dividedBy(ELASTICITY_MULTIPLIER); // 15M target
+const gasTarget = Uint.dividedBy(gasLimit, ELASTICITY_MULTIPLIER); // 15M target
 
 const scenarios = [
 	{ used: gasTarget, desc: "At target (no change)" },
@@ -131,12 +131,12 @@ const scenarios = [
 for (const { used, desc } of scenarios) {
 	const nextFee = calculateNextBaseFee(baseFee, used, gasTarget);
 	const percentUsed =
-		(Number(used.toBigInt()) / Number(gasLimit.toBigInt())) * 100;
-	const change = nextFee.greaterThan(baseFee)
-		? nextFee.minus(baseFee)
-		: baseFee.minus(nextFee);
+		(Number(Uint.toBigInt(used)) / Number(Uint.toBigInt(gasLimit))) * 100;
+	const change = Uint.greaterThan(nextFee, baseFee)
+		? Uint.minus(nextFee, baseFee)
+		: Uint.minus(baseFee, nextFee);
 	const changePercent =
-		Number(change.times(Uint.from(10000n)).dividedBy(baseFee).toBigInt()) / 100;
+		Number(Uint.toBigInt(Uint.dividedBy(Uint.times(change, Uint.from(10000n)), baseFee))) / 100;
 }
 
 // Storage operations
@@ -146,25 +146,26 @@ const SSTORE_RESET = Uint.from(5000n); // Reset storage to zero
 
 // Compare storage vs memory
 const numReads = Uint.from(10n);
-const storageReads = SLOAD_COST.times(numReads);
-const memoryReads = Uint.from(3n).times(numReads); // ~3 gas per memory read
+const storageReads = Uint.times(SLOAD_COST, numReads);
+const memoryReads = Uint.times(Uint.from(3n), numReads); // ~3 gas per memory read
 
 const txGasPrice = Uint.from(50000000000n); // 50 gwei
 const txGasUsed = Uint.from(100000n);
 const txValue = Uint.from(1000000000000000000n); // 1 ETH
 
-const gasCost = txGasUsed.times(txGasPrice);
-const totalCost = gasCost.plus(txValue);
+const gasCost = Uint.times(txGasUsed, txGasPrice);
+const totalCost = Uint.plus(gasCost, txValue);
 
 function weiToEther(wei: typeof Uint.prototype): string {
-	return (Number(wei.toBigInt()) / 1e18).toFixed(6);
+	return (Number(Uint.toBigInt(wei)) / 1e18).toFixed(6);
 }
 
 const singleTxCost = TX_BASE_COST;
 const numTransfers = Uint.from(10n);
-const separateCost = singleTxCost.times(numTransfers);
+const separateCost = Uint.times(singleTxCost, numTransfers);
 
 // Batch transfer saves base cost for each additional transfer
-const batchCost = TX_BASE_COST.plus(
-	Uint.from(25000n).times(numTransfers.minus(Uint.ONE)),
+const batchCost = Uint.plus(
+	TX_BASE_COST,
+	Uint.times(Uint.from(25000n), Uint.minus(numTransfers, Uint.ONE))
 );

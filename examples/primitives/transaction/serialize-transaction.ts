@@ -8,8 +8,8 @@
  * - Round-trip serialization
  */
 
-import * as Address from "../../../src/primitives/Address/index.js";
-import * as Hash from "../../../src/primitives/Hash/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
 import * as Transaction from "../../../src/primitives/Transaction/index.js";
 

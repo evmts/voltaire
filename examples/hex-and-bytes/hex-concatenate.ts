@@ -2,12 +2,12 @@
 // @description Combine multiple hex strings into a single hex value
 
 // SNIPPET:START
-import { Hex } from "../../src/primitives/Hex/index.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
 
 // Create some hex strings
-const hex1 = Hex("0x1234");
-const hex2 = Hex("0x5678");
-const hex3 = Hex("0xabcd");
+const hex1 = Hex.from("0x1234");
+const hex2 = Hex.from("0x5678");
+const hex3 = Hex.from("0xabcd");
 
 // Concatenate them (variadic arguments)
 const combined = Hex.concat(hex1, hex2, hex3);

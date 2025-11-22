@@ -20,15 +20,15 @@ const values = [
 ];
 
 for (const val of values) {
-	const hex = val.toHex(false);
-	const bitLen = val.bitLength();
-	const leadingZeros = val.leadingZeros();
-	const popCount = val.popCount();
+	const hex = Uint.toHex(val, false);
+	const bitLen = Uint.bitLength(val);
+	const leadingZeros = Uint.leadingZeros(val);
+	const popCount = Uint.popCount(val);
 }
 
 function isPowerOfTwo(val: typeof Uint.prototype): boolean {
 	// Power of 2 has exactly one bit set
-	return !val.isZero() && val.popCount() === 1;
+	return !Uint.isZero(val) && Uint.popCount(val) === 1;
 }
 
 const testValues = [1n, 2n, 3n, 4n, 7n, 8n, 15n, 16n, 127n, 128n, 256n];
@@ -50,8 +50,8 @@ const numbers = [
 	Uint.from(256n),
 ];
 
-const min = numbers.reduce((acc, val) => acc.minimum(val));
-const max = numbers.reduce((acc, val) => acc.maximum(val));
+const min = numbers.reduce((acc, val) => Uint.minimum(acc, val));
+const max = numbers.reduce((acc, val) => Uint.maximum(acc, val));
 
 const unsorted = [
 	Uint.from(42n),
@@ -62,8 +62,8 @@ const unsorted = [
 ];
 
 const sorted = [...unsorted].sort((x, y) => {
-	if (x.lessThan(y)) return -1;
-	if (x.greaterThan(y)) return 1;
+	if (Uint.lessThan(x, y)) return -1;
+	if (Uint.greaterThan(x, y)) return 1;
 	return 0;
 });
 
@@ -72,7 +72,7 @@ function clamp(
 	min: typeof Uint.prototype,
 	max: typeof Uint.prototype,
 ): typeof Uint.prototype {
-	return val.maximum(min).minimum(max);
+	return Uint.minimum(Uint.maximum(val, min), max);
 }
 
 const min_val = Uint.from(0n);
@@ -94,7 +94,7 @@ function hammingDistance(
 	y: typeof Uint.prototype,
 ): number {
 	// Number of differing bits
-	return x.bitwiseXor(y).popCount();
+	return Uint.popCount(Uint.bitwiseXor(x, y));
 }
 
 const val1 = Uint.from(0b1010n);
@@ -102,7 +102,7 @@ const val2 = Uint.from(0b1100n);
 const val3 = Uint.from(0b0000n);
 
 function getRequiredType(val: typeof Uint.prototype): string {
-	const bits = val.bitLength();
+	const bits = Uint.bitLength(val);
 	if (bits === 0) return "uint0";
 	if (bits <= 8) return "uint8";
 	if (bits <= 16) return "uint16";
@@ -123,7 +123,7 @@ const widthTests = [
 
 for (const val of widthTests) {
 	const type = getRequiredType(val);
-	const bits = val.bitLength();
+	const bits = Uint.bitLength(val);
 }
 
 function findMedian(
@@ -132,8 +132,8 @@ function findMedian(
 	if (vals.length === 0) return undefined;
 
 	const sorted_vals = [...vals].sort((x, y) => {
-		if (x.lessThan(y)) return -1;
-		if (x.greaterThan(y)) return 1;
+		if (Uint.lessThan(x, y)) return -1;
+		if (Uint.greaterThan(x, y)) return 1;
 		return 0;
 	});
 
@@ -144,8 +144,8 @@ function findMedian(
 	}
 
 	// Average of two middle values
-	const sum = sorted_vals[mid - 1].plus(sorted_vals[mid]);
-	return sum.dividedBy(Uint.from(2n));
+	const sum = Uint.plus(sorted_vals[mid - 1], sorted_vals[mid]);
+	return Uint.dividedBy(sum, Uint.from(2n));
 }
 
 const medianTest = [
@@ -158,9 +158,9 @@ const medianTest = [
 const median = findMedian(medianTest);
 
 function bitDensity(val: typeof Uint.prototype): number {
-	const total = val.bitLength();
+	const total = Uint.bitLength(val);
 	if (total === 0) return 0;
-	const setCount = val.popCount();
+	const setCount = Uint.popCount(val);
 	return setCount / total;
 }
 
@@ -177,11 +177,11 @@ for (const val of densityTests) {
 }
 
 function isEvenParity(val: typeof Uint.prototype): boolean {
-	return val.popCount() % 2 === 0;
+	return Uint.popCount(val) % 2 === 0;
 }
 
 function isOddParity(val: typeof Uint.prototype): boolean {
-	return val.popCount() % 2 === 1;
+	return Uint.popCount(val) % 2 === 1;
 }
 
 const parityTests = [

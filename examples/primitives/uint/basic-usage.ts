@@ -25,7 +25,7 @@ const fromString = Uint.from("12345");
 const value = Uint.from(255n);
 
 const byteValue = Uint.from(256n);
-const bytes = byteValue.toBytes();
+const bytes = Uint.toBytes(byteValue);
 
 // Round-trip conversion
 const fromBytes = Uint.fromBytes(bytes);

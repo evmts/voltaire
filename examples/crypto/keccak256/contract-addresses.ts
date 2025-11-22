@@ -13,7 +13,7 @@ for (const nonce of [0n, 1n, 5n, 10n, 100n]) {
 const factory = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
 // Simple bytecode example (empty contract)
-const initCode = Bytecode("0x6080604052348015610000f57600080fd");
+const initCode = Bytecode("0x60806040523480156100105760008000fd");
 
 // Calculate CREATE2 addresses with different salts
 const initCodeHash = Keccak256(initCode);

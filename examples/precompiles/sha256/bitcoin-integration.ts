@@ -11,7 +11,7 @@
 import {
 	PrecompileAddress,
 	execute,
-} from "../../../src/precompiles/precompiles.js";
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 // Simulate a Bitcoin block header (80 bytes)

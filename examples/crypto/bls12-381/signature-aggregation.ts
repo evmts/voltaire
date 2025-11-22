@@ -41,7 +41,7 @@ const messageHash = bls12_381.G1.hashToCurve(sharedMessage, {
 // Verification: e(aggSig, G2) = e(H(msg), aggPubKey)
 const lhs = bls12_381.pairing(aggregatedSignature, bls12_381.G2.Point.BASE);
 const rhs = bls12_381.pairing(messageHash, aggregatedPubKey);
-const valid = lhs.equals(rhs);
+const valid = bls12_381.fields.Fp12.eql(lhs, rhs);
 
 // Only validators 0, 2, 4 participate
 const participantIndices = [0, 2, 4];
@@ -60,7 +60,7 @@ for (let i = 1; i < participantPubKeys.length; i++) {
 
 const partialLhs = bls12_381.pairing(partialSig, bls12_381.G2.Point.BASE);
 const partialRhs = bls12_381.pairing(messageHash, partialPubKey);
-const partialValid = partialLhs.equals(partialRhs);
+const partialValid = bls12_381.fields.Fp12.eql(partialLhs, partialRhs);
 
 // Simulate signatures arriving one at a time
 let incrementalSig = signatures[0];
@@ -110,7 +110,7 @@ function verifyAggregated(
 	});
 	const lhs = bls12_381.pairing(aggSig, bls12_381.G2.Point.BASE);
 	const rhs = bls12_381.pairing(msgHash, aggPubKey);
-	return lhs.equals(rhs);
+	return bls12_381.fields.Fp12.eql(lhs, rhs);
 }
 
 const testMsg = new TextEncoder().encode("Test aggregation");

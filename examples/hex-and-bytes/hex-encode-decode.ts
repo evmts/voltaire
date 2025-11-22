@@ -2,7 +2,7 @@
 // @description Convert between hex strings and byte arrays using Voltaire's Hex primitive
 
 // SNIPPET:START
-import { Hex } from "../../src/primitives/Hex/index.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
 
 // Encode bytes to hex string
 const bytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello" in bytes
@@ -12,7 +12,7 @@ const hexString = Hex.fromBytes(bytes);
 const decoded = Hex.toBytes(hexString);
 
 // Create hex directly from string
-const directHex = Hex("0x48656c6c6f");
+const directHex = Hex.from("0x48656c6c6f");
 // SNIPPET:END
 
 // Test assertions

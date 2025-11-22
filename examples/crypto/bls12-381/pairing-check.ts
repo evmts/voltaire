@@ -91,13 +91,10 @@ for (let i = 1; i < messages.length; i++) {
 
 // e(G1, G2) should not equal 1 (identity in GT)
 const one = bls12_381.fields.Fp12.ONE;
-const notDegenerate = !pairing1.equals(one);
+const notDegenerate = !bls12_381.fields.Fp12.eql(pairing1, one);
 
 const g1Zero = bls12_381.G1.Point.ZERO;
 const g2Zero = bls12_381.G2.Point.ZERO;
 
-// e(0, Q) = 1 for any Q
-const pairingZeroG1 = bls12_381.pairing(g1Zero, g2Gen);
-
-// e(P, 0) = 1 for any P
-const pairingZeroG2 = bls12_381.pairing(g1Gen, g2Zero);
+// Note: @noble/curves does not support pairing with zero points
+// In theory: e(0, Q) = 1 and e(P, 0) = 1, but implementation throws error

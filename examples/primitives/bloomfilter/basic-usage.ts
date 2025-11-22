@@ -1,9 +1,9 @@
-import * as BrandedBloomFilter from "../../../src/primitives/BloomFilter/BrandedBloomFilter/index.js";
 // Basic BloomFilter usage: create, add items, check membership
 import {
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
+	fromHex,
 } from "../../../src/primitives/BloomFilter/index.js";
 
 // Create a standard Ethereum bloom filter (2048 bits, 3 hash functions)
@@ -26,4 +26,4 @@ filter.add(item1);
 const hex = filter.toHex();
 
 // Restore from hex
-const restored = BrandedBloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
+const restored = fromHex(hex, BITS, DEFAULT_HASH_COUNT);

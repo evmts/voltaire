@@ -10,19 +10,19 @@
 
 import { Address } from "../../../src/primitives/Address/index.js";
 import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Bytes32 } from "../../../src/primitives/Bytes32/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
 const address = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 
 const key = BinaryTree.addressToKey(address);
 
-const testKey = Bytes32.from(
-	"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa42",
+const testKey = Hash.from(
+	"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa042",
 );
 
 const { stem, idx } = BinaryTree.splitKey(testKey);
 
-const stemExample = Bytes32.from(
+const stemExample = Hash.from(
 	"0xaa00000000000000000000000000000000000000000000000000000000000000",
 ).slice(0, 31);
 
@@ -31,7 +31,7 @@ for (let pos = 0; pos < 8; pos++) {
 	const direction = bit === 0 ? "left" : "right";
 }
 
-const pathStem = Bytes32.from(
+const pathStem = Hash.from(
 	"0xc000000000000000000000000000000000000000000000000000000000000000",
 ).slice(0, 31);
 
@@ -68,13 +68,13 @@ for (const { idx, desc } of subindexMap) {
 	keyForIdx[31] = idx;
 }
 
-const exampleKey = Bytes32.from(
-	"0x000000000000000000000000abcd00000000000000000000000000000000005",
+const exampleKey = Hash.from(
+	"0x000000000000000000000000abcd000000000000000000000000000000000005",
 );
 
 const { stem: exStem, idx: exIdx } = BinaryTree.splitKey(exampleKey);
 
-const navStem = Bytes32.from(
+const navStem = Hash.from(
 	"0xb400000000000000000000000000000000000000000000000000000000000000",
 ).slice(0, 31);
 

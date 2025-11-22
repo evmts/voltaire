@@ -8,7 +8,7 @@
  * - Signature verification
  */
 
-import * as Address from "../../../src/primitives/Address/index.js";
+import { Address } from "../../../src/primitives/Address/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
 import * as Transaction from "../../../src/primitives/Transaction/index.js";
 

@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex } from "../../../src/primitives/Hex/Hex.js";
 
 const erc20Functions = [
 	"totalSupply()",

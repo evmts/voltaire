@@ -15,20 +15,20 @@ import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import {
 	PrecompileAddress,
 	execute,
-} from "../../../src/precompiles/precompiles.js";
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
+import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 
 // Generate a keypair and sign a message
 const privateKey = crypto.getRandomValues(new Uint8Array(32));
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 // Derive expected address from public key
-const pubKeyHash = keccak256(publicKey);
+const pubKeyHash = Keccak256.hash(publicKey);
 const expectedAddress = pubKeyHash.slice(12); // Last 20 bytes
 
 // Sign a message hash
-const messageHash = keccak256(new TextEncoder().encode("Hello, ECRECOVER!"));
+const messageHash = Keccak256.hash(new TextEncoder().encode("Hello, ECRECOVER!"));
 
 const signature = Secp256k1.sign(messageHash, privateKey);
 

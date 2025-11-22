@@ -9,13 +9,12 @@
  */
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
+import { keccak256 } from "../../../src/primitives/Hash/index.js";
 
 // Generate keypair
 const privateKeyBytes = new Uint8Array(32);
 crypto.getRandomValues(privateKeyBytes);
-const privateKey = `0x${Buffer.from(privateKeyBytes).toString("hex")}`;
-const publicKey = Secp256k1.derivePublicKey(privateKey as any);
+const publicKey = Secp256k1.derivePublicKey(privateKeyBytes);
 
 // Derive Ethereum address from public key
 function deriveAddress(pubKey: Uint8Array): string {
@@ -32,7 +31,7 @@ const signerAddress = deriveAddress(publicKey);
 const message = "Authenticate me!";
 const messageBytes = new TextEncoder().encode(message);
 const messageHash = keccak256(messageBytes);
-const signature = Secp256k1.sign(messageHash, privateKey);
+const signature = Secp256k1.sign(messageHash, privateKeyBytes);
 
 // Recover public key from signature
 const recoveredKey = Secp256k1.recoverPublicKey(signature, messageHash);

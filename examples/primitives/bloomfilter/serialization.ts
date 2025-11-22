@@ -1,9 +1,11 @@
-import * as BrandedBloomFilter from "../../../src/primitives/BloomFilter/BrandedBloomFilter/index.js";
 // Demonstrate bloom filter serialization and restoration
 import {
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
+	contains,
+	fromHex,
+	toHex,
 } from "../../../src/primitives/BloomFilter/index.js";
 
 // Create and populate a filter
@@ -18,13 +20,9 @@ for (const item of items) {
 
 // Serialize to hex
 const hexString = original.toHex();
-const restored = BrandedBloomFilter.fromHex(
-	hexString,
-	BITS,
-	DEFAULT_HASH_COUNT,
-);
+const restored = fromHex(hexString, BITS, DEFAULT_HASH_COUNT);
 for (const item of items) {
-	const contains = BrandedBloomFilter.contains(restored, encoder.encode(item));
+	const itemContains = contains(restored, encoder.encode(item));
 }
 const storageFormat = {
 	hex: hexString,
@@ -34,7 +32,7 @@ const storageFormat = {
 	itemCount: items.length,
 };
 const originalHex = original.toHex();
-const restoredHex = BrandedBloomFilter.toHex(restored);
+const restoredHex = toHex(restored);
 const identical = originalHex === restoredHex;
 
 // Demonstrate byte-level comparison
@@ -70,7 +68,7 @@ const block1001Data = blockFilters.find((b) => b.blockNumber === 1001);
 if (!block1001Data) {
 	throw new Error("Block 1001 filter not found");
 }
-const block1001Filter = BrandedBloomFilter.fromHex(
+const block1001Filter = fromHex(
 	block1001Data.hex,
 	block1001Data.m,
 	block1001Data.k,
@@ -81,13 +79,5 @@ const withPrefix = original.toHex(); // Returns with 0x
 const withoutPrefix = withPrefix.slice(2);
 
 // Both formats work for fromHex
-const fromWith = BrandedBloomFilter.fromHex(
-	withPrefix,
-	BITS,
-	DEFAULT_HASH_COUNT,
-);
-const fromWithout = BrandedBloomFilter.fromHex(
-	withoutPrefix,
-	BITS,
-	DEFAULT_HASH_COUNT,
-);
+const fromWith = fromHex(withPrefix, BITS, DEFAULT_HASH_COUNT);
+const fromWithout = fromHex(withoutPrefix, BITS, DEFAULT_HASH_COUNT);

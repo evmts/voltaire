@@ -53,15 +53,15 @@ const g2PlusIdentity = g2Generator.add(g2Identity);
 const curveOrder = bls12_381.fields.Fr.ORDER;
 
 // G1 point: 48 bytes compressed, 96 bytes uncompressed
-const g1Compressed = g1Multiplied.toRawBytes(true); // Compressed
-const g1Uncompressed = g1Multiplied.toRawBytes(false); // Uncompressed
+const g1Compressed = g1Multiplied.toBytes(true); // Compressed
+const g1Uncompressed = g1Multiplied.toBytes(false); // Uncompressed
 
 // G2 point: 96 bytes compressed, 192 bytes uncompressed
-const g2Compressed = g2Multiplied.toRawBytes(true);
-const g2Uncompressed = g2Multiplied.toRawBytes(false);
+const g2Compressed = g2Multiplied.toBytes(true);
+const g2Uncompressed = g2Multiplied.toBytes(false);
 
-const g1Recovered = bls12_381.G1.Point.fromHex(g1Compressed);
-const g2Recovered = bls12_381.G2.Point.fromHex(g2Compressed);
+const g1Recovered = bls12_381.G1.Point.fromHex(g1Multiplied.toHex(true));
+const g2Recovered = bls12_381.G2.Point.fromHex(g2Multiplied.toHex(true));
 
 const scalars = [123n, 456n, 789n];
 const g1Points = scalars.map((s) => g1Generator.multiply(s));

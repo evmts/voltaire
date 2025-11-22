@@ -11,8 +11,11 @@
 
 import { Address } from "../../../src/primitives/Address/index.js";
 import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import * as Keccak256Hash from "../../../src/crypto/Keccak256/index.js";
 
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", {
+	keccak256: Keccak256Hash.hash,
+});
 
 // Contract initialization code (bytecode)
 const initCode = Bytes.fromHex("0x608060405234801561001057600080fd5b50");
@@ -113,9 +116,24 @@ if (result) {
 
 // Same factory + salt + init code = same address on all chains
 const chainDeployers = new Map([
-	["Ethereum", Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C")],
-	["Optimism", Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C")],
-	["Arbitrum", Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C")],
+	[
+		"Ethereum",
+		Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C", {
+			keccak256: Keccak256Hash.hash,
+		}),
+	],
+	[
+		"Optimism",
+		Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C", {
+			keccak256: Keccak256Hash.hash,
+		}),
+	],
+	[
+		"Arbitrum",
+		Address.fromHex("0x4e59b44847b379578588920cA78FbF26c0B4956C", {
+			keccak256: Keccak256Hash.hash,
+		}),
+	],
 ]);
 
 const crossChainSalt = 12345n;

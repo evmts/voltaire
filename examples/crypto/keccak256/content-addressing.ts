@@ -1,6 +1,6 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex } from "../../../src/primitives/Hex/Hex.js";
 
 const content1 = "Hello, World!";
 const content2 = "Hello, World!";
@@ -55,7 +55,7 @@ if (retrieved) {
 }
 
 // Simulate contract bytecode
-const contractCode1 = Bytecode("0x6080604052348015610000f57600080fd");
+const contractCode1 = Bytecode("0x60806040523480156100105760008000fd");
 
 const contractCode2 = Bytecode("0x608060405234801561001057600080fd"); // Slightly different
 
@@ -74,16 +74,18 @@ const contentBytes = Hex(
 const fileChunks = [pngHeader, pngData, contentBytes];
 
 // Compute hash before "sending"
-const originalFile = Hex.concat([...fileChunks]);
+const originalFile = Hex.concat(...fileChunks);
 const expectedHash = Keccak256(originalFile);
 
 // Simulate receiving and verifying
-const receivedFile = Hex.concat([...fileChunks]);
+const receivedFile = Hex.concat(...fileChunks);
 const receivedHash = Keccak256(receivedFile);
 
 // Simulate corruption
-receivedFile[50] ^= 0xff; // Flip bits
-const corruptedHash = Keccak256(receivedFile);
+const receivedBytes = Hex.toBytes(receivedFile);
+receivedBytes[50] ^= 0xff; // Flip bits
+const corruptedFile = Hex.fromBytes(receivedBytes);
+const corruptedHash = Keccak256(corruptedFile);
 
 interface Commit {
 	parent?: string;
@@ -140,5 +142,5 @@ const chunkHashes = chunks.map((chunk) => Keccak256(chunk as any));
 for (let i = 0; i < chunkHashes.length; i++) {}
 
 // Build root hash from all chunk hashes
-const allChunkHashes = Hex.concat(chunkHashes as any);
+const allChunkHashes = Hex.concat(...chunkHashes.map((h) => Hex.fromBytes(h)));
 const rootHash = Keccak256(allChunkHashes);

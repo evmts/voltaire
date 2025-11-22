@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex } from "../../../src/primitives/Hex/Hex.js";
 
 const chunk1 = Hex("0x010203");
 const chunk2 = Hex("0x040506");
@@ -9,7 +9,7 @@ const chunk3 = Hex("0x070809");
 const multiHash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 // Compare to concatenating first
-const concatenated = Hex.concat([chunk1, chunk2, chunk3]);
+const concatenated = Hex.concat(chunk1, chunk2, chunk3);
 const singleHash = Keccak256(concatenated);
 
 // Simulate ABI encoding: function selector + parameters
@@ -109,6 +109,6 @@ const time1 = performance.now() - start1;
 
 // Method 2: Concatenate then hash
 const start2 = performance.now();
-const combined = Hex.concat(smallChunks as any);
+const combined = Hex.concat(...smallChunks);
 const hash2 = Keccak256(combined);
 const time2 = performance.now() - start2;

@@ -10,13 +10,12 @@
  */
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
+import { keccak256 } from "../../../src/primitives/Hash/index.js";
 
 // Generate test keypair
-const privateKeyBytes = new Uint8Array(32);
-crypto.getRandomValues(privateKeyBytes);
-const privateKey = `0x${Buffer.from(privateKeyBytes).toString("hex")}`;
-const publicKey = Secp256k1.derivePublicKey(privateKey as any);
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 // Create valid signature
 const message = "Test message";

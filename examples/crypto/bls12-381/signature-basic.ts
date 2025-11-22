@@ -11,8 +11,8 @@ const publicKey1 = bls12_381.G2.Point.BASE.multiply(privateKey1);
 const publicKey2 = bls12_381.G2.Point.BASE.multiply(privateKey2);
 
 // Serialize public keys
-const pubKeyBytes1 = publicKey1.toRawBytes(true); // Compressed
-const pubKeyBytes2 = publicKey2.toRawBytes(true);
+const pubKeyBytes1 = publicKey1.toBytes(true); // Compressed
+const pubKeyBytes2 = publicKey2.toBytes(true);
 
 const message = new TextEncoder().encode("Hello, Ethereum!");
 
@@ -27,29 +27,29 @@ const signature1 = messageHash.multiply(privateKey1);
 const signature2 = messageHash.multiply(privateKey2);
 
 // Serialize signatures (G1 points)
-const sigBytes1 = signature1.toRawBytes(true); // Compressed: 48 bytes
-const sigBytes2 = signature2.toRawBytes(true);
+const sigBytes1 = signature1.toBytes(true); // Compressed: 48 bytes
+const sigBytes2 = signature2.toBytes(true);
 
 // Verify: e(signature, G2_gen) = e(H(message), pubkey)
 const g2Gen = bls12_381.G2.Point.BASE;
 
 const lhs1 = bls12_381.pairing(signature1, g2Gen);
 const rhs1 = bls12_381.pairing(messageHash, publicKey1);
-const valid1 = lhs1.equals(rhs1);
+const valid1 = bls12_381.fields.Fp12.eql(lhs1, rhs1);
 
 const lhs2 = bls12_381.pairing(signature2, g2Gen);
 const rhs2 = bls12_381.pairing(messageHash, publicKey2);
-const valid2 = lhs2.equals(rhs2);
+const valid2 = bls12_381.fields.Fp12.eql(lhs2, rhs2);
 
 // Try to verify signature1 with publicKey2 (should fail)
 const wrongLhs = bls12_381.pairing(signature1, g2Gen);
 const wrongRhs = bls12_381.pairing(messageHash, publicKey2);
-const wrongValid = wrongLhs.equals(wrongRhs);
+const wrongValid = bls12_381.fields.Fp12.eql(wrongLhs, wrongRhs);
 
 // Modify signature slightly (should fail)
 const corruptedSig = signature1.add(bls12_381.G1.Point.BASE);
 const corruptedLhs = bls12_381.pairing(corruptedSig, g2Gen);
-const corruptedValid = corruptedLhs.equals(rhs1);
+const corruptedValid = bls12_381.fields.Fp12.eql(corruptedLhs, rhs1);
 
 // Same message + key always produces same signature
 const message2 = new TextEncoder().encode("Hello, Ethereum!");
@@ -98,7 +98,7 @@ function verifySignature(
 	});
 	const lhs = bls12_381.pairing(signature, bls12_381.G2.Point.BASE);
 	const rhs = bls12_381.pairing(msgHash, publicKey);
-	return lhs.equals(rhs);
+	return bls12_381.fields.Fp12.eql(lhs, rhs);
 }
 
 const testPrivKey = 12345n;

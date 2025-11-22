@@ -16,13 +16,13 @@ const b = Uint.from(50n);
 const dividend = Uint.from(17n);
 const divisor = Uint.from(5n);
 
-const quotient = dividend.dividedBy(divisor);
-const remainder = dividend.modulo(divisor);
+const quotient = Uint.dividedBy(dividend, divisor);
+const remainder = Uint.modulo(dividend, divisor);
 
 const base = Uint.from(2n);
 const powers = [0n, 1n, 8n, 16n, 32n];
 for (const exp of powers) {
-	const result = base.toPower(Uint.from(exp));
+	const result = Uint.toPower(base, Uint.from(exp));
 }
 
 const max = Uint.MAX;
@@ -36,15 +36,15 @@ const y = Uint.from(20n);
 const z = Uint.from(5n);
 
 // Calculate: (x + y) * z - 25
-const result = x.plus(y).times(z).minus(Uint.from(25n));
+const result = Uint.minus(Uint.times(Uint.plus(x, y), z), Uint.from(25n));
 
 function detectAdditionOverflow(
 	num1: typeof Uint.prototype,
 	num2: typeof Uint.prototype,
 ): boolean {
-	const sum = num1.plus(num2);
+	const sum = Uint.plus(num1, num2);
 	// If sum < num1, overflow occurred
-	return sum.lessThan(num1);
+	return Uint.lessThan(sum, num1);
 }
 
 const test1 = Uint.from(100n);
@@ -58,14 +58,14 @@ function wadMul(
 	num1: typeof Uint.prototype,
 	num2: typeof Uint.prototype,
 ): typeof Uint.prototype {
-	return num1.times(num2).dividedBy(WAD);
+	return Uint.dividedBy(Uint.times(num1, num2), WAD);
 }
 
 function wadDiv(
 	num1: typeof Uint.prototype,
 	num2: typeof Uint.prototype,
 ): typeof Uint.prototype {
-	return num1.times(WAD).dividedBy(num2);
+	return Uint.dividedBy(Uint.times(num1, WAD), num2);
 }
 
 // 2.5 * 1.5 = 3.75

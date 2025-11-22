@@ -12,16 +12,16 @@ import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import {
 	PrecompileAddress,
 	execute,
-} from "../../../src/precompiles/precompiles.js";
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/HashType/keccak256.js";
+import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 
 // Simulate a signed message scenario
 const signerKey = crypto.getRandomValues(new Uint8Array(32));
 const signerPubKey = Secp256k1.derivePublicKey(signerKey);
-const signerAddress = keccak256(signerPubKey).slice(12);
+const signerAddress = Keccak256.hash(signerPubKey).slice(12);
 const authMessage = "I authorize this action at timestamp 1234567890";
-const authHash = keccak256(new TextEncoder().encode(authMessage));
+const authHash = Keccak256.hash(new TextEncoder().encode(authMessage));
 const authSig = Secp256k1.sign(authHash, signerKey);
 
 // Prepare ECRECOVER input
@@ -52,7 +52,7 @@ let totalGas = 0n;
 let validCount = 0;
 
 for (const msg of messages) {
-	const msgHash = keccak256(new TextEncoder().encode(msg));
+	const msgHash = Keccak256.hash(new TextEncoder().encode(msg));
 	const sig = Secp256k1.sign(msgHash, signerKey);
 
 	const input = new Uint8Array(128);
@@ -77,7 +77,7 @@ for (const msg of messages) {
 }
 
 // Create a signature with s in the lower half (valid)
-const testMessage = keccak256(new TextEncoder().encode("Test message"));
+const testMessage = Keccak256.hash(new TextEncoder().encode("Test message"));
 const validSig = Secp256k1.sign(testMessage, signerKey);
 
 // secp256k1 curve order: n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
@@ -111,7 +111,7 @@ const validMatch = validRecovered.every((byte, i) => byte === signerAddress[i]);
 // Create a different signer
 const wrongKey = crypto.getRandomValues(new Uint8Array(32));
 const wrongPubKey = Secp256k1.derivePublicKey(wrongKey);
-const wrongAddress = keccak256(wrongPubKey).slice(12);
+const wrongAddress = Keccak256.hash(wrongPubKey).slice(12);
 
 // Sign message with wrong key
 const wrongSig = Secp256k1.sign(testMessage, wrongKey);
