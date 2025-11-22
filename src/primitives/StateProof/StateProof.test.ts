@@ -268,11 +268,11 @@ describe("StateProof", () => {
 			const proof = StateProof.from({
 				address: Address("0x1234567890123456789012345678901234567890"),
 				accountProof: [new Uint8Array([0xf8, 0x51])],
-				balance: Wei(0n),
+				balance: weiFrom(0n),
 				codeHash: Hash(
 					"0xabcdef1234567890123456789012345678901234567890123456789012345678",
 				),
-				nonce: Nonce(1n),
+				nonce: nonceFrom(1n),
 				storageHash: StateRoot.from(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				),
