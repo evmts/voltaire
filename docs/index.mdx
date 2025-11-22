@@ -434,8 +434,9 @@ url = "https://tevm.sh/mcp"
 
         // Create Web Worker for sandboxed execution
         function createWorker() {
-          const workerCode = 'self.onmessage = function(e) {' +
-            '  const { code } = e.data;' +
+          const workerCode = 'let Tevm = null;' +
+            'self.onmessage = async function(e) {' +
+            '  const { code, loadTevm } = e.data;' +
             '  const console = {' +
             '    log: (...args) => {' +
             '      self.postMessage({' +
@@ -462,9 +463,20 @@ url = "https://tevm.sh/mcp"
             '      });' +
             '    }' +
             '  };' +
+            '  if (loadTevm && !Tevm) {' +
+            '    try {' +
+            '      self.postMessage({ type: "log", args: ["Loading Tevm APIs..."] });' +
+            '      const module = await import("https://esm.sh/@tevm/index@1.0.0-next.100");' +
+            '      Tevm = module;' +
+            '      Object.assign(globalThis, module);' +
+            '      self.postMessage({ type: "log", args: ["Tevm loaded! Available: Address, Hex, Keccak256, etc."] });' +
+            '    } catch (err) {' +
+            '      self.postMessage({ type: "error", args: ["Failed to load Tevm: " + err.message] });' +
+            '    }' +
+            '  }' +
             '  try {' +
-            '    const fn = new Function("console", code);' +
-            '    fn(console);' +
+            '    const fn = new Function("console", "Tevm", code);' +
+            '    fn(console, Tevm);' +
             '    self.postMessage({ type: "complete" });' +
             '  } catch (error) {' +
             '    self.postMessage({' +
@@ -555,7 +567,7 @@ url = "https://tevm.sh/mcp"
 
           // Get code and execute
           const code = editor.getValue();
-          currentWorker.postMessage({ code });
+          currentWorker.postMessage({ code, loadTevm: true });
         }
 
         function resetButton() {
@@ -621,35 +633,30 @@ url = "https://tevm.sh/mcp"
           const monaco = await init();
 
           const code = '// Try out Tevm primitives in your browser!\\n' +
-            '// Click "Run Code" to execute this example\\n' +
+            '// All Tevm APIs are available globally\\n' +
+            '// Click "Run Code" to execute\\n' +
             '\\n' +
-            '// Simple example: Working with addresses\\n' +
-            'console.log("=== Address Example ===");\\n' +
-            'const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";\\n' +
-            'console.log("Address:", address);\\n' +
+            '// Address utilities\\n' +
+            'const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");\\n' +
+            'console.log("Address:", Address.toHex(addr));\\n' +
+            'console.log("Checksummed:", Address.toChecksummed(addr));\\n' +
             '\\n' +
-            '// Working with hex values\\n' +
-            'console.log("\\\\n=== Hex Example ===");\\n' +
-            'const hexValue = "0x48656c6c6f"; // "Hello" in hex\\n' +
-            'console.log("Hex:", hexValue);\\n' +
+            '// Hex encoding\\n' +
+            'const message = "Hello, Tevm!";\\n' +
+            'const hexMsg = Hex.fromString(message);\\n' +
+            'console.log("Hex encoded:", hexMsg);\\n' +
+            'console.log("Decoded:", Hex.toString(hexMsg));\\n' +
             '\\n' +
-            '// Math operations\\n' +
-            'console.log("\\\\n=== Math Example ===");\\n' +
-            'const a = 100;\\n' +
-            'const b = 42;\\n' +
-            'console.log(a + " + " + b + " = " + (a + b));\\n' +
-            'console.log(a + " * " + b + " = " + (a * b));\\n' +
+            '// Keccak256 hashing\\n' +
+            'const hash = Keccak256.hash(Hex.fromString("Voltaire"));\\n' +
+            'console.log("Keccak256 hash:", Hex.fromBytes(hash));\\n' +
             '\\n' +
-            '// Arrays and objects\\n' +
-            'console.log("\\\\n=== Data Structures ===");\\n' +
-            'const data = {\\n' +
-            '  network: "Ethereum",\\n' +
-            '  gasPrice: 30,\\n' +
-            '  tokens: ["ETH", "USDC", "DAI"]\\n' +
-            '};\\n' +
-            'console.log("Network data:", JSON.stringify(data, null, 2));\\n' +
+            '// Uint256 operations\\n' +
+            'const a = Uint256.from(100n);\\n' +
+            'const b = Uint256.from(42n);\\n' +
+            'console.log("100 + 42 =", Uint256.toBigInt(Uint256.add(a, b)));\\n' +
             '\\n' +
-            'console.log("\\\\n✓ Execution complete!");';
+            'console.log("\\\\n✓ Try modifying the code above!");';
 
           const model = monaco.editor.createModel(code, 'typescript');
 
