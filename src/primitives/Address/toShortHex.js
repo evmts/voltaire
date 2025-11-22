@@ -3,7 +3,7 @@ import { toHex } from "./toHex.js";
 /**
  * Format address with shortened display
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to format
+ * @param {import('./AddressType.js').AddressType} address - Address to format
  * @param {number} [prefixLength=6] - Number of chars to show at start
  * @param {number} [suffixLength=4] - Number of chars to show at end
  * @returns {string} Shortened address like "0x742d...51e3"

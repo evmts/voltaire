@@ -1,7 +1,7 @@
 /**
  * Check if address is zero address
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to check
+ * @param {import('./AddressType.js').AddressType} address - Address to check
  * @returns {boolean} True if all bytes are zero
  *
  * @example

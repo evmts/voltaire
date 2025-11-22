@@ -1,7 +1,7 @@
 /**
  * Convert Address to Uint8Array
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to convert
+ * @param {import('./AddressType.js').AddressType} address - Address to convert
  * @returns {Uint8Array} Underlying Uint8Array
  *
  * @example

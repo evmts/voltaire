@@ -7,7 +7,7 @@ const HEX_REGEX = /^[0-9a-fA-F]{40}$/;
  * Parse hex string to Address (standard form)
  *
  * @param {string} hex - Hex string with 0x prefix
- * @returns {import('./BrandedAddress.js').AddressType} Address bytes
+ * @returns {import('./AddressType.js').AddressType} Address bytes
  * @throws {InvalidHexFormatError} If invalid format or length
  * @throws {InvalidHexStringError} If hex contains invalid characters
  *
@@ -32,5 +32,5 @@ export function fromHex(hex) {
 	for (let i = 0; i < SIZE; i++) {
 		bytes[i] = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
 	}
-	return /** @type {import('./BrandedAddress.js').AddressType} */ (bytes);
+	return /** @type {import('./AddressType.js').AddressType} */ (bytes);
 }

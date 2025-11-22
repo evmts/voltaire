@@ -5,7 +5,7 @@ import { InvalidValueError } from "./errors.js";
  * Create Address from number value (takes lower 160 bits) (standard form)
  *
  * @param {bigint | number} value - Number or bigint value
- * @returns {import('./BrandedAddress.js').AddressType} Address from lower 160 bits
+ * @returns {import('./AddressType.js').AddressType} Address from lower 160 bits
  * @throws {InvalidValueError} If value is negative
  *
  * @example
@@ -29,5 +29,5 @@ export function fromNumber(value) {
 		bytes[i] = Number(v & 0xffn);
 		v >>= 8n;
 	}
-	return /** @type {import('./BrandedAddress.js').AddressType} */ (bytes);
+	return /** @type {import('./AddressType.js').AddressType} */ (bytes);
 }

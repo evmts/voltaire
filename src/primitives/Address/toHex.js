@@ -1,7 +1,7 @@
 /**
  * Convert Address to hex string
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to convert
+ * @param {import('./AddressType.js').AddressType} address - Address to convert
  * @returns {import('../../Hex/index.js').HexType} Lowercase hex string with 0x prefix
  *
  * @example

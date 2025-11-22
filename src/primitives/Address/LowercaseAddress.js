@@ -7,7 +7,7 @@ import { toHex } from "./toHex.js";
 /**
  * Create lowercase address hex string from Address
  *
- * @param {import('./BrandedAddress.js').AddressType} addr - Address to format
+ * @param {import('./AddressType.js').AddressType} addr - Address to format
  * @returns {Lowercase} Lowercase address hex string
  *
  * @example

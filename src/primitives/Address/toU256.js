@@ -3,7 +3,7 @@ import { SIZE } from "./constants.js";
 /**
  * Convert Address to uint256
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to convert
+ * @param {import('./AddressType.js').AddressType} address - Address to convert
  * @returns {bigint} Bigint representation
  *
  * @example

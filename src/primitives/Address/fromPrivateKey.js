@@ -8,7 +8,7 @@ import { FromPublicKey } from "./fromPublicKey.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(privateKey: Uint8Array) => Uint8Array} deps.derivePublicKey - Secp256k1 public key derivation function
- * @returns {(privateKey: import('../../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType) => import('./BrandedAddress.js').AddressType} Function that creates Address from private key
+ * @returns {(privateKey: import('../../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType) => import('./AddressType.js').AddressType} Function that creates Address from private key
  *
  * @example
  * ```typescript

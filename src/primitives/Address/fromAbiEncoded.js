@@ -4,7 +4,7 @@
  * Extracts the last 20 bytes from 32-byte ABI-encoded address data.
  *
  * @param {Uint8Array} bytes - 32-byte ABI-encoded data
- * @returns {import('./BrandedAddress.js').AddressType} Decoded Address
+ * @returns {import('./AddressType.js').AddressType} Decoded Address
  * @throws {Error} If bytes length is not 32
  *
  * @example
@@ -20,7 +20,7 @@ export function fromAbiEncoded(bytes) {
 			`ABI-encoded Address must be exactly 32 bytes, got ${bytes.length}`,
 		);
 	}
-	return /** @type {import('./BrandedAddress.js').AddressType} */ (
+	return /** @type {import('./AddressType.js').AddressType} */ (
 		bytes.slice(12, 32)
 	);
 }

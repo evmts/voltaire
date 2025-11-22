@@ -3,8 +3,8 @@ import { SIZE } from "./constants.js";
 /**
  * Compare two addresses lexicographically
  *
- * @param {import('./BrandedAddress.js').AddressType} address - First address
- * @param {import('./BrandedAddress.js').AddressType} other - Address to compare with
+ * @param {import('./AddressType.js').AddressType} address - First address
+ * @param {import('./AddressType.js').AddressType} other - Address to compare with
  * @returns {number} -1 if address < other, 0 if equal, 1 if address > other
  *
  * @example

@@ -5,7 +5,7 @@ import { From } from "./ChecksumAddress.js";
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(address: import('./BrandedAddress.js').BrandedAddress) => import('./ChecksumAddress.js').Checksummed} Function that converts Address to checksummed hex string
+ * @returns {(address: import('./AddressType.js').BrandedAddress) => import('./ChecksumAddress.js').Checksummed} Function that converts Address to checksummed hex string
  *
  * @example
  * ```typescript

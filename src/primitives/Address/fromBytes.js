@@ -5,7 +5,7 @@ import { InvalidAddressLengthError } from "./errors.js";
  * Create Address from raw bytes (standard form)
  *
  * @param {Uint8Array} bytes - Raw 20-byte array
- * @returns {import('./BrandedAddress.js').AddressType} Address
+ * @returns {import('./AddressType.js').AddressType} Address
  * @throws {InvalidAddressLengthError} If length is not 20 bytes
  *
  * @example
@@ -21,7 +21,7 @@ export function fromBytes(bytes) {
 			context: { actualLength: bytes.length },
 		});
 	}
-	return /** @type {import('./BrandedAddress.js').AddressType} */ (
+	return /** @type {import('./AddressType.js').AddressType} */ (
 		new Uint8Array(bytes)
 	);
 }

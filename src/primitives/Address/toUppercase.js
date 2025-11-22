@@ -3,7 +3,7 @@ import { from as uppercaseFrom } from "./UppercaseAddress.js";
 /**
  * Convert Address to uppercase hex string
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to convert
+ * @param {import('./AddressType.js').AddressType} address - Address to convert
  * @returns {import('./UppercaseAddress.js').Uppercase} Uppercase hex string
  *
  * @example

@@ -4,7 +4,7 @@ import { fromBytes } from "./fromBytes.js";
  * Create Address from base64 string
  *
  * @param {string} b64 - Base64 encoded string
- * @returns {import('./BrandedAddress.js').AddressType} Address
+ * @returns {import('./AddressType.js').AddressType} Address
  * @throws {import('./errors.js').InvalidAddressLengthError} If decoded length is not 20 bytes
  *
  * @example

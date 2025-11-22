@@ -35,7 +35,7 @@ function encodeNonce(num) {
  * @param {Object} deps - Dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(items: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(address: import('./BrandedAddress.js').BrandedAddress, nonce: bigint) => import('./BrandedAddress.js').AddressType}
+ * @returns {(address: import('./AddressType.js').BrandedAddress, nonce: bigint) => import('./AddressType.js').AddressType}
  *
  * @example
  * ```typescript
@@ -54,9 +54,9 @@ export function CalculateCreateAddress({ keccak256, rlpEncode }) {
 	 *
 	 * address = keccak256(rlp([sender, nonce]))[12:32]
 	 *
-	 * @param {import('./BrandedAddress.js').AddressType} address - Sender address
+	 * @param {import('./AddressType.js').AddressType} address - Sender address
 	 * @param {bigint} nonce - Transaction nonce
-	 * @returns {import('./BrandedAddress.js').AddressType} Calculated contract address
+	 * @returns {import('./AddressType.js').AddressType} Calculated contract address
 	 * @throws {InvalidValueError} If nonce is negative
 	 *
 	 * @example
@@ -77,7 +77,7 @@ export function CalculateCreateAddress({ keccak256, rlpEncode }) {
 
 		// Hash and take last 20 bytes
 		const hash = keccak256(encoded);
-		return /** @type {import('./BrandedAddress.js').AddressType} */ (
+		return /** @type {import('./AddressType.js').AddressType} */ (
 			hash.slice(12)
 		);
 	};

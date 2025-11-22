@@ -7,7 +7,7 @@ import { toHex } from "./toHex.js";
 /**
  * Create uppercase address hex string from Address
  *
- * @param {import('./BrandedAddress.js').AddressType} addr - Address to format
+ * @param {import('./AddressType.js').AddressType} addr - Address to format
  * @returns {Uppercase} Uppercase address hex string
  *
  * @example

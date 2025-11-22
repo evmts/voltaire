@@ -1,8 +1,8 @@
 /**
  * Check if two addresses are equal
  *
- * @param {import('./BrandedAddress.js').AddressType} address - First address
- * @param {import('./BrandedAddress.js').AddressType} other - Address to compare with
+ * @param {import('./AddressType.js').AddressType} address - First address
+ * @param {import('./AddressType.js').AddressType} other - Address to compare with
  * @returns {boolean} True if addresses are identical
  *
  * @example

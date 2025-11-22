@@ -3,7 +3,7 @@ import { from as lowercaseFrom } from "./LowercaseAddress.js";
 /**
  * Convert Address to lowercase hex string
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to convert
+ * @param {import('./AddressType.js').AddressType} address - Address to convert
  * @returns {import('./LowercaseAddress.js').Lowercase} Lowercase hex string
  *
  * @example

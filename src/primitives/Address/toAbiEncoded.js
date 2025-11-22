@@ -3,7 +3,7 @@
  *
  * Ethereum ABI encoding pads addresses to 32 bytes by prepending 12 zero bytes.
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to encode
+ * @param {import('./AddressType.js').AddressType} address - Address to encode
  * @returns {Uint8Array} 32-byte ABI-encoded Uint8Array
  *
  * @example

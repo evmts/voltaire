@@ -4,7 +4,7 @@ import { SIZE } from "./constants.js";
  * Type guard for Address (standard form)
  *
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedAddress.js').AddressType} True if value is an Address
+ * @returns {value is import('./AddressType.js').AddressType} True if value is an Address
  *
  * @example
  * ```typescript

@@ -3,7 +3,7 @@
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(x: bigint, y: bigint) => import('./BrandedAddress.js').AddressType} Function that creates Address from public key coordinates
+ * @returns {(x: bigint, y: bigint) => import('./AddressType.js').AddressType} Function that creates Address from public key coordinates
  *
  * @example
  * ```typescript
@@ -31,7 +31,7 @@ export function FromPublicKey({ keccak256 }) {
 
 		// Hash and take last 20 bytes
 		const hash = keccak256(pubkey);
-		return /** @type {import('./BrandedAddress.js').AddressType} */ (
+		return /** @type {import('./AddressType.js').AddressType} */ (
 			hash.slice(12)
 		);
 	};

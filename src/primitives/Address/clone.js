@@ -3,8 +3,8 @@ import { from } from "./from.js";
 /**
  * Create a deep copy of an Address
  *
- * @param {import('./BrandedAddress.js').AddressType} address - Address to clone
- * @returns {import('./BrandedAddress.js').AddressType} Deep copy
+ * @param {import('./AddressType.js').AddressType} address - Address to clone
+ * @returns {import('./AddressType.js').AddressType} Deep copy
  *
  * @example
  * ```typescript

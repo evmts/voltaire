@@ -1,5 +1,5 @@
 // @ts-nocheck
-export * from "./BrandedUint.js";
+export * from "./Uint256Type.js";
 export * from "./constants.js";
 
 // Import core methods
@@ -86,7 +86,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedUint.js').BrandedUint} BrandedUint
+ * @typedef {import('./Uint256Type.js').Uint256Type} Uint256Type
  * @typedef {import('./UintConstructor.js').UintConstructor} UintConstructor
  */
 

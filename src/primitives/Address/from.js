@@ -7,7 +7,7 @@ import { fromNumber } from "./fromNumber.js";
  * Create Address from various input types (universal constructor)
  *
  * @param {number | bigint | string | Uint8Array} value - Number, bigint, hex string, or Uint8Array
- * @returns {import('./BrandedAddress.js').AddressType} Address
+ * @returns {import('./AddressType.js').AddressType} Address
  * @throws {InvalidValueError} If value type is unsupported or invalid
  * @throws {InvalidHexFormatError} If hex string is invalid
  * @throws {InvalidAddressLengthError} If bytes length is not 20
