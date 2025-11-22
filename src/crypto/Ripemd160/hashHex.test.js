@@ -1,0 +1,47 @@
+// @ts-nocheck
+import { expect, test, describe } from "vitest";
+import { Ripemd160Hash } from "./Ripemd160.js";
+
+describe("Ripemd160.hashHex", () => {
+	test("should hash hex string with 0x prefix", () => {
+		const hash = Ripemd160Hash.hashHex("0xdeadbeef");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+	});
+
+	test("should hash hex string without 0x prefix", () => {
+		const hash = Ripemd160Hash.hashHex("deadbeef");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+	});
+
+	test("should produce same hash for identical inputs", () => {
+		const hash1 = Ripemd160Hash.hashHex("0x0102030405");
+		const hash2 = Ripemd160Hash.hashHex("0x0102030405");
+		expect(hash1).toEqual(hash2);
+	});
+
+	test("should produce same hash with or without 0x prefix", () => {
+		const hash1 = Ripemd160Hash.hashHex("0x0102030405");
+		const hash2 = Ripemd160Hash.hashHex("0102030405");
+		expect(hash1).toEqual(hash2);
+	});
+
+	test("should produce different hashes for different inputs", () => {
+		const hash1 = Ripemd160Hash.hashHex("0x0102030405");
+		const hash2 = Ripemd160Hash.hashHex("0x0102030406");
+		expect(hash1).not.toEqual(hash2);
+	});
+
+	test("should handle empty hex string", () => {
+		const hash = Ripemd160Hash.hashHex("0x");
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(20);
+	});
+
+	test("should handle uppercase hex", () => {
+		const hash1 = Ripemd160Hash.hashHex("0xDEADBEEF");
+		const hash2 = Ripemd160Hash.hashHex("0xdeadbeef");
+		expect(hash1).toEqual(hash2);
+	});
+});
