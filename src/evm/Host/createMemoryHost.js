@@ -3,7 +3,7 @@ import { from } from "./from.js";
 /**
  * Create an in-memory Host implementation for testing
  *
- * @returns {import("./BrandedHost.js").BrandedHost} Memory-backed Host
+ * @returns {import("./HostType.js").HostType} Memory-backed Host
  */
 export function createMemoryHost() {
 	/** @type {Map<string, bigint>} */
