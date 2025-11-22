@@ -434,51 +434,45 @@ url = "https://tevm.sh/mcp"
 
         // Create Web Worker for sandboxed execution
         function createWorker() {
-          const workerCode = \`
-            self.onmessage = function(e) {
-              const { code } = e.data;
-
-              // Create sandboxed console that sends messages back
-              const console = {
-                log: (...args) => {
-                  self.postMessage({
-                    type: 'log',
-                    args: args.map(arg => {
-                      if (typeof arg === 'object') {
-                        try { return JSON.stringify(arg, null, 2); }
-                        catch { return String(arg); }
-                      }
-                      return String(arg);
-                    })
-                  });
-                },
-                error: (...args) => {
-                  self.postMessage({
-                    type: 'error',
-                    args: args.map(arg => String(arg))
-                  });
-                },
-                warn: (...args) => {
-                  self.postMessage({
-                    type: 'warn',
-                    args: args.map(arg => String(arg))
-                  });
-                },
-              };
-
-              try {
-                // Execute code in sandboxed context
-                const fn = new Function('console', code);
-                fn(console);
-                self.postMessage({ type: 'complete' });
-              } catch (error) {
-                self.postMessage({
-                  type: 'error',
-                  args: [error.message]
-                });
-              }
-            };
-          \`;
+          const workerCode = 'self.onmessage = function(e) {' +
+            '  const { code } = e.data;' +
+            '  const console = {' +
+            '    log: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "log",' +
+            '        args: args.map(arg => {' +
+            '          if (typeof arg === "object") {' +
+            '            try { return JSON.stringify(arg, null, 2); }' +
+            '            catch { return String(arg); }' +
+            '          }' +
+            '          return String(arg);' +
+            '        })' +
+            '      });' +
+            '    },' +
+            '    error: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "error",' +
+            '        args: args.map(arg => String(arg))' +
+            '      });' +
+            '    },' +
+            '    warn: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "warn",' +
+            '        args: args.map(arg => String(arg))' +
+            '      });' +
+            '    }' +
+            '  };' +
+            '  try {' +
+            '    const fn = new Function("console", code);' +
+            '    fn(console);' +
+            '    self.postMessage({ type: "complete" });' +
+            '  } catch (error) {' +
+            '    self.postMessage({' +
+            '      type: "error",' +
+            '      args: [error.message]' +
+            '    });' +
+            '  }' +
+            '};';
 
           const blob = new Blob([workerCode], { type: 'application/javascript' });
           return new Worker(URL.createObjectURL(blob));
