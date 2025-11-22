@@ -1454,7 +1454,7 @@
 			"chatgpt",
 			"cursor",
 			"vscode",
-			"model-context-protocol"
+			"mcp"
 		]
 	},
 	"assistant": {
