@@ -46,6 +46,16 @@ import * as eth_signTransaction from "./signTransaction/eth_signTransaction.js";
 import * as eth_simulateV1 from "./simulateV1/eth_simulateV1.js";
 import * as eth_syncing from "./syncing/eth_syncing.js";
 import * as eth_uninstallFilter from "./uninstallFilter/eth_uninstallFilter.js";
+import * as eth_subscribe from "./subscribe/eth_subscribe.js";
+import * as eth_unsubscribe from "./unsubscribe/eth_unsubscribe.js";
+import * as eth_getWork from "./getWork/eth_getWork.js";
+import * as eth_submitWork from "./submitWork/eth_submitWork.js";
+import * as eth_submitHashrate from "./submitHashrate/eth_submitHashrate.js";
+import * as eth_hashrate from "./hashrate/eth_hashrate.js";
+import * as eth_mining from "./mining/eth_mining.js";
+import * as eth_getUncleByBlockHashAndIndex from "./getUncleByBlockHashAndIndex/eth_getUncleByBlockHashAndIndex.js";
+import * as eth_getUncleByBlockNumberAndIndex from "./getUncleByBlockNumberAndIndex/eth_getUncleByBlockNumberAndIndex.js";
+import * as eth_protocolVersion from "./protocolVersion/eth_protocolVersion.js";
 
 /**
  * Method name enum - provides string literals for each method
@@ -95,6 +105,16 @@ export const EthMethod = {
 	eth_simulateV1: "eth_simulateV1",
 	eth_syncing: "eth_syncing",
 	eth_uninstallFilter: "eth_uninstallFilter",
+	eth_subscribe: "eth_subscribe",
+	eth_unsubscribe: "eth_unsubscribe",
+	eth_getWork: "eth_getWork",
+	eth_submitWork: "eth_submitWork",
+	eth_submitHashrate: "eth_submitHashrate",
+	eth_hashrate: "eth_hashrate",
+	eth_mining: "eth_mining",
+	eth_getUncleByBlockHashAndIndex: "eth_getUncleByBlockHashAndIndex",
+	eth_getUncleByBlockNumberAndIndex: "eth_getUncleByBlockNumberAndIndex",
+	eth_protocolVersion: "eth_protocolVersion",
 };
 
 // Re-export individual method modules for direct access (tree-shakable)
@@ -139,6 +159,16 @@ export {
 	eth_simulateV1,
 	eth_syncing,
 	eth_uninstallFilter,
+	eth_subscribe,
+	eth_unsubscribe,
+	eth_getWork,
+	eth_submitWork,
+	eth_submitHashrate,
+	eth_hashrate,
+	eth_mining,
+	eth_getUncleByBlockHashAndIndex,
+	eth_getUncleByBlockNumberAndIndex,
+	eth_protocolVersion,
 };
 
 // ============================================================================
@@ -207,3 +237,16 @@ export const SimulateV1Request = eth_simulateV1.SimulateV1Request;
 export const SyncingRequest = eth_syncing.SyncingRequest;
 export const UninstallFilterRequest =
 	eth_uninstallFilter.UninstallFilterRequest;
+export const SubscribeRequest = eth_subscribe.SubscribeRequest;
+export const UnsubscribeRequest = eth_unsubscribe.UnsubscribeRequest;
+export const GetWorkRequest = eth_getWork.GetWorkRequest;
+export const SubmitWorkRequest = eth_submitWork.SubmitWorkRequest;
+export const SubmitHashrateRequest = eth_submitHashrate.SubmitHashrateRequest;
+export const HashrateRequest = eth_hashrate.HashrateRequest;
+export const MiningRequest = eth_mining.MiningRequest;
+export const GetUncleByBlockHashAndIndexRequest =
+	eth_getUncleByBlockHashAndIndex.GetUncleByBlockHashAndIndexRequest;
+export const GetUncleByBlockNumberAndIndexRequest =
+	eth_getUncleByBlockNumberAndIndex.GetUncleByBlockNumberAndIndexRequest;
+export const ProtocolVersionRequest =
+	eth_protocolVersion.ProtocolVersionRequest;

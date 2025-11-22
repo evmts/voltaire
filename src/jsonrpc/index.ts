@@ -17,6 +17,9 @@ export * as engine from "./engine/methods.js";
 export * as wallet from "./wallet/methods.js";
 export * as anvil from "./anvil/methods.js";
 export * as hardhat from "./hardhat/methods.js";
+export * as web3 from "./web3/methods.js";
+export * as net from "./net/methods.js";
+export * as txpool from "./txpool/methods.js";
 
 // Export shared types
 export * as types from "./types/index.js";
@@ -26,6 +29,9 @@ export * as types from "./types/index.js";
 // ============================================================================
 
 import * as _anvilMethods from "./anvil/methods.js";
+import * as _netMethods from "./net/methods.js";
+import * as _txpoolMethods from "./txpool/methods.js";
+import * as _web3Methods from "./web3/methods.js";
 /**
  * Rpc namespace - Modern API for creating JSON-RPC requests
  *
@@ -84,6 +90,10 @@ export namespace Rpc {
 			_ethMethods.GetUncleCountByBlockHashRequest,
 		GetUncleCountByBlockNumberRequest:
 			_ethMethods.GetUncleCountByBlockNumberRequest,
+		GetUncleByBlockHashAndIndexRequest:
+			_ethMethods.GetUncleByBlockHashAndIndexRequest,
+		GetUncleByBlockNumberAndIndexRequest:
+			_ethMethods.GetUncleByBlockNumberAndIndexRequest,
 		MaxPriorityFeePerGasRequest: _ethMethods.MaxPriorityFeePerGasRequest,
 		NewBlockFilterRequest: _ethMethods.NewBlockFilterRequest,
 		NewFilterRequest: _ethMethods.NewFilterRequest,
@@ -96,6 +106,14 @@ export namespace Rpc {
 		SimulateV1Request: _ethMethods.SimulateV1Request,
 		SyncingRequest: _ethMethods.SyncingRequest,
 		UninstallFilterRequest: _ethMethods.UninstallFilterRequest,
+		SubscribeRequest: _ethMethods.SubscribeRequest,
+		UnsubscribeRequest: _ethMethods.UnsubscribeRequest,
+		GetWorkRequest: _ethMethods.GetWorkRequest,
+		SubmitWorkRequest: _ethMethods.SubmitWorkRequest,
+		SubmitHashrateRequest: _ethMethods.SubmitHashrateRequest,
+		HashrateRequest: _ethMethods.HashrateRequest,
+		MiningRequest: _ethMethods.MiningRequest,
+		ProtocolVersionRequest: _ethMethods.ProtocolVersionRequest,
 	};
 
 	/**
@@ -119,4 +137,30 @@ export namespace Rpc {
 	 * Hardhat namespace - Request constructors for Hardhat Network methods
 	 */
 	export const Hardhat = _hardhatMethods;
+
+	/**
+	 * Web3 namespace - Request constructors for web3_ methods
+	 */
+	export const Web3 = {
+		ClientVersionRequest: _web3Methods.ClientVersionRequest,
+		Sha3Request: _web3Methods.Sha3Request,
+	};
+
+	/**
+	 * Net namespace - Request constructors for net_ methods
+	 */
+	export const Net = {
+		VersionRequest: _netMethods.VersionRequest,
+		ListeningRequest: _netMethods.ListeningRequest,
+		PeerCountRequest: _netMethods.PeerCountRequest,
+	};
+
+	/**
+	 * Txpool namespace - Request constructors for txpool_ methods
+	 */
+	export const Txpool = {
+		StatusRequest: _txpoolMethods.StatusRequest,
+		ContentRequest: _txpoolMethods.ContentRequest,
+		InspectRequest: _txpoolMethods.InspectRequest,
+	};
 }
