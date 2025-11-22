@@ -8,21 +8,6 @@ const hashNode = HashNode({ blake3 });
 
 /**
  * Insert value at key
- *
- * @param {import('./BinaryTreeType.js').BinaryTree} tree - Binary tree
- * @param {Uint8Array} k - 32-byte key
- * @param {Uint8Array} v - Value to insert
- * @returns {import('./BinaryTreeType.js').BinaryTree} Updated tree
- * @throws {InvalidKeyLengthError} If key is not 32 bytes
- * @throws {InvalidTreeStateError} If tree is in invalid state
- *
- * @example
- * ```typescript
- * let tree = BinaryTree.init();
- * const key = new Uint8Array(32);
- * const value = new Uint8Array(32);
- * tree = BinaryTree.insert(tree, key, value);
- * ```
  */
 export function insert(tree, k, v) {
 	const { stem, idx } = splitKey(k);
@@ -30,15 +15,19 @@ export function insert(tree, k, v) {
 	return { root };
 }
 
-/**
- * @param {import('./BinaryTreeType.js').Node} node
- * @param {Uint8Array} stem
- * @param {number} idx
- * @param {Uint8Array} v
- * @param {number} depth
- * @returns {import('./BinaryTreeType.js').Node}
- */
 function insertNode(node, stem, idx, v, depth) {
+	// Prevent infinite recursion by checking depth limit
+	if (depth > 300) {
+		throw new InvalidTreeStateError(
+			"Maximum tree depth exceeded - possible infinite recursion",
+			{
+				value: depth,
+				expected: "<= 300",
+				docsPath: "/primitives/binary-tree/insert#error-handling",
+			},
+		);
+	}
+
 	switch (node.type) {
 		case "empty": {
 			const values = new Array(256).fill(null);
@@ -54,25 +43,17 @@ function insertNode(node, stem, idx, v, depth) {
 			return splitStems(node, stem, idx, v, depth);
 		}
 		case "internal": {
-			const bit = getStemBit(stem, depth);
-			if (bit === 0) {
-				const newLeft = insertNode(
-					{ type: "internal", left: node.left, right: node.right },
-					stem,
-					idx,
-					v,
-					depth + 1,
-				);
-				return { type: "internal", left: hashNode(newLeft), right: node.right };
-			}
-			const newRight = insertNode(
-				{ type: "internal", left: node.left, right: node.right },
-				stem,
-				idx,
-				v,
-				depth + 1,
+			// Internal nodes in a Merkle tree only store hashes
+			// We cannot traverse them, so we cannot insert into a tree with internal root
+			// This is a limitation of the current implementation
+			throw new InvalidTreeStateError(
+				"Cannot insert into tree with internal node at this depth - tree structure limitation",
+				{
+					value: "internal",
+					expected: "empty or stem",
+					docsPath: "/primitives/binary-tree/insert#limitations",
+				},
 			);
-			return { type: "internal", left: node.left, right: hashNode(newRight) };
 		}
 		case "leaf":
 			throw new InvalidTreeStateError("Cannot insert into leaf node", {
@@ -83,15 +64,15 @@ function insertNode(node, stem, idx, v, depth) {
 	}
 }
 
-/**
- * @param {import('./BinaryTreeType.js').StemNode} existing
- * @param {Uint8Array} newStem
- * @param {number} newIdx
- * @param {Uint8Array} newVal
- * @param {number} depth
- * @returns {import('./BinaryTreeType.js').Node}
- */
 function splitStems(existing, newStem, newIdx, newVal, depth) {
+	// If we've checked all stem bits (248), stems must be equal
+	// Update the value in the existing stem node
+	if (depth >= 248) {
+		const values = [...existing.values];
+		values[newIdx] = newVal;
+		return { type: "stem", stem: existing.stem, values };
+	}
+
 	const existingBit = getStemBit(existing.stem, depth);
 	const newBit = getStemBit(newStem, depth);
 
@@ -107,12 +88,11 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 
 	const newValues = new Array(256).fill(null);
 	newValues[newIdx] = newVal;
-	const newStemNode =
-		/** @type {import('./BrandedBinaryTree.js').StemNode} */ ({
-			type: "stem",
-			stem: newStem,
-			values: newValues,
-		});
+	const newStemNode = {
+		type: "stem",
+		stem: newStem,
+		values: newValues,
+	};
 
 	const existingHash = hashNode(existing);
 	const newHash = hashNode(newStemNode);
@@ -123,11 +103,6 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 	return { type: "internal", left: newHash, right: existingHash };
 }
 
-/**
- * @param {Uint8Array} a
- * @param {Uint8Array} b
- * @returns {boolean}
- */
 function arraysEqual(a, b) {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {

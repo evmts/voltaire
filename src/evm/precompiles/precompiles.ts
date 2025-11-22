@@ -852,14 +852,41 @@ export function bls12G1Mul(
 }
 
 /**
+ * Calculate MSM gas cost with EIP-2537 discount
+ */
+function calculateMsmGas(k: number, baseCost: bigint): bigint {
+	if (k === 0) return 0n;
+	// EIP-2537 discount multipliers
+	const multipliers = [
+		0, 1, 1.64, 2.1, 2.32, 2.5, 2.64, 2.76, 2.86, 2.94, 3.02, 3.08, 3.14, 3.2,
+		3.26, 3.3, 3.34, 3.38, 3.42, 3.46, 3.5, 3.54, 3.58, 3.62, 3.66, 3.7, 3.74,
+		3.78, 3.82, 3.86, 3.9, 3.94,
+	];
+	const multiplier =
+		k < multipliers.length ? multipliers[k] : 3.94 + (k - 31) * 0.04;
+	return BigInt(Math.floor(Number(baseCost) * multiplier));
+}
+
+/**
  * BLS12_G1_MSM precompile (0x0d)
  */
 export function bls12G1Msm(
 	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
+	// Validate input length first
+	if (input.length % 160 !== 0 || input.length === 0) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid input length",
+		};
+	}
+
 	const k = input.length / 160;
-	const gas = 12000n * BigInt(k);
+	const gas = calculateMsmGas(k, 12000n);
+
 	if (gasLimit < gas) {
 		return {
 			success: false,
@@ -870,16 +897,6 @@ export function bls12G1Msm(
 	}
 
 	try {
-		// Validate input length is multiple of 160
-		if (input.length % 160 !== 0) {
-			return {
-				success: false,
-				output: new Uint8Array(0),
-				gasUsed: gas,
-				error: "Invalid input length",
-			};
-		}
-
 		const numPairs = Math.floor(input.length / 160);
 
 		// Perform multi-scalar multiplication manually
@@ -890,6 +907,10 @@ export function bls12G1Msm(
 			const scalar = beBytesToBigInt(
 				input.subarray(offset + 128, offset + 160),
 			);
+			// Skip zero scalar (noble validation)
+			if (scalar === 0n) {
+				continue;
+			}
 			result = result.add(point.multiply(scalar));
 		}
 
@@ -1012,8 +1033,19 @@ export function bls12G2Msm(
 	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
+	// Validate input length first
+	if (input.length % 288 !== 0 || input.length === 0) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid input length",
+		};
+	}
+
 	const k = input.length / 288;
-	const gas = 45000n * BigInt(k);
+	const gas = calculateMsmGas(k, 45000n);
+
 	if (gasLimit < gas) {
 		return {
 			success: false,
@@ -1024,16 +1056,6 @@ export function bls12G2Msm(
 	}
 
 	try {
-		// Validate input length is multiple of 288
-		if (input.length % 288 !== 0) {
-			return {
-				success: false,
-				output: new Uint8Array(0),
-				gasUsed: gas,
-				error: "Invalid input length",
-			};
-		}
-
 		const numPairs = Math.floor(input.length / 288);
 
 		// Perform multi-scalar multiplication manually
@@ -1044,6 +1066,10 @@ export function bls12G2Msm(
 			const scalar = beBytesToBigInt(
 				input.subarray(offset + 256, offset + 288),
 			);
+			// Skip zero scalar (noble validation)
+			if (scalar === 0n) {
+				continue;
+			}
 			result = result.add(point.multiply(scalar));
 		}
 
@@ -1068,8 +1094,19 @@ export function bls12Pairing(
 	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
+	// Validate input length first
+	if (input.length % 384 !== 0) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid input length",
+		};
+	}
+
 	const k = input.length / 384;
-	const gas = 115000n + BigInt(k) * 23000n;
+	const gas = 65000n + BigInt(k) * 43000n;
+
 	if (gasLimit < gas) {
 		return {
 			success: false,
@@ -1080,15 +1117,6 @@ export function bls12Pairing(
 	}
 
 	try {
-		// Validate input length is multiple of 384
-		if (input.length % 384 !== 0) {
-			return {
-				success: false,
-				output: new Uint8Array(0),
-				gasUsed: gas,
-				error: "Invalid input length",
-			};
-		}
 
 		const numPairs = Math.floor(input.length / 384);
 

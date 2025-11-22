@@ -16,5 +16,5 @@
  * ```
  */
 export function slice(hash, start, end) {
-	return hash.slice(start, end);
+	return Uint8Array.prototype.slice.call(hash, start, end);
 }

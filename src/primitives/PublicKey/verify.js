@@ -1,8 +1,8 @@
 /**
  * Factory: Verify signature against public key
  * @param {Object} deps - Crypto dependencies
- * @param {(signature: Uint8Array, hash: Uint8Array, publicKey: Uint8Array) => boolean} deps.secp256k1Verify - Secp256k1 signature verification function
- * @returns {(publicKey: Uint8Array, hash: Uint8Array, signature: Uint8Array) => boolean} Function that verifies ECDSA signature
+ * @param {(signature: import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType, hash: Uint8Array, publicKey: Uint8Array) => boolean} deps.secp256k1Verify - Secp256k1 signature verification function (expects 64-byte public key)
+ * @returns {(publicKey: Uint8Array, hash: Uint8Array, signature: import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType) => boolean} Function that verifies ECDSA signature
  */
 export function Verify({ secp256k1Verify }) {
 	/**
@@ -10,7 +10,7 @@ export function Verify({ secp256k1Verify }) {
 	 *
 	 * @param {import('./PublicKeyType.js').PublicKeyType} publicKey - Public key (64 bytes, uncompressed x,y)
 	 * @param {import('../Hash/BrandedHash.js').BrandedHash} hash - Message hash
-	 * @param {import('../Signature/SignatureType.js').SignatureType} signature - ECDSA signature
+	 * @param {import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType} signature - ECDSA signature
 	 * @returns {boolean} True if signature is valid
 	 *
 	 * @example
@@ -23,11 +23,6 @@ export function Verify({ secp256k1Verify }) {
 	 * ```
 	 */
 	return function verify(publicKey, hash, signature) {
-		// Add 0x04 prefix for uncompressed key
-		const fullKey = new Uint8Array(65);
-		fullKey[0] = 0x04;
-		fullKey.set(publicKey, 1);
-
-		return secp256k1Verify(signature, hash, fullKey);
+		return secp256k1Verify(signature, hash, publicKey);
 	};
 }

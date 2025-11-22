@@ -4,10 +4,11 @@ export { SIZE, HEX_SIZE } from "./constants.js";
 import { HEX_SIZE, SIZE } from "./constants.js";
 import { from } from "./from.js";
 import { hash } from "./hash.js";
+import { hashHex } from "./hashHex.js";
 import { hashString } from "./hashString.js";
 
 // Export individual functions
-export { from, hash, hashString };
+export { from, hash, hashHex, hashString };
 
 /**
  * Ripemd160Hash - Type-safe RIPEMD160 hash namespace
@@ -33,10 +34,12 @@ export const Ripemd160Hash = Object.assign(from, {
 	// Primary API (type-safe constructors)
 	from,
 	fromString: hashString,
+	fromHex: hashHex,
 
 	// Legacy API (kept for compatibility)
 	hash,
 	hashString,
+	hashHex,
 
 	// Constants
 	SIZE,

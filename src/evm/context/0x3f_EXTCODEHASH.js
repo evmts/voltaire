@@ -3,7 +3,10 @@ import { fromNumber } from "../../primitives/Address/fromNumber.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { gasCostAccessAddress, supportsConstantinople } from "./gasCostAccessAddress.js";
+import {
+	gasCostAccessAddress,
+	supportsConstantinople,
+} from "./gasCostAccessAddress.js";
 
 /**
  * EXTCODEHASH opcode (0x3f) - Get hash of an account's code

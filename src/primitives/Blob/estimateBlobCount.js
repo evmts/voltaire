@@ -1,4 +1,4 @@
-import { SIZE } from "./constants.js";
+import { BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB } from "./constants.js";
 
 /**
  * Estimate number of blobs needed for data
@@ -18,6 +18,8 @@ export function estimateBlobCount(dataSize) {
 	if (dataSize < 0) {
 		throw new Error(`Invalid data size: ${dataSize}`);
 	}
-	const maxDataPerBlob = SIZE - 8; // Account for length prefix
+	// Each field element holds 31 bytes of data (1 byte reserved for 0x00)
+	const maxDataPerBlob =
+		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 	return Math.ceil(dataSize / maxDataPerBlob);
 }

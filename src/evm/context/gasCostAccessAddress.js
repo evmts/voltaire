@@ -1,4 +1,7 @@
-import { ColdAccountAccess, WarmStorageRead } from "../../primitives/GasConstants/constants.js";
+import {
+	ColdAccountAccess,
+	WarmStorageRead,
+} from "../../primitives/GasConstants/constants.js";
 import { toHex } from "../../primitives/Address/toHex.js";
 
 /**
@@ -63,8 +66,5 @@ export function supportsConstantinople(frame) {
 	if (!frame.hardfork) return true; // Default to supporting if not specified
 
 	const hardfork = frame.hardfork;
-	return (
-		hardfork === "constantinople" ||
-		hardfork >= "constantinople"
-	);
+	return hardfork === "constantinople" || hardfork >= "constantinople";
 }

@@ -14,6 +14,7 @@ pub const P256_GY: u256 = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6
 
 /// Sign a message hash with a private key
 /// Returns signature as r || s (64 bytes)
+/// Enforces low-s for malleability protection
 pub fn sign(
     allocator: std.mem.Allocator,
     hash: []const u8,
@@ -28,7 +29,27 @@ pub fn sign(
     const sig = try key_pair.signPrehashed(hash[0..32].*, null);
 
     const result = try allocator.alloc(u8, 64);
-    @memcpy(result, &sig.toBytes());
+    var sig_bytes = sig.toBytes();
+    @memcpy(result, &sig_bytes);
+
+    // Enforce low-s for malleability protection
+    // If s > n/2, replace s with n - s
+    var s_int: u256 = 0;
+    for (sig_bytes[32..64]) |byte| {
+        s_int = (s_int << 8) | @as(u256, byte);
+    }
+
+    const half_n: u256 = P256_N / 2;
+    if (s_int > half_n) {
+        const new_s = P256_N - s_int;
+        // Write new_s back to result in big-endian (bytes 32-63)
+        var i: usize = 0;
+        var remaining = new_s;
+        while (i < 32) : (i += 1) {
+            result[63 - i] = @as(u8, @truncate(remaining & 0xff));
+            remaining >>= 8;
+        }
+    }
 
     return result;
 }

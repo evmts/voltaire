@@ -1,9 +1,9 @@
 /**
- * Factory: Create Address from secp256k1 public key (standard form)
+ * Factory: Create Address from secp256k1 public key
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(x: bigint, y: bigint) => import('./AddressType.js').AddressType} Function that creates Address from public key coordinates
+ * @returns {(xOrPublicKey: bigint | Uint8Array, y?: bigint) => import('./AddressType.js').AddressType} Function that creates Address from public key
  *
  * @example
  * ```typescript
@@ -11,22 +11,44 @@
  * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
  *
  * const fromPublicKey = FromPublicKey({ keccak256 })
- * const addr = fromPublicKey(xCoord, yCoord)
+ * // From coordinates
+ * const addr1 = fromPublicKey(xCoord, yCoord)
+ * // From 64-byte public key
+ * const addr2 = fromPublicKey(publicKeyBytes)
  * ```
  */
 export function FromPublicKey({ keccak256 }) {
-	return function fromPublicKey(x, y) {
-		// Encode public key as 64 bytes (uncompressed, no prefix)
-		const pubkey = new Uint8Array(64);
+	return function fromPublicKey(xOrPublicKey, y) {
+		let pubkey;
 
-		// Encode x coordinate (32 bytes, big-endian)
-		for (let i = 0; i < 32; i++) {
-			pubkey[31 - i] = Number((x >> BigInt(i * 8)) & 0xffn);
-		}
+		// Handle Uint8Array input (64-byte public key)
+		if (xOrPublicKey instanceof Uint8Array) {
+			if (xOrPublicKey.length !== 64) {
+				throw new Error(`Invalid public key length: expected 64 bytes, got ${xOrPublicKey.length}`);
+			}
+			pubkey = xOrPublicKey;
+		} else {
+			// Handle bigint coordinates (x, y)
+			if (typeof y !== 'bigint') {
+				throw new Error('When x is bigint, y coordinate must also be provided as bigint');
+			}
 
-		// Encode y coordinate (32 bytes, big-endian)
-		for (let i = 0; i < 32; i++) {
-			pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
+			// Encode public key as 64 bytes (uncompressed, no prefix)
+			pubkey = new Uint8Array(64);
+
+			// Encode x coordinate (32 bytes, big-endian)
+			let xVal = xOrPublicKey;
+			for (let i = 31; i >= 0; i--) {
+				pubkey[i] = Number(xVal & 0xffn);
+				xVal >>= 8n;
+			}
+
+			// Encode y coordinate (32 bytes, big-endian)
+			let yVal = y;
+			for (let i = 63; i >= 32; i--) {
+				pubkey[i] = Number(yVal & 0xffn);
+				yVal >>= 8n;
+			}
 		}
 
 		// Hash and take last 20 bytes

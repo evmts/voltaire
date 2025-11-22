@@ -6,6 +6,7 @@ export * from "./EIP712Type.js";
 import { hash as keccak256 } from "../Keccak256/hash.js";
 import { recoverPublicKey as secp256k1RecoverPublicKey } from "../Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
+import { from as privateKeyFrom } from "../../primitives/PrivateKey/from.js";
 
 // Import factories
 import { Hash as HashDomain } from "./Domain/hash.js";
@@ -70,8 +71,16 @@ const recoverAddress = RecoverAddress({
 	hashTypedData,
 });
 
-const signTypedData = SignTypedData({ hashTypedData, sign: secp256k1Sign });
+const _signTypedData = SignTypedData({ hashTypedData, sign: secp256k1Sign });
 const verifyTypedData = VerifyTypedData({ recoverAddress });
+
+// Wrapper for signTypedData to accept string or Uint8Array private keys
+function signTypedData(typedData, privateKey) {
+	const privateKeyBytes = typeof privateKey === 'string'
+		? privateKeyFrom(privateKey)
+		: privateKey;
+	return _signTypedData(typedData, privateKeyBytes);
+}
 
 // Export convenience wrappers with auto-injected crypto
 export {
@@ -84,6 +93,7 @@ export {
 	recoverAddress,
 	signTypedData,
 	verifyTypedData,
+	_signTypedData,
 };
 
 /**

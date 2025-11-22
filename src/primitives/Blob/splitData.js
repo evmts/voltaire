@@ -1,4 +1,8 @@
-import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
+import {
+	MAX_PER_TRANSACTION,
+	BYTES_PER_FIELD_ELEMENT,
+	FIELD_ELEMENTS_PER_BLOB,
+} from "./constants.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
 import { fromData } from "./fromData.js";
 
@@ -18,7 +22,9 @@ import { fromData } from "./fromData.js";
  * ```
  */
 export function splitData(data) {
-	const maxDataPerBlob = SIZE - 8;
+	// Each field element holds 31 bytes of data (1 byte reserved for 0x00)
+	const maxDataPerBlob =
+		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 	const blobCount = estimateBlobCount(data.length);
 
 	if (blobCount > MAX_PER_TRANSACTION) {

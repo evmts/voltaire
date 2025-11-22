@@ -102,7 +102,11 @@ Hash.merkleRoot = (hashes) => {
 	return result;
 };
 
-Hash.ZERO = HashType.ZERO;
+// Wrap ZERO constant with prototype
+const _ZERO = HashType.ZERO;
+Object.setPrototypeOf(_ZERO, Hash.prototype);
+Hash.ZERO = _ZERO;
+
 Hash.SIZE = HashType.SIZE;
 
 // Set up Hash.prototype to inherit from Uint8Array.prototype

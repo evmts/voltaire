@@ -1,5 +1,5 @@
 // @ts-nocheck
-import * as HexType from "./index.js";
+import * as HexType from "./internal-index.js";
 
 // Re-export errors
 export * from "./errors.js";

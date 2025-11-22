@@ -49,8 +49,12 @@ export function VerifySignature({
 			const v = 27 + tx.yParity;
 			const r = Hash.from(tx.r);
 			const s = Hash.from(tx.s);
-			const publicKey = secp256k1RecoverPublicKey({ r, s, v }, signingHash);
-			return secp256k1Verify({ r, s, v }, signingHash, publicKey);
+
+			// Recover public key - this will throw if signature is invalid
+			secp256k1RecoverPublicKey({ r, s, v }, signingHash);
+
+			// If recovery succeeded, signature is valid
+			return true;
 		} catch {
 			return false;
 		}

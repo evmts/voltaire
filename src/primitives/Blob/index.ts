@@ -34,9 +34,11 @@ import { Verify } from "./verify.js";
 // Import KZG functions from crypto module
 import {
 	blobToKzgCommitment,
-	computeKzgProof,
 	verifyBlobKzgProof,
 } from "../../crypto/KZG/index.js";
+
+// Import c-kzg directly for computeBlobKzgProof (not yet wrapped in KZG module)
+import * as ckzg from "c-kzg";
 
 // Create wrapper functions with crypto auto-injected
 export const toVersionedHash = ToVersionedHash({ sha256 });
@@ -44,7 +46,7 @@ export const toCommitment = ToCommitment({
 	blobToKzgCommitment,
 });
 export const toProof = ToProof({
-	computeBlobKzgProof: computeKzgProof,
+	computeBlobKzgProof: ckzg.computeBlobKzgProof,
 });
 export const verify = Verify({ verifyBlobKzgProof });
 

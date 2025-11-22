@@ -139,9 +139,17 @@ Address.fromBase64 = (value: string): AddressType => {
 };
 Address.fromBase64.prototype = Address.prototype;
 
-Address.fromHex = (value: string): AddressType => {
+Address.fromHex = (value: string, crypto?: AddressCrypto): AddressType => {
 	const result = BrandedAddress.fromHex(value);
 	Object.setPrototypeOf(result, Address.prototype);
+	if (crypto) {
+		Object.defineProperty(result, "_crypto", {
+			value: crypto,
+			writable: false,
+			enumerable: false,
+			configurable: false,
+		});
+	}
 	return result;
 };
 Address.fromHex.prototype = Address.prototype;
@@ -160,10 +168,16 @@ Address.fromNumber = (value: number | bigint): AddressType => {
 };
 Address.fromNumber.prototype = Address.prototype;
 
-Address.fromPublicKey = (x: bigint, y: bigint): AddressType => {
-	const result = BrandedAddress.fromPublicKey(x, y);
+Address.fromPublicKey = ((
+	xOrPublicKey: bigint | Uint8Array,
+	y?: bigint,
+): AddressType => {
+	const result = BrandedAddress.fromPublicKey(xOrPublicKey, y);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
+}) as {
+	(x: bigint, y: bigint): AddressType;
+	(publicKey: Uint8Array): AddressType;
 };
 Address.fromPublicKey.prototype = Address.prototype;
 
