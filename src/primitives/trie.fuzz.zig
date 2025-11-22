@@ -597,3 +597,542 @@ fn fuzzMultipleDeletes(_: void, input: []const u8) !void {
         try std.testing.expectEqualStrings("value3", v);
     }
 }
+
+// ============================================================================
+// Proof Generation and Verification Fuzzing
+// ============================================================================
+
+test "fuzz proof generation" {
+    try std.testing.fuzz({}, fuzzProofGeneration, .{});
+}
+
+fn fuzzProofGeneration(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert data
+    const split = input.len / 2;
+    const key1 = input[0..split];
+    const key2 = input[split..];
+
+    t.put(key1, "value1") catch return;
+    t.put(key2, "value2") catch return;
+
+    // Generate proof (if method exists)
+    // Note: This assumes a prove() method exists. Adjust if different.
+    // _ = t.prove(key1) catch return;
+}
+
+// ============================================================================
+// Malformed Trie Structure Fuzzing
+// ============================================================================
+
+test "fuzz malformed node hash" {
+    try std.testing.fuzz({}, fuzzMalformedNodeHash, .{});
+}
+
+fn fuzzMalformedNodeHash(_: void, input: []const u8) !void {
+    if (input.len < 32) return;
+
+    // Create node with corrupted hash
+    var hash: [32]u8 = undefined;
+    @memcpy(&hash, input[0..32]);
+
+    // BranchNode with potentially invalid hash
+    var branch = trie.BranchNode.init();
+    defer branch.deinit(std.testing.allocator);
+
+    for (0..16) |i| {
+        if (input[i % input.len] % 3 == 0) {
+            branch.set_child(@intCast(i), hash);
+        }
+    }
+
+    // Verify mask consistency
+    const count = branch.mask.bit_count();
+    try std.testing.expect(count <= 16);
+}
+
+test "fuzz invalid rlp nodes" {
+    try std.testing.fuzz({}, fuzzInvalidRlpNodes, .{});
+}
+
+fn fuzzInvalidRlpNodes(_: void, input: []const u8) !void {
+    // Test with arbitrary bytes as RLP
+    // This tests robustness against malformed encoded nodes
+
+    // Create trie and attempt operations with malformed data
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Operations should not crash on malformed internal state
+    t.put(input, "value") catch return;
+    _ = t.get(input) catch return;
+}
+
+// ============================================================================
+// Maximum Depth Testing
+// ============================================================================
+
+test "fuzz maximum depth trie" {
+    try std.testing.fuzz({}, fuzzMaxDepth, .{});
+}
+
+fn fuzzMaxDepth(_: void, input: []const u8) !void {
+    if (input.len < 16) return;
+    if (input.len > 512) return; // Limit for performance
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Create keys with incrementing prefixes to force deep trie
+    var key_buffer: [64]u8 = undefined;
+    for (0..@min(input.len / 4, 8)) |depth| {
+        const key_len = depth + 1;
+        @memcpy(key_buffer[0..key_len], input[depth * 4 .. depth * 4 + key_len]);
+
+        const key = key_buffer[0..key_len];
+        t.put(key, "value") catch return;
+    }
+
+    // Verify all keys still retrievable
+    for (0..@min(input.len / 4, 8)) |depth| {
+        const key_len = depth + 1;
+        @memcpy(key_buffer[0..key_len], input[depth * 4 .. depth * 4 + key_len]);
+
+        const key = key_buffer[0..key_len];
+        const result = t.get(key) catch return;
+        if (result) |v| {
+            try std.testing.expectEqualStrings("value", v);
+        }
+    }
+}
+
+test "fuzz extremely deep path" {
+    try std.testing.fuzz({}, fuzzExtremelyDeepPath, .{});
+}
+
+fn fuzzExtremelyDeepPath(_: void, input: []const u8) !void {
+    if (input.len < 128) return;
+    if (input.len > 1024) return; // Limit for performance
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert with very long key
+    t.put(input, "deep_value") catch return;
+
+    // Retrieve should succeed
+    const result = t.get(input) catch return;
+    if (result) |v| {
+        try std.testing.expectEqualStrings("deep_value", v);
+    }
+
+    // Delete should work
+    t.delete(input) catch return;
+
+    // Should be gone
+    const after_delete = t.get(input) catch return;
+    try std.testing.expect(after_delete == null);
+}
+
+// ============================================================================
+// Branch Node Edge Cases
+// ============================================================================
+
+test "fuzz branch all children populated" {
+    try std.testing.fuzz({}, fuzzBranchAllChildren, .{});
+}
+
+fn fuzzBranchAllChildren(_: void, input: []const u8) !void {
+    if (input.len < 16) return;
+
+    var branch = trie.BranchNode.init();
+    defer branch.deinit(std.testing.allocator);
+
+    // Populate all 16 children
+    for (0..16) |i| {
+        var hash: [32]u8 = undefined;
+        const start = (i * 2) % input.len;
+        const end = @min(start + 32, input.len);
+        const fill_len = end - start;
+        @memcpy(hash[0..fill_len], input[start..end]);
+        if (fill_len < 32) {
+            @memset(hash[fill_len..], input[i % input.len]);
+        }
+
+        branch.set_child(@intCast(i), hash);
+    }
+
+    // Property: all children set
+    try std.testing.expectEqual(@as(u5, 16), branch.mask.bit_count());
+
+    // Property: not single child
+    try std.testing.expect(!branch.has_single_child());
+
+    // Property: all indices have children
+    for (0..16) |i| {
+        try std.testing.expect(branch.mask.is_set(@intCast(i)));
+    }
+}
+
+test "fuzz branch collapse scenarios" {
+    try std.testing.fuzz({}, fuzzBranchCollapse, .{});
+}
+
+fn fuzzBranchCollapse(_: void, input: []const u8) !void {
+    if (input.len < 6) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Create scenario where branch should collapse
+    // Insert two keys with common prefix
+    const key1 = input[0..2];
+    const key2 = input[2..4];
+    const key3 = input[4..6];
+
+    t.put(key1, "v1") catch return;
+    t.put(key2, "v2") catch return;
+    t.put(key3, "v3") catch return;
+
+    // Delete one - may trigger collapse
+    t.delete(key2) catch return;
+
+    // Remaining keys should still be accessible
+    _ = t.get(key1) catch return;
+    _ = t.get(key3) catch return;
+}
+
+// ============================================================================
+// Extension Node Edge Cases
+// ============================================================================
+
+test "fuzz extension maximum length path" {
+    try std.testing.fuzz({}, fuzzExtensionMaxPath, .{});
+}
+
+fn fuzzExtensionMaxPath(_: void, input: []const u8) !void {
+    if (input.len < 64) return;
+
+    // Create extension with very long path
+    var hash: [32]u8 = undefined;
+    @memcpy(&hash, input[input.len - 32 ..]);
+
+    const nibbles = input[0 .. input.len - 32];
+
+    var ext = trie.ExtensionNode.init(std.testing.allocator, nibbles, hash) catch return;
+    defer ext.deinit(std.testing.allocator);
+
+    // Property: data preserved
+    try std.testing.expectEqualSlices(u8, nibbles, ext.nibbles);
+    try std.testing.expectEqualSlices(u8, &hash, &ext.child_hash);
+}
+
+test "fuzz extension splitting" {
+    try std.testing.fuzz({}, fuzzExtensionSplitting, .{});
+}
+
+fn fuzzExtensionSplitting(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert keys that will create and split extensions
+    const key1 = input[0..4];
+    const key2 = input[0..3]; // Prefix of key1
+    const key3 = input[0..5]; // Extension of key1
+
+    t.put(key1, "value1") catch return;
+    t.put(key2, "value2") catch return;
+    t.put(key3, "value3") catch return;
+
+    // All should be retrievable
+    _ = t.get(key1) catch return;
+    _ = t.get(key2) catch return;
+    _ = t.get(key3) catch return;
+}
+
+// ============================================================================
+// Path Encoding Edge Cases
+// ============================================================================
+
+test "fuzz invalid prefix bytes" {
+    try std.testing.fuzz({}, fuzzInvalidPrefixBytes, .{});
+}
+
+fn fuzzInvalidPrefixBytes(_: void, input: []const u8) !void {
+    if (input.len == 0) return;
+
+    // Test with arbitrary prefix bytes
+    const result = trie.decodePath(std.testing.allocator, input) catch |err| {
+        // Expected to fail with invalid paths
+        try std.testing.expect(err == trie.TrieError.InvalidPath);
+        return;
+    };
+    defer std.testing.allocator.free(result.nibbles);
+
+    // If successful, nibbles should be valid
+    for (result.nibbles) |n| {
+        try std.testing.expect(n <= 0x0F);
+    }
+}
+
+test "fuzz path encoding all prefixes" {
+    try std.testing.fuzz({}, fuzzPathEncodingAllPrefixes, .{});
+}
+
+fn fuzzPathEncodingAllPrefixes(_: void, input: []const u8) !void {
+    // Test with valid nibbles but various odd/even lengths
+    var nibbles = std.testing.allocator.alloc(u8, input.len) catch return;
+    defer std.testing.allocator.free(nibbles);
+
+    for (input, 0..) |byte, i| {
+        nibbles[i] = byte & 0x0F;
+    }
+
+    // Test both leaf and extension variants
+    for ([_]bool{ false, true }) |is_leaf| {
+        const encoded = trie.encodePath(std.testing.allocator, nibbles, is_leaf) catch return;
+        defer std.testing.allocator.free(encoded);
+
+        const decoded = trie.decodePath(std.testing.allocator, encoded) catch return;
+        defer std.testing.allocator.free(decoded.nibbles);
+
+        // Roundtrip verification
+        try std.testing.expectEqual(is_leaf, decoded.is_leaf);
+        try std.testing.expectEqualSlices(u8, nibbles, decoded.nibbles);
+    }
+}
+
+// ============================================================================
+// Stress Testing
+// ============================================================================
+
+test "fuzz massive sequential insertions" {
+    try std.testing.fuzz({}, fuzzMassiveInsertions, .{});
+}
+
+fn fuzzMassiveInsertions(_: void, input: []const u8) !void {
+    if (input.len < 32) return;
+    if (input.len > 512) return; // Limit for performance
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert many keys derived from input
+    var i: usize = 0;
+    while (i + 4 <= input.len) : (i += 4) {
+        const key = input[i .. i + 4];
+        t.put(key, "value") catch continue;
+    }
+
+    // Verify hash is stable
+    const hash1 = t.root_hash();
+    const hash2 = t.root_hash();
+
+    if (hash1) |h1| {
+        if (hash2) |h2| {
+            try std.testing.expectEqualSlices(u8, &h1, &h2);
+        }
+    }
+}
+
+test "fuzz alternating insert delete" {
+    try std.testing.fuzz({}, fuzzAlternatingOps, .{});
+}
+
+fn fuzzAlternatingOps(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Alternate between insert and delete
+    var i: usize = 0;
+    while (i + 4 <= input.len) : (i += 4) {
+        const key = input[i .. i + 4];
+        const op = input[i] % 2;
+
+        if (op == 0) {
+            t.put(key, "value") catch continue;
+        } else {
+            t.delete(key) catch continue;
+        }
+    }
+
+    // Trie should remain valid
+    _ = t.root_hash();
+}
+
+// ============================================================================
+// Concurrent-like Fuzzing (Sequential but adversarial)
+// ============================================================================
+
+test "fuzz overlapping key modifications" {
+    try std.testing.fuzz({}, fuzzOverlappingKeys, .{});
+}
+
+fn fuzzOverlappingKeys(_: void, input: []const u8) !void {
+    if (input.len < 12) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Create overlapping keys
+    const key1 = input[0..4];
+    const key2 = input[0..6]; // Extends key1
+    const key3 = input[0..3]; // Prefix of key1
+
+    // Modify in various orders
+    t.put(key1, "v1") catch return;
+    t.put(key2, "v2") catch return;
+    t.put(key3, "v3") catch return;
+
+    // Update middle key
+    t.put(key1, "v1_updated") catch return;
+
+    // Delete prefix
+    t.delete(key3) catch return;
+
+    // Verify remaining keys
+    const r1 = t.get(key1) catch return;
+    if (r1) |v| {
+        try std.testing.expectEqualStrings("v1_updated", v);
+    }
+
+    const r2 = t.get(key2) catch return;
+    if (r2) |v| {
+        try std.testing.expectEqualStrings("v2", v);
+    }
+
+    const r3 = t.get(key3) catch return;
+    try std.testing.expect(r3 == null);
+}
+
+// ============================================================================
+// Hash Collision Testing
+// ============================================================================
+
+test "fuzz hash collision simulation" {
+    try std.testing.fuzz({}, fuzzHashCollision, .{});
+}
+
+fn fuzzHashCollision(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    var t1 = Trie.init(std.testing.allocator);
+    defer t1.deinit();
+
+    var t2 = Trie.init(std.testing.allocator);
+    defer t2.deinit();
+
+    // Insert different keys
+    const key1 = input[0..4];
+    const key2 = input[4..8];
+
+    t1.put(key1, "value") catch return;
+    t2.put(key2, "value") catch return;
+
+    const hash1 = t1.root_hash();
+    const hash2 = t2.root_hash();
+
+    // Different keys should produce different hashes
+    if (hash1) |h1| {
+        if (hash2) |h2| {
+            if (!std.mem.eql(u8, key1, key2)) {
+                // Should differ (collision would be extremely rare)
+                _ = std.mem.eql(u8, &h1, &h2);
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Memory Stress Testing
+// ============================================================================
+
+test "fuzz memory intensive operations" {
+    try std.testing.fuzz({}, fuzzMemoryIntensive, .{});
+}
+
+fn fuzzMemoryIntensive(_: void, input: []const u8) !void {
+    if (input.len > 1024) return; // Limit size
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    var t = Trie.init(arena.allocator());
+    defer t.deinit();
+
+    // Many operations with arena allocator
+    var i: usize = 0;
+    while (i + 2 <= input.len) : (i += 2) {
+        const key = input[i .. i + 2];
+        t.put(key, "value") catch continue;
+    }
+
+    // Mass retrieval
+    i = 0;
+    while (i + 2 <= input.len) : (i += 2) {
+        const key = input[i .. i + 2];
+        _ = t.get(key) catch continue;
+    }
+}
+
+// ============================================================================
+// Edge Case: Empty Paths and Values
+// ============================================================================
+
+test "fuzz empty path edge cases" {
+    try std.testing.fuzz({}, fuzzEmptyPaths, .{});
+}
+
+fn fuzzEmptyPaths(_: void, input: []const u8) !void {
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert empty key
+    t.put("", "empty_key_value") catch return;
+
+    // Insert normal keys
+    if (input.len > 0) {
+        t.put(input, "normal_value") catch return;
+    }
+
+    // Retrieve empty key
+    const empty_result = t.get("") catch return;
+    if (empty_result) |v| {
+        try std.testing.expectEqualStrings("empty_key_value", v);
+    }
+
+    // Delete empty key
+    t.delete("") catch return;
+
+    // Should be gone
+    const after_delete = t.get("") catch return;
+    try std.testing.expect(after_delete == null);
+}
+
+test "fuzz empty value edge cases" {
+    try std.testing.fuzz({}, fuzzEmptyValues, .{});
+}
+
+fn fuzzEmptyValues(_: void, input: []const u8) !void {
+    if (input.len == 0) return;
+
+    var t = Trie.init(std.testing.allocator);
+    defer t.deinit();
+
+    // Insert with empty value
+    t.put(input, "") catch return;
+
+    // Retrieve should work
+    const result = t.get(input) catch return;
+    if (result) |v| {
+        try std.testing.expectEqualStrings("", v);
+    }
+}

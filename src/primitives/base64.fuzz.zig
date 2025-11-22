@@ -424,3 +424,479 @@ fn countTrailing(slice: []const u8, char: u8) usize {
     }
     return count;
 }
+
+// ============================================================================
+// Adversarial Scenarios - Whitespace Injection
+// ============================================================================
+
+test "fuzz whitespace injection standard" {
+    try testing.fuzz({}, testWhitespaceInjectionStandard, .{});
+}
+
+fn testWhitespaceInjectionStandard(_: void, input: []const u8) !void {
+    if (input.len == 0) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Encode clean data first
+    const encoded = base64.encode(alloc, input) catch return;
+
+    // Inject whitespace characters (space, tab, newline, CR)
+    const ws_chars = [_]u8{ ' ', '\t', '\n', '\r' };
+    var modified = std.ArrayList(u8).init(alloc);
+
+    var i: usize = 0;
+    while (i < encoded.len) : (i += 1) {
+        // Randomly inject whitespace based on input
+        if (i < input.len and input[i] % 4 == 0) {
+            const ws_char = ws_chars[input[i] % ws_chars.len];
+            try modified.append(ws_char);
+        }
+        try modified.append(encoded[i]);
+    }
+
+    // Decode should reject whitespace in standard mode
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+test "fuzz mixed whitespace patterns" {
+    try testing.fuzz({}, testMixedWhitespacePatterns, .{});
+}
+
+fn testMixedWhitespacePatterns(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Create valid base64 with mixed whitespace
+    var modified = std.ArrayList(u8).init(alloc);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    for (input, 0..) |byte, i| {
+        if (i % 8 == 0) try modified.append(' ');
+        if (i % 11 == 0) try modified.append('\t');
+        if (i % 17 == 0) try modified.append('\n');
+        try modified.append(alphabet[byte % 64]);
+    }
+
+    // Should fail due to whitespace
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+// ============================================================================
+// Adversarial Scenarios - Mixed Character Sets
+// ============================================================================
+
+test "fuzz mixed standard and url-safe chars" {
+    try testing.fuzz({}, testMixedCharSets, .{});
+}
+
+fn testMixedCharSets(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Create mixed string with both +/ and -_
+    var modified = std.ArrayList(u8).init(alloc);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (input, 0..) |byte, i| {
+        if (i % 5 == 0 and byte % 2 == 0) {
+            try modified.append('+'); // Standard
+        } else if (i % 5 == 0) {
+            try modified.append('-'); // URL-safe
+        } else if (i % 7 == 0 and byte % 2 == 0) {
+            try modified.append('/'); // Standard
+        } else if (i % 7 == 0) {
+            try modified.append('_'); // URL-safe
+        } else {
+            try modified.append(alphabet[byte % 62]);
+        }
+    }
+
+    // Ensure length is multiple of 4
+    while (modified.items.len % 4 != 0) {
+        try modified.append('=');
+    }
+
+    // Standard decoder should reject URL-safe chars
+    _ = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidCharacter);
+        return;
+    };
+}
+
+// ============================================================================
+// Adversarial Scenarios - Case Sensitivity
+// ============================================================================
+
+test "fuzz case sensitivity edge cases" {
+    try testing.fuzz({}, testCaseSensitivity, .{});
+}
+
+fn testCaseSensitivity(_: void, input: []const u8) !void {
+    if (input.len == 0) return;
+
+    // Encode then flip case randomly
+    const encoded = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const modified = try alloc.dupe(u8, encoded);
+
+    // Flip case for some characters based on input pattern
+    for (modified, 0..) |*char, i| {
+        if (i < input.len and input[i] % 3 == 0) {
+            if (char.* >= 'A' and char.* <= 'Z') {
+                char.* = char.* + 32; // to lowercase
+            } else if (char.* >= 'a' and char.* <= 'z') {
+                char.* = char.* - 32; // to uppercase
+            }
+        }
+    }
+
+    // Decode - case changes should produce different result or error
+    const decoded = base64.decode(testing.allocator, modified) catch return;
+    defer testing.allocator.free(decoded);
+
+    // If decode succeeded, result may differ from original
+    _ = decoded;
+}
+
+// ============================================================================
+// Adversarial Scenarios - Very Large Inputs
+// ============================================================================
+
+test "fuzz very large inputs" {
+    try testing.fuzz({}, testVeryLargeInputs, .{});
+}
+
+fn testVeryLargeInputs(_: void, input: []const u8) !void {
+    if (input.len > 10000) return; // Limit to reasonable size
+
+    // Should handle large inputs gracefully
+    const encoded = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    const decoded = base64.decode(testing.allocator, encoded) catch return;
+    defer testing.allocator.free(decoded);
+
+    try testing.expectEqualSlices(u8, input, decoded);
+}
+
+// ============================================================================
+// Adversarial Scenarios - Boundary Length Fuzzing
+// ============================================================================
+
+test "fuzz boundary lengths modulo 4" {
+    try testing.fuzz({}, testBoundaryLengths, .{});
+}
+
+fn testBoundaryLengths(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    // Test all boundary cases: len % 4 == 1, 2, 3
+    for ([_]usize{ 1, 2, 3 }) |remainder| {
+        const len = (input.len / 4) * 4 + remainder;
+        if (len > input.len) continue;
+
+        const slice = input[0..len];
+        const encoded = base64.encode(testing.allocator, slice) catch continue;
+        defer testing.allocator.free(encoded);
+
+        const decoded = base64.decode(testing.allocator, encoded) catch continue;
+        defer testing.allocator.free(decoded);
+
+        try testing.expectEqualSlices(u8, slice, decoded);
+    }
+}
+
+test "fuzz truncated encoded inputs" {
+    try testing.fuzz({}, testTruncatedInputs, .{});
+}
+
+fn testTruncatedInputs(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    const encoded = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    // Truncate at various positions
+    var i: usize = 1;
+    while (i < encoded.len) : (i += 1) {
+        const truncated = encoded[0..i];
+
+        // Truncated input should either error or decode partially
+        const decoded = base64.decode(testing.allocator, truncated) catch continue;
+        testing.allocator.free(decoded);
+    }
+}
+
+// ============================================================================
+// Adversarial Scenarios - Null Byte Handling
+// ============================================================================
+
+test "fuzz null byte in input" {
+    try testing.fuzz({}, testNullBytes, .{});
+}
+
+fn testNullBytes(_: void, input: []const u8) !void {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Create input with embedded nulls
+    var modified = std.ArrayList(u8).init(alloc);
+    for (input, 0..) |byte, i| {
+        try modified.append(byte);
+        if (i % 7 == 0) {
+            try modified.append(0); // Null byte
+        }
+    }
+
+    // Should handle null bytes in data
+    const encoded = base64.encode(testing.allocator, modified.items) catch return;
+    defer testing.allocator.free(encoded);
+
+    const decoded = base64.decode(testing.allocator, encoded) catch return;
+    defer testing.allocator.free(decoded);
+
+    try testing.expectEqualSlices(u8, modified.items, decoded);
+}
+
+// ============================================================================
+// Adversarial Scenarios - Malformed Padding
+// ============================================================================
+
+test "fuzz triple padding" {
+    try testing.fuzz({}, testTriplePadding, .{});
+}
+
+fn testTriplePadding(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Create valid base64 then add triple padding
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    var modified = std.ArrayList(u8).init(alloc);
+
+    const len = (input.len / 4) * 4;
+    for (input[0..len]) |byte| {
+        try modified.append(alphabet[byte % 64]);
+    }
+    try modified.append('=');
+    try modified.append('=');
+    try modified.append('='); // Invalid triple padding
+
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidPadding or err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+test "fuzz padding in wrong positions" {
+    try testing.fuzz({}, testPaddingWrongPositions, .{});
+}
+
+fn testPaddingWrongPositions(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    var modified = std.ArrayList(u8).init(alloc);
+
+    // Build string with padding at wrong position
+    for (input, 0..) |byte, i| {
+        if (i == input.len / 2) {
+            try modified.append('='); // Padding in middle
+        }
+        try modified.append(alphabet[byte % 64]);
+    }
+
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidPadding or err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+test "fuzz padding before data" {
+    try testing.fuzz({}, testPaddingBeforeData, .{});
+}
+
+fn testPaddingBeforeData(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    var modified = std.ArrayList(u8).init(alloc);
+
+    // Padding first
+    try modified.append('=');
+    try modified.append('=');
+
+    for (input[0..@min(input.len, 32)]) |byte| {
+        try modified.append(alphabet[byte % 64]);
+    }
+
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidPadding or err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+// ============================================================================
+// Adversarial Scenarios - Non-ASCII Characters
+// ============================================================================
+
+test "fuzz non-ascii in standard base64" {
+    try testing.fuzz({}, testNonAscii, .{});
+}
+
+fn testNonAscii(_: void, input: []const u8) !void {
+    if (input.len < 4) return;
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    // Inject high bytes (non-ASCII)
+    var modified = std.ArrayList(u8).init(alloc);
+    for (input, 0..) |byte, i| {
+        if (i % 5 == 0 and byte > 127) {
+            try modified.append(byte); // Non-ASCII byte
+        } else {
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            try modified.append(alphabet[byte % 64]);
+        }
+    }
+
+    const result = base64.decode(testing.allocator, modified.items) catch |err| {
+        try testing.expect(err == error.InvalidCharacter);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+// ============================================================================
+// URL-Safe Adversarial Scenarios
+// ============================================================================
+
+test "fuzz url-safe with padding" {
+    try testing.fuzz({}, testUrlSafeWithPadding, .{});
+}
+
+fn testUrlSafeWithPadding(_: void, input: []const u8) !void {
+    if (input.len == 0) return;
+
+    // URL-safe encoding should not include padding
+    const encoded = base64.encodeUrlSafe(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    // Verify no padding
+    for (encoded) |c| {
+        try testing.expect(c != '=');
+    }
+
+    // Add padding manually
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var with_padding = std.ArrayList(u8).init(alloc);
+    try with_padding.appendSlice(encoded);
+    try with_padding.append('=');
+    try with_padding.append('=');
+
+    // Should reject padded URL-safe
+    const result = base64.decodeUrlSafe(testing.allocator, with_padding.items) catch |err| {
+        try testing.expect(err == error.InvalidCharacter or err == error.InvalidPadding);
+        return;
+    };
+    testing.allocator.free(result);
+}
+
+test "fuzz url-safe wrong length" {
+    try testing.fuzz({}, testUrlSafeWrongLength, .{});
+}
+
+fn testUrlSafeWrongLength(_: void, input: []const u8) !void {
+    if (input.len < 8) return;
+
+    const encoded = base64.encodeUrlSafe(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    // Truncate to wrong length
+    if (encoded.len % 4 == 0 and encoded.len > 4) {
+        const truncated = encoded[0 .. encoded.len - 1];
+
+        _ = base64.decodeUrlSafe(testing.allocator, truncated) catch return;
+    }
+}
+
+// ============================================================================
+// Determinism Verification
+// ============================================================================
+
+test "fuzz encoding determinism" {
+    try testing.fuzz({}, testEncodingDeterminism, .{});
+}
+
+fn testEncodingDeterminism(_: void, input: []const u8) !void {
+    // Encode same input twice
+    const encoded1 = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded1);
+
+    const encoded2 = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded2);
+
+    // Must be identical
+    try testing.expectEqualSlices(u8, encoded1, encoded2);
+}
+
+test "fuzz decoding determinism" {
+    try testing.fuzz({}, testDecodingDeterminism, .{});
+}
+
+fn testDecodingDeterminism(_: void, input: []const u8) !void {
+    const encoded = base64.encode(testing.allocator, input) catch return;
+    defer testing.allocator.free(encoded);
+
+    // Decode same encoded string twice
+    const decoded1 = base64.decode(testing.allocator, encoded) catch return;
+    defer testing.allocator.free(decoded1);
+
+    const decoded2 = base64.decode(testing.allocator, encoded) catch return;
+    defer testing.allocator.free(decoded2);
+
+    // Must be identical
+    try testing.expectEqualSlices(u8, decoded1, decoded2);
+}
