@@ -1,5 +1,8 @@
 import { describe, test, expect } from "vitest";
-import { method, GetBlockTransactionCountByNumberRequest } from "./eth_getBlockTransactionCountByNumber.js";
+import {
+	method,
+	GetBlockTransactionCountByNumberRequest,
+} from "./eth_getBlockTransactionCountByNumber.js";
 
 describe("eth_getBlockTransactionCountByNumber", () => {
 	describe("Request Creation", () => {

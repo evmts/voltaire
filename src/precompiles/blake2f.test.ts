@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, blake2f, execute } from "../evm/precompiles/precompiles.js";
+import {
+	PrecompileAddress,
+	blake2f,
+	execute,
+} from "../evm/precompiles/precompiles.js";
 
 /**
  * Blake2f compression - EIP-152

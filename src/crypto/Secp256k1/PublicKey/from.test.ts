@@ -31,8 +31,7 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("from hex string", () => {
 		it("should create public key from hex string with 0x prefix", () => {
-			const hexStr =
-				"0x" + "a".repeat(64) + "b".repeat(64); // 128 hex chars = 64 bytes
+			const hexStr = "0x" + "a".repeat(64) + "b".repeat(64); // 128 hex chars = 64 bytes
 
 			const publicKey = PublicKey.from(hexStr);
 

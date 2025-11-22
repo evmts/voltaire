@@ -192,7 +192,7 @@ describe("Keccak256 constants", () => {
 
 	describe("security properties", () => {
 		it("has collision resistance of 2^128", () => {
-			const securityBits = DIGEST_SIZE * 8 / 2;
+			const securityBits = (DIGEST_SIZE * 8) / 2;
 			expect(securityBits).toBe(128);
 		});
 

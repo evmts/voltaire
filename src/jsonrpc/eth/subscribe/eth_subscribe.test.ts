@@ -14,7 +14,9 @@ describe("eth_subscribe", () => {
 		test("creates request with logs subscription and filter", () => {
 			const filter = {
 				address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-				topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+				topics: [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+				],
 			};
 			const req = SubscribeRequest("logs", filter);
 			expect(req).toEqual({
@@ -72,7 +74,10 @@ describe("eth_subscribe", () => {
 
 		test("handles logs subscription with multiple addresses", () => {
 			const filter = {
-				address: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"],
+				address: [
+					"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+					"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+				],
 			};
 			const req = SubscribeRequest("logs", filter);
 			expect(req.params?.[1]).toHaveProperty("address");
@@ -83,7 +88,9 @@ describe("eth_subscribe", () => {
 				topics: [
 					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 					null,
-					["0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0"],
+					[
+						"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0",
+					],
 				],
 			};
 			const req = SubscribeRequest("logs", filter);

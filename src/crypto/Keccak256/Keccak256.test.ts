@@ -65,7 +65,9 @@ describe("Keccak256 namespace", () => {
 
 		it("has fromTopic method", () => {
 			expect(typeof Keccak256Hash.fromTopic).toBe("function");
-			const result = Keccak256Hash.fromTopic("Transfer(address,address,uint256)");
+			const result = Keccak256Hash.fromTopic(
+				"Transfer(address,address,uint256)",
+			);
 			expect(result.length).toBe(32);
 		});
 
@@ -107,10 +109,7 @@ describe("Keccak256 namespace", () => {
 
 		it("has contractAddress method", () => {
 			expect(typeof Keccak256Hash.contractAddress).toBe("function");
-			const result = Keccak256Hash.contractAddress(
-				new Uint8Array(20),
-				0n,
-			);
+			const result = Keccak256Hash.contractAddress(new Uint8Array(20), 0n);
 			expect(result.length).toBe(20);
 		});
 

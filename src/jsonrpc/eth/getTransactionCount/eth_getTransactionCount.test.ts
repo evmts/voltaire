@@ -1,5 +1,8 @@
 import { describe, test, expect } from "vitest";
-import { method, GetTransactionCountRequest } from "./eth_getTransactionCount.js";
+import {
+	method,
+	GetTransactionCountRequest,
+} from "./eth_getTransactionCount.js";
 
 describe("eth_getTransactionCount", () => {
 	describe("Request Creation", () => {
@@ -37,7 +40,9 @@ describe("eth_getTransactionCount", () => {
 
 	describe("Request Structure", () => {
 		test("returns RequestArguments type with params", () => {
-			const req = GetTransactionCountRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+			const req = GetTransactionCountRequest(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+			);
 			expect(req).toHaveProperty("method");
 			expect(req).toHaveProperty("params");
 			expect(Array.isArray(req.params)).toBe(true);
@@ -45,7 +50,9 @@ describe("eth_getTransactionCount", () => {
 		});
 
 		test("method matches constant", () => {
-			const req = GetTransactionCountRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+			const req = GetTransactionCountRequest(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+			);
 			expect(req.method).toBe(method);
 		});
 	});

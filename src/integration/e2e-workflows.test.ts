@@ -26,7 +26,10 @@ import * as SignedData from "../primitives/SignedData/index.js";
 import * as TypedData from "../primitives/TypedData/index.js";
 import { recoverPublicKey } from "../crypto/Secp256k1/recoverPublicKey.js";
 import * as Transaction from "../primitives/Transaction/index.js";
-import { fromBytes as hexFromBytes, toBytes as hexToBytes } from "../primitives/Hex/index.js";
+import {
+	fromBytes as hexFromBytes,
+	toBytes as hexToBytes,
+} from "../primitives/Hex/index.js";
 
 /**
  * Mock provider for simulating blockchain interactions.
@@ -182,7 +185,12 @@ describe("E2E Workflows", () => {
 		it("should compile, sign deployment tx, execute, and verify address", async () => {
 			// Step 1: Prepare contract bytecode (simplified ERC20-like contract)
 			const contractBytecode = new Uint8Array([
-				0x60, 0x80, 0x60, 0x40, 0x50, 0x50, // PUSH1 0x80 PUSH1 0x40 MSTORE MSTORE
+				0x60,
+				0x80,
+				0x60,
+				0x40,
+				0x50,
+				0x50, // PUSH1 0x80 PUSH1 0x40 MSTORE MSTORE
 			]);
 			const contractBytecodeHex = hexFromBytes(contractBytecode);
 
@@ -201,8 +209,8 @@ describe("E2E Workflows", () => {
 				new TextEncoder().encode(JSON.stringify(deploymentTx)),
 			);
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			expect(signature.r).toBeDefined();
@@ -273,8 +281,8 @@ describe("E2E Workflows", () => {
 				new TextEncoder().encode(JSON.stringify(transferTx)),
 			);
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			expect(signature).toBeDefined();
@@ -321,7 +329,10 @@ describe("E2E Workflows", () => {
 			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
 			const tokenIdBytes = new Uint8Array(32);
 			for (let i = 0; i < 32; i++) {
-				tokenIdBytes[i] = Number.parseInt(tokenIdHex.slice(i * 2, i * 2 + 2), 16);
+				tokenIdBytes[i] = Number.parseInt(
+					tokenIdHex.slice(i * 2, i * 2 + 2),
+					16,
+				);
 			}
 			mintData.set(tokenIdBytes, 36);
 
@@ -341,8 +352,8 @@ describe("E2E Workflows", () => {
 				new TextEncoder().encode(JSON.stringify(mintTx)),
 			);
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -352,7 +363,8 @@ describe("E2E Workflows", () => {
 
 			// Step 4: Verify ownership
 			// ownerOf(uint256 tokenId) selector = 0x6352211e
-			const ownerOfSelector = "0x6352211e" + tokenId.toString(16).padStart(64, "0");
+			const ownerOfSelector =
+				"0x6352211e" + tokenId.toString(16).padStart(64, "0");
 			const ownerResult = await provider.request("eth_call", [
 				{
 					to: toChecksummed(nftContractAddress),
@@ -363,7 +375,8 @@ describe("E2E Workflows", () => {
 
 			// Step 5: Verify tokenURI
 			// tokenURI(uint256 tokenId) selector = 0xc87b56dd
-			const tokenURISelector = "0xc87b56dd" + tokenId.toString(16).padStart(64, "0");
+			const tokenURISelector =
+				"0xc87b56dd" + tokenId.toString(16).padStart(64, "0");
 			const uriResult = await provider.request("eth_call", [
 				{
 					to: toChecksummed(nftContractAddress),
@@ -400,9 +413,9 @@ describe("E2E Workflows", () => {
 
 			const signatures = [sig1, sig2, sig3];
 			expect(signatures).toHaveLength(3);
-			expect(signatures.every((sig) => sig.r && sig.s && sig.v !== undefined)).toBe(
-				true,
-			);
+			expect(
+				signatures.every((sig) => sig.r && sig.s && sig.v !== undefined),
+			).toBe(true);
 
 			// Verify each signature recovers correct signer
 			const pubKey1 = HDWallet.getPublicKey(signer1);
@@ -527,8 +540,8 @@ describe("E2E Workflows", () => {
 				new TextEncoder().encode(JSON.stringify(executeTx)),
 			);
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -590,9 +603,7 @@ describe("E2E Workflows", () => {
 			]);
 
 			expect(logs).toHaveLength(1);
-			expect(logs[0].address).toBe(
-				toChecksummed(contractAddress),
-			);
+			expect(logs[0].address).toBe(toChecksummed(contractAddress));
 
 			// Step 4: Decode event data
 			const decodedLog = logs[0];
@@ -627,12 +638,10 @@ describe("E2E Workflows", () => {
 				gas: "0x5208",
 			};
 
-			const txHash = keccak256(
-				new TextEncoder().encode(JSON.stringify(tx)),
-			);
+			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -774,12 +783,10 @@ describe("E2E Workflows", () => {
 				nonce: 5,
 			};
 
-			const txHash = keccak256(
-				new TextEncoder().encode(JSON.stringify(tx)),
-			);
+			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
 			const signature = Secp256k1.sign(
-			txHash,
-			Buffer.from(testPrivateKey.slice(2), "hex"),
+				txHash,
+				Buffer.from(testPrivateKey.slice(2), "hex"),
 			);
 
 			// Transaction should still be created (validation happens on chain)

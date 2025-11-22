@@ -11,10 +11,7 @@ type Equals<T, U> = (<V>() => V extends T ? 1 : 2) extends <V>() => V extends U
 describe("Keccak256HashType", () => {
 	describe("type structure", () => {
 		it("is a Uint8Array", () => {
-			type Test = Equals<
-				Keccak256Hash extends Uint8Array ? true : false,
-				true
-			>;
+			type Test = Equals<Keccak256Hash extends Uint8Array ? true : false, true>;
 			const assertion: Test = true;
 			assertion;
 		});

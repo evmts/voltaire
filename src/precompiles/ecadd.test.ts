@@ -7,7 +7,11 @@ import {
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
 } from "../crypto/bn254/constants.js";
-import { PrecompileAddress, bn254Add, execute } from "../evm/precompiles/precompiles.js";
+import {
+	PrecompileAddress,
+	bn254Add,
+	execute,
+} from "../evm/precompiles/precompiles.js";
 
 /**
  * BN254 curve: y^2 = x^3 + 3 over Fp

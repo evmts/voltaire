@@ -207,9 +207,7 @@ describe("BytesType type-level tests", () => {
 		});
 
 		it("should support from array", () => {
-			const _bytes: BytesType = new Uint8Array([
-				1, 2, 3, 4,
-			]) as BytesType;
+			const _bytes: BytesType = new Uint8Array([1, 2, 3, 4]) as BytesType;
 		});
 
 		it("should support from ArrayBuffer", () => {

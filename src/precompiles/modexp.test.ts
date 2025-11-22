@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../primitives/Hardfork/index.js";
-import { PrecompileAddress, execute, modexp } from "../evm/precompiles/precompiles.js";
+import {
+	PrecompileAddress,
+	execute,
+	modexp,
+} from "../evm/precompiles/precompiles.js";
 
 /**
  * Helper to convert bigint to big-endian bytes with padding
@@ -181,11 +185,7 @@ describe("Modular Exponentiation (0x05) - EIP-198/2565", () => {
 			const gas1 = res1.gasUsed;
 
 			// Large exponent (256 bits)
-			const input2 = createModExpInput(
-				2n,
-				(1n << 256n) - 1n,
-				997n,
-			);
+			const input2 = createModExpInput(2n, (1n << 256n) - 1n, 997n);
 			const res2 = modexp(input2, 1000000n);
 			expect(res2.success).toBe(true);
 			const gas2 = res2.gasUsed;

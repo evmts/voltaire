@@ -1,10 +1,14 @@
 import { describe, test, expect } from "vitest";
-import { method, GetTransactionReceiptRequest } from "./eth_getTransactionReceipt.js";
+import {
+	method,
+	GetTransactionReceiptRequest,
+} from "./eth_getTransactionReceipt.js";
 
 describe("eth_getTransactionReceipt", () => {
 	describe("Request Creation", () => {
 		test("creates request with transaction hash", () => {
-			const txHash = "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
 			const req = GetTransactionReceiptRequest(txHash);
 			expect(req).toEqual({
 				method: "eth_getTransactionReceipt",
@@ -19,7 +23,8 @@ describe("eth_getTransactionReceipt", () => {
 
 	describe("Request Structure", () => {
 		test("returns RequestArguments type with params", () => {
-			const txHash = "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
 			const req = GetTransactionReceiptRequest(txHash);
 			expect(req).toHaveProperty("method");
 			expect(req).toHaveProperty("params");
@@ -28,7 +33,8 @@ describe("eth_getTransactionReceipt", () => {
 		});
 
 		test("method matches constant", () => {
-			const txHash = "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
 			const req = GetTransactionReceiptRequest(txHash);
 			expect(req.method).toBe(method);
 		});
@@ -36,13 +42,15 @@ describe("eth_getTransactionReceipt", () => {
 
 	describe("Edge Cases", () => {
 		test("handles successful transaction hash", () => {
-			const txHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const txHash =
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 			const req = GetTransactionReceiptRequest(txHash);
 			expect(req.params?.[0]).toBe(txHash);
 		});
 
 		test("handles failed transaction hash", () => {
-			const txHash = "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
+			const txHash =
+				"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
 			const req = GetTransactionReceiptRequest(txHash);
 			expect(req.params?.[0]).toBe(txHash);
 		});

@@ -126,9 +126,7 @@ describe("Secp256k1.Signature.fromBytes", () => {
 		it("should throw on 32-byte array", () => {
 			const bytes32 = new Uint8Array(32);
 
-			expect(() => Signature.fromBytes(bytes32)).toThrow(
-				InvalidSignatureError,
-			);
+			expect(() => Signature.fromBytes(bytes32)).toThrow(InvalidSignatureError);
 		});
 
 		it("should include error context", () => {

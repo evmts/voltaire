@@ -238,7 +238,8 @@ describe("PublicKey.verify", () => {
 			const hash = Hash.keccak256(new Uint8Array([1, 2, 3]));
 			const sig = sign(pk, hash);
 
-			sig[0] ^= 0xff;
+			// Corrupt the r component of the signature
+			sig.r[0] ^= 0xff;
 
 			const valid = verify(pubkey, hash, sig);
 			expect(valid).toBe(false);

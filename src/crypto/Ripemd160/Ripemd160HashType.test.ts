@@ -95,9 +95,7 @@ describe("Ripemd160HashType", () => {
 
 		it("Ripemd160Hash in tuples", () => {
 			type HashTuple = [Ripemd160Hash, Ripemd160Hash];
-			expectTypeOf<HashTuple>().toEqualTypeOf<
-				[Ripemd160Hash, Ripemd160Hash]
-			>();
+			expectTypeOf<HashTuple>().toEqualTypeOf<[Ripemd160Hash, Ripemd160Hash]>();
 		});
 	});
 
@@ -139,13 +137,13 @@ describe("Ripemd160HashType", () => {
 		it("accepts as Uint8Array parameter", () => {
 			function acceptsUint8Array(_value: Uint8Array): void {}
 			const hash = new Uint8Array(20) as Ripemd160Hash;
-			expectTypeOf(hash).toMatchTypeOf<Parameters<typeof acceptsUint8Array>[0]>();
+			expectTypeOf(hash).toMatchTypeOf<
+				Parameters<typeof acceptsUint8Array>[0]
+			>();
 		});
 
 		it("compatible with ArrayLike", () => {
-			type IsArrayLike = Ripemd160Hash extends ArrayLike<number>
-				? true
-				: false;
+			type IsArrayLike = Ripemd160Hash extends ArrayLike<number> ? true : false;
 			const result: IsArrayLike = true;
 			expectTypeOf(result).toEqualTypeOf<true>();
 		});

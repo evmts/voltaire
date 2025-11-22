@@ -83,9 +83,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 5. Verify recovered address matches signer
 			const recoveredAddress = recoverResult.output.slice(12);
-			expect(Buffer.from(recoveredAddress).equals(Buffer.from(signerAddress))).toBe(
-				true,
-			);
+			expect(
+				Buffer.from(recoveredAddress).equals(Buffer.from(signerAddress)),
+			).toBe(true);
 
 			// 6. Verify signature with crypto module
 			const isValidSig = Secp256k1.verify(sig, txHash, publicKey);
@@ -192,9 +192,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 7. Verify address derivation matches
 			const derivedAddress = Address.fromPrivateKey(privateKey);
-			expect(Buffer.from(signerAddress).equals(Buffer.from(derivedAddress))).toBe(
-				true,
-			);
+			expect(
+				Buffer.from(signerAddress).equals(Buffer.from(derivedAddress)),
+			).toBe(true);
 		});
 
 		it("should handle different domain separators correctly", () => {
@@ -288,7 +288,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 3. Commitments should be deterministic for same blob
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(true);
+			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(
+				true,
+			);
 		});
 
 		it("should compute and verify blob proof", () => {
@@ -340,7 +342,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// But commitment should be the same
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(true);
+			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(
+				true,
+			);
 		});
 	});
 
@@ -389,9 +393,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 6. Verify address derivation
 			const signerAddress = Keccak256.hash(publicKey).slice(-20);
 			const derivedAddress = Address.fromPrivateKey(privateKey);
-			expect(Buffer.from(signerAddress).equals(Buffer.from(derivedAddress))).toBe(
-				true,
-			);
+			expect(
+				Buffer.from(signerAddress).equals(Buffer.from(derivedAddress)),
+			).toBe(true);
 
 			// 7. Verify with ecrecover precompile
 			const recoverInput = new Uint8Array(128);
@@ -490,9 +494,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 5. Verify with Address.fromPrivateKey
 			const derivedAddress = Address.fromPrivateKey(privateKey);
 
-			expect(Buffer.from(manualAddress).equals(Buffer.from(derivedAddress))).toBe(
-				true,
-			);
+			expect(
+				Buffer.from(manualAddress).equals(Buffer.from(derivedAddress)),
+			).toBe(true);
 
 			// 6. Verify address format
 			expect(derivedAddress.length).toBe(20);
@@ -633,7 +637,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 2. Function selector (first 4 bytes of function hash)
 			// Example: transfer(address,uint256) selector
 			const functionName = "transfer(address,uint256)";
-			const functionHash = Keccak256.hash(new TextEncoder().encode(functionName));
+			const functionHash = Keccak256.hash(
+				new TextEncoder().encode(functionName),
+			);
 			const selector = functionHash.slice(0, 4);
 
 			// 3. Encode parameters
@@ -641,7 +647,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			const amount = beBytes32(1000n);
 
 			// Build calldata: selector + encoded params
-			const calldata = new Uint8Array(selector.length + to.length + amount.length);
+			const calldata = new Uint8Array(
+				selector.length + to.length + amount.length,
+			);
 			calldata.set(selector, 0);
 			calldata.set(to, selector.length);
 			calldata.set(amount, selector.length + to.length);
@@ -684,7 +692,9 @@ describe("Integration: Cross-Module Workflows", () => {
 				new TextEncoder().encode("Transfer(address,address,uint256)"),
 			);
 
-			const from = Address.fromHex("0x1111111111111111111111111111111111111111");
+			const from = Address.fromHex(
+				"0x1111111111111111111111111111111111111111",
+			);
 			const to = Address.fromHex("0x2222222222222222222222222222222222222222");
 			const value = beBytes32(1000n);
 
@@ -770,7 +780,11 @@ describe("Integration: Cross-Module Workflows", () => {
 			expect(bytes).toBeInstanceOf(Uint8Array);
 
 			// 5. Verify we can round-trip the data
-			const reconstructed = "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+			const reconstructed =
+				"0x" +
+				Array.from(bytes)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("");
 			expect(reconstructed).toBe(txHash);
 		});
 
@@ -1025,7 +1039,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 7. Verify signer address matches derived address
 			const signerAddress = Keccak256.hash(publicKey).slice(-20);
-			expect(Buffer.from(address).equals(Buffer.from(signerAddress))).toBe(true);
+			expect(Buffer.from(address).equals(Buffer.from(signerAddress))).toBe(
+				true,
+			);
 		});
 	});
 

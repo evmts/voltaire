@@ -89,4 +89,58 @@ describe("fromPublicKey", () => {
 		expect(addr).toBeInstanceOf(Uint8Array);
 		expect(addr.length).toBe(20);
 	});
+
+	describe("Uint8Array overload", () => {
+		it("creates Address from 64-byte public key", () => {
+			// Create 64-byte public key (32 bytes x + 32 bytes y)
+			const publicKey = new Uint8Array(64);
+			// Fill with test data
+			for (let i = 0; i < 32; i++) {
+				publicKey[i] = i;
+				publicKey[i + 32] = 32 + i;
+			}
+			const addr = fromPublicKey(publicKey);
+			expect(addr).toBeInstanceOf(Uint8Array);
+			expect(addr.length).toBe(20);
+		});
+
+		it("produces same result as coordinates", () => {
+			const x =
+				0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n;
+			const y =
+				0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n;
+
+			// Encode coordinates as 64-byte array (big-endian)
+			const publicKey = new Uint8Array(64);
+			let xVal = x;
+			for (let i = 31; i >= 0; i--) {
+				publicKey[i] = Number(xVal & 0xffn);
+				xVal >>= 8n;
+			}
+			let yVal = y;
+			for (let i = 63; i >= 32; i--) {
+				publicKey[i] = Number(yVal & 0xffn);
+				yVal >>= 8n;
+			}
+
+			const addrFromBytes = fromPublicKey(publicKey);
+			const addrFromCoords = fromPublicKey(x, y);
+
+			expect(Address.equals(addrFromBytes, addrFromCoords)).toBe(true);
+		});
+
+		it("rejects invalid public key length", () => {
+			const invalidKey = new Uint8Array(32); // Too short
+			expect(() => fromPublicKey(invalidKey)).toThrow(
+				"Invalid public key length",
+			);
+		});
+
+		it("works with Address namespace method", () => {
+			const publicKey = new Uint8Array(64);
+			const addr = Address.fromPublicKey(publicKey);
+			expect(addr).toBeInstanceOf(Uint8Array);
+			expect(addr.length).toBe(20);
+		});
+	});
 });

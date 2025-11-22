@@ -40,7 +40,10 @@ describe("eth_getStorageAt", () => {
 
 	describe("Request Structure", () => {
 		test("returns RequestArguments type with params", () => {
-			const req = GetStorageAtRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x0");
+			const req = GetStorageAtRequest(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+				"0x0",
+			);
 			expect(req).toHaveProperty("method");
 			expect(req).toHaveProperty("params");
 			expect(Array.isArray(req.params)).toBe(true);
@@ -48,7 +51,10 @@ describe("eth_getStorageAt", () => {
 		});
 
 		test("method matches constant", () => {
-			const req = GetStorageAtRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x0");
+			const req = GetStorageAtRequest(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+				"0x0",
+			);
 			expect(req.method).toBe(method);
 		});
 	});
@@ -62,7 +68,8 @@ describe("eth_getStorageAt", () => {
 
 		test("handles large storage slot", () => {
 			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
-			const position = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+			const position =
+				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 			const req = GetStorageAtRequest(address, position);
 			expect(req.params?.[1]).toBe(position);
 		});

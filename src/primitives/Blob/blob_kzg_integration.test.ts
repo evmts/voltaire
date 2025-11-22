@@ -93,7 +93,7 @@ describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
 
 			const blob = Blob.fromData(calldata);
 			const commitment = Blob.toCommitment(blob);
-			const proof = Blob.toProof(blob);
+			const proof = Blob.toProof(blob, commitment);
 
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 			expect(proof.length).toBe(BYTES_PER_PROOF);
@@ -179,7 +179,7 @@ describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
 		});
 
 		it("should estimate blob count correctly for various data sizes", () => {
-			const maxPerBlob = SIZE - 8;
+			const maxPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 
 			const tests = [
 				{ dataSize: 1000, expectedBlobs: 1 },

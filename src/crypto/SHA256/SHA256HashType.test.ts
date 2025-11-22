@@ -135,7 +135,9 @@ describe("SHA256HashType", () => {
 		it("accepts as Uint8Array parameter", () => {
 			function acceptsUint8Array(_value: Uint8Array): void {}
 			const hash = new Uint8Array(32) as SHA256Hash;
-			expectTypeOf(hash).toMatchTypeOf<Parameters<typeof acceptsUint8Array>[0]>();
+			expectTypeOf(hash).toMatchTypeOf<
+				Parameters<typeof acceptsUint8Array>[0]
+			>();
 		});
 
 		it("compatible with ArrayLike", () => {

@@ -65,7 +65,8 @@ describe("eth_getBlockReceipts", () => {
 		});
 
 		test("handles block hash", () => {
-			const blockHash = "0xd5f1812548be429cbdc6376b29611fc49e06f1359758c4ceaaa3b393e2239f9c";
+			const blockHash =
+				"0xd5f1812548be429cbdc6376b29611fc49e06f1359758c4ceaaa3b393e2239f9c";
 			const req = GetBlockReceiptsRequest(blockHash);
 			expect(req.params?.[0]).toBe(blockHash);
 		});

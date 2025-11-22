@@ -93,9 +93,10 @@ describe("Ed25519 Seed Type", () => {
 
 	describe("deterministic properties", () => {
 		it("same seed produces same keys", () => {
-			function generateFromSeed(
-				seed: Seed,
-			): { key1: Uint8Array; key2: Uint8Array } {
+			function generateFromSeed(seed: Seed): {
+				key1: Uint8Array;
+				key2: Uint8Array;
+			} {
 				return { key1: seed, key2: seed };
 			}
 			expectTypeOf(generateFromSeed).parameter(0).toEqualTypeOf<Seed>();

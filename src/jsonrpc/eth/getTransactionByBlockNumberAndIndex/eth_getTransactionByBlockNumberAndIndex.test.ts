@@ -1,12 +1,18 @@
 import { describe, test, expect } from "vitest";
-import { method, GetTransactionByBlockNumberAndIndexRequest } from "./eth_getTransactionByBlockNumberAndIndex.js";
+import {
+	method,
+	GetTransactionByBlockNumberAndIndexRequest,
+} from "./eth_getTransactionByBlockNumberAndIndex.js";
 
 describe("eth_getTransactionByBlockNumberAndIndex", () => {
 	describe("Request Creation", () => {
 		test("creates request with block number and transaction index", () => {
 			const blockNumber = "0x1234";
 			const txIndex = "0x0";
-			const req = GetTransactionByBlockNumberAndIndexRequest(blockNumber, txIndex);
+			const req = GetTransactionByBlockNumberAndIndexRequest(
+				blockNumber,
+				txIndex,
+			);
 			expect(req).toEqual({
 				method: "eth_getTransactionByBlockNumberAndIndex",
 				params: [blockNumber, txIndex],

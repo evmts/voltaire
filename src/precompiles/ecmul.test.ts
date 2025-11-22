@@ -6,7 +6,11 @@ import {
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
 } from "../crypto/bn254/constants.js";
-import { PrecompileAddress, bn254Mul, execute } from "../evm/precompiles/precompiles.js";
+import {
+	PrecompileAddress,
+	bn254Mul,
+	execute,
+} from "../evm/precompiles/precompiles.js";
 
 /**
  * BN254 scalar multiplication on G1

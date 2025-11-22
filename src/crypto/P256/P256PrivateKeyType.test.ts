@@ -43,7 +43,9 @@ describe("P256PrivateKeyType", () => {
 			function returnsPrivateKey(): P256PrivateKeyType {
 				return new Uint8Array(32);
 			}
-			expectTypeOf(returnsPrivateKey).returns.toEqualTypeOf<P256PrivateKeyType>();
+			expectTypeOf(
+				returnsPrivateKey,
+			).returns.toEqualTypeOf<P256PrivateKeyType>();
 		});
 
 		it("P256PrivateKeyType in signing", () => {
@@ -53,7 +55,9 @@ describe("P256PrivateKeyType", () => {
 
 		it("P256PrivateKeyType in key derivation", () => {
 			type DerivePublic = (sk: P256PrivateKeyType) => Uint8Array;
-			expectTypeOf<DerivePublic>().parameter(0).toEqualTypeOf<P256PrivateKeyType>();
+			expectTypeOf<DerivePublic>()
+				.parameter(0)
+				.toEqualTypeOf<P256PrivateKeyType>();
 		});
 	});
 
@@ -64,7 +68,9 @@ describe("P256PrivateKeyType", () => {
 		});
 
 		it("compatible with crypto.getRandomValues", () => {
-			const key: P256PrivateKeyType = crypto.getRandomValues(new Uint8Array(32));
+			const key: P256PrivateKeyType = crypto.getRandomValues(
+				new Uint8Array(32),
+			);
 			expectTypeOf(key).toEqualTypeOf<P256PrivateKeyType>();
 		});
 
@@ -129,7 +135,9 @@ describe("P256PrivateKeyType", () => {
 
 	describe("type narrowing", () => {
 		it("narrows from Uint8Array to P256PrivateKeyType", () => {
-			function isP256PrivateKey(value: Uint8Array): value is P256PrivateKeyType {
+			function isP256PrivateKey(
+				value: Uint8Array,
+			): value is P256PrivateKeyType {
 				return value.length === 32;
 			}
 			expectTypeOf(isP256PrivateKey).returns.toEqualTypeOf<boolean>();

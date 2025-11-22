@@ -70,10 +70,7 @@ describe("Keccak256 index exports", () => {
 		});
 
 		it("contractAddress function works", () => {
-			const result = Keccak256Index.contractAddress(
-				new Uint8Array(20),
-				0n,
-			);
+			const result = Keccak256Index.contractAddress(new Uint8Array(20), 0n);
 			expect(result.length).toBe(20);
 		});
 
@@ -150,7 +147,9 @@ describe("Keccak256 index exports", () => {
 				Keccak256Index.Keccak256Hash.hashString,
 			);
 			expect(Keccak256Index.hashHex).toBe(Keccak256Index.Keccak256Hash.hashHex);
-			expect(Keccak256Index.selector).toBe(Keccak256Index.Keccak256Hash.selector);
+			expect(Keccak256Index.selector).toBe(
+				Keccak256Index.Keccak256Hash.selector,
+			);
 			expect(Keccak256Index.topic).toBe(Keccak256Index.Keccak256Hash.topic);
 		});
 	});
