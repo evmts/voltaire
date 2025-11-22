@@ -1,0 +1,365 @@
+import { describe, it } from "vitest";
+import type {
+	BrandedBase64,
+	BrandedBase64Url,
+	Base64Like,
+	Base64UrlLike,
+} from "./Base64Type.js";
+
+type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
+	? 1
+	: 2
+	? true
+	: false;
+
+describe("Base64Type type-level tests", () => {
+	describe("BrandedBase64 basic structure", () => {
+		it("should be a branded string type", () => {
+			type Test1 = Equals<BrandedBase64, string>;
+			const test1: Test1 = false;
+			test1;
+
+			type Test2 = BrandedBase64 extends string ? true : false;
+			const test2: Test2 = true;
+			test2;
+		});
+
+		it("should be assignable to string", () => {
+			const value = "SGVsbG8=" as BrandedBase64;
+			const _str: string = value;
+		});
+
+		it("should not allow plain string assignment without cast", () => {
+			const str = "SGVsbG8=";
+			// @ts-expect-error - plain string not assignable to branded type
+			const _value: BrandedBase64 = str;
+		});
+
+		it("should have readonly brand", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			// @ts-expect-error - brand is readonly
+			base64["__tag"] = "Modified";
+		});
+	});
+
+	describe("BrandedBase64Url basic structure", () => {
+		it("should be a branded string type", () => {
+			type Test1 = Equals<BrandedBase64Url, string>;
+			const test1: Test1 = false;
+			test1;
+
+			type Test2 = BrandedBase64Url extends string ? true : false;
+			const test2: Test2 = true;
+			test2;
+		});
+
+		it("should be assignable to string", () => {
+			const value = "SGVsbG8" as BrandedBase64Url;
+			const _str: string = value;
+		});
+
+		it("should not allow plain string assignment without cast", () => {
+			const str = "SGVsbG8";
+			// @ts-expect-error - plain string not assignable to branded type
+			const _value: BrandedBase64Url = str;
+		});
+
+		it("should have readonly brand", () => {
+			const base64url = "SGVsbG8" as BrandedBase64Url;
+			// @ts-expect-error - brand is readonly
+			base64url["__tag"] = "Modified";
+		});
+	});
+
+	describe("brand differentiation", () => {
+		it("should not allow BrandedBase64 assignment to BrandedBase64Url", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			// @ts-expect-error - different branded types
+			const _base64url: BrandedBase64Url = base64;
+		});
+
+		it("should not allow BrandedBase64Url assignment to BrandedBase64", () => {
+			const base64url = "SGVsbG8" as BrandedBase64Url;
+			// @ts-expect-error - different branded types
+			const _base64: BrandedBase64 = base64url;
+		});
+
+		it("should not allow other branded types", () => {
+			type OtherBrand = string & { readonly __tag: "Other" };
+			const other = "SGVsbG8=" as OtherBrand;
+			// @ts-expect-error - different branded type
+			const _base64: BrandedBase64 = other;
+			// @ts-expect-error - different branded type
+			const _base64url: BrandedBase64Url = other;
+		});
+	});
+
+	describe("Base64Like union type", () => {
+		it("should accept BrandedBase64", () => {
+			const branded = "SGVsbG8=" as BrandedBase64;
+			const _value: Base64Like = branded;
+		});
+
+		it("should accept plain string", () => {
+			const str = "SGVsbG8=";
+			const _value: Base64Like = str;
+		});
+
+		it("should accept Uint8Array", () => {
+			const bytes = new Uint8Array([1, 2, 3]);
+			const _value: Base64Like = bytes;
+		});
+
+		it("should not accept number", () => {
+			// @ts-expect-error - number not in union
+			const _value: Base64Like = 123;
+		});
+
+		it("should not accept boolean", () => {
+			// @ts-expect-error - boolean not in union
+			const _value: Base64Like = true;
+		});
+
+		it("should not accept object", () => {
+			// @ts-expect-error - object not in union
+			const _value: Base64Like = { data: "SGVsbG8=" };
+		});
+	});
+
+	describe("Base64UrlLike union type", () => {
+		it("should accept BrandedBase64Url", () => {
+			const branded = "SGVsbG8" as BrandedBase64Url;
+			const _value: Base64UrlLike = branded;
+		});
+
+		it("should accept plain string", () => {
+			const str = "SGVsbG8";
+			const _value: Base64UrlLike = str;
+		});
+
+		it("should accept Uint8Array", () => {
+			const bytes = new Uint8Array([1, 2, 3]);
+			const _value: Base64UrlLike = bytes;
+		});
+
+		it("should not accept number", () => {
+			// @ts-expect-error - number not in union
+			const _value: Base64UrlLike = 123;
+		});
+
+		it("should not accept boolean", () => {
+			// @ts-expect-error - boolean not in union
+			const _value: Base64UrlLike = true;
+		});
+
+		it("should not accept object", () => {
+			// @ts-expect-error - object not in union
+			const _value: Base64UrlLike = { data: "SGVsbG8" };
+		});
+	});
+
+	describe("type narrowing", () => {
+		it("should narrow from string to BrandedBase64", () => {
+			const str: string = "SGVsbG8=";
+			const base64 = str as BrandedBase64;
+			const _typed: BrandedBase64 = base64;
+		});
+
+		it("should narrow from string to BrandedBase64Url", () => {
+			const str: string = "SGVsbG8";
+			const base64url = str as BrandedBase64Url;
+			const _typed: BrandedBase64Url = base64url;
+		});
+
+		it("should widen from BrandedBase64 to string", () => {
+			const base64: BrandedBase64 = "SGVsbG8=" as BrandedBase64;
+			const str: string = base64;
+			const _typed: string = str;
+		});
+
+		it("should widen from BrandedBase64Url to string", () => {
+			const base64url: BrandedBase64Url = "SGVsbG8" as BrandedBase64Url;
+			const str: string = base64url;
+			const _typed: string = str;
+		});
+	});
+
+	describe("string methods compatibility", () => {
+		it("should support length property", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _length: number = base64.length;
+		});
+
+		it("should support charAt", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _char: string = base64.charAt(0);
+		});
+
+		it("should support includes", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _includes: boolean = base64.includes("V");
+		});
+
+		it("should support slice", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _slice: string = base64.slice(0, 4);
+		});
+
+		it("should support startsWith", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _starts: boolean = base64.startsWith("SGV");
+		});
+
+		it("should support endsWith", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _ends: boolean = base64.endsWith("=");
+		});
+	});
+
+	describe("const assertions", () => {
+		it("should maintain BrandedBase64 brand", () => {
+			const value = "SGVsbG8=" as const as BrandedBase64;
+			const _typed: BrandedBase64 = value;
+		});
+
+		it("should maintain BrandedBase64Url brand", () => {
+			const value = "SGVsbG8" as const as BrandedBase64Url;
+			const _typed: BrandedBase64Url = value;
+		});
+	});
+
+	describe("union types", () => {
+		it("should work in unions", () => {
+			type Base64OrString = BrandedBase64 | string;
+			const _branded: Base64OrString = "SGVsbG8=" as BrandedBase64;
+			const _str: Base64OrString = "plain string";
+		});
+
+		it("should work with both branded types", () => {
+			type AnyBase64 = BrandedBase64 | BrandedBase64Url;
+			const _standard: AnyBase64 = "SGVsbG8=" as BrandedBase64;
+			const _url: AnyBase64 = "SGVsbG8" as BrandedBase64Url;
+		});
+	});
+
+	describe("generic functions", () => {
+		it("should work as generic parameter", () => {
+			function test<T extends string>(value: T): T {
+				return value;
+			}
+
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const result = test(base64);
+			const _typed: BrandedBase64 = result;
+		});
+
+		it("should preserve branding through generic", () => {
+			function identity<T>(value: T): T {
+				return value;
+			}
+
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const result = identity(base64);
+			const _typed: BrandedBase64 = result;
+		});
+	});
+
+	describe("type compatibility", () => {
+		it("should not accept number", () => {
+			// @ts-expect-error - number is not BrandedBase64
+			const _base64: BrandedBase64 = 123;
+			// @ts-expect-error - number is not BrandedBase64Url
+			const _base64url: BrandedBase64Url = 123;
+		});
+
+		it("should not accept boolean", () => {
+			// @ts-expect-error - boolean is not BrandedBase64
+			const _base64: BrandedBase64 = true;
+			// @ts-expect-error - boolean is not BrandedBase64Url
+			const _base64url: BrandedBase64Url = false;
+		});
+
+		it("should not accept array", () => {
+			// @ts-expect-error - array is not BrandedBase64
+			const _base64: BrandedBase64 = [1, 2, 3];
+			// @ts-expect-error - array is not BrandedBase64Url
+			const _base64url: BrandedBase64Url = [1, 2, 3];
+		});
+
+		it("should not accept Uint8Array", () => {
+			// @ts-expect-error - Uint8Array is not BrandedBase64
+			const _base64: BrandedBase64 = new Uint8Array([1, 2, 3]);
+			// @ts-expect-error - Uint8Array is not BrandedBase64Url
+			const _base64url: BrandedBase64Url = new Uint8Array([1, 2, 3]);
+		});
+
+		it("should not accept object", () => {
+			// @ts-expect-error - object is not BrandedBase64
+			const _base64: BrandedBase64 = { value: "SGVsbG8=" };
+			// @ts-expect-error - object is not BrandedBase64Url
+			const _base64url: BrandedBase64Url = { value: "SGVsbG8" };
+		});
+	});
+
+	describe("RFC 4648 format constraints", () => {
+		it("should document standard Base64 alphabet", () => {
+			const _standard: BrandedBase64 = "SGVsbG8=" as BrandedBase64;
+			const _withPlus: BrandedBase64 = "AB+/=" as BrandedBase64;
+		});
+
+		it("should document URL-safe Base64 alphabet", () => {
+			const _urlSafe: BrandedBase64Url = "SGVsbG8" as BrandedBase64Url;
+			const _withDash: BrandedBase64Url = "AB-_" as BrandedBase64Url;
+		});
+
+		it("should document padding differences", () => {
+			const _withPadding: BrandedBase64 = "SGVsbG8=" as BrandedBase64;
+			const _noPadding: BrandedBase64Url = "SGVsbG8" as BrandedBase64Url;
+		});
+	});
+
+	describe("known encodings", () => {
+		it("should support RFC 4648 test vectors", () => {
+			const _empty: BrandedBase64 = "" as BrandedBase64;
+			const _f: BrandedBase64 = "Zg==" as BrandedBase64;
+			const _fo: BrandedBase64 = "Zm8=" as BrandedBase64;
+			const _foo: BrandedBase64 = "Zm9v" as BrandedBase64;
+			const _foob: BrandedBase64 = "Zm9vYg==" as BrandedBase64;
+			const _fooba: BrandedBase64 = "Zm9vYmE=" as BrandedBase64;
+			const _foobar: BrandedBase64 = "Zm9vYmFy" as BrandedBase64;
+		});
+
+		it("should support URL-safe variants", () => {
+			const _empty: BrandedBase64Url = "" as BrandedBase64Url;
+			const _f: BrandedBase64Url = "Zg" as BrandedBase64Url;
+			const _fo: BrandedBase64Url = "Zm8" as BrandedBase64Url;
+			const _foo: BrandedBase64Url = "Zm9v" as BrandedBase64Url;
+		});
+	});
+
+	describe("type guards", () => {
+		it("should work with typeof", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const isString: "string" = typeof base64;
+			const _check: "string" = isString;
+		});
+
+		it("should not be instanceof String", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const isInstance: boolean = base64 instanceof String;
+			const _check: false = isInstance as false;
+		});
+	});
+
+	describe("template literal types", () => {
+		it("should work in template literals", () => {
+			const base64 = "SGVsbG8=" as BrandedBase64;
+			const _template: string = `data:text/plain;base64,${base64}`;
+		});
+
+		it("should work in URL-safe template literals", () => {
+			const base64url = "SGVsbG8" as BrandedBase64Url;
+			const _template: string = `https://example.com?data=${base64url}`;
+		});
+	});
+});
