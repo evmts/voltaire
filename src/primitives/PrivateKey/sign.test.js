@@ -16,9 +16,9 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1, 2, 3, 4]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toHaveProperty('r');
-			expect(sig).toHaveProperty('s');
-			expect(sig).toHaveProperty('v');
+			expect(sig).toHaveProperty("r");
+			expect(sig).toHaveProperty("s");
+			expect(sig).toHaveProperty("v");
 		});
 
 		it("creates signature from known test key", () => {
@@ -83,7 +83,9 @@ describe("PrivateKey.sign", () => {
 			const sig1 = sign(pk1, hash);
 			const sig2 = sign(pk2, hash);
 
-			const different = sig1.r.some((b, i) => b !== sig2.r[i]) || sig1.s.some((b, i) => b !== sig2.s[i]);
+			const different =
+				sig1.r.some((b, i) => b !== sig2.r[i]) ||
+				sig1.s.some((b, i) => b !== sig2.s[i]);
 			expect(different).toBe(true);
 		});
 
@@ -96,7 +98,9 @@ describe("PrivateKey.sign", () => {
 			const sig1 = sign(pk, hash1);
 			const sig2 = sign(pk, hash2);
 
-			const different = sig1.r.some((b, i) => b !== sig2.r[i]) || sig1.s.some((b, i) => b !== sig2.s[i]);
+			const different =
+				sig1.r.some((b, i) => b !== sig2.r[i]) ||
+				sig1.s.some((b, i) => b !== sig2.s[i]);
 			expect(different).toBe(true);
 		});
 
@@ -120,12 +124,12 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toHaveProperty('r');
-			expect(sig).toHaveProperty('s');
-			expect(sig).toHaveProperty('v');
+			expect(sig).toHaveProperty("r");
+			expect(sig).toHaveProperty("s");
+			expect(sig).toHaveProperty("v");
 			expect(sig.r).toBeInstanceOf(Uint8Array);
 			expect(sig.s).toBeInstanceOf(Uint8Array);
-			expect(typeof sig.v).toBe('number');
+			expect(typeof sig.v).toBe("number");
 		});
 
 		it("signature components have expected length", () => {
@@ -222,9 +226,9 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toHaveProperty('r');
-			expect(sig).toHaveProperty('s');
-			expect(sig).toHaveProperty('v');
+			expect(sig).toHaveProperty("r");
+			expect(sig).toHaveProperty("s");
+			expect(sig).toHaveProperty("v");
 		});
 
 		it("signs zero hash", () => {

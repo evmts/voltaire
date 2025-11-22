@@ -1,0 +1,583 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { BatchQueue, createBatchedFunction, AsyncQueue } from "./batch.js";
+
+describe("BatchQueue", () => {
+	describe("add", () => {
+		it("should queue items and return promises", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x * 2),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 3,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+
+			const result1 = await p1;
+			const result2 = await p2;
+
+			expect(result1).toBe(2);
+			expect(result2).toBe(4);
+		});
+
+		it("should process batch when size is reached", async () => {
+			const processBatch = vi.fn(async (items: string[]) =>
+				items.map((x) => x.toUpperCase()),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 2,
+				maxWaitTime: 1000,
+				processBatch,
+			});
+
+			const p1 = queue.add("a");
+			const p2 = queue.add("b");
+
+			const result1 = await p1;
+			const result2 = await p2;
+
+			expect(result1).toBe("A");
+			expect(result2).toBe("B");
+			expect(processBatch).toHaveBeenCalledOnce();
+		});
+
+		it("should process batch when timeout elapses", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x + 1),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 10,
+				maxWaitTime: 50,
+				processBatch,
+			});
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+
+			const result1 = await p1;
+			const result2 = await p2;
+
+			expect(result1).toBe(2);
+			expect(result2).toBe(3);
+			expect(processBatch).toHaveBeenCalledOnce();
+		});
+
+		it("should handle multiple batches", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x * 2),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 2,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			const batch1 = [queue.add(1), queue.add(2)];
+			const batch2 = [queue.add(3), queue.add(4)];
+
+			const results = await Promise.all([...batch1, ...batch2]);
+
+			expect(results).toEqual([2, 4, 6, 8]);
+			expect(processBatch).toHaveBeenCalledTimes(2);
+		});
+
+		it("should return individual results in batch order", async () => {
+			const processBatch = vi.fn(async (items: string[]) =>
+				items.map((x) => x.length),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 3,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			const p1 = queue.add("a");
+			const p2 = queue.add("bb");
+			const p3 = queue.add("ccc");
+
+			const results = await Promise.all([p1, p2, p3]);
+
+			expect(results).toEqual([1, 2, 3]);
+		});
+	});
+
+	describe("flush", () => {
+		it("should manually flush pending items", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x + 10),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 10,
+				maxWaitTime: 5000,
+				processBatch,
+			});
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+
+			await queue.flush();
+
+			const result1 = await p1;
+			const result2 = await p2;
+
+			expect(result1).toBe(11);
+			expect(result2).toBe(12);
+		});
+
+		it("should handle empty queue flush", async () => {
+			const processBatch = vi.fn(async () => []);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 10,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			await queue.flush();
+
+			expect(processBatch).not.toHaveBeenCalled();
+		});
+
+		it("should not process if already processing", async () => {
+			const processBatch = vi.fn(async (items: number[]) => {
+				await new Promise((resolve) => setTimeout(resolve, 50));
+				return items;
+			});
+
+			const queue = new BatchQueue({
+				maxBatchSize: 1,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			queue.add(1);
+			const flushPromise = queue.flush();
+			const flushAgain = queue.flush();
+
+			await Promise.all([flushPromise, flushAgain]);
+
+			expect(processBatch).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe("size", () => {
+		it("should return queue size", async () => {
+			const processBatch = vi.fn(async () => []);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 10,
+				maxWaitTime: 1000,
+				processBatch,
+			});
+
+			expect(queue.size()).toBe(0);
+
+			queue.add(1);
+			expect(queue.size()).toBe(1);
+
+			queue.add(2);
+			expect(queue.size()).toBe(2);
+		});
+	});
+
+	describe("clear", () => {
+		it("should clear queue and reject pending items", async () => {
+			const processBatch = vi.fn(async () => []);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 10,
+				maxWaitTime: 1000,
+				processBatch,
+			});
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+
+			queue.clear();
+
+			await expect(p1).rejects.toThrow("Queue cleared");
+			await expect(p2).rejects.toThrow("Queue cleared");
+			expect(queue.size()).toBe(0);
+		});
+	});
+
+	describe("drain", () => {
+		it("should wait for all pending items to complete", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x * 2),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 2,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			queue.add(1);
+			queue.add(2);
+			queue.add(3);
+
+			await queue.drain();
+
+			expect(queue.size()).toBe(0);
+			expect(processBatch).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe("error handling", () => {
+		it("should call onError when batch processing fails", async () => {
+			const error = new Error("Batch processing failed");
+			const processBatch = vi.fn(async () => {
+				throw error;
+			});
+			const onError = vi.fn();
+
+			const queue = new BatchQueue({
+				maxBatchSize: 2,
+				maxWaitTime: 100,
+				processBatch,
+				onError,
+			});
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+
+			await expect(p1).rejects.toThrow("Batch processing failed");
+			await expect(p2).rejects.toThrow("Batch processing failed");
+
+			expect(onError).toHaveBeenCalledWith(error, [1, 2]);
+		});
+
+		it("should reject all items in batch on error", async () => {
+			const processBatch = vi.fn(async () => {
+				throw new Error("Processing error");
+			});
+
+			const queue = new BatchQueue({
+				maxBatchSize: 3,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			const promises = [queue.add(1), queue.add(2), queue.add(3)];
+
+			const results = await Promise.allSettled(promises);
+
+			expect(results.every((r) => r.status === "rejected")).toBe(true);
+		});
+	});
+
+	describe("concurrent operations", () => {
+		it("should handle rapid additions", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x + 1),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 5,
+				maxWaitTime: 100,
+				processBatch,
+			});
+
+			const promises = Array.from({ length: 20 }, (_, i) => queue.add(i));
+
+			const results = await Promise.all(promises);
+
+			expect(results).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+		});
+
+		it("should continue processing remaining items after batch", async () => {
+			const processBatch = vi.fn(async (items: number[]) =>
+				items.map((x) => x * 2),
+			);
+
+			const queue = new BatchQueue({
+				maxBatchSize: 2,
+				maxWaitTime: 1000,
+				processBatch,
+			});
+
+			queue.add(1);
+			queue.add(2);
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			queue.add(3);
+			queue.add(4);
+
+			await queue.drain();
+
+			expect(processBatch).toHaveBeenCalledTimes(2);
+		});
+	});
+});
+
+describe("createBatchedFunction", () => {
+	it("should create batched version of function", async () => {
+		const batchFn = vi.fn(async (items: number[]) => items.map((x) => x * 2));
+
+		const batched = createBatchedFunction(batchFn, 3, 100);
+
+		const p1 = batched(1);
+		const p2 = batched(2);
+
+		const result1 = await p1;
+		const result2 = await p2;
+
+		expect(result1).toBe(2);
+		expect(result2).toBe(4);
+		expect(batchFn).toHaveBeenCalledOnce();
+	});
+
+	it("should batch multiple calls", async () => {
+		const batchFn = vi.fn(async (items: string[]) =>
+			items.map((x) => x.toUpperCase()),
+		);
+
+		const batched = createBatchedFunction(batchFn, 5, 100);
+
+		const results = await Promise.all([
+			batched("a"),
+			batched("b"),
+			batched("c"),
+			batched("d"),
+		]);
+
+		expect(results).toEqual(["A", "B", "C", "D"]);
+		expect(batchFn).toHaveBeenCalledOnce();
+	});
+
+	it("should respect max batch size", async () => {
+		const batchFn = vi.fn(async (items: number[]) => items);
+
+		const batched = createBatchedFunction(batchFn, 2, 5000);
+
+		batched(1);
+		batched(2);
+		const p3 = batched(3);
+		const p4 = batched(4);
+
+		await Promise.all([p3, p4]);
+
+		expect(batchFn).toHaveBeenCalledTimes(2);
+	});
+
+	it("should respect max wait time", async () => {
+		const batchFn = vi.fn(async (items: number[]) => items);
+
+		const batched = createBatchedFunction(batchFn, 100, 50);
+
+		batched(1);
+
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(batchFn).toHaveBeenCalledOnce();
+	});
+});
+
+describe("AsyncQueue", () => {
+	describe("add", () => {
+		it("should process items with concurrency limit", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				await new Promise((resolve) => setTimeout(resolve, 20));
+				return item * 2;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+			const p3 = queue.add(3);
+			const p4 = queue.add(4);
+
+			const results = await Promise.all([p1, p2, p3, p4]);
+
+			expect(results).toEqual([2, 4, 6, 8]);
+		});
+
+		it("should limit concurrent operations", async () => {
+			let concurrent = 0;
+			let maxConcurrent = 0;
+
+			const processFn = async (item: number) => {
+				concurrent++;
+				maxConcurrent = Math.max(maxConcurrent, concurrent);
+				await new Promise((resolve) => setTimeout(resolve, 20));
+				concurrent--;
+				return item;
+			};
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			const promises = Array.from({ length: 5 }, (_, i) => queue.add(i));
+			await Promise.all(promises);
+
+			expect(maxConcurrent).toBe(2);
+		});
+	});
+
+	describe("size", () => {
+		it("should return queue size", async () => {
+			const processFn = vi.fn(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 1 });
+
+			expect(queue.size()).toBe(0);
+
+			queue.add(1);
+			// Size may be 0 or 1 depending on timing, so just check it was added
+			queue.add(2);
+
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			// After processing, size should be 0
+			expect(queue.size()).toBe(0);
+		});
+	});
+
+	describe("activeCount", () => {
+		it("should track active operations", async () => {
+			let active = 0;
+
+			const processFn = vi.fn(async () => {
+				active++;
+				await new Promise((resolve) => setTimeout(resolve, 30));
+				active--;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			queue.add(1);
+			queue.add(2);
+			queue.add(3);
+
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			expect(queue.activeCount()).toBeLessThanOrEqual(2);
+
+			await queue.drain();
+		});
+	});
+
+	describe("drain", () => {
+		it("should wait for all operations to complete", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				await new Promise((resolve) => setTimeout(resolve, 20));
+				return item;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			queue.add(1);
+			queue.add(2);
+			queue.add(3);
+
+			await queue.drain();
+
+			expect(queue.size()).toBe(0);
+			expect(queue.activeCount()).toBe(0);
+			expect(processFn).toHaveBeenCalledTimes(3);
+		});
+
+		it("should complete even with concurrent additions", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				return item;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			queue.add(1);
+			queue.add(2);
+
+			const drainPromise = queue.drain();
+
+			queue.add(3);
+			queue.add(4);
+
+			await drainPromise;
+
+			expect(queue.size()).toBe(0);
+		});
+	});
+
+	describe("error handling", () => {
+		it("should reject on error", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				if (item === 2) throw new Error("Item 2 failed");
+				return item;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			const p1 = queue.add(1);
+			const p2 = queue.add(2);
+			const p3 = queue.add(3);
+
+			const results = await Promise.allSettled([p1, p2, p3]);
+
+			expect(results[0].status).toBe("fulfilled");
+			expect(results[1].status).toBe("rejected");
+			expect(results[2].status).toBe("fulfilled");
+		});
+
+		it("should continue processing after error", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				if (item === 2) throw new Error("Item 2 failed");
+				return item * 2;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 2 });
+
+			const promises = [queue.add(1), queue.add(2), queue.add(3), queue.add(4)];
+
+			const results = await Promise.allSettled(promises);
+
+			expect(results[0]).toEqual({ status: "fulfilled", value: 2 });
+			expect(results[1]).toEqual({
+				status: "rejected",
+				reason: expect.any(Error),
+			});
+			expect(results[2]).toEqual({ status: "fulfilled", value: 6 });
+			expect(results[3]).toEqual({ status: "fulfilled", value: 8 });
+		});
+	});
+
+	describe("concurrency variations", () => {
+		it("should work with concurrency 1", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				return item;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 1 });
+
+			const promises = Array.from({ length: 3 }, (_, i) => queue.add(i));
+			const results = await Promise.all(promises);
+
+			expect(results).toEqual([0, 1, 2]);
+			expect(queue.activeCount()).toBe(0);
+		});
+
+		it("should work with high concurrency", async () => {
+			const processFn = vi.fn(async (item: number) => {
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				return item * 2;
+			});
+
+			const queue = new AsyncQueue(processFn, { concurrency: 10 });
+
+			const promises = Array.from({ length: 5 }, (_, i) => queue.add(i));
+			const results = await Promise.all(promises);
+
+			expect(results).toEqual([0, 2, 4, 6, 8]);
+		});
+	});
+});

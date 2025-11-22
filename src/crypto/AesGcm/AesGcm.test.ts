@@ -891,9 +891,7 @@ describe("AesGcm", () => {
 
 			expect(ciphertext1).not.toEqual(ciphertext2);
 
-			await expect(
-				AesGcm.decrypt(ciphertext1, key, nonce2),
-			).rejects.toThrow();
+			await expect(AesGcm.decrypt(ciphertext1, key, nonce2)).rejects.toThrow();
 		});
 	});
 });

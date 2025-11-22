@@ -14,7 +14,7 @@ vi.mock("@ledgerhq/hw-transport-webusb", () => {
 });
 
 vi.mock("@ledgerhq/hw-app-eth", () => {
-	const mockEth = vi.fn(function() {
+	const mockEth = vi.fn(function () {
 		return {
 			getAddress: vi.fn().mockResolvedValue({
 				address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",

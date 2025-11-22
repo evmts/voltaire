@@ -1,0 +1,452 @@
+import { describe, expect, it } from "vitest";
+import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
+import { Address } from "../primitives/Address/index.js";
+import * as Uint256 from "../primitives/Uint/index.js";
+import * as ERC721 from "./ERC721.js";
+
+describe("ERC721", () => {
+	describe("SELECTORS", () => {
+		it("has correct balanceOf selector", () => {
+			const sig = "balanceOf(address)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.balanceOf).toBe(selector);
+		});
+
+		it("has correct ownerOf selector", () => {
+			const sig = "ownerOf(uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.ownerOf).toBe(selector);
+		});
+
+		it("has correct safeTransferFrom selector", () => {
+			const sig = "safeTransferFrom(address,address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.safeTransferFrom).toBe(selector);
+		});
+
+		it("has correct safeTransferFromWithData selector", () => {
+			const sig = "safeTransferFrom(address,address,uint256,bytes)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.safeTransferFromWithData).toBe(selector);
+		});
+
+		it("has correct transferFrom selector", () => {
+			const sig = "transferFrom(address,address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.transferFrom).toBe(selector);
+		});
+
+		it("has correct approve selector", () => {
+			const sig = "approve(address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.approve).toBe(selector);
+		});
+
+		it("has correct setApprovalForAll selector", () => {
+			const sig = "setApprovalForAll(address,bool)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.setApprovalForAll).toBe(selector);
+		});
+
+		it("has correct getApproved selector", () => {
+			const sig = "getApproved(uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.getApproved).toBe(selector);
+		});
+
+		it("has correct isApprovedForAll selector", () => {
+			const sig = "isApprovedForAll(address,address)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.isApprovedForAll).toBe(selector);
+		});
+
+		it("has correct name selector (Metadata)", () => {
+			const sig = "name()";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.name).toBe(selector);
+		});
+
+		it("has correct symbol selector (Metadata)", () => {
+			const sig = "symbol()";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.symbol).toBe(selector);
+		});
+
+		it("has correct tokenURI selector (Metadata)", () => {
+			const sig = "tokenURI(uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.tokenURI).toBe(selector);
+		});
+
+		it("has correct totalSupply selector (Enumerable)", () => {
+			const sig = "totalSupply()";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.totalSupply).toBe(selector);
+		});
+
+		it("has correct tokenOfOwnerByIndex selector (Enumerable)", () => {
+			const sig = "tokenOfOwnerByIndex(address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.tokenOfOwnerByIndex).toBe(selector);
+		});
+
+		it("has correct tokenByIndex selector (Enumerable)", () => {
+			const sig = "tokenByIndex(uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			expect(ERC721.SELECTORS.tokenByIndex).toBe(selector);
+		});
+	});
+
+	describe("EVENTS", () => {
+		it("has correct Transfer event signature", () => {
+			const sig = "Transfer(address,address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			expect(ERC721.EVENTS.Transfer).toBe(eventSig);
+		});
+
+		it("has correct Approval event signature", () => {
+			const sig = "Approval(address,address,uint256)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			expect(ERC721.EVENTS.Approval).toBe(eventSig);
+		});
+
+		it("has correct ApprovalForAll event signature", () => {
+			const sig = "ApprovalForAll(address,address,bool)";
+			const hash = keccak256(new TextEncoder().encode(sig));
+			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			expect(ERC721.EVENTS.ApprovalForAll).toBe(eventSig);
+		});
+	});
+
+	describe("encodeTransferFrom", () => {
+		it("encodes transferFrom calldata", () => {
+			const from = Address.fromHex(
+				"0x1111111111111111111111111111111111111111",
+			);
+			const to = Address.fromHex("0x2222222222222222222222222222222222222222");
+			const tokenId = Uint256.fromBigInt(1n);
+
+			const calldata = ERC721.encodeTransferFrom(from, to, tokenId);
+
+			expect(calldata).toMatch(/^0x23b872dd/); // transferFrom selector
+			expect(calldata.length).toBe(202); // 10 + 64 + 64 + 64
+		});
+
+		it("encodes transferFrom with large tokenId", () => {
+			const from = Address.fromHex(
+				"0x1111111111111111111111111111111111111111",
+			);
+			const to = Address.fromHex("0x2222222222222222222222222222222222222222");
+			const tokenId =
+				Uint256.fromBigInt(
+					115792089237316195423570985008687907853269984665640564039457584007913129639935n,
+				); // max uint256
+
+			const calldata = ERC721.encodeTransferFrom(from, to, tokenId);
+
+			expect(calldata).toMatch(/^0x23b872dd/);
+			expect(calldata.length).toBe(202);
+		});
+	});
+
+	describe("encodeSafeTransferFrom", () => {
+		it("encodes safeTransferFrom calldata", () => {
+			const from = Address.fromHex(
+				"0x1111111111111111111111111111111111111111",
+			);
+			const to = Address.fromHex("0x2222222222222222222222222222222222222222");
+			const tokenId = Uint256.fromBigInt(42n);
+
+			const calldata = ERC721.encodeSafeTransferFrom(from, to, tokenId);
+
+			expect(calldata).toMatch(/^0x42842e0e/); // safeTransferFrom selector
+			expect(calldata.length).toBe(202); // 10 + 64 + 64 + 64
+		});
+
+		it("encodes safeTransferFrom with different addresses", () => {
+			const from = Address.fromHex(
+				"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			);
+			const to = Address.fromHex("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+			const tokenId = Uint256.fromBigInt(999n);
+
+			const calldata = ERC721.encodeSafeTransferFrom(from, to, tokenId);
+
+			expect(calldata).toMatch(/^0x42842e0e/);
+			expect(calldata).toContain("aaaaaaaaaaaaaaaaaaaaaaaa");
+			expect(calldata).toContain("bbbbbbbbbbbbbbbbbbbbbbbb");
+		});
+	});
+
+	describe("encodeApprove", () => {
+		it("encodes approve calldata", () => {
+			const to = Address.fromHex("0x1234567890123456789012345678901234567890");
+			const tokenId = Uint256.fromBigInt(100n);
+
+			const calldata = ERC721.encodeApprove(to, tokenId);
+
+			expect(calldata).toMatch(/^0x095ea7b3/); // approve selector
+			expect(calldata.length).toBe(138); // 10 + 64 + 64
+		});
+
+		it("encodes approve with zero address", () => {
+			const to = Address.fromHex("0x0000000000000000000000000000000000000000");
+			const tokenId = Uint256.fromBigInt(50n);
+
+			const calldata = ERC721.encodeApprove(to, tokenId);
+
+			expect(calldata).toMatch(/^0x095ea7b3/);
+			expect(calldata).toContain("0000000000000000000000");
+		});
+	});
+
+	describe("encodeSetApprovalForAll", () => {
+		it("encodes setApprovalForAll(true) calldata", () => {
+			const operator = Address.fromHex(
+				"0x1234567890123456789012345678901234567890",
+			);
+
+			const calldata = ERC721.encodeSetApprovalForAll(operator, true);
+
+			expect(calldata).toMatch(/^0xa22cb465/); // setApprovalForAll selector
+			expect(calldata.length).toBe(138); // 10 + 64 + 64
+			expect(calldata).toContain(
+				"0000000000000000000000000000000000000000000000000000000000000001",
+			);
+		});
+
+		it("encodes setApprovalForAll(false) calldata", () => {
+			const operator = Address.fromHex(
+				"0x1234567890123456789012345678901234567890",
+			);
+
+			const calldata = ERC721.encodeSetApprovalForAll(operator, false);
+
+			expect(calldata).toMatch(/^0xa22cb465/);
+			expect(calldata.length).toBe(138);
+			expect(calldata).toContain(
+				"0000000000000000000000000000000000000000000000000000000000000000",
+			);
+		});
+	});
+
+	describe("encodeOwnerOf", () => {
+		it("encodes ownerOf calldata", () => {
+			const tokenId = Uint256.fromBigInt(123n);
+
+			const calldata = ERC721.encodeOwnerOf(tokenId);
+
+			expect(calldata).toMatch(/^0x6352211e/); // ownerOf selector
+			expect(calldata.length).toBe(74); // 10 + 64
+		});
+
+		it("encodes ownerOf with zero tokenId", () => {
+			const tokenId = Uint256.fromBigInt(0n);
+
+			const calldata = ERC721.encodeOwnerOf(tokenId);
+
+			expect(calldata).toMatch(/^0x6352211e/);
+			expect(calldata).toContain(
+				"00000000000000000000000000000000000000000000000000000000000",
+			);
+		});
+	});
+
+	describe("encodeTokenURI", () => {
+		it("encodes tokenURI calldata", () => {
+			const tokenId = Uint256.fromBigInt(456n);
+
+			const calldata = ERC721.encodeTokenURI(tokenId);
+
+			expect(calldata).toMatch(/^0xc87b56dd/); // tokenURI selector
+			expect(calldata.length).toBe(74); // 10 + 64
+		});
+
+		it("encodes tokenURI with large tokenId", () => {
+			const tokenId = Uint256.fromBigInt(999999999999n);
+
+			const calldata = ERC721.encodeTokenURI(tokenId);
+
+			expect(calldata).toMatch(/^0xc87b56dd/);
+			expect(calldata.length).toBe(74);
+		});
+	});
+
+	describe("decodeTransferEvent", () => {
+		it("decodes Transfer event", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.Transfer,
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // from
+					"0x0000000000000000000000002222222222222222222222222222222222222222", // to
+					"0x000000000000000000000000000000000000000000000000000000000000007b", // tokenId 123
+				],
+				data: "0x",
+			};
+
+			const decoded = ERC721.decodeTransferEvent(log);
+
+			expect(decoded.from).toBe("0x1111111111111111111111111111111111111111");
+			expect(decoded.to).toBe("0x2222222222222222222222222222222222222222");
+			expect(decoded.tokenId).toBe(123n);
+		});
+
+		it("decodes Transfer event with zero address", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.Transfer,
+					"0x0000000000000000000000000000000000000000000000000000000000000000", // from (zero = mint)
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // to
+					"0x0000000000000000000000000000000000000000000000000000000000000001", // tokenId 1
+				],
+				data: "0x",
+			};
+
+			const decoded = ERC721.decodeTransferEvent(log);
+
+			expect(decoded.from).toBe("0x0000000000000000000000000000000000000000");
+			expect(decoded.to).toBe("0x1111111111111111111111111111111111111111");
+			expect(decoded.tokenId).toBe(1n);
+		});
+
+		it("throws on wrong event signature", () => {
+			const log = {
+				topics: [
+					"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"0x0000000000000000000000001111111111111111111111111111111111111111",
+					"0x0000000000000000000000002222222222222222222222222222222222222222",
+					"0x0000000000000000000000000000000000000000000000000000000000000001",
+				],
+				data: "0x",
+			};
+
+			expect(() => ERC721.decodeTransferEvent(log)).toThrow(
+				"Not a Transfer event",
+			);
+		});
+	});
+
+	describe("decodeApprovalEvent", () => {
+		it("decodes Approval event", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.Approval,
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // owner
+					"0x0000000000000000000000002222222222222222222222222222222222222222", // approved
+					"0x000000000000000000000000000000000000000000000000000000000000002a", // tokenId 42
+				],
+				data: "0x",
+			};
+
+			const decoded = ERC721.decodeApprovalEvent(log);
+
+			expect(decoded.owner).toBe("0x1111111111111111111111111111111111111111");
+			expect(decoded.approved).toBe(
+				"0x2222222222222222222222222222222222222222",
+			);
+			expect(decoded.tokenId).toBe(42n);
+		});
+
+		it("decodes Approval event with zero approved address", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.Approval,
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // owner
+					"0x0000000000000000000000000000000000000000000000000000000000000000", // approved (zero = revoke)
+					"0x0000000000000000000000000000000000000000000000000000000000000001", // tokenId
+				],
+				data: "0x",
+			};
+
+			const decoded = ERC721.decodeApprovalEvent(log);
+
+			expect(decoded.approved).toBe(
+				"0x0000000000000000000000000000000000000000",
+			);
+		});
+
+		it("throws on wrong event signature", () => {
+			const log = {
+				topics: [
+					"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"0x0000000000000000000000001111111111111111111111111111111111111111",
+					"0x0000000000000000000000002222222222222222222222222222222222222222",
+					"0x0000000000000000000000000000000000000000000000000000000000000001",
+				],
+				data: "0x",
+			};
+
+			expect(() => ERC721.decodeApprovalEvent(log)).toThrow(
+				"Not an Approval event",
+			);
+		});
+	});
+
+	describe("decodeApprovalForAllEvent", () => {
+		it("decodes ApprovalForAll event (true)", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.ApprovalForAll,
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // owner
+					"0x0000000000000000000000002222222222222222222222222222222222222222", // operator
+				],
+				data: "0x0000000000000000000000000000000000000000000000000000000000000001", // approved = true
+			};
+
+			const decoded = ERC721.decodeApprovalForAllEvent(log);
+
+			expect(decoded.owner).toBe("0x1111111111111111111111111111111111111111");
+			expect(decoded.operator).toBe(
+				"0x2222222222222222222222222222222222222222",
+			);
+			expect(decoded.approved).toBe(true);
+		});
+
+		it("decodes ApprovalForAll event (false)", () => {
+			const log = {
+				topics: [
+					ERC721.EVENTS.ApprovalForAll,
+					"0x0000000000000000000000001111111111111111111111111111111111111111", // owner
+					"0x0000000000000000000000002222222222222222222222222222222222222222", // operator
+				],
+				data: "0x0000000000000000000000000000000000000000000000000000000000000000", // approved = false
+			};
+
+			const decoded = ERC721.decodeApprovalForAllEvent(log);
+
+			expect(decoded.approved).toBe(false);
+		});
+
+		it("throws on wrong event signature", () => {
+			const log = {
+				topics: [
+					"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"0x0000000000000000000000001111111111111111111111111111111111111111",
+					"0x0000000000000000000000002222222222222222222222222222222222222222",
+				],
+				data: "0x0000000000000000000000000000000000000000000000000000000000000001",
+			};
+
+			expect(() => ERC721.decodeApprovalForAllEvent(log)).toThrow(
+				"Not an ApprovalForAll event",
+			);
+		});
+	});
+});

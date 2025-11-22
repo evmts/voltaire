@@ -26,7 +26,9 @@ describe("Bytecode", () => {
 
 		it("analyze() - contract with jumps", () => {
 			// PUSH1 0x05, JUMP, STOP, STOP, JUMPDEST, STOP
-			const code = Bytecode(new Uint8Array([0x60, 0x05, 0x56, 0x00, 0x00, 0x5b, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x05, 0x56, 0x00, 0x00, 0x5b, 0x00]),
+			);
 			const analysis = code.analyze();
 			expect(analysis.valid).toBe(true);
 			expect(analysis.jumpDestinations.has(5)).toBe(true);
@@ -55,8 +57,8 @@ describe("Bytecode", () => {
 			// PUSH1 0x03, PUSH1 0x0c, PUSH1 0x00, CODECOPY, PUSH1 0x03, PUSH1 0x00, RETURN, PUSH1 0x01, STOP
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x03, 0x60, 0x0c, 0x60, 0x00, 0x39, 0x60, 0x03, 0x60, 0x00, 0xf3,
-					0x60, 0x01, 0x00,
+					0x60, 0x03, 0x60, 0x0c, 0x60, 0x00, 0x39, 0x60, 0x03, 0x60, 0x00,
+					0xf3, 0x60, 0x01, 0x00,
 				]),
 			);
 			const analysis = code.analyze();
@@ -81,8 +83,8 @@ describe("Bytecode", () => {
 			// Real-world-ish bytecode: PUSH1, MSTORE, RETURN + metadata
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x80, 0x60, 0x40, 0x52, 0x60, 0x00, 0x80, 0xf3, 0xa2, 0x64, 0x69,
-					0x70, 0x66, 0x73, 0x58, 0x22, 0x00, 0x33,
+					0x60, 0x80, 0x60, 0x40, 0x52, 0x60, 0x00, 0x80, 0xf3, 0xa2, 0x64,
+					0x69, 0x70, 0x66, 0x73, 0x58, 0x22, 0x00, 0x33,
 				]),
 			);
 			const analysis = code.analyze();
@@ -95,8 +97,16 @@ describe("Bytecode", () => {
 			const code = Bytecode(
 				new Uint8Array([
 					0x00, // STOP
-					0x60, 0x00, 0x60, 0x00, 0xf3, // PUSH1 0, PUSH1 0, RETURN
-					0x60, 0x00, 0x60, 0x00, 0xfd, // PUSH1 0, PUSH1 0, REVERT
+					0x60,
+					0x00,
+					0x60,
+					0x00,
+					0xf3, // PUSH1 0, PUSH1 0, RETURN
+					0x60,
+					0x00,
+					0x60,
+					0x00,
+					0xfd, // PUSH1 0, PUSH1 0, REVERT
 					0xfe, // INVALID
 				]),
 			);
@@ -110,9 +120,15 @@ describe("Bytecode", () => {
 			// Test PUSH1, PUSH2, PUSH3
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x01, // PUSH1 0x01
-					0x61, 0x01, 0x02, // PUSH2 0x0102
-					0x62, 0x01, 0x02, 0x03, // PUSH3 0x010203
+					0x60,
+					0x01, // PUSH1 0x01
+					0x61,
+					0x01,
+					0x02, // PUSH2 0x0102
+					0x62,
+					0x01,
+					0x02,
+					0x03, // PUSH3 0x010203
 				]),
 			);
 			const instructions = code.parseInstructions();
@@ -175,7 +191,9 @@ describe("Bytecode", () => {
 
 		it("parseInstructions() - jump destinations", () => {
 			// PUSH1 0x05, JUMP, INVALID, JUMPDEST, STOP
-			const code = Bytecode(new Uint8Array([0x60, 0x05, 0x56, 0xfe, 0xfe, 0x5b, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x05, 0x56, 0xfe, 0xfe, 0x5b, 0x00]),
+			);
 			const instructions = code.parseInstructions();
 			const jumpdest = instructions.find((i) => i.opcode === 0x5b);
 			expect(jumpdest).toBeDefined();
@@ -217,7 +235,9 @@ describe("Bytecode", () => {
 
 		it("parseInstructions() - CREATE and CALL operations", () => {
 			// CREATE, CALL, CALLCODE, DELEGATECALL, CREATE2, STATICCALL
-			const code = Bytecode(new Uint8Array([0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xfa]));
+			const code = Bytecode(
+				new Uint8Array([0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xfa]),
+			);
 			const instructions = code.parseInstructions();
 			expect(instructions).toHaveLength(6);
 		});
@@ -240,7 +260,9 @@ describe("Bytecode", () => {
 	describe("3. Block Analysis", () => {
 		it("analyzeBlocks() - linear code blocks", () => {
 			// Simple linear code: PUSH1 0x01, PUSH1 0x02, ADD, STOP
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]),
+			);
 			const blocks = code.analyzeBlocks();
 			expect(blocks).toHaveLength(1);
 			expect(blocks[0].startPc).toBe(0);
@@ -249,7 +271,9 @@ describe("Bytecode", () => {
 		it("analyzeBlocks() - conditional branches (JUMPI)", () => {
 			// PUSH1 0x08, PUSH1 0x01, JUMPI, STOP, INVALID, JUMPDEST, STOP
 			const code = Bytecode(
-				new Uint8Array([0x60, 0x08, 0x60, 0x01, 0x57, 0x00, 0xfe, 0xfe, 0x5b, 0x00]),
+				new Uint8Array([
+					0x60, 0x08, 0x60, 0x01, 0x57, 0x00, 0xfe, 0xfe, 0x5b, 0x00,
+				]),
 			);
 			const blocks = code.analyzeBlocks({ buildCFG: true });
 			expect(blocks.length).toBeGreaterThan(1);
@@ -259,7 +283,9 @@ describe("Bytecode", () => {
 
 		it("analyzeBlocks() - unconditional jumps (JUMP)", () => {
 			// PUSH1 0x05, JUMP, INVALID, JUMPDEST, STOP
-			const code = Bytecode(new Uint8Array([0x60, 0x05, 0x56, 0xfe, 0xfe, 0x5b, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x05, 0x56, 0xfe, 0xfe, 0x5b, 0x00]),
+			);
 			const blocks = code.analyzeBlocks({ buildCFG: true });
 			const jumpBlock = blocks.find((b) => b.terminator === "jump");
 			expect(jumpBlock).toBeDefined();
@@ -290,7 +316,9 @@ describe("Bytecode", () => {
 
 		it("analyzeBlocks() - block boundaries", () => {
 			// PUSH1 0x01, JUMPDEST, PUSH1 0x02, STOP
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]),
+			);
 			const blocks = code.analyzeBlocks();
 			expect(blocks.length).toBeGreaterThan(0);
 			expect(blocks[0].endPc).toBeGreaterThan(blocks[0].startPc);
@@ -298,7 +326,9 @@ describe("Bytecode", () => {
 
 		it("analyzeBlocks() - JUMPDEST identification", () => {
 			// Multiple JUMPDESTs
-			const code = Bytecode(new Uint8Array([0x5b, 0x00, 0x5b, 0x00, 0x5b, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x5b, 0x00, 0x5b, 0x00, 0x5b, 0x00]),
+			);
 			const blocks = code.analyzeBlocks();
 			expect(blocks.length).toBeGreaterThanOrEqual(3);
 		});
@@ -348,11 +378,21 @@ describe("Bytecode", () => {
 			// Dispatcher-like pattern: multiple conditional jumps
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x0a, 0x57, // PUSH1 10, JUMPI
-					0x60, 0x10, 0x57, // PUSH1 16, JUMPI
+					0x60,
+					0x0a,
+					0x57, // PUSH1 10, JUMPI
+					0x60,
+					0x10,
+					0x57, // PUSH1 16, JUMPI
 					0x00, // STOP
-					0x5b, 0x60, 0x01, 0x00, // JUMPDEST, PUSH1 1, STOP
-					0x5b, 0x60, 0x02, 0x00, // JUMPDEST, PUSH1 2, STOP
+					0x5b,
+					0x60,
+					0x01,
+					0x00, // JUMPDEST, PUSH1 1, STOP
+					0x5b,
+					0x60,
+					0x02,
+					0x00, // JUMPDEST, PUSH1 2, STOP
 				]),
 			);
 			const blocks = code.analyzeBlocks({ buildCFG: true });
@@ -385,7 +425,9 @@ describe("Bytecode", () => {
 		});
 
 		it("analyzeJumpDestinations() - no JUMPDEST (sequential code)", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]),
+			);
 			const jumpDests = code.analyzeJumpDestinations();
 			expect(jumpDests.size).toBe(0);
 		});
@@ -394,11 +436,17 @@ describe("Bytecode", () => {
 			// Multiple JUMPDESTs simulating a jump table
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x05, 0x56, // PUSH1 5, JUMP
-					0xfe, 0xfe, // INVALID INVALID
-					0x5b, 0x00, // JUMPDEST, STOP (position 5)
-					0x5b, 0x00, // JUMPDEST, STOP (position 7)
-					0x5b, 0x00, // JUMPDEST, STOP (position 9)
+					0x60,
+					0x05,
+					0x56, // PUSH1 5, JUMP
+					0xfe,
+					0xfe, // INVALID INVALID
+					0x5b,
+					0x00, // JUMPDEST, STOP (position 5)
+					0x5b,
+					0x00, // JUMPDEST, STOP (position 7)
+					0x5b,
+					0x00, // JUMPDEST, STOP (position 9)
 				]),
 			);
 			const jumpDests = code.analyzeJumpDestinations();
@@ -409,11 +457,16 @@ describe("Bytecode", () => {
 			// Function dispatcher with multiple JUMPDESTs
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x04, 0x35, // PUSH1 4, CALLDATALOAD (selector)
+					0x60,
+					0x04,
+					0x35, // PUSH1 4, CALLDATALOAD (selector)
 					0x5b, // JUMPDEST (position 3)
-					0x60, 0x08, 0x57, // PUSH1 8, JUMPI
+					0x60,
+					0x08,
+					0x57, // PUSH1 8, JUMPI
 					0x00, // STOP
-					0x5b, 0x00, // JUMPDEST, STOP (position 8)
+					0x5b,
+					0x00, // JUMPDEST, STOP (position 8)
 				]),
 			);
 			const jumpDests = code.analyzeJumpDestinations();
@@ -447,7 +500,9 @@ describe("Bytecode", () => {
 		});
 
 		it("analyzeJumpDestinations() - alternating JUMPDEST and opcodes", () => {
-			const code = Bytecode(new Uint8Array([0x5b, 0x00, 0x5b, 0x01, 0x5b, 0x02]));
+			const code = Bytecode(
+				new Uint8Array([0x5b, 0x00, 0x5b, 0x01, 0x5b, 0x02]),
+			);
 			const jumpDests = code.analyzeJumpDestinations();
 			expect(jumpDests.has(0)).toBe(true);
 			expect(jumpDests.has(2)).toBe(true);
@@ -520,7 +575,9 @@ describe("Bytecode", () => {
 			const code = Bytecode(new Uint8Array([0x01]));
 			const stackAnalysis = code.analyzeStack();
 			expect(stackAnalysis.valid).toBe(false);
-			expect(stackAnalysis.issues.some((i) => i.type === "underflow")).toBe(true);
+			expect(stackAnalysis.issues.some((i) => i.type === "underflow")).toBe(
+				true,
+			);
 		});
 
 		it("analyzeStack() - stack overflow detection (>1024)", () => {
@@ -612,7 +669,9 @@ describe("Bytecode", () => {
 		});
 
 		it("prettyPrint() - pretty-printed disassembly", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]),
+			);
 			const pretty = code.prettyPrint();
 			expect(typeof pretty).toBe("string");
 			expect(pretty.length).toBeGreaterThan(0);
@@ -671,8 +730,8 @@ describe("Bytecode", () => {
 			// Typical Solidity metadata end: 0x00 0x33
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x80, 0x60, 0x40, 0x52, 0xa2, 0x64, 0x69, 0x70, 0x66, 0x73, 0x00,
-					0x33,
+					0x60, 0x80, 0x60, 0x40, 0x52, 0xa2, 0x64, 0x69, 0x70, 0x66, 0x73,
+					0x00, 0x33,
 				]),
 			);
 			const has = code.hasMetadata();
@@ -699,8 +758,8 @@ describe("Bytecode", () => {
 			// Constructor that copies runtime code
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x03, 0x60, 0x0c, 0x60, 0x00, 0x39, 0x60, 0x03, 0x60, 0x00, 0xf3,
-					0x60, 0x01, 0x00,
+					0x60, 0x03, 0x60, 0x0c, 0x60, 0x00, 0x39, 0x60, 0x03, 0x60, 0x00,
+					0xf3, 0x60, 0x01, 0x00,
 				]),
 			);
 			const runtime = code.extractRuntime();
@@ -722,7 +781,9 @@ describe("Bytecode", () => {
 
 	describe("9. Validation", () => {
 		it("validate() - valid bytecode", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]),
+			);
 			const valid = code.validate();
 			expect(valid).toBe(true);
 		});
@@ -770,7 +831,9 @@ describe("Bytecode", () => {
 		});
 
 		it("getBlock() - get basic block", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]),
+			);
 			const block = code.getBlock(0);
 			expect(block).toBeDefined();
 		});
@@ -826,8 +889,11 @@ describe("Bytecode", () => {
 		it("getNextPc() - various opcodes", () => {
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x01, // PUSH1 at 0, next is 2
-					0x61, 0x01, 0x02, // PUSH2 at 2, next is 5
+					0x60,
+					0x01, // PUSH1 at 0, next is 2
+					0x61,
+					0x01,
+					0x02, // PUSH2 at 2, next is 5
 					0x00, // STOP at 5, next would be 6 (EOF)
 				]),
 			);
@@ -879,9 +945,12 @@ describe("Bytecode", () => {
 			// PUSH32 * 3
 			const code = Bytecode(
 				new Uint8Array([
-					0x7f, ...new Uint8Array(32).fill(0xaa),
-					0x7f, ...new Uint8Array(32).fill(0xbb),
-					0x7f, ...new Uint8Array(32).fill(0xcc),
+					0x7f,
+					...new Uint8Array(32).fill(0xaa),
+					0x7f,
+					...new Uint8Array(32).fill(0xbb),
+					0x7f,
+					...new Uint8Array(32).fill(0xcc),
 				]),
 			);
 			const analysis = code.analyze();
@@ -956,8 +1025,14 @@ describe("Bytecode", () => {
 			// Bytecode with function selector pattern
 			const code = Bytecode(
 				new Uint8Array([
-					0x60, 0x04, 0x35, // PUSH1 4, CALLDATALOAD (load selector)
-					0x63, 0x12, 0x34, 0x56, 0x78, // PUSH4 0x12345678 (selector)
+					0x60,
+					0x04,
+					0x35, // PUSH1 4, CALLDATALOAD (load selector)
+					0x63,
+					0x12,
+					0x34,
+					0x56,
+					0x78, // PUSH4 0x12345678 (selector)
 					0x14, // EQ
 					0x00, // STOP
 				]),
@@ -967,7 +1042,9 @@ describe("Bytecode", () => {
 		});
 
 		it("analyzeBlocks() - block instruction count", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x00]),
+			);
 			const blocks = code.analyzeBlocks();
 			expect(blocks[0].instructionCount).toBeGreaterThan(0);
 		});
@@ -992,13 +1069,17 @@ describe("Bytecode", () => {
 		});
 
 		it("analyzeGas() - block gas breakdown", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]),
+			);
 			const gasAnalysis = code.analyzeGas();
 			expect(gasAnalysis.byBlock.length).toBeGreaterThan(0);
 		});
 
 		it("analyzeStack() - block stack info", () => {
-			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]));
+			const code = Bytecode(
+				new Uint8Array([0x60, 0x01, 0x5b, 0x60, 0x02, 0x00]),
+			);
 			const stackAnalysis = code.analyzeStack();
 			expect(stackAnalysis.byBlock.length).toBeGreaterThan(0);
 		});
