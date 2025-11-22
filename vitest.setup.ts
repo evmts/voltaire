@@ -17,6 +17,8 @@ const wasmBuffer = readFileSync(wasmPath);
 await loadWasm(wasmBuffer.buffer);
 
 // Mock process.exit to prevent examples from actually exiting test process
-vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
-  return undefined as never;
-});
+vi.spyOn(process, "exit").mockImplementation(
+	(code?: string | number | null | undefined): never => {
+		return undefined as never;
+	},
+);
