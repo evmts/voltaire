@@ -5,11 +5,25 @@
  * This provider maintains its own blockchain state in memory for testing and development.
  *
  * @module provider/InMemoryProvider
- * @placeholder This implementation will be completed when EVM documentation is finalized
+ * @status PLACEHOLDER - EVM module is ready but InMemoryProvider needs implementation
+ *
+ * The EVM module (src/evm) is complete with Frame, Host, and execution functions.
+ * This provider needs to:
+ * 1. Implement state management (accounts, storage, blocks)
+ * 2. Wire up EVM calls to JSON-RPC methods
+ * 3. Handle block mining (auto/interval/manual)
+ * 4. Support forking from external nodes
  */
 
 import type { Provider } from "./Provider.js";
-import type { ProviderEvents, RequestOptions, Response } from "./types.js";
+import type {
+	ProviderEvent,
+	ProviderEventMap,
+	ProviderEvents,
+	RequestArguments,
+	RequestOptions,
+	Response,
+} from "./types.js";
 
 /**
  * In-Memory Provider configuration options
@@ -81,7 +95,7 @@ export class InMemoryProvider implements Provider {
 	constructor(_options?: InMemoryProviderOptions) {
 		throw new Error(
 			"InMemoryProvider is not yet implemented. " +
-				"This provider will be completed when the EVM module is documented. " +
+				"The EVM module is ready (src/evm) but state management and JSON-RPC wiring is pending. " +
 				"For now, use HttpProvider or WebSocketProvider to connect to external nodes.",
 		);
 	}
@@ -96,8 +110,35 @@ export class InMemoryProvider implements Provider {
 	private notImplemented(): never {
 		throw new Error(
 			"InMemoryProvider is not yet implemented. " +
-				"This provider will be completed when the EVM module is documented.",
+				"The EVM module is ready but state management and JSON-RPC wiring is pending.",
 		);
+	}
+
+	/**
+	 * EIP-1193 request method
+	 */
+	async request(_args: RequestArguments): Promise<unknown> {
+		return this.notImplemented();
+	}
+
+	/**
+	 * Register event listener
+	 */
+	on<E extends ProviderEvent>(
+		_event: E,
+		_listener: (...args: ProviderEventMap[E]) => void,
+	): this {
+		return this.notImplemented();
+	}
+
+	/**
+	 * Remove event listener
+	 */
+	removeListener<E extends ProviderEvent>(
+		_event: E,
+		_listener: (...args: ProviderEventMap[E]) => void,
+	): this {
+		return this.notImplemented();
 	}
 
 	// eth methods
