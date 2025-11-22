@@ -35,7 +35,7 @@ function encodeNonce(num) {
  * @param {Object} deps - Dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(items: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(address: import('./AddressType.js').BrandedAddress, nonce: bigint) => import('./AddressType.js').AddressType}
+ * @returns {(address: import('./AddressType.js').AddressType, nonce: bigint) => import('./AddressType.js').AddressType}
  *
  * @example
  * ```typescript

@@ -3,7 +3,7 @@
  *
  * @param {Object} deps - Dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {function(import('./AddressType.js').BrandedAddress, import('../Hash/HashType.js').HashType, import('../../Bytecode/BytecodeType.js').BrandedBytecode): import('./AddressType.js').AddressType}
+ * @returns {function(import('./AddressType.js').AddressType, import('../Hash/HashType.js').HashType, import('../../Bytecode/BytecodeType.js').BrandedBytecode): import('./AddressType.js').AddressType}
  */
 export function CalculateCreate2Address({ keccak256 }) {
 	/**

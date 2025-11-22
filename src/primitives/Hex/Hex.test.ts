@@ -57,7 +57,7 @@ describe("Hex", () => {
 
 		it("throws on invalid hex", () => {
 			expect(() => validate("1234")).toThrow(InvalidHexFormatError);
-			expect(() => validate("0xg")).toThrow(InvalidHexCharacterError);
+			expect(() => validate("0xg")).toThrow(InvalidHexFormatError);
 		});
 	});
 
@@ -106,13 +106,13 @@ describe("Hex", () => {
 		});
 
 		it("throws on odd length", () => {
-			expect(() => toBytes("0x1" as HexType)).toThrow(OddLengthHexError);
-			expect(() => toBytes("0x123" as HexType)).toThrow(OddLengthHexError);
+			expect(() => toBytes("0x1" as HexType)).toThrow(InvalidHexLengthError);
+			expect(() => toBytes("0x123" as HexType)).toThrow(InvalidHexLengthError);
 		});
 
 		it("throws on invalid character", () => {
 			expect(() => toBytes("0xdeadbeeg" as HexType)).toThrow(
-				InvalidHexCharacterError,
+				InvalidHexFormatError,
 			);
 		});
 	});

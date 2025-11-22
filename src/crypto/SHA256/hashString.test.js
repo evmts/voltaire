@@ -167,13 +167,7 @@ describe("SHA256 hashString function", () => {
 		});
 
 		it("should match hash() for string inputs", () => {
-			const testStrings = [
-				"test",
-				"hello",
-				"",
-				"a",
-				"The quick brown fox",
-			];
+			const testStrings = ["test", "hello", "", "a", "The quick brown fox"];
 
 			for (const str of testStrings) {
 				const result = hashString(str);

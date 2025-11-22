@@ -157,6 +157,255 @@ describe("Base64", () => {
 		});
 	});
 
+	describe("Error Handling", () => {
+		describe("DecodingError structure", () => {
+			it("throws DecodingError with correct structure on invalid base64", () => {
+				try {
+					Base64.decode("!!!");
+					expect.fail("Should have thrown");
+				} catch (error) {
+					expect(error).toBeInstanceOf(Error);
+					expect(error.name).toBe("DecodingError");
+					expect(error.message).toContain("Invalid base64");
+					expect(error.code).toBe("BASE64_INVALID_FORMAT");
+					expect(error.context).toBeDefined();
+					expect(error.context.value).toBe("!!!");
+				}
+			});
+
+			it("throws DecodingError with docsPath", () => {
+				try {
+					Base64.decode("invalid");
+					expect.fail("Should have thrown");
+				} catch (error) {
+					expect(error.docsPath).toContain("/primitives/base64");
+				}
+			});
+		});
+
+		describe("Invalid length errors", () => {
+			it("validates base64 length requirements", () => {
+				expect(Base64.isValid("")).toBe(true);
+				expect(Base64.isValid("AAAA")).toBe(true);
+			});
+
+			it("checks length with padding", () => {
+				const valid1 = Base64.isValid("AA==");
+				const valid2 = Base64.isValid("AAA=");
+				expect(valid1 || valid2).toBe(true);
+			});
+
+			it("accepts valid lengths", () => {
+				expect(() => Base64.decode("")).not.toThrow();
+				expect(() => Base64.decode("AAAA")).not.toThrow();
+				expect(() => Base64.decode("AAAABBBB")).not.toThrow();
+			});
+		});
+
+		describe("Invalid padding", () => {
+			it("throws on padding in middle", () => {
+				expect(() => Base64.decode("AA=A")).toThrow();
+				expect(() => Base64.decode("A=AA")).toThrow();
+				expect(() => Base64.decode("=AAA")).toThrow();
+			});
+
+			it("throws on 3+ padding characters", () => {
+				expect(() => Base64.decode("A===")).toThrow();
+				expect(() => Base64.decode("====")).toThrow();
+			});
+
+			it("accepts valid padding", () => {
+				expect(() => Base64.decode("AA==")).not.toThrow();
+				expect(() => Base64.decode("AAA=")).not.toThrow();
+			});
+		});
+
+		describe("Invalid characters", () => {
+			it("throws on invalid base64 characters", () => {
+				expect(() => Base64.decode("!!!")).toThrow();
+				expect(() => Base64.decode("@#$%")).toThrow();
+				expect(() => Base64.decode("A B C")).toThrow();
+			});
+
+			it("throws on newlines", () => {
+				expect(() => Base64.decode("AAAA\nBBBB")).toThrow();
+			});
+
+			it("throws on unicode characters", () => {
+				expect(() => Base64.decode("AAAA€BBB")).toThrow();
+			});
+		});
+	});
+
+	describe("Edge Cases", () => {
+		describe("Very long inputs", () => {
+			it("handles 1KB base64 string", () => {
+				const data = new Uint8Array(768);
+				for (let i = 0; i < data.length; i++) data[i] = i % 256;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles 10KB base64 string", () => {
+				const data = new Uint8Array(7600);
+				for (let i = 0; i < data.length; i++) data[i] = (i * 7) % 256;
+				const encoded = Base64.encode(data);
+				expect(encoded.length).toBeGreaterThan(10000);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles 100KB base64 string", () => {
+				const data = new Uint8Array(76000);
+				for (let i = 0; i < data.length; i++) data[i] = (i * 13) % 256;
+				const encoded = Base64.encode(data);
+				expect(encoded.length).toBeGreaterThan(100000);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+		});
+
+		describe("UTF-8 edge cases", () => {
+			it("handles emoji", () => {
+				const emoji = "🚀🌟💎";
+				const encoded = Base64.encodeString(emoji);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(emoji);
+			});
+
+			it("handles multi-byte characters", () => {
+				const text = "こんにちは世界";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles mixed ASCII and multi-byte", () => {
+				const text = "Hello 世界 🌍";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles null character", () => {
+				const text = "Hello\x00World";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles all ASCII control characters", () => {
+				let text = "";
+				for (let i = 0; i < 32; i++) {
+					text += String.fromCharCode(i);
+				}
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles surrogate pairs", () => {
+				const text = "𝕳𝖊𝖑𝖑𝖔";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+		});
+
+		describe("Mixed standard/URL-safe", () => {
+			it("standard decode rejects URL-safe characters", () => {
+				expect(() => Base64.decode("AA-_")).toThrow();
+			});
+
+			it("URL-safe validation rejects standard characters", () => {
+				expect(Base64.isValidUrlSafe("AA+/")).toBe(false);
+			});
+
+			it("URL-safe validation rejects padding", () => {
+				expect(Base64.isValidUrlSafe("AAA=")).toBe(false);
+			});
+
+			it("can convert between formats", () => {
+				const data = new Uint8Array([255, 254, 253]);
+				const standard = Base64.encode(data);
+				const urlSafe = Base64.encodeUrlSafe(data);
+
+				expect(standard).not.toBe(urlSafe);
+				expect(Base64.decode(standard)).toEqual(data);
+				expect(Base64.decodeUrlSafe(urlSafe)).toEqual(data);
+			});
+		});
+
+		describe("calcDecodedSize edge cases", () => {
+			it("returns 0 for empty string", () => {
+				expect(Base64.calcDecodedSize(0)).toBe(0);
+			});
+
+			it("calculates size for various lengths", () => {
+				expect(Base64.calcDecodedSize(4)).toBe(1);
+				expect(Base64.calcDecodedSize(8)).toBe(4);
+				expect(Base64.calcDecodedSize(12)).toBe(7);
+				expect(Base64.calcDecodedSize(16)).toBe(10);
+			});
+
+			it("handles various input lengths", () => {
+				expect(Base64.calcDecodedSize(1)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(3)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(5)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(7)).toBeGreaterThanOrEqual(0);
+			});
+		});
+
+		describe("Empty string URL-safe validation", () => {
+			it("isValidUrlSafe accepts empty string", () => {
+				expect(Base64.isValidUrlSafe("")).toBe(true);
+			});
+
+			it("decodeUrlSafe accepts empty string", () => {
+				const result = Base64.decodeUrlSafe("");
+				expect(result).toEqual(new Uint8Array(0));
+			});
+
+			it("encodeUrlSafe produces empty string for empty input", () => {
+				const result = Base64.encodeUrlSafe(new Uint8Array(0));
+				expect(result).toBe("");
+			});
+		});
+
+		describe("Binary data edge cases", () => {
+			it("handles all zero bytes", () => {
+				const data = new Uint8Array(32);
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles all 0xFF bytes", () => {
+				const data = new Uint8Array(32).fill(255);
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles alternating bytes", () => {
+				const data = new Uint8Array(32);
+				for (let i = 0; i < 32; i++) data[i] = i % 2 === 0 ? 0xaa : 0x55;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles random-like patterns", () => {
+				const data = new Uint8Array(32);
+				for (let i = 0; i < 32; i++) data[i] = (i * 7 + 13) % 256;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+		});
+	});
+
 	describe("Size Calculation", () => {
 		it("calcEncodedSize should calculate correct size", () => {
 			expect(Base64.calcEncodedSize(0)).toBe(0);

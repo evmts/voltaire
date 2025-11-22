@@ -101,10 +101,7 @@ describe("HexType type-level tests", () => {
 
 	describe("Bytes alias for Sized", () => {
 		it("should be equivalent to Sized", () => {
-			type Test = Equals<
-				import("./HexType.js").Bytes<4>,
-				Sized<4>
-			>;
+			type Test = Equals<import("./HexType.js").Bytes<4>, Sized<4>>;
 			const test: Test = true;
 			test;
 		});

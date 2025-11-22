@@ -4,8 +4,8 @@ import { equals } from "./equals.js";
  * Remove duplicate addresses from array
  * Preserves first occurrence of each unique address
  *
- * @param {import('./AddressType.js').BrandedAddress[]} addresses - Addresses to deduplicate
- * @returns {import('./AddressType.js').BrandedAddress[]} Deduplicated addresses (new array)
+ * @param {import('./AddressType.js').AddressType[]} addresses - Addresses to deduplicate
+ * @returns {import('./AddressType.js').AddressType[]} Deduplicated addresses (new array)
  *
  * @example
  * ```typescript

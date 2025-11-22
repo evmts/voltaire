@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import * as Address from "../Address/internal-index.js";
-import * as Bytes from "../Bytes/BrandedBytes/index.js";
+import * as Bytes from "../Bytes/index.js";
 import * as Hex from "../Hex/index.js";
 import { InvalidTransactionUrlError } from "./errors.js";
 import { format } from "./format.js";

@@ -14,7 +14,5 @@
  * ```
  */
 export function clone(hash) {
-	return /** @type {import('./HashType.js').HashType} */ (
-		new Uint8Array(hash)
-	);
+	return /** @type {import('./HashType.js').HashType} */ (new Uint8Array(hash));
 }

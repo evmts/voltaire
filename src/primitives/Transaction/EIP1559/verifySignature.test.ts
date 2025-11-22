@@ -131,10 +131,7 @@ describe("TransactionEIP1559.verifySignature", () => {
 			accessList: [
 				{
 					address: Address("0x1234567890123456789012345678901234567890"),
-					storageKeys: [
-						new Uint8Array(32).fill(1),
-						new Uint8Array(32).fill(2),
-					],
+					storageKeys: [new Uint8Array(32).fill(1), new Uint8Array(32).fill(2)],
 				},
 			],
 			yParity: 0,

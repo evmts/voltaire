@@ -1,5 +1,5 @@
 import * as OxBase64 from "ox/Base64";
-import { DecodingError } from "../../errors/SerializationError.js";
+import { DecodingError } from "../errors/index.js";
 
 /**
  * Decode standard base64 string to bytes

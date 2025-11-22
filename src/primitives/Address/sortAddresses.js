@@ -3,8 +3,8 @@ import { compare } from "./compare.js";
 /**
  * Sort addresses lexicographically
  *
- * @param {import('./AddressType.js').BrandedAddress[]} addresses - Addresses to sort
- * @returns {import('./AddressType.js').BrandedAddress[]} Sorted addresses (new array)
+ * @param {import('./AddressType.js').AddressType[]} addresses - Addresses to sort
+ * @returns {import('./AddressType.js').AddressType[]} Sorted addresses (new array)
  *
  * @example
  * ```typescript

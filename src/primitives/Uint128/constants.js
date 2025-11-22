@@ -47,9 +47,7 @@ export const MAX = /** @type {import('./Uint128Type.js').Uint128Type} */ (
  * console.log(MIN); // 0n
  * ```
  */
-export const MIN = /** @type {import('./Uint128Type.js').Uint128Type} */ (
-	0n
-);
+export const MIN = /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 
 /**
  * Zero value
@@ -63,9 +61,7 @@ export const MIN = /** @type {import('./Uint128Type.js').Uint128Type} */ (
  * console.log(ZERO); // 0n
  * ```
  */
-export const ZERO = /** @type {import('./Uint128Type.js').Uint128Type} */ (
-	0n
-);
+export const ZERO = /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 
 /**
  * One value
@@ -79,6 +75,4 @@ export const ZERO = /** @type {import('./Uint128Type.js').Uint128Type} */ (
  * console.log(ONE); // 1n
  * ```
  */
-export const ONE = /** @type {import('./Uint128Type.js').Uint128Type} */ (
-	1n
-);
+export const ONE = /** @type {import('./Uint128Type.js').Uint128Type} */ (1n);

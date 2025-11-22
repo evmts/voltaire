@@ -1,4 +1,4 @@
-import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
+import { InvalidFormatError, InvalidLengthError } from "../../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**

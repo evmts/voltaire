@@ -73,9 +73,7 @@ export function Verify({
 			// Recover public key from signature
 			const publicKey = secp256k1RecoverPublicKey(
 				{ r, s, v: recoveryId },
-				/** @type {import('../Hash/HashType.js').HashType} */ (
-					messageHash
-				),
+				/** @type {import('../Hash/HashType.js').HashType} */ (messageHash),
 			);
 
 			// Derive address from public key

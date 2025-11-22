@@ -563,3 +563,151 @@ describe("Security properties", () => {
 		}
 	});
 });
+
+describe("Streaming API (SHA256.create)", () => {
+	it("should produce same hash as one-shot hash", () => {
+		const data = new TextEncoder().encode("hello world");
+
+		const hasher = SHA256Namespace.create();
+		hasher.update(data);
+		const streamHash = hasher.digest();
+
+		const oneShotHash = SHA256Namespace.hash(data);
+
+		expect(streamHash).toEqual(oneShotHash);
+	});
+
+	it("should handle multiple updates correctly", () => {
+		const part1 = new TextEncoder().encode("hello");
+		const part2 = new TextEncoder().encode(" ");
+		const part3 = new TextEncoder().encode("world");
+
+		const hasher = SHA256Namespace.create();
+		hasher.update(part1);
+		hasher.update(part2);
+		hasher.update(part3);
+		const streamHash = hasher.digest();
+
+		const fullData = new TextEncoder().encode("hello world");
+		const oneShotHash = SHA256Namespace.hash(fullData);
+
+		expect(streamHash).toEqual(oneShotHash);
+	});
+
+	it("should handle empty updates between non-empty updates", () => {
+		const hasher = SHA256Namespace.create();
+		hasher.update(new TextEncoder().encode("hello"));
+		hasher.update(new Uint8Array(0)); // Empty update
+		hasher.update(new TextEncoder().encode(" world"));
+		const streamHash = hasher.digest();
+
+		const expected = SHA256Namespace.hashString("hello world");
+		expect(streamHash).toEqual(expected);
+	});
+
+	it("should handle very small chunks (1-byte at a time)", () => {
+		const data = new Uint8Array([1, 2, 3, 4, 5]);
+
+		const hasher = SHA256Namespace.create();
+		for (const byte of data) {
+			hasher.update(new Uint8Array([byte]));
+		}
+		const streamHash = hasher.digest();
+
+		const oneShotHash = SHA256Namespace.hash(data);
+		expect(streamHash).toEqual(oneShotHash);
+	});
+
+	it("should handle empty stream (no updates before digest)", () => {
+		const hasher = SHA256Namespace.create();
+		const hash = hasher.digest();
+
+		const expected = SHA256Namespace.hash(new Uint8Array(0));
+		expect(hash).toEqual(expected);
+	});
+
+	it("digest() should finalize the hasher", () => {
+		const hasher = SHA256Namespace.create();
+		hasher.update(new TextEncoder().encode("test"));
+		const hash = hasher.digest();
+
+		// After digest(), hasher is finalized
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+
+		// Attempting to call digest() again or update() will throw
+		expect(() => hasher.digest()).toThrow();
+	});
+
+	it("should handle large data in chunks", () => {
+		const chunkSize = 1024;
+		const numChunks = 100;
+		const totalSize = chunkSize * numChunks;
+
+		// Create predictable data
+		const fullData = new Uint8Array(totalSize);
+		for (let i = 0; i < totalSize; i++) {
+			fullData[i] = i & 0xff;
+		}
+
+		// Hash in chunks
+		const hasher = SHA256Namespace.create();
+		for (let i = 0; i < numChunks; i++) {
+			const chunk = fullData.slice(i * chunkSize, (i + 1) * chunkSize);
+			hasher.update(chunk);
+		}
+		const streamHash = hasher.digest();
+
+		// Compare with one-shot
+		const oneShotHash = SHA256Namespace.hash(fullData);
+		expect(streamHash).toEqual(oneShotHash);
+	});
+
+	it("should handle unaligned block boundaries", () => {
+		// SHA256 processes 64-byte blocks
+		// Test data that doesn't align to block boundaries
+		const sizes = [1, 63, 64, 65, 127, 128, 129];
+
+		for (const size of sizes) {
+			const data = new Uint8Array(size).fill(0x42);
+
+			// Split at odd positions
+			const split = Math.floor(size / 3);
+			const part1 = data.slice(0, split);
+			const part2 = data.slice(split);
+
+			const hasher = SHA256Namespace.create();
+			hasher.update(part1);
+			hasher.update(part2);
+			const streamHash = hasher.digest();
+
+			const oneShotHash = SHA256Namespace.hash(data);
+			expect(streamHash).toEqual(oneShotHash);
+		}
+	});
+
+	it("should be deterministic across multiple hasher instances", () => {
+		const data = new TextEncoder().encode("test data");
+
+		const hasher1 = SHA256Namespace.create();
+		hasher1.update(data);
+		const hash1 = hasher1.digest();
+
+		const hasher2 = SHA256Namespace.create();
+		hasher2.update(data);
+		const hash2 = hasher2.digest();
+
+		expect(hash1).toEqual(hash2);
+	});
+
+	it("should handle updates after empty initialization", () => {
+		const hasher = SHA256Namespace.create();
+		hasher.update(new Uint8Array(0));
+		hasher.update(new TextEncoder().encode("test"));
+		hasher.update(new Uint8Array(0));
+		const hash = hasher.digest();
+
+		const expected = SHA256Namespace.hashString("test");
+		expect(hash).toEqual(expected);
+	});
+});

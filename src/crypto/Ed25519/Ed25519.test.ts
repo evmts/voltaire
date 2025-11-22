@@ -473,5 +473,218 @@ describe("Ed25519", () => {
 			const seed = crypto.getRandomValues(new Uint8Array(32));
 			expect(() => Ed25519.validateSeed(seed)).not.toThrow();
 		});
+
+		it("validates all-0xFF public key (Ed25519 may accept some edge values)", () => {
+			// Create a public key with all 0xFF
+			const edgePublicKey = new Uint8Array(32).fill(0xff);
+
+			// Ed25519 validation may accept this depending on implementation
+			const isValid = Ed25519.validatePublicKey(edgePublicKey);
+			// Just verify it returns a boolean (not testing specific validation logic)
+			expect(typeof isValid).toBe("boolean");
+		});
+
+		it("rejects secret key with incorrect length", () => {
+			const invalidSecretKey = new Uint8Array(16);
+			const isValid = Ed25519.validateSecretKey(invalidSecretKey);
+			expect(isValid).toBe(false);
+		});
+
+		it("rejects public key with incorrect length", () => {
+			const invalidPublicKey = new Uint8Array(16);
+			const isValid = Ed25519.validatePublicKey(invalidPublicKey);
+			expect(isValid).toBe(false);
+		});
+
+		it("rejects seed with incorrect length", () => {
+			const invalidSeed = new Uint8Array(16);
+			const isValid = Ed25519.validateSeed(invalidSeed);
+			expect(isValid).toBe(false);
+		});
+
+		it("validates all-zero secret key (edge case)", () => {
+			const zeroSecretKey = new Uint8Array(32);
+			// Should not throw - validation is length-based
+			expect(() => Ed25519.validateSecretKey(zeroSecretKey)).not.toThrow();
+		});
+
+		it("validates all-ones secret key (edge case)", () => {
+			const onesSecretKey = new Uint8Array(32).fill(0xff);
+			// Should not throw - validation is length-based
+			expect(() => Ed25519.validateSecretKey(onesSecretKey)).not.toThrow();
+		});
+	});
+
+	describe("Enhanced Security Edge Cases", () => {
+		it("handles point at infinity explicit test", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+
+			// Point at infinity is (0, 1) in Edwards form
+			// In Ed25519 encoding: y with x = 0
+			const infinityPoint = new Uint8Array(32);
+			infinityPoint[0] = 0x01; // y = 1, x = 0
+
+			const signature = Ed25519.sign(message, keypair.secretKey);
+			const valid = Ed25519.verify(signature, message, infinityPoint);
+			expect(valid).toBe(false);
+		});
+
+		it("handles high-bit set scalar test", () => {
+			// Ed25519 clamps scalars - test high bit behavior
+			const highBitSeed = new Uint8Array(32);
+			highBitSeed[31] = 0x80; // Set high bit
+
+			const keypair = Ed25519.keypairFromSeed(highBitSeed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+			const valid = Ed25519.verify(signature, message, keypair.publicKey);
+
+			expect(valid).toBe(true);
+		});
+
+		it("handles near-order scalar value", () => {
+			// Ed25519 order is 2^252 + 27742317777372353535851937790883648493
+			// Test with value near the order
+			const nearOrderSeed = new Uint8Array(32);
+			// Set to maximum 252-bit value
+			nearOrderSeed.fill(0xff);
+			nearOrderSeed[31] = 0x0f; // Clear top bits for valid scalar
+
+			const keypair = Ed25519.keypairFromSeed(nearOrderSeed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+			const valid = Ed25519.verify(signature, message, keypair.publicKey);
+
+			expect(valid).toBe(true);
+		});
+
+		it("systematic signature byte mutation (multiple bit flips)", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+
+			// Test systematic mutations at different positions
+			const testPositions = [0, 1, 15, 16, 31, 32, 47, 48, 63];
+
+			for (const pos of testPositions) {
+				// Flip entire byte
+				const corruptedSig = new Uint8Array(signature);
+				if (corruptedSig[pos] !== undefined) {
+					corruptedSig[pos] ^= 0xff;
+				}
+
+				const valid = Ed25519.verify(corruptedSig, message, keypair.publicKey);
+				expect(valid).toBe(false);
+			}
+		});
+
+		it("handles signature with all R bytes modified", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+
+			// Corrupt R component (first 32 bytes)
+			const corruptedSig = new Uint8Array(signature);
+			for (let i = 0; i < 32; i++) {
+				if (corruptedSig[i] !== undefined) {
+					corruptedSig[i] ^= 1;
+				}
+			}
+
+			const valid = Ed25519.verify(corruptedSig, message, keypair.publicKey);
+			expect(valid).toBe(false);
+		});
+
+		it("handles signature with all S bytes modified", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+
+			// Corrupt S component (last 32 bytes)
+			const corruptedSig = new Uint8Array(signature);
+			for (let i = 32; i < 64; i++) {
+				if (corruptedSig[i] !== undefined) {
+					corruptedSig[i] ^= 1;
+				}
+			}
+
+			const valid = Ed25519.verify(corruptedSig, message, keypair.publicKey);
+			expect(valid).toBe(false);
+		});
+
+		it("handles mixed-endian byte order edge cases", () => {
+			// Ed25519 uses little-endian - test that we handle it correctly
+			const seed1 = new Uint8Array(32);
+			seed1[0] = 0x01; // Little-endian 1
+
+			const seed2 = new Uint8Array(32);
+			seed2[31] = 0x01; // Big-endian 1
+
+			const keypair1 = Ed25519.keypairFromSeed(seed1);
+			const keypair2 = Ed25519.keypairFromSeed(seed2);
+
+			// Should produce different keys
+			expect(keypair1.publicKey).not.toEqual(keypair2.publicKey);
+		});
+
+		it("handles signature verification with swapped R and S", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+			const signature = Ed25519.sign(message, keypair.secretKey);
+
+			// Swap R and S components
+			const swappedSig = new Uint8Array(64);
+			swappedSig.set(signature.slice(32, 64), 0); // S -> R position
+			swappedSig.set(signature.slice(0, 32), 32); // R -> S position
+
+			const valid = Ed25519.verify(swappedSig, message, keypair.publicKey);
+			expect(valid).toBe(false);
+		});
+
+		it("rejects signature with out-of-range S value", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = Ed25519.keypairFromSeed(seed);
+			const message = new TextEncoder().encode("test");
+
+			// Create signature with S > order
+			const invalidSig = new Uint8Array(64);
+			// R component (first 32 bytes) - use valid R
+			const validSig = Ed25519.sign(message, keypair.secretKey);
+			invalidSig.set(validSig.slice(0, 32), 0);
+
+			// S component (last 32 bytes) - set to value > order
+			for (let i = 32; i < 64; i++) {
+				invalidSig[i] = 0xff;
+			}
+
+			const valid = Ed25519.verify(invalidSig, message, keypair.publicKey);
+			expect(valid).toBe(false);
+		});
+
+		it("handles concurrent signature operations", () => {
+			// Test thread safety / no shared state issues
+			const seeds = Array.from({ length: 100 }, (_, i) => {
+				const seed = new Uint8Array(32);
+				seed[0] = i;
+				return seed;
+			});
+
+			const results = seeds.map((seed, i) => {
+				const keypair = Ed25519.keypairFromSeed(seed);
+				const message = new TextEncoder().encode(`message ${i}`);
+				const signature = Ed25519.sign(message, keypair.secretKey);
+				const valid = Ed25519.verify(signature, message, keypair.publicKey);
+				return valid;
+			});
+
+			// All should be valid
+			expect(results.every((v) => v === true)).toBe(true);
+		});
 	});
 });

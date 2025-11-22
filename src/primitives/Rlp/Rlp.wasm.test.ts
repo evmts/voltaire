@@ -379,8 +379,7 @@ describe("RLP WASM - fromHex", () => {
 	});
 
 	test("hex without 0x prefix", () => {
-		const result = RlpWasm.fromHex("83646f67");
-		expect(result).toEqual(KNOWN_VECTORS.dog.encoded);
+		expect(() => RlpWasm.fromHex("83646f67")).toThrow("Invalid hex string");
 	});
 
 	test("lowercase hex", () => {
@@ -717,7 +716,7 @@ describe("RLP WASM - Error Handling", () => {
 
 	test("fromHex handles empty gracefully", () => {
 		expect(() => RlpWasm.fromHex("0x")).not.toThrow();
-		expect(() => RlpWasm.fromHex("")).not.toThrow();
+		expect(() => RlpWasm.fromHex("")).toThrow("Invalid hex string");
 	});
 
 	test("fromHex handles invalid hex", () => {

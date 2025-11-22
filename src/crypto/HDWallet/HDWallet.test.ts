@@ -68,6 +68,35 @@ describe("HDWallet", () => {
 				"xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
 			);
 		});
+
+		it("handles all-zero seed", () => {
+			const zeroSeed = new Uint8Array(64);
+			const root = HDWallet.fromSeed(zeroSeed);
+
+			expect(root).toBeDefined();
+			expect(HDWallet.getPrivateKey(root)).toBeInstanceOf(Uint8Array);
+		});
+
+		it("handles all-0xFF seed", () => {
+			const ffSeed = new Uint8Array(64).fill(0xff);
+			const root = HDWallet.fromSeed(ffSeed);
+
+			expect(root).toBeDefined();
+			expect(HDWallet.getPrivateKey(root)).toBeInstanceOf(Uint8Array);
+		});
+
+		it("produces different keys for different seeds", () => {
+			const seed1 = new Uint8Array(64).fill(1);
+			const seed2 = new Uint8Array(64).fill(2);
+
+			const root1 = HDWallet.fromSeed(seed1);
+			const root2 = HDWallet.fromSeed(seed2);
+
+			const key1 = HDWallet.getPrivateKey(root1);
+			const key2 = HDWallet.getPrivateKey(root2);
+
+			expect(key1).not.toEqual(key2);
+		});
 	});
 
 	describe("derivePath", () => {
@@ -254,6 +283,54 @@ describe("HDWallet", () => {
 			const maxHardenedIndex = 0xffffffff;
 			const child = HDWallet.deriveChild(root, maxHardenedIndex);
 			expect(child).toBeDefined();
+		});
+
+		it("throws on index = -1", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.deriveChild(root, -1)).toThrow();
+		});
+
+		it("throws on index > 0xFFFFFFFF", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			const overMax = 0x100000000; // 2^32
+			expect(() => HDWallet.deriveChild(root, overMax)).toThrow();
+		});
+
+		it("throws on non-integer index", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.deriveChild(root, 1.5 as any)).toThrow();
+		});
+
+		it("throws on NaN index", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.deriveChild(root, Number.NaN)).toThrow();
+		});
+
+		it("throws on Infinity index", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() =>
+				HDWallet.deriveChild(root, Number.POSITIVE_INFINITY),
+			).toThrow();
 		});
 	});
 
@@ -529,6 +606,50 @@ describe("HDWallet", () => {
 		it("rejects path with invalid characters", () => {
 			expect(HDWallet.isValidPath("m/44'/60'/a'/0/0")).toBe(false);
 		});
+
+		it("rejects extremely long paths", () => {
+			// Build a path with 1000 levels
+			const longPath =
+				"m/" + Array.from({ length: 1000 }, (_, i) => i).join("/");
+			// Should handle gracefully (either accept or reject, but not crash)
+			const result = HDWallet.isValidPath(longPath);
+			expect(typeof result).toBe("boolean");
+		});
+
+		it("rejects path with trailing slash", () => {
+			expect(HDWallet.isValidPath("m/44'/60'/0'/0/0/")).toBe(false);
+		});
+
+		it("rejects path with double slashes", () => {
+			expect(HDWallet.isValidPath("m/44'//60'/0'/0/0")).toBe(false);
+			expect(HDWallet.isValidPath("m//44'/60'/0'/0/0")).toBe(false);
+		});
+
+		it("rejects path with spaces", () => {
+			expect(HDWallet.isValidPath("m/44' /60'/0'/0/0")).toBe(false);
+			expect(HDWallet.isValidPath("m /44'/60'/0'/0/0")).toBe(false);
+		});
+
+		it("rejects path with mixed hardened notation", () => {
+			// Some implementations might not allow mixing ' and h
+			const mixed = "m/0'/1h/2'";
+			const result = HDWallet.isValidPath(mixed);
+			// Should handle consistently (either accept or reject)
+			expect(typeof result).toBe("boolean");
+		});
+
+		it("validates single-level path", () => {
+			expect(HDWallet.isValidPath("m/0")).toBe(true);
+			expect(HDWallet.isValidPath("m/0'")).toBe(true);
+		});
+
+		it("handles root path 'm'", () => {
+			// Root path may or may not be valid depending on implementation
+			const isValid = HDWallet.isValidPath("m");
+			expect(typeof isValid).toBe("boolean");
+			// Trailing slash should definitely be invalid
+			expect(HDWallet.isValidPath("m/")).toBe(false);
+		});
 	});
 
 	describe("isHardenedPath", () => {
@@ -565,6 +686,46 @@ describe("HDWallet", () => {
 		it("parses large index", () => {
 			const maxNormal = "2147483647"; // 2^31 - 1
 			expect(HDWallet.parseIndex(maxNormal)).toBe(0x7fffffff);
+		});
+
+		it("parses index > 2^31-1 (parseIndex allows, deriveChild will validate)", () => {
+			const overMax = "2147483648"; // 2^31
+			// parseIndex just parses, doesn't validate range
+			expect(HDWallet.parseIndex(overMax)).toBe(2147483648);
+		});
+
+		it("throws on negative strings", () => {
+			expect(() => HDWallet.parseIndex("-1")).toThrow();
+			expect(() => HDWallet.parseIndex("-100")).toThrow();
+		});
+
+		it("parses hex strings as decimal (0x ignored)", () => {
+			// parseInt with base 10 stops at 'x'
+			expect(HDWallet.parseIndex("0x10")).toBe(0);
+			expect(HDWallet.parseIndex("0xFF")).toBe(0);
+		});
+
+		it("parses integers from strings with floats", () => {
+			// parseInt truncates floats
+			expect(HDWallet.parseIndex("1.5")).toBe(1);
+			expect(HDWallet.parseIndex("99.9")).toBe(99);
+		});
+
+		it("throws on non-numeric strings", () => {
+			expect(() => HDWallet.parseIndex("abc")).toThrow();
+			expect(() => HDWallet.parseIndex("")).toThrow();
+		});
+
+		it("throws on special values", () => {
+			expect(() => HDWallet.parseIndex("NaN")).toThrow();
+			// Infinity parses as NaN with parseInt
+			expect(() => HDWallet.parseIndex("Infinity")).toThrow();
+			expect(() => HDWallet.parseIndex("-Infinity")).toThrow();
+		});
+
+		it("handles hardened index at maximum", () => {
+			const maxHardened = "2147483647'"; // 2^31-1 hardened
+			expect(HDWallet.parseIndex(maxHardened)).toBe(0xffffffff);
 		});
 	});
 

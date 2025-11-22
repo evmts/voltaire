@@ -1,5 +1,5 @@
-import { decode } from "../../Rlp/decode.js";
-import { DecodingError } from "../../errors/SerializationError.js";
+import { decode } from "../Rlp/decode.js";
+import { DecodingError } from "../errors/index.js";
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 
 /**

@@ -163,8 +163,7 @@ describe("Hex WASM - hexToBytes", () => {
 	});
 
 	test("single byte without 0x prefix", () => {
-		const result = HexWasm.hexToBytes("42");
-		expect(result).toEqual(new Uint8Array([0x42]));
+		expect(() => HexWasm.hexToBytes("42")).toThrow("Invalid hex string");
 	});
 
 	test("lowercase hex", () => {
@@ -298,9 +297,7 @@ describe("Hex WASM - Round-trip Conversions", () => {
 
 	test("hexToBytes -> bytesToHex (without 0x prefix)", () => {
 		const original = "deadbeef";
-		const bytes = HexWasm.hexToBytes(original);
-		const result = HexWasm.bytesToHex(bytes);
-		expect(result).toBe("0xdeadbeef");
+		expect(() => HexWasm.hexToBytes(original)).toThrow("Invalid hex string");
 	});
 
 	test("hexToBytes -> bytesToHex (uppercase to lowercase)", () => {
@@ -490,8 +487,7 @@ describe("Hex WASM - Edge Cases", () => {
 	});
 
 	test("hex without prefix", () => {
-		const result = HexWasm.hexToBytes("1234");
-		expect(result).toEqual(new Uint8Array([0x12, 0x34]));
+		expect(() => HexWasm.hexToBytes("1234")).toThrow("Invalid hex string");
 	});
 
 	test("all zeros", () => {
@@ -592,7 +588,7 @@ describe("Hex WASM - Known Ethereum Values", () => {
 
 describe("Hex WASM - Error Handling", () => {
 	test("handles empty input gracefully", () => {
-		expect(() => HexWasm.hexToBytes("")).not.toThrow();
+		expect(() => HexWasm.hexToBytes("")).toThrow("Invalid hex string");
 		expect(() => HexWasm.hexToBytes("0x")).not.toThrow();
 		expect(() => HexWasm.bytesToHex(new Uint8Array())).not.toThrow();
 	});

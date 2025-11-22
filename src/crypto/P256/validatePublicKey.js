@@ -25,15 +25,14 @@ export function validatePublicKey(publicKey) {
 	}
 
 	try {
-		// Add 0x04 prefix for validation
+		// Add 0x04 prefix for uncompressed point format
 		const fullPublicKey = new Uint8Array(65);
 		fullPublicKey[0] = 0x04;
 		fullPublicKey.set(publicKey, 1);
 
-		// Try to verify with dummy sig - will fail if invalid key
-		const dummySig = new Uint8Array(64);
-		const dummyMsg = new Uint8Array(32);
-		p256.verify(dummySig, dummyMsg, fullPublicKey);
+		// Use @noble/curves' ProjectivePoint.fromHex to validate the point
+		// This properly checks if the point is on the curve
+		p256.ProjectivePoint.fromHex(fullPublicKey);
 		return true;
 	} catch {
 		return false;

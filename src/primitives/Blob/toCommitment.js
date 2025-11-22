@@ -1,5 +1,4 @@
-import { PrimitiveError } from "../../errors/PrimitiveError.js";
-import { InvalidLengthError } from "../errors/index.js";
+import { PrimitiveError, InvalidLengthError } from "../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -37,11 +36,18 @@ export function ToCommitment({ blobToKzgCommitment }) {
 				docsPath: "/primitives/blob/to-commitment#error-handling",
 			});
 		}
-		// TODO: const commitment = blobToKzgCommitment(blob);
-		// TODO: return commitment;
-		throw new PrimitiveError("Not implemented: requires c-kzg-4844 library", {
-			code: "BLOB_KZG_NOT_IMPLEMENTED",
-			docsPath: "/primitives/blob/to-commitment#error-handling",
-		});
+		try {
+			const commitment = blobToKzgCommitment(blob);
+			return commitment;
+		} catch (error) {
+			throw new PrimitiveError(
+				`Failed to compute KZG commitment: ${error instanceof Error ? error.message : String(error)}`,
+				{
+					code: "BLOB_KZG_COMMITMENT_FAILED",
+					docsPath: "/primitives/blob/to-commitment#error-handling",
+					cause: error instanceof Error ? error : undefined,
+				},
+			);
+		}
 	};
 }
