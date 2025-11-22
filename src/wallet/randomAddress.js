@@ -1,7 +1,7 @@
 import { Address } from "../primitives/Address/index.js";
 
 /**
- * Generate a cryptographically secure random Ethereum wallet
+ * Generate a cryptographically secure random Ethereum address
  * Uses secp256k1 to generate random private key, derives public key,
  * and returns the address (last 20 bytes of keccak256(pubkey))
  *
@@ -9,13 +9,13 @@ import { Address } from "../primitives/Address/index.js";
  *
  * @example
  * ```typescript
- * import { randomPrivateKey } from '@tevm/voltaire/wallet';
+ * import { randomAddress } from '@tevm/voltaire/wallet';
  *
- * const randomAddr = randomPrivateKey();
+ * const randomAddr = randomAddress();
  * console.log(Address.toHex(randomAddr));
  * ```
  */
-export function randomPrivateKey() {
+export function randomAddress() {
 	// Use crypto.getRandomValues for secure randomness
 	const privateKey = new Uint8Array(32);
 	crypto.getRandomValues(privateKey);

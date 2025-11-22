@@ -1,1 +1,1 @@
-export { randomPrivateKey } from "./randomPrivateKey.js";
+export { randomAddress } from "./randomAddress.js";
