@@ -495,7 +495,7 @@ console.log("TxHash:", signedTx.hash().toHex());\`;
             fontFamily: 'Menlo, Monaco, "Courier New", monospace',
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
-            padding: { top: 16, bottom: 16 },
+            padding: { top: 16, bottom: 16, left: 16 },
             automaticLayout: true,
             lineNumbers: 'on',
             glyphMargin: false,
@@ -513,6 +513,15 @@ console.log("TxHash:", signedTx.hash().toHex());\`;
             tabSize: 2,
             insertSpaces: true
           });
+
+          // Add CSS to increase gap between line numbers and content
+          const style = document.createElement('style');
+          style.textContent = \`
+            .monaco-editor .margin-view-overlays .line-numbers {
+              padding-right: 16px !important;
+            }
+          \`;
+          document.head.appendChild(style);
 
           // Store globally for theme updates
           window.monacoInstance = monaco;
