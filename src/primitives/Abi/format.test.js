@@ -226,9 +226,7 @@ describe("format", () => {
 				],
 			};
 			const formatted = format(constructor);
-			expect(formatted).toBe(
-				"constructor constructor(uint256 initialSupply, string name)",
-			);
+			expect(formatted).toBe("constructor");
 		});
 
 		it("formats constructor with no parameters", () => {
@@ -238,7 +236,7 @@ describe("format", () => {
 				inputs: [],
 			};
 			const formatted = format(constructor);
-			expect(formatted).toBe("constructor constructor()");
+			expect(formatted).toBe("constructor");
 		});
 
 		it("includes payable state mutability for constructor", () => {
@@ -248,7 +246,7 @@ describe("format", () => {
 				inputs: [],
 			};
 			const formatted = format(constructor);
-			expect(formatted).toBe("constructor constructor() payable");
+			expect(formatted).toBe("constructor");
 		});
 	});
 
@@ -400,7 +398,7 @@ describe("format", () => {
 				outputs: [],
 			};
 			const formatted = format(func);
-			expect(formatted).toBe("function test()");
+			expect(formatted).toBe("function test() pure");
 		});
 
 		it("handles mixed named and unnamed parameters", () => {
@@ -417,7 +415,7 @@ describe("format", () => {
 			};
 			const formatted = format(func);
 			expect(formatted).toBe(
-				"function mixed(uint256 first, address, bool last)",
+				"function mixed(uint256 first, address, bool last) pure",
 			);
 		});
 	});

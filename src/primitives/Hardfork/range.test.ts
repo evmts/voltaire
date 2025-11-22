@@ -13,7 +13,7 @@ describe("Hardfork.range", () => {
 	});
 
 	it("returns range in ascending order", () => {
-		const result = range(Hardfork.BERLIN, Hardfork.LONDON);
+		const result = range(Hardfork.BERLIN, Hardfork.ARROW_GLACIER);
 		expect(result).toContain(Hardfork.BERLIN);
 		expect(result).toContain(Hardfork.LONDON);
 		expect(result).toContain(Hardfork.ARROW_GLACIER);

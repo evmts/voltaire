@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import * as AccountState from "../AccountState/index.js";
 import { Address } from "../Address/index.js";
-import { Wei } from "../Denomination/Wei.js";
+import { from as weiFrom } from "../Denomination/Wei.js";
 import { Hash } from "../Hash/index.js";
-import { Nonce } from "../Nonce/index.js";
+import { from as nonceFrom } from "../Nonce/from.js";
 import * as StorageKey from "../State/index.js";
 import * as StateRoot from "../StateRoot/index.js";
 import * as StorageProof from "../StorageProof/index.js";
@@ -33,9 +33,9 @@ describe("StateProof", () => {
 		StateProof.from({
 			address: createTestAddress(),
 			accountProof: createTestAccountProof(),
-			balance: Wei(1000000000000000000n),
+			balance: weiFrom(1000000000000000000n),
 			codeHash: Hash(AccountState.EMPTY_CODE_HASH),
-			nonce: Nonce(5n),
+			nonce: nonceFrom(5n),
 			storageHash: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
 			storageProof: [],
 		});
