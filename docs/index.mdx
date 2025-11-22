@@ -487,13 +487,13 @@ url = "https://tevm.sh/mcp"
 
           if (type === 'log') {
             entry.style.borderLeftColor = '#4CAF50';
-            entry.style.color = '#e0e0e0';
+            entry.style.color = '#d4d4d4';
           } else if (type === 'error') {
             entry.style.borderLeftColor = '#f44336';
-            entry.style.color = '#ff6b6b';
+            entry.style.color = '#f48771';
           } else if (type === 'warn') {
             entry.style.borderLeftColor = '#ff9800';
-            entry.style.color = '#ffb74d';
+            entry.style.color = '#dcdcaa';
           }
 
           entry.textContent = args.join(' ');
@@ -602,17 +602,17 @@ url = "https://tevm.sh/mcp"
           <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
             Edit and experiment with live Tevm code examples.
           </p>
-          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px 12px 0 0; overflow: hidden; position: relative; padding-left: 8px; padding-bottom: 8px;"></div>
-          <div style="display: flex; gap: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; background: rgba(0, 0, 0, 0.2);">
+          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px 12px 0 0; overflow: hidden; position: relative;"></div>
+          <div style="display: flex; gap: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none;">
             <button id="run-button" style="flex: 1; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); color: white; border: none; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem;">
               ▶ Run Code
             </button>
-            <button id="clear-console-button" style="flex: 0 0 auto; padding: 0.75rem 1.5rem; background: rgba(0, 0, 0, 0.2); color: #999; border: none; border-left: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem;">
+            <button id="clear-console-button" style="flex: 0 0 auto; padding: 0.75rem 1.5rem; background: transparent; color: #E6A23C; border: none; border-left: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem; font-weight: 600;">
               Clear
             </button>
           </div>
-          <div id="console-output" style="min-height: 150px; max-height: 300px; overflow-y: auto; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; border-radius: 0 0 12px 12px; padding: 1rem; font-family: 'Menlo, Monaco, Courier New, monospace'; font-size: 0.875rem; line-height: 1.5; color: #e0e0e0; word-wrap: break-word; white-space: pre-wrap;">
-            <div style="color: #666; font-style: italic;">Console output will appear here...</div>
+          <div id="console-output" style="min-height: 150px; max-height: 300px; overflow-y: auto; background: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; border-radius: 0 0 12px 12px; padding: 1rem; font-family: 'Menlo, Monaco, Courier New, monospace'; font-size: 0.875rem; line-height: 1.6; color: #d4d4d4; word-wrap: break-word; white-space: pre-wrap;">
+            <div style="color: #858585; font-style: italic;">Console output will appear here...</div>
           </div>
         \`;
 
