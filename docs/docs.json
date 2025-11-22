@@ -1447,15 +1447,7 @@
 		"raiseIssue": true
 	},
 	"contextual": {
-		"options": [
-			"copy",
-			"view",
-			"claude",
-			"chatgpt",
-			"cursor",
-			"vscode",
-			"mcp"
-		]
+		"options": ["copy", "view", "claude", "chatgpt", "cursor", "vscode", "mcp"]
 	},
 	"assistant": {
 		"enabled": true
