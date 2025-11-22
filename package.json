@@ -26,6 +26,9 @@
 	],
 	"sideEffects": false,
 	"type": "module",
+	"bin": {
+		"tevm": "./bin/repl.js"
+	},
 	"exports": {
 		"./package.json": "./package.json",
 		".": {
