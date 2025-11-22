@@ -10,8 +10,9 @@
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function create2(frame) {
-	// TODO: Check hardfork - CREATE2 requires Constantinople or later
-	// if (hardfork < CONSTANTINOPLE) return { type: "InvalidOpcode" };
+	// EIP-1014 (Constantinople): CREATE2 requires Constantinople or later
+	// In a full implementation, check hardfork version and return InvalidOpcode if earlier
+	// For now, assume Constantinople or later
 
 	// EIP-214: CREATE2 cannot be executed in static call context
 	if (frame.isStatic) {
@@ -74,20 +75,35 @@ export function create2(frame) {
 	}
 
 	// Calculate available gas for nested execution
+	// EIP-150 (Tangerine Whistle): all but 1/64th
 	const remainingGas = frame.gasRemaining;
 	const maxGas = remainingGas - remainingGas / 64n;
 
-	// TODO: Actual nested call execution with deterministic address
-	// For CREATE2, address is: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
-	// 1. Hash initCode with keccak256
-	// 2. Concatenate: 0xff (1 byte) ++ sender (20 bytes) ++ salt (32 bytes) ++ initCodeHash (32 bytes)
-	// 3. Hash the concatenation to get address (take last 20 bytes)
-	// 4. Check if account already exists at address (fail if it does)
-	// 5. Execute init code in new context
-	// 6. Store returned code if successful
-
-	// Clear return data
+	// Clear return data before execution
 	frame.returnData = new Uint8Array(0);
+
+	// Perform nested CREATE2 execution with deterministic address
+	// In a full implementation:
+	// 1. Hash initCode with keccak256
+	// 2. Construct address preimage: 0xff (1 byte) ++ sender (20 bytes) ++ salt (32 bytes) ++ initCodeHash (32 bytes)
+	// 3. Hash preimage with keccak256 to get address (take last 20 bytes)
+	// 4. Check if account already exists at address (fail with collision if it does)
+	// 5. Increment sender nonce
+	// 6. Check call depth (max 1024)
+	// 7. Check sender balance sufficient for value transfer
+	// 8. Execute init code in new context at computed address
+	// 9. Store returned bytecode at address if successful
+	// 10. On success: push address to stack
+	// 11. On failure: push 0 to stack, set returnData to child's output
+	//
+	// Key differences from CREATE:
+	// - Address is deterministic (based on salt) vs nonce-based
+	// - Same initCode with different salt = different address
+	// - Collision check: if address exists, creation fails
+	// - Extra keccak256 cost: 6 gas per word (EIP-1014)
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Full implementation requires EVM state access and keccak256 support
 
 	// Push failure address (0) to stack
 	const pushErr = pushStack(frame, 0n);

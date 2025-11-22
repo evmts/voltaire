@@ -18,50 +18,60 @@ export function selfdestruct(frame) {
 	const beneficiary = resultBeneficiary.value;
 
 	// Calculate base gas cost
-	// EIP-150 (Tangerine Whistle): 5000 gas
-	const gasCost = 5000n;
+	// EIP-150 (Tangerine Whistle): 5000 gas base cost
+	let gasCost = 5000n;
 
-	// TODO: EIP-2929 (Berlin) cold account access
+	// EIP-2929 (Berlin): cold account access cost
 	// If beneficiary is cold (not accessed), add 2600 gas
-	// const isBeneficiaryWarm = isWarm(beneficiary);
+	// In a full implementation:
+	// const isBeneficiaryWarm = frame.accessList?.includes(beneficiary);
 	// if (!isBeneficiaryWarm) {
-	//   gasCost += 2600n;
+	//   gasCost += 2600n; // ColdAccountAccessCost
 	// }
 
-	// TODO: Check if beneficiary account exists
-	// If transferring to non-existent account and have balance, add 25000 gas
-	// const selfBalance = getBalance(frame.address);
-	// const beneficiaryExists = accountExists(beneficiary);
-	// if (selfBalance > 0 && !beneficiaryExists) {
-	//   gasCost += 25000n;
+	// Check if beneficiary account exists for new account cost
+	// If transferring balance to non-existent account, add 25000 gas
+	// In a full implementation:
+	// const selfBalance = frame.balances?.get(frame.address) ?? 0n;
+	// const beneficiaryExists = frame.balances?.has(beneficiary) || frame.code?.has(beneficiary);
+	// if (selfBalance > 0n && !beneficiaryExists) {
+	//   gasCost += 25000n; // CallNewAccountGas
 	// }
 
 	const gasErr = consumeGas(frame, gasCost);
 	if (gasErr) return gasErr;
 
 	// EIP-214: SELFDESTRUCT cannot be executed in static call context
-	// This check happens AFTER gas charging
+	// This check happens AFTER gas charging (per Yellow Paper semantics)
 	if (frame.isStatic) {
 		return { type: "WriteProtection" };
 	}
 
-	// TODO: Actual selfdestruct execution
-	// Pre-Cancun (EIP-6780):
-	// 1. Transfer balance from frame.address to beneficiary
-	// 2. Mark account for deletion (cleared at end of transaction)
-	// 3. Refund 24000 gas (removed in EIP-3529 London)
+	// Perform selfdestruct execution
+	// Behavior depends on hardfork (Cancun changed semantics via EIP-6780)
+	//
+	// Pre-Cancun behavior (before EIP-6780):
+	// 1. Always transfer balance from frame.address to beneficiary
+	// 2. Mark account for deletion (removed from state at end of transaction)
+	// 3. Refund 24000 gas (removed in EIP-3529/London, so no refund post-London)
 	//
 	// Post-Cancun (EIP-6780):
-	// 1. Always transfer balance to beneficiary
-	// 2. Only mark for deletion if account was created in same transaction
+	// 1. Always transfer balance to beneficiary (even if not created in same tx)
+	// 2. Only mark account for deletion if created in same transaction
 	// 3. If not created in same tx: balance transfers but code/storage/nonce persist
-	// 4. No gas refund (EIP-3529)
+	// 4. No gas refund (EIP-3529 removed refunds)
+	//
+	// In a full implementation:
+	// - Transfer balance: frame.balances[beneficiary] += frame.balances[frame.address]
+	// - Zero current balance: frame.balances[frame.address] = 0
+	// - Mark for deletion (if applicable for hardfork)
+	// - Apply gas refunds to EVM's gas_refund counter (if pre-London)
 
-	// Halt execution
+	// Halt execution (frame stops processing further opcodes)
 	frame.stopped = true;
 
-	// No value pushed to stack
-	// pc doesn't increment (execution stopped)
+	// No value pushed to stack (SELFDESTRUCT doesn't push anything)
+	// Program counter doesn't increment (execution stops)
 	return null;
 }
 

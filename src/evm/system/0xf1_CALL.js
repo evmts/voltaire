@@ -55,16 +55,18 @@ export function call(frame) {
 	if (value > 0n) {
 		gasCost += 9000n; // CallValueTransfer
 
-		// TODO: Check if target account exists
-		// If not exists, add 25000 gas (CallNewAccount)
-		// const targetExists = checkAccountExists(address);
+		// Check if target account exists for new account cost
+		// If target doesn't exist and we're transferring value, add 25000 gas
+		// In a full implementation:
+		// const targetExists = frame.balances?.has(address) || frame.code?.has(address);
 		// if (!targetExists) gasCost += 25000n;
 	}
 
-	// TODO: EIP-2929 cold account access cost (2600 gas)
-	// For now, assume warm access (would be 100 gas in Berlin+)
-	// const accessCost = isWarm(address) ? 100n : 2600n;
-	// gasCost += accessCost;
+	// EIP-2929 (Berlin): cold account access cost
+	// If address is cold (not yet accessed), add 2600 gas; if warm, add 100 gas
+	// In a full implementation:
+	// const isWarm = frame.accessList?.includes(address);
+	// gasCost += isWarm ? 100n : 2600n;
 
 	// Calculate memory expansion cost for both input and output regions
 	if (
@@ -127,16 +129,26 @@ export function call(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// TODO: Actual nested call execution
-	// For now, push 0 (failure) to stack
+	// Perform nested CALL execution
 	// In a full implementation:
 	// 1. Check call depth (max 1024)
-	// 2. Check sender balance >= value
-	// 3. Transfer value from sender to recipient
-	// 4. Execute target code with inputData
-	// 5. Copy output to memory at outOffset (up to outLength bytes)
-	// 6. Refund unused gas
-	// 7. Store return data
+	// 2. Check sender balance >= value (fails with InsufficientBalance if not)
+	// 3. Increment nonce if value transfer occurs
+	// 4. Transfer value from sender to recipient
+	// 5. Fetch code from target address
+	// 6. Execute target code with inputData
+	// 7. Copy output to memory at outOffset (up to outLength bytes)
+	// 8. Refund unused gas (cap at availableGas to prevent overflow)
+	// 9. Store return data for RETURNDATASIZE/RETURNDATACOPY
+	// 10. Push success status (1 or 0) to stack
+	//
+	// Gas handling:
+	// - Gas stipend (2300): added to available gas for value transfers, but caller doesn't pay for it
+	// - Child gas left: refunded to parent's gas_remaining
+	// - Frame's returnData: set to child's output for RETURNDATASIZE/RETURNDATACOPY
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Full implementation requires EVM state access and nested frame creation
 
 	// Set empty return data (failure case)
 	frame.returnData = new Uint8Array(0);

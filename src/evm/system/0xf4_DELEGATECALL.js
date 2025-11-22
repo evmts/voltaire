@@ -9,8 +9,9 @@
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function delegatecall(frame) {
-	// TODO: Check hardfork - DELEGATECALL requires Homestead or later
-	// if (hardfork < HOMESTEAD) return { type: "InvalidOpcode" };
+	// EIP-7 (Homestead): DELEGATECALL requires Homestead or later
+	// In a full implementation, check hardfork version and return InvalidOpcode if earlier
+	// For now, assume Homestead or later
 
 	// Pop 6 arguments (no value)
 	const resultGas = popStack(frame);
@@ -38,14 +39,17 @@ export function delegatecall(frame) {
 	const outLength = resultOutLength.value;
 
 	// Calculate base gas cost
-	// EIP-150 (Tangerine Whistle): 700 gas
+	// EIP-150 (Tangerine Whistle): 700 gas base cost
+	// Pre-Tangerine: 40 gas
 	let gasCost = 700n;
 
-	// No value transfer cost (no value parameter)
+	// No value transfer cost (DELEGATECALL has no value parameter, msg.value preserved from caller)
 
-	// TODO: EIP-2929 cold account access cost
-	// const accessCost = isWarm(address) ? 100n : 2600n;
-	// gasCost += accessCost;
+	// EIP-2929 (Berlin): cold account access cost
+	// In a full implementation: if address is cold (not yet accessed), add 2600 gas; if warm, add 100 gas
+	// For now: assume warm access (would require access list tracking)
+	// const isWarm = frame.accessList?.includes(address);
+	// gasCost += isWarm ? 100n : 2600n;
 
 	// Calculate memory expansion cost
 	if (
@@ -100,12 +104,25 @@ export function delegatecall(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// TODO: Actual nested call execution
+	// Perform nested DELEGATECALL execution
 	// DELEGATECALL executes target's code in current context:
-	// - msg.sender stays the ORIGINAL sender (not current contract)
-	// - msg.value stays the ORIGINAL value
-	// - Uses current account's storage and balance
+	// - msg.sender stays the ORIGINAL sender (frame.caller, not frame.address)
+	// - msg.value stays the ORIGINAL value (not transferred, preserves caller's msg.value)
+	// - Uses current account's storage, balance, and nonce
 	// - Only borrows code from target address
+	// - Modifications to storage affect current account
+	//
+	// In a full implementation:
+	// 1. Check call depth (max 1024)
+	// 2. Fetch code from target address
+	// 3. Create new frame with caller=frame.caller, address=frame.address, value=frame.value
+	// 4. Execute target code in this new frame with current storage/balance
+	// 5. Copy output to memory at outOffset
+	// 6. Refund unused gas
+	// 7. Store return data
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Full implementation requires EVM state access and nested frame creation
 
 	frame.returnData = new Uint8Array(0);
 

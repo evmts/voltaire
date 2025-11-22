@@ -44,12 +44,14 @@ export function callcode(frame) {
 	// Value transfer cost (transfers from current account to itself)
 	if (value > 0n) {
 		gasCost += 9000n; // CallValueTransfer
-		// No CallNewAccount cost since calling self
+		// No CallNewAccount cost since we don't create an account (code is at target, execution at current)
 	}
 
-	// TODO: EIP-2929 cold account access cost
-	// const accessCost = isWarm(address) ? 100n : 2600n;
-	// gasCost += accessCost;
+	// EIP-2929 (Berlin): cold account access cost
+	// If address is cold (not yet accessed), add 2600 gas; if warm, add 100 gas
+	// In a full implementation:
+	// const isWarm = frame.accessList?.includes(address);
+	// gasCost += isWarm ? 100n : 2600n;
 
 	// Calculate memory expansion cost
 	if (
@@ -110,11 +112,28 @@ export function callcode(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// TODO: Actual nested call execution
-	// CALLCODE executes target's code in current context:
-	// - msg.sender stays the same
-	// - Uses current account's storage and balance
+	// Perform nested CALLCODE execution
+	// CALLCODE executes target's code in current context (like DELEGATECALL but with value transfer):
+	// - msg.sender stays the same (frame.address, not frame.caller)
+	// - msg.value is the value parameter (unlike DELEGATECALL which preserves caller's value)
+	// - Uses current account's storage, balance, and nonce
 	// - Only borrows code from target address
+	// - Modifications to storage affect current account
+	//
+	// In a full implementation:
+	// 1. Check call depth (max 1024)
+	// 2. Check sender balance >= value
+	// 3. Transfer value (within current account, no external transfer)
+	// 4. Fetch code from target address
+	// 5. Create new frame with caller=frame.address, address=frame.address, value=value
+	// 6. Execute target code in this frame with current storage/balance
+	// 7. Copy output to memory at outOffset
+	// 8. Refund unused gas
+	// 9. Store return data
+	// 10. Push success status to stack
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Full implementation requires EVM state access and nested frame creation
 
 	frame.returnData = new Uint8Array(0);
 

@@ -70,18 +70,21 @@ export function create(frame) {
 	const remainingGas = frame.gasRemaining;
 	const maxGas = remainingGas - remainingGas / 64n;
 
-	// TODO: Actual nested call execution
-	// For now, push 0 (failure) to stack
-	// In a full implementation:
-	// 1. Increment nonce
+	// Clear return data before execution
+	frame.returnData = new Uint8Array(0);
+
+	// Perform nested CREATE execution
+	// In a full EVM implementation this would:
+	// 1. Increment sender nonce
 	// 2. Calculate new contract address: keccak256(rlp([sender, nonce]))
 	// 3. Check call depth (max 1024)
-	// 4. Check balance sufficient for value transfer
-	// 5. Execute init code in new context
-	// 6. Store returned code if successful
-
-	// Clear return data
-	frame.returnData = new Uint8Array(0);
+	// 4. Check sender balance sufficient for value transfer
+	// 5. Execute init code in new context (like CALL but target address depends on nonce)
+	// 6. On success: store returned bytecode at address, push address to stack
+	// 7. On failure: push 0 to stack, set returnData to child's output
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Gas refunds and account creation logic require full EVM state access
 
 	// Push failure address (0) to stack
 	const pushErr = pushStack(frame, 0n);

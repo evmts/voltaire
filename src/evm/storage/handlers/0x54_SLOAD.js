@@ -13,6 +13,11 @@ import * as Frame from "../../Frame/index.js";
  *
  * Gas: 100 (warm) or 2100 (cold) - EIP-2929
  *
+ * EIP-2929 (Berlin+): Warm/cold storage access tracking
+ * - First access to slot: 2100 gas (cold)
+ * - Subsequent accesses: 100 gas (warm)
+ * - Slot is marked warm for rest of transaction
+ *
  * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @param {import("../../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
@@ -23,9 +28,22 @@ export function sload(frame, host) {
 	if (keyResult.error) return keyResult.error;
 	const key = keyResult.value;
 
-	// TODO: EIP-2929 access list tracking for warm/cold slots
-	// For now, assume cold access (worst case)
-	const gasCost = ColdSload;
+	// EIP-2929: Check if slot is warm or cold
+	// Initialize accessed_storage_keys on first use
+	if (!frame.accessedStorageKeys) {
+		frame.accessedStorageKeys = new Map();
+	}
+
+	const storageKey = getStorageMapKey(frame.address, key);
+	let gasCost = ColdSload;
+
+	// If already accessed in this transaction, it's warm
+	if (frame.accessedStorageKeys.has(storageKey)) {
+		gasCost = WarmStorageRead;
+	} else {
+		// Mark slot as accessed (warm for subsequent accesses)
+		frame.accessedStorageKeys.set(storageKey, true);
+	}
 
 	const gasError = Frame.consumeGas(frame, gasCost);
 	if (gasError) return gasError;
@@ -39,4 +57,14 @@ export function sload(frame, host) {
 
 	frame.pc += 1;
 	return null;
+}
+
+/**
+ * Get consistent storage key for tracking accessed slots
+ * @param {Uint8Array} address
+ * @param {bigint} slot
+ * @returns {string}
+ */
+function getStorageMapKey(address, slot) {
+	return `${Buffer.from(address).toString("hex")}-${slot.toString(16)}`;
 }

@@ -10,10 +10,11 @@
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function staticcall(frame) {
-	// TODO: Check hardfork - STATICCALL requires Byzantium or later
-	// if (hardfork < BYZANTIUM) return { type: "InvalidOpcode" };
+	// EIP-214 (Byzantium): STATICCALL requires Byzantium or later
+	// In a full implementation, check hardfork version and return InvalidOpcode if earlier
+	// For now, assume Byzantium or later
 
-	// Pop 6 arguments (no value - value is always 0)
+	// Pop 6 arguments (no value parameter - value is always 0)
 	const resultGas = popStack(frame);
 	if (resultGas.error) return resultGas.error;
 	const gas = resultGas.value;
@@ -39,15 +40,18 @@ export function staticcall(frame) {
 	const outLength = resultOutLength.value;
 
 	// Calculate base gas cost
-	// EIP-150 (Tangerine Whistle): 700 gas
+	// EIP-150 (Tangerine Whistle): 700 gas base cost
+	// Pre-Tangerine: 40 gas
 	let gasCost = 700n;
 
-	// No value transfer cost (value is always 0)
-	// No CallNewAccount cost (no value transfer)
+	// No value transfer cost (value is always 0 for STATICCALL)
+	// No CallNewAccount cost (no value transfer, no account creation)
 
-	// TODO: EIP-2929 cold account access cost
-	// const accessCost = isWarm(address) ? 100n : 2600n;
-	// gasCost += accessCost;
+	// EIP-2929 (Berlin): cold account access cost
+	// In a full implementation: if address is cold (not yet accessed), add 2600 gas; if warm, add 100 gas
+	// For now: assume warm access (would require access list tracking)
+	// const isWarm = frame.accessList?.includes(address);
+	// gasCost += isWarm ? 100n : 2600n;
 
 	// Calculate memory expansion cost
 	if (
@@ -102,11 +106,24 @@ export function staticcall(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// TODO: Actual nested call execution
-	// STATICCALL executes with isStatic = true:
-	// - No state modifications allowed (SSTORE, LOG*, CREATE, SELFDESTRUCT, value transfers)
-	// - Any state modification opcodes should fail with WriteProtection error
-	// - Otherwise behaves like CALL with value = 0
+	// Perform nested STATICCALL execution
+	// STATICCALL is like CALL with value = 0, but enforces static context:
+	// - No state modifications allowed (SSTORE, LOG*, CREATE, SELFDESTRUCT)
+	// - No value transfers (value is always 0)
+	// - Calling STATICCALL with isStatic=false propagates isStatic=true to child
+	// - Any state modification opcodes in child should fail with WriteProtection error
+	//
+	// In a full implementation:
+	// 1. Check call depth (max 1024)
+	// 2. Fetch code from target address
+	// 3. Create new frame with isStatic=true
+	// 4. Execute target code in this new frame (without value transfer or account creation)
+	// 5. Copy output to memory at outOffset
+	// 6. Refund unused gas
+	// 7. Store return data
+	//
+	// For now (stub implementation): push 0 (failure) to stack
+	// Full implementation requires EVM state access and nested frame creation with isStatic flag
 
 	frame.returnData = new Uint8Array(0);
 

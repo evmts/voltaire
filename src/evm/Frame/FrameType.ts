@@ -1,6 +1,7 @@
 import type { brand } from "../../brand.js";
 import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
 import type { Hex } from "../../primitives/Hex/index.js";
+import type { HardforkType } from "../../primitives/Hardfork/HardforkType.js";
 
 /**
  * BrandedFrame - EVM execution frame
@@ -39,6 +40,13 @@ export type BrandedFrame = {
 	// Other
 	authorized: bigint | null;
 	callDepth: number;
+
+	// Hardfork configuration (for hardfork-aware gas pricing)
+	hardfork?: HardforkType;
+
+	// EIP-2929: Track warm/cold account and storage access (Berlin+)
+	accessedAddresses?: Set<string>; // Warm addresses
+	accessedStorageKeys?: Map<string, Set<string>>; // Warm storage slots per address
 
 	// Block context (optional, for block opcodes)
 	blockNumber?: bigint;
