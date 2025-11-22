@@ -60,7 +60,7 @@ describe("Rlp.getEncodedLength", () => {
 		const encoded = encode(data);
 		const length = getEncodedLength(data);
 		expect(length).toBe(encoded.length);
-		expect(length).toBe(4);
+		expect(length).toBe(3); // 0xc2, 0x01, 0x02
 	});
 
 	it("returns length for long list", () => {

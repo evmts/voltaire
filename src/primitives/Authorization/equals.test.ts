@@ -1,0 +1,545 @@
+/**
+ * Comprehensive tests for Authorization.equals and equalsAuth
+ */
+
+import { describe, expect, it } from "vitest";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { AuthorizationType } from "./AuthorizationType.js";
+import { equals, equalsAuth } from "./equals.js";
+
+// ============================================================================
+// Test Helpers
+// ============================================================================
+
+function createAddress(byte: number): BrandedAddress {
+	const bytes = new Uint8Array(20);
+	bytes.fill(byte);
+	return bytes as BrandedAddress;
+}
+
+function createAddressFromBytes(bytes: number[]): BrandedAddress {
+	const addr = new Uint8Array(20);
+	for (let i = 0; i < Math.min(bytes.length, 20); i++) {
+		addr[i] = bytes[i];
+	}
+	return addr as BrandedAddress;
+}
+
+// ============================================================================
+// Address Equality Tests (equals)
+// ============================================================================
+
+describe("Authorization.equals - address equality", () => {
+	it("returns true for identical addresses", () => {
+		const addr1 = createAddress(1);
+		const addr2 = createAddress(1);
+		expect(equals(addr1, addr2)).toBe(true);
+	});
+
+	it("returns true for same address reference", () => {
+		const addr = createAddress(1);
+		expect(equals(addr, addr)).toBe(true);
+	});
+
+	it("returns false for different addresses", () => {
+		const addr1 = createAddress(1);
+		const addr2 = createAddress(2);
+		expect(equals(addr1, addr2)).toBe(false);
+	});
+
+	it("returns false for addresses with different single byte", () => {
+		const addr1 = createAddressFromBytes([
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+		]);
+		const addr2 = createAddressFromBytes([
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21,
+		]);
+		expect(equals(addr1, addr2)).toBe(false);
+	});
+
+	it("returns true for zero addresses", () => {
+		const addr1 = createAddress(0);
+		const addr2 = createAddress(0);
+		expect(equals(addr1, addr2)).toBe(true);
+	});
+
+	it("returns true for max addresses", () => {
+		const addr1 = createAddress(0xff);
+		const addr2 = createAddress(0xff);
+		expect(equals(addr1, addr2)).toBe(true);
+	});
+
+	it("returns false when first byte differs", () => {
+		const addr1 = createAddressFromBytes([
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		]);
+		const addr2 = createAddressFromBytes([
+			2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		]);
+		expect(equals(addr1, addr2)).toBe(false);
+	});
+
+	it("returns false when last byte differs", () => {
+		const addr1 = createAddressFromBytes([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+		]);
+		const addr2 = createAddressFromBytes([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+		]);
+		expect(equals(addr1, addr2)).toBe(false);
+	});
+
+	it("returns false when middle byte differs", () => {
+		const addr1 = createAddressFromBytes([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		]);
+		const addr2 = createAddressFromBytes([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		]);
+		expect(equals(addr1, addr2)).toBe(false);
+	});
+});
+
+// ============================================================================
+// Authorization Equality Tests (equalsAuth)
+// ============================================================================
+
+describe("Authorization.equalsAuth - basic equality", () => {
+	const auth1: AuthorizationType = {
+		chainId: 1n,
+		address: createAddress(1),
+		nonce: 0n,
+		yParity: 0,
+		r: new Uint8Array(32).fill(0x12),
+		s: new Uint8Array(32).fill(0x34),
+	};
+
+	it("returns true for identical authorizations", () => {
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("returns true for same authorization reference", () => {
+		expect(equalsAuth(auth1, auth1)).toBe(true);
+	});
+
+	it("returns false when chainId differs", () => {
+		const auth2 = { ...auth1, chainId: 2n };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when address differs", () => {
+		const auth2 = { ...auth1, address: createAddress(2) };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when nonce differs", () => {
+		const auth2 = { ...auth1, nonce: 1n };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when yParity differs", () => {
+		const auth2 = { ...auth1, yParity: 1 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when r differs", () => {
+		const auth2 = { ...auth1, r: new Uint8Array(32).fill(0x56) };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when s differs", () => {
+		const auth2 = { ...auth1, s: new Uint8Array(32).fill(0x78) };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+});
+
+// ============================================================================
+// Multiple Field Differences Tests
+// ============================================================================
+
+describe("Authorization.equalsAuth - multiple field differences", () => {
+	const auth1: AuthorizationType = {
+		chainId: 1n,
+		address: createAddress(1),
+		nonce: 0n,
+		yParity: 0,
+		r: new Uint8Array(32).fill(0x12),
+		s: new Uint8Array(32).fill(0x34),
+	};
+
+	it("returns false when chainId and nonce differ", () => {
+		const auth2 = { ...auth1, chainId: 2n, nonce: 1n };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when address and yParity differ", () => {
+		const auth2 = { ...auth1, address: createAddress(2), yParity: 1 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when r and s differ", () => {
+		const auth2 = {
+			...auth1,
+			r: new Uint8Array(32).fill(0x56),
+			s: new Uint8Array(32).fill(0x78),
+		};
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("returns false when all fields differ", () => {
+		const auth2: AuthorizationType = {
+			chainId: 2n,
+			address: createAddress(2),
+			nonce: 1n,
+			yParity: 1,
+			r: new Uint8Array(32).fill(0x56),
+			s: new Uint8Array(32).fill(0x78),
+		};
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+});
+
+// ============================================================================
+// Edge Case Values Tests
+// ============================================================================
+
+describe("Authorization.equalsAuth - edge case values", () => {
+	it("compares authorizations with zero chainId", () => {
+		const auth1: AuthorizationType = {
+			chainId: 0n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with max uint64 chainId", () => {
+		const auth1: AuthorizationType = {
+			chainId: 18446744073709551615n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with max uint64 nonce", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 18446744073709551615n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with very large chainId", () => {
+		const auth1: AuthorizationType = {
+			chainId: 2n ** 256n - 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with very large nonce", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 2n ** 256n - 1n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with zero address", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(0),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with max address", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(0xff),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with all zero r", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with all zero s", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with all max r", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0xff),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+
+	it("compares authorizations with all max s", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0xff),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+	});
+});
+
+// ============================================================================
+// Signature Component Tests
+// ============================================================================
+
+describe("Authorization.equalsAuth - signature components", () => {
+	const baseAuth: AuthorizationType = {
+		chainId: 1n,
+		address: createAddress(1),
+		nonce: 0n,
+		yParity: 0,
+		r: new Uint8Array(32).fill(0x12),
+		s: new Uint8Array(32).fill(0x34),
+	};
+
+	it("detects difference in single r byte", () => {
+		const r1 = new Uint8Array(32).fill(0x12);
+		const r2 = new Uint8Array(32).fill(0x12);
+		r2[15] = 0x13;
+		const auth1 = { ...baseAuth, r: r1 };
+		const auth2 = { ...baseAuth, r: r2 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("detects difference in single s byte", () => {
+		const s1 = new Uint8Array(32).fill(0x34);
+		const s2 = new Uint8Array(32).fill(0x34);
+		s2[15] = 0x35;
+		const auth1 = { ...baseAuth, s: s1 };
+		const auth2 = { ...baseAuth, s: s2 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("detects difference in first r byte", () => {
+		const r1 = new Uint8Array(32);
+		r1[0] = 0x12;
+		const r2 = new Uint8Array(32);
+		r2[0] = 0x13;
+		const auth1 = { ...baseAuth, r: r1 };
+		const auth2 = { ...baseAuth, r: r2 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+
+	it("detects difference in last s byte", () => {
+		const s1 = new Uint8Array(32);
+		s1[31] = 0x12;
+		const s2 = new Uint8Array(32);
+		s2[31] = 0x13;
+		const auth1 = { ...baseAuth, s: s1 };
+		const auth2 = { ...baseAuth, s: s2 };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+	});
+});
+
+// ============================================================================
+// Reflexivity and Symmetry Tests
+// ============================================================================
+
+describe("Authorization.equalsAuth - reflexivity and symmetry", () => {
+	it("is reflexive (a equals a)", () => {
+		const auth: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 42n,
+			yParity: 1,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		expect(equalsAuth(auth, auth)).toBe(true);
+	});
+
+	it("is symmetric (a equals b implies b equals a) - true case", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+		expect(equalsAuth(auth2, auth1)).toBe(true);
+	});
+
+	it("is symmetric (a equals b implies b equals a) - false case", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1, chainId: 2n };
+		expect(equalsAuth(auth1, auth2)).toBe(false);
+		expect(equalsAuth(auth2, auth1)).toBe(false);
+	});
+
+	it("is transitive (a equals b and b equals c implies a equals c)", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+		const auth3 = { ...auth1 };
+		expect(equalsAuth(auth1, auth2)).toBe(true);
+		expect(equalsAuth(auth2, auth3)).toBe(true);
+		expect(equalsAuth(auth1, auth3)).toBe(true);
+	});
+});
+
+// ============================================================================
+// Array/List Comparison Tests
+// ============================================================================
+
+describe("Authorization.equalsAuth - array comparisons", () => {
+	it("can compare multiple authorizations in array", () => {
+		const auths = Array.from({ length: 5 }, (_, i) => ({
+			chainId: 1n,
+			address: createAddress(i + 1),
+			nonce: BigInt(i),
+			yParity: i % 2,
+			r: new Uint8Array(32).fill(i + 1),
+			s: new Uint8Array(32).fill(i + 2),
+		}));
+
+		// Each auth should equal itself
+		for (const auth of auths) {
+			expect(equalsAuth(auth, auth)).toBe(true);
+		}
+
+		// No auth should equal any other auth
+		for (let i = 0; i < auths.length; i++) {
+			for (let j = i + 1; j < auths.length; j++) {
+				expect(equalsAuth(auths[i], auths[j])).toBe(false);
+			}
+		}
+	});
+
+	it("finds matching authorization in array", () => {
+		const target: AuthorizationType = {
+			chainId: 42n,
+			address: createAddress(99),
+			nonce: 123n,
+			yParity: 1,
+			r: new Uint8Array(32).fill(0xaa),
+			s: new Uint8Array(32).fill(0xbb),
+		};
+
+		const auths = [
+			{
+				chainId: 1n,
+				address: createAddress(1),
+				nonce: 0n,
+				yParity: 0,
+				r: new Uint8Array(32).fill(0x12),
+				s: new Uint8Array(32).fill(0x34),
+			},
+			{ ...target },
+			{
+				chainId: 2n,
+				address: createAddress(2),
+				nonce: 1n,
+				yParity: 1,
+				r: new Uint8Array(32).fill(0x56),
+				s: new Uint8Array(32).fill(0x78),
+			},
+		];
+
+		const found = auths.find((auth) => equalsAuth(auth, target));
+		expect(found).toBeDefined();
+		expect(equalsAuth(found!, target)).toBe(true);
+	});
+
+	it("detects duplicates in array", () => {
+		const auth1: AuthorizationType = {
+			chainId: 1n,
+			address: createAddress(1),
+			nonce: 0n,
+			yParity: 0,
+			r: new Uint8Array(32).fill(0x12),
+			s: new Uint8Array(32).fill(0x34),
+		};
+		const auth2 = { ...auth1 };
+
+		const auths = [auth1, auth2];
+
+		expect(equalsAuth(auths[0], auths[1])).toBe(true);
+	});
+});

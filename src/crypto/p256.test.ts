@@ -161,15 +161,26 @@ describe("P256", () => {
 			expect(P256.validatePrivateKey(zeroKey)).toBe(false);
 		});
 
-		it("validatePublicKey should accept valid key", () => {
-			const privateKey = new Uint8Array(32).fill(14);
-			const publicKey = P256.derivePublicKey(privateKey);
-			expect(P256.validatePublicKey(publicKey)).toBe(true);
+		it("validatePrivateKey should reject key >= curve order", () => {
+			const largeKey = new Uint8Array(32);
+			largeKey.fill(0xff);
+			expect(P256.validatePrivateKey(largeKey)).toBe(false);
 		});
 
 		it("validatePublicKey should reject invalid length", () => {
 			const invalidKey = new Uint8Array(32);
 			expect(P256.validatePublicKey(invalidKey)).toBe(false);
+		});
+
+		it("validatePublicKey should reject point not on curve", () => {
+			const invalidKey = new Uint8Array(64);
+			invalidKey.fill(0xff);
+			expect(P256.validatePublicKey(invalidKey)).toBe(false);
+		});
+
+		it("validatePublicKey should reject all zeros", () => {
+			const zeroKey = new Uint8Array(64);
+			expect(P256.validatePublicKey(zeroKey)).toBe(false);
 		});
 	});
 

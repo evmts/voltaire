@@ -4,20 +4,23 @@ import { selector } from "./selector.js";
 
 describe("Keccak256.selector", () => {
 	describe("basic functionality", () => {
-		it("should return 4-byte selector", () => {
+		it("should return 4-byte selector as hex string", () => {
 			const result = selector("transfer(address,uint256)");
 
-			expect(result.length).toBe(4);
-			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
+			expect(typeof result).toBe("string");
 		});
 
-		it("should extract first 4 bytes of hash", () => {
+		it("should extract first 4 bytes of hash as hex", () => {
 			const sig = "balanceOf(address)";
 
 			const result = selector(sig);
 			const fullHash = hashString(sig);
+			const expectedHex = `0x${Array.from(fullHash.slice(0, 4))
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 
-			expect(result).toEqual(fullHash.slice(0, 4));
+			expect(result).toBe(expectedHex);
 		});
 	});
 
@@ -26,50 +29,35 @@ describe("Keccak256.selector", () => {
 			const result = selector("transfer(address,uint256)");
 
 			// Known selector: 0xa9059cbb
-			expect(result[0]).toBe(0xa9);
-			expect(result[1]).toBe(0x05);
-			expect(result[2]).toBe(0x9c);
-			expect(result[3]).toBe(0xbb);
+			expect(result).toBe("0xa9059cbb");
 		});
 
 		it("should compute approve(address,uint256) selector", () => {
 			const result = selector("approve(address,uint256)");
 
 			// Known selector: 0x095ea7b3
-			expect(result[0]).toBe(0x09);
-			expect(result[1]).toBe(0x5e);
-			expect(result[2]).toBe(0xa7);
-			expect(result[3]).toBe(0xb3);
+			expect(result).toBe("0x095ea7b3");
 		});
 
 		it("should compute balanceOf(address) selector", () => {
 			const result = selector("balanceOf(address)");
 
 			// Known selector: 0x70a08231
-			expect(result[0]).toBe(0x70);
-			expect(result[1]).toBe(0xa0);
-			expect(result[2]).toBe(0x82);
-			expect(result[3]).toBe(0x31);
+			expect(result).toBe("0x70a08231");
 		});
 
 		it("should compute totalSupply() selector", () => {
 			const result = selector("totalSupply()");
 
 			// Known selector: 0x18160ddd
-			expect(result[0]).toBe(0x18);
-			expect(result[1]).toBe(0x16);
-			expect(result[2]).toBe(0x0d);
-			expect(result[3]).toBe(0xdd);
+			expect(result).toBe("0x18160ddd");
 		});
 
 		it("should compute allowance(address,address) selector", () => {
 			const result = selector("allowance(address,address)");
 
 			// Known selector: 0xdd62ed3e
-			expect(result[0]).toBe(0xdd);
-			expect(result[1]).toBe(0x62);
-			expect(result[2]).toBe(0xed);
-			expect(result[3]).toBe(0x3e);
+			expect(result).toBe("0xdd62ed3e");
 		});
 	});
 
@@ -86,7 +74,7 @@ describe("Keccak256.selector", () => {
 
 			for (const func of erc20Functions) {
 				const result = selector(func);
-				expect(result.length).toBe(4);
+				expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 			}
 		});
 	});
@@ -96,20 +84,14 @@ describe("Keccak256.selector", () => {
 			const result = selector("safeTransferFrom(address,address,uint256)");
 
 			// Known selector: 0x42842e0e
-			expect(result[0]).toBe(0x42);
-			expect(result[1]).toBe(0x84);
-			expect(result[2]).toBe(0x2e);
-			expect(result[3]).toBe(0x0e);
+			expect(result).toBe("0x42842e0e");
 		});
 
 		it("should compute ownerOf selector", () => {
 			const result = selector("ownerOf(uint256)");
 
 			// Known selector: 0x6352211e
-			expect(result[0]).toBe(0x63);
-			expect(result[1]).toBe(0x52);
-			expect(result[2]).toBe(0x21);
-			expect(result[3]).toBe(0x1e);
+			expect(result).toBe("0x6352211e");
 		});
 	});
 
@@ -134,27 +116,27 @@ describe("Keccak256.selector", () => {
 	describe("function signature formatting", () => {
 		it("should handle no parameters", () => {
 			const result = selector("getValue()");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle single parameter", () => {
 			const result = selector("setValue(uint256)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle multiple parameters", () => {
 			const result = selector("complexFunction(uint256,address,bytes32,bool)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle array parameters", () => {
 			const result = selector("batchTransfer(address[],uint256[])");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle tuple parameters", () => {
 			const result = selector("structFunction((uint256,address))");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 	});
 
@@ -201,7 +183,7 @@ describe("Keccak256.selector", () => {
 			const selectors = signatures.map((sig) => selector(sig));
 
 			// Check all are unique
-			const uniqueSelectors = new Set(selectors.map((s) => s.join(",")));
+			const uniqueSelectors = new Set(selectors);
 
 			expect(uniqueSelectors.size).toBe(signatures.length);
 		});
@@ -210,17 +192,17 @@ describe("Keccak256.selector", () => {
 	describe("special function names", () => {
 		it("should handle constructor-like names", () => {
 			const result = selector("initialize(address)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle fallback-like names", () => {
 			const result = selector("fallback()");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle receive-like names", () => {
 			const result = selector("receive()");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 	});
 
@@ -235,8 +217,11 @@ describe("Keccak256.selector", () => {
 			for (const sig of signatures) {
 				const sel = selector(sig);
 				const fullHash = hashString(sig);
+				const expectedHex = `0x${Array.from(fullHash.slice(0, 4))
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("")}`;
 
-				expect(sel).toEqual(fullHash.slice(0, 4));
+				expect(sel).toBe(expectedHex);
 			}
 		});
 	});
@@ -244,35 +229,35 @@ describe("Keccak256.selector", () => {
 	describe("edge cases", () => {
 		it("should handle empty function name", () => {
 			const result = selector("()");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle very long function names", () => {
 			const longName = "a".repeat(100);
 			const result = selector(`${longName}(uint256)`);
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should handle complex nested types", () => {
 			const result = selector("complex((uint256,address)[],bytes32,bool)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 	});
 
 	describe("real-world examples", () => {
 		it("should compute Uniswap swap selector", () => {
 			const result = selector("swap(uint256,uint256,address,bytes)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should compute Compound borrow selector", () => {
 			const result = selector("borrow(uint256)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 
 		it("should compute Aave deposit selector", () => {
 			const result = selector("deposit(address,uint256,address,uint16)");
-			expect(result.length).toBe(4);
+			expect(result).toMatch(/^0x[0-9a-f]{8}$/);
 		});
 	});
 });

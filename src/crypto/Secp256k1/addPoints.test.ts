@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+import { Secp256k1 } from "./index.js";
+
+describe("Secp256k1.addPoints", () => {
+	it("adds two valid points", () => {
+		const privateKey1 = new Uint8Array(32);
+		privateKey1[31] = 5;
+		const privateKey2 = new Uint8Array(32);
+		privateKey2[31] = 7;
+
+		const pubKey1 = Secp256k1.derivePublicKey(privateKey1);
+		const pubKey2 = Secp256k1.derivePublicKey(privateKey2);
+
+		const sum = Secp256k1.addPoints(pubKey1, pubKey2);
+
+		expect(sum).toBeInstanceOf(Uint8Array);
+		expect(sum.length).toBe(64);
+		expect(Secp256k1.isValidPublicKey(sum)).toBe(true);
+	});
+
+	it("demonstrates commutativity (P1 + P2 == P2 + P1)", () => {
+		const privateKey1 = new Uint8Array(32);
+		privateKey1[31] = 11;
+		const privateKey2 = new Uint8Array(32);
+		privateKey2[31] = 13;
+
+		const pubKey1 = Secp256k1.derivePublicKey(privateKey1);
+		const pubKey2 = Secp256k1.derivePublicKey(privateKey2);
+
+		const sum12 = Secp256k1.addPoints(pubKey1, pubKey2);
+		const sum21 = Secp256k1.addPoints(pubKey2, pubKey1);
+
+		expect(sum12).toEqual(sum21);
+	});
+
+	it("adds same point twice (point doubling)", () => {
+		const privateKey = new Uint8Array(32);
+		privateKey[31] = 3;
+
+		const pubKey = Secp256k1.derivePublicKey(privateKey);
+		const doubled = Secp256k1.addPoints(pubKey, pubKey);
+
+		expect(doubled).toBeInstanceOf(Uint8Array);
+		expect(doubled.length).toBe(64);
+		expect(Secp256k1.isValidPublicKey(doubled)).toBe(true);
+		expect(doubled).not.toEqual(pubKey);
+	});
+
+	it("verifies addition correctness with scalar multiplication", () => {
+		// Generate P1 = 2*G and P2 = 3*G
+		const scalar2 = new Uint8Array(32);
+		scalar2[31] = 2;
+		const scalar3 = new Uint8Array(32);
+		scalar3[31] = 3;
+		const scalar5 = new Uint8Array(32);
+		scalar5[31] = 5;
+
+		const point2 = Secp256k1.scalarMultiply(scalar2);
+		const point3 = Secp256k1.scalarMultiply(scalar3);
+		const point5 = Secp256k1.scalarMultiply(scalar5);
+
+		// P1 + P2 should equal 5*G
+		const sum = Secp256k1.addPoints(point2, point3);
+		expect(sum).toEqual(point5);
+	});
+
+	it("throws on invalid public key 1 length", () => {
+		const validKey = Secp256k1.derivePublicKey(new Uint8Array(32).fill(1));
+		const invalidKey = new Uint8Array(32);
+
+		expect(() => Secp256k1.addPoints(invalidKey, validKey)).toThrow(
+			"Public key 1 must be 64 bytes",
+		);
+	});
+
+	it("throws on invalid public key 2 length", () => {
+		const validKey = Secp256k1.derivePublicKey(new Uint8Array(32).fill(1));
+		const invalidKey = new Uint8Array(32);
+
+		expect(() => Secp256k1.addPoints(validKey, invalidKey)).toThrow(
+			"Public key 2 must be 64 bytes",
+		);
+	});
+
+	it("throws on invalid point not on curve", () => {
+		const validKey = Secp256k1.derivePublicKey(new Uint8Array(32).fill(1));
+		const invalidKey = new Uint8Array(64);
+		invalidKey.fill(0xff);
+
+		expect(() => Secp256k1.addPoints(validKey, invalidKey)).toThrow();
+	});
+
+	it("handles adding different points", () => {
+		const privateKeys = [1, 2, 3, 4, 5].map((n) => {
+			const key = new Uint8Array(32);
+			key[31] = n;
+			return key;
+		});
+
+		const pubKeys = privateKeys.map((k) => Secp256k1.derivePublicKey(k));
+
+		for (let i = 0; i < pubKeys.length; i++) {
+			for (let j = i + 1; j < pubKeys.length; j++) {
+				const sum = Secp256k1.addPoints(pubKeys[i]!, pubKeys[j]!);
+				expect(Secp256k1.isValidPublicKey(sum)).toBe(true);
+				expect(sum).not.toEqual(pubKeys[i]);
+				expect(sum).not.toEqual(pubKeys[j]);
+			}
+		}
+	});
+});

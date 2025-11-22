@@ -19,6 +19,7 @@ import {
 } from "./constants.js";
 import { create } from "./create.js";
 import { deduplicate } from "./deduplicate.js";
+import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
 import { gasCost } from "./gasCost.js";
 import { gasSavings } from "./gasSavings.js";
@@ -645,6 +646,71 @@ describe("AccessList.create", () => {
 		const list = create();
 		expect(Array.isArray(list)).toBe(true);
 		expect(list.length).toBe(0);
+	});
+});
+
+describe("AccessList.from", () => {
+	it("returns array as-is when given array", () => {
+		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
+		const result = from(list);
+		expect(result).toBe(list);
+		expect(result.length).toBe(1);
+	});
+
+	it("decodes Uint8Array via fromBytes", () => {
+		const list: AccessListType = [
+			{ address: addr1, storageKeys: [key1, key2] },
+		];
+		const encoded = toBytes(list);
+		const result = from(encoded);
+		expect(result.length).toBe(1);
+		expect(result[0]?.address).toEqual(addr1);
+		expect(result[0]?.storageKeys.length).toBe(2);
+	});
+
+	it("handles empty array", () => {
+		const list: AccessListType = [];
+		const result = from(list);
+		expect(result.length).toBe(0);
+	});
+
+	it("handles empty bytes", () => {
+		const encoded = toBytes([]);
+		const result = from(encoded);
+		expect(result.length).toBe(0);
+	});
+
+	it("preserves original array reference", () => {
+		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
+		const result = from(list);
+		expect(result).toBe(list);
+	});
+
+	it("handles complex access list from array", () => {
+		const list: AccessListType = [
+			{ address: addr1, storageKeys: [key1] },
+			{ address: addr2, storageKeys: [key2, key3] },
+			{ address: addr3, storageKeys: [] },
+		];
+		const result = from(list);
+		expect(result.length).toBe(3);
+		expect(result[0]?.storageKeys.length).toBe(1);
+		expect(result[1]?.storageKeys.length).toBe(2);
+		expect(result[2]?.storageKeys.length).toBe(0);
+	});
+
+	it("handles complex access list from bytes", () => {
+		const list: AccessListType = [
+			{ address: addr1, storageKeys: [key1] },
+			{ address: addr2, storageKeys: [key2, key3] },
+			{ address: addr3, storageKeys: [] },
+		];
+		const encoded = toBytes(list);
+		const result = from(encoded);
+		expect(result.length).toBe(3);
+		expect(result[0]?.address).toEqual(addr1);
+		expect(result[1]?.address).toEqual(addr2);
+		expect(result[2]?.address).toEqual(addr3);
 	});
 });
 

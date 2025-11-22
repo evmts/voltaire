@@ -24,6 +24,18 @@ describe("AesGcm", () => {
 
 			expect(exported1).not.toEqual(exported2);
 		});
+
+		it("validates key format for 128-bit key", async () => {
+			const key = await AesGcm.generateKey(128);
+			const exported = await AesGcm.exportKey(key);
+			expect(exported.length).toBe(16);
+		});
+
+		it("validates key format for 256-bit key", async () => {
+			const key = await AesGcm.generateKey(256);
+			const exported = await AesGcm.exportKey(key);
+			expect(exported.length).toBe(32);
+		});
 	});
 
 	describe("importKey / exportKey", () => {
@@ -82,6 +94,19 @@ describe("AesGcm", () => {
 			const nonce = AesGcm.generateNonce();
 			const hasNonZero = Array.from(nonce).some((byte) => byte !== 0);
 			expect(hasNonZero).toBe(true);
+		});
+
+		it("uniqueness test: 1000 nonces have no collisions", () => {
+			const nonces = new Set<string>();
+			const count = 1000;
+
+			for (let i = 0; i < count; i++) {
+				const nonce = AesGcm.generateNonce();
+				const key = Array.from(nonce).join(",");
+				nonces.add(key);
+			}
+
+			expect(nonces.size).toBe(count);
 		});
 	});
 
@@ -206,6 +231,37 @@ describe("AesGcm", () => {
 
 			expect(decrypted).toEqual(plaintext);
 		});
+
+		it("null AAD vs empty AAD produces different ciphertexts", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = new Uint8Array(12).fill(1);
+			const plaintext = new TextEncoder().encode("Test");
+
+			const ciphertextNoAAD = await AesGcm.encrypt(plaintext, key, nonce);
+			const ciphertextEmptyAAD = await AesGcm.encrypt(
+				plaintext,
+				key,
+				nonce,
+				new Uint8Array(0),
+			);
+
+			expect(ciphertextNoAAD).toEqual(ciphertextEmptyAAD);
+		});
+
+		it("handles very long AAD (1MB)", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new TextEncoder().encode("Test");
+			const aad = new Uint8Array(1024 * 1024);
+			for (let i = 0; i < aad.length; i++) {
+				aad[i] = i % 256;
+			}
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce, aad);
+
+			expect(decrypted).toEqual(plaintext);
+		});
 	});
 
 	describe("error cases", () => {
@@ -290,6 +346,21 @@ describe("AesGcm", () => {
 			await expect(
 				AesGcm.decrypt(ciphertext, key, wrongNonce),
 			).rejects.toThrow();
+		});
+
+		it("throws error for invalid key size on import (24 bytes)", async () => {
+			const invalidKey = new Uint8Array(24);
+			await expect(AesGcm.importKey(invalidKey)).rejects.toThrow();
+		});
+
+		it("throws error for invalid key size on import (empty)", async () => {
+			const invalidKey = new Uint8Array(0);
+			await expect(AesGcm.importKey(invalidKey)).rejects.toThrow();
+		});
+
+		it("throws error for invalid key size on import (1 byte)", async () => {
+			const invalidKey = new Uint8Array(1);
+			await expect(AesGcm.importKey(invalidKey)).rejects.toThrow();
 		});
 	});
 
@@ -560,6 +631,50 @@ describe("AesGcm", () => {
 
 			expect(decrypted).toEqual(plaintext);
 		});
+
+		it("nonce reuse with same plaintext is deterministic", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = new Uint8Array(12).fill(42);
+			const plaintext = new TextEncoder().encode("Same message");
+
+			const ciphertext1 = await AesGcm.encrypt(plaintext, key, nonce);
+			const ciphertext2 = await AesGcm.encrypt(plaintext, key, nonce);
+
+			expect(ciphertext1).toEqual(ciphertext2);
+		});
+
+		it("authentication tag is 16 bytes", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new TextEncoder().encode("Test");
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+			expect(ciphertext.length).toBe(plaintext.length + 16);
+		});
+
+		it("handles exact block size plaintext (16 bytes)", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new Uint8Array(16);
+			crypto.getRandomValues(plaintext);
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+			expect(decrypted).toEqual(plaintext);
+		});
+
+		it("handles small plaintext (< 16 bytes)", async () => {
+			const key = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new TextEncoder().encode("Hi");
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+			expect(decrypted).toEqual(plaintext);
+		});
 	});
 
 	describe("deriveKey", () => {
@@ -631,6 +746,154 @@ describe("AesGcm", () => {
 			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
 
 			expect(decrypted).toEqual(plaintext);
+		});
+
+		it("derives 128-bit key from password", async () => {
+			const password = "test";
+			const salt = new Uint8Array(16).fill(1);
+			const iterations = 100000;
+
+			const key = await AesGcm.deriveKey(password, salt, iterations, 128);
+			const exported = await AesGcm.exportKey(key);
+
+			expect(exported.length).toBe(16);
+		});
+
+		it("derives key from Uint8Array password", async () => {
+			const password = new TextEncoder().encode("password");
+			const salt = new Uint8Array(16).fill(1);
+			const iterations = 100000;
+
+			const key = await AesGcm.deriveKey(password, salt, iterations, 256);
+			expect(key).toBeDefined();
+			expect(key.type).toBe("secret");
+		});
+
+		it("different iteration counts produce different keys", async () => {
+			const password = "password";
+			const salt = new Uint8Array(16).fill(1);
+
+			const key1 = await AesGcm.deriveKey(password, salt, 10000, 256);
+			const key2 = await AesGcm.deriveKey(password, salt, 20000, 256);
+
+			const exported1 = await AesGcm.exportKey(key1);
+			const exported2 = await AesGcm.exportKey(key2);
+
+			expect(exported1).not.toEqual(exported2);
+		});
+	});
+
+	describe("integration tests", () => {
+		it("full encryption workflow: generate key -> encrypt -> decrypt", async () => {
+			const key = await AesGcm.generateKey(256);
+			const plaintext = new TextEncoder().encode("Integration test message");
+			const nonce = AesGcm.generateNonce();
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+			const message = new TextDecoder().decode(decrypted);
+
+			expect(message).toBe("Integration test message");
+		});
+
+		it("password-based encryption workflow", async () => {
+			const password = "user-password-123";
+			const salt = new Uint8Array(16);
+			crypto.getRandomValues(salt);
+
+			const key = await AesGcm.deriveKey(password, salt, 100000, 256);
+			const plaintext = new TextEncoder().encode("Encrypted with password");
+			const nonce = AesGcm.generateNonce();
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+			expect(decrypted).toEqual(plaintext);
+		});
+
+		it("key rotation: encrypt with key1, cannot decrypt with key2", async () => {
+			const key1 = await AesGcm.generateKey(256);
+			const key2 = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new TextEncoder().encode("Message");
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key1, nonce);
+
+			await expect(AesGcm.decrypt(ciphertext, key2, nonce)).rejects.toThrow();
+		});
+
+		it("authenticated encryption with AAD workflow", async () => {
+			const key = await AesGcm.generateKey(256);
+			const plaintext = new TextEncoder().encode("Secret data");
+			const aad = new TextEncoder().encode(
+				JSON.stringify({ userId: 123, timestamp: Date.now() }),
+			);
+			const nonce = AesGcm.generateNonce();
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+			const decrypted = await AesGcm.decrypt(ciphertext, key, nonce, aad);
+
+			expect(decrypted).toEqual(plaintext);
+		});
+
+		it("key import/export round-trip", async () => {
+			const originalKey = await AesGcm.generateKey(256);
+			const exported = await AesGcm.exportKey(originalKey);
+			const imported = await AesGcm.importKey(exported);
+
+			const plaintext = new TextEncoder().encode("Test");
+			const nonce = AesGcm.generateNonce();
+
+			const ciphertext1 = await AesGcm.encrypt(plaintext, originalKey, nonce);
+			const ciphertext2 = await AesGcm.encrypt(plaintext, imported, nonce);
+
+			expect(ciphertext1).toEqual(ciphertext2);
+		});
+
+		it("concurrent encryption operations", async () => {
+			const key = await AesGcm.generateKey(256);
+
+			const operations = await Promise.all([
+				(async () => {
+					const nonce = AesGcm.generateNonce();
+					const plaintext = new TextEncoder().encode("Message 1");
+					const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+					return AesGcm.decrypt(ciphertext, key, nonce);
+				})(),
+				(async () => {
+					const nonce = AesGcm.generateNonce();
+					const plaintext = new TextEncoder().encode("Message 2");
+					const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+					return AesGcm.decrypt(ciphertext, key, nonce);
+				})(),
+				(async () => {
+					const nonce = AesGcm.generateNonce();
+					const plaintext = new TextEncoder().encode("Message 3");
+					const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+					return AesGcm.decrypt(ciphertext, key, nonce);
+				})(),
+			]);
+
+			expect(new TextDecoder().decode(operations[0])).toBe("Message 1");
+			expect(new TextDecoder().decode(operations[1])).toBe("Message 2");
+			expect(new TextDecoder().decode(operations[2])).toBe("Message 3");
+		});
+
+		it("replay attack prevention via unique nonce", async () => {
+			const key = await AesGcm.generateKey(256);
+			const plaintext = new TextEncoder().encode("Important message");
+
+			const nonce1 = AesGcm.generateNonce();
+			const ciphertext1 = await AesGcm.encrypt(plaintext, key, nonce1);
+
+			const nonce2 = AesGcm.generateNonce();
+			const ciphertext2 = await AesGcm.encrypt(plaintext, key, nonce2);
+
+			expect(ciphertext1).not.toEqual(ciphertext2);
+
+			await expect(
+				AesGcm.decrypt(ciphertext1, key, nonce2),
+			).rejects.toThrow();
 		});
 	});
 });

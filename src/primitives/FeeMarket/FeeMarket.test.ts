@@ -8,6 +8,7 @@ import {
 	getFeeMarketImplementationStatus,
 	isWasmFeeMarketAvailable,
 } from "./FeeMarket.wasm.js";
+import { fakeExponential } from "./fakeExponential.js";
 
 // ============================================================================
 // Constants Tests
@@ -143,6 +144,76 @@ describe("FeeMarket.BaseFee", () => {
 // ============================================================================
 // Blob Fee Calculation Tests (EIP-4844)
 // ============================================================================
+
+describe("FeeMarket.fakeExponential", () => {
+	it("returns factor when numerator is zero", () => {
+		const result = fakeExponential(1_000_000n, 0n, 1_000_000n);
+		expect(result).toBe(1_000_000n); // e^0 = 1
+	});
+
+	it("approximates exponential with small numerator", () => {
+		// Small exponent: e^0.001 ≈ 1.001
+		const result = fakeExponential(1_000_000n, 1_000n, 1_000_000n);
+		expect(result).toBeGreaterThan(1_000_000n);
+		expect(result).toBeLessThan(1_002_000n); // Should be close to factor
+	});
+
+	it("approximates exponential with moderate numerator", () => {
+		// e^(1000000/3338477) ≈ e^0.3 ≈ 1.35
+		const result = fakeExponential(
+			1_000_000n,
+			1_000_000n,
+			FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION,
+		);
+		expect(result).toBeGreaterThan(1_300_000n);
+		expect(result).toBeLessThan(1_400_000n);
+	});
+
+	it("calculates EIP-4844 blob fee formula correctly", () => {
+		// Canonical EIP-4844 case: MIN_BLOB_BASE_FEE * e^(excessBlobGas / UPDATE_FRACTION)
+		const excessBlobGas = 393216n; // 1 target worth
+		const result = fakeExponential(
+			FeeMarket.Eip4844.MIN_BLOB_BASE_FEE,
+			excessBlobGas,
+			FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION,
+		);
+		// MIN_BLOB_BASE_FEE = 1, e^(393216/3338477) ≈ e^0.118 ≈ 1.125
+		expect(result).toBeGreaterThanOrEqual(FeeMarket.Eip4844.MIN_BLOB_BASE_FEE);
+	});
+
+	it("handles large numerator (high excess)", () => {
+		const result = fakeExponential(
+			1_000_000n,
+			10_000_000n,
+			FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION,
+		);
+		// e^(10000000/3338477) ≈ e^3 ≈ 20
+		expect(result).toBeGreaterThan(10_000_000n);
+	});
+
+	it("terminates Taylor series at 256 iterations", () => {
+		// Very large numerator should still converge
+		const result = fakeExponential(1_000_000n, 100_000_000n, 1_000_000n);
+		expect(result).toBeGreaterThan(0n);
+	});
+
+	it("returns factor * denominator floor when numerator zero", () => {
+		const result = fakeExponential(5n, 0n, 3n);
+		expect(result).toBe(5n); // (5 * 3) / 3 = 5
+	});
+
+	it("converges with multiple terms", () => {
+		// Test Taylor series convergence: 1 + x + x²/2! + x³/3! + ...
+		const factor = 1_000_000n;
+		const numerator = 1_000_000n; // x = 1
+		const denominator = 1_000_000n;
+
+		const result = fakeExponential(factor, numerator, denominator);
+		// e^1 ≈ 2.71828, so result ≈ 2_718_280
+		expect(result).toBeGreaterThan(2_700_000n);
+		expect(result).toBeLessThan(2_750_000n);
+	});
+});
 
 describe("FeeMarket.BlobBaseFee", () => {
 	it("returns minimum fee with no excess", () => {

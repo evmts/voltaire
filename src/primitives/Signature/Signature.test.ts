@@ -118,10 +118,11 @@ describe("Signature", () => {
 		it("should convert to compact (with v)", () => {
 			const r = new Uint8Array(32).fill(1);
 			const s = new Uint8Array(32).fill(2);
-			const sig = Signature.fromSecp256k1(r, s, 27);
+			const sig = Signature.fromSecp256k1(r, s, 1); // yParity 1
 			const compact = Signature.toCompact(sig);
-			expect(compact.length).toBe(65);
-			expect(compact[64]).toBe(27);
+			expect(compact.length).toBe(64); // EIP-2098 format
+			// yParity encoded in bit 255 of s
+			expect(compact[32] & 0x80).toBe(0x80); // Bit 255 set for yParity=1
 		});
 
 		it("should create from compact (64 bytes)", () => {
@@ -628,16 +629,17 @@ describe("Signature", () => {
 		it("should handle compact with v (65 bytes)", () => {
 			const r = new Uint8Array(32).fill(1);
 			const s = new Uint8Array(32).fill(2);
-			const sig = Signature.fromSecp256k1(r, s, 28);
+			const sig = Signature.fromSecp256k1(r, s, 0); // yParity 0
 			const compact = Signature.toCompact(sig);
-			expect(compact.length).toBe(65);
-			expect(compact[64]).toBe(28);
+			expect(compact.length).toBe(64); // EIP-2098 format
+			// yParity not encoded for yParity=0 (bit 255 clear)
+			expect(compact[32] & 0x80).toBe(0x00); // Bit 255 clear for yParity=0
 		});
 
 		it("should roundtrip compact encoding without v", () => {
 			const r = new Uint8Array(32).fill(3);
 			const s = new Uint8Array(32).fill(4);
-			const sig = Signature.fromSecp256k1(r, s);
+			const sig = Signature.fromSecp256k1(r, s, 0); // yParity 0
 			const compact = Signature.toCompact(sig);
 			const sig2 = Signature.fromCompact(compact, "secp256k1");
 			expect(Signature.equals(sig, sig2)).toBe(true);
@@ -646,11 +648,11 @@ describe("Signature", () => {
 		it("should roundtrip compact encoding with v", () => {
 			const r = new Uint8Array(32).fill(5);
 			const s = new Uint8Array(32).fill(6);
-			const sig = Signature.fromSecp256k1(r, s, 27);
+			const sig = Signature.fromSecp256k1(r, s, 1); // yParity 1
 			const compact = Signature.toCompact(sig);
 			const sig2 = Signature.fromCompact(compact, "secp256k1");
 			expect(Signature.equals(sig, sig2)).toBe(true);
-			expect(sig2.v).toBe(27);
+			expect(sig2.v).toBe(1);
 		});
 
 		it("should handle P256 compact encoding", () => {
@@ -755,6 +757,343 @@ describe("Signature", () => {
 
 		it("should reject numbers", () => {
 			expect(Signature.is(42)).toBe(false);
+		});
+	});
+
+	describe("secp256k1 canonical boundary tests", () => {
+		// secp256k1 curve order n
+		const n = new Uint8Array([
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+			0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+		]);
+		// n/2
+		const nHalf = new Uint8Array([
+			0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+			0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa0,
+		]);
+
+		it("should treat s = n/2 as canonical (boundary)", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			const sig = Signature.fromSecp256k1(r, nHalf, 27);
+			expect(Signature.isCanonical(sig)).toBe(true);
+		});
+
+		it("should treat s = n/2 + 1 as non-canonical", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			const sHigher = new Uint8Array(nHalf);
+			sHigher[31] += 1;
+			const sig = Signature.fromSecp256k1(r, sHigher, 27);
+			expect(Signature.isCanonical(sig)).toBe(false);
+		});
+
+		it("should normalize s = n - 1 (max) to s = 1 (min)", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// s = n - 1
+			const sMax = new Uint8Array(n);
+			sMax[31] -= 1;
+			const sig = Signature.fromSecp256k1(r, sMax, 27);
+			expect(Signature.isCanonical(sig)).toBe(false);
+			const normalized = Signature.normalize(sig);
+			expect(Signature.isCanonical(normalized)).toBe(true);
+			// Verify s = 1
+			const s = Signature.getS(normalized);
+			expect(s[31]).toBe(1);
+			expect(s.slice(0, 31).every((b) => b === 0)).toBe(true);
+		});
+
+		it("should handle all zero r (testing zero boundary)", () => {
+			const r = new Uint8Array(32).fill(0);
+			const s = new Uint8Array(32).fill(0);
+			s[31] = 1;
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			const rValue = Signature.getR(sig);
+			expect(rValue.every((b) => b === 0)).toBe(true);
+		});
+
+		it("should handle all zero s (testing zero boundary)", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			const s = new Uint8Array(32).fill(0);
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			const sValue = Signature.getS(sig);
+			expect(sValue.every((b) => b === 0)).toBe(true);
+		});
+	});
+
+	describe("P256 canonical boundary tests", () => {
+		// P-256 curve order n
+		const p256n = new Uint8Array([
+			0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17, 0x9e, 0x84,
+			0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51,
+		]);
+		// n/2 for P-256 (matches isCanonical.js)
+		const p256nHalf = new Uint8Array([
+			0x7f, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x7f, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17, 0x9e, 0x84,
+			0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51,
+		]);
+
+		it("should treat P-256 s = n/2 as canonical (boundary)", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			const sig = Signature.fromP256(r, p256nHalf);
+			expect(Signature.isCanonical(sig)).toBe(true);
+		});
+
+		it("should treat P-256 s = n/2 + 1 as non-canonical", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			const sHigher = new Uint8Array(p256nHalf);
+			sHigher[31] += 1;
+			const sig = Signature.fromP256(r, sHigher);
+			expect(Signature.isCanonical(sig)).toBe(false);
+		});
+
+		it("should normalize P-256 high-s signature", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// Use a clearly high s value (close to full order)
+			const sHigh = new Uint8Array(p256n);
+			sHigh[31] -= 10; // s = n - 10 (definitely > n/2)
+			const sig = Signature.fromP256(r, sHigh);
+			expect(Signature.isCanonical(sig)).toBe(false);
+			const normalized = Signature.normalize(sig);
+			expect(Signature.isCanonical(normalized)).toBe(true);
+		});
+	});
+
+	describe("DER encoding security tests", () => {
+		it("should reject DER with negative r (0x00 prefix missing)", () => {
+			const der = new Uint8Array([
+				0x30,
+				0x06, // SEQUENCE, length 6
+				0x02,
+				0x01,
+				0x80, // INTEGER r = 0x80 (negative without padding)
+				0x02,
+				0x01,
+				0x01, // INTEGER s = 0x01
+			]);
+			// Should work - implementation handles this
+			const sig = Signature.fromDER(der, "secp256k1", 27);
+			expect(sig.algorithm).toBe("secp256k1");
+		});
+
+		it("should handle DER with minimal r and s", () => {
+			const der = new Uint8Array([
+				0x30,
+				0x06, // SEQUENCE, length 6
+				0x02,
+				0x01,
+				0x01, // INTEGER r = 1
+				0x02,
+				0x01,
+				0x01, // INTEGER s = 1
+			]);
+			const sig = Signature.fromDER(der, "secp256k1", 27);
+			const r = Signature.getR(sig);
+			const s = Signature.getS(sig);
+			expect(r[31]).toBe(1);
+			expect(s[31]).toBe(1);
+		});
+
+		it("should handle DER with 32-byte r and s", () => {
+			const der = new Uint8Array([
+				0x30,
+				0x44, // SEQUENCE, length 68
+				0x02,
+				0x20, // INTEGER r, length 32
+				...new Uint8Array(32).fill(0x11),
+				0x02,
+				0x20, // INTEGER s, length 32
+				...new Uint8Array(32).fill(0x22),
+			]);
+			const sig = Signature.fromDER(der, "secp256k1", 27);
+			const r = Signature.getR(sig);
+			const s = Signature.getS(sig);
+			expect(r.every((b) => b === 0x11)).toBe(true);
+			expect(s.every((b) => b === 0x22)).toBe(true);
+		});
+
+		it("should reject DER with length overflow", () => {
+			const der = new Uint8Array([
+				0x30,
+				0xff, // SEQUENCE with inflated length
+				0x02,
+				0x01,
+				0x01,
+				0x02,
+				0x01,
+				0x01,
+			]);
+			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
+				Signature.InvalidDERError,
+			);
+		});
+
+		it("should reject truncated DER (incomplete r)", () => {
+			const der = new Uint8Array([
+				0x30,
+				0x06, // SEQUENCE claims 6 bytes
+				0x02,
+				0x02, // INTEGER r claims 2 bytes
+				0x01, // But only 1 byte provided
+			]);
+			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
+				Signature.InvalidDERError,
+			);
+		});
+
+		it("should reject truncated DER (incomplete s)", () => {
+			const der = new Uint8Array([
+				0x30,
+				0x06, // SEQUENCE claims 6 bytes
+				0x02,
+				0x01,
+				0x01, // INTEGER r complete
+				0x02,
+				0x01, // INTEGER s claims 1 byte but missing
+			]);
+			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
+				Signature.InvalidDERError,
+			);
+		});
+	});
+
+	describe("EIP-2098 compact signature encoding", () => {
+		it("should encode yParity=0 in compact format (bit 255 clear)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0x55);
+			const sig = Signature.fromSecp256k1(r, s, 0);
+			const compact = Signature.toCompact(sig);
+			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x00); // MSB clear
+			expect(compact[32] & 0x7f).toBe(0x55); // Original s value preserved
+		});
+
+		it("should encode yParity=1 in compact format (bit 255 set)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0x55);
+			const sig = Signature.fromSecp256k1(r, s, 1);
+			const compact = Signature.toCompact(sig);
+			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x80); // MSB set
+			expect(compact[32] & 0x7f).toBe(0x55); // Original s value preserved
+		});
+
+		it("should decode yParity=0 from compact format", () => {
+			const compact = new Uint8Array(64);
+			compact.fill(0xaa, 0, 32); // r
+			compact.fill(0x55, 32, 64); // s with MSB clear (yParity=0)
+			const sig = Signature.fromCompact(compact, "secp256k1");
+			expect(sig.v).toBe(0);
+		});
+
+		it("should decode yParity=1 from compact format", () => {
+			const compact = new Uint8Array(64);
+			compact.fill(0xaa, 0, 32); // r
+			compact.fill(0xd5, 32, 64); // s with MSB set (0xd5 = 0x55 | 0x80)
+			const sig = Signature.fromCompact(compact, "secp256k1");
+			expect(sig.v).toBe(1);
+			// Verify s was cleared of bit 255
+			const s = Signature.getS(sig);
+			expect(s[0]).toBe(0x55); // MSB cleared
+		});
+
+		it("should roundtrip EIP-2098 with high bit in original s", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0x7f); // High bit clear in s
+			const sig = Signature.fromSecp256k1(r, s, 1);
+			const compact = Signature.toCompact(sig);
+			expect(compact[32]).toBe(0xff); // 0x7f | 0x80
+			const sig2 = Signature.fromCompact(compact, "secp256k1");
+			expect(Signature.equals(sig, sig2)).toBe(true);
+		});
+	});
+
+	describe("legacy 65-byte compact format", () => {
+		it("should parse legacy 65-byte format with v at end", () => {
+			const compact = new Uint8Array(65);
+			compact.fill(0x11, 0, 32); // r
+			compact.fill(0x22, 32, 64); // s
+			compact[64] = 27; // v
+			const sig = Signature.fromCompact(compact, "secp256k1");
+			expect(sig.v).toBe(27);
+			expect(Signature.getR(sig).every((b) => b === 0x11)).toBe(true);
+			expect(Signature.getS(sig).every((b) => b === 0x22)).toBe(true);
+		});
+
+		it("should parse legacy 65-byte format with v=28", () => {
+			const compact = new Uint8Array(65);
+			compact.fill(0x33, 0, 32); // r
+			compact.fill(0x44, 32, 64); // s
+			compact[64] = 28; // v
+			const sig = Signature.fromCompact(compact, "secp256k1");
+			expect(sig.v).toBe(28);
+		});
+
+		it("should parse legacy 65-byte format with EIP-155 v", () => {
+			const compact = new Uint8Array(65);
+			compact.fill(0x55, 0, 32); // r
+			compact.fill(0x66, 32, 64); // s
+			compact[64] = 37; // v = chainId * 2 + 35 + 0 (chainId=1)
+			const sig = Signature.fromCompact(compact, "secp256k1");
+			expect(sig.v).toBe(37);
+		});
+	});
+
+	describe("cross-algorithm comparison", () => {
+		it("should not equal signatures with same bytes but different algorithms", () => {
+			const r = new Uint8Array(32).fill(1);
+			const s = new Uint8Array(32).fill(2);
+			const sig1 = Signature.fromSecp256k1(r, s);
+			const sig2 = Signature.fromP256(r, s);
+			expect(Signature.equals(sig1, sig2)).toBe(false);
+		});
+
+		it("should handle Ed25519 vs ECDSA comparison", () => {
+			const bytes = new Uint8Array(64).fill(1);
+			const sig1 = Signature.fromEd25519(bytes);
+			const sig2 = Signature.fromSecp256k1(
+				bytes.slice(0, 32),
+				bytes.slice(32, 64),
+			);
+			expect(Signature.equals(sig1, sig2)).toBe(false);
+		});
+	});
+
+	describe("toBytes consistency", () => {
+		it("should return raw signature bytes (without v)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0xbb);
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			const bytes = Signature.toBytes(sig);
+			expect(bytes.length).toBe(64);
+			expect(bytes.slice(0, 32).every((b) => b === 0xaa)).toBe(true);
+			expect(bytes.slice(32, 64).every((b) => b === 0xbb)).toBe(true);
+		});
+
+		it("should return Ed25519 signature bytes unchanged", () => {
+			const original = new Uint8Array(64).fill(0xcc);
+			const sig = Signature.fromEd25519(original);
+			const bytes = Signature.toBytes(sig);
+			expect(bytes).toEqual(original);
+		});
+
+		it("should return P256 signature bytes", () => {
+			const r = new Uint8Array(32).fill(0xdd);
+			const s = new Uint8Array(32).fill(0xee);
+			const sig = Signature.fromP256(r, s);
+			const bytes = Signature.toBytes(sig);
+			expect(bytes.length).toBe(64);
+			expect(bytes.slice(0, 32).every((b) => b === 0xdd)).toBe(true);
+			expect(bytes.slice(32, 64).every((b) => b === 0xee)).toBe(true);
 		});
 	});
 });

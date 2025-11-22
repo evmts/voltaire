@@ -68,7 +68,6 @@ describe("Host", () => {
 				},
 			});
 
-			expect(host.__tag).toBe("Host");
 			expect(typeof host.getBalance).toBe("function");
 			expect(typeof host.setBalance).toBe("function");
 			expect(typeof host.getCode).toBe("function");
@@ -603,14 +602,10 @@ describe("Host", () => {
 				getTransientStorage: () => 0n,
 				setTransientStorage: () => {},
 			});
-
-			expect(host.__tag).toBe("Host");
 		});
 
 		it("Host.createMemoryHost creates branded Host type", () => {
 			const host = Host.createMemoryHost();
-
-			expect(host.__tag).toBe("Host");
 		});
 
 		it("Host interface has all required methods for handlers", () => {

@@ -16,8 +16,9 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1, 2, 3, 4]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
-			expect(sig.length).toBeGreaterThan(0);
+			expect(sig).toHaveProperty('r');
+			expect(sig).toHaveProperty('s');
+			expect(sig).toHaveProperty('v');
 		});
 
 		it("creates signature from known test key", () => {
@@ -28,7 +29,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(message);
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("creates signature with 32 byte hash", () => {
@@ -40,7 +42,8 @@ describe("PrivateKey.sign", () => {
 			);
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("creates ECDSA signature", () => {
@@ -50,7 +53,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
 			const sig = sign(pk, hash);
 
-			expect(sig.length).toBeGreaterThanOrEqual(64);
+			expect(sig.r.length).toBe(32);
+			expect(sig.s.length).toBe(32);
 		});
 	});
 
@@ -63,7 +67,9 @@ describe("PrivateKey.sign", () => {
 			const sig1 = sign(pk, hash);
 			const sig2 = sign(pk, hash);
 
-			expect(sig1.every((b, i) => b === sig2[i])).toBe(true);
+			expect(sig1.r.every((b, i) => b === sig2.r[i])).toBe(true);
+			expect(sig1.s.every((b, i) => b === sig2.s[i])).toBe(true);
+			expect(sig1.v).toBe(sig2.v);
 		});
 
 		it("produces different signatures for different private keys", () => {
@@ -77,7 +83,8 @@ describe("PrivateKey.sign", () => {
 			const sig1 = sign(pk1, hash);
 			const sig2 = sign(pk2, hash);
 
-			expect(sig1.some((b, i) => b !== sig2[i])).toBe(true);
+			const different = sig1.r.some((b, i) => b !== sig2.r[i]) || sig1.s.some((b, i) => b !== sig2.s[i]);
+			expect(different).toBe(true);
 		});
 
 		it("produces different signatures for different hashes", () => {
@@ -89,7 +96,8 @@ describe("PrivateKey.sign", () => {
 			const sig1 = sign(pk, hash1);
 			const sig2 = sign(pk, hash2);
 
-			expect(sig1.some((b, i) => b !== sig2[i])).toBe(true);
+			const different = sig1.r.some((b, i) => b !== sig2.r[i]) || sig1.s.some((b, i) => b !== sig2.s[i]);
+			expect(different).toBe(true);
 		});
 
 		it("is deterministic with RFC 6979", () => {
@@ -105,25 +113,31 @@ describe("PrivateKey.sign", () => {
 	});
 
 	describe("signature format", () => {
-		it("returns Uint8Array", () => {
+		it("returns signature object with r, s, v", () => {
 			const pk = from(
 				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 			);
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig).toHaveProperty('r');
+			expect(sig).toHaveProperty('s');
+			expect(sig).toHaveProperty('v');
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
+			expect(typeof sig.v).toBe('number');
 		});
 
-		it("signature has expected length", () => {
+		it("signature components have expected length", () => {
 			const pk = from(
 				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 			);
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig.length).toBeGreaterThanOrEqual(64);
-			expect(sig.length).toBeLessThanOrEqual(65);
+			expect(sig.r.length).toBe(32);
+			expect(sig.s.length).toBe(32);
+			expect([27, 28]).toContain(sig.v);
 		});
 
 		it("signature is non-zero", () => {
@@ -133,7 +147,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig.some((b) => b !== 0)).toBe(true);
+			expect(sig.r.some((b) => b !== 0)).toBe(true);
+			expect(sig.s.some((b) => b !== 0)).toBe(true);
 		});
 	});
 
@@ -207,8 +222,9 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
-			expect(sig.length).toBeGreaterThan(0);
+			expect(sig).toHaveProperty('r');
+			expect(sig).toHaveProperty('s');
+			expect(sig).toHaveProperty('v');
 		});
 
 		it("signs zero hash", () => {
@@ -220,7 +236,8 @@ describe("PrivateKey.sign", () => {
 			);
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("signs max hash", () => {
@@ -232,7 +249,8 @@ describe("PrivateKey.sign", () => {
 			);
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("signs empty message hash", () => {
@@ -242,7 +260,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("signs single byte message hash", () => {
@@ -252,7 +271,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(new Uint8Array([0xff]));
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 
 		it("signs large message hash", () => {
@@ -263,7 +283,8 @@ describe("PrivateKey.sign", () => {
 			const hash = Hash.keccak256(largeMessage);
 			const sig = sign(pk, hash);
 
-			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.r).toBeInstanceOf(Uint8Array);
+			expect(sig.s).toBeInstanceOf(Uint8Array);
 		});
 	});
 

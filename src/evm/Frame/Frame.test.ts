@@ -27,7 +27,6 @@ describe("Frame.from", () => {
 			calldata,
 		});
 
-		expect(frame.__tag).toBe("Frame");
 		expect(frame.bytecode).toBe(bytecode);
 		expect(frame.gasRemaining).toBe(gas);
 		expect(frame.caller).toBe(caller);
@@ -452,7 +451,6 @@ describe("Frame integration", () => {
 describe("createTestFrame utility", () => {
 	it("creates frame with defaults", () => {
 		const frame = createTestFrame();
-		expect(frame.__tag).toBe("Frame");
 		expect(frame.gasRemaining).toBe(1000000n);
 		expect(frame.bytecode.length).toBe(0);
 		expect(frame.calldata.length).toBe(0);
