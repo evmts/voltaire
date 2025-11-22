@@ -15,7 +15,9 @@ export function handle(frame) {
 	// Pop operands
 	if (frame.stack.length < 2) return { type: "StackUnderflow" };
 	const i = frame.stack.pop();
+	if (i === undefined) return { type: "StackUnderflow" };
 	const x = frame.stack.pop();
+	if (x === undefined) return { type: "StackUnderflow" };
 
 	// Extract byte: if i >= 32, return 0, else get byte at position (31-i)
 	const result = i >= 32n ? 0n : (x >> (8n * (31n - i))) & 0xffn;

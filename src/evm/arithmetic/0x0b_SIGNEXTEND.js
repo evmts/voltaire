@@ -69,6 +69,9 @@ function popStack(frame) {
 		return { value: null, error: { type: "StackUnderflow" } };
 	}
 	const value = frame.stack.pop();
+	if (value === undefined) {
+		return { value: null, error: { type: "StackUnderflow" } };
+	}
 	return { value, error: null };
 }
 

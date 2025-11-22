@@ -15,6 +15,7 @@ export function handle(frame) {
 	// Pop operand
 	if (frame.stack.length < 1) return { type: "StackUnderflow" };
 	const a = frame.stack.pop();
+	if (a === undefined) return { type: "StackUnderflow" };
 
 	// Bitwise NOT (mask to 256 bits)
 	const result = ~a & ((1n << 256n) - 1n);

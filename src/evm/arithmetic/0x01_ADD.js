@@ -15,7 +15,9 @@ export function add(frame) {
 	// Pop operands
 	if (frame.stack.length < 2) return { type: "StackUnderflow" };
 	const a = frame.stack.pop();
+	if (a === undefined) return { type: "StackUnderflow" };
 	const b = frame.stack.pop();
+	if (b === undefined) return { type: "StackUnderflow" };
 
 	// Compute result with wrapping (modulo 2^256)
 	const result = (a + b) & ((1n << 256n) - 1n);
