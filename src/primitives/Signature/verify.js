@@ -6,7 +6,7 @@ import { InvalidAlgorithmError } from "./errors.js";
  * Note: This is a placeholder. Actual verification requires crypto implementations.
  * Use this in conjunction with crypto library functions.
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature to verify
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to verify
  * @param {Uint8Array} _message - Message that was signed
  * @param {Uint8Array} _publicKey - Public key to verify against
  * @returns {boolean} True if signature is valid

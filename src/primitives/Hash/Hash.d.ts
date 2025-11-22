@@ -1,3 +1,3 @@
 export { Hash } from "./Hash.js";
 export * from "./Hash.js";
-export type { HashType, HashLike } from "./HashType.js";
+export type { HashType, HashLike } from ./HashType.js";

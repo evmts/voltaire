@@ -7,7 +7,7 @@ import { isValidSignature } from "./isValidSignature.js";
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(signature: {r: Uint8Array, s: Uint8Array, v: number}, messageHash: Uint8Array) => Uint8Array} deps.recoverPublicKey - secp256k1 public key recovery
  * @param {(x: bigint, y: bigint) => import("../Address/AddressType.js").AddressType} deps.addressFromPublicKey - Address derivation from public key
- * @returns {(provider: {request: (method: string, params: unknown[]) => Promise<unknown>}, address: import("../Address/AddressType.js").AddressType | string, hash: import("../Hash/HashType/HashType.js").HashType | Uint8Array, signature: {r: Uint8Array, s: Uint8Array, v: number} | Uint8Array) => Promise<boolean>}
+ * @returns {(provider: {request: (method: string, params: unknown[]) => Promise<unknown>}, address: import("../Address/AddressType.js").AddressType | string, hash: import("../Hash/HashType.js").HashType | Uint8Array, signature: {r: Uint8Array, s: Uint8Array, v: number} | Uint8Array) => Promise<boolean>}
  */
 export function VerifySignature({
 	keccak256,
@@ -24,7 +24,7 @@ export function VerifySignature({
 	 * @param {Object} provider - JSON-RPC provider
 	 * @param {(method: string, params: unknown[]) => Promise<unknown>} provider.request - JSON-RPC request method
 	 * @param {import("../Address/AddressType.js").AddressType | string} address - Address to verify signature for
-	 * @param {import("../Hash/HashType/HashType.js").HashType | Uint8Array} hash - Message hash
+	 * @param {import("../Hash/HashType.js").HashType | Uint8Array} hash - Message hash
 	 * @param {{r: Uint8Array, s: Uint8Array, v: number} | Uint8Array} signature - ECDSA signature or raw bytes
 	 * @returns {Promise<boolean>} True if signature is valid
 	 *

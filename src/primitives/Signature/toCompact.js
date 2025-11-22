@@ -3,7 +3,7 @@ import { ECDSA_WITH_V_SIZE } from "./constants.js";
 /**
  * Convert Signature to compact format (EIP-2098: yParity encoded in bit 255 of s)
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature to convert
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to convert
  * @returns {Uint8Array} Compact signature (64 bytes with yParity in bit 255 of s)
  *
  * @example

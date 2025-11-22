@@ -1,7 +1,7 @@
 /**
  * Convert Signature to raw bytes (without metadata)
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature to convert
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to convert
  * @returns {Uint8Array} Raw signature bytes
  *
  * @example

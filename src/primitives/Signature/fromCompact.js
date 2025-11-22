@@ -13,8 +13,8 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * Create Signature from compact format (EIP-2098: supports yParity in bit 255 of s)
  *
  * @param {Uint8Array} bytes - Compact signature bytes (64 or 65 bytes)
- * @param {import('../SignatureType.js').SignatureAlgorithm | number} algorithmOrV - Algorithm or explicit v value
- * @returns {import('../SignatureType.js').SignatureType} Signature
+ * @param {import('./SignatureType.js').SignatureAlgorithm | number} algorithmOrV - Algorithm or explicit v value
+ * @returns {import('./SignatureType.js').SignatureType} Signature
  * @throws {InvalidSignatureLengthError} If bytes length is invalid
  *
  * @example

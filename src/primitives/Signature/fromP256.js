@@ -6,7 +6,7 @@ import { InvalidSignatureLengthError } from "./errors.js";
  *
  * @param {import('../Hash/index.js').HashType} r - r component (32 bytes, HashType)
  * @param {import('../Hash/index.js').HashType} s - s component (32 bytes, HashType)
- * @returns {import('../SignatureType.js').SignatureType} Signature
+ * @returns {import('./SignatureType.js').SignatureType} Signature
  *
  * @example
  * ```typescript
@@ -44,5 +44,5 @@ export function fromP256(r, s) {
 	// Add metadata (algorithm)
 	Object.assign(result, { algorithm: "p256" });
 
-	return /** @type {import('../SignatureType.js').SignatureType} */ (result);
+	return /** @type {import('./SignatureType.js').SignatureType} */ (result);
 }

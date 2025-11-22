@@ -1,4 +1,4 @@
-import { SIZE } from "./HashType.js";
+import { SIZE } from ./HashType.js";
 
 /**
  * Check if value is a valid Hash
@@ -6,7 +6,7 @@ import { SIZE } from "./HashType.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {unknown} value - Value to check
- * @returns {value is import('../HashType.js').HashType} True if value is Hash type
+ * @returns {value is import('./HashType.js').HashType} True if value is Hash type
  * @throws {never}
  * @example
  * ```javascript

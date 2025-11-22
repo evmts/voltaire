@@ -4,7 +4,7 @@ import { InvalidAlgorithmError } from "./errors.js";
 /**
  * Get r component from ECDSA signature
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature
  * @returns {import('../../Hash/index.js').HashType} r component (32 bytes, HashType)
  * @throws {InvalidAlgorithmError} If signature is not ECDSA
  *

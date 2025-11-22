@@ -12,7 +12,7 @@ import { ContractCallError } from "./errors.js";
  * @param {Object} provider - JSON-RPC provider
  * @param {(method: string, params: unknown[]) => Promise<unknown>} provider.request - JSON-RPC request method
  * @param {import("../Address/AddressType.js").AddressType | string} contractAddress - Contract address to call
- * @param {import("../Hash/HashType/HashType.js").HashType | Uint8Array} hash - Message hash (bytes32)
+ * @param {import("../Hash/HashType.js").HashType | Uint8Array} hash - Message hash (bytes32)
  * @param {Uint8Array} signature - Signature bytes
  * @returns {Promise<boolean>} True if signature is valid
  * @throws {ContractCallError} If the contract call fails

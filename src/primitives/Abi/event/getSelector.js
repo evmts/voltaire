@@ -4,7 +4,7 @@ import { getSignature } from "./getSignature.js";
  * Factory: Get event selector (keccak256 hash of signature)
  * @param {Object} deps - Crypto dependencies
  * @param {(str: string) => Uint8Array} deps.keccak256String - Keccak256 hash function for strings
- * @returns {(event: any) => import('../../Hash/HashType/HashType.js').HashType} Function that computes event selector
+ * @returns {(event: any) => import('../../Hash/HashType.js').HashType} Function that computes event selector
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
@@ -23,7 +23,7 @@ export function GetSelector({ keccak256String }) {
 	 * Get event selector (keccak256 hash of signature)
 	 *
 	 * @param {import('./EventType.js').EventType} event - Event definition
-	 * @returns {import('../../Hash/HashType/HashType.js').HashType} Event selector (32 bytes)
+	 * @returns {import('../../Hash/HashType.js').HashType} Event selector (32 bytes)
 	 * @throws {never}
 	 */
 	return function getSelector(event) {

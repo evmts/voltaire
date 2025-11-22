@@ -6,8 +6,8 @@ import { ZERO } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {...import('./BrandedUint.ts').BrandedUint} values - Values to sum
- * @returns {import('./BrandedUint.ts').BrandedUint} Sum of all values mod 2^256
+ * @param {...import('./Uint256Type.js').Uint256Type} values - Values to sum
+ * @returns {import('./Uint256Type.js').Uint256Type} Sum of all values mod 2^256
  * @throws {never}
  * @example
  * ```javascript
@@ -18,7 +18,7 @@ import { ZERO } from "./constants.js";
 export function sum(...values) {
 	let result = ZERO;
 	for (const value of values) {
-		result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+		result = /** @type {import('./Uint256Type.js').Uint256Type} */ (
 			(result + value) & MAX
 		);
 	}

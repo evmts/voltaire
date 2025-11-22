@@ -2,8 +2,8 @@
  * @internal
  * Compare two hashes for equality (byte-wise)
  *
- * @param {import('../../Hash/HashType/HashType.js').HashType} a
- * @param {import('../../Hash/HashType/HashType.js').HashType} b
+ * @param {import('../../Hash/HashType.js').HashType} a
+ * @param {import('../../Hash/HashType.js').HashType} b
  * @returns {boolean}
  */
 export function hashEquals(a, b) {

@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {...import('./BrandedUint.ts').BrandedUint} values - Values to compare
- * @returns {import('./BrandedUint.ts').BrandedUint} Minimum value
+ * @param {...import('./Uint256Type.js').Uint256Type} values - Values to compare
+ * @returns {import('./Uint256Type.js').Uint256Type} Minimum value
  * @throws {Error} If no values provided
  * @example
  * ```javascript
@@ -16,11 +16,11 @@ export function min(...values) {
 	if (values.length === 0) {
 		throw new Error("min requires at least one value");
 	}
-	let result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+	let result = /** @type {import('./Uint256Type.js').Uint256Type} */ (
 		values[0]
 	);
 	for (let i = 1; i < values.length; i++) {
-		const val = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+		const val = /** @type {import('./Uint256Type.js').Uint256Type} */ (
 			values[i]
 		);
 		if (val < result) {

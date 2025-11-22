@@ -6,7 +6,7 @@ import { COMPONENT_SIZE } from "./constants.js";
  * For secp256k1 and p256, a signature is canonical if s <= curve_order / 2
  * This prevents signature malleability.
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature to check
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to check
  * @returns {boolean} True if signature is canonical or Ed25519
  *
  * @example

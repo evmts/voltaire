@@ -5,7 +5,7 @@ import { PERSONAL_MESSAGE_PREFIX } from "./constants.js";
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(message: Uint8Array | string) => import('../Hash/HashType/HashType.js').HashType}
+ * @returns {(message: Uint8Array | string) => import('../Hash/HashType.js').HashType}
  */
 export function Hash({ keccak256 }) {
 	/**
@@ -18,7 +18,7 @@ export function Hash({ keccak256 }) {
 	 * being a valid transaction.
 	 *
 	 * @param {Uint8Array | string} message - Message to hash
-	 * @returns {import('../Hash/HashType/HashType.js').HashType} 32-byte keccak256 hash
+	 * @returns {import('../Hash/HashType.js').HashType} 32-byte keccak256 hash
 	 *
 	 * @example
 	 * ```javascript
@@ -50,7 +50,7 @@ export function Hash({ keccak256 }) {
 		data.set(messageBytes, prefixBytes.length + lenBytes.length);
 
 		// Hash the complete message
-		return /** @type {import('../Hash/HashType/HashType.js').HashType} */ (
+		return /** @type {import('../Hash/HashType.js').HashType} */ (
 			keccak256(data)
 		);
 	};

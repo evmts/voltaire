@@ -7,7 +7,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
- * @returns {import('../HashType.js').HashType} Hash bytes
+ * @returns {import('./HashType.js').HashType} Hash bytes
  * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript
@@ -28,7 +28,7 @@ export function fromBytes(bytes) {
 			},
 		);
 	}
-	return /** @type {import('../HashType.js').HashType} */ (
+	return /** @type {import('./HashType.js').HashType} */ (
 		new Uint8Array(bytes)
 	);
 }

@@ -1,5 +1,5 @@
-import { InvalidBytesLengthError } from "../BytesType/errors.js";
-import * as BytesType from "../BytesType/index.js";
+import { InvalidBytesLengthError } from "../errors.js";
+import * as BytesType from "../BytesType.js";
 
 export function fromHex(hex) {
 	const bytes = BytesType.fromHex(hex);

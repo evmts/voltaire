@@ -7,9 +7,9 @@ import { gcd } from "./gcd.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {import('./BrandedUint.ts').BrandedUint} a - First value
- * @param {import('./BrandedUint.ts').BrandedUint} b - Second value
- * @returns {import('./BrandedUint.ts').BrandedUint} LCM of a and b
+ * @param {import('./Uint256Type.js').Uint256Type} a - First value
+ * @param {import('./Uint256Type.js').Uint256Type} b - Second value
+ * @returns {import('./Uint256Type.js').Uint256Type} LCM of a and b
  * @throws {never}
  * @example
  * ```javascript
@@ -21,7 +21,7 @@ export function lcm(a, b) {
 	if (a === ZERO || b === ZERO) {
 		return ZERO;
 	}
-	return /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+	return /** @type {import('./Uint256Type.js').Uint256Type} */ (
 		((a * b) / gcd(a, b)) & MAX
 	);
 }

@@ -5,8 +5,8 @@ export const SIZE = 32;
 
 /**
  * Zero hash constant (32 zero bytes)
- * @type {import('../HashType.js').HashType}
+ * @type {import('./HashType.js').HashType}
  */
-export const ZERO = /** @type {import('../HashType.js').HashType} */ (
+export const ZERO = /** @type {import('./HashType.js').HashType} */ (
 	new Uint8Array(SIZE)
 );

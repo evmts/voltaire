@@ -2,7 +2,7 @@
  * Check if value is a SignatureType
  *
  * @param {unknown} value - Value to check
- * @returns {value is import('../SignatureType.js').SignatureType} True if value is a SignatureType
+ * @returns {value is import('./SignatureType.js').SignatureType} True if value is a SignatureType
  *
  * @example
  * ```typescript

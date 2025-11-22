@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('../HashType.js').HashType} hash - Hash to format
+ * @param {import('./HashType.js').HashType} hash - Hash to format
  * @param {number} [prefixLength=6] - Number of chars to show at start
  * @param {number} [suffixLength=4] - Number of chars to show at end
  * @returns {string} Formatted string like "0x1234...5678"

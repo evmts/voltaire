@@ -7,7 +7,7 @@
  * - null entries always match (wildcard)
  *
  * @param {import('./TopicFilterType.js').TopicFilterType} filter
- * @param {readonly import('../Hash/HashType/HashType.js').HashType[]} logTopics - Topics from a log entry
+ * @param {readonly import('../Hash/HashType.js').HashType[]} logTopics - Topics from a log entry
  * @returns {boolean}
  * @example
  * ```javascript

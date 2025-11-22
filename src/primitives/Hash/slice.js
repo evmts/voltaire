@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('../HashType.js').HashType} hash - Hash to slice
+ * @param {import('./HashType.js').HashType} hash - Hash to slice
  * @param {number} [start] - Start index (inclusive)
  * @param {number} [end] - End index (exclusive)
  * @returns {Uint8Array} Slice of hash bytes

@@ -2,7 +2,7 @@
  * Factory: Hash data with Keccak-256
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(data: Uint8Array) => import('../HashType.js').HashType} Function that hashes data
+ * @returns {(data: Uint8Array) => import('./HashType.js').HashType} Function that hashes data
  */
 export function Keccak256({ keccak256 }) {
 	/**
@@ -11,7 +11,7 @@ export function Keccak256({ keccak256 }) {
 	 * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
 	 * @since 0.0.0
 	 * @param {Uint8Array} data - Data to hash
-	 * @returns {import('../HashType.js').HashType} 32-byte hash
+	 * @returns {import('./HashType.js').HashType} 32-byte hash
 	 * @throws {never}
 	 * @example
 	 * ```javascript
@@ -22,6 +22,6 @@ export function Keccak256({ keccak256 }) {
 	 * ```
 	 */
 	return function hash(data) {
-		return /** @type {import('../HashType.js').HashType} */ (keccak256(data));
+		return /** @type {import('./HashType.js').HashType} */ (keccak256(data));
 	};
 }

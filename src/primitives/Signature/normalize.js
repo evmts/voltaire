@@ -7,8 +7,8 @@ import { isCanonical } from "./isCanonical.js";
 /**
  * Normalize ECDSA signature to canonical form (s = n - s if s > n/2)
  *
- * @param {import('../SignatureType.js').SignatureType} signature - Signature to normalize
- * @returns {import('../SignatureType.js').SignatureType} Normalized signature
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to normalize
+ * @returns {import('./SignatureType.js').SignatureType} Normalized signature
  *
  * @example
  * ```typescript

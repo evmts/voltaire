@@ -6,8 +6,8 @@ import { ONE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {...import('./BrandedUint.ts').BrandedUint} values - Values to multiply
- * @returns {import('./BrandedUint.ts').BrandedUint} Product of all values mod 2^256
+ * @param {...import('./Uint256Type.js').Uint256Type} values - Values to multiply
+ * @returns {import('./Uint256Type.js').Uint256Type} Product of all values mod 2^256
  * @throws {never}
  * @example
  * ```javascript
@@ -18,7 +18,7 @@ import { ONE } from "./constants.js";
 export function product(...values) {
 	let result = ONE;
 	for (const value of values) {
-		result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+		result = /** @type {import('./Uint256Type.js').Uint256Type} */ (
 			(result * value) & MAX
 		);
 	}

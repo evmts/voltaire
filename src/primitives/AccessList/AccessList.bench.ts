@@ -4,7 +4,7 @@
  * Measures performance of access list operations
  */
 
-import type { HashType } from "../../Hash/HashType.js";
+import type { HashType } from "../Hash/HashType.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { Item } from "./AccessListType.js";
 import { addressCount } from "./addressCount.js";

@@ -1,8 +1,8 @@
 /**
  * Check if two signatures are equal
  *
- * @param {import('../SignatureType.js').SignatureType} a - First signature
- * @param {import('../SignatureType.js').SignatureType} b - Second signature
+ * @param {import('./SignatureType.js').SignatureType} a - First signature
+ * @param {import('./SignatureType.js').SignatureType} b - Second signature
  * @returns {boolean} True if signatures are equal
  *
  * @example

@@ -7,9 +7,9 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * Create Signature from DER-encoded ECDSA signature
  *
  * @param {Uint8Array} der - DER-encoded signature
- * @param {import('../SignatureType.js').SignatureAlgorithm} algorithm - Algorithm (secp256k1 or p256)
+ * @param {import('./SignatureType.js').SignatureAlgorithm} algorithm - Algorithm (secp256k1 or p256)
  * @param {number} [v] - Optional recovery ID for secp256k1
- * @returns {import('../SignatureType.js').SignatureType} Signature
+ * @returns {import('./SignatureType.js').SignatureType} Signature
  * @throws {InvalidDERError} If DER encoding is invalid
  *
  * @example

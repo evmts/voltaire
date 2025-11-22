@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Compare two hashes for equality (byte-by-byte)
  *
- * @param {import('../../Hash/HashType/HashType.js').HashType} a
- * @param {import('../../Hash/HashType/HashType.js').HashType} b
+ * @param {import('../Hash/HashType.js').HashType} a
+ * @param {import('../Hash/HashType.js').HashType} b
  * @returns {boolean}
  */
 function hashEquals(a, b) {
@@ -37,7 +37,7 @@ function hashEquals(a, b) {
  * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to add to
  * @param {import('../../Address/AddressType.js').AddressType} address - Address to add key for
- * @param {import('../../Hash/HashType/HashType.js').HashType} storageKey - Storage key to add
+ * @param {import('../Hash/HashType.js').HashType} storageKey - Storage key to add
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} New access list with storage key added
  * @throws {never}
  * @example

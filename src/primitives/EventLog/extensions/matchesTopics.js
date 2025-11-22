@@ -4,7 +4,7 @@ import { hashEquals } from "./utils.js";
  * Check if log matches topic filter
  *
  * @param {import('../EventLogType.js').BrandedEventLog} log
- * @param {readonly (import('../../Hash/HashType/HashType.js').HashType | import('../../Hash/HashType/HashType.js').HashType[] | null)[]} filterTopics
+ * @param {readonly (import('../../Hash/HashType.js').HashType | import('../../Hash/HashType.js').HashType[] | null)[]} filterTopics
  * @returns {boolean}
  *
  * @example

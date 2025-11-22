@@ -5,9 +5,9 @@ import { ZERO } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {import('./BrandedUint.ts').BrandedUint} a - First value
- * @param {import('./BrandedUint.ts').BrandedUint} b - Second value
- * @returns {import('./BrandedUint.ts').BrandedUint} GCD of a and b
+ * @param {import('./Uint256Type.js').Uint256Type} a - First value
+ * @param {import('./Uint256Type.js').Uint256Type} b - Second value
+ * @returns {import('./Uint256Type.js').Uint256Type} GCD of a and b
  * @throws {never}
  * @example
  * ```javascript
@@ -20,7 +20,7 @@ export function gcd(a, b) {
 	let y = b;
 	while (y !== ZERO) {
 		const temp = y;
-		y = /** @type {import('./BrandedUint.ts').BrandedUint} */ (x % y);
+		y = /** @type {import('./Uint256Type.js').Uint256Type} */ (x % y);
 		x = temp;
 	}
 	return x;

@@ -2,7 +2,7 @@
  * Get indexed topics (topic1-topic3) from log
  *
  * @param {import('../EventLogType.js').BrandedEventLog} log - Event log
- * @returns {readonly import('../../Hash/HashType/HashType.js').HashType[]}
+ * @returns {readonly import('../../Hash/HashType.js').HashType[]}
  *
  * @example
  * ```typescript

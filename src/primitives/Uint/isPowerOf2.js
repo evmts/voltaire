@@ -5,7 +5,7 @@ import { ZERO } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @param {import('./BrandedUint.ts').BrandedUint} value - Value to check
+ * @param {import('./Uint256Type.js').Uint256Type} value - Value to check
  * @returns {boolean} True if value is power of 2
  * @throws {never}
  * @example

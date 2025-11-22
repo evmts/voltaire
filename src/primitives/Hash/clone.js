@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('../HashType.js').HashType} hash - Hash to clone
- * @returns {import('../HashType.js').HashType} New hash with same value
+ * @param {import('./HashType.js').HashType} hash - Hash to clone
+ * @returns {import('./HashType.js').HashType} New hash with same value
  * @throws {never}
  * @example
  * ```javascript
@@ -14,7 +14,7 @@
  * ```
  */
 export function clone(hash) {
-	return /** @type {import('../HashType.js').HashType} */ (
+	return /** @type {import('./HashType.js').HashType} */ (
 		new Uint8Array(hash)
 	);
 }

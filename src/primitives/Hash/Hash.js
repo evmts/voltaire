@@ -5,7 +5,7 @@ import * as HashType from "./BrandedHashIndex.js";
 export * from "./constants.js";
 
 /**
- * @typedef {import('./HashType.js').HashType} HashType
+ * @typedef {import(./HashType.js').HashType} HashType
  */
 
 /**

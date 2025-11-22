@@ -8,8 +8,8 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
 /**
  * Create Signature from various input types (universal constructor)
  *
- * @param {Uint8Array | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: import('../SignatureType.js').SignatureAlgorithm } | { signature: Uint8Array; algorithm: 'ed25519' }} value - Signature data
- * @returns {import('../SignatureType.js').SignatureType} Signature
+ * @param {Uint8Array | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: import('./SignatureType.js').SignatureAlgorithm } | { signature: Uint8Array; algorithm: 'ed25519' }} value - Signature data
+ * @returns {import('./SignatureType.js').SignatureType} Signature
  * @throws {InvalidSignatureFormatError} If value format is unsupported or invalid
  * @throws {InvalidSignatureLengthError} If signature length is invalid
  *
@@ -35,7 +35,7 @@ export function from(value) {
 			val.algorithm === "p256" ||
 			val.algorithm === "ed25519")
 	) {
-		return /** @type {import('../SignatureType.js').SignatureType} */ (value);
+		return /** @type {import('./SignatureType.js').SignatureType} */ (value);
 	}
 
 	// Handle Uint8Array (compact format)

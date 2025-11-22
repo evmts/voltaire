@@ -5,7 +5,7 @@ import { Keccak256 } from "./keccak256.js";
  * Factory: Hash hex string with Keccak-256
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {(hex: string) => import('../HashType.js').HashType} Function that hashes hex strings
+ * @returns {(hex: string) => import('./HashType.js').HashType} Function that hashes hex strings
  */
 export function Keccak256Hex({ keccak256 }) {
 	const hash = Keccak256({ keccak256 });
@@ -16,7 +16,7 @@ export function Keccak256Hex({ keccak256 }) {
 	 * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
 	 * @since 0.0.0
 	 * @param {string} hex - Hex string to hash (with or without 0x prefix)
-	 * @returns {import('../HashType.js').HashType} 32-byte hash
+	 * @returns {import('./HashType.js').HashType} 32-byte hash
 	 * @throws {InvalidFormatError} If hex string has odd length
 	 * @example
 	 * ```javascript

@@ -5,7 +5,7 @@ import { ZERO } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('../HashType.js').HashType} hash - Hash to check
+ * @param {import('./HashType.js').HashType} hash - Hash to check
  * @returns {boolean} True if hash is all zeros
  * @throws {never}
  * @example

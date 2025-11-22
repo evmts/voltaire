@@ -24,14 +24,14 @@ export const SIZE = 16;
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint128.ts').Uint128Type}
+ * @type {import('./Uint128Type.js').Uint128Type}
  * @example
  * ```javascript
  * import { MAX } from './primitives/Uint128/index.js';
  * console.log(MAX); // 340282366920938463463374607431768211455n
  * ```
  */
-export const MAX = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
+export const MAX = /** @type {import('./Uint128Type.js').Uint128Type} */ (
 	(1n << 128n) - 1n
 );
 
@@ -40,14 +40,14 @@ export const MAX = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint128.ts').Uint128Type}
+ * @type {import('./Uint128Type.js').Uint128Type}
  * @example
  * ```javascript
  * import { MIN } from './primitives/Uint128/index.js';
  * console.log(MIN); // 0n
  * ```
  */
-export const MIN = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
+export const MIN = /** @type {import('./Uint128Type.js').Uint128Type} */ (
 	0n
 );
 
@@ -56,14 +56,14 @@ export const MIN = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint128.ts').Uint128Type}
+ * @type {import('./Uint128Type.js').Uint128Type}
  * @example
  * ```javascript
  * import { ZERO } from './primitives/Uint128/index.js';
  * console.log(ZERO); // 0n
  * ```
  */
-export const ZERO = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
+export const ZERO = /** @type {import('./Uint128Type.js').Uint128Type} */ (
 	0n
 );
 
@@ -72,13 +72,13 @@ export const ZERO = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
- * @type {import('./BrandedUint128.ts').Uint128Type}
+ * @type {import('./Uint128Type.js').Uint128Type}
  * @example
  * ```javascript
  * import { ONE } from './primitives/Uint128/index.js';
  * console.log(ONE); // 1n
  * ```
  */
-export const ONE = /** @type {import('./BrandedUint128.ts').Uint128Type} */ (
+export const ONE = /** @type {import('./Uint128Type.js').Uint128Type} */ (
 	1n
 );
