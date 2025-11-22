@@ -4,8 +4,6 @@ description: High-performance, type-safe Ethereum primitives and cryptography
 mode: "custom"
 ---
 
-import { MonacoEditor } from "./snippets/MonacoEditor.jsx";
-
 <style>{`
   @media (prefers-color-scheme: dark) {
     #navbar, [id="navbar"], nav {
@@ -354,44 +352,17 @@ url = "https://tevm.sh/mcp"
       </div>
     </div>
 
-<MonacoEditor
-  defaultCode={`// Try out Tevm primitives in your browser!
-// Click "Run Code" to execute this example
-
-// Simple example: Working with addresses
-console.log("=== Address Example ===");
-const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
-console.log("Address:", address);
-
-// Working with hex values
-console.log("\\n=== Hex Example ===");
-const hexValue = "0x48656c6c6f"; // "Hello" in hex
-console.log("Hex:", hexValue);
-
-// Math operations
-console.log("\\n=== Math Example ===");
-const a = 100;
-const b = 42;
-console.log(a + " + " + b + " = " + (a + b));
-console.log(a + " * " + b + " = " + (a * b));
-
-// Arrays and objects
-console.log("\\n=== Data Structures ===");
-const data = {
-  network: "Ethereum",
-  gasPrice: 30,
-  tokens: ["ETH", "USDC", "DAI"]
-};
-console.log("Network data:", JSON.stringify(data, null, 2));
-
-console.log("\\n✓ Execution complete!");`}
-/>
+    <div style={{ textAlign: 'left' }}>
+      <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
+    </div>
 
     <script dangerouslySetInnerHTML={{__html: `
       // Wait for full page load and React hydration
       window.addEventListener('load', function() {
+        setTimeout(initMonaco, 500);
         setTimeout(initTextAnimation, 500);
         setTimeout(initTabIndicator, 500);
+        setTimeout(observeThemeChanges, 500);
       });
 
       function initTabIndicator() {
@@ -445,6 +416,313 @@ console.log("\\n✓ Execution complete!");`}
 
         // Start animation cycle (every 5 seconds)
         setInterval(animateLanguage, 5000);
+      }
+
+      // Detect current theme from Mintlify's DOM
+      function getCurrentTheme() {
+        return document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs';
+      }
+
+      // Setup code execution with Web Worker sandbox
+      function setupCodeExecution(editor) {
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-console-button');
+        const consoleOutput = document.getElementById('console-output');
+
+        let currentWorker = null;
+        let executionTimeout = null;
+
+        // Create Web Worker for sandboxed execution
+        function createWorker() {
+          const workerCode = 'self.onmessage = function(e) {' +
+            '  const { code } = e.data;' +
+            '  const console = {' +
+            '    log: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "log",' +
+            '        args: args.map(arg => {' +
+            '          if (typeof arg === "object") {' +
+            '            try { return JSON.stringify(arg, null, 2); }' +
+            '            catch { return String(arg); }' +
+            '          }' +
+            '          return String(arg);' +
+            '        })' +
+            '      });' +
+            '    },' +
+            '    error: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "error",' +
+            '        args: args.map(arg => String(arg))' +
+            '      });' +
+            '    },' +
+            '    warn: (...args) => {' +
+            '      self.postMessage({' +
+            '        type: "warn",' +
+            '        args: args.map(arg => String(arg))' +
+            '      });' +
+            '    }' +
+            '  };' +
+            '  try {' +
+            '    const fn = new Function("console", code);' +
+            '    fn(console);' +
+            '    self.postMessage({ type: "complete" });' +
+            '  } catch (error) {' +
+            '    self.postMessage({' +
+            '      type: "error",' +
+            '      args: [error.message]' +
+            '    });' +
+            '  }' +
+            '};';
+
+          const blob = new Blob([workerCode], { type: 'application/javascript' });
+          return new Worker(URL.createObjectURL(blob));
+        }
+
+        // Add log entry to console output
+        function addLog(type, args) {
+          const entry = document.createElement('div');
+          entry.style.marginBottom = '0.5rem';
+          entry.style.paddingLeft = '1rem';
+          entry.style.borderLeft = '3px solid';
+
+          if (type === 'log') {
+            entry.style.borderLeftColor = '#4CAF50';
+            entry.style.color = '#ccc';
+          } else if (type === 'error') {
+            entry.style.borderLeftColor = '#f44336';
+            entry.style.color = '#ff6b6b';
+          } else if (type === 'warn') {
+            entry.style.borderLeftColor = '#ff9800';
+            entry.style.color = '#ffb74d';
+          }
+
+          entry.textContent = args.join(' ');
+
+          // Remove placeholder if present
+          const placeholder = consoleOutput.querySelector('[style*="italic"]');
+          if (placeholder) placeholder.remove();
+
+          consoleOutput.appendChild(entry);
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // Execute code
+        function executeCode() {
+          // Clear previous output
+          consoleOutput.innerHTML = '';
+
+          // Terminate previous worker if running
+          if (currentWorker) {
+            currentWorker.terminate();
+            clearTimeout(executionTimeout);
+          }
+
+          // Update button state
+          runButton.textContent = '⏸ Running...';
+          runButton.disabled = true;
+          runButton.style.opacity = '0.7';
+
+          // Create new worker
+          currentWorker = createWorker();
+
+          // Set up timeout (5 seconds)
+          executionTimeout = setTimeout(() => {
+            currentWorker.terminate();
+            addLog('error', ['Execution timeout (5s limit)']);
+            resetButton();
+          }, 5000);
+
+          // Handle messages from worker
+          currentWorker.onmessage = (e) => {
+            const { type, args } = e.data;
+
+            if (type === 'complete') {
+              clearTimeout(executionTimeout);
+              resetButton();
+            } else if (type === 'log' || type === 'error' || type === 'warn') {
+              addLog(type, args);
+            }
+          };
+
+          // Handle worker errors
+          currentWorker.onerror = (error) => {
+            clearTimeout(executionTimeout);
+            addLog('error', ['Worker error:', error.message]);
+            resetButton();
+          };
+
+          // Get code and execute
+          const code = editor.getValue();
+          currentWorker.postMessage({ code });
+        }
+
+        function resetButton() {
+          runButton.textContent = '▶ Run Code';
+          runButton.disabled = false;
+          runButton.style.opacity = '1';
+        }
+
+        // Clear console
+        function clearConsole() {
+          consoleOutput.innerHTML = '<div style="color: #666; font-style: italic;">Console output will appear here...</div>';
+        }
+
+        // Event listeners
+        runButton.addEventListener('click', executeCode);
+        clearButton.addEventListener('click', clearConsole);
+
+        // Hover effects
+        runButton.addEventListener('mouseenter', () => {
+          if (!runButton.disabled) {
+            runButton.style.transform = 'scale(1.01)';
+            runButton.style.boxShadow = '0 2px 8px rgba(230, 162, 60, 0.3)';
+          }
+        });
+        runButton.addEventListener('mouseleave', () => {
+          runButton.style.transform = 'scale(1)';
+          runButton.style.boxShadow = 'none';
+        });
+
+        clearButton.addEventListener('mouseenter', () => {
+          clearButton.style.background = 'rgba(128, 128, 128, 0.1)';
+        });
+        clearButton.addEventListener('mouseleave', () => {
+          clearButton.style.background = 'transparent';
+        });
+      }
+
+      async function initMonaco() {
+        const mountPoint = document.getElementById('editor-mount-point');
+        if (!mountPoint) return;
+
+        mountPoint.innerHTML = \`
+          <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700; text-align: center; margin-bottom: 1rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Try It Now</h2>
+          <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
+            Edit and experiment with live Tevm code examples.
+          </p>
+          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px 12px 0 0; overflow: hidden; position: relative;"></div>
+          <div style="display: flex; gap: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none;">
+            <button id="run-button" style="flex: 1; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); color: white; border: none; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem;">
+              ▶ Run Code
+            </button>
+            <button id="clear-console-button" style="flex: 0 0 auto; padding: 0.75rem 1.5rem; background: transparent; color: #999; border: none; border-left: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem;">
+              Clear
+            </button>
+          </div>
+          <div id="console-output" style="min-height: 150px; max-height: 300px; overflow-y: auto; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; border-radius: 0 0 12px 12px; padding: 1rem; font-family: 'Menlo, Monaco, Courier New, monospace'; font-size: 0.875rem; line-height: 1.5; color: #ccc;">
+            <div style="color: #666; font-style: italic;">Console output will appear here...</div>
+          </div>
+        \`;
+
+        try {
+          const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
+          const monaco = await init();
+
+          const code = '// Try out Tevm primitives in your browser!\\n' +
+            '// Click "Run Code" to execute this example\\n' +
+            '\\n' +
+            '// Simple example: Working with addresses\\n' +
+            'console.log("=== Address Example ===");\\n' +
+            'const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";\\n' +
+            'console.log("Address:", address);\\n' +
+            '\\n' +
+            '// Working with hex values\\n' +
+            'console.log("\\\\n=== Hex Example ===");\\n' +
+            'const hexValue = "0x48656c6c6f"; // "Hello" in hex\\n' +
+            'console.log("Hex:", hexValue);\\n' +
+            '\\n' +
+            '// Math operations\\n' +
+            'console.log("\\\\n=== Math Example ===");\\n' +
+            'const a = 100;\\n' +
+            'const b = 42;\\n' +
+            'console.log(a + " + " + b + " = " + (a + b));\\n' +
+            'console.log(a + " * " + b + " = " + (a * b));\\n' +
+            '\\n' +
+            '// Arrays and objects\\n' +
+            'console.log("\\\\n=== Data Structures ===");\\n' +
+            'const data = {\\n' +
+            '  network: "Ethereum",\\n' +
+            '  gasPrice: 30,\\n' +
+            '  tokens: ["ETH", "USDC", "DAI"]\\n' +
+            '};\\n' +
+            'console.log("Network data:", JSON.stringify(data, null, 2));\\n' +
+            '\\n' +
+            'console.log("\\\\n✓ Execution complete!");';
+
+          const model = monaco.editor.createModel(code, 'typescript');
+
+          const editor = monaco.editor.create(document.getElementById('editor-container'), {
+            model: model,
+            theme: getCurrentTheme(),
+            fontSize: 14,
+            lineHeight: 21,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            padding: { top: 16, bottom: 16, left: 16 },
+            automaticLayout: true,
+            lineNumbers: 'on',
+            glyphMargin: false,
+            folding: false,
+            lineDecorationsWidth: 0,
+            lineNumbersMinChars: 3,
+            renderLineHighlight: 'line',
+            scrollbar: {
+              vertical: 'visible',
+              horizontal: 'visible',
+              useShadows: false,
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10
+            },
+            tabSize: 2,
+            insertSpaces: true
+          });
+
+          // Add CSS to increase gap between line numbers and content
+          const style = document.createElement('style');
+          style.textContent = \`
+            .monaco-editor .margin-view-overlays .line-numbers {
+              padding-right: 16px !important;
+            }
+          \`;
+          document.head.appendChild(style);
+
+          // Store globally for theme updates
+          window.monacoInstance = monaco;
+          window.monacoEditor = editor;
+
+          // Setup code execution with Web Worker
+          setupCodeExecution(editor);
+
+          // Trigger auto-formatting
+          setTimeout(() => {
+            editor.getAction('editor.action.formatDocument')?.run();
+          }, 100);
+
+        } catch (e) {
+          document.getElementById('editor-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Failed to load editor</div>';
+        }
+      }
+
+      // Watch for theme changes
+      function observeThemeChanges() {
+        const observer = new MutationObserver(() => {
+          if (window.monacoInstance && window.monacoEditor) {
+            const container = document.getElementById('editor-container');
+            // Re-initialize if container was destroyed
+            if (!container || !container.parentElement) {
+              initMonaco();
+            } else {
+              // Update theme on existing editor
+              window.monacoInstance.editor.setTheme(getCurrentTheme());
+            }
+          }
+        });
+
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class']
+        });
       }
     `}}>
     </script>
