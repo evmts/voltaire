@@ -37,10 +37,10 @@ export const method = "eth_getStorageAt";
  * Creates a eth_getStorageAt JSON-RPC request
  *
  * @param {Address} address
- * @param {Quantity} [block]
- * @param {BlockSpec} params
+ * @param {Quantity} position
+ * @param {BlockSpec} [block="latest"]
  * @returns {RequestArguments}
  */
-export function GetStorageAtRequest(address, block, params) {
-	return { method, params: [address, block, params] };
+export function GetStorageAtRequest(address, position, block = "latest") {
+	return { method, params: [address, position, block] };
 }
