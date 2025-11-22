@@ -58,7 +58,10 @@ export const EVENTS = {
  * Encode transfer(address,uint256) calldata
  */
 export function encodeTransfer(to: AddressType, amount: Uint256Type): string {
-	const toHex = Buffer.from(to).toString("hex").padStart(64, "0");
+	// Convert address (20 bytes) to hex and pad to 32 bytes
+	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const amountHex = amount.toString(16).padStart(64, "0");
 	return `${SELECTORS.transfer}${toHex}${amountHex}`;
 }
@@ -70,7 +73,10 @@ export function encodeApprove(
 	spender: AddressType,
 	amount: Uint256Type,
 ): string {
-	const spenderHex = Buffer.from(spender).toString("hex").padStart(64, "0");
+	// Convert address (20 bytes) to hex and pad to 32 bytes
+	const spenderHex = Array.from(spender, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const amountHex = amount.toString(16).padStart(64, "0");
 	return `${SELECTORS.approve}${spenderHex}${amountHex}`;
 }
@@ -83,8 +89,13 @@ export function encodeTransferFrom(
 	to: AddressType,
 	amount: Uint256Type,
 ): string {
-	const fromHex = Buffer.from(from).toString("hex").padStart(64, "0");
-	const toHex = Buffer.from(to).toString("hex").padStart(64, "0");
+	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
+	const fromHex = Array.from(from, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
+	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const amountHex = amount.toString(16).padStart(64, "0");
 	return `${SELECTORS.transferFrom}${fromHex}${toHex}${amountHex}`;
 }
@@ -93,7 +104,10 @@ export function encodeTransferFrom(
  * Encode balanceOf(address) calldata
  */
 export function encodeBalanceOf(account: AddressType): string {
-	const accountHex = Buffer.from(account).toString("hex").padStart(64, "0");
+	// Convert address (20 bytes) to hex and pad to 32 bytes
+	const accountHex = Array.from(account, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	return `${SELECTORS.balanceOf}${accountHex}`;
 }
 
@@ -104,8 +118,13 @@ export function encodeAllowance(
 	owner: AddressType,
 	spender: AddressType,
 ): string {
-	const ownerHex = Buffer.from(owner).toString("hex").padStart(64, "0");
-	const spenderHex = Buffer.from(spender).toString("hex").padStart(64, "0");
+	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
+	const ownerHex = Array.from(owner, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
+	const spenderHex = Array.from(spender, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	return `${SELECTORS.allowance}${ownerHex}${spenderHex}`;
 }
 
@@ -187,5 +206,10 @@ export function decodeString(data: string): string {
 	const length = Number.parseInt(hex.slice(64, 128), 16);
 	const stringData = hex.slice(128, 128 + length * 2);
 
-	return Buffer.from(stringData, "hex").toString("utf8");
+	// Convert hex to UTF-8 string manually
+	const bytes = new Uint8Array(stringData.length / 2);
+	for (let i = 0; i < stringData.length; i += 2) {
+		bytes[i / 2] = Number.parseInt(stringData.slice(i, i + 2), 16);
+	}
+	return new TextDecoder().decode(bytes);
 }

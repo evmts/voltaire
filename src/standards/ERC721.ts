@@ -72,8 +72,13 @@ export function encodeTransferFrom(
 	to: AddressType,
 	tokenId: Uint256Type,
 ): string {
-	const fromHex = Buffer.from(from).toString("hex").padStart(64, "0");
-	const toHex = Buffer.from(to).toString("hex").padStart(64, "0");
+	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
+	const fromHex = Array.from(from, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
+	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const tokenIdHex = tokenId.toString(16).padStart(64, "0");
 	return `${SELECTORS.transferFrom}${fromHex}${toHex}${tokenIdHex}`;
 }
@@ -86,8 +91,13 @@ export function encodeSafeTransferFrom(
 	to: AddressType,
 	tokenId: Uint256Type,
 ): string {
-	const fromHex = Buffer.from(from).toString("hex").padStart(64, "0");
-	const toHex = Buffer.from(to).toString("hex").padStart(64, "0");
+	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
+	const fromHex = Array.from(from, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
+	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const tokenIdHex = tokenId.toString(16).padStart(64, "0");
 	return `${SELECTORS.safeTransferFrom}${fromHex}${toHex}${tokenIdHex}`;
 }
@@ -96,7 +106,10 @@ export function encodeSafeTransferFrom(
  * Encode approve(address,uint256) calldata
  */
 export function encodeApprove(to: AddressType, tokenId: Uint256Type): string {
-	const toHex = Buffer.from(to).toString("hex").padStart(64, "0");
+	// Convert address (20 bytes) to hex and pad to 32 bytes
+	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.padStart(64, "0");
 	const tokenIdHex = tokenId.toString(16).padStart(64, "0");
 	return `${SELECTORS.approve}${toHex}${tokenIdHex}`;
 }
@@ -108,7 +121,12 @@ export function encodeSetApprovalForAll(
 	operator: AddressType,
 	approved: boolean,
 ): string {
-	const operatorHex = Buffer.from(operator).toString("hex").padStart(64, "0");
+	// Convert address (20 bytes) to hex and pad to 32 bytes
+	const operatorHex = Array.from(operator, (b) =>
+		b.toString(16).padStart(2, "0"),
+	)
+		.join("")
+		.padStart(64, "0");
 	const approvedHex = approved ? "1".padStart(64, "0") : "0".padStart(64, "0");
 	return `${SELECTORS.setApprovalForAll}${operatorHex}${approvedHex}`;
 }
