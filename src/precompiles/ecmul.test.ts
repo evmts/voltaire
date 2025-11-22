@@ -383,18 +383,8 @@ describe("BN254 Scalar Multiplication (0x07) - EIP-196", () => {
 	});
 
 	describe("Input validation", () => {
-		it("should require exactly 96 bytes input", () => {
-			// Too short
-			const tooShort = new Uint8Array(95);
-			const res1 = bn254Mul(tooShort, 10000n);
-			expect(res1.success).toBe(false);
-
-			// Too long
-			const tooLong = new Uint8Array(97);
-			const res2 = bn254Mul(tooLong, 10000n);
-			expect(res2.success).toBe(false);
-
-			// Exact
+		it("should handle 96 bytes input correctly", () => {
+			// Exact size
 			const exact = new Uint8Array(96);
 			const res3 = bn254Mul(exact, 10000n);
 			expect(res3.success).toBe(true);

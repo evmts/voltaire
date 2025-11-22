@@ -18,8 +18,8 @@ import * as Bip39 from "../crypto/Bip39/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
 import { PrivateKeySignerImpl } from "../crypto/signers/private-key-signer.js";
 import { Keccak256Wasm } from "../crypto/keccak256.wasm.js";
-import { Address, toHex as addressToHex, toBytes as addressToBytes, toChecksummed } from "../primitives/Address/index.js";
-import * as BrandedAddress from "../primitives/Address/internal-index.js";
+import { Address, toHex as addressToHex, toBytes as addressToBytes } from "../primitives/Address/index.js";
+import { toChecksummed } from "../primitives/Address/internal-index.js";
 import * as Secp256k1 from "../crypto/Secp256k1/index.js";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
 import * as SignedData from "../primitives/SignedData/index.js";
@@ -294,7 +294,7 @@ describe("E2E Workflows", () => {
 			// Step 6: Verify balance change (mock call to balanceOf)
 			const balanceAfter = await provider.request("eth_call", [
 				{
-					to: Address.toChecksummed(tokenContractAddress),
+					to: toChecksummed(tokenContractAddress),
 					data: "0x70a08231" + testSigner.address.slice(2).padStart(64, "0"),
 				},
 			]);
@@ -304,7 +304,7 @@ describe("E2E Workflows", () => {
 
 	describe("3. NFT Minting (ERC721)", () => {
 		it("should create mint tx, execute, verify ownership and tokenURI", async () => {
-			const nftContractAddress = Address.from(
+			const nftContractAddress = Address(
 				"0x0000000000000000000000000000000000000001",
 			);
 			const tokenId = 1n;
@@ -315,8 +315,8 @@ describe("E2E Workflows", () => {
 			const mintData = new Uint8Array(68);
 			mintData.set(mintSelector, 0);
 
-			const toBytes = Address.toBytes(Address.from(testSigner.address));
-			mintData.set(toBytes, 12 + 12);
+			const toAddrBytes = addressToBytes(Address(testSigner.address));
+			mintData.set(toAddrBytes, 12 + 12);
 
 			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
 			const tokenIdBytes = new Uint8Array(32);
@@ -328,8 +328,8 @@ describe("E2E Workflows", () => {
 			// Step 2: Create mint transaction
 			const mintTx: any = {
 				from: testSigner.address,
-				to: Address.toChecksummed(nftContractAddress),
-				data: Hex.fromBytes(mintData),
+				to: toChecksummed(nftContractAddress),
+				data: hexFromBytes(mintData),
 				value: "0x0",
 				gas: "0x88b8", // 35000 gas for mint
 				gasPrice: "0x4a817c800",
@@ -355,7 +355,7 @@ describe("E2E Workflows", () => {
 			const ownerOfSelector = "0x6352211e" + tokenId.toString(16).padStart(64, "0");
 			const ownerResult = await provider.request("eth_call", [
 				{
-					to: Address.toChecksummed(nftContractAddress),
+					to: toChecksummed(nftContractAddress),
 					data: ownerOfSelector,
 				},
 			]);
@@ -366,7 +366,7 @@ describe("E2E Workflows", () => {
 			const tokenURISelector = "0xc87b56dd" + tokenId.toString(16).padStart(64, "0");
 			const uriResult = await provider.request("eth_call", [
 				{
-					to: Address.toChecksummed(nftContractAddress),
+					to: toChecksummed(nftContractAddress),
 					data: tokenURISelector,
 				},
 			]);
@@ -494,14 +494,14 @@ describe("E2E Workflows", () => {
 
 	describe("6. Gas Estimation with Buffer", () => {
 		it("should estimate gas, add buffer, execute, and verify actual usage", async () => {
-			const targetAddress = Address.from(
+			const targetAddress = Address(
 				"0x2222222222222222222222222222222222222222",
 			);
 
 			// Step 1: Build transaction to estimate
 			const tx: any = {
 				from: testSigner.address,
-				to: Address.toChecksummed(targetAddress),
+				to: toChecksummed(targetAddress),
 				value: "0x0de0b6b3a7640000", // 1 ETH
 				data: "0x",
 				nonce: 3,
@@ -547,10 +547,10 @@ describe("E2E Workflows", () => {
 
 	describe("7. Event Filtering and Decoding", () => {
 		it("should emit events, filter logs, and decode event data", async () => {
-			const contractAddress = Address.from(
+			const contractAddress = Address(
 				"0x3333333333333333333333333333333333333333",
 			);
-			const toAddress = Address.from(
+			const toAddress = Address(
 				"0x1111111111111111111111111111111111111111",
 			);
 			const transferAmount = 1000n;
@@ -563,11 +563,11 @@ describe("E2E Workflows", () => {
 			);
 
 			const eventLog = {
-				address: Address.toChecksummed(contractAddress),
+				address: toChecksummed(contractAddress),
 				topics: [
-					Hex.toHex(transferEventSelector),
+					hexFromBytes(transferEventSelector),
 					"0x" + testSigner.address.slice(2).padStart(64, "0"),
-					"0x" + Address.toHex(toAddress).slice(2).padStart(64, "0"),
+					"0x" + addressToHex(toAddress).slice(2).padStart(64, "0"),
 				],
 				data: "0x" + transferAmount.toString(16).padStart(64, "0"),
 				blockNumber: "0x1",
@@ -582,8 +582,8 @@ describe("E2E Workflows", () => {
 			// Step 3: Query logs
 			const logs = await provider.request("eth_getLogs", [
 				{
-					address: Address.toChecksummed(contractAddress),
-					topics: [Hex.toHex(transferEventSelector)],
+					address: toChecksummed(contractAddress),
+					topics: [hexFromBytes(transferEventSelector)],
 					fromBlock: "0x0",
 					toBlock: "latest",
 				},
@@ -591,12 +591,12 @@ describe("E2E Workflows", () => {
 
 			expect(logs).toHaveLength(1);
 			expect(logs[0].address).toBe(
-				Address.toChecksummed(contractAddress),
+				toChecksummed(contractAddress),
 			);
 
 			// Step 4: Decode event data
 			const decodedLog = logs[0];
-			expect(decodedLog.topics[0]).toBe(Hex.toHex(transferEventSelector));
+			expect(decodedLog.topics[0]).toBe(hexFromBytes(transferEventSelector));
 
 			// Parse topics
 			const from = "0x" + decodedLog.topics[1].slice(-40);
@@ -604,7 +604,7 @@ describe("E2E Workflows", () => {
 			const value = BigInt(decodedLog.data);
 
 			expect(from).toBe(testSigner.address.toLowerCase());
-			expect(to).toBe(Address.toHex(toAddress).toLowerCase());
+			expect(to).toBe(addressToHex(toAddress).toLowerCase());
 			expect(value).toBe(transferAmount);
 		});
 	});
@@ -614,12 +614,12 @@ describe("E2E Workflows", () => {
 			const initialBlockNumber = provider.getBlockHeight();
 
 			// Step 1: Create and send transaction
-			const targetAddress = Address.from(
+			const targetAddress = Address(
 				"0x1111111111111111111111111111111111111111",
 			);
 			const tx: any = {
 				from: testSigner.address,
-				to: Address.toChecksummed(targetAddress),
+				to: toChecksummed(targetAddress),
 				value: "0x0de0b6b3a7640000", // 1 ETH
 				data: "0x",
 				nonce: 4,
@@ -695,7 +695,7 @@ describe("E2E Workflows", () => {
 			const messageHash = SignedData.Hash({ keccak256 })(message);
 
 			// Sign with derived key
-			const signature = Secp256k1.sign(privKey, messageHash);
+			const signature = Secp256k1.sign(messageHash, privKey);
 
 			// Construct full signature (65 bytes: r + s + v)
 			const fullSignature = new Uint8Array(65);
@@ -704,10 +704,10 @@ describe("E2E Workflows", () => {
 			fullSignature[64] = signature.v;
 
 			expect(fullSignature).toHaveLength(65);
-			expect(Hex.toHex(fullSignature)).toMatch(/^0x[0-9a-f]{130}$/i);
+			expect(hexFromBytes(fullSignature)).toMatch(/^0x[0-9a-f]{130}$/i);
 
-			// Verify signature can be recovered
-			const recoveredPubKey = recoverPublicKey(messageHash, fullSignature);
+			// Verify signature can be recovered with correct arg order
+			const recoveredPubKey = recoverPublicKey(fullSignature, messageHash);
 			expect(recoveredPubKey).toBeDefined();
 			expect(recoveredPubKey.length).toBe(65); // 0x04 prefix + 64 bytes
 		});
@@ -752,7 +752,7 @@ describe("E2E Workflows", () => {
 	describe("Error Handling and Edge Cases", () => {
 		it("should handle invalid addresses gracefully", () => {
 			expect(() => {
-				Address.from("0xinvalid");
+				Address("0xinvalid");
 			}).toThrow();
 		});
 

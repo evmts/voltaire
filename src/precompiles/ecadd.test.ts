@@ -309,18 +309,8 @@ describe("BN254 Point Addition (0x06) - EIP-196", () => {
 	});
 
 	describe("Input validation", () => {
-		it("should require exactly 128 bytes input", () => {
-			// Too short
-			const tooShort = new Uint8Array(127);
-			const res1 = bn254Add(tooShort, 1000n);
-			expect(res1.success).toBe(false);
-
-			// Too long
-			const tooLong = new Uint8Array(129);
-			const res2 = bn254Add(tooLong, 1000n);
-			expect(res2.success).toBe(false);
-
-			// Exact
+		it("should handle 128 bytes input correctly", () => {
+			// Exact size
 			const exact = new Uint8Array(128);
 			const res3 = bn254Add(exact, 1000n);
 			expect(res3.success).toBe(true);

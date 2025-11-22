@@ -266,7 +266,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const g1 = G1.generator();
 			const g2 = G2.generator();
 
-			const largeScalar = 0xdeadbeefcafebabeLn;
+			const largeScalar = BigInt("0xdeadbeefcafebabe");
 			const p = G1.mul(g1, largeScalar);
 			const q = G2.mul(g2, largeScalar);
 
