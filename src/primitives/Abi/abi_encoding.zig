@@ -234,7 +234,42 @@ pub const AbiValue = union(AbiType) {
     @"bytes4[2]": [2][4]u8,
 
     pub fn get_type(self: AbiValue) AbiType {
-        return self;
+        return switch (self) {
+            .uint8 => .uint8,
+            .uint16 => .uint16,
+            .uint32 => .uint32,
+            .uint64 => .uint64,
+            .uint128 => .uint128,
+            .uint256 => .uint256,
+            .int8 => .int8,
+            .int16 => .int16,
+            .int32 => .int32,
+            .int64 => .int64,
+            .int128 => .int128,
+            .int256 => .int256,
+            .address => .address,
+            .bool => .bool,
+            .bytes1 => .bytes1,
+            .bytes2 => .bytes2,
+            .bytes3 => .bytes3,
+            .bytes4 => .bytes4,
+            .bytes8 => .bytes8,
+            .bytes16 => .bytes16,
+            .bytes32 => .bytes32,
+            .bytes => .bytes,
+            .string => .string,
+            .@"uint256[]" => .@"uint256[]",
+            .@"bytes32[]" => .@"bytes32[]",
+            .@"address[]" => .@"address[]",
+            .@"string[]" => .@"string[]",
+            .@"bool[]" => .@"bool[]",
+            .@"uint256[][]" => .@"uint256[][]",
+            .@"uint256[2]" => .@"uint256[2]",
+            .@"uint256[3]" => .@"uint256[3]",
+            .@"address[2]" => .@"address[2]",
+            .@"bool[4]" => .@"bool[4]",
+            .@"bytes4[2]" => .@"bytes4[2]",
+        };
     }
 };
 
@@ -495,41 +530,33 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .@"uint256[2]" => {
             var result: [2]u256 = undefined;
             result[0] = try decode_uint(cursor, u256, 256);
-            cursor.advance(32);
             result[1] = try decode_uint(cursor, u256, 256);
             return AbiValue{ .@"uint256[2]" = result };
         },
         .@"uint256[3]" => {
             var result: [3]u256 = undefined;
             result[0] = try decode_uint(cursor, u256, 256);
-            cursor.advance(32);
             result[1] = try decode_uint(cursor, u256, 256);
-            cursor.advance(32);
             result[2] = try decode_uint(cursor, u256, 256);
             return AbiValue{ .@"uint256[3]" = result };
         },
         .@"address[2]" => {
             var result: [2]address.Address = undefined;
             result[0] = try decode_address(cursor);
-            cursor.advance(32);
             result[1] = try decode_address(cursor);
             return AbiValue{ .@"address[2]" = result };
         },
         .@"bool[4]" => {
             var result: [4]bool = undefined;
             result[0] = try decode_bool(cursor);
-            cursor.advance(32);
             result[1] = try decode_bool(cursor);
-            cursor.advance(32);
             result[2] = try decode_bool(cursor);
-            cursor.advance(32);
             result[3] = try decode_bool(cursor);
             return AbiValue{ .@"bool[4]" = result };
         },
         .@"bytes4[2]" => {
             var result: [2][4]u8 = undefined;
             result[0] = try decode_bytes_fixed(cursor, 4);
-            cursor.advance(32);
             result[1] = try decode_bytes_fixed(cursor, 4);
             return AbiValue{ .@"bytes4[2]" = result };
         },
@@ -1339,6 +1366,20 @@ pub fn encodePacked(allocator: std.mem.Allocator, values: []const AbiValue) ![]u
             .@"string[]" => |val| {
                 for (val) |item| {
                     try result.appendSlice(item);
+                }
+            },
+            .@"bool[]" => |val| {
+                for (val) |item| {
+                    try result.append(if (item) 1 else 0);
+                }
+            },
+            .@"uint256[][]" => |val| {
+                for (val) |arr| {
+                    for (arr) |item| {
+                        var bytes: [32]u8 = undefined;
+                        std.mem.writeInt(u256, &bytes, item, .big);
+                        try result.appendSlice(&bytes);
+                    }
                 }
             },
             .@"uint256[2]" => |arr| {

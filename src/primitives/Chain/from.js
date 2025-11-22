@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
- * @param {import('../ChainType.js').Chain} chain - Chain object
- * @returns {import('../ChainType.js').Chain} Chain object
+ * @param {import('./ChainType.js').Chain} chain - Chain object
+ * @returns {import('./ChainType.js').Chain} Chain object
  * @throws {never}
  * @example
  * ```javascript

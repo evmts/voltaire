@@ -224,6 +224,25 @@ Address.compare = BrandedAddress.compare;
 Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
+// Export standalone helper functions
+export const sortAddresses = (addresses: AddressType[]): AddressType[] => {
+	return BrandedAddress.sortAddresses(addresses).map((addr) => {
+		Object.setPrototypeOf(addr, Address.prototype);
+		return addr;
+	});
+};
+
+export const deduplicateAddresses = (addresses: AddressType[]): AddressType[] => {
+	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
+		Object.setPrototypeOf(addr, Address.prototype);
+		return addr;
+	});
+};
+
+export const toHex = BrandedAddress.toHex;
+export const fromHex = Address.fromHex;
+export const equals = Address.equals;
+
 Address.sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
@@ -419,3 +438,6 @@ Address.prototype.calculateCreate2Address = function (
 	});
 	return result;
 };
+
+// Default export for dynamic imports
+export default Address;

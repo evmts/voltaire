@@ -11,9 +11,7 @@ export { _from };
 export function from(params: {
 	transactions: readonly import("../Transaction/types.js").Any[];
 	ommers: readonly import("../Uncle/UncleType.js").UncleType[];
-	withdrawals?: readonly import(
-		"../Withdrawal/WithdrawalType.js"
-	).WithdrawalType[];
+	withdrawals?: readonly import("../Withdrawal/WithdrawalType.js").WithdrawalType[];
 }) {
 	return _from(params);
 }

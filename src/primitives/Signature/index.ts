@@ -50,5 +50,29 @@ export {
 	equals,
 };
 
+// Default export for dynamic imports
+const Signature = {
+	from,
+	fromSecp256k1,
+	fromP256,
+	fromEd25519,
+	fromCompact,
+	fromDER,
+	toBytes,
+	toCompact,
+	toDER,
+	getAlgorithm,
+	getR,
+	getS,
+	getV,
+	isCanonical,
+	normalize,
+	verify,
+	is,
+	equals,
+};
+
+export default Signature;
+
 // Namespace export for tree-shakable API
-export * as Signature from "./index.js";
+export { Signature };

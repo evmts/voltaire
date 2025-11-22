@@ -26,10 +26,10 @@ export function increment(nonce: number | bigint | string) {
 // Export internal functions (tree-shakeable)
 export { _toNumber, _toBigInt, _increment };
 
-// Export as namespace (convenience)
-export const Nonce = {
+// Export as callable constructor and namespace
+export const Nonce = Object.assign(from, {
 	from,
 	toNumber,
 	toBigInt,
 	increment,
-};
+});

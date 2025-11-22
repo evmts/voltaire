@@ -5,7 +5,7 @@ import { chainById as tevmChainById } from "@tevm/chains";
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
- * @type {Record<number, import('../ChainType.js').Chain>}
+ * @type {Record<number, import('./ChainType.js').Chain>}
  * @throws {never}
  * @example
  * ```javascript

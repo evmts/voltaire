@@ -54,7 +54,7 @@ export * as Abi from "./Abi/index.js";
 // Transactions
 export * as Transaction from "./Transaction/index.js";
 export { AccessList } from "./AccessList/index.js";
-export * as BrandedAccessList from "./AccessList/BrandedAccessList/index.js";
+export * as BrandedAccessList from "./AccessList/index.js";
 export * as Authorization from "./Authorization/index.js";
 export * as BrandedAuthorization from "./Authorization/index.js"; // Re-exported for backward compatibility
 

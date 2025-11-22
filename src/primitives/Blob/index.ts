@@ -26,11 +26,6 @@ import { verifyBatch } from "./verifyBatch.js";
 import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 
 // Import factories
-export { ToVersionedHash } from "./toVersionedHash.js";
-export { ToCommitment } from "./toCommitment.js";
-export { ToProof } from "./toProof.js";
-export { Verify } from "./verify.js";
-
 import { ToCommitment } from "./toCommitment.js";
 import { ToProof } from "./toProof.js";
 import { ToVersionedHash } from "./toVersionedHash.js";
@@ -227,9 +222,9 @@ Blob.prototype.toData = function () {
 Blob.prototype.toCommitment = function () {
 	return BrandedBlob.toCommitment(this);
 };
-Blob.prototype.toProof = function () {
-	return BrandedBlob.toProof(this);
+Blob.prototype.toProof = function (commitment) {
+	return BrandedBlob.toProof(this, commitment);
 };
-Blob.prototype.verify = function () {
-	return BrandedBlob.verify(this);
+Blob.prototype.verify = function (commitment, proof) {
+	return BrandedBlob.verify(this, commitment, proof);
 };

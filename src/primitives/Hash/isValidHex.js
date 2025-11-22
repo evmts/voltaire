@@ -17,6 +17,7 @@ import { SIZE } from "./HashType.js";
  * ```
  */
 export function isValidHex(hex) {
+	if (typeof hex !== "string") return false;
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	return normalized.length === SIZE * 2 && /^[0-9a-fA-F]+$/.test(normalized);
 }

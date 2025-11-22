@@ -34,3 +34,16 @@ export function toEther(wei: Type): import("./Ether.js").Type {
 export function toU256(wei: Type): Uint.Type {
 	return wei as Uint.Type;
 }
+
+// Export as callable constructor and namespace
+export const Wei = Object.assign(from, {
+	from,
+	fromGwei,
+	fromEther,
+	toGwei,
+	toEther,
+	toU256,
+});
+
+// Default export for default import usage
+export default Wei;

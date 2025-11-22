@@ -3,7 +3,7 @@
  *
  * @param {Object} deps - Dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
- * @returns {function(import('./AddressType.js').AddressType, import('../Hash/HashType.js').HashType, import('../../Bytecode/BytecodeType.js').BrandedBytecode): import('./AddressType.js').AddressType}
+ * @returns {function(import('./AddressType.js').AddressType, import('../Hash/HashType.js').HashType, import('../Bytecode/BytecodeType.js').BrandedBytecode): import('./AddressType.js').AddressType}
  */
 export function CalculateCreate2Address({ keccak256 }) {
 	/**
@@ -13,7 +13,7 @@ export function CalculateCreate2Address({ keccak256 }) {
 	 *
 	 * @param {import('./AddressType.js').AddressType} address - Sender address
 	 * @param {import('../Hash/HashType.js').HashType} salt - 32-byte salt (use Hash.from to create)
-	 * @param {import('../../Bytecode/BytecodeType.js').BrandedBytecode} initCode - Contract initialization code
+	 * @param {import('../Bytecode/BytecodeType.js').BrandedBytecode} initCode - Contract initialization code
 	 * @returns {import('./AddressType.js').AddressType} Calculated contract address
 	 *
 	 * @example

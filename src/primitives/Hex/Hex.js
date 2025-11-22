@@ -82,3 +82,6 @@ Hex.prototype.trim = Function.prototype.call.bind(HexType.trim);
 Hex.prototype.equals = Function.prototype.call.bind(HexType.equals);
 Hex.prototype.xor = Function.prototype.call.bind(HexType.xor);
 Hex.prototype.clone = Function.prototype.call.bind(HexType.clone);
+
+// Default export for dynamic imports
+export default Hex;

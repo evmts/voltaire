@@ -1,4 +1,5 @@
 import { isValidSignature } from "./isValidSignature.js";
+import * as Address from "../Address/index.js";
 
 /**
  * Factory: Create unified signature verification for EOA and contract accounts
@@ -53,15 +54,8 @@ export function VerifySignature({
 	return async function verifySignature(provider, address, hash, signature) {
 		try {
 			// Convert address to hex string for eth_getCode
-			let addressHex;
-			if (typeof address === "string") {
-				addressHex = address;
-			} else {
-				addressHex = "0x";
-				for (const byte of address) {
-					addressHex += byte.toString(16).padStart(2, "0");
-				}
-			}
+			const addressHex =
+				typeof address === "string" ? address : Address.toHex(address);
 
 			// Check if address is a contract
 			const code = await provider.request("eth_getCode", [

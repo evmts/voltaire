@@ -54,3 +54,6 @@ export const PrivateKey = {
 	toAddress,
 	sign,
 };
+
+// Default export for dynamic imports
+export default PrivateKey;

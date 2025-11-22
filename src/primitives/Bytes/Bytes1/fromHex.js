@@ -1,5 +1,5 @@
 import { InvalidBytesLengthError } from "../errors.js";
-import * as BytesType from "../BytesType.js";
+import * as BytesType from "../Bytes.index.js";
 
 /**
  * Create Bytes1 from hex string with size validation

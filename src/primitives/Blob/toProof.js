@@ -23,8 +23,7 @@ import { SIZE } from "./constants.js";
  * - Call computeBlobKzgProof(blob, commitment)
  * - Return 48-byte proof
  */
-import { PrimitiveError } from "../../errors/PrimitiveError.js";
-import { InvalidLengthError } from "../errors/index.js";
+import { PrimitiveError, InvalidLengthError } from "../errors/index.js";
 
 export function ToProof({ computeBlobKzgProof }) {
 	return function toProof(blob, commitment) {
@@ -37,12 +36,15 @@ export function ToProof({ computeBlobKzgProof }) {
 			});
 		}
 		if (commitment.length !== 48) {
-			throw new InvalidLengthError(`Invalid commitment size: ${commitment.length}`, {
-				value: commitment.length,
-				expected: "48 bytes",
-				code: "BLOB_INVALID_COMMITMENT_SIZE",
-				docsPath: "/primitives/blob/to-proof#error-handling",
-			});
+			throw new InvalidLengthError(
+				`Invalid commitment size: ${commitment.length}`,
+				{
+					value: commitment.length,
+					expected: "48 bytes",
+					code: "BLOB_INVALID_COMMITMENT_SIZE",
+					docsPath: "/primitives/blob/to-proof#error-handling",
+				},
+			);
 		}
 		try {
 			const proof = computeBlobKzgProof(blob, commitment);

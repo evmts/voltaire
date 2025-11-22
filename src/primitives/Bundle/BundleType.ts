@@ -1,6 +1,6 @@
 import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { Uint256Type } from "../Uint256/Uint256Type.js";
+import type { Uint256Type } from "../Uint/Uint256Type.js";
 
 /**
  * Bundle type
