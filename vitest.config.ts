@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 // https://vitest.dev/config/ - for docs
 export default defineConfig({
 	test: {
-		include: ["src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+		include: ["src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}", "examples/**/*.test.ts"],
 		exclude: ["src/mcp-evals/**", "node_modules/**"],
 		setupFiles: ["./vitest.setup.ts"],
 		environment: "node",
