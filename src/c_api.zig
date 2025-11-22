@@ -1786,8 +1786,6 @@ export fn primitives_abi_encode_packed(
     const encoded = primitives.Abi.encodePacked(allocator, abi_values.items) catch |err| {
         return switch (err) {
             error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
-            error.MaxLengthExceeded => PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED,
-            else => PRIMITIVES_ERROR_INVALID_INPUT,
         };
     };
     defer allocator.free(encoded);

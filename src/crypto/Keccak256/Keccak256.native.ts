@@ -85,11 +85,14 @@ export async function from(input: string | Uint8Array): Promise<Keccak256Hash> {
  * Compute function selector (first 4 bytes of keccak256)
  *
  * @param signature - Function signature (e.g., "transfer(address,uint256)")
- * @returns First 4 bytes of hash
+ * @returns First 4 bytes of hash as hex string
  */
-export async function selector(signature: string): Promise<Uint8Array> {
+export async function selector(signature: string): Promise<string> {
 	const fullHash = await hashString(signature);
-	return fullHash.slice(0, 4);
+	const selectorBytes = fullHash.slice(0, 4);
+	return `0x${Array.from(selectorBytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**

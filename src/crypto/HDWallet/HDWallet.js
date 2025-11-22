@@ -36,15 +36,18 @@ import { derivePath } from "./derivePath.js";
 import { fromExtendedKey } from "./fromExtendedKey.js";
 import { fromPublicExtendedKey } from "./fromPublicExtendedKey.js";
 import { fromSeed } from "./fromSeed.js";
+import { generateMnemonic } from "./generateMnemonic.js";
 import { getChainCode } from "./getChainCode.js";
 import { getPrivateKey } from "./getPrivateKey.js";
 import { getPublicKey } from "./getPublicKey.js";
 import { isHardenedPath } from "./isHardenedPath.js";
 import { isValidPath } from "./isValidPath.js";
+import { mnemonicToSeed } from "./mnemonicToSeed.js";
 import { parseIndex } from "./parseIndex.js";
 import { toExtendedPrivateKey } from "./toExtendedPrivateKey.js";
 import { toExtendedPublicKey } from "./toExtendedPublicKey.js";
 import { toPublic } from "./toPublic.js";
+import { validateMnemonic } from "./validateMnemonic.js";
 
 // Export individual functions
 export {
@@ -65,6 +68,9 @@ export {
 	isHardenedPath,
 	isValidPath,
 	parseIndex,
+	generateMnemonic,
+	mnemonicToSeed,
+	validateMnemonic,
 };
 
 /**
@@ -109,6 +115,11 @@ export const HDWallet = {
 	isHardenedPath,
 	isValidPath,
 	parseIndex,
+
+	// Mnemonic utilities
+	generateMnemonic,
+	mnemonicToSeed,
+	validateMnemonic,
 
 	// Constants
 	HARDENED_OFFSET,

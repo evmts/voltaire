@@ -6,6 +6,7 @@ export * from "./errors.js";
 
 import * as PublicKeyMethods from "./PublicKey/index.js";
 import * as SignatureMethods from "./Signature/index.js";
+import * as PrivateKeyMethods from "../../primitives/PrivateKey/index.js";
 import {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
@@ -39,6 +40,7 @@ export {
 
 export const Signature = SignatureMethods;
 export const PublicKey = PublicKeyMethods;
+export const PrivateKey = PrivateKeyMethods;
 
 /**
  * @typedef {import('./SignatureType.js').Secp256k1SignatureType} Secp256k1SignatureType
@@ -85,6 +87,7 @@ export const Secp256k1 = {
 	scalarMultiply,
 	Signature: SignatureMethods,
 	PublicKey: PublicKeyMethods,
+	PrivateKey: PrivateKeyMethods,
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
 	PUBLIC_KEY_SIZE,
