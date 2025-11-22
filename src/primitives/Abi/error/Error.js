@@ -3,7 +3,7 @@ import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";
 import { GetSelector } from "./getSelector.js";
 import { getSignature } from "./getSignature.js";
-import { getSelector } from "./index.js";
+import { keccak256String as keccak256StringImpl } from "../../Hash/index.js";
 
 /**
  * Factory function for creating Error instances
@@ -28,7 +28,7 @@ import { getSelector } from "./index.js";
 // Static utility methods
 export const Error = {
 	getSignature,
-	getSelector,
+	getSelector: GetSelector({ keccak256String: keccak256StringImpl }),
 	encodeParams,
 	decodeParams,
 	// Factory

@@ -1,5 +1,3 @@
-import * as FunctionNs from "./index.js";
-
 /**
  * @typedef {import('./FunctionType.js').FunctionType} FunctionType
  */
@@ -32,21 +30,3 @@ import * as FunctionNs from "./index.js";
 export function Function(fn) {
 	return fn;
 }
-
-// Static methods delegate to function namespace
-Function.getSelector = FunctionNs.getSelector;
-Function.getSignature = FunctionNs.getSignature;
-Function.encodeParams = FunctionNs.encodeParams;
-Function.decodeParams = FunctionNs.decodeParams;
-Function.encodeResult = FunctionNs.encodeResult;
-Function.decodeResult = FunctionNs.decodeResult;
-
-// Constructor-style aliases (data-first pattern)
-Function.Signature = FunctionNs.Signature;
-Function.Params = FunctionNs.Params;
-Function.DecodeParams = FunctionNs.DecodeParams;
-Function.Result = FunctionNs.Result;
-Function.DecodeResult = FunctionNs.DecodeResult;
-
-// Factories
-Function.GetSelector = FunctionNs.GetSelector;

@@ -1,12 +1,12 @@
 // @ts-nocheck
 import {
-	EncodeTopics,
-	GetSelector,
-	decodeLog,
-	encodeTopics,
-	getSelector,
-	getSignature,
-} from "./index.js";
+	keccak256 as keccak256Impl,
+	keccak256String as keccak256StringImpl,
+} from "../../Hash/index.js";
+import { EncodeTopics } from "./encodeTopics.js";
+import { GetSelector } from "./getSelector.js";
+import { decodeLog } from "./decodeLog.js";
+import { getSignature } from "./getSignature.js";
 
 /**
  * Factory function for creating Event instances
@@ -31,6 +31,12 @@ import {
  * const selector = Abi.Event.getSelector(event);
  * ```
  */
+
+const getSelector = GetSelector({ keccak256String: keccak256StringImpl });
+const encodeTopics = EncodeTopics({
+	keccak256: keccak256Impl,
+	keccak256String: keccak256StringImpl,
+});
 
 // Static utility methods
 export const Event = {
