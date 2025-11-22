@@ -358,6 +358,26 @@
 				"default": "./dist/crypto/Keccak256/index.cjs"
 			}
 		},
+		"./Keccak256/native": {
+			"import": {
+				"types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
+				"default": "./dist/crypto/Keccak256/Keccak256.native.js"
+			},
+			"require": {
+				"types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
+				"default": "./dist/crypto/Keccak256/Keccak256.native.cjs"
+			}
+		},
+		"./Keccak256/wasm": {
+			"import": {
+				"types": "./types/crypto/Keccak256/index.d.ts",
+				"default": "./dist/crypto/Keccak256/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Keccak256/index.d.ts",
+				"default": "./dist/crypto/Keccak256/index.cjs"
+			}
+		},
 		"./KZG": {
 			"import": {
 				"types": "./types/crypto/KZG/index.d.ts",
@@ -505,7 +525,12 @@
 	"optionalDependencies": {
 		"effect": "^3.12.6",
 		"ffi-napi": "^4.0.3",
-		"ref-napi": "^3.0.3"
+		"ref-napi": "^3.0.3",
+		"@tevm/voltaire-darwin-arm64": "0.1.0",
+		"@tevm/voltaire-darwin-x64": "0.1.0",
+		"@tevm/voltaire-linux-arm64": "0.1.0",
+		"@tevm/voltaire-linux-x64": "0.1.0",
+		"@tevm/voltaire-win32-x64": "0.1.0"
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",

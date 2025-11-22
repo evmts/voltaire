@@ -584,6 +584,9 @@ pub fn build(b: *std.Build) void {
         // Native TypeScript bindings - ReleaseFast for maximum performance
         const ts_native_target = b.resolveTargetQuery(.{});
         addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+
+        // Cross-platform native builds for distribution
+        addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
     }
 
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
@@ -1101,6 +1104,77 @@ fn addTypeScriptSteps(b: *std.Build) void {
     const pre_commit_step = b.step("pre-commit", "Fast pre-commit validation (format + lint + typecheck)");
     pre_commit_step.dependOn(format_step);
     pre_commit_step.dependOn(lint_step);
+}
+
+/// Add cross-platform native builds for distribution (Bun FFI + Node-API)
+/// Builds shared libraries for all supported platforms with ReleaseFast optimization
+fn addCrossPlatformNativeBuilds(
+    b: *std.Build,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    // Define target platforms for cross-compilation
+    const platforms = [_]struct {
+        cpu_arch: std.Target.Cpu.Arch,
+        os_tag: std.Target.Os.Tag,
+        name: []const u8,
+    }{
+        .{ .cpu_arch = .aarch64, .os_tag = .macos, .name = "darwin-arm64" },
+        .{ .cpu_arch = .x86_64, .os_tag = .macos, .name = "darwin-x64" },
+        .{ .cpu_arch = .aarch64, .os_tag = .linux, .name = "linux-arm64" },
+        .{ .cpu_arch = .x86_64, .os_tag = .linux, .name = "linux-x64" },
+        .{ .cpu_arch = .x86_64, .os_tag = .windows, .name = "win32-x64" },
+    };
+
+    // Create step to build all platforms
+    const build_native_all = b.step("build-native-all", "Build native bindings for all platforms");
+
+    inline for (platforms) |platform| {
+        const target = b.resolveTargetQuery(.{
+            .cpu_arch = platform.cpu_arch,
+            .os_tag = platform.os_tag,
+        });
+
+        // Build shared library with ReleaseFast
+        const native_lib = b.addLibrary(.{
+            .name = "voltaire_native",
+            .linkage = .dynamic,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/c_api.zig"),
+                .target = target,
+                .optimize = .ReleaseFast, // Native always fast
+            }),
+        });
+        native_lib.root_module.addImport("primitives", primitives_mod);
+        native_lib.root_module.addImport("crypto", crypto_mod);
+        native_lib.linkLibrary(c_kzg_lib);
+        native_lib.linkLibrary(blst_lib);
+        native_lib.addObjectFile(rust_crypto_lib_path);
+        native_lib.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
+        native_lib.addIncludePath(b.path("lib"));
+        native_lib.addIncludePath(b.path("lib/libwally-core/include"));
+        native_lib.step.dependOn(cargo_build_step);
+        native_lib.linkLibC();
+
+        // Install to native/{platform}/ directory
+        const install_dir = b.fmt("native/{s}", .{platform.name});
+        const install_native = b.addInstallArtifact(native_lib, .{
+            .dest_dir = .{ .override = .{ .custom = install_dir } },
+        });
+
+        // Create individual build step for this platform
+        const step_name = b.fmt("build-native-{s}", .{platform.name});
+        const step_desc = b.fmt("Build native bindings for {s}", .{platform.name});
+        const platform_step = b.step(step_name, step_desc);
+        platform_step.dependOn(&install_native.step);
+
+        // Add to build-native-all
+        build_native_all.dependOn(&install_native.step);
+    }
 }
 
 /// Add individual crypto WASM compilation targets for tree-shaking

@@ -1,0 +1,141 @@
+name: Build Native Bindings
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: darwin-arm64
+            zig-target: aarch64-macos
+          - os: macos-latest
+            platform: darwin-x64
+            zig-target: x86_64-macos
+          - os: ubuntu-latest
+            platform: linux-arm64
+            zig-target: aarch64-linux
+          - os: ubuntu-latest
+            platform: linux-x64
+            zig-target: x86_64-linux
+          - os: windows-latest
+            platform: win32-x64
+            zig-target: x86_64-windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache Zig dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/zig
+            zig-cache/
+          key: ${{ runner.os }}-zig-${{ matrix.platform }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Rust dependencies
+        run: cargo build --release
+        env:
+          CARGO_TARGET_DIR: target
+
+      - name: Build native library
+        run: zig build build-native-${{ matrix.platform }}
+
+      - name: Verify build output
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" == "win32-x64" ]; then
+            ls -lh zig-out/native/${{ matrix.platform }}/*.dll || echo "No DLL found"
+          elif [ "${{ matrix.platform }}" == "darwin-arm64" ] || [ "${{ matrix.platform }}" == "darwin-x64" ]; then
+            ls -lh zig-out/native/${{ matrix.platform }}/*.dylib || echo "No dylib found"
+          else
+            ls -lh zig-out/native/${{ matrix.platform }}/*.so || echo "No so found"
+          fi
+
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: zig-out/native/${{ matrix.platform }}/
+          retention-days: 7
+
+  package-natives:
+    name: Package native binaries
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R artifacts/
+
+      - name: Organize native binaries
+        run: |
+          mkdir -p native
+          for platform in darwin-arm64 darwin-x64 linux-arm64 linux-x64 win32-x64; do
+            if [ -d "artifacts/native-$platform" ]; then
+              mkdir -p "native/$platform"
+              cp -r "artifacts/native-$platform/"* "native/$platform/"
+            fi
+          done
+
+      - name: List organized natives
+        run: |
+          echo "Organized native binaries:"
+          ls -R native/
+
+      - name: Upload combined artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-all-platforms
+          path: native/
+          retention-days: 30
