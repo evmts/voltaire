@@ -237,13 +237,14 @@ describe("BLS12-381 G1 Mul (0x0c)", () => {
 		expect(result.output.every((b) => b === 0)).toBe(true);
 	});
 
-	test("generator * 0 fails (noble validation)", () => {
+	test("generator * 0 = identity", () => {
 		const gen = bls12_381.G1.Point.BASE;
 		const genBytes = serializeG1Point(gen);
 		const input = new Uint8Array(160);
 		input.set(genBytes, 0);
 		const result = bls12G1Mul(input, 20000n);
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
+		expect(result.output.every((b) => b === 0)).toBe(true);
 	});
 
 	test("generator * 1 = generator", () => {
@@ -370,11 +371,12 @@ describe("BLS12-381 G1 MSM (0x0d)", () => {
 		expect(result.success).toBe(false);
 	});
 
-	test("single identity point with scalar fails (noble)", () => {
+	test("single identity point with scalar = identity", () => {
 		const input = new Uint8Array(160);
 		input[159] = 1;
 		const result = bls12G1Msm(input, 20000n);
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
+		expect(result.output.every((b) => b === 0)).toBe(true);
 	});
 
 	test("generator with scalar 1", () => {
@@ -706,10 +708,11 @@ describe("BLS12-381 G2 MSM (0x10)", () => {
 		expect(result.success).toBe(false);
 	});
 
-	test("single identity point with scalar fails (noble)", () => {
+	test("single identity point with scalar = identity", () => {
 		const input = new Uint8Array(288);
 		const result = bls12G2Msm(input, 50000n);
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
+		expect(result.output.every((b) => b === 0)).toBe(true);
 	});
 
 	test("generator with scalar 1", () => {
