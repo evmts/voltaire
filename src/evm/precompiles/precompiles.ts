@@ -834,6 +834,11 @@ export function bls12G1Mul(
 		const point = deserializeG1(input.subarray(0, 128));
 		const scalar = beBytesToBigInt(input.subarray(128, 160));
 
+		// Handle zero scalar (returns identity point)
+		if (scalar === 0n) {
+			return { success: true, output: new Uint8Array(128), gasUsed: gas };
+		}
+
 		// Multiply point by scalar
 		const result = point.multiply(scalar);
 
@@ -864,7 +869,7 @@ function calculateMsmGas(k: number, baseCost: bigint): bigint {
 	];
 	const multiplier =
 		k < multipliers.length ? multipliers[k] : 3.94 + (k - 31) * 0.04;
-	return BigInt(Math.floor(Number(baseCost) * multiplier));
+	return BigInt(Math.round(Number(baseCost) * multiplier));
 }
 
 /**
@@ -1008,6 +1013,11 @@ export function bls12G2Mul(
 		// Deserialize G2 point and scalar
 		const point = deserializeG2(input.subarray(0, 256));
 		const scalar = beBytesToBigInt(input.subarray(256, 288));
+
+		// Handle zero scalar (returns identity point)
+		if (scalar === 0n) {
+			return { success: true, output: new Uint8Array(256), gasUsed: gas };
+		}
 
 		// Multiply point by scalar
 		const result = point.multiply(scalar);
