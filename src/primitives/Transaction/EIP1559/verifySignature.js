@@ -50,12 +50,25 @@ export function VerifySignature({
 			const r = Hash.from(tx.r);
 			const s = Hash.from(tx.s);
 
-			// Recover public key - this will throw if signature is invalid
-			secp256k1RecoverPublicKey({ r, s, v }, signingHash);
+			// Attempt recovery and verification
+			const publicKey = secp256k1RecoverPublicKey({ r, s, v }, signingHash);
 
-			// If recovery succeeded, signature is valid
-			return true;
-		} catch {
+			// Now we need to verify the signature is actually valid for this message
+			// NOT just that we can recover a public key
+			const isValid = secp256k1Verify({ r, s, v }, signingHash, publicKey);
+
+			console.log('verifySignature debug:', {
+				signingHash: Buffer.from(signingHash).toString('hex').slice(0, 16) + '...',
+				r: Buffer.from(r).toString('hex').slice(0, 16) + '...',
+				s: Buffer.from(s).toString('hex').slice(0, 16) + '...',
+				v,
+				publicKey: Buffer.from(publicKey).toString('hex').slice(0, 16) + '...',
+				isValid
+			});
+
+			return isValid;
+		} catch (e) {
+			console.log('verifySignature error:', e.message);
 			return false;
 		}
 	};
