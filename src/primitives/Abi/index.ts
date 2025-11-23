@@ -17,9 +17,11 @@ export {
 } from "./Encoding.js";
 
 // Re-export sub-namespaces for runtime (Abi.Function.*, Abi.Event.*, etc.)
-export { Function } from "./function/Function.js";
-export { Event } from "./event/Event.js";
-export { Error } from "./error/Error.js";
+export * as Function from "./function/index.js";
+export * as Event from "./event/index.js";
+export * as Error from "./error/index.js";
+export * as Item from "./Item/index.js";
+export * as Constructor from "./constructor/index.js";
 
 // Re-export ERC standards
 export { Interface } from "./interface/index.js";
