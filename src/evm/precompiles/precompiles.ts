@@ -1127,7 +1127,6 @@ export function bls12Pairing(
 	}
 
 	try {
-
 		const numPairs = Math.floor(input.length / 384);
 
 		// Handle empty input
@@ -1147,7 +1146,10 @@ export function bls12Pairing(
 			const g1 = deserializeG1(input.subarray(offset, offset + 128));
 			const g2 = deserializeG2(input.subarray(offset + 128, offset + 384));
 			// Skip pairs with ZERO points (noble validation)
-			if (!g1.equals(bls12_381.G1.Point.ZERO) && !g2.equals(bls12_381.G2.Point.ZERO)) {
+			if (
+				!g1.equals(bls12_381.G1.Point.ZERO) &&
+				!g2.equals(bls12_381.G2.Point.ZERO)
+			) {
 				pairs.push({ g1, g2 });
 			}
 		}
