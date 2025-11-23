@@ -82,24 +82,24 @@ console.log('Match:', emojiOriginal === emojiDecoded);
 	"hex-to-bytes.ts": `import * as Hex from 'voltaire/primitives/Hex';
 
 // Convert hex string to Uint8Array
-const hex = '0x123456789abcdef0';
-const bytes = Hex.toBytes(hex);
-console.log('Hex:', hex);
+const hex = Hex.from('0x123456789abcdef0');
+const bytes = hex.toBytes();
+console.log('Hex:', hex.toString());
 console.log('Bytes:', bytes);
 console.log('Bytes length:', bytes.length);
 
 // With prefix and without
-const withPrefix = '0xdeadbeef';
-const withoutPrefix = 'deadbeef';
-console.log('\\nWith prefix:', Hex.toBytes(withPrefix));
-console.log('Without prefix:', Hex.toBytes(withoutPrefix));
+const withPrefix = Hex.from('0xdeadbeef');
+const withoutPrefix = Hex.from('deadbeef');
+console.log('\\nWith prefix:', withPrefix.toBytes());
+console.log('Without prefix:', withoutPrefix.toBytes());
 
 // Round-trip conversion
 const original = new Uint8Array([1, 2, 3, 4, 5]);
 const hexString = Hex.fromBytes(original);
-const restored = Hex.toBytes(hexString);
+const restored = hexString.toBytes();
 console.log('\\nOriginal bytes:', original);
-console.log('Hex representation:', hexString);
+console.log('Hex representation:', hexString.toString());
 console.log('Restored bytes:', restored);
 console.log('Arrays equal:', original.every((b, i) => b === restored[i]));
 `,
@@ -107,73 +107,73 @@ console.log('Arrays equal:', original.every((b, i) => b === restored[i]));
 	"hex-concat.ts": `import * as Hex from 'voltaire/primitives/Hex';
 
 // Concatenate multiple hex strings
-const part1 = '0x1234';
-const part2 = '0x5678';
-const part3 = '0x9abc';
+const part1 = Hex.from('0x1234');
+const part2 = Hex.from('0x5678');
+const part3 = Hex.from('0x9abc');
 
-const combined = Hex.concat(part1, part2, part3);
-console.log('Part 1:', part1);
-console.log('Part 2:', part2);
-console.log('Part 3:', part3);
-console.log('Combined:', combined);
-console.log('Combined size:', Hex.size(combined), 'bytes');
+const combined = part1.concat(part2, part3);
+console.log('Part 1:', part1.toString());
+console.log('Part 2:', part2.toString());
+console.log('Part 3:', part3.toString());
+console.log('Combined:', combined.toString());
+console.log('Combined size:', combined.size(), 'bytes');
 
 // Build complex data structures
-const selector = '0x70a08231';
-const address = '0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e';
-const calldata = Hex.concat(selector, address);
-console.log('\\nFunction calldata:', calldata);
-console.log('Calldata size:', Hex.size(calldata), 'bytes');
+const selector = Hex.from('0x70a08231');
+const address = Hex.from('0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e');
+const calldata = selector.concat(address);
+console.log('\\nFunction calldata:', calldata.toString());
+console.log('Calldata size:', calldata.size(), 'bytes');
 `,
 
 	"hex-slice.ts": `import * as Hex from 'voltaire/primitives/Hex';
 
 // Slice hex strings by byte offsets
-const hex = '0x123456789abcdef0';
-console.log('Original:', hex);
-console.log('Size:', Hex.size(hex), 'bytes');
+const hex = Hex.from('0x123456789abcdef0');
+console.log('Original:', hex.toString());
+console.log('Size:', hex.size(), 'bytes');
 
 // Extract first 4 bytes
-const first4 = Hex.slice(hex, 0, 4);
-console.log('\\nFirst 4 bytes:', first4);
+const first4 = hex.slice(0, 4);
+console.log('\\nFirst 4 bytes:', first4.toString());
 
 // Extract last 4 bytes
-const last4 = Hex.slice(hex, 4, 8);
-console.log('Last 4 bytes:', last4);
+const last4 = hex.slice(4, 8);
+console.log('Last 4 bytes:', last4.toString());
 
 // Extract function selector
-const calldata = '0x70a08231000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e';
-const selector = Hex.slice(calldata, 0, 4);
-const params = Hex.slice(calldata, 4);
-console.log('\\nCalldata:', calldata);
-console.log('Function selector:', selector);
-console.log('Parameters:', params);
+const calldata = Hex.from('0x70a08231000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e');
+const selector = calldata.slice(0, 4);
+const params = calldata.slice(4);
+console.log('\\nCalldata:', calldata.toString());
+console.log('Function selector:', selector.toString());
+console.log('Parameters:', params.toString());
 `,
 
 	"hex-equals.ts": `import * as Hex from 'voltaire/primitives/Hex';
 
 // Compare hex values for equality
-const hex1 = '0xdeadbeef';
-const hex2 = '0xdeadbeef';
-const hex3 = '0xDEADBEEF';
-const hex4 = 'deadbeef';
+const hex1 = Hex.from('0xdeadbeef');
+const hex2 = Hex.from('0xdeadbeef');
+const hex3 = Hex.from('0xDEADBEEF');
+const hex4 = Hex.from('deadbeef');
 
-console.log('Hex 1:', hex1);
-console.log('Hex 2:', hex2);
-console.log('hex1 === hex2:', Hex.equals(hex1, hex2));
+console.log('Hex 1:', hex1.toString());
+console.log('Hex 2:', hex2.toString());
+console.log('hex1 === hex2:', hex1.equals(hex2));
 
 // Case-insensitive comparison
-console.log('\\nHex 3 (uppercase):', hex3);
-console.log('hex1 === hex3:', Hex.equals(hex1, hex3));
+console.log('\\nHex 3 (uppercase):', hex3.toString());
+console.log('hex1 === hex3:', hex1.equals(hex3));
 
 // Prefix handling
-console.log('\\nHex 4 (no prefix):', hex4);
-console.log('hex1 === hex4:', Hex.equals(hex1, hex4));
+console.log('\\nHex 4 (no prefix):', hex4.toString());
+console.log('hex1 === hex4:', hex1.equals(hex4));
 
 // Different values
-const different = '0xcafebabe';
-console.log('\\nDifferent:', different);
-console.log('hex1 === different:', Hex.equals(hex1, different));
+const different = Hex.from('0xcafebabe');
+console.log('\\nDifferent:', different.toString());
+console.log('hex1 === different:', hex1.equals(different));
 `,
 
 	"hex-from-number.ts": `import * as Hex from 'voltaire/primitives/Hex';

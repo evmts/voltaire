@@ -18,7 +18,7 @@ const b = Bytes.fromHex("0x5678");
 const concat = Bytes.concat(a, b);
 console.log("Concat size:", Bytes.size(concat), "bytes");
 
-const slice = Bytes.slice(concat, 1, 3);
+const slice = concat.slice( 1, 3);
 console.log("Slice size:", Bytes.size(slice), "bytes");
 
 // String sizes (UTF-8 encoding)

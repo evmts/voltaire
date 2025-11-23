@@ -31,5 +31,5 @@ console.log(
 
 // Decode ABI-encoded address
 const decoded = Address.fromAbiEncoded(encoded);
-console.log("Decoded:", Address.toHex(decoded));
-console.log("Round-trip success:", Address.equals(addr, decoded));
+console.log("Decoded:", decoded.toHex());
+console.log("Round-trip success:", addr.equals(decoded));

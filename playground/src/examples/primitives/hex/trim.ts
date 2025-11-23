@@ -1,39 +1,41 @@
 import * as Hex from "../../../primitives/Hex/index.js";
 
 // Remove leading zeros from hex
-const padded =
-	"0x000000000000000000000000000000000000000000000000000000000000002a";
-const trimmed = Hex.trim(padded);
-console.log("Padded:", padded);
-console.log("Trimmed:", trimmed);
-console.log("Padded size:", Hex.size(padded), "bytes");
-console.log("Trimmed size:", Hex.size(trimmed), "bytes");
+const padded = Hex.from(
+	"0x000000000000000000000000000000000000000000000000000000000000002a",
+);
+const trimmed = padded.trim();
+console.log("Padded:", padded.toString());
+console.log("Trimmed:", trimmed.toString());
+console.log("Padded size:", padded.size(), "bytes");
+console.log("Trimmed size:", trimmed.size(), "bytes");
 
 // Trim address from padded calldata parameter
-const paddedAddress =
-	"0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e";
-const address = Hex.trim(paddedAddress);
-console.log("\nPadded address:", paddedAddress);
-console.log("Trimmed address:", address);
+const paddedAddress = Hex.from(
+	"0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e",
+);
+const address = paddedAddress.trim();
+console.log("\nPadded address:", paddedAddress.toString());
+console.log("Trimmed address:", address.toString());
 
 // All zeros
-const zeros = "0x0000000000";
-const trimmedZeros = Hex.trim(zeros);
-console.log("\nAll zeros:", zeros);
-console.log("Trimmed:", trimmedZeros);
+const zeros = Hex.from("0x0000000000");
+const trimmedZeros = zeros.trim();
+console.log("\nAll zeros:", zeros.toString());
+console.log("Trimmed:", trimmedZeros.toString());
 
 // No leading zeros
-const noZeros = "0xdeadbeef";
-const unchanged = Hex.trim(noZeros);
-console.log("\nNo leading zeros:", noZeros);
-console.log("After trim:", unchanged);
-console.log("Unchanged:", noZeros === unchanged);
+const noZeros = Hex.from("0xdeadbeef");
+const unchanged = noZeros.trim();
+console.log("\nNo leading zeros:", noZeros.toString());
+console.log("After trim:", unchanged.toString());
+console.log("Unchanged:", noZeros.toString() === unchanged.toString());
 
 // Round-trip pad and trim
-const original = "0x1234";
-const padded32 = Hex.pad(original, 32);
-const restored = Hex.trim(padded32);
-console.log("\nOriginal:", original);
-console.log("Padded:", padded32);
-console.log("Restored:", restored);
-console.log("Match:", original === restored);
+const original = Hex.from("0x1234");
+const padded32 = original.pad(32);
+const restored = padded32.trim();
+console.log("\nOriginal:", original.toString());
+console.log("Padded:", padded32.toString());
+console.log("Restored:", restored.toString());
+console.log("Match:", original.toString() === restored.toString());

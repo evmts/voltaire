@@ -9,7 +9,7 @@ const privateKey = new Uint8Array([
 ]);
 
 const addr = Address.fromPrivateKey(privateKey);
-console.log("Address from private key:", Address.toHex(addr));
+console.log("Address from private key:", addr.toHex());
 console.log("Address size:", addr.length, "bytes");
 
 // Note: This derives the public key internally using secp256k1,

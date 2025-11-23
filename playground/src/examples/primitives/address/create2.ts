@@ -11,11 +11,11 @@ const initCode = Bytecode.from("0x608060405234801561001057600080fd5b50");
 
 // Calculate CREATE2 address
 const contractAddr = Address.calculateCreate2Address(deployer, salt, initCode);
-console.log("CREATE2 address:", Address.toHex(contractAddr));
+console.log("CREATE2 address:", contractAddr.toHex());
 
 // Same deployer, salt, and initCode always produce same address
 const contractAddr2 = Address.calculateCreate2Address(deployer, salt, initCode);
-console.log("Deterministic:", Address.equals(contractAddr, contractAddr2));
+console.log("Deterministic:", contractAddr.equals(contractAddr2));
 
 // Different salt produces different address
 const salt2 = Hash.from("0x" + "00".repeat(32));
@@ -24,5 +24,5 @@ const contractAddr3 = Address.calculateCreate2Address(
 	salt2,
 	initCode,
 );
-console.log("Different salt:", Address.toHex(contractAddr3));
-console.log("Different address:", !Address.equals(contractAddr, contractAddr3));
+console.log("Different salt:", contractAddr3.toHex());
+console.log("Different address:", !contractAddr.equals(contractAddr3));

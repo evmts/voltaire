@@ -13,7 +13,7 @@ const items = [
 const batchEncoded = Rlp.encodeBatch(items);
 console.log(
 	"Batch encoded:",
-	batchEncoded.map((e) => Hex.toHex(e)),
+	batchEncoded.map((e) => e.toHex()),
 );
 // Each item encoded separately: ['0x01', '0x820203', '0x83040506']
 
@@ -42,7 +42,7 @@ const decoded = Rlp.decodeBatch(encoded);
 console.log("Decoded batch length:", decoded.length);
 console.log(
 	"First item matches:",
-	Hex.toHex(decoded[0]) === Hex.toHex(original[0]),
+	decoded[0].toHex() === original[0].toHex(),
 );
 
 // Batch encode with lists
@@ -55,7 +55,7 @@ const mixedItems = [
 const mixedEncoded = Rlp.encodeBatch(mixedItems);
 console.log(
 	"Mixed batch encoded:",
-	mixedEncoded.map((e) => Hex.toHex(e)),
+	mixedEncoded.map((e) => e.toHex()),
 );
 
 // Process large batch

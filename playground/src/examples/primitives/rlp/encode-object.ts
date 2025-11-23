@@ -33,7 +33,7 @@ const schema: (keyof Transaction)[] = [
 	"data",
 ];
 const encoded = Rlp.encodeObject(tx, schema);
-console.log("Encoded transaction:", Hex.toHex(encoded));
+console.log("Encoded transaction:", encoded.toHex());
 console.log("Encoded length:", encoded.length, "bytes");
 
 // Simple object encoding
@@ -48,7 +48,7 @@ const simple: SimpleData = {
 };
 
 const simpleEncoded = Rlp.encodeObject(simple, ["id", "value"]);
-console.log("Simple object:", Hex.toHex(simpleEncoded));
+console.log("Simple object:", simpleEncoded.toHex());
 
 // Nested object encoding
 interface NestedData {
@@ -62,7 +62,7 @@ const nested: NestedData = {
 };
 
 const nestedEncoded = Rlp.encodeObject(nested, ["header", "items"]);
-console.log("Nested object:", Hex.toHex(nestedEncoded));
+console.log("Nested object:", nestedEncoded.toHex());
 
 // Schema with optional fields (use empty bytes for missing)
 interface WithOptional {
@@ -79,4 +79,4 @@ const optionalEncoded = Rlp.encodeObject(withOptional, [
 	"required",
 	"optional",
 ]);
-console.log("With optional field:", Hex.toHex(optionalEncoded));
+console.log("With optional field:", optionalEncoded.toHex());

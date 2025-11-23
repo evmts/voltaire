@@ -16,5 +16,5 @@ console.log("Not checksummed:", Address.isValidChecksum(notChecksummed));
 
 // Type guard
 if (Address.is(validAddr)) {
-	console.log("Type guard confirms valid:", Address.toHex(validAddr));
+	console.log("Type guard confirms valid:", validAddr.toHex());
 }

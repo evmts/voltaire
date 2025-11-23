@@ -5,13 +5,6 @@ export class Executor {
 		// Extract imports
 		const imports = this.extractImports(code);
 
-		// Debug: log what's in the modules
-		console.log("Available modules:", Object.keys(voltaireModules));
-		for (const imp of imports) {
-			const mod = voltaireModules[imp.path];
-			console.log(`Module ${imp.path}:`, Object.keys(mod || {}).slice(0, 10));
-		}
-
 		// Transform imports to use pre-loaded modules
 		const transformedCode = this.transformImports(code, imports);
 

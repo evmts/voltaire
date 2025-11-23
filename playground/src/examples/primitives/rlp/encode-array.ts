@@ -5,12 +5,12 @@ import * as Hex from "../../../primitives/Hex/index.js";
 
 // Empty array
 const empty = Rlp.encodeArray([]);
-console.log("Empty array:", Hex.toHex(empty));
+console.log("Empty array:", empty.toHex());
 // Output: 0xc0
 
 // Single element
 const single = Rlp.encodeArray([new Uint8Array([0x42])]);
-console.log("Single element:", Hex.toHex(single));
+console.log("Single element:", single.toHex());
 // Output: 0xc142
 
 // Multiple elements
@@ -19,7 +19,7 @@ const multiple = Rlp.encodeArray([
 	new Uint8Array([0x03, 0x04, 0x05]),
 	new Uint8Array([0x06]),
 ]);
-console.log("Multiple elements:", Hex.toHex(multiple));
+console.log("Multiple elements:", multiple.toHex());
 
 // Array with empty elements
 const withEmpty = Rlp.encodeArray([
@@ -27,18 +27,18 @@ const withEmpty = Rlp.encodeArray([
 	new Uint8Array([0x01]),
 	new Uint8Array([]),
 ]);
-console.log("With empty elements:", Hex.toHex(withEmpty));
+console.log("With empty elements:", withEmpty.toHex());
 
 // Nested arrays
 const nested = Rlp.encodeArray([
 	new Uint8Array([0x01]),
 	[new Uint8Array([0x02]), new Uint8Array([0x03])],
 ]);
-console.log("Nested arrays:", Hex.toHex(nested));
+console.log("Nested arrays:", nested.toHex());
 
 // Deeply nested
 const deepNested = Rlp.encodeArray([[[new Uint8Array([0x01])]]]);
-console.log("Deeply nested:", Hex.toHex(deepNested));
+console.log("Deeply nested:", deepNested.toHex());
 
 // Array with mixed sizes
 const mixed = Rlp.encodeArray([

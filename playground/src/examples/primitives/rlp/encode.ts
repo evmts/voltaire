@@ -6,19 +6,19 @@ import * as Hex from "../../../primitives/Hex/index.js";
 // Encode Uint8Array (as bytes)
 const bytes = new Uint8Array([0x01, 0x02, 0x03]);
 const encoded1 = Rlp.encode(bytes);
-console.log("Bytes:", Hex.toHex(encoded1));
+console.log("Bytes:", encoded1.toHex());
 // Output: 0x83010203
 
 // Encode array (as list)
 const array = [new Uint8Array([0x01]), new Uint8Array([0x02])];
 const encoded2 = Rlp.encode(array);
-console.log("Array:", Hex.toHex(encoded2));
+console.log("Array:", encoded2.toHex());
 // Output: 0xc20102
 
 // Encode BrandedRlp data
 const rlpData = Rlp.from(new Uint8Array([0xff]));
 const encoded3 = Rlp.encode(rlpData);
-console.log("BrandedRlp:", Hex.toHex(encoded3));
+console.log("BrandedRlp:", encoded3.toHex());
 // Output: 0x81ff
 
 // Encode nested arrays
@@ -28,13 +28,13 @@ const nested = [
 	[[new Uint8Array([0x03])]],
 ];
 const encoded4 = Rlp.encode(nested);
-console.log("Nested structure:", Hex.toHex(encoded4));
+console.log("Nested structure:", encoded4.toHex());
 
 // Encode string data
 const textEncoder = new TextEncoder();
 const stringData = textEncoder.encode("hello");
 const encoded5 = Rlp.encode(stringData);
-console.log('String "hello":', Hex.toHex(encoded5));
+console.log('String "hello":', encoded5.toHex());
 // Output: 0x8568656c6c6f
 
 // Encode transaction-like structure
@@ -48,4 +48,4 @@ const txData = [
 ];
 const encoded6 = Rlp.encode(txData);
 console.log("Transaction structure - length:", encoded6.length, "bytes");
-console.log("Transaction hex:", Hex.toHex(encoded6));
+console.log("Transaction hex:", encoded6.toHex());

@@ -85,9 +85,9 @@ const testEncoded = Rlp.encodeObject(original, testSchema);
 const testDecoded = Rlp.decodeObject(testEncoded, testSchema);
 console.log(
 	"Round-trip field1 matches:",
-	Hex.toHex(testDecoded.field1) === Hex.toHex(original.field1),
+	testDecoded.field1.toHex() === original.field1.toHex(),
 );
 console.log(
 	"Round-trip field2 matches:",
-	Hex.toHex(testDecoded.field2) === Hex.toHex(original.field2),
+	testDecoded.field2.toHex() === original.field2.toHex(),
 );

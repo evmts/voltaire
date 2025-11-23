@@ -11,7 +11,7 @@ const publicKey = new Uint8Array([
 ]);
 
 const addr = Address.fromPublicKey(publicKey);
-console.log("Address from public key:", Address.toHex(addr));
+console.log("Address from public key:", addr.toHex());
 
 // From separate x, y coordinates (32 bytes each)
 const x =
@@ -19,7 +19,7 @@ const x =
 const y =
 	0x2cd4_7024_3405_397a_b2bb_c368_82b3_75d8_44f8_0c32_fa3d_5f9d_4f5e_3a8a_ae1f_9a23n;
 const addr2 = Address.fromPublicKey(x, y);
-console.log("Address from x,y:", Address.toHex(addr2));
+console.log("Address from x,y:", addr2.toHex());
 
 // Both methods produce same result
-console.log("Addresses match:", Address.equals(addr, addr2));
+console.log("Addresses match:", addr.equals(addr2));

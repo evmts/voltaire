@@ -7,15 +7,15 @@ const bytes = new Uint8Array([
 ]);
 
 const addr = Address.fromBytes(bytes);
-console.log("Address from bytes:", Address.toHex(addr));
+console.log("Address from bytes:", addr.toHex());
 console.log("Byte length:", bytes.length);
 
 // Can also use Address.from() with bytes
 const addr2 = Address.from(bytes);
-console.log("Using from():", Address.toHex(addr2));
-console.log("Identical:", Address.equals(addr, addr2));
+console.log("Using from():", addr2.toHex());
+console.log("Identical:", addr.equals(addr2));
 
 // Partial bytes (less than 20) are left-padded with zeros
 const partial = new Uint8Array([0x01, 0x02, 0x03]);
 const padded = Address.fromBytes(partial);
-console.log("Padded address:", Address.toHex(padded));
+console.log("Padded address:", padded.toHex());

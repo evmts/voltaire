@@ -4,16 +4,16 @@ import * as Bytes from "../../../primitives/Bytes/index.js";
 const original = Bytes.fromHex("0x1234");
 const copy = Bytes.clone(original);
 
-console.log("Original:", Bytes.toHex(original));
-console.log("Copy:", Bytes.toHex(copy));
-console.log("Equal:", Bytes.equals(original, copy));
+console.log("Original:", original.toHex());
+console.log("Copy:", copy.toHex());
+console.log("Equal:", original.equals(copy));
 
 // Modify original - copy unaffected
 original[0] = 0xff;
 console.log("After modifying original:");
-console.log("  Original:", Bytes.toHex(original));
-console.log("  Copy:", Bytes.toHex(copy));
-console.log("  Still equal:", Bytes.equals(original, copy));
+console.log("  Original:", original.toHex());
+console.log("  Copy:", copy.toHex());
+console.log("  Still equal:", original.equals(copy));
 
 // Clone for safe mutations
 const base = Bytes.fromString("Hello");

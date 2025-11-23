@@ -7,7 +7,7 @@ const number = 42;
 
 // Type guard narrows the type
 if (Address.is(validAddr)) {
-	console.log("Valid address detected:", Address.toHex(validAddr));
+	console.log("Valid address detected:", validAddr.toHex());
 }
 
 if (!Address.is(invalidAddr)) {
@@ -22,7 +22,7 @@ if (!Address.is(number)) {
 function processAddress(input: unknown) {
 	if (Address.is(input)) {
 		// TypeScript knows input is AddressType here
-		return Address.toHex(input);
+		return input.toHex();
 	}
 	throw new Error("Not an address");
 }

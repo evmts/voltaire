@@ -6,7 +6,7 @@ const b = Bytes.fromHex("0x5678");
 const c = Bytes.fromHex("0x9abc");
 
 const combined = Bytes.concat(a, b, c);
-console.log("Combined:", Bytes.toHex(combined));
+console.log("Combined:", combined.toHex());
 console.log("Total size:", Bytes.size(combined), "bytes");
 
 // Concat with strings
@@ -21,4 +21,4 @@ console.log("Sentence:", Bytes.toString(sentence));
 const empty1 = Bytes.zero(0);
 const empty2 = Bytes.fromHex("0x");
 const withEmpty = Bytes.concat(a, empty1, b, empty2);
-console.log("With empty:", Bytes.toHex(withEmpty));
+console.log("With empty:", withEmpty.toHex());

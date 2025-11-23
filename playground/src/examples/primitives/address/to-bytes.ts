@@ -4,7 +4,7 @@ import * as Address from "../../../primitives/Address/index.js";
 const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
 // Get raw bytes
-const bytes = Address.toBytes(addr);
+const bytes = addr.toBytes();
 console.log("Bytes:", bytes);
 console.log("Length:", bytes.length);
 console.log("First byte:", "0x" + bytes[0].toString(16).padStart(2, "0"));
