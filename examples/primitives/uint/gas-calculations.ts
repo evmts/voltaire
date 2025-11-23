@@ -62,16 +62,28 @@ function calculateMemoryCost(
 	// Memory cost = linear + quadratic
 	// cost(size) = (size / 32) * 3 + (size / 32)^2 / 512
 
-	const newWords = Uint.dividedBy(Uint.plus(newSize, Uint.from(31n)), Uint.from(32n));
-	const oldWords = Uint.dividedBy(Uint.plus(oldSize, Uint.from(31n)), Uint.from(32n));
+	const newWords = Uint.dividedBy(
+		Uint.plus(newSize, Uint.from(31n)),
+		Uint.from(32n),
+	);
+	const oldWords = Uint.dividedBy(
+		Uint.plus(oldSize, Uint.from(31n)),
+		Uint.from(32n),
+	);
 
 	// Linear cost
 	const newLinear = Uint.times(newWords, MEMORY_COST_PER_WORD);
 	const oldLinear = Uint.times(oldWords, MEMORY_COST_PER_WORD);
 
 	// Quadratic cost
-	const newQuad = Uint.dividedBy(Uint.times(newWords, newWords), QUADRATIC_DENOMINATOR);
-	const oldQuad = Uint.dividedBy(Uint.times(oldWords, oldWords), QUADRATIC_DENOMINATOR);
+	const newQuad = Uint.dividedBy(
+		Uint.times(newWords, newWords),
+		QUADRATIC_DENOMINATOR,
+	);
+	const oldQuad = Uint.dividedBy(
+		Uint.times(oldWords, oldWords),
+		QUADRATIC_DENOMINATOR,
+	);
 
 	const newTotal = Uint.plus(newLinear, newQuad);
 	const oldTotal = Uint.plus(oldLinear, oldQuad);
@@ -105,7 +117,7 @@ function calculateNextBaseFee(
 		const delta = Uint.minus(gasUsed, gasTarget);
 		const increase = Uint.dividedBy(
 			Uint.dividedBy(Uint.times(currentBaseFee, delta), gasTarget),
-			BASE_FEE_MAX_CHANGE
+			BASE_FEE_MAX_CHANGE,
 		);
 		return Uint.maximum(Uint.plus(currentBaseFee, increase), Uint.ONE);
 	}
@@ -113,7 +125,7 @@ function calculateNextBaseFee(
 	const delta = Uint.minus(gasTarget, gasUsed);
 	const decrease = Uint.dividedBy(
 		Uint.dividedBy(Uint.times(currentBaseFee, delta), gasTarget),
-		BASE_FEE_MAX_CHANGE
+		BASE_FEE_MAX_CHANGE,
 	);
 	return Uint.minus(currentBaseFee, decrease);
 }
@@ -136,7 +148,11 @@ for (const { used, desc } of scenarios) {
 		? Uint.minus(nextFee, baseFee)
 		: Uint.minus(baseFee, nextFee);
 	const changePercent =
-		Number(Uint.toBigInt(Uint.dividedBy(Uint.times(change, Uint.from(10000n)), baseFee))) / 100;
+		Number(
+			Uint.toBigInt(
+				Uint.dividedBy(Uint.times(change, Uint.from(10000n)), baseFee),
+			),
+		) / 100;
 }
 
 // Storage operations
@@ -167,5 +183,5 @@ const separateCost = Uint.times(singleTxCost, numTransfers);
 // Batch transfer saves base cost for each additional transfer
 const batchCost = Uint.plus(
 	TX_BASE_COST,
-	Uint.times(Uint.from(25000n), Uint.minus(numTransfers, Uint.ONE))
+	Uint.times(Uint.from(25000n), Uint.minus(numTransfers, Uint.ONE)),
 );

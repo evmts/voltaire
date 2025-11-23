@@ -8,17 +8,12 @@
  * - Validating transactions
  */
 
-import {
-	type Eip1559Transaction,
-	type Eip7702Transaction,
-	type LegacyTransaction,
-	detectTransactionType,
-	encodeEip1559ForSigning,
-	encodeEip7702ForSigning,
-	encodeLegacyForSigning,
-	hashTransaction,
-	validateTransaction,
-} from "../../src/typescript/primitives/transaction";
+import * as Transaction from "../../src/primitives/Transaction/index.js";
+import type {
+	Eip1559Transaction,
+	Eip7702Transaction,
+	LegacyTransaction,
+} from "../../src/primitives/Transaction/index.js";
 const legacyTx: LegacyTransaction = {
 	nonce: 0n,
 	gasPrice: 20000000000n, // 20 gwei

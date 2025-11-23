@@ -110,7 +110,14 @@ try {
 const fileSizes = [0, 100, 1024, 10_000, 100_000];
 for (const size of fileSizes) {
 	const data = new Uint8Array(size);
-	if (size > 0) crypto.getRandomValues(data);
+	// Fill in chunks due to crypto.getRandomValues 65536 byte limit
+	if (size > 0) {
+		const chunkSize = 65536;
+		for (let i = 0; i < size; i += chunkSize) {
+			const chunk = data.subarray(i, Math.min(i + chunkSize, size));
+			crypto.getRandomValues(chunk);
+		}
+	}
 
 	const enc = await encryptFile(data, password);
 	const overhead = enc.length - size;

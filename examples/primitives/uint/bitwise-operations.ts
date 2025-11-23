@@ -96,7 +96,10 @@ function extractBits(
 	start: number,
 	length: number,
 ): typeof Uint.prototype {
-	const mask = Uint.minus(Uint.shiftLeft(Uint.ONE, Uint.from(length)), Uint.ONE);
+	const mask = Uint.minus(
+		Uint.shiftLeft(Uint.ONE, Uint.from(length)),
+		Uint.ONE,
+	);
 	return Uint.bitwiseAnd(Uint.shiftRight(num, Uint.from(start)), mask);
 }
 

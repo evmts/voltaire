@@ -81,7 +81,10 @@ const priorityFeeWei = gweiToWei(priorityFeeGwei);
 const maxFeeWei = gweiToWei(maxFeeGwei);
 
 // Effective gas price = min(maxFeePerGas, baseFee + priorityFee)
-const effectiveFee = Uint.minimum(Uint.plus(baseFeeWei, priorityFeeWei), maxFeeWei);
+const effectiveFee = Uint.minimum(
+	Uint.plus(baseFeeWei, priorityFeeWei),
+	maxFeeWei,
+);
 const effectiveFeeGwei = weiToGwei(effectiveFee);
 
 const txGas = Uint.from(21000n);
@@ -110,7 +113,7 @@ const rewardMultiplier = Math.floor(
 );
 const rewards = Uint.dividedBy(
 	Uint.times(stakedAmount, Uint.from(BigInt(rewardMultiplier))),
-	WEI_PER_ETHER
+	WEI_PER_ETHER,
 );
 
 const totalStaked = Uint.plus(stakedAmount, rewards);

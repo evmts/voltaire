@@ -9,19 +9,8 @@
  * - Memory expansion costs
  */
 
-import {
-	BASE_FEE_MAX_CHANGE_DENOMINATOR,
-	ELASTICITY_MULTIPLIER,
-	TX_BASE_COST,
-	TX_DATA_NONZERO_COST,
-	TX_DATA_ZERO_COST,
-	calculateEffectiveGasPrice,
-	calculateIntrinsicGas,
-	calculateMemoryGasCost,
-	calculateNextBaseFee,
-	calculatePriorityFee,
-} from "../../src/typescript/primitives/gas";
-import { hexToBytes } from "../../src/typescript/utils/hex";
+import * as Gas from "../../src/primitives/Gas/index.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
 const baseFee = 1000000000n; // 1 gwei
 const gasLimit = 30000000n;
 const gasTarget = gasLimit / BigInt(ELASTICITY_MULTIPLIER); // 15M

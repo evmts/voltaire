@@ -7,12 +7,7 @@
  * - Working with nested structures
  */
 
-import {
-	decodeRlp,
-	encodeRlp,
-	fromHex,
-	toHex,
-} from "../../src/typescript/primitives/rlp";
+import * as Rlp from "../../src/primitives/Rlp/index.js";
 const num1 = 0n;
 const num2 = 127n;
 const num3 = 128n;
@@ -23,12 +18,12 @@ const list1 = [1n, 2n, 3n];
 const list2 = ["cat", "dog"];
 const list3 = []; // empty list
 const nested = ["hello", [1n, 2n, 3n], "world"];
-const encoded = encodeRlp(nested);
-const rlpData = fromHex("0xc78362617283646f67");
-const decoded = decodeRlp(rlpData);
+const encoded = Rlp.encode(nested);
+const rlpData = Rlp(new Uint8Array([0xc7, 0x83, 0x62, 0x61, 0x72, 0x83, 0x64, 0x6f, 0x67]));
+const decoded = Rlp.decode(rlpData);
 const original = [1n, "0x1234", [5n, 6n], "test"];
-const encodedData = encodeRlp(original);
-const decodedData = decodeRlp(encodedData);
+const encodedData = Rlp.encode(original);
+const decodedData = Rlp.decode(encodedData);
 const txData = [
 	0n, // nonce
 	20000000000n, // gasPrice
@@ -37,4 +32,4 @@ const txData = [
 	1000000000000000n, // value
 	"0x", // data
 ];
-const encodedTx = encodeRlp(txData);
+const encodedTx = Rlp.encode(txData);

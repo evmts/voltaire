@@ -28,7 +28,9 @@ const pubKeyHash = Keccak256.hash(publicKey);
 const expectedAddress = pubKeyHash.slice(12); // Last 20 bytes
 
 // Sign a message hash
-const messageHash = Keccak256.hash(new TextEncoder().encode("Hello, ECRECOVER!"));
+const messageHash = Keccak256.hash(
+	new TextEncoder().encode("Hello, ECRECOVER!"),
+);
 
 const signature = Secp256k1.sign(messageHash, privateKey);
 
