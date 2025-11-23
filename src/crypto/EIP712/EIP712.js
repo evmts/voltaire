@@ -76,9 +76,8 @@ const verifyTypedData = VerifyTypedData({ recoverAddress });
 
 // Wrapper for signTypedData to accept string or Uint8Array private keys
 function signTypedData(typedData, privateKey) {
-	const privateKeyBytes = typeof privateKey === 'string'
-		? privateKeyFrom(privateKey)
-		: privateKey;
+	const privateKeyBytes =
+		typeof privateKey === "string" ? privateKeyFrom(privateKey) : privateKey;
 	return _signTypedData(typedData, privateKeyBytes);
 }
 
