@@ -1,4 +1,7 @@
-import { BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB } from "./constants.js";
+import {
+	BYTES_PER_FIELD_ELEMENT,
+	FIELD_ELEMENTS_PER_BLOB,
+} from "./constants.js";
 
 /**
  * Estimate number of blobs needed for data

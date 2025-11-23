@@ -65,7 +65,7 @@ export function decodeFunction(abi, data) {
 
 	// Type assertion after guard
 	const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
-	const params = Function.decodeParams(fn, bytes.slice(4));
+	const params = Function.decodeParams(fn, bytes);
 
 	return {
 		name: fn.name,

@@ -13,8 +13,14 @@
  * ```
  */
 export function getChainId() {
-	// EIP-155: chainId = (v - 35) / 2 (if v >= 35)
-	// Pre-EIP-155: null
+	// EIP-155: v = chainId * 2 + 35 + recoveryBit (if v >= 35)
+	// Pre-EIP-155: v = 27 + recoveryBit (v is 27 or 28)
 	if (this.v < 35n) return null;
+
+	// Extract chainId accounting for recovery bit (0 or 1)
+	// Since v = chainId * 2 + 35 + recoveryBit, we have:
+	// chainId = (v - 35 - recoveryBit) / 2
+	// To get chainId without knowing recoveryBit, use integer division:
+	// (v - 35) / 2 works because integer division floors the result
 	return (this.v - 35n) / 2n;
 }

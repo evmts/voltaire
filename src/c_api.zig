@@ -195,17 +195,17 @@ export fn primitives_bytes_to_hex(
         return PRIMITIVES_ERROR_INVALID_LENGTH;
     }
 
-    var stack_buf: [2048]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-    const allocator = fba.allocator();
+    // Write directly to output buffer without intermediate allocation
+    const hex_chars = "0123456789abcdef";
+    out_buf[0] = '0';
+    out_buf[1] = 'x';
 
-    const hex = primitives.Hex.bytesToHex(allocator, input) catch {
-        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
-    };
-    defer allocator.free(hex);
+    for (input, 0..) |byte, i| {
+        out_buf[2 + i * 2] = hex_chars[byte >> 4];
+        out_buf[2 + i * 2 + 1] = hex_chars[byte & 0x0F];
+    }
 
-    @memcpy(out_buf[0..hex.len], hex);
-    return @intCast(hex.len);
+    return @intCast(required_len);
 }
 
 // ============================================================================

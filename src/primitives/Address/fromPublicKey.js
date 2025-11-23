@@ -24,13 +24,17 @@ export function FromPublicKey({ keccak256 }) {
 		// Handle Uint8Array input (64-byte public key)
 		if (xOrPublicKey instanceof Uint8Array) {
 			if (xOrPublicKey.length !== 64) {
-				throw new Error(`Invalid public key length: expected 64 bytes, got ${xOrPublicKey.length}`);
+				throw new Error(
+					`Invalid public key length: expected 64 bytes, got ${xOrPublicKey.length}`,
+				);
 			}
 			pubkey = xOrPublicKey;
 		} else {
 			// Handle bigint coordinates (x, y)
-			if (typeof y !== 'bigint') {
-				throw new Error('When x is bigint, y coordinate must also be provided as bigint');
+			if (typeof y !== "bigint") {
+				throw new Error(
+					"When x is bigint, y coordinate must also be provided as bigint",
+				);
 			}
 
 			// Encode public key as 64 bytes (uncompressed, no prefix)
