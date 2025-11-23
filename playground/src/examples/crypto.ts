@@ -1,5 +1,5 @@
 export const cryptoExamples = {
-  'keccak256.ts': `// Keccak256: Ethereum's primary hash function
+	"keccak256.ts": `// Keccak256: Ethereum's primary hash function
 import { Keccak256 } from 'voltaire/crypto/Keccak256';
 import * as Hex from 'voltaire/primitives/Hex';
 
@@ -19,7 +19,7 @@ const emptyHash = Keccak256.hash(new Uint8Array(0));
 console.log('Empty hash:', Hex.fromBytes(emptyHash).toString());
 `,
 
-  'sha256.ts': `// SHA256: Hashing algorithm
+	"sha256.ts": `// SHA256: Hashing algorithm
 import { hash, hashString } from 'voltaire/crypto/SHA256';
 import { Hex } from 'voltaire/primitives/Hex';
 
@@ -33,7 +33,7 @@ const doubleHash = hash(stringHash);
 console.log('Double hash:', Hex.from(doubleHash).toString());
 `,
 
-  'blake2.ts': `// Blake2: Fast cryptographic hash
+	"blake2.ts": `// Blake2: Fast cryptographic hash
 import { hash, hashString } from 'voltaire/crypto/Blake2';
 import { Hex } from 'voltaire/primitives/Hex';
 
@@ -48,7 +48,7 @@ const bytesHash = hash(bytes);
 console.log('Bytes hash:', Hex.from(bytesHash).toString());
 `,
 
-  'ripemd160.ts': `// RIPEMD-160: Hash function
+	"ripemd160.ts": `// RIPEMD-160: Hash function
 import { hash, hashString } from 'voltaire/crypto/Ripemd160';
 import { Hex } from 'voltaire/primitives/Hex';
 
@@ -63,7 +63,7 @@ const bytesHash = hash(bytes);
 console.log('Bytes hash:', Hex.from(bytesHash).toString());
 `,
 
-  'secp256k1-keys.ts': `// Secp256k1: Elliptic curve operations
+	"secp256k1-keys.ts": `// Secp256k1: Elliptic curve operations
 import { Secp256k1 } from 'voltaire/crypto/Secp256k1';
 import { Hex } from 'voltaire/primitives/Hex';
 
@@ -80,7 +80,7 @@ const isValid = Secp256k1.PublicKey.isValid(publicKey);
 console.log('Public key valid:', isValid);
 `,
 
-  'secp256k1-sign.ts': `// Secp256k1: Signing and verification
+	"secp256k1-sign.ts": `// Secp256k1: Signing and verification
 import { Secp256k1 } from 'voltaire/crypto/Secp256k1';
 import { Keccak256 } from 'voltaire/crypto/Keccak256';
 import { Hex } from 'voltaire/primitives/Hex';
@@ -103,7 +103,7 @@ const isValid = Secp256k1.verify({ hash: messageHash, signature, publicKey });
 console.log('Signature valid:', isValid);
 `,
 
-  'hdwallet-basic.ts': `// HD Wallet: Hierarchical Deterministic wallets
+	"hdwallet-basic.ts": `// HD Wallet: Hierarchical Deterministic wallets
 import { HDWallet } from 'voltaire/crypto/HDWallet';
 
 // Generate mnemonic
@@ -120,7 +120,7 @@ const invalid = HDWallet.validateMnemonic('invalid words here');
 console.log('Invalid mnemonic rejected:', !invalid);
 `,
 
-  'hdwallet-seed.ts': `// HD Wallet: Seed generation
+	"hdwallet-seed.ts": `// HD Wallet: Seed generation
 import { HDWallet } from 'voltaire/crypto/HDWallet';
 import { Hex } from 'voltaire/primitives/Hex';
 
