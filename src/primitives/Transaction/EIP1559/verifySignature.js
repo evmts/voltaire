@@ -10,11 +10,20 @@ import { GetSigningHash } from "./getSigningHash.js";
 /**
  * Factory: Verify transaction signature.
  *
+ * Verifies that the transaction signature is valid. This checks that:
+ * 1. The signature components (r, s) are well-formed
+ * 2. The yParity/v is valid
+ * 3. A public key can be recovered from the signature
+ *
+ * Note: This does NOT verify the transaction was signed by a specific address.
+ * It only validates the signature is cryptographically valid and can recover
+ * a sender address. To verify against an expected sender, use getSender() and
+ * compare the result.
+ *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
  * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array) => Uint8Array} deps.secp256k1RecoverPublicKey - secp256k1 public key recovery
- * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array, publicKey: Uint8Array) => boolean} deps.secp256k1Verify - secp256k1 signature verification
  * @returns {(tx: import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559) => boolean} Function that verifies signature
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
@@ -25,12 +34,11 @@ import { GetSigningHash } from "./getSigningHash.js";
  * import { VerifySignature } from './primitives/Transaction/EIP1559/verifySignature.js';
  * import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
  * import { encode as rlpEncode } from '../../Rlp/encode.js';
- * import { recoverPublicKey, verify } from '../../../crypto/Secp256k1/index.js';
+ * import { recoverPublicKey } from '../../../crypto/Secp256k1/index.js';
  * const verifySignature = VerifySignature({
  *   keccak256,
  *   rlpEncode,
- *   secp256k1RecoverPublicKey: recoverPublicKey,
- *   secp256k1Verify: verify
+ *   secp256k1RecoverPublicKey: recoverPublicKey
  * });
  * const isValid = verifySignature(tx);
  * ```
@@ -39,7 +47,6 @@ export function VerifySignature({
 	keccak256,
 	rlpEncode,
 	secp256k1RecoverPublicKey,
-	secp256k1Verify,
 }) {
 	const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
 
@@ -50,25 +57,13 @@ export function VerifySignature({
 			const r = Hash.from(tx.r);
 			const s = Hash.from(tx.s);
 
-			// Attempt recovery and verification
-			const publicKey = secp256k1RecoverPublicKey({ r, s, v }, signingHash);
+			// Attempt to recover public key
+			// This validates signature components are well-formed and can produce a valid recovery
+			secp256k1RecoverPublicKey({ r, s, v }, signingHash);
 
-			// Now we need to verify the signature is actually valid for this message
-			// NOT just that we can recover a public key
-			const isValid = secp256k1Verify({ r, s, v }, signingHash, publicKey);
-
-			console.log('verifySignature debug:', {
-				signingHash: Buffer.from(signingHash).toString('hex').slice(0, 16) + '...',
-				r: Buffer.from(r).toString('hex').slice(0, 16) + '...',
-				s: Buffer.from(s).toString('hex').slice(0, 16) + '...',
-				v,
-				publicKey: Buffer.from(publicKey).toString('hex').slice(0, 16) + '...',
-				isValid
-			});
-
-			return isValid;
-		} catch (e) {
-			console.log('verifySignature error:', e.message);
+			// If recovery succeeded without throwing, the signature is valid
+			return true;
+		} catch {
 			return false;
 		}
 	};
@@ -79,5 +74,4 @@ export const verifySignature = VerifySignature({
 	keccak256,
 	rlpEncode,
 	secp256k1RecoverPublicKey,
-	secp256k1Verify,
 });
