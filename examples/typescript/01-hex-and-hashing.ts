@@ -7,26 +7,26 @@
  * - Working with hex data
  */
 
-import {
-	keccak256,
-	keccak256Hex,
-} from "../../src/crypto/Keccak256/index.js";
+import * as Keccak256 from "../../src/crypto/Keccak256/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
+
 const hexString = "0x48656c6c6f20576f726c64"; // "Hello World" in hex
 const bytes = Hex.toBytes(hexString);
+
 const message = "Hello World";
 const messageBytes = new TextEncoder().encode(message);
 const messageHex = Hex.fromBytes(messageBytes);
+
 const data = new TextEncoder().encode("test");
-const hash = keccak256(data);
+const hash = Keccak256.hash(data);
 const hashHex = Hex.fromBytes(hash);
+
 const hexData = "0x1234567890abcdef";
-const hexHash = keccak256Hex(hexData);
-const emptyHash = keccak256Hex("0x");
+const hexHash = Keccak256.hashHex(hexData);
+const emptyHash = Keccak256.hashHex("0x");
+
 const functionSig = "transfer(address,uint256)";
-const sigBytes = new TextEncoder().encode(functionSig);
-const sigHash = keccak256(sigBytes);
-const selector = Hex.fromBytes(sigHash.slice(0, 4));
+const selector = Keccak256.selector(functionSig);
+
 const eventSig = "Transfer(address,address,uint256)";
-const eventBytes = new TextEncoder().encode(eventSig);
-const eventHash = keccak256(eventBytes);
+const eventTopic = Keccak256.topic(eventSig);

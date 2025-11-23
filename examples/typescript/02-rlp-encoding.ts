@@ -19,7 +19,9 @@ const list2 = ["cat", "dog"];
 const list3 = []; // empty list
 const nested = ["hello", [1n, 2n, 3n], "world"];
 const encoded = Rlp.encode(nested);
-const rlpData = Rlp(new Uint8Array([0xc7, 0x83, 0x62, 0x61, 0x72, 0x83, 0x64, 0x6f, 0x67]));
+const rlpData = Rlp(
+	new Uint8Array([0xc7, 0x83, 0x62, 0x61, 0x72, 0x83, 0x64, 0x6f, 0x67]),
+);
 const decoded = Rlp.decode(rlpData);
 const original = [1n, "0x1234", [5n, 6n], "test"];
 const encodedData = Rlp.encode(original);

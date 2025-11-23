@@ -4,26 +4,14 @@
  * Demonstrates:
  * - Creating and parsing SIWE messages
  * - Validating SIWE messages
- * - Parsing event logs
- * - Filtering logs by topics
+ * - Working with event logs
+ * - Filtering logs
  */
 
-import {
-	type SiweMessage,
-	formatMessage,
-	isExpired,
-	isNotYetValid,
-	parseMessage,
-	validateMessage,
-} from "../../src/typescript/primitives/siwe";
+import * as Siwe from "../../src/primitives/Siwe/index.js";
+import * as EventLog from "../../src/primitives/EventLog/index.js";
 
-import {
-	type EventLog,
-	type EventSignature,
-	createEventSignatureHash,
-	filterLogsByTopics,
-	parseEventLog,
-} from "../../src/typescript/primitives/logs";
+// Parse a SIWE message
 const siweMessage = `example.com wants you to sign in with your Ethereum account:
 0x1234567890123456789012345678901234567890
 
@@ -40,13 +28,13 @@ Resources:
 - https://example.com/resource1
 - https://example.com/resource2`;
 
-const parsed = parseMessage(siweMessage);
-const validMsg = validateMessage(parsed);
+const parsed = Siwe.parse(siweMessage);
 
-const expired = isExpired(parsed, new Date("2024-01-03").getTime());
+// Validate SIWE message
+const validMsg = Siwe.validate(parsed);
 
-const notYetValid = isNotYetValid(parsed, new Date("2023-12-31").getTime());
-const siweObj: SiweMessage = {
+// Create a SIWE message
+const siweObj = Siwe.create({
 	domain: "app.example.com",
 	address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
 	statement: "Sign in to the application",
@@ -56,10 +44,16 @@ const siweObj: SiweMessage = {
 	nonce: "random-nonce-12345",
 	issuedAt: new Date().toISOString(),
 	expirationTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-};
+});
 
-const formatted = formatMessage(siweObj);
-const minimalSiwe: SiweMessage = {
+// Format SIWE message to string
+const formatted = Siwe.format(siweObj);
+
+// Generate a random nonce
+const nonce = Siwe.generateNonce();
+
+// Create minimal SIWE message
+const minimalSiwe = Siwe.create({
 	domain: "minimal.example.com",
 	address: "0x1111111111111111111111111111111111111111",
 	uri: "https://minimal.example.com",
@@ -67,10 +61,12 @@ const minimalSiwe: SiweMessage = {
 	chainId: 1,
 	nonce: "nonce123",
 	issuedAt: new Date().toISOString(),
-};
+});
 
-const minimalFormatted = formatMessage(minimalSiwe);
-const transferLog: EventLog = {
+const minimalFormatted = Siwe.format(minimalSiwe);
+
+// Example event log (Transfer event)
+const transferLog = EventLog.create({
 	address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
 	topics: [
 		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer(address,address,uint256)
@@ -79,23 +75,22 @@ const transferLog: EventLog = {
 	],
 	data: "0x0000000000000000000000000000000000000000000000000000000005f5e100", // 100000000 (100 USDC with 6 decimals)
 	blockNumber: 19000000n,
-	transactionHash: "0x1234...",
+	transactionHash:
+		"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	transactionIndex: 50,
-	blockHash: "0x5678...",
+	blockHash:
+		"0x5678567856785678567856785678567856785678567856785678567856785678",
 	logIndex: 25,
-};
+});
 
-const transferSignature: EventSignature = {
-	name: "Transfer",
-	inputs: [
-		{ name: "from", type: "address", indexed: true },
-		{ name: "to", type: "address", indexed: true },
-		{ name: "value", type: "uint256", indexed: false },
-	],
-};
+// Get topic0 (event signature hash)
+const topic0 = EventLog.getTopic0(transferLog);
 
-const decodedTransfer = parseEventLog(transferLog, transferSignature);
-const approvalLog: EventLog = {
+// Get indexed topics
+const indexedTopics = EventLog.getIndexedTopics(transferLog);
+
+// Create multiple logs for filtering
+const approvalLog = EventLog.create({
 	address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 	topics: [
 		"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", // Approval(address,address,uint256)
@@ -103,54 +98,12 @@ const approvalLog: EventLog = {
 		"0x0000000000000000000000001111111254eeb25477b68fb85ed929f73a960582", // spender
 	],
 	data: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", // unlimited approval
-};
+});
 
-const approvalSignature: EventSignature = {
-	name: "Approval",
-	inputs: [
-		{ name: "owner", type: "address", indexed: true },
-		{ name: "spender", type: "address", indexed: true },
-		{ name: "value", type: "uint256", indexed: false },
-	],
-};
+const logs = [transferLog, approvalLog];
 
-const decodedApproval = parseEventLog(approvalLog, approvalSignature);
-const logs: EventLog[] = [
-	transferLog,
-	approvalLog,
-	{
-		address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-		topics: [
-			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-			"0x000000000000000000000000e92a8b5a75c16874ae6a25c44a8e7e2e3c2c4e5c",
-			"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0",
-		],
-		data: "0x00000000000000000000000000000000000000000000000000000000000186a0",
-	},
-];
+// Sort logs by block number and log index
+const sortedLogs = EventLog.sortLogs(logs);
 
-// Filter for Transfer events only
-const transfersOnly = filterLogsByTopics(logs, [
-	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-]);
-
-// Filter for transfers from specific address
-const fromSpecific = filterLogsByTopics(logs, [
-	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-	"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0",
-]);
-
-// Filter for transfers to specific address (using null for topic1)
-const toSpecific = filterLogsByTopics(logs, [
-	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-	null,
-	"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0",
-]);
-const signatures = [
-	"Transfer(address,address,uint256)",
-	"Approval(address,address,uint256)",
-	"Swap(address,uint256,uint256,uint256,uint256,address)",
-];
-for (const sig of signatures) {
-	const hash = createEventSignatureHash(sig);
-}
+// Filter logs (example - would need proper filter structure)
+// const filtered = EventLog.filterLogs(logs, someFilter);

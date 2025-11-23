@@ -1,82 +1,41 @@
 /**
- * Example 4: Gas Calculations and EIP-1559 Fee Market
+ * Example 4: Gas Types and Constants
  *
  * Demonstrates:
- * - EIP-1559 base fee calculations
- * - Priority fee calculations
- * - Effective gas price
- * - Intrinsic gas costs
- * - Memory expansion costs
+ * - Gas limit and gas price types
+ * - Gas constants for various operations
+ * - Working with gas values
  */
 
 import * as Gas from "../../src/primitives/Gas/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-const baseFee = 1000000000n; // 1 gwei
-const gasLimit = 30000000n;
-const gasTarget = gasLimit / BigInt(ELASTICITY_MULTIPLIER); // 15M
+import * as GasConstants from "../../src/primitives/GasConstants/index.js";
 
-// At target (no change)
-const nextBaseFeeTarget = calculateNextBaseFee(baseFee, gasTarget, gasLimit);
-const gasUsedHigh = 29000000n; // ~96.7% full
-const nextBaseFeeHigh = calculateNextBaseFee(baseFee, gasUsedHigh, gasLimit);
-const increasePercent =
-	Number(((nextBaseFeeHigh - baseFee) * 10000n) / baseFee) / 100;
-const gasUsedLow = 1000000n; // ~3.3% full
-const nextBaseFeeLow = calculateNextBaseFee(baseFee, gasUsedLow, gasLimit);
-const decreasePercent =
-	Number(((baseFee - nextBaseFeeLow) * 10000n) / baseFee) / 100;
-const currentBaseFee = 50000000000n; // 50 gwei
-const maxFeePerGas = 100000000000n; // 100 gwei
-const maxPriorityFee = 2000000000n; // 2 gwei
+// Gas limit examples
+const simpleTransferLimit = Gas.GasLimit.from(21000); // Standard ETH transfer
+const erc20TransferLimit = Gas.GasLimit.from(65000); // Typical ERC20 transfer
 
-const priorityFee = calculatePriorityFee(
-	maxFeePerGas,
-	currentBaseFee,
-	maxPriorityFee,
-);
-const effectiveGasPrice = calculateEffectiveGasPrice(
-	currentBaseFee,
-	maxFeePerGas,
-	maxPriorityFee,
-);
+// Gas price examples (in wei)
+const gasPriceWei = Gas.GasPrice.from(20000000000n); // 20 gwei
+const gasPriceFromGwei = Gas.GasPrice.fromGwei(50); // 50 gwei
 
-// Empty transaction
-const emptyData = new Uint8Array(0);
-const emptyGas = calculateIntrinsicGas(emptyData);
+// Convert gas price to gwei for display
+const gweiValue = Gas.GasPrice.toGwei(gasPriceWei);
 
-// Data with zeros
-const zeroData = new Uint8Array(100); // All zeros
-const zeroGas = calculateIntrinsicGas(zeroData);
+// Gas constants - opcode costs
+const addCost = GasConstants.FastestStep; // 3 gas for ADD
+const mulCost = GasConstants.FastStep; // 5 gas for MUL
+const keccak256Base = GasConstants.Keccak256Base; // 30 gas base cost
+const sloadCost = GasConstants.Sload; // 100 gas for warm SLOAD
+const coldSloadCost = GasConstants.ColdSload; // 2100 gas for cold SLOAD
 
-// Data with non-zeros
-const nonZeroData = new Uint8Array(100).fill(1); // All non-zero
-const nonZeroGas = calculateIntrinsicGas(nonZeroData);
+// Calculate transaction intrinsic gas
+const emptyTxData = new Uint8Array(0);
+const intrinsicGas = GasConstants.calculateTxIntrinsicGas(emptyTxData, false);
 
-// Real transaction data
-const txData = hexToBytes(
-	"0xa9059cbb0000000000000000000000001234567890123456789012345678901234567890000000000000000000000000000000000000000000000000000000000000000a",
-);
-const txGas = calculateIntrinsicGas(txData);
+// Memory expansion cost
+const memSize = 1024n; // bytes
+const prevSize = 0n;
+const memCost = GasConstants.calculateMemoryExpansionCost(memSize, prevSize);
 
-const mem1 = calculateMemoryGasCost(32n, 0n);
-
-const mem2 = calculateMemoryGasCost(64n, 32n);
-
-const mem3 = calculateMemoryGasCost(1024n, 0n);
-
-const mem4 = calculateMemoryGasCost(10000n, 1024n);
-const txGasLimit = 21000n;
-const txGasPrice = 50000000000n; // 50 gwei
-const txValue = 1000000000000000000n; // 1 ETH
-
-const totalGasCost = txGasLimit * txGasPrice;
-const totalCost = totalGasCost + txValue;
-
-// Helper functions
-function formatGwei(wei: bigint): string {
-	return (Number(wei) / 1e9).toFixed(2);
-}
-
-function formatEther(wei: bigint): string {
-	return (Number(wei) / 1e18).toFixed(6);
-}
+// Note: For EIP-1559 base fee calculations and other advanced gas calculations,
+// see the BaseFeePerGas, EffectiveGasPrice, and other gas-related modules.
