@@ -2,7 +2,10 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
-import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
+import {
+	InvalidLengthError,
+	InvalidPrivateKeyError,
+} from "../../primitives/errors/index.js";
 import { sign } from "./sign.js";
 
 import { PrivateKey } from "../../primitives/PrivateKey/index.js";
@@ -183,18 +186,18 @@ describe("Secp256k1.sign", () => {
 
 		it("should throw InvalidPrivateKeyError for wrong length private key", () => {
 			const privateKeyBytes = new Uint8Array(31);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too short
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
-			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidLengthError,
+			);
 		});
 
 		it("should throw InvalidPrivateKeyError for too long private key", () => {
 			const privateKeyBytes = new Uint8Array(33);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // Too long
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
 
-			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidLengthError,
+			);
 		});
 	});
 

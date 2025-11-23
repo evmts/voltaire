@@ -42,7 +42,7 @@ describe("PrivateKey.toPublicKey", () => {
 			expect(pubkey[0]).not.toBe(0x04);
 		});
 
-		it("derives public key from known test key", () => {
+		it("derives public key from known test key", async () => {
 			const pk = from(
 				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 			);

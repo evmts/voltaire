@@ -45,7 +45,7 @@ describe("PrivateKey.toHex", () => {
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(
-				"0x000000010203040506070809 0a0b0c0d0e0f101112131415161718191a1b1c1d",
+				"0x0000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d",
 			);
 		});
 
@@ -76,8 +76,8 @@ describe("PrivateKey.toHex", () => {
 
 			expect(hex).toContain("01");
 			expect(hex).toContain("0f");
-			expect(hex).not.toContain("1");
-			expect(hex).not.toContain("f");
+			expect(/^0x[0-9a-f]{64}$/.test(hex)).toBe(true);
+			expect(hex.length).toBe(66);
 		});
 	});
 
