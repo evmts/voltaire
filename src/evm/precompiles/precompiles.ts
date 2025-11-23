@@ -1136,7 +1136,17 @@ export function bls12Pairing(
 			const offset = i * 384;
 			const g1 = deserializeG1(input.subarray(offset, offset + 128));
 			const g2 = deserializeG2(input.subarray(offset + 128, offset + 384));
-			pairs.push({ g1, g2 });
+			// Skip pairs with ZERO points (noble validation)
+			if (!g1.equals(bls12_381.G1.Point.ZERO) && !g2.equals(bls12_381.G2.Point.ZERO)) {
+				pairs.push({ g1, g2 });
+			}
+		}
+
+		// Handle case with no valid pairs
+		if (pairs.length === 0) {
+			const output = new Uint8Array(32);
+			output[31] = 1; // Empty pairing is valid
+			return { success: true, output, gasUsed: gas };
 		}
 
 		// Perform pairing check using pairingBatch
