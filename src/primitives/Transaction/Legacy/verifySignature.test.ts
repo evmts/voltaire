@@ -186,7 +186,7 @@ describe("TransactionLegacy.verifySignature", () => {
 		expect(TransactionLegacy.verifySignature.call(tx)).toBe(false);
 	});
 
-	it("returns false for tampered transaction data", () => {
+	it("detects tampered nonce via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -210,16 +210,25 @@ describe("TransactionLegacy.verifySignature", () => {
 
 		const signedTx: TransactionLegacyType = {
 			...unsignedTx,
-			nonce: 1n, // Tampered nonce
 			v: BigInt(signature.v),
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionLegacy.getSender.call(signedTx);
 
-		expect(TransactionLegacy.verifySignature.call(signedTx)).toBe(false);
+		const tamperedTx: TransactionLegacyType = {
+			...signedTx,
+			nonce: 1n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionLegacy.verifySignature.call(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionLegacy.getSender.call(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for tampered value", () => {
+	it("detects tampered value via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -243,16 +252,25 @@ describe("TransactionLegacy.verifySignature", () => {
 
 		const signedTx: TransactionLegacyType = {
 			...unsignedTx,
-			value: 2000000000000000000n, // Tampered value
 			v: BigInt(signature.v),
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionLegacy.getSender.call(signedTx);
 
-		expect(TransactionLegacy.verifySignature.call(signedTx)).toBe(false);
+		const tamperedTx: TransactionLegacyType = {
+			...signedTx,
+			value: 2000000000000000000n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionLegacy.verifySignature.call(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionLegacy.getSender.call(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for signature from wrong chainId", () => {
+	it("detects wrong chainId via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -276,12 +294,22 @@ describe("TransactionLegacy.verifySignature", () => {
 
 		const signedTx: TransactionLegacyType = {
 			...unsignedTx,
-			v: 5n * 2n + 35n + BigInt(signature.v - 27), // Wrong chainId (5 instead of 1)
+			v: BigInt(signature.v),
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionLegacy.getSender.call(signedTx);
 
-		expect(TransactionLegacy.verifySignature.call(signedTx)).toBe(false);
+		const tamperedTx: TransactionLegacyType = {
+			...signedTx,
+			v: 5n * 2n + 35n + BigInt(signature.v - 27), // Wrong chainId (5 instead of 1)
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionLegacy.verifySignature.call(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionLegacy.getSender.call(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
 	it("returns false for malformed r value", () => {

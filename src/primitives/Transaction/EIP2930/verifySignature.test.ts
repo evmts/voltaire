@@ -202,7 +202,7 @@ describe("TransactionEIP2930.verifySignature", () => {
 		expect(TransactionEIP2930.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered nonce", () => {
+	it("detects tampered nonce via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -228,16 +228,25 @@ describe("TransactionEIP2930.verifySignature", () => {
 
 		const signedTx: TransactionEIP2930Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP2930.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP2930Type = {
+			...signedTx,
 			nonce: 1n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP2930.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP2930.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP2930.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for tampered value", () => {
+	it("detects tampered value via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -263,16 +272,25 @@ describe("TransactionEIP2930.verifySignature", () => {
 
 		const signedTx: TransactionEIP2930Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP2930.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP2930Type = {
+			...signedTx,
 			value: 2000000000000000000n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP2930.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP2930.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP2930.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for wrong chainId", () => {
+	it("detects wrong chainId via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -298,13 +316,22 @@ describe("TransactionEIP2930.verifySignature", () => {
 
 		const signedTx: TransactionEIP2930Type = {
 			...unsignedTx,
-			chainId: 5n,
 			yParity: signature.v - 27,
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionEIP2930.getSender(signedTx);
 
-		expect(TransactionEIP2930.verifySignature(signedTx)).toBe(false);
+		const tamperedTx: TransactionEIP2930Type = {
+			...signedTx,
+			chainId: 5n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionEIP2930.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP2930.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
 	it("returns false for malformed r value", () => {
@@ -347,7 +374,7 @@ describe("TransactionEIP2930.verifySignature", () => {
 		expect(TransactionEIP2930.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered access list", () => {
+	it("detects tampered access list via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -373,17 +400,26 @@ describe("TransactionEIP2930.verifySignature", () => {
 
 		const signedTx: TransactionEIP2930Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP2930.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP2930Type = {
+			...signedTx,
 			accessList: [
 				{
 					address: Address("0x1234567890123456789012345678901234567890"),
 					storageKeys: [new Uint8Array(32).fill(1)],
 				},
 			],
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP2930.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP2930.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP2930.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 });

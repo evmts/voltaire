@@ -259,7 +259,7 @@ describe("TransactionEIP7702.verifySignature", () => {
 		expect(TransactionEIP7702.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered nonce", () => {
+	it("detects tampered nonce via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -287,16 +287,25 @@ describe("TransactionEIP7702.verifySignature", () => {
 
 		const signedTx: TransactionEIP7702Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP7702.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP7702Type = {
+			...signedTx,
 			nonce: 1n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP7702.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP7702.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP7702.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for tampered value", () => {
+	it("detects tampered value via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -324,16 +333,25 @@ describe("TransactionEIP7702.verifySignature", () => {
 
 		const signedTx: TransactionEIP7702Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP7702.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP7702Type = {
+			...signedTx,
 			value: 2000000000000000000n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP7702.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP7702.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP7702.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for wrong chainId", () => {
+	it("detects wrong chainId via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -361,13 +379,22 @@ describe("TransactionEIP7702.verifySignature", () => {
 
 		const signedTx: TransactionEIP7702Type = {
 			...unsignedTx,
-			chainId: 5n,
 			yParity: signature.v - 27,
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionEIP7702.getSender(signedTx);
 
-		expect(TransactionEIP7702.verifySignature(signedTx)).toBe(false);
+		const tamperedTx: TransactionEIP7702Type = {
+			...signedTx,
+			chainId: 5n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionEIP7702.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP7702.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
 	it("returns false for malformed r value", () => {
@@ -414,7 +441,7 @@ describe("TransactionEIP7702.verifySignature", () => {
 		expect(TransactionEIP7702.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered authorization list", () => {
+	it("detects tampered authorization list via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -442,6 +469,14 @@ describe("TransactionEIP7702.verifySignature", () => {
 
 		const signedTx: TransactionEIP7702Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP7702.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP7702Type = {
+			...signedTx,
 			authorizationList: [
 				{
 					chainId: 1n,
@@ -452,11 +487,12 @@ describe("TransactionEIP7702.verifySignature", () => {
 					s: new Uint8Array(32).fill(2),
 				},
 			],
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP7702.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP7702.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP7702.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 });
