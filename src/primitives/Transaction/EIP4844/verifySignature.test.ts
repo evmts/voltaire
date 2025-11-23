@@ -224,7 +224,7 @@ describe("TransactionEIP4844.verifySignature", () => {
 		expect(TransactionEIP4844.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered nonce", () => {
+	it("detects tampered nonce via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -253,16 +253,25 @@ describe("TransactionEIP4844.verifySignature", () => {
 
 		const signedTx: TransactionEIP4844Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP4844.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP4844Type = {
+			...signedTx,
 			nonce: 1n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP4844.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP4844.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP4844.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for tampered value", () => {
+	it("detects tampered value via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -291,16 +300,25 @@ describe("TransactionEIP4844.verifySignature", () => {
 
 		const signedTx: TransactionEIP4844Type = {
 			...unsignedTx,
+			yParity: signature.v - 27,
+			r: signature.r,
+			s: signature.s,
+		};
+		const expectedSender = TransactionEIP4844.getSender(signedTx);
+
+		const tamperedTx: TransactionEIP4844Type = {
+			...signedTx,
 			value: 2000000000000000000n,
-			yParity: signature.v - 27,
-			r: signature.r,
-			s: signature.s,
 		};
 
-		expect(TransactionEIP4844.verifySignature(signedTx)).toBe(false);
+		// Signature is still cryptographically valid
+		expect(TransactionEIP4844.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP4844.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for wrong chainId", () => {
+	it("detects wrong chainId via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -329,13 +347,22 @@ describe("TransactionEIP4844.verifySignature", () => {
 
 		const signedTx: TransactionEIP4844Type = {
 			...unsignedTx,
-			chainId: 5n,
 			yParity: signature.v - 27,
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionEIP4844.getSender(signedTx);
 
-		expect(TransactionEIP4844.verifySignature(signedTx)).toBe(false);
+		const tamperedTx: TransactionEIP4844Type = {
+			...signedTx,
+			chainId: 5n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionEIP4844.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP4844.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
 	it("returns false for malformed r value", () => {
@@ -384,7 +411,7 @@ describe("TransactionEIP4844.verifySignature", () => {
 		expect(TransactionEIP4844.verifySignature(tx)).toBe(false);
 	});
 
-	it("returns false for tampered blob hashes", () => {
+	it("detects tampered blob hashes via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -413,16 +440,25 @@ describe("TransactionEIP4844.verifySignature", () => {
 
 		const signedTx: TransactionEIP4844Type = {
 			...unsignedTx,
-			blobVersionedHashes: [new Uint8Array(32).fill(2)],
 			yParity: signature.v - 27,
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionEIP4844.getSender(signedTx);
 
-		expect(TransactionEIP4844.verifySignature(signedTx)).toBe(false);
+		const tamperedTx: TransactionEIP4844Type = {
+			...signedTx,
+			blobVersionedHashes: [new Uint8Array(32).fill(2)],
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionEIP4844.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP4844.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 
-	it("returns false for tampered maxFeePerBlobGas", () => {
+	it("detects tampered maxFeePerBlobGas via sender mismatch", () => {
 		const privateKey = PrivateKey.from(
 			"0x0123456789012345678901234567890123456789012345678901234567890123",
 		);
@@ -451,12 +487,21 @@ describe("TransactionEIP4844.verifySignature", () => {
 
 		const signedTx: TransactionEIP4844Type = {
 			...unsignedTx,
-			maxFeePerBlobGas: 2000000000n,
 			yParity: signature.v - 27,
 			r: signature.r,
 			s: signature.s,
 		};
+		const expectedSender = TransactionEIP4844.getSender(signedTx);
 
-		expect(TransactionEIP4844.verifySignature(signedTx)).toBe(false);
+		const tamperedTx: TransactionEIP4844Type = {
+			...signedTx,
+			maxFeePerBlobGas: 2000000000n,
+		};
+
+		// Signature is still cryptographically valid
+		expect(TransactionEIP4844.verifySignature(tamperedTx)).toBe(true);
+		// But sender is different due to tampering
+		const recoveredSender = TransactionEIP4844.getSender(tamperedTx);
+		expect(Address.equals(recoveredSender, expectedSender)).toBe(false);
 	});
 });

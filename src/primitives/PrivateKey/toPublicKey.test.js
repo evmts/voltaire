@@ -206,9 +206,9 @@ describe("PrivateKey.toPublicKey", () => {
 			const addressFromPubkey = pubkeyToAddress.call(pubkey);
 			const addressFromPrivkey = privkeyToAddress.call(pk);
 
-			expect(addressFromPubkey.every((b, i) => b === addressFromPrivkey[i])).toBe(
-				true,
-			);
+			expect(
+				addressFromPubkey.every((b, i) => b === addressFromPrivkey[i]),
+			).toBe(true);
 		});
 
 		it("can be used with PublicKey.toHex", async () => {

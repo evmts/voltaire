@@ -349,18 +349,14 @@ describe("Keccak256 WASM - hashHex()", () => {
 		expect(isHash(result)).toBe(true);
 	});
 
-	test("invalid hex - odd length produces result", () => {
-		// Implementation doesn't throw on odd length, just produces result
-		// This documents current behavior - may want to add validation
-		const result = Keccak256Wasm.hashHex("0x123");
-		expect(isHash(result)).toBe(true);
+	test("invalid hex - odd length throws error", () => {
+		expect(() => Keccak256Wasm.hashHex("0x123")).toThrow(
+			"Hex string must have even length",
+		);
 	});
 
-	test("invalid hex - non-hex characters produces NaN bytes", () => {
-		// Implementation doesn't throw on invalid hex, produces NaN bytes
-		// This documents current behavior - may want to add validation
-		const result = Keccak256Wasm.hashHex("0xzzzz");
-		expect(isHash(result)).toBe(true);
+	test("invalid hex - non-hex characters throws error", () => {
+		expect(() => Keccak256Wasm.hashHex("0xzzzz")).toThrow("Invalid hex string");
 	});
 });
 
@@ -445,51 +441,75 @@ describe("Keccak256 WASM - selector()", () => {
 		const result = Keccak256Wasm.selector(
 			KNOWN_VECTORS.transferSignature.input,
 		);
-		expect(result).toBe(KNOWN_VECTORS.transferSignature.selector);
+		expect(result.length).toBe(4);
+		expect(result[0]).toBe(0xa9);
+		expect(result[1]).toBe(0x05);
+		expect(result[2]).toBe(0x9c);
+		expect(result[3]).toBe(0xbb);
 	});
 
 	test("balanceOf function", () => {
 		const result = Keccak256Wasm.selector(
 			KNOWN_VECTORS.balanceOfSignature.input,
 		);
-		expect(result).toBe(KNOWN_VECTORS.balanceOfSignature.selector);
+		expect(result.length).toBe(4);
+		expect(result[0]).toBe(0x70);
+		expect(result[1]).toBe(0xa0);
+		expect(result[2]).toBe(0x82);
+		expect(result[3]).toBe(0x31);
 	});
 
 	test("approve function", () => {
 		const result = Keccak256Wasm.selector("approve(address,uint256)");
-		expect(result).toBe("0x095ea7b3");
+		expect(result.length).toBe(4);
+		expect(result[0]).toBe(0x09);
+		expect(result[1]).toBe(0x5e);
+		expect(result[2]).toBe(0xa7);
+		expect(result[3]).toBe(0xb3);
 	});
 
 	test("allowance function", () => {
 		const result = Keccak256Wasm.selector("allowance(address,address)");
-		expect(result).toBe("0xdd62ed3e");
+		expect(result.length).toBe(4);
+		expect(result[0]).toBe(0xdd);
+		expect(result[1]).toBe(0x62);
+		expect(result[2]).toBe(0xed);
+		expect(result[3]).toBe(0x3e);
 	});
 
 	test("totalSupply function", () => {
 		const result = Keccak256Wasm.selector("totalSupply()");
-		expect(result).toBe("0x18160ddd");
+		expect(result.length).toBe(4);
+		expect(result[0]).toBe(0x18);
+		expect(result[1]).toBe(0x16);
+		expect(result[2]).toBe(0x0d);
+		expect(result[3]).toBe(0xdd);
 	});
 
-	test("selector format is 0x + 8 hex chars", () => {
+	test("selector is 4 bytes", () => {
 		const result = Keccak256Wasm.selector("test()");
-		expect(result).toMatch(/^0x[0-9a-f]{8}$/);
+		expect(result.length).toBe(4);
+		expect(result instanceof Uint8Array).toBe(true);
 	});
 
 	test("complex function signature", () => {
 		const result = Keccak256Wasm.selector(
 			"safeTransferFrom(address,address,uint256,bytes)",
 		);
-		expect(result).toMatch(/^0x[0-9a-f]{8}$/);
+		expect(result.length).toBe(4);
+		expect(result instanceof Uint8Array).toBe(true);
 	});
 
 	test("function with array parameter", () => {
 		const result = Keccak256Wasm.selector("test(uint256[])");
-		expect(result).toMatch(/^0x[0-9a-f]{8}$/);
+		expect(result.length).toBe(4);
+		expect(result instanceof Uint8Array).toBe(true);
 	});
 
 	test("function with tuple parameter", () => {
 		const result = Keccak256Wasm.selector("test((uint256,address))");
-		expect(result).toMatch(/^0x[0-9a-f]{8}$/);
+		expect(result.length).toBe(4);
+		expect(result instanceof Uint8Array).toBe(true);
 	});
 });
 
@@ -899,11 +919,9 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 		for (const sig of signatures) {
 			const wasmResult = Keccak256Wasm.selector(sig);
 			const nobleResult = nobleKeccak256(new TextEncoder().encode(sig));
-			const nobleSelector = `0x${Array.from(nobleResult.slice(0, 4))
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`;
+			const nobleSelector = nobleResult.slice(0, 4);
 
-			expect(wasmResult).toBe(nobleSelector);
+			expect(equals(wasmResult, nobleSelector as any)).toBe(true);
 		}
 	});
 

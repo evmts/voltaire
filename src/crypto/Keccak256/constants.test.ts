@@ -85,8 +85,9 @@ describe("Keccak256 constants", () => {
 			expect(DIGEST_SIZE).toBeLessThan(RATE);
 		});
 
-		it("digest size is less than state size", () => {
-			expect(DIGEST_SIZE).toBeLessThan(STATE_SIZE);
+		it("digest size is less than state size in bytes", () => {
+			// STATE_SIZE is in 64-bit words, so multiply by 8 to get bytes
+			expect(DIGEST_SIZE).toBeLessThan(STATE_SIZE * 8);
 		});
 
 		it("rate is less than state size in bits", () => {

@@ -179,7 +179,8 @@ describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
 		});
 
 		it("should estimate blob count correctly for various data sizes", () => {
-			const maxPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
+			const maxPerBlob =
+				FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 
 			const tests = [
 				{ dataSize: 1000, expectedBlobs: 1 },
