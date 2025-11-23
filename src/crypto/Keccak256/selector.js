@@ -8,19 +8,16 @@ import { hashString } from "./hashString.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} signature - Function signature string
- * @returns {string} 4-byte selector as hex string
+ * @returns {Uint8Array} 4-byte selector
  * @throws {never}
  * @example
  * ```javascript
  * import * as Keccak256 from './crypto/Keccak256/index.js';
  * const selector = Keccak256.selector('transfer(address,uint256)');
- * // "0xa9059cbb"
+ * // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
  * ```
  */
 export function selector(signature) {
 	const digest = hashString(signature);
-	const selectorBytes = digest.slice(0, 4);
-	return `0x${Array.from(selectorBytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return digest.slice(0, 4);
 }

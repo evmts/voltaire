@@ -114,18 +114,15 @@ export function hashMultiple(chunks: Uint8Array[]): HashType {
 /**
  * Compute function selector (first 4 bytes of hash)
  * @param signature - Function signature string (e.g., "transfer(address,uint256)")
- * @returns 4-byte function selector as hex string
+ * @returns 4-byte function selector
  */
-export function selector(signature: string): string {
+export function selector(signature: string): Uint8Array {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	const bytes = new TextEncoder().encode(signature);
 	const hash = loader.keccak256(bytes);
-	const selectorBytes = hash.slice(0, 4);
-	return `0x${Array.from(selectorBytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return hash.slice(0, 4);
 }
 
 /**
