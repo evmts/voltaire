@@ -1,0 +1,36 @@
+import * as Keccak256 from "../../../crypto/Keccak256/index.js";
+import * as Address from "../../../primitives/Address/index.js";
+import * as Hex from "../../../primitives/Hex/index.js";
+
+// Example: Compute contract address using CREATE2 opcode
+const deployer = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// CREATE2 requires: deployer address, salt, and initCode hash
+const salt = new Uint8Array(32); // 32-byte salt (all zeros)
+const initCode = Hex.toBytes("0x60806040"); // Simple bytecode
+const initCodeHash = Keccak256.hash(initCode);
+
+const contractAddr = Keccak256.create2Address(deployer, salt, initCodeHash);
+
+console.log("Deployer:", deployer.toHex());
+console.log("Salt:", Hex.fromBytes(salt));
+console.log("InitCode:", Hex.fromBytes(initCode));
+console.log("InitCode hash:", Hex.fromBytes(initCodeHash));
+console.log("\nCREATE2 contract address:", Hex.fromBytes(contractAddr));
+
+// Different salts produce different addresses
+const salt1 = new Uint8Array(32);
+salt1[31] = 1;
+const addr1 = Keccak256.create2Address(deployer, salt1, initCodeHash);
+console.log("\nWith different salt:", Hex.fromBytes(addr1));
+console.log(
+	"Addresses differ:",
+	Hex.fromBytes(contractAddr) !== Hex.fromBytes(addr1),
+);
+
+// Same parameters always produce same address (deterministic)
+const addrAgain = Keccak256.create2Address(deployer, salt, initCodeHash);
+console.log(
+	"Deterministic:",
+	Hex.fromBytes(contractAddr) === Hex.fromBytes(addrAgain),
+);
