@@ -1,7 +1,7 @@
 import {
 	PrecompileAddress,
 	execute,
-} from "../../../src/precompiles/precompiles.js";
+} from "../../../src/evm/precompiles/precompiles.js";
 import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
 
 const FIELD_ELEMENTS_PER_BLOB = 4096;

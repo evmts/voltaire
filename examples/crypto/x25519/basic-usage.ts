@@ -43,10 +43,9 @@ const isValid = X25519.validatePublicKey(derivedPublicKey);
 
 const seedBytes = new Uint8Array(32);
 crypto.getRandomValues(seedBytes);
-const seed = Hex.fromBytes(seedBytes);
 
-const keypair1 = X25519.keypairFromSeed(seed);
-const keypair2 = X25519.keypairFromSeed(seed);
+const keypair1 = X25519.keypairFromSeed(seedBytes);
+const keypair2 = X25519.keypairFromSeed(seedBytes);
 
 const publicKeysMatch =
 	Hex.fromBytes(keypair1.publicKey) === Hex.fromBytes(keypair2.publicKey);

@@ -9,8 +9,8 @@
  * - Ephemeral vs static keys
  */
 
-import { hkdf } from "@noble/hashes/hkdf";
-import { sha256 } from "@noble/hashes/sha256";
+import { hkdf } from "@noble/hashes/hkdf.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
 import * as X25519 from "../../../src/crypto/X25519/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
