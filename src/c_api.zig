@@ -205,6 +205,9 @@ export fn primitives_bytes_to_hex(
         out_buf[2 + i * 2 + 1] = hex_chars[byte & 0x0F];
     }
 
+    // Add null terminator (caller allocated space for it)
+    out_buf[required_len] = 0;
+
     return @intCast(required_len);
 }
 

@@ -11,7 +11,8 @@
  * - WASM-specific concerns (memory, errors)
  */
 
-import { beforeAll, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { resetMemory } from "../../wasm-loader/loader.js";
 import * as HexWasm from "./Hex.wasm.js";
 
 // ============================================================================
@@ -20,6 +21,11 @@ import * as HexWasm from "./Hex.wasm.js";
 
 beforeAll(async () => {
 	// WASM loader auto-initializes, no explicit init needed
+});
+
+beforeEach(() => {
+	// Reset WASM memory allocator before each test to ensure clean state
+	resetMemory();
 });
 
 // ============================================================================
@@ -419,6 +425,8 @@ describe("Hex WASM - WASM-Specific", () => {
 		}
 		const hex = HexWasm.bytesToHex(bytes);
 		expect(hex.startsWith("0x")).toBe(true);
+		// Explicitly reset memory after large allocation to prevent pollution
+		resetMemory();
 	});
 
 	test("memory cleanup - sequential operations", () => {
