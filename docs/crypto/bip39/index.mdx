@@ -408,6 +408,19 @@ const testSeed = await Bip39.mnemonicToSeed(testMnemonic, 'TREZOR');
 // 0c1e24e5...c6e8bc39 (64 bytes)
 ```
 
+## Examples
+
+Comprehensive examples demonstrating BIP-39 functionality:
+
+- [Generate Mnemonic](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/generate-mnemonic.ts) - Generate mnemonics with different entropy levels (12-24 words)
+- [Validate Mnemonic](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/validate-mnemonic.ts) - Validate mnemonics and handle errors
+- [Mnemonic to Seed](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/mnemonic-to-seed.ts) - Async seed derivation with PBKDF2
+- [Entropy to Mnemonic](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/entropy-to-mnemonic.ts) - Convert raw entropy to mnemonic
+- [Sync Derivation](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/sync-derivation.ts) - Synchronous seed derivation
+- [Passphrase Usage](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/passphrase.ts) - Plausible deniability with passphrases
+- [Utilities](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/utilities.ts) - Word count and entropy calculations
+- [Full Workflow](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/bip39/full-workflow.ts) - Complete wallet creation workflow
+
 ## References
 
 - [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)

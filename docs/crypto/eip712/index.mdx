@@ -60,6 +60,18 @@ const address = EIP712.recoverAddress(signature, typedData);
 const isValid = EIP712.verifyTypedData(signature, typedData, address);
 ```
 
+## Examples
+
+- [Basic Message](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/basic-message.ts#L1-L47) - Hash and encode simple typed data
+- [Sign & Verify](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/sign-verify.ts#L1-L59) - Complete signing and verification flow
+- [Nested Structs](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/nested-structs.ts#L1-L70) - Working with nested type hierarchies
+- [Encode Values](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/encode-values.ts#L1-L55) - Value encoding for different types
+- [Domain Separator](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/domain-separator.ts#L1-L65) - Replay attack prevention
+- [ERC-2612 Permit](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/erc2612-permit.ts#L1-L74) - Gasless token approvals
+- [DEX Order](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dex-order.ts#L1-L83) - Off-chain order book signatures
+- [DAO Vote](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dao-vote.ts#L1-L76) - Gasless governance voting
+- [Meta-Transaction](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/meta-transaction.ts#L1-L82) - Relayer-based gasless transactions
+
 ## API Styles
 
 Tevm provides two ways to use EIP-712:

@@ -7,6 +7,12 @@ description: Hardened and non-hardened child key derivation in HD wallets
 
 HD wallets derive child keys from parent keys using HMAC-SHA512. BIP-32 defines two derivation methods: hardened (more secure) and normal (allows public derivation).
 
+<Tip>
+**Examples:**
+- [Child Keys](/playground/src/examples/crypto/hdwallet/child-keys.ts) - Sequential child key derivation
+- [Hardened Derivation](/playground/src/examples/crypto/hdwallet/hardened-derivation.ts) - Hardened vs non-hardened comparison
+</Tip>
+
 ## Derivation Algorithm
 
 ### Parent → Child Process

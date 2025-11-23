@@ -3,10 +3,6 @@ title: RIPEMD160
 description: 160-bit hash function used in Bitcoin address derivation
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
 # RIPEMD160
 
 RIPEMD160 is a **cryptographic one-way hash function** producing a 20-byte digest, designed as an alternative to SHA-1.
@@ -45,98 +41,146 @@ RIPEMD160 is primarily maintained for Bitcoin compatibility. For new application
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
 
-// Hash bytes - constructor returns branded Ripemd160 type
+// Hash string data
+const message = "Hello, Bitcoin!";
+const hash = RIPEMD160.hashString(message);
+// Uint8Array(20) [RIPEMD160 hash]
+
+// Hash bytes
 const data = new Uint8Array([1, 2, 3, 4, 5]);
-const hash = Ripemd160(data);
-// BrandedRipemd160 (Uint8Array(20))
+const bytesHash = RIPEMD160.hash(data);
+// Uint8Array(20)
 
-// Hash string (UTF-8 encoded automatically)
-const stringHash = Ripemd160('hello');
-// BrandedRipemd160
-
-// Constructor accepts both Uint8Array and strings
-const directHash = Ripemd160('hello');
-// BrandedRipemd160 [same as stringHash]
+// Constructor pattern - auto-detects type
+const autoHash = RIPEMD160.from("hello");
+// Uint8Array(20)
 ```
+
+[View Example: hash-string.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/hash-string.ts#L1-L20)
 </Tab>
 
 <Tab title="Bitcoin Address">
 ```typescript
-import { Sha256 } from 'tevm/crypto/sha256';
-import { Ripemd160 } from 'tevm/crypto/ripemd160';
-import * as Hex from 'tevm/primitives/Hex';
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as SHA256 from 'voltaire/crypto/SHA256';
 
 // Bitcoin P2PKH address derivation (simplified)
-const publicKey = Hex('0x04' + '9876...'); // 65-byte uncompressed secp256k1 public key
+const publicKey = new Uint8Array([0x04, ...]); // 65-byte uncompressed
 
 // Step 1: SHA256 hash of public key
-const sha256Hash = Sha256(publicKey); // BrandedSha256
+const sha256Hash = SHA256.hash(publicKey);
 
-// Step 2: RIPEMD160 hash of SHA256 result
-const pubKeyHash = Ripemd160(sha256Hash);
-// BrandedRipemd160 (Uint8Array(20)) [public key hash]
+// Step 2: RIPEMD160 hash of SHA256 result (hash160)
+const hash160 = RIPEMD160.hash(sha256Hash);
+// Uint8Array(20) [public key hash for Bitcoin address]
 
 // Step 3: Add version byte and checksum, then Base58 encode
 // (Base58Check encoding not shown)
 ```
+
+[View Example: bitcoin-address.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/bitcoin-address.ts#L1-L45)
 </Tab>
 </Tabs>
 
 ## API Reference
 
-### `Ripemd160(data: Uint8Array | string): BrandedRipemd160`
+### `RIPEMD160.hash(data: Uint8Array | string): Uint8Array`
 
-Compute RIPEMD160 hash using constructor pattern.
+Compute RIPEMD160 hash of byte array or string.
 
 Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hashing.
 
 **Parameters:**
 - `data`: Input data to hash (Uint8Array or string)
 
-**Returns:** BrandedRipemd160 - 20-byte hash with branded type
+**Returns:** `Uint8Array` - 20-byte hash
 
 **Example:**
 ```typescript
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+
 // Hash bytes
-const hash1 = Ripemd160(new Uint8Array([1, 2, 3]));
+const hash1 = RIPEMD160.hash(new Uint8Array([1, 2, 3]));
 console.log(hash1.length); // 20
 
 // Hash string
-const hash2 = Ripemd160('hello');
+const hash2 = RIPEMD160.hash('hello');
 console.log(hash2.length); // 20
 ```
 
+[View Example: hash-bytes.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/hash-bytes.ts#L1-L27)
+
 ---
 
-### `Ripemd160.hash(data: Uint8Array | string): BrandedRipemd160`
+### `RIPEMD160.hashString(str: string): Uint8Array`
 
-Alternative namespace API for computing RIPEMD160 hash.
+Compute RIPEMD160 hash of UTF-8 string.
 
 **Parameters:**
-- `data`: Input data to hash (Uint8Array or string)
+- `str`: Input string
 
-**Returns:** BrandedRipemd160 - 20-byte branded hash
+**Returns:** `Uint8Array` - 20-byte hash
 
 **Example:**
 ```typescript
-// Equivalent to Ripemd160(data) constructor
-const hash = Ripemd160.hash('message digest');
-// BrandedRipemd160
+const hash = RIPEMD160.hashString('message digest');
+console.log(hash.length); // 20
 ```
+
+[View Example: hash-string.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/hash-string.ts#L1-L20)
+
+---
+
+### `RIPEMD160.hashHex(hex: string): Uint8Array`
+
+Compute RIPEMD160 hash of hex string.
+
+**Parameters:**
+- `hex`: Hex string (with or without 0x prefix)
+
+**Returns:** `Uint8Array` - 20-byte hash
+
+**Example:**
+```typescript
+const hash = RIPEMD160.hashHex("0xdeadbeef");
+console.log(hash.length); // 20
+```
+
+[View Example: hash-hex.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/hash-hex.ts#L1-L22)
+
+---
+
+### `RIPEMD160.from(input: Uint8Array | string): Uint8Array`
+
+Constructor pattern - auto-detects input type and hashes accordingly.
+
+**Parameters:**
+- `input`: Data to hash (Uint8Array or string)
+
+**Returns:** `Uint8Array` - 20-byte hash
+
+**Example:**
+```typescript
+const hash1 = RIPEMD160.from("hello");
+const hash2 = RIPEMD160.from(new Uint8Array([1, 2, 3]));
+```
+
+[View Example: constructor-pattern.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/constructor-pattern.ts#L1-L42)
 
 ## Type Definition
 
 ```typescript
-// Branded 20-byte RIPEMD160 hash for type safety
-export type BrandedRipemd160 = Uint8Array & { readonly __tag: "Ripemd160" };
+export type Ripemd160Hash = Uint8Array & {
+  readonly [brand]: "Ripemd160Hash";
+};
 ```
 
 ## Constants
 
 ```typescript
-Ripemd160.SIZE  // 20 - Output size in bytes (160 bits)
+RIPEMD160.SIZE  // 20 - Output size in bytes (160 bits)
 ```
 
 ## Test Vectors
@@ -144,8 +188,10 @@ Ripemd160.SIZE  // 20 - Output size in bytes (160 bits)
 Official RIPEMD160 test vectors:
 
 ```typescript
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+
 // Empty string
-Ripemd160("")
+RIPEMD160.hashString("")
 // Uint8Array(20) [
 //   0x9c, 0x11, 0x85, 0xa5, 0xc5, 0xe9, 0xfc, 0x54,
 //   0x61, 0x28, 0x08, 0x97, 0x7e, 0xe8, 0xf5, 0x48,
@@ -153,7 +199,7 @@ Ripemd160("")
 // ]
 
 // "a"
-Ripemd160("a")
+RIPEMD160.hashString("a")
 // Uint8Array(20) [
 //   0x0b, 0xdc, 0x9d, 0x2d, 0x25, 0x6b, 0x3e, 0xe9,
 //   0xda, 0xae, 0x34, 0x7b, 0xe6, 0xf4, 0xdc, 0x83,
@@ -161,7 +207,7 @@ Ripemd160("a")
 // ]
 
 // "abc"
-Ripemd160("abc")
+RIPEMD160.hashString("abc")
 // Uint8Array(20) [
 //   0x8e, 0xb2, 0x08, 0xf7, 0xe0, 0x5d, 0x98, 0x7a,
 //   0x9b, 0x04, 0x4a, 0x8e, 0x98, 0xc6, 0xb0, 0x87,
@@ -169,7 +215,7 @@ Ripemd160("abc")
 // ]
 
 // "message digest"
-Ripemd160("message digest")
+RIPEMD160.hashString("message digest")
 // Uint8Array(20) [
 //   0x5d, 0x06, 0x89, 0xef, 0x49, 0xd2, 0xfa, 0xe5,
 //   0x72, 0xb8, 0x81, 0xb1, 0x23, 0xa8, 0x5f, 0xfa,
@@ -177,7 +223,7 @@ Ripemd160("message digest")
 // ]
 
 // "abcdefghijklmnopqrstuvwxyz"
-Ripemd160("abcdefghijklmnopqrstuvwxyz")
+RIPEMD160.hashString("abcdefghijklmnopqrstuvwxyz")
 // Uint8Array(20) [
 //   0xf7, 0x1c, 0x27, 0x10, 0x9c, 0x69, 0x2c, 0x1b,
 //   0x56, 0xbb, 0xdc, 0xeb, 0x5b, 0x9d, 0x28, 0x65,
@@ -185,7 +231,7 @@ Ripemd160("abcdefghijklmnopqrstuvwxyz")
 // ]
 
 // "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-Ripemd160("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+RIPEMD160.hashString("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
 // Uint8Array(20) [
 //   0x12, 0xa0, 0x53, 0x38, 0x4a, 0x9c, 0x0c, 0x88,
 //   0xe4, 0x05, 0xa0, 0x6c, 0x27, 0xdc, 0xf4, 0x9a,
@@ -193,7 +239,7 @@ Ripemd160("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
 // ]
 
 // "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-Ripemd160("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+RIPEMD160.hashString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 // Uint8Array(20) [
 //   0xb0, 0xe2, 0x0b, 0x6e, 0x31, 0x16, 0x64, 0x02,
 //   0x86, 0xed, 0x3a, 0x87, 0xa5, 0x71, 0x30, 0x79,
@@ -201,13 +247,15 @@ Ripemd160("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 // ]
 
 // Eight repetitions of "1234567890"
-Ripemd160("12345678901234567890123456789012345678901234567890123456789012345678901234567890")
+RIPEMD160.hashString("12345678901234567890123456789012345678901234567890123456789012345678901234567890")
 // Uint8Array(20) [
 //   0x9b, 0x75, 0x2e, 0x45, 0x57, 0x3d, 0x4b, 0x39,
 //   0xf4, 0xdb, 0xd3, 0x32, 0x3c, 0xab, 0x82, 0xbf,
 //   0x63, 0x32, 0x6b, 0xfb
 // ]
 ```
+
+[View Example: hash-string.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/hash-string.ts#L16-L20)
 
 ## Security Considerations
 
@@ -293,28 +341,30 @@ const hash = Ripemd160Wasm.hash(data);
 ### Bitcoin P2PKH Address
 Pay-to-PubKey-Hash (most common Bitcoin address):
 ```typescript
-import { Sha256 } from 'tevm/crypto/sha256';
-import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import * as SHA256 from 'voltaire/crypto/SHA256';
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
 
-function createPubKeyHash(publicKey: Uint8Array): BrandedRipemd160 {
+function createPubKeyHash(publicKey: Uint8Array): Uint8Array {
   // Bitcoin uses SHA256 followed by RIPEMD160
-  const sha256Hash = Sha256(publicKey);      // BrandedSha256
-  const pubKeyHash = Ripemd160(sha256Hash);  // BrandedRipemd160
+  const sha256Hash = SHA256.hash(publicKey);
+  const pubKeyHash = RIPEMD160.hash(sha256Hash);
   return pubKeyHash; // 20 bytes
 }
 
 // Then add version byte (0x00 for mainnet) and checksum for Base58Check
 ```
 
+[View Example: bitcoin-address.ts](https://github.com/fucory/voltaire/blob/main/playground/src/examples/crypto/ripemd160/bitcoin-address.ts#L1-L45)
+
 ### Bitcoin P2SH Address
 Pay-to-Script-Hash addresses:
 ```typescript
-import { Sha256 } from 'tevm/crypto/sha256';
-import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import * as SHA256 from 'voltaire/crypto/SHA256';
+import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
 
-function createScriptHash(redeemScript: Uint8Array): BrandedRipemd160 {
-  const sha256Hash = Sha256(redeemScript);   // BrandedSha256
-  const scriptHash = Ripemd160(sha256Hash);  // BrandedRipemd160
+function createScriptHash(redeemScript: Uint8Array): Uint8Array {
+  const sha256Hash = SHA256.hash(redeemScript);
+  const scriptHash = RIPEMD160.hash(sha256Hash);
   return scriptHash; // 20 bytes
 }
 // Version byte 0x05 for P2SH mainnet addresses

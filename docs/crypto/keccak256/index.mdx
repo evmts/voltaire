@@ -86,6 +86,10 @@ const hash3: Keccak256Hash = Keccak256HashWasm.from(data);  // Explicit WASM
 
 ## Quick Start
 
+<Tip>
+View executable examples: [`hash-bytes.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-bytes.ts) | [`hash-string.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-string.ts) | [`hash-hex.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-hex.ts)
+</Tip>
+
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
@@ -136,6 +140,10 @@ const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c
 const create2Addr = Keccak256Hash.create2Address(deployerAddress, salt, initCode);
 // Uint8Array(20) [deterministic contract address]
 ```
+
+<Tip>
+View examples: [`function-selector.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/function-selector.ts) | [`event-topic.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/event-topic.ts) | [`contract-address-create.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create.ts) | [`contract-address-create2.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create2.ts)
+</Tip>
 </Tab>
 
 <Tab title="Multiple Chunks">
@@ -151,6 +159,10 @@ const chunk3 = Hex.toBytes('0x070809');
 const hash: Keccak256Hash = Keccak256Hash.fromMultiple([chunk1, chunk2, chunk3]);
 // Same as: Keccak256Hash.from(Hex.toBytes('0x010203040506070809'))
 ```
+
+<Tip>
+View examples: [`hash-multiple.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-multiple.ts) | [`merkle-tree.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/merkle-tree.ts) | [`chain-hashing.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/chain-hashing.ts)
+</Tip>
 </Tab>
 </Tabs>
 

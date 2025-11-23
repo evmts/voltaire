@@ -41,6 +41,23 @@ const isValid = Secp256k1.verify(signature, messageHash, publicKey);
 const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 ```
 
+## Examples
+
+Interactive examples in the [Voltaire Playground](https://voltaire.tevm.sh/playground):
+- [Generate Keypair](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/generate-keypair.ts) - Generate random private key and derive public key
+- [Sign Message](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/sign-message.ts) - Sign Keccak256 hash with ECDSA
+- [Verify Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/verify-signature.ts) - Verify signature with public key
+- [Recover Public Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/recover-public-key.ts) - Recover public key from signature (ecRecover)
+- [Compact Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/compact-signature.ts) - 65-byte compact format (r+s+v)
+- [Signature Bytes](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/signature-bytes.ts) - Serialize/deserialize signatures
+- [ECDH](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/ecdh.ts) - Elliptic Curve Diffie-Hellman key exchange
+- [Validate Private Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-private-key.ts) - Private key validation
+- [Validate Public Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-public-key.ts) - Public key validation
+- [Validate Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-signature.ts) - Signature format validation
+- [Point Addition](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/point-addition.ts) - Elliptic curve point addition
+- [Scalar Multiply](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/scalar-multiply.ts) - Scalar multiplication on curve
+- [Sign Transaction](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/sign-transaction.ts) - Sign Ethereum transaction
+
 ## API Reference
 
 ### Signing
