@@ -1,24 +1,24 @@
-import * as Hex from '../../../primitives/Hex/index.js';
+import * as Hex from "../../../primitives/Hex/index.js";
 
 // Decode hex to UTF-8 string
-const hex = '0x48656c6c6f2c20457468657265756d21';
+const hex = "0x48656c6c6f2c20457468657265756d21";
 const decoded = Hex.toString(hex);
-console.log('Hex:', hex);
-console.log('Decoded string:', decoded);
+console.log("Hex:", hex);
+console.log("Decoded string:", decoded);
 
 // Round-trip encoding
-const original = 'Voltaire primitives';
+const original = "Voltaire primitives";
 const encoded = Hex.fromString(original);
 const roundtrip = Hex.toString(encoded);
-console.log('\nOriginal:', original);
-console.log('Encoded:', encoded);
-console.log('Round-trip:', roundtrip);
-console.log('Match:', original === roundtrip);
+console.log("\nOriginal:", original);
+console.log("Encoded:", encoded);
+console.log("Round-trip:", roundtrip);
+console.log("Match:", original === roundtrip);
 
 // Emoji round-trip
-const emojiOriginal = '🔥 Fast crypto';
+const emojiOriginal = "🔥 Fast crypto";
 const emojiEncoded = Hex.fromString(emojiOriginal);
 const emojiDecoded = Hex.toString(emojiEncoded);
-console.log('\nEmoji original:', emojiOriginal);
-console.log('Emoji decoded:', emojiDecoded);
-console.log('Match:', emojiOriginal === emojiDecoded);
+console.log("\nEmoji original:", emojiOriginal);
+console.log("Emoji decoded:", emojiDecoded);
+console.log("Match:", emojiOriginal === emojiDecoded);

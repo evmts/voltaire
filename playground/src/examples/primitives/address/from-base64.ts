@@ -1,18 +1,18 @@
-import * as Address from '../../../primitives/Address/index.js';
+import * as Address from "../../../primitives/Address/index.js";
 
 // Example: Create address from base64
 // Useful for some APIs that encode addresses in base64
-const base64 = 'dC01zGY0wFMpJaO4RLxFTkQ49E4=';
+const base64 = "dC01zGY0wFMpJaO4RLxFTkQ49E4=";
 
 const addr = Address.fromBase64(base64);
-console.log('From base64:', Address.toHex(addr));
+console.log("From base64:", Address.toHex(addr));
 
 // Encode address to base64
-const instance = Address.Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e');
+const instance = Address.Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const encoded = instance.toBase64();
-console.log('To base64:', encoded);
+console.log("To base64:", encoded);
 
 // Round-trip
 const roundTrip = Address.fromBase64(encoded);
-console.log('Round-trip:', Address.toHex(roundTrip));
-console.log('Success:', Address.equals(instance, roundTrip));
+console.log("Round-trip:", Address.toHex(roundTrip));
+console.log("Success:", Address.equals(instance, roundTrip));
