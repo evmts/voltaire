@@ -5,8 +5,6 @@
  * Try using Cmd+Shift+\ to jump to matching brackets.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 // Deeply nested function calls (demonstrates rainbow bracket levels)
 declare function someFunction(x: unknown): unknown;
 declare function anotherFunction(x: unknown): unknown;

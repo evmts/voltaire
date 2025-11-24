@@ -5,10 +5,6 @@ import { registerVoltaireSnippets } from "../features/Snippets.js";
 import { registerQuickFixes } from "../features/QuickFixes.js";
 import { registerNavigationProviders } from "../features/Navigation.js";
 import { generateTypeDefinitions } from "../runtime/TypeDefinitions.js";
-import {
-	ESLintIntegration,
-	createLintStatusIndicator,
-} from "../features/Linting.js";
 import { InlineSuggestions } from "../features/InlineSuggestions.js";
 
 export class Editor {
@@ -18,8 +14,6 @@ export class Editor {
 	private completionDisposables: any[] = [];
 	private quickFixDisposable: any = null;
 	private navigationDisposables: any[] = [];
-	private lintIntegration: ESLintIntegration | null = null;
-	private lintStatusElement: HTMLElement | null = null;
 	private inlineSuggestions: InlineSuggestions | null = null;
 
 	constructor(container: HTMLElement) {
@@ -92,19 +86,6 @@ export class Editor {
 			this.editor,
 			this.monaco,
 		);
-
-		// Initialize ESLint integration
-		this.lintIntegration = new ESLintIntegration(this.monaco, this.editor);
-
-		// Create and add status indicator
-		const statusIndicator = createLintStatusIndicator();
-		this.lintStatusElement = statusIndicator.element;
-		this.container.appendChild(this.lintStatusElement);
-
-		// Connect status updates
-		this.lintIntegration.setStatusCallback((status) => {
-			statusIndicator.update(status);
-		});
 	}
 
 	setValue(value: string): void {
@@ -143,21 +124,11 @@ export class Editor {
 		return this.monaco;
 	}
 
-	getLintIntegration(): ESLintIntegration | null {
-		return this.lintIntegration;
-	}
-
 	getInlineSuggestions(): InlineSuggestions | null {
 		return this.inlineSuggestions;
 	}
 
 	dispose(): void {
-		if (this.lintIntegration) {
-			this.lintIntegration.dispose();
-		}
-		if (this.lintStatusElement && this.lintStatusElement.parentNode) {
-			this.lintStatusElement.parentNode.removeChild(this.lintStatusElement);
-		}
 		if (this.quickFixDisposable) {
 			this.quickFixDisposable.dispose();
 		}
