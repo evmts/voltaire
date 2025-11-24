@@ -13,8 +13,6 @@ const basicConstructor = ABI.Constructor.encodeParams(
 	["MyToken", "MTK", 18],
 );
 
-console.log("Basic constructor:", basicConstructor);
-
 // Example: Encode constructor with address and uint256
 const tokenConstructor = ABI.Constructor.encodeParams(
 	{
@@ -26,8 +24,6 @@ const tokenConstructor = ABI.Constructor.encodeParams(
 	},
 	["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 1000000000000000000000000n],
 );
-
-console.log("Token constructor:", tokenConstructor);
 
 // Example: Encode constructor with array parameter
 const multisigConstructor = ABI.Constructor.encodeParams(
@@ -48,8 +44,6 @@ const multisigConstructor = ABI.Constructor.encodeParams(
 	],
 );
 
-console.log("Multisig constructor:", multisigConstructor);
-
 // Example: Encode constructor with tuple parameter
 const complexConstructor = ABI.Constructor.encodeParams(
 	{
@@ -68,5 +62,3 @@ const complexConstructor = ABI.Constructor.encodeParams(
 	},
 	[["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 100n, false]],
 );
-
-console.log("Complex constructor:", complexConstructor);

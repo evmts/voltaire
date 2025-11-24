@@ -30,18 +30,12 @@ const abi = ABI.Abi([
 
 // Example: Get function by selector
 const transferFunc = ABI.getFunctionBySelector(abi, "0xa9059cbb");
-console.log("Transfer function:", transferFunc);
 
 const approveFunc = ABI.getFunctionBySelector(abi, "0x095ea7b3");
-console.log("Approve function:", approveFunc);
 
 const balanceOfFunc = ABI.getFunctionBySelector(abi, "0x70a08231");
-console.log("BalanceOf function:", balanceOfFunc);
 
 // Example: Handle unknown selector
 try {
 	const unknown = ABI.getFunctionBySelector(abi, "0x00000000");
-	console.log("Unknown function:", unknown);
-} catch (error) {
-	console.log("Error:", error);
-}
+} catch (error) {}

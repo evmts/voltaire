@@ -25,8 +25,6 @@ const basicConstructor = ABI.Constructor.decodeParams(
 	basicData,
 );
 
-console.log("Basic constructor params:", basicConstructor);
-
 // Example: Decode constructor with address and uint256
 const tokenData = Hex.fromString(
 	"0x" +
@@ -44,5 +42,3 @@ const tokenConstructor = ABI.Constructor.decodeParams(
 	},
 	tokenData,
 );
-
-console.log("Token constructor params:", tokenConstructor);

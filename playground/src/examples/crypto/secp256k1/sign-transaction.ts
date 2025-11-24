@@ -1,8 +1,8 @@
 // Sign Ethereum transaction
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
+import * as Address from "../../../primitives/Address/index.js";
 import * as Hash from "../../../primitives/Hash/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
-import * as Address from "../../../primitives/Address/index.js";
 
 // Simulated transaction data
 const txData = {
@@ -14,26 +14,14 @@ const txData = {
 	data: "0x",
 };
 
-console.log("Transaction:");
-console.log("  to:", txData.to);
-console.log("  value:", txData.value, "(1 ETH)");
-console.log("  gasLimit:", txData.gasLimit);
-
 // Hash transaction data (simplified - real tx uses RLP encoding)
 const txString = JSON.stringify(txData);
 const txHash = Hash.keccak256String(txString);
-console.log("\nTransaction hash:", Hex.from(txHash).toString());
 
 // Sign transaction
 const privateKey = Secp256k1.PrivateKey.random();
 const signature = Secp256k1.sign(txHash, privateKey);
 
-console.log("\nSignature:");
-console.log("  r:", Hex.from(signature.r).toString());
-console.log("  s:", Hex.from(signature.s).toString());
-console.log("  v:", signature.yParity + 27, "(Ethereum format)");
-
 // Verify sender address can be recovered
 const recoveredKey = Secp256k1.recoverPublicKey(signature, txHash);
 const senderAddress = Address.fromPublicKey(recoveredKey);
-console.log("\nRecovered sender:", Hex.from(senderAddress).toString());

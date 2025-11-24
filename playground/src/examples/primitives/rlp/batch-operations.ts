@@ -1,5 +1,5 @@
-import * as Rlp from "../../../primitives/RLP/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+import * as Rlp from "../../../primitives/RLP/index.js";
 
 // Example: Batch encoding and decoding
 
@@ -11,10 +11,6 @@ const items = [
 ];
 
 const batchEncoded = Rlp.encodeBatch(items);
-console.log(
-	"Batch encoded:",
-	batchEncoded.map((e) => e.toHex()),
-);
 // Each item encoded separately: ['0x01', '0x820203', '0x83040506']
 
 // Decode multiple items in batch
@@ -25,7 +21,6 @@ const encodedItems = [
 ];
 
 const batchDecoded = Rlp.decodeBatch(encodedItems);
-console.log("Batch decoded:", batchDecoded);
 
 // Round-trip batch operations
 const original = [
@@ -36,14 +31,8 @@ const original = [
 ];
 
 const encoded = Rlp.encodeBatch(original);
-console.log("Encoded batch length:", encoded.length);
 
 const decoded = Rlp.decodeBatch(encoded);
-console.log("Decoded batch length:", decoded.length);
-console.log(
-	"First item matches:",
-	decoded[0].toHex() === original[0].toHex(),
-);
 
 // Batch encode with lists
 const mixedItems = [
@@ -53,10 +42,6 @@ const mixedItems = [
 ];
 
 const mixedEncoded = Rlp.encodeBatch(mixedItems);
-console.log(
-	"Mixed batch encoded:",
-	mixedEncoded.map((e) => e.toHex()),
-);
 
 // Process large batch
 const largeItems = Array.from(
@@ -65,11 +50,5 @@ const largeItems = Array.from(
 );
 
 const largeEncoded = Rlp.encodeBatch(largeItems);
-console.log("Large batch - encoded 1000 items:", largeEncoded.length);
 
 const largeDecoded = Rlp.decodeBatch(largeEncoded);
-console.log("Large batch - decoded 1000 items:", largeDecoded.length);
-console.log(
-	"Large batch round-trip successful:",
-	largeDecoded.length === largeItems.length,
-);

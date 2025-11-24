@@ -5,14 +5,10 @@ import * as Address from "../../../primitives/Address/index.js";
 const base64 = "dC01zGY0wFMpJaO4RLxFTkQ49E4=";
 
 const addr = Address.fromBase64(base64);
-console.log("From base64:", addr.toHex());
 
 // Encode address to base64
 const instance = Address.Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const encoded = instance.toBase64();
-console.log("To base64:", encoded);
 
 // Round-trip
 const roundTrip = Address.fromBase64(encoded);
-console.log("Round-trip:", roundTrip.toHex());
-console.log("Success:", instance.equals(roundTrip));

@@ -18,8 +18,6 @@ const basicParams = ABI.decodeParameters(
 	basicData,
 );
 
-console.log("Basic parameters:", basicParams);
-
 // Example: Decode array types
 const arrayData = Hex.fromString(
 	"0x" +
@@ -42,8 +40,6 @@ const arrayParams = ABI.decodeParameters(
 	arrayData,
 );
 
-console.log("Array parameters:", arrayParams);
-
 // Example: Decode string and bytes
 const dynamicData = Hex.fromString(
 	"0x" +
@@ -62,8 +58,6 @@ const dynamicParams = ABI.decodeParameters(
 	],
 	dynamicData,
 );
-
-console.log("Dynamic parameters:", dynamicParams);
 
 // Example: Decode tuple
 const tupleData = Hex.fromString(
@@ -88,5 +82,3 @@ const tupleParams = ABI.decodeParameters(
 	],
 	tupleData,
 );
-
-console.log("Tuple parameters:", tupleParams);

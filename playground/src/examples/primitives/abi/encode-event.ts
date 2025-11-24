@@ -17,8 +17,6 @@ const transferTopics = ABI.Event.encodeTopics(
 	},
 );
 
-console.log("Transfer topics:", transferTopics);
-
 // Example: Encode Approval event topics
 const approvalTopics = ABI.Event.encodeTopics(
 	{
@@ -35,8 +33,6 @@ const approvalTopics = ABI.Event.encodeTopics(
 		spender: "0x1234567890123456789012345678901234567890",
 	},
 );
-
-console.log("Approval topics:", approvalTopics);
 
 // Example: Encode event with indexed uint256
 const swapTopics = ABI.Event.encodeTopics(
@@ -57,5 +53,3 @@ const swapTopics = ABI.Event.encodeTopics(
 		to: "0x1234567890123456789012345678901234567890",
 	},
 );
-
-console.log("Swap topics:", swapTopics);

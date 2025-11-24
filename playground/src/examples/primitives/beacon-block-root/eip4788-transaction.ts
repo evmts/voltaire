@@ -1,0 +1,92 @@
+import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
+import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
+
+// Example: EIP-4788 beacon root in transaction context
+
+// The beacon root is exposed via a system contract at:
+// BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
+
+// Block with beacon root (Cancun+)
+const cancunBlock = BlockHeader.from({
+	parentHash: new Uint8Array(32).fill(0x01),
+	ommersHash:
+		"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+	beneficiary: "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
+	stateRoot: new Uint8Array(32).fill(0x02),
+	transactionsRoot: new Uint8Array(32).fill(0x03),
+	receiptsRoot: new Uint8Array(32).fill(0x04),
+	logsBloom: new Uint8Array(256),
+	difficulty: 0n,
+	number: 19426587n, // Cancun activation block
+	gasLimit: 30000000n,
+	gasUsed: 15000000n,
+	timestamp: 1710338135n,
+	extraData: new Uint8Array(0),
+	mixHash: new Uint8Array(32),
+	nonce: new Uint8Array(8),
+	baseFeePerGas: 25000000000n,
+	withdrawalsRoot: new Uint8Array(32).fill(0x05),
+	blobGasUsed: 262144n,
+	excessBlobGas: 0n,
+	parentBeaconBlockRoot: new Uint8Array(32).fill(0xaa), // EIP-4788
+});
+
+// Extract the beacon root
+const beaconRoot = BeaconBlockRoot.from(
+	cancunBlock.parentBeaconBlockRoot as Uint8Array,
+);
+
+// How to access beacon roots in Solidity:
+const solidityExample = `
+// Read beacon root for a specific timestamp
+function getBeaconRoot(uint256 timestamp) external view returns (bytes32) {
+    address beaconRoots = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+    (bool success, bytes memory data) = beaconRoots.staticcall(
+        abi.encode(timestamp)
+    );
+    require(success, "Beacon root not found");
+    return abi.decode(data, (bytes32));
+}
+
+// Example: Verify validator withdrawal
+function verifyWithdrawal(
+    uint256 blockTimestamp,
+    bytes32[] calldata proof,
+    bytes calldata withdrawal
+) external view returns (bool) {
+    bytes32 root = getBeaconRoot(blockTimestamp);
+    return MerkleProof.verify(proof, root, keccak256(withdrawal));
+}
+`;
+
+console.log("=== EIP-4788 Transaction Context ===\n");
+
+console.log("Block Number:", cancunBlock.number);
+console.log("Timestamp:", cancunBlock.timestamp);
+console.log("Parent Beacon Root:", BeaconBlockRoot.toHex(beaconRoot));
+console.log();
+
+console.log("System Contract:");
+console.log("  Address: 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02");
+console.log("  Function: staticcall(timestamp) → beaconRoot");
+console.log("  Storage: Ring buffer of 8191 roots");
+console.log("  Gas Cost: ~2600 gas (warm SLOAD)");
+console.log();
+
+console.log("Ring Buffer:");
+console.log("  Size: 8191 slots");
+console.log("  Index: timestamp % 8191");
+console.log("  Retention: ~27 hours (12s blocks)");
+console.log("  Overwrite: Older roots get replaced");
+console.log();
+
+console.log("Solidity Usage:");
+console.log(solidityExample);
+console.log();
+
+console.log("Transaction Flow:");
+console.log("  1. Block N-1 finalizes with beacon root R");
+console.log("  2. Block N header includes parentBeaconBlockRoot = R");
+console.log("  3. EVM system call stores R at timestamp % 8191");
+console.log("  4. Smart contracts read R via BEACON_ROOTS_ADDRESS");
+console.log("  5. Contracts verify Merkle proofs against R");

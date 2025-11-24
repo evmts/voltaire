@@ -10,8 +10,6 @@ const basicParams = ABI.encodeParameters(
 	[1000n, "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", true],
 );
 
-console.log("Basic parameters:", basicParams);
-
 // Example: Encode array types
 const arrayParams = ABI.encodeParameters(
 	[
@@ -27,8 +25,6 @@ const arrayParams = ABI.encodeParameters(
 	],
 );
 
-console.log("Array parameters:", arrayParams);
-
 // Example: Encode fixed-size array
 const fixedArrayParams = ABI.encodeParameters(
 	[
@@ -41,8 +37,6 @@ const fixedArrayParams = ABI.encodeParameters(
 	],
 );
 
-console.log("Fixed array parameters:", fixedArrayParams);
-
 // Example: Encode string and bytes
 const dynamicParams = ABI.encodeParameters(
 	[
@@ -51,8 +45,6 @@ const dynamicParams = ABI.encodeParameters(
 	],
 	["Hello, World!", new Uint8Array([1, 2, 3, 4, 5])],
 );
-
-console.log("Dynamic parameters:", dynamicParams);
 
 // Example: Encode tuple
 const tupleParams = ABI.encodeParameters(
@@ -69,5 +61,3 @@ const tupleParams = ABI.encodeParameters(
 	],
 	[["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 1000n, 500n]],
 );
-
-console.log("Tuple parameters:", tupleParams);

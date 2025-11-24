@@ -16,9 +16,6 @@ const exchangeAddress = Address.from(
 	"0xDef1C0ded9bec7F1a1670819833240f027b25EfF",
 );
 
-console.log("Maker address:", makerAddress.toHex());
-console.log("Trading DAI for USDC");
-
 // DEX order typed data
 const order = {
 	domain: {
@@ -54,30 +51,9 @@ const order = {
 
 // Maker signs order off-chain
 const signature = EIP712.signTypedData(order, makerPrivateKey);
-console.log(
-	"Order signature r:",
-	Hex.fromBytes(signature.r).toString().slice(0, 20) + "...",
-);
-console.log(
-	"Order signature s:",
-	Hex.fromBytes(signature.s).toString().slice(0, 20) + "...",
-);
-console.log("Order signature v:", signature.v);
 
 // Verify order signature
 const isValid = EIP712.verifyTypedData(signature, order, makerAddress);
-console.log("Order signature valid:", isValid);
 
 // Order hash uniquely identifies this order
 const orderHash = EIP712.hashTypedData(order);
-console.log("Order hash:", Hex.fromBytes(orderHash).toString());
-
-console.log("\nOrder details:");
-console.log("- Sell: 1000 DAI");
-console.log("- Buy: 1000 USDC");
-console.log("- Rate: 1 DAI = 1 USDC");
-console.log("- Open to any taker");
-console.log(
-	"- Expires:",
-	new Date(Number(order.message.expiry) * 1000).toISOString(),
-);

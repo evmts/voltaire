@@ -16,9 +16,6 @@ const targetContract = Address.from(
 	"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
 ); // Target contract
 
-console.log("User address:", userAddress.toHex());
-console.log("Forwarder:", forwarderAddress.toHex());
-
 // Encode function call data (example: transfer(address,uint256))
 // In real usage, you'd encode actual function call
 const callData = new Uint8Array(68); // Simplified for example
@@ -54,29 +51,10 @@ const metaTx = {
 
 // User signs meta-transaction off-chain
 const signature = EIP712.signTypedData(metaTx, userPrivateKey);
-console.log(
-	"Meta-tx signature r:",
-	Hex.fromBytes(signature.r).toString().slice(0, 20) + "...",
-);
-console.log(
-	"Meta-tx signature s:",
-	Hex.fromBytes(signature.s).toString().slice(0, 20) + "...",
-);
-console.log("Meta-tx signature v:", signature.v);
 
 // Verify signature
 const recovered = EIP712.recoverAddress(signature, metaTx);
 const isValid = EIP712.verifyTypedData(signature, metaTx, userAddress);
-console.log("Meta-tx signature valid:", isValid);
-console.log("Recovered user matches:", recovered.equals(userAddress));
 
 // Transaction hash
 const txHash = EIP712.hashTypedData(metaTx);
-console.log("Meta-tx hash:", Hex.fromBytes(txHash).toString());
-
-console.log("\nMeta-transaction flow:");
-console.log("1. User signs request off-chain (no ETH needed)");
-console.log("2. Relayer submits to forwarder contract");
-console.log("3. Forwarder verifies signature");
-console.log("4. Forwarder executes call on behalf of user");
-console.log("5. Relayer pays gas, user gets gasless tx");

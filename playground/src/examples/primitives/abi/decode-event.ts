@@ -24,8 +24,6 @@ const transferLog = ABI.Event.decodeLog(
 	},
 );
 
-console.log("Transfer event:", transferLog);
-
 // Example: Decode Approval event
 const approvalLog = ABI.Event.decodeLog(
 	{
@@ -48,8 +46,6 @@ const approvalLog = ABI.Event.decodeLog(
 		),
 	},
 );
-
-console.log("Approval event:", approvalLog);
 
 // Example: Decode Swap event with multiple non-indexed parameters
 const swapLog = ABI.Event.decodeLog(
@@ -80,5 +76,3 @@ const swapLog = ABI.Event.decodeLog(
 		),
 	},
 );
-
-console.log("Swap event:", swapLog);

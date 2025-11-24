@@ -33,26 +33,13 @@ const message = {
 
 // Type encoding includes all nested types alphabetically
 const mailEncoding = EIP712.encodeType("Mail", types);
-console.log("Mail type encoding:", mailEncoding);
 
 // Hash individual structs
 const fromHash = EIP712.hashStruct("Person", message.from, types);
 const toHash = EIP712.hashStruct("Person", message.to, types);
-console.log(
-	"From struct hash:",
-	Hex.fromBytes(fromHash).toString().slice(0, 20) + "...",
-);
-console.log(
-	"To struct hash:",
-	Hex.fromBytes(toHash).toString().slice(0, 20) + "...",
-);
 
 // Hash complete mail struct
 const mailHash = EIP712.hashStruct("Mail", message, types);
-console.log(
-	"Mail struct hash:",
-	Hex.fromBytes(mailHash).toString().slice(0, 20) + "...",
-);
 
 // Complete typed data
 const typedData = {
@@ -67,4 +54,3 @@ const typedData = {
 };
 
 const finalHash = EIP712.hashTypedData(typedData);
-console.log("Final typed data hash:", Hex.fromBytes(finalHash).toString());

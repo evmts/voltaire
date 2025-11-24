@@ -12,25 +12,10 @@ const initCodeHash = Keccak256.hash(initCode);
 
 const contractAddr = Keccak256.create2Address(deployer, salt, initCodeHash);
 
-console.log("Deployer:", deployer.toHex());
-console.log("Salt:", Hex.fromBytes(salt));
-console.log("InitCode:", Hex.fromBytes(initCode));
-console.log("InitCode hash:", Hex.fromBytes(initCodeHash));
-console.log("\nCREATE2 contract address:", Hex.fromBytes(contractAddr));
-
 // Different salts produce different addresses
 const salt1 = new Uint8Array(32);
 salt1[31] = 1;
 const addr1 = Keccak256.create2Address(deployer, salt1, initCodeHash);
-console.log("\nWith different salt:", Hex.fromBytes(addr1));
-console.log(
-	"Addresses differ:",
-	Hex.fromBytes(contractAddr) !== Hex.fromBytes(addr1),
-);
 
 // Same parameters always produce same address (deterministic)
 const addrAgain = Keccak256.create2Address(deployer, salt, initCodeHash);
-console.log(
-	"Deterministic:",
-	Hex.fromBytes(contractAddr) === Hex.fromBytes(addrAgain),
-);

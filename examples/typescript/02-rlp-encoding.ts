@@ -7,8 +7,8 @@
  * - Working with nested structures
  */
 
-import * as Rlp from "../../src/primitives/Rlp/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
+import * as Rlp from "../../src/primitives/Rlp/index.js";
 
 // RLP works with Uint8Arrays and nested arrays
 

@@ -994,13 +994,22 @@ console.log('Different seeds:', Hex.fromBytes(decoy).toString() !== Hex.fromByte
 `,
 
 	// EIP-712 Examples - Lines reference actual files in /playground/src/examples/crypto/eip712/
-	"eip712/basic-message.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/basic-message.ts#L1-L47`,
-	"eip712/sign-verify.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/sign-verify.ts#L1-L59`,
-	"eip712/nested-structs.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/nested-structs.ts#L1-L70`,
-	"eip712/encode-values.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/encode-values.ts#L1-L55`,
-	"eip712/domain-separator.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/domain-separator.ts#L1-L65`,
-	"eip712/erc2612-permit.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/erc2612-permit.ts#L1-L74`,
-	"eip712/dex-order.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dex-order.ts#L1-L83`,
-	"eip712/dao-vote.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dao-vote.ts#L1-L76`,
-	"eip712/meta-transaction.ts": `https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/meta-transaction.ts#L1-L82`,
+	"eip712/basic-message.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/basic-message.ts#L1-L47",
+	"eip712/sign-verify.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/sign-verify.ts#L1-L59",
+	"eip712/nested-structs.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/nested-structs.ts#L1-L70",
+	"eip712/encode-values.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/encode-values.ts#L1-L55",
+	"eip712/domain-separator.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/domain-separator.ts#L1-L65",
+	"eip712/erc2612-permit.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/erc2612-permit.ts#L1-L74",
+	"eip712/dex-order.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dex-order.ts#L1-L83",
+	"eip712/dao-vote.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dao-vote.ts#L1-L76",
+	"eip712/meta-transaction.ts":
+		"https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/meta-transaction.ts#L1-L82",
 };

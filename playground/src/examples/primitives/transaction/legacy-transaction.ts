@@ -1,7 +1,7 @@
-// Legacy Transaction: Create and serialize Legacy (Type 0) transaction
-import * as Transaction from "../../../primitives/Transaction/index.js";
 import * as Address from "../../../primitives/Address/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+// Legacy Transaction: Create and serialize Legacy (Type 0) transaction
+import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create a Legacy transaction (original Ethereum transaction type)
 const legacy: Transaction.Legacy = {
@@ -17,17 +17,5 @@ const legacy: Transaction.Legacy = {
 	s: new Uint8Array(32),
 };
 
-console.log("Transaction type:", legacy.type);
-console.log("Nonce:", legacy.nonce);
-console.log("Gas price:", legacy.gasPrice);
-console.log("Gas limit:", legacy.gasLimit);
-console.log("To:", Hex.fromBytes(legacy.to!));
-console.log("Value (wei):", legacy.value);
-
 // Serialize to bytes
 const serialized = Transaction.serialize(legacy);
-console.log("Serialized length:", serialized.length, "bytes");
-console.log(
-	"Serialized:",
-	Hex.fromBytes(serialized).toString().slice(0, 40) + "...",
-);

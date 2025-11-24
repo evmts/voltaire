@@ -7,8 +7,6 @@ const unauthorized = ABI.Error.encodeParams({
 	inputs: [],
 });
 
-console.log("Unauthorized error:", unauthorized);
-
 // Example: Encode custom error with parameters
 const insufficientBalance = ABI.Error.encodeParams(
 	{
@@ -22,8 +20,6 @@ const insufficientBalance = ABI.Error.encodeParams(
 	},
 	["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 100n, 1000n],
 );
-
-console.log("InsufficientBalance error:", insufficientBalance);
 
 // Example: Encode error with array parameter
 const invalidTokens = ABI.Error.encodeParams(
@@ -40,8 +36,6 @@ const invalidTokens = ABI.Error.encodeParams(
 	],
 );
 
-console.log("InvalidTokens error:", invalidTokens);
-
 // Example: Encode error with string message
 const transferFailed = ABI.Error.encodeParams(
 	{
@@ -51,5 +45,3 @@ const transferFailed = ABI.Error.encodeParams(
 	},
 	["Insufficient allowance"],
 );
-
-console.log("TransferFailed error:", transferFailed);

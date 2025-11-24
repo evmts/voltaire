@@ -7,15 +7,12 @@ const number = 42;
 
 // Type guard narrows the type
 if (Address.is(validAddr)) {
-	console.log("Valid address detected:", validAddr.toHex());
 }
 
 if (!Address.is(invalidAddr)) {
-	console.log("Invalid address rejected");
 }
 
 if (!Address.is(number)) {
-	console.log("Non-address type rejected");
 }
 
 // Use in type narrowing
@@ -28,4 +25,3 @@ function processAddress(input: unknown) {
 }
 
 const addr = Address.from(validAddr);
-console.log("Processed:", processAddress(addr));

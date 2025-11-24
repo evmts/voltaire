@@ -12,8 +12,6 @@ const unauthorized = ABI.Error.decodeParams(
 	unauthorizedData,
 );
 
-console.log("Unauthorized error params:", unauthorized);
-
 // Example: Decode InsufficientBalance error
 const insufficientBalanceData = Hex.fromString(
 	"0xcf479181" + // selector
@@ -35,8 +33,6 @@ const insufficientBalance = ABI.Error.decodeParams(
 	insufficientBalanceData,
 );
 
-console.log("InsufficientBalance params:", insufficientBalance);
-
 // Example: Decode error with array parameter
 const invalidTokensData = Hex.fromString(
 	"0x5d5155f9" + // selector
@@ -54,5 +50,3 @@ const invalidTokens = ABI.Error.decodeParams(
 	},
 	invalidTokensData,
 );
-
-console.log("InvalidTokens params:", invalidTokens);

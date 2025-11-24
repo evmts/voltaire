@@ -1,0 +1,12 @@
+import * as Int128 from "../../../primitives/Int128/index.js";
+const large_pos = Int128.fromBigInt(123456789012345678901234567890n);
+const large_neg = Int128.fromBigInt(-123456789012345678901234567890n);
+const medium = Int128.fromBigInt(1000000000000000000n);
+const sum = Int128.plus(large_pos, medium);
+const diff = Int128.minus(large_pos, large_neg);
+const product = Int128.times(medium, 1000n);
+const min_val = Int128.minimum(large_pos, large_neg);
+const max_val = Int128.maximum(large_pos, large_neg);
+const near_max = Int128.MAX;
+const near_min = Int128.MIN;
+const mask = Int128.fromBigInt(0xffffn);

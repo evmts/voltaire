@@ -1,7 +1,7 @@
-// Transaction Type Detection: Identify transaction type from bytes
-import * as Transaction from "../../../primitives/Transaction/index.js";
 import * as Address from "../../../primitives/Address/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+// Transaction Type Detection: Identify transaction type from bytes
+import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create different transaction types and serialize them
 const legacy: Transaction.Legacy = {
@@ -37,28 +37,6 @@ const eip1559: Transaction.EIP1559 = {
 const legacySerialized = Transaction.serialize(legacy);
 const eip1559Serialized = Transaction.serialize(eip1559);
 
-console.log("=== Legacy Transaction ===");
-console.log("First byte:", legacySerialized[0].toString(16));
-console.log("First byte >= 0xc0:", legacySerialized[0] >= 0xc0);
-console.log("(Legacy transactions start with RLP list marker >= 0xc0)");
-
 const legacyDetected = Transaction.detectType(legacySerialized);
-console.log("Detected type:", legacyDetected);
-console.log("Type name:", Transaction.Type[legacyDetected]);
-
-console.log("\n=== EIP-1559 Transaction ===");
-console.log("First byte:", eip1559Serialized[0].toString(16));
-console.log("Type byte:", eip1559Serialized[0]);
-console.log("(Typed transactions have type byte < 0xc0)");
 
 const eip1559Detected = Transaction.detectType(eip1559Serialized);
-console.log("Detected type:", eip1559Detected);
-console.log("Type name:", Transaction.Type[eip1559Detected]);
-
-// Detection rules:
-console.log("\n=== Detection Rules ===");
-console.log("Type 0 (Legacy): First byte >= 0xc0 (RLP list)");
-console.log("Type 1 (EIP-2930): First byte = 0x01");
-console.log("Type 2 (EIP-1559): First byte = 0x02");
-console.log("Type 3 (EIP-4844): First byte = 0x03");
-console.log("Type 4 (EIP-7702): First byte = 0x04");

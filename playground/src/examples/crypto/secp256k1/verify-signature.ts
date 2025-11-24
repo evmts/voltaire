@@ -13,15 +13,12 @@ const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Verify valid signature
 const isValid = Secp256k1.verify(signature, messageHash, publicKey);
-console.log("Valid signature verified:", isValid);
 
 // Try with wrong public key
 const wrongPrivateKey = Secp256k1.PrivateKey.random();
 const wrongPublicKey = Secp256k1.derivePublicKey(wrongPrivateKey);
 const isInvalid = Secp256k1.verify(signature, messageHash, wrongPublicKey);
-console.log("Wrong public key rejected:", !isInvalid);
 
 // Try with wrong message
 const wrongMessageHash = Hash.keccak256String("Different message");
 const wrongMessage = Secp256k1.verify(signature, wrongMessageHash, publicKey);
-console.log("Wrong message rejected:", !wrongMessage);

@@ -44,23 +44,17 @@ const key = new TextEncoder().encode("secret-key");
 const message = new TextEncoder().encode("Important message");
 
 const mac = hmacSha256(key, message);
-console.log("Message:", new TextDecoder().decode(message));
-console.log("Key:", new TextDecoder().decode(key));
-console.log("HMAC-SHA256:", Hex.fromBytes(mac));
 
 // Verify message integrity
 const verifyMac = hmacSha256(key, message);
 const verified = mac.every((b, i) => b === verifyMac[i]);
-console.log("\nMAC verified:", verified);
 
 // Different key produces different MAC
 const wrongKey = new TextEncoder().encode("wrong-key");
 const wrongMac = hmacSha256(wrongKey, message);
 const different = !mac.every((b, i) => b === wrongMac[i]);
-console.log("Different key rejected:", different);
 
 // Different message produces different MAC
 const wrongMsg = new TextEncoder().encode("Tampered message");
 const tamperedMac = hmacSha256(key, wrongMsg);
 const tampered = !mac.every((b, i) => b === tamperedMac[i]);
-console.log("Tampered message detected:", tampered);

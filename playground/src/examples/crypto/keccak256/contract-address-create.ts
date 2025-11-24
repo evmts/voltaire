@@ -10,26 +10,5 @@ const nonce0 = Keccak256.contractAddress(deployer, 0n);
 const nonce1 = Keccak256.contractAddress(deployer, 1n);
 const nonce5 = Keccak256.contractAddress(deployer, 5n);
 
-console.log("Deployer:", deployer.toHex());
-console.log("\nContract addresses by nonce:");
-console.log("Nonce 0:", Hex.fromBytes(nonce0));
-console.log("Nonce 1:", Hex.fromBytes(nonce1));
-console.log("Nonce 5:", Hex.fromBytes(nonce5));
-
-// Different nonces produce different addresses
-console.log("\nEach nonce creates unique address:");
-console.log(
-	"nonce0 ≠ nonce1:",
-	Hex.fromBytes(nonce0) !== Hex.fromBytes(nonce1),
-);
-console.log(
-	"nonce1 ≠ nonce5:",
-	Hex.fromBytes(nonce1) !== Hex.fromBytes(nonce5),
-);
-
 // Same deployer + nonce always produces same address (deterministic)
 const nonce5Again = Keccak256.contractAddress(deployer, 5n);
-console.log(
-	"\nDeterministic:",
-	Hex.fromBytes(nonce5) === Hex.fromBytes(nonce5Again),
-);

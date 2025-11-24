@@ -16,8 +16,6 @@ const uintParams = ABI.encodeParameters(
 	],
 );
 
-console.log("Uint parameters:", uintParams);
-
 // Example: Encode static int types
 const intParams = ABI.encodeParameters(
 	[
@@ -28,8 +26,6 @@ const intParams = ABI.encodeParameters(
 	],
 	[-128, -32768, -2147483648, -1000000n],
 );
-
-console.log("Int parameters:", intParams);
 
 // Example: Encode static address type
 const addressParams = ABI.encodeParameters(
@@ -43,8 +39,6 @@ const addressParams = ABI.encodeParameters(
 	],
 );
 
-console.log("Address parameters:", addressParams);
-
 // Example: Encode static bool type
 const boolParams = ABI.encodeParameters(
 	[
@@ -53,8 +47,6 @@ const boolParams = ABI.encodeParameters(
 	],
 	[true, false],
 );
-
-console.log("Bool parameters:", boolParams);
 
 // Example: Encode static bytes types
 const bytesParams = ABI.encodeParameters(
@@ -69,5 +61,3 @@ const bytesParams = ABI.encodeParameters(
 		new Uint8Array(32).fill(1),
 	],
 );
-
-console.log("Bytes parameters:", bytesParams);

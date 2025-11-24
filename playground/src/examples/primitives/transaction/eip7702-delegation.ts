@@ -1,6 +1,6 @@
+import * as Address from "../../../primitives/Address/index.js";
 // EIP-7702 Transaction: EOA delegation to smart contracts
 import * as Transaction from "../../../primitives/Transaction/index.js";
-import * as Address from "../../../primitives/Address/index.js";
 
 // Create EIP-7702 transaction with authorization list
 const eip7702: Transaction.EIP7702 = {
@@ -30,18 +30,11 @@ const eip7702: Transaction.EIP7702 = {
 	s: new Uint8Array(32),
 };
 
-console.log("Transaction type:", eip7702.type);
-console.log("Chain ID:", eip7702.chainId);
-
 // Get authorization count
 const authCount = Transaction.getAuthorizationCount(eip7702);
-console.log("Authorization count:", authCount);
 
 // Get authorizations
 const authorizations = Transaction.getAuthorizations(eip7702);
-console.log("Authorizations:", authorizations.length);
-console.log("First authorization chain ID:", authorizations[0].chainId);
-console.log("Delegation nonce:", authorizations[0].nonce);
 
 // Use cases:
 // - Batched transactions from EOA

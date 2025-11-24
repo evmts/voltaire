@@ -9,16 +9,12 @@ const nonce = 0n;
 
 // Calculate address of first contract deployed
 const firstContract = Address.calculateCreateAddress(deployer, nonce);
-console.log("First deployment (nonce=0):", firstContract.toHex());
 
 // Second deployment
 const secondContract = Address.calculateCreateAddress(deployer, 1n);
-console.log("Second deployment (nonce=1):", secondContract.toHex());
 
 // Third deployment
 const thirdContract = Address.calculateCreateAddress(deployer, 2n);
-console.log("Third deployment (nonce=2):", thirdContract.toHex());
 
 // Nonce can be large
 const highNonce = Address.calculateCreateAddress(deployer, 1000000n);
-console.log("High nonce deployment:", highNonce.toHex());

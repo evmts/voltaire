@@ -15,9 +15,6 @@ const spenderAddress = Address.from(
 );
 const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
 
-console.log("Token owner:", ownerAddress.toHex());
-console.log("Spender:", spenderAddress.toHex());
-
 // ERC-2612 Permit typed data
 const permit = {
 	domain: {
@@ -47,28 +44,7 @@ const permit = {
 
 // Owner signs permit off-chain (no gas cost)
 const signature = EIP712.signTypedData(permit, ownerPrivateKey);
-console.log(
-	"Permit signature r:",
-	Hex.fromBytes(signature.r).toString().slice(0, 20) + "...",
-);
-console.log(
-	"Permit signature s:",
-	Hex.fromBytes(signature.s).toString().slice(0, 20) + "...",
-);
-console.log("Permit signature v:", signature.v);
 
 // Verify permit signature
 const recovered = EIP712.recoverAddress(signature, permit);
 const isValid = EIP712.verifyTypedData(signature, permit, ownerAddress);
-console.log("Permit signature valid:", isValid);
-console.log(
-	"Recovered owner matches:",
-	recovered.equals(ownerAddress),
-);
-
-// Spender can submit this signature to token.permit() to approve without owner paying gas
-console.log("\nBenefits:");
-console.log("- Owner signs off-chain (no gas)");
-console.log("- Spender submits to contract");
-console.log("- Approval granted in same tx as transfer");
-console.log("- Better UX for end users");

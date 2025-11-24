@@ -9,8 +9,6 @@ const privateKey = Secp256k1.PrivateKey.random();
 const publicKey = Secp256k1.PrivateKey.toPublicKey(privateKey);
 const signerAddress = Secp256k1.PublicKey.toAddress(publicKey);
 
-console.log("Signer address:", signerAddress.toHex());
-
 // Define typed data
 const typedData = {
 	domain: {
@@ -35,25 +33,13 @@ const typedData = {
 
 // Sign typed data - produces ECDSA signature
 const signature = EIP712.signTypedData(typedData, privateKey);
-console.log(
-	"Signature r:",
-	Hex.fromBytes(signature.r).toString().slice(0, 20) + "...",
-);
-console.log(
-	"Signature s:",
-	Hex.fromBytes(signature.s).toString().slice(0, 20) + "...",
-);
-console.log("Signature v:", signature.v);
 
 // Recover signer address from signature
 const recoveredAddress = EIP712.recoverAddress(signature, typedData);
-console.log("Recovered address:", recoveredAddress.toHex());
 
 // Verify signature matches expected signer
 const isValid = EIP712.verifyTypedData(signature, typedData, signerAddress);
-console.log("Signature valid:", isValid);
 
 // Verify with wrong address fails
 const wrongAddress = Address.from("0x0000000000000000000000000000000000000001");
 const invalidCheck = EIP712.verifyTypedData(signature, typedData, wrongAddress);
-console.log("Wrong address rejected:", !invalidCheck);

@@ -1,8 +1,8 @@
-// EIP-2930 Transaction: Access lists for gas optimization
-import * as Transaction from "../../../primitives/Transaction/index.js";
 import * as Address from "../../../primitives/Address/index.js";
 import * as Hash from "../../../primitives/Hash/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+// EIP-2930 Transaction: Access lists for gas optimization
+import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-2930 transaction with access list
 const eip2930: Transaction.EIP2930 = {
@@ -19,8 +19,8 @@ const eip2930: Transaction.EIP2930 = {
 		{
 			address: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 			storageKeys: [
-				Hash.from("0x" + "00".repeat(32)),
-				Hash.from("0x" + "01".repeat(32)),
+				Hash.from(`0x${"00".repeat(32)}`),
+				Hash.from(`0x${"01".repeat(32)}`),
 			],
 		},
 	],
@@ -29,18 +29,8 @@ const eip2930: Transaction.EIP2930 = {
 	s: new Uint8Array(32),
 };
 
-console.log("Transaction type:", eip2930.type);
-console.log("Chain ID:", eip2930.chainId);
-console.log("Access list entries:", eip2930.accessList.length);
-console.log(
-	"Storage keys in first entry:",
-	eip2930.accessList[0].storageKeys.length,
-);
-
 // Check if has access list
 const hasAccessList = Transaction.hasAccessList(eip2930);
-console.log("Has access list:", hasAccessList);
 
 // Get access list
 const accessList = Transaction.getAccessList(eip2930);
-console.log("Access list:", accessList);

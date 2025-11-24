@@ -1,10 +1,6 @@
 import * as Blake2 from "../../../crypto/Blake2/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
 
-// RFC 7693 test vectors for Blake2b
-
-console.log("Blake2b RFC 7693 Test Vectors:\n");
-
 // Empty input (64-byte output)
 const emptyHash = Blake2.hash(new Uint8Array(0), 64);
 const emptyExpected = new Uint8Array([
@@ -14,13 +10,6 @@ const emptyExpected = new Uint8Array([
 	0x53, 0x13, 0x89, 0x64, 0x44, 0x93, 0x4e, 0xb0, 0x4b, 0x90, 0x3a, 0x68, 0x5b,
 	0x14, 0x48, 0xb7, 0x55, 0xd5, 0x6f, 0x70, 0x1a, 0xfe, 0x9b, 0xe2, 0xce,
 ]);
-
-console.log("Empty input (64 bytes):");
-console.log("Output:", Hex.fromBytes(emptyHash));
-console.log(
-	"Match:",
-	emptyHash.every((b, i) => b === emptyExpected[i]),
-);
 
 // "abc" (64-byte output)
 const abc = new Uint8Array([0x61, 0x62, 0x63]);
@@ -33,13 +22,6 @@ const abcExpected = new Uint8Array([
 	0xdb, 0xf1, 0x92, 0x5a, 0xb9, 0x23, 0x86, 0xed, 0xd4, 0x00, 0x99, 0x23,
 ]);
 
-console.log('\n"abc" (64 bytes):');
-console.log("Output:", Hex.fromBytes(abcHash));
-console.log(
-	"Match:",
-	abcHash.every((b, i) => b === abcExpected[i]),
-);
-
 // Empty input (32-byte output, Blake2b-256)
 const empty32 = Blake2.hash(new Uint8Array(0), 32);
 const empty32Expected = new Uint8Array([
@@ -48,23 +30,10 @@ const empty32Expected = new Uint8Array([
 	0x45, 0xcd, 0xf1, 0x2f, 0xe3, 0xa8,
 ]);
 
-console.log("\nEmpty input (32 bytes, Blake2b-256):");
-console.log("Output:", Hex.fromBytes(empty32));
-console.log(
-	"Match:",
-	empty32.every((b, i) => b === empty32Expected[i]),
-);
-
 // Single byte 0x00
 const zero = new Uint8Array([0x00]);
 const zeroHash = Blake2.hash(zero, 64);
 
-console.log("\nSingle byte 0x00 (64 bytes):");
-console.log("Output:", Hex.fromBytes(zeroHash).slice(0, 60) + "...");
-
 // Two bytes 0x00 0x01
 const twoBytes = new Uint8Array([0x00, 0x01]);
 const twoBytesHash = Blake2.hash(twoBytes, 64);
-
-console.log("\nTwo bytes 0x00 0x01 (64 bytes):");
-console.log("Output:", Hex.fromBytes(twoBytesHash).slice(0, 60) + "...");

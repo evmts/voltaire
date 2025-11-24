@@ -2,7 +2,6 @@ import * as ABI from "../../../primitives/ABI/index.js";
 
 // Example: Calculate function selector from signature string
 const transferSelector = ABI.Function.getSelector("transfer(address,uint256)");
-console.log("transfer selector:", transferSelector);
 
 // Example: Calculate selector from function definition
 const approveSelector = ABI.Function.getSelector({
@@ -13,7 +12,6 @@ const approveSelector = ABI.Function.getSelector({
 		{ type: "uint256", name: "value" },
 	],
 });
-console.log("approve selector:", approveSelector);
 
 // Example: Complex function with multiple parameters
 const swapSelector = ABI.Function.getSelector({
@@ -27,7 +25,6 @@ const swapSelector = ABI.Function.getSelector({
 		{ type: "uint256", name: "deadline" },
 	],
 });
-console.log("swapExactTokensForTokens selector:", swapSelector);
 
 // Example: Function with tuple parameter
 const executeSelector = ABI.Function.getSelector({
@@ -45,7 +42,6 @@ const executeSelector = ABI.Function.getSelector({
 		},
 	],
 });
-console.log("execute selector:", executeSelector);
 
 // Example: Common ERC20 selectors
 const balanceOfSelector = ABI.Function.getSelector("balanceOf(address)");
@@ -55,7 +51,3 @@ const transferFromSelector = ABI.Function.getSelector(
 const allowanceSelector = ABI.Function.getSelector(
 	"allowance(address,address)",
 );
-
-console.log("balanceOf:", balanceOfSelector);
-console.log("transferFrom:", transferFromSelector);
-console.log("allowance:", allowanceSelector);

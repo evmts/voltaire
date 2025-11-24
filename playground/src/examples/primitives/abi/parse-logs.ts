@@ -48,8 +48,6 @@ const logs = [
 
 const parsedLogs = ABI.parseLogs(abi, logs);
 
-console.log("Parsed logs:", parsedLogs);
-
 // Example: Parse logs with unknown events (will be skipped)
 const logsWithUnknown = [
 	{
@@ -73,5 +71,3 @@ const logsWithUnknown = [
 ];
 
 const parsedWithUnknown = ABI.parseLogs(abi, logsWithUnknown);
-
-console.log("Parsed logs (with unknown):", parsedWithUnknown);

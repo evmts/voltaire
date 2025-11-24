@@ -1,5 +1,5 @@
-import * as Rlp from "../../../primitives/RLP/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+import * as Rlp from "../../../primitives/RLP/index.js";
 
 // Example: Decode objects with schema
 
@@ -35,9 +35,6 @@ const encoded = Rlp.encodeObject(tx, schema);
 
 // Decode back to object
 const decoded = Rlp.decodeObject<Transaction>(encoded, schema);
-console.log("Decoded nonce:", decoded.nonce);
-console.log("Decoded gasPrice:", decoded.gasPrice);
-console.log("Decoded to address length:", decoded.to.length);
 
 // Simple object decode
 interface SimpleData {
@@ -53,8 +50,6 @@ const simpleDecoded = Rlp.decodeObject<SimpleData>(simpleEncoded, [
 	"id",
 	"value",
 ]);
-console.log("Simple decoded id:", simpleDecoded.id);
-console.log("Simple decoded value:", simpleDecoded.value);
 
 // Nested object decode
 interface NestedData {
@@ -71,8 +66,6 @@ const nestedDecoded = Rlp.decodeObject<NestedData>(nestedEncoded, [
 	"header",
 	"items",
 ]);
-console.log("Nested header:", nestedDecoded.header);
-console.log("Nested items:", nestedDecoded.items);
 
 // Round-trip validation
 const original = {
@@ -83,11 +76,3 @@ const original = {
 const testSchema: (keyof typeof original)[] = ["field1", "field2", "field3"];
 const testEncoded = Rlp.encodeObject(original, testSchema);
 const testDecoded = Rlp.decodeObject(testEncoded, testSchema);
-console.log(
-	"Round-trip field1 matches:",
-	testDecoded.field1.toHex() === original.field1.toHex(),
-);
-console.log(
-	"Round-trip field2 matches:",
-	testDecoded.field2.toHex() === original.field2.toHex(),
-);

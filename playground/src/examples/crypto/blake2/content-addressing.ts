@@ -14,19 +14,11 @@ const content1 = new TextEncoder().encode("First piece of content");
 const content2 = new TextEncoder().encode("Second piece of content");
 const content3 = new TextEncoder().encode("First piece of content"); // Same as content1
 
-console.log("Content Addressing:\n");
-
 const addr1 = contentAddress(content1);
-console.log("Content 1:", addr1);
 
 const addr2 = contentAddress(content2);
-console.log("Content 2:", addr2);
 
 const addr3 = contentAddress(content3);
-console.log("Content 3:", addr3);
-
-console.log("\nSame content = same address:", addr1 === addr3);
-console.log("Different content = different address:", addr1 !== addr2);
 
 // Build a simple content store
 const contentStore = new Map<string, Uint8Array>();
@@ -40,9 +32,5 @@ function store(data: Uint8Array): string {
 function retrieve(address: string): Uint8Array | undefined {
 	return contentStore.get(address);
 }
-
-console.log("\nContent Store Example:");
 const key = store(content1);
-console.log("Stored with address:", key.slice(0, 20) + "...");
 const retrieved = retrieve(key);
-console.log("Retrieved successfully:", retrieved !== undefined);

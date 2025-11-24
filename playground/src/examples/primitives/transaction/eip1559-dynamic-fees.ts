@@ -1,7 +1,7 @@
-// EIP-1559 Transaction: Dynamic fee market with priority fees
-import * as Transaction from "../../../primitives/Transaction/index.js";
 import * as Address from "../../../primitives/Address/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+// EIP-1559 Transaction: Dynamic fee market with priority fees
+import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-1559 transaction (most common type post-London fork)
 const eip1559: Transaction.EIP1559 = {
@@ -20,24 +20,15 @@ const eip1559: Transaction.EIP1559 = {
 	s: new Uint8Array(32),
 };
 
-console.log("Transaction type:", eip1559.type);
-console.log("Max priority fee:", eip1559.maxPriorityFeePerGas, "wei");
-console.log("Max fee per gas:", eip1559.maxFeePerGas, "wei");
-
 // Calculate effective gas price given current base fee
 const baseFee = 20_000_000_000n; // 20 gwei from block
 const effectiveGasPrice = Transaction.getGasPrice(eip1559, baseFee);
-console.log("Base fee:", baseFee);
-console.log("Effective gas price:", effectiveGasPrice);
 
 // Total max cost (reserved upfront)
 const maxCost = eip1559.maxFeePerGas * eip1559.gasLimit + eip1559.value;
-console.log("Max cost (wei):", maxCost);
 
 // Actual cost if all gas used
 const actualCost = effectiveGasPrice * eip1559.gasLimit + eip1559.value;
-console.log("Actual cost (wei):", actualCost);
 
 // Refund
 const refund = maxCost - actualCost;
-console.log("Refund (wei):", refund);

@@ -15,8 +15,6 @@ const simpleTuple = ABI.encodeParameters(
 	[["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 1000n]],
 );
 
-console.log("Simple tuple:", simpleTuple);
-
 // Example: Encode tuple with dynamic types
 const dynamicTuple = ABI.encodeParameters(
 	[
@@ -32,8 +30,6 @@ const dynamicTuple = ABI.encodeParameters(
 	],
 	[["MyNFT", "A unique NFT", new Uint8Array([1, 2, 3])]],
 );
-
-console.log("Dynamic tuple:", dynamicTuple);
 
 // Example: Encode array of tuples
 const tupleArray = ABI.encodeParameters(
@@ -56,8 +52,6 @@ const tupleArray = ABI.encodeParameters(
 	],
 );
 
-console.log("Tuple array:", tupleArray);
-
 // Example: Encode nested tuple
 const nestedTuple = ABI.encodeParameters(
 	[
@@ -79,8 +73,6 @@ const nestedTuple = ABI.encodeParameters(
 	],
 	[["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", [100n, 50n]]],
 );
-
-console.log("Nested tuple:", nestedTuple);
 
 // Example: Encode tuple with array component
 const tupleWithArray = ABI.encodeParameters(
@@ -106,5 +98,3 @@ const tupleWithArray = ABI.encodeParameters(
 		],
 	],
 );
-
-console.log("Tuple with array:", tupleWithArray);

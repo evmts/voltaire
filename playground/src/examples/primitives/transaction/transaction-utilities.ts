@@ -1,6 +1,6 @@
+import * as Address from "../../../primitives/Address/index.js";
 // Transaction Utilities: Helper functions for transaction analysis
 import * as Transaction from "../../../primitives/Transaction/index.js";
-import * as Address from "../../../primitives/Address/index.js";
 
 // Contract creation transaction (to is null)
 const contractCreation: Transaction.EIP1559 = {
@@ -19,14 +19,6 @@ const contractCreation: Transaction.EIP1559 = {
 	s: new Uint8Array(32),
 };
 
-console.log("=== Contract Creation Transaction ===");
-console.log(
-	"Is contract creation:",
-	Transaction.isContractCreation(contractCreation),
-);
-console.log("Is contract call:", Transaction.isContractCall(contractCreation));
-console.log("Recipient:", Transaction.getRecipient(contractCreation)); // null
-
 // Contract call transaction
 const contractCall: Transaction.EIP1559 = {
 	type: Transaction.Type.EIP1559,
@@ -43,16 +35,8 @@ const contractCall: Transaction.EIP1559 = {
 	r: new Uint8Array(32),
 	s: new Uint8Array(32),
 };
-
-console.log("\n=== Contract Call Transaction ===");
-console.log(
-	"Is contract creation:",
-	Transaction.isContractCreation(contractCall),
-);
-console.log("Is contract call:", Transaction.isContractCall(contractCall));
 const recipient = Transaction.getRecipient(contractCall);
 if (recipient) {
-	console.log("Recipient exists:", recipient.length === 20);
 }
 
 // Simple ETH transfer
@@ -71,11 +55,3 @@ const ethTransfer: Transaction.EIP1559 = {
 	r: new Uint8Array(32),
 	s: new Uint8Array(32),
 };
-
-console.log("\n=== ETH Transfer Transaction ===");
-console.log(
-	"Is contract creation:",
-	Transaction.isContractCreation(ethTransfer),
-);
-console.log("Is contract call:", Transaction.isContractCall(ethTransfer));
-console.log("Has data:", ethTransfer.data.length > 0);

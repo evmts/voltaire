@@ -9,23 +9,17 @@ const stringParams = ABI.encodeParameters(
 	["Hello, Ethereum!", "Voltaire"],
 );
 
-console.log("String parameters:", stringParams);
-
 // Example: Encode dynamic bytes type
 const bytesParams = ABI.encodeParameters(
 	[{ type: "bytes", name: "data" }],
 	[new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])],
 );
 
-console.log("Dynamic bytes parameters:", bytesParams);
-
 // Example: Encode dynamic array
 const arrayParams = ABI.encodeParameters(
 	[{ type: "uint256[]", name: "amounts" }],
 	[[100n, 200n, 300n, 400n, 500n]],
 );
-
-console.log("Dynamic array parameters:", arrayParams);
 
 // Example: Encode dynamic array of addresses
 const addressArrayParams = ABI.encodeParameters(
@@ -38,8 +32,6 @@ const addressArrayParams = ABI.encodeParameters(
 		],
 	],
 );
-
-console.log("Address array parameters:", addressArrayParams);
 
 // Example: Encode mixed static and dynamic types
 const mixedParams = ABI.encodeParameters(
@@ -57,12 +49,8 @@ const mixedParams = ABI.encodeParameters(
 	],
 );
 
-console.log("Mixed parameters:", mixedParams);
-
 // Example: Encode nested dynamic types
 const nestedParams = ABI.encodeParameters(
 	[{ type: "string[]", name: "messages" }],
 	[["Hello", "World", "Ethereum"]],
 );
-
-console.log("Nested dynamic parameters:", nestedParams);

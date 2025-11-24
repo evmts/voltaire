@@ -6,15 +6,12 @@ const message = "Hello, Ethereum!";
 
 // Single hash
 const hash1 = Keccak256.hashString(message);
-console.log("Hash 1:", Hex.fromBytes(hash1).slice(0, 20), "...");
 
 // Double hash (hash of hash)
 const hash2 = Keccak256.hash(hash1);
-console.log("Hash 2:", Hex.fromBytes(hash2).slice(0, 20), "...");
 
 // Triple hash
 const hash3 = Keccak256.hash(hash2);
-console.log("Hash 3:", Hex.fromBytes(hash3).slice(0, 20), "...");
 
 // Build hash chain (like blockchain)
 function buildHashChain(data: string[], length: number): Uint8Array[] {
@@ -35,8 +32,4 @@ function buildHashChain(data: string[], length: number): Uint8Array[] {
 
 const blocks = ["genesis", "block1", "block2", "block3"];
 const chain = buildHashChain(blocks, blocks.length);
-
-console.log("\nHash chain:");
-chain.forEach((hash, i) => {
-	console.log(`Block ${i}:`, Hex.fromBytes(hash).slice(0, 20), "...");
-});
+chain.forEach((hash, i) => {});

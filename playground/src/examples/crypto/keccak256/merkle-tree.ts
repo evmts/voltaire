@@ -7,7 +7,6 @@ const data = ["alice", "bob", "charlie", "dave"];
 // Hash each leaf
 const leaves = data.map((item) => {
 	const hash = Keccak256.hashString(item);
-	console.log(`Leaf "${item}":`, Hex.fromBytes(hash).slice(0, 18), "...");
 	return hash;
 });
 
@@ -31,10 +30,7 @@ function buildMerkleTree(leaves: Uint8Array[]): Uint8Array {
 
 	return buildMerkleTree(parents);
 }
-
-console.log("\nBuilding merkle tree...");
 const root = buildMerkleTree(leaves);
-console.log("Merkle root:", Hex.fromBytes(root));
 
 // Verify merkle proof for "alice"
 const aliceHash = leaves[0];
@@ -48,8 +44,3 @@ const computedRoot = Keccak256.hashMultiple([
 	aliceBobParent,
 	charlieDaveParent,
 ]);
-
-console.log(
-	"\nProof verification:",
-	Hex.fromBytes(root) === Hex.fromBytes(computedRoot),
-);

@@ -8,13 +8,13 @@
  * - Handling signature malleability (EIP-2)
  */
 
+import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import {
 	PrecompileAddress,
 	execute,
 } from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
 
 // Simulate a signed message scenario
 const signerKey = crypto.getRandomValues(new Uint8Array(32));

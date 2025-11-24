@@ -13,8 +13,6 @@ const transfer = ABI.Function.encodeParams(
 	["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 100n],
 );
 
-console.log("Transfer calldata:", transfer);
-
 // Example: Encode approve with complex parameters
 const approve = ABI.Function.encodeParams(
 	{
@@ -27,8 +25,6 @@ const approve = ABI.Function.encodeParams(
 	},
 	["0x1234567890123456789012345678901234567890", 1000000000000000000n],
 );
-
-console.log("Approve calldata:", approve);
 
 // Example: Encode a function with multiple types
 const swap = ABI.Function.encodeParams(
@@ -54,5 +50,3 @@ const swap = ABI.Function.encodeParams(
 		1700000000n,
 	],
 );
-
-console.log("Swap calldata:", swap);

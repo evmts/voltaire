@@ -10,8 +10,6 @@ const transferSig = ABI.Function.getSignature({
 	],
 });
 
-console.log("Function signature:", transferSig);
-
 // Example: Format event signature
 const approvalSig = ABI.Event.getSignature({
 	name: "Approval",
@@ -23,8 +21,6 @@ const approvalSig = ABI.Event.getSignature({
 	],
 });
 
-console.log("Event signature:", approvalSig);
-
 // Example: Format error signature
 const errorSig = ABI.Error.getSignature({
 	name: "InsufficientBalance",
@@ -35,8 +31,6 @@ const errorSig = ABI.Error.getSignature({
 		{ type: "uint256", name: "needed" },
 	],
 });
-
-console.log("Error signature:", errorSig);
 
 // Example: Format complex function with tuple
 const executeSig = ABI.Function.getSignature({
@@ -54,8 +48,6 @@ const executeSig = ABI.Function.getSignature({
 	],
 });
 
-console.log("Complex function signature:", executeSig);
-
 // Example: Format function with array
 const batchTransferSig = ABI.Function.getSignature({
 	name: "batchTransfer",
@@ -65,5 +57,3 @@ const batchTransferSig = ABI.Function.getSignature({
 		{ type: "uint256[]", name: "amounts" },
 	],
 });
-
-console.log("Batch transfer signature:", batchTransferSig);

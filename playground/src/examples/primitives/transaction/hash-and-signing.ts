@@ -1,7 +1,7 @@
-// Transaction Hashing: Compute transaction and signing hashes
-import * as Transaction from "../../../primitives/Transaction/index.js";
 import * as Address from "../../../primitives/Address/index.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+// Transaction Hashing: Compute transaction and signing hashes
+import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create transaction
 const tx: Transaction.EIP1559 = {
@@ -23,19 +23,9 @@ const tx: Transaction.EIP1559 = {
 // Get signing hash (what gets signed by private key)
 // This excludes signature fields to avoid circular dependency
 const signingHash = Transaction.getSigningHash(tx);
-console.log("Signing hash:", Hex.fromBytes(signingHash).toString());
-console.log("Signing hash length:", signingHash.length, "bytes (always 32)");
 
 // Compute transaction hash (includes signature)
 const txHash = Transaction.hash(tx);
-console.log("Transaction hash:", Hex.fromBytes(txHash).toString());
-console.log("Transaction hash length:", txHash.length, "bytes (always 32)");
-
-// The signing hash is used to create the signature
-// The transaction hash is the unique identifier after signing
-console.log("Hashes are different:", signingHash !== txHash);
 
 // Format transaction for display
 const formatted = Transaction.format(tx);
-console.log("Formatted transaction:");
-console.log(formatted.slice(0, 200) + "...");

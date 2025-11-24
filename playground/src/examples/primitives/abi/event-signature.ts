@@ -4,7 +4,6 @@ import * as ABI from "../../../primitives/ABI/index.js";
 const transferSignature = ABI.Event.getSelector(
 	"Transfer(address,address,uint256)",
 );
-console.log("Transfer signature:", transferSignature);
 
 // Example: Calculate signature from event definition
 const approvalSignature = ABI.Event.getSelector({
@@ -16,7 +15,6 @@ const approvalSignature = ABI.Event.getSelector({
 		{ type: "uint256", name: "value", indexed: false },
 	],
 });
-console.log("Approval signature:", approvalSignature);
 
 // Example: Event with multiple indexed parameters
 const swapSignature = ABI.Event.getSelector({
@@ -31,7 +29,6 @@ const swapSignature = ABI.Event.getSelector({
 		{ type: "address", name: "to", indexed: true },
 	],
 });
-console.log("Swap signature:", swapSignature);
 
 // Example: Event with array parameter
 const depositSignature = ABI.Event.getSelector({
@@ -42,7 +39,6 @@ const depositSignature = ABI.Event.getSelector({
 		{ type: "uint256[]", name: "amounts", indexed: false },
 	],
 });
-console.log("Deposit signature:", depositSignature);
 
 // Example: Common ERC721 event signatures
 const transferERC721 = ABI.Event.getSelector(
@@ -54,7 +50,3 @@ const approvalERC721 = ABI.Event.getSelector(
 const approvalForAll = ABI.Event.getSelector(
 	"ApprovalForAll(address,address,bool)",
 );
-
-console.log("ERC721 Transfer:", transferERC721);
-console.log("ERC721 Approval:", approvalERC721);
-console.log("ApprovalForAll:", approvalForAll);

@@ -25,23 +25,12 @@ const typedData = {
 
 // Hash typed data - produces 32-byte digest ready for signing
 const hash = EIP712.hashTypedData(typedData);
-console.log("Typed data hash:", Hex.fromBytes(hash).toString());
-console.log("Hash length:", hash.length, "bytes");
 
 // Domain separator binds signature to specific app + chain
 const domainHash = EIP712.Domain.hash(typedData.domain);
-console.log(
-	"Domain separator:",
-	Hex.fromBytes(domainHash).toString().slice(0, 20) + "...",
-);
 
 // Type encoding - canonical string representation
 const typeEncoding = EIP712.encodeType("Message", typedData.types);
-console.log("Type encoding:", typeEncoding);
 
 // Type hash - keccak256 of type encoding
 const typeHash = EIP712.hashType("Message", typedData.types);
-console.log(
-	"Type hash:",
-	Hex.fromBytes(typeHash).toString().slice(0, 20) + "...",
-);

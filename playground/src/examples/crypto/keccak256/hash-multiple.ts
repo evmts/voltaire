@@ -8,25 +8,12 @@ const chunk3 = Hex.toBytes("0x0506");
 
 // Hash all chunks together
 const multiHash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
-console.log("Hash of chunks:", Hex.fromBytes(multiHash));
 
 // Equivalent to concatenating first, then hashing
 const concatenated = new Uint8Array([...chunk1, ...chunk2, ...chunk3]);
 const singleHash = Keccak256.hash(concatenated);
-console.log("Hash of concat:", Hex.fromBytes(singleHash));
-
-// Results are identical
-console.log(
-	"Results match:",
-	Hex.fromBytes(multiHash) === Hex.fromBytes(singleHash),
-);
 
 // Useful for merkle tree construction
 const left = Keccak256.hash(new Uint8Array([0x01]));
 const right = Keccak256.hash(new Uint8Array([0x02]));
 const parent = Keccak256.hashMultiple([left, right]);
-
-console.log("\nMerkle tree:");
-console.log("Left leaf:", Hex.fromBytes(left).slice(0, 18), "...");
-console.log("Right leaf:", Hex.fromBytes(right).slice(0, 18), "...");
-console.log("Parent:", Hex.fromBytes(parent).slice(0, 18), "...");

@@ -1,6 +1,6 @@
+import * as Address from "../../../primitives/Address/index.js";
 // Transaction Replacement: Bump fees to replace pending transaction
 import * as Transaction from "../../../primitives/Transaction/index.js";
-import * as Address from "../../../primitives/Address/index.js";
 
 // Original pending transaction
 const pendingTx: Transaction.EIP1559 = {
@@ -19,40 +19,20 @@ const pendingTx: Transaction.EIP1559 = {
 	s: new Uint8Array(32),
 };
 
-console.log("=== Original Pending Transaction ===");
-console.log("Nonce:", pendingTx.nonce);
-console.log("Max priority fee:", pendingTx.maxPriorityFeePerGas);
-console.log("Max fee per gas:", pendingTx.maxFeePerGas);
-
 // Replace with default 10% fee bump
 const replaced = Transaction.replaceWith(pendingTx);
-console.log("\n=== Replaced Transaction (default 10% bump) ===");
-console.log("Nonce (same):", replaced.nonce);
 if ("maxPriorityFeePerGas" in replaced) {
-	console.log("Max priority fee:", replaced.maxPriorityFeePerGas);
-	console.log(
-		"Priority fee increase:",
-		replaced.maxPriorityFeePerGas - pendingTx.maxPriorityFeePerGas,
-	);
 }
 if ("maxFeePerGas" in replaced) {
-	console.log("Max fee per gas:", replaced.maxFeePerGas);
-	console.log(
-		"Max fee increase:",
-		replaced.maxFeePerGas - pendingTx.maxFeePerGas,
-	);
 }
 
 // Replace with custom fee bump
 const customReplaced = Transaction.replaceWith(pendingTx, {
 	feeBumpPercent: 20, // 20% increase
 });
-console.log("\n=== Replaced Transaction (20% bump) ===");
 if ("maxPriorityFeePerGas" in customReplaced) {
-	console.log("Max priority fee:", customReplaced.maxPriorityFeePerGas);
 }
 if ("maxFeePerGas" in customReplaced) {
-	console.log("Max fee per gas:", customReplaced.maxFeePerGas);
 }
 
 // For legacy transactions
@@ -70,7 +50,3 @@ const pendingLegacy: Transaction.Legacy = {
 };
 
 const replacedLegacy = Transaction.replaceWith(pendingLegacy);
-console.log("\n=== Replaced Legacy Transaction ===");
-console.log("Original gas price:", pendingLegacy.gasPrice);
-console.log("New gas price:", replacedLegacy.gasPrice);
-console.log("Increase:", replacedLegacy.gasPrice - pendingLegacy.gasPrice);

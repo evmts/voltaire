@@ -14,8 +14,6 @@ const transferResult = ABI.Function.decodeResult(
 	transferReturnData,
 );
 
-console.log("Transfer result:", transferResult);
-
 // Example: Decode balanceOf return value
 const balanceData = Hex.fromString(
 	"0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
@@ -28,8 +26,6 @@ const balance = ABI.Function.decodeResult(
 	},
 	balanceData,
 );
-
-console.log("Balance:", balance);
 
 // Example: Decode function with multiple return values
 const getReservesData = Hex.fromString(
@@ -51,5 +47,3 @@ const reserves = ABI.Function.decodeResult(
 	},
 	getReservesData,
 );
-
-console.log("Reserves:", reserves);

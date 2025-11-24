@@ -13,9 +13,6 @@ const governorAddress = Address.from(
 	"0xc0Da02939E1441F497fd74F78cE7Decb17B66529",
 ); // Compound Governor
 
-console.log("Voter address:", voterAddress.toHex());
-console.log("Governor contract:", governorAddress.toHex());
-
 // Governance vote typed data
 const vote = {
 	domain: {
@@ -42,35 +39,10 @@ const vote = {
 
 // Voter signs ballot off-chain (gasless voting)
 const signature = EIP712.signTypedData(vote, voterPrivateKey);
-console.log(
-	"Vote signature r:",
-	Hex.fromBytes(signature.r).toString().slice(0, 20) + "...",
-);
-console.log(
-	"Vote signature s:",
-	Hex.fromBytes(signature.s).toString().slice(0, 20) + "...",
-);
-console.log("Vote signature v:", signature.v);
 
 // Verify vote signature
 const recovered = EIP712.recoverAddress(signature, vote);
 const isValid = EIP712.verifyTypedData(signature, vote, voterAddress);
-console.log("Vote signature valid:", isValid);
-console.log(
-	"Recovered voter matches:",
-	recovered.equals(voterAddress),
-);
 
 // Vote hash
 const voteHash = EIP712.hashTypedData(vote);
-console.log("Vote hash:", Hex.fromBytes(voteHash).toString());
-
-console.log("\nVote details:");
-console.log("- Proposal #42");
-console.log("- Position: FOR");
-console.log("- Reason provided");
-console.log("\nBenefits:");
-console.log("- Voter signs off-chain (no gas)");
-console.log("- Aggregator batches votes");
-console.log("- Single tx to submit all votes");
-console.log("- Snapshot-style governance");

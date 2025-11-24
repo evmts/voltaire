@@ -8,8 +8,8 @@
  * - Filtering logs
  */
 
-import * as Siwe from "../../src/primitives/Siwe/index.js";
 import * as EventLog from "../../src/primitives/EventLog/index.js";
+import * as Siwe from "../../src/primitives/Siwe/index.js";
 
 // Parse a SIWE message
 const siweMessage = `example.com wants you to sign in with your Ethereum account:

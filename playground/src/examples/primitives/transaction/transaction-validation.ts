@@ -1,6 +1,6 @@
+import * as Address from "../../../primitives/Address/index.js";
 // Transaction Validation: Validate transaction fields
 import * as Transaction from "../../../primitives/Transaction/index.js";
-import * as Address from "../../../primitives/Address/index.js";
 
 // Create transaction to validate
 const tx: Transaction.EIP1559 = {
@@ -19,52 +19,27 @@ const tx: Transaction.EIP1559 = {
 	s: new Uint8Array(32),
 };
 
-console.log("=== Transaction Validation ===");
-
 // Validate gas price
 try {
 	Transaction.validateGasPrice(tx);
-	console.log("Gas price: VALID");
-} catch (error) {
-	console.log("Gas price: INVALID -", error);
-}
+} catch (error) {}
 
 // Validate gas limit
 try {
 	Transaction.validateGasLimit(tx);
-	console.log("Gas limit: VALID");
-} catch (error) {
-	console.log("Gas limit: INVALID -", error);
-}
+} catch (error) {}
 
 // Validate nonce
 try {
 	Transaction.validateNonce(tx);
-	console.log("Nonce: VALID");
-} catch (error) {
-	console.log("Nonce: INVALID -", error);
-}
+} catch (error) {}
 
 // Validate value
 try {
 	Transaction.validateValue(tx);
-	console.log("Value: VALID");
-} catch (error) {
-	console.log("Value: INVALID -", error);
-}
+} catch (error) {}
 
 // Validate chain ID
 try {
 	Transaction.validateChainId(tx);
-	console.log("Chain ID: VALID");
-} catch (error) {
-	console.log("Chain ID: INVALID -", error);
-}
-
-console.log("\n=== Field Constraints ===");
-console.log(
-	"maxPriorityFeePerGas <= maxFeePerGas:",
-	tx.maxPriorityFeePerGas <= tx.maxFeePerGas,
-);
-console.log("gasLimit >= 21000 (intrinsic gas):", tx.gasLimit >= 21_000n);
-console.log("nonce is non-negative:", tx.nonce >= 0n);
+} catch (error) {}

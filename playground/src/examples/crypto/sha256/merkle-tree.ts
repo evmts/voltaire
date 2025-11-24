@@ -40,17 +40,9 @@ const tx4 = new TextEncoder().encode("Dave sends 1 ETH to Eve");
 
 const leaves = [tx1, tx2, tx3, tx4];
 
-console.log("Merkle Tree with SHA256:\n");
-console.log("Leaves:", leaves.length);
-
 const root = merkleRoot(leaves);
-console.log("Root:", Hex.fromBytes(root));
-
-// Show intermediate hashes
-console.log("\nLeaf hashes:");
 leaves.forEach((leaf, i) => {
 	const hash = SHA256.hash(leaf);
-	console.log(`L${i}:`, Hex.fromBytes(hash).slice(0, 20) + "...");
 });
 
 // Adding a leaf changes the root
@@ -58,12 +50,6 @@ const txExtra = new TextEncoder().encode("Eve sends 0.5 ETH to Frank");
 const leavesWithExtra = [...leaves, txExtra];
 const newRoot = merkleRoot(leavesWithExtra);
 
-console.log("\nRoot changes with new leaf:");
-console.log("Original:", Hex.fromBytes(root).slice(0, 20) + "...");
-console.log("New root:", Hex.fromBytes(newRoot).slice(0, 20) + "...");
-console.log("Different:", Hex.fromBytes(root) !== Hex.fromBytes(newRoot));
-
 // Even number of leaves
 const evenLeaves = [tx1, tx2];
 const evenRoot = merkleRoot(evenLeaves);
-console.log("\nEven leaves (2):", Hex.fromBytes(evenRoot).slice(0, 20) + "...");
