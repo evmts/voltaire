@@ -7,6 +7,7 @@ export interface FileNode {
 
 export class FileTree {
 	private container: HTMLElement;
+	private files: FileNode[];
 	private onFileSelect: (file: FileNode) => void;
 	private activeFile: string | null = null;
 
@@ -22,18 +23,10 @@ export class FileTree {
 	}
 
 	private render(): void {
-		console.log("Rendering file tree with", this.files.length, "root nodes");
 		this.container.innerHTML = "";
-		this.files.forEach((node) => {
-			console.log(
-				"Rendering node:",
-				node.name,
-				"children:",
-				node.children?.length,
-			);
+		this.files.forEach((node: FileNode) => {
 			this.renderNode(node, this.container);
 		});
-		console.log("File tree HTML:", this.container.innerHTML.substring(0, 200));
 	}
 
 	private renderNode(node: FileNode, parent: HTMLElement): void {

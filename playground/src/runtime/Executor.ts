@@ -83,10 +83,9 @@ export class Executor {
 				if (imp.isNamed && imp.names) {
 					// Destructure from module: const { Address, toHex } = modules['path'];
 					return `const { ${imp.names.join(", ")} } = modules['${imp.path}'];`;
-				} else {
-					// Namespace import: const Name = modules['path'];
-					return `const ${imp.name} = modules['${imp.path}'];`;
 				}
+				// Namespace import: const Name = modules['path'];
+				return `const ${imp.name} = modules['${imp.path}'];`;
 			})
 			.join("\n");
 

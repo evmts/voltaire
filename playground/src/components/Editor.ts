@@ -1,19 +1,77 @@
-import { init } from "modern-monaco/core";
+import { init } from "modern-monaco";
+import type { DisplaySettings } from "../features/DisplaySettings.js";
+import { registerImportCompletion } from "../features/ImportCompletion.js";
+import { registerVoltaireSnippets } from "../features/Snippets.js";
+import { registerQuickFixes } from "../features/QuickFixes.js";
+import { registerNavigationProviders } from "../features/Navigation.js";
+import { generateTypeDefinitions } from "../runtime/TypeDefinitions.js";
+import {
+	ESLintIntegration,
+	createLintStatusIndicator,
+} from "../features/Linting.js";
+import { InlineSuggestions } from "../features/InlineSuggestions.js";
 
 export class Editor {
 	private editor: any = null;
 	private monaco: any = null;
 	private container: HTMLElement;
+	private completionDisposables: any[] = [];
+	private quickFixDisposable: any = null;
+	private navigationDisposables: any[] = [];
+	private lintIntegration: ESLintIntegration | null = null;
+	private lintStatusElement: HTMLElement | null = null;
+	private inlineSuggestions: InlineSuggestions | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
 	}
 
 	async init(): Promise<void> {
-		// Load monaco-editor-core (without LSP)
+		// Load monaco with LSP support
 		this.monaco = await init({
 			theme: "vitesse-dark",
+			lsp: {
+				typescript: {
+					compilerOptions: {
+						target: 99, // ESNext
+						module: 99, // ESNext
+						lib: ["ES2023", "DOM"],
+						moduleResolution: 2, // Node
+						allowSyntheticDefaultImports: true,
+						esModuleInterop: true,
+						strict: true,
+						skipLibCheck: true,
+						resolveJsonModule: true,
+					},
+				},
+			},
 		});
+
+		// Add Voltaire type definitions to TypeScript language service
+		const typeDefinitions = generateTypeDefinitions();
+		for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
+			this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+				typeDef,
+				`file:///node_modules/${modulePath}/index.d.ts`,
+			);
+		}
+
+		// Register import completion providers
+		this.completionDisposables = registerImportCompletion(
+			typeDefinitions,
+			this.monaco,
+		);
+
+		// Register Voltaire code snippets
+		registerVoltaireSnippets(this.monaco);
+
+		// Register quick fix code actions
+		this.quickFixDisposable = registerQuickFixes(this.monaco);
+
+		// Register inline suggestions
+		this.inlineSuggestions = new InlineSuggestions();
+		const inlineDisposable = this.inlineSuggestions.register(this.monaco);
+		this.completionDisposables.push(inlineDisposable);
 
 		// Create editor instance
 		this.editor = this.monaco.editor.create(this.container, {
@@ -27,6 +85,25 @@ export class Editor {
 			wordWrap: "on",
 			wrappingIndent: "indent",
 			padding: { top: 8, bottom: 8 },
+		});
+
+		// Register navigation providers (F12, Alt+F12, Shift+F12)
+		this.navigationDisposables = registerNavigationProviders(
+			this.editor,
+			this.monaco,
+		);
+
+		// Initialize ESLint integration
+		this.lintIntegration = new ESLintIntegration(this.monaco, this.editor);
+
+		// Create and add status indicator
+		const statusIndicator = createLintStatusIndicator();
+		this.lintStatusElement = statusIndicator.element;
+		this.container.appendChild(this.lintStatusElement);
+
+		// Connect status updates
+		this.lintIntegration.setStatusCallback((status) => {
+			statusIndicator.update(status);
 		});
 	}
 
@@ -43,6 +120,55 @@ export class Editor {
 	setReadOnly(readOnly: boolean): void {
 		if (this.editor) {
 			this.editor.updateOptions({ readOnly });
+		}
+	}
+
+	applySettings(settings: DisplaySettings): void {
+		if (this.editor) {
+			this.editor.updateOptions({
+				fontSize: settings.fontSize,
+				fontFamily: settings.fontFamily,
+				minimap: { enabled: settings.minimap },
+				lineNumbers: settings.lineNumbers,
+				wordWrap: settings.wordWrap,
+			});
+		}
+	}
+
+	getEditor(): any {
+		return this.editor;
+	}
+
+	getMonaco(): any {
+		return this.monaco;
+	}
+
+	getLintIntegration(): ESLintIntegration | null {
+		return this.lintIntegration;
+	}
+
+	getInlineSuggestions(): InlineSuggestions | null {
+		return this.inlineSuggestions;
+	}
+
+	dispose(): void {
+		if (this.lintIntegration) {
+			this.lintIntegration.dispose();
+		}
+		if (this.lintStatusElement && this.lintStatusElement.parentNode) {
+			this.lintStatusElement.parentNode.removeChild(this.lintStatusElement);
+		}
+		if (this.quickFixDisposable) {
+			this.quickFixDisposable.dispose();
+		}
+		if (this.inlineSuggestions) {
+			this.inlineSuggestions.destroy();
+		}
+		for (const disposable of this.completionDisposables) {
+			disposable.dispose();
+		}
+		for (const disposable of this.navigationDisposables) {
+			disposable.dispose();
 		}
 	}
 }

@@ -30,7 +30,7 @@ export class ImportMapManager {
 			return;
 		}
 
-		const importMap = this.generateImportMap();
+		const importMap = ImportMapManager.generateImportMap();
 		const script = document.createElement("script");
 		script.type = "importmap";
 		script.textContent = JSON.stringify(importMap, null, 2);
@@ -38,6 +38,6 @@ export class ImportMapManager {
 	}
 
 	static getImportMap() {
-		return this.generateImportMap();
+		return ImportMapManager.generateImportMap();
 	}
 }

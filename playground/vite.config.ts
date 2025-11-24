@@ -1,7 +1,10 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
-import { resolve } from "path";
 
 export default defineConfig({
+	test: {
+		environment: "jsdom",
+	},
 	resolve: {
 		alias: {
 			"voltaire/primitives/Address": resolve(
