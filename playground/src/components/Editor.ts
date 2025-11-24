@@ -24,6 +24,13 @@ export class Editor {
 		// Generate type definitions for Voltaire modules
 		const typeDefinitions = generateTypeDefinitions();
 
+		// Build importMap for TypeScript LSP
+		const imports: Record<string, string> = {};
+		for (const modulePath of Object.keys(typeDefinitions)) {
+			// Map to .d.ts files that modern-monaco's worker can fetch
+			imports[modulePath] = `/${modulePath}.d.ts`;
+		}
+
 		// Load monaco with TypeScript LSP support
 		this.monaco = await init({
 			theme: "vitesse-dark",
@@ -39,6 +46,9 @@ export class Editor {
 						strict: true,
 						skipLibCheck: true,
 						resolveJsonModule: true,
+					},
+					importMap: {
+						imports,
 					},
 				},
 			},
