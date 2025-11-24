@@ -1,3 +1,7 @@
+// Debug: capture unhandled errors
+window.addEventListener('error', (e) => console.error('Global error:', e.message, e.filename, e.lineno));
+window.addEventListener('unhandledrejection', (e) => console.error('Unhandled rejection:', e.reason));
+
 import "./style.css";
 import { FileTree, type FileNode } from "./components/FileTree.js";
 import { Editor } from "./components/Editor.js";

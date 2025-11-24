@@ -1,12 +1,60 @@
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import { readFileSync } from "node:fs";
+import { defineConfig, type Plugin } from "vite";
+
+// Plugin to serve typescript as ESM and transform worker imports
+function typescriptEsmPlugin(): Plugin {
+	return {
+		name: "typescript-esm",
+		configureServer(server) {
+			server.middlewares.use((req, res, next) => {
+				// Serve typescript as ESM
+				if (req.url === "/typescript" || req.url === "/typescript.js") {
+					const tsPath = resolve(__dirname, "node_modules/typescript/lib/typescript.js");
+					const content = readFileSync(tsPath, "utf-8");
+					const esmContent = `${content}\nexport default ts;\nexport { ts };`;
+					res.setHeader("Content-Type", "application/javascript");
+					res.end(esmContent);
+					return;
+				}
+
+				// Transform worker files to rewrite bare typescript import
+				if (req.url?.includes("modern-monaco") && req.url?.endsWith("worker.mjs")) {
+					const filePath = resolve(__dirname, req.url.replace(/^\//, ""));
+					try {
+						let content = readFileSync(filePath, "utf-8");
+						// Rewrite bare specifier to absolute path
+						content = content.replace(
+							/import\s+ts\s+from\s+["']typescript["']/g,
+							'import ts from "/typescript"'
+						);
+						res.setHeader("Content-Type", "application/javascript");
+						res.end(content);
+						return;
+					} catch {
+						// Fall through to next handler
+					}
+				}
+
+				next();
+			});
+		},
+	};
+}
 
 export default defineConfig({
+	plugins: [typescriptEsmPlugin()],
 	test: {
 		environment: "jsdom",
 	},
+	optimizeDeps: {
+		exclude: ["modern-monaco"],
+		include: ["typescript"],
+	},
 	resolve: {
 		alias: {
+			// Serve typescript as ESM for workers
+			typescript: resolve(__dirname, "node_modules/typescript/lib/typescript.js"),
 			"voltaire/primitives/Address": resolve(
 				__dirname,
 				"../src/primitives/Address",

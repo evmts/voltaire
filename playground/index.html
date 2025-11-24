@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voltaire Playground</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "modern-monaco/editor-core": "/node_modules/modern-monaco/dist/editor-core.mjs",
+          "modern-monaco/editor-worker": "/node_modules/modern-monaco/dist/editor-worker.mjs",
+          "modern-monaco/editor-worker-main": "/node_modules/modern-monaco/dist/editor-worker-main.mjs",
+          "modern-monaco/lsp": "/node_modules/modern-monaco/dist/lsp/index.mjs",
+          "typescript": "/typescript"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="app">

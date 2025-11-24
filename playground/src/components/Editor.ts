@@ -21,7 +21,10 @@ export class Editor {
 	}
 
 	async init(): Promise<void> {
-		// Load monaco with LSP support
+		// Generate type definitions for Voltaire modules
+		const typeDefinitions = generateTypeDefinitions();
+
+		// Load monaco with TypeScript LSP support
 		this.monaco = await init({
 			theme: "vitesse-dark",
 			lsp: {
@@ -41,13 +44,14 @@ export class Editor {
 			},
 		});
 
-		// Add Voltaire type definitions to TypeScript language service
-		const typeDefinitions = generateTypeDefinitions();
-		for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
-			this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-				typeDef,
-				`file:///node_modules/${modulePath}/index.d.ts`,
-			);
+		// Add Voltaire type definitions if TypeScript language service is available
+		if (this.monaco.languages?.typescript?.typescriptDefaults) {
+			for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
+				this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+					typeDef,
+					`file:///node_modules/${modulePath}/index.d.ts`,
+				);
+			}
 		}
 
 		// Register import completion providers
@@ -67,10 +71,8 @@ export class Editor {
 		const inlineDisposable = this.inlineSuggestions.register(this.monaco);
 		this.completionDisposables.push(inlineDisposable);
 
-		// Create editor instance
+		// Create editor instance without initial model
 		this.editor = this.monaco.editor.create(this.container, {
-			value: "// Select a file from the tree to begin",
-			language: "typescript",
 			automaticLayout: true,
 			minimap: { enabled: false },
 			fontSize: 14,
@@ -80,6 +82,13 @@ export class Editor {
 			wrappingIndent: "indent",
 			padding: { top: 8, bottom: 8 },
 		});
+
+		// Create and attach model separately (required by modern-monaco LSP)
+		const model = this.monaco.editor.createModel(
+			"// Select a file from the tree to begin",
+			"typescript",
+		);
+		this.editor.setModel(model);
 
 		// Register navigation providers (F12, Alt+F12, Shift+F12)
 		this.navigationDisposables = registerNavigationProviders(
