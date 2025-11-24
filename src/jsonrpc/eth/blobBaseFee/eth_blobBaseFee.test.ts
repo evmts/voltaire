@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, BlobBaseFeeRequest } from "./eth_blobBaseFee.js";
+import { describe, expect, test } from "vitest";
+import { BlobBaseFeeRequest, method } from "./eth_blobBaseFee.js";
 
 describe("eth_blobBaseFee", () => {
 	describe("Request Creation", () => {

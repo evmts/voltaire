@@ -1,11 +1,11 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	TimeoutError,
 	createDeferred,
+	executeWithTimeout,
 	sleep,
 	withTimeout,
 	wrapWithTimeout,
-	executeWithTimeout,
 } from "./timeout.js";
 
 describe("TimeoutError", () => {

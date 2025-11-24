@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	InvalidAddressLengthError,
 	InvalidHexFormatError,
 	InvalidHexStringError,
-	InvalidAddressLengthError,
 	InvalidValueError,
 	NotImplementedError,
 } from "./errors.js";

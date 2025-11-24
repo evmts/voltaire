@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, GetBalanceRequest } from "./eth_getBalance.js";
+import { describe, expect, test } from "vitest";
+import { GetBalanceRequest, method } from "./eth_getBalance.js";
 
 describe("eth_getBalance", () => {
 	describe("Request Creation", () => {

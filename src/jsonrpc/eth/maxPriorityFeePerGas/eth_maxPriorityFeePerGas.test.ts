@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-	method,
 	MaxPriorityFeePerGasRequest,
+	method,
 } from "./eth_maxPriorityFeePerGas.js";
 
 describe("eth_maxPriorityFeePerGas", () => {

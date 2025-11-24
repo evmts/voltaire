@@ -1,6 +1,6 @@
-import { describe, it, expectTypeOf } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 import type { BrandedHash } from "./BrandedHash.js";
-import { SIZE, ZERO, hashSymbol } from "./BrandedHash.js";
+import { type SIZE, ZERO, hashSymbol } from "./BrandedHash.js";
 
 type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
 	? 1
@@ -35,7 +35,7 @@ describe("BrandedHash", () => {
 		});
 
 		it("hashSymbol is unique", () => {
-			expectTypeOf(hashSymbol).not.toEqualTypeOf<Symbol>();
+			expectTypeOf(hashSymbol).not.toEqualTypeOf<symbol>();
 		});
 	});
 

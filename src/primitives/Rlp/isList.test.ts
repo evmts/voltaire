@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { RlpDecodingError } from "./RlpError.js";
 import { encode } from "./encode.js";
 import { isList } from "./isList.js";
-import { RlpDecodingError } from "./RlpError.js";
 
 describe("Rlp.isList", () => {
 	it("identifies empty list", () => {

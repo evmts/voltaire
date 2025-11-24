@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { dividedBy } from "./dividedBy.js";
 import { from } from "./from.js";
-import { ZERO, MAX, ONE } from "./constants.js";
 
 describe("Uint256.dividedBy", () => {
 	describe("known values", () => {

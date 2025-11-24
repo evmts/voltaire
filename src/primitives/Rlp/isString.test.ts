@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { RlpDecodingError } from "./RlpError.js";
 import { encode } from "./encode.js";
 import { isString } from "./isString.js";
-import { RlpDecodingError } from "./RlpError.js";
 
 describe("Rlp.isString", () => {
 	it("identifies single byte < 0x80", () => {

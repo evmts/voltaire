@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
 import type { TransactionEIP1559Type } from "./TransactionEIP1559Type.js";
 import * as TransactionEIP1559 from "./index.js";
-import { Address } from "../../Address/index.js";
 
 describe("TransactionEIP1559.getEffectiveGasPrice", () => {
 	it("returns baseFee + maxPriorityFee when maxFee allows", () => {

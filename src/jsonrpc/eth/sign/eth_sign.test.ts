@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, SignRequest } from "./eth_sign.js";
+import { describe, expect, test } from "vitest";
+import { SignRequest, method } from "./eth_sign.js";
 
 describe("eth_sign", () => {
 	describe("Request Creation", () => {
@@ -57,7 +57,7 @@ describe("eth_sign", () => {
 
 		test("handles long message", () => {
 			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
-			const message = "0x" + "a".repeat(200);
+			const message = `0x${"a".repeat(200)}`;
 			const req = SignRequest(address, message);
 			expect(req.params?.[1]).toBe(message);
 		});

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { clone } from "./clone.js";
-import { fromHex } from "./fromHex.js";
-import { fromBytes } from "./fromBytes.js";
 import { equals } from "./equals.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
 
 describe("clone", () => {
 	describe("cloning", () => {

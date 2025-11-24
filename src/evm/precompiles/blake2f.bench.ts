@@ -6,8 +6,8 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import * as loader from "../../wasm-loader/loader.js";
 import { Blake2 } from "../../crypto/Blake2/index.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(

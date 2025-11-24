@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { isPowerOf2 } from "./isPowerOf2.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { isPowerOf2 } from "./isPowerOf2.js";
 
 describe("Uint256.isPowerOf2", () => {
 	describe("true cases", () => {

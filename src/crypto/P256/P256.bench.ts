@@ -10,13 +10,13 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { bench, run } from "mitata";
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { bench, run } from "mitata";
 import { Hash } from "../../primitives/Hash/index.js";
 import { loadWasm } from "../../wasm-loader/loader.js";
-import { P256 } from "./P256.js";
 import { P256Wasm } from "../p256.wasm.js";
+import { P256 } from "./P256.js";
 
 // Load WASM before running benchmarks
 await loadWasm(

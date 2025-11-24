@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
-import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
+import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { fromPublicKey } from "../Address/fromPublicKey.js";
 import {
 	EIP1271_MAGIC_VALUE,

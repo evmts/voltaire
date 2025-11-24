@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-	method,
 	GetTransactionByHashRequest,
+	method,
 } from "./eth_getTransactionByHash.js";
 
 describe("eth_getTransactionByHash", () => {

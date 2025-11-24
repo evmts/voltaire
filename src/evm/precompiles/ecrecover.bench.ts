@@ -6,9 +6,9 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import * as loader from "../../wasm-loader/loader.js";
-import { secp256k1 } from "../../crypto/secp256k1/index.js";
 import * as Hash from "../../crypto/Keccak256/index.js";
+import { secp256k1 } from "../../crypto/secp256k1/index.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(

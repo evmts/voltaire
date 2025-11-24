@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { bitLength } from "./bitLength.js";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX, ONE } from "./constants.js";
 
 describe("Uint256.bitLength", () => {
 	describe("known values", () => {

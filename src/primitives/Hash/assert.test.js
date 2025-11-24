@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { assert } from "./assert.js";
-import { fromHex } from "./fromHex.js";
 import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
 
 describe("assert", () => {
 	describe("valid hashes", () => {

@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { toNumber } from "./toNumber.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { toNumber } from "./toNumber.js";
 
 describe("Uint256.toNumber", () => {
 	describe("known values", () => {

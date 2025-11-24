@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { modulo } from "./modulo.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { modulo } from "./modulo.js";
 
 describe("Uint64.modulo", () => {
 	describe("known values", () => {

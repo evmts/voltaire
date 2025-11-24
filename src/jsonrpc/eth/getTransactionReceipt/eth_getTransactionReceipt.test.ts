@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-	method,
 	GetTransactionReceiptRequest,
+	method,
 } from "./eth_getTransactionReceipt.js";
 
 describe("eth_getTransactionReceipt", () => {

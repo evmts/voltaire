@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Hardfork from "./index.js";
 import { fromString } from "./fromString.js";
+import * as Hardfork from "./index.js";
 
 describe("Hardfork.fromString", () => {
 	it("parses lowercase hardfork name", () => {

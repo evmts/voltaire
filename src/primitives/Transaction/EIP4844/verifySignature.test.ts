@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
+import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
+import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
 import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
 import * as TransactionEIP4844 from "./index.js";
-import { Address } from "../../Address/index.js";
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 
 describe("TransactionEIP4844.verifySignature", () => {
 	it("returns true for valid signature (yParity 0)", () => {

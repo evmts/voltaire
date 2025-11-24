@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, BlockNumberRequest } from "./eth_blockNumber.js";
+import { describe, expect, test } from "vitest";
+import { BlockNumberRequest, method } from "./eth_blockNumber.js";
 
 describe("eth_blockNumber", () => {
 	describe("Request Creation", () => {

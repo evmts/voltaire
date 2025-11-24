@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, GetStorageAtRequest } from "./eth_getStorageAt.js";
+import { describe, expect, test } from "vitest";
+import { GetStorageAtRequest, method } from "./eth_getStorageAt.js";
 
 describe("eth_getStorageAt", () => {
 	describe("Request Creation", () => {

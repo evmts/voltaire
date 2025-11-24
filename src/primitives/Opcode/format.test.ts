@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import * as Opcode from "./Opcode.js";
-import { format } from "./format.js";
 import type { Instruction } from "./OpcodeType.js";
+import { format } from "./format.js";
 
 describe("Opcode.format", () => {
 	it("formats simple instruction without immediate", () => {
@@ -65,7 +65,7 @@ describe("Opcode.format", () => {
 			immediate: new Uint8Array(Array(32).fill(0xff)),
 		};
 		const result = format(inst);
-		expect(result).toBe("0x0000: PUSH32 0x" + "ff".repeat(32));
+		expect(result).toBe(`0x0000: PUSH32 0x${"ff".repeat(32)}`);
 	});
 
 	it("formats PUSH with zero immediate", () => {

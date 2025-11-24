@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { toHex } from "./toHex.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE, MAX } from "./constants.js";
+import { toHex } from "./toHex.js";
 
 describe("Uint64.toHex", () => {
 	it("converts zero", () => {

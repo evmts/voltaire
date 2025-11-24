@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { toBytes } from "./toBytes.js";
-import { fromHex } from "./fromHex.js";
 import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { toBytes } from "./toBytes.js";
 
 describe("toBytes", () => {
 	describe("conversion", () => {

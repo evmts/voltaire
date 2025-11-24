@@ -3,12 +3,12 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
-import { FromPublicKey } from "../Address/fromPublicKey.js";
-import { encode as rlpEncode } from "../../Rlp/encode.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import { FromPublicKey } from "../Address/fromPublicKey.js";
 import { Sign } from "./sign.js";
 
 // Create address factory

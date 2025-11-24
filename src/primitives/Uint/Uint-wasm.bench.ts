@@ -7,8 +7,8 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import * as loader from "../../wasm-loader/loader.js";
-import * as Uint from "./index.js";
 import * as UintWasm from "./Uint256.wasm.js";
+import * as Uint from "./index.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(

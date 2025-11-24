@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, GetFilterChangesRequest } from "./eth_getFilterChanges.js";
+import { describe, expect, test } from "vitest";
+import { GetFilterChangesRequest, method } from "./eth_getFilterChanges.js";
 
 describe("eth_getFilterChanges", () => {
 	describe("Request Creation", () => {

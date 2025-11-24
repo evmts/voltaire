@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Address } from "./index.js";
 import { deduplicateAddresses } from "./deduplicateAddresses.js";
+import { Address } from "./index.js";
 
 describe("deduplicateAddresses", () => {
 	it("removes duplicate addresses preserving first occurrence", () => {

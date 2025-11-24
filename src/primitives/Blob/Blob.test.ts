@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { Blob } from "./index.js";
+import type {
+	BrandedBlob,
+	Commitment,
+	Proof,
+	VersionedHash,
+} from "./BlobType.js";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	COMMITMENT_VERSION_KZG,
@@ -9,12 +14,7 @@ import {
 	SIZE,
 	TARGET_GAS_PER_BLOCK,
 } from "./constants.js";
-import type {
-	BrandedBlob,
-	Commitment,
-	Proof,
-	VersionedHash,
-} from "./BlobType.js";
+import { Blob } from "./index.js";
 
 // ============================================================================
 // Blob Class API Tests

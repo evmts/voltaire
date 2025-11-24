@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { createEmpty } from "./createEmpty.js";
-import { toBigInt as nonceToBigInt } from "../Nonce/index.js";
+import { describe, expect, it } from "vitest";
 import { toU256 as weiToU256 } from "../Denomination/Wei.js";
-import * as StateRoot from "../StateRoot/index.js";
 import { Hash } from "../Hash/index.js";
+import { toBigInt as nonceToBigInt } from "../Nonce/index.js";
+import * as StateRoot from "../StateRoot/index.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_HASH } from "./AccountStateType.js";
+import { createEmpty } from "./createEmpty.js";
 
 describe("AccountState.createEmpty", () => {
 	describe("constructor tests", () => {

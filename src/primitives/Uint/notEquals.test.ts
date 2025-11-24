@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { notEquals } from "./notEquals.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX, ONE } from "./constants.js";
+import { notEquals } from "./notEquals.js";
 
 describe("Uint256.notEquals", () => {
 	describe("known values", () => {

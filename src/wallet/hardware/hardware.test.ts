@@ -14,31 +14,29 @@ vi.mock("@ledgerhq/hw-transport-webusb", () => {
 });
 
 vi.mock("@ledgerhq/hw-app-eth", () => {
-	const mockEth = vi.fn(function () {
-		return {
-			getAddress: vi.fn().mockResolvedValue({
-				address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-			}),
-			signTransaction: vi.fn().mockResolvedValue({
-				r: `0x${"1".repeat(64)}`,
-				s: `0x${"2".repeat(64)}`,
-				v: "1c",
-			}),
-			signPersonalMessage: vi.fn().mockResolvedValue({
-				r: `0x${"3".repeat(64)}`,
-				s: `0x${"4".repeat(64)}`,
-				v: "1b",
-			}),
-			signEIP712HashedMessage: vi.fn().mockResolvedValue({
-				r: `0x${"5".repeat(64)}`,
-				s: `0x${"6".repeat(64)}`,
-				v: "1c",
-			}),
-			getAppConfiguration: vi.fn().mockResolvedValue({
-				version: "1.10.0",
-			}),
-		};
-	});
+	const mockEth = vi.fn(() => ({
+		getAddress: vi.fn().mockResolvedValue({
+			address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+		}),
+		signTransaction: vi.fn().mockResolvedValue({
+			r: `0x${"1".repeat(64)}`,
+			s: `0x${"2".repeat(64)}`,
+			v: "1c",
+		}),
+		signPersonalMessage: vi.fn().mockResolvedValue({
+			r: `0x${"3".repeat(64)}`,
+			s: `0x${"4".repeat(64)}`,
+			v: "1b",
+		}),
+		signEIP712HashedMessage: vi.fn().mockResolvedValue({
+			r: `0x${"5".repeat(64)}`,
+			s: `0x${"6".repeat(64)}`,
+			v: "1c",
+		}),
+		getAppConfiguration: vi.fn().mockResolvedValue({
+			version: "1.10.0",
+		}),
+	}));
 	return {
 		default: mockEth,
 	};

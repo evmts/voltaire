@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as PublicKey from "./index.js";
-import { derivePublicKey } from "../derivePublicKey.js";
 import { PrivateKey } from "../../../primitives/PrivateKey/index.js";
+import { derivePublicKey } from "../derivePublicKey.js";
+import * as PublicKey from "./index.js";
 
 describe("Secp256k1.PublicKey.from", () => {
 	describe("from bytes", () => {
@@ -31,7 +31,7 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("from hex string", () => {
 		it("should create public key from hex string with 0x prefix", () => {
-			const hexStr = "0x" + "a".repeat(64) + "b".repeat(64); // 128 hex chars = 64 bytes
+			const hexStr = `0x${"a".repeat(64)}${"b".repeat(64)}`; // 128 hex chars = 64 bytes
 
 			const publicKey = PublicKey.from(hexStr);
 
@@ -77,19 +77,19 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("validation", () => {
 		it("should throw on invalid hex string", () => {
-			const invalidHex = "0x" + "g".repeat(128);
+			const invalidHex = `0x${"g".repeat(128)}`;
 
 			expect(() => PublicKey.from(invalidHex)).toThrow(/Invalid hex string/);
 		});
 
 		it("should throw on hex string with invalid characters", () => {
-			const invalidHex = "xyz123" + "a".repeat(122);
+			const invalidHex = `xyz123${"a".repeat(122)}`;
 
 			expect(() => PublicKey.from(invalidHex)).toThrow(/Invalid hex string/);
 		});
 
 		it("should throw on hex string with wrong length", () => {
-			const shortHex = "0x" + "a".repeat(126); // 63 bytes
+			const shortHex = `0x${"a".repeat(126)}`; // 63 bytes
 
 			expect(() => PublicKey.from(shortHex)).toThrow(
 				/Invalid public key hex length/,
@@ -147,7 +147,7 @@ describe("Secp256k1.PublicKey.from", () => {
 		});
 
 		it("should handle hex string at exact length boundary", () => {
-			const exactHex = "0x" + "a".repeat(128); // Exactly 64 bytes
+			const exactHex = `0x${"a".repeat(128)}`; // Exactly 64 bytes
 
 			const publicKey = PublicKey.from(exactHex);
 
@@ -163,11 +163,9 @@ describe("Secp256k1.PublicKey.from", () => {
 			const original = derivePublicKey(privateKey);
 
 			// Convert to hex
-			const hex =
-				"0x" +
-				Array.from(original)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const hex = `0x${Array.from(original)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 
 			// Convert back
 			const publicKey = PublicKey.from(hex);
@@ -189,7 +187,7 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("determinism", () => {
 		it("should produce same result for same hex string", () => {
-			const hexStr = "0x" + "1234567890abcdef".repeat(8);
+			const hexStr = `0x${"1234567890abcdef".repeat(8)}`;
 
 			const pk1 = PublicKey.from(hexStr);
 			const pk2 = PublicKey.from(hexStr);

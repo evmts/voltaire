@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, EstimateGasRequest } from "./eth_estimateGas.js";
+import { describe, expect, test } from "vitest";
+import { EstimateGasRequest, method } from "./eth_estimateGas.js";
 
 describe("eth_estimateGas", () => {
 	describe("Request Creation", () => {

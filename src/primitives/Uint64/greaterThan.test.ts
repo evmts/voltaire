@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { greaterThan } from "./greaterThan.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE, MAX } from "./constants.js";
+import { greaterThan } from "./greaterThan.js";
 
 describe("Uint64.greaterThan", () => {
 	describe("true cases", () => {

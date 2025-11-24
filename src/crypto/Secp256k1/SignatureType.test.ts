@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
-import type { Secp256k1SignatureType } from "./SignatureType.js";
 import type { HashType } from "../../primitives/Hash/index.js";
+import type { Secp256k1SignatureType } from "./SignatureType.js";
 
 type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 	? 1

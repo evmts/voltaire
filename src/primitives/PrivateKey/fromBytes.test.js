@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { fromBytes } from "./fromBytes.js";
+import { describe, expect, it } from "vitest";
 import { InvalidLengthError } from "../errors/index.js";
+import { fromBytes } from "./fromBytes.js";
 
 describe("PrivateKey.fromBytes", () => {
 	describe("constructor tests", () => {

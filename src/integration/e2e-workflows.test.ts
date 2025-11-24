@@ -13,23 +13,23 @@
  * 8. Block polling: Wait for block → poll for receipt → verify confirmation depth
  */
 
-import { describe, expect, it, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as Bip39 from "../crypto/Bip39/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
-import { PrivateKeySignerImpl } from "../crypto/signers/private-key-signer.js";
+import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
+import * as Secp256k1 from "../crypto/Secp256k1/index.js";
+import { recoverPublicKey } from "../crypto/Secp256k1/recoverPublicKey.js";
 import { Keccak256Wasm } from "../crypto/keccak256.wasm.js";
+import { PrivateKeySignerImpl } from "../crypto/signers/private-key-signer.js";
 import { Address, toHex as addressToHex } from "../primitives/Address/index.js";
 import { toChecksummed } from "../primitives/Address/internal-index.js";
-import * as Secp256k1 from "../crypto/Secp256k1/index.js";
-import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
-import * as SignedData from "../primitives/SignedData/index.js";
-import * as TypedData from "../primitives/TypedData/index.js";
-import { recoverPublicKey } from "../crypto/Secp256k1/recoverPublicKey.js";
-import * as Transaction from "../primitives/Transaction/index.js";
 import {
 	fromBytes as hexFromBytes,
 	toBytes as hexToBytes,
 } from "../primitives/Hex/index.js";
+import * as SignedData from "../primitives/SignedData/index.js";
+import * as Transaction from "../primitives/Transaction/index.js";
+import * as TypedData from "../primitives/TypedData/index.js";
 
 /**
  * Mock provider for simulating blockchain interactions.
@@ -37,7 +37,7 @@ import {
  */
 class MockEthereumProvider {
 	private accounts: Map<string, { nonce: number; balance: bigint }> = new Map();
-	private blockHeight: number = 1;
+	private blockHeight = 1;
 	private blockTimestamp: number = Date.now() / 1000;
 	private txReceipts: Map<string, any> = new Map();
 	private contractCode: Map<string, Uint8Array> = new Map();
@@ -76,14 +76,16 @@ class MockEthereumProvider {
 					miner: "0x0000000000000000000000000000000000000000",
 				};
 
-			case "eth_getBalance":
+			case "eth_getBalance": {
 				const addr = params[0].toLowerCase();
 				const balance = this.accounts.get(addr)?.balance ?? 0n;
 				return `0x${balance.toString(16)}`;
+			}
 
-			case "eth_getTransactionCount":
+			case "eth_getTransactionCount": {
 				const nonce = this.accounts.get(params[0].toLowerCase())?.nonce ?? 0;
 				return `0x${nonce.toString(16)}`;
+			}
 
 			case "eth_sendTransaction":
 			case "eth_sendRawTransaction": {
@@ -233,7 +235,7 @@ describe("E2E Workflows", () => {
 
 			// Step 6: Verify contract address is derivable
 			const expectedContractAddress = keccak256(
-				new TextEncoder().encode(testSigner.address + "0"),
+				new TextEncoder().encode(`${testSigner.address}0`),
 			);
 			expect(expectedContractAddress).toHaveLength(32);
 		});
@@ -303,7 +305,7 @@ describe("E2E Workflows", () => {
 			const balanceAfter = await provider.request("eth_call", [
 				{
 					to: toChecksummed(tokenContractAddress),
-					data: "0x70a08231" + testSigner.address.slice(2).padStart(64, "0"),
+					data: `0x70a08231${testSigner.address.slice(2).padStart(64, "0")}`,
 				},
 			]);
 			expect(balanceAfter).toBeDefined();
@@ -363,8 +365,7 @@ describe("E2E Workflows", () => {
 
 			// Step 4: Verify ownership
 			// ownerOf(uint256 tokenId) selector = 0x6352211e
-			const ownerOfSelector =
-				"0x6352211e" + tokenId.toString(16).padStart(64, "0");
+			const ownerOfSelector = `0x6352211e${tokenId.toString(16).padStart(64, "0")}`;
 			const ownerResult = await provider.request("eth_call", [
 				{
 					to: toChecksummed(nftContractAddress),
@@ -375,8 +376,7 @@ describe("E2E Workflows", () => {
 
 			// Step 5: Verify tokenURI
 			// tokenURI(uint256 tokenId) selector = 0xc87b56dd
-			const tokenURISelector =
-				"0xc87b56dd" + tokenId.toString(16).padStart(64, "0");
+			const tokenURISelector = `0xc87b56dd${tokenId.toString(16).padStart(64, "0")}`;
 			const uriResult = await provider.request("eth_call", [
 				{
 					to: toChecksummed(nftContractAddress),
@@ -579,10 +579,10 @@ describe("E2E Workflows", () => {
 				address: toChecksummed(contractAddress),
 				topics: [
 					hexFromBytes(transferEventSelector),
-					"0x" + testSigner.address.slice(2).padStart(64, "0"),
-					"0x" + addressToHex(toAddress).slice(2).padStart(64, "0"),
+					`0x${testSigner.address.slice(2).padStart(64, "0")}`,
+					`0x${addressToHex(toAddress).slice(2).padStart(64, "0")}`,
 				],
-				data: "0x" + transferAmount.toString(16).padStart(64, "0"),
+				data: `0x${transferAmount.toString(16).padStart(64, "0")}`,
 				blockNumber: "0x1",
 				transactionHash:
 					"0x0000000000000000000000000000000000000000000000000000000000000001",
@@ -610,8 +610,8 @@ describe("E2E Workflows", () => {
 			expect(decodedLog.topics[0]).toBe(hexFromBytes(transferEventSelector));
 
 			// Parse topics
-			const from = ("0x" + decodedLog.topics[1].slice(-40)).toLowerCase();
-			const to = ("0x" + decodedLog.topics[2].slice(-40)).toLowerCase();
+			const from = `0x${decodedLog.topics[1].slice(-40)}`.toLowerCase();
+			const to = `0x${decodedLog.topics[2].slice(-40)}`.toLowerCase();
 			const value = BigInt(decodedLog.data);
 
 			expect(from).toBe(testSigner.address.toLowerCase());

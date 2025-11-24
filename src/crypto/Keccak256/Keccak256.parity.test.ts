@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import * as KeccakPure from "./Keccak256.js";
 import * as KeccakNative from "./Keccak256.native.js";
 

@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Hardfork from "./index.js";
 import { allIds } from "./allIds.js";
+import * as Hardfork from "./index.js";
 
 describe("Hardfork.allIds", () => {
 	it("returns array of all hardfork IDs", () => {

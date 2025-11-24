@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { toBigInt } from "./toBigInt.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE, MAX } from "./constants.js";
+import { toBigInt } from "./toBigInt.js";
 
 describe("Uint64.toBigInt", () => {
 	it("converts zero", () => {

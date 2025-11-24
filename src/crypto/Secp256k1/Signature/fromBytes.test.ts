@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as Signature from "./index.js";
 import { InvalidSignatureError } from "../../../primitives/errors/index.js";
+import * as Signature from "./index.js";
 
 describe("Secp256k1.Signature.fromBytes", () => {
 	describe("valid signatures", () => {

@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, SubmitHashrateRequest } from "./eth_submitHashrate.js";
+import { describe, expect, test } from "vitest";
+import { SubmitHashrateRequest, method } from "./eth_submitHashrate.js";
 
 describe("eth_submitHashrate", () => {
 	describe("Request Creation", () => {

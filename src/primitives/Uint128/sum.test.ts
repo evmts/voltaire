@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { sum } from "./sum.js";
-import { from } from "./from.js";
+import { describe, expect, it } from "vitest";
 import { ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { sum } from "./sum.js";
 
 describe("Uint128.sum", () => {
 	it("sums empty array", () => {

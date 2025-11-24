@@ -47,7 +47,7 @@ describe("BytesType type-level tests", () => {
 		it("should have readonly brand property", () => {
 			const bytes = new Uint8Array([1, 2, 3]) as BytesType;
 			// @ts-expect-error - brand is readonly
-			bytes["__tag"] = "Modified";
+			bytes.__tag = "Modified";
 		});
 	});
 
@@ -267,7 +267,7 @@ describe("BytesType type-level tests", () => {
 
 		it("should not be instanceof Array", () => {
 			const bytes = new Uint8Array([1, 2, 3]) as BytesType;
-			const isArray: boolean = bytes instanceof Array;
+			const isArray: boolean = Array.isArray(bytes);
 			const _check: false = isArray as false;
 		});
 	});

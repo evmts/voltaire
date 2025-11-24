@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
 import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
 import * as TransactionEIP4844 from "./index.js";
-import { Address } from "../../Address/index.js";
 
 describe("TransactionEIP4844.getBlobGasCost", () => {
 	it("computes blob gas cost for single blob", () => {

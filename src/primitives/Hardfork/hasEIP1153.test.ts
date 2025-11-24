@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Hardfork from "./index.js";
 import { hasEIP1153 } from "./hasEIP1153.js";
+import * as Hardfork from "./index.js";
 
 describe("Hardfork.hasEIP1153", () => {
 	it("returns false for Shanghai", () => {

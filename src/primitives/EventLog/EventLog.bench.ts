@@ -4,8 +4,8 @@
  * Measures performance of event log operations
  */
 
-import type { HashType } from "../Hash/HashType.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/HashType.js";
 import { clone } from "./clone.js";
 import { copy } from "./copy.js";
 import { create } from "./create.js";

@@ -77,14 +77,14 @@ describe("SHA256 toHex function", () => {
 			const hashResult = new Uint8Array(32).fill(0x00);
 			const hex = toHex(hashResult);
 
-			expect(hex).toBe("0x" + "00".repeat(32));
+			expect(hex).toBe(`0x${"00".repeat(32)}`);
 		});
 
 		it("should convert all-ones hash", () => {
 			const hashResult = new Uint8Array(32).fill(0xff);
 			const hex = toHex(hashResult);
 
-			expect(hex).toBe("0x" + "ff".repeat(32));
+			expect(hex).toBe(`0x${"ff".repeat(32)}`);
 		});
 
 		it("should convert single byte 0x00", () => {
@@ -226,7 +226,7 @@ describe("SHA256 toHex function", () => {
 			const hashResult = new Uint8Array(16).fill(0x42);
 			const hex = toHex(hashResult);
 
-			expect(hex).toBe("0x" + "42".repeat(16));
+			expect(hex).toBe(`0x${"42".repeat(16)}`);
 			expect(hex.length).toBe(34);
 		});
 
@@ -234,7 +234,7 @@ describe("SHA256 toHex function", () => {
 			const hashResult = new Uint8Array(32).fill(0xaa);
 			const hex = toHex(hashResult);
 
-			expect(hex).toBe("0x" + "aa".repeat(32));
+			expect(hex).toBe(`0x${"aa".repeat(32)}`);
 			expect(hex.length).toBe(66);
 		});
 
@@ -242,7 +242,7 @@ describe("SHA256 toHex function", () => {
 			const hashResult = new Uint8Array(64).fill(0xff);
 			const hex = toHex(hashResult);
 
-			expect(hex).toBe("0x" + "ff".repeat(64));
+			expect(hex).toBe(`0x${"ff".repeat(64)}`);
 			expect(hex.length).toBe(130);
 		});
 	});

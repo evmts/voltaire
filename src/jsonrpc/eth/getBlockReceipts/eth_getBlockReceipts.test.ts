@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, GetBlockReceiptsRequest } from "./eth_getBlockReceipts.js";
+import { describe, expect, test } from "vitest";
+import { GetBlockReceiptsRequest, method } from "./eth_getBlockReceipts.js";
 
 describe("eth_getBlockReceipts", () => {
 	describe("Request Creation", () => {

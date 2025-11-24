@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { gcd } from "./gcd.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX } from "./constants.js";
+import { gcd } from "./gcd.js";
 
 describe("Uint128.gcd", () => {
 	describe("known values", () => {

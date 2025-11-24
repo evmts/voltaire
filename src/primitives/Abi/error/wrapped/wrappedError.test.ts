@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../../Address/index.js";
+import { fromBytes, toBytes } from "../../../Hex/index.js";
 import * as Selector from "../../../Selector/index.js";
-import { toBytes, fromBytes } from "../../../Hex/index.js";
-import { encodeWrappedError } from "./encodeWrappedError.js";
-import { decodeWrappedError } from "./decodeWrappedError.js";
 import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
+import { decodeWrappedError } from "./decodeWrappedError.js";
+import { encodeWrappedError } from "./encodeWrappedError.js";
 
 // Helper to create Bytes from hex
 function bytesFromHex(hex) {

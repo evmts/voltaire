@@ -55,7 +55,7 @@ describe("PublicKeyType", () => {
 		it("brand tag is readonly", () => {
 			const _test = (pk: PublicKeyType) => {
 				// @ts-expect-error - brand is readonly
-				pk["__tag"] = "Something";
+				pk.__tag = "Something";
 			};
 		});
 	});
@@ -172,7 +172,7 @@ describe("PublicKeyType", () => {
 		it("brand property is readonly", () => {
 			const _test = (pk: PublicKeyType) => {
 				// @ts-expect-error - cannot reassign readonly property
-				pk["__tag"] = "Modified" as any;
+				pk.__tag = "Modified" as any;
 			};
 		});
 

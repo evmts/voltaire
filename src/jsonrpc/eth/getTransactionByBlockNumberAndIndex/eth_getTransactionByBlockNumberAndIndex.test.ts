@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-	method,
 	GetTransactionByBlockNumberAndIndexRequest,
+	method,
 } from "./eth_getTransactionByBlockNumberAndIndex.js";
 
 describe("eth_getTransactionByBlockNumberAndIndex", () => {

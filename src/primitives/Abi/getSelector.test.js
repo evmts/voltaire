@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { GetSelector } from "./getSelector.js";
+import { describe, expect, it } from "vitest";
 import * as Keccak from "../../crypto/Keccak256/index.js";
+import { GetSelector } from "./getSelector.js";
 
 describe("GetSelector", () => {
 	const keccak256String = (str) => Keccak.hash(new TextEncoder().encode(str));

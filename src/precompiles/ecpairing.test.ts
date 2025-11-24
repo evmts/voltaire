@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-	serializeG1,
-	serializeG2,
 	deserializeG1,
 	deserializeG2,
+	serializeG1,
+	serializeG2,
 } from "../crypto/bn254/BN254.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import * as G2 from "../crypto/bn254/G2/index.js";
-import { FR_MOD, FP_MOD, FP2_MOD } from "../crypto/bn254/constants.js";
+import { FP2_MOD, FP_MOD, FR_MOD } from "../crypto/bn254/constants.js";
 import {
 	PrecompileAddress,
 	bn254Pairing,

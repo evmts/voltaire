@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
 import { toPublicKey } from "./toPublicKey.js";

@@ -1,26 +1,26 @@
-import { describe, expect, it, beforeAll } from "vitest";
-import { Secp256k1 } from "../crypto/Secp256k1/index.js";
-import { Keccak256 } from "../crypto/Keccak256/index.js";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as Bip39 from "../crypto/Bip39/Bip39.js";
 import { EIP712 } from "../crypto/EIP712/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
-import * as Bip39 from "../crypto/Bip39/Bip39.js";
 import * as Kzg from "../crypto/KZG/index.js";
-import { SHA256 } from "../crypto/SHA256/index.js";
+import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Ripemd160 } from "../crypto/Ripemd160/index.js";
-import { Address } from "../primitives/Address/index.js";
-import * as Rlp from "../primitives/Rlp/index.js";
-import * as Signature from "../primitives/Signature/index.js";
+import { SHA256 } from "../crypto/SHA256/index.js";
+import { Secp256k1 } from "../crypto/Secp256k1/index.js";
 import {
-	ecrecover,
 	PrecompileAddress,
-	execute,
-	pointEvaluation,
 	bn254Add,
 	bn254Mul,
 	bn254Pairing,
+	ecrecover,
+	execute,
 	identity,
+	pointEvaluation,
 } from "../evm/precompiles/precompiles.js";
+import { Address } from "../primitives/Address/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
+import * as Rlp from "../primitives/Rlp/index.js";
+import * as Signature from "../primitives/Signature/index.js";
 
 /**
  * Comprehensive Integration Tests: Cross-Module Workflows
@@ -780,11 +780,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			expect(bytes).toBeInstanceOf(Uint8Array);
 
 			// 5. Verify we can round-trip the data
-			const reconstructed =
-				"0x" +
-				Array.from(bytes)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const reconstructed = `0x${Array.from(bytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 			expect(reconstructed).toBe(txHash);
 		});
 

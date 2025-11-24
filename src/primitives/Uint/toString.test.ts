@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { toString } from "./toString.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX, ONE } from "./constants.js";
+import { toString } from "./toString.js";
 
 describe("Uint256.toString", () => {
 	describe("default base (10)", () => {

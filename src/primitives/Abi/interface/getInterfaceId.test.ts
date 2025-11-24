@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import * as Selector from "../../Selector/index.js";
-import { getInterfaceId } from "./getInterfaceId.js";
 import {
-	ERC165_INTERFACE_ID,
 	ERC20_INTERFACE_ID,
+	ERC165_INTERFACE_ID,
 	ERC721_INTERFACE_ID,
 	ERC1155_INTERFACE_ID,
 } from "./constants.js";
+import { getInterfaceId } from "./getInterfaceId.js";
 
 describe("getInterfaceId", () => {
 	it("should compute ERC-165 interface ID", () => {

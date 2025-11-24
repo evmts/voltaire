@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { times } from "./times.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { times } from "./times.js";
 
 describe("Uint64.times", () => {
 	describe("known values", () => {

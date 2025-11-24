@@ -1,6 +1,6 @@
-import { describe, it, expectTypeOf } from "vitest";
-import type { P256SignatureType } from "./P256SignatureType.js";
+import { describe, expectTypeOf, it } from "vitest";
 import type { HashType } from "../../primitives/Hash/index.js";
+import type { P256SignatureType } from "./P256SignatureType.js";
 
 type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
 	? 1

@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, ChainIdRequest } from "./eth_chainId.js";
+import { describe, expect, test } from "vitest";
+import { ChainIdRequest, method } from "./eth_chainId.js";
 
 describe("eth_chainId", () => {
 	describe("Request Creation", () => {

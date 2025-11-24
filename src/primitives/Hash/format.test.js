@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { format } from "./format.js";
-import { fromHex } from "./fromHex.js";
 import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
 
 describe("format", () => {
 	describe("basic formatting", () => {

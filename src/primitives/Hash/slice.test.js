@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { slice } from "./slice.js";
-import { fromHex } from "./fromHex.js";
 import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { slice } from "./slice.js";
 
 describe("slice", () => {
 	describe("basic slicing", () => {

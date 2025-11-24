@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { keccak256String } from "../../../Hash/BrandedHashIndex.js";
 import * as Selector from "../../../Selector/index.js";
 import { GetSelector } from "../getSelector.js";
-import { keccak256String } from "../../../Hash/BrandedHashIndex.js";
 import * as ERC1155 from "./ERC1155Errors.js";
 
 const getSelector = GetSelector({ keccak256String });

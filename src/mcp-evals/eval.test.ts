@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { runClaudeEval } from "./utils/runClaudeEval.js";
+import { beforeAll, describe, expect, it } from "vitest";
 import { EXPECTED_ANSWERS } from "./fixtures/expected-answers.js";
+import { runClaudeEval } from "./utils/runClaudeEval.js";
 
 // MCP server URL - deployed Voltaire MCP server
 const MCP_SERVER_URL = "https://voltaire.tevm.sh/mcp";

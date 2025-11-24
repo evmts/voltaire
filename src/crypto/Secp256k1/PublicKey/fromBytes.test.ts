@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as PublicKey from "./index.js";
-import { derivePublicKey } from "../derivePublicKey.js";
 import { PrivateKey } from "../../../primitives/PrivateKey/index.js";
+import { derivePublicKey } from "../derivePublicKey.js";
+import * as PublicKey from "./index.js";
 
 describe("Secp256k1.PublicKey.fromBytes", () => {
 	describe("valid public keys", () => {

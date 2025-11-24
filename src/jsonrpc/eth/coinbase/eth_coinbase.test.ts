@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, CoinbaseRequest } from "./eth_coinbase.js";
+import { describe, expect, test } from "vitest";
+import { CoinbaseRequest, method } from "./eth_coinbase.js";
 
 describe("eth_coinbase", () => {
 	describe("Request Creation", () => {

@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
+import { Hash } from "../Hash/index.js";
 import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
 import { Sign } from "./sign.js";
-import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
-import { Hash } from "../Hash/index.js";
 
 describe("PrivateKey.sign", () => {
 	const sign = Sign({ secp256k1Sign });

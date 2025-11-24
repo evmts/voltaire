@@ -91,7 +91,7 @@ describe("Secp256k1PublicKeyType", () => {
 			const publicKey = {} as Secp256k1PublicKeyType;
 
 			// @ts-expect-error - brand is readonly
-			publicKey["__brand"] = "test";
+			publicKey.__brand = "test";
 		});
 	});
 

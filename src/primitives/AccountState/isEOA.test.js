@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { isEOA } from "./isEOA.js";
-import { from } from "./from.js";
-import { from as nonceFrom } from "../Nonce/from.js";
+import { describe, expect, it } from "vitest";
 import { from as weiFrom } from "../Denomination/Wei.js";
-import * as StateRoot from "../StateRoot/index.js";
 import { Hash } from "../Hash/index.js";
+import { from as nonceFrom } from "../Nonce/from.js";
+import * as StateRoot from "../StateRoot/index.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_HASH } from "./AccountStateType.js";
+import { from } from "./from.js";
+import { isEOA } from "./isEOA.js";
 
 describe("AccountState.isEOA", () => {
 	describe("EOA detection", () => {

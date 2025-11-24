@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { minus } from "./minus.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX } from "./constants.js";
+import { minus } from "./minus.js";
 
 describe("Uint64.minus", () => {
 	describe("known values", () => {

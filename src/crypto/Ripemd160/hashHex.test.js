@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { expect, test, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import { Ripemd160Hash } from "./Ripemd160.js";
 
 describe("Ripemd160.hashHex", () => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
+import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
+import { Address } from "../../Address/index.js";
+import { Hash } from "../../Hash/index.js";
 import { Type } from "../types.js";
 import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import * as TransactionLegacy from "./index.js";
-import { Address } from "../../Address/index.js";
-import { Hash } from "../../Hash/index.js";
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 
 describe("TransactionLegacy.getSender", () => {
 	it("recovers sender from pre-EIP-155 transaction signature", () => {

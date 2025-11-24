@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as Signature from "./index.js";
 import { Hash } from "../../../primitives/Hash/index.js";
+import * as Signature from "./index.js";
 
 describe("Secp256k1.Signature.toCompact", () => {
 	describe("conversion to compact format", () => {

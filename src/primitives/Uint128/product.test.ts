@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { product } from "./product.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { product } from "./product.js";
 
 describe("Uint128.product", () => {
 	it("products empty array to 1", () => {

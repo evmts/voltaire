@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
-import type { NonceType } from "./NonceType.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
+import type { NonceType } from "./NonceType.js";
 
 type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 	? 1

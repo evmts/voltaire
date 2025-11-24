@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, HashrateRequest } from "./eth_hashrate.js";
+import { describe, expect, test } from "vitest";
+import { HashrateRequest, method } from "./eth_hashrate.js";
 
 describe("eth_hashrate", () => {
 	describe("Request Creation", () => {

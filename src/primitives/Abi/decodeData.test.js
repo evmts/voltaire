@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { decodeData } from "./decodeData.js";
+import { describe, expect, it } from "vitest";
 import { AbiInvalidSelectorError, AbiItemNotFoundError } from "./Errors.js";
+import { decodeData } from "./decodeData.js";
 import * as Function from "./function/index.js";
 
 describe("decodeData", () => {

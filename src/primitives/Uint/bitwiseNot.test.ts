@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { bitwiseNot } from "./bitwiseNot.js";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX } from "./constants.js";
 
 describe("Uint256.bitwiseNot", () => {
 	describe("known values", () => {

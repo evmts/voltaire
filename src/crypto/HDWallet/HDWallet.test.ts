@@ -609,8 +609,7 @@ describe("HDWallet", () => {
 
 		it("rejects extremely long paths", () => {
 			// Build a path with 1000 levels
-			const longPath =
-				"m/" + Array.from({ length: 1000 }, (_, i) => i).join("/");
+			const longPath = `m/${Array.from({ length: 1000 }, (_, i) => i).join("/")}`;
 			// Should handle gracefully (either accept or reject, but not crash)
 			const result = HDWallet.isValidPath(longPath);
 			expect(typeof result).toBe("boolean");

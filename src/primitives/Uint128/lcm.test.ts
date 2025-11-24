@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { lcm } from "./lcm.js";
-import { from } from "./from.js";
+import { describe, expect, it } from "vitest";
 import { ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { lcm } from "./lcm.js";
 
 describe("Uint128.lcm", () => {
 	describe("known values", () => {

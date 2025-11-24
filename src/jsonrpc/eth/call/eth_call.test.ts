@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, CallRequest } from "./eth_call.js";
+import { describe, expect, test } from "vitest";
+import { CallRequest, method } from "./eth_call.js";
 
 describe("eth_call", () => {
 	describe("Request Creation", () => {

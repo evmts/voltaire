@@ -11,7 +11,6 @@ import { equals } from "../primitives/Hash/equals.js";
 import { fromHex } from "../primitives/Hash/fromHex.js";
 import { keccak256String } from "../primitives/Hash/index.js";
 import { isZero } from "../primitives/Hash/isZero.js";
-import { hash as keccak256 } from "./Keccak256/hash.js";
 import {
 	type Domain,
 	EIP712,
@@ -19,6 +18,7 @@ import {
 	type TypeDefinitions,
 	type TypedData,
 } from "./EIP712/index.js";
+import { hash as keccak256 } from "./Keccak256/hash.js";
 
 describe("EIP712", () => {
 	describe("Domain.hash", () => {

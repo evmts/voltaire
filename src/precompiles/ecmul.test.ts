@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serializeG1, deserializeG1 } from "../crypto/bn254/BN254.js";
+import { deserializeG1, serializeG1 } from "../crypto/bn254/BN254.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import {
 	FR_MOD,

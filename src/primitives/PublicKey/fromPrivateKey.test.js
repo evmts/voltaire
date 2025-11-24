@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { fromPrivateKey } from "./fromPrivateKey.js";
+import { describe, expect, it } from "vitest";
 import { from as privateKeyFrom } from "../PrivateKey/from.js";
 import { fromBytes as privateKeyFromBytes } from "../PrivateKey/fromBytes.js";
+import { fromPrivateKey } from "./fromPrivateKey.js";
 
 describe("PublicKey.fromPrivateKey", () => {
 	describe("conversion tests", () => {

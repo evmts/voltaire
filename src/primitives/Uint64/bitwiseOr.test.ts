@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { bitwiseOr } from "./bitwiseOr.js";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX } from "./constants.js";
 
 describe("Uint64.bitwiseOr", () => {
 	describe("known values", () => {

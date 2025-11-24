@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { from } from "./from.js";
+import { describe, expect, it } from "vitest";
 import { MAX } from "./constants.js";
+import { from } from "./from.js";
 
 describe("Uint64.from", () => {
 	describe("from bigint", () => {

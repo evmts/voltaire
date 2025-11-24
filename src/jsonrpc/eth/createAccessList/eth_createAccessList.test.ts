@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, CreateAccessListRequest } from "./eth_createAccessList.js";
+import { describe, expect, test } from "vitest";
+import { CreateAccessListRequest, method } from "./eth_createAccessList.js";
 
 describe("eth_createAccessList", () => {
 	describe("Request Creation", () => {

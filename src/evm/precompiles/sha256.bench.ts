@@ -6,8 +6,8 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import * as loader from "../../wasm-loader/loader.js";
 import { SHA256 } from "../../crypto/SHA256/index.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(
@@ -150,8 +150,8 @@ bench("SHA256 (JS) hashString - long", () => {
 // ============================================================================
 
 const shortHex = "0xdeadbeef";
-const mediumHex = "0x" + "ab".repeat(512);
-const longHex = "0x" + "cd".repeat(32768);
+const mediumHex = `0x${"ab".repeat(512)}`;
+const longHex = `0x${"cd".repeat(32768)}`;
 
 bench("SHA256 (JS) hashHex - short", () => {
 	SHA256.hashHex(shortHex);

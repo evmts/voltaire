@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedRlp } from "./RlpType.js";
 import { RlpDecodingError } from "./RlpError.js";
+import type { BrandedRlp } from "./RlpType.js";
 import { fromJSON } from "./fromJSON.js";
 import { toJSON } from "./toJSON.js";
 

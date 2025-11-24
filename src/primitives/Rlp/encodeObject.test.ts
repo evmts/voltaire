@@ -64,7 +64,7 @@ describe("Rlp.encodeObject", () => {
 		const result = encodeObject(obj);
 		const decoded = decodeObject(result);
 		expect(decoded["🔑"]).toEqual(new Uint8Array([1, 2, 3]));
-		expect(decoded["键"]).toEqual(new Uint8Array([4, 5, 6]));
+		expect(decoded.键).toEqual(new Uint8Array([4, 5, 6]));
 	});
 
 	it("maintains key insertion order", () => {

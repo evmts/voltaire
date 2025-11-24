@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { RlpDecodingError } from "./RlpError.js";
 import { encode } from "./encode.js";
 import { getLength } from "./getLength.js";
-import { RlpDecodingError } from "./RlpError.js";
 
 describe("Rlp.getLength", () => {
 	it("calculates length for single byte < 0x80", () => {

@@ -1,6 +1,6 @@
-import { describe, it, expectTypeOf } from "vitest";
-import type { HashConstructor } from "./HashConstructor.js";
+import { describe, expectTypeOf, it } from "vitest";
 import type { BrandedHash } from "./BrandedHash.js";
+import type { HashConstructor } from "./HashConstructor.js";
 
 describe("HashConstructor", () => {
 	describe("constructor signature", () => {

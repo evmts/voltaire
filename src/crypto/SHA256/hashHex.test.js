@@ -152,7 +152,7 @@ describe("SHA256 hashHex function", () => {
 
 	describe("typical Ethereum values", () => {
 		it("should hash address-sized hex (20 bytes)", () => {
-			const address = "0x" + "1".repeat(40);
+			const address = `0x${"1".repeat(40)}`;
 			const result = hashHex(address);
 
 			expect(result.length).toBe(32);
@@ -162,7 +162,7 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash hash-sized hex (32 bytes)", () => {
-			const hash32 = "0x" + "a".repeat(64);
+			const hash32 = `0x${"a".repeat(64)}`;
 			const result = hashHex(hash32);
 
 			expect(result.length).toBe(32);
@@ -172,8 +172,8 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash signature r,s values (32 bytes each)", () => {
-			const r = "0x" + "1".repeat(64);
-			const s = "0x" + "2".repeat(64);
+			const r = `0x${"1".repeat(64)}`;
+			const s = `0x${"2".repeat(64)}`;
 
 			const hashR = hashHex(r);
 			const hashS = hashHex(s);
@@ -200,7 +200,7 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash all-zeros hex", () => {
-			const hex = "0x" + "00".repeat(32);
+			const hex = `0x${"00".repeat(32)}`;
 			const result = hashHex(hex);
 
 			const bytes = new Uint8Array(32).fill(0x00);
@@ -208,7 +208,7 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash all-ones hex", () => {
-			const hex = "0x" + "ff".repeat(32);
+			const hex = `0x${"ff".repeat(32)}`;
 			const result = hashHex(hex);
 
 			const bytes = new Uint8Array(32).fill(0xff);
@@ -216,7 +216,7 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash alternating pattern", () => {
-			const hex = "0x" + "aa".repeat(16);
+			const hex = `0x${"aa".repeat(16)}`;
 			const result = hashHex(hex);
 
 			const bytes = new Uint8Array(16).fill(0xaa);
@@ -256,7 +256,7 @@ describe("SHA256 hashHex function", () => {
 		});
 
 		it("should hash very long hex (128 bytes)", () => {
-			const hex = "0x" + "ab".repeat(128);
+			const hex = `0x${"ab".repeat(128)}`;
 			const result = hashHex(hex);
 
 			const bytes = new Uint8Array(128).fill(0xab);

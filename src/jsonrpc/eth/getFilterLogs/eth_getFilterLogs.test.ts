@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, GetFilterLogsRequest } from "./eth_getFilterLogs.js";
+import { describe, expect, test } from "vitest";
+import { GetFilterLogsRequest, method } from "./eth_getFilterLogs.js";
 
 describe("eth_getFilterLogs", () => {
 	describe("Request Creation", () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BatchQueue, createBatchedFunction, AsyncQueue } from "./batch.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AsyncQueue, BatchQueue, createBatchedFunction } from "./batch.js";
 
 describe("BatchQueue", () => {
 	describe("add", () => {

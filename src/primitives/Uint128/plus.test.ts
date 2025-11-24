@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { plus } from "./plus.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, MAX } from "./constants.js";
+import { plus } from "./plus.js";
 
 describe("Uint128.plus", () => {
 	describe("known values", () => {

@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import * as Address from "../Address/index.js";
+import { from as privateKeyFrom } from "../PrivateKey/from.js";
 import { fromPrivateKey } from "./fromPrivateKey.js";
 import { toAddress } from "./toAddress.js";
-import { from as privateKeyFrom } from "../PrivateKey/from.js";
-import * as Address from "../Address/index.js";
 
 describe("PublicKey.toAddress", () => {
 	describe("address derivation", () => {

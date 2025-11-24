@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 import type { SHA256Hash } from "./SHA256HashType.js";
 import { SIZE } from "./SHA256HashType.js";
 

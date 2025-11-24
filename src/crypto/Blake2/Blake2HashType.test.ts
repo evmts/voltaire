@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 import type { Blake2Hash } from "./Blake2HashType.js";
 import { SIZE } from "./Blake2HashType.js";
 

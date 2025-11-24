@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 import type { Ripemd160Hash } from "./Ripemd160HashType.js";
 import { SIZE } from "./Ripemd160HashType.js";
 

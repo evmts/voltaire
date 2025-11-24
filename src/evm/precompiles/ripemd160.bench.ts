@@ -6,8 +6,8 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import * as loader from "../../wasm-loader/loader.js";
 import { RIPEMD160 } from "../../crypto/RIPEMD160/index.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(
@@ -150,8 +150,8 @@ bench("RIPEMD160 (JS) hashString - long", () => {
 // ============================================================================
 
 const shortHex = "0xdeadbeef";
-const mediumHex = "0x" + "ab".repeat(512);
-const longHex = "0x" + "cd".repeat(32768);
+const mediumHex = `0x${"ab".repeat(512)}`;
+const longHex = `0x${"cd".repeat(32768)}`;
 
 bench("RIPEMD160 (JS) hashHex - short", () => {
 	RIPEMD160.hashHex(shortHex);

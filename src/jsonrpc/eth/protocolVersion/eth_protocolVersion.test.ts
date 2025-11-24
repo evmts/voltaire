@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, ProtocolVersionRequest } from "./eth_protocolVersion.js";
+import { describe, expect, test } from "vitest";
+import { ProtocolVersionRequest, method } from "./eth_protocolVersion.js";
 
 describe("eth_protocolVersion", () => {
 	describe("Request Creation", () => {

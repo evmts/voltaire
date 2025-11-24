@@ -1,7 +1,7 @@
 import { describe, it } from "vitest";
-import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import type { AddressType } from "../../Address/AddressType.js";
 import { Type } from "../types.js";
+import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 
 type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 	? 1

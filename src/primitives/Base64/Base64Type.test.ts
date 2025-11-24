@@ -1,9 +1,9 @@
 import { describe, it } from "vitest";
 import type {
-	BrandedBase64,
-	BrandedBase64Url,
 	Base64Like,
 	Base64UrlLike,
+	BrandedBase64,
+	BrandedBase64Url,
 } from "./Base64Type.js";
 
 type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
@@ -38,7 +38,7 @@ describe("Base64Type type-level tests", () => {
 		it("should have readonly brand", () => {
 			const base64 = "SGVsbG8=" as BrandedBase64;
 			// @ts-expect-error - brand is readonly
-			base64["__tag"] = "Modified";
+			base64.__tag = "Modified";
 		});
 	});
 
@@ -67,7 +67,7 @@ describe("Base64Type type-level tests", () => {
 		it("should have readonly brand", () => {
 			const base64url = "SGVsbG8" as BrandedBase64Url;
 			// @ts-expect-error - brand is readonly
-			base64url["__tag"] = "Modified";
+			base64url.__tag = "Modified";
 		});
 	});
 

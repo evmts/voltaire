@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { equals } from "./equals.js";
-import { fromHex } from "./fromHex.js";
 import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
 
 describe("equals", () => {
 	describe("equality", () => {

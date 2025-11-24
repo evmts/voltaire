@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { from as privateKeyFrom } from "../PrivateKey/from.js";
 import { from } from "./from.js";
 import { fromPrivateKey } from "./fromPrivateKey.js";
 import { toHex } from "./toHex.js";
-import { from as privateKeyFrom } from "../PrivateKey/from.js";
 
 describe("PublicKey.toHex", () => {
 	describe("conversion tests", () => {
@@ -32,14 +32,14 @@ describe("PublicKey.toHex", () => {
 			const pubkey = new Uint8Array(64);
 			const hex = toHex.call(pubkey);
 
-			expect(hex).toBe("0x" + "00".repeat(64));
+			expect(hex).toBe(`0x${"00".repeat(64)}`);
 		});
 
 		it("converts all max public key", () => {
 			const pubkey = new Uint8Array(64).fill(0xff);
 			const hex = toHex.call(pubkey);
 
-			expect(hex).toBe("0x" + "ff".repeat(64));
+			expect(hex).toBe(`0x${"ff".repeat(64)}`);
 		});
 
 		it("converts known public key", () => {
@@ -80,7 +80,7 @@ describe("PublicKey.toHex", () => {
 			const pubkey = new Uint8Array(64).fill(0xab);
 			const hex = toHex.call(pubkey);
 
-			expect(hex).toBe("0x" + "ab".repeat(64));
+			expect(hex).toBe(`0x${"ab".repeat(64)}`);
 			expect(hex).not.toContain("A");
 			expect(hex).not.toContain("B");
 		});

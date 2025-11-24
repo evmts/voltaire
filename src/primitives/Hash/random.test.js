@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { random } from "./random.js";
-import { isHash } from "./isHash.js";
 import { equals } from "./equals.js";
+import { isHash } from "./isHash.js";
 import { isZero } from "./isZero.js";
+import { random } from "./random.js";
 
 describe("random", () => {
 	describe("generation", () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { poll, pollUntil, pollForReceipt, pollWithBackoff } from "./poll.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { poll, pollForReceipt, pollUntil, pollWithBackoff } from "./poll.js";
 
 describe("poll", () => {
 	describe("basic polling", () => {
@@ -276,7 +276,7 @@ describe("poll", () => {
 				onPoll,
 			});
 
-			expect(onPoll).toHaveBeenCalledWith(`attempt-1`, 0);
+			expect(onPoll).toHaveBeenCalledWith("attempt-1", 0);
 		});
 
 		it("should track attempt numbers in onPoll", async () => {

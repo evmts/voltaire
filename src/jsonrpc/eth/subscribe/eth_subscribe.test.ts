@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { method, SubscribeRequest } from "./eth_subscribe.js";
+import { describe, expect, test } from "vitest";
+import { SubscribeRequest, method } from "./eth_subscribe.js";
 
 describe("eth_subscribe", () => {
 	describe("Request Creation", () => {

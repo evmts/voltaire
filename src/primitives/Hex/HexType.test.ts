@@ -169,7 +169,7 @@ describe("HexType type-level tests", () => {
 		it("should have readonly brand property", () => {
 			const hex = "0x1234" as HexType;
 			// @ts-expect-error - brand is readonly
-			hex["__tag"] = "Modified";
+			hex.__tag = "Modified";
 		});
 
 		it("should have readonly size for Sized", () => {

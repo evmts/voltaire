@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { Address } from "../../Address/index.js";
+import { Hash } from "../../Hash/index.js";
 import { Type } from "../types.js";
 import type { TransactionEIP2930Type } from "./TransactionEIP2930Type.js";
 import * as TransactionEIP2930 from "./index.js";
-import { Address } from "../../Address/index.js";
-import { Hash } from "../../Hash/index.js";
 
 describe("TransactionEIP2930.hash", () => {
 	it("computes transaction hash", () => {

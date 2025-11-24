@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { isZero } from "./isZero.js";
-import { fromHex } from "./fromHex.js";
-import { fromBytes } from "./fromBytes.js";
 import { ZERO } from "./constants.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { isZero } from "./isZero.js";
 
 describe("isZero", () => {
 	describe("zero hashes", () => {

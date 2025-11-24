@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { toBytes } from "./toBytes.js";
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
-import { ZERO, MAX, ONE } from "./constants.js";
+import { toBytes } from "./toBytes.js";
 
 describe("Uint256.toBytes", () => {
 	describe("known values", () => {

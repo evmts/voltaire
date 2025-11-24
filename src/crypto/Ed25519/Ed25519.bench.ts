@@ -10,11 +10,11 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { bench, run } from "mitata";
 import { ed25519 } from "@noble/curves/ed25519.js";
+import { bench, run } from "mitata";
 import { loadWasm } from "../../wasm-loader/loader.js";
-import { Ed25519 } from "./Ed25519.js";
 import { Ed25519Wasm } from "../ed25519.wasm.js";
+import { Ed25519 } from "./Ed25519.js";
 
 // Load WASM before running benchmarks
 await loadWasm(

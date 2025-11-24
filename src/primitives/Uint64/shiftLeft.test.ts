@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { shiftLeft } from "./shiftLeft.js";
+import { describe, expect, it } from "vitest";
+import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
-import { ZERO, ONE } from "./constants.js";
+import { shiftLeft } from "./shiftLeft.js";
 
 describe("Uint64.shiftLeft", () => {
 	describe("known values", () => {

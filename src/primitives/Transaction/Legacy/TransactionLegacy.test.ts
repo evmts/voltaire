@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { Type } from "../types.js";
-import { TransactionLegacy } from "./index.js";
-import { Address } from "../../Address/index.js";
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
 import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
+import { Address } from "../../Address/index.js";
+import { Type } from "../types.js";
+import { TransactionLegacy } from "./index.js";
 
 describe("TransactionLegacy", () => {
 	describe("factory function", () => {

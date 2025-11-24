@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import * as StealthAddress from "./index.js";
-import * as Secp256k1 from "../../crypto/Secp256k1/index.js";
+import { describe, expect, it } from "vitest";
 import * as Keccak256 from "../../crypto/Keccak256/index.js";
+import * as Secp256k1 from "../../crypto/Secp256k1/index.js";
 import * as BrandedAddress from "../Address/internal-index.js";
+import * as StealthAddress from "./index.js";
 
 describe("StealthAddress - ERC-5564", () => {
 	describe("compressPublicKey", () => {

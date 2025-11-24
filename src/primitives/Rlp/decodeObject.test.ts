@@ -63,7 +63,7 @@ describe("Rlp.decodeObject", () => {
 		const encoded = encodeObject(obj);
 		const result = decodeObject(encoded);
 		expect(result["🔑"]).toEqual(new Uint8Array([1, 2, 3]));
-		expect(result["键"]).toEqual(new Uint8Array([4, 5, 6]));
+		expect(result.键).toEqual(new Uint8Array([4, 5, 6]));
 	});
 
 	it("round-trips complex object", () => {

@@ -48,7 +48,7 @@ describe("Opcode.disassemble", () => {
 		const bytecode = new Uint8Array([Opcode.PUSH32, ...immediate]);
 		const result = disassemble(bytecode);
 		expect(result).toHaveLength(1);
-		expect(result[0]).toBe("0x0000: PUSH32 0x" + "ff".repeat(32));
+		expect(result[0]).toBe(`0x0000: PUSH32 0x${"ff".repeat(32)}`);
 	});
 
 	it("disassembles PUSH0", () => {

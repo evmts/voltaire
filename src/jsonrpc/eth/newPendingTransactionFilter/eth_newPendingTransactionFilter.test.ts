@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-	method,
 	NewPendingTransactionFilterRequest,
+	method,
 } from "./eth_newPendingTransactionFilter.js";
 
 describe("eth_newPendingTransactionFilter", () => {

@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { fromPrivateKey } from "./fromPrivateKey.js";
-import { Verify } from "./verify.js";
-import { from as privateKeyFrom } from "../PrivateKey/from.js";
-import { Sign } from "../PrivateKey/sign.js";
-import { Hash } from "../Hash/index.js";
+import { describe, expect, it } from "vitest";
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
 import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
+import { Hash } from "../Hash/index.js";
+import { from as privateKeyFrom } from "../PrivateKey/from.js";
+import { Sign } from "../PrivateKey/sign.js";
+import { fromPrivateKey } from "./fromPrivateKey.js";
+import { Verify } from "./verify.js";
 
 describe("PublicKey.verify", () => {
 	const verify = Verify({ secp256k1Verify });

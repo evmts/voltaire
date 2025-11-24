@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import * as SimulateV1 from "./eth_simulateV1.js";
 
 describe("eth_simulateV1", () => {
