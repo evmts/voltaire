@@ -1,3 +1,7 @@
+// @ts-nocheck
+import { byId } from "./byId.js";
+import { from } from "./from.js";
+import { fromId } from "./fromId.js";
 import { getBlockTime } from "./getBlockTime.js";
 import { getExplorerUrl } from "./getExplorerUrl.js";
 import { getGasLimit } from "./getGasLimit.js";
@@ -9,10 +13,6 @@ import { getRpcUrl } from "./getRpcUrl.js";
 import { getShortName } from "./getShortName.js";
 import { getSymbol } from "./getSymbol.js";
 import { getWebsocketUrl } from "./getWebsocketUrl.js";
-// @ts-nocheck
-import { byId } from "./byId.js";
-import { from } from "./from.js";
-import { fromId } from "./fromId.js";
 import { isL2 } from "./isL2.js";
 import { isTestnet } from "./isTestnet.js";
 import { supportsHardfork } from "./supportsHardfork.js";

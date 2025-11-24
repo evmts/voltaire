@@ -1,7 +1,7 @@
 import {
-	SIZE,
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
+	SIZE,
 } from "./constants.js";
 
 /**

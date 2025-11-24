@@ -3,7 +3,7 @@
  * Uses Bun's dlopen for high-performance native library loading
  */
 
-import { dlopen, FFIType, type Library } from "bun:ffi";
+import { FFIType, type Library, dlopen } from "bun:ffi";
 import { getNativeLibPath } from "./platform.js";
 import { getNativeErrorMessage } from "./types.js";
 

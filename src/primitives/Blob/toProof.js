@@ -23,7 +23,7 @@ import { SIZE } from "./constants.js";
  * - Call computeBlobKzgProof(blob, commitment)
  * - Return 48-byte proof
  */
-import { PrimitiveError, InvalidLengthError } from "../errors/index.js";
+import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 
 export function ToProof({ computeBlobKzgProof }) {
 	return function toProof(blob, commitment) {

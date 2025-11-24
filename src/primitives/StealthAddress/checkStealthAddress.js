@@ -1,9 +1,9 @@
+import * as Keccak256 from "../../crypto/Keccak256/index.js";
 // @ts-nocheck
 import * as Secp256k1 from "../../crypto/Secp256k1/index.js";
-import * as Keccak256 from "../../crypto/Keccak256/index.js";
 import * as BrandedAddress from "../Address/internal-index.js";
-import { PRIVATE_KEY_SIZE, COMPRESSED_PUBLIC_KEY_SIZE } from "./constants.js";
 import { computeViewTag } from "./computeViewTag.js";
+import { COMPRESSED_PUBLIC_KEY_SIZE, PRIVATE_KEY_SIZE } from "./constants.js";
 import { decompressPublicKey } from "./decompressPublicKey.js";
 import { StealthAddressError } from "./errors.js";
 

@@ -33,29 +33,29 @@ import * as eth_getTransactionByBlockNumberAndIndex from "./getTransactionByBloc
 import * as eth_getTransactionByHash from "./getTransactionByHash/eth_getTransactionByHash.js";
 import * as eth_getTransactionCount from "./getTransactionCount/eth_getTransactionCount.js";
 import * as eth_getTransactionReceipt from "./getTransactionReceipt/eth_getTransactionReceipt.js";
+import * as eth_getUncleByBlockHashAndIndex from "./getUncleByBlockHashAndIndex/eth_getUncleByBlockHashAndIndex.js";
+import * as eth_getUncleByBlockNumberAndIndex from "./getUncleByBlockNumberAndIndex/eth_getUncleByBlockNumberAndIndex.js";
 import * as eth_getUncleCountByBlockHash from "./getUncleCountByBlockHash/eth_getUncleCountByBlockHash.js";
 import * as eth_getUncleCountByBlockNumber from "./getUncleCountByBlockNumber/eth_getUncleCountByBlockNumber.js";
+import * as eth_getWork from "./getWork/eth_getWork.js";
+import * as eth_hashrate from "./hashrate/eth_hashrate.js";
 import * as eth_maxPriorityFeePerGas from "./maxPriorityFeePerGas/eth_maxPriorityFeePerGas.js";
+import * as eth_mining from "./mining/eth_mining.js";
 import * as eth_newBlockFilter from "./newBlockFilter/eth_newBlockFilter.js";
 import * as eth_newFilter from "./newFilter/eth_newFilter.js";
 import * as eth_newPendingTransactionFilter from "./newPendingTransactionFilter/eth_newPendingTransactionFilter.js";
+import * as eth_protocolVersion from "./protocolVersion/eth_protocolVersion.js";
 import * as eth_sendRawTransaction from "./sendRawTransaction/eth_sendRawTransaction.js";
 import * as eth_sendTransaction from "./sendTransaction/eth_sendTransaction.js";
 import * as eth_sign from "./sign/eth_sign.js";
 import * as eth_signTransaction from "./signTransaction/eth_signTransaction.js";
 import * as eth_simulateV1 from "./simulateV1/eth_simulateV1.js";
+import * as eth_submitHashrate from "./submitHashrate/eth_submitHashrate.js";
+import * as eth_submitWork from "./submitWork/eth_submitWork.js";
+import * as eth_subscribe from "./subscribe/eth_subscribe.js";
 import * as eth_syncing from "./syncing/eth_syncing.js";
 import * as eth_uninstallFilter from "./uninstallFilter/eth_uninstallFilter.js";
-import * as eth_subscribe from "./subscribe/eth_subscribe.js";
 import * as eth_unsubscribe from "./unsubscribe/eth_unsubscribe.js";
-import * as eth_getWork from "./getWork/eth_getWork.js";
-import * as eth_submitWork from "./submitWork/eth_submitWork.js";
-import * as eth_submitHashrate from "./submitHashrate/eth_submitHashrate.js";
-import * as eth_hashrate from "./hashrate/eth_hashrate.js";
-import * as eth_mining from "./mining/eth_mining.js";
-import * as eth_getUncleByBlockHashAndIndex from "./getUncleByBlockHashAndIndex/eth_getUncleByBlockHashAndIndex.js";
-import * as eth_getUncleByBlockNumberAndIndex from "./getUncleByBlockNumberAndIndex/eth_getUncleByBlockNumberAndIndex.js";
-import * as eth_protocolVersion from "./protocolVersion/eth_protocolVersion.js";
 
 /**
  * Method name enum - provides string literals for each method

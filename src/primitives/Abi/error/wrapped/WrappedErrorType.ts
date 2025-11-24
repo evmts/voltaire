@@ -1,6 +1,6 @@
 import type { AddressType } from "../../../Address/AddressType.js";
-import type { SelectorType } from "../../../Selector/SelectorType.js";
 import type { BytesType } from "../../../Bytes/BytesType.js";
+import type { SelectorType } from "../../../Selector/SelectorType.js";
 
 /**
  * ERC-7751 Wrapped Error type

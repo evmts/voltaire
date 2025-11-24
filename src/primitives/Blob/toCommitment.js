@@ -1,4 +1,4 @@
-import { PrimitiveError, InvalidLengthError } from "../errors/index.js";
+import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**

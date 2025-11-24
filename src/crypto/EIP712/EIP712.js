@@ -2,11 +2,11 @@
 export * from "./errors.js";
 export * from "./EIP712Type.js";
 
+import { from as privateKeyFrom } from "../../primitives/PrivateKey/from.js";
 // Import crypto dependencies
 import { hash as keccak256 } from "../Keccak256/hash.js";
 import { recoverPublicKey as secp256k1RecoverPublicKey } from "../Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../Secp256k1/sign.js";
-import { from as privateKeyFrom } from "../../primitives/PrivateKey/from.js";
 
 // Import factories
 import { Hash as HashDomain } from "./Domain/hash.js";

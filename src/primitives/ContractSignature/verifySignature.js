@@ -1,5 +1,5 @@
-import { isValidSignature } from "./isValidSignature.js";
 import * as Address from "../Address/index.js";
+import { isValidSignature } from "./isValidSignature.js";
 
 /**
  * Factory: Create unified signature verification for EOA and contract accounts

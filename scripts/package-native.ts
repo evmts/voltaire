@@ -4,9 +4,9 @@
  * Copies built native libraries to platform-specific package structure
  */
 
-import { $ } from "bun";
-import { existsSync, mkdirSync, copyFileSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { $ } from "bun";
 
 type Platform =
 	| "darwin-arm64"
@@ -78,16 +78,12 @@ async function packageNative(config: PlatformConfig) {
 
 	const stats = statSync(targetPath);
 	const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
-
-	console.log(`✅ Packaged ${platform}: ${targetLib} (${sizeMB} MB)`);
 	return true;
 }
 
 async function main() {
 	const args = process.argv.slice(2);
 	const requestedPlatform = args[0] as Platform | undefined;
-
-	console.log("📦 Packaging native binaries...\n");
 
 	const platformsToPackage = requestedPlatform
 		? platforms.filter((p) => p.platform === requestedPlatform)
@@ -111,11 +107,8 @@ async function main() {
 		}
 	}
 
-	console.log(`\n📊 Summary: ${successCount} packaged, ${failCount} skipped`);
-
 	// Create native directory structure info
 	if (successCount > 0) {
-		console.log("\n📁 Native directory structure:");
 		await $`ls -lh native/*/*.node 2>/dev/null || echo "No .node files found"`;
 	}
 }

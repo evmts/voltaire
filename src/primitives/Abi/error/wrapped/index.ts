@@ -16,8 +16,8 @@ export { decodeWrappedError } from "./decodeWrappedError.js";
 
 // Namespace export
 import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
-import { encodeWrappedError } from "./encodeWrappedError.js";
 import { decodeWrappedError } from "./decodeWrappedError.js";
+import { encodeWrappedError } from "./encodeWrappedError.js";
 
 export const WrappedError = {
 	WRAPPED_ERROR_SELECTOR,

@@ -1,8 +1,8 @@
+import { toHex } from "../../primitives/Address/toHex.js";
 import {
 	ColdAccountAccess,
 	WarmStorageRead,
 } from "../../primitives/GasConstants/constants.js";
-import { toHex } from "../../primitives/Address/toHex.js";
 
 /**
  * Calculate gas cost for account access with warm/cold distinction (EIP-2929)

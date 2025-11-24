@@ -23,7 +23,7 @@ import { SIZE } from "./constants.js";
  * - Call verifyBlobKzgProof(blob, commitment, proof)
  * - Return boolean result
  */
-import { PrimitiveError, InvalidLengthError } from "../errors/index.js";
+import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 
 export function Verify({ verifyBlobKzgProof }) {
 	return function verify(blob, commitment, proof) {

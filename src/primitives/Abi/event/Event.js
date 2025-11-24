@@ -3,9 +3,9 @@ import {
 	keccak256 as keccak256Impl,
 	keccak256String as keccak256StringImpl,
 } from "../../Hash/index.js";
+import { decodeLog } from "./decodeLog.js";
 import { EncodeTopics } from "./encodeTopics.js";
 import { GetSelector } from "./getSelector.js";
-import { decodeLog } from "./decodeLog.js";
 import { getSignature } from "./getSignature.js";
 
 /**

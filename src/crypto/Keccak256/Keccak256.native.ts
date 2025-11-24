@@ -4,12 +4,12 @@
  */
 
 import {
-	loadNative,
-	checkError,
 	allocateOutput,
+	checkError,
+	loadNative,
 } from "../../native-loader/index.js";
-import type { Keccak256Hash } from "./Keccak256HashType.js";
 import * as Hex from "../../primitives/Hex/index.js";
+import type { Keccak256Hash } from "./Keccak256HashType.js";
 
 // Lazy-load native library
 let nativeLib: Awaited<ReturnType<typeof loadNative>> | null = null;

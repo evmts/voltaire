@@ -29,9 +29,6 @@ export * as types from "./types/index.js";
 // ============================================================================
 
 import * as _anvilMethods from "./anvil/methods.js";
-import * as _netMethods from "./net/methods.js";
-import * as _txpoolMethods from "./txpool/methods.js";
-import * as _web3Methods from "./web3/methods.js";
 /**
  * Rpc namespace - Modern API for creating JSON-RPC requests
  *
@@ -48,7 +45,10 @@ import * as _web3Methods from "./web3/methods.js";
  */
 import * as _ethMethods from "./eth/methods.js";
 import * as _hardhatMethods from "./hardhat/methods.js";
+import * as _netMethods from "./net/methods.js";
+import * as _txpoolMethods from "./txpool/methods.js";
 import * as _walletMethods from "./wallet/methods.js";
+import * as _web3Methods from "./web3/methods.js";
 
 export namespace Rpc {
 	/**
