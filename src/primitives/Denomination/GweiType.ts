@@ -1,4 +1,4 @@
-import type { Uint256Type } from "../../Uint/Uint256Type.js";
+import type { Uint256Type } from "../Uint/Uint256Type.js";
 import type { brand } from "../../brand.js";
 
 /**

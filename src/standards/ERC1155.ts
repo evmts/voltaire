@@ -1,5 +1,4 @@
 import type { AddressType } from "../primitives/Address/AddressType.js";
-import type { HashType } from "../primitives/Hash/Hash.js";
 import type { Uint256Type } from "../primitives/Uint/Uint256Type.js";
 
 /**
@@ -38,15 +37,15 @@ export const SELECTORS = {
 export const EVENTS = {
 	/** TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value) */
 	TransferSingle:
-		"0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62" as HashType,
+		"0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62",
 	/** TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values) */
 	TransferBatch:
-		"0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb" as HashType,
+		"0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb",
 	/** ApprovalForAll(address indexed account, address indexed operator, bool approved) */
 	ApprovalForAll:
-		"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31" as HashType,
+		"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31",
 	/** URI(string value, uint256 indexed id) */
-	URI: "0x6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b" as HashType,
+	URI: "0x6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b",
 } as const;
 
 /**
@@ -153,9 +152,15 @@ export function decodeTransferSingleEvent(log: {
 	}
 
 	// Topics: [event_sig, operator, from, to]
-	const operator = `0x${log.topics[1].slice(26)}`; // Remove padding
-	const from = `0x${log.topics[2].slice(26)}`; // Remove padding
-	const to = `0x${log.topics[3].slice(26)}`; // Remove padding
+	const operatorTopic = log.topics[1];
+	const fromTopic = log.topics[2];
+	const toTopic = log.topics[3];
+	if (!operatorTopic || !fromTopic || !toTopic) {
+		throw new Error("Missing TransferSingle event topics");
+	}
+	const operator = `0x${operatorTopic.slice(26)}`; // Remove padding
+	const from = `0x${fromTopic.slice(26)}`; // Remove padding
+	const to = `0x${toTopic.slice(26)}`; // Remove padding
 
 	// Data: [id, value]
 	const dataHex = log.data.startsWith("0x") ? log.data.slice(2) : log.data;
@@ -181,8 +186,13 @@ export function decodeApprovalForAllEvent(log: {
 	}
 
 	// Topics: [event_sig, account, operator]
-	const account = `0x${log.topics[1].slice(26)}`; // Remove padding
-	const operator = `0x${log.topics[2].slice(26)}`; // Remove padding
+	const accountTopic = log.topics[1];
+	const operatorTopic = log.topics[2];
+	if (!accountTopic || !operatorTopic) {
+		throw new Error("Missing ApprovalForAll event topics");
+	}
+	const account = `0x${accountTopic.slice(26)}`; // Remove padding
+	const operator = `0x${operatorTopic.slice(26)}`; // Remove padding
 	const approved = BigInt(log.data) !== 0n;
 
 	return { account, operator, approved };

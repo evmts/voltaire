@@ -1,4 +1,7 @@
-// @ts-nocheck
+/**
+ * @typedef {import('./HashType.js').HashType} HashType
+ * @typedef {import('./HashType.js').HashLike} HashLike
+ */
 
 // Import crypto dependencies
 import { hash as keccak256Impl } from "../../crypto/Keccak256/hash.js";
@@ -29,10 +32,15 @@ import { toString } from "./toString.js";
 export { Keccak256, Keccak256Hex, Keccak256String, MerkleRoot, Concat };
 
 // Wrapper exports (convenient, backward compat)
+/** @type {(data: Uint8Array) => HashType} */
 export const keccak256 = Keccak256({ keccak256: keccak256Impl });
+/** @type {(hex: string) => HashType} */
 export const keccak256Hex = Keccak256Hex({ keccak256: keccak256Impl });
+/** @type {(str: string) => HashType} */
 export const keccak256String = Keccak256String({ keccak256: keccak256Impl });
+/** @type {(leaves: HashType[]) => HashType} */
 export const merkleRoot = MerkleRoot({ keccak256: keccak256Impl });
+/** @type {(...hashes: HashType[]) => HashType} */
 export const concat = Concat({ keccak256: keccak256Impl });
 
 // Export non-crypto functions

@@ -8,6 +8,15 @@ import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
 import type { AuthorizationType } from "./AuthorizationType.js";
 
+// Helper to convert Uint8Array to bigint
+function bytesToBigInt(bytes: Uint8Array): bigint {
+	let result = 0n;
+	for (const byte of bytes) {
+		result = (result << 8n) | BigInt(byte);
+	}
+	return result;
+}
+
 /**
  * Validate authorization structure
  * @param auth - Authorization to validate
@@ -19,8 +28,8 @@ export function validateWasm(auth: AuthorizationType): void {
 		address: auth.address,
 		nonce: auth.nonce,
 		yParity: auth.yParity,
-		r: auth.r,
-		s: auth.s,
+		r: bytesToBigInt(auth.r),
+		s: bytesToBigInt(auth.s),
 	});
 }
 
@@ -50,8 +59,8 @@ export function authorityWasm(auth: AuthorizationType): BrandedAddress {
 		address: auth.address,
 		nonce: auth.nonce,
 		yParity: auth.yParity,
-		r: auth.r,
-		s: auth.s,
+		r: bytesToBigInt(auth.r),
+		s: bytesToBigInt(auth.s),
 	}) as BrandedAddress;
 }
 

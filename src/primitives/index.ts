@@ -21,9 +21,9 @@
 // Core primitives
 export { Address } from "./Address/index.js";
 export * as BrandedAddress from "./Address/internal-index.js";
-export * from "./Hash/index.js";
+export * as Hash from "./Hash/index.js";
 export * as HashType from "./Hash/HashType.js";
-export * from "./Hex/index.js";
+export * as Hex from "./Hex/index.js";
 export * as BrandedHex from "./Hex/index.js";
 
 // Numeric types - Unsigned integers
@@ -109,7 +109,7 @@ export * as BlockHeader from "./BlockHeader/index.js";
 export * as Uncle from "./Uncle/index.js";
 
 // Events & Logs
-export * from "./EventLog/index.js";
+export * as EventLog from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 
 // Filters

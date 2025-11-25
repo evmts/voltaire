@@ -1,4 +1,4 @@
-import type { HexType } from "./HexType/HexType.js";
+import type { HexType } from "./HexType.js";
 
 export function Hex(value: string | Uint8Array | HexType): HexType;
 export namespace Hex {
@@ -35,5 +35,5 @@ export namespace Hex {
 	export function xor(a: HexType, b: HexType): HexType;
 }
 
-export * from "./HexType/errors.js";
-export type { HexType } from "./HexType/HexType.js";
+export * from "./errors.js";
+export type { HexType } from "./HexType.js";

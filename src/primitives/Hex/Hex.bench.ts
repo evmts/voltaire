@@ -4,7 +4,7 @@
  * Measures performance of hex operations
  */
 
-import type { HexType } from "./HexType/HexType.js";
+import type { HexType } from "./HexType.js";
 import {
 	assertSize,
 	concat,

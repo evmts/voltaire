@@ -1,5 +1,4 @@
 import type { AddressType } from "../primitives/Address/AddressType.js";
-import type { HashType } from "../primitives/Hash/Hash.js";
 import type { Uint256Type } from "../primitives/Uint/Uint256Type.js";
 
 /**
@@ -55,13 +54,13 @@ export const SELECTORS = {
 export const EVENTS = {
 	/** Transfer(address indexed from, address indexed to, uint256 indexed tokenId) */
 	Transfer:
-		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HashType,
+		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 	/** Approval(address indexed owner, address indexed approved, uint256 indexed tokenId) */
 	Approval:
-		"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925" as HashType,
+		"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
 	/** ApprovalForAll(address indexed owner, address indexed operator, bool approved) */
 	ApprovalForAll:
-		"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31" as HashType,
+		"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31",
 } as const;
 
 /**
@@ -163,9 +162,15 @@ export function decodeTransferEvent(log: {
 	}
 
 	// Topics: [event_sig, from, to, tokenId]
-	const from = `0x${log.topics[1].slice(26)}`; // Remove padding
-	const to = `0x${log.topics[2].slice(26)}`; // Remove padding
-	const tokenId = BigInt(log.topics[3]) as Uint256Type;
+	const fromTopic = log.topics[1];
+	const toTopic = log.topics[2];
+	const tokenIdTopic = log.topics[3];
+	if (!fromTopic || !toTopic || !tokenIdTopic) {
+		throw new Error("Missing Transfer event topics");
+	}
+	const from = `0x${fromTopic.slice(26)}`; // Remove padding
+	const to = `0x${toTopic.slice(26)}`; // Remove padding
+	const tokenId = BigInt(tokenIdTopic) as Uint256Type;
 
 	return { from, to, tokenId };
 }
@@ -186,9 +191,15 @@ export function decodeApprovalEvent(log: {
 	}
 
 	// Topics: [event_sig, owner, approved, tokenId]
-	const owner = `0x${log.topics[1].slice(26)}`; // Remove padding
-	const approved = `0x${log.topics[2].slice(26)}`; // Remove padding
-	const tokenId = BigInt(log.topics[3]) as Uint256Type;
+	const ownerTopic = log.topics[1];
+	const approvedTopic = log.topics[2];
+	const tokenIdTopic = log.topics[3];
+	if (!ownerTopic || !approvedTopic || !tokenIdTopic) {
+		throw new Error("Missing Approval event topics");
+	}
+	const owner = `0x${ownerTopic.slice(26)}`; // Remove padding
+	const approved = `0x${approvedTopic.slice(26)}`; // Remove padding
+	const tokenId = BigInt(tokenIdTopic) as Uint256Type;
 
 	return { owner, approved, tokenId };
 }
@@ -209,8 +220,13 @@ export function decodeApprovalForAllEvent(log: {
 	}
 
 	// Topics: [event_sig, owner, operator]
-	const owner = `0x${log.topics[1].slice(26)}`; // Remove padding
-	const operator = `0x${log.topics[2].slice(26)}`; // Remove padding
+	const ownerTopic = log.topics[1];
+	const operatorTopic = log.topics[2];
+	if (!ownerTopic || !operatorTopic) {
+		throw new Error("Missing ApprovalForAll event topics");
+	}
+	const owner = `0x${ownerTopic.slice(26)}`; // Remove padding
+	const operator = `0x${operatorTopic.slice(26)}`; // Remove padding
 	const approved = BigInt(log.data) !== 0n;
 
 	return { owner, operator, approved };

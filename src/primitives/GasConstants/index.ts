@@ -1,8 +1,52 @@
-// @ts-nocheck
+// Export all constants
 export * from "./constants.js";
+
+// Export types
+export type * from "./types.js";
+
+// Import Precompile namespace
 import * as Precompile from "./Precompile.js";
 export { Precompile };
 
+// Import typed functions
+import type { Hardfork } from "./types.js";
+
+// Calculate functions with typed imports
+export { calculateCallCost } from "./calculateCallCost.js";
+export { calculateCopyCost } from "./calculateCopyCost.js";
+export { calculateCreateCost } from "./calculateCreateCost.js";
+export { calculateKeccak256Cost } from "./calculateKeccak256Cost.js";
+export { calculateLogCost } from "./calculateLogCost.js";
+export { calculateMaxRefund } from "./calculateMaxRefund.js";
+export { calculateMemoryExpansionCost } from "./calculateMemoryExpansionCost.js";
+export { calculateSstoreCost } from "./calculateSstoreCost.js";
+export { calculateTxIntrinsicGas } from "./calculateTxIntrinsicGas.js";
+
+// Convenience functions
+export { callCost } from "./callCost.js";
+export { copyCost } from "./copyCost.js";
+export { createCost } from "./createCost.js";
+export { keccak256Cost } from "./keccak256Cost.js";
+export { logCost } from "./logCost.js";
+export { maxRefund } from "./maxRefund.js";
+export { memoryExpansionCost } from "./memoryExpansionCost.js";
+export { sstoreCost } from "./sstoreCost.js";
+export { txIntrinsicGas } from "./txIntrinsicGas.js";
+
+// EIP check functions
+export { hasEIP1153 } from "./hasEIP1153.js";
+export { hasEIP2929 } from "./hasEIP2929.js";
+export { hasEIP3529 } from "./hasEIP3529.js";
+export { hasEIP3860 } from "./hasEIP3860.js";
+export { hasEIP4844 } from "./hasEIP4844.js";
+
+// Get functions
+export { getColdAccountAccessCost } from "./getColdAccountAccessCost.js";
+export { getColdSloadCost } from "./getColdSloadCost.js";
+export { getSelfdestructRefund } from "./getSelfdestructRefund.js";
+export { getSstoreRefund } from "./getSstoreRefund.js";
+
+// Re-import for namespace export
 import { calculateCallCost } from "./calculateCallCost.js";
 import { calculateCopyCost } from "./calculateCopyCost.js";
 import { calculateCreateCost } from "./calculateCreateCost.js";
@@ -31,65 +75,34 @@ import { memoryExpansionCost } from "./memoryExpansionCost.js";
 import { sstoreCost } from "./sstoreCost.js";
 import { txIntrinsicGas } from "./txIntrinsicGas.js";
 
-// Export individual functions
-export {
-	calculateKeccak256Cost,
-	calculateSstoreCost,
-	calculateLogCost,
-	calculateCallCost,
-	calculateMemoryExpansionCost,
-	calculateCreateCost,
-	calculateTxIntrinsicGas,
-	calculateCopyCost,
-	calculateMaxRefund,
-	keccak256Cost,
-	sstoreCost,
-	logCost,
-	callCost,
-	memoryExpansionCost,
-	createCost,
-	txIntrinsicGas,
-	copyCost,
-	maxRefund,
-	hasEIP2929,
-	hasEIP3529,
-	hasEIP3860,
-	hasEIP1153,
-	hasEIP4844,
-	getColdSloadCost,
-	getColdAccountAccessCost,
-	getSstoreRefund,
-	getSelfdestructRefund,
-};
-
 // Namespace export
 export const BrandedGasConstants = {
-	calculateKeccak256Cost,
-	calculateSstoreCost,
-	calculateLogCost,
 	calculateCallCost,
-	calculateMemoryExpansionCost,
-	calculateCreateCost,
-	calculateTxIntrinsicGas,
 	calculateCopyCost,
+	calculateCreateCost,
+	calculateKeccak256Cost,
+	calculateLogCost,
 	calculateMaxRefund,
-	keccak256Cost,
-	sstoreCost,
-	logCost,
+	calculateMemoryExpansionCost,
+	calculateSstoreCost,
+	calculateTxIntrinsicGas,
 	callCost,
-	memoryExpansionCost,
-	createCost,
-	txIntrinsicGas,
 	copyCost,
-	maxRefund,
+	createCost,
+	getColdAccountAccessCost,
+	getColdSloadCost,
+	getSelfdestructRefund,
+	getSstoreRefund,
+	hasEIP1153,
 	hasEIP2929,
 	hasEIP3529,
 	hasEIP3860,
-	hasEIP1153,
 	hasEIP4844,
-	getColdSloadCost,
-	getColdAccountAccessCost,
-	getSstoreRefund,
-	getSelfdestructRefund,
+	keccak256Cost,
+	logCost,
+	maxRefund,
+	memoryExpansionCost,
 	Precompile,
+	sstoreCost,
+	txIntrinsicGas,
 };

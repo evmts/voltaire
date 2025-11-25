@@ -1,5 +1,5 @@
-export type { BrandedInt16 } from "./Int16Type.ts";
-export { INT16_MIN, INT16_MAX } from "./Int16Type.ts";
+export type { BrandedInt16 } from "./Int16Type.js";
+export { INT16_MIN, INT16_MAX } from "./Int16Type.js";
 
 // Constructors - no wrapper needed
 export { from, fromNumber, fromBigint, fromHex, fromBytes } from "./from.js";
@@ -56,7 +56,7 @@ export {
 } from "./utilities.js";
 
 // Public wrappers (auto-convert inputs)
-import type { BrandedInt16 } from "./Int16Type.ts";
+import type { BrandedInt16 } from "./Int16Type.js";
 import * as arith from "./arithmetic.js";
 import * as bit from "./bitwise.js";
 import * as cmp from "./comparison.js";

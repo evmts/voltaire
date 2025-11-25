@@ -1,8 +1,7 @@
-// @ts-nocheck
 export * from "./errors.js";
 export * from "./constants.js";
 export type { AddressType } from "./AddressType.js";
-export type { AddressType as BrandedAddress } from "./AddressType.js";
+export type { AddressType as BrandedAddressType } from "./AddressType.js";
 
 // Export factory functions from ChecksumAddress
 export { From, IsValid } from "./ChecksumAddress.js";
@@ -75,7 +74,9 @@ export const fromPublicKey = FromPublicKeyFactory({ keccak256 });
  */
 export const fromPrivateKey = FromPrivateKeyFactory({
 	keccak256,
-	derivePublicKey,
+	derivePublicKey: derivePublicKey as unknown as (
+		privateKey: Uint8Array,
+	) => Uint8Array,
 });
 
 import * as Lowercase from "./LowercaseAddress.js";

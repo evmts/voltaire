@@ -1,4 +1,4 @@
-import type { brand } from "../../../brand.js";
+import type { brand } from "../../brand.js";
 
 /**
  * Branded Int128 type

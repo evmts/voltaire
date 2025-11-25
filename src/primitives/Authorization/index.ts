@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Re-export AuthorizationType and BrandedAuthorization (deprecated alias)
 export type {
 	AuthorizationType,
@@ -15,16 +14,67 @@ import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
 import { FromPublicKey } from "../Address/fromPublicKey.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
 
+import type { AddressType } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/HashType.js";
+import type { PrivateKeyType } from "../PrivateKey/PrivateKeyType.js";
+import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
+import type { Secp256k1SignatureType } from "../../crypto/Secp256k1/SignatureType.js";
+import type { AuthorizationType } from "./AuthorizationType.js";
+
 // Create address factory with crypto dependencies
 const addressFromPublicKey = FromPublicKey({ keccak256 });
 
-// Import factory functions
-import { Hash } from "./hash.js";
-import { Sign } from "./sign.js";
-import { Verify } from "./verify.js";
+// Import factory functions with proper types
+import { Hash as HashFactory } from "./hash.js";
+import { Sign as SignFactory } from "./sign.js";
+import { Verify as VerifyFactory } from "./verify.js";
 
-// Import other functions
-import { calculateGasCost } from "./calculateGasCost.js";
+// Define factory return types
+type HashFn = (unsigned: {
+	chainId: bigint;
+	address: AddressType;
+	nonce: bigint;
+}) => HashType;
+
+type SignFn = (
+	unsigned: { chainId: bigint; address: AddressType; nonce: bigint },
+	privateKey: Uint8Array,
+) => AuthorizationType;
+
+type VerifyFn = (auth: AuthorizationType) => AddressType;
+
+// Re-export typed factories (types are flexible for crypto deps)
+export const Hash: (deps: {
+	keccak256: (data: Uint8Array) => Uint8Array;
+	rlpEncode: (data: Uint8Array[]) => Uint8Array;
+}) => HashFn = HashFactory as any;
+
+export const Sign: (deps: {
+	keccak256: (data: Uint8Array) => Uint8Array;
+	rlpEncode: (data: Uint8Array[]) => Uint8Array;
+	sign: (
+		messageHash: Uint8Array,
+		privateKey: Uint8Array,
+	) => { r: Uint8Array; s: Uint8Array; v: number };
+	recoverPublicKey: (
+		signature: { r: Uint8Array; s: Uint8Array; v: number },
+		messageHash: Uint8Array,
+	) => Uint8Array;
+	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+}) => SignFn = SignFactory as any;
+
+export const Verify: (deps: {
+	keccak256: (data: Uint8Array) => Uint8Array;
+	rlpEncode: (data: Uint8Array[]) => Uint8Array;
+	recoverPublicKey: (
+		signature: { r: Uint8Array; s: Uint8Array; v: number },
+		messageHash: Uint8Array,
+	) => Uint8Array;
+	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+}) => VerifyFn = VerifyFactory as any;
+
+// Import other functions with proper types
+import { calculateGasCost as calculateGasCostImpl } from "./calculateGasCost.js";
 import {
 	MAGIC_BYTE,
 	PER_AUTH_BASE_COST,
@@ -32,50 +82,76 @@ import {
 	SECP256K1_HALF_N,
 	SECP256K1_N,
 } from "./constants.js";
-import { equals, equalsAuth } from "./equals.js";
-import { format } from "./format.js";
-import { getGasCost } from "./getGasCost.js";
-import { isItem } from "./isItem.js";
-import { isUnsigned } from "./isUnsigned.js";
-import { process } from "./process.js";
-import { processAll } from "./processAll.js";
-import { validate } from "./validate.js";
+import { equals as equalsImpl, equalsAuth as equalsAuthImpl } from "./equals.js";
+import { format as formatImpl } from "./format.js";
+import { getGasCost as getGasCostImpl } from "./getGasCost.js";
+import { isItem as isItemImpl } from "./isItem.js";
+import { isUnsigned as isUnsignedImpl } from "./isUnsigned.js";
+import { process as processImpl } from "./process.js";
+import { processAll as processAllImpl } from "./processAll.js";
+import { validate as validateImpl } from "./validate.js";
 
-// Export factory functions (tree-shakeable)
-export { Hash, Verify, Sign };
+// Typed function signatures
+export const calculateGasCost: (
+	authList: AuthorizationType[],
+	emptyAccounts: number,
+) => bigint = calculateGasCostImpl;
+
+export const equals: (a: AddressType, b: AddressType) => boolean = equalsImpl;
+
+export const equalsAuth: (
+	auth1: AuthorizationType,
+	auth2: AuthorizationType,
+) => boolean = equalsAuthImpl;
+
+export const format: (
+	auth:
+		| AuthorizationType
+		| { chainId: bigint; address: AddressType; nonce: bigint },
+) => string = formatImpl;
+
+export const getGasCost: (
+	auth: AuthorizationType,
+	isEmpty: boolean,
+) => bigint = getGasCostImpl;
+
+export const isItem: (value: unknown) => boolean = isItemImpl;
+
+export const isUnsigned: (value: unknown) => boolean = isUnsignedImpl;
+
+export const process: (auth: AuthorizationType) => {
+	authority: AddressType;
+	delegatedAddress: AddressType;
+} = processImpl;
+
+export const processAll: (
+	authList: AuthorizationType[],
+) => { authority: AddressType; delegatedAddress: AddressType }[] =
+	processAllImpl;
+
+export const validate: (auth: AuthorizationType) => void = validateImpl;
 
 // Create wrapped functions with auto-injected crypto
-const hash = Hash({ keccak256, rlpEncode });
-const verify = Verify({
-	keccak256,
+const hash: HashFn = Hash({
+	keccak256: keccak256 as any,
 	rlpEncode,
-	recoverPublicKey,
+});
+const verify: VerifyFn = Verify({
+	keccak256: keccak256 as any,
+	rlpEncode,
+	recoverPublicKey: recoverPublicKey as any,
 	addressFromPublicKey,
 });
-const sign = Sign({
-	keccak256,
+const sign: SignFn = Sign({
+	keccak256: keccak256 as any,
 	rlpEncode,
-	sign: secp256k1Sign,
-	recoverPublicKey,
+	sign: secp256k1Sign as any,
+	recoverPublicKey: recoverPublicKey as any,
 	addressFromPublicKey,
 });
 
-// Export individual functions
-export {
-	isItem,
-	isUnsigned,
-	validate,
-	hash,
-	sign,
-	verify,
-	calculateGasCost,
-	getGasCost,
-	process,
-	processAll,
-	format,
-	equals,
-	equalsAuth,
-};
+// Export wrapped functions
+export { hash, sign, verify };
 
 // Namespace export
 export const Authorization = {

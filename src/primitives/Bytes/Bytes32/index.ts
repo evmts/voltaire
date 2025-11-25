@@ -1,6 +1,8 @@
-// @ts-nocheck
-export * from "./constants.js";
-export * from "./Bytes32Type.js";
+// From Type file
+export type { Bytes32Type, Bytes32Like } from "./Bytes32Type.js";
+export { SIZE } from "./Bytes32Type.js";
+// From constants
+export { ZERO } from "./constants.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
@@ -41,7 +43,7 @@ export {
 };
 
 // Namespace export
-export const Bytes32Type = {
+export const Bytes32 = {
 	from,
 	fromBytes,
 	fromHex,

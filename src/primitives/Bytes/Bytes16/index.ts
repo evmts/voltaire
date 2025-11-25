@@ -1,6 +1,8 @@
-// @ts-nocheck
-export * from "./constants.js";
-export * from "./Bytes16Type.js";
+// From Type file
+export type { Bytes16Type, Bytes16Like } from "./Bytes16Type.js";
+export { SIZE } from "./Bytes16Type.js";
+// From constants
+export { ZERO } from "./constants.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";

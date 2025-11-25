@@ -1,5 +1,5 @@
-export type { BrandedInt8 } from "./Int8Type.ts";
-export { INT8_MIN, INT8_MAX } from "./Int8Type.ts";
+export type { BrandedInt8 } from "./Int8Type.js";
+export { INT8_MIN, INT8_MAX } from "./Int8Type.js";
 
 // Constructors - no wrapper needed
 export { from, fromNumber, fromBigint, fromHex, fromBytes } from "./from.js";
@@ -56,7 +56,7 @@ export {
 } from "./utilities.js";
 
 // Public wrappers (auto-convert inputs)
-import type { BrandedInt8 } from "./Int8Type.ts";
+import type { BrandedInt8 } from "./Int8Type.js";
 import * as arith from "./arithmetic.js";
 import * as bit from "./bitwise.js";
 import * as cmp from "./comparison.js";

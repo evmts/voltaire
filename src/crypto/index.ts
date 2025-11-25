@@ -12,18 +12,18 @@
  * ```
  */
 
-export { Keccak256, Keccak256Hash } from "./Keccak256/index.js";
-export type { Keccak256Hash as Keccak256HashType } from "./Keccak256/Keccak256HashType.js";
+export { Keccak256 } from "./Keccak256/index.js";
+export type { Keccak256Hash, Keccak256Hash as Keccak256HashType } from "./Keccak256/Keccak256HashType.js";
 export { Secp256k1 } from "./Secp256k1/index.js";
 export { EIP712 } from "./EIP712/index.js";
 export { KZG } from "./KZG/index.js";
 export { BN254 } from "./bn254/BN254.js";
-export { Ripemd160, Ripemd160Hash } from "./Ripemd160/index.js";
-export type { Ripemd160Hash as Ripemd160HashType } from "./Ripemd160/Ripemd160HashType.js";
-export { SHA256, SHA256Hash } from "./SHA256/index.js";
-export type { SHA256Hash as SHA256HashType } from "./SHA256/SHA256HashType.js";
-export { Blake2, Blake2Hash } from "./Blake2/index.js";
-export type { Blake2Hash as Blake2HashType } from "./Blake2/Blake2HashType.js";
+export { Ripemd160 } from "./Ripemd160/index.js";
+export type { Ripemd160Hash, Ripemd160Hash as Ripemd160HashType } from "./Ripemd160/Ripemd160HashType.js";
+export { SHA256 } from "./SHA256/index.js";
+export type { SHA256Hash, SHA256Hash as SHA256HashType } from "./SHA256/SHA256HashType.js";
+export { Blake2 } from "./Blake2/index.js";
+export type { Blake2Hash, Blake2Hash as Blake2HashType } from "./Blake2/Blake2HashType.js";
 export { Ed25519 } from "./Ed25519/index.js";
 export { AesGcm } from "./AesGcm/AesGcm.js";
 export { Bip39 } from "./Bip39/index.js";

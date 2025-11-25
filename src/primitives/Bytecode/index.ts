@@ -1,34 +1,49 @@
-// @ts-nocheck
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 
-import { analyze } from "./analyze.js";
-import { analyzeBlocks } from "./analyzeBlocks.js";
-import { analyzeGas } from "./analyzeGas.js";
-import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { analyzeStack } from "./analyzeStack.js";
-import { detectFusions } from "./detectFusions.js";
-import { equals } from "./equals.js";
-import { extractRuntime } from "./extractRuntime.js";
-import { formatInstruction } from "./formatInstruction.js";
-import { formatInstructions } from "./formatInstructions.js";
-import { from } from "./from.js";
-import { fromHex } from "./fromHex.js";
-import { getBlock } from "./getBlock.js";
+import type {
+	Analysis,
+	BasicBlock,
+	BlockAnalysisOptions,
+	BrandedAbi,
+	BrandedBytecode,
+	GasAnalysis,
+	GasAnalysisOptions,
+	Instruction,
+	PrettyPrintOptions,
+	ScanOptions,
+	StackAnalysis,
+	StackAnalysisOptions,
+} from "./BytecodeType.js";
+
+// Import internal functions with proper types
+import { analyze as _analyze } from "./analyze.js";
+import { analyzeBlocks as _analyzeBlocks } from "./analyzeBlocks.js";
+import { analyzeGas as _analyzeGas } from "./analyzeGas.js";
+import { analyzeJumpDestinations as _analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import { analyzeStack as _analyzeStack } from "./analyzeStack.js";
+import { detectFusions as _detectFusions } from "./detectFusions.js";
+import { equals as _equals } from "./equals.js";
+import { extractRuntime as _extractRuntime } from "./extractRuntime.js";
+import { formatInstruction as _formatInstruction } from "./formatInstruction.js";
+import { formatInstructions as _formatInstructions } from "./formatInstructions.js";
+import { from as _from } from "./from.js";
+import { fromHex as _fromHex } from "./fromHex.js";
+import { getBlock as _getBlock } from "./getBlock.js";
 import { getNextPc as _getNextPc } from "./getNextPc.js";
-import { getPushSize } from "./getPushSize.js";
-import { hasMetadata } from "./hasMetadata.js";
-import { Hash } from "./hash.js";
-import { isPush } from "./isPush.js";
-import { isTerminator } from "./isTerminator.js";
-import { isValidJumpDest } from "./isValidJumpDest.js";
-import { parseInstructions } from "./parseInstructions.js";
-import { prettyPrint } from "./prettyPrint.js";
-import { scan } from "./scan.js";
-import { size } from "./size.js";
-import { stripMetadata } from "./stripMetadata.js";
-import { toAbi } from "./toAbi.js";
-import { toHex } from "./toHex.js";
-import { validate } from "./validate.js";
+import { getPushSize as _getPushSize } from "./getPushSize.js";
+import { hasMetadata as _hasMetadata } from "./hasMetadata.js";
+import { Hash as _Hash } from "./hash.js";
+import { isPush as _isPush } from "./isPush.js";
+import { isTerminator as _isTerminator } from "./isTerminator.js";
+import { isValidJumpDest as _isValidJumpDest } from "./isValidJumpDest.js";
+import { parseInstructions as _parseInstructions } from "./parseInstructions.js";
+import { prettyPrint as _prettyPrint } from "./prettyPrint.js";
+import { scan as _scan } from "./scan.js";
+import { size as _size } from "./size.js";
+import { stripMetadata as _stripMetadata } from "./stripMetadata.js";
+import { toAbi as _toAbi } from "./toAbi.js";
+import { toHex as _toHex } from "./toHex.js";
+import { validate as _validate } from "./validate.js";
 
 // Re-export types
 export type * from "./BytecodeType.js";
@@ -37,7 +52,74 @@ export type * from "./BytecodeType.js";
 export { Hash } from "./hash.js";
 
 // Hash convenience function
-const hash = Hash({ keccak256 });
+const hash = _Hash({ keccak256 });
+
+// Type the internal functions properly
+const analyze: (code: BrandedBytecode) => Analysis = _analyze;
+const analyzeBlocks: (
+	bytecode: BrandedBytecode,
+	options?: BlockAnalysisOptions,
+) => BasicBlock[] = _analyzeBlocks;
+const analyzeGas: (
+	bytecode: BrandedBytecode,
+	options?: GasAnalysisOptions,
+) => GasAnalysis = _analyzeGas;
+const analyzeJumpDestinations: (
+	code: BrandedBytecode,
+) => ReadonlySet<number> = _analyzeJumpDestinations;
+const analyzeStack: (
+	bytecode: BrandedBytecode,
+	options?: StackAnalysisOptions,
+) => StackAnalysis = _analyzeStack;
+const detectFusions: (code: BrandedBytecode) => unknown = _detectFusions;
+const equals: (a: BrandedBytecode, b: BrandedBytecode) => boolean = _equals;
+const extractRuntime: (
+	code: BrandedBytecode,
+	offset: number,
+) => BrandedBytecode = _extractRuntime;
+const formatInstruction: (inst: Instruction) => string = _formatInstruction;
+const formatInstructions: (code: BrandedBytecode) => string[] =
+	_formatInstructions;
+const from: (value: string | Uint8Array) => BrandedBytecode = _from;
+const fromHex: (hex: string) => BrandedBytecode = _fromHex;
+const getBlock: (
+	code: BrandedBytecode,
+	pc: number,
+) => BasicBlock | undefined = _getBlock;
+const getNextPc: (
+	code: BrandedBytecode,
+	currentPc: number,
+) => number | undefined = _getNextPc;
+const getPushSize: (opcode: number) => number = _getPushSize;
+const hasMetadata: (code: BrandedBytecode) => boolean = _hasMetadata;
+const isPush: (opcode: number) => boolean = _isPush;
+const isTerminator: (opcode: number) => boolean = _isTerminator;
+const isValidJumpDest: (code: BrandedBytecode, offset: number) => boolean =
+	_isValidJumpDest;
+const parseInstructions: (code: BrandedBytecode) => Instruction[] =
+	_parseInstructions;
+const prettyPrint: (
+	bytecode: BrandedBytecode,
+	options?: PrettyPrintOptions,
+) => string = _prettyPrint;
+const scan: (
+	bytecode: BrandedBytecode,
+	options?: ScanOptions,
+) => Generator<{
+	pc: number;
+	opcode: number;
+	type: "push" | "regular";
+	size: number;
+	value?: bigint;
+	gas?: number;
+	stackEffect?: { pop: number; push: number };
+}> = _scan;
+const size: (code: BrandedBytecode) => number = _size;
+const stripMetadata: (code: BrandedBytecode) => BrandedBytecode =
+	_stripMetadata;
+const toHex: (code: BrandedBytecode, prefix?: boolean) => string = _toHex;
+const toAbi: (bytecode: BrandedBytecode) => BrandedAbi = _toAbi;
+const validate: (code: BrandedBytecode) => boolean = _validate;
 
 // Export individual functions
 export {
@@ -72,7 +154,7 @@ export {
 };
 
 // Wrapper export (convenient, backward compat)
-const BrandedBytecode = {
+const BrandedBytecodeNamespace = {
 	from,
 	fromHex,
 	analyze,
@@ -112,11 +194,11 @@ const BrandedBytecode = {
  * const code = Bytecode("0x6001")
  * ```
  *
- * @param {import('./index.js').BytecodeLike} value - Bytecode input
- * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
+ * @param value - Bytecode input
+ * @returns Bytecode instance
  */
-export function Bytecode(value) {
-	const result = BrandedBytecode.from(value);
+export function Bytecode(value: string | Uint8Array) {
+	const result = BrandedBytecodeNamespace.from(value);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 }
@@ -125,125 +207,137 @@ export function Bytecode(value) {
  * Alias for Bytecode() constructor
  *
  * @deprecated Use `Bytecode(value)` directly instead
- * @param {import('./index.js').BytecodeLike} value - Bytecode input
- * @returns {BrandedBytecode & typeof Bytecode.prototype} Bytecode instance
+ * @param value - Bytecode input
+ * @returns Bytecode instance
  */
-Bytecode.from = (value) => {
-	const result = BrandedBytecode.from(value);
+Bytecode.from = (value: string | Uint8Array) => {
+	const result = BrandedBytecodeNamespace.from(value);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
 Bytecode.from.prototype = Bytecode.prototype;
 
-Bytecode.fromHex = (value) => {
-	const result = BrandedBytecode.fromHex(value);
+Bytecode.fromHex = (value: string) => {
+	const result = BrandedBytecodeNamespace.fromHex(value);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
 Bytecode.fromHex.prototype = Bytecode.prototype;
 
 // Static utility methods (don't return Bytecode instances)
-Bytecode.analyze = BrandedBytecode.analyze;
-Bytecode.analyzeBlocks = BrandedBytecode.analyzeBlocks;
-Bytecode.analyzeGas = BrandedBytecode.analyzeGas;
-Bytecode.analyzeJumpDestinations = BrandedBytecode.analyzeJumpDestinations;
-Bytecode.analyzeStack = BrandedBytecode.analyzeStack;
-Bytecode.detectFusions = BrandedBytecode.detectFusions;
-Bytecode.equals = BrandedBytecode.equals;
-Bytecode.extractRuntime = BrandedBytecode.extractRuntime;
-Bytecode.formatInstruction = BrandedBytecode.formatInstruction;
-Bytecode.formatInstructions = BrandedBytecode.formatInstructions;
-Bytecode.getBlock = BrandedBytecode.getBlock;
-Bytecode.getNextPc = BrandedBytecode._getNextPc;
-Bytecode.getPushSize = BrandedBytecode.getPushSize;
-Bytecode.hash = BrandedBytecode.hash;
-Bytecode.hasMetadata = BrandedBytecode.hasMetadata;
-Bytecode.isPush = BrandedBytecode.isPush;
-Bytecode.isTerminator = BrandedBytecode.isTerminator;
-Bytecode.isValidJumpDest = BrandedBytecode.isValidJumpDest;
-Bytecode.parseInstructions = BrandedBytecode.parseInstructions;
-Bytecode.prettyPrint = BrandedBytecode.prettyPrint;
-Bytecode.scan = BrandedBytecode.scan;
-Bytecode.size = BrandedBytecode.size;
-Bytecode.stripMetadata = BrandedBytecode.stripMetadata;
-Bytecode.toAbi = BrandedBytecode.toAbi;
-Bytecode.toHex = BrandedBytecode.toHex;
-Bytecode.validate = BrandedBytecode.validate;
+Bytecode.analyze = BrandedBytecodeNamespace.analyze;
+Bytecode.analyzeBlocks = BrandedBytecodeNamespace.analyzeBlocks;
+Bytecode.analyzeGas = BrandedBytecodeNamespace.analyzeGas;
+Bytecode.analyzeJumpDestinations = BrandedBytecodeNamespace.analyzeJumpDestinations;
+Bytecode.analyzeStack = BrandedBytecodeNamespace.analyzeStack;
+Bytecode.detectFusions = BrandedBytecodeNamespace.detectFusions;
+Bytecode.equals = BrandedBytecodeNamespace.equals;
+Bytecode.extractRuntime = BrandedBytecodeNamespace.extractRuntime;
+Bytecode.formatInstruction = BrandedBytecodeNamespace.formatInstruction;
+Bytecode.formatInstructions = BrandedBytecodeNamespace.formatInstructions;
+Bytecode.getBlock = BrandedBytecodeNamespace.getBlock;
+Bytecode.getNextPc = BrandedBytecodeNamespace._getNextPc;
+Bytecode.getPushSize = BrandedBytecodeNamespace.getPushSize;
+Bytecode.hash = BrandedBytecodeNamespace.hash;
+Bytecode.hasMetadata = BrandedBytecodeNamespace.hasMetadata;
+Bytecode.isPush = BrandedBytecodeNamespace.isPush;
+Bytecode.isTerminator = BrandedBytecodeNamespace.isTerminator;
+Bytecode.isValidJumpDest = BrandedBytecodeNamespace.isValidJumpDest;
+Bytecode.parseInstructions = BrandedBytecodeNamespace.parseInstructions;
+Bytecode.prettyPrint = BrandedBytecodeNamespace.prettyPrint;
+Bytecode.scan = BrandedBytecodeNamespace.scan;
+Bytecode.size = BrandedBytecodeNamespace.size;
+Bytecode.stripMetadata = BrandedBytecodeNamespace.stripMetadata;
+Bytecode.toAbi = BrandedBytecodeNamespace.toAbi;
+Bytecode.toHex = BrandedBytecodeNamespace.toHex;
+Bytecode.validate = BrandedBytecodeNamespace.validate;
 
 // Set up Bytecode.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
 
 // Instance methods
-Bytecode.prototype.analyze = function () {
-	return BrandedBytecode.analyze(this);
+Bytecode.prototype.analyze = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.analyze(this);
 };
-Bytecode.prototype.analyzeBlocks = function (options) {
-	return BrandedBytecode.analyzeBlocks(this, options);
+Bytecode.prototype.analyzeBlocks = function (
+	this: BrandedBytecode,
+	options?: BlockAnalysisOptions,
+) {
+	return BrandedBytecodeNamespace.analyzeBlocks(this, options);
 };
-Bytecode.prototype.analyzeGas = function (options) {
-	return BrandedBytecode.analyzeGas(this, options);
+Bytecode.prototype.analyzeGas = function (
+	this: BrandedBytecode,
+	options?: GasAnalysisOptions,
+) {
+	return BrandedBytecodeNamespace.analyzeGas(this, options);
 };
-Bytecode.prototype.analyzeJumpDestinations = function () {
-	return BrandedBytecode.analyzeJumpDestinations(this);
+Bytecode.prototype.analyzeJumpDestinations = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.analyzeJumpDestinations(this);
 };
-Bytecode.prototype.analyzeStack = function (options) {
-	return BrandedBytecode.analyzeStack(this, options);
+Bytecode.prototype.analyzeStack = function (
+	this: BrandedBytecode,
+	options?: StackAnalysisOptions,
+) {
+	return BrandedBytecodeNamespace.analyzeStack(this, options);
 };
-Bytecode.prototype.detectFusions = function () {
-	return BrandedBytecode.detectFusions(this);
+Bytecode.prototype.detectFusions = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.detectFusions(this);
 };
-Bytecode.prototype.equals = function (other) {
-	return BrandedBytecode.equals(this, other);
+Bytecode.prototype.equals = function (this: BrandedBytecode, other: BrandedBytecode) {
+	return BrandedBytecodeNamespace.equals(this, other);
 };
-Bytecode.prototype.extractRuntime = function () {
-	const result = BrandedBytecode.extractRuntime(this);
+Bytecode.prototype.extractRuntime = function (this: BrandedBytecode, offset: number) {
+	const result = BrandedBytecodeNamespace.extractRuntime(this, offset);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
-Bytecode.prototype.formatInstructions = function () {
-	return BrandedBytecode.formatInstructions(this);
+Bytecode.prototype.formatInstructions = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.formatInstructions(this);
 };
-Bytecode.prototype.getBlock = function (pc) {
-	return BrandedBytecode.getBlock(this, pc);
+Bytecode.prototype.getBlock = function (this: BrandedBytecode, pc: number) {
+	return BrandedBytecodeNamespace.getBlock(this, pc);
 };
-Bytecode.prototype.getNextPc = function (currentPc) {
-	return BrandedBytecode._getNextPc(this, currentPc);
+Bytecode.prototype.getNextPc = function (this: BrandedBytecode, currentPc: number) {
+	return BrandedBytecodeNamespace._getNextPc(this, currentPc);
 };
-Bytecode.prototype.hash = function () {
-	return BrandedBytecode.hash(this);
+Bytecode.prototype.hash = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.hash(this);
 };
-Bytecode.prototype.hasMetadata = function () {
-	return BrandedBytecode.hasMetadata(this);
+Bytecode.prototype.hasMetadata = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.hasMetadata(this);
 };
-Bytecode.prototype.isValidJumpDest = function (offset) {
-	return BrandedBytecode.isValidJumpDest(this, offset);
+Bytecode.prototype.isValidJumpDest = function (this: BrandedBytecode, offset: number) {
+	return BrandedBytecodeNamespace.isValidJumpDest(this, offset);
 };
-Bytecode.prototype.parseInstructions = function () {
-	return BrandedBytecode.parseInstructions(this);
+Bytecode.prototype.parseInstructions = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.parseInstructions(this);
 };
-Bytecode.prototype.prettyPrint = function (options) {
-	return BrandedBytecode.prettyPrint(this, options);
+Bytecode.prototype.prettyPrint = function (
+	this: BrandedBytecode,
+	options?: PrettyPrintOptions,
+) {
+	return BrandedBytecodeNamespace.prettyPrint(this, options);
 };
-Bytecode.prototype.scan = function (options) {
-	return BrandedBytecode.scan(this, options);
+Bytecode.prototype.scan = function (this: BrandedBytecode, options?: ScanOptions) {
+	return BrandedBytecodeNamespace.scan(this, options);
 };
-Bytecode.prototype.size = function () {
-	return BrandedBytecode.size(this);
+Bytecode.prototype.size = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.size(this);
 };
-Bytecode.prototype.stripMetadata = function () {
-	const result = BrandedBytecode.stripMetadata(this);
+Bytecode.prototype.stripMetadata = function (this: BrandedBytecode) {
+	const result = BrandedBytecodeNamespace.stripMetadata(this);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
-Bytecode.prototype.toAbi = function () {
-	return BrandedBytecode.toAbi(this);
+Bytecode.prototype.toAbi = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.toAbi(this);
 };
-Bytecode.prototype.toHex = function () {
-	return BrandedBytecode.toHex(this);
+Bytecode.prototype.toHex = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.toHex(this);
 };
-Bytecode.prototype.validate = function () {
-	return BrandedBytecode.validate(this);
+Bytecode.prototype.validate = function (this: BrandedBytecode) {
+	return BrandedBytecodeNamespace.validate(this);
 };
 
-// Namespace export
-export { BrandedBytecode };
+// Namespace export - value export for backward compatibility
+export { BrandedBytecodeNamespace as BrandedBytecode };

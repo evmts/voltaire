@@ -4,8 +4,8 @@ export * from "./EventLog.js";
 // Export type definitions
 export type * from "./EventLogConstructor.js";
 
-// Re-export type as BrandedEventLog for backward compatibility
-export type { EventLogType as BrandedEventLog } from "./EventLogType.js";
+// Re-export type
+export type { EventLogType, EventLogType as BrandedEventLogType } from "./EventLogType.js";
 
 // Import all methods and create namespace export
 import { clone } from "./clone.js";

@@ -1,55 +1,97 @@
-// @ts-nocheck
-import { add } from "./add.js";
-import { combine } from "./combine.js";
-import { contains } from "./contains.js";
-import { create } from "./create.js";
-import { density } from "./density.js";
-import { expectedFalsePositiveRate } from "./expectedFalsePositiveRate.js";
-import { fromHex } from "./fromHex.js";
-import { hash } from "./hash.js";
-import { isEmpty } from "./isEmpty.js";
-import { merge } from "./merge.js";
-import { toHex } from "./toHex.js";
+import type { BloomFilterType } from "./BloomFilterType.js";
+
+// Import implementation functions with proper types
+import { add as _add } from "./add.js";
+import { combine as _combine } from "./combine.js";
+import { contains as _contains } from "./contains.js";
+import { create as _create } from "./create.js";
+import { density as _density } from "./density.js";
+import { expectedFalsePositiveRate as _expectedFalsePositiveRate } from "./expectedFalsePositiveRate.js";
+import { fromHex as _fromHex } from "./fromHex.js";
+import { hash as _hash } from "./hash.js";
+import { isEmpty as _isEmpty } from "./isEmpty.js";
+import { merge as _merge } from "./merge.js";
+import { toHex as _toHex } from "./toHex.js";
 
 // Re-export type and errors
 export type { BloomFilterType } from "./BloomFilterType.js";
 export * from "./errors.js";
 export * from "./constants.js";
 
-// Export individual functions
-export {
-	add,
-	combine,
-	contains,
-	create,
-	density,
-	expectedFalsePositiveRate,
-	fromHex,
-	hash,
-	isEmpty,
-	merge,
-	toHex,
-};
+// Export individual functions with proper types
+export function add(filter: BloomFilterType, item: Uint8Array): void {
+	return _add(filter, item);
+}
+
+export function combine(...filters: BloomFilterType[]): BloomFilterType {
+	return _combine(...filters);
+}
+
+export function contains(filter: BloomFilterType, item: Uint8Array): boolean {
+	return _contains(filter, item);
+}
+
+export function create(m: number, k: number): BloomFilterType {
+	return _create(m, k);
+}
+
+export function density(filter: BloomFilterType): number {
+	return _density(filter);
+}
+
+export function expectedFalsePositiveRate(
+	filter: BloomFilterType,
+	itemCount: number,
+): number {
+	return _expectedFalsePositiveRate(filter, itemCount);
+}
+
+export function fromHex(hex: string, m: number, k: number): BloomFilterType {
+	return _fromHex(hex, m, k);
+}
+
+export function hash(item: Uint8Array, seed: number, m: number): number {
+	return _hash(item, seed, m);
+}
+
+export function isEmpty(filter: BloomFilterType): boolean {
+	return _isEmpty(filter);
+}
+
+export function merge(
+	filter1: BloomFilterType,
+	filter2: BloomFilterType,
+): BloomFilterType {
+	return _merge(filter1, filter2);
+}
+
+export function toHex(filter: BloomFilterType): string {
+	return _toHex(filter);
+}
 
 /**
  * Factory function for creating BloomFilter instances
  */
-export function BloomFilter(m, k) {
+export function BloomFilter(m: number, k: number): BloomFilterType {
 	const result = create(m, k);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 }
 
 // Static constructors
-BloomFilter.create = (m, k) => {
+BloomFilter.create = (m: number, k: number): BloomFilterType => {
 	const result = create(m, k);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 };
 BloomFilter.create.prototype = BloomFilter.prototype;
 
-BloomFilter.fromHex = (value) => {
-	const result = fromHex(value);
+BloomFilter.fromHex = (
+	value: string,
+	m: number,
+	k: number,
+): BloomFilterType => {
+	const result = fromHex(value, m, k);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 };
@@ -58,12 +100,15 @@ BloomFilter.fromHex.prototype = BloomFilter.prototype;
 // Static utility methods (don't return BloomFilter instances)
 BloomFilter.add = add;
 BloomFilter.contains = contains;
-BloomFilter.merge = (a, b) => {
+BloomFilter.merge = (
+	a: BloomFilterType,
+	b: BloomFilterType,
+): BloomFilterType => {
 	const result = merge(a, b);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 };
-BloomFilter.combine = (...filters) => {
+BloomFilter.combine = (...filters: BloomFilterType[]): BloomFilterType => {
 	const result = combine(...filters);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
@@ -78,20 +123,22 @@ BloomFilter.expectedFalsePositiveRate = expectedFalsePositiveRate;
 Object.setPrototypeOf(BloomFilter.prototype, Uint8Array.prototype);
 
 // Instance methods
-BloomFilter.prototype.add = function (value) {
-	return add(this, value);
+BloomFilter.prototype.add = function (value: Uint8Array): void {
+	return add(this as BloomFilterType, value);
 };
-BloomFilter.prototype.contains = function (value) {
-	return contains(this, value);
+BloomFilter.prototype.contains = function (value: Uint8Array): boolean {
+	return contains(this as BloomFilterType, value);
 };
-BloomFilter.prototype.merge = function (other) {
-	const result = merge(this, other);
+BloomFilter.prototype.merge = function (
+	other: BloomFilterType,
+): BloomFilterType {
+	const result = merge(this as BloomFilterType, other);
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 };
-BloomFilter.prototype.toHex = function () {
-	return toHex(this);
+BloomFilter.prototype.toHex = function (): string {
+	return toHex(this as BloomFilterType);
 };
-BloomFilter.prototype.isEmpty = function () {
-	return isEmpty(this);
+BloomFilter.prototype.isEmpty = function (): boolean {
+	return isEmpty(this as BloomFilterType);
 };

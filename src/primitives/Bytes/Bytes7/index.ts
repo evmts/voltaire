@@ -1,5 +1,4 @@
-// @ts-nocheck
-export * from "./Bytes7Type.js";
+export type { Bytes7Type } from "./Bytes7Type.js";
 
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";

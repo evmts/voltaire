@@ -2,7 +2,7 @@
 export * from "./Abi.js";
 
 // Export type definitions
-export type * from "./Abi.ts";
+export type * from "./Abi.js";
 
 // Re-export encoding/decoding methods
 export { encode } from "./encode.js";

@@ -1,6 +1,6 @@
-// @ts-nocheck
-export * from "./Int128Type.js";
-export * from "./constants.js";
+// Export type from Int128Type
+export type { BrandedInt128 } from "./Int128Type.js";
+// Constants are re-exported via explicit exports
 
 import { abs } from "./abs.js";
 import { bitLength } from "./bitLength.js";
@@ -8,16 +8,7 @@ import { bitwiseAnd } from "./bitwiseAnd.js";
 import { bitwiseNot } from "./bitwiseNot.js";
 import { bitwiseOr } from "./bitwiseOr.js";
 import { bitwiseXor } from "./bitwiseXor.js";
-import {
-	BITS,
-	MAX,
-	MIN,
-	MODULO,
-	NEG_ONE,
-	ONE,
-	SIZE,
-	ZERO,
-} from "./constants.js";
+import { BITS, MAX, MIN, MODULO, NEG_ONE, ONE, SIZE, ZERO } from "./constants.js";
 import { dividedBy } from "./dividedBy.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";
@@ -90,7 +81,7 @@ export {
 };
 
 // Namespace export
-export const BrandedInt128 = {
+export const Int128 = {
 	from,
 	fromHex,
 	fromBigInt,

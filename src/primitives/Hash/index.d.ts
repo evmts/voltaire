@@ -5,5 +5,5 @@ export { Hash } from "./Hash.js";
 export * from "./BrandedHashIndex.js";
 
 // Export type definitions
-export type * from "./BrandedHashIndex.ts";
+export type * from "./BrandedHashIndex.js";
 export type { HashType as HashTypeInterface, HashLike } from "./HashType.js";

@@ -30,7 +30,7 @@ export function from<T = Record<string, unknown>>(typedData: {
 	};
 	message: T;
 }): import("./TypedDataType.js").TypedDataType<T> {
-	return fromImpl(typedData);
+	return fromImpl(typedData) as import("./TypedDataType.js").TypedDataType<T>;
 }
 
 export function hash(

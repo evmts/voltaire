@@ -1,6 +1,7 @@
-// Export type and constants
-export * from "./Int64Type.js";
-export * from "./constants.js";
+// Export type from Int64Type
+export type { BrandedInt64 } from "./Int64Type.js";
+export { INT64_MIN, INT64_MAX } from "./Int64Type.js";
+// Note: constants.js exports are imported and re-exported below
 
 // Import all functions
 import { abs } from "./abs.js";
