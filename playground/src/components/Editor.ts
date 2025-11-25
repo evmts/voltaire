@@ -4,8 +4,22 @@ import { registerImportCompletion } from "../features/ImportCompletion.js";
 import { registerVoltaireSnippets } from "../features/Snippets.js";
 import { registerQuickFixes } from "../features/QuickFixes.js";
 import { registerNavigationProviders } from "../features/Navigation.js";
-import { generateTypeDefinitions } from "../runtime/TypeDefinitions.js";
 import { InlineSuggestions } from "../features/InlineSuggestions.js";
+
+// Available Voltaire modules for LSP
+const VOLTAIRE_MODULES = [
+	"voltaire/primitives/Address",
+	"voltaire/primitives/Hex",
+	"voltaire/primitives/Hash",
+	"voltaire/primitives/Rlp",
+	"voltaire/primitives/Abi",
+	"voltaire/crypto/Keccak256",
+	"voltaire/crypto/Secp256k1",
+	"voltaire/crypto/SHA256",
+	"voltaire/crypto/Blake2",
+	"voltaire/crypto/Ripemd160",
+	"voltaire/crypto/HDWallet",
+];
 
 export class Editor {
 	private editor: any = null;
@@ -21,14 +35,28 @@ export class Editor {
 	}
 
 	async init(): Promise<void> {
-		// Generate type definitions for Voltaire modules
-		const typeDefinitions = generateTypeDefinitions();
+		// Fetch type definitions from server (actual source files)
+		const baseUrl = window.location.origin;
+		const typeDefinitions: Record<string, string> = {};
+
+		// Fetch actual type definitions from server
+		await Promise.all(
+			VOLTAIRE_MODULES.map(async (modulePath) => {
+				try {
+					const res = await fetch(`${baseUrl}/${modulePath}.d.ts`);
+					if (res.ok) {
+						typeDefinitions[modulePath] = await res.text();
+					}
+				} catch {
+					// Module not available
+				}
+			})
+		);
 
 		// Build importMap for TypeScript LSP
 		const imports: Record<string, string> = {};
-		for (const modulePath of Object.keys(typeDefinitions)) {
-			// Map to .d.ts files that modern-monaco's worker can fetch
-			imports[modulePath] = `/${modulePath}.d.ts`;
+		for (const modulePath of VOLTAIRE_MODULES) {
+			imports[modulePath] = `${baseUrl}/${modulePath}.d.ts`;
 		}
 
 		// Load monaco with TypeScript LSP support
@@ -54,7 +82,7 @@ export class Editor {
 			},
 		});
 
-		// Add Voltaire type definitions if TypeScript language service is available
+		// Add fetched type definitions to Monaco
 		if (this.monaco.languages?.typescript?.typescriptDefaults) {
 			for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
 				this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
