@@ -1,8 +1,8 @@
 /**
  * Factory: Sign a message hash with private key
  * @param {Object} deps - Crypto dependencies
- * @param {(hash: Uint8Array, privateKey: Uint8Array) => Uint8Array} deps.secp256k1Sign - Secp256k1 signing function
- * @returns {(privateKey: Uint8Array, hash: Uint8Array) => Uint8Array} Function that creates ECDSA signature
+ * @param {(messageHash: import('../Hash/HashType.js').HashType, privateKey: import('./PrivateKeyType.js').PrivateKeyType) => import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType} deps.secp256k1Sign - Secp256k1 signing function
+ * @returns {(privateKey: import('./PrivateKeyType.js').PrivateKeyType, hash: import('../Hash/HashType.js').HashType) => import('../Signature/SignatureType.js').SignatureType} Function that creates ECDSA signature
  */
 export function Sign({ secp256k1Sign }) {
 	/**
