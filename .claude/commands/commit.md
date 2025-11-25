@@ -2,7 +2,7 @@
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*)
 argument-hint: [--dry-run] [--all]
 description: Analyze git changes and create atomic conventional commits with emoji prefixes
-model: claude-sonnet-4-20250514
+model: claude-haiku-4-5-20251001
 ---
 
 # Intelligent Git Commit Command
