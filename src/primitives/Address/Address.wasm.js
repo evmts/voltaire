@@ -30,7 +30,7 @@ import {
 
 /**
  * @typedef {import('./AddressType.js').AddressType} BrandedAddress
- * @typedef {import('./AddressConstructor.js').AddressConstructor} AddressConstructor
+ * @typedef {import('./AddressClass.js').AddressConstructor} AddressConstructor
  */
 
 // ============================================================================

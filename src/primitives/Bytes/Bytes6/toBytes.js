@@ -1,7 +1,7 @@
 /**
  * Convert Bytes6 to generic Bytes
  *
- * @param {import('./Bytes6Type.js').BytesType6} bytes - Bytes6 to convert
+ * @param {import('./Bytes6Type.js').Bytes6Type} bytes - Bytes6 to convert
  * @returns {import('../BytesType.js').BytesType} Generic Bytes
  *
  * @example

@@ -1,7 +1,7 @@
 /**
  * Get size of Bytes6 (always 6)
  *
- * @param {import('./Bytes6Type.js').BytesType6} _bytes - Bytes6
+ * @param {import('./Bytes6Type.js').Bytes6Type} _bytes - Bytes6
  * @returns {6} Size (always 6)
  *
  * @example

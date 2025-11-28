@@ -1,4 +1,4 @@
-import type { brand } from "../../../brand.js";
+import type { brand } from "../../brand.js";
 
 export type HashType = Uint8Array & {
 	readonly [brand]: "Hash";

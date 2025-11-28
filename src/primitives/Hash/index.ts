@@ -30,7 +30,6 @@ import {
 	slice,
 	format,
 	ZERO,
-	HashType as HashTypeNamespace,
 } from "./BrandedHashIndex.js";
 import type { HashType, HashLike } from "./HashType.js";
 
@@ -68,7 +67,6 @@ export {
 	slice,
 	format,
 	ZERO,
-	HashTypeNamespace,
 };
 
 // Export constants

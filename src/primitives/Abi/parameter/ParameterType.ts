@@ -1,4 +1,3 @@
-import type { brand } from "../../../brand.js";
 import type { AbiType } from "../Type.js";
 
 export type ParameterType<
@@ -11,5 +10,4 @@ export type ParameterType<
 	readonly internalType?: TInternalType;
 	readonly indexed?: boolean;
 	readonly components?: readonly ParameterType[];
-	readonly [brand]: "AbiParameter";
 };

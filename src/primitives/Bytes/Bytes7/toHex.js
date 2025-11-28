@@ -1,7 +1,7 @@
 /**
  * Convert Bytes7 to hex string
  *
- * @param {import('./Bytes7Type.js').BytesType7} bytes - Bytes7 to convert
+ * @param {import('./Bytes7Type.js').Bytes7Type} bytes - Bytes7 to convert
  * @returns {import('../../Hex/index.js').HexType} Hex string
  *
  * @example

@@ -12,7 +12,7 @@ import {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint | string | Uint8Array} value - Value to convert to Address
- * @returns {import('./AddressType.js').AddressType} Address instance with prototype methods
+ * @returns {import('./AddressClass.js').Address} Address instance with prototype methods
  * @throws {Error} If value format is invalid
  * @example
  * ```javascript
@@ -34,7 +34,7 @@ export function Address(value) {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint | string | Uint8Array} value - Value to convert (hex string, bytes, or number)
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {Error} If value format is invalid
  * @example
  * ```javascript
@@ -56,7 +56,7 @@ Address.from = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {string} value - Base64-encoded address string
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {Error} If base64 format is invalid
  * @example
  * ```javascript
@@ -76,7 +76,7 @@ Address.fromBase64 = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {string} value - Hex string address (40 or 42 characters)
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {Error} If hex format is invalid or length incorrect
  * @example
  * ```javascript
@@ -96,7 +96,7 @@ Address.fromHex = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 20-byte array representing address
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {Error} If not exactly 20 bytes
  * @example
  * ```javascript
@@ -117,7 +117,7 @@ Address.fromBytes = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {number | bigint} value - Numeric value to convert
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {never} Never throws - accepts any valid number/bigint
  * @example
  * ```javascript
@@ -138,7 +138,7 @@ Address.fromNumber = (value) => {
  * @since 0.0.0
  * @param {bigint} x - Public key X coordinate (32 bytes)
  * @param {bigint} y - Public key Y coordinate (32 bytes)
- * @returns {import('./AddressType.js').AddressType} Derived address
+ * @returns {import('./AddressClass.js').Address} Derived address
  * @throws {never} Never throws - accepts any valid bigint coordinates
  * @example
  * ```javascript
@@ -160,7 +160,7 @@ Address.fromPublicKey = (x, y) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 32-byte private key
- * @returns {import('./AddressType.js').AddressType} Derived address
+ * @returns {import('./AddressClass.js').Address} Derived address
  * @throws {Error} If private key is invalid
  * @example
  * ```javascript
@@ -181,7 +181,7 @@ Address.fromPrivateKey = (value) => {
  * @see https://voltaire.tevm.sh/primitives/address for Address documentation
  * @since 0.0.0
  * @param {Uint8Array} value - 32-byte ABI-encoded address (12 zero bytes + 20 address bytes)
- * @returns {import('./AddressType.js').AddressType} Address instance
+ * @returns {import('./AddressClass.js').Address} Address instance
  * @throws {Error} If not exactly 32 bytes
  * @example
  * ```javascript

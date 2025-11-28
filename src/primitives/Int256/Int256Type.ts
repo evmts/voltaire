@@ -1,4 +1,4 @@
-import type { brand } from "../../../brand.js";
+import type { brand } from "../../brand.js";
 
 /**
  * Branded Int256 type (critical for EVM signed operations)

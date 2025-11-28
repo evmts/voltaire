@@ -7,7 +7,7 @@
  * @since 0.0.0
  * @param {Object} deps - Crypto dependencies
  * @param {(signature: import('./EIP712Type.js').Signature, typedData: import('./EIP712Type.js').TypedData) => import('../../primitives/Address/index.js').AddressType} deps.recoverAddress - Recover address function
- * @returns {(signature: import('./EIP712Type.js').Signature, typedData: import('./EIP712Type.js').TypedData, address: import('../../primitives/Address/index.js').BrandedAddress) => boolean} Function that verifies signature
+ * @returns {(signature: import('./EIP712Type.js').Signature, typedData: import('./EIP712Type.js').TypedData, address: import('../../primitives/Address/index.js').AddressType) => boolean} Function that verifies signature
  * @throws {never}
  * @example
  * ```javascript

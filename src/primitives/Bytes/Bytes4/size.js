@@ -1,7 +1,7 @@
 /**
  * Get size of Bytes4 (always 4)
  *
- * @param {import('./Bytes4Type.js').BytesType4} _bytes - Bytes4
+ * @param {import('./Bytes4Type.js').Bytes4Type} _bytes - Bytes4
  * @returns {4} Size (always 4)
  *
  * @example

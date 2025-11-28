@@ -1,4 +1,4 @@
-import type { brand } from "../brand.js";
+import type { brand } from "../../brand.js";
 
 /**
  * Branded PrivateKey type - 32 byte private key for cryptographic operations

@@ -22,7 +22,7 @@ import { GetSigningHash } from "./getSigningHash.js";
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
  * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array) => Uint8Array} deps.secp256k1RecoverPublicKey - secp256k1 public key recovery
- * @returns {(tx: import('./TransactionLegacyType.js').TransactionLegacyType) => boolean} Function that verifies signature
+ * @returns {(this: import('./TransactionLegacyType.js').TransactionLegacyType) => boolean} Function that verifies signature
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
@@ -48,6 +48,10 @@ export function VerifySignature({
 }) {
 	const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
 
+	/**
+	 * @this {import('./TransactionLegacyType.js').TransactionLegacyType}
+	 * @returns {boolean}
+	 */
 	return function verifySignature() {
 		try {
 			const signingHash = getSigningHash.call(this);

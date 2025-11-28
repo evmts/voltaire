@@ -1,7 +1,7 @@
 /**
  * Convert Bytes5 to hex string
  *
- * @param {import('./Bytes5Type.js').BytesType5} bytes - Bytes5 to convert
+ * @param {import('./Bytes5Type.js').Bytes5Type} bytes - Bytes5 to convert
  * @returns {import('../../Hex/index.js').HexType} Hex string
  *
  * @example
