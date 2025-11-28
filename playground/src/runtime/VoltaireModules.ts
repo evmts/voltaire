@@ -12,6 +12,9 @@ import * as Address from "voltaire/primitives/Address";
 import * as Hash from "voltaire/primitives/Hash";
 import * as Hex from "voltaire/primitives/Hex";
 import * as RLP from "voltaire/primitives/RLP";
+import * as Frame from "voltaire/evm/Frame";
+import * as Host from "voltaire/evm/Host";
+import * as Arithmetic from "voltaire/evm/Arithmetic";
 
 export const modules: Record<string, any> = {
 	"voltaire/primitives/Address": Address,
@@ -25,4 +28,7 @@ export const modules: Record<string, any> = {
 	"voltaire/crypto/Blake2": Blake2,
 	"voltaire/crypto/Ripemd160": Ripemd160,
 	"voltaire/crypto/HDWallet": HDWallet,
+	"voltaire/evm/Frame": Frame,
+	"voltaire/evm/Host": Host,
+	"voltaire/evm/Arithmetic": Arithmetic,
 };

@@ -21,29 +21,29 @@ function modernMonacoPlugin(): Plugin {
 					return;
 				}
 
-				// Serve voltaire source files as .d.ts for Monaco LSP
-				// Match patterns like /voltaire/primitives/Address.d.ts
-				const dtsMatch = req.url?.match(/^\/(voltaire\/(primitives|crypto)\/([^/.]+))\.d\.ts$/);
+				// Serve voltaire .d.ts files from dist-types for Monaco LSP
+				// Match patterns like /voltaire/primitives/Address.d.ts or /voltaire/evm/Frame.d.ts
+				const dtsMatch = req.url?.match(/^\/(voltaire\/(primitives|crypto|evm)\/([^/.]+))\.d\.ts$/);
 				if (dtsMatch) {
 					const [, modulePath, category, moduleName] = dtsMatch;
-					// Try to read the actual source index.ts file
-					const srcPath = resolve(__dirname, `../src/${category}/${moduleName}/index.ts`);
+					// Try to read from dist-types (generated .d.ts files)
+					const dtsPath = resolve(__dirname, `../dist-types/${category}/${moduleName}/index.d.ts`);
 
-					if (existsSync(srcPath)) {
+					if (existsSync(dtsPath)) {
 						try {
-							let sourceContent = readFileSync(srcPath, "utf-8");
+							let content = readFileSync(dtsPath, "utf-8");
 
-							// Strip import statements that Monaco can't resolve
-							// Keep only type exports and declarations
-							sourceContent = sourceContent
+							// Remove import/export statements that reference other modules
+							// Monaco LSP works better with inline declarations
+							content = content
 								.replace(/^import\s+.*?from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^import\s+\{[^}]*\}\s+from\s+["'][^"']+["'];?\s*$/gm, '')
 								.replace(/^import\s+type\s+.*?from\s+["'][^"']+["'];?\s*$/gm, '')
 								.replace(/^export\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^export\s+type\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, '');
+								.replace(/^export\s+type\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, '')
+								.replace(/^export\s+type\s+\{[^}]*\}\s+from\s+["'][^"']+["'];?\s*$/gm, '');
 
-							// Wrap source in declare module for Monaco
-							const moduleDecl = `declare module "${modulePath}" {\n${sourceContent}\n}`;
+							// Wrap in declare module for Monaco
+							const moduleDecl = `declare module "${modulePath}" {\n${content}\n}`;
 							res.setHeader("Content-Type", "application/typescript");
 							res.setHeader("Access-Control-Allow-Origin", "*");
 							res.end(moduleDecl);
@@ -104,6 +104,9 @@ export default defineConfig({
 			"voltaire/crypto/Blake2": resolve(__dirname, "../src/crypto/Blake2"),
 			"voltaire/crypto/Ripemd160": resolve(__dirname, "../src/crypto/Ripemd160"),
 			"voltaire/crypto/HDWallet": resolve(__dirname, "../src/crypto/HDWallet"),
+			"voltaire/evm/Frame": resolve(__dirname, "../src/evm/Frame"),
+			"voltaire/evm/Host": resolve(__dirname, "../src/evm/Host"),
+			"voltaire/evm/Arithmetic": resolve(__dirname, "../src/evm/arithmetic"),
 		},
 	},
 	server: {

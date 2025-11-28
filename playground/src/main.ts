@@ -11,6 +11,7 @@ import { EditorTabs } from "./components/EditorTabs.js";
 import { Executor } from "./runtime/Executor.js";
 import { primitiveExamples } from "./examples/primitives.js";
 import { cryptoExamples } from "./examples/crypto.js";
+import { evmExamples } from "./examples/evm.js";
 import { ExecutionHistory } from "./features/ExecutionHistory.js";
 import { VimMode } from "./features/VimMode.js";
 import {
@@ -42,6 +43,15 @@ const fileTree: FileNode[] = [
 		children: Object.entries(cryptoExamples).map(([name, content]) => ({
 			name,
 			path: `crypto/${name}`,
+			content,
+		})),
+	},
+	{
+		name: "EVM",
+		path: "evm",
+		children: Object.entries(evmExamples).map(([name, content]) => ({
+			name,
+			path: `evm/${name}`,
 			content,
 		})),
 	},

@@ -19,6 +19,8 @@ const VOLTAIRE_MODULES = [
 	"voltaire/crypto/Blake2",
 	"voltaire/crypto/Ripemd160",
 	"voltaire/crypto/HDWallet",
+	"voltaire/evm/Frame",
+	"voltaire/evm/Host",
 ];
 
 export class Editor {
