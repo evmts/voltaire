@@ -167,7 +167,9 @@ Address/
 - Dual exports: `_internal` + wrapper
 - Namespace export: `export * as Address`
 
-**Naming**: `Type.fromFoo` (construct from Foo), `Type.toFoo` (convert to Foo), loose `Type.from` (any input)
+**Naming**: `Type.fromFoo` (construct from Foo), `Type.toFoo` (convert to Foo), `Type()` preferred over `Type.from()` for main constructor
+
+**Constructor preference**: Use `Address()`, `Frame()`, `Bytes32()` not `Address.from()`, `Frame.from()`, `Bytes32.from()`
 
 ## Zig
 
