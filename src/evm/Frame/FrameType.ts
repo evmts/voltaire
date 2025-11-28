@@ -64,6 +64,19 @@ export type BrandedFrame = {
 		topics: bigint[];
 		data: Uint8Array;
 	}>;
+
+	// Arithmetic instance methods (0x01-0x0b)
+	add(): EvmError | null;
+	mul(): EvmError | null;
+	sub(): EvmError | null;
+	div(): EvmError | null;
+	sdiv(): EvmError | null;
+	mod(): EvmError | null;
+	smod(): EvmError | null;
+	addmod(): EvmError | null;
+	mulmod(): EvmError | null;
+	exp(): EvmError | null;
+	signextend(): EvmError | null;
 };
 
 /**

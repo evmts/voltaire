@@ -1,3 +1,15 @@
+import { add } from "../arithmetic/0x01_ADD.js";
+import { mul } from "../arithmetic/0x02_MUL.js";
+import { sub } from "../arithmetic/0x03_SUB.js";
+import { div } from "../arithmetic/0x04_DIV.js";
+import { sdiv } from "../arithmetic/0x05_SDIV.js";
+import { mod } from "../arithmetic/0x06_MOD.js";
+import { smod } from "../arithmetic/0x07_SMOD.js";
+import { addmod } from "../arithmetic/0x08_ADDMOD.js";
+import { mulmod } from "../arithmetic/0x09_MULMOD.js";
+import { exp } from "../arithmetic/0x0a_EXP.js";
+import { signextend } from "../arithmetic/0x0b_SIGNEXTEND.js";
+
 /**
  * Create a new Frame instance
  *
@@ -24,7 +36,7 @@ export function from({
 	stack = [],
 	gasRemaining,
 }) {
-	return /** @type {import("./FrameType.js").BrandedFrame} */ ({
+	const frame = /** @type {import("./FrameType.js").BrandedFrame} */ ({
 		stack,
 		memory: new Map(),
 		memorySize: 0,
@@ -43,4 +55,19 @@ export function from({
 		authorized: null,
 		callDepth: 0,
 	});
+
+	// Attach arithmetic instance methods
+	frame.add = () => add(frame);
+	frame.mul = () => mul(frame);
+	frame.sub = () => sub(frame);
+	frame.div = () => div(frame);
+	frame.sdiv = () => sdiv(frame);
+	frame.mod = () => mod(frame);
+	frame.smod = () => smod(frame);
+	frame.addmod = () => addmod(frame);
+	frame.mulmod = () => mulmod(frame);
+	frame.exp = () => exp(frame);
+	frame.signextend = () => signextend(frame);
+
+	return frame;
 }

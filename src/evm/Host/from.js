@@ -10,8 +10,8 @@
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint, bigint): void} impl.setStorage - Set storage
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType): bigint} impl.getNonce - Get nonce
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint): void} impl.setNonce - Set nonce
- * @returns {import("./HostType.js").HostType} Host instance
+ * @returns {import("./HostType.js").BrandedHost} Host instance
  */
 export function from(impl) {
-	return /** @type {import("./HostType.js").HostType} */ (impl);
+	return /** @type {import("./HostType.js").BrandedHost} */ (impl);
 }

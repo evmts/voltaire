@@ -7,9 +7,9 @@
  * @module evm
  */
 
-// Core execution components
-export * as Frame from "./Frame/index.js";
-export * as Host from "./Host/index.js";
+// Core execution components - callable functions with attached methods
+export { Frame } from "./Frame/index.js";
+export { Host } from "./Host/index.js";
 
 // Re-export types
 export type { BrandedFrame, EvmError } from "./Frame/FrameType.js";
