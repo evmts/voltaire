@@ -59,9 +59,8 @@ describe("Domain", () => {
 			expect(domain.verifyingContract).toBe(address);
 		});
 
-		it.skip("should accept Hash instance", () => {
-			// TODO: Fix Hash import/usage
-			const salt = Hash(
+		it("should accept Hash instance", () => {
+			const salt = Hash.from(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
 			const domain = Domain.from({ salt });

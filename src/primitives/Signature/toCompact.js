@@ -23,7 +23,18 @@ export function toCompact(signature) {
 
 	// EIP-2098: Encode yParity in bit 255 (MSB) of s
 	if (signature.v !== undefined && signature.algorithm === "secp256k1") {
-		const yParity = signature.v;
+		// Convert v to yParity (0 or 1)
+		// v can be: 0/1 (yParity), 27/28 (legacy), or chainId*2+35+yParity (EIP-155)
+		let yParity;
+		if (signature.v <= 1) {
+			yParity = signature.v;
+		} else if (signature.v === 27 || signature.v === 28) {
+			yParity = signature.v - 27;
+		} else {
+			// EIP-155: v = chainId * 2 + 35 + yParity
+			yParity = (signature.v - 35) % 2;
+		}
+
 		if (yParity === 1) {
 			/** @type {*} */ (compact)[32] |= 0x80; // Set bit 255
 		}

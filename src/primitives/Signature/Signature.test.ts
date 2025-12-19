@@ -1096,4 +1096,309 @@ describe("Signature", () => {
 			expect(bytes.slice(32, 64).every((b) => b === 0xee)).toBe(true);
 		});
 	});
+
+	describe("toHex serialization", () => {
+		it("should convert secp256k1 signature to hex (without v)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0xbb);
+			const sig = Signature.fromSecp256k1(r, s);
+			const hex = Signature.toHex(sig);
+			expect(hex).toMatch(/^0x[0-9a-f]{128}$/);
+			expect(hex.slice(2, 66)).toBe("a".repeat(64)); // r
+			expect(hex.slice(66, 130)).toBe("b".repeat(64)); // s
+		});
+
+		it("should convert secp256k1 signature to hex (with v)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0xbb);
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			const hex = Signature.toHex(sig);
+			expect(hex).toMatch(/^0x[0-9a-f]{130}$/);
+			expect(hex.slice(2, 66)).toBe("a".repeat(64)); // r
+			expect(hex.slice(66, 130)).toBe("b".repeat(64)); // s
+			expect(hex.slice(130, 132)).toBe("1b"); // v = 27 = 0x1b
+		});
+
+		it("should convert secp256k1 signature to hex (excluding v)", () => {
+			const r = new Uint8Array(32).fill(0xaa);
+			const s = new Uint8Array(32).fill(0xbb);
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			const hex = Signature.toHex(sig, false);
+			expect(hex).toMatch(/^0x[0-9a-f]{128}$/);
+			expect(hex.length).toBe(130); // 0x + 128 chars
+		});
+
+		it("should convert Ed25519 signature to hex", () => {
+			const signature = new Uint8Array(64).fill(0xcc);
+			const sig = Signature.fromEd25519(signature);
+			const hex = Signature.toHex(sig);
+			expect(hex).toMatch(/^0x[0-9a-f]{128}$/);
+			expect(hex).toBe(`0x${"c".repeat(128)}`);
+		});
+
+		it("should convert P256 signature to hex", () => {
+			const r = new Uint8Array(32).fill(0xdd);
+			const s = new Uint8Array(32).fill(0xee);
+			const sig = Signature.fromP256(r, s);
+			const hex = Signature.toHex(sig);
+			expect(hex).toMatch(/^0x[0-9a-f]{128}$/);
+			expect(hex.slice(2, 66)).toBe("d".repeat(64)); // r
+			expect(hex.slice(66, 130)).toBe("e".repeat(64)); // s
+		});
+
+		it("should handle mixed byte values in hex conversion", () => {
+			const r = new Uint8Array(32);
+			const s = new Uint8Array(32);
+			for (let i = 0; i < 32; i++) {
+				r[i] = i;
+				s[i] = i + 32;
+			}
+			const sig = Signature.fromSecp256k1(r, s, 28);
+			const hex = Signature.toHex(sig);
+			expect(hex).toMatch(/^0x[0-9a-f]{130}$/);
+			expect(hex.slice(-2)).toBe("1c"); // v = 28 = 0x1c
+		});
+	});
+
+	describe("fromHex deserialization", () => {
+		it("should create signature from hex (64 bytes, no v)", () => {
+			const hex = `0x${"1".repeat(64)}${"2".repeat(64)}`;
+			const sig = Signature.fromHex(hex);
+			expect(sig.algorithm).toBe("secp256k1");
+			expect(sig.v).toBe(0); // EIP-2098 yParity extracted from bit 255 (clear)
+			const r = Signature.getR(sig);
+			const s = Signature.getS(sig);
+			expect(r[0]).toBe(0x11);
+			expect(s[0]).toBe(0x22);
+		});
+
+		it("should create signature from hex (65 bytes, with v)", () => {
+			const hex = `0x${"3".repeat(64)}${"4".repeat(64)}1b`;
+			const sig = Signature.fromHex(hex);
+			expect(sig.algorithm).toBe("secp256k1");
+			expect(sig.v).toBe(27);
+		});
+
+		it("should create signature from hex without 0x prefix", () => {
+			const hex = "5".repeat(64) + "6".repeat(64);
+			const sig = Signature.fromHex(hex);
+			expect(sig.algorithm).toBe("secp256k1");
+		});
+
+		it("should create Ed25519 signature from hex", () => {
+			const hex = `0x${"c".repeat(128)}`;
+			const sig = Signature.fromHex(hex, "ed25519");
+			expect(sig.algorithm).toBe("ed25519");
+			expect(sig.length).toBe(64);
+		});
+
+		it("should create P256 signature from hex", () => {
+			const hex = `0x${"d".repeat(64)}${"e".repeat(64)}`;
+			const sig = Signature.fromHex(hex, "p256");
+			expect(sig.algorithm).toBe("p256");
+		});
+
+		it("should throw on invalid hex length", () => {
+			const hex = `0x${"a".repeat(100)}`;
+			expect(() => Signature.fromHex(hex)).toThrow(
+				Signature.InvalidSignatureLengthError,
+			);
+		});
+
+		it("should throw on invalid hex characters", () => {
+			const hex = `0x${"z".repeat(128)}`;
+			expect(() => Signature.fromHex(hex)).toThrow(
+				Signature.InvalidSignatureFormatError,
+			);
+		});
+
+		it("should throw on non-string input", () => {
+			expect(() => Signature.fromHex(123 as any)).toThrow(
+				Signature.InvalidSignatureFormatError,
+			);
+		});
+
+		it("should roundtrip hex serialization (without v)", () => {
+			const r = new Uint8Array(32).fill(0x12);
+			const s = new Uint8Array(32).fill(0x34);
+			const sig1 = Signature.fromSecp256k1(r, s, 0);
+			const hex = Signature.toHex(sig1, false);
+			const sig2 = Signature.fromHex(hex);
+			expect(Signature.equals(sig1, sig2)).toBe(true);
+		});
+
+		it("should roundtrip hex serialization (with v)", () => {
+			const r = new Uint8Array(32).fill(0x56);
+			const s = new Uint8Array(32).fill(0x78);
+			const sig1 = Signature.fromSecp256k1(r, s, 27);
+			const hex = Signature.toHex(sig1);
+			const sig2 = Signature.fromHex(hex);
+			expect(Signature.equals(sig1, sig2)).toBe(true);
+		});
+
+		it("should roundtrip Ed25519 hex serialization", () => {
+			const signature = new Uint8Array(64).fill(0xab);
+			const sig1 = Signature.fromEd25519(signature);
+			const hex = Signature.toHex(sig1);
+			const sig2 = Signature.fromHex(hex, "ed25519");
+			expect(Signature.equals(sig1, sig2)).toBe(true);
+		});
+	});
+
+	describe("fromBytes wrapper", () => {
+		it("should create signature from bytes (64 bytes)", () => {
+			const bytes = new Uint8Array(64);
+			bytes.fill(0x11, 0, 32);
+			bytes.fill(0x22, 32, 64);
+			const sig = Signature.fromBytes(bytes);
+			expect(sig.algorithm).toBe("secp256k1");
+			expect(sig.length).toBe(64);
+		});
+
+		it("should create signature from bytes (65 bytes with v)", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(0x33, 0, 32);
+			bytes.fill(0x44, 32, 64);
+			bytes[64] = 27;
+			const sig = Signature.fromBytes(bytes);
+			expect(sig.algorithm).toBe("secp256k1");
+			expect(sig.v).toBe(27);
+		});
+
+		it("should create Ed25519 signature from bytes", () => {
+			const bytes = new Uint8Array(64).fill(0x55);
+			const sig = Signature.fromBytes(bytes, "ed25519");
+			expect(sig.algorithm).toBe("ed25519");
+		});
+
+		it("should create P256 signature from bytes", () => {
+			const bytes = new Uint8Array(64).fill(0x66);
+			const sig = Signature.fromBytes(bytes, "p256");
+			expect(sig.algorithm).toBe("p256");
+		});
+
+		it("should accept explicit v value", () => {
+			const bytes = new Uint8Array(64);
+			bytes.fill(0x77, 0, 32);
+			bytes.fill(0x88, 32, 64);
+			const sig = Signature.fromBytes(bytes, 1);
+			expect(sig.v).toBe(1);
+		});
+
+		it("should roundtrip bytes serialization", () => {
+			const r = new Uint8Array(32).fill(0x19);
+			const s = new Uint8Array(32).fill(0x2a);
+			const sig1 = Signature.fromSecp256k1(r, s, 28);
+			const bytes = Signature.toBytes(sig1);
+			const sig2 = Signature.fromBytes(bytes);
+			// Note: v is lost in toBytes (only returns r+s), so we can't compare v
+			expect(Signature.getR(sig2)).toEqual(Signature.getR(sig1));
+			expect(Signature.getS(sig2)).toEqual(Signature.getS(sig1));
+		});
+	});
+
+	describe("serialization format consistency", () => {
+		it("should maintain consistency between toBytes and toHex", () => {
+			const r = new Uint8Array(32).fill(0xab);
+			const s = new Uint8Array(32).fill(0xcd);
+			const sig = Signature.fromSecp256k1(r, s);
+			const bytes = Signature.toBytes(sig);
+			const hex = Signature.toHex(sig, false);
+			// Convert bytes to hex manually and compare
+			let expectedHex = "0x";
+			for (let i = 0; i < bytes.length; i++) {
+				expectedHex += bytes[i].toString(16).padStart(2, "0");
+			}
+			expect(hex).toBe(expectedHex);
+		});
+
+		it("should maintain consistency between fromBytes and fromHex", () => {
+			const hex = `0x${"12".repeat(32)}${"34".repeat(32)}`;
+			const bytes = new Uint8Array(64);
+			bytes.fill(0x12, 0, 32);
+			bytes.fill(0x34, 32, 64);
+			const sig1 = Signature.fromHex(hex);
+			const sig2 = Signature.fromBytes(bytes);
+			expect(Signature.equals(sig1, sig2)).toBe(true);
+		});
+	});
+
+	describe("EIP-155 v encoding in hex", () => {
+		it("should encode pre-EIP-155 v values (27/28)", () => {
+			const r = new Uint8Array(32).fill(1);
+			const s = new Uint8Array(32).fill(2);
+			const sig27 = Signature.fromSecp256k1(r, s, 27);
+			const sig28 = Signature.fromSecp256k1(r, s, 28);
+			expect(Signature.toHex(sig27).slice(-2)).toBe("1b"); // 27 = 0x1b
+			expect(Signature.toHex(sig28).slice(-2)).toBe("1c"); // 28 = 0x1c
+		});
+
+		it("should encode EIP-155 v values", () => {
+			const r = new Uint8Array(32).fill(1);
+			const s = new Uint8Array(32).fill(2);
+			const sig37 = Signature.fromSecp256k1(r, s, 37); // chainId 1
+			const sig38 = Signature.fromSecp256k1(r, s, 38);
+			expect(Signature.toHex(sig37).slice(-2)).toBe("25"); // 37 = 0x25
+			expect(Signature.toHex(sig38).slice(-2)).toBe("26"); // 38 = 0x26
+		});
+
+		it("should encode large chain ID v values", () => {
+			const r = new Uint8Array(32).fill(1);
+			const s = new Uint8Array(32).fill(2);
+			const sig309 = Signature.fromSecp256k1(r, s, 309); // chainId 137 (Polygon)
+			const hex = Signature.toHex(sig309);
+			// v=309 = 0x0135 (padded to even length)
+			// v=309 = 0x0135 (padded to even length)
+			expect(hex.slice(-4)).toBe("0135"); // 309 = 0x0135
+		});
+
+		it("should decode EIP-155 v values from hex", () => {
+			// For v > 255, we need 2 bytes. v=309 = 0x0135
+			// But fromHex expects 65 bytes (130 hex chars), so v must be 1 byte
+			// Let's use a smaller v that fits in 1 byte
+			const hex = `0x${"11".repeat(32)}${"22".repeat(32)}fd`; // v=253
+			const sig = Signature.fromHex(hex);
+			expect(sig.v).toBe(253);
+		});
+	});
+
+	describe("edge cases and malformed input", () => {
+		it("should handle all zeros signature", () => {
+			const bytes = new Uint8Array(64);
+			const sig = Signature.fromBytes(bytes);
+			const hex = Signature.toHex(sig, false);
+			expect(hex).toBe(`0x${"0".repeat(128)}`);
+		});
+
+		it("should handle all 0xff signature", () => {
+			const bytes = new Uint8Array(64).fill(0xff);
+			const sig = Signature.fromBytes(bytes);
+			const hex = Signature.toHex(sig, false);
+			// Note: When fromCompact parses this, it extracts yParity from bit 255 of s
+			// and clears that bit, so s[0] becomes 0x7f instead of 0xff
+			const expectedHex = `0x${"f".repeat(64)}7${"f".repeat(63)}`;
+			expect(hex).toBe(expectedHex);
+		});
+
+		it("should reject odd-length hex strings", () => {
+			const hex = `0x${"a".repeat(127)}`; // Odd length
+			expect(() => Signature.fromHex(hex)).toThrow(
+				Signature.InvalidSignatureLengthError,
+			);
+		});
+
+		it("should handle lowercase and uppercase hex", () => {
+			const hexLower = `0x${"ab".repeat(64)}`;
+			const hexUpper = `0x${"AB".repeat(64)}`;
+			const sig1 = Signature.fromHex(hexLower);
+			const sig2 = Signature.fromHex(hexUpper);
+			expect(Signature.equals(sig1, sig2)).toBe(true);
+		});
+
+		it("should handle mixed case hex", () => {
+			const hex = `0x${"aB".repeat(64)}`;
+			const sig = Signature.fromHex(hex);
+			expect(sig.algorithm).toBe("secp256k1");
+		});
+	});
 });

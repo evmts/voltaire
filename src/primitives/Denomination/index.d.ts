@@ -1,7 +1,7 @@
-import type { WeiType } from "./WeiType.js";
-import type { GweiType } from "./GweiType.js";
-import type { EtherType } from "./EtherType.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
+import type { EtherType } from "./EtherType.js";
+import type { GweiType } from "./GweiType.js";
+import type { WeiType } from "./WeiType.js";
 
 // Wei
 export interface WeiConstructor {

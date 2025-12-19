@@ -1,8 +1,8 @@
 export * from "./EventSignatureType.js";
 
 import type {
-	EventSignatureType,
 	EventSignatureLike,
+	EventSignatureType,
 } from "./EventSignatureType.js";
 
 import { equals as _equals } from "./equals.js";
@@ -12,10 +12,8 @@ import { fromSignature as _fromSignature } from "./fromSignature.js";
 import { toHex as _toHex } from "./toHex.js";
 
 // Export typed versions
-export const equals: (
-	a: EventSignatureType,
-	b: EventSignatureType,
-) => boolean = _equals;
+export const equals: (a: EventSignatureType, b: EventSignatureType) => boolean =
+	_equals;
 export const from: (value: EventSignatureLike) => EventSignatureType = _from;
 export const fromHex: (hex: string) => EventSignatureType = _fromHex;
 export const fromSignature: (signature: string) => EventSignatureType =

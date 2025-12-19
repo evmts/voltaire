@@ -18,10 +18,6 @@ import { SIZE } from "./constants.js";
  * const toProof = ToProof({ computeBlobKzgProof });
  * const proof = toProof(blob, commitment);
  * ```
- *
- * TODO: Implement using c-kzg-4844 library
- * - Call computeBlobKzgProof(blob, commitment)
- * - Return 48-byte proof
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 

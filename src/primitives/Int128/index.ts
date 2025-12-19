@@ -8,7 +8,16 @@ import { bitwiseAnd } from "./bitwiseAnd.js";
 import { bitwiseNot } from "./bitwiseNot.js";
 import { bitwiseOr } from "./bitwiseOr.js";
 import { bitwiseXor } from "./bitwiseXor.js";
-import { BITS, MAX, MIN, MODULO, NEG_ONE, ONE, SIZE, ZERO } from "./constants.js";
+import {
+	BITS,
+	MAX,
+	MIN,
+	MODULO,
+	NEG_ONE,
+	ONE,
+	SIZE,
+	ZERO,
+} from "./constants.js";
 import { dividedBy } from "./dividedBy.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";

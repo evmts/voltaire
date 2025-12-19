@@ -14,11 +14,15 @@ export {
 	SiweParseError,
 } from "./errors.js";
 
-// Import types first
-import type { SiweMessageType, Signature, ValidationResult } from "./SiweMessageType.js";
+import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
 import type { AddressType } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
+// Import types first
+import type {
+	Signature,
+	SiweMessageType,
+	ValidationResult,
+} from "./SiweMessageType.js";
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
@@ -33,18 +37,30 @@ import { VerifyMessage as _VerifyMessage } from "./verifyMessage.js";
 // Type the factory functions properly
 type GetMessageHashFn = (message: SiweMessageType) => Uint8Array;
 type VerifyFn = (message: SiweMessageType, signature: Signature) => boolean;
-type VerifyMessageFn = (message: SiweMessageType, signature: Signature, options?: { now?: Date }) => ValidationResult;
+type VerifyMessageFn = (
+	message: SiweMessageType,
+	signature: Signature,
+	options?: { now?: Date },
+) => ValidationResult;
 
 // Re-export factories (tree-shakeable) with proper types
-export const GetMessageHash: (deps: { keccak256: (data: Uint8Array) => Uint8Array }) => GetMessageHashFn = _GetMessageHash as any;
+export const GetMessageHash: (deps: {
+	keccak256: (data: Uint8Array) => Uint8Array;
+}) => GetMessageHashFn = _GetMessageHash as any;
 export const Verify: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
-	secp256k1RecoverPublicKey: (signature: { r: Uint8Array; s: Uint8Array; v: number }, hash: HashType) => Secp256k1PublicKeyType;
+	secp256k1RecoverPublicKey: (
+		signature: { r: Uint8Array; s: Uint8Array; v: number },
+		hash: HashType,
+	) => Secp256k1PublicKeyType;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
 }) => VerifyFn = _Verify as any;
 export const VerifyMessage: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
-	secp256k1RecoverPublicKey: (signature: { r: Uint8Array; s: Uint8Array; v: number }, hash: HashType) => Secp256k1PublicKeyType;
+	secp256k1RecoverPublicKey: (
+		signature: { r: Uint8Array; s: Uint8Array; v: number },
+		hash: HashType,
+	) => Secp256k1PublicKeyType;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
 }) => VerifyMessageFn = _VerifyMessage as any;
 
@@ -94,7 +110,9 @@ export function create<
 	TAddress extends AddressType = AddressType,
 	TUri extends string = string,
 	TChainId extends number = number,
->(params: CreateParams<TDomain, TAddress, TUri, TChainId>): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> {
+>(
+	params: CreateParams<TDomain, TAddress, TUri, TChainId>,
+): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> {
 	return _create(params);
 }
 
@@ -110,7 +128,10 @@ export function parse(text: string): SiweMessageType {
 	return _parse(text);
 }
 
-export function validate(message: SiweMessageType, options?: { now?: Date }): ValidationResult {
+export function validate(
+	message: SiweMessageType,
+	options?: { now?: Date },
+): ValidationResult {
 	return _validate(message, options);
 }
 
@@ -149,7 +170,9 @@ export function Siwe<
 	TAddress extends AddressType = AddressType,
 	TUri extends string = string,
 	TChainId extends number = number,
->(params: CreateParams<TDomain, TAddress, TUri, TChainId>): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> {
+>(
+	params: CreateParams<TDomain, TAddress, TUri, TChainId>,
+): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> {
 	const result = create(params);
 	Object.setPrototypeOf(result, Siwe.prototype);
 	return result;
@@ -161,7 +184,9 @@ Siwe.create = <
 	TAddress extends AddressType = AddressType,
 	TUri extends string = string,
 	TChainId extends number = number,
->(params: CreateParams<TDomain, TAddress, TUri, TChainId>): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> => {
+>(
+	params: CreateParams<TDomain, TAddress, TUri, TChainId>,
+): SiweMessageType<TDomain, TAddress, TUri, "1", TChainId> => {
 	const result = create(params);
 	Object.setPrototypeOf(result, Siwe.prototype);
 	return result;
@@ -196,6 +221,9 @@ Siwe.prototype.getMessageHash = function (this: SiweMessageType): Uint8Array {
 Siwe.prototype.validate = function (this: SiweMessageType): ValidationResult {
 	return validate(this);
 };
-Siwe.prototype.verify = function (this: SiweMessageType, signature: Signature): boolean {
+Siwe.prototype.verify = function (
+	this: SiweMessageType,
+	signature: Signature,
+): boolean {
 	return verify(this, signature);
 };

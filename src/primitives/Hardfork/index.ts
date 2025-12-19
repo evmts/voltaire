@@ -15,7 +15,6 @@ import { hasEIP4844 as _hasEIP4844 } from "./hasEIP4844.js";
 import { isAfter as _isAfter } from "./isAfter.js";
 import { isAtLeast as _isAtLeast } from "./isAtLeast.js";
 import { isBefore as _isBefore } from "./isBefore.js";
-import { isEqual as _isEqual } from "./isEqual.js";
 import { isPoS as _isPoS } from "./isPoS.js";
 import { isPostMerge as _isPostMerge } from "./isPostMerge.js";
 import { isValidName as _isValidName } from "./isValidName.js";
@@ -45,20 +44,17 @@ export const isBefore: (fork: HardforkType, maxFork: HardforkType) => boolean =
 	_isBefore;
 export const isAfter: (fork: HardforkType, minFork: HardforkType) => boolean =
 	_isAfter;
-export const isEqual: (a: HardforkType, b: HardforkType) => boolean = _isEqual;
 export const compare: (a: HardforkType, b: HardforkType) => number = _compare;
 export const min: (forks: HardforkType[]) => HardforkType = _min;
 export const max: (forks: HardforkType[]) => HardforkType = _max;
 export const gte: (a: HardforkType, b: HardforkType) => boolean = _gte;
 export const lt: (a: HardforkType, b: HardforkType) => boolean = _lt;
 export const gt: (a: HardforkType, b: HardforkType) => boolean = _gt;
-export const equals: (
-	this: HardforkType,
-	other: HardforkType,
-) => boolean = _equals;
+export const equals: (a: HardforkType, b: HardforkType) => boolean = _equals;
 export const lte: (a: HardforkType, b: HardforkType) => boolean = _lte;
 export const hasEIP1559: (fork: HardforkType) => boolean = _hasEIP1559;
-export const supportsEIP1559: (fork: HardforkType) => boolean = _supportsEIP1559;
+export const supportsEIP1559: (fork: HardforkType) => boolean =
+	_supportsEIP1559;
 export const hasEIP3855: (fork: HardforkType) => boolean = _hasEIP3855;
 export const supportsPUSH0: (fork: HardforkType) => boolean = _supportsPUSH0;
 export const hasEIP4844: (fork: HardforkType) => boolean = _hasEIP4844;
@@ -70,10 +66,8 @@ export const isPostMerge: (fork: HardforkType) => boolean = _isPostMerge;
 export const isPoS: (fork: HardforkType) => boolean = _isPoS;
 export const allNames: () => string[] = _allNames;
 export const allIds: () => HardforkType[] = _allIds;
-export const range: (
-	start: HardforkType,
-	end: HardforkType,
-) => HardforkType[] = _range;
+export const range: (start: HardforkType, end: HardforkType) => HardforkType[] =
+	_range;
 
 // Namespace export
 export const Hardfork = {
@@ -83,7 +77,6 @@ export const Hardfork = {
 	isAtLeast,
 	isBefore,
 	isAfter,
-	isEqual,
 	compare,
 	min,
 	max,

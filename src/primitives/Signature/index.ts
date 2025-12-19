@@ -11,9 +11,11 @@ export * from "./constants.js";
 // Import all functions
 import { equals } from "./equals.js";
 import { from } from "./from.js";
+import { fromBytes } from "./fromBytes.js";
 import { fromCompact } from "./fromCompact.js";
 import { fromDER } from "./fromDER.js";
 import { fromEd25519 } from "./fromEd25519.js";
+import { fromHex } from "./fromHex.js";
 import { fromP256 } from "./fromP256.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { getAlgorithm } from "./getAlgorithm.js";
@@ -26,19 +28,23 @@ import { normalize } from "./normalize.js";
 import { toBytes } from "./toBytes.js";
 import { toCompact } from "./toCompact.js";
 import { toDER } from "./toDER.js";
+import { toHex } from "./toHex.js";
 import { verify } from "./verify.js";
 
 // Export individual functions
 export {
 	from,
+	fromBytes,
 	fromSecp256k1,
 	fromP256,
 	fromEd25519,
 	fromCompact,
 	fromDER,
+	fromHex,
 	toBytes,
 	toCompact,
 	toDER,
+	toHex,
 	getAlgorithm,
 	getR,
 	getS,
@@ -53,14 +59,17 @@ export {
 // Default export for dynamic imports
 const Signature = {
 	from,
+	fromBytes,
 	fromSecp256k1,
 	fromP256,
 	fromEd25519,
 	fromCompact,
 	fromDER,
+	fromHex,
 	toBytes,
 	toCompact,
 	toDER,
+	toHex,
 	getAlgorithm,
 	getR,
 	getS,

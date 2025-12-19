@@ -21,6 +21,7 @@ import { fromJSON } from "./fromJSON.js";
 import { getEncodedLength } from "./getEncodedLength.js";
 import { getLength } from "./getLength.js";
 import { isBytesData } from "./isBytesData.js";
+import { isCanonical } from "./isCanonical.js";
 import { isData } from "./isData.js";
 import { isList } from "./isList.js";
 import { isListData } from "./isListData.js";
@@ -51,6 +52,7 @@ export {
 	toRaw,
 	fromJSON,
 	validate,
+	isCanonical,
 	getLength,
 	isList,
 	isString,
@@ -80,6 +82,7 @@ export const BrandedRlp = {
 	toRaw,
 	fromJSON,
 	validate,
+	isCanonical,
 	getLength,
 	isList,
 	isString,

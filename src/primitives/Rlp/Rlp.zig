@@ -618,6 +618,193 @@ pub fn validate(allocator: Allocator, input: []const u8) bool {
     return true;
 }
 
+/// Validates if RLP encoding is canonical
+/// Canonical encoding rules:
+/// - Integers must use minimum bytes (no leading zeros)
+/// - Strings/bytes must use shortest length prefix
+/// - Single byte < 0x80 must not be encoded as string
+/// - Length prefix must use minimum bytes
+/// Returns true if encoding is canonical, false otherwise
+pub fn isCanonical(input: []const u8) bool {
+    return isCanonicalRecursive(input, 0);
+}
+
+fn isCanonicalRecursive(input: []const u8, depth: u32) bool {
+    if (input.len == 0) return false;
+    if (depth >= MAX_RLP_DEPTH) return false;
+
+    const prefix = input[0];
+
+    // Single byte (0x00 - 0x7f)
+    if (prefix <= 0x7f) {
+        return true;
+    }
+
+    // String 0-55 bytes (0x80 - 0xb7)
+    if (prefix <= 0xb7) {
+        const length = prefix - 0x80;
+
+        if (input.len - 1 < length) {
+            return false;
+        }
+
+        // Non-canonical: single byte < 0x80 should not be prefixed
+        if (length == 1 and input.len > 1 and input[1] < 0x80) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // String > 55 bytes (0xb8 - 0xbf)
+    if (prefix <= 0xbf) {
+        const length_of_length = prefix - 0xb7;
+
+        if (input.len - 1 < length_of_length) {
+            return false;
+        }
+
+        // Non-canonical: leading zeros in length
+        if (input[1] == 0) {
+            return false;
+        }
+
+        var total_length: usize = 0;
+        for (input[1 .. 1 + length_of_length]) |byte| {
+            total_length = (total_length << 8) + byte;
+        }
+
+        // Non-canonical: < 56 bytes should use short form
+        if (total_length < 56) {
+            return false;
+        }
+
+        if (input.len - 1 - length_of_length < total_length) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // List 0-55 bytes (0xc0 - 0xf7)
+    if (prefix <= 0xf7) {
+        const length = prefix - 0xc0;
+
+        if (input.len - 1 < length) {
+            return false;
+        }
+
+        // Recursively validate list items
+        var offset: usize = 1;
+        while (offset < 1 + length) {
+            const item_length = getItemLength(input[offset..]);
+            if (item_length == 0) return false;
+            if (!isCanonicalRecursive(input[offset .. offset + item_length], depth + 1)) {
+                return false;
+            }
+            offset += item_length;
+        }
+
+        return offset == 1 + length;
+    }
+
+    // List > 55 bytes (0xf8 - 0xff)
+    if (prefix <= 0xff) {
+        const length_of_length = prefix - 0xf7;
+
+        if (input.len - 1 < length_of_length) {
+            return false;
+        }
+
+        // Non-canonical: leading zeros in length
+        if (input[1] == 0) {
+            return false;
+        }
+
+        var total_length: usize = 0;
+        for (input[1 .. 1 + length_of_length]) |byte| {
+            total_length = (total_length << 8) + byte;
+        }
+
+        // Non-canonical: < 56 bytes should use short form
+        if (total_length < 56) {
+            return false;
+        }
+
+        if (input.len - 1 - length_of_length < total_length) {
+            return false;
+        }
+
+        // Recursively validate list items
+        var offset: usize = 1 + length_of_length;
+        const end_offset = 1 + length_of_length + total_length;
+        while (offset < end_offset) {
+            const item_length = getItemLength(input[offset..]);
+            if (item_length == 0) return false;
+            if (!isCanonicalRecursive(input[offset .. offset + item_length], depth + 1)) {
+                return false;
+            }
+            offset += item_length;
+        }
+
+        return offset == end_offset;
+    }
+
+    return false;
+}
+
+/// Calculate the length of a single RLP item
+fn getItemLength(input: []const u8) usize {
+    if (input.len == 0) return 0;
+
+    const prefix = input[0];
+
+    // Single byte (0x00 - 0x7f)
+    if (prefix <= 0x7f) {
+        return 1;
+    }
+
+    // String 0-55 bytes (0x80 - 0xb7)
+    if (prefix <= 0xb7) {
+        const length = prefix - 0x80;
+        if (input.len < 1 + length) return 0;
+        return 1 + length;
+    }
+
+    // String > 55 bytes (0xb8 - 0xbf)
+    if (prefix <= 0xbf) {
+        const length_of_length = prefix - 0xb7;
+        if (input.len < 1 + length_of_length) return 0;
+
+        var total_length: usize = 0;
+        for (input[1 .. 1 + length_of_length]) |byte| {
+            total_length = (total_length << 8) + byte;
+        }
+
+        if (input.len < 1 + length_of_length + total_length) return 0;
+        return 1 + length_of_length + total_length;
+    }
+
+    // List 0-55 bytes (0xc0 - 0xf7)
+    if (prefix <= 0xf7) {
+        const length = prefix - 0xc0;
+        if (input.len < 1 + length) return 0;
+        return 1 + length;
+    }
+
+    // List > 55 bytes (0xf8 - 0xff)
+    const length_of_length = prefix - 0xf7;
+    if (input.len < 1 + length_of_length) return 0;
+
+    var total_length: usize = 0;
+    for (input[1 .. 1 + length_of_length]) |byte| {
+        total_length = (total_length << 8) + byte;
+    }
+
+    if (input.len < 1 + length_of_length + total_length) return 0;
+    return 1 + length_of_length + total_length;
+}
+
 // Test cases
 test "RLP single byte" {
     const testing = std.testing;
@@ -1739,4 +1926,84 @@ test "RLP validate" {
     // Invalid - non-canonical
     const invalid2 = [_]u8{ 0x81, 0x7f };
     try testing.expect(!validate(allocator, &invalid2));
+}
+
+test "RLP isCanonical - canonical encodings" {
+    const testing = std.testing;
+
+    // Single byte < 0x80
+    const single_byte = [_]u8{0x7f};
+    try testing.expect(isCanonical(&single_byte));
+
+    // Empty bytes
+    const empty_bytes = [_]u8{0x80};
+    try testing.expect(isCanonical(&empty_bytes));
+
+    // Short string
+    const short_string = [_]u8{ 0x83, 'd', 'o', 'g' };
+    try testing.expect(isCanonical(&short_string));
+
+    // Empty list
+    const empty_list = [_]u8{0xc0};
+    try testing.expect(isCanonical(&empty_list));
+
+    // List with items
+    const list = [_]u8{ 0xc3, 0x01, 0x02, 0x03 };
+    try testing.expect(isCanonical(&list));
+
+    // Nested list
+    const nested = [_]u8{ 0xc4, 0xc2, 0x01, 0x02 };
+    try testing.expect(isCanonical(&nested));
+}
+
+test "RLP isCanonical - non-canonical encodings" {
+    const testing = std.testing;
+
+    // Empty input
+    const empty = [_]u8{};
+    try testing.expect(!isCanonical(&empty));
+
+    // Single byte < 0x80 with string prefix
+    const non_canonical_byte = [_]u8{ 0x81, 0x7f };
+    try testing.expect(!isCanonical(&non_canonical_byte));
+
+    // String with leading zeros in length
+    const leading_zeros = [_]u8{ 0xb8, 0x00, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    try testing.expect(!isCanonical(&leading_zeros));
+
+    // Short string using long form
+    const wrong_form = [_]u8{ 0xb8, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    try testing.expect(!isCanonical(&wrong_form));
+
+    // List with leading zeros in length
+    const list_leading_zeros = [_]u8{ 0xf8, 0x00, 0x03, 0x01, 0x02, 0x03 };
+    try testing.expect(!isCanonical(&list_leading_zeros));
+
+    // Short list using long form
+    const list_wrong_form = [_]u8{ 0xf8, 0x03, 0x01, 0x02, 0x03 };
+    try testing.expect(!isCanonical(&list_wrong_form));
+
+    // Truncated string
+    const truncated = [_]u8{ 0x83, 'd', 'o' };
+    try testing.expect(!isCanonical(&truncated));
+
+    // List with non-canonical item
+    const list_non_canonical = [_]u8{ 0xc3, 0x81, 0x7f, 0x02 };
+    try testing.expect(!isCanonical(&list_non_canonical));
+}
+
+test "RLP isCanonical - edge cases" {
+    const testing = std.testing;
+
+    // Byte 0x80 must be prefixed (0x81 0x80)
+    const byte_80 = [_]u8{ 0x81, 0x80 };
+    try testing.expect(isCanonical(&byte_80));
+
+    // Boundary: 55 byte string (short form)
+    const str_55 = [_]u8{0xb7} ++ ([_]u8{0x61} ** 55);
+    try testing.expect(isCanonical(&str_55));
+
+    // Boundary: 56 byte string (long form)
+    const str_56 = [_]u8{ 0xb8, 56 } ++ ([_]u8{0x61} ** 56);
+    try testing.expect(isCanonical(&str_56));
 }

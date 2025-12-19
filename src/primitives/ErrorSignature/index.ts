@@ -5,8 +5,8 @@ export type {
 export { SIZE } from "./ErrorSignatureType.js";
 
 import type {
-	ErrorSignatureType,
 	ErrorSignatureLike,
+	ErrorSignatureType,
 } from "./ErrorSignatureType.js";
 
 import { equals as _equals } from "./equals.js";
@@ -46,10 +46,7 @@ export function toHex(signature: ErrorSignatureType): string {
 /**
  * Check if two ErrorSignatures are equal
  */
-export function equals(
-	a: ErrorSignatureType,
-	b: ErrorSignatureType,
-): boolean {
+export function equals(a: ErrorSignatureType, b: ErrorSignatureType): boolean {
 	return _equals(a, b);
 }
 

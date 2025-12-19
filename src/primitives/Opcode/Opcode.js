@@ -42,7 +42,7 @@ import { pushBytes } from "./pushBytes.js";
 import { pushOpcode } from "./pushOpcode.js";
 import { swapPosition } from "./swapPosition.js";
 
-// Export individual functions
+// Export individual functions (public API)
 export {
 	disassemble,
 	dupPosition,
@@ -74,6 +74,40 @@ export {
 	pushBytes,
 	pushOpcode,
 	swapPosition,
+};
+
+// Export internal functions (tree-shakeable, _-prefixed)
+export {
+	disassemble as _disassemble,
+	dupPosition as _dupPosition,
+	format as _format,
+	getCategory as _getCategory,
+	getDescription as _getDescription,
+	getGasCost as _getGasCost,
+	getName as _getName,
+	getPushSize as _getPushSize,
+	getStackEffect as _getStackEffect,
+	getStackInput as _getStackInput,
+	getStackOutput as _getStackOutput,
+	info as _info,
+	isDup as _isDup,
+	isJump as _isJump,
+	isJumpDestination as _isJumpDestination,
+	isLog as _isLog,
+	isPush as _isPush,
+	isSwap as _isSwap,
+	isTerminating as _isTerminating,
+	isTerminator as _isTerminator,
+	isValid as _isValid,
+	isValidJumpDest as _isValidJumpDest,
+	isValidOpcode as _isValidOpcode,
+	jumpDests as _jumpDests,
+	logTopics as _logTopics,
+	name as _name,
+	parse as _parse,
+	pushBytes as _pushBytes,
+	pushOpcode as _pushOpcode,
+	swapPosition as _swapPosition,
 };
 
 /**
@@ -125,5 +159,40 @@ Opcode.swapPosition = swapPosition;
 
 // Attach constants
 Object.assign(Opcode, constants);
+
+// Namespace export (branded namespace)
+export const BrandedOpcode = {
+	disassemble,
+	dupPosition,
+	format,
+	getCategory,
+	getDescription,
+	getGasCost,
+	getName,
+	getPushSize,
+	getStackEffect,
+	getStackInput,
+	getStackOutput,
+	info,
+	isDup,
+	isJump,
+	isJumpDestination,
+	isLog,
+	isPush,
+	isSwap,
+	isTerminating,
+	isTerminator,
+	isValid,
+	isValidJumpDest,
+	isValidOpcode,
+	jumpDests,
+	logTopics,
+	name,
+	parse,
+	pushBytes,
+	pushOpcode,
+	swapPosition,
+	...constants,
+};
 
 export { Opcode };

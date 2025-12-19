@@ -20,11 +20,6 @@ import { SIZE } from "./constants.js";
  * const toCommitment = ToCommitment({ blobToKzgCommitment });
  * const commitment = toCommitment(blob);
  * ```
- *
- * TODO: Implement using c-kzg-4844 library
- * - Load KZG trusted setup
- * - Call blobToKzgCommitment(blob)
- * - Return 48-byte commitment
  */
 export function ToCommitment({ blobToKzgCommitment }) {
 	return function toCommitment(blob) {

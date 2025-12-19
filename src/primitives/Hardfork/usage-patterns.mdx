@@ -323,7 +323,7 @@ function checkCompatibility(
   reason?: string;
   recommendedAction?: string;
 } {
-  if (Hardfork.isEqual(clientVersion, networkVersion)) {
+  if (Hardfork.equals(clientVersion, networkVersion)) {
     return { compatible: true };
   }
 
@@ -723,9 +723,9 @@ storage.set("hardfork", normalized);
 ### 4. Handle Aliases
 
 ```typescript
-const fork1 = Hardfork("merge");
-const fork2 = Hardfork("paris");
-console.log(Hardfork.isEqual(fork1, fork2));  // true
+const fork1 = Hardfork.fromString("merge");
+const fork2 = Hardfork.fromString("paris");
+console.log(Hardfork.equals(fork1, fork2));  // true
 ```
 
 ### 5. Provide Clear Error Messages

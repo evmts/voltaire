@@ -96,6 +96,80 @@ pub fn fromPrivateKey(private_key: [32]u8) !PublicKey {
     return pk;
 }
 
+/// Compress public key from 64 bytes to 33 bytes
+/// Format: prefix (1 byte) + x-coordinate (32 bytes)
+/// Prefix is 0x02 if y is even, 0x03 if y is odd
+pub fn compress(pk: PublicKey) [33]u8 {
+    var result: [33]u8 = undefined;
+
+    // Parse y coordinate
+    const y = std.mem.readInt(u256, pk.bytes[32..64], .big);
+
+    // Set prefix based on y parity
+    result[0] = if ((y & 1) == 0) 0x02 else 0x03;
+
+    // Copy x coordinate
+    @memcpy(result[1..33], pk.bytes[0..32]);
+
+    return result;
+}
+
+/// Decompress public key from 33 bytes to 64 bytes
+/// Solves y² = x³ + 7 mod p and chooses y based on prefix parity
+pub fn decompress(compressed: [33]u8) !PublicKey {
+    // Validate prefix
+    if (compressed[0] != 0x02 and compressed[0] != 0x03) {
+        return error.InvalidCompressedPrefix;
+    }
+
+    // Parse x coordinate
+    const x = std.mem.readInt(u256, compressed[1..33], .big);
+
+    // Validate x is in field
+    if (x >= crypto.secp256k1.SECP256K1_P) {
+        return error.InvalidXCoordinate;
+    }
+
+    // Calculate y² = x³ + 7 mod p
+    const x3 = crypto.secp256k1.unauditedMulmod(crypto.secp256k1.unauditedMulmod(x, x, crypto.secp256k1.SECP256K1_P), x, crypto.secp256k1.SECP256K1_P);
+    const y2 = crypto.secp256k1.unauditedAddmod(x3, crypto.secp256k1.SECP256K1_B, crypto.secp256k1.SECP256K1_P);
+
+    // Calculate y = y²^((p+1)/4) mod p (works because p ≡ 3 mod 4)
+    const y_candidate = crypto.secp256k1.unauditedPowmod(y2, (crypto.secp256k1.SECP256K1_P + 1) >> 2, crypto.secp256k1.SECP256K1_P);
+
+    // Verify y is correct
+    if (crypto.secp256k1.unauditedMulmod(y_candidate, y_candidate, crypto.secp256k1.SECP256K1_P) != y2) {
+        return error.InvalidCompressedKey;
+    }
+
+    // Choose correct y based on prefix parity
+    const y_is_odd = (y_candidate & 1) == 1;
+    const prefix_is_odd = compressed[0] == 0x03;
+    const y = if (y_is_odd == prefix_is_odd) y_candidate else crypto.secp256k1.SECP256K1_P - y_candidate;
+
+    // Validate point is on curve
+    const point = crypto.secp256k1.AffinePoint{ .x = x, .y = y, .infinity = false };
+    if (!point.isOnCurve()) {
+        return error.InvalidCompressedKey;
+    }
+
+    // Convert to 64 byte uncompressed format
+    var pk: PublicKey = undefined;
+    std.mem.writeInt(u256, pk.bytes[0..32], x, .big);
+    std.mem.writeInt(u256, pk.bytes[32..64], y, .big);
+
+    return pk;
+}
+
+/// Check if a byte array represents a compressed public key
+/// Returns true for 33 bytes with 0x02/0x03 prefix, false for 64 bytes
+pub fn isCompressed(bytes: []const u8) bool {
+    if (bytes.len == 33) {
+        return bytes[0] == 0x02 or bytes[0] == 0x03;
+    }
+    return false;
+}
+
 /// Verify ECDSA signature against this public key
 /// Uses secp256k1 signature verification
 pub fn verify(
@@ -324,4 +398,143 @@ test "PublicKey.verify - rejects point not on curve" {
     const result = try verify(pk, hash, sig);
 
     try std.testing.expect(!result);
+}
+
+test "PublicKey.compress - compresses generator point" {
+    // Use generator point
+    const gen = crypto.secp256k1.AffinePoint.generator();
+    var pk: PublicKey = undefined;
+    std.mem.writeInt(u256, pk.bytes[0..32], gen.x, .big);
+    std.mem.writeInt(u256, pk.bytes[32..64], gen.y, .big);
+
+    const compressed = compress(pk);
+
+    // Should be 33 bytes
+    try std.testing.expectEqual(@as(usize, 33), compressed.len);
+
+    // y is even, so prefix should be 0x02
+    try std.testing.expectEqual(@as(u8, 0x02), compressed[0]);
+
+    // x coordinate should match
+    const x_from_compressed = std.mem.readInt(u256, compressed[1..33], .big);
+    try std.testing.expectEqual(gen.x, x_from_compressed);
+}
+
+test "PublicKey.compress - handles odd y coordinate" {
+    // Create a point with odd y
+    var private_key: [32]u8 = [_]u8{0} ** 32;
+    private_key[31] = 2; // private key = 2
+
+    const pk = try fromPrivateKey(private_key);
+    const compressed = compress(pk);
+
+    // Check prefix matches y parity
+    const y = std.mem.readInt(u256, pk.bytes[32..64], .big);
+    const expected_prefix: u8 = if ((y & 1) == 0) 0x02 else 0x03;
+
+    try std.testing.expectEqual(expected_prefix, compressed[0]);
+}
+
+test "PublicKey.decompress - decompresses generator point" {
+    // Known compressed generator point
+    const gen = crypto.secp256k1.AffinePoint.generator();
+    var pk: PublicKey = undefined;
+    std.mem.writeInt(u256, pk.bytes[0..32], gen.x, .big);
+    std.mem.writeInt(u256, pk.bytes[32..64], gen.y, .big);
+
+    const compressed = compress(pk);
+    const decompressed = try decompress(compressed);
+
+    // Should match original
+    try std.testing.expectEqualSlices(u8, &pk.bytes, &decompressed.bytes);
+}
+
+test "PublicKey.decompress - round trip" {
+    // Create multiple test keys
+    const test_privkeys = [_]u8{ 1, 2, 3, 7, 42, 123 };
+
+    for (test_privkeys) |priv_val| {
+        var private_key: [32]u8 = [_]u8{0} ** 32;
+        private_key[31] = priv_val;
+
+        const original_pk = try fromPrivateKey(private_key);
+        const compressed = compress(original_pk);
+        const decompressed_pk = try decompress(compressed);
+
+        try std.testing.expectEqualSlices(u8, &original_pk.bytes, &decompressed_pk.bytes);
+    }
+}
+
+test "PublicKey.decompress - rejects invalid prefix" {
+    var compressed: [33]u8 = undefined;
+    compressed[0] = 0x04; // Invalid prefix (should be 0x02 or 0x03)
+    @memset(compressed[1..], 0x01);
+
+    const result = decompress(compressed);
+
+    try std.testing.expectError(error.InvalidCompressedPrefix, result);
+}
+
+test "PublicKey.decompress - rejects x >= p" {
+    var compressed: [33]u8 = undefined;
+    compressed[0] = 0x02;
+
+    // Set x to p (invalid)
+    std.mem.writeInt(u256, compressed[1..33], crypto.secp256k1.SECP256K1_P, .big);
+
+    const result = decompress(compressed);
+
+    try std.testing.expectError(error.InvalidXCoordinate, result);
+}
+
+test "PublicKey.isCompressed - detects compressed format" {
+    var compressed: [33]u8 = undefined;
+    compressed[0] = 0x02;
+    @memset(compressed[1..], 0x01);
+
+    try std.testing.expect(isCompressed(&compressed));
+}
+
+test "PublicKey.isCompressed - rejects uncompressed format" {
+    var uncompressed: [64]u8 = undefined;
+    @memset(&uncompressed, 0x01);
+
+    try std.testing.expect(!isCompressed(&uncompressed));
+}
+
+test "PublicKey.isCompressed - rejects invalid prefix" {
+    var invalid: [33]u8 = undefined;
+    invalid[0] = 0x04; // Invalid prefix
+    @memset(invalid[1..], 0x01);
+
+    try std.testing.expect(!isCompressed(&invalid));
+}
+
+test "PublicKey.compress/decompress - known test vector" {
+    // Known test vector from SEC 2 v2 spec
+    // Generator point (secp256k1)
+    const gen = crypto.secp256k1.AffinePoint.generator();
+
+    // Create public key from generator
+    var pk: PublicKey = undefined;
+    std.mem.writeInt(u256, pk.bytes[0..32], gen.x, .big);
+    std.mem.writeInt(u256, pk.bytes[32..64], gen.y, .big);
+
+    // Compress
+    const compressed = compress(pk);
+
+    // Expected: 02 + 32 bytes of x
+    try std.testing.expectEqual(@as(u8, 0x02), compressed[0]);
+
+    // Decompress and verify
+    const decompressed = try decompress(compressed);
+
+    // Verify coordinates match
+    const x_orig = std.mem.readInt(u256, pk.bytes[0..32], .big);
+    const y_orig = std.mem.readInt(u256, pk.bytes[32..64], .big);
+    const x_decomp = std.mem.readInt(u256, decompressed.bytes[0..32], .big);
+    const y_decomp = std.mem.readInt(u256, decompressed.bytes[32..64], .big);
+
+    try std.testing.expectEqual(x_orig, x_decomp);
+    try std.testing.expectEqual(y_orig, y_decomp);
 }

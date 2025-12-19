@@ -64,9 +64,8 @@ const analyzeGas: (
 	bytecode: BrandedBytecode,
 	options?: GasAnalysisOptions,
 ) => GasAnalysis = _analyzeGas;
-const analyzeJumpDestinations: (
-	code: BrandedBytecode,
-) => ReadonlySet<number> = _analyzeJumpDestinations;
+const analyzeJumpDestinations: (code: BrandedBytecode) => ReadonlySet<number> =
+	_analyzeJumpDestinations;
 const analyzeStack: (
 	bytecode: BrandedBytecode,
 	options?: StackAnalysisOptions,
@@ -82,10 +81,8 @@ const formatInstructions: (code: BrandedBytecode) => string[] =
 	_formatInstructions;
 const from: (value: string | Uint8Array) => BrandedBytecode = _from;
 const fromHex: (hex: string) => BrandedBytecode = _fromHex;
-const getBlock: (
-	code: BrandedBytecode,
-	pc: number,
-) => BasicBlock | undefined = _getBlock;
+const getBlock: (code: BrandedBytecode, pc: number) => BasicBlock | undefined =
+	_getBlock;
 const getNextPc: (
 	code: BrandedBytecode,
 	currentPc: number,
@@ -228,7 +225,8 @@ Bytecode.fromHex.prototype = Bytecode.prototype;
 Bytecode.analyze = BrandedBytecodeNamespace.analyze;
 Bytecode.analyzeBlocks = BrandedBytecodeNamespace.analyzeBlocks;
 Bytecode.analyzeGas = BrandedBytecodeNamespace.analyzeGas;
-Bytecode.analyzeJumpDestinations = BrandedBytecodeNamespace.analyzeJumpDestinations;
+Bytecode.analyzeJumpDestinations =
+	BrandedBytecodeNamespace.analyzeJumpDestinations;
 Bytecode.analyzeStack = BrandedBytecodeNamespace.analyzeStack;
 Bytecode.detectFusions = BrandedBytecodeNamespace.detectFusions;
 Bytecode.equals = BrandedBytecodeNamespace.equals;
@@ -283,10 +281,16 @@ Bytecode.prototype.analyzeStack = function (
 Bytecode.prototype.detectFusions = function (this: BrandedBytecode) {
 	return BrandedBytecodeNamespace.detectFusions(this);
 };
-Bytecode.prototype.equals = function (this: BrandedBytecode, other: BrandedBytecode) {
+Bytecode.prototype.equals = function (
+	this: BrandedBytecode,
+	other: BrandedBytecode,
+) {
 	return BrandedBytecodeNamespace.equals(this, other);
 };
-Bytecode.prototype.extractRuntime = function (this: BrandedBytecode, offset: number) {
+Bytecode.prototype.extractRuntime = function (
+	this: BrandedBytecode,
+	offset: number,
+) {
 	const result = BrandedBytecodeNamespace.extractRuntime(this, offset);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
@@ -297,7 +301,10 @@ Bytecode.prototype.formatInstructions = function (this: BrandedBytecode) {
 Bytecode.prototype.getBlock = function (this: BrandedBytecode, pc: number) {
 	return BrandedBytecodeNamespace.getBlock(this, pc);
 };
-Bytecode.prototype.getNextPc = function (this: BrandedBytecode, currentPc: number) {
+Bytecode.prototype.getNextPc = function (
+	this: BrandedBytecode,
+	currentPc: number,
+) {
 	return BrandedBytecodeNamespace._getNextPc(this, currentPc);
 };
 Bytecode.prototype.hash = function (this: BrandedBytecode) {
@@ -306,7 +313,10 @@ Bytecode.prototype.hash = function (this: BrandedBytecode) {
 Bytecode.prototype.hasMetadata = function (this: BrandedBytecode) {
 	return BrandedBytecodeNamespace.hasMetadata(this);
 };
-Bytecode.prototype.isValidJumpDest = function (this: BrandedBytecode, offset: number) {
+Bytecode.prototype.isValidJumpDest = function (
+	this: BrandedBytecode,
+	offset: number,
+) {
 	return BrandedBytecodeNamespace.isValidJumpDest(this, offset);
 };
 Bytecode.prototype.parseInstructions = function (this: BrandedBytecode) {
@@ -318,7 +328,10 @@ Bytecode.prototype.prettyPrint = function (
 ) {
 	return BrandedBytecodeNamespace.prettyPrint(this, options);
 };
-Bytecode.prototype.scan = function (this: BrandedBytecode, options?: ScanOptions) {
+Bytecode.prototype.scan = function (
+	this: BrandedBytecode,
+	options?: ScanOptions,
+) {
 	return BrandedBytecodeNamespace.scan(this, options);
 };
 Bytecode.prototype.size = function (this: BrandedBytecode) {

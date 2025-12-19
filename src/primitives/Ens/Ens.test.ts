@@ -138,4 +138,42 @@ describe("Ens", () => {
 			expect(hex).toMatch(/^0x[0-9a-f]{64}$/);
 		});
 	});
+
+	describe("isValid", () => {
+		it("should return true for valid ENS names", () => {
+			expect(Ens.isValid("vitalik.eth")).toBe(true);
+			expect(Ens.isValid("sub.domain.eth")).toBe(true);
+			expect(Ens.isValid("test.eth")).toBe(true);
+		});
+
+		it("should return false for invalid ENS names", () => {
+			expect(Ens.isValid("invalid\x00.eth")).toBe(false);
+			expect(Ens.isValid("")).toBe(false);
+		});
+
+		it("should return false for non-strings", () => {
+			expect(Ens.isValid(123 as any)).toBe(false);
+			expect(Ens.isValid(null as any)).toBe(false);
+			expect(Ens.isValid(undefined as any)).toBe(false);
+		});
+	});
+
+	describe("validate", () => {
+		it("should not throw for valid ENS names", () => {
+			expect(() => Ens.validate("vitalik.eth")).not.toThrow();
+			expect(() => Ens.validate("sub.domain.eth")).not.toThrow();
+			expect(() => Ens.validate("test.eth")).not.toThrow();
+		});
+
+		it("should throw for invalid ENS names", () => {
+			expect(() => Ens.validate("invalid\x00.eth")).toThrow();
+			expect(() => Ens.validate("")).toThrow();
+		});
+
+		it("should throw for non-strings", () => {
+			expect(() => Ens.validate(123 as any)).toThrow();
+			expect(() => Ens.validate(null as any)).toThrow();
+			expect(() => Ens.validate(undefined as any)).toThrow();
+		});
+	});
 });

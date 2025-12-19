@@ -1,19 +1,19 @@
-import { isEqual } from "./isEqual.js";
-
 /**
- * Check if two hardforks are equal (convenience form)
+ * Check if two hardforks are equal
  *
- * @this {import('./HardforkType.ts').HardforkType}
- * @param {import('./HardforkType.ts').HardforkType} other - Second hardfork
- * @returns {boolean} true if this == other
+ * @param {import('./HardforkType.ts').HardforkType} a - First hardfork
+ * @param {import('./HardforkType.ts').HardforkType} b - Second hardfork
+ * @returns {boolean} true if a == b
  *
  * @example
  * ```typescript
  * import { CANCUN, equals } from './hardfork.js';
  *
- * equals.call(CANCUN, CANCUN); // true
+ * if (equals(fork, CANCUN)) {
+ *   // Exactly Cancun
+ * }
  * ```
  */
-export function equals(other) {
-	return isEqual(this, other);
+export function equals(a, b) {
+	return a === b;
 }

@@ -45,9 +45,7 @@ import { withAddress as _withAddress } from "./withAddress.js";
 import { withStorageKey as _withStorageKey } from "./withStorageKey.js";
 
 // Type-safe wrappers
-const from: (
-	value: readonly Item[] | Uint8Array,
-) => BrandedAccessList = _from;
+const from: (value: readonly Item[] | Uint8Array) => BrandedAccessList = _from;
 const fromBytes: (bytes: Uint8Array) => BrandedAccessList = _fromBytes;
 const is: (value: unknown) => value is BrandedAccessList = _is;
 const isItem: (value: unknown) => value is Item = _isItem;

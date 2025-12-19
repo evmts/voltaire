@@ -9,7 +9,7 @@ import { MerkleRoot as _MerkleRootFactory } from "./merkleRoot.js";
 import { Concat as _ConcatFactory } from "./concat.js";
 import { hash as keccak256Impl } from "../../crypto/Keccak256/hash.js";
 
-import type { HashType } from "./HashType.js";
+import type { HashType, HashLike } from "./HashType.js";
 
 // Factory exports (internal, prefixed with _ to avoid collision with crypto/Keccak256)
 export {
@@ -46,4 +46,8 @@ export { format } from "./format.js";
 export { ZERO, SIZE } from "./constants.js";
 
 // Export type definitions
-export type { HashType, HashType as HashTypeInterface, HashLike } from "./HashType.js";
+export type {
+	HashType,
+	HashType as HashTypeInterface,
+	HashLike,
+} from "./HashType.js";

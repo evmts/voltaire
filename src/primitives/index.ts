@@ -43,10 +43,13 @@ export * as Int128 from "./Int128/index.js";
 export * as Int256 from "./Int256/index.js";
 
 // Denomination
-export * as Denomination from "./Denomination/index.js";
+export { Wei, Gwei, Ether } from "./Denomination/index.js";
+export * as BrandedWei from "./Denomination/wei-index.js";
+export * as BrandedGwei from "./Denomination/gwei-index.js";
+export * as BrandedEther from "./Denomination/ether-index.js";
 
 // Encoding
-export { Rlp } from "./Rlp/index.js";
+export * as Rlp from "./Rlp/index.js";
 export * as BrandedRlp from "./Rlp/index.js";
 export * as Ssz from "./Ssz/index.js";
 export * as Abi from "./Abi/index.js";
@@ -66,7 +69,8 @@ export * as InitCode from "./InitCode/index.js";
 export * as RuntimeCode from "./RuntimeCode/index.js";
 export * as Metadata from "./Metadata/index.js";
 export * as SourceMap from "./SourceMap/index.js";
-export * as Opcode from "./Opcode/index.js";
+export { Opcode } from "./Opcode/index.js";
+export * as BrandedOpcode from "./Opcode/Opcode.js";
 export * as Gas from "./Gas/index.js";
 export * as GasConstants from "./GasConstants/index.js";
 export * as GasCosts from "./GasCosts/index.js";
@@ -75,6 +79,7 @@ export * as GasEstimate from "./GasEstimate/index.js";
 export * as GasRefund from "./GasRefund/index.js";
 export { StorageKey } from "./State/index.js";
 export * as BrandedStorageKey from "./State/index.js";
+export * as State from "./State/index.js";
 export * as Storage from "./Storage/index.js";
 export * as Proxy from "./Proxy/index.js";
 
@@ -84,6 +89,7 @@ export * as BrandedBlob from "./Blob/index.js";
 export { Chain } from "./Chain/index.js";
 export * as BrandedChain from "./Chain/index.js";
 export * as FeeMarket from "./FeeMarket/index.js";
+export * as BrandedFeeMarket from "./FeeMarket/FeeMarket.js";
 export * as Hardfork from "./Hardfork/index.js";
 export * as ForkId from "./ForkId/index.js";
 

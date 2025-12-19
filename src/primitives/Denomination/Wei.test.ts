@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Wei, Gwei } from "./index.js";
+import { Gwei, Wei } from "./index.js";
 
 describe("Wei", () => {
 	it("creates Wei from bigint", () => {

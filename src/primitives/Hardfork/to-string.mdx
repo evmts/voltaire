@@ -188,11 +188,11 @@ function saveHardforkBad(input: string) {
 ```typescript
 import { Hardfork } from 'tevm'
 
-const fork = Hardfork("cancun")
+const fork = Hardfork.fromString("cancun")
 const name = Hardfork.toString(fork)
-const fork2 = Hardfork(name)
+const fork2 = Hardfork.fromString(name)
 
-fork.isEqual(fork2)  // true - round trip works
+Hardfork.equals(fork, fork2)  // true - round trip works
 ```
 
 ## Performance

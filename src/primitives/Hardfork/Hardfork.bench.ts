@@ -26,7 +26,6 @@ import { hasEIP4844 } from "./hasEIP4844.js";
 import { isAfter } from "./isAfter.js";
 import { isAtLeast } from "./isAtLeast.js";
 import { isBefore } from "./isBefore.js";
-import { isEqual } from "./isEqual.js";
 import { isPoS } from "./isPoS.js";
 import { isPostMerge } from "./isPostMerge.js";
 import { isValidName } from "./isValidName.js";
@@ -117,7 +116,7 @@ results.push(
 	benchmark("isAfter", () => isAfter(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("isEqual", () => isEqual(testForks.recent, testForks.recent)),
+	benchmark("equals", () => equals(testForks.recent, testForks.recent)),
 );
 results.push(
 	benchmark("compare", () => compare(testForks.middle, testForks.recent)),
@@ -130,11 +129,6 @@ results.push(
 );
 results.push(
 	benchmark("gt.call", () => gt.call(testForks.recent, testForks.middle)),
-);
-results.push(
-	benchmark("equals.call", () =>
-		equals.call(testForks.recent, testForks.recent),
-	),
 );
 results.push(
 	benchmark("lte.call", () => lte.call(testForks.middle, testForks.recent)),

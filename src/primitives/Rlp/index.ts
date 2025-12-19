@@ -47,6 +47,7 @@ Rlp.toJSON = BrandedRlpNs.toJSON;
 Rlp.toRaw = BrandedRlpNs.toRaw;
 Rlp.fromJSON = BrandedRlpNs.fromJSON;
 Rlp.validate = BrandedRlpNs.validate;
+Rlp.isCanonical = BrandedRlpNs.isCanonical;
 Rlp.getLength = BrandedRlpNs.getLength;
 Rlp.isList = BrandedRlpNs.isList;
 Rlp.isString = BrandedRlpNs.isString;

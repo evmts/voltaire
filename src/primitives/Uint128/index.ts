@@ -68,7 +68,8 @@ export const toBigInt: (uint: Uint128Type) => bigint = _toBigInt;
 export const toNumber: (uint: Uint128Type) => number = _toNumber;
 export const toBytes: (uint: Uint128Type) => Uint8Array = _toBytes;
 export const toAbiEncoded: (uint: Uint128Type) => Uint8Array = _toAbiEncoded;
-export const toString: (uint: Uint128Type, radix?: number) => string = _toString;
+export const toString: (uint: Uint128Type, radix?: number) => string =
+	_toString;
 
 export const clone: (uint: Uint128Type) => Uint128Type = _clone;
 
@@ -79,8 +80,10 @@ export const dividedBy: (uint: Uint128Type, b: Uint128Type) => Uint128Type =
 	_dividedBy;
 export const modulo: (uint: Uint128Type, b: Uint128Type) => Uint128Type =
 	_modulo;
-export const toPower: (uint: Uint128Type, exponent: Uint128Type) => Uint128Type =
-	_toPower;
+export const toPower: (
+	uint: Uint128Type,
+	exponent: Uint128Type,
+) => Uint128Type = _toPower;
 
 export const bitwiseAnd: (uint: Uint128Type, b: Uint128Type) => Uint128Type =
 	_bitwiseAnd;

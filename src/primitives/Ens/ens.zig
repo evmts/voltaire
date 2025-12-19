@@ -52,6 +52,23 @@ pub fn toString(name: []const u8) []const u8 {
     return name;
 }
 
+/// Check if ENS name is valid (can be normalized without error)
+/// Matches TS isValid() API
+pub fn isValid(allocator: std.mem.Allocator, name: []const u8) bool {
+    if (name.len == 0) return false;
+    const result = normalize(allocator, name) catch return false;
+    allocator.free(result);
+    return true;
+}
+
+/// Validate ENS name (returns error if invalid)
+/// Matches TS validate() API
+pub fn validate(allocator: std.mem.Allocator, name: []const u8) EnsError!void {
+    if (name.len == 0) return EnsError.DisallowedCharacter;
+    const result = normalize(allocator, name) catch |err| return err;
+    allocator.free(result);
+}
+
 /// Compute ENS namehash for a given name
 /// Implements EIP-137: namehash(name) = keccak256(namehash(parent) ‖ labelhash(label))
 /// Empty string has hash of 32 zero bytes.
@@ -213,4 +230,33 @@ test "labelhash eth" {
 
     // Should produce 32 bytes
     try std.testing.expectEqual(@as(usize, 32), result.len);
+}
+
+test "isValid returns true for valid names" {
+    const allocator = std.testing.allocator;
+
+    try std.testing.expect(isValid(allocator, "vitalik.eth"));
+    try std.testing.expect(isValid(allocator, "sub.domain.eth"));
+    try std.testing.expect(isValid(allocator, "test.eth"));
+}
+
+test "isValid returns false for invalid names" {
+    const allocator = std.testing.allocator;
+
+    try std.testing.expect(!isValid(allocator, ""));
+}
+
+test "validate succeeds for valid names" {
+    const allocator = std.testing.allocator;
+
+    try validate(allocator, "vitalik.eth");
+    try validate(allocator, "sub.domain.eth");
+    try validate(allocator, "test.eth");
+}
+
+test "validate fails for invalid names" {
+    const allocator = std.testing.allocator;
+
+    const result = validate(allocator, "");
+    try std.testing.expectError(EnsError.DisallowedCharacter, result);
 }

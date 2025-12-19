@@ -4,8 +4,8 @@ export type {
 } from "./FunctionSignatureType.js";
 
 import type {
-	FunctionSignatureType,
 	FunctionSignatureLike,
+	FunctionSignatureType,
 } from "./FunctionSignatureType.js";
 
 import { equals as _equals } from "./equals.js";

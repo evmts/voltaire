@@ -45,15 +45,15 @@ describe("Hardfork.isAfter", () => {
 	});
 });
 
-describe("Hardfork.isEqual", () => {
+describe("Hardfork.equals", () => {
 	it("returns true when hardforks are equal", () => {
-		expect(Hardfork.isEqual(Hardfork.CANCUN, Hardfork.CANCUN)).toBe(true);
-		expect(Hardfork.isEqual(Hardfork.FRONTIER, Hardfork.FRONTIER)).toBe(true);
+		expect(Hardfork.equals(Hardfork.CANCUN, Hardfork.CANCUN)).toBe(true);
+		expect(Hardfork.equals(Hardfork.FRONTIER, Hardfork.FRONTIER)).toBe(true);
 	});
 
 	it("returns false when hardforks are not equal", () => {
-		expect(Hardfork.isEqual(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(false);
-		expect(Hardfork.isEqual(Hardfork.BERLIN, Hardfork.LONDON)).toBe(false);
+		expect(Hardfork.equals(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(false);
+		expect(Hardfork.equals(Hardfork.BERLIN, Hardfork.LONDON)).toBe(false);
 	});
 });
 
@@ -262,18 +262,6 @@ describe("Hardfork.gt (convenience form)", () => {
 		const fork = Hardfork.BERLIN;
 		expect(Hardfork.gt.call(fork, Hardfork.LONDON)).toBe(false);
 		expect(Hardfork.gt.call(fork, Hardfork.BERLIN)).toBe(false);
-	});
-});
-
-describe("Hardfork.equals (convenience form)", () => {
-	it("returns true when this == other", () => {
-		const fork = Hardfork.CANCUN;
-		expect(Hardfork.equals.call(fork, Hardfork.CANCUN)).toBe(true);
-	});
-
-	it("returns false when this != other", () => {
-		const fork = Hardfork.CANCUN;
-		expect(Hardfork.equals.call(fork, Hardfork.SHANGHAI)).toBe(false);
 	});
 });
 

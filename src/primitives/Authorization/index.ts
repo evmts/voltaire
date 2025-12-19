@@ -14,11 +14,11 @@ import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
 import { FromPublicKey } from "../Address/fromPublicKey.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
 
+import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
+import type { Secp256k1SignatureType } from "../../crypto/Secp256k1/SignatureType.js";
 import type { AddressType } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType.js";
 import type { PrivateKeyType } from "../PrivateKey/PrivateKeyType.js";
-import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
-import type { Secp256k1SignatureType } from "../../crypto/Secp256k1/SignatureType.js";
 import type { AuthorizationType } from "./AuthorizationType.js";
 
 // Create address factory with crypto dependencies
@@ -82,7 +82,10 @@ import {
 	SECP256K1_HALF_N,
 	SECP256K1_N,
 } from "./constants.js";
-import { equals as equalsImpl, equalsAuth as equalsAuthImpl } from "./equals.js";
+import {
+	equalsAuth as equalsAuthImpl,
+	equals as equalsImpl,
+} from "./equals.js";
 import { format as formatImpl } from "./format.js";
 import { getGasCost as getGasCostImpl } from "./getGasCost.js";
 import { isItem as isItemImpl } from "./isItem.js";
@@ -110,10 +113,8 @@ export const format: (
 		| { chainId: bigint; address: AddressType; nonce: bigint },
 ) => string = formatImpl;
 
-export const getGasCost: (
-	auth: AuthorizationType,
-	isEmpty: boolean,
-) => bigint = getGasCostImpl;
+export const getGasCost: (auth: AuthorizationType, isEmpty: boolean) => bigint =
+	getGasCostImpl;
 
 export const isItem: (value: unknown) => boolean = isItemImpl;
 

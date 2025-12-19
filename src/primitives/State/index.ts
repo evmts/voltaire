@@ -1,11 +1,8 @@
 export * from "./StorageKeyType.js";
 export * from "./constants.js";
 
-import type {
-	StorageKeyType,
-	StorageKeyLike,
-} from "./StorageKeyType.js";
 import type { AddressType } from "../Address/AddressType.js";
+import type { StorageKeyLike, StorageKeyType } from "./StorageKeyType.js";
 
 import { create as _createImpl } from "./create.js";
 import { equals as _equalsImpl } from "./equals.js";

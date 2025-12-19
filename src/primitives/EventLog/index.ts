@@ -5,7 +5,10 @@ export * from "./EventLog.js";
 export type * from "./EventLogConstructor.js";
 
 // Re-export type
-export type { EventLogType, EventLogType as BrandedEventLogType } from "./EventLogType.js";
+export type {
+	EventLogType,
+	EventLogType as BrandedEventLogType,
+} from "./EventLogType.js";
 
 // Import all methods and create namespace export
 import { clone } from "./clone.js";

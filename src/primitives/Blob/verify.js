@@ -18,10 +18,6 @@ import { SIZE } from "./constants.js";
  * const verify = Verify({ verifyBlobKzgProof });
  * const isValid = verify(blob, commitment, proof);
  * ```
- *
- * TODO: Implement using c-kzg-4844 library
- * - Call verifyBlobKzgProof(blob, commitment, proof)
- * - Return boolean result
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 
