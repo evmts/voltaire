@@ -2,8 +2,8 @@
 // These files can be run directly with: bun playground/examples/crypto/<file>.js
 
 import keccak256HashString from "../../examples/crypto/keccak256/hash-string.js?raw";
-import sha256HashString from "../../examples/crypto/sha256/hash-string.js?raw";
 import sha256HashBytes from "../../examples/crypto/sha256/hash-bytes.js?raw";
+import sha256HashString from "../../examples/crypto/sha256/hash-string.js?raw";
 
 // Transform imports for display (convert relative paths to voltaire/... format)
 function transformForDisplay(code: string): string {

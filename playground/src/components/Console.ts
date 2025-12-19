@@ -83,7 +83,7 @@ export class Console {
 		this.updateFilterOptions();
 		this.filterSelect.value = this.activeFilter;
 		this.filterSelect.onchange = () => {
-			this.activeFilter = this.filterSelect!.value as FilterLevel;
+			this.activeFilter = this.filterSelect?.value as FilterLevel;
 			this.saveFilterPreference();
 			this.render();
 		};

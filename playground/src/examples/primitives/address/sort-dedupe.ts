@@ -10,14 +10,14 @@ const addresses = [addr1, addr2, addr3, addr4];
 
 // Sort addresses lexicographically
 const sorted = Address.sortAddresses(addresses);
-sorted.forEach((addr) => console.log(Address.toHex(addr)));
+sorted.forEach((addr) => );
 
 // Remove duplicates
 const unique = Address.deduplicateAddresses(addresses);
-unique.forEach((addr) => console.log(Address.toHex(addr)));
+unique.forEach((addr) => );
 
 // Combine: sort and deduplicate
 const cleanList = Address.deduplicateAddresses(
 	Address.sortAddresses(addresses),
 );
-cleanList.forEach((addr) => console.log(Address.toHex(addr)));
+cleanList.forEach((addr) => );

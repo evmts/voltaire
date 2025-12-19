@@ -5,10 +5,6 @@ import type { Hardfork } from "voltaire/primitives/Chain";
 
 const eth = Chain.fromId(1)!; // Ethereum Mainnet
 
-console.log("\n=== Current Hardfork Status ===");
-console.log("Chain:", Chain.getName(eth));
-console.log("Latest hardfork:", Chain.getLatestHardfork(eth));
-
 // Check major hardfork support
 const majorHardforks: Hardfork[] = [
 	"homestead",
@@ -23,21 +19,12 @@ const majorHardforks: Hardfork[] = [
 	"prague",
 ];
 
-console.log("\n=== Hardfork Support Matrix ===");
-console.log("Hardfork | Supported | Block Number");
-console.log("---------|-----------|-------------");
-
 for (const hardfork of majorHardforks) {
 	const supported = Chain.supportsHardfork(eth, hardfork);
 	const block = Chain.getHardforkBlock(eth, hardfork);
 	const blockStr = block !== undefined ? block.toLocaleString() : "N/A";
 	const supportStr = supported ? "✓" : "✗";
-
-	console.log(`${hardfork.padEnd(20)} | ${supportStr.padEnd(9)} | ${blockStr}`);
 }
-
-// EIP support detection (based on hardforks)
-console.log("\n=== EIP Support Detection ===");
 
 interface EIP {
 	number: number;
@@ -63,12 +50,7 @@ const eips: EIP[] = [
 for (const eip of eips) {
 	const supported = Chain.supportsHardfork(eth, eip.hardfork);
 	const block = Chain.getHardforkBlock(eth, eip.hardfork);
-
-	console.log(`EIP-${eip.number} (${eip.name}):`);
-	console.log(`  Hardfork: ${eip.hardfork}`);
-	console.log(`  Supported: ${supported ? "✓" : "✗"}`);
 	if (block !== undefined) {
-		console.log(`  Active since block: ${block.toLocaleString()}`);
 	}
 }
 
@@ -99,8 +81,6 @@ function getHardforkAtBlock(
 
 	return "chainstart";
 }
-
-console.log("\n=== Hardfork at Specific Blocks ===");
 const testBlocks = [
 	1000000, // Pre-DAO
 	12965000, // London
@@ -111,11 +91,7 @@ const testBlocks = [
 
 for (const block of testBlocks) {
 	const hardfork = getHardforkAtBlock(eth, block);
-	console.log(`Block ${block.toLocaleString()}: ${hardfork}`);
 }
-
-// Multi-chain hardfork comparison
-console.log("\n=== Multi-Chain Hardfork Status ===");
 const chains = [
 	{ chain: Chain.fromId(1)!, name: "Mainnet" },
 	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
@@ -124,9 +100,6 @@ const chains = [
 ];
 
 const hardforks: Hardfork[] = ["london", "paris", "shanghai", "cancun"];
-
-console.log("\nChain | Latest | London | Paris | Shanghai | Cancun");
-console.log("------|--------|--------|-------|----------|-------");
 
 for (const { chain, name } of chains) {
 	const c = Chain.from(chain);
@@ -139,8 +112,6 @@ for (const { chain, name } of chains) {
 			block !== undefined ? block.toString().padEnd(10) : "N/A".padEnd(10),
 		);
 	}
-
-	console.log(row.join(" | "));
 }
 
 // Feature detection helper
@@ -155,12 +126,6 @@ function supportsEIP4844(chain: ReturnType<typeof Chain.from>): boolean {
 function supportsPoS(chain: ReturnType<typeof Chain.from>): boolean {
 	return Chain.supportsHardfork(chain, "paris");
 }
-
-console.log("\n=== Feature Detection ===");
 for (const { chain, name } of chains) {
 	const c = Chain.from(chain);
-	console.log(`${name}:`);
-	console.log(`  EIP-1559 (Fee Market): ${supportsEIP1559(c) ? "✓" : "✗"}`);
-	console.log(`  EIP-4844 (Blob Txs): ${supportsEIP4844(c) ? "✓" : "✗"}`);
-	console.log(`  Proof of Stake: ${supportsPoS(c) ? "✓" : "✗"}`);
 }

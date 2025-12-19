@@ -56,46 +56,10 @@ const getTimeUntilOverwrite = (timestamp: bigint, current: bigint): bigint => {
 // Max age of readable roots
 const MAX_AGE_SECONDS = RING_BUFFER_SIZE * SLOT_TIME; // ~27.3 hours
 const MAX_AGE_HOURS = MAX_AGE_SECONDS / 3600;
-
-console.log("=== EIP-4788 Ring Buffer ===\n");
-
-console.log("Buffer Configuration:");
-console.log("  Size:", RING_BUFFER_SIZE, "slots");
-console.log("  Slot time:", SLOT_TIME, "seconds");
-console.log(
-	"  Max age:",
-	MAX_AGE_SECONDS,
-	"seconds (~",
-	MAX_AGE_HOURS,
-	"hours)",
-);
-console.log("  Storage: timestamp % 8191 → (timestamp, root)");
-console.log();
-
-console.log("Recent Blocks:");
 for (const block of recentBlocks) {
 	const index = getRingBufferIndex(block.timestamp);
 	const age = currentTime - block.timestamp;
-	console.log(`  Timestamp: ${block.timestamp}`);
-	console.log(`  Age: ${age}s`);
-	console.log(`  Ring index: ${index}`);
-	console.log(`  Root: ${BeaconBlockRoot.toHex(block.root)}`);
-	console.log();
 }
-
-console.log("Index Calculation:");
-console.log("  Formula: timestamp % 8191");
-console.log("  Example: 1710338135 % 8191 =", getRingBufferIndex(currentTime));
-console.log("  Note: Two timestamps may map to same index!");
-console.log();
-
-console.log("Overwrite Mechanics:");
-console.log("  • New block writes to index (timestamp % 8191)");
-console.log("  • If slot occupied, old data is overwritten");
-console.log("  • After 8191 blocks, slot 0 is reused");
-console.log("  • Contract stores (timestamp, root) pair");
-console.log("  • Read checks timestamp matches to prevent collisions");
-console.log();
 
 const solidityExample = `
 // EIP-4788 system contract storage layout
@@ -143,37 +107,3 @@ contract MyContract {
     }
 }
 `;
-
-console.log("Solidity Implementation:");
-console.log(solidityExample);
-console.log();
-
-console.log("Collision Prevention:");
-console.log("  • Two timestamps ~8191 blocks apart map to same index");
-console.log("  • Contract stores timestamp WITH root");
-console.log("  • Read verifies timestamp matches stored value");
-console.log("  • Mismatch means root was overwritten");
-console.log();
-
-console.log("Best Practices:");
-console.log("  ✓ Always check timestamp age (<27 hours)");
-console.log("  ✓ Handle 'not found' errors gracefully");
-console.log("  ✓ Use recent timestamps for reliability");
-console.log("  ✓ Don't rely on very old roots");
-console.log("  ✓ Cache roots in your contract if needed long-term");
-console.log();
-
-console.log("Example Timeline:");
-console.log("  T=0: Root A stored at index 100");
-console.log("  T=1: Root B stored at index 101");
-console.log("  ...");
-console.log("  T=8191: Root Z stored at index 8290");
-console.log("  T=8192: Root A' overwrites Root A at index 100");
-console.log("  T=8193: Root B' overwrites Root B at index 101");
-console.log();
-
-console.log("Gas Costs:");
-console.log("  Cold read (first access): ~2,100 gas");
-console.log("  Warm read (subsequent): ~100 gas");
-console.log("  Storage: 2 SLOADs (timestamp + root)");
-console.log("  Total: ~2,600 gas for typical read");

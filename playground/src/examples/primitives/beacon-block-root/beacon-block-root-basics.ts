@@ -29,33 +29,3 @@ const hex2 = BeaconBlockRoot.toHex(mainnetRoot);
 // Compare roots
 const same = BeaconBlockRoot.equals(root1, root1);
 const different = BeaconBlockRoot.equals(root1, root2);
-
-console.log("=== BeaconBlockRoot Basics ===\n");
-
-console.log("Root 1:", hex1);
-console.log("Root 2:", BeaconBlockRoot.toHex(root2));
-console.log("Mainnet root:", hex2);
-console.log("Zero root:", BeaconBlockRoot.toHex(zeroRoot));
-console.log();
-
-console.log("Equality:");
-console.log("  root1 == root1:", same);
-console.log("  root1 == root2:", different);
-console.log();
-
-console.log("EIP-4788 Context:");
-console.log("  Upgrade: Cancun (March 2024)");
-console.log("  Size: 32 bytes (256 bits)");
-console.log("  Purpose: Connect execution layer to consensus layer");
-console.log(
-	"  Storage: BEACON_ROOTS_ADDRESS (0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02)",
-);
-console.log("  History: 8191 most recent roots (ring buffer)");
-console.log();
-
-console.log("Use Cases:");
-console.log("  1. MEV protection: Verify beacon chain state");
-console.log("  2. L2 bridges: Trustless cross-chain messaging");
-console.log("  3. Oracles: Cryptographically proven consensus data");
-console.log("  4. Light clients: Efficient verification");
-console.log("  5. Proof of Stake: Validator accountability");

@@ -7,13 +7,6 @@ function isValidChainId(chainId: number): boolean {
 	return chainId > 0 && Number.isInteger(chainId);
 }
 
-console.log("\n=== Chain ID Validation ===");
-console.log("Valid chain ID (1):", isValidChainId(1));
-console.log("Valid chain ID (31337):", isValidChainId(31337));
-console.log("Invalid chain ID (0):", isValidChainId(0));
-console.log("Invalid chain ID (-1):", isValidChainId(-1));
-console.log("Invalid chain ID (1.5):", isValidChainId(1.5));
-
 // Validate chain configuration
 function validateChainConfig(chain: any): {
 	valid: boolean;
@@ -56,8 +49,6 @@ function validateChainConfig(chain: any): {
 		errors,
 	};
 }
-
-console.log("\n=== Chain Configuration Validation ===");
 const chains = [
 	{ chain: Chain.fromId(1)!, name: "Mainnet" },
 	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
@@ -66,10 +57,8 @@ const chains = [
 
 for (const { chain, name } of chains) {
 	const result = validateChainConfig(chain);
-	console.log(`${name}: ${result.valid ? "✓ Valid" : "✗ Invalid"}`);
 	if (!result.valid) {
 		for (const error of result.errors) {
-			console.log(`  - ${error}`);
 		}
 	}
 }
@@ -88,13 +77,8 @@ const invalidChain = {
 		public: { http: [] },
 	},
 };
-
-console.log("\n=== Invalid Chain Example ===");
 const invalidResult = validateChainConfig(invalidChain);
-console.log("Valid:", invalidResult.valid);
-console.log("Errors:");
 for (const error of invalidResult.errors) {
-	console.log(`  - ${error}`);
 }
 
 // Check chain uniqueness
@@ -106,16 +90,12 @@ function hasDuplicateChainId(chains: any[]): boolean {
 	}
 	return false;
 }
-
-console.log("\n=== Chain ID Uniqueness ===");
 const mainnetChain = Chain.fromId(1)!;
 const sepoliaChain = Chain.fromId(11155111)!;
 const optimismChain = Chain.fromId(10)!;
 const uniqueChains = [mainnetChain, sepoliaChain, optimismChain];
-console.log("Unique chains:", !hasDuplicateChainId(uniqueChains));
 
 const duplicateChains = [mainnetChain, sepoliaChain, mainnetChain];
-console.log("Duplicate chains:", hasDuplicateChainId(duplicateChains));
 
 // Validate RPC endpoint format
 function isValidRpcUrl(url: string): boolean {
@@ -135,8 +115,6 @@ function isValidWsUrl(url: string): boolean {
 		return false;
 	}
 }
-
-console.log("\n=== RPC URL Validation ===");
 const rpcUrls = [
 	"https://eth.llamarpc.com",
 	"http://localhost:8545",
@@ -145,10 +123,7 @@ const rpcUrls = [
 ];
 
 for (const url of rpcUrls) {
-	console.log(`${url}: ${isValidRpcUrl(url) ? "✓" : "✗"}`);
 }
-
-console.log("\n=== WebSocket URL Validation ===");
 const wsUrls = [
 	"wss://eth.llamarpc.com",
 	"ws://localhost:8545",
@@ -157,7 +132,6 @@ const wsUrls = [
 ];
 
 for (const url of wsUrls) {
-	console.log(`${url}: ${isValidWsUrl(url) ? "✓" : "✗"}`);
 }
 
 // Validate chain accessibility
@@ -166,15 +140,9 @@ async function canConnectToChain(
 ): Promise<boolean> {
 	const rpcUrl = Chain.getRpcUrl(chain);
 	if (!rpcUrl) return false;
-
-	// This is a mock - in real code you'd make an actual RPC call
-	console.log(`Would check connection to: ${rpcUrl}`);
 	return true;
 }
-
-console.log("\n=== Chain Accessibility Check (mock) ===");
 const eth = Chain.fromId(1)!;
-console.log(`Checking ${Chain.getName(eth)}...`);
 canConnectToChain(eth);
 
 // Validate chain metadata availability
@@ -197,8 +165,6 @@ function hasCompleteMetadata(chain: ReturnType<typeof Chain.from>): boolean {
 		return false;
 	}
 }
-
-console.log("\n=== Metadata Completeness ===");
 const testChains = [
 	{ chain: Chain.fromId(1)!, name: "Mainnet" },
 	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
@@ -211,7 +177,6 @@ const testChains = [
 for (const { chain, name } of testChains) {
 	const c = Chain.from(chain);
 	const complete = hasCompleteMetadata(c);
-	console.log(`${name}: ${complete ? "✓ Complete" : "✗ Incomplete"}`);
 }
 
 // Safe chain access
@@ -224,7 +189,3 @@ function safeGetChainName(chain: any | undefined): string {
 		return "invalid";
 	}
 }
-
-console.log("\n=== Safe Chain Access ===");
-console.log("Valid chain:", safeGetChainName(mainnetChain));
-console.log("Undefined chain:", safeGetChainName(undefined));

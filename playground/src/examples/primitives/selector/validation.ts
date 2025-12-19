@@ -1,40 +1,20 @@
 import * as Selector from "../../../primitives/Selector/index.js";
 
-// Example: Validating selectors and handling errors
-
-console.log("=== Selector Validation ===\n");
-
-console.log("--- Valid Selectors ---\n");
-
 try {
 	const sel1 = Selector.fromHex("0xa9059cbb");
-	console.log(`Valid hex (with 0x):     ${Selector.toHex(sel1)} ✓`);
-} catch (e) {
-	console.log(`Unexpected error: ${e.message}`);
-}
+} catch (e) {}
 
 try {
 	const sel2 = Selector.from("0xa9059cbb");
-	console.log(`Valid hex string:        ${Selector.toHex(sel2)} ✓`);
-} catch (e) {
-	console.log(`Unexpected error: ${e.message}`);
-}
+} catch (e) {}
 
 try {
 	const sel3 = Selector.from(new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]));
-	console.log(`Valid bytes (4 bytes):   ${Selector.toHex(sel3)} ✓`);
-} catch (e) {
-	console.log(`Unexpected error: ${e.message}`);
-}
+} catch (e) {}
 
 try {
 	const sel4 = Selector.fromSignature("transfer(address,uint256)");
-	console.log(`Valid signature:         ${Selector.toHex(sel4)} ✓\n`);
-} catch (e) {
-	console.log(`Unexpected error: ${e.message}\n`);
-}
-
-console.log("--- Invalid Length (Hex) ---\n");
+} catch (e) {}
 
 const invalidHexLengths = [
 	"0x",
@@ -48,13 +28,8 @@ const invalidHexLengths = [
 for (const hex of invalidHexLengths) {
 	try {
 		Selector.fromHex(hex);
-		console.log(`${hex.padEnd(20)} -> Should have failed!`);
-	} catch (e) {
-		console.log(`${hex.padEnd(20)} -> ${e.message}`);
-	}
+	} catch (e) {}
 }
-
-console.log("\n--- Invalid Length (Bytes) ---\n");
 
 const invalidByteLengths = [0, 1, 2, 3, 5, 8, 16, 32];
 
@@ -62,23 +37,13 @@ for (const len of invalidByteLengths) {
 	try {
 		const bytes = new Uint8Array(len);
 		Selector.from(bytes);
-		console.log(`${len} bytes -> Should have failed!`);
-	} catch (e) {
-		console.log(`${len} bytes -> Must be exactly 4 bytes`);
-	}
+	} catch (e) {}
 }
-
-console.log("\n--- Correct Length ---\n");
 
 try {
 	const bytes4 = new Uint8Array(4);
 	const sel = Selector.from(bytes4);
-	console.log(`4 bytes -> ${Selector.toHex(sel)} ✓`);
-} catch (e) {
-	console.log(`Unexpected error: ${e.message}`);
-}
-
-console.log("\n--- Invalid Types ---\n");
+} catch (e) {}
 
 const invalidTypes = [null, undefined, 42, true, {}, []];
 
@@ -86,13 +51,8 @@ for (const val of invalidTypes) {
 	try {
 		// @ts-expect-error - Testing invalid input
 		Selector.from(val);
-		console.log(`${typeof val} -> Should have failed!`);
-	} catch (e) {
-		console.log(`${typeof val} -> Invalid input type`);
-	}
+	} catch (e) {}
 }
-
-console.log("\n=== Validating Calldata ===\n");
 
 function validateCalldata(calldata: string): {
 	valid: boolean;
@@ -126,15 +86,11 @@ const testCalldata = [
 
 for (const data of testCalldata) {
 	const result = validateCalldata(data);
-	const display = data.length > 30 ? data.slice(0, 30) + "..." : data;
+	const display = data.length > 30 ? `${data.slice(0, 30)}...` : data;
 	if (result.valid) {
-		console.log(`${display.padEnd(35)} ✓ ${result.selector}`);
 	} else {
-		console.log(`${display.padEnd(35)} ✗ ${result.error}`);
 	}
 }
-
-console.log("\n=== Selector Whitelist Pattern ===\n");
 
 const allowedSelectors = new Set([
 	Selector.toHex(Selector.fromSignature("transfer(address,uint256)")),
@@ -152,25 +108,18 @@ function isAllowedFunction(calldata: string): boolean {
 	}
 }
 
-console.log("Whitelisted functions: transfer, approve, balanceOf\n");
-
 const testFunctions = [
-	{ data: "0xa9059cbb" + "0".repeat(128), name: "transfer" },
-	{ data: "0x095ea7b3" + "0".repeat(128), name: "approve" },
-	{ data: "0x70a08231" + "0".repeat(64), name: "balanceOf" },
-	{ data: "0x23b872dd" + "0".repeat(192), name: "transferFrom" },
-	{ data: "0x12345678" + "0".repeat(128), name: "unknown" },
+	{ data: `0xa9059cbb${"0".repeat(128)}`, name: "transfer" },
+	{ data: `0x095ea7b3${"0".repeat(128)}`, name: "approve" },
+	{ data: `0x70a08231${"0".repeat(64)}`, name: "balanceOf" },
+	{ data: `0x23b872dd${"0".repeat(192)}`, name: "transferFrom" },
+	{ data: `0x12345678${"0".repeat(128)}`, name: "unknown" },
 ];
 
 for (const fn of testFunctions) {
 	const allowed = isAllowedFunction(fn.data);
 	const status = allowed ? "✓" : "✗";
-	console.log(
-		`${fn.name.padEnd(15)} ${status} ${allowed ? "Allowed" : "Blocked"}`,
-	);
 }
-
-console.log("\n=== Defensive Validation Helper ===\n");
 
 function safeExtractSelector(
 	input: unknown,
@@ -209,8 +158,6 @@ function safeExtractSelector(
 	}
 }
 
-console.log("Testing defensive extraction:\n");
-
 const testInputs: unknown[] = [
 	"0xa9059cbb000000",
 	new Uint8Array([0xa9, 0x05, 0x9c, 0xbb, 0x00]),
@@ -229,8 +176,6 @@ for (const input of testInputs) {
 				: String(input);
 
 	if (result.success) {
-		console.log(`${display.padEnd(25)} ✓ ${result.selector}`);
 	} else {
-		console.log(`${display.padEnd(25)} ✗ ${result.error}`);
 	}
 }

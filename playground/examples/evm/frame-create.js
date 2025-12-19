@@ -8,13 +8,6 @@ const frame = Frame({
 	gas: 100000n,
 });
 
-console.log("Frame created");
-console.log("Gas remaining:", frame.gasRemaining);
-console.log("Program counter:", frame.pc);
-console.log("Stack depth:", frame.stack.length);
-console.log("Memory size:", frame.memorySize);
-console.log("Bytecode length:", frame.bytecode.length);
-
 // Create frame with full context
 const caller = Address("0x1111111111111111111111111111111111111111");
 const address = Address("0x2222222222222222222222222222222222222222");
@@ -28,10 +21,3 @@ const fullFrame = Frame({
 	calldata: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]), // transfer selector
 	isStatic: false,
 });
-
-console.log("\nFull frame:");
-console.log("Caller:", Address.toHex(fullFrame.caller));
-console.log("Address:", Address.toHex(fullFrame.address));
-console.log("Value:", fullFrame.value, "wei");
-console.log("Calldata length:", fullFrame.calldata.length);
-console.log("Is static call:", fullFrame.isStatic);

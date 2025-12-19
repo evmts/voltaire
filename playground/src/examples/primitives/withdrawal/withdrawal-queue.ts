@@ -1,16 +1,5 @@
 import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
 
-// Example: Withdrawal queue and processing
-
-// Withdrawals are processed in a queue with these characteristics:
-// - FIFO (first in, first out) based on validator index
-// - 16 withdrawals maximum per block
-// - Automatic processing by protocol
-// - Round-robin sweep of all validators
-
-console.log("Withdrawal Queue Processing");
-console.log("============================\n");
-
 // Sequential withdrawals in a single block
 const block1 = [
 	Withdrawal.from({
@@ -32,12 +21,7 @@ const block1 = [
 		amount: 32500000000n, // Full withdrawal with rewards
 	}),
 ];
-
-console.log("Block withdrawals (sequential):");
-block1.forEach((w, i) => {
-	console.log(`  [${i}] Index: ${w.index}, Validator: ${w.validatorIndex}`);
-	console.log(`      Amount: ${w.amount} Gwei`);
-});
+block1.forEach((w, i) => {});
 
 // Full block (16 withdrawals max)
 const fullBlock = Array.from({ length: 16 }, (_, i) =>
@@ -49,37 +33,12 @@ const fullBlock = Array.from({ length: 16 }, (_, i) =>
 	}),
 );
 
-console.log("\nFull block (16 withdrawals):");
-console.log("  Count:", fullBlock.length);
-console.log("  First validator:", fullBlock[0].validatorIndex);
-console.log("  Last validator:", fullBlock[15].validatorIndex);
-console.log(
-	"  Total amount:",
-	(Number(fullBlock[0].amount) * 16) / 1_000_000_000,
-	"ETH",
-);
-
 // Validator sweep cycle
 const totalValidators = 500000;
 const withdrawalsPerBlock = 16;
 const blocksPerDay = 7200; // 12 seconds per block
 const withdrawalsPerDay = withdrawalsPerBlock * blocksPerDay;
 const cycleDays = totalValidators / withdrawalsPerDay;
-
-console.log("\nValidator sweep cycle:");
-console.log("  Total validators:", totalValidators.toLocaleString());
-console.log("  Withdrawals/block:", withdrawalsPerBlock);
-console.log("  Blocks/day:", blocksPerDay.toLocaleString());
-console.log("  Withdrawals/day:", withdrawalsPerDay.toLocaleString());
-console.log("  Full cycle:", cycleDays.toFixed(1), "days");
-
-// Queue priorities
-console.log("\nWithdrawal priorities:");
-console.log("  1. Validator order (index ascending)");
-console.log("  2. Full vs partial: No difference");
-console.log("  3. Amount: No difference");
-console.log("  4. Time in queue: No difference");
-console.log("  Rule: Pure round-robin by validator index");
 
 // Estimating your withdrawal
 const yourValidatorIndex = 123456;
@@ -89,16 +48,6 @@ const indexDifference =
 		? yourValidatorIndex - currentSweepIndex
 		: totalValidators - currentSweepIndex + yourValidatorIndex;
 const daysUntilWithdrawal = indexDifference / withdrawalsPerDay;
-
-console.log("\nEstimate your withdrawal:");
-console.log("  Your validator:", yourValidatorIndex);
-console.log("  Current sweep:", currentSweepIndex);
-console.log("  Validators ahead:", indexDifference.toLocaleString());
-console.log("  Days until withdrawal:", daysUntilWithdrawal.toFixed(2));
-console.log(
-	"  Approximate date:",
-	new Date(Date.now() + daysUntilWithdrawal * 86400000).toDateString(),
-);
 
 // Block with mix of full and partial
 const mixedBlock = [
@@ -123,14 +72,3 @@ const mixedBlock = [
 ];
 
 const totalAmount = mixedBlock.reduce((sum, w) => sum + Number(w.amount), 0);
-console.log("\nMixed withdrawal block:");
-console.log("  Withdrawals:", mixedBlock.length);
-console.log(
-	"  Full:",
-	mixedBlock.filter((w) => w.amount >= 32000000000n).length,
-);
-console.log(
-	"  Partial:",
-	mixedBlock.filter((w) => w.amount < 32000000000n).length,
-);
-console.log("  Total:", (totalAmount / 1_000_000_000).toFixed(2), "ETH");

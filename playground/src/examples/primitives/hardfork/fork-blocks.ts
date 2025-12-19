@@ -1,9 +1,5 @@
 import * as Hardfork from "../../../primitives/Hardfork/index.js";
 
-// Mainnet block numbers for each hardfork activation
-
-console.log("=== ETHEREUM MAINNET HARDFORK BLOCKS ===\n");
-
 interface ForkBlock {
 	name: string;
 	block: number | string;
@@ -132,10 +128,6 @@ const mainnetBlocks: ForkBlock[] = [
 mainnetBlocks.forEach((fork, index) => {
 	const blockNum =
 		typeof fork.block === "number" ? fork.block.toLocaleString() : fork.block;
-	console.log(`${index + 1}. ${fork.name}`);
-	console.log(`   Block: ${blockNum}`);
-	console.log(`   Date: ${fork.date}`);
-	console.log(`   Constant: Hardfork.${fork.constant}\n`);
 });
 
 // Helper function to determine hardfork from block number
@@ -149,9 +141,6 @@ function hardforkAtBlock(blockNum: number): string {
 	return "Unknown";
 }
 
-// Examples
-console.log("=== BLOCK LOOKUP EXAMPLES ===\n");
-
 const exampleBlocks = [
 	{ block: 0, description: "Genesis" },
 	{ block: 1000000, description: "Early Homestead" },
@@ -164,11 +153,7 @@ const exampleBlocks = [
 
 exampleBlocks.forEach(({ block, description }) => {
 	const fork = hardforkAtBlock(block);
-	console.log(`Block ${block.toLocaleString()} (${description}): ${fork}`);
 });
-
-// Block ranges
-console.log("\n=== BLOCK RANGES ===\n");
 
 const ranges = [
 	{ start: "London", end: "Merge" },
@@ -192,10 +177,5 @@ ranges.forEach(({ start, end }) => {
 			typeof startBlock === "number" && typeof endBlock === "number"
 				? (endBlock - startBlock).toLocaleString()
 				: "TBD";
-
-		console.log(`${start} → ${end}:`);
-		console.log(`  Start: ${startBlock.toLocaleString()}`);
-		console.log(`  End: ${endBlock.toLocaleString()}`);
-		console.log(`  Range: ${range} blocks\n`);
 	}
 });

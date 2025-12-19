@@ -147,6 +147,6 @@ function handleStatus<T extends Status>(
 }
 
 handleStatus(success, {
-	onSuccess: (gas) => console.log("Success handler called, gas:", gas),
-	onFailed: (reason) => console.log("Failed handler called, reason:", reason),
+	onSuccess: (gas) => ,
+	onFailed: (reason) => ,
 });

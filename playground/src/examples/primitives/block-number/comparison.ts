@@ -19,7 +19,7 @@ const blocks = [
 	BlockNumber.from(19426587), // Cancun
 	BlockNumber.from(4370000), // Byzantium
 ];
-blocks.forEach((b) => console.log(BlockNumber.toNumber(b)));
+blocks.forEach((b) => );
 
 // Find minimum (earliest block)
 let minBlock = blocks[0];
@@ -43,13 +43,13 @@ const unsorted = [
 	BlockNumber.from(17034870),
 	BlockNumber.from(15537394),
 ];
-unsorted.forEach((b) => console.log(BlockNumber.toNumber(b)));
+unsorted.forEach((b) => );
 
 const sorted = [...unsorted].sort((a, b) => {
 	const diff = BlockNumber.toBigInt(a) - BlockNumber.toBigInt(b);
 	return diff < 0n ? -1 : diff > 0n ? 1 : 0;
 });
-sorted.forEach((b) => console.log(BlockNumber.toNumber(b)));
+sorted.forEach((b) => );
 
 const target = BlockNumber.from(16000000);
 const rangeStart = BlockNumber.from(15000000);

@@ -7,14 +7,10 @@ import * as Hash from "voltaire/primitives/Hash";
 
 // Empty access list
 const empty = AccessList.create();
-console.log("Empty access list:", empty);
-console.log("Is empty?", AccessList.isEmpty(empty));
 
 // Create from single address (no storage keys)
 const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const listWithAddress = AccessList.from([{ address: addr, storageKeys: [] }]);
-console.log("\nSingle address access list:", listWithAddress);
-console.log("Address count:", AccessList.addressCount(listWithAddress));
 
 // Create with storage keys
 const tokenAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
@@ -31,8 +27,6 @@ const listWithKeys = AccessList.from([
 		storageKeys: [balanceSlot, allowanceSlot],
 	},
 ]);
-console.log("\nWith storage keys:", listWithKeys);
-console.log("Storage key count:", AccessList.storageKeyCount(listWithKeys));
 
 // Multi-address access list
 const uniswapRouter = Address.from(
@@ -43,33 +37,12 @@ const multiList = AccessList.from([
 	{ address: uniswapRouter, storageKeys: [balanceSlot] },
 	{ address: weth, storageKeys: [] },
 ]);
-console.log("\nMulti-address list:", multiList);
 
 // Gas cost calculation
 const gasCost = AccessList.gasCost(multiList);
-console.log("\nAccess list gas cost:", gasCost, "gas");
-console.log("Address cost:", AccessList.ADDRESS_COST, "per address");
-console.log("Storage key cost:", AccessList.STORAGE_KEY_COST, "per key");
 
 // Gas savings calculation
 const savings = AccessList.gasSavings(multiList);
-console.log("\nEstimated gas savings:", savings, "gas");
-console.log("Has savings?", AccessList.hasSavings(multiList));
-
-// Checking inclusion
-console.log(
-	"\nIncludes USDC?",
-	AccessList.includesAddress(multiList, tokenAddr),
-);
-console.log(
-	"Includes Uniswap?",
-	AccessList.includesAddress(multiList, uniswapRouter),
-);
-console.log(
-	"Includes balance slot for Uniswap?",
-	AccessList.includesStorageKey(multiList, uniswapRouter, balanceSlot),
-);
 
 // Get keys for address
 const keysForRouter = AccessList.keysFor(multiList, uniswapRouter);
-console.log("\nStorage keys for Uniswap router:", keysForRouter);

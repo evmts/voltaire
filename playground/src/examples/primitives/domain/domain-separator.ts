@@ -1,5 +1,5 @@
-import * as Domain from "../../../../../src/primitives/Domain/index.js";
 import { hash as keccak256 } from "../../../../../src/crypto/Keccak256/index.js";
+import * as Domain from "../../../../../src/primitives/Domain/index.js";
 import * as Hex from "../../../../../src/primitives/Hex/index.js";
 
 // Example: Computing and using EIP-712 domain separators
@@ -20,7 +20,6 @@ const simple = Domain.from({
 });
 
 const simpleSeparator = Domain.toHash(simple, { keccak256 });
-console.log("Simple separator:", Hex.fromBytes(simpleSeparator));
 
 // Domain with chainId
 const withChain = Domain.from({
@@ -30,7 +29,6 @@ const withChain = Domain.from({
 });
 
 const chainSeparator = Domain.toHash(withChain, { keccak256 });
-console.log("With chain separator:", Hex.fromBytes(chainSeparator));
 
 // Domain with contract
 const withContract = Domain.from({
@@ -41,7 +39,6 @@ const withContract = Domain.from({
 });
 
 const contractSeparator = Domain.toHash(withContract, { keccak256 });
-console.log("With contract separator:", Hex.fromBytes(contractSeparator));
 
 // Domain with salt
 const withSalt = Domain.from({
@@ -51,26 +48,3 @@ const withSalt = Domain.from({
 });
 
 const saltSeparator = Domain.toHash(withSalt, { keccak256 });
-console.log("With salt separator:", Hex.fromBytes(saltSeparator));
-
-// Different separators prevent replay attacks
-console.log("\nSeparators are unique:");
-console.log(
-	"Simple != Chain:",
-	!Hex.equals(Hex.fromBytes(simpleSeparator), Hex.fromBytes(chainSeparator)),
-);
-console.log(
-	"Chain != Contract:",
-	!Hex.equals(Hex.fromBytes(chainSeparator), Hex.fromBytes(contractSeparator)),
-);
-console.log(
-	"Contract != Salt:",
-	!Hex.equals(Hex.fromBytes(contractSeparator), Hex.fromBytes(saltSeparator)),
-);
-
-// Get type definitions for each
-console.log("\nType definitions:");
-console.log("Simple:", Domain.getEIP712DomainType(simple));
-console.log("With chain:", Domain.getEIP712DomainType(withChain));
-console.log("With contract:", Domain.getEIP712DomainType(withContract));
-console.log("With salt:", Domain.getEIP712DomainType(withSalt));

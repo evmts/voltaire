@@ -1,10 +1,10 @@
 import { init } from "modern-monaco";
 import type { DisplaySettings } from "../features/DisplaySettings.js";
 import { registerImportCompletion } from "../features/ImportCompletion.js";
-import { registerVoltaireSnippets } from "../features/Snippets.js";
-import { registerQuickFixes } from "../features/QuickFixes.js";
-import { registerNavigationProviders } from "../features/Navigation.js";
 import { InlineSuggestions } from "../features/InlineSuggestions.js";
+import { registerNavigationProviders } from "../features/Navigation.js";
+import { registerQuickFixes } from "../features/QuickFixes.js";
+import { registerVoltaireSnippets } from "../features/Snippets.js";
 
 // Available Voltaire modules for LSP
 const VOLTAIRE_MODULES = [
@@ -52,7 +52,7 @@ export class Editor {
 				} catch {
 					// Module not available
 				}
-			})
+			}),
 		);
 
 		// Build importMap for TypeScript LSP

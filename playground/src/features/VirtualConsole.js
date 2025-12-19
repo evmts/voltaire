@@ -48,7 +48,8 @@ export class VirtualConsole {
 
 		this.#container.innerHTML = filtered
 			.map(
-				(e) => `<div class="console-${e.level}">${this.#escape(e.message)}</div>`,
+				(e) =>
+					`<div class="console-${e.level}">${this.#escape(e.message)}</div>`,
 			)
 			.join("");
 	}

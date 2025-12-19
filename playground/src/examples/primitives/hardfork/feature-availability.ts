@@ -1,9 +1,5 @@
 import * as Hardfork from "../../../primitives/Hardfork/index.js";
 
-// Feature availability across hardforks
-
-console.log("=== FEATURE AVAILABILITY BY HARDFORK ===\n");
-
 // Define feature sets
 interface FeatureSet {
 	fork: string;
@@ -115,20 +111,12 @@ const features: FeatureSet[] = [
 
 // Display features
 features.forEach(({ fork, opcodes, transactionTypes, specialFeatures }) => {
-	console.log(`${fork}:`);
 	if (opcodes.length > 0) {
-		console.log("  New opcodes:");
-		opcodes.forEach((op) => console.log(`    - ${op}`));
+		opcodes.forEach((op) => );
 	}
-	console.log("  Transaction types:");
-	transactionTypes.forEach((type) => console.log(`    - ${type}`));
-	console.log("  Special features:");
-	specialFeatures.forEach((feat) => console.log(`    - ${feat}`));
-	console.log("");
+	transactionTypes.forEach((type) => );
+	specialFeatures.forEach((feat) => );
 });
-
-// Feature detection matrix
-console.log("=== FEATURE DETECTION MATRIX ===\n");
 
 const forks = [
 	Hardfork.BERLIN,
@@ -141,12 +129,6 @@ const forks = [
 
 const forkNames = forks.map((f) => Hardfork.toString(f));
 
-console.log("Feature Support:");
-console.log(
-	`Fork${" ".repeat(12)} | EIP-1559 | PUSH0 | Blobs | Transient | PoS`,
-);
-console.log("-".repeat(70));
-
 forks.forEach((fork) => {
 	const name = Hardfork.toString(fork).padEnd(15);
 	const eip1559 = Hardfork.hasEIP1559(fork) ? "✓" : "✗";
@@ -154,14 +136,7 @@ forks.forEach((fork) => {
 	const blobs = Hardfork.hasEIP4844(fork) ? "✓" : "✗";
 	const transient = Hardfork.hasEIP1153(fork) ? "✓" : "✗";
 	const pos = Hardfork.isPostMerge(fork) ? "✓" : "✗";
-
-	console.log(
-		`${name} | ${eip1559}       | ${push0}     | ${blobs}     | ${transient}         | ${pos}`,
-	);
 });
-
-// Check feature introduction
-console.log("\n=== FEATURE INTRODUCTION ===\n");
 
 const featureChecks = [
 	{
@@ -197,27 +172,4 @@ featureChecks.forEach(({ name, check }) => {
 			break;
 		}
 	}
-
-	console.log(`${name}: Introduced in ${introduced}`);
 });
-
-// Gas cost changes
-console.log("\n=== NOTABLE GAS COST CHANGES ===\n");
-
-console.log("Tangerine Whistle (EIP-150):");
-console.log("  EXTCODESIZE: 20 → 700 gas");
-console.log("  BALANCE: 20 → 400 gas");
-console.log("  CALL: 40 → 700 gas\n");
-
-console.log("Istanbul (EIP-2200):");
-console.log("  SSTORE: New pricing model");
-console.log("  Net gas metering\n");
-
-console.log("Berlin (EIP-2929):");
-console.log("  Cold SLOAD: 800 → 2,100 gas");
-console.log("  Cold account access: 700 → 2,600 gas");
-console.log("  Warm access: 100 gas\n");
-
-console.log("Cancun:");
-console.log("  TLOAD: 100 gas (vs SLOAD 2,100)");
-console.log("  TSTORE: 100 gas (vs SSTORE 2,900-20,000)");

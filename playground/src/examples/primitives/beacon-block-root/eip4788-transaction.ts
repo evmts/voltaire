@@ -58,35 +58,3 @@ function verifyWithdrawal(
     return MerkleProof.verify(proof, root, keccak256(withdrawal));
 }
 `;
-
-console.log("=== EIP-4788 Transaction Context ===\n");
-
-console.log("Block Number:", cancunBlock.number);
-console.log("Timestamp:", cancunBlock.timestamp);
-console.log("Parent Beacon Root:", BeaconBlockRoot.toHex(beaconRoot));
-console.log();
-
-console.log("System Contract:");
-console.log("  Address: 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02");
-console.log("  Function: staticcall(timestamp) → beaconRoot");
-console.log("  Storage: Ring buffer of 8191 roots");
-console.log("  Gas Cost: ~2600 gas (warm SLOAD)");
-console.log();
-
-console.log("Ring Buffer:");
-console.log("  Size: 8191 slots");
-console.log("  Index: timestamp % 8191");
-console.log("  Retention: ~27 hours (12s blocks)");
-console.log("  Overwrite: Older roots get replaced");
-console.log();
-
-console.log("Solidity Usage:");
-console.log(solidityExample);
-console.log();
-
-console.log("Transaction Flow:");
-console.log("  1. Block N-1 finalizes with beacon root R");
-console.log("  2. Block N header includes parentBeaconBlockRoot = R");
-console.log("  3. EVM system call stores R at timestamp % 8191");
-console.log("  4. Smart contracts read R via BEACON_ROOTS_ADDRESS");
-console.log("  5. Contracts verify Merkle proofs against R");

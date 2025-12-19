@@ -34,52 +34,6 @@ const sequential1 = BeaconBlockRoot.equals(slot1000, slot1001);
 const sequential2 = BeaconBlockRoot.equals(slot1001, slot1002);
 const zeroVsMax = BeaconBlockRoot.equals(zeroRoot, maxRoot);
 const zeroVsZero = BeaconBlockRoot.equals(zeroRoot, zeroRoot);
-
-console.log("=== Beacon Block Root Comparison ===\n");
-
-console.log("Identical Roots:");
-console.log("  Root 1a:", BeaconBlockRoot.toHex(root1a));
-console.log("  Root 1b:", BeaconBlockRoot.toHex(root1b));
-console.log("  Equal:", sameRoot);
-console.log();
-
-console.log("Different Roots:");
-console.log("  Root 1:", BeaconBlockRoot.toHex(root1a));
-console.log("  Root 2:", BeaconBlockRoot.toHex(root2));
-console.log("  Equal:", differentRoots);
-console.log();
-
-console.log("Chain Progression:");
-console.log("  Slot 1000:", BeaconBlockRoot.toHex(slot1000));
-console.log("  Slot 1001:", BeaconBlockRoot.toHex(slot1001));
-console.log("  Slot 1002:", BeaconBlockRoot.toHex(slot1002));
-console.log("  1000 == 1001:", sequential1);
-console.log("  1001 == 1002:", sequential2);
-console.log();
-
-console.log("Edge Cases:");
-console.log("  Zero Root:", BeaconBlockRoot.toHex(zeroRoot));
-console.log("  Max Root:", BeaconBlockRoot.toHex(maxRoot));
-console.log("  Zero == Max:", zeroVsMax);
-console.log("  Zero == Zero:", zeroVsZero);
-console.log();
-
-console.log("Equality Semantics:");
-console.log("  • Byte-by-byte comparison");
-console.log("  • All 32 bytes must match exactly");
-console.log("  • Case-insensitive (hex is normalized)");
-console.log("  • No special treatment for zero/max");
-console.log();
-
-console.log("Use Cases for Comparison:");
-console.log("  1. Verify root matches expected value");
-console.log("  2. Check if block is reorg'd (root changed)");
-console.log("  3. Deduplicate roots in data structures");
-console.log("  4. Validate Merkle proof consistency");
-console.log("  5. Track beacon chain forks");
-console.log();
-
-console.log("Solidity Comparison:");
 const solidityExample = `
 // Compare beacon roots in Solidity
 function verifyExpectedRoot(
@@ -112,11 +66,3 @@ function trackRoot(uint256 slot) external {
     observedRoots[slot] = root;
 }
 `;
-console.log(solidityExample);
-console.log();
-
-console.log("Performance:");
-console.log("  TypeScript: O(32) byte comparison");
-console.log("  Solidity: O(1) bytes32 comparison");
-console.log("  Gas Cost: ~3 gas (EQ opcode)");
-console.log("  Optimized: Compiler inlines comparison");

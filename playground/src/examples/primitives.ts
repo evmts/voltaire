@@ -2,12 +2,12 @@
 // These files can be run directly with: bun playground/examples/primitives/<file>.js
 
 import addressBasics from "../../examples/primitives/address-basics.js?raw";
-import hexFromString from "../../examples/primitives/hex/from-string.js?raw";
-import hexFromBytes from "../../examples/primitives/hex/from-bytes.js?raw";
-import hexToString from "../../examples/primitives/hex/to-string.js?raw";
-import hexToBytes from "../../examples/primitives/hex/to-bytes.js?raw";
 import hexConcat from "../../examples/primitives/hex/concat.js?raw";
+import hexFromBytes from "../../examples/primitives/hex/from-bytes.js?raw";
+import hexFromString from "../../examples/primitives/hex/from-string.js?raw";
 import hexSlice from "../../examples/primitives/hex/slice.js?raw";
+import hexToBytes from "../../examples/primitives/hex/to-bytes.js?raw";
+import hexToString from "../../examples/primitives/hex/to-string.js?raw";
 
 // Transform imports for display (convert relative paths to voltaire/... format)
 function transformForDisplay(code: string): string {

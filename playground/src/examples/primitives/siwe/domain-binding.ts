@@ -1,9 +1,5 @@
-import * as Siwe from "../../../primitives/Siwe/index.js";
 import * as Address from "../../../primitives/Address/index.js";
-
-// Example: Domain binding and URI patterns in SIWE
-
-console.log("\n=== Domain Binding ===\n");
+import * as Siwe from "../../../primitives/Siwe/index.js";
 
 const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
@@ -14,13 +10,7 @@ const singleDomain = Siwe.create({
 	uri: "https://example.com",
 	chainId: 1,
 });
-
-console.log("Single domain:", singleDomain.domain);
-console.log("Formatted:");
 const formatted = Siwe.format(singleDomain);
-console.log(formatted.split("\n")[0]); // First line shows domain
-
-console.log("\n=== Subdomain Patterns ===\n");
 
 // Different subdomain configurations
 const subdomains = [
@@ -37,10 +27,7 @@ subdomains.forEach(({ domain, desc }) => {
 		uri: `https://${domain}`,
 		chainId: 1,
 	});
-	console.log(`${desc}: ${message.domain}`);
 });
-
-console.log("\n=== Localhost Development ===\n");
 
 // Development environments
 const devDomains = [
@@ -57,10 +44,7 @@ devDomains.forEach((domain) => {
 		uri: `http://${domain}`,
 		chainId: 31337, // local chain
 	});
-	console.log(`Dev domain: ${message.domain}`);
 });
-
-console.log("\n=== URI Patterns ===\n");
 
 // Different URI structures
 const domain = "example.com";
@@ -72,7 +56,6 @@ const root = Siwe.create({
 	uri: "https://example.com",
 	chainId: 1,
 });
-console.log("Root URI:", root.uri);
 
 // Nested path
 const nested = Siwe.create({
@@ -81,7 +64,6 @@ const nested = Siwe.create({
 	uri: "https://example.com/auth/login",
 	chainId: 1,
 });
-console.log("Nested URI:", nested.uri);
 
 // With query parameters
 const withQuery = Siwe.create({
@@ -90,7 +72,6 @@ const withQuery = Siwe.create({
 	uri: "https://example.com/login?redirect=/dashboard&source=mobile",
 	chainId: 1,
 });
-console.log("URI with query:", withQuery.uri);
 
 // With fragment
 const withFragment = Siwe.create({
@@ -99,9 +80,6 @@ const withFragment = Siwe.create({
 	uri: "https://example.com/login#oauth",
 	chainId: 1,
 });
-console.log("URI with fragment:", withFragment.uri);
-
-console.log("\n=== Domain-URI Relationship ===\n");
 
 // Matching domain and URI
 const matching = Siwe.create({
@@ -111,10 +89,6 @@ const matching = Siwe.create({
 	chainId: 1,
 });
 
-console.log("Domain:", matching.domain);
-console.log("URI:", matching.uri);
-console.log("Match:", matching.uri.includes(matching.domain));
-
 // Non-matching (external resource reference)
 const external = Siwe.create({
 	domain: "app.example.com",
@@ -122,12 +96,6 @@ const external = Siwe.create({
 	uri: "https://auth-provider.com/callback",
 	chainId: 1,
 });
-
-console.log("\nDomain:", external.domain);
-console.log("URI:", external.uri);
-console.log("Match:", external.uri.includes(external.domain));
-
-console.log("\n=== Multi-Tenant Architecture ===\n");
 
 // Different tenants on same domain
 const tenants = ["tenant-a", "tenant-b", "tenant-c"];
@@ -139,12 +107,7 @@ tenants.forEach((tenant) => {
 		chainId: 1,
 		statement: `Sign in to ${tenant}`,
 	});
-	console.log(`Tenant: ${tenant}`);
-	console.log(`  URI: ${message.uri}`);
-	console.log(`  Statement: ${message.statement}`);
 });
-
-console.log("\n=== API Versioning ===\n");
 
 // Different API versions
 const versions = ["v1", "v2", "v3"];
@@ -155,10 +118,7 @@ versions.forEach((version) => {
 		uri: `https://api.example.com/${version}/auth`,
 		chainId: 1,
 	});
-	console.log(`${version}: ${message.uri}`);
 });
-
-console.log("\n=== Protocol Schemes ===\n");
 
 // Different protocols
 const protocols = [
@@ -174,10 +134,7 @@ protocols.forEach(({ scheme, desc }) => {
 		uri: `${scheme}example.com/resource`,
 		chainId: 1,
 	});
-	console.log(`${desc}: ${message.uri}`);
 });
-
-console.log("\n=== Domain Validation ===\n");
 
 // Valid domains
 const validDomains = [
@@ -197,7 +154,6 @@ validDomains.forEach((domain) => {
 		chainId: 1,
 	});
 	const result = Siwe.validate(message);
-	console.log(`${domain}: ${result.valid ? "Valid" : "Invalid"}`);
 });
 
 // Invalid domain (empty)
@@ -209,12 +165,8 @@ const emptyDomain = Siwe.create({
 });
 
 const emptyResult = Siwe.validate(emptyDomain);
-console.log(`Empty domain: ${emptyResult.valid ? "Valid" : "Invalid"}`);
 if (!emptyResult.valid) {
-	console.log("Error:", emptyResult.error.message);
 }
-
-console.log("\n=== Real-World Scenarios ===\n");
 
 // SPA with routing
 const spa = Siwe.create({
@@ -225,11 +177,6 @@ const spa = Siwe.create({
 	statement: "Sign in to access your dashboard",
 });
 
-console.log("SPA scenario:");
-console.log("- Domain:", spa.domain);
-console.log("- URI:", spa.uri);
-console.log("- Statement:", spa.statement);
-
 // OAuth callback
 const oauth = Siwe.create({
 	domain: "auth.example.com",
@@ -239,10 +186,6 @@ const oauth = Siwe.create({
 	statement: "Authorize OAuth flow",
 });
 
-console.log("\nOAuth scenario:");
-console.log("- Domain:", oauth.domain);
-console.log("- URI:", oauth.uri);
-
 // Mobile app
 const mobile = Siwe.create({
 	domain: "mobile.example.com",
@@ -251,7 +194,3 @@ const mobile = Siwe.create({
 	chainId: 1,
 	statement: "Sign in to mobile app",
 });
-
-console.log("\nMobile scenario:");
-console.log("- Domain:", mobile.domain);
-console.log("- URI:", mobile.uri);

@@ -1,9 +1,5 @@
 import * as Opcode from "../../../primitives/Opcode/index.js";
 
-// Example: Parsing and disassembling bytecode
-
-console.log("=== Simple Bytecode Parsing ===");
-
 // Simple bytecode: PUSH1 0x60 PUSH1 0x40 MSTORE
 const simpleBytecode = new Uint8Array([
 	Opcode.PUSH1,
@@ -14,16 +10,8 @@ const simpleBytecode = new Uint8Array([
 	Opcode.STOP, // STOP
 ]);
 
-console.log(
-	"\nBytecode:",
-	Array.from(simpleBytecode)
-		.map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-		.join(" "),
-);
-
 // Parse bytecode into instructions
 const instructions = Opcode.parse(simpleBytecode);
-console.log("\nParsed instructions:");
 for (const inst of instructions) {
 	const name = Opcode.name(inst.opcode);
 	const immediate = inst.immediate
@@ -31,14 +19,8 @@ for (const inst of instructions) {
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("")}`
 		: "";
-	console.log(`  [${inst.offset}] ${name}${immediate}`);
 }
-
-console.log("\n=== Disassembly ===");
 const disassembly = Opcode.disassemble(simpleBytecode);
-console.log(disassembly);
-
-console.log("\n=== Complex Bytecode with Jumps ===");
 
 // Bytecode with conditional jump
 const jumpBytecode = new Uint8Array([
@@ -56,28 +38,8 @@ const jumpBytecode = new Uint8Array([
 	Opcode.STOP, // STOP
 ]);
 
-console.log(
-	"\nBytecode:",
-	Array.from(jumpBytecode)
-		.map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-		.join(" "),
-);
-console.log("\nDisassembly:");
-console.log(Opcode.disassemble(jumpBytecode));
-
 // Find all valid jump destinations
 const dests = Opcode.jumpDests(jumpBytecode);
-console.log("\nValid JUMPDEST offsets:", Array.from(dests));
-
-// Validate specific offsets
-console.log(
-	`Offset 9 is valid JUMPDEST: ${Opcode.isValidJumpDest(jumpBytecode, 9)}`,
-);
-console.log(
-	`Offset 5 is valid JUMPDEST: ${Opcode.isValidJumpDest(jumpBytecode, 5)}`,
-);
-
-console.log("\n=== PUSH Immediate Data ===");
 
 // Bytecode with various PUSH sizes
 const pushBytecode = new Uint8Array([
@@ -94,25 +56,10 @@ const pushBytecode = new Uint8Array([
 	Opcode.STOP,
 ]);
 
-console.log(
-	"\nBytecode:",
-	Array.from(pushBytecode)
-		.map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-		.join(" "),
-);
-console.log("\nDisassembly:");
-console.log(Opcode.disassemble(pushBytecode));
-
-console.log("\n=== Instruction Formatting ===");
-
 const parsedInstructions = Opcode.parse(pushBytecode);
-console.log("\nFormatted instructions:");
 for (const inst of parsedInstructions) {
 	const formatted = Opcode.format(inst);
-	console.log(`  ${formatted}`);
 }
-
-console.log("\n=== Bytecode with Invalid Opcodes ===");
 
 // Bytecode with undefined opcodes
 const invalidBytecode = new Uint8Array([
@@ -122,17 +69,6 @@ const invalidBytecode = new Uint8Array([
 	Opcode.STOP, // Valid
 	0x21, // Invalid opcode
 ]);
-
-console.log(
-	"\nBytecode:",
-	Array.from(invalidBytecode)
-		.map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-		.join(" "),
-);
-console.log("\nDisassembly:");
-console.log(Opcode.disassemble(invalidBytecode));
-
-console.log("\n=== Real Contract Pattern ===");
 
 // Common Solidity constructor pattern
 const constructorPattern = new Uint8Array([
@@ -155,6 +91,3 @@ const constructorPattern = new Uint8Array([
 	Opcode.POP, // POP
 	Opcode.STOP, // STOP
 ]);
-
-console.log("\nSolidity constructor pattern (reject ETH):");
-console.log(Opcode.disassemble(constructorPattern));

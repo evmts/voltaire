@@ -1,21 +1,7 @@
 import * as Opcode from "../../../primitives/Opcode/index.js";
 
-// Example: Stack manipulation opcodes - DUP, SWAP, PUSH, POP
-
-console.log("=== Stack Operations ===");
-
 // POP (0x50) - Remove from stack
 const popInfo = Opcode.info(Opcode.POP);
-console.log("\nPOP (0x50):", {
-	name: popInfo?.name,
-	hex: "0x50",
-	gasCost: popInfo?.gasCost,
-	stackInputs: popInfo?.stackInputs, // 1 value removed
-	stackOutputs: popInfo?.stackOutputs, // 0 values pushed
-	category: Opcode.getCategory(Opcode.POP),
-});
-
-console.log("\n=== DUP Opcodes (DUP1-DUP16) ===");
 // DUP duplicates stack items
 
 const dupExamples = [
@@ -27,16 +13,7 @@ const dupExamples = [
 
 for (const { op, pos } of dupExamples) {
 	const info = Opcode.info(op);
-	console.log(`\n${info?.name} (0x${op.toString(16)}):`);
-	console.log(`  Duplicates position: ${Opcode.dupPosition(op)}`);
-	console.log(`  Gas cost: ${info?.gasCost}`);
-	console.log(
-		`  Stack effect: ${info?.stackInputs} inputs → ${info?.stackOutputs} outputs`,
-	);
-	console.log(`  isDup: ${Opcode.isDup(op)}`);
 }
-
-console.log("\n=== SWAP Opcodes (SWAP1-SWAP16) ===");
 // SWAP swaps top stack item with Nth item
 
 const swapExamples = [
@@ -48,16 +25,7 @@ const swapExamples = [
 
 for (const { op, pos } of swapExamples) {
 	const info = Opcode.info(op);
-	console.log(`\n${info?.name} (0x${op.toString(16)}):`);
-	console.log(`  Swaps with position: ${Opcode.swapPosition(op)}`);
-	console.log(`  Gas cost: ${info?.gasCost}`);
-	console.log(
-		`  Stack effect: ${info?.stackInputs} inputs → ${info?.stackOutputs} outputs`,
-	);
-	console.log(`  isSwap: ${Opcode.isSwap(op)}`);
 }
-
-console.log("\n=== DUP Position Mapping ===");
 // Show position for all DUP opcodes
 const dupOpcodes = [
 	Opcode.DUP1,
@@ -77,13 +45,8 @@ const dupOpcodes = [
 	Opcode.DUP15,
 	Opcode.DUP16,
 ];
-
-console.log("DUP opcodes duplicate from these stack positions:");
 for (const op of dupOpcodes) {
-	console.log(`${Opcode.name(op)}: position ${Opcode.dupPosition(op)}`);
 }
-
-console.log("\n=== SWAP Position Mapping ===");
 // Show position for all SWAP opcodes
 const swapOpcodes = [
 	Opcode.SWAP1,
@@ -103,13 +66,8 @@ const swapOpcodes = [
 	Opcode.SWAP15,
 	Opcode.SWAP16,
 ];
-
-console.log("SWAP opcodes swap top with these positions:");
 for (const op of swapOpcodes) {
-	console.log(`${Opcode.name(op)}: position ${Opcode.swapPosition(op)}`);
 }
-
-console.log("\n=== Stack Effects ===");
 // Show stack input/output for various opcodes
 const stackOps = [
 	Opcode.POP, // 1 → 0
@@ -125,12 +83,4 @@ for (const op of stackOps) {
 	const inputs = Opcode.getStackInput(op);
 	const outputs = Opcode.getStackOutput(op);
 	const effect = outputs - inputs;
-	console.log(
-		`${info?.name}: ${inputs} inputs → ${outputs} outputs (net: ${effect >= 0 ? "+" : ""}${effect})`,
-	);
 }
-
-console.log("\n=== Stack Size Limits ===");
-console.log("EVM stack is limited to 1024 items");
-console.log("DUP can access up to 16 items deep (DUP1-DUP16)");
-console.log("SWAP can access up to 17 items (top + 16 positions)");

@@ -35,7 +35,6 @@ const packedValue = (): StorageValue.StorageValueType => {
 };
 
 const packed = packedValue();
-console.log("Packed storage:", StorageValue.toHex(packed));
 
 // Extract uint128 from bytes 0-15
 const extractUint128 = (storage: Uint8Array): bigint => {
@@ -54,11 +53,6 @@ const extractUint64 = (storage: Uint8Array, offset: number): bigint => {
 	}
 	return result;
 };
-
-console.log("\nExtracted values:");
-console.log("Value (uint128):", extractUint128(packed));
-console.log("Timestamp (uint64):", extractUint64(packed, 16));
-console.log("Flags (uint64):", extractUint64(packed, 24).toString(2));
 
 // Example 2: Packed address + uint96
 // Common pattern: owner (address, 20 bytes) + balance (uint96, 12 bytes)
@@ -87,17 +81,13 @@ const packedAddr = packAddressUint96(
 	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
 	1000000n,
 );
-console.log("\nPacked address + uint96:", StorageValue.toHex(packedAddr));
 
 // Extract address (first 20 bytes)
 const extractPackedAddress = (storage: Uint8Array): string => {
 	const addrBytes = storage.slice(0, 20);
-	return (
-		"0x" +
-		Array.from(addrBytes)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(addrBytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 };
 
 // Extract uint96 (last 12 bytes)
@@ -109,9 +99,6 @@ const extractUint96 = (storage: Uint8Array): bigint => {
 	return result;
 };
 
-console.log("Extracted address:", extractPackedAddress(packedAddr));
-console.log("Extracted amount:", extractUint96(packedAddr));
-
 // Example 3: Multiple uint8 values (32 individual bytes)
 const packedBytes = new Uint8Array(32);
 for (let i = 0; i < 32; i++) {
@@ -119,24 +106,15 @@ for (let i = 0; i < 32; i++) {
 }
 const multiPacked = StorageValue.from(packedBytes);
 
-console.log("\n32 packed uint8 values:", StorageValue.toHex(multiPacked));
-console.log("Individual bytes:", Array.from(multiPacked).join(", "));
-
 // Example 4: Bit flags (256 individual bits)
 const flagsStorage = new Uint8Array(32);
 flagsStorage[0] = 0b10101010; // Set some flags in first byte
 flagsStorage[31] = 0b00001111; // Set some flags in last byte
 
 const flags = StorageValue.from(flagsStorage);
-console.log("\nBit flags storage:", StorageValue.toHex(flags));
 
 const checkFlag = (storage: Uint8Array, flagIndex: number): boolean => {
 	const byteIndex = Math.floor(flagIndex / 8);
 	const bitIndex = flagIndex % 8;
 	return (storage[byteIndex] & (1 << (7 - bitIndex))) !== 0;
 };
-
-console.log("Flag 1:", checkFlag(flags, 1));
-console.log("Flag 2:", checkFlag(flags, 2));
-console.log("Flag 252:", checkFlag(flags, 252));
-console.log("Flag 255:", checkFlag(flags, 255));

@@ -21,12 +21,6 @@ const oracleRoot = BeaconBlockRoot.from(
 const lidoRoot = BeaconBlockRoot.from(
 	"0x7f8e9d0c1b2a3948576e0d1c2b3a4958677e0d1c2b3a4958677e0d1c2b3a4958",
 );
-
-console.log("=== Beacon Block Root Use Cases ===\n");
-
-console.log("1. MEV Protection");
-console.log("   Root:", BeaconBlockRoot.toHex(mevProtectionRoot));
-console.log();
 const mevExample = `
 // Verify validator in current committee
 contract MEVProtection {
@@ -56,12 +50,6 @@ contract MEVProtection {
     }
 }
 `;
-console.log(mevExample);
-console.log();
-
-console.log("2. L2 Bridge (Optimistic Rollup)");
-console.log("   Root:", BeaconBlockRoot.toHex(l2BridgeRoot));
-console.log();
 const l2Example = `
 // Trustless L2 → L1 message passing
 contract L2Bridge {
@@ -96,12 +84,6 @@ contract L2Bridge {
     }
 }
 `;
-console.log(l2Example);
-console.log();
-
-console.log("3. Oracle (Decentralized Randomness)");
-console.log("   Root:", BeaconBlockRoot.toHex(oracleRoot));
-console.log();
 const oracleExample = `
 // Use RANDAO for verifiable randomness
 contract RandomOracle {
@@ -128,12 +110,6 @@ contract RandomOracle {
     }
 }
 `;
-console.log(oracleExample);
-console.log();
-
-console.log("4. Staking Protocol (Lido)");
-console.log("   Root:", BeaconBlockRoot.toHex(lidoRoot));
-console.log();
 const stakingExample = `
 // Verify validator credentials and balances
 contract StakingPool {
@@ -171,30 +147,3 @@ contract StakingPool {
     }
 }
 `;
-console.log(stakingExample);
-console.log();
-
-console.log("5. Additional Use Cases:");
-console.log("   • Eigenlayer: Restaking slashing conditions");
-console.log("   • RocketPool: Node operator accounting");
-console.log("   • Flashbots: Proposer-builder separation");
-console.log("   • zkEVMs: Prove execution against consensus");
-console.log("   • Light clients: Sync committee verification");
-console.log("   • DAOs: Governance based on validator votes");
-console.log();
-
-console.log("Benefits:");
-console.log("  ✓ Trustless: No oracle needed");
-console.log("  ✓ Cheap: ~2600 gas to read root");
-console.log("  ✓ Secure: Backed by CL consensus");
-console.log("  ✓ Real-time: Updated every 12 seconds");
-console.log("  ✓ Historical: 27 hours of roots available");
-console.log();
-
-console.log("Implementation Tips:");
-console.log("  • Use finalized roots (wait 2+ epochs)");
-console.log("  • Cache roots to save gas");
-console.log("  • Validate Merkle proof depth");
-console.log("  • Handle ring buffer wraparound");
-console.log("  • Test with mainnet beacon node");
-console.log("  • Use SSZ libraries for proof generation");

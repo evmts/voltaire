@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 // Run all playground examples to verify they work
 
+import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { spawn } from "node:child_process";
 
 const examplesDir = import.meta.dir;
 const rootDir = join(examplesDir, "../..");
@@ -64,8 +64,6 @@ async function runExample(path) {
 }
 
 async function main() {
-	console.log("Running all playground examples...\n");
-
 	const results = [];
 	let passed = 0;
 	let failed = 0;
@@ -75,18 +73,13 @@ async function main() {
 		results.push(result);
 
 		if (result.success) {
-			console.log(`✓ ${result.path}`);
 			passed++;
 		} else {
-			console.log(`✗ ${result.path}`);
 			if (result.stderr) {
-				console.log(`  Error: ${result.stderr.split("\n")[0]}`);
 			}
 			failed++;
 		}
 	}
-
-	console.log(`\n${passed} passed, ${failed} failed`);
 
 	if (failed > 0) {
 		process.exit(1);

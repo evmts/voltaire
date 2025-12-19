@@ -2,16 +2,12 @@
 import * as Hex from "../../../../src/primitives/Hex/index.js";
 
 const hex = Hex.from("0x123456789abcdef0");
-console.log("Original:", hex);
-console.log("Size:", Hex.size(hex), "bytes");
 
 // Extract first 4 bytes
 const first4 = Hex.slice(hex, 0, 4);
-console.log("\nFirst 4 bytes:", first4);
 
 // Extract last 4 bytes
 const last4 = Hex.slice(hex, 4, 8);
-console.log("Last 4 bytes:", last4);
 
 // Extract function selector
 const calldata = Hex.from(
@@ -19,6 +15,3 @@ const calldata = Hex.from(
 );
 const selector = Hex.slice(calldata, 0, 4);
 const params = Hex.slice(calldata, 4);
-console.log("\nCalldata:", calldata);
-console.log("Function selector:", selector);
-console.log("Parameters:", params);

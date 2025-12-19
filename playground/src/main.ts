@@ -1,30 +1,34 @@
 // Debug: capture unhandled errors
-window.addEventListener('error', (e) => console.error('Global error:', e.message, e.filename, e.lineno));
-window.addEventListener('unhandledrejection', (e) => console.error('Unhandled rejection:', e.reason));
+window.addEventListener("error", (e) =>
+	console.error("Global error:", e.message, e.filename, e.lineno),
+);
+window.addEventListener("unhandledrejection", (e) =>
+	console.error("Unhandled rejection:", e.reason),
+);
 
 import "./style.css";
-import { FileTree, type FileNode } from "./components/FileTree.js";
-import { Editor } from "./components/Editor.js";
-import { Console } from "./components/Console.js";
 import { Breadcrumbs } from "./components/Breadcrumbs.js";
+import { Console } from "./components/Console.js";
+import { Editor } from "./components/Editor.js";
 import { EditorTabs } from "./components/EditorTabs.js";
-import { Executor } from "./runtime/Executor.js";
-import { primitiveExamples } from "./examples/primitives.js";
+import { type FileNode, FileTree } from "./components/FileTree.js";
 import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
+import { primitiveExamples } from "./examples/primitives.js";
+import { AutoSave } from "./features/AutoSave.js";
+import { BenchmarkMode } from "./features/BenchmarkMode.js";
+import { CodeLensProvider } from "./features/CodeLens.js";
+import { DiffView } from "./features/DiffView.js";
+import { DisplaySettingsManager } from "./features/DisplaySettings.js";
 import { ExecutionHistory } from "./features/ExecutionHistory.js";
-import { VimMode } from "./features/VimMode.js";
+import { createInlineSuggestionsButton } from "./features/InlineSuggestions.js";
 import {
 	KeyboardShortcuts,
 	addShortcutStyles,
 } from "./features/KeyboardShortcuts.js";
-import { DisplaySettingsManager } from "./features/DisplaySettings.js";
-import { AutoSave } from "./features/AutoSave.js";
-import { DiffView } from "./features/DiffView.js";
 import { SearchReplace } from "./features/SearchReplace.js";
-import { CodeLensProvider } from "./features/CodeLens.js";
-import { createInlineSuggestionsButton } from "./features/InlineSuggestions.js";
-import { BenchmarkMode } from "./features/BenchmarkMode.js";
+import { VimMode } from "./features/VimMode.js";
+import { Executor } from "./runtime/Executor.js";
 
 // Build file tree structure
 const fileTree: FileNode[] = [
@@ -225,15 +229,11 @@ function updateDiffIndicator(): void {
 
 // Initialize app
 async function init(): Promise<void> {
-	console.log("Initializing playground...");
-	console.log("File tree data:", fileTree);
-
 	// Add keyboard shortcuts styles
 	addShortcutStyles();
 
 	// Initialize editor
 	await editor.init();
-	console.log("Editor initialized");
 
 	// Initialize EditorTabs
 	const editorTabsContainer = document.getElementById("editor-tabs")!;
@@ -254,7 +254,6 @@ async function init(): Promise<void> {
 			}
 		},
 	);
-	console.log("EditorTabs initialized");
 
 	// Initialize DiffView
 	const editorContainer = document.getElementById("editor")!;
@@ -263,7 +262,6 @@ async function init(): Promise<void> {
 		editorContainer,
 		editor.getEditor(),
 	);
-	console.log("DiffView initialized");
 
 	// Initialize SearchReplace
 	const searchPanel = document.getElementById("search-panel")!;
@@ -273,24 +271,21 @@ async function init(): Promise<void> {
 		editorTabs,
 		searchPanel,
 	);
-	console.log("SearchReplace initialized");
 
 	// Initialize CodeLens
 	CodeLensProvider.register(editor.getMonaco(), editor.getEditor(), handleRun);
-	console.log("CodeLens initialized");
 
 	// Initialize AutoSave with UI indicators
 	const unsavedIndicator = document.getElementById("unsaved-indicator")!;
 	const lastSavedIndicator = document.getElementById("last-saved-indicator")!;
 	autoSave.init(unsavedIndicator, lastSavedIndicator);
-	console.log("AutoSave initialized");
 
 	// Initialize breadcrumbs with editor reference
 	breadcrumbs.setEditor(editor.getEditor(), editor.getMonaco());
 	breadcrumbs.setNavigationCallback((path: string) => {
 		// Navigate to folder - find first file in folder
 		const folderNode = findFileByPath(fileTree, path);
-		if (folderNode && folderNode.children && folderNode.children.length > 0) {
+		if (folderNode?.children && folderNode.children.length > 0) {
 			// Find first file in folder
 			const firstFile = folderNode.children.find((n) => n.content);
 			if (firstFile) {
@@ -309,9 +304,7 @@ async function init(): Promise<void> {
 
 	// Initialize file tree
 	const fileTreeEl = document.getElementById("file-tree");
-	console.log("File tree element:", fileTreeEl);
 	new FileTree(fileTreeEl!, fileTree, handleFileSelect);
-	console.log("File tree rendered");
 
 	// Setup run button
 	const runButton = document.getElementById("run-button")!;
@@ -408,12 +401,10 @@ async function init(): Promise<void> {
 					const code =
 						editorTabs?.getActiveTab()?.model.getValue() || editor.getValue();
 
-					await benchmark.runBenchmark(code, currentFile!.path, executor, {
+					await benchmark.runBenchmark(code, currentFile?.path, executor, {
 						iterations,
 						warmupRuns,
 					});
-
-					console.log("Benchmark completed successfully");
 				} catch (error) {
 					console.error("Benchmark failed:", error);
 					alert(`Benchmark failed: ${error}`);
@@ -500,8 +491,6 @@ async function init(): Promise<void> {
 			toolbar.appendChild(inlineButton);
 		}
 	}
-
-	console.log("Playground ready");
 }
 
 // Helper to find file by path

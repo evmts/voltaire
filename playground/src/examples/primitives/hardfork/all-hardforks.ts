@@ -1,9 +1,5 @@
 import * as Hardfork from "../../../primitives/Hardfork/index.js";
 
-// Complete list of all Ethereum hardforks with descriptions
-
-console.log("=== ALL ETHEREUM HARDFORKS ===\n");
-
 const forkDetails = [
 	{
 		name: "Frontier",
@@ -103,21 +99,8 @@ const forkDetails = [
 ];
 
 // Display all forks
-forkDetails.forEach((fork, index) => {
-	console.log(`${index + 1}. ${fork.name}`);
-	console.log(`   Date: ${fork.date}`);
-	console.log(`   ${fork.description}\n`);
-});
+forkDetails.forEach((fork, index) => {});
 
 // Programmatic access
 const allForks = Hardfork.allNames();
 const allIds = Hardfork.allIds();
-
-console.log("Programmatic access:");
-console.log(`  Total forks: ${allForks.length}`);
-console.log(`  First fork: ${allForks[0]}`);
-console.log(`  Latest fork: ${allForks[allForks.length - 1]}`);
-console.log(`  All IDs:`, allIds);
-
-// Default hardfork
-console.log(`\nDefault hardfork: ${Hardfork.DEFAULT}`);

@@ -26,11 +26,10 @@ const config = {
 		host: "localhost",
 		middleware: [
 			(req, res, next) => {
-				console.log(`Request: ${req.method} ${req.url}`);
 				next();
 			},
 			(req, res, next) => {
-				if (req.headers["authorization"]) {
+				if (req.headers.authorization) {
 					next();
 				} else {
 					res.status(401).json({ error: "Unauthorized" });
@@ -71,14 +70,13 @@ function processData(input: unknown) {
 				}
 				return item;
 			});
-		} else {
-			return Object.entries(input).reduce((acc, [key, value]) => {
-				if (typeof value === "object" && value !== null) {
-					return { ...acc, [key]: processData(value) };
-				}
-				return { ...acc, [key]: value };
-			}, {});
 		}
+		return Object.entries(input).reduce((acc, [key, value]) => {
+			if (typeof value === "object" && value !== null) {
+				return { ...acc, [key]: processData(value) };
+			}
+			return { ...acc, [key]: value };
+		}, {});
 	}
 	return input;
 }

@@ -1,10 +1,10 @@
 // EVM examples - imported as raw strings from actual JS files
 // These files can be run directly with: bun playground/examples/evm/<file>.js
 
+import arithmetic from "../../examples/evm/arithmetic.js?raw";
 import frameCreate from "../../examples/evm/frame-create.js?raw";
 import frameStack from "../../examples/evm/frame-stack.js?raw";
 import hostMemory from "../../examples/evm/host-memory.js?raw";
-import arithmetic from "../../examples/evm/arithmetic.js?raw";
 
 // Transform imports for display (convert relative paths to voltaire/... format)
 function transformForDisplay(code: string): string {

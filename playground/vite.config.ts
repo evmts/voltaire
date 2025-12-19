@@ -1,7 +1,7 @@
-import { resolve, dirname } from "node:path";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Plugin } from "vite";
+import { type Plugin, defineConfig } from "vite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -13,7 +13,10 @@ function modernMonacoPlugin(): Plugin {
 			server.middlewares.use((req, res, next) => {
 				// Serve typescript as ESM
 				if (req.url === "/typescript" || req.url === "/typescript.js") {
-					const tsPath = resolve(__dirname, "node_modules/typescript/lib/typescript.js");
+					const tsPath = resolve(
+						__dirname,
+						"node_modules/typescript/lib/typescript.js",
+					);
 					const content = readFileSync(tsPath, "utf-8");
 					const esmContent = `${content}\nexport default ts;\nexport { ts };`;
 					res.setHeader("Content-Type", "application/javascript");
@@ -23,11 +26,16 @@ function modernMonacoPlugin(): Plugin {
 
 				// Serve voltaire .d.ts files from dist-types for Monaco LSP
 				// Match patterns like /voltaire/primitives/Address.d.ts or /voltaire/evm/Frame.d.ts
-				const dtsMatch = req.url?.match(/^\/(voltaire\/(primitives|crypto|evm)\/([^/.]+))\.d\.ts$/);
+				const dtsMatch = req.url?.match(
+					/^\/(voltaire\/(primitives|crypto|evm)\/([^/.]+))\.d\.ts$/,
+				);
 				if (dtsMatch) {
 					const [, modulePath, category, moduleName] = dtsMatch;
 					// Try to read from dist-types (generated .d.ts files)
-					const dtsPath = resolve(__dirname, `../dist-types/${category}/${moduleName}/index.d.ts`);
+					const dtsPath = resolve(
+						__dirname,
+						`../dist-types/${category}/${moduleName}/index.d.ts`,
+					);
 
 					if (existsSync(dtsPath)) {
 						try {
@@ -36,11 +44,20 @@ function modernMonacoPlugin(): Plugin {
 							// Remove import/export statements that reference other modules
 							// Monaco LSP works better with inline declarations
 							content = content
-								.replace(/^import\s+.*?from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^import\s+type\s+.*?from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^export\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^export\s+type\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, '')
-								.replace(/^export\s+type\s+\{[^}]*\}\s+from\s+["'][^"']+["'];?\s*$/gm, '');
+								.replace(/^import\s+.*?from\s+["'][^"']+["'];?\s*$/gm, "")
+								.replace(
+									/^import\s+type\s+.*?from\s+["'][^"']+["'];?\s*$/gm,
+									"",
+								)
+								.replace(/^export\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm, "")
+								.replace(
+									/^export\s+type\s+\*\s+from\s+["'][^"']+["'];?\s*$/gm,
+									"",
+								)
+								.replace(
+									/^export\s+type\s+\{[^}]*\}\s+from\s+["'][^"']+["'];?\s*$/gm,
+									"",
+								);
 
 							// Wrap in declare module for Monaco
 							const moduleDecl = `declare module "${modulePath}" {\n${content}\n}`;
@@ -55,14 +72,17 @@ function modernMonacoPlugin(): Plugin {
 				}
 
 				// Transform worker files to rewrite bare typescript import
-				if (req.url?.includes("modern-monaco") && req.url?.endsWith("worker.mjs")) {
+				if (
+					req.url?.includes("modern-monaco") &&
+					req.url?.endsWith("worker.mjs")
+				) {
 					const filePath = resolve(__dirname, req.url.replace(/^\//, ""));
 					try {
 						let content = readFileSync(filePath, "utf-8");
 						// Rewrite bare specifier to absolute path
 						content = content.replace(
 							/import\s+ts\s+from\s+["']typescript["']/g,
-							'import ts from "/typescript"'
+							'import ts from "/typescript"',
 						);
 						res.setHeader("Content-Type", "application/javascript");
 						res.end(content);
@@ -90,19 +110,34 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			// Serve typescript as ESM for workers
-			typescript: resolve(__dirname, "node_modules/typescript/lib/typescript.js"),
-			"voltaire/primitives/Address": resolve(__dirname, "../src/primitives/Address"),
+			typescript: resolve(
+				__dirname,
+				"node_modules/typescript/lib/typescript.js",
+			),
+			"voltaire/primitives/Address": resolve(
+				__dirname,
+				"../src/primitives/Address",
+			),
 			"voltaire/primitives/Hex": resolve(__dirname, "../src/primitives/Hex"),
 			"voltaire/primitives/Hash": resolve(__dirname, "../src/primitives/Hash"),
 			"voltaire/primitives/RLP": resolve(__dirname, "../src/primitives/Rlp"),
 			"voltaire/primitives/Rlp": resolve(__dirname, "../src/primitives/Rlp"),
 			"voltaire/primitives/ABI": resolve(__dirname, "../src/primitives/Abi"),
 			"voltaire/primitives/Abi": resolve(__dirname, "../src/primitives/Abi"),
-			"voltaire/crypto/Keccak256": resolve(__dirname, "../src/crypto/Keccak256"),
-			"voltaire/crypto/Secp256k1": resolve(__dirname, "../src/crypto/Secp256k1"),
+			"voltaire/crypto/Keccak256": resolve(
+				__dirname,
+				"../src/crypto/Keccak256",
+			),
+			"voltaire/crypto/Secp256k1": resolve(
+				__dirname,
+				"../src/crypto/Secp256k1",
+			),
 			"voltaire/crypto/SHA256": resolve(__dirname, "../src/crypto/SHA256"),
 			"voltaire/crypto/Blake2": resolve(__dirname, "../src/crypto/Blake2"),
-			"voltaire/crypto/Ripemd160": resolve(__dirname, "../src/crypto/Ripemd160"),
+			"voltaire/crypto/Ripemd160": resolve(
+				__dirname,
+				"../src/crypto/Ripemd160",
+			),
 			"voltaire/crypto/HDWallet": resolve(__dirname, "../src/crypto/HDWallet"),
 			"voltaire/evm/Frame": resolve(__dirname, "../src/evm/Frame"),
 			"voltaire/evm/Host": resolve(__dirname, "../src/evm/Host"),

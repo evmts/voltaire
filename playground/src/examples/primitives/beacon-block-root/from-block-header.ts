@@ -90,42 +90,5 @@ const cancunRoot = cancunHasRoot
 const nextRoot = nextHasRoot
 	? BeaconBlockRoot.from(nextBlock.parentBeaconBlockRoot as Uint8Array)
 	: null;
-
-console.log("=== Extracting Beacon Root from Block Headers ===\n");
-
-console.log("Shanghai Block (Pre-Cancun):");
-console.log("  Number:", shanghaiBlock.number);
-console.log("  Has Beacon Root:", shanghaiHasRoot);
-console.log("  Note: EIP-4788 not activated");
-console.log();
-
-console.log("Cancun Block:");
-console.log("  Number:", cancunBlock.number);
-console.log("  Has Beacon Root:", cancunHasRoot);
-console.log(
-	"  Beacon Root:",
-	cancunRoot ? BeaconBlockRoot.toHex(cancunRoot) : "N/A",
-);
-console.log();
-
-console.log("Next Block:");
-console.log("  Number:", nextBlock.number);
-console.log("  Has Beacon Root:", nextHasRoot);
-console.log(
-	"  Beacon Root:",
-	nextRoot ? BeaconBlockRoot.toHex(nextRoot) : "N/A",
-);
-console.log();
-
-console.log("Comparison:");
 if (cancunRoot && nextRoot) {
-	console.log("  Roots Equal:", BeaconBlockRoot.equals(cancunRoot, nextRoot));
-	console.log("  Note: Different blocks have different beacon roots");
 }
-console.log();
-
-console.log("Upgrade Timeline:");
-console.log("  Shanghai: Withdrawals enabled (no beacon root)");
-console.log("  Cancun: EIP-4788 activated (beacon root added)");
-console.log("  Block field: parentBeaconBlockRoot (32 bytes)");
-console.log("  Timing: 1 beacon block per 12 EL blocks (~12s)");
