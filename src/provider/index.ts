@@ -7,9 +7,9 @@
  * ## Features
  *
  * - **EIP-1193 compliant** - Single `request()` method for all RPC calls
+ * - **Strongly typed** - Full type safety with RpcSchema support
  * - **EventEmitter** - Standard event handling for blockchain events
  * - **Throws on error** - Clean error handling with RpcError
- * - **Type-safe** - Full TypeScript support with branded primitives
  * - **Multiple transports** - HTTP, WebSocket, or in-memory execution
  *
  * ## Quick Start
@@ -41,19 +41,58 @@
  * @module provider
  */
 
-// Core types and interfaces
+// Core types and interfaces (legacy)
 export type { Provider } from "./Provider.js";
 export type {
-	RequestArguments,
+	RequestArguments as LegacyRequestArguments,
 	RpcError,
 	RequestOptions,
 	BlockTag,
 	ProviderEventListener,
-	ProviderConnectInfo,
-	ProviderEventMap,
+	ProviderConnectInfo as LegacyProviderConnectInfo,
+	ProviderEventMap as LegacyProviderEventMap,
 	ProviderEvent,
 } from "./types.js";
 export { ProviderRpcErrorCode } from "./types.js";
+
+// Strongly-typed provider types
+export type { TypedProvider, EIP1193Provider } from "./TypedProvider.js";
+
+// RPC Schema system
+export type {
+	RpcSchema,
+	RpcMethodNames,
+	RpcMethodParameters,
+	RpcMethodReturnType,
+} from "./RpcSchema.js";
+
+// Request module
+export type {
+	RequestArguments,
+	EIP1193RequestFn,
+	EIP1193RequestOptions,
+} from "./request/index.js";
+
+// Events module
+export {
+	ProviderRpcError,
+	EIP1193ErrorCode,
+	JsonRpcErrorCode,
+} from "./events/index.js";
+export type {
+	ProviderConnectInfo,
+	ProviderMessage,
+	EthSubscription,
+	EIP1193EventMap,
+	EIP1193EventEmitter,
+} from "./events/index.js";
+
+// Schemas
+export type {
+	VoltaireRpcSchema,
+	DerivedRpcSchema,
+	RpcSchemaOverride,
+} from "./schemas/index.js";
 
 // Provider implementations
 export { HttpProvider } from "./HttpProvider.js";
