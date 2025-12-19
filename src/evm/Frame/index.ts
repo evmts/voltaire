@@ -1,16 +1,16 @@
 // Type exports
 export type { BrandedFrame, EvmError } from "./FrameType.js";
 
+import type { BrandedFrame } from "./FrameType.js";
+import { consumeGas as _consumeGas } from "./consumeGas.js";
 // Internal imports
 import { from as _from } from "./from.js";
-import { pushStack as _pushStack } from "./pushStack.js";
-import { popStack as _popStack } from "./popStack.js";
+import { memoryExpansionCost as _memoryExpansionCost } from "./memoryExpansionCost.js";
 import { peekStack as _peekStack } from "./peekStack.js";
-import { consumeGas as _consumeGas } from "./consumeGas.js";
+import { popStack as _popStack } from "./popStack.js";
+import { pushStack as _pushStack } from "./pushStack.js";
 import { readMemory as _readMemory } from "./readMemory.js";
 import { writeMemory as _writeMemory } from "./writeMemory.js";
-import { memoryExpansionCost as _memoryExpansionCost } from "./memoryExpansionCost.js";
-import type { BrandedFrame } from "./FrameType.js";
 
 // Direct exports (for internal EVM module consumers)
 export { from } from "./from.js";

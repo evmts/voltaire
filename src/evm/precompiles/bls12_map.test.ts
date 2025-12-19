@@ -5,6 +5,7 @@ import {
 	bls12MapFp2ToG2,
 	bls12MapFpToG1,
 	execute,
+	isPrecompile,
 } from "./precompiles.js";
 
 /**
@@ -558,6 +559,68 @@ describe("Precompile: BLS12_MAP_FP2_TO_G2 (0x13)", () => {
 			expect(g2Result.success).toBe(true);
 
 			expect(g2Result.output.length).toBe(g1Result.output.length * 2);
+		});
+	});
+});
+
+describe("BLS12 Map Hardfork Activation", () => {
+	describe("BLS12_MAP_FP_TO_G1 (0x12)", () => {
+		it("should NOT be available before Prague (Cancun)", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.CANCUN),
+			).toBe(false);
+		});
+
+		it("should NOT be available before Prague (Shanghai)", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.SHANGHAI),
+			).toBe(false);
+		});
+
+		it("should be available from Prague hardfork", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.PRAGUE),
+			).toBe(true);
+
+			const input = new Uint8Array(64).fill(0);
+			const pragueResult = execute(
+				PrecompileAddress.BLS12_MAP_FP_TO_G1,
+				input,
+				10000n,
+				Hardfork.PRAGUE,
+			);
+			expect(pragueResult.success).toBe(true);
+			expect(pragueResult.gasUsed).toBe(5500n);
+		});
+	});
+
+	describe("BLS12_MAP_FP2_TO_G2 (0x13)", () => {
+		it("should NOT be available before Prague (Cancun)", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.CANCUN),
+			).toBe(false);
+		});
+
+		it("should NOT be available before Prague (Shanghai)", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.SHANGHAI),
+			).toBe(false);
+		});
+
+		it("should be available from Prague hardfork", () => {
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.PRAGUE),
+			).toBe(true);
+
+			const input = new Uint8Array(128).fill(0);
+			const pragueResult = execute(
+				PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+				input,
+				100000n,
+				Hardfork.PRAGUE,
+			);
+			expect(pragueResult.success).toBe(true);
+			expect(pragueResult.gasUsed).toBe(75000n);
 		});
 	});
 });

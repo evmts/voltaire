@@ -1,11 +1,11 @@
 // Type exports
 export type { BrandedHost } from "./HostType.js";
 
+import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
+import type { BrandedHost } from "./HostType.js";
 // Internal imports
 import { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 import { from as _from } from "./from.js";
-import type { BrandedHost } from "./HostType.js";
-import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
 
 // Internal exports for tree-shaking
 export { from as _from } from "./from.js";

@@ -1,3 +1,5 @@
+import { exp } from "../arithmetic/0x0a_EXP.js";
+import { signextend } from "../arithmetic/0x0b_SIGNEXTEND.js";
 import { add } from "../arithmetic/0x01_ADD.js";
 import { mul } from "../arithmetic/0x02_MUL.js";
 import { sub } from "../arithmetic/0x03_SUB.js";
@@ -7,8 +9,6 @@ import { mod } from "../arithmetic/0x06_MOD.js";
 import { smod } from "../arithmetic/0x07_SMOD.js";
 import { addmod } from "../arithmetic/0x08_ADDMOD.js";
 import { mulmod } from "../arithmetic/0x09_MULMOD.js";
-import { exp } from "../arithmetic/0x0a_EXP.js";
-import { signextend } from "../arithmetic/0x0b_SIGNEXTEND.js";
 
 /**
  * Create a new Frame instance
