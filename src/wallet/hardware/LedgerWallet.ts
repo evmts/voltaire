@@ -87,6 +87,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		// Serialize transaction for Ledger
 		const serialized = Transaction.serialize(tx);
@@ -99,7 +100,11 @@ export class LedgerWallet implements HardwareWallet {
 		const s = result.s;
 		const v = result.v;
 
-		return Signature.from({ r, s, v: Number.parseInt(v, 16) });
+		return Signature.from({
+			r: Hash.fromHex(r),
+			s: Hash.fromHex(s),
+			v: Number.parseInt(v, 16),
+		});
 	}
 
 	async signTypedData(
@@ -111,6 +116,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		const result = await this.eth.signEIP712HashedMessage(
 			path,
@@ -119,8 +125,8 @@ export class LedgerWallet implements HardwareWallet {
 		);
 
 		return Signature.from({
-			r: result.r,
-			s: result.s,
+			r: Hash.fromHex(result.r),
+			s: Hash.fromHex(result.s),
 			v: Number.parseInt(result.v, 16),
 		});
 	}
@@ -131,13 +137,14 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		const hexMessage = Buffer.from(message).toString("hex");
 		const result = await this.eth.signPersonalMessage(path, hexMessage);
 
 		return Signature.from({
-			r: result.r,
-			s: result.s,
+			r: Hash.fromHex(result.r),
+			s: Hash.fromHex(result.s),
 			v: Number.parseInt(result.v, 16),
 		});
 	}

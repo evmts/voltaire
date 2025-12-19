@@ -12,8 +12,6 @@ export * from "./crypto/index.js";
 // Standards - Ethereum token standards (ERC-20, ERC-721, ERC-1155, ERC-165)
 export * from "./standards/index.js";
 
-// Core type definitions are exported directly from primitives (no separate types namespace)
-
 // WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";
 
@@ -22,3 +20,6 @@ export * as evm from "./evm/index.js";
 
 // Precompiles (0x01-0x0a + BLS)
 export * as precompiles from "./evm/precompiles/precompiles.js";
+
+// ExEx (Execution Extensions - chain indexer pattern)
+export * as exex from "./exex/index.js";

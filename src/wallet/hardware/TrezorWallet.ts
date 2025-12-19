@@ -119,6 +119,7 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Signature/index.js"
 		);
 		const { Hex } = await import("../../primitives/Hex/index.js");
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		// Convert Transaction to Trezor format
 		const trezorTx: any = {
@@ -149,7 +150,11 @@ export class TrezorWallet implements HardwareWallet {
 		}
 
 		const { v, r, s } = result.payload;
-		return Signature.from({ r, s, v: Number.parseInt(v, 16) });
+		return Signature.from({
+			r: Hash.fromHex(r),
+			s: Hash.fromHex(s),
+			v: Number.parseInt(v, 16),
+		});
 	}
 
 	async signTypedData(
@@ -161,6 +166,7 @@ export class TrezorWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignTypedData({
 			path,
@@ -173,8 +179,8 @@ export class TrezorWallet implements HardwareWallet {
 		}
 
 		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
-		const r = sigBytes.slice(0, 32);
-		const s = sigBytes.slice(32, 64);
+		const r = Hash.fromBytes(sigBytes.slice(0, 32));
+		const s = Hash.fromBytes(sigBytes.slice(32, 64));
 		const v = sigBytes[64];
 
 		return Signature.from({ r, s, v });
@@ -186,6 +192,7 @@ export class TrezorWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
+		const { default: Hash } = await import("../../primitives/Hash/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignMessage({
 			path,
@@ -198,8 +205,8 @@ export class TrezorWallet implements HardwareWallet {
 		}
 
 		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
-		const r = sigBytes.slice(0, 32);
-		const s = sigBytes.slice(32, 64);
+		const r = Hash.fromBytes(sigBytes.slice(0, 32));
+		const s = Hash.fromBytes(sigBytes.slice(32, 64));
 		const v = sigBytes[64];
 
 		return Signature.from({ r, s, v });
