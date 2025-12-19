@@ -1,20 +1,52 @@
-const std = @import("std");
+//! Modular Exponentiation (ModExp)
+//!
+//! Computes base^exponent mod modulus for arbitrary-precision integers.
+//! Used in Ethereum precompile 0x05 and RSA-style cryptographic operations.
+//!
+//! WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been security audited.
+//! This implementation is provided for educational/testing purposes only.
+//! DO NOT USE IN PRODUCTION without proper security audit and testing.
+//!
+//! ## Overview
+//! Modular exponentiation is a fundamental operation in public-key cryptography,
+//! computing (base^exponent) mod modulus efficiently for large numbers.
+//!
+//! ## Algorithm
+//! Uses square-and-multiply algorithm (binary exponentiation):
+//! - Time complexity: O(log(exponent) * cost_of_multiplication)
+//! - Space complexity: O(size_of_modulus)
+//! - Handles arbitrary-precision integers
+//!
+//! ## Usage
+//! ```zig
+//! const modexp = @import("modexp");
+//!
+//! const base = [_]u8{0x03}; // 3
+//! const exp = [_]u8{0x0A}; // 10
+//! const mod = [_]u8{0x0D}; // 13
+//! var output: [1]u8 = undefined;
+//!
+//! // Compute 3^10 mod 13 = 9
+//! try modexp.unauditedModexp(allocator, &base, &exp, &mod, &output);
+//! ```
+//!
+//! ## Security Considerations
+//! - Unaudited custom implementation
+//! - Potential timing attacks in big integer operations
+//! - Unvalidated against side-channel vulnerabilities
+//! - Custom algorithms may have edge case bugs
+//! - Memory safety not guaranteed under all conditions
+//! - Use audited libraries (GMP, OpenSSL) in production
+//!
+//! ## Ethereum Context
+//! - Precompile 0x05: ModExp for RSA verification
+//! - EIP-198: Big integer modular exponentiation
+//! - Gas cost scales with input sizes
+//!
+//! ## References
+//! - [EIP-198](https://eips.ethereum.org/EIPS/eip-198) - ModExp precompile
 
-/// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
-///
-/// This module contains CUSTOM modular exponentiation implementations
-/// that have NOT been security audited or verified against known attacks.
-/// These implementations are provided for educational/testing purposes only.
-/// DO NOT USE IN PRODUCTION without proper security audit and testing.
-///
-/// Known risks:
-/// - Potential timing attacks in big integer operations
-/// - Unvalidated against side-channel vulnerabilities
-/// - Custom algorithms may have edge case bugs
-/// - Memory safety not guaranteed under all conditions
-///
-/// Modular exponentiation implementation
-/// Computes base^exponent mod modulus for arbitrary-precision integers
+const std = @import("std");
 /// Error set for modular exponentiation operations
 pub const ModExpError = error{
     DivisionByZero,

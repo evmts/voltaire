@@ -3,9 +3,6 @@
  * Uses native Zig BN254 implementation via WebAssembly
  */
 
-// TODO: Implement WASM loader similar to address.wasm.ts
-// This will be implemented once WASM build infrastructure is set up
-
 export namespace Bn254Wasm {
 	// Placeholder - will be implemented with WASM loader
 	export namespace G1 {

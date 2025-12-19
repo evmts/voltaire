@@ -542,20 +542,3 @@ describe("Edge cases", () => {
 		}
 	});
 });
-
-// ============================================================================
-// Cross-Implementation Validation Tests
-// ============================================================================
-// TODO: Once WASM implementations are ready, add tests that verify:
-// 1. All implementations produce identical results for same operations
-// 2. Serialization compatibility between implementations
-// 3. Performance characteristics match expectations (Ark >> WASM >> Pure)
-//
-// Example test structure:
-// describe.each(implementations)("$name implementation", ({ impl }) => {
-//   it("should match reference results", () => {
-//     const g1 = impl.G1.generator();
-//     const result = impl.G1.mul.call(g1, 5n);
-//     // Verify against known test vectors
-//   });
-// });

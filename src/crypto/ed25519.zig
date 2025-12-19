@@ -1,3 +1,59 @@
+//! Ed25519 Digital Signature Algorithm
+//!
+//! High-speed, high-security signatures using the Edwards-curve Digital Signature Algorithm.
+//! Re-exports and wraps Zig's standard library Ed25519 implementation.
+//!
+//! ## Overview
+//! Ed25519 is a modern signature scheme designed by Daniel J. Bernstein providing:
+//! - 128-bit security level
+//! - Fast signing and verification
+//! - Small keys and signatures (32 bytes each)
+//! - Deterministic signatures (no random nonce required)
+//!
+//! ## Key Sizes
+//! - Private key: 32 bytes (seed) or 64 bytes (expanded)
+//! - Public key: 32 bytes
+//! - Signature: 64 bytes
+//!
+//! ## Features
+//! - Deterministic signing (no nonce required)
+//! - Fast batch verification
+//! - Constant-time operations (timing attack resistant)
+//! - Collision-resistant hash (SHA-512)
+//! - Cofactor clearing for security
+//!
+//! ## Usage
+//! ```zig
+//! const ed25519 = @import("ed25519");
+//!
+//! // Generate keypair from seed
+//! const seed: [32]u8 = random_bytes();
+//! const keypair = try ed25519.keypairFromSeed(&seed);
+//!
+//! // Sign message
+//! const message = "Hello, Ed25519!";
+//! const sig = try ed25519.sign(allocator, message, &keypair.secret_key.bytes);
+//! defer allocator.free(sig);
+//!
+//! // Verify signature
+//! const valid = try ed25519.verify(sig, message, &keypair.public_key.bytes);
+//! ```
+//!
+//! ## Security Notes
+//! - Uses Zig's audited std.crypto implementation
+//! - Deterministic signatures (RFC 8032)
+//! - Constant-time operations
+//! - Cofactor cleared for security
+//!
+//! ## Use Cases
+//! - Not used in Ethereum mainnet (uses secp256k1)
+//! - Commonly used in other blockchains (Solana, Polkadot)
+//! - General-purpose digital signatures
+//!
+//! ## References
+//! - [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032) - Ed25519 specification
+//! - [Ed25519 Paper](https://ed25519.cr.yp.to/ed25519-20110926.pdf) - Original paper
+
 const std = @import("std");
 const crypto = std.crypto;
 

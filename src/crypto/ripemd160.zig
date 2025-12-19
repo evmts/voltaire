@@ -1,3 +1,55 @@
+//! RIPEMD-160 Cryptographic Hash Function
+//!
+//! Implementation of RIPEMD-160 hash algorithm producing 160-bit (20-byte) digests.
+//! Based on Bitcoin Core reference implementation for compatibility.
+//!
+//! WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been security audited.
+//! This implementation is provided for educational/testing purposes only.
+//! DO NOT USE IN PRODUCTION without proper security audit and testing.
+//!
+//! ## Overview
+//! RIPEMD-160 (RACE Integrity Primitives Evaluation Message Digest) is a 160-bit
+//! cryptographic hash function designed as a secure alternative to MD5/SHA-1.
+//!
+//! ## Features
+//! - 160-bit (20-byte) output
+//! - Bitcoin-compatible implementation
+//! - Streaming interface (init/update/final)
+//! - Matches Bitcoin Core behavior
+//!
+//! ## Usage
+//! ```zig
+//! const ripemd160 = @import("ripemd160");
+//!
+//! // One-shot hash
+//! var hasher = ripemd160.RIPEMD160.init();
+//! hasher.update("Hello, RIPEMD160!");
+//! var output: [20]u8 = undefined;
+//! hasher.final(&output);
+//!
+//! // Streaming hash
+//! hasher = ripemd160.RIPEMD160.init();
+//! hasher.update("Part 1");
+//! hasher.update("Part 2");
+//! hasher.final(&output);
+//! ```
+//!
+//! ## Security Considerations
+//! - Unaudited custom implementation
+//! - Potential timing vulnerabilities
+//! - Not verified against known attacks
+//! - Memory safety not guaranteed in all conditions
+//! - Use Bitcoin Core or audited libraries in production
+//!
+//! ## Use Cases
+//! - Bitcoin address generation (SHA256 then RIPEMD160)
+//! - Ethereum precompile 0x03
+//! - Legacy systems requiring RIPEMD-160
+//!
+//! ## References
+//! - [RIPEMD-160 Specification](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
+//! - [Bitcoin Core Implementation](https://github.com/bitcoin/bitcoin)
+
 const std = @import("std");
 const builtin = @import("builtin");
 

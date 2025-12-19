@@ -1,3 +1,44 @@
+//! X25519 Elliptic Curve Diffie-Hellman Key Exchange
+//!
+//! High-performance, secure key exchange using Curve25519.
+//! Re-exports and wraps Zig's standard library X25519 implementation.
+//!
+//! ## Overview
+//! X25519 is a modern elliptic curve Diffie-Hellman (ECDH) key exchange
+//! designed by Daniel J. Bernstein. It provides 128-bit security with
+//! excellent performance and resistance to timing attacks.
+//!
+//! ## Key Features
+//! - Constant-time operations (timing attack resistant)
+//! - 32-byte secret and public keys
+//! - 32-byte shared secrets
+//! - No point validation required (clamping handles invalid inputs)
+//!
+//! ## Usage
+//! ```zig
+//! const x25519 = @import("x25519");
+//!
+//! // Generate keypair from secret
+//! const seed: [32]u8 = random_bytes();
+//! const keypair = try x25519.keypairFromSeed(&seed);
+//!
+//! // Perform key exchange
+//! const shared = try x25519.scalarmult(
+//!     allocator,
+//!     &keypair.secret_key,
+//!     &other_public_key
+//! );
+//! defer allocator.free(shared);
+//! ```
+//!
+//! ## Security Notes
+//! - Uses Zig's audited std.crypto implementation
+//! - Constant-time scalar multiplication
+//! - Automatic key clamping
+//!
+//! ## References
+//! - [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748) - X25519 specification
+
 const std = @import("std");
 const crypto = std.crypto;
 

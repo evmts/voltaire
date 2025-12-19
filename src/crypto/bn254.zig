@@ -1,3 +1,42 @@
+//! BN254 Elliptic Curve (bn128/alt_bn128)
+//!
+//! Implementation of the BN254 (Barreto-Naehrig) pairing-friendly elliptic curve.
+//! Used in Ethereum precompiles (0x06-0x08) for zkSNARK verification.
+//!
+//! ## Curve Parameters
+//! - Prime field Fp: 254-bit prime modulus
+//! - Scalar field Fr: ~254-bit group order
+//! - Embedding degree: 12
+//! - Security level: ~100 bits (note: reduced from original 128-bit claim)
+//!
+//! ## Components
+//! - **G1**: Points on E(Fp) where y² = x³ + 3
+//! - **G2**: Points on E'(Fp²) twisted curve
+//! - **Pairing**: Optimal Ate pairing e: G1 × G2 → GT
+//! - **Field towers**: Fp → Fp² → Fp⁶ → Fp¹²
+//!
+//! ## Usage
+//! ```zig
+//! const bn254 = @import("bn254");
+//!
+//! // G1 operations
+//! const g1_gen = bn254.G1.GENERATOR;
+//! const scalar = bn254.Fr.init(42);
+//! const point = g1_gen.mul(&scalar);
+//!
+//! // Pairing check
+//! const result = bn254.pairing(&p1, &q1, &p2, &q2);
+//! ```
+//!
+//! ## Security Note
+//! BN254 security reduced to ~100 bits due to advances in discrete log attacks.
+//! Still secure for Ethereum's use case but not recommended for new protocols
+//! requiring 128-bit security.
+//!
+//! ## References
+//! - [EIP-196](https://eips.ethereum.org/EIPS/eip-196) - Precompile for addition and scalar multiplication
+//! - [EIP-197](https://eips.ethereum.org/EIPS/eip-197) - Precompile for pairing check
+
 const std = @import("std");
 const curve_parameters = @import("bn254/curve_parameters.zig");
 

@@ -1,3 +1,4 @@
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
 import { Secp256k1 } from "./index.js";
 
@@ -100,5 +101,44 @@ describe("Secp256k1.ecdh", () => {
 		const publicKey = Secp256k1.derivePublicKey(new Uint8Array(32).fill(1));
 
 		expect(() => Secp256k1.ecdh(zeroPrivate, publicKey)).toThrow();
+	});
+
+	it("cross-validates with @noble/curves", () => {
+		const privateKey = new Uint8Array(32);
+		for (let i = 0; i < 32; i++) {
+			privateKey[i] = i + 1;
+		}
+		const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+		// Our implementation returns x-coordinate only (32 bytes)
+		const ourShared = Secp256k1.ecdh(privateKey, publicKey);
+
+		// Noble returns uncompressed point (65 bytes: 0x04 + x + y)
+		const fullPublicKey = new Uint8Array(65);
+		fullPublicKey[0] = 0x04;
+		fullPublicKey.set(publicKey, 1);
+		const nobleShared = secp256k1.getSharedSecret(
+			privateKey,
+			fullPublicKey,
+			false,
+		);
+		const nobleXCoord = nobleShared.slice(1, 33);
+
+		expect(ourShared).toEqual(nobleXCoord);
+	});
+
+	it("getSharedSecret alias works correctly", () => {
+		const privateKey = new Uint8Array(32);
+		privateKey.fill(1);
+		const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+		const ecdhResult = Secp256k1.ecdh(privateKey, publicKey);
+		const getSharedSecretResult = Secp256k1.getSharedSecret(
+			privateKey,
+			publicKey,
+		);
+
+		expect(getSharedSecretResult).toEqual(ecdhResult);
+		expect(getSharedSecretResult.length).toBe(32);
 	});
 });

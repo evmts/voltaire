@@ -3,9 +3,6 @@
  * Uses Arkworks Rust library via WebAssembly for production performance
  */
 
-// TODO: Implement WASM loader for Arkworks backend
-// This will be implemented once WASM build infrastructure is set up
-
 export namespace Bn254Ark {
 	// Placeholder - will be implemented with WASM loader
 	export namespace G1 {

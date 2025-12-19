@@ -1,3 +1,42 @@
+//! Hash Utilities - Core Hash Types and Operations
+//!
+//! Provides fundamental hash types and utility functions for working with
+//! 32-byte hashes (B256) used throughout Ethereum.
+//!
+//! ## Provided Types
+//! - **Hash/B256**: Generic 32-byte hash
+//! - **BlockHash**: Block identifier
+//! - **TxHash**: Transaction identifier
+//! - **StorageKey**: Storage slot key
+//! - **StorageValue**: Storage slot value
+//! - **Selector**: 4-byte function/event selector
+//!
+//! ## Core Operations
+//! - Hash creation (fromHex, fromBytes, fromSlice)
+//! - Hash conversion (toHex, toHexUpper)
+//! - Keccak256 hashing
+//! - Comparisons (equal, lessThan, greaterThan)
+//! - Bitwise operations (xor, bitAnd, bitOr, bitNot)
+//! - EIP-191 message hashing
+//! - Function selector generation
+//!
+//! ## Usage
+//! ```zig
+//! const hash_utils = @import("hash_utils");
+//!
+//! // Create hash from hex
+//! const h = try hash_utils.fromHex("0x1234...");
+//!
+//! // Keccak256 hash
+//! const hash = hash_utils.keccak256("Hello, Ethereum!");
+//!
+//! // Function selector
+//! const selector = hash_utils.selectorFromSignature("transfer(address,uint256)");
+//!
+//! // EIP-191 personal sign
+//! const msg_hash = hash_utils.eip191HashMessage("Sign this message");
+//! ```
+
 const std = @import("std");
 const crypto = std.crypto;
 const testing = std.testing;

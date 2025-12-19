@@ -1,5 +1,35 @@
-// Hash module - comprehensive hash types and utilities for Ethereum
-// Based on Alloy's hash implementation with Zig optimizations
+//! Hash Module - Comprehensive Hash Types and Utilities for Ethereum
+//!
+//! Central module for cryptographic hash operations in Ethereum context.
+//! Based on Alloy's hash implementation with Zig optimizations.
+//!
+//! ## Provided Types
+//! - Hash: Generic 32-byte hash (B256)
+//! - BlockHash: Block identifier hash
+//! - TxHash: Transaction identifier hash
+//! - StorageKey/StorageValue: Storage slot identifiers
+//! - Selector: 4-byte function/event selector
+//!
+//! ## Core Functions
+//! - keccak256: Ethereum's primary hash function
+//! - Hash creation and conversion (fromHex, toHex, fromBytes)
+//! - Hash comparisons and operations (equal, xor, bitwise ops)
+//! - Specialized functions (selectorFromSignature, eip191HashMessage)
+//!
+//! ## Usage
+//! ```zig
+//! const hash = @import("hash");
+//!
+//! // Create hash from data
+//! const h = hash.keccak256("Hello, Ethereum!");
+//!
+//! // Function selector
+//! const selector = hash.selectorFromSignature("transfer(address,uint256)");
+//!
+//! // Hash operations
+//! const is_empty = hash.isZero(h);
+//! const hex = hash.toHex(h);
+//! ```
 
 pub const hash = @import("hash_utils.zig");
 

@@ -1,4 +1,51 @@
-/// C-KZG bindings for EIP-4844 support
+//! C-KZG Bindings for EIP-4844 Proto-Danksharding
+//!
+//! Zig wrapper for c-kzg-4844 library providing KZG polynomial commitments
+//! for Ethereum blob transactions (EIP-4844).
+//!
+//! ## Overview
+//! KZG (Kate-Zaverucha-Goldberg) commitments enable efficient verification
+//! of polynomial evaluations, used in EIP-4844 for blob data availability.
+//!
+//! ## Key Operations
+//! - **Blob to commitment**: Generate KZG commitment from 128KB blob
+//! - **Compute proof**: Create evaluation proof for commitment
+//! - **Verify proof**: Validate proof against commitment
+//! - **Batch verification**: Verify multiple proofs efficiently
+//!
+//! ## Constants
+//! - BYTES_PER_BLOB: 131,072 (128 KB)
+//! - FIELD_ELEMENTS_PER_BLOB: 4,096
+//! - BYTES_PER_FIELD_ELEMENT: 32
+//! - BYTES_PER_COMMITMENT: 48 (BLS12-381 G1 point)
+//! - BYTES_PER_PROOF: 48 (BLS12-381 G1 point)
+//!
+//! ## Usage
+//! ```zig
+//! const c_kzg = @import("c_kzg");
+//!
+//! // Load trusted setup (required once)
+//! try c_kzg.loadTrustedSetupFile("trusted_setup.txt", 0);
+//! defer c_kzg.freeTrustedSetup() catch {};
+//!
+//! // Generate commitment
+//! const commitment = try c_kzg.blobToKzgCommitment(&blob);
+//!
+//! // Compute and verify proof
+//! const z: [32]u8 = ...; // Evaluation point
+//! const proof_result = try c_kzg.computeKZGProof(&blob, &z);
+//! const valid = try c_kzg.verifyKZGProof(&commitment, &z, &proof_result.y, &proof_result.proof);
+//! ```
+//!
+//! ## Security Notes
+//! - Requires trusted setup ceremony (powers of tau)
+//! - Uses c-kzg-4844 library (audited)
+//! - BLS12-381 curve operations
+//!
+//! ## References
+//! - [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Proto-Danksharding
+//! - [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) - Reference implementation
+
 const std = @import("std");
 
 // Import the official zig bindings

@@ -1,3 +1,58 @@
+//! AES-GCM Authenticated Encryption
+//!
+//! Provides AES-GCM (Galois/Counter Mode) authenticated encryption with associated data (AEAD).
+//! Wraps Zig's standard library implementation with allocation-friendly interfaces.
+//!
+//! ## Overview
+//! AES-GCM combines AES encryption in counter mode with GMAC authentication,
+//! providing both confidentiality and authenticity in a single operation.
+//!
+//! ## Supported Variants
+//! - **AES-128-GCM**: 128-bit keys, 96-bit nonces, 128-bit tags
+//! - **AES-256-GCM**: 256-bit keys, 96-bit nonces, 128-bit tags
+//!
+//! ## Features
+//! - Authenticated encryption with associated data (AEAD)
+//! - Constant-time operations
+//! - Hardware acceleration (AES-NI) when available
+//! - Nonce reuse resistance (when nonces are unique)
+//!
+//! ## Usage
+//! ```zig
+//! const aes_gcm = @import("aes_gcm");
+//!
+//! // Encrypt
+//! const key: [16]u8 = ...;  // 128-bit key
+//! const nonce: [12]u8 = ...; // 96-bit nonce (must be unique)
+//! const ciphertext = try aes_gcm.encrypt128(
+//!     allocator,
+//!     plaintext,
+//!     &key,
+//!     &nonce,
+//!     associated_data
+//! );
+//! defer allocator.free(ciphertext);
+//!
+//! // Decrypt
+//! const plaintext = try aes_gcm.decrypt128(
+//!     allocator,
+//!     ciphertext,
+//!     &key,
+//!     &nonce,
+//!     associated_data
+//! );
+//! defer allocator.free(plaintext);
+//! ```
+//!
+//! ## Security Notes
+//! - Never reuse nonces with the same key
+//! - Uses Zig's audited std.crypto implementation
+//! - Constant-time guarantee from underlying primitives
+//! - Authentication tag prevents tampering
+//!
+//! ## References
+//! - [NIST SP 800-38D](https://csrc.nist.gov/publications/detail/sp/800-38d/final) - GCM specification
+
 const std = @import("std");
 const crypto = std.crypto;
 

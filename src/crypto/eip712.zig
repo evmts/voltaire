@@ -1,3 +1,36 @@
+//! EIP-712: Typed Structured Data Hashing and Signing
+//!
+//! Implementation of EIP-712 for creating type-safe, human-readable signatures.
+//! Enables secure signing of structured data with domain separation.
+//!
+//! ## Overview
+//! EIP-712 provides a standard for hashing and signing typed structured data,
+//! making signatures more secure and user-friendly by displaying what users are signing.
+//!
+//! ## Key Components
+//! - Domain separator for contract/chain isolation
+//! - Type definitions and encoding
+//! - Structured data hashing (hashStruct)
+//! - Message signing and verification
+//!
+//! ## Usage
+//! ```zig
+//! const eip712 = @import("eip712");
+//!
+//! // Define domain
+//! var domain = eip712.Eip712Domain{
+//!     .name = "MyDApp",
+//!     .version = "1",
+//!     .chain_id = 1,
+//! };
+//!
+//! // Hash and sign typed data
+//! const hash = try eip712.hashTypedData(allocator, domain, types, message);
+//! ```
+//!
+//! ## References
+//! - [EIP-712 Specification](https://eips.ethereum.org/EIPS/eip-712)
+
 const std = @import("std");
 const testing = std.testing;
 const crypto = std.crypto;

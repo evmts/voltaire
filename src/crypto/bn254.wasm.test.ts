@@ -1057,10 +1057,6 @@ describe("Bn254Wasm Integration", () => {
 // ============================================================================
 
 describe.skip("Bn254Wasm Cross-Implementation Validation", () => {
-	// TODO: Import pure TS and Arkworks implementations when ready
-	// import { BN254 as Bn254Pure } from "./bn254/BN254.js";
-	// import { Bn254Ark } from "./bn254.ark.js";
-
 	describe("G1 operations match across implementations", () => {
 		it("should produce identical results for scalar multiplication", () => {
 			// const g1_wasm = Bn254Wasm.G1.generator();

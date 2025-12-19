@@ -1,0 +1,49 @@
+// @ts-nocheck
+import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
+import { scrypt } from "@noble/hashes/scrypt.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+
+/**
+ * Derive key using scrypt KDF
+ *
+ * @param {string | Uint8Array} password - Password
+ * @param {Uint8Array} salt - Salt (32 bytes recommended)
+ * @param {number} n - CPU/memory cost parameter (default: 262144)
+ * @param {number} r - Block size parameter (default: 8)
+ * @param {number} p - Parallelization parameter (default: 1)
+ * @param {number} dklen - Derived key length (default: 32)
+ * @returns {Uint8Array} Derived key
+ */
+export function deriveScrypt(
+	password,
+	salt,
+	n = 262144,
+	r = 8,
+	p = 1,
+	dklen = 32,
+) {
+	const passwordBytes =
+		typeof password === "string"
+			? new TextEncoder().encode(password)
+			: password;
+
+	return scrypt(passwordBytes, salt, { N: n, r, p, dkLen: dklen });
+}
+
+/**
+ * Derive key using PBKDF2-HMAC-SHA256
+ *
+ * @param {string | Uint8Array} password - Password
+ * @param {Uint8Array} salt - Salt (32 bytes recommended)
+ * @param {number} c - Iteration count (default: 262144)
+ * @param {number} dklen - Derived key length (default: 32)
+ * @returns {Uint8Array} Derived key
+ */
+export function derivePbkdf2(password, salt, c = 262144, dklen = 32) {
+	const passwordBytes =
+		typeof password === "string"
+			? new TextEncoder().encode(password)
+			: password;
+
+	return pbkdf2(sha256, passwordBytes, salt, { c, dkLen: dklen });
+}

@@ -1,0 +1,123 @@
+// @ts-nocheck
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import {
+	CryptoError,
+	InvalidSignatureError,
+} from "../../primitives/errors/index.js";
+
+/**
+ * Concatenate multiple Uint8Arrays
+ * @param {...Uint8Array} arrays
+ * @returns {Uint8Array}
+ */
+function concat(...arrays) {
+	const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+	const result = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const arr of arrays) {
+		result.set(arr, offset);
+		offset += arr.length;
+	}
+	return result;
+}
+
+/**
+ * Recover public key from signature and pre-hashed message
+ *
+ * This is the hash-level API that operates directly on a 32-byte hash.
+ * Use this when you need custom hashing schemes or interop with other libraries.
+ * For standard Ethereum signing, use recoverPublicKey() instead.
+ *
+ * Uses the recovery id (v) to recover the exact public key that created
+ * the signature. This is what enables Ethereum's address recovery from
+ * transaction signatures.
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {Object} signature - ECDSA signature components
+ * @param {Uint8Array} signature.r - 32-byte signature component r
+ * @param {Uint8Array} signature.s - 32-byte signature component s
+ * @param {number} signature.v - Recovery id (27/28 or 0/1)
+ * @param {import('../../primitives/Hash/index.js').HashType} hash - 32-byte hash that was signed (pre-hashed message)
+ * @returns {import('./Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} 64-byte uncompressed public key
+ * @throws {InvalidSignatureError} If signature or recovery fails
+ * @throws {CryptoError} If hash is not 32 bytes
+ * @example
+ * ```javascript
+ * import * as Secp256k1 from './crypto/Secp256k1/index.js';
+ * import * as Hash from './primitives/Hash/index.js';
+ *
+ * // Recover public key from a pre-hashed message (hash-level API)
+ * const hash = Hash.keccak256String('Hello');
+ * const recovered = Secp256k1.recoverPublicKeyFromHash(
+ *   { r: rBytes, s: sBytes, v: 27 },
+ *   hash
+ * );
+ *
+ * // For comparison, recoverPublicKey() hashes internally (message-level API)
+ * const recovered2 = Secp256k1.recoverPublicKey(
+ *   { r: rBytes, s: sBytes, v: 27 },
+ *   messageHash
+ * );
+ * ```
+ */
+export function recoverPublicKeyFromHash(signature, hash) {
+	// Validate hash is exactly 32 bytes
+	if (hash.length !== 32) {
+		throw new CryptoError(`Hash must be exactly 32 bytes, got ${hash.length}`, {
+			code: "INVALID_HASH_LENGTH",
+			context: { hashLength: hash.length, expected: 32 },
+			docsPath: "/crypto/secp256k1/recover-public-key-from-hash#error-handling",
+		});
+	}
+
+	// Convert Ethereum v (27 or 28) to recovery bit (0 or 1)
+	let recoveryBit;
+	if (signature.v === 27 || signature.v === 28) {
+		recoveryBit = signature.v - 27;
+	} else if (signature.v === 0 || signature.v === 1) {
+		recoveryBit = signature.v;
+	} else {
+		throw new InvalidSignatureError(
+			`Invalid v value: ${signature.v} (expected 0, 1, 27, or 28)`,
+			{
+				code: "INVALID_SIGNATURE_V",
+				context: { v: signature.v, expected: [0, 1, 27, 28] },
+				docsPath:
+					"/crypto/secp256k1/recover-public-key-from-hash#error-handling",
+			},
+		);
+	}
+
+	try {
+		// Create compact signature from r and s
+		const compactSig = concat(signature.r, signature.s);
+		const sig = secp256k1.Signature.fromBytes(compactSig);
+
+		// Add recovery bit and recover public key
+		const sigWithRecovery = sig.addRecoveryBit(recoveryBit);
+		const recovered = sigWithRecovery.recoverPublicKey(hash);
+		const uncompressed = recovered.toBytes(false); // 65 bytes with 0x04 prefix
+
+		if (uncompressed[0] !== 0x04) {
+			throw new InvalidSignatureError("Invalid recovered public key format", {
+				code: "INVALID_RECOVERED_KEY_FORMAT",
+				context: { prefix: uncompressed[0], expected: 0x04 },
+				docsPath:
+					"/crypto/secp256k1/recover-public-key-from-hash#error-handling",
+			});
+		}
+
+		// Return 64 bytes without the 0x04 prefix
+		return /** @type {import('./Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} */ (
+			uncompressed.slice(1)
+		);
+	} catch (error) {
+		throw new InvalidSignatureError(`Public key recovery failed: ${error}`, {
+			code: "PUBLIC_KEY_RECOVERY_FROM_HASH_FAILED",
+			context: { signature, hash },
+			docsPath: "/crypto/secp256k1/recover-public-key-from-hash#error-handling",
+			cause: error,
+		});
+	}
+}

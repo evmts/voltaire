@@ -1,3 +1,31 @@
+//! Hash Algorithms - Cryptographic Hash Function Implementations
+//!
+//! Provides standardized interfaces for multiple cryptographic hash functions
+//! used in Ethereum and blockchain applications.
+//!
+//! ## Supported Algorithms
+//! - SHA256: Secure Hash Algorithm 2 (256-bit)
+//! - RIPEMD160: RACE Integrity Primitives Evaluation (160-bit, Bitcoin-compatible)
+//! - BLAKE2b: Fast cryptographic hash (optimized for 64-bit)
+//!
+//! ## Features
+//! - Consistent API across all hash functions
+//! - Both streaming (hash) and one-shot (hashFixed) interfaces
+//! - Known test vectors for validation
+//! - Fixed-size output guarantees
+//!
+//! ## Usage
+//! ```zig
+//! const algorithms = @import("hash_algorithms");
+//!
+//! // SHA256
+//! const sha256_result = algorithms.SHA256.hashFixed("hello");
+//!
+//! // RIPEMD160
+//! var output: [20]u8 = undefined;
+//! try algorithms.RIPEMD160.hash("data", &output);
+//! ```
+
 const std = @import("std");
 const ripemd160_impl = @import("ripemd160.zig");
 const blake2_impl = @import("blake2.zig");

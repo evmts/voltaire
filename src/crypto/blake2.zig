@@ -1,3 +1,32 @@
+//! BLAKE2b Cryptographic Hash Function
+//!
+//! Implementation of BLAKE2b hash algorithm as specified in RFC 7693.
+//! BLAKE2b is a cryptographic hash function optimized for 64-bit platforms.
+//!
+//! WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been security audited.
+//! This implementation is provided for educational/testing purposes only.
+//! DO NOT USE IN PRODUCTION without proper security audit and testing.
+//!
+//! ## Features
+//! - BLAKE2b compression function (F)
+//! - Support for variable output lengths (1-64 bytes)
+//! - Message schedule (sigma) permutations
+//! - Initialization vectors and constants
+//!
+//! ## Security Considerations
+//! - Unaudited custom implementation
+//! - Potential timing vulnerabilities
+//! - Not verified against side-channel attacks
+//! - Memory safety not guaranteed in all conditions
+//!
+//! ## Usage
+//! ```zig
+//! const blake2 = @import("blake2");
+//! var state: [8]u64 = blake2.BLAKE2B_IV;
+//! var message: [16]u64 = undefined;
+//! blake2.unauditedBlake2bCompress(&state, &message, .{0, 0}, true, 12);
+//! ```
+
 const std = @import("std");
 
 /// BLAKE2b initialization vectors

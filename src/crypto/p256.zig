@@ -1,3 +1,61 @@
+//! P256 (secp256r1/prime256v1) Elliptic Curve Operations
+//!
+//! NIST P-256 elliptic curve implementation for ECDSA signatures.
+//! Uses Zig's standard library P256 implementation.
+//!
+//! ## Overview
+//! P-256 (also known as secp256r1 or prime256v1) is a NIST-standardized
+//! elliptic curve widely used in TLS, government applications, and WebAuthn.
+//!
+//! ## Curve Parameters
+//! - Prime field: 256-bit prime (NIST P-256)
+//! - Security level: 128 bits
+//! - Curve equation: y² = x³ - 3x + b (short Weierstrass form)
+//! - Cofactor: 1
+//!
+//! ## Key Features
+//! - NIST-standardized curve
+//! - Hardware acceleration support (Intel, ARM)
+//! - Constant-time operations
+//! - Low-s malleability protection enforced
+//!
+//! ## Usage
+//! ```zig
+//! const p256 = @import("p256");
+//!
+//! // Sign message hash
+//! const hash: [32]u8 = sha256("message");
+//! const private_key: [32]u8 = ...;
+//! const sig = try p256.sign(allocator, &hash, &private_key);
+//! defer allocator.free(sig);
+//!
+//! // Verify signature (r || s format)
+//! const r = sig[0..32];
+//! const s = sig[32..64];
+//! const public_key: [64]u8 = ...; // Uncompressed x || y
+//! const valid = try p256.verify(&hash, r, s, &public_key);
+//! ```
+//!
+//! ## Security Notes
+//! - Uses Zig's audited std.crypto implementation
+//! - Enforces low-s to prevent signature malleability
+//! - Constant-time scalar multiplication
+//! - Hardware acceleration when available
+//!
+//! ## P256 vs secp256k1
+//! - **P256**: NIST-standardized, government approved, TLS/WebAuthn
+//! - **secp256k1**: Bitcoin/Ethereum, Koblitz curve, faster
+//!
+//! ## Use Cases
+//! - Not used in Ethereum mainnet (uses secp256k1)
+//! - RIP-7212 precompile candidate
+//! - WebAuthn integration
+//! - General ECDSA applications
+//!
+//! ## References
+//! - [FIPS 186-4](https://csrc.nist.gov/publications/detail/fips/186/4/final) - NIST P-256 specification
+//! - [SEC 2](https://www.secg.org/sec2-v2.pdf) - secp256r1 curve parameters
+
 const std = @import("std");
 
 /// P256 (secp256r1/prime256v1) elliptic curve operations

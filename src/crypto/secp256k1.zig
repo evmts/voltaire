@@ -1,3 +1,64 @@
+//! secp256k1 Elliptic Curve Cryptography
+//!
+//! Implementation of secp256k1 elliptic curve operations for Bitcoin and Ethereum.
+//! This is the primary signature scheme used in Ethereum for transaction signing.
+//!
+//! WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been security audited.
+//! This implementation is provided for educational/testing purposes only.
+//! DO NOT USE IN PRODUCTION without proper security audit and testing.
+//!
+//! ## Overview
+//! secp256k1 is a Koblitz elliptic curve used in Bitcoin and Ethereum for:
+//! - Transaction signing (ECDSA)
+//! - Public key derivation
+//! - Address generation
+//! - Signature verification and recovery
+//!
+//! ## Curve Parameters
+//! - Prime field: p = 2^256 - 2^32 - 977 (SECP256K1_P)
+//! - Curve order: n = ~2^256 (SECP256K1_N)
+//! - Curve equation: y² = x³ + 7
+//! - Generator point: (SECP256K1_GX, SECP256K1_GY)
+//!
+//! ## Key Features
+//! - ECDSA signature generation and verification
+//! - Public key recovery from signatures (v parameter)
+//! - Ethereum address derivation
+//! - Point operations (add, double, scalar multiplication)
+//! - Compressed and uncompressed public key formats
+//!
+//! ## Usage
+//! ```zig
+//! const secp256k1 = @import("secp256k1");
+//!
+//! // Point operations
+//! const generator = secp256k1.AffinePoint.generator();
+//! const doubled = generator.double();
+//! const sum = generator.add(doubled);
+//!
+//! // Verify point on curve
+//! const valid = point.isOnCurve();
+//! ```
+//!
+//! ## Security Considerations
+//! - Unaudited custom implementation
+//! - Potential timing attacks in modular arithmetic
+//! - Unvalidated against known ECC vulnerabilities
+//! - Custom point arithmetic may have edge case bugs
+//! - Memory safety not guaranteed under all conditions
+//! - Use audited libraries (libsecp256k1) in production
+//!
+//! ## Ethereum Context
+//! - Used for all transaction signatures
+//! - Public key recovery enables address derivation from signatures
+//! - Precompile 0x01 (ecrecover) uses this curve
+//! - 65-byte signatures (r || s || v format)
+//!
+//! ## References
+//! - [SEC 2](https://www.secg.org/sec2-v2.pdf) - secp256k1 specification
+//! - [libsecp256k1](https://github.com/bitcoin-core/secp256k1) - Bitcoin Core implementation
+//! - [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix F
+
 const std = @import("std");
 const crypto = std.crypto;
 const primitives = @import("primitives");

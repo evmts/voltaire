@@ -20,20 +20,27 @@ import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import { isValidPublicKey } from "./isValidPublicKey.js";
 import { isValidSignature } from "./isValidSignature.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
+import { recoverPublicKeyFromHash } from "./recoverPublicKeyFromHash.js";
 import { scalarMultiply } from "./scalarMultiply.js";
 import { sign } from "./sign.js";
+import { signHash } from "./signHash.js";
 import { verify } from "./verify.js";
+import { verifyHash } from "./verifyHash.js";
 
 // Export individual functions
 export {
 	sign,
+	signHash,
 	verify,
+	verifyHash,
 	recoverPublicKey,
+	recoverPublicKeyFromHash,
 	derivePublicKey,
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
 	ecdh,
+	ecdh as getSharedSecret, // Alias for API compatibility
 	addPoints,
 	scalarMultiply,
 };
@@ -72,17 +79,26 @@ export const PrivateKey = PrivateKeyMethods;
  *
  * // Recover public key from signature
  * const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+ *
+ * // Hash-level API for interop with other libraries
+ * const hash = Hash.keccak256String('Hello');
+ * const hashSig = Secp256k1.signHash(hash, privateKey);
+ * const hashValid = Secp256k1.verifyHash(hashSig, hash, publicKey);
  * ```
  */
 export const Secp256k1 = {
 	sign,
+	signHash,
 	verify,
+	verifyHash,
 	recoverPublicKey,
+	recoverPublicKeyFromHash,
 	derivePublicKey,
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
 	ecdh,
+	getSharedSecret: ecdh, // Alias for API compatibility
 	addPoints,
 	scalarMultiply,
 	Signature: SignatureMethods,
