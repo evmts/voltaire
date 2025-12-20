@@ -7,7 +7,12 @@ export default defineConfig({
 			"src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"examples/**/*.test.ts",
 		],
-		exclude: ["src/mcp-evals/**", "node_modules/**"],
+		exclude: [
+			"src/mcp-evals/**",
+			"node_modules/**",
+			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)
+			"src/wallet/hardware/**",
+		],
 		setupFiles: ["./vitest.setup.ts"],
 		environment: "node",
 		typecheck: {
