@@ -1,8 +1,7 @@
 import type { brand } from "../../brand.js";
-import type { Uint256Type } from "../Uint/Uint256Type.js";
 
 /**
  * Branded Nonce type - prevents nonce reuse/confusion
- * Variable-length Uint8Array representing a transaction nonce
+ * Represents a transaction nonce as a branded bigint
  */
-export type NonceType = Uint256Type & { readonly [brand]: "Nonce" };
+export type NonceType = bigint & { readonly [brand]: "Nonce" };

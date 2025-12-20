@@ -1,5 +1,4 @@
 import type { brand } from "../../brand.js";
-import type { AddressType } from "../Address/AddressType.js";
 
 /**
  * Bundler address type - ERC-4337 bundler node
@@ -11,4 +10,4 @@ import type { AddressType } from "../Address/AddressType.js";
  * @see https://voltaire.tevm.sh/primitives/bundler for Bundler documentation
  * @since 0.0.0
  */
-export type BundlerType = AddressType & { readonly [brand]: "Bundler" };
+export type BundlerType = Uint8Array & { readonly [brand]: "Bundler" };

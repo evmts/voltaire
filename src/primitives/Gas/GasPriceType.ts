@@ -1,8 +1,7 @@
 import type { brand } from "../../brand.js";
-import type { Uint256Type } from "../Uint/Uint256Type.js";
 
 /**
  * Branded GasPrice type - prevents gas parameter confusion
- * Variable-length Uint8Array representing gas price in wei per gas unit
+ * Represents gas price in wei per gas unit as a branded bigint
  */
-export type GasPriceType = Uint256Type & { readonly [brand]: "GasPrice" };
+export type GasPriceType = bigint & { readonly [brand]: "GasPrice" };

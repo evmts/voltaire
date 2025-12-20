@@ -1,5 +1,4 @@
 import type { brand } from "../../brand.js";
-import type { HashType } from "../Hash/HashType.js";
 
 /**
  * Branded StateRoot type - represents a 32-byte Merkle Patricia Trie root hash
@@ -13,7 +12,7 @@ import type { HashType } from "../Hash/HashType.js";
  * (160-bit identifiers) and account states. The state root is included in
  * every block header.
  */
-export type StateRootType = HashType & {
+export type StateRootType = Uint8Array & {
 	readonly [brand]: "StateRoot";
 	readonly length: 32;
 };

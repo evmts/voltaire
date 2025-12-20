@@ -1,5 +1,4 @@
 import type { brand } from "../../brand.js";
-import type { AddressType } from "../Address/AddressType.js";
 
 /**
  * EntryPoint address type - ERC-4337 entry point contract
@@ -8,4 +7,4 @@ import type { AddressType } from "../Address/AddressType.js";
  * @see https://voltaire.tevm.sh/primitives/entry-point for EntryPoint documentation
  * @since 0.0.0
  */
-export type EntryPointType = AddressType & { readonly [brand]: "EntryPoint" };
+export type EntryPointType = Uint8Array & { readonly [brand]: "EntryPoint" };

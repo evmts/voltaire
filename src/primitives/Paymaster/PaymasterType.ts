@@ -1,5 +1,4 @@
 import type { brand } from "../../brand.js";
-import type { AddressType } from "../Address/AddressType.js";
 
 /**
  * Paymaster address type - ERC-4337 paymaster contract
@@ -11,4 +10,4 @@ import type { AddressType } from "../Address/AddressType.js";
  * @see https://voltaire.tevm.sh/primitives/paymaster for Paymaster documentation
  * @since 0.0.0
  */
-export type PaymasterType = AddressType & { readonly [brand]: "Paymaster" };
+export type PaymasterType = Uint8Array & { readonly [brand]: "Paymaster" };
