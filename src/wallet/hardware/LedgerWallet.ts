@@ -1,6 +1,6 @@
 import type { AddressType } from "../../primitives/Address/AddressType.js";
 import type { SignatureType } from "../../primitives/Signature/SignatureType.js";
-import type { TransactionType } from "../../primitives/Transaction/TransactionType.js";
+import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
 import type {
 	DeviceInfo,
 	EIP712TypedData,
@@ -33,9 +33,9 @@ export class LedgerWallet implements HardwareWallet {
 	private _isConnected = false;
 
 	async connect(): Promise<void> {
-		const { default: TransportWebUSB } = await import(
-			"@ledgerhq/hw-transport-webusb"
-		);
+		// @ts-expect-error - Optional dependency for hardware wallet support
+		const { default: TransportWebUSB } = await import("@ledgerhq/hw-transport-webusb");
+		// @ts-expect-error - Optional dependency for hardware wallet support
 		const { default: Eth } = await import("@ledgerhq/hw-app-eth");
 
 		this.transport = await TransportWebUSB.create();

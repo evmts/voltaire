@@ -1,0 +1,266 @@
+---
+title: Dependencies
+description: Current dependencies and their purposes
+---
+
+# Dependencies
+
+All external dependencies used by Voltaire and their purposes.
+
+## Zig Dependencies
+
+From `build.zig.zon`:
+
+### zbench
+Performance benchmarking framework.
+
+```zig
+.zbench = .{
+    .url = "https://github.com/hendriknielaender/zBench/archive/refs/heads/main.tar.gz",
+}
+```
+
+**Used for**: Zig benchmarks in `*.bench.zig` files
+
+### clap
+Command-line argument parsing.
+
+```zig
+.clap = .{
+    .url = "https://github.com/Hejsil/zig-clap/archive/refs/heads/master.tar.gz",
+}
+```
+
+**Used for**: CLI tools and examples
+
+### z_ens_normalize
+ENS name normalization (ENSIP-15).
+
+```zig
+.z_ens_normalize = .{
+    .url = "git+https://github.com/evmts/z-ens-normalize#...",
+}
+```
+
+**Used for**: `Ens.normalize()` in primitives
+
+### libwally-core
+Wallet utilities (BIP39, BIP32).
+
+```zig
+.libwally_core = .{
+    .path = "lib/libwally-core",
+}
+```
+
+**Used for**: Mnemonic generation, HD wallet derivation
+
+---
+
+## Rust Dependencies
+
+From `Cargo.toml`. Compiled to `libcrypto_wrappers.a` static library.
+
+### arkworks (ark-*)
+Elliptic curve cryptography.
+
+```toml
+ark-bn254 = "0.5.0"
+ark-bls12-381 = "0.5.0"
+ark-ec = "0.5.0"
+ark-ff = "0.5.0"
+ark-serialize = "0.5.0"
+```
+
+**Used for**:
+- BN254 curve operations (precompiles 0x06-0x08)
+- BLS12-381 curve operations (precompiles 0x0B-0x13)
+- Field arithmetic, point serialization
+
+### keccak-asm
+Assembly-optimized Keccak256.
+
+```toml
+keccak-asm = { version = "0.1.4", optional = true }
+```
+
+**Feature**: `asm` (default, native only)
+**Used for**: High-performance Keccak256 hashing
+
+### tiny-keccak
+Pure Rust Keccak256.
+
+```toml
+tiny-keccak = { version = "2.0", features = ["keccak"], optional = true }
+```
+
+**Feature**: `portable` (WASM builds)
+**Used for**: WASM-compatible Keccak256
+
+---
+
+## C Libraries
+
+Vendored in `lib/` directory.
+
+### blst
+BLS12-381 signature library from Supranational.
+
+**Location**: `lib/blst/`
+**Used for**: BLS12-381 precompile implementations
+**Built by**: `zig build` (compiles as static library)
+
+### c-kzg-4844
+KZG commitment library for EIP-4844.
+
+**Location**: `lib/c-kzg-4844/`
+**Used for**: Blob commitments, point evaluation precompile
+**Built by**: `zig build`
+
+### libwally-core
+Wallet operations (git submodule).
+
+**Location**: `lib/libwally-core/`
+**Used for**: BIP39 mnemonics, BIP32 HD derivation
+**Setup**: `git submodule update --init`
+
+---
+
+## Node.js Dependencies
+
+From `package.json`.
+
+### Runtime Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `@adraffy/ens-normalize` | ENS name normalization (JS fallback) |
+| `@scure/bip32` | HD wallet derivation (TypeScript) |
+| `@scure/bip39` | Mnemonic generation (TypeScript) |
+| `@shazow/whatsabi` | ABI detection from bytecode |
+| `c-kzg` | KZG bindings (Node.js) |
+
+### Development Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `@biomejs/biome` | Code formatting and linting |
+| `@noble/curves` | Reference crypto (testing) |
+| `@noble/hashes` | Reference hashes (testing) |
+| `@noble/secp256k1` | Reference secp256k1 (testing) |
+| `@types/bun` | Bun type definitions |
+| `@types/node` | Node.js type definitions |
+| `abitype` | ABI TypeScript types |
+| `effect` | Functional programming utilities |
+| `mitata` | JavaScript benchmarking |
+| `tsup` | TypeScript bundling |
+| `typescript` | TypeScript compiler |
+| `vitest` | Test framework |
+
+### Hardware Wallet Support
+
+| Package | Purpose |
+|---------|---------|
+| `@ledgerhq/hw-app-eth` | Ledger Ethereum app |
+| `@ledgerhq/hw-transport` | Ledger transport base |
+| `@ledgerhq/hw-transport-webusb` | WebUSB transport |
+| `@trezor/connect-web` | Trezor web integration |
+
+### Peer Dependencies
+
+| Package | Required |
+|---------|----------|
+| `abitype` | Optional - for advanced ABI types |
+
+---
+
+## Dependency Graph
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   TypeScript                         │
+│  @noble/*, @scure/*, whatsabi, abitype, effect      │
+└─────────────────────┬───────────────────────────────┘
+                      │
+┌─────────────────────┴───────────────────────────────┐
+│                    Zig Core                          │
+│           zbench, clap, z_ens_normalize              │
+└─────────────────────┬───────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+┌───────────┐  ┌───────────┐  ┌───────────┐
+│   Rust    │  │     C     │  │     C     │
+│ arkworks  │  │   blst    │  │  c-kzg    │
+│ keccak-*  │  └───────────┘  └───────────┘
+└───────────┘
+```
+
+---
+
+## Installing Dependencies
+
+```bash
+# Node.js dependencies
+bun install
+
+# Zig dependencies (automatic via build)
+zig build deps
+
+# Git submodules (libwally-core)
+git submodule update --init --recursive
+
+# Full build (includes C/Rust libs)
+zig build
+```
+
+## Updating Dependencies
+
+### Zig
+Edit `build.zig.zon` with new URLs/hashes, then:
+```bash
+zig build
+```
+
+### Rust
+Edit `Cargo.toml`, then:
+```bash
+cargo update
+zig build
+```
+
+### Node.js
+```bash
+bun update
+```
+
+---
+
+## Version Requirements
+
+| Tool | Minimum Version |
+|------|-----------------|
+| Zig | 0.15.1 |
+| Bun | 1.0+ |
+| Node.js | 18+ (for native modules) |
+| Rust | 1.70+ (for arkworks) |
+
+---
+
+## Vendored vs External
+
+### Vendored (in repo)
+- `lib/blst/` - BLS12-381
+- `lib/c-kzg-4844/` - KZG
+
+### Git Submodule
+- `lib/libwally-core/` - Wallet utils
+
+### Fetched by Zig
+- zbench, clap, z_ens_normalize
+
+### Fetched by Cargo
+- arkworks, keccak-asm, tiny-keccak
+
+### Fetched by bun/npm
+- All Node.js packages

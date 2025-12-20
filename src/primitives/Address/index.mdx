@@ -85,7 +85,7 @@ const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4
 const addr = Address.fromPrivateKey(privateKey);
 
 // Or from public key coordinates
-const pubKey = Secp256k1.getPublicKey(privateKey);
+const pubKey = Secp256k1.derivePublicKey(privateKey);
 const addr2 = Address.fromPublicKey(pubKey.x, pubKey.y);
 
 console.log(Address.toChecksummed(addr));

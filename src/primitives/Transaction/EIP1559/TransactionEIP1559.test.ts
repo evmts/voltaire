@@ -265,7 +265,7 @@ describe("TransactionEIP1559", () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789012345678901234567890123456789012345678901234567890123",
 			);
-			const publicKey = Secp256k1.getPublicKey(privateKey);
+			const publicKey = Secp256k1.derivePublicKey(privateKey);
 			const expectedAddress = Address.fromPublicKey(publicKey);
 
 			const unsignedTx = TransactionEIP1559({

@@ -128,8 +128,10 @@ export class BatchQueue<T, R> {
 			const results = await this.processBatch(items);
 
 			// Resolve individual promises
+			// Safety: Loop bounds guarantee batch[i] exists (i < batch.length)
+			// Contract: processBatch must return results.length === items.length
 			for (let i = 0; i < batch.length; i++) {
-				batch[i].resolve(results[i]);
+				batch[i]!.resolve(results[i]!);
 			}
 		} catch (error) {
 			// Notify error handler

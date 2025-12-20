@@ -350,7 +350,7 @@ function publicKeyToAddress(publicKey: Uint8Array): Uint8Array {
 const privateKey = new Uint8Array(32);
 crypto.getRandomValues(privateKey);
 
-const publicKey = Secp256k1.getPublicKey(privateKey, false); // uncompressed
+const publicKey = Secp256k1.derivePublicKey(privateKey, false); // uncompressed
 const address = publicKeyToAddress(publicKey);
 ```
 

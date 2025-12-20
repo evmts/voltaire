@@ -6,7 +6,7 @@ import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {string} str - Input string
- * @returns {Uint8Array} 32-byte hash
+ * @returns {import('./SHA256HashType.js').SHA256Hash} 32-byte hash
  * @throws {never}
  * @example
  * ```javascript
@@ -18,5 +18,7 @@ import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
 export function hashString(str) {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(str);
-	return nobleSha256(data);
+	return /** @type {import('./SHA256HashType.js').SHA256Hash} */ (
+		nobleSha256(data)
+	);
 }

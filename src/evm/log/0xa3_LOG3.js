@@ -49,7 +49,7 @@ export function handler_0xa3_LOG3(frame) {
 	const topic2 = topic2Result.value;
 
 	// Check values fit in safe integer range
-	if (offset > Number.MAXSAFEINTEGER || length > Number.MAXSAFEINTEGER) {
+	if (offset > Number.MAX_SAFE_INTEGER || length > Number.MAX_SAFE_INTEGER) {
 		return { type: "OutOfBounds" };
 	}
 	const off = Number(offset);

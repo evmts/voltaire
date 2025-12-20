@@ -9,7 +9,7 @@ import {
 	loadNative,
 } from "../../native-loader/index.js";
 import * as Hex from "../../primitives/Hex/index.js";
-import type { Keccak256Hash } from "./Keccak256HashType.js";
+import type { Keccak256Hash as Keccak256HashType } from "./Keccak256HashType.js";
 
 // Lazy-load native library
 let nativeLib: Awaited<ReturnType<typeof loadNative>> | null = null;
@@ -28,14 +28,14 @@ async function ensureLoaded() {
  * @returns 32-byte hash
  * @throws Error if native operation fails
  */
-export async function hash(data: Uint8Array): Promise<Keccak256Hash> {
+export async function hash(data: Uint8Array): Promise<Keccak256HashType> {
 	const lib = await ensureLoaded();
 	const output = allocateOutput(32);
 
 	const result = lib.primitives_keccak256(data, data.length, output);
 	checkError(result, "keccak256");
 
-	return output as Keccak256Hash;
+	return output as Keccak256HashType;
 }
 
 /**
@@ -45,7 +45,7 @@ export async function hash(data: Uint8Array): Promise<Keccak256Hash> {
  * @returns 32-byte hash
  * @throws Error if native operation fails
  */
-export async function hashHex(hex: string): Promise<Keccak256Hash> {
+export async function hashHex(hex: string): Promise<Keccak256HashType> {
 	const bytes = Hex.toBytes(hex);
 	return hash(bytes);
 }
@@ -57,7 +57,7 @@ export async function hashHex(hex: string): Promise<Keccak256Hash> {
  * @returns 32-byte hash
  * @throws Error if native operation fails
  */
-export async function hashString(str: string): Promise<Keccak256Hash> {
+export async function hashString(str: string): Promise<Keccak256HashType> {
 	const encoder = new TextEncoder();
 	const bytes = encoder.encode(str);
 	return hash(bytes);
@@ -70,7 +70,7 @@ export async function hashString(str: string): Promise<Keccak256Hash> {
  * @returns 32-byte hash
  * @throws Error if native operation fails
  */
-export async function from(input: string | Uint8Array): Promise<Keccak256Hash> {
+export async function from(input: string | Uint8Array): Promise<Keccak256HashType> {
 	if (typeof input === "string") {
 		// Check if hex string
 		if (input.startsWith("0x")) {
@@ -101,7 +101,7 @@ export async function selector(signature: string): Promise<string> {
  * @param signature - Event signature (e.g., "Transfer(address,address,uint256)")
  * @returns 32-byte topic hash
  */
-export async function topic(signature: string): Promise<Keccak256Hash> {
+export async function topic(signature: string): Promise<Keccak256HashType> {
 	return hashString(signature);
 }
 
@@ -109,7 +109,7 @@ export async function topic(signature: string): Promise<Keccak256Hash> {
  * Synchronous hash (for backward compatibility)
  * Throws if native library not loaded
  */
-export function hashSync(data: Uint8Array): Keccak256Hash {
+export function hashSync(data: Uint8Array): Keccak256HashType {
 	if (!nativeLib) {
 		throw new Error(
 			"Native library not loaded. Use await hash() or call await ensureLoaded() first.",
@@ -120,7 +120,7 @@ export function hashSync(data: Uint8Array): Keccak256Hash {
 	const result = nativeLib.primitives_keccak256(data, data.length, output);
 	checkError(result, "keccak256");
 
-	return output as Keccak256Hash;
+	return output as Keccak256HashType;
 }
 
 // Re-export constants from pure TS implementation

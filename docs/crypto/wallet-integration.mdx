@@ -125,7 +125,7 @@ function deriveEthereumAddress(hdKey: ExtendedKey): string {
   const privateKey = HDWallet.getPrivateKey(hdKey)!;
 
   // 2. Derive uncompressed public key (65 bytes)
-  const publicKey = Secp256k1.getPublicKey(privateKey, false); // false = uncompressed
+  const publicKey = Secp256k1.derivePublicKey(privateKey, false); // false = uncompressed
 
   // 3. Remove 0x04 prefix (first byte)
   const publicKeyWithoutPrefix = publicKey.slice(1); // 64 bytes

@@ -28,8 +28,12 @@ import { signextend } from "../arithmetic/0x0b_SIGNEXTEND.js";
 export function from({
 	bytecode = new Uint8Array(0),
 	gas = 1000000n,
-	caller = new Uint8Array(20),
-	address = new Uint8Array(20),
+	caller = /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (
+		new Uint8Array(20)
+	),
+	address = /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (
+		new Uint8Array(20)
+	),
 	value = 0n,
 	calldata = new Uint8Array(0),
 	isStatic = false,

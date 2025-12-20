@@ -1,0 +1,506 @@
+---
+title: Adding Primitives
+description: Step-by-step guide to add a new primitive type to Voltaire
+---
+
+# Adding Primitives
+
+This guide walks through adding a new primitive type to Voltaire. We'll use a hypothetical `Frame` type as an example.
+
+## Prerequisites
+
+- Understand [TypeScript Patterns](/dev/typescript-patterns)
+- Understand [Zig Patterns](/dev/zig-patterns)
+- Familiar with [Testing](/dev/testing)
+
+## Step 1: Create Directory Structure
+
+```bash
+mkdir -p src/primitives/Frame
+```
+
+Create these files:
+
+```
+src/primitives/Frame/
+├── FrameType.ts          # Type definition
+├── from.js               # Main constructor
+├── fromHex.js            # From hex string
+├── fromBytes.js          # From bytes
+├── toHex.js              # To hex string
+├── toBytes.js            # To bytes
+├── equals.js             # Equality check
+├── isValid.js            # Validation
+├── is.js                 # Type guard
+├── index.ts              # Exports
+├── Frame.test.ts         # Tests
+├── frame.zig             # Zig implementation
+└── frame.mdx             # Documentation
+```
+
+## Step 2: Define the Type
+
+```typescript
+// FrameType.ts
+declare const brand: unique symbol;
+
+/**
+ * Branded Frame type - a 64-byte Ethereum frame
+ */
+export type FrameType = Uint8Array & {
+  readonly [brand]: "Frame";
+  readonly length: 64;
+};
+```
+
+## Step 3: Implement Constructor
+
+```javascript
+// from.js
+import { fromHex } from "./fromHex.js";
+import { fromBytes } from "./fromBytes.js";
+import { is } from "./is.js";
+
+/**
+ * Create a Frame from various input types
+ * @param {import('./types.js').FrameInput} value
+ * @returns {import('./FrameType.js').FrameType}
+ */
+export function from(value) {
+  if (is(value)) return value;
+  if (typeof value === "string") return fromHex(value);
+  if (value instanceof Uint8Array) return fromBytes(value);
+  throw new Error(`Invalid Frame input: ${typeof value}`);
+}
+```
+
+```javascript
+// fromHex.js
+import { InvalidFrameError } from "./errors.js";
+
+/**
+ * Create Frame from hex string
+ * @param {string} hex
+ * @returns {import('./FrameType.js').FrameType}
+ */
+export function fromHex(hex) {
+  if (!/^0x[0-9a-fA-F]{128}$/.test(hex)) {
+    throw new InvalidFrameError(hex);
+  }
+
+  const bytes = new Uint8Array(64);
+  for (let i = 0; i < 64; i++) {
+    bytes[i] = parseInt(hex.slice(2 + i * 2, 4 + i * 2), 16);
+  }
+
+  return /** @type {import('./FrameType.js').FrameType} */ (bytes);
+}
+```
+
+```javascript
+// fromBytes.js
+import { InvalidFrameError } from "./errors.js";
+
+/**
+ * Create Frame from bytes
+ * @param {Uint8Array} bytes
+ * @returns {import('./FrameType.js').FrameType}
+ */
+export function fromBytes(bytes) {
+  if (bytes.length !== 64) {
+    throw new InvalidFrameError(bytes);
+  }
+
+  const result = new Uint8Array(64);
+  result.set(bytes);
+
+  return /** @type {import('./FrameType.js').FrameType} */ (result);
+}
+```
+
+## Step 4: Implement Methods
+
+```javascript
+// toHex.js
+/**
+ * Convert Frame to hex string
+ * @param {import('./FrameType.js').FrameType} frame
+ * @returns {string}
+ */
+export function toHex(frame) {
+  let hex = "0x";
+  for (let i = 0; i < frame.length; i++) {
+    hex += frame[i].toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+```
+
+```javascript
+// equals.js
+/**
+ * Check if two frames are equal
+ * @param {import('./FrameType.js').FrameType} a
+ * @param {import('./FrameType.js').FrameType} b
+ * @returns {boolean}
+ */
+export function equals(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+```
+
+```javascript
+// isValid.js
+/**
+ * Check if value is a valid Frame input
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isValid(value) {
+  if (typeof value === "string") {
+    return /^0x[0-9a-fA-F]{128}$/.test(value);
+  }
+  if (value instanceof Uint8Array) {
+    return value.length === 64;
+  }
+  return false;
+}
+```
+
+```javascript
+// is.js
+/**
+ * Type guard for Frame
+ * @param {unknown} value
+ * @returns {value is import('./FrameType.js').FrameType}
+ */
+export function is(value) {
+  return value instanceof Uint8Array && value.length === 64;
+}
+```
+
+## Step 5: Create Index with Dual Exports
+
+```typescript
+// index.ts
+
+// Type exports
+export type { FrameType } from "./FrameType.js";
+export type { FrameType as Frame } from "./FrameType.js";
+
+// Constructor (no wrapper needed)
+export { from } from "./from.js";
+export { from as Frame } from "./from.js";
+
+// Named constructors
+export { fromHex } from "./fromHex.js";
+export { fromBytes } from "./fromBytes.js";
+
+// Internal methods (underscore prefix)
+export { toHex as _toHex } from "./toHex.js";
+export { toBytes as _toBytes } from "./toBytes.js";
+export { equals as _equals } from "./equals.js";
+
+// Public wrappers with auto-conversion
+import { from } from "./from.js";
+import { toHex as _toHex } from "./toHex.js";
+import { toBytes as _toBytes } from "./toBytes.js";
+import { equals as _equals } from "./equals.js";
+import type { FrameInput } from "./types.js";
+
+export function toHex(value: FrameInput): string {
+  return _toHex(from(value));
+}
+
+export function toBytes(value: FrameInput): Uint8Array {
+  return _toBytes(from(value));
+}
+
+export function equals(a: FrameInput, b: FrameInput): boolean {
+  return _equals(from(a), from(b));
+}
+
+// Validation (no wrapper needed)
+export { isValid } from "./isValid.js";
+export { is } from "./is.js";
+
+// Constants
+export const EMPTY_FRAME = from(new Uint8Array(64));
+```
+
+## Step 6: Write Tests
+
+```typescript
+// Frame.test.ts
+import { describe, it, expect } from "vitest";
+import * as Frame from "./index.js";
+
+describe("Frame", () => {
+  const validHex = "0x" + "ab".repeat(64);
+  const validBytes = new Uint8Array(64).fill(0xab);
+
+  describe("from", () => {
+    it("creates from hex string", () => {
+      const frame = Frame.from(validHex);
+      expect(frame).toBeInstanceOf(Uint8Array);
+      expect(frame.length).toBe(64);
+    });
+
+    it("creates from bytes", () => {
+      const frame = Frame.from(validBytes);
+      expect(frame.length).toBe(64);
+    });
+
+    it("returns same instance if already Frame", () => {
+      const frame1 = Frame.from(validHex);
+      const frame2 = Frame.from(frame1);
+      expect(frame1).toBe(frame2);
+    });
+  });
+
+  describe("fromHex", () => {
+    it("parses valid hex", () => {
+      const frame = Frame.fromHex(validHex);
+      expect(frame[0]).toBe(0xab);
+    });
+
+    it("throws on invalid length", () => {
+      expect(() => Frame.fromHex("0x1234")).toThrow();
+    });
+
+    it("throws on invalid characters", () => {
+      expect(() => Frame.fromHex("0x" + "gg".repeat(64))).toThrow();
+    });
+  });
+
+  describe("toHex", () => {
+    it("converts to lowercase hex", () => {
+      const frame = Frame.from(validBytes);
+      expect(Frame.toHex(frame)).toBe(validHex);
+    });
+
+    it("accepts various inputs via wrapper", () => {
+      expect(Frame.toHex(validHex)).toBe(validHex);
+      expect(Frame.toHex(validBytes)).toBe(validHex);
+    });
+  });
+
+  describe("equals", () => {
+    it("returns true for equal frames", () => {
+      const a = Frame.from(validHex);
+      const b = Frame.from(validHex);
+      expect(Frame.equals(a, b)).toBe(true);
+    });
+
+    it("returns false for different frames", () => {
+      const a = Frame.from(validHex);
+      const b = Frame.from("0x" + "cd".repeat(64));
+      expect(Frame.equals(a, b)).toBe(false);
+    });
+  });
+
+  describe("isValid", () => {
+    it("validates hex strings", () => {
+      expect(Frame.isValid(validHex)).toBe(true);
+      expect(Frame.isValid("0x1234")).toBe(false);
+    });
+
+    it("validates byte arrays", () => {
+      expect(Frame.isValid(validBytes)).toBe(true);
+      expect(Frame.isValid(new Uint8Array(32))).toBe(false);
+    });
+  });
+});
+```
+
+## Step 7: Implement Zig Version
+
+```zig
+// frame.zig
+const std = @import("std");
+
+pub const Frame = struct {
+    bytes: [64]u8,
+
+    pub fn fromHex(hex_str: []const u8) !Frame {
+        const start: usize = if (hex_str.len >= 2 and
+            hex_str[0] == '0' and hex_str[1] == 'x') 2 else 0;
+        const hex = hex_str[start..];
+
+        if (hex.len != 128) return error.InvalidLength;
+
+        var bytes: [64]u8 = undefined;
+        var i: usize = 0;
+        while (i < 64) : (i += 1) {
+            const high = try hexDigitToInt(hex[i * 2]);
+            const low = try hexDigitToInt(hex[i * 2 + 1]);
+            bytes[i] = (@as(u8, high) << 4) | @as(u8, low);
+        }
+
+        return Frame{ .bytes = bytes };
+    }
+
+    pub fn toHex(self: Frame) [130]u8 {
+        const hex_chars = "0123456789abcdef";
+        var result: [130]u8 = undefined;
+        result[0] = '0';
+        result[1] = 'x';
+
+        var i: usize = 0;
+        while (i < 64) : (i += 1) {
+            result[2 + i * 2] = hex_chars[self.bytes[i] >> 4];
+            result[3 + i * 2] = hex_chars[self.bytes[i] & 0x0f];
+        }
+
+        return result;
+    }
+
+    pub fn equals(self: Frame, other: Frame) bool {
+        return std.mem.eql(u8, &self.bytes, &other.bytes);
+    }
+
+    fn hexDigitToInt(c: u8) !u4 {
+        return switch (c) {
+            '0'...'9' => @intCast(c - '0'),
+            'a'...'f' => @intCast(c - 'a' + 10),
+            'A'...'F' => @intCast(c - 'A' + 10),
+            else => error.InvalidHexDigit,
+        };
+    }
+};
+
+// Tests
+test "Frame.fromHex valid input" {
+    const hex = "0x" ++ "ab" ** 64;
+    const frame = try Frame.fromHex(hex);
+    try std.testing.expectEqual(@as(u8, 0xab), frame.bytes[0]);
+}
+
+test "Frame.fromHex rejects invalid length" {
+    const result = Frame.fromHex("0x1234");
+    try std.testing.expectError(error.InvalidLength, result);
+}
+
+test "Frame.toHex roundtrip" {
+    const input = "0x" ++ "ab" ** 64;
+    const frame = try Frame.fromHex(input);
+    const output = frame.toHex();
+    try std.testing.expectEqualSlices(u8, input, &output);
+}
+
+test "Frame.equals" {
+    const a = try Frame.fromHex("0x" ++ "ab" ** 64);
+    const b = try Frame.fromHex("0x" ++ "ab" ** 64);
+    const c = try Frame.fromHex("0x" ++ "cd" ** 64);
+
+    try std.testing.expect(a.equals(b));
+    try std.testing.expect(!a.equals(c));
+}
+```
+
+## Step 8: Register in Module
+
+```zig
+// src/primitives/root.zig
+pub const Address = @import("Address/address.zig").Address;
+pub const Hash = @import("Hash/hash.zig").Hash;
+pub const Frame = @import("Frame/frame.zig").Frame;  // Add this line
+// ...
+```
+
+## Step 9: Add Documentation
+
+```mdx
+// docs/primitives/frame/index.mdx
+---
+title: Frame
+description: 64-byte Ethereum frame type for protocol operations
+---
+
+# Frame
+
+A `Frame` is a branded 64-byte `Uint8Array` used for [specific purpose].
+
+## Quick Start
+
+```typescript
+import * as Frame from "@voltaire/primitives/Frame";
+
+// Create from hex
+const frame = Frame.from("0x" + "ab".repeat(64));
+
+// Convert to hex
+const hex = Frame.toHex(frame);
+
+// Check equality
+const equal = Frame.equals(frame1, frame2);
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `Frame(value)` | Create from any valid input |
+| `Frame.fromHex(hex)` | Create from hex string |
+| `Frame.fromBytes(bytes)` | Create from Uint8Array |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `Frame.toHex(frame)` | Convert to hex string |
+| `Frame.toBytes(frame)` | Convert to Uint8Array |
+| `Frame.equals(a, b)` | Check equality |
+
+### Validation
+
+| Function | Description |
+|----------|-------------|
+| `Frame.isValid(value)` | Check if input is valid |
+| `Frame.is(value)` | Type guard |
+```
+
+## Step 10: Update Navigation
+
+Add to `docs/docs.json`:
+
+```json
+{
+  "group": "Frame",
+  "icon": { "name": "square", "style": "solid" },
+  "pages": ["primitives/frame/index"]
+}
+```
+
+## Step 11: Run Tests
+
+```bash
+# Zig tests
+zig build test -Dtest-filter=Frame
+
+# TypeScript tests
+bun run test -- Frame
+
+# Full build
+zig build && bun run test:run
+```
+
+## Checklist
+
+Before submitting:
+
+- [ ] Type definition in `FrameType.ts`
+- [ ] All methods in separate `.js` files with JSDoc
+- [ ] Dual exports in `index.ts`
+- [ ] Comprehensive tests in `Frame.test.ts`
+- [ ] Zig implementation with inline tests
+- [ ] Registered in `root.zig`
+- [ ] Documentation in `docs/primitives/frame/`
+- [ ] Navigation updated in `docs.json`
+- [ ] All tests passing: `zig build test && bun run test:run`

@@ -1,6 +1,6 @@
 import type { AddressType } from "../../primitives/Address/AddressType.js";
 import type { SignatureType } from "../../primitives/Signature/SignatureType.js";
-import type { TransactionType } from "../../primitives/Transaction/TransactionType.js";
+import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
 import type {
 	DeviceInfo,
 	EIP712TypedData,
@@ -46,6 +46,7 @@ export class TrezorWallet implements HardwareWallet {
 	}
 
 	async connect(): Promise<void> {
+		// @ts-expect-error - Optional dependency for hardware wallet support
 		const { default: TrezorConnect } = await import("@trezor/connect-web");
 		this.TrezorConnect = TrezorConnect;
 
@@ -117,24 +118,24 @@ export class TrezorWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hex } = await import("../../primitives/Hex/index.js");
+		const { Hex } = await import("../../primitives/Hex/index.js");
 
 		// Convert Transaction to Trezor format
 		const trezorTx: any = {
 			to: tx.to ? Hex.toString(tx.to) : undefined,
 			value: tx.value ? Hex.toString(tx.value) : "0x0",
-			gasPrice: tx.gasPrice ? Hex.toString(tx.gasPrice) : undefined,
-			gasLimit: tx.gas ? Hex.toString(tx.gas) : undefined,
+			gasPrice: "gasPrice" in tx && tx.gasPrice ? Hex.toString(tx.gasPrice) : undefined,
+			gasLimit: tx.gasLimit ? Hex.toString(tx.gasLimit) : undefined,
 			nonce: tx.nonce ? Hex.toString(tx.nonce) : undefined,
 			data: tx.data ? Hex.toString(tx.data) : undefined,
-			chainId: tx.chainId || 1,
+			chainId: "chainId" in tx ? tx.chainId : 1,
 		};
 
 		// EIP-1559 fields
-		if (tx.maxFeePerGas) {
+		if ("maxFeePerGas" in tx && tx.maxFeePerGas) {
 			trezorTx.maxFeePerGas = Hex.toString(tx.maxFeePerGas);
 		}
-		if (tx.maxPriorityFeePerGas) {
+		if ("maxPriorityFeePerGas" in tx && tx.maxPriorityFeePerGas) {
 			trezorTx.maxPriorityFeePerGas = Hex.toString(tx.maxPriorityFeePerGas);
 		}
 
@@ -172,8 +173,8 @@ export class TrezorWallet implements HardwareWallet {
 		}
 
 		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
-		const r = `0x${sigBytes.slice(0, 32).toString("hex")}`;
-		const s = `0x${sigBytes.slice(32, 64).toString("hex")}`;
+		const r = sigBytes.slice(0, 32);
+		const s = sigBytes.slice(32, 64);
 		const v = sigBytes[64];
 
 		return Signature.from({ r, s, v });
@@ -197,8 +198,8 @@ export class TrezorWallet implements HardwareWallet {
 		}
 
 		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
-		const r = `0x${sigBytes.slice(0, 32).toString("hex")}`;
-		const s = `0x${sigBytes.slice(32, 64).toString("hex")}`;
+		const r = sigBytes.slice(0, 32);
+		const s = sigBytes.slice(32, 64);
 		const v = sigBytes[64];
 
 		return Signature.from({ r, s, v });

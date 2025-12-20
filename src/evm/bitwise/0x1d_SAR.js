@@ -14,8 +14,8 @@ export function handle(frame) {
 
 	// Pop operands: shift amount, then value
 	if (frame.stack.length < 2) return { type: "StackUnderflow" };
-	const shift = frame.stack.pop();
-	const value = frame.stack.pop();
+	const shift = /** @type {bigint} */ (frame.stack.pop());
+	const value = /** @type {bigint} */ (frame.stack.pop());
 
 	// Convert to signed for arithmetic shift
 	const MIN_SIGNED = 1n << 255n;

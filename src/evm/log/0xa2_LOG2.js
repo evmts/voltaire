@@ -45,7 +45,7 @@ export function handler_0xa2_LOG2(frame) {
 	const topic1 = topic1Result.value;
 
 	// Check values fit in safe integer range
-	if (offset > Number.MAXSAFEINTEGER || length > Number.MAXSAFEINTEGER) {
+	if (offset > Number.MAX_SAFE_INTEGER || length > Number.MAX_SAFE_INTEGER) {
 		return { type: "OutOfBounds" };
 	}
 	const off = Number(offset);

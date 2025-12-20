@@ -50,7 +50,7 @@ const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // 2. Derive 64-byte uncompressed public key (32-byte x + 32-byte y coordinates)
-const publicKey = Secp256k1.getPublicKey(privateKey, false); // false = uncompressed
+const publicKey = Secp256k1.derivePublicKey(privateKey, false); // false = uncompressed
 // publicKey is 65 bytes: [0x04, x (32 bytes), y (32 bytes)]
 
 // 3. Remove the 0x04 prefix byte

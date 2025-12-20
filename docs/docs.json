@@ -1386,6 +1386,50 @@
 								"pages": ["examples/rlp/rlp-encode-list"]
 							}
 						]
+					},
+					{
+						"group": "Developer Documentation",
+						"icon": "code",
+						"pages": [
+							"dev/index",
+							{
+								"group": "Current State",
+								"pages": [
+									"dev/codebase-map",
+									"dev/primitives-reference",
+									"dev/crypto-reference",
+									"dev/precompiles-reference",
+									"dev/exports",
+									"dev/dependencies"
+								]
+							},
+							{
+								"group": "Patterns & Architecture",
+								"pages": [
+									"dev/architecture",
+									"dev/typescript-patterns",
+									"dev/zig-patterns",
+									"dev/api-conventions"
+								]
+							},
+							{
+								"group": "Development",
+								"pages": [
+									"dev/build-system",
+									"dev/testing",
+									"dev/wasm",
+									"dev/multi-language",
+									"dev/security"
+								]
+							},
+							{
+								"group": "Contributing",
+								"pages": [
+									"dev/adding-primitives",
+									"dev/adding-crypto"
+								]
+							}
+						]
 					}
 				]
 			}

@@ -14,8 +14,8 @@ export function handle(frame) {
 
 	// Pop operands: shift amount, then value
 	if (frame.stack.length < 2) return { type: "StackUnderflow" };
-	const shift = frame.stack.pop();
-	const value = frame.stack.pop();
+	const shift = /** @type {bigint} */ (frame.stack.pop());
+	const value = /** @type {bigint} */ (frame.stack.pop());
 
 	// For shifts >= 256, result is 0; else logical shift right
 	const result = shift >= 256n ? 0n : value >> shift;

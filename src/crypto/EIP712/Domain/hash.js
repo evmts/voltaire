@@ -1,5 +1,6 @@
 /**
  * All possible EIP-712 domain fields
+ * @type {Record<string, {name: string, type: string}>}
  */
 const DOMAIN_FIELD_TYPES = {
 	name: { name: "name", type: "string" },

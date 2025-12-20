@@ -18,13 +18,13 @@ export function pack(userOp) {
 	const callBytes = new Uint8Array(16);
 
 	// Convert limits to 128-bit values
-	let verification = userOp.verificationGasLimit;
+	let verification = /** @type {bigint} */ (userOp.verificationGasLimit);
 	for (let i = 15; i >= 0; i--) {
 		verificationBytes[i] = Number(verification & 0xffn);
 		verification >>= 8n;
 	}
 
-	let call = userOp.callGasLimit;
+	let call = /** @type {bigint} */ (userOp.callGasLimit);
 	for (let i = 15; i >= 0; i--) {
 		callBytes[i] = Number(call & 0xffn);
 		call >>= 8n;
@@ -38,13 +38,13 @@ export function pack(userOp) {
 	const priorityBytes = new Uint8Array(16);
 	const maxBytes = new Uint8Array(16);
 
-	let priority = userOp.maxPriorityFeePerGas;
+	let priority = /** @type {bigint} */ (userOp.maxPriorityFeePerGas);
 	for (let i = 15; i >= 0; i--) {
 		priorityBytes[i] = Number(priority & 0xffn);
 		priority >>= 8n;
 	}
 
-	let max = userOp.maxFeePerGas;
+	let max = /** @type {bigint} */ (userOp.maxFeePerGas);
 	for (let i = 15; i >= 0; i--) {
 		maxBytes[i] = Number(max & 0xffn);
 		max >>= 8n;

@@ -1,5 +1,7 @@
 import type { AddressType } from "../Address/AddressType.js";
-import type { Uint256Type } from "../Uint/Uint256Type.js";
+import type { GweiType } from "../Denomination/GweiType.js";
+import type { ValidatorIndexType } from "../ValidatorIndex/ValidatorIndexType.js";
+import type { WithdrawalIndexType } from "../WithdrawalIndex/WithdrawalIndexType.js";
 
 /**
  * Withdrawal type - represents Ethereum withdrawal (post-merge)
@@ -13,11 +15,11 @@ import type { Uint256Type } from "../Uint/Uint256Type.js";
  */
 export type WithdrawalType = {
 	/** Withdrawal index (monotonically increasing) */
-	readonly index: Uint256Type;
+	readonly index: WithdrawalIndexType;
 	/** Validator index on beacon chain */
-	readonly validatorIndex: Uint256Type;
+	readonly validatorIndex: ValidatorIndexType;
 	/** Address receiving withdrawal */
 	readonly address: AddressType;
 	/** Amount in Gwei */
-	readonly amount: Uint256Type;
+	readonly amount: GweiType;
 };

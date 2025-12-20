@@ -45,7 +45,7 @@ const privateKey = Bytes32();
 crypto.getRandomValues(privateKey);
 
 // Derive public key from private key
-const publicKey = Secp256k1.getPublicKey(privateKey);
+const publicKey = Secp256k1.derivePublicKey(privateKey);
 console.log(publicKey.length); // 64 bytes (uncompressed x, y coordinates)
 
 // Derive Ethereum address from public key
@@ -164,7 +164,7 @@ const privateKey = Bytes32();
 crypto.getRandomValues(privateKey); // Demo only
 
 // 2. Derive public information
-const publicKey = Secp256k1.getPublicKey(privateKey);
+const publicKey = Secp256k1.derivePublicKey(privateKey);
 const senderAddress = Secp256k1.publicKeyToAddress(publicKey);
 
 // 3. Create message hash

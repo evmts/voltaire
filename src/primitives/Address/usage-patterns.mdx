@@ -139,7 +139,7 @@ import * as Secp256k1 from 'tevm/Secp256k1';
 
 // Derive address from private key
 function deriveAddress(privateKey: Uint8Array): AddressType {
-  const publicKey = Secp256k1.getPublicKey(privateKey, false);
+  const publicKey = Secp256k1.derivePublicKey(privateKey, false);
   return Address.fromPublicKey(publicKey);
 }
 

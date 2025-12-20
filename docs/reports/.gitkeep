@@ -1,0 +1,21 @@
+# Issue Fix Reports
+
+This directory contains reports generated when fixing GitHub issues via the `/fix-issue` command.
+
+## Report Format
+
+Each report is named `issue-{number}.md` and contains:
+- Issue summary and link
+- Technical description of the fix
+- Files changed
+- Tests added
+- Validation checklist
+- Architecture impact notes
+
+## Purpose
+
+These reports provide:
+- Audit trail for changes
+- Context for future debugging
+- Documentation of decision-making
+- Links between commits, issues, and code
