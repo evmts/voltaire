@@ -91,7 +91,6 @@ Analyze the current git repository state and create atomic, conventional commits
 - **Follow conventions**: Use conventional commit format with appropriate emoji
 - **Avoid temporary files**: Don't commit debug, test, or temporary files unless explicitly requested
 - **Group logically**: Related changes should be in the same commit
-- **Ask before committing**: Show the plan and ask for confirmation before executing commits
 
 ## Safety Checks
 
