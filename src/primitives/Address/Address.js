@@ -360,6 +360,16 @@ Address.prototype.isZero = BrandedAddress.isZero.call.bind(
 Address.prototype.equals = BrandedAddress.equals.call.bind(
 	BrandedAddress.equals,
 );
+Address.prototype.toBytes = BrandedAddress.toBytes.call.bind(
+	BrandedAddress.toBytes,
+);
+Address.prototype.clone = function () {
+	const result = BrandedAddress.clone(
+		/** @type {import('./AddressType.js').AddressType} */ (this),
+	);
+	Object.setPrototypeOf(result, Address.prototype);
+	return result;
+};
 /**
  * Instance method to calculate CREATE contract address from this address
  *
