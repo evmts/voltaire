@@ -699,6 +699,13 @@ export function blake2f(
 /**
  * POINT_EVALUATION precompile (0x0a)
  * KZG point evaluation (EIP-4844)
+ *
+ * Input format (192 bytes per EIP-4844):
+ * - versioned_hash (32 bytes) - hash of the blob commitment
+ * - z (32 bytes) - evaluation point
+ * - y (32 bytes) - claimed evaluation result
+ * - commitment (48 bytes) - KZG commitment
+ * - proof (48 bytes) - KZG proof
  */
 export function pointEvaluation(
 	_input: Uint8Array,
@@ -713,20 +720,25 @@ export function pointEvaluation(
 			error: "Out of gas",
 		};
 	}
-	// EIP-4844: input = commitment(48) | z(32) | y(32) | proof(48) = 160 bytes per spec
-	// Some implementations use 160 or 192 including flags; we tolerate 160 or 192 with trailing zeros.
-	if (!(_input.length === 160 || _input.length === 192)) {
+	// EIP-4844 specifies exactly 192 bytes
+	if (_input.length !== 192) {
 		return {
 			success: false,
 			output: new Uint8Array(0),
 			gasUsed: gas,
-			error: "Invalid input length",
+			error: "Invalid input length: expected 192 bytes",
 		};
 	}
-	const commitment = _input.slice(0, 48);
-	const z = _input.slice(48, 80);
-	const y = _input.slice(80, 112);
-	const proof = _input.slice(112, 160);
+	const versionedHash = _input.slice(0, 32);
+	const z = _input.slice(32, 64);
+	const y = _input.slice(64, 96);
+	const commitment = _input.slice(96, 144);
+	const proof = _input.slice(144, 192);
+
+	// TODO: Validate versioned_hash matches sha256(0x01 || commitment)[0:32]
+	// For now, we only verify the KZG proof itself
+	void versionedHash; // Suppress unused variable warning
+
 	try {
 		if (!Kzg.isInitialized()) Kzg.loadTrustedSetup();
 		const ok = Kzg.verifyKzgProof(commitment, z, y, proof);
