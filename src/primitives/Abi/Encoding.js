@@ -245,6 +245,23 @@ function decodeUint256(data, offset) {
 }
 
 /**
+ * Safely convert a bigint to a Number, throwing if it exceeds safe integer range.
+ * Prevents integer overflow vulnerabilities when decoding ABI offsets/lengths.
+ * @param {bigint} value - The bigint value to convert
+ * @param {string} context - Description of what the value represents (for error messages)
+ * @returns {number} The value as a safe JavaScript number
+ * @throws {AbiDecodingError} If the value exceeds Number.MAX_SAFE_INTEGER
+ */
+function safeToNumber(value, context) {
+	if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+		throw new AbiDecodingError(
+			`${context} exceeds maximum safe integer (got ${value}, max ${Number.MAX_SAFE_INTEGER})`,
+		);
+	}
+	return Number(value);
+}
+
+/**
  * @param {Parameter["type"]} type
  * @param {Uint8Array} data
  * @param {number} offset
@@ -256,7 +273,7 @@ function decodeValue(type, data, offset, components) {
 	if (type === "tuple" && components) {
 		const isDynamic = isDynamicType(type, components);
 		if (isDynamic) {
-			const dataOffset = Number(decodeUint256(data, offset));
+			const dataOffset = safeToNumber(decodeUint256(data, offset), "Tuple data offset");
 			const value = decodeParameters(
 				/** @type {any} */ (components),
 				data.slice(dataOffset),
@@ -278,8 +295,8 @@ function decodeValue(type, data, offset, components) {
 
 	if (type.endsWith("[]")) {
 		const elementType = /** @type {Parameter["type"]} */ (type.slice(0, -2));
-		const dataOffset = Number(decodeUint256(data, offset));
-		const length = Number(decodeUint256(data, dataOffset));
+		const dataOffset = safeToNumber(decodeUint256(data, offset), "Dynamic array data offset");
+		const length = safeToNumber(decodeUint256(data, dataOffset), "Dynamic array length");
 
 		const elementParams = Array(length).fill({
 			type: elementType,
@@ -302,7 +319,7 @@ function decodeValue(type, data, offset, components) {
 			components,
 		});
 		if (isDynamicType(elementType, components)) {
-			const dataOffset = Number(decodeUint256(data, offset));
+			const dataOffset = safeToNumber(decodeUint256(data, offset), "Fixed array data offset");
 			const value = decodeParameters(
 				/** @type {any} */ (elementParams),
 				data.slice(dataOffset),
@@ -379,8 +396,8 @@ function decodeValue(type, data, offset, components) {
 	}
 
 	if (type === "bytes") {
-		const dataOffset = Number(decodeUint256(data, offset));
-		const length = Number(decodeUint256(data, dataOffset));
+		const dataOffset = safeToNumber(decodeUint256(data, offset), "Bytes data offset");
+		const length = safeToNumber(decodeUint256(data, dataOffset), "Bytes length");
 		if (dataOffset + 32 + length > data.length) {
 			throw new AbiDecodingError("Data too small for bytes");
 		}
@@ -389,8 +406,8 @@ function decodeValue(type, data, offset, components) {
 	}
 
 	if (type === "string") {
-		const dataOffset = Number(decodeUint256(data, offset));
-		const length = Number(decodeUint256(data, dataOffset));
+		const dataOffset = safeToNumber(decodeUint256(data, offset), "String data offset");
+		const length = safeToNumber(decodeUint256(data, dataOffset), "String length");
 		if (dataOffset + 32 + length > data.length) {
 			throw new AbiDecodingError("Data too small for string");
 		}
