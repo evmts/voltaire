@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/authorization
  * @since 0.0.0
- * @param {import("../../Address/AddressType.js").AddressType} a - First address
- * @param {import("../../Address/AddressType.js").AddressType} b - Second address
+ * @param {import("../Address/AddressType.js").AddressType} a - First address
+ * @param {import("../Address/AddressType.js").AddressType} b - Second address
  * @returns {boolean} True if equal
  * @throws {never}
  * @example

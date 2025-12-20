@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Create Nonce from number, bigint, or hex string
  *
- * @param value - Value to convert
- * @returns Nonce
+ * @param {bigint | number | string} value - Value to convert
+ * @returns {import('./NonceType.js').NonceType} Nonce
  *
  * @example
  * ```typescript
@@ -14,5 +14,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function from(value) {
-	return Uint.from(value);
+	return /** @type {import('./NonceType.js').NonceType} */ (Uint.from(value));
 }

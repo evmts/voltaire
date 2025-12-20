@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Create GasPrice from number, bigint, or hex string
  *
- * @param value - Value in wei
- * @returns Gas price
+ * @param {bigint | number | string} value - Value in wei
+ * @returns {import('./GasPriceType.js').GasPriceType} Gas price
  *
  * @example
  * ```typescript
@@ -14,5 +14,7 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasPriceFrom(value) {
-	return Uint.from(value);
+	return /** @type {import('./GasPriceType.js').GasPriceType} */ (
+		Uint.from(value)
+	);
 }

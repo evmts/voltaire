@@ -8,7 +8,7 @@ import { includesAddress } from "./includesAddress.js";
  * @see https://voltaire.tevm.sh/primitives/accesslist
  * @since 0.0.0
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to add to
- * @param {import('../../Address/AddressType.js').AddressType} address - Address to add
+ * @param {import('../Address/AddressType.js').AddressType} address - Address to add
  * @returns {import('../BrandedAccessList.js').BrandedAccessList} New access list with address added
  * @throws {never}
  * @example

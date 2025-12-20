@@ -29,6 +29,9 @@ export type EventLogType<
 	removed?: boolean;
 } & { readonly [brand]: "EventLog" };
 
+/** Alias for EventLogType - for backwards compatibility */
+export type BrandedEventLog = EventLogType;
+
 /**
  * Event log filter for querying logs
  */

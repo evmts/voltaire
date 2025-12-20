@@ -10,7 +10,7 @@
  *
  * @typedef {Object} Unsigned
  * @property {bigint} chainId - Chain ID where authorization is valid
- * @property {import("../../Address/AddressType.js").AddressType} address - Address to delegate code execution to
+ * @property {import("../Address/AddressType.js").AddressType} address - Address to delegate code execution to
  * @property {bigint} nonce - Nonce of the authorizing account
  */
 
@@ -18,6 +18,6 @@
  * Delegation designation result
  *
  * @typedef {Object} DelegationDesignation
- * @property {import("../../Address/AddressType.js").AddressType} authority - Authority (signer) address
- * @property {import("../../Address/AddressType.js").AddressType} delegatedAddress - Delegated code address
+ * @property {import("../Address/AddressType.js").AddressType} authority - Authority (signer) address
+ * @property {import("../Address/AddressType.js").AddressType} delegatedAddress - Delegated code address
  */

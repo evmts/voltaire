@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/authorization
  * @since 0.0.0
- * @param {import("./AuthorizationType.js").AuthorizationType | {chainId: bigint, address: import("../../Address/AddressType.js").BrandedAddress, nonce: bigint}} auth - Authorization to format
+ * @param {import("./AuthorizationType.js").AuthorizationType | {chainId: bigint, address: import("../Address/AddressType.js").BrandedAddress, nonce: bigint}} auth - Authorization to format
  * @returns {string} Human-readable string
  * @throws {never}
  * @example
@@ -29,7 +29,7 @@ export function format(auth) {
 
 /**
  * Helper to format address (shortened)
- * @param {import("../../Address/AddressType.js").AddressType} addr - Address to format
+ * @param {import("../Address/AddressType.js").AddressType} addr - Address to format
  * @returns {string} Formatted address
  */
 function formatAddress(addr) {

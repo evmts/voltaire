@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Create GasLimit from number, bigint, or hex string
  *
- * @param value - Value to convert
- * @returns Gas limit
+ * @param {bigint | number | string} value - Value to convert
+ * @returns {import('./GasLimitType.js').GasLimitType} Gas limit
  *
  * @example
  * ```typescript
@@ -14,5 +14,7 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasLimitFrom(value) {
-	return Uint.from(value);
+	return /** @type {import('./GasLimitType.js').GasLimitType} */ (
+		Uint.from(value)
+	);
 }

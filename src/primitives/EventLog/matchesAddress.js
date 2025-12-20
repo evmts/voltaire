@@ -1,5 +1,5 @@
 /**
- * @typedef {import('../../Address/index.js').AddressType} BrandedAddress
+ * @typedef {import('../Address/index.js').AddressType} BrandedAddress
  * @typedef {import('./EventLogType.js').EventLogType} BrandedEventLog
  */
 
