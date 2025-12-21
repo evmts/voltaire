@@ -190,7 +190,7 @@ describe("PublicKey.toAddress", () => {
 			const pubkey = fromPrivateKey(pk);
 			const address = toAddress.call(pubkey);
 
-			const checksummed = Address.toChecksum(address);
+			const checksummed = Address.toChecksummed(address);
 			expect(checksummed).toBeDefined();
 			expect(checksummed.startsWith("0x")).toBe(true);
 		});
@@ -203,7 +203,7 @@ describe("PublicKey.toAddress", () => {
 			const address1 = toAddress.call(pubkey);
 
 			const hex = Address.toHex(address1);
-			const address2 = Address.from(hex);
+			const address2 = Address.fromHex(hex);
 
 			expect(Address.equals(address1, address2)).toBe(true);
 		});

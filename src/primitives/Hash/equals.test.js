@@ -142,7 +142,7 @@ describe("equals", () => {
 
 		it("returns false for different length arrays", () => {
 			const a = fromBytes(new Uint8Array(32));
-			const b = new Uint8Array(20);
+			const b = /** @type {*} */ (new Uint8Array(20));
 			expect(equals(a, b)).toBe(false);
 		});
 

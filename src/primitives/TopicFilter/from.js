@@ -83,5 +83,5 @@ export function from(topics) {
 		}
 	}
 
-	return /** @type {import('./TopicFilterType.js').TopicFilterType} */ (topics);
+	return /** @type {import('./TopicFilterType.js').TopicFilterType} */ (/** @type {unknown} */ (topics));
 }

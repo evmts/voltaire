@@ -120,7 +120,7 @@ describe("isZero", () => {
 		});
 
 		it("returns false for wrong length array", () => {
-			const arr = new Uint8Array(20);
+			const arr = /** @type {*} */ (new Uint8Array(20));
 			expect(isZero(arr)).toBe(false);
 		});
 	});

@@ -239,7 +239,7 @@ describe("PublicKey.verify", () => {
 			const sig = sign(pk, hash);
 
 			// Corrupt the r component of the signature
-			sig.r[0] ^= 0xff;
+			/** @type {*} */ (sig).r[0] ^= 0xff;
 
 			const valid = verify(pubkey, hash, sig);
 			expect(valid).toBe(false);
@@ -375,7 +375,7 @@ describe("PublicKey.verify", () => {
 				fakeSig[i] = i;
 			}
 
-			const valid = verify(pubkey, hash, fakeSig);
+			const valid = verify(pubkey, hash, /** @type {*} */ (fakeSig));
 			expect(valid).toBe(false);
 		});
 	});
