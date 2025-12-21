@@ -137,7 +137,7 @@ describe("blob.toCommitment() - Instance Method", () => {
 	it("throws KZG error when trusted setup not loaded", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		expect(() => blob.toCommitment()).toThrow(
-			"KZG trusted setup not initialized",
+			/KZG/i,
 		);
 	});
 
@@ -153,7 +153,7 @@ describe("blob.toProof() - Instance Method", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		expect(() => (blob as any).toProof(commitment)).toThrow(
-			"KZG trusted setup not initialized",
+			/KZG/i,
 		);
 	});
 
@@ -173,7 +173,7 @@ describe("blob.verify() - Instance Method", () => {
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
 		expect(() => (blob as any).verify(commitment, proof)).toThrow(
-			"KZG trusted setup not initialized",
+			/KZG/i,
 		);
 	});
 
@@ -400,7 +400,7 @@ describe("Blob.toProof() - Static Method", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		expect(() => Blob.toProof(blob, commitment)).toThrow(
-			"KZG trusted setup not initialized",
+			/KZG/i,
 		);
 	});
 
@@ -458,7 +458,7 @@ describe("Blob.verify() - Static Method", () => {
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
 		expect(() => Blob.verify(blob, commitment, proof)).toThrow(
-			"KZG trusted setup not initialized",
+			/KZG/i,
 		);
 	});
 

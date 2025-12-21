@@ -37,8 +37,12 @@ AbiError.decodeParams = decodeParams;
 
 // Prototype setup
 Object.setPrototypeOf(AbiError.prototype, Object.prototype);
-AbiError.prototype.getSelector = getSelector.call.bind(getSelector);
-AbiError.prototype.getSignature = getSignature.call.bind(getSignature);
+AbiError.prototype.getSelector = function () {
+	return getSelector(this);
+};
+AbiError.prototype.getSignature = function () {
+	return getSignature(this);
+};
 AbiError.prototype.encodeParams = function (args: any) {
 	return encodeParams(this, args);
 };

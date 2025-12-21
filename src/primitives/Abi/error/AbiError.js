@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { decodeParams } from "./decodeParams.js";
-import { encodeParams } from "./encodeParams.js";
-import { getSignature } from "./getSignature.js";
+import { decodeParams as _decodeParams } from "./decodeParams.js";
+import { encodeParams as _encodeParams } from "./encodeParams.js";
+import { getSignature as _getSignature } from "./getSignature.js";
+import { keccak256String } from "../../Hash/index.js";
 
 /**
  * Factory function for creating AbiError instances
@@ -12,6 +13,22 @@ export function AbiError(error) {
 	if (!error || error.type !== "error") {
 		throw new TypeError("Invalid error definition: must have type='error'");
 	}
-	// Create a plain object copy
-	return { ...error };
+	// Create object with instance methods
+	return {
+		...error,
+		getSelector() {
+			const signature = _getSignature(this);
+			const hash = keccak256String(signature);
+			return hash.slice(0, 4);
+		},
+		getSignature() {
+			return _getSignature(this);
+		},
+		encodeParams(args) {
+			return _encodeParams(this, args);
+		},
+		decodeParams(data) {
+			return _decodeParams(this, data);
+		},
+	};
 }
