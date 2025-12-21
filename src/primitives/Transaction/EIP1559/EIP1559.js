@@ -70,10 +70,8 @@ export function TransactionEIP1559(tx) {
 	});
 }
 
-// Attach static methods
-TransactionEIP1559.deserialize = (bytes) => deserialize(bytes);
-TransactionEIP1559.deserialize.prototype = TransactionEIP1559.prototype;
-
+// Attach static methods - all EIP1559 methods take tx as first argument
+TransactionEIP1559.deserialize = deserialize;
 TransactionEIP1559.serialize = serialize;
 TransactionEIP1559.hash = hash;
 TransactionEIP1559.getSigningHash = getSigningHash;

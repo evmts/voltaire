@@ -91,14 +91,14 @@ export function TransactionLegacy(tx) {
 	});
 }
 
-// Attach static methods
+// Attach static methods (wrap to pass tx as `this`)
 TransactionLegacy.deserialize = deserialize;
-TransactionLegacy.serialize = serialize;
-TransactionLegacy.hash = hash;
-TransactionLegacy.getChainId = getChainId;
-TransactionLegacy.getSigningHash = getSigningHash;
-TransactionLegacy.getSender = getSender;
-TransactionLegacy.verifySignature = verifySignature;
+TransactionLegacy.serialize = (tx) => serialize.call(tx);
+TransactionLegacy.hash = (tx) => hash.call(tx);
+TransactionLegacy.getChainId = (tx) => getChainId.call(tx);
+TransactionLegacy.getSigningHash = (tx) => getSigningHash.call(tx);
+TransactionLegacy.getSender = (tx) => getSender.call(tx);
+TransactionLegacy.verifySignature = (tx) => verifySignature.call(tx);
 
 // Bind prototype methods using Function.prototype.call.bind
 TransactionLegacy.prototype = {};

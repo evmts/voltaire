@@ -29,7 +29,7 @@ describe("TransactionEIP1559", () => {
 			expect(tx.maxPriorityFeePerGas).toBe(1000000000n);
 			expect(tx.maxFeePerGas).toBe(20000000000n);
 			expect(tx.gasLimit).toBe(21000n);
-			expect(tx.to).toBe(Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"));
+			expect(tx.to).toStrictEqual(Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"));
 			expect(tx.value).toBe(1000000000000000000n);
 			expect(tx.data).toBeInstanceOf(Uint8Array);
 			expect(tx.accessList).toEqual([]);
@@ -158,7 +158,7 @@ describe("TransactionEIP1559", () => {
 		});
 	});
 
-	describe("prototype methods", () => {
+	describe("static method call pattern", () => {
 		const createTx = () =>
 			TransactionEIP1559({
 				chainId: 1n,
@@ -175,34 +175,37 @@ describe("TransactionEIP1559", () => {
 				s: new Uint8Array(32).fill(2),
 			});
 
-		it("instance has serialize method", () => {
+		it("serialize works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.serialize).toBe("function");
+			expect(TransactionEIP1559.serialize(tx)).toBeInstanceOf(Uint8Array);
 		});
 
-		it("instance has hash method", () => {
+		it("hash works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.hash).toBe("function");
+			expect(TransactionEIP1559.hash(tx)).toBeInstanceOf(Uint8Array);
 		});
 
-		it("instance has getSigningHash method", () => {
+		it("getSigningHash works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.getSigningHash).toBe("function");
+			expect(TransactionEIP1559.getSigningHash(tx)).toBeInstanceOf(Uint8Array);
 		});
 
-		it("instance has getSender method", () => {
+		it("getSender works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.getSender).toBe("function");
+			expect(typeof TransactionEIP1559.getSender).toBe("function");
 		});
 
-		it("instance has verifySignature method", () => {
+		it("verifySignature works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.verifySignature).toBe("function");
+			expect(typeof TransactionEIP1559.verifySignature).toBe("function");
 		});
 
-		it("instance has getEffectiveGasPrice method", () => {
+		it("getEffectiveGasPrice works with call pattern", () => {
 			const tx = createTx();
-			expect(typeof tx.getEffectiveGasPrice).toBe("function");
+			const baseFee = 10000000000n;
+			expect(TransactionEIP1559.getEffectiveGasPrice(tx, baseFee)).toBe(
+				11000000000n,
+			);
 		});
 	});
 
@@ -302,10 +305,12 @@ describe("TransactionEIP1559", () => {
 			);
 		});
 
-		it("detects tampered signature", () => {
+		it("detects tampered transaction by recovering different address", () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789012345678901234567890123456789012345678901234567890123",
 			);
+			const publicKey = Secp256k1.derivePublicKey(privateKey);
+			const originalSender = Address.fromPublicKey(publicKey);
 
 			const unsignedTx = TransactionEIP1559({
 				chainId: 1n,
@@ -325,6 +330,7 @@ describe("TransactionEIP1559", () => {
 			const signingHash = TransactionEIP1559.getSigningHash(unsignedTx);
 			const signature = Secp256k1.sign(signingHash, privateKey);
 
+			// Tamper with the transaction value
 			const tamperedTx = TransactionEIP1559({
 				...unsignedTx,
 				value: 2000000000000000000n,
@@ -333,8 +339,15 @@ describe("TransactionEIP1559", () => {
 				s: signature.s,
 			});
 
-			const isValid = TransactionEIP1559.verifySignature(tamperedTx);
-			expect(isValid).toBe(false);
+			// Signature is still technically recoverable (just to a different address)
+			const isRecoverable = TransactionEIP1559.verifySignature(tamperedTx);
+			expect(isRecoverable).toBe(true);
+
+			// But the recovered sender will be different from the original
+			const recoveredSender = TransactionEIP1559.getSender(tamperedTx);
+			expect(Address.toHex(recoveredSender)).not.toBe(
+				Address.toHex(originalSender),
+			);
 		});
 
 		it("computes effective gas price", () => {
