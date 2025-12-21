@@ -138,6 +138,7 @@ describe("Constructor", () => {
 					inputs: [],
 				});
 				const encoded = constructor.encodeParams([]);
+				/** @type {unknown[]} */
 				const decoded = constructor.decodeParams(encoded);
 				expect(decoded).toEqual([]);
 			});
@@ -193,7 +194,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "uint256" }],
 			});
 			const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
-			const inspected = constructor[inspectSymbol]();
+			/** @type {(depth?: number, options?: unknown) => string} */
+			const inspected = /** @type {*} */ (constructor)[inspectSymbol]();
 			expect(inspected).toContain("Constructor");
 			expect(inspected).toContain("nonpayable");
 			expect(inspected).toContain("inputs: 1");
@@ -266,7 +268,7 @@ describe("Constructor", () => {
 				inputs: [{ type: "address", name: "owner" }],
 			});
 
-			const addr = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
+			const addr = /** @type {import('../../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ ("0x742d35cc6634c0532925a3b844bc9e7595f251e3"));
 			const encoded = constructor.encodeParams([addr]);
 			const decoded = constructor.decodeParams(encoded);
 			expect(decoded).toEqual([addr]);
@@ -306,7 +308,7 @@ describe("Constructor", () => {
 			const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
 			const encoded = constructor.encodeParams([data]);
 			const decoded = constructor.decodeParams(encoded);
-			expect(decoded[0]).toEqual(data);
+			expect(/** @type {*} */ (decoded)[0]).toEqual(data);
 		});
 
 		it("handles array parameter", () => {
@@ -387,7 +389,7 @@ describe("Constructor", () => {
 				inputs: [{ type: "address" }],
 			});
 
-			const zeroAddr = "0x0000000000000000000000000000000000000000";
+			const zeroAddr = /** @type {import('../../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ ("0x0000000000000000000000000000000000000000"));
 			const encoded = constructor.encodeParams([zeroAddr]);
 			const decoded = constructor.decodeParams(encoded);
 			expect(decoded).toEqual([zeroAddr]);
@@ -408,22 +410,24 @@ describe("Constructor", () => {
 
 	describe("static method usage", () => {
 		it("encodeParams works as static method", () => {
-			const constructorDef = {
+			/** @type {import('./ConstructorType.js').ConstructorType<'nonpayable', [{ type: 'uint256' }]>} */
+			const constructorDef = /** @type {*} */ ({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
-			};
+			});
 
 			const encoded = Constructor.encodeParams(constructorDef, [42n]);
 			expect(encoded).toBeInstanceOf(Uint8Array);
 		});
 
 		it("decodeParams works as static method", () => {
-			const constructorDef = {
+			/** @type {import('./ConstructorType.js').ConstructorType<'nonpayable', [{ type: 'uint256' }]>} */
+			const constructorDef = /** @type {*} */ ({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
-			};
+			});
 
 			const encoded = Constructor.encodeParams(constructorDef, [42n]);
 			const decoded = Constructor.decodeParams(constructorDef, encoded);
