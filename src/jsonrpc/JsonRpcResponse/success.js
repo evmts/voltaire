@@ -1,9 +1,10 @@
 /**
  * Create success response
  *
+ * @template TResult
  * @param {string | number | null} id - Request ID
- * @param {unknown} result - Result value
- * @returns {object} JSON-RPC success response
+ * @param {TResult} result - Result value
+ * @returns {import('./JsonRpcResponseType.js').JsonRpcSuccessResponseType<TResult>} JSON-RPC success response
  *
  * @example
  * ```typescript
@@ -12,9 +13,9 @@
  * ```
  */
 export function success(id, result) {
-	return {
+	return /** @type {import('./JsonRpcResponseType.js').JsonRpcSuccessResponseType<TResult>} */ ({
 		jsonrpc: "2.0",
 		id,
 		result,
-	};
+	});
 }

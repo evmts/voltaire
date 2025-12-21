@@ -1,8 +1,6 @@
 /**
  * @description Resets the fork to a fresh state or a specific block
- * @param {Object} [config] - Optional reset configuration
- * @param {string} [config.forking.jsonRpcUrl] - URL to fork from
- * @param {number} [config.forking.blockNumber] - Block number to fork from
+ * @param {{ forking?: { jsonRpcUrl?: string; blockNumber?: number } }} [config] - Optional reset configuration
  * @returns {Object} JSON-RPC request for hardhat_reset
  */
 export function hardhat_reset(config) {

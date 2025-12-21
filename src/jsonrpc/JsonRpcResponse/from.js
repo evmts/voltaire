@@ -61,10 +61,10 @@ export function from(response) {
 	};
 
 	if (hasResult) {
-		return {
+		return /** @type {import('./JsonRpcResponseType.js').JsonRpcResponseType} */ ({
 			...base,
 			result,
-		};
+		});
 	}
 
 	// Validate error
@@ -80,12 +80,12 @@ export function from(response) {
 		throw new TypeError("Error message must be a string");
 	}
 
-	return {
+	return /** @type {import('./JsonRpcResponseType.js').JsonRpcResponseType} */ ({
 		...base,
 		error: {
 			code: error.code,
 			message: error.message,
 			...(error.data !== undefined && { data: error.data }),
 		},
-	};
+	});
 }

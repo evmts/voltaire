@@ -28,14 +28,14 @@ export function success<TResult>(
 	id: JsonRpcIdType,
 	result: TResult,
 ): JsonRpcSuccessResponseType<TResult> {
-	return _success(id, result);
+	return _success(id, result) as JsonRpcSuccessResponseType<TResult>;
 }
 
 export function error(
 	id: JsonRpcIdType,
 	errorObj: JsonRpcErrorType,
 ): JsonRpcErrorResponseType {
-	return _error(id, errorObj);
+	return _error(id, errorObj) as JsonRpcErrorResponseType;
 }
 
 export function isSuccess<TResult>(

@@ -1,7 +1,7 @@
 /**
  * Convert JsonRpcError to string representation
  *
- * @param {object} error - Error object
+ * @param {{ code: number; message: string }} error - Error object
  * @returns {string} String representation
  *
  * @example

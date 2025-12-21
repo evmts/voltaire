@@ -3,8 +3,6 @@
  * Auto-detects Bun vs Node.js and uses appropriate FFI mechanism
  */
 
-import type { NativeErrorCode } from "./types.js";
-
 export {
 	getPlatform,
 	getNativeExtension,
@@ -12,12 +10,13 @@ export {
 	type Platform,
 } from "./platform.js";
 export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
+export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
 
 /**
  * Runtime environment detection
  */
 export function isBun(): boolean {
-	// @ts-expect-error - Bun global
+	// @ts-expect-error Bun global
 	return typeof Bun !== "undefined";
 }
 
@@ -78,4 +77,3 @@ export function allocateStringOutput(size: number): {
 	return { buffer, ptr };
 }
 
-export type { NativeErrorCode };

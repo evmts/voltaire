@@ -37,10 +37,10 @@ export const method = "eth_getProof";
  * Creates a eth_getProof JSON-RPC request
  *
  * @param {Address} address
- * @param {`0x${string}`[]} [block]
- * @param {BlockSpec} params
+ * @param {`0x${string}`[]} storageKeys
+ * @param {BlockSpec} [block]
  * @returns {RequestArguments}
  */
-export function GetProofRequest(address, block, params) {
-	return { method, params: [address, block, params] };
+export function GetProofRequest(address, storageKeys, block = "latest") {
+	return { method, params: [address, storageKeys, block] };
 }

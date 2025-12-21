@@ -19,7 +19,9 @@ export function isNotification(request: JsonRpcRequestType): boolean {
 export function withParams<TParams>(
 	request: JsonRpcRequestType,
 ): (params: TParams) => JsonRpcRequestType<TParams> {
-	return _withParams(from(request));
+	return _withParams(from(request)) as (
+		params: TParams,
+	) => JsonRpcRequestType<TParams>;
 }
 
 // Export internal functions (tree-shakeable)

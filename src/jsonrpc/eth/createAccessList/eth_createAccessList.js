@@ -9,6 +9,7 @@
  * @typedef {import('../../types/index.js').BlockTag} BlockTag
  * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
  * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
+ * @typedef {import('../call/eth_call.js').CallParams} CallParams
  */
 
 /**
