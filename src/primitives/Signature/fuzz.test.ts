@@ -16,7 +16,11 @@ describe("Signature Fuzz Tests", () => {
 			for (let i = 0; i < 100; i++) {
 				const r = crypto.getRandomValues(new Uint8Array(32));
 				const s = crypto.getRandomValues(new Uint8Array(32));
-				const v = Math.random() > 0.5 ? 27 : 28;
+				// EIP-2098 requires s < curve_order/2, meaning bit 255 must be 0
+				// This is guaranteed for normalized ECDSA signatures
+				s[0] &= 0x7f; // Clear bit 7 of first byte (bit 255 of s)
+				// EIP-2098 compact format only stores yParity (0 or 1), not legacy v values
+				const v = Math.random() > 0.5 ? 0 : 1;
 
 				const sig = Signature.fromSecp256k1(r, s, v);
 				const compact = Signature.toCompact(sig);
@@ -30,6 +34,8 @@ describe("Signature Fuzz Tests", () => {
 			for (let i = 0; i < 100; i++) {
 				const r = crypto.getRandomValues(new Uint8Array(32));
 				const s = crypto.getRandomValues(new Uint8Array(32));
+				// Compact format uses bit 255 of s for yParity; clear it for clean round-trip
+				s[0] &= 0x7f;
 
 				const sig = Signature.fromP256(r, s);
 				const compact = Signature.toCompact(sig);
@@ -396,12 +402,13 @@ describe("Signature Fuzz Tests", () => {
 			}
 		});
 
-		it("should preserve v through compact round-trip", () => {
+		it("should preserve yParity through compact round-trip", () => {
 			const r = new Uint8Array(32).fill(1);
 			const s = new Uint8Array(32).fill(2);
 
-			const vValues = [0, 1, 27, 28, 37, 38, 255];
-			for (const v of vValues) {
+			// EIP-2098 compact format only preserves yParity (0 or 1)
+			// Legacy v values (27, 28, etc.) are converted to yParity
+			for (const v of [0, 1]) {
 				const sig = Signature.fromSecp256k1(r, s, v);
 				const compact = Signature.toCompact(sig);
 				const restored = Signature.fromCompact(compact, "secp256k1");
@@ -646,15 +653,21 @@ describe("Signature Fuzz Tests", () => {
 			expect(norm28.v).toBe(27); // Should flip
 		});
 
-		it("should handle recovery bit in compact signatures", () => {
+		it("should encode yParity in bit 255 of s (EIP-2098)", () => {
 			const r = new Uint8Array(32).fill(1);
 			const s = new Uint8Array(32).fill(2);
 
-			for (let v = 0; v < 2; v++) {
-				const sig = Signature.fromSecp256k1(r, s, v);
-				const compact = Signature.toCompact(sig);
-				expect(compact[64]).toBe(v);
-			}
+			// EIP-2098: yParity is encoded in bit 255 (MSB of byte 32)
+			// compact is 64 bytes, not 65
+			const sig0 = Signature.fromSecp256k1(r, s, 0);
+			const compact0 = Signature.toCompact(sig0);
+			expect(compact0.length).toBe(64);
+			expect((compact0[32] & 0x80) >> 7).toBe(0); // yParity=0, bit 255 clear
+
+			const sig1 = Signature.fromSecp256k1(r, s, 1);
+			const compact1 = Signature.toCompact(sig1);
+			expect(compact1.length).toBe(64);
+			expect((compact1[32] & 0x80) >> 7).toBe(1); // yParity=1, bit 255 set
 		});
 
 		it("should handle recovery bit 0 and 1", () => {

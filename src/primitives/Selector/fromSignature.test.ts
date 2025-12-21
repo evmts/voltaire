@@ -91,19 +91,19 @@ describe("Selector.fromSignature", () => {
 
 		it("computes function with multiple uint types", () => {
 			const selector = Selector.fromSignature(
-				"execute(uint256,uint256,uint256)",
+				"setValues(uint256,uint256,uint256)",
 			);
-			expect(Selector.toHex(selector)).toBe("0xb61d27f6");
+			expect(Selector.toHex(selector)).toBe("0x111be316");
 		});
 
 		it("computes function with bool parameter", () => {
 			const selector = Selector.fromSignature("setValue(uint256,bool)");
-			expect(Selector.toHex(selector)).toBe("0x1258f753");
+			expect(Selector.toHex(selector)).toBe("0x82e33e82");
 		});
 
 		it("computes function with bytes32 parameter", () => {
 			const selector = Selector.fromSignature("verifyHash(bytes32)");
-			expect(Selector.toHex(selector)).toBe("0x7b8d56e3");
+			expect(Selector.toHex(selector)).toBe("0xef020f4a");
 		});
 	});
 

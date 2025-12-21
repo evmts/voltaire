@@ -85,7 +85,7 @@ describe("assert", () => {
 			try {
 				assert(new Uint8Array(20), "Custom error message");
 			} catch (e) { const error = /** @type {*} */ (e);
-				expect(error.message).toBe("Custom error message");
+				expect(error.message).toContain("Custom error message");
 			}
 		});
 

@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { HexType, Sized } from "./HexType.js";
 
 type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
@@ -168,20 +168,20 @@ describe("HexType type-level tests", () => {
 	describe("readonly brand", () => {
 		it("should have readonly brand property", () => {
 			const hex = "0x1234" as HexType;
-			// @ts-expect-error - brand is readonly
-			// Strings are immutable in JS, so assignment throws TypeError
-			expect(() => {
-				(hex as Record<string, unknown>).__tag = "Modified";
-			}).toThrow(TypeError);
+			// @ts-expect-error - brand is readonly (TypeScript enforcement only)
+			// JS primitive strings silently ignore property assignments
+			(hex as Record<string, unknown>).__tag = "Modified";
+			// The brand property isn't actually on the runtime value
+			expect((hex as Record<string, unknown>).__tag).toBeUndefined();
 		});
 
 		it("should have readonly size for Sized", () => {
 			const sized = "0x1234" as Sized<2>;
-			// @ts-expect-error - size is readonly
-			// Strings are immutable in JS, so assignment throws TypeError
-			expect(() => {
-				(sized as Record<string, unknown>).size = 4;
-			}).toThrow(TypeError);
+			// @ts-expect-error - size is readonly (TypeScript enforcement only)
+			// JS primitive strings silently ignore property assignments
+			(sized as Record<string, unknown>).size = 4;
+			// The size property isn't actually on the runtime value
+			expect((sized as Record<string, unknown>).size).toBeUndefined();
 		});
 	});
 

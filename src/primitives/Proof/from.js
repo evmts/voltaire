@@ -43,9 +43,9 @@ export function from(proof) {
 		}
 	}
 
-	// Return immutable object
+	// Return immutable object with copied values
 	return Object.freeze({
-		value,
-		proof: Object.freeze([...proofArray]),
+		value: value.slice(),
+		proof: Object.freeze(proofArray.map((p) => p.slice())),
 	});
 }
