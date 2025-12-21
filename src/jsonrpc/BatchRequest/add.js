@@ -1,7 +1,7 @@
 /**
  * Add request to batch
  *
- * @param {Array} batch - Existing batch
+ * @param {Array<*>} batch - Existing batch
  * @returns {function} Function that takes a request and returns new batch
  *
  * @example

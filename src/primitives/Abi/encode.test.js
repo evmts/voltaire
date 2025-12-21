@@ -4,6 +4,7 @@ import { encode } from "./encode.js";
 import * as Function from "./function/index.js";
 
 describe("encode", () => {
+	/** @type {import('./Item/ItemType.js').ItemType[]} */
 	const testAbi = [
 		{
 			type: "function",

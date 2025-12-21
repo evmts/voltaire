@@ -8,6 +8,9 @@ const hashNode = HashNode({ blake3 });
 
 /**
  * Insert value at key
+ * @param {*} tree
+ * @param {Uint8Array} k
+ * @param {*} v
  */
 export function insert(tree, k, v) {
 	const { stem, idx } = splitKey(k);
@@ -15,6 +18,7 @@ export function insert(tree, k, v) {
 	return { root };
 }
 
+/** @param {*} node @param {Uint8Array} stem @param {number} idx @param {*} v @param {number} depth */
 function insertNode(node, stem, idx, v, depth) {
 	// Prevent infinite recursion by checking depth limit
 	if (depth > 300) {
@@ -64,6 +68,7 @@ function insertNode(node, stem, idx, v, depth) {
 	}
 }
 
+/** @param {*} existing @param {Uint8Array} newStem @param {number} newIdx @param {*} newVal @param {number} depth */
 function splitStems(existing, newStem, newIdx, newVal, depth) {
 	// If we've checked all stem bits (248), stems must be equal
 	// Update the value in the existing stem node
@@ -103,6 +108,7 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 	return { type: "internal", left: newHash, right: existingHash };
 }
 
+/** @param {Uint8Array} a @param {Uint8Array} b */
 function arraysEqual(a, b) {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {

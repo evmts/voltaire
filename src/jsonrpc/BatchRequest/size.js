@@ -1,7 +1,7 @@
 /**
  * Get size of batch request
  *
- * @param {Array} batch - Batch request
+ * @param {Array<*>} batch - Batch request
  * @returns {number} Number of requests in batch
  *
  * @example

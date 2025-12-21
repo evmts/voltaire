@@ -98,7 +98,7 @@ describe("PrivateKey.fromBytes", () => {
 			try {
 				fromBytes(bytes);
 				expect.fail("Should have thrown");
-			} catch (error) {
+			} catch (e) { const error = /** @type {*} */ (e);
 				expect(error.message).toContain("31");
 				expect(error.message).toContain("32");
 			}
@@ -109,7 +109,7 @@ describe("PrivateKey.fromBytes", () => {
 			try {
 				fromBytes(bytes);
 				expect.fail("Should have thrown");
-			} catch (error) {
+			} catch (e) { const error = /** @type {*} */ (e);
 				expect(error.message).toContain("32 bytes");
 			}
 		});
@@ -119,7 +119,7 @@ describe("PrivateKey.fromBytes", () => {
 			try {
 				fromBytes(bytes);
 				expect.fail("Should have thrown");
-			} catch (error) {
+			} catch (e) { const error = /** @type {*} */ (e);
 				expect(error.code).toBe("PRIVATE_KEY_INVALID_LENGTH");
 			}
 		});

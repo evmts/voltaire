@@ -17,8 +17,8 @@ export function handler_0x99_SWAP10(frame) {
 
 	const topIdx = frame.stack.length - 1;
 	const swapIdx = frame.stack.length - 1 - 10;
-	const temp = frame.stack[topIdx];
-	frame.stack[topIdx] = frame.stack[swapIdx];
+	const temp = /** @type {bigint} */ (frame.stack[topIdx]);
+	frame.stack[topIdx] = /** @type {bigint} */ (frame.stack[swapIdx]);
 	frame.stack[swapIdx] = temp;
 
 	frame.pc += 1;

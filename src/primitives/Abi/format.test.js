@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { format } from "./format.js";
+import { format as formatItem } from "./format.js";
+
+/** @param {*} item */
+const format = (item) => formatItem(item);
 
 describe("format", () => {
 	describe("function formatting", () => {

@@ -4,6 +4,7 @@ import { decode } from "./decode.js";
 import * as Function from "./function/index.js";
 
 describe("decode", () => {
+	/** @type {import('./Item/ItemType.js').ItemType[]} */
 	const testAbi = [
 		{
 			type: "function",
@@ -33,21 +34,21 @@ describe("decode", () => {
 
 	describe("single return value", () => {
 		it("decodes uint256 return value", () => {
-			const func = testAbi[0];
+			const func = /** @type {*} */ (testAbi[0]);
 			const returnData = Function.encodeResult(func, [1000n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([1000n]);
 		});
 
 		it("decodes bool return value", () => {
-			const func = testAbi[1];
+			const func = /** @type {*} */ (testAbi[1]);
 			const returnData = Function.encodeResult(func, [true]);
 			const decoded = decode.call(testAbi, "transfer", returnData);
 			expect(decoded).toEqual([true]);
 		});
 
 		it("decodes zero value", () => {
-			const func = testAbi[0];
+			const func = /** @type {*} */ (testAbi[0]);
 			const returnData = Function.encodeResult(func, [0n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([0n]);
@@ -56,14 +57,14 @@ describe("decode", () => {
 
 	describe("multiple return values", () => {
 		it("decodes multiple types", () => {
-			const func = testAbi[2];
+			const func = /** @type {*} */ (testAbi[2]);
 			const returnData = Function.encodeResult(func, [42n, "test", true]);
 			const decoded = decode.call(testAbi, "getData", returnData);
 			expect(decoded).toEqual([42n, "test", true]);
 		});
 
 		it("decodes with empty string", () => {
-			const func = testAbi[2];
+			const func = /** @type {*} */ (testAbi[2]);
 			const returnData = Function.encodeResult(func, [0n, "", false]);
 			const decoded = decode.call(testAbi, "getData", returnData);
 			expect(decoded).toEqual([0n, "", false]);
@@ -117,7 +118,7 @@ describe("decode", () => {
 
 	describe("boundary values", () => {
 		it("decodes max uint256", () => {
-			const func = testAbi[0];
+			const func = /** @type {*} */ (testAbi[0]);
 			const maxUint256 =
 				0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
 			const returnData = Function.encodeResult(func, [maxUint256]);
@@ -126,7 +127,7 @@ describe("decode", () => {
 		});
 
 		it("decodes zero uint256", () => {
-			const func = testAbi[0];
+			const func = /** @type {*} */ (testAbi[0]);
 			const returnData = Function.encodeResult(func, [0n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([0n]);

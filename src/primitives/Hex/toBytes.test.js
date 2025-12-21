@@ -144,7 +144,7 @@ describe("Hex.toBytes", () => {
 		it("provides position info in error", () => {
 			try {
 				toBytes("0x12GG");
-			} catch (error) {
+			} catch (e) { const error = /** @type {*} */ (e);
 				expect(error.message).toContain("position");
 				expect(error.code).toBe("HEX_INVALID_CHARACTER");
 			}

@@ -24,7 +24,7 @@ export function fromBytes(bytes) {
 
 	let value = 0;
 	for (let i = 0; i < SIZE; i++) {
-		value = (value << 8) | bytes[i];
+		value = (value << 8) | /** @type {number} */ (bytes[i]);
 	}
 
 	return /** @type {import('./Uint32Type.js').Uint32Type} */ (value >>> 0);

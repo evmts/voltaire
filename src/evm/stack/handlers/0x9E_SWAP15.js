@@ -17,8 +17,8 @@ export function handler_0x9E_SWAP15(frame) {
 
 	const topIdx = frame.stack.length - 1;
 	const swapIdx = frame.stack.length - 1 - 15;
-	const temp = frame.stack[topIdx];
-	frame.stack[topIdx] = frame.stack[swapIdx];
+	const temp = /** @type {bigint} */ (frame.stack[topIdx]);
+	frame.stack[topIdx] = /** @type {bigint} */ (frame.stack[swapIdx]);
 	frame.stack[swapIdx] = temp;
 
 	frame.pc += 1;

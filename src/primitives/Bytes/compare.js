@@ -13,8 +13,10 @@
 export function compare(a, b) {
 	const minLen = Math.min(a.length, b.length);
 	for (let i = 0; i < minLen; i++) {
-		if (a[i] < b[i]) return -1;
-		if (a[i] > b[i]) return 1;
+		const ai = /** @type {number} */ (a[i]);
+		const bi = /** @type {number} */ (b[i]);
+		if (ai < bi) return -1;
+		if (ai > bi) return 1;
 	}
 	if (a.length < b.length) return -1;
 	if (a.length > b.length) return 1;

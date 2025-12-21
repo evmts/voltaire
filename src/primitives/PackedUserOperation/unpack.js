@@ -19,24 +19,24 @@ export function unpack(packedUserOp) {
 	let verificationGasLimit = 0n;
 	for (let i = 0; i < 16; i++) {
 		verificationGasLimit =
-			(verificationGasLimit << 8n) | BigInt(accountGasLimits[i]);
+			(verificationGasLimit << 8n) | BigInt(/** @type {number} */ (accountGasLimits[i]));
 	}
 
 	let callGasLimit = 0n;
 	for (let i = 16; i < 32; i++) {
-		callGasLimit = (callGasLimit << 8n) | BigInt(accountGasLimits[i]);
+		callGasLimit = (callGasLimit << 8n) | BigInt(/** @type {number} */ (accountGasLimits[i]));
 	}
 
 	// Unpack gasFees: maxPriorityFeePerGas (128 bits) || maxFeePerGas (128 bits)
 	const gasFees = packedUserOp.gasFees;
 	let maxPriorityFeePerGas = 0n;
 	for (let i = 0; i < 16; i++) {
-		maxPriorityFeePerGas = (maxPriorityFeePerGas << 8n) | BigInt(gasFees[i]);
+		maxPriorityFeePerGas = (maxPriorityFeePerGas << 8n) | BigInt(/** @type {number} */ (gasFees[i]));
 	}
 
 	let maxFeePerGas = 0n;
 	for (let i = 16; i < 32; i++) {
-		maxFeePerGas = (maxFeePerGas << 8n) | BigInt(gasFees[i]);
+		maxFeePerGas = (maxFeePerGas << 8n) | BigInt(/** @type {number} */ (gasFees[i]));
 	}
 
 	return /** @type {import('../UserOperation/UserOperationType.js').UserOperationType} */ ({

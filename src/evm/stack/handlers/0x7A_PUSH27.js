@@ -18,7 +18,7 @@ function readImmediate(bytecode, pc, size) {
 
 	let result = 0n;
 	for (let i = 0; i < size; i++) {
-		result = (result << 8n) | BigInt(bytecode[pc + 1 + i]);
+		result = (result << 8n) | BigInt(/** @type {number} */ (bytecode[pc + 1 + i]));
 	}
 	return result;
 }

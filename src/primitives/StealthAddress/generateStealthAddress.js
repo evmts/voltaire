@@ -62,7 +62,7 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 
 		// 2. Derive ephemeral public key
 		const ephemeralPublicKeyUncompressed =
-			Secp256k1.derivePublicKey(ephemeralPrivateKey);
+			Secp256k1.derivePublicKey(/** @type {*} */ (ephemeralPrivateKey));
 		const ephemeralPublicKey =
 			/** @type {import('./StealthAddressType.js').EphemeralPublicKey} */ (
 				compressPublicKey(ephemeralPublicKeyUncompressed)
@@ -73,7 +73,7 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 
 		// 4. Compute shared secret: ECDH(ephemeralPrivKey, viewingPubKey)
 		const sharedSecret = Secp256k1.ecdh(
-			ephemeralPrivateKey,
+			/** @type {*} */ (ephemeralPrivateKey),
 			viewingPubKeyUncompressed,
 		);
 
@@ -91,7 +91,7 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 
 		// 9. Compute stealth public key: spendingPubKey + stealthPoint
 		const stealthPubKey = Secp256k1.addPoints(
-			spendingPubKeyUncompressed,
+			/** @type {*} */ (spendingPubKeyUncompressed),
 			stealthPoint,
 		);
 
@@ -103,11 +103,11 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 		// Convert to bigint
 		let xBigInt = 0n;
 		for (let i = 0; i < 32; i++) {
-			xBigInt = (xBigInt << 8n) | BigInt(x[i]);
+			xBigInt = (xBigInt << 8n) | BigInt(/** @type {number} */ (x[i]));
 		}
 		let yBigInt = 0n;
 		for (let i = 0; i < 32; i++) {
-			yBigInt = (yBigInt << 8n) | BigInt(y[i]);
+			yBigInt = (yBigInt << 8n) | BigInt(/** @type {number} */ (y[i]));
 		}
 
 		const stealthAddress = BrandedAddress.fromPublicKey(xBigInt, yBigInt);

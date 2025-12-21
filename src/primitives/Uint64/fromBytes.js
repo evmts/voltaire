@@ -24,7 +24,7 @@ export function fromBytes(bytes) {
 
 	let value = 0n;
 	for (let i = 0; i < SIZE; i++) {
-		value = (value << 8n) | BigInt(bytes[i]);
+		value = (value << 8n) | BigInt(/** @type {number} */ (bytes[i]));
 	}
 
 	return /** @type {import('./Uint64Type.js').Uint64Type} */ (value);

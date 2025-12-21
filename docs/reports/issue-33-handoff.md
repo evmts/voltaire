@@ -1,17 +1,18 @@
 # Issue #33 Continuation: TypeScript Test Failures Handoff
 
 ## Mission
-Continue fixing TypeScript type errors to reduce test failures. Previous sessions reduced source errors from 1597→1177 (-26%). Target: Get all 18,197 tests passing.
+Continue fixing TypeScript type errors to reduce test failures. Progress: 1597→1177→832 (-48% total). Target: Get all 18,197 tests passing.
 
 ## Current State
 
 ```
 Test Files  57 failed | 759 passed | 2 skipped (818)
 Tests       388 failed | 17732 passed | 182 skipped (18302)
-Errors      1177 source errors
+Errors      832 source errors
 ```
 
 **Latest commits on `main`**:
+- Session 3: JSDoc type casts, branded types, ABI fixes, FFI usize
 - `e96e9aba9` - Add JSDoc type annotations for implicit any params
 - `ea33e6f19` - Update issue-33 handoff with session progress
 - `bc880aaa8` - Add JSDoc type casts for branded types
@@ -38,83 +39,87 @@ Errors      1177 source errors
 | **from() return types** | `Nonce/from.js`, `Gas/*.js` | Added JSDoc return type casts |
 | **Wrong import paths** | ~40 files | Fixed `../../` to `../` for sibling modules |
 | **BrandedEventLog export** | `EventLogType.ts` | Added `BrandedEventLog` alias |
-| **Int128 branded types** | 13 files in `src/primitives/Int128/` | JSDoc casts `/** @type {BrandedInt128} */` |
-| **Int256 branded types** | 13 files in `src/primitives/Int256/` | JSDoc casts `/** @type {BrandedInt256} */` |
-| **Uint128 branded types** | 18 files in `src/primitives/Uint128/` | JSDoc casts `/** @type {Uint128Type} */` |
-| **Uint64 branded types** | 18 files in `src/primitives/Uint64/` | JSDoc casts `/** @type {Uint64Type} */` |
-| **Uint32 branded types** | 18 files in `src/primitives/Uint32/` | JSDoc casts `/** @type {Uint32Type} */` |
+| **Int128/Int256/Uint* branded types** | ~80 files | JSDoc casts `/** @type {Branded*} */` |
 | **Async test callbacks** | AccountState, PublicKey tests | Added `async` to test callbacks with `await import()` |
-| **EIP712 verifyTypedData** | `verifyTypedData.js` | JSDoc cast for array access in loop |
-| **Abi.test.js undefined** | `Abi.test.js` | `/** @type {*} */ (item)` instead of `item!` |
-| **PublicKey toHex test** | `toHex.test.js` | Added `asPublicKey` helper for branded casts |
-| **jsonrpc implicit any** | 5 files in `src/jsonrpc/` | Added JSDoc params for returned functions |
-| **createMemoryHost params** | `createMemoryHost.js` | JSDoc types for transient storage |
+| **ABI Item type mismatches** | 5 test files | Added `/** @type {ItemType[]} */` annotations |
+| **Constructor encodeParams/decodeParams** | `ConstructorType.ts` | Added `ConstructorInstance` interface with methods |
+| **Abi.js prototype methods** | `Abi.js` | Added JSDoc types and `/** @type {*} */` casts for `this` |
+| **EVM SWAP/PUSH handlers** | ~48 files | JSDoc casts for array access `/** @type {bigint|number} */` |
+| **Bytes compare.js files** | ~20 files | Extract variables with JSDoc casts for array access |
+| **Error 'unknown' in catch** | 5 test files | Rename `catch(e)` and cast `const error = /** @type {*} */ (e)` |
+| **StealthAddress branded casts** | 2 files | JSDoc casts for Secp256k1 params |
+| **PublicKey.verify signature** | `verify.js` | Updated JSDoc to match actual Secp256k1 verify signature |
+| **FFI usize type** | `native-loader/types.ts` | Replace `FFIType.usize` with `FFIType.u64` |
+| **Array<T> generic type** | jsonrpc BatchRequest/Response | Change `@param {Array}` to `@param {Array<*>}` |
 
 ## Remaining Error Patterns (Priority Order)
 
-### 1. HIGH: undefined/null handling (~100 errors)
+### 1. HIGH: Object/Item possibly undefined (~50 errors)
 ```
-Argument of type 'number | undefined' is not assignable to parameter of type 'string | number | bigint | boolean'.
-Object is possibly 'undefined'.
-Type 'bigint | undefined' is not assignable to type 'bigint'.
-```
-
-**Fix patterns**:
-```javascript
-// Option 1: Non-null assertion (only in .ts files)
-const value = obj.prop!;
-
-// Option 2: Default value
-const value = obj.prop ?? 0n;
-
-// Option 3: Type assertion after check (works in .js)
-if (obj.prop !== undefined) {
-  return /** @type {bigint} */ (obj.prop);
-}
-
-// Option 4: JSDoc cast (works in .js)
-const value = /** @type {number} */ (array[i]);
-```
-
-### 2. HIGH: ABI Item type compatibility (~70 errors)
-```
-Argument of type '{ type: string; ... }[]' is not assignable to parameter of type 'readonly Item[]'.
-Property 'encodeParams' does not exist on type...
-```
-
-**Fix pattern**: Use `as const` for ABI literals or proper type imports:
-```typescript
-const abi = [{ type: "function", ... }] as const;
-// or
-import type { Item } from './ItemType.js';
-const items: Item[] = [...];
-```
-
-### 3. MEDIUM: Implicit `any` parameters (~30 remaining errors)
-```
-Parameter 'value' implicitly has an 'any' type.
+Object is possibly 'undefined'. (26)
+'item' is possibly 'undefined'. (25)
 ```
 
 **Fix pattern**:
 ```javascript
-// Before
-const fn = (a, b) => { ... }
+// Option 1: Type assertion after check
+if (obj !== undefined) {
+  return /** @type {SomeType} */ (obj);
+}
 
-// After
-/** @param {string} a @param {number} b */
-const fn = (a, b) => { ... }
+// Option 2: Non-null assertion (only in .ts files)
+const value = obj!;
 
-// Or for arrow functions:
-const fn = /** @param {string} a */ (a) => { ... }
+// Option 3: JSDoc cast (works in .js)
+const value = /** @type {*} */ (array[i]);
 ```
 
-### 4. MEDIUM: Secp256k1SignatureType mismatch (~11 errors)
+### 2. HIGH: bigint/string | undefined (~35 errors)
 ```
-Type '(signature: Secp256k1SignatureType, messageHash: HashType, publicKey: Secp256k1PublicKeyType) => boolean'
-is not assignable to type '(signature: ..., hash: Uint8Array, publicKey: Uint8Array) => boolean'.
+Argument of type 'bigint | undefined' is not assignable to parameter of type 'bigint'. (16+9)
+Argument of type 'string | undefined' is not assignable to parameter of type 'string'. (11)
 ```
 
-**Fix**: Ensure consistent branded type usage across signature verification functions.
+**Fix pattern**:
+```javascript
+const value = /** @type {bigint} */ (maybeUndefined);
+// or use default:
+const value = maybeUndefined ?? 0n;
+```
+
+### 3. MEDIUM: Implicit any (~30 errors)
+```
+Parameter 'value' implicitly has an 'any' type. (10)
+'this' implicitly has type 'any'. (10)
+Parameter 'hex' implicitly has an 'any' type. (7)
+```
+
+**Fix pattern**:
+```javascript
+/** @param {string} value */
+const fn = (value) => { ... }
+```
+
+### 4. MEDIUM: ABI Item type mismatches (15 errors)
+```
+Argument of type '{ type: string; ... }' is not assignable to parameter of type 'Item'.
+```
+
+**Fix pattern**: Use `/** @type {*} */` cast or add `/** @type {ItemType[]} */` to arrays.
+
+### 5. LOW: Address type missing properties (9 errors)
+```
+Type 'AddressType' is missing properties: toChecksummed, toLowercase...
+```
+
+These may require updating the Address type definitions to include instance methods.
+
+### 6. LOW: Branded type conversion (8 errors)
+```
+Conversion of type 'Uint256Type' to type 'WeiType' may be a mistake.
+```
+
+**Fix pattern**: Cast through unknown: `/** @type {WeiType} */ (/** @type {unknown} */ (value))`
 
 ## Validation Commands
 

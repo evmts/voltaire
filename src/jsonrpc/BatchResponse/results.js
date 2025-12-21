@@ -1,7 +1,7 @@
 /**
  * Get all success responses from batch
  *
- * @param {Array} batch - Batch response
+ * @param {Array<*>} batch - Batch response
  * @returns {Array} Array of success responses
  *
  * @example

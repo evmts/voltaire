@@ -17,8 +17,8 @@ export function handler_0x92_SWAP3(frame) {
 
 	const topIdx = frame.stack.length - 1;
 	const swapIdx = frame.stack.length - 1 - 3;
-	const temp = frame.stack[topIdx];
-	frame.stack[topIdx] = frame.stack[swapIdx];
+	const temp = /** @type {bigint} */ (frame.stack[topIdx]);
+	frame.stack[topIdx] = /** @type {bigint} */ (frame.stack[swapIdx]);
 	frame.stack[swapIdx] = temp;
 
 	frame.pc += 1;

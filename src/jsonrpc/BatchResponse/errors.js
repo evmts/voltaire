@@ -1,7 +1,7 @@
 /**
  * Get all error responses from batch
  *
- * @param {Array} batch - Batch response
+ * @param {Array<*>} batch - Batch response
  * @returns {Array} Array of error responses
  *
  * @example

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getItem } from "./getItem.js";
 
 describe("getItem", () => {
+	/** @type {import('./Item/ItemType.js').ItemType[]} */
 	const testAbi = [
 		{
 			type: "function",

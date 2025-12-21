@@ -1,7 +1,7 @@
 export function compare(a, b) {
 	for (let i = 0; i < 2; i++) {
-		if (a[i] < b[i]) return -1;
-		if (a[i] > b[i]) return 1;
+		const ai = /** @type {number} */ (a[i]); const bi = /** @type {number} */ (b[i]); if (ai < bi) return -1;
+		if (ai > bi) return 1;
 	}
 	return 0;
 }

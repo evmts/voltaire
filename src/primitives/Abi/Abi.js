@@ -34,15 +34,15 @@ import { parseLogs } from "./parseLogs.js";
  * ```
  */
 export function Abi(items) {
-	const result = Array.from(items);
+	const result = /** @type {*} */ (Array.from(items));
 	Object.setPrototypeOf(result, Abi.prototype);
 	return result;
 }
 
 // Static constructor
-/** @param {readonly import('./Item/ItemType.js').Item[]} items */
+/** @param {readonly import('./Item/ItemType.js').ItemType[]} items */
 Abi.from = (items) => {
-	const result = Array.from(items);
+	const result = /** @type {*} */ (Array.from(items));
 	Object.setPrototypeOf(result, Abi.prototype);
 	return result;
 };
@@ -77,71 +77,78 @@ Object.setPrototypeOf(Abi.prototype, Array.prototype);
 // Instance methods for ABI operations
 /** @param {string} name @param {string} [type] */
 Abi.prototype.getItem = function (name, type) {
-	return getItem(this, name, type);
+	return getItem(/** @type {*} */ (this), name, type);
 };
 
 Abi.prototype.format = function () {
-	return this.map(/** @param {*} item */ (item) => format(item));
+	return /** @type {*} */ (this).map(/** @param {*} item */ (item) => format(item));
 };
 
 /** @param {Record<string, unknown[]>} args */
 Abi.prototype.formatWithArgs = function (args) {
-	return this.map(/** @param {*} item */ (item) => {
+	return /** @type {*} */ (this).map(/** @param {*} item */ (item) => {
 		if ("name" in item && item.name in args) {
-			return formatWithArgs(item, args[item.name]);
+			return formatWithArgs(item, /** @type {*} */ (args[item.name]));
 		}
 		return format(item);
 	});
 };
 
+/** @param {string} functionName @param {unknown[]} args */
 Abi.prototype.encode = function (functionName, args) {
-	return encode.call(this, functionName, args);
+	return encode.call(/** @type {*} */ (this), functionName, args);
 };
 
+/** @param {string} functionName @param {Uint8Array} data */
 Abi.prototype.decode = function (functionName, data) {
-	return decode.call(this, functionName, data);
+	return decode.call(/** @type {*} */ (this), functionName, data);
 };
 
+/** @param {Uint8Array} data */
 Abi.prototype.decodeData = function (data) {
-	return decodeData.call(this, data);
+	return decodeData.call(/** @type {*} */ (this), data);
 };
 
+/** @param {unknown[]} logs */
 Abi.prototype.parseLogs = function (logs) {
-	return parseLogs.call(this, logs);
+	return parseLogs.call(/** @type {*} */ (this), logs);
 };
 
 // Convenience methods for getting specific item types
+/** @param {string} name */
 Abi.prototype.getFunction = function (name) {
-	return getItem(this, name, "function");
+	return getItem(/** @type {*} */ (this), name, "function");
 };
 
+/** @param {string} name */
 Abi.prototype.getEvent = function (name) {
-	return getItem(this, name, "event");
+	return getItem(/** @type {*} */ (this), name, "event");
 };
 
+/** @param {string} name */
 Abi.prototype.getError = function (name) {
-	return getItem(this, name, "error");
+	return getItem(/** @type {*} */ (this), name, "error");
 };
 
 Abi.prototype.getConstructor = function () {
-	return this.find((item) => item.type === "constructor");
+	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "constructor");
 };
 
 Abi.prototype.getFallback = function () {
-	return this.find((item) => item.type === "fallback");
+	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "fallback");
 };
 
 Abi.prototype.getReceive = function () {
-	return this.find((item) => item.type === "receive");
+	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "receive");
 };
 
 Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	depth,
 	options,
 ) {
-	return `Abi(${this.length} items)`;
+	return `Abi(${/** @type {*} */ (this).length} items)`;
 };
 
 Abi.prototype.toString = function () {
-	return `Abi([${this.map((item) => item.name || item.type).join(", ")}])`;
+	return `Abi([${/** @type {*} */ (this).map(/** @param {*} item */ (item) => item.name || item.type).join(", ")}])`;
 };

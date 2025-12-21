@@ -25,8 +25,8 @@ import { SIZE } from "./constants.js";
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 
-export function Verify({ verifyBlobKzgProof }) {
-	return function verify(blob, commitment, proof) {
+export function Verify(/** @type {{verifyBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array) => boolean}} */ { verifyBlobKzgProof }) {
+	return /** @param {Uint8Array} blob @param {Uint8Array} commitment @param {Uint8Array} proof */ function verify(blob, commitment, proof) {
 		if (blob.length !== SIZE) {
 			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
 				value: blob.length,

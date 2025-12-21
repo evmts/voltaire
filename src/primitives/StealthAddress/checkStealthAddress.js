@@ -88,7 +88,7 @@ export function checkStealthAddress(
 
 		// 2. Compute shared secret: ECDH(viewingPrivKey, ephemeralPubKey)
 		const sharedSecret = Secp256k1.ecdh(
-			viewingPrivateKey,
+			/** @type {*} */ (viewingPrivateKey),
 			ephemeralPubKeyUncompressed,
 		);
 
@@ -110,7 +110,7 @@ export function checkStealthAddress(
 
 		// 7. Compute stealth public key: spendingPubKey + stealthPoint
 		const stealthPubKey = Secp256k1.addPoints(
-			spendingPubKeyUncompressed,
+			/** @type {*} */ (spendingPubKeyUncompressed),
 			stealthPoint,
 		);
 
@@ -120,11 +120,11 @@ export function checkStealthAddress(
 
 		let xBigInt = 0n;
 		for (let i = 0; i < 32; i++) {
-			xBigInt = (xBigInt << 8n) | BigInt(x[i]);
+			xBigInt = (xBigInt << 8n) | BigInt(/** @type {number} */ (x[i]));
 		}
 		let yBigInt = 0n;
 		for (let i = 0; i < 32; i++) {
-			yBigInt = (yBigInt << 8n) | BigInt(y[i]);
+			yBigInt = (yBigInt << 8n) | BigInt(/** @type {number} */ (y[i]));
 		}
 
 		const computedStealthAddress = BrandedAddress.fromPublicKey(

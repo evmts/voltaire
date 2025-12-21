@@ -24,7 +24,7 @@ export function fromBytes(bytes) {
 	// Parse as unsigned
 	let unsigned = 0n;
 	for (let i = 0; i < SIZE; i++) {
-		unsigned = (unsigned << 8n) | BigInt(bytes[i]);
+		unsigned = (unsigned << 8n) | BigInt(/** @type {number} */ (bytes[i]));
 	}
 
 	// Convert from two's complement if high bit is set

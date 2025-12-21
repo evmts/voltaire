@@ -33,7 +33,7 @@ export interface NativeExports {
 
 	// Keccak256 operations
 	primitives_keccak256: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 
@@ -57,7 +57,7 @@ export interface NativeExports {
 		returns: FFIType.i32;
 	};
 	primitives_bytes_to_hex: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 
@@ -73,7 +73,7 @@ export interface NativeExports {
 
 	// EIP-191 operations
 	primitives_eip191_hash_message: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 
@@ -123,21 +123,21 @@ export interface NativeExports {
 
 	// Hash functions
 	primitives_sha256: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 	primitives_ripemd160: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 	primitives_blake2b: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 
 	// RLP operations
 	primitives_rlp_encode_bytes: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 	primitives_rlp_encode_uint: {
@@ -145,7 +145,7 @@ export interface NativeExports {
 		returns: FFIType.i32;
 	};
 	primitives_rlp_to_hex: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 	primitives_rlp_from_hex: {
@@ -183,11 +183,11 @@ export interface NativeExports {
 
 	// Solidity-compatible hash functions
 	primitives_solidity_keccak256: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 	primitives_solidity_sha256: {
-		args: [FFIType.ptr, FFIType.usize, FFIType.ptr];
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr];
 		returns: FFIType.i32;
 	};
 

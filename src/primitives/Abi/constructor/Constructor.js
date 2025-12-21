@@ -1,16 +1,18 @@
-// @ts-nocheck
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";
 
 /**
  * Factory function for creating Constructor instances
+ * @template {import('../function/statemutability.js').StateMutability} TStateMutability
+ * @template {readonly import('../Parameter.js').Parameter[]} TInputs
  * @param {Object} options
- * @param {'constructor'} options.type
- * @param {import('../function/statemutability.js').StateMutability} options.stateMutability
- * @param {readonly import('../../parameter/index.js').Parameter[]} options.inputs
+ * @param {'constructor'} [options.type]
+ * @param {TStateMutability} options.stateMutability
+ * @param {TInputs} options.inputs
+ * @returns {import('./ConstructorType.js').ConstructorInstance<TStateMutability, TInputs>}
  */
 export function Constructor({ type = "constructor", stateMutability, inputs }) {
-	const result = { type, stateMutability, inputs };
+	const result = /** @type {*} */ ({ type, stateMutability, inputs });
 	Object.setPrototypeOf(result, Constructor.prototype);
 	return result;
 }
@@ -23,12 +25,14 @@ Constructor.decodeParams = decodeParams;
 Object.setPrototypeOf(Constructor.prototype, Object.prototype);
 
 // Instance methods
+/** @param {unknown[]} args */
 Constructor.prototype.encodeParams = function (args) {
-	return encodeParams(this, args);
+	return encodeParams(/** @type {*} */ (this), args);
 };
 
+/** @param {Uint8Array} data */
 Constructor.prototype.decodeParams = function (data) {
-	return decodeParams(this, data);
+	return decodeParams(/** @type {*} */ (this), data);
 };
 
 Constructor.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
