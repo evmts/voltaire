@@ -18,5 +18,5 @@ import type { GweiType as BrandedGwei } from "./GweiType.js";
  * ```
  */
 export function from(value: bigint | number | string): BrandedGwei {
-	return Uint.from(value) as BrandedGwei;
+	return Uint.from(value) as unknown as BrandedGwei;
 }

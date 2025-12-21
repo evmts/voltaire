@@ -18,5 +18,5 @@ import type { WeiType as BrandedWei } from "./WeiType.js";
  * ```
  */
 export function from(value: bigint | number | string): BrandedWei {
-	return Uint.from(value) as BrandedWei;
+	return Uint.from(value) as unknown as BrandedWei;
 }

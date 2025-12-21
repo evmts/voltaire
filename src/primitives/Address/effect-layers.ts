@@ -2,6 +2,8 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { hash as keccak256Native } from "../../crypto/Keccak256/hash.js";
 import { derivePublicKey as derivePublicKeyNative } from "../../crypto/Secp256k1/derivePublicKey.js";
+import type { PrivateKeyType } from "../PrivateKey/PrivateKeyType.js";
+import type { Encodable } from "../Rlp/RlpType.js";
 import { encode as rlpEncodeNative } from "../Rlp/encode.js";
 import { CryptoOperationError, RlpEncodingError } from "./effect-errors.js";
 import {
@@ -39,7 +41,7 @@ export const Secp256k1ServiceLive = Layer.succeed(
 	Secp256k1Service.of({
 		derivePublicKey: (privateKey) =>
 			Effect.try({
-				try: () => derivePublicKeyNative(privateKey),
+				try: () => derivePublicKeyNative(privateKey as PrivateKeyType),
 				catch: (error) =>
 					new CryptoOperationError({
 						operation: "secp256k1",
@@ -52,7 +54,7 @@ export const Secp256k1ServiceLive = Layer.succeed(
 				try: () => {
 					// This would need implementation using @noble/curves
 					// For now, derive public key and extract x, y coordinates
-					const publicKey = derivePublicKeyNative(privateKey);
+					const publicKey = derivePublicKeyNative(privateKey as PrivateKeyType);
 					// Public key is 64 bytes: 32 bytes for x, 32 bytes for y
 					const x = publicKey.slice(0, 32);
 					const y = publicKey.slice(32, 64);
@@ -61,8 +63,8 @@ export const Secp256k1ServiceLive = Layer.succeed(
 					let xBigInt = 0n;
 					let yBigInt = 0n;
 					for (let i = 0; i < 32; i++) {
-						xBigInt = (xBigInt << 8n) | BigInt(x[i]);
-						yBigInt = (yBigInt << 8n) | BigInt(y[i]);
+						xBigInt = (xBigInt << 8n) | BigInt(x[i] ?? 0);
+						yBigInt = (yBigInt << 8n) | BigInt(y[i] ?? 0);
 					}
 					return { x: xBigInt, y: yBigInt };
 				},
@@ -85,7 +87,7 @@ export const RlpEncoderServiceLive = Layer.succeed(
 	RlpEncoderService.of({
 		encode: (data) =>
 			Effect.try({
-				try: () => rlpEncodeNative(data),
+				try: () => rlpEncodeNative(data as Encodable),
 				catch: (error) =>
 					new RlpEncodingError({
 						data,

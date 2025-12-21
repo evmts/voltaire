@@ -186,16 +186,36 @@ async function runClaudeCodeCycle(prompt: string, cycleNum: number): Promise<{ s
     // --permission-mode acceptEdits: auto-accept file edits
     // --output-format text: get readable output
     // --max-budget-usd: limit cost per cycle
-    const result = await $`cat ${promptFile} | claude \
-      --print \
-      --dangerously-skip-permissions \
-      --permission-mode acceptEdits \
-      --output-format text \
-      --max-budget-usd ${CONFIG.maxBudgetPerCycle}`.timeout(900000); // 15 min timeout
+    const proc = Bun.spawn(
+      ["sh", "-c", `cat "${promptFile}" | claude --print --dangerously-skip-permissions --permission-mode acceptEdits --output-format text --max-budget-usd ${CONFIG.maxBudgetPerCycle}`],
+      {
+        cwd: process.cwd(),
+        stdout: "pipe",
+        stderr: "pipe",
+      }
+    );
+
+    // Set up a timeout
+    const timeoutMs = 900000; // 15 minutes
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        proc.kill();
+        reject(new Error(`Timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+
+    // Wait for completion or timeout
+    const exitCode = await Promise.race([proc.exited, timeoutPromise]);
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+
+    if (exitCode !== 0) {
+      console.error("Claude stderr:", stderr);
+    }
 
     return {
-      success: true,
-      output: result.stdout.toString(),
+      success: exitCode === 0,
+      output: stdout || stderr,
     };
   } catch (error) {
     console.error("Claude Code cycle error:", error);

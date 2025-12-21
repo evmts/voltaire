@@ -17,5 +17,5 @@ import type { EtherType as BrandedEther } from "./EtherType.js";
  * ```
  */
 export function toU256(ether: BrandedEther): Uint256Type {
-	return ether as Uint256Type;
+	return ether as unknown as Uint256Type;
 }

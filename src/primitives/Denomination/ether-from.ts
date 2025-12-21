@@ -18,5 +18,5 @@ import type { EtherType as BrandedEther } from "./EtherType.js";
  * ```
  */
 export function from(value: bigint | number | string): BrandedEther {
-	return Uint.from(value) as BrandedEther;
+	return Uint.from(value) as unknown as BrandedEther;
 }

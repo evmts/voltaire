@@ -17,5 +17,5 @@ import type { GweiType as BrandedGwei } from "./GweiType.js";
  * ```
  */
 export function toU256(gwei: BrandedGwei): Uint256Type {
-	return gwei as Uint256Type;
+	return gwei as unknown as Uint256Type;
 }

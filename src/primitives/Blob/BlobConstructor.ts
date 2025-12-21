@@ -12,18 +12,18 @@ import type { isValid } from "./isValid.js";
 import type { isValidVersion } from "./isValidVersion.js";
 import type { joinData } from "./joinData.js";
 import type { splitData } from "./splitData.js";
-import type { toCommitment } from "./toCommitment.js";
+import type { ToCommitment } from "./toCommitment.js";
 import type { toData } from "./toData.js";
-import type { toProof } from "./toProof.js";
-import type { toVersionedHash } from "./toVersionedHash.js";
-import type { verify } from "./verify.js";
+import type { ToProof } from "./toProof.js";
+import type { ToVersionedHash } from "./toVersionedHash.js";
+import type { Verify } from "./verify.js";
 import type { verifyBatch } from "./verifyBatch.js";
 
 type BlobPrototype = BrandedBlob & {
 	toData: typeof toData;
-	toCommitment: typeof toCommitment;
-	toProof: typeof toProof;
-	verify: typeof verify;
+	toCommitment: ReturnType<typeof ToCommitment>;
+	toProof: ReturnType<typeof ToProof>;
+	verify: ReturnType<typeof Verify>;
 };
 
 export interface BlobConstructor {
@@ -33,10 +33,10 @@ export interface BlobConstructor {
 	fromData: typeof fromData;
 	isValid: typeof isValid;
 	toData: typeof toData;
-	toCommitment: typeof toCommitment;
-	toProof: typeof toProof;
-	toVersionedHash: typeof toVersionedHash;
-	verify: typeof verify;
+	toCommitment: ReturnType<typeof ToCommitment>;
+	toProof: ReturnType<typeof ToProof>;
+	toVersionedHash: ReturnType<typeof ToVersionedHash>;
+	verify: ReturnType<typeof Verify>;
 	verifyBatch: typeof verifyBatch;
 	isValidVersion: typeof isValidVersion;
 	calculateGas: typeof calculateGas;

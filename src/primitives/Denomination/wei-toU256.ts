@@ -17,5 +17,5 @@ import type { WeiType as BrandedWei } from "./WeiType.js";
  * ```
  */
 export function toU256(wei: BrandedWei): Uint256Type {
-	return wei as Uint256Type;
+	return wei as unknown as Uint256Type;
 }
