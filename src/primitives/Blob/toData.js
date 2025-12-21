@@ -13,7 +13,7 @@ import {
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @see https://eips.ethereum.org/EIPS/eip-4844 for EIP-4844 specification
  * @since 0.0.0
- * @param {import('./BlobType.js').BlobType} blob - Blob data
+ * @param {import('./BlobType.js').BrandedBlob} blob - Blob data
  * @returns {Uint8Array} Original data
  * @throws {Error} If blob size is invalid or format is corrupted
  * @example
@@ -58,8 +58,8 @@ export function toData(blob) {
 			continue;
 		}
 
-		// Copy data byte
-		data[dataOffset] = blob[blobOffset];
+		// Copy data byte (index is always in bounds by construction)
+		data[dataOffset] = /** @type {number} */ (blob[blobOffset]);
 		dataOffset++;
 		blobOffset++;
 	}

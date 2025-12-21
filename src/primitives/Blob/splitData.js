@@ -12,7 +12,7 @@ import { fromData } from "./fromData.js";
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
  * @param {Uint8Array} data - Data to split
- * @returns {import('./BlobType.js').BlobType[]} Array of blobs containing the data
+ * @returns {import('./BlobType.js').BrandedBlob[]} Array of blobs containing the data
  * @throws {Error} If data requires more blobs than maximum per transaction
  * @example
  * ```javascript

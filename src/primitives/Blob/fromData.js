@@ -14,7 +14,7 @@ import {
  * @see https://eips.ethereum.org/EIPS/eip-4844 for EIP-4844 specification
  * @since 0.0.0
  * @param {Uint8Array} data - Data to encode (max 126972 bytes)
- * @returns {import('./BlobType.js').BlobType} Blob containing encoded data
+ * @returns {import('./BlobType.js').BrandedBlob} Blob containing encoded data
  * @throws {Error} If data exceeds maximum size
  * @example
  * ```javascript
@@ -57,13 +57,13 @@ export function fromData(data) {
 			continue;
 		}
 
-		// Copy data byte
-		blob[blobOffset] = data[dataOffset];
+		// Copy data byte (index is always in bounds by construction)
+		blob[blobOffset] = /** @type {number} */ (data[dataOffset]);
 		dataOffset++;
 		blobOffset++;
 	}
 
 	// Rest is already zero-padded from Uint8Array construction
 
-	return /** @type {import('./BlobType.js').BlobType} */ (blob);
+	return /** @type {import('./BlobType.js').BrandedBlob} */ (blob);
 }
