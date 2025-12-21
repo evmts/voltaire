@@ -47,21 +47,38 @@ export function validate(auth) {
 		throw new InvalidYParityError(auth.yParity);
 	}
 
+	// Convert r and s to bigint for comparison
+	const rBigInt = bytesToBigInt(auth.r);
+	const sBigInt = bytesToBigInt(auth.s);
+
 	// r and s must be non-zero
-	if (auth.r === 0n) {
-		throw new InvalidSignatureComponentError("r", auth.r);
+	if (rBigInt === 0n) {
+		throw new InvalidSignatureComponentError("r", rBigInt);
 	}
-	if (auth.s === 0n) {
-		throw new InvalidSignatureComponentError("s", auth.s);
+	if (sBigInt === 0n) {
+		throw new InvalidSignatureComponentError("s", sBigInt);
 	}
 
 	// r must be < N
-	if (auth.r >= SECP256K1_N) {
-		throw new InvalidSignatureRangeError(auth.r, SECP256K1_N);
+	if (rBigInt >= SECP256K1_N) {
+		throw new InvalidSignatureRangeError(rBigInt, SECP256K1_N);
 	}
 
 	// s must be <= N/2 (no malleable signatures)
-	if (auth.s > SECP256K1_HALF_N) {
-		throw new MalleableSignatureError(auth.s, SECP256K1_HALF_N);
+	if (sBigInt > SECP256K1_HALF_N) {
+		throw new MalleableSignatureError(sBigInt, SECP256K1_HALF_N);
 	}
+}
+
+/**
+ * Convert Uint8Array to bigint
+ * @param {Uint8Array} bytes
+ * @returns {bigint}
+ */
+function bytesToBigInt(bytes) {
+	let result = 0n;
+	for (let i = 0; i < bytes.length; i++) {
+		result = (result << 8n) | BigInt(/** @type {number} */ (bytes[i]));
+	}
+	return result;
 }

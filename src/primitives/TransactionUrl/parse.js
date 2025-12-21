@@ -1,5 +1,5 @@
 import * as Address from "../Address/internal-index.js";
-import * as Bytes from "../Bytes/index.js";
+import { from as bytesFrom } from "../Bytes/from.js";
 import { Hex } from "../Hex/index.js";
 import { InvalidTransactionUrlError } from "./errors.js";
 
@@ -102,16 +102,16 @@ export function parse(url) {
 		});
 	}
 
-	// Build result
-	/** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */
-	const result = { target };
+	// Build result - use object spread to build incrementally
+	/** @type {Partial<import('./TransactionUrlType.js').ParsedTransactionUrl>} */
+	let result = { target };
 
 	if (chainId !== undefined) {
-		result.chainId = chainId;
+		result = { ...result, chainId };
 	}
 
 	if (functionName !== undefined) {
-		result.functionName = functionName;
+		result = { ...result, functionName };
 	}
 
 	// Parse query parameters
@@ -119,23 +119,23 @@ export function parse(url) {
 		const params = parseQueryString(queryString, url);
 
 		if (params.value !== undefined) {
-			result.value = params.value;
+			result = { ...result, value: params.value };
 		}
 		if (params.gas !== undefined) {
-			result.gas = params.gas;
+			result = { ...result, gas: params.gas };
 		}
 		if (params.gasPrice !== undefined) {
-			result.gasPrice = params.gasPrice;
+			result = { ...result, gasPrice: params.gasPrice };
 		}
 		if (params.data !== undefined) {
-			result.data = params.data;
+			result = { ...result, data: params.data };
 		}
 		if (params.functionParams !== undefined) {
-			result.functionParams = params.functionParams;
+			result = { ...result, functionParams: params.functionParams };
 		}
 	}
 
-	return result;
+	return /** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */ (result);
 }
 
 /**
@@ -191,7 +191,7 @@ function parseQueryString(queryString, url) {
 			// Parse hex data
 			try {
 				const hexValue = Hex.from(value);
-				result.data = Bytes.from(Hex.toBytes(hexValue));
+				result = { ...result, data: bytesFrom(Hex.toBytes(hexValue)) };
 			} catch (error) {
 				throw new InvalidTransactionUrlError("Invalid data parameter", {
 					key,

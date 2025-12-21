@@ -24,7 +24,7 @@ import {
 export function Address(value) {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 }
 
 // Alias for Address()
@@ -47,7 +47,7 @@ export function Address(value) {
 Address.from = (value) => {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -67,7 +67,7 @@ Address.from = (value) => {
 Address.fromBase64 = (value) => {
 	const result = BrandedAddress.fromBase64(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -87,7 +87,7 @@ Address.fromBase64 = (value) => {
 Address.fromHex = (value) => {
 	const result = BrandedAddress.fromHex(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -108,7 +108,7 @@ Address.fromHex = (value) => {
 Address.fromBytes = (value) => {
 	const result = BrandedAddress.fromBytes(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -128,7 +128,7 @@ Address.fromBytes = (value) => {
 Address.fromNumber = (value) => {
 	const result = BrandedAddress.fromNumber(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -151,7 +151,7 @@ Address.fromNumber = (value) => {
 Address.fromPublicKey = (x, y) => {
 	const result = BrandedAddress.fromPublicKey(x, y);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -172,7 +172,7 @@ Address.fromPublicKey = (x, y) => {
 Address.fromPrivateKey = (value) => {
 	const result = BrandedAddress.fromPrivateKey(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 /**
@@ -193,7 +193,7 @@ Address.fromPrivateKey = (value) => {
 Address.fromAbiEncoded = (value) => {
 	const result = BrandedAddress.fromAbiEncoded(value);
 	Object.setPrototypeOf(result, Address.prototype);
-	return result;
+	return /** @type {import('./AddressClass.js').Address} */ (result);
 };
 
 // Static utility methods (don't return Address instances)
@@ -308,7 +308,7 @@ Address.calculateCreateAddress = (address, nonce) => {
 Address.calculateCreate2Address = (address, salt, initCode) => {
 	const result = BrandedAddress.calculateCreate2Address(
 		address,
-		salt,
+		/** @type {*} */ (salt),
 		initCode,
 	);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -365,7 +365,7 @@ Address.prototype.toBytes = BrandedAddress.toBytes.call.bind(
 );
 Address.prototype.clone = function () {
 	const result = BrandedAddress.clone(
-		/** @type {import('./AddressType.js').AddressType} */ (this),
+		/** @type {import('./AddressType.js').AddressType} */ (/** @type {unknown} */ (this)),
 	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
@@ -416,7 +416,7 @@ Address.prototype.calculateCreateAddress = function (nonce) {
 Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(
 		/** @type {import('./AddressType.js').AddressType} */ (this),
-		salt,
+		/** @type {*} */ (salt),
 		initCode,
 	);
 	Object.setPrototypeOf(result, Address.prototype);

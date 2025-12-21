@@ -14,7 +14,7 @@ export function Concat({ keccak256 }) {
 	 *
 	 * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
 	 * @since 0.0.0
-	 * @param {...import('./HashType.js').HashType} hashes - Hashes to concatenate
+	 * @param {import('./HashType.js').HashType[]} hashes - Hashes to concatenate
 	 * @returns {import('./HashType.js').HashType} Hash of concatenated hashes
 	 * @throws {never}
 	 * @example

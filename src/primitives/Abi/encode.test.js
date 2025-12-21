@@ -142,6 +142,7 @@ describe("encode", () => {
 		});
 
 		it("throws when item is not a function", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "event",
@@ -157,6 +158,7 @@ describe("encode", () => {
 
 	describe("complex parameter types", () => {
 		it("encodes function with array parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -181,6 +183,7 @@ describe("encode", () => {
 		});
 
 		it("encodes function with string parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -198,6 +201,7 @@ describe("encode", () => {
 		});
 
 		it("encodes function with bytes parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -215,6 +219,7 @@ describe("encode", () => {
 		});
 
 		it("encodes function with bool parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -272,6 +277,7 @@ describe("encode", () => {
 
 	describe("this binding", () => {
 		it("uses this context as abi", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -294,7 +300,7 @@ describe("encode", () => {
 			const amount = 1000n;
 			const encoded = encode.call(testAbi, "transfer", [to, amount]);
 
-			const decoded = Function.decodeParams(testAbi[0], encoded);
+			const decoded = Function.decodeParams(/** @type {*} */ (testAbi[0]), encoded);
 			expect(decoded).toEqual([to, amount]);
 		});
 
@@ -303,7 +309,7 @@ describe("encode", () => {
 			const amount = 999n;
 			const encoded = encode.call(testAbi, "approve", [spender, amount]);
 
-			const decoded = Function.decodeParams(testAbi[2], encoded);
+			const decoded = Function.decodeParams(/** @type {*} */ (testAbi[2]), encoded);
 			expect(decoded).toEqual([spender, amount]);
 		});
 	});
@@ -335,6 +341,7 @@ describe("encode", () => {
 
 	describe("overloaded functions", () => {
 		it("encodes first matching function name", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",

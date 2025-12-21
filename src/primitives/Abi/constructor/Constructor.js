@@ -35,13 +35,17 @@ Constructor.prototype.decodeParams = function (data) {
 	return decodeParams(/** @type {*} */ (this), data);
 };
 
+/**
+ * @param {number} depth
+ * @param {*} options
+ */
 Constructor.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	depth,
 	options,
 ) {
-	return `Constructor(stateMutability: ${this.stateMutability}, inputs: ${this.inputs.length})`;
+	return `Constructor(stateMutability: ${/** @type {*} */ (this).stateMutability}, inputs: ${/** @type {*} */ (this).inputs.length})`;
 };
 
 Constructor.prototype.toString = function () {
-	return `Constructor(stateMutability: ${this.stateMutability}, inputs: ${this.inputs.length})`;
+	return `Constructor(stateMutability: ${/** @type {*} */ (this).stateMutability}, inputs: ${/** @type {*} */ (this).inputs.length})`;
 };

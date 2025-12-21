@@ -19,13 +19,14 @@ describe("random", () => {
 		});
 
 		it("creates many unique hashes", () => {
+			/** @type {import('./HashType.js').HashType[]} */
 			const hashes = [];
 			for (let i = 0; i < 10; i++) {
 				hashes.push(random());
 			}
 			for (let i = 0; i < hashes.length; i++) {
 				for (let j = i + 1; j < hashes.length; j++) {
-					expect(equals(hashes[i], hashes[j])).toBe(false);
+					expect(equals(/** @type {*} */ (hashes[i]), /** @type {*} */ (hashes[j]))).toBe(false);
 				}
 			}
 		});
@@ -53,8 +54,9 @@ describe("random", () => {
 			let hasLow = false;
 			let hasHigh = false;
 			for (let i = 0; i < hash.length; i++) {
-				if (hash[i] < 128) hasLow = true;
-				if (hash[i] >= 128) hasHigh = true;
+				const byte = /** @type {number} */ (hash[i]);
+				if (byte < 128) hasLow = true;
+				if (byte >= 128) hasHigh = true;
 			}
 			expect(hasLow || hasHigh).toBe(true);
 		});
@@ -74,6 +76,7 @@ describe("random", () => {
 
 	describe("independence", () => {
 		it("repeated calls produce independent hashes", () => {
+			/** @type {import('./HashType.js').HashType[]} */
 			const hashes = [];
 			for (let i = 0; i < 5; i++) {
 				hashes.push(random());
@@ -90,7 +93,8 @@ describe("random", () => {
 			const hash = random();
 			const byteCounts = new Array(256).fill(0);
 			for (let i = 0; i < hash.length; i++) {
-				byteCounts[hash[i]]++;
+				const byte = /** @type {number} */ (hash[i]);
+				byteCounts[byte]++;
 			}
 			const uniqueBytes = byteCounts.filter((c) => c > 0).length;
 			expect(uniqueBytes).toBeGreaterThan(10);
@@ -98,9 +102,11 @@ describe("random", () => {
 
 		it("unlikely to have many repeated bytes", () => {
 			const hash = random();
+			/** @type {Record<number, number>} */
 			const byteCounts = {};
 			for (let i = 0; i < hash.length; i++) {
-				byteCounts[hash[i]] = (byteCounts[hash[i]] || 0) + 1;
+				const byte = /** @type {number} */ (hash[i]);
+				byteCounts[byte] = (byteCounts[byte] || 0) + 1;
 			}
 			const maxRepeats = Math.max(...Object.values(byteCounts));
 			expect(maxRepeats).toBeLessThan(10);

@@ -27,6 +27,7 @@
 export function from(codeOrError, message, data) {
 	// If first arg is object, treat as full error
 	if (typeof codeOrError === "object" && codeOrError !== null) {
+		/** @type {*} */
 		const error = codeOrError;
 		if (typeof error.code !== "number") {
 			throw new TypeError("Error code must be a number");
@@ -49,6 +50,7 @@ export function from(codeOrError, message, data) {
 		throw new TypeError("Error message must be a string");
 	}
 
+	/** @type {{ code: number; message: string; data?: unknown }} */
 	const result = {
 		code: codeOrError,
 		message,

@@ -1,4 +1,8 @@
 export class InvalidBytesLengthError extends Error {
+	/**
+	 * @param {string} message
+	 * @param {*} [details]
+	 */
 	constructor(message, details) {
 		super(message);
 		this.name = "InvalidBytesLengthError";
@@ -7,6 +11,10 @@ export class InvalidBytesLengthError extends Error {
 }
 
 export class InvalidBytesFormatError extends Error {
+	/**
+	 * @param {string} message
+	 * @param {*} [details]
+	 */
 	constructor(message, details) {
 		super(message);
 		this.name = "InvalidBytesFormatError";
@@ -15,6 +23,10 @@ export class InvalidBytesFormatError extends Error {
 }
 
 export class InvalidValueError extends Error {
+	/**
+	 * @param {string} message
+	 * @param {*} [details]
+	 */
 	constructor(message, details) {
 		super(message);
 		this.name = "InvalidValueError";

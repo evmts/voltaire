@@ -96,7 +96,7 @@ describe("AccountState.from", () => {
 			});
 
 			expect(() => {
-				state.nonce = nonceFrom(10n);
+				/** @type {*} */ (state).nonce = nonceFrom(10n);
 			}).toThrow();
 		});
 
@@ -109,7 +109,7 @@ describe("AccountState.from", () => {
 			});
 
 			expect(() => {
-				state.balance = weiFrom(200n);
+				/** @type {*} */ (state).balance = weiFrom(200n);
 			}).toThrow();
 		});
 
@@ -122,7 +122,7 @@ describe("AccountState.from", () => {
 			});
 
 			expect(() => {
-				state.storageRoot = StateRoot.from(
+				/** @type {*} */ (state).storageRoot = StateRoot.from(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 			}).toThrow();
@@ -137,7 +137,7 @@ describe("AccountState.from", () => {
 			});
 
 			expect(() => {
-				state.codeHash = Hash(
+				/** @type {*} */ (state).codeHash = Hash(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 			}).toThrow();
@@ -147,70 +147,70 @@ describe("AccountState.from", () => {
 	describe("error cases", () => {
 		it("throws on missing nonce", () => {
 			expect(() =>
-				from({
+				from(/** @type {*} */ ({
 					balance: weiFrom(0n),
 					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
 					codeHash: Hash(EMPTY_CODE_HASH),
-				}),
+				})),
 			).toThrow("nonce is required");
 		});
 
 		it("throws on missing balance", () => {
 			expect(() =>
-				from({
+				from(/** @type {*} */ ({
 					nonce: nonceFrom(0n),
 					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
 					codeHash: Hash(EMPTY_CODE_HASH),
-				}),
+				})),
 			).toThrow("balance is required");
 		});
 
 		it("throws on missing storageRoot", () => {
 			expect(() =>
-				from({
+				from(/** @type {*} */ ({
 					nonce: nonceFrom(0n),
 					balance: weiFrom(0n),
 					codeHash: Hash(EMPTY_CODE_HASH),
-				}),
+				})),
 			).toThrow("storageRoot is required");
 		});
 
 		it("throws on missing codeHash", () => {
 			expect(() =>
-				from({
+				from(/** @type {*} */ ({
 					nonce: nonceFrom(0n),
 					balance: weiFrom(0n),
 					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
-				}),
+				})),
 			).toThrow("codeHash is required");
 		});
 
 		it("throws on null input", () => {
-			expect(() => from(null)).toThrow(
+			expect(() => from(/** @type {*} */ (null))).toThrow(
 				"AccountState must be an object with nonce, balance, storageRoot, and codeHash",
 			);
 		});
 
 		it("throws on undefined input", () => {
-			expect(() => from(undefined)).toThrow(
+			expect(() => from(/** @type {*} */ (undefined))).toThrow(
 				"AccountState must be an object with nonce, balance, storageRoot, and codeHash",
 			);
 		});
 
 		it("throws on string input", () => {
-			expect(() => from("not an object")).toThrow(
+			expect(() => from(/** @type {*} */ ("not an object"))).toThrow(
 				"AccountState must be an object with nonce, balance, storageRoot, and codeHash",
 			);
 		});
 
 		it("throws on number input", () => {
-			expect(() => from(42)).toThrow(
+			expect(() => from(/** @type {*} */ (42))).toThrow(
 				"AccountState must be an object with nonce, balance, storageRoot, and codeHash",
 			);
 		});
 
 		it("throws on array input", () => {
-			expect(() => from([])).toThrow("nonce is required");
+			expect(() => from(/** @type {*} */ ([]))).toThrow("nonce is required");
 		});
 	});
 });

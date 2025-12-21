@@ -16,14 +16,8 @@ import * as Hex from "../Hex/index.js";
  * ```
  */
 export function decode(raw) {
-	const metadata = {
-		raw,
-		solc: undefined,
-		ipfs: undefined,
-		bzzr0: undefined,
-		bzzr1: undefined,
-		experimental: undefined,
-	};
+	/** @type {import('./MetadataType.js').Metadata} */
+	const metadata = { raw };
 
 	// Simple CBOR parser for Solidity metadata
 	// Format: map with string keys ("ipfs", "solc", "bzzr0", "bzzr1", "experimental")
@@ -58,9 +52,9 @@ export function decode(raw) {
 				i += len;
 
 				if (key === "ipfs") {
-					metadata.ipfs = Hex.fromBytes(value);
+					/** @type {*} */ (metadata).ipfs = Hex.fromBytes(value);
 				} else if (key === "solc") {
-					metadata.solc = new TextDecoder().decode(value);
+					/** @type {*} */ (metadata).solc = new TextDecoder().decode(value);
 				}
 			} else if (raw[i] === 0x58 || raw[i] === 0x14 || raw[i] === 0x20) {
 				// Fixed-size byte strings
@@ -71,7 +65,7 @@ export function decode(raw) {
 				i += len;
 
 				if (key === "ipfs") {
-					metadata.ipfs = Hex.fromBytes(value);
+					/** @type {*} */ (metadata).ipfs = Hex.fromBytes(value);
 				}
 			}
 		} else if (raw[i] === 0x65) {
@@ -90,9 +84,9 @@ export function decode(raw) {
 				i += len;
 
 				if (key === "bzzr0") {
-					metadata.bzzr0 = Hex.fromBytes(value);
+					/** @type {*} */ (metadata).bzzr0 = Hex.fromBytes(value);
 				} else if (key === "bzzr1") {
-					metadata.bzzr1 = Hex.fromBytes(value);
+					/** @type {*} */ (metadata).bzzr1 = Hex.fromBytes(value);
 				}
 			}
 		} else if (raw[i] === 0x6c) {
@@ -102,10 +96,10 @@ export function decode(raw) {
 
 			// Read boolean value
 			if (raw[i] === 0xf5) {
-				metadata.experimental = true;
+				/** @type {*} */ (metadata).experimental = true;
 				i++;
 			} else if (raw[i] === 0xf4) {
-				metadata.experimental = false;
+				/** @type {*} */ (metadata).experimental = false;
 				i++;
 			}
 		} else {

@@ -10,6 +10,7 @@ describe("Abi", () => {
 		});
 
 		it("creates Abi from function items", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const items = [
 				{
 					type: "function",
@@ -29,6 +30,7 @@ describe("Abi", () => {
 		});
 
 		it("creates Abi with multiple item types", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const items = [
 				{
 					type: "function",
@@ -68,6 +70,7 @@ describe("Abi", () => {
 
 	describe("Abi.from", () => {
 		it("creates Abi from items", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const items = [
 				{
 					type: "function",
@@ -83,6 +86,7 @@ describe("Abi", () => {
 		});
 
 		it("creates new array instance", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const items = [
 				{
 					type: "function",
@@ -176,7 +180,7 @@ describe("Abi", () => {
 			});
 
 			it("finds item by name without type filter", () => {
-				const item = testAbi.getItem("transfer");
+				const item = testAbi.getItem("transfer", "function");
 				expect(item).toBeDefined();
 				expect(/** @type {*} */ (item).name).toBe("transfer");
 			});
@@ -323,14 +327,14 @@ describe("Abi", () => {
 		describe("inspect", () => {
 			it("provides custom inspect output", () => {
 				const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
-				const inspected = testAbi[inspectSymbol]();
+				const inspected = /** @type {*} */ (testAbi)[inspectSymbol]();
 				expect(inspected).toBe("Abi(7 items)");
 			});
 
 			it("shows count for empty abi", () => {
 				const abi = Abi([]);
 				const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
-				const inspected = abi[inspectSymbol]();
+				const inspected = /** @type {*} */ (abi)[inspectSymbol]();
 				expect(inspected).toBe("Abi(0 items)");
 			});
 		});
@@ -401,7 +405,8 @@ describe("Abi", () => {
 
 	describe("array behavior", () => {
 		it("supports array methods", () => {
-			const abi = Abi([
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const items = [
 				{
 					type: "function",
 					name: "a",
@@ -416,14 +421,16 @@ describe("Abi", () => {
 					inputs: [],
 					outputs: [],
 				},
-			]);
+			];
+			const abi = Abi(items);
 			expect(abi.length).toBe(2);
-			expect(abi[0].name).toBe("a");
-			expect(abi.filter((i) => i.name === "b").length).toBe(1);
+			expect(/** @type {*} */ (abi[0]).name).toBe("a");
+			expect(abi.filter((i) => /** @type {*} */ (i).name === "b").length).toBe(1);
 		});
 
 		it("supports iteration", () => {
-			const abi = Abi([
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const items = [
 				{
 					type: "function",
 					name: "test",
@@ -431,16 +438,18 @@ describe("Abi", () => {
 					inputs: [],
 					outputs: [],
 				},
-			]);
-			const items = [];
+			];
+			const abi = Abi(items);
+			const collected = [];
 			for (const item of abi) {
-				items.push(item);
+				collected.push(item);
 			}
-			expect(items.length).toBe(1);
+			expect(collected.length).toBe(1);
 		});
 
 		it("supports map", () => {
-			const abi = Abi([
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const items = [
 				{
 					type: "function",
 					name: "test",
@@ -448,8 +457,9 @@ describe("Abi", () => {
 					inputs: [],
 					outputs: [],
 				},
-			]);
-			const names = abi.map((i) => i.name);
+			];
+			const abi = Abi(items);
+			const names = abi.map((i) => /** @type {*} */ (i).name);
 			expect(names).toEqual(["test"]);
 		});
 	});
@@ -472,7 +482,8 @@ describe("Abi", () => {
 		});
 
 		it("handles abi with overloaded functions", () => {
-			const abi = Abi([
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const items = [
 				{
 					type: "function",
 					name: "transfer",
@@ -487,10 +498,11 @@ describe("Abi", () => {
 					inputs: [{ type: "address" }, { type: "uint256" }],
 					outputs: [],
 				},
-			]);
+			];
+			const abi = Abi(items);
 			const func = abi.getFunction("transfer");
 			expect(func).toBeDefined();
-			expect(func.inputs.length).toBe(1);
+			expect(/** @type {*} */ (func).inputs.length).toBe(1);
 		});
 
 		it("handles items without names", () => {

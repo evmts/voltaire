@@ -68,6 +68,7 @@ describe("decodeData", () => {
 
 	describe("function with no parameters", () => {
 		it("decodes calldata with only selector", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -77,7 +78,7 @@ describe("decodeData", () => {
 					outputs: [{ type: "uint256" }],
 				},
 			];
-			const calldata = Function.encodeParams(abi[0], []);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), []);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("totalSupply");
@@ -162,6 +163,7 @@ describe("decodeData", () => {
 
 	describe("complex parameter types", () => {
 		it("decodes function with array parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -179,7 +181,7 @@ describe("decodeData", () => {
 				"0x0000000000000000000000000000000000000002",
 			];
 			const amounts = [100n, 200n];
-			const calldata = Function.encodeParams(abi[0], [recipients, amounts]);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [recipients, amounts]);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("batchTransfer");
@@ -187,6 +189,7 @@ describe("decodeData", () => {
 		});
 
 		it("decodes function with string parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -197,7 +200,7 @@ describe("decodeData", () => {
 				},
 			];
 			const name = "Alice";
-			const calldata = Function.encodeParams(abi[0], [name]);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [name]);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("setName");
@@ -205,6 +208,7 @@ describe("decodeData", () => {
 		});
 
 		it("decodes function with bytes parameter", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -215,7 +219,7 @@ describe("decodeData", () => {
 				},
 			];
 			const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-			const calldata = Function.encodeParams(abi[0], [data]);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [data]);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("setData");
@@ -257,6 +261,7 @@ describe("decodeData", () => {
 
 	describe("this binding", () => {
 		it("uses this context as abi", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -266,7 +271,7 @@ describe("decodeData", () => {
 					outputs: [],
 				},
 			];
-			const calldata = Function.encodeParams(abi[0], [42n]);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [42n]);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("test");
@@ -288,6 +293,7 @@ describe("decodeData", () => {
 		});
 
 		it("handles multiple functions with similar names", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -309,12 +315,12 @@ describe("decodeData", () => {
 				},
 			];
 
-			const transferFromCalldata = Function.encodeParams(abi[0], [
+			const transferFromCalldata = Function.encodeParams(/** @type {*} */ (abi[0]), [
 				"0x0000000000000000000000000000000000000001",
 				"0x0000000000000000000000000000000000000002",
 				100n,
 			]);
-			const transferCalldata = Function.encodeParams(abi[1], [
+			const transferCalldata = Function.encodeParams(/** @type {*} */ (abi[1]), [
 				"0x0000000000000000000000000000000000000001",
 				100n,
 			]);
