@@ -23,8 +23,8 @@ export function toPower(uint, exponent) {
 	}
 
 	let result = 1n;
-	let base = uint;
-	let exp = exponent;
+	let base = /** @type {bigint} */ (uint);
+	let exp = /** @type {bigint} */ (exponent);
 
 	while (exp > 0n) {
 		if (exp & 1n) {

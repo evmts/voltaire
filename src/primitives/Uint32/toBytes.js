@@ -17,10 +17,11 @@ import { SIZE } from "./constants.js";
  */
 export function toBytes(uint) {
 	const bytes = new Uint8Array(SIZE);
+	let n = /** @type {number} */ (uint);
 
 	for (let i = SIZE - 1; i >= 0; i--) {
-		bytes[i] = uint & 0xff;
-		uint = uint >>> 8;
+		bytes[i] = n & 0xff;
+		n = n >>> 8;
 	}
 
 	return bytes;

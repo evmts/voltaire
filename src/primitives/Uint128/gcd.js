@@ -16,8 +16,8 @@
  * ```
  */
 export function gcd(uint, b) {
-	let a = uint;
-	let x = b;
+	let a = /** @type {bigint} */ (uint);
+	let x = /** @type {bigint} */ (b);
 
 	while (x !== 0n) {
 		const temp = x;

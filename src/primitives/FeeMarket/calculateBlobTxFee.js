@@ -9,8 +9,8 @@ import * as Eip4844 from "./eip4844Constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../BlobTxFeeParams.js').BlobTxFeeParams} params - Blob transaction fee parameters
- * @returns {import('../BlobTxFee.js').BlobTxFee} Calculated fee breakdown including blob fees
+ * @param {import('./BlobTxFeeParams.js').BlobTxFeeParams} params - Blob transaction fee parameters
+ * @returns {import('./BlobTxFee.js').BlobTxFee} Calculated fee breakdown including blob fees
  * @throws {never}
  * @example
  * ```javascript

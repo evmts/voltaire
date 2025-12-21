@@ -15,7 +15,7 @@
  */
 export function toAbiEncoded(uint) {
 	const bytes = new Uint8Array(32);
-	let val = uint;
+	let val = /** @type {bigint} */ (uint);
 
 	for (let i = 31; i >= 24; i--) {
 		bytes[i] = Number(val & 0xffn);

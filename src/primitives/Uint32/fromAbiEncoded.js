@@ -23,7 +23,7 @@ export function fromAbiEncoded(bytes) {
 
 	let value = 0;
 	for (let i = 28; i < 32; i++) {
-		value = (value << 8) | bytes[i];
+		value = (value << 8) | /** @type {number} */ (bytes[i]);
 	}
 
 	return /** @type {import('./Uint32Type.js').Uint32Type} */ (value >>> 0);

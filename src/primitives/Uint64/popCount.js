@@ -15,7 +15,7 @@
  */
 export function popCount(uint) {
 	let count = 0;
-	let n = uint;
+	let n = /** @type {bigint} */ (uint);
 	while (n > 0n) {
 		count += Number(n & 1n);
 		n = n >> 1n;

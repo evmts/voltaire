@@ -19,7 +19,7 @@ export function bitLength(uint) {
 	}
 
 	let bits = 0;
-	let val = uint;
+	let val = /** @type {bigint} */ (uint);
 	while (val > 0n) {
 		bits++;
 		val = val >> 1n;

@@ -17,7 +17,7 @@ import { SIZE } from "./constants.js";
  */
 export function toBytes(uint) {
 	const bytes = new Uint8Array(SIZE);
-	let val = uint;
+	let val = /** @type {bigint} */ (uint);
 
 	for (let i = SIZE - 1; i >= 0; i--) {
 		bytes[i] = Number(val & 0xffn);

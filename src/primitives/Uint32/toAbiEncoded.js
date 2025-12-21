@@ -15,10 +15,11 @@
  */
 export function toAbiEncoded(uint) {
 	const bytes = new Uint8Array(32);
+	let n = /** @type {number} */ (uint);
 
 	for (let i = 31; i >= 28; i--) {
-		bytes[i] = uint & 0xff;
-		uint = uint >>> 8;
+		bytes[i] = n & 0xff;
+		n = n >>> 8;
 	}
 
 	return bytes;
