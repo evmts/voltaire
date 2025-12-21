@@ -78,6 +78,7 @@ export function createMemoryHost() {
 			nonces.set(key, nonce);
 		},
 
+		/** @param {Uint8Array} address @param {bigint} slot */
 		getTransientStorage: (address, slot) => {
 			const addrKey = Buffer.from(address).toString("hex");
 			const addrStorage = transientStorage.get(addrKey);
@@ -85,6 +86,7 @@ export function createMemoryHost() {
 			return addrStorage.get(slot.toString(16)) ?? 0n;
 		},
 
+		/** @param {Uint8Array} address @param {bigint} slot @param {bigint} value */
 		setTransientStorage: (address, slot, value) => {
 			const addrKey = Buffer.from(address).toString("hex");
 			let addrStorage = transientStorage.get(addrKey);

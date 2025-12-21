@@ -13,5 +13,5 @@
  * ```
  */
 export function equals(id) {
-	return (other) => id === other;
+	return /** @param {string | number | null} other */ (other) => id === other;
 }

@@ -12,7 +12,7 @@
  * ```
  */
 export function withParams(request) {
-	return (params) => ({
+	return /** @param {unknown} params */ (params) => ({
 		...request,
 		params,
 	});

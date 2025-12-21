@@ -13,7 +13,7 @@
  * });
  * ```
  */
-export function error(id, errorObj) {
+export function error(id, /** @type {{code: number, message: string}} */ errorObj) {
 	return {
 		jsonrpc: "2.0",
 		id,

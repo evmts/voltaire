@@ -40,6 +40,7 @@ export function Abi(items) {
 }
 
 // Static constructor
+/** @param {readonly import('./Item/ItemType.js').Item[]} items */
 Abi.from = (items) => {
 	const result = Array.from(items);
 	Object.setPrototypeOf(result, Abi.prototype);
@@ -74,16 +75,18 @@ Abi.Item = ItemNs;
 Object.setPrototypeOf(Abi.prototype, Array.prototype);
 
 // Instance methods for ABI operations
+/** @param {string} name @param {string} [type] */
 Abi.prototype.getItem = function (name, type) {
 	return getItem(this, name, type);
 };
 
 Abi.prototype.format = function () {
-	return this.map((item) => format(item));
+	return this.map(/** @param {*} item */ (item) => format(item));
 };
 
+/** @param {Record<string, unknown[]>} args */
 Abi.prototype.formatWithArgs = function (args) {
-	return this.map((item) => {
+	return this.map(/** @param {*} item */ (item) => {
 		if ("name" in item && item.name in args) {
 			return formatWithArgs(item, args[item.name]);
 		}
