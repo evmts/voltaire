@@ -12,9 +12,9 @@ import { getChainId } from "./getChainId.js";
  * (20 bytes or null). Returns a HashType (32 bytes).
  *
  * @param {Object} deps - Crypto dependencies
- * @param {(data: Uint8Array) => import('../../Hash/index.js').HashType} deps.keccak256 - Keccak256 hash function
- * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(this: import('./TransactionLegacyType.js').TransactionLegacyType) => import('../../Hash/index.js').HashType} Function that computes signing hash
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: import('../../Rlp/encode.js').Encodable) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @returns {(this: import('./TransactionLegacyType.js').TransactionLegacyType) => Uint8Array} Function that computes signing hash
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
@@ -31,7 +31,7 @@ import { getChainId } from "./getChainId.js";
 export function GetSigningHash({ keccak256, rlpEncode }) {
 	/**
 	 * @this {import('./TransactionLegacyType.js').TransactionLegacyType}
-	 * @returns {import('../../Hash/index.js').HashType}
+	 * @returns {Uint8Array}
 	 */
 	return function getSigningHash() {
 		const chainId = getChainId.call(this);

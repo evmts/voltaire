@@ -12,9 +12,9 @@ import {
  * Factory: Get signing hash.
  *
  * @param {Object} deps - Crypto dependencies
- * @param {(data: Uint8Array) => import('../../Hash/index.js').HashType} deps.keccak256 - Keccak256 hash function
- * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
- * @returns {(tx: import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702) => import('../../Hash/index.js').HashType} Function that computes signing hash
+ * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: import('../../Rlp/encode.js').Encodable) => Uint8Array} deps.rlpEncode - RLP encode function
+ * @returns {(tx: import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702) => Uint8Array} Function that computes signing hash
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
