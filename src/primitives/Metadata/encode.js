@@ -1,4 +1,4 @@
-import * as Hex from "../Hex/index.js";
+import { Hex } from "../Hex/index.js";
 
 /**
  * Encode metadata to CBOR format

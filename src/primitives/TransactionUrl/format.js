@@ -1,5 +1,5 @@
 import * as Address from "../Address/internal-index.js";
-import * as Hex from "../Hex/index.js";
+import { Hex } from "../Hex/index.js";
 
 /**
  * Format transaction request as ERC-681 URL

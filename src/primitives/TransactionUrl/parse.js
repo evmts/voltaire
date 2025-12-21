@@ -1,6 +1,6 @@
 import * as Address from "../Address/internal-index.js";
 import * as Bytes from "../Bytes/index.js";
-import * as Hex from "../Hex/index.js";
+import { Hex } from "../Hex/index.js";
 import { InvalidTransactionUrlError } from "./errors.js";
 
 /**
