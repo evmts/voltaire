@@ -16,9 +16,14 @@ import { isValidPublicKey } from "../isValidPublicKey.js";
  * ```
  */
 export function fromBytes(bytes) {
-	if (!isValidPublicKey(bytes)) {
+	if (bytes.length !== 64) {
 		throw new Error(
 			`Invalid public key: expected 64 bytes, got ${bytes.length}`,
+		);
+	}
+	if (!isValidPublicKey(bytes)) {
+		throw new Error(
+			"Invalid public key: not a valid point on the secp256k1 curve",
 		);
 	}
 	return /** @type {import('../Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} */ (

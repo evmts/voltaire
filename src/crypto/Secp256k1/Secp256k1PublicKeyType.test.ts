@@ -97,11 +97,11 @@ describe("Secp256k1PublicKeyType", () => {
 
 	describe("array operations", () => {
 		it("should support Uint8Array methods", () => {
-			const publicKey = {} as Secp256k1PublicKeyType;
-			const slice: Uint8Array = publicKey.slice(0, 32);
-			const map: Uint8Array = publicKey.map((x) => x);
-			slice;
-			map;
+			// Type-only test: verify method types exist
+			type HasSlice = Secp256k1PublicKeyType["slice"];
+			type HasMap = Secp256k1PublicKeyType["map"];
+			const _testSlice: HasSlice = {} as HasSlice;
+			const _testMap: HasMap = {} as HasMap;
 		});
 
 		it("should support indexing", () => {
@@ -111,11 +111,12 @@ describe("Secp256k1PublicKeyType", () => {
 		});
 
 		it("should support iteration", () => {
-			const publicKey = {} as Secp256k1PublicKeyType;
-			for (const _byte of publicKey) {
-				const test: Equals<typeof _byte, number> = true;
-				test;
-			}
+			// Type-only test: verify the iterator return type
+			type IteratorType = ReturnType<
+				Secp256k1PublicKeyType[typeof Symbol.iterator]
+			>;
+			type IteratorValue = ReturnType<IteratorType["next"]>["value"];
+			const _test: Equals<IteratorValue, number | undefined> = true;
 		});
 	});
 

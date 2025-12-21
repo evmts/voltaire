@@ -131,8 +131,9 @@ describe("P256", () => {
 			const nobleR = nobleSig.slice(0, 32);
 			const nobleS = nobleSig.slice(32, 64);
 
-			expect(signature.r).toEqual(nobleR);
-			expect(signature.s).toEqual(nobleS);
+			// Compare bytes (signature.r/s are branded Hash types, convert for comparison)
+			expect(new Uint8Array(signature.r)).toEqual(nobleR);
+			expect(new Uint8Array(signature.s)).toEqual(nobleS);
 		});
 	});
 

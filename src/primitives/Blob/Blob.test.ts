@@ -85,7 +85,8 @@ describe("Blob.fromData() - Static Factory", () => {
 	});
 
 	it("encodes max size data", () => {
-		const maxSize = SIZE - 8;
+		// Max is 4096 field elements * 31 bytes per element = 126976
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxSize);
 		const blob = Blob.fromData(data);
 		expect(blob.length).toBe(SIZE);
@@ -254,20 +255,20 @@ describe("Blob.splitData() - Static Method", () => {
 	});
 
 	it("splits at correct boundaries", () => {
-		const maxDataPerBlob = SIZE - 8;
+		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxDataPerBlob * 2 + 100);
 		const blobs = Blob.splitData(data);
 		expect(blobs.length).toBe(3);
 	});
 
 	it("throws when exceeding max blobs per transaction", () => {
-		const maxDataPerBlob = SIZE - 8;
+		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const tooMuch = new Uint8Array(maxDataPerBlob * (MAX_PER_TRANSACTION + 1));
 		expect(() => Blob.splitData(tooMuch)).toThrow("Data too large");
 	});
 
 	it("handles exactly max transaction capacity", () => {
-		const maxDataPerBlob = SIZE - 8;
+		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxDataPerBlob * MAX_PER_TRANSACTION);
 		const blobs = Blob.splitData(data);
 		expect(blobs.length).toBe(MAX_PER_TRANSACTION);
@@ -306,7 +307,7 @@ describe("Blob.joinData() - Static Method", () => {
 	});
 
 	it("roundtrip with max transaction capacity", () => {
-		const maxPerTransaction = MAX_PER_TRANSACTION * (SIZE - 8);
+		const maxPerTransaction = MAX_PER_TRANSACTION * FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxPerTransaction - 100);
 		for (let i = 0; i < data.length; i++) {
 			data[i] = (i * 7) % 256;
@@ -328,7 +329,7 @@ describe("Blob.estimateBlobCount() - Static Method", () => {
 	});
 
 	it("estimates multiple blobs for large data", () => {
-		const maxDataPerBlob = SIZE - 8;
+		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		expect(Blob.estimateBlobCount(maxDataPerBlob + 1)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2 + 1)).toBe(3);
@@ -343,7 +344,7 @@ describe("Blob.estimateBlobCount() - Static Method", () => {
 	});
 
 	it("estimates correctly at exact boundaries", () => {
-		const maxDataPerBlob = SIZE - 8;
+		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		expect(Blob.estimateBlobCount(maxDataPerBlob)).toBe(1);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * MAX_PER_TRANSACTION)).toBe(
 			MAX_PER_TRANSACTION,
@@ -668,7 +669,7 @@ describe("Blob Constants - Static Properties", () => {
 
 describe("Edge Cases", () => {
 	it("handles exact max data size", () => {
-		const maxSize = SIZE - 8;
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxSize);
 		const blob = Blob.fromData(data);
 		const decoded = Blob.toData(blob);

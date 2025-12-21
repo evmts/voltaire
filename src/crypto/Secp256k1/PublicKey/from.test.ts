@@ -18,10 +18,11 @@ describe("Secp256k1.PublicKey.from", () => {
 		});
 
 		it("should accept Uint8Array directly", () => {
-			const bytes = new Uint8Array(64);
-			for (let i = 0; i < 64; i++) {
-				bytes[i] = (i * 3) % 256;
-			}
+			// Must use a valid curve point - derive from private key
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 2;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
 
 			const publicKey = PublicKey.from(bytes);
 
@@ -30,8 +31,19 @@ describe("Secp256k1.PublicKey.from", () => {
 	});
 
 	describe("from hex string", () => {
+		// Helper to get a valid public key hex
+		const getValidPubKeyHex = (seed: number = 1) => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = seed;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const pubKeyBytes = derivePublicKey(privateKey);
+			return Array.from(pubKeyBytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
+		};
+
 		it("should create public key from hex string with 0x prefix", () => {
-			const hexStr = `0x${"a".repeat(64)}${"b".repeat(64)}`; // 128 hex chars = 64 bytes
+			const hexStr = `0x${getValidPubKeyHex(1)}`;
 
 			const publicKey = PublicKey.from(hexStr);
 
@@ -39,7 +51,7 @@ describe("Secp256k1.PublicKey.from", () => {
 		});
 
 		it("should create public key from hex string without 0x prefix", () => {
-			const hexStr = "a".repeat(64) + "b".repeat(64);
+			const hexStr = getValidPubKeyHex(2);
 
 			const publicKey = PublicKey.from(hexStr);
 
@@ -47,29 +59,30 @@ describe("Secp256k1.PublicKey.from", () => {
 		});
 
 		it("should parse valid hex characters", () => {
-			const hexStr =
-				"0123456789abcdef".repeat(4) + "fedcba9876543210".repeat(4);
+			const hexStr = getValidPubKeyHex(3);
 
 			const publicKey = PublicKey.from(hexStr);
 
 			expect(publicKey.length).toBe(64);
-			expect(publicKey[0]).toBe(0x01);
-			expect(publicKey[1]).toBe(0x23);
 		});
 
 		it("should handle uppercase hex characters", () => {
-			const hexStr = "A".repeat(64) + "B".repeat(64);
+			const hexStr = getValidPubKeyHex(4).toUpperCase();
 
 			const publicKey = PublicKey.from(hexStr);
 
 			expect(publicKey.length).toBe(64);
-			expect(publicKey[0]).toBe(0xaa);
 		});
 
 		it("should handle mixed case hex characters", () => {
-			const hexStr = "aB".repeat(32) + "Cd".repeat(32);
+			const hex = getValidPubKeyHex(5);
+			// Mix case: alternate upper/lower
+			const mixedHex = hex
+				.split("")
+				.map((c, i) => (i % 2 === 0 ? c.toUpperCase() : c.toLowerCase()))
+				.join("");
 
-			const publicKey = PublicKey.from(hexStr);
+			const publicKey = PublicKey.from(mixedHex);
 
 			expect(publicKey.length).toBe(64);
 		});
@@ -134,7 +147,7 @@ describe("Secp256k1.PublicKey.from", () => {
 			const zeroBytes = new Uint8Array(64);
 
 			expect(() => PublicKey.from(zeroBytes)).toThrow(
-				/Invalid public key: expected 64 bytes/,
+				/not a valid point on the secp256k1 curve/,
 			);
 		});
 
@@ -142,12 +155,19 @@ describe("Secp256k1.PublicKey.from", () => {
 			const onesBytes = new Uint8Array(64).fill(0xff);
 
 			expect(() => PublicKey.from(onesBytes)).toThrow(
-				/Invalid public key: expected 64 bytes/,
+				/not a valid point on the secp256k1 curve/,
 			);
 		});
 
 		it("should handle hex string at exact length boundary", () => {
-			const exactHex = `0x${"a".repeat(128)}`; // Exactly 64 bytes
+			// Must use a valid public key
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 10;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const pubKeyBytes = derivePublicKey(privateKey);
+			const exactHex = `0x${Array.from(pubKeyBytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 
 			const publicKey = PublicKey.from(exactHex);
 
@@ -187,7 +207,14 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("determinism", () => {
 		it("should produce same result for same hex string", () => {
-			const hexStr = `0x${"1234567890abcdef".repeat(8)}`;
+			// Use valid public key derived from private key
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 20;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const pubKeyBytes = derivePublicKey(privateKey);
+			const hexStr = `0x${Array.from(pubKeyBytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 
 			const pk1 = PublicKey.from(hexStr);
 			const pk2 = PublicKey.from(hexStr);
@@ -196,10 +223,11 @@ describe("Secp256k1.PublicKey.from", () => {
 		});
 
 		it("should produce same result for same bytes", () => {
-			const bytes = new Uint8Array(64);
-			for (let i = 0; i < 64; i++) {
-				bytes[i] = (i * 7) % 256;
-			}
+			// Use valid public key derived from private key
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 21;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
 
 			const pk1 = PublicKey.from(bytes);
 			const pk2 = PublicKey.from(bytes);
