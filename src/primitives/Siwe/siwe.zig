@@ -173,7 +173,7 @@ pub fn verifySiweMessage(
     defer allocator.free(formatted);
 
     // Hash with EIP-191
-    const message_hash = try hash.eip_191_hash_message(formatted, allocator);
+    const message_hash = try hash.eip191HashMessage(formatted, allocator);
 
     // Recover signer
     const public_key = try crypto.recover_public_key(allocator, message_hash, signature);
