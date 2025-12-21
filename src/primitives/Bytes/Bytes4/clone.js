@@ -11,6 +11,6 @@
  */
 export function clone(bytes) {
 	return /** @type {import('./Bytes4Type.js').Bytes4Type} */ (
-		new Uint8Array([bytes[0]])
+		new Uint8Array(bytes)
 	);
 }

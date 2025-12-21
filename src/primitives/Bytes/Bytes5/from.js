@@ -1,6 +1,10 @@
 import * as BytesType from "../Bytes.index.js";
 import { InvalidBytesLengthError } from "../errors.js";
 
+/**
+ * @param {Uint8Array | string} value
+ * @returns {import('./Bytes5Type.js').Bytes5Type}
+ */
 export function from(value) {
 	const bytes = BytesType.from(value);
 	if (bytes.length !== 5) {
@@ -9,5 +13,5 @@ export function from(value) {
 			actual: bytes.length,
 		});
 	}
-	return bytes;
+	return /** @type {import('./Bytes5Type.js').Bytes5Type} */ (/** @type {unknown} */ (bytes));
 }

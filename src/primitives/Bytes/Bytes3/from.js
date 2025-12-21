@@ -2,7 +2,7 @@ import * as BytesType from "../Bytes.index.js";
 import { InvalidBytesLengthError } from "../errors.js";
 
 /**
- * @param {import('../BytesType.js').BytesInput} value
+ * @param {Uint8Array | string} value
  * @returns {import('./Bytes3Type.js').Bytes3Type}
  */
 export function from(value) {
