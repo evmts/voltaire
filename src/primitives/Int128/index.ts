@@ -40,7 +40,7 @@ import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { toString } from "./toString.js";
 
-// Export individual functions
+// Export individual functions and constants
 export {
 	from,
 	fromHex,
@@ -78,6 +78,14 @@ export {
 	bitLength,
 	leadingZeros,
 	popCount,
+	MAX,
+	MIN,
+	ZERO,
+	ONE,
+	NEG_ONE,
+	SIZE,
+	BITS,
+	MODULO,
 };
 
 // Namespace export

@@ -38,38 +38,39 @@ function bigintToBytes(n: bigint, size: number): Uint8Array {
 
 describe("Precompile: BLS12_PAIRING (0x11)", () => {
 	describe("Gas calculation", () => {
-		it("should use 115000 gas for empty input (0 pairs)", () => {
+		// EIP-2537: BASE_GAS = 65000, PER_PAIR_GAS = 43000
+		it("should use 65000 gas for empty input (0 pairs)", () => {
 			const input = new Uint8Array(0);
 			const result = bls12Pairing(input, 200000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(115000n); // 115000 + 0 * 23000
+			expect(result.gasUsed).toBe(65000n); // 65000 + 0 * 43000
 		});
 
-		it("should use 138000 gas for 1 pair (384 bytes)", () => {
+		it("should use 108000 gas for 1 pair (384 bytes)", () => {
 			const input = new Uint8Array(384).fill(0);
 			const result = bls12Pairing(input, 200000n);
 
-			// Gas = 115000 + 1 * 23000 = 138000
-			expect(result.gasUsed).toBe(138000n);
+			// Gas = 65000 + 1 * 43000 = 108000
+			expect(result.gasUsed).toBe(108000n);
 		});
 
-		it("should use 161000 gas for 2 pairs (768 bytes)", () => {
+		it("should use 151000 gas for 2 pairs (768 bytes)", () => {
 			const input = new Uint8Array(768).fill(0);
 			const result = bls12Pairing(input, 200000n);
 
-			// Gas = 115000 + 2 * 23000 = 161000
-			expect(result.gasUsed).toBe(161000n);
+			// Gas = 65000 + 2 * 43000 = 151000
+			expect(result.gasUsed).toBe(151000n);
 		});
 
-		it("should verify gas formula: 115000 + k * 23000", () => {
+		it("should verify gas formula: 65000 + k * 43000", () => {
 			const testCases = [
-				{ pairs: 0, expected: 115000n },
-				{ pairs: 1, expected: 138000n },
-				{ pairs: 2, expected: 161000n },
-				{ pairs: 3, expected: 184000n },
-				{ pairs: 5, expected: 230000n },
-				{ pairs: 10, expected: 345000n },
+				{ pairs: 0, expected: 65000n },
+				{ pairs: 1, expected: 108000n },
+				{ pairs: 2, expected: 151000n },
+				{ pairs: 3, expected: 194000n },
+				{ pairs: 5, expected: 280000n },
+				{ pairs: 10, expected: 495000n },
 			];
 
 			for (const { pairs, expected } of testCases) {
@@ -84,24 +85,24 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 	describe("Out of gas handling", () => {
 		it("should fail with insufficient gas for empty input", () => {
 			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 114999n);
+			const result = bls12Pairing(input, 64999n);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(115000n);
+			expect(result.gasUsed).toBe(65000n);
 		});
 
 		it("should succeed with exact gas for empty input", () => {
 			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 115000n);
+			const result = bls12Pairing(input, 65000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(115000n);
+			expect(result.gasUsed).toBe(65000n);
 		});
 
 		it("should fail with insufficient gas for 1 pair", () => {
 			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 137999n);
+			const result = bls12Pairing(input, 107999n);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
@@ -109,9 +110,9 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 
 		it("should succeed with exact gas for 1 pair", () => {
 			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 138000n);
+			const result = bls12Pairing(input, 108000n);
 
-			expect(result.gasUsed).toBe(138000n);
+			expect(result.gasUsed).toBe(108000n);
 		});
 	});
 
@@ -219,7 +220,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 			const result = bls12Pairing(input, 200000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(115000n);
+			expect(result.gasUsed).toBe(65000n);
 		});
 	});
 
@@ -255,21 +256,21 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 			const input = new Uint8Array(768).fill(0);
 			const result = bls12Pairing(input, 300000n);
 
-			expect(result.gasUsed).toBe(161000n);
+			expect(result.gasUsed).toBe(151000n); // 65000 + 2 * 43000
 		});
 
 		it("should handle 3 pairs", () => {
 			const input = new Uint8Array(1152).fill(0);
 			const result = bls12Pairing(input, 300000n);
 
-			expect(result.gasUsed).toBe(184000n);
+			expect(result.gasUsed).toBe(194000n); // 65000 + 3 * 43000
 		});
 
 		it("should handle 5 pairs", () => {
 			const input = new Uint8Array(1920).fill(0);
 			const result = bls12Pairing(input, 400000n);
 
-			expect(result.gasUsed).toBe(230000n);
+			expect(result.gasUsed).toBe(280000n); // 65000 + 5 * 43000
 		});
 
 		it("should verify pairing equation: e(G1[0], G2[0]) * ... = 1", () => {
@@ -347,7 +348,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 		it("should handle maximum reasonable number of pairs", () => {
 			// Test with 10 pairs
 			const input = new Uint8Array(3840).fill(0);
-			const expectedGas = 115000n + 10n * 23000n;
+			const expectedGas = 65000n + 10n * 43000n; // 495000
 			const result = bls12Pairing(input, expectedGas + 10000n);
 
 			expect(result.gasUsed).toBe(expectedGas);
@@ -358,7 +359,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 
 			for (const count of pairCounts) {
 				const input = new Uint8Array(count * 384);
-				const expectedGas = 115000n + BigInt(count) * 23000n;
+				const expectedGas = 65000n + BigInt(count) * 43000n;
 				const result = bls12Pairing(input, expectedGas + 100000n);
 
 				expect(result.gasUsed).toBe(expectedGas);
@@ -388,7 +389,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 			const result = bls12Pairing(input, 200000n);
 
 			// Pairing with identity may have special behavior
-			expect(result.gasUsed).toBe(138000n);
+			expect(result.gasUsed).toBe(108000n); // 65000 + 1 * 43000
 		});
 	});
 
@@ -405,7 +406,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(32);
 			expect(result.output[31]).toBe(1);
-			expect(result.gasUsed).toBe(115000n);
+			expect(result.gasUsed).toBe(65000n);
 		});
 
 		it("should be available from Prague hardfork", () => {
@@ -423,8 +424,8 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 
 	describe("Gas cost comparison", () => {
 		it("should scale linearly with number of pairs", () => {
-			const baseCost = 115000n;
-			const perPairCost = 23000n;
+			const baseCost = 65000n;
+			const perPairCost = 43000n;
 
 			for (let pairs = 0; pairs <= 5; pairs++) {
 				const input = new Uint8Array(pairs * 384);
@@ -437,7 +438,7 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 
 		it("should be expensive compared to other precompiles", () => {
 			// BLS12 pairing is one of the most expensive precompiles
-			const emptyPairingGas = 115000n;
+			const emptyPairingGas = 65000n;
 
 			// Compare to other precompiles:
 			// SHA256: 60 + words * 12
@@ -450,9 +451,9 @@ describe("Precompile: BLS12_PAIRING (0x11)", () => {
 		});
 
 		it("should verify per-pair gas cost is significant", () => {
-			const perPairCost = 23000n;
+			const perPairCost = 43000n;
 
-			// Each additional pair costs 23000 gas
+			// Each additional pair costs 43000 gas
 			// This is more than most simple precompile operations
 			expect(perPairCost).toBeGreaterThan(5500n); // More than BLS12 map_fp_to_g1
 			expect(perPairCost).toBeGreaterThan(600n); // Much more than RIPEMD160 base
