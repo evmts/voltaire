@@ -449,11 +449,17 @@ export fn secp256k1Sign(
     var s = crypto.secp256k1.unauditedMulmod(k_inv, e_plus_r_priv, crypto.secp256k1.SECP256K1_N);
 
     const half_n = crypto.secp256k1.SECP256K1_N >> 1;
+    var s_negated: bool = false;
     if (s > half_n) {
         s = crypto.secp256k1.SECP256K1_N - s;
+        s_negated = true;
     }
 
-    const recovery_id: u8 = if ((R.y & 1) == 1) 1 else 0;
+    // Recovery ID: R.y parity XOR s_negated
+    var recovery_id: u8 = if ((R.y & 1) == 1) 1 else 0;
+    if (s_negated) {
+        recovery_id = 1 - recovery_id;
+    }
 
     std.mem.writeInt(u256, sig_ptr[0..32], r, .big);
     std.mem.writeInt(u256, sig_ptr[32..64], s, .big);
