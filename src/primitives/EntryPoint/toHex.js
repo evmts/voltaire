@@ -13,5 +13,5 @@ import * as Address from "../Address/internal-index.js";
  * ```
  */
 export function toHex(entryPoint) {
-	return Address.toHex(entryPoint);
+	return Address.toHex(/** @type {*} */ (entryPoint));
 }

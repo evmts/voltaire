@@ -28,5 +28,5 @@ export function calculate(baseFee, maxFee, maxPriorityFee) {
 	const effectiveGasPrice = baseFee + effectivePriorityFee;
 
 	// Should always be <= maxFee, but cap it for safety
-	return effectiveGasPrice <= maxFee ? effectiveGasPrice : maxFee;
+	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (effectiveGasPrice <= maxFee ? effectiveGasPrice : maxFee);
 }

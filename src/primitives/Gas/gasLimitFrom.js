@@ -14,7 +14,7 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasLimitFrom(value) {
-	return /** @type {import('./GasLimitType.js').GasLimitType} */ (
+	return /** @type {import('./GasLimitType.js').GasLimitType} */ (/** @type {unknown} */ (
 		Uint.from(value)
-	);
+	));
 }

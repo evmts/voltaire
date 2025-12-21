@@ -5,8 +5,8 @@ const GWEI = 1_000_000_000n;
 /**
  * Create GasPrice from gwei
  *
- * @param gwei - Value in gwei
- * @returns Gas price in wei
+ * @param {number | bigint} gwei - Value in gwei
+ * @returns {import('./GasPriceType.js').GasPriceType} Gas price in wei
  *
  * @example
  * ```typescript
@@ -15,5 +15,5 @@ const GWEI = 1_000_000_000n;
  */
 export function gasPriceFromGwei(gwei) {
 	const gweiValue = typeof gwei === "number" ? BigInt(gwei) : gwei;
-	return Uint.from(gweiValue * GWEI);
+	return /** @type {import('./GasPriceType.js').GasPriceType} */ (/** @type {unknown} */ (Uint.from(gweiValue * GWEI)));
 }

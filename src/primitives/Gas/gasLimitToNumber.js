@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Convert GasLimit to number
  *
- * @param this - Gas limit
- * @returns Number
+ * @this {import('./GasLimitType.js').GasLimitType}
+ * @returns {number} Number
  * @throws If value exceeds safe integer range
  *
  * @example

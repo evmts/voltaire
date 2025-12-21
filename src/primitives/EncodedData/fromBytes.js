@@ -13,5 +13,5 @@ import * as Hex from "../Hex/index.js";
  */
 export function fromBytes(value) {
 	const hex = Hex.fromBytes(value);
-	return /** @type {import('./EncodedDataType.js').EncodedDataType} */ (hex);
+	return /** @type {import('./EncodedDataType.js').EncodedDataType} */ (/** @type {unknown} */ (hex));
 }

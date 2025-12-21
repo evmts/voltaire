@@ -3,8 +3,8 @@ import { MAINNET } from "./constants.js";
 /**
  * Check if chain ID is Ethereum mainnet
  *
- * @param this - Chain ID
- * @returns True if mainnet
+ * @this {number}
+ * @returns {boolean} True if mainnet
  *
  * @example
  * ```typescript

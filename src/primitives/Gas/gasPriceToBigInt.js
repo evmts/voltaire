@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Convert GasPrice to bigint
  *
- * @param this - Gas price
- * @returns BigInt in wei
+ * @this {import('./GasPriceType.js').GasPriceType}
+ * @returns {bigint} BigInt in wei
  *
  * @example
  * ```typescript

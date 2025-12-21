@@ -38,7 +38,7 @@ export function ToCommitment({ blobToKzgCommitment }) {
 		}
 		try {
 			const commitment = blobToKzgCommitment(blob);
-			return commitment;
+			return /** @type {import('./BlobType.js').Commitment} */ (commitment);
 		} catch (error) {
 			throw new PrimitiveError(
 				`Failed to compute KZG commitment: ${error instanceof Error ? error.message : String(error)}`,

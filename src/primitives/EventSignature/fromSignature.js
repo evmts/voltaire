@@ -19,7 +19,7 @@ import * as Keccak256 from "../../crypto/Keccak256/index.js";
  */
 export function fromSignature(signature) {
 	const hash = Keccak256.hashString(signature);
-	return /** @type {import('./EventSignatureType.js').EventSignatureType} */ (
+	return /** @type {import('./EventSignatureType.js').EventSignatureType} */ (/** @type {unknown} */ (
 		hash
-	);
+	));
 }

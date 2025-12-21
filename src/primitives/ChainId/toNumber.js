@@ -1,8 +1,8 @@
 /**
  * Convert ChainId to number
  *
- * @param this - Chain ID
- * @returns Number
+ * @this {number}
+ * @returns {number} Number
  *
  * @example
  * ```typescript

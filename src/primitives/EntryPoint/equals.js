@@ -13,5 +13,5 @@ import * as Address from "../Address/internal-index.js";
  * ```
  */
 export function equals(a, b) {
-	return Address.equals(a, b);
+	return Address.equals(/** @type {*} */ (a), /** @type {*} */ (b));
 }

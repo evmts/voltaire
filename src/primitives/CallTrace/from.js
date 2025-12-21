@@ -29,7 +29,7 @@
  * ```
  */
 export function from(data) {
-	return {
+	return /** @type {import('./CallTraceType.js').CallTraceType} */ ({
 		type: data.type,
 		from: data.from,
 		...(data.to !== undefined && { to: data.to }),
@@ -41,5 +41,5 @@ export function from(data) {
 		...(data.error !== undefined && { error: data.error }),
 		...(data.revertReason !== undefined && { revertReason: data.revertReason }),
 		...(data.calls !== undefined && { calls: data.calls }),
-	};
+	});
 }

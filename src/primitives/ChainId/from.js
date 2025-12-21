@@ -3,7 +3,7 @@ import { InvalidFormatError } from "../errors/ValidationError.js";
 /**
  * Create ChainId from number
  *
- * @param value - Chain ID number
+ * @param {number} value - Chain ID number
  * @returns Branded chain ID
  * @throws {InvalidFormatError} If value is not a non-negative integer
  *

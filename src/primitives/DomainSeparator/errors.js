@@ -2,6 +2,10 @@
  * Error thrown when DomainSeparator length is invalid
  */
 export class InvalidDomainSeparatorLengthError extends Error {
+	/**
+	 * @param {string} message
+	 * @param {Record<string, unknown>} context
+	 */
 	constructor(message, context) {
 		super(message);
 		this.name = "InvalidDomainSeparatorLengthError";

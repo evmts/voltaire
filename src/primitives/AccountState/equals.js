@@ -21,8 +21,8 @@ import { equals as uintEquals } from "../Uint/equals.js";
  */
 export function equals(a, b) {
 	return (
-		uintEquals(/** @type {bigint} */ (a.nonce), /** @type {bigint} */ (b.nonce)) &&
-		uintEquals(/** @type {bigint} */ (a.balance), /** @type {bigint} */ (b.balance)) &&
+		uintEquals(/** @type {*} */ (a.nonce), /** @type {*} */ (b.nonce)) &&
+		uintEquals(/** @type {*} */ (a.balance), /** @type {*} */ (b.balance)) &&
 		StateRoot.equals(a.storageRoot, b.storageRoot) &&
 		Hash.equals(a.codeHash, b.codeHash)
 	);

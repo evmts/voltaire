@@ -28,6 +28,6 @@ export function GetSelector({ keccak256String }) {
 	 */
 	return function getSelector(event) {
 		const signature = getSignature(event);
-		return keccak256String(signature);
+		return /** @type {import('../../Hash/HashType.js').HashType} */ (keccak256String(signature));
 	};
 }

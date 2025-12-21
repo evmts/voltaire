@@ -38,7 +38,7 @@ export function getInterfaceId(selectors) {
 	const result = new Uint8Array(4);
 	for (const selector of normalized) {
 		for (let i = 0; i < 4; i++) {
-			result[i] ^= /** @type {number} */ (selector[i]);
+			result[i] ^= /** @type {*} */ (selector[i]);
 		}
 	}
 

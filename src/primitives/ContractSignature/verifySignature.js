@@ -95,7 +95,7 @@ export function VerifySignature({
 
 				// Convert expected address to AddressType
 				const expectedAddress =
-					typeof address === "string" ? Address.from(address) : address;
+					typeof address === "string" ? /** @type {*} */ (Address)(address) : address;
 
 				// Compare addresses using utility function
 				return Address.equals(recoveredAddress, expectedAddress);

@@ -56,7 +56,7 @@ export function from(value) {
 	}
 
 	// Normalize next to BlockNumber
-	const next = BlockNumber.from(value.next);
+	const next = BlockNumber.from(/** @type {number | bigint} */ (value.next));
 
 	return /** @type {import('./ForkIdType.js').ForkIdType} */ ({
 		hash,

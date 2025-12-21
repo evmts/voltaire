@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Convert GasLimit to bigint
  *
- * @param this - Gas limit
- * @returns BigInt
+ * @this {import('./GasLimitType.js').GasLimitType}
+ * @returns {bigint} BigInt
  *
  * @example
  * ```typescript
