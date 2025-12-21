@@ -47,6 +47,25 @@ function concat(...arrays) {
  * ```
  */
 export function recoverPublicKey(signature, messageHash) {
+	// Validate signature component lengths
+	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
+		throw new InvalidSignatureError(
+			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes`,
+			{
+				code: "INVALID_SIGNATURE_R_LENGTH",
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			},
+		);
+	}
+	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
+		throw new InvalidSignatureError(
+			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes`,
+			{
+				code: "INVALID_SIGNATURE_S_LENGTH",
+				docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
+			},
+		);
+	}
 	// Convert Ethereum v (27 or 28) to recovery bit (0 or 1)
 	let recoveryBit;
 	if (signature.v === 27 || signature.v === 28) {

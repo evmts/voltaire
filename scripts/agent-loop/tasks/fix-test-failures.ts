@@ -28,12 +28,14 @@ const config: TaskConfig = {
 
   async checkState() {
     try {
-      // Run tests and extract failure count
+      // Run tests and extract failure count (no timeout on macOS)
+      // Strip ANSI codes for reliable parsing
       const result = await runCommand(
-        'timeout 120 bun run test:run 2>&1 | tail -20 || true'
+        'bun run test:run 2>&1 | tail -30 | sed "s/\\x1b\\[[0-9;]*m//g" || true'
       );
 
       // Parse vitest output: "Tests  X failed | Y passed"
+      // Handle various spacing from stripped ANSI
       const failMatch = result.match(/Tests\s+(\d+)\s+failed/);
       const failCount = failMatch ? parseInt(failMatch[1]) : 0;
 

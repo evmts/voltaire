@@ -501,8 +501,12 @@ for (const { name, impl } of implementations) {
 
 				expect(compact).toBeInstanceOf(Uint8Array);
 				expect(compact.length).toBe(64);
-				expect(compact.slice(0, 32)).toEqual(signature.r);
-				expect(compact.slice(32, 64)).toEqual(signature.s);
+				expect(new Uint8Array(compact.slice(0, 32))).toEqual(
+					new Uint8Array(signature.r),
+				);
+				expect(new Uint8Array(compact.slice(32, 64))).toEqual(
+					new Uint8Array(signature.s),
+				);
 			});
 
 			it("converts signature to bytes with v", () => {
@@ -514,8 +518,12 @@ for (const { name, impl } of implementations) {
 
 				expect(bytes).toBeInstanceOf(Uint8Array);
 				expect(bytes.length).toBe(65);
-				expect(bytes.slice(0, 32)).toEqual(signature.r);
-				expect(bytes.slice(32, 64)).toEqual(signature.s);
+				expect(new Uint8Array(bytes.slice(0, 32))).toEqual(
+					new Uint8Array(signature.r),
+				);
+				expect(new Uint8Array(bytes.slice(32, 64))).toEqual(
+					new Uint8Array(signature.s),
+				);
 				expect(bytes[64]).toBe(signature.v);
 			});
 
@@ -531,8 +539,8 @@ for (const { name, impl } of implementations) {
 					signature.v,
 				);
 
-				expect(restored.r).toEqual(signature.r);
-				expect(restored.s).toEqual(signature.s);
+				expect(new Uint8Array(restored.r)).toEqual(new Uint8Array(signature.r));
+				expect(new Uint8Array(restored.s)).toEqual(new Uint8Array(signature.s));
 				expect(restored.v).toBe(signature.v);
 			});
 
@@ -545,8 +553,8 @@ for (const { name, impl } of implementations) {
 
 				const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
-				expect(restored.r).toEqual(signature.r);
-				expect(restored.s).toEqual(signature.s);
+				expect(new Uint8Array(restored.r)).toEqual(new Uint8Array(signature.r));
+				expect(new Uint8Array(restored.s)).toEqual(new Uint8Array(signature.s));
 				expect(restored.v).toBe(signature.v);
 			});
 

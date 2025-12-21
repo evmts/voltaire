@@ -30,6 +30,13 @@ import {
  * ```
  */
 export function sign(messageHash, privateKey) {
+	// Validate private key length
+	if (privateKey.length !== 32) {
+		throw new InvalidPrivateKeyError("Private key must be 32 bytes", {
+			code: "PRIVATE_KEY_INVALID_LENGTH",
+			docsPath: "/crypto/secp256k1/sign#error-handling",
+		});
+	}
 	// Validate private key is not zero
 	const isZero = privateKey.every((byte) => byte === 0);
 	if (isZero) {

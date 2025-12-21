@@ -39,6 +39,35 @@ function concat(...arrays) {
  * ```
  */
 export function verify(signature, messageHash, publicKey) {
+	// Validate public key length
+	if (publicKey.length !== PUBLIC_KEY_SIZE) {
+		throw new InvalidSignatureError(
+			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
+			{
+				code: "INVALID_PUBLIC_KEY_LENGTH",
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
+		);
+	}
+	// Validate signature component lengths
+	if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
+		throw new InvalidSignatureError(
+			`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
+			{
+				code: "INVALID_SIGNATURE_R_LENGTH",
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
+		);
+	}
+	if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
+		throw new InvalidSignatureError(
+			`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
+			{
+				code: "INVALID_SIGNATURE_S_LENGTH",
+				docsPath: "/crypto/secp256k1/verify#error-handling",
+			},
+		);
+	}
 	// Validate v parameter (must be 27 or 28)
 	if (signature.v !== 27 && signature.v !== 28) {
 		return false;

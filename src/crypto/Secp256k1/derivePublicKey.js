@@ -23,6 +23,13 @@ import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
  * ```
  */
 export function derivePublicKey(privateKey) {
+	// Validate private key length
+	if (privateKey.length !== 32) {
+		throw new InvalidPrivateKeyError("Private key must be 32 bytes", {
+			code: "PRIVATE_KEY_INVALID_LENGTH",
+			docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
+		});
+	}
 	try {
 		// Get public key from private key (uncompressed, 65 bytes with 0x04 prefix)
 		const uncompressed = secp256k1.getPublicKey(privateKey, false);
