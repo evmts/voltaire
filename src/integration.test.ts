@@ -505,6 +505,12 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// Generate commitment
 			const commitment = Kzg.KZG.Commitment(blob);
 
+			// Compute versioned hash: 0x01 || sha256(commitment)[1:]
+			const commitmentHash = SHA256.hash(commitment);
+			const versionedHash = new Uint8Array(32);
+			versionedHash[0] = 0x01;
+			versionedHash.set(commitmentHash.slice(1), 1);
+
 			// Use fixed z value (32 bytes)
 			const z = new Uint8Array(32);
 			z[31] = 1; // Small value
@@ -512,12 +518,14 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// Compute proof at point z
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			// Build precompile input (160 bytes)
-			const input = new Uint8Array(160);
-			input.set(commitment, 0); // 48 bytes commitment
-			input.set(z, 48); // 32 bytes z
-			input.set(y, 80); // 32 bytes y
-			input.set(proof, 112); // 48 bytes proof
+			// Build precompile input per EIP-4844 (192 bytes):
+			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+			const input = new Uint8Array(192);
+			input.set(versionedHash, 0); // 32 bytes versioned hash
+			input.set(z, 32); // 32 bytes z
+			input.set(y, 64); // 32 bytes y
+			input.set(commitment, 96); // 48 bytes commitment
+			input.set(proof, 144); // 48 bytes proof
 
 			const result = pointEvaluation(input, 100000n);
 
@@ -716,14 +724,24 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
+
+			// Compute versioned hash: 0x01 || sha256(commitment)[1:]
+			const commitmentHash = SHA256.hash(commitment);
+			const versionedHash = new Uint8Array(32);
+			versionedHash[0] = 0x01;
+			versionedHash.set(commitmentHash.slice(1), 1);
+
 			const z = new Uint8Array(32);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
+			// Build precompile input per EIP-4844 (192 bytes):
+			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+			const input = new Uint8Array(192);
+			input.set(versionedHash, 0);
+			input.set(z, 32);
+			input.set(y, 64);
+			input.set(commitment, 96);
+			input.set(proof, 144);
 
 			const cancun = Hardfork.CANCUN;
 			const result = execute(
@@ -786,9 +804,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 
 			const sig = Signature.fromSecp256k1(r, s, v);
 
-			// Convert to compact - includes v byte for secp256k1
+			// Convert to compact - 64 bytes (r + s), v encoded in s high bit per EIP-2098
 			const compact = Signature.toCompact(sig);
-			expect(compact.length).toBe(65); // r + s + v for secp256k1
+			expect(compact.length).toBe(64); // r + s compact format
 
 			// Convert to DER
 			const der = Signature.toDER(sig);

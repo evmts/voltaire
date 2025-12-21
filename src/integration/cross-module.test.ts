@@ -298,11 +298,17 @@ describe("Integration: Cross-Module Workflows", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 
-			// 2. Create evaluation point z
+			// 2. Compute versioned hash: 0x01 || sha256(commitment)[1:]
+			const commitmentHash = SHA256.hash(commitment);
+			const versionedHash = new Uint8Array(32);
+			versionedHash[0] = 0x01;
+			versionedHash.set(commitmentHash.slice(1), 1);
+
+			// 3. Create evaluation point z
 			const z = new Uint8Array(32);
 			z[31] = 1; // Simple z value
 
-			// 3. Compute proof and evaluation
+			// 4. Compute proof and evaluation
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
 			expect(proof).toBeInstanceOf(Uint8Array);
@@ -310,12 +316,15 @@ describe("Integration: Cross-Module Workflows", () => {
 			expect(y).toBeInstanceOf(Uint8Array);
 			expect(y.length).toBe(32);
 
-			// 4. Verify with precompile (point evaluation)
-			const input = new Uint8Array(160);
-			input.set(commitment, 0); // 48 bytes commitment
-			input.set(z, 48); // 32 bytes z
-			input.set(y, 80); // 32 bytes y
-			input.set(proof, 112); // 48 bytes proof
+			// 5. Verify with precompile (point evaluation)
+			// Build input per EIP-4844 (192 bytes):
+			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+			const input = new Uint8Array(192);
+			input.set(versionedHash, 0);
+			input.set(z, 32);
+			input.set(y, 64);
+			input.set(commitment, 96);
+			input.set(proof, 144);
 
 			const result = pointEvaluation(input, 100000n);
 
