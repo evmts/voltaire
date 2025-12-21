@@ -1,5 +1,4 @@
 import { SIZE } from "./BundleHashType.js";
-// @ts-nocheck
 import { InvalidBundleHashError } from "./errors.js";
 
 /**
@@ -27,7 +26,7 @@ export function from(value) {
 				{ value },
 			);
 		}
-		return value;
+		return /** @type {BundleHashType} */ (/** @type {unknown} */ (value));
 	}
 
 	if (typeof value === "string") {
@@ -47,7 +46,7 @@ export function from(value) {
 			}
 			bytes[i / 2] = byte;
 		}
-		return bytes;
+		return /** @type {BundleHashType} */ (/** @type {unknown} */ (bytes));
 	}
 
 	throw new InvalidBundleHashError(

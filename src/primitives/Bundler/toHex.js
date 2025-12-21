@@ -13,5 +13,5 @@ import * as Address from "../Address/internal-index.js";
  * ```
  */
 export function toHex(bundler) {
-	return Address.toHex(bundler);
+	return Address.toHex(/** @type {import('../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ (bundler)));
 }

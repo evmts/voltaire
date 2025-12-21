@@ -1,3 +1,8 @@
+/**
+ * @param {import('./Bytes2Type.js').Bytes2Type} a
+ * @param {import('./Bytes2Type.js').Bytes2Type} b
+ * @returns {-1 | 0 | 1}
+ */
 export function compare(a, b) {
 	for (let i = 0; i < 2; i++) {
 		const ai = /** @type {number} */ (a[i]); const bi = /** @type {number} */ (b[i]); if (ai < bi) return -1;

@@ -10,7 +10,8 @@
  * ```
  */
 export function clone(bytes) {
+	const val = /** @type {number} */ (bytes[0]);
 	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (
-		new Uint8Array([bytes[0]])
+		new Uint8Array([val])
 	);
 }

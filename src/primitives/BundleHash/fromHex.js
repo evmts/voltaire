@@ -1,5 +1,4 @@
 import { SIZE } from "./BundleHashType.js";
-// @ts-nocheck
 import { InvalidBundleHashError } from "./errors.js";
 
 /**
@@ -40,5 +39,5 @@ export function fromHex(value) {
 		bytes[i / 2] = byte;
 	}
 
-	return bytes;
+	return /** @type {BundleHashType} */ (/** @type {unknown} */ (bytes));
 }

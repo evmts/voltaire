@@ -10,7 +10,8 @@
  * ```
  */
 export function toHex(bytes) {
+	const val = /** @type {number} */ (bytes[0]);
 	return /** @type {import('../../Hex/index.js').HexType} */ (
-		`0x${bytes[0].toString(16).padStart(2, "0")}`
+		`0x${val.toString(16).padStart(2, "0")}`
 	);
 }

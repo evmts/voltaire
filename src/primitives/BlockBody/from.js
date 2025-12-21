@@ -21,11 +21,8 @@ export function from({ transactions, ommers, withdrawals }) {
 	const body = {
 		transactions,
 		ommers,
+		withdrawals,
 	};
-
-	if (withdrawals !== undefined) {
-		body.withdrawals = withdrawals;
-	}
 
 	return body;
 }

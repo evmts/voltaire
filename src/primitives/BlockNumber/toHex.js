@@ -1,4 +1,4 @@
-import * as Hex from "../Hex/index.js";
+import { Hex } from "../Hex/index.js";
 
 /**
  * Convert BlockNumber to hex string

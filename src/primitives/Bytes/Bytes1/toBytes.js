@@ -10,5 +10,5 @@
  * ```
  */
 export function toBytes(bytes) {
-	return /** @type {import('../BytesType.js').BytesType} */ (bytes);
+	return /** @type {import('../BytesType.js').BytesType} */ (/** @type {unknown} */ (bytes));
 }

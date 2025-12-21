@@ -10,5 +10,5 @@
  * ```
  */
 export function toNumber(bytes) {
-	return bytes[0];
+	return /** @type {number} */ (bytes[0]);
 }

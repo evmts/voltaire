@@ -1,6 +1,10 @@
 import * as BytesType from "../Bytes.index.js";
 import { InvalidBytesLengthError } from "../errors.js";
 
+/**
+ * @param {import('../../Hex/HexType.js').HexType} hex
+ * @returns {import('./Bytes2Type.js').Bytes2Type}
+ */
 export function fromHex(hex) {
 	const bytes = BytesType.fromHex(hex);
 	if (bytes.length !== 2) {
@@ -9,5 +13,5 @@ export function fromHex(hex) {
 			actual: bytes.length,
 		});
 	}
-	return bytes;
+	return /** @type {import('./Bytes2Type.js').Bytes2Type} */ (/** @type {unknown} */ (bytes));
 }
