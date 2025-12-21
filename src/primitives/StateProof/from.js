@@ -54,9 +54,9 @@ export function from(proof) {
 		}
 	}
 
-	// Validate balance
-	if (!(balance instanceof Uint8Array)) {
-		throw new TypeError("StateProof.balance must be a Wei");
+	// Validate balance (Wei is a branded bigint)
+	if (typeof balance !== "bigint") {
+		throw new TypeError("StateProof.balance must be a Wei (bigint)");
 	}
 
 	// Validate codeHash
@@ -67,9 +67,9 @@ export function from(proof) {
 		throw new TypeError("StateProof.codeHash must be 32 bytes");
 	}
 
-	// Validate nonce
-	if (!(nonce instanceof Uint8Array)) {
-		throw new TypeError("StateProof.nonce must be a Nonce");
+	// Validate nonce (Nonce is a branded bigint)
+	if (typeof nonce !== "bigint") {
+		throw new TypeError("StateProof.nonce must be a Nonce (bigint)");
 	}
 
 	// Validate storageHash

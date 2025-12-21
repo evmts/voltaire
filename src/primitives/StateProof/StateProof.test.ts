@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import * as AccountState from "../AccountState/index.js";
 import { Address } from "../Address/index.js";
-import { from as weiFrom } from "../Denomination/Wei.js";
+import { from as weiFrom, Wei } from "../Denomination/Wei.js";
 import { Hash } from "../Hash/index.js";
 import { from as nonceFrom } from "../Nonce/from.js";
+import { Nonce } from "../Nonce/index.js";
 import * as StorageKey from "../State/index.js";
 import * as StateRoot from "../StateRoot/index.js";
 import * as StorageProof from "../StorageProof/index.js";
@@ -247,7 +248,7 @@ describe("StateProof", () => {
 	describe("integration", () => {
 		it("represents EOA with no storage", () => {
 			const proof = StateProof.from({
-				address: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"),
+				address: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"),
 				accountProof: [
 					new Uint8Array([0xf8, 0x51]), // RLP-encoded node
 				],

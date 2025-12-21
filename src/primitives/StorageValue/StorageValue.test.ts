@@ -81,7 +81,8 @@ describe("StorageValue", () => {
 
 	describe("toHex", () => {
 		it("converts StorageValue to hex string", () => {
-			const val = StorageValue.from(123n);
+			// 0x123 = 291 decimal
+			const val = StorageValue.from(0x123n);
 			const hex = StorageValue.toHex(val);
 
 			expect(hex).toBe(

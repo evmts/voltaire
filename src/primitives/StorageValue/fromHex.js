@@ -17,7 +17,9 @@ import * as Hex from "../Hex/index.js";
  * ```
  */
 export function fromHex(hex) {
-	const bytes = Hex.toBytes(hex);
+	// Add 0x prefix if missing
+	const prefixedHex = hex.startsWith("0x") ? hex : `0x${hex}`;
+	const bytes = Hex.toBytes(prefixedHex);
 
 	if (bytes.length !== 32) {
 		throw new Error(
