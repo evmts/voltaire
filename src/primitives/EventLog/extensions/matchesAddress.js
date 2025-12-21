@@ -4,7 +4,7 @@ import { addressEquals } from "./utils.js";
  * Check if log matches address filter
  *
  * @param {import('../EventLogType.js').BrandedEventLog} log
- * @param {import('../../Address/AddressType.js').AddressType.BrandedAddress | import('../../Address/AddressType.js').AddressType.BrandedAddress[]} filterAddress
+ * @param {import('../../Address/AddressType.js').AddressType | import('../../Address/AddressType.js').AddressType[]} filterAddress
  * @returns {boolean}
  *
  * @example

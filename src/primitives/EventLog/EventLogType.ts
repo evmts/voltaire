@@ -33,6 +33,21 @@ export type EventLogType<
 export type BrandedEventLog = EventLogType;
 
 /**
+ * Input type for creating EventLogs (accepts strings for addresses/hashes)
+ */
+export type EventLogLike = {
+	address: BrandedAddress | string;
+	topics: readonly (HashType | string)[];
+	data: Uint8Array | string;
+	blockNumber?: bigint | number;
+	transactionHash?: HashType | string;
+	transactionIndex?: number;
+	blockHash?: HashType | string;
+	logIndex?: number;
+	removed?: boolean;
+};
+
+/**
  * Event log filter for querying logs
  */
 export type Filter<

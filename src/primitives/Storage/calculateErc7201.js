@@ -16,7 +16,7 @@ export function calculateErc7201(keccak256, id) {
 	// Convert to bigint, subtract 1
 	let value = 0n;
 	for (let i = 0; i < 32; i++) {
-		value = (value << 8n) | BigInt(firstHash[i]);
+		value = (value << 8n) | BigInt(/** @type {*} */ (firstHash[i]));
 	}
 	value = value - 1n;
 

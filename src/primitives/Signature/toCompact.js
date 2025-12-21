@@ -25,7 +25,7 @@ export function toCompact(signature) {
 	if (signature.v !== undefined && signature.algorithm === "secp256k1") {
 		const yParity = signature.v;
 		if (yParity === 1) {
-			compact[32] |= 0x80; // Set bit 255
+			/** @type {*} */ (compact)[32] |= 0x80; // Set bit 255
 		}
 	}
 

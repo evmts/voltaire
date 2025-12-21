@@ -66,6 +66,7 @@ export function parse(raw) {
 			fields[3] !== "" && fields[3] !== undefined
 				? /** @type {"i" | "o" | "-"} */ (fields[3])
 				: prevJump;
+		/** @type {number | undefined} */
 		const modifierDepth =
 			fields[4] !== "" && fields[4] !== undefined
 				? Number.parseInt(fields[4], 10)

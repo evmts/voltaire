@@ -23,6 +23,7 @@ export function hash(packedUserOp, entryPoint, chainId) {
 	const chainIdBytes = Uint.toBytes(Uint.from(chainId));
 
 	// Helper to ensure 32-byte padding
+	/** @param {Uint8Array} bytes */
 	const pad32 = (bytes) => {
 		const result = new Uint8Array(32);
 		result.set(bytes, 32 - bytes.length);

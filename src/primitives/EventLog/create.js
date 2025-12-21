@@ -56,5 +56,5 @@ export function create(params) {
 	if (params.logIndex !== undefined) {
 		result.logIndex = params.logIndex;
 	}
-	return /** @type {import('./BrandedEventLog.js').BrandedEventLog} */ (result);
+	return /** @type {import('./EventLogType.js').BrandedEventLog} */ (result);
 }

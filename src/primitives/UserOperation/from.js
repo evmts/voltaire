@@ -37,6 +37,7 @@ import * as Uint from "../Uint/index.js";
  */
 export function from(params) {
 	// Convert hex strings to Uint8Array
+	/** @param {Uint8Array | string} value */
 	const hexToBytes = (value) => {
 		if (typeof value === "string") {
 			const hex = value.startsWith("0x") ? value.slice(2) : value;

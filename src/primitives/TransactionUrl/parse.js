@@ -191,7 +191,7 @@ function parseQueryString(queryString, url) {
 			// Parse hex data
 			try {
 				const hexValue = Hex.from(value);
-				result = { ...result, data: bytesFrom(Hex.toBytes(hexValue)) };
+				/** @type {*} */ (result).data = bytesFrom(Hex.toBytes(hexValue));
 			} catch (error) {
 				throw new InvalidTransactionUrlError("Invalid data parameter", {
 					key,
