@@ -28,9 +28,9 @@ export function toPower(uint, exponent) {
 
 	while (exp > 0n) {
 		if (exp & 1n) {
-			result = (result * base) & MAX;
+			result = /** @type {bigint} */ ((result * base) & MAX);
 		}
-		base = (base * base) & MAX;
+		base = /** @type {bigint} */ ((base * base) & MAX);
 		exp = exp >> 1n;
 	}
 

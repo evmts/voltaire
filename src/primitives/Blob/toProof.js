@@ -25,8 +25,8 @@ import { SIZE } from "./constants.js";
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
 
-export function ToProof({ computeBlobKzgProof }) {
-	return function toProof(blob, commitment) {
+export function ToProof(/** @type {{ computeBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array) => Uint8Array }} */ { computeBlobKzgProof }) {
+	return /** @param {import('./BlobType.js').BrandedBlob} blob @param {import('./BlobType.js').Commitment} commitment */ function toProof(blob, commitment) {
 		if (blob.length !== SIZE) {
 			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
 				value: blob.length,

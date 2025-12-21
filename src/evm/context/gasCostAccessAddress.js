@@ -16,8 +16,8 @@ import {
  * - Tangerine Whistle-Istanbul: 400 (uniform, EIP-1884 for BALANCE/EXTCODESIZE)
  * - Pre-Tangerine Whistle: 20 (uniform)
  *
- * @param {import("./FrameType.js").BrandedFrame} frame - Frame with hardfork config
- * @param {import("../Address/AddressType.js").AddressType} address - Address to check
+ * @param {*} frame - Frame with hardfork config
+ * @param {import("../../primitives/Address/AddressType.js").AddressType} address - Address to check
  * @returns {bigint} Gas cost for the access
  */
 export function gasCostAccessAddress(frame, address) {
@@ -59,7 +59,7 @@ export function gasCostAccessAddress(frame, address) {
  *
  * Used for opcodes introduced in Constantinople (EIP-1052: EXTCODEHASH)
  *
- * @param {import("./FrameType.js").BrandedFrame} frame - Frame with hardfork config
+ * @param {*} frame - Frame with hardfork config
  * @returns {boolean} True if hardfork is Constantinople or later
  */
 export function supportsConstantinople(frame) {
