@@ -12,6 +12,8 @@ export default defineConfig({
 			"node_modules/**",
 			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)
 			"src/wallet/hardware/**",
+			// Examples test dist/ which requires optional native deps (ffi-napi, ref-napi)
+			"examples/**",
 		],
 		setupFiles: ["./vitest.setup.ts"],
 		environment: "node",

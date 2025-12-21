@@ -3,7 +3,7 @@
  * @typedef {import('node:ffi-napi').Library} Library
  */
 
-import ffi from "node:ffi-napi";
+import ffi from "ffi-napi";
 import ref from "ref-napi";
 import { LIB_PATH } from "../../lib-path.js";
 

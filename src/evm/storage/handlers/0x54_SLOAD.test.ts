@@ -76,12 +76,16 @@ describe("SLOAD (0x54)", () => {
 		expect(frame.pc).toBe(0);
 	});
 
-	it("returns StackOverflow when stack is full", () => {
+	it("succeeds when stack is full (SLOAD pops 1, pushes 1)", () => {
 		const host = createMemoryHost();
 		const addr = addressFrom("0x1234567890123456789012345678901234567890");
 
-		// Create stack with 1024 items (max)
-		const fullStack = new Array(1024).fill(0n);
+		// Create stack with 1024 items (max), last item is the key
+		const fullStack = new Array(1023).fill(0n);
+		fullStack.push(0x42n); // key to load
+
+		// Set storage value
+		host.setStorage(addr, 0x42n, 0x1337n);
 
 		const frame = frameFrom({
 			stack: fullStack,
@@ -91,8 +95,11 @@ describe("SLOAD (0x54)", () => {
 
 		const error = sload(frame, host);
 
-		expect(error).toEqual({ type: "StackOverflow" });
-		expect(frame.pc).toBe(0);
+		// SLOAD pops 1 (key) and pushes 1 (value), net effect is 0
+		// So it should succeed on a full stack
+		expect(error).toBeNull();
+		expect(frame.stack.length).toBe(1024);
+		expect(frame.stack[1023]).toBe(0x1337n);
 	});
 
 	it("loads max uint256 value", () => {
@@ -125,7 +132,7 @@ describe("SLOAD (0x54)", () => {
 		host.setStorage(addr, 0xffffffffffffffffffffffffffffffffffffffffn, 0x333n);
 
 		// Load from slot 0
-		let frame = Frame.from({
+		let frame = frameFrom({
 			stack: [0x0n],
 			gasRemaining: 10000n,
 			address: addr,
