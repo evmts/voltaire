@@ -14,6 +14,7 @@
  * ```
  */
 export function parse(raw) {
+	/** @type {import('./SourceMapType.js').SourceMapEntry[]} */
 	const entries = [];
 
 	// Handle empty string
@@ -28,6 +29,7 @@ export function parse(raw) {
 	let prevLength = 0;
 	let prevFileIndex = 0;
 	let prevJump = /** @type {"i" | "o" | "-"} */ ("-");
+	/** @type {number | undefined} */
 	let prevModifierDepth = undefined;
 
 	for (const part of parts) {

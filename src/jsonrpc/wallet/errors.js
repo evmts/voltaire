@@ -23,6 +23,7 @@ export const WalletErrorCode = {
  * @returns {{ code: number, message: string, data?: any }}
  */
 export function createWalletError(code, message, data) {
+	/** @type {{ code: number; message: string; data?: * }} */
 	const error = { code, message };
 	if (data !== undefined) error.data = data;
 	return error;
@@ -46,7 +47,7 @@ export function unauthorizedError(message = "Unauthorized") {
 
 /**
  * @param {string} method - Method name
- * @returns {{ code: number, message: string, data: { method: string } }}
+ * @returns {{ code: number, message: string, data?: * }}
  */
 export function unsupportedMethodError(method) {
 	return createWalletError(
@@ -58,7 +59,7 @@ export function unsupportedMethodError(method) {
 
 /**
  * @param {string} chainId - Chain ID
- * @returns {{ code: number, message: string, data: { chainId: string } }}
+ * @returns {{ code: number, message: string, data?: * }}
  */
 export function unrecognizedChainError(chainId) {
 	return createWalletError(

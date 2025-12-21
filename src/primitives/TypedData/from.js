@@ -2,10 +2,14 @@ import * as Domain from "../Domain/index.js";
 import { InvalidTypedDataError } from "./errors.js";
 
 /**
+ * @typedef {{ name: string; type: string }} TypedDataField
+ */
+
+/**
  * Create TypedData from object
  *
  * @param {object} typedData - TypedData object
- * @param {object} typedData.types - Type definitions
+ * @param {Record<string, readonly TypedDataField[]>} typedData.types - Type definitions
  * @param {string} typedData.primaryType - Primary type name
  * @param {object} typedData.domain - Domain separator
  * @param {any} typedData.message - Message data
