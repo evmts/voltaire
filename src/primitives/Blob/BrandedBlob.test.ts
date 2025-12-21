@@ -163,7 +163,8 @@ describe("fromData", () => {
 	});
 
 	it("encodes max size data", () => {
-		const maxSize = SIZE - 8;
+		// Max data = 4096 field elements * 31 bytes per element = 126976 bytes
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
 		const data = new Uint8Array(maxSize);
 		const blob = fromData(data);
 
@@ -171,37 +172,38 @@ describe("fromData", () => {
 	});
 
 	it("throws on oversized data", () => {
-		const oversized = new Uint8Array(SIZE);
+		// Oversized = more than max data per blob
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
+		const oversized = new Uint8Array(maxSize + 1);
 		expect(() => fromData(oversized)).toThrow("Data too large");
 	});
 
-	it("includes length prefix", () => {
+	it("uses field element encoding with high byte 0x00", () => {
 		const data = new Uint8Array([1, 2, 3, 4, 5]);
 		const blob = fromData(data);
 
-		const view = new DataView(blob.buffer, blob.byteOffset);
-		const length = view.getBigUint64(0, true);
-
-		expect(length).toBe(5n);
+		// First field element: byte 0 = 0x00 (high byte), bytes 1-5 = data
+		expect(blob[0]).toBe(0x00);
+		expect(blob[1]).toBe(1);
+		expect(blob[2]).toBe(2);
+		expect(blob[3]).toBe(3);
+		expect(blob[4]).toBe(4);
+		expect(blob[5]).toBe(5);
 	});
 
-	it("copies data after length prefix", () => {
+	it("adds 0x80 terminator after data", () => {
 		const data = new Uint8Array([1, 2, 3, 4, 5]);
 		const blob = fromData(data);
 
-		expect(blob[8]).toBe(1);
-		expect(blob[9]).toBe(2);
-		expect(blob[10]).toBe(3);
-		expect(blob[11]).toBe(4);
-		expect(blob[12]).toBe(5);
+		// Terminator after 5 data bytes: position 6 in first field element
+		expect(blob[6]).toBe(0x80);
 	});
 
 	it("pads remaining bytes with zeros", () => {
 		const data = new Uint8Array([1, 2, 3]);
 		const blob = fromData(data);
 
-		// Check a few bytes after the data
-		expect(blob[11]).toBe(0);
+		// After terminator, rest should be zeros
 		expect(blob[100]).toBe(0);
 		expect(blob[SIZE - 1]).toBe(0);
 	});
@@ -225,7 +227,9 @@ describe("toData", () => {
 	});
 
 	it("decodes max size data", () => {
-		const original = new Uint8Array(SIZE - 8).fill(0xab);
+		// Max data = 4096 field elements * 31 bytes per element = 126976 bytes
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
+		const original = new Uint8Array(maxSize).fill(0xab);
 		const blob = fromData(original);
 		const decoded = toData(blob);
 
@@ -237,18 +241,10 @@ describe("toData", () => {
 		expect(() => toData(invalid)).toThrow("Invalid blob size");
 	});
 
-	it("throws on invalid length prefix", () => {
-		const blob = new Uint8Array(SIZE) as BrandedBlob;
-		const view = new DataView(blob.buffer);
-		view.setBigUint64(0, BigInt(SIZE), true); // Invalid: exceeds max
-
-		expect(() => toData(blob)).toThrow("Invalid length prefix");
-	});
-
 	it("handles roundtrip encoding", () => {
 		const testData = [
 			new Uint8Array([1, 2, 3, 4, 5]),
-			new TextEncoder().encode("Test string with unicode: 🔥"),
+			new TextEncoder().encode("Test string with unicode"),
 			new Uint8Array(1000).fill(0xff),
 			new Uint8Array(0),
 		];

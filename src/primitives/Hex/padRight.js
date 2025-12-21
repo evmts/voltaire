@@ -18,7 +18,14 @@ import { toBytes } from "./toBytes.js";
  * ```
  */
 export function padRight(hex, targetSize) {
-	const bytes = toBytes(/** @type {import('./HexType.js').HexType} */ (hex));
+	// Normalize odd-length hex by padding with trailing 0
+	let normalized = hex;
+	if (hex.length % 2 !== 0) {
+		normalized = hex + "0";
+	}
+	const bytes = toBytes(
+		/** @type {import('./HexType.js').HexType} */ (normalized),
+	);
 	if (bytes.length >= targetSize) {
 		return /** @type {import('./HexType.js').HexType} */ (fromBytes(bytes));
 	}

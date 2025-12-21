@@ -27,6 +27,27 @@ export function toBytes(hex) {
 		});
 
 	const hexDigits = hex.slice(2);
+
+	// Check for invalid characters first (more helpful error message)
+	for (let i = 0; i < hexDigits.length; i++) {
+		const char = hexDigits[i];
+		const val = hexCharToValue(char);
+		if (val === null)
+			throw new InvalidFormatError(
+				`Invalid hex character at position ${i + 2}: '${char}'`,
+				{
+					code: "HEX_INVALID_CHARACTER",
+					value: hex,
+					expected: "valid hex characters (0-9, a-f, A-F)",
+					context: {
+						position: i + 2,
+						character: char,
+					},
+					docsPath: "/primitives/hex#error-handling",
+				},
+			);
+	}
+
 	if (hexDigits.length % 2 !== 0)
 		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
 			code: "HEX_ODD_LENGTH",
@@ -37,25 +58,9 @@ export function toBytes(hex) {
 
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {
-		const charHigh = hexDigits[i];
-		const charLow = hexDigits[i + 1];
-		const high = hexCharToValue(charHigh);
-		const low = hexCharToValue(charLow);
-		if (high === null || low === null)
-			throw new InvalidFormatError(
-				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
-				{
-					code: "HEX_INVALID_CHARACTER",
-					value: hex,
-					expected: "valid hex characters (0-9, a-f, A-F)",
-					context: {
-						position: i + 2,
-						character: (charHigh ?? "") + (charLow ?? ""),
-					},
-					docsPath: "/primitives/hex#error-handling",
-				},
-			);
-		bytes[i / 2] = high * 16 + low;
+		const high = hexCharToValue(hexDigits[i]);
+		const low = hexCharToValue(hexDigits[i + 1]);
+		bytes[i / 2] = /** @type {number} */ (high) * 16 + /** @type {number} */ (low);
 	}
 	return bytes;
 }
