@@ -54,7 +54,7 @@ export function from(domain) {
 	if (domain.chainId !== undefined) {
 		result = { ...result, chainId:
 			typeof domain.chainId === "number"
-				? ChainId.from(domain.chainId)
+				? /** @type {*} */ (ChainId.from(domain.chainId))
 				: domain.chainId };
 	}
 

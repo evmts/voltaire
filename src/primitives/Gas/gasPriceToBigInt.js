@@ -12,5 +12,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasPriceToBigInt() {
-	return Uint.toBigInt(this);
+	return Uint.toBigInt(/** @type {*} */ (this));
 }

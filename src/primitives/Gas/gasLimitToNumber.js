@@ -13,5 +13,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasLimitToNumber() {
-	return Uint.toNumber(this);
+	return Uint.toNumber(/** @type {*} */ (this));
 }

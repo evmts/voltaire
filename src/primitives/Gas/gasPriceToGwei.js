@@ -5,8 +5,8 @@ const GWEI = 1_000_000_000n;
 /**
  * Convert GasPrice to gwei
  *
- * @param this - Gas price
- * @returns Value in gwei
+ * @this {import('./GasPriceType.js').GasPriceType}
+ * @returns {bigint} Value in gwei
  *
  * @example
  * ```typescript
@@ -14,5 +14,5 @@ const GWEI = 1_000_000_000n;
  * ```
  */
 export function gasPriceToGwei() {
-	return Uint.toBigInt(this) / GWEI;
+	return Uint.toBigInt(/** @type {*} */ (this)) / GWEI;
 }

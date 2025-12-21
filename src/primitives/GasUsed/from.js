@@ -28,5 +28,5 @@ export function from(value) {
 		);
 	}
 
-	return bigintValue;
+	return /** @type {import('./GasUsedType.js').GasUsedType} */ (bigintValue);
 }

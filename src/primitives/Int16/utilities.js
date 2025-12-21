@@ -1,8 +1,8 @@
-import { INT16_MAX, INT16_MIN } from "./Int16Type.ts";
+import { INT16_MAX, INT16_MIN } from "./Int16Type.js";
 
 /**
  * Get bit length (number of bits needed to represent value)
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {number}
  */
 export function bitLength(value) {
@@ -14,7 +14,7 @@ export function bitLength(value) {
 
 /**
  * Count leading zeros in binary representation
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {number}
  */
 export function leadingZeros(value) {
@@ -31,7 +31,7 @@ export function leadingZeros(value) {
 
 /**
  * Count set bits (population count)
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {number}
  */
 export function popCount(value) {
