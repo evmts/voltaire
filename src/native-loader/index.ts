@@ -16,8 +16,7 @@ export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
  * Runtime environment detection
  */
 export function isBun(): boolean {
-	// @ts-expect-error Bun global
-	return typeof Bun !== "undefined";
+	return typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
 }
 
 export function isNode(): boolean {

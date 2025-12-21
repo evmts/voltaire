@@ -9,7 +9,7 @@ import { Hash } from "./hash.js";
  * @param {(messageHash: Uint8Array, privateKey: Uint8Array) => {r: Uint8Array, s: Uint8Array, v: number}} deps.sign - secp256k1 sign function
  * @param {(signature: {r: Uint8Array, s: Uint8Array, v: number}, messageHash: Uint8Array) => Uint8Array} deps.recoverPublicKey - secp256k1 public key recovery
  * @param {(x: bigint, y: bigint) => import("../Address/AddressType.js").AddressType} deps.addressFromPublicKey - Address derivation from public key
- * @returns {(unsigned: {chainId: bigint, address: import("../Address/AddressType.js").BrandedAddress, nonce: bigint}, privateKey: Uint8Array) => import("./AuthorizationType.js").AuthorizationType} Function that signs authorization
+ * @returns {(unsigned: {chainId: bigint, address: import("../Address/AddressType.js").AddressType, nonce: bigint}, privateKey: Uint8Array) => import("./AuthorizationType.js").AuthorizationType} Function that signs authorization
  */
 export function Sign({
 	keccak256,
