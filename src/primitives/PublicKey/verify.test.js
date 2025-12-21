@@ -370,10 +370,14 @@ describe("PublicKey.verify", () => {
 			const pubkey = fromPrivateKey(pk);
 			const hash = Hash.keccak256(new Uint8Array([1, 2, 3]));
 
-			const fakeSig = new Uint8Array(64);
-			for (let i = 0; i < 64; i++) {
-				fakeSig[i] = i;
+			// Create a properly structured fake signature
+			const r = new Uint8Array(32);
+			const s = new Uint8Array(32);
+			for (let i = 0; i < 32; i++) {
+				r[i] = i;
+				s[i] = i + 32;
 			}
+			const fakeSig = { r, s, v: 27 };
 
 			const valid = verify(pubkey, hash, /** @type {*} */ (fakeSig));
 			expect(valid).toBe(false);

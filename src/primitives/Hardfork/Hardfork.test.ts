@@ -416,12 +416,12 @@ describe("Hardfork.isPostMerge", () => {
 describe("Hardfork.isPoS (convenience form)", () => {
 	it("returns true for Merge and later", () => {
 		const fork = Hardfork.MERGE;
-		expect(Hardfork.isPoS.call(fork)).toBe(true);
+		expect(Hardfork.isPoS(fork)).toBe(true);
 	});
 
 	it("returns false for pre-Merge", () => {
 		const fork = Hardfork.LONDON;
-		expect(Hardfork.isPoS.call(fork)).toBe(false);
+		expect(Hardfork.isPoS(fork)).toBe(false);
 	});
 });
 

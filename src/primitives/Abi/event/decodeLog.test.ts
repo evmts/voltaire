@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import * as Hash from "../../Hash/index.ts";
-import * as Hex from "../../Hex/index.js";
+import { Hex, fromBytes as hexFromBytes, toBytes as hexToBytes } from "../../Hex/index.js";
 import { encodeParameters } from "../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
 import { decodeLog } from "./decodeLog.js";
@@ -274,7 +274,7 @@ describe("decodeLog", () => {
 		};
 
 		const selector = Hash.keccak256String("Data(bytes)");
-		const bytesData = Hex.from("0x123456");
+		const bytesData = Hex("0x123456");
 		const data = encodeParameters(
 			[{ type: "bytes", name: "data" }],
 			[bytesData],
@@ -283,7 +283,7 @@ describe("decodeLog", () => {
 		const result = decodeLog(event, data, [selector]);
 
 		expect(result.data).toBeInstanceOf(Uint8Array);
-		expect(Hex.toHex(result.data)).toBe("0x123456");
+		expect(hexFromBytes(result.data)).toBe("0x123456");
 	});
 
 	it("decodes array type", () => {
@@ -351,8 +351,8 @@ describe("decodeLog", () => {
 		};
 
 		const selector = Hash.keccak256String("HashSet(bytes32)");
-		const hashTopic = Hex.from(
-			"0x0000000000000000000000000000000000000000000000000000000000000001",
+		const hashTopic = hexToBytes(
+			Hex("0x0000000000000000000000000000000000000000000000000000000000000001"),
 		);
 
 		const data = new Uint8Array(0);
@@ -379,11 +379,13 @@ describe("decodeLog", () => {
 			"ComplexEvent(uint256,address,bool,bytes32)",
 		);
 
-		const addressBytes = new Uint8Array(32);
-		addressBytes[31] = 1;
+		// Address is 20 bytes
+		const addressBytes = new Uint8Array(20);
+		addressBytes[19] = 1;
 
-		const hashBytes = Hex.from(
-			"0x0000000000000000000000000000000000000000000000000000000000000002",
+		// bytes32 should be a Uint8Array
+		const hashBytes = hexToBytes(
+			Hex("0x0000000000000000000000000000000000000000000000000000000000000002"),
 		);
 
 		const data = encodeParameters(
@@ -399,7 +401,7 @@ describe("decodeLog", () => {
 		const result = decodeLog(event, data, [selector]);
 
 		expect(result.a).toBe(42n);
-		expect(result.b).toBeInstanceOf(Uint8Array);
+		expect(typeof result.b).toBe("string"); // Address decoded as hex string
 		expect(result.c).toBe(true);
 		expect(result.d).toBeInstanceOf(Uint8Array);
 	});

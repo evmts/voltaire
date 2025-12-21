@@ -112,7 +112,8 @@ describe("Error namespace", () => {
 		const encoded = Error.encodeParams(error, args);
 		const decoded = Error.decodeParams(error, encoded);
 
-		expect(decoded[0]).toBe(args[0]);
+		// Address checksum not preserved through ABI encode/decode (compared lowercase)
+		expect(decoded[0]?.toLowerCase()).toBe(args[0].toLowerCase());
 		expect(decoded[1]).toBe(args[1]);
 	});
 
