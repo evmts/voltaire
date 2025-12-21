@@ -30,7 +30,7 @@ const GWEI_PER_ETHER = 1_000_000_000n;
  * @returns {Gwei}
  */
 export function from(value) {
-	return /** @type {Gwei} */ (Uint.from(value));
+	return /** @type {Gwei} */ (/** @type {unknown} */ (Uint.from(value)));
 }
 
 /**
@@ -40,8 +40,8 @@ export function from(value) {
  * @returns {Gwei}
  */
 export function fromWei(wei) {
-	const gwei = Uint.dividedBy(/** @type {Uint.Type} */ (wei), Uint.from(WEI_PER_GWEI));
-	return /** @type {Gwei} */ (gwei);
+	const gwei = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)), Uint.from(WEI_PER_GWEI));
+	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
 }
 
 /**
@@ -51,8 +51,8 @@ export function fromWei(wei) {
  * @returns {Gwei}
  */
 export function fromEther(ether) {
-	const gwei = Uint.times(/** @type {Uint.Type} */ (ether), Uint.from(GWEI_PER_ETHER));
-	return /** @type {Gwei} */ (gwei);
+	const gwei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)), Uint.from(GWEI_PER_ETHER));
+	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
 }
 
 /**
@@ -62,8 +62,8 @@ export function fromEther(ether) {
  * @returns {Wei}
  */
 export function toWei(gwei) {
-	const wei = Uint.times(/** @type {Uint.Type} */ (gwei), Uint.from(WEI_PER_GWEI));
-	return /** @type {Wei} */ (wei);
+	const wei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)), Uint.from(WEI_PER_GWEI));
+	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
 }
 
 /**
@@ -73,8 +73,8 @@ export function toWei(gwei) {
  * @returns {Ether}
  */
 export function toEther(gwei) {
-	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (gwei), Uint.from(GWEI_PER_ETHER));
-	return /** @type {Ether} */ (ether);
+	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)), Uint.from(GWEI_PER_ETHER));
+	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
 }
 
 /**
@@ -84,7 +84,7 @@ export function toEther(gwei) {
  * @returns {Uint.Type}
  */
 export function toU256(gwei) {
-	return /** @type {Uint.Type} */ (gwei);
+	return /** @type {Uint.Type} */ (/** @type {unknown} */ (gwei));
 }
 
 /**

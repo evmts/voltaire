@@ -30,7 +30,7 @@ const GWEI_PER_ETHER = 1_000_000_000n;
  * @returns {Ether}
  */
 export function from(value) {
-	return /** @type {Ether} */ (Uint.from(value));
+	return /** @type {Ether} */ (/** @type {unknown} */ (Uint.from(value)));
 }
 
 /**
@@ -40,8 +40,8 @@ export function from(value) {
  * @returns {Ether}
  */
 export function fromWei(wei) {
-	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (wei), Uint.from(WEI_PER_ETHER));
-	return /** @type {Ether} */ (ether);
+	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)), Uint.from(WEI_PER_ETHER));
+	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
 }
 
 /**
@@ -51,8 +51,8 @@ export function fromWei(wei) {
  * @returns {Ether}
  */
 export function fromGwei(gwei) {
-	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (gwei), Uint.from(GWEI_PER_ETHER));
-	return /** @type {Ether} */ (ether);
+	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)), Uint.from(GWEI_PER_ETHER));
+	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
 }
 
 /**
@@ -62,8 +62,8 @@ export function fromGwei(gwei) {
  * @returns {Wei}
  */
 export function toWei(ether) {
-	const wei = Uint.times(/** @type {Uint.Type} */ (ether), Uint.from(WEI_PER_ETHER));
-	return /** @type {Wei} */ (wei);
+	const wei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)), Uint.from(WEI_PER_ETHER));
+	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
 }
 
 /**
@@ -73,8 +73,8 @@ export function toWei(ether) {
  * @returns {Gwei}
  */
 export function toGwei(ether) {
-	const gwei = Uint.times(/** @type {Uint.Type} */ (ether), Uint.from(GWEI_PER_ETHER));
-	return /** @type {Gwei} */ (gwei);
+	const gwei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)), Uint.from(GWEI_PER_ETHER));
+	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
 }
 
 /**
@@ -84,7 +84,7 @@ export function toGwei(ether) {
  * @returns {Uint.Type}
  */
 export function toU256(ether) {
-	return /** @type {Uint.Type} */ (ether);
+	return /** @type {Uint.Type} */ (/** @type {unknown} */ (ether));
 }
 
 /**

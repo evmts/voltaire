@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { formatWithArgs } from "./formatWithArgs.js";
 
+/** @param {*} item @returns {import('./Item/ItemType.js').ItemType} */
+const item = (item) => item;
+
 describe("formatWithArgs", () => {
 	describe("function formatting", () => {
 		it("formats function call with arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "transfer",
 				stateMutability: "nonpayable",
@@ -13,7 +16,7 @@ describe("formatWithArgs", () => {
 					{ type: "uint256", name: "amount" },
 				],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 				1000n,
@@ -24,25 +27,25 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats function with no arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "totalSupply",
 				stateMutability: "view",
 				inputs: [],
 				outputs: [{ type: "uint256" }],
-			};
+			});
 			const formatted = formatWithArgs(func, []);
 			expect(formatted).toBe("totalSupply()");
 		});
 
 		it("formats function with single argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "balanceOf",
 				stateMutability: "view",
 				inputs: [{ type: "address", name: "account" }],
 				outputs: [{ type: "uint256" }],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			]);
@@ -52,7 +55,7 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats function with multiple arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "approve",
 				stateMutability: "nonpayable",
@@ -61,7 +64,7 @@ describe("formatWithArgs", () => {
 					{ type: "uint256", name: "amount" },
 				],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 				500n,
@@ -74,7 +77,7 @@ describe("formatWithArgs", () => {
 
 	describe("event formatting", () => {
 		it("formats event with indexed arguments", () => {
-			const event = {
+			const event = item({
 				type: "event",
 				name: "Transfer",
 				inputs: [
@@ -82,7 +85,7 @@ describe("formatWithArgs", () => {
 					{ type: "address", name: "to", indexed: true },
 					{ type: "uint256", name: "value", indexed: false },
 				],
-			};
+			});
 			const formatted = formatWithArgs(event, [
 				"0x0000000000000000000000000000000000000000",
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
@@ -93,11 +96,11 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats event with no arguments", () => {
-			const event = {
+			const event = item({
 				type: "event",
 				name: "Paused",
 				inputs: [],
-			};
+			});
 			const formatted = formatWithArgs(event, []);
 			expect(formatted).toBe("Paused()");
 		});
@@ -105,24 +108,24 @@ describe("formatWithArgs", () => {
 
 	describe("error formatting", () => {
 		it("formats error with arguments", () => {
-			const error = {
+			const error = item({
 				type: "error",
 				name: "InsufficientBalance",
 				inputs: [
 					{ type: "uint256", name: "available" },
 					{ type: "uint256", name: "required" },
 				],
-			};
+			});
 			const formatted = formatWithArgs(error, [100n, 200n]);
 			expect(formatted).toBe("InsufficientBalance(100, 200)");
 		});
 
 		it("formats error with no arguments", () => {
-			const error = {
+			const error = item({
 				type: "error",
 				name: "Unauthorized",
 				inputs: [],
-			};
+			});
 			const formatted = formatWithArgs(error, []);
 			expect(formatted).toBe("Unauthorized()");
 		});
@@ -130,49 +133,49 @@ describe("formatWithArgs", () => {
 
 	describe("argument types", () => {
 		it("formats bigint arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "test",
 				stateMutability: "pure",
 				inputs: [{ type: "uint256" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [1000000000000000000n]);
 			expect(formatted).toBe("test(1000000000000000000)");
 		});
 
 		it("formats string arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setName",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string", name: "name" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, ["Alice"]);
 			expect(formatted).toBe("setName(Alice)");
 		});
 
 		it("formats boolean arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setFlag",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "bool", name: "flag" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [true]);
 			expect(formatted).toBe("setFlag(true)");
 		});
 
 		it("formats address arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "transfer",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "address" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			]);
@@ -182,25 +185,25 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats number arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "test",
 				stateMutability: "pure",
 				inputs: [{ type: "uint8" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [42]);
 			expect(formatted).toBe("test(42)");
 		});
 
 		it("formats array arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "batchTransfer",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256[]" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [[1n, 2n, 3n]]);
 			expect(formatted).toContain("batchTransfer(");
 			expect(formatted).toContain("1");
@@ -211,19 +214,19 @@ describe("formatWithArgs", () => {
 
 	describe("fallback cases", () => {
 		it("falls back to format for items without name", () => {
-			const fallback = {
+			const fallback = item({
 				type: "fallback",
 				stateMutability: "payable",
-			};
+			});
 			const formatted = formatWithArgs(fallback, []);
 			expect(formatted).toBe("fallback");
 		});
 
 		it("falls back to format for items without inputs", () => {
-			const receive = {
+			const receive = item({
 				type: "receive",
 				stateMutability: "payable",
-			};
+			});
 			const formatted = formatWithArgs(receive, []);
 			expect(formatted).toBe("receive");
 		});
@@ -231,37 +234,37 @@ describe("formatWithArgs", () => {
 
 	describe("edge cases", () => {
 		it("handles empty string argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setName",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [""]);
 			expect(formatted).toBe("setName()");
 		});
 
 		it("handles zero bigint argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "transfer",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [0n]);
 			expect(formatted).toBe("transfer(0)");
 		});
 
 		it("handles zero address argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "burn",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "address" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x0000000000000000000000000000000000000000",
 			]);
@@ -271,25 +274,25 @@ describe("formatWithArgs", () => {
 		});
 
 		it("handles false boolean argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setFlag",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "bool" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [false]);
 			expect(formatted).toBe("setFlag(false)");
 		});
 
 		it("handles bytes argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "execute",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "bytes" }],
 				outputs: [],
-			};
+			});
 			const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
 			const formatted = formatWithArgs(func, [bytes]);
 			expect(formatted).toContain("execute(");
@@ -298,7 +301,7 @@ describe("formatWithArgs", () => {
 
 	describe("complex arguments", () => {
 		it("formats function with multiple mixed type arguments", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "complex",
 				stateMutability: "nonpayable",
@@ -309,7 +312,7 @@ describe("formatWithArgs", () => {
 					{ type: "string" },
 				],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 				1000n,
@@ -324,7 +327,7 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats function with tuple argument", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "swap",
 				stateMutability: "nonpayable",
@@ -335,7 +338,7 @@ describe("formatWithArgs", () => {
 					},
 				],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				{
 					0: "0x742d35cc6634c0532925a3b844bc9e7595f251e3",
@@ -348,7 +351,7 @@ describe("formatWithArgs", () => {
 
 	describe("real-world examples", () => {
 		it("formats ERC20 transfer call", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "transfer",
 				stateMutability: "nonpayable",
@@ -357,7 +360,7 @@ describe("formatWithArgs", () => {
 					{ type: "uint256", name: "amount" },
 				],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [
 				"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 				1000000000000000000n,
@@ -368,7 +371,7 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats ERC20 approve call", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "approve",
 				stateMutability: "nonpayable",
@@ -377,7 +380,7 @@ describe("formatWithArgs", () => {
 					{ type: "uint256", name: "amount" },
 				],
 				outputs: [],
-			};
+			});
 			const maxUint256 =
 				0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
 			const formatted = formatWithArgs(func, [
@@ -389,7 +392,7 @@ describe("formatWithArgs", () => {
 		});
 
 		it("formats Transfer event emission", () => {
-			const event = {
+			const event = item({
 				type: "event",
 				name: "Transfer",
 				inputs: [
@@ -397,7 +400,7 @@ describe("formatWithArgs", () => {
 					{ type: "address", name: "to", indexed: true },
 					{ type: "uint256", name: "value" },
 				],
-			};
+			});
 			const formatted = formatWithArgs(event, [
 				"0x0000000000000000000000000000000000000000",
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
@@ -410,25 +413,25 @@ describe("formatWithArgs", () => {
 
 	describe("argument count mismatch", () => {
 		it("handles more arguments than inputs", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "test",
 				stateMutability: "pure",
 				inputs: [{ type: "uint256" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [1n, 2n]);
 			expect(formatted).toContain("test(");
 		});
 
 		it("handles fewer arguments than inputs", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "test",
 				stateMutability: "pure",
 				inputs: [{ type: "uint256" }, { type: "uint256" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, [1n]);
 			expect(formatted).toContain("test(");
 		});
@@ -436,37 +439,37 @@ describe("formatWithArgs", () => {
 
 	describe("special characters in strings", () => {
 		it("handles strings with spaces", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setName",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, ["Hello World"]);
 			expect(formatted).toBe("setName(Hello World)");
 		});
 
 		it("handles strings with quotes", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setText",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, ['Test "quoted" text']);
 			expect(formatted).toContain("setText(");
 		});
 
 		it("handles strings with commas", () => {
-			const func = {
+			const func = item({
 				type: "function",
 				name: "setText",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string" }],
 				outputs: [],
-			};
+			});
 			const formatted = formatWithArgs(func, ["Hello, World"]);
 			expect(formatted).toBe("setText(Hello, World)");
 		});

@@ -5,9 +5,33 @@ import { from as hashFrom } from "../Hash/index.js";
 import { from as uint256From } from "../Uint/index.js";
 
 /**
+ * @typedef {object} BlockHeaderParams
+ * @property {string | Uint8Array} parentHash
+ * @property {string | Uint8Array} ommersHash
+ * @property {string | Uint8Array} beneficiary
+ * @property {string | Uint8Array} stateRoot
+ * @property {string | Uint8Array} transactionsRoot
+ * @property {string | Uint8Array} receiptsRoot
+ * @property {Uint8Array} logsBloom
+ * @property {bigint} difficulty
+ * @property {bigint} number
+ * @property {bigint} gasLimit
+ * @property {bigint} gasUsed
+ * @property {bigint} timestamp
+ * @property {Uint8Array} extraData
+ * @property {string | Uint8Array} mixHash
+ * @property {Uint8Array} nonce
+ * @property {bigint} [baseFeePerGas]
+ * @property {string | Uint8Array} [withdrawalsRoot]
+ * @property {bigint} [blobGasUsed]
+ * @property {bigint} [excessBlobGas]
+ * @property {string | Uint8Array} [parentBeaconBlockRoot]
+ */
+
+/**
  * Create BlockHeader from components
  *
- * @param {object} params - BlockHeader parameters
+ * @param {BlockHeaderParams} params - BlockHeader parameters
  * @returns {import('./BlockHeaderType.js').BlockHeaderType} BlockHeader
  *
  * @example
@@ -58,8 +82,7 @@ export function from({
 	excessBlobGas,
 	parentBeaconBlockRoot,
 }) {
-	/** @type {import('./BlockHeaderType.js').BlockHeaderType} */
-	const header = {
+	return /** @type {import('./BlockHeaderType.js').BlockHeaderType} */ ({
 		parentHash: blockHashFrom(parentHash),
 		ommersHash: hashFrom(ommersHash),
 		beneficiary: addressFrom(beneficiary),
@@ -75,31 +98,10 @@ export function from({
 		extraData,
 		mixHash: hashFrom(mixHash),
 		nonce,
-	};
-
-	// Optional post-London fields
-	if (baseFeePerGas !== undefined) {
-		header.baseFeePerGas = uint256From(baseFeePerGas);
-	}
-
-	// Optional post-Shanghai fields
-	if (withdrawalsRoot !== undefined) {
-		header.withdrawalsRoot = hashFrom(withdrawalsRoot);
-	}
-
-	// Optional post-Cancun fields (EIP-4844)
-	if (blobGasUsed !== undefined) {
-		header.blobGasUsed = uint256From(blobGasUsed);
-	}
-
-	if (excessBlobGas !== undefined) {
-		header.excessBlobGas = uint256From(excessBlobGas);
-	}
-
-	// Optional post-Cancun fields (EIP-4788)
-	if (parentBeaconBlockRoot !== undefined) {
-		header.parentBeaconBlockRoot = hashFrom(parentBeaconBlockRoot);
-	}
-
-	return header;
+		...(baseFeePerGas !== undefined && { baseFeePerGas: uint256From(baseFeePerGas) }),
+		...(withdrawalsRoot !== undefined && { withdrawalsRoot: hashFrom(withdrawalsRoot) }),
+		...(blobGasUsed !== undefined && { blobGasUsed: uint256From(blobGasUsed) }),
+		...(excessBlobGas !== undefined && { excessBlobGas: uint256From(excessBlobGas) }),
+		...(parentBeaconBlockRoot !== undefined && { parentBeaconBlockRoot: hashFrom(parentBeaconBlockRoot) }),
+	});
 }

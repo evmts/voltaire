@@ -50,21 +50,21 @@ describe("getItem", () => {
 
 	describe("finding by name and type", () => {
 		it("finds function by name and type", () => {
-			const item = getItem(testAbi, "transfer", "function");
+			const item = /** @type {*} */ (getItem(testAbi, "transfer", "function"));
 			expect(item).toBeDefined();
 			expect(item.type).toBe("function");
 			expect(item.name).toBe("transfer");
 		});
 
 		it("finds event by name and type", () => {
-			const item = getItem(testAbi, "Transfer", "event");
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", "event"));
 			expect(item).toBeDefined();
 			expect(item.type).toBe("event");
 			expect(item.name).toBe("Transfer");
 		});
 
 		it("finds error by name and type", () => {
-			const item = getItem(testAbi, "InsufficientBalance", "error");
+			const item = /** @type {*} */ (getItem(testAbi, "InsufficientBalance", "error"));
 			expect(item).toBeDefined();
 			expect(item.type).toBe("error");
 			expect(item.name).toBe("InsufficientBalance");
@@ -78,13 +78,13 @@ describe("getItem", () => {
 
 	describe("finding by name only", () => {
 		it("finds item by name without type filter", () => {
-			const item = getItem(testAbi, "transfer");
+			const item = /** @type {*} */ (getItem(testAbi, "transfer"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("transfer");
 		});
 
 		it("finds first matching item when type undefined", () => {
-			const item = getItem(testAbi, "Transfer");
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("Transfer");
 			expect(item.type).toBe("event");
@@ -98,13 +98,14 @@ describe("getItem", () => {
 
 	describe("multiple items with same name", () => {
 		it("finds first function with matching name", () => {
-			const item = getItem(testAbi, "balanceOf", "function");
+			const item = /** @type {*} */ (getItem(testAbi, "balanceOf", "function"));
 			expect(item).toBeDefined();
 			expect(item.type).toBe("function");
 			expect(item.name).toBe("balanceOf");
 		});
 
 		it("distinguishes between function and event with same name", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -120,10 +121,10 @@ describe("getItem", () => {
 				},
 			];
 
-			const func = getItem(abi, "Swap", "function");
+			const func = /** @type {*} */ (getItem(abi, "Swap", "function"));
 			expect(func.type).toBe("function");
 
-			const event = getItem(abi, "Swap", "event");
+			const event = /** @type {*} */ (getItem(abi, "Swap", "event"));
 			expect(event.type).toBe("event");
 		});
 	});
@@ -135,7 +136,7 @@ describe("getItem", () => {
 		});
 
 		it("matches exact case", () => {
-			const item = getItem(testAbi, "transfer");
+			const item = /** @type {*} */ (getItem(testAbi, "transfer"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("transfer");
 		});
@@ -172,17 +173,17 @@ describe("getItem", () => {
 
 	describe("finding all types", () => {
 		it("finds function", () => {
-			const item = getItem(testAbi, "transfer", "function");
+			const item = /** @type {*} */ (getItem(testAbi, "transfer", "function"));
 			expect(item.type).toBe("function");
 		});
 
 		it("finds event", () => {
-			const item = getItem(testAbi, "Transfer", "event");
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", "event"));
 			expect(item.type).toBe("event");
 		});
 
 		it("finds error", () => {
-			const item = getItem(testAbi, "InsufficientBalance", "error");
+			const item = /** @type {*} */ (getItem(testAbi, "InsufficientBalance", "error"));
 			expect(item.type).toBe("error");
 		});
 
@@ -194,6 +195,7 @@ describe("getItem", () => {
 
 	describe("overloaded functions", () => {
 		it("finds first overload", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -211,7 +213,7 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = getItem(abi, "transfer", "function");
+			const item = /** @type {*} */ (getItem(abi, "transfer", "function"));
 			expect(item).toBeDefined();
 			expect(item.inputs.length).toBe(1);
 		});
@@ -219,6 +221,7 @@ describe("getItem", () => {
 
 	describe("real-world ABIs", () => {
 		it("finds ERC20 transfer", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -249,13 +252,14 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = getItem(abi, "transfer", "function");
+			const item = /** @type {*} */ (getItem(abi, "transfer", "function"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("transfer");
 			expect(item.inputs.length).toBe(2);
 		});
 
 		it("finds ERC20 Transfer event", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "event",
@@ -277,13 +281,14 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = getItem(abi, "Transfer", "event");
+			const item = /** @type {*} */ (getItem(abi, "Transfer", "event"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("Transfer");
 			expect(item.inputs.length).toBe(3);
 		});
 
 		it("finds custom error", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "error",
@@ -300,7 +305,7 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = getItem(abi, "InsufficientBalance", "error");
+			const item = /** @type {*} */ (getItem(abi, "InsufficientBalance", "error"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("InsufficientBalance");
 			expect(item.inputs.length).toBe(2);
@@ -309,6 +314,7 @@ describe("getItem", () => {
 
 	describe("edge cases", () => {
 		it("handles abi with single item", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -324,20 +330,22 @@ describe("getItem", () => {
 		});
 
 		it("handles abi with many items", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = Array.from({ length: 100 }, (_, i) => ({
-				type: "function",
+				type: /** @type {const} */ ("function"),
 				name: `func${i}`,
-				stateMutability: "pure",
-				inputs: [],
-				outputs: [],
+				stateMutability: /** @type {const} */ ("pure"),
+				inputs: /** @type {const} */ ([]),
+				outputs: /** @type {const} */ ([]),
 			}));
 
-			const item = getItem(abi, "func50");
+			const item = /** @type {*} */ (getItem(abi, "func50"));
 			expect(item).toBeDefined();
 			expect(item.name).toBe("func50");
 		});
 
 		it("returns first match in order", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "event",
@@ -353,7 +361,7 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = getItem(abi, "Test");
+			const item = /** @type {*} */ (getItem(abi, "Test"));
 			expect(item.type).toBe("event");
 		});
 	});
@@ -366,7 +374,7 @@ describe("getItem", () => {
 		});
 
 		it("finds any type when undefined", () => {
-			const item = getItem(testAbi, "Transfer", undefined);
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", undefined));
 			expect(item).toBeDefined();
 			expect(item.type).toBe("event");
 		});
