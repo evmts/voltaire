@@ -163,7 +163,8 @@ export fn primitives_hex_to_bytes(
 
     // We need an allocator for temporary conversion
     // Since we can't use C allocator easily, use a stack buffer for small conversions
-    var stack_buf: [1024]u8 = undefined;
+    // 4KB buffer supports hex strings up to ~8KB (2 chars per byte)
+    var stack_buf: [4096]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
     const allocator = fba.allocator();
 

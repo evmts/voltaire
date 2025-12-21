@@ -169,13 +169,19 @@ describe("HexType type-level tests", () => {
 		it("should have readonly brand property", () => {
 			const hex = "0x1234" as HexType;
 			// @ts-expect-error - brand is readonly
-			hex.__tag = "Modified";
+			// Strings are immutable in JS, so assignment throws TypeError
+			expect(() => {
+				(hex as Record<string, unknown>).__tag = "Modified";
+			}).toThrow(TypeError);
 		});
 
 		it("should have readonly size for Sized", () => {
 			const sized = "0x1234" as Sized<2>;
 			// @ts-expect-error - size is readonly
-			sized.size = 4;
+			// Strings are immutable in JS, so assignment throws TypeError
+			expect(() => {
+				(sized as Record<string, unknown>).size = 4;
+			}).toThrow(TypeError);
 		});
 	});
 
