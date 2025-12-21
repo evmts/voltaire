@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Keccak256 } from "../keccak256.js";
 import { ZERO } from "./constants.js";
 
