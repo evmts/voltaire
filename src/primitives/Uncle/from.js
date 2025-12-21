@@ -5,9 +5,28 @@ import { from as hashFrom } from "../Hash/index.js";
 import { from as uint256From } from "../Uint/index.js";
 
 /**
+ * @typedef {object} UncleParams
+ * @property {string | Uint8Array} parentHash
+ * @property {string | Uint8Array} ommersHash
+ * @property {string | Uint8Array} beneficiary
+ * @property {string | Uint8Array} stateRoot
+ * @property {string | Uint8Array} transactionsRoot
+ * @property {string | Uint8Array} receiptsRoot
+ * @property {Uint8Array} logsBloom
+ * @property {bigint} difficulty
+ * @property {bigint} number
+ * @property {bigint} gasLimit
+ * @property {bigint} gasUsed
+ * @property {bigint} timestamp
+ * @property {Uint8Array} extraData
+ * @property {string | Uint8Array} mixHash
+ * @property {Uint8Array} nonce
+ */
+
+/**
  * Create Uncle from components
  *
- * @param {object} params - Uncle parameters
+ * @param {UncleParams} params - Uncle parameters
  * @returns {import('./UncleType.js').UncleType} Uncle
  *
  * @example
@@ -48,7 +67,7 @@ export function from({
 	mixHash,
 	nonce,
 }) {
-	return {
+	return /** @type {import('./UncleType.js').UncleType} */ ({
 		parentHash: blockHashFrom(parentHash),
 		ommersHash: hashFrom(ommersHash),
 		beneficiary: addressFrom(beneficiary),
@@ -64,5 +83,5 @@ export function from({
 		extraData,
 		mixHash: hashFrom(mixHash),
 		nonce,
-	};
+	});
 }

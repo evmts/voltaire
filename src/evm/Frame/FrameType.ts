@@ -46,7 +46,11 @@ export type BrandedFrame = {
 
 	// EIP-2929: Track warm/cold account and storage access (Berlin+)
 	accessedAddresses?: Set<string>; // Warm addresses
-	accessedStorageKeys?: Map<string, Set<string>>; // Warm storage slots per address
+	accessedStorageKeys?: Map<string, boolean>; // Warm storage slots (key is "address:slot")
+
+	// Storage tracking (for EIP-2200 gas refunds)
+	storageOriginalValues?: Map<string, bigint>; // Original values before tx started
+	gasRefunds?: bigint; // Accumulated gas refunds
 
 	// Block context (optional, for block opcodes)
 	blockNumber?: bigint;
