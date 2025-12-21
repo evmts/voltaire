@@ -24,7 +24,7 @@ export class Bip39Error extends CryptoError {
 	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
-		super(message, {
+		super(message || "BIP-39 error", {
 			code: options?.code || "BIP39_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
@@ -56,7 +56,7 @@ export class InvalidMnemonicError extends InvalidFormatError {
 	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
-		super(message, {
+		super(message || "Invalid mnemonic", {
 			code: options?.code || "BIP39_INVALID_MNEMONIC",
 			value: options?.context?.mnemonic || "",
 			expected: "Valid BIP-39 mnemonic (12, 15, 18, 21, or 24 words)",

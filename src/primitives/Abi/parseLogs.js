@@ -39,7 +39,7 @@ export function parseLogs(logs) {
 
 			// Find event by selector (topic0 for non-anonymous events)
 			const event =
-				/** @type {import('./event/BrandedEvent.js').Event<string, readonly import('./parameter/index.js').AbiParameter[]> | undefined} */ (
+				/** @type {import('./event/EventType.js').EventType<string, readonly import('./parameter/index.js').AbiParameter[]> | undefined} */ (
 					this.find((item) => {
 						if (item.type !== "event") return false;
 						if (item.anonymous) return false;

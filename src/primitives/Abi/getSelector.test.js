@@ -3,6 +3,7 @@ import * as Keccak from "../../crypto/Keccak256/index.js";
 import { GetSelector } from "./getSelector.js";
 
 describe("GetSelector", () => {
+	/** @param {string} str */
 	const keccak256String = (str) => Keccak.hash(new TextEncoder().encode(str));
 	const getSelector = GetSelector({ keccak256String });
 
@@ -280,6 +281,7 @@ describe("GetSelector", () => {
 		});
 
 		it("allows custom keccak256 implementation", () => {
+			/** @param {string} str */
 			const customKeccak = (str) => keccak256String(str);
 			const customGetSelector = GetSelector({
 				keccak256String: customKeccak,

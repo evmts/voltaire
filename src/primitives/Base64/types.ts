@@ -3,6 +3,8 @@ export type { BrandedBase64Url } from "./Base64Type.js";
 export type { Base64Like } from "./Base64Type.js";
 export type { Base64UrlLike } from "./Base64Type.js";
 
+import type { BrandedBase64, BrandedBase64Url } from "./Base64Type.js";
+
 /**
  * @deprecated Use BrandedBase64 instead
  * Base64-encoded string (standard alphabet)

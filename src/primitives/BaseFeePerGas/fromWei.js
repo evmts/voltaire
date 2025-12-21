@@ -10,5 +10,5 @@
  * ```
  */
 export function fromWei(wei) {
-	return wei;
+	return /** @type {import("./BaseFeePerGasType.js").BaseFeePerGasType} */ (wei);
 }

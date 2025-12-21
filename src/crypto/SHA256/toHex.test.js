@@ -196,7 +196,7 @@ describe("SHA256 toHex function", () => {
 
 			const bytes = new Uint8Array(hashResult.length);
 			for (let i = 0; i < hashResult.length; i++) {
-				bytes[i] = hashResult[i];
+				bytes[i] = /** @type {number} */ (hashResult[i]);
 			}
 
 			expect(toHex(bytes)).toBe(hex);

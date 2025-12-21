@@ -41,7 +41,7 @@ export function getFunctionBySelector(abi, selector) {
 		);
 	}
 
-	const item = /** @type {import('./AbiType.js').Item[]} */ (abi).find((/** @type {import('./AbiType.js').Item} */ item) => {
+	const item = /** @type {import('./AbiType.js').Item[]} */ (/** @type {unknown} */ (abi)).find((/** @type {import('./AbiType.js').Item} */ item) => {
 		if (item.type !== "function") return false;
 		const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
 

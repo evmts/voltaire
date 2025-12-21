@@ -17,5 +17,5 @@ import * as OxBase64 from "ox/Base64";
  * ```
  */
 export function encode(data) {
-	return OxBase64.fromBytes(data);
+	return /** @type {import('./Base64Type.js').BrandedBase64} */ (OxBase64.fromBytes(data));
 }

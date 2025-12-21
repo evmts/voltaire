@@ -21,7 +21,7 @@ import { isValid } from "./isValid.js";
 export function from(value) {
 	// Already branded Base64
 	if (typeof value === "string" && isValid(value)) {
-		return value;
+		return /** @type {import('./Base64Type.js').BrandedBase64} */ (value);
 	}
 
 	// Convert bytes to Base64
@@ -34,7 +34,7 @@ export function from(value) {
 		if (!isValid(value)) {
 			throw new TypeError(`Invalid Base64 string: ${value}`);
 		}
-		return value;
+		return /** @type {import('./Base64Type.js').BrandedBase64} */ (value);
 	}
 
 	throw new TypeError(
