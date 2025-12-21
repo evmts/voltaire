@@ -2,7 +2,7 @@ import * as BytesType from "../Bytes.index.js";
 import { InvalidBytesLengthError } from "../errors.js";
 
 /**
- * @param {import('../BytesType.js').BytesLike} value
+ * @param {Uint8Array | string} value
  * @returns {import('./Bytes8Type.js').Bytes8Type}
  */
 export function from(value) {
@@ -13,5 +13,5 @@ export function from(value) {
 			actual: bytes.length,
 		});
 	}
-	return bytes;
+	return /** @type {import('./Bytes8Type.js').Bytes8Type} */ (bytes);
 }
