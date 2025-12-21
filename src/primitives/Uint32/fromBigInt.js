@@ -23,5 +23,5 @@ export function fromBigInt(value) {
 		throw new Error(`Uint32 value exceeds maximum: ${value}`);
 	}
 
-	return Number(value);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (Number(value));
 }

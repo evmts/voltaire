@@ -21,11 +21,11 @@ export function plus(a, b) {
 
 	// Handle wrapping
 	if (sum > MAX) {
-		return sum - MODULO;
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (sum - MODULO);
 	}
 	if (sum < MIN) {
-		return sum + MODULO;
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (sum + MODULO);
 	}
 
-	return sum;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (sum);
 }

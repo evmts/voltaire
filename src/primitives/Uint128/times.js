@@ -19,5 +19,5 @@ import { MAX } from "./constants.js";
  */
 export function times(uint, b) {
 	const product = uint * b;
-	return product & MAX;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (product & MAX);
 }

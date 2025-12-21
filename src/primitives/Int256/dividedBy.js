@@ -41,5 +41,5 @@ export function dividedBy(a, b) {
 	}
 
 	// BigInt / already truncates toward zero (matches EVM SDIV)
-	return a / b;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (a / b);
 }

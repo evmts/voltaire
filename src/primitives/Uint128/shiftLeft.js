@@ -19,7 +19,7 @@ import { MAX } from "./constants.js";
 export function shiftLeft(uint, bits) {
 	const shift = typeof bits === "bigint" ? bits : BigInt(bits);
 	if (shift >= 128n) {
-		return 0n;
+		return /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 	}
-	return (uint << shift) & MAX;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ ((uint << shift) & MAX);
 }

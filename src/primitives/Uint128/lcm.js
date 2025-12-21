@@ -21,7 +21,7 @@ import { times } from "./times.js";
  */
 export function lcm(uint, b) {
 	if (uint === 0n || b === 0n) {
-		return 0n;
+		return /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 	}
 
 	const product = times(uint, b);

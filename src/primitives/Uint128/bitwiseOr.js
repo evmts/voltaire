@@ -16,5 +16,5 @@
  * ```
  */
 export function bitwiseOr(uint, b) {
-	return uint | b;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (uint | b);
 }

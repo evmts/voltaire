@@ -24,8 +24,8 @@ describe("Abi", () => {
 			];
 			const abi = Abi(items);
 			expect(abi.length).toBe(1);
-			expect(abi[0].type).toBe("function");
-			expect(abi[0].name).toBe("transfer");
+			expect(/** @type {*} */ (abi[0]).type).toBe("function");
+			expect(/** @type {*} */ (abi[0]).name).toBe("transfer");
 		});
 
 		it("creates Abi with multiple item types", () => {
@@ -152,22 +152,22 @@ describe("Abi", () => {
 			it("finds function by name", () => {
 				const item = testAbi.getItem("transfer", "function");
 				expect(item).toBeDefined();
-				expect(item.type).toBe("function");
-				expect(item.name).toBe("transfer");
+				expect(/** @type {*} */ (item).type).toBe("function");
+				expect(/** @type {*} */ (item).name).toBe("transfer");
 			});
 
 			it("finds event by name", () => {
 				const item = testAbi.getItem("Transfer", "event");
 				expect(item).toBeDefined();
-				expect(item.type).toBe("event");
-				expect(item.name).toBe("Transfer");
+				expect(/** @type {*} */ (item).type).toBe("event");
+				expect(/** @type {*} */ (item).name).toBe("Transfer");
 			});
 
 			it("finds error by name", () => {
 				const item = testAbi.getItem("InsufficientBalance", "error");
 				expect(item).toBeDefined();
-				expect(item.type).toBe("error");
-				expect(item.name).toBe("InsufficientBalance");
+				expect(/** @type {*} */ (item).type).toBe("error");
+				expect(/** @type {*} */ (item).name).toBe("InsufficientBalance");
 			});
 
 			it("returns undefined for missing item", () => {
@@ -178,7 +178,7 @@ describe("Abi", () => {
 			it("finds item by name without type filter", () => {
 				const item = testAbi.getItem("transfer");
 				expect(item).toBeDefined();
-				expect(item.name).toBe("transfer");
+				expect(/** @type {*} */ (item).name).toBe("transfer");
 			});
 		});
 
@@ -186,8 +186,8 @@ describe("Abi", () => {
 			it("finds function by name", () => {
 				const func = testAbi.getFunction("transfer");
 				expect(func).toBeDefined();
-				expect(func.type).toBe("function");
-				expect(func.name).toBe("transfer");
+				expect(/** @type {*} */ (func).type).toBe("function");
+				expect(/** @type {*} */ (func).name).toBe("transfer");
 			});
 
 			it("returns undefined for missing function", () => {
@@ -200,8 +200,8 @@ describe("Abi", () => {
 			it("finds event by name", () => {
 				const event = testAbi.getEvent("Transfer");
 				expect(event).toBeDefined();
-				expect(event.type).toBe("event");
-				expect(event.name).toBe("Transfer");
+				expect(/** @type {*} */ (event).type).toBe("event");
+				expect(/** @type {*} */ (event).name).toBe("Transfer");
 			});
 
 			it("returns undefined for missing event", () => {
@@ -214,8 +214,8 @@ describe("Abi", () => {
 			it("finds error by name", () => {
 				const error = testAbi.getError("InsufficientBalance");
 				expect(error).toBeDefined();
-				expect(error.type).toBe("error");
-				expect(error.name).toBe("InsufficientBalance");
+				expect(/** @type {*} */ (error).type).toBe("error");
+				expect(/** @type {*} */ (error).name).toBe("InsufficientBalance");
 			});
 
 			it("returns undefined for missing error", () => {
@@ -228,7 +228,7 @@ describe("Abi", () => {
 			it("finds constructor", () => {
 				const constructor = testAbi.getConstructor();
 				expect(constructor).toBeDefined();
-				expect(constructor.type).toBe("constructor");
+				expect(/** @type {*} */ (constructor).type).toBe("constructor");
 			});
 
 			it("returns undefined when no constructor", () => {

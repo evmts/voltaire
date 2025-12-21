@@ -21,11 +21,11 @@ export function minus(a, b) {
 
 	// Handle wrapping
 	if (diff > MAX) {
-		return diff - MODULO;
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (diff - MODULO);
 	}
 	if (diff < MIN) {
-		return diff + MODULO;
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (diff + MODULO);
 	}
 
-	return diff;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (diff);
 }

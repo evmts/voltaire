@@ -14,5 +14,5 @@
  * ```
  */
 export function bitwiseNot(uint) {
-	return ~uint >>> 0;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (~uint >>> 0);
 }

@@ -88,7 +88,7 @@ describe("PublicKey.toAddress", () => {
 	});
 
 	describe("keccak256 derivation", () => {
-		it("takes last 20 bytes of keccak256", () => {
+		it("takes last 20 bytes of keccak256", async () => {
 			const pk = privateKeyFrom(
 				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 			);
@@ -210,7 +210,7 @@ describe("PublicKey.toAddress", () => {
 	});
 
 	describe("edge cases", () => {
-		it("handles minimum private key", () => {
+		it("handles minimum private key", async () => {
 			const { fromBytes } = await import("../PrivateKey/fromBytes.js");
 			const pk = fromBytes(new Uint8Array(32));
 			pk[31] = 0x01;
@@ -220,7 +220,7 @@ describe("PublicKey.toAddress", () => {
 			expect(address.length).toBe(20);
 		});
 
-		it("handles sequential private key", () => {
+		it("handles sequential private key", async () => {
 			const { fromBytes } = await import("../PrivateKey/fromBytes.js");
 			const bytes = new Uint8Array(32);
 			for (let i = 0; i < 32; i++) {
@@ -234,7 +234,7 @@ describe("PublicKey.toAddress", () => {
 			expect(address.some((b) => b !== 0)).toBe(true);
 		});
 
-		it("handles alternating pattern private key", () => {
+		it("handles alternating pattern private key", async () => {
 			const { fromBytes } = await import("../PrivateKey/fromBytes.js");
 			const bytes = new Uint8Array(32);
 			for (let i = 0; i < 32; i++) {

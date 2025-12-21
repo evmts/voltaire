@@ -273,7 +273,7 @@ describe("AccountState.isContract", () => {
 	});
 
 	describe("inverse relationship", () => {
-		it("isContract is inverse of isEOA for empty account", () => {
+		it("isContract is inverse of isEOA for empty account", async () => {
 			const state = from({
 				nonce: nonceFrom(0n),
 				balance: weiFrom(0n),
@@ -285,7 +285,7 @@ describe("AccountState.isContract", () => {
 			expect(isContract(state)).toBe(!isEOA(state));
 		});
 
-		it("isContract is inverse of isEOA for contract", () => {
+		it("isContract is inverse of isEOA for contract", async () => {
 			const state = from({
 				nonce: nonceFrom(1n),
 				balance: weiFrom(0n),

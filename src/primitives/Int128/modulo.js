@@ -20,5 +20,5 @@ export function modulo(a, b) {
 		throw new Error("Division by zero");
 	}
 
-	return a % b;
+	return /** @type {import('./Int128Type.js').BrandedInt128} */ (a % b);
 }

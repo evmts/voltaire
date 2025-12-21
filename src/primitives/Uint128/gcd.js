@@ -25,5 +25,5 @@ export function gcd(uint, b) {
 		a = temp;
 	}
 
-	return a;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (a);
 }

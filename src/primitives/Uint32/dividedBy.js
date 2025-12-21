@@ -19,5 +19,5 @@ export function dividedBy(uint, b) {
 	if (b === 0) {
 		throw new Error("Division by zero");
 	}
-	return Math.floor(uint / b);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (Math.floor(uint / b));
 }

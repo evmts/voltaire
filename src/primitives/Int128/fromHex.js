@@ -34,5 +34,5 @@ export function fromHex(hex) {
 		throw new Error(`Int128 value out of range (${MIN} to ${MAX}): ${value}`);
 	}
 
-	return value;
+	return /** @type {import('./Int128Type.js').BrandedInt128} */ (value);
 }

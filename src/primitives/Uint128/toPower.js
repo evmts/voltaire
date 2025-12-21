@@ -19,7 +19,7 @@ import { MAX } from "./constants.js";
  */
 export function toPower(uint, exponent) {
 	if (exponent === 0n) {
-		return 1n;
+		return /** @type {import('./Uint128Type.js').Uint128Type} */ (1n);
 	}
 
 	let result = 1n;
@@ -34,5 +34,5 @@ export function toPower(uint, exponent) {
 		exp = exp >> 1n;
 	}
 
-	return result;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (result);
 }

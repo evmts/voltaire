@@ -30,5 +30,5 @@ export function fromNumber(value) {
 		throw new Error(`Int128 value exceeds maximum (${MAX}): ${bigintValue}`);
 	}
 
-	return bigintValue;
+	return /** @type {import('./Int128Type.js').BrandedInt128} */ (bigintValue);
 }

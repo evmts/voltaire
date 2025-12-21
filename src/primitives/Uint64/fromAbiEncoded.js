@@ -26,5 +26,5 @@ export function fromAbiEncoded(bytes) {
 		value = (value << 8n) | BigInt(bytes[i]);
 	}
 
-	return value;
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (value);
 }

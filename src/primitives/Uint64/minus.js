@@ -19,5 +19,5 @@ import { MAX } from "./constants.js";
  */
 export function minus(uint, b) {
 	const diff = uint - b;
-	return diff & MAX;
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (diff & MAX);
 }

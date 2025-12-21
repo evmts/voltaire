@@ -43,5 +43,5 @@ export function from(value) {
 		throw new Error(`Uint128 value exceeds maximum: ${bigintValue}`);
 	}
 
-	return bigintValue;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (bigintValue);
 }

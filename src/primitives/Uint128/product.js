@@ -17,12 +17,12 @@ import { times } from "./times.js";
  */
 export function product(values) {
 	if (values.length === 0) {
-		return 1n;
+		return /** @type {import('./Uint128Type.js').Uint128Type} */ (1n);
 	}
 
 	let result = values[0];
 	for (let i = 1; i < values.length; i++) {
 		result = times(result, values[i]);
 	}
-	return result;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (result);
 }

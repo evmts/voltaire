@@ -19,5 +19,5 @@ import { MAX } from "./constants.js";
  */
 export function plus(uint, b) {
 	const sum = uint + b;
-	return sum & MAX;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (sum & MAX);
 }

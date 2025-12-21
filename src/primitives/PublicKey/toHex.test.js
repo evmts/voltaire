@@ -4,6 +4,9 @@ import { from } from "./from.js";
 import { fromPrivateKey } from "./fromPrivateKey.js";
 import { toHex } from "./toHex.js";
 
+/** @type {(bytes: Uint8Array) => import('./PublicKeyType.js').PublicKeyType} */
+const asPublicKey = (bytes) => /** @type {any} */ (bytes);
+
 describe("PublicKey.toHex", () => {
 	describe("conversion tests", () => {
 		it("converts public key to hex", () => {
@@ -29,14 +32,14 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("converts all zero public key", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			const hex = toHex.call(pubkey);
 
 			expect(hex).toBe(`0x${"00".repeat(64)}`);
 		});
 
 		it("converts all max public key", () => {
-			const pubkey = new Uint8Array(64).fill(0xff);
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xff));
 			const hex = toHex.call(pubkey);
 
 			expect(hex).toBe(`0x${"ff".repeat(64)}`);
@@ -54,7 +57,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("pads single digit bytes with zero", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			pubkey[0] = 0x01;
 			pubkey[32] = 0x0f;
 			const hex = toHex.call(pubkey);
@@ -77,7 +80,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("returns lowercase hex", () => {
-			const pubkey = new Uint8Array(64).fill(0xab);
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xab));
 			const hex = toHex.call(pubkey);
 
 			expect(hex).toBe(`0x${"ab".repeat(64)}`);
@@ -119,7 +122,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("round-trips zero key", () => {
-			const pubkey1 = new Uint8Array(64);
+			const pubkey1 = asPublicKey(new Uint8Array(64));
 			const hex = toHex.call(pubkey1);
 			const pubkey2 = from(hex);
 
@@ -127,7 +130,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("round-trips max key", () => {
-			const pubkey1 = new Uint8Array(64).fill(0xff);
+			const pubkey1 = asPublicKey(new Uint8Array(64).fill(0xff));
 			const hex = toHex.call(pubkey1);
 			const pubkey2 = from(hex);
 
@@ -135,7 +138,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("preserves all byte values", () => {
-			const pubkey1 = new Uint8Array(64);
+			const pubkey1 = asPublicKey(new Uint8Array(64));
 			for (let i = 0; i < 64; i++) {
 				pubkey1[i] = i;
 			}
@@ -176,8 +179,8 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("distinguishes keys differing by one byte", () => {
-			const pubkey1 = new Uint8Array(64).fill(0xaa);
-			const pubkey2 = new Uint8Array(64).fill(0xaa);
+			const pubkey1 = asPublicKey(new Uint8Array(64).fill(0xaa));
+			const pubkey2 = asPublicKey(new Uint8Array(64).fill(0xaa));
 			pubkey2[32] = 0xab;
 
 			const hex1 = toHex.call(pubkey1);
@@ -189,7 +192,7 @@ describe("PublicKey.toHex", () => {
 
 	describe("edge cases", () => {
 		it("handles all zeros", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			const hex = toHex.call(pubkey);
 
 			expect(hex).toBe(
@@ -199,7 +202,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("handles all ones", () => {
-			const pubkey = new Uint8Array(64).fill(0xff);
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xff));
 			const hex = toHex.call(pubkey);
 
 			expect(hex).toBe(
@@ -209,7 +212,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("handles alternating bytes", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			for (let i = 0; i < 64; i++) {
 				pubkey[i] = i % 2 === 0 ? 0xaa : 0x55;
 			}
@@ -220,7 +223,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("handles sequential bytes", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			for (let i = 0; i < 64; i++) {
 				pubkey[i] = i;
 			}
@@ -231,7 +234,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("handles x coordinate all zeros", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			for (let i = 32; i < 64; i++) {
 				pubkey[i] = 0xff;
 			}
@@ -242,7 +245,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("handles y coordinate all zeros", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			for (let i = 0; i < 32; i++) {
 				pubkey[i] = 0xff;
 			}
@@ -255,7 +258,7 @@ describe("PublicKey.toHex", () => {
 
 	describe("coordinate tests", () => {
 		it("encodes x coordinate in first half", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			pubkey[0] = 0x12;
 			pubkey[31] = 0x34;
 			const hex = toHex.call(pubkey);
@@ -265,7 +268,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("encodes y coordinate in second half", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			pubkey[32] = 0x56;
 			pubkey[63] = 0x78;
 			const hex = toHex.call(pubkey);
@@ -275,7 +278,7 @@ describe("PublicKey.toHex", () => {
 		});
 
 		it("correctly positions both coordinates", () => {
-			const pubkey = new Uint8Array(64);
+			const pubkey = asPublicKey(new Uint8Array(64));
 			for (let i = 0; i < 32; i++) {
 				pubkey[i] = 0xaa;
 			}

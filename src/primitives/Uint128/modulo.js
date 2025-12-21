@@ -19,5 +19,5 @@ export function modulo(uint, b) {
 	if (b === 0n) {
 		throw new Error("Modulo by zero");
 	}
-	return uint % b;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (uint % b);
 }

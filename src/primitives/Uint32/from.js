@@ -48,5 +48,5 @@ export function from(value) {
 		throw new Error(`Uint32 value exceeds maximum: ${numberValue}`);
 	}
 
-	return numberValue;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (numberValue);
 }

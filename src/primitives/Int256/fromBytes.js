@@ -35,5 +35,5 @@ export function fromBytes(bytes) {
 		throw new Error(`Int256 value out of range (${MIN} to ${MAX}): ${value}`);
 	}
 
-	return value;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (value);
 }

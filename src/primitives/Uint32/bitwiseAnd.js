@@ -16,5 +16,5 @@
  * ```
  */
 export function bitwiseAnd(uint, b) {
-	return (uint & b) >>> 0;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ ((uint & b) >>> 0);
 }

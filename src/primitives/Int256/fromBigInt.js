@@ -24,5 +24,5 @@ export function fromBigInt(value) {
 		throw new Error(`Int256 value exceeds maximum (${MAX}): ${value}`);
 	}
 
-	return value;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (value);
 }

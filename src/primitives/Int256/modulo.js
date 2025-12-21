@@ -33,5 +33,5 @@ export function modulo(a, b) {
 	}
 
 	// BigInt % already follows dividend sign (matches EVM SMOD)
-	return a % b;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (a % b);
 }

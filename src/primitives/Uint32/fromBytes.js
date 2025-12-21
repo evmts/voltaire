@@ -27,5 +27,5 @@ export function fromBytes(bytes) {
 		value = (value << 8) | bytes[i];
 	}
 
-	return value >>> 0;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (value >>> 0);
 }

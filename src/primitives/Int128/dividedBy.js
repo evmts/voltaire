@@ -27,5 +27,5 @@ export function dividedBy(a, b) {
 		throw new Error("Int128 overflow: MIN / -1");
 	}
 
-	return a / b;
+	return /** @type {import('./Int128Type.js').BrandedInt128} */ (a / b);
 }

@@ -29,5 +29,5 @@ export function times(a, b) {
 		result += MODULO;
 	}
 
-	return result;
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (result);
 }

@@ -30,5 +30,5 @@ export function fromHex(hex) {
 		throw new Error(`Uint64 value exceeds maximum: ${value}`);
 	}
 
-	return value;
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (value);
 }

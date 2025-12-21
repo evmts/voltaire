@@ -16,5 +16,5 @@
  * ```
  */
 export function times(uint, b) {
-	return Math.imul(uint, b) >>> 0;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (Math.imul(uint, b) >>> 0);
 }

@@ -25,7 +25,7 @@ describe("AccountState.createEmpty", () => {
 			expect(state1).not.toBe(state2);
 		});
 
-		it("creates identical states", () => {
+		it("creates identical states", async () => {
 			const state1 = createEmpty();
 			const state2 = createEmpty();
 
@@ -99,13 +99,13 @@ describe("AccountState.createEmpty", () => {
 	});
 
 	describe("state classification tests", () => {
-		it("is an EOA", () => {
+		it("is an EOA", async () => {
 			const state = createEmpty();
 			const { isEOA } = await import("./isEOA.js");
 			expect(isEOA(state)).toBe(true);
 		});
 
-		it("is not a contract", () => {
+		it("is not a contract", async () => {
 			const state = createEmpty();
 			const { isContract } = await import("./isContract.js");
 			expect(isContract(state)).toBe(false);
@@ -118,7 +118,7 @@ describe("AccountState.createEmpty", () => {
 			expect(Object.isFrozen(state)).toBe(true);
 		});
 
-		it("cannot modify nonce", () => {
+		it("cannot modify nonce", async () => {
 			const state = createEmpty();
 			const { from: nonceFrom } = await import("../Nonce/from.js");
 
@@ -127,7 +127,7 @@ describe("AccountState.createEmpty", () => {
 			}).toThrow();
 		});
 
-		it("cannot modify balance", () => {
+		it("cannot modify balance", async () => {
 			const state = createEmpty();
 			const { from: weiFrom } = await import("../Denomination/Wei.js");
 
@@ -172,7 +172,7 @@ describe("AccountState.createEmpty", () => {
 	});
 
 	describe("integration tests", () => {
-		it("can be used with from function", () => {
+		it("can be used with from function", async () => {
 			const emptyState = createEmpty();
 			const { from } = await import("./from.js");
 
@@ -187,7 +187,7 @@ describe("AccountState.createEmpty", () => {
 			expect(equals(emptyState, reconstructed)).toBe(true);
 		});
 
-		it("can be compared with equals", () => {
+		it("can be compared with equals", async () => {
 			const state1 = createEmpty();
 			const state2 = createEmpty();
 			const { equals } = await import("./equals.js");

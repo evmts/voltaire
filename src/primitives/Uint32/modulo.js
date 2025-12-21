@@ -19,5 +19,5 @@ export function modulo(uint, b) {
 	if (b === 0) {
 		throw new Error("Modulo by zero");
 	}
-	return uint % b;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (uint % b);
 }

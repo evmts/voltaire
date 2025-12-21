@@ -15,5 +15,5 @@
  * ```
  */
 export function shiftRight(uint, bits) {
-	return uint >>> bits;
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (uint >>> bits);
 }

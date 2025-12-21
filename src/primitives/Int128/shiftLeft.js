@@ -23,7 +23,7 @@ export function shiftLeft(value, shift) {
 	}
 
 	if (shiftAmount >= BigInt(BITS)) {
-		return 0n;
+		return /** @type {import('./Int128Type.js').BrandedInt128} */ (0n);
 	}
 
 	// Convert to unsigned for shift
