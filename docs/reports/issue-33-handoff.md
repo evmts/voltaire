@@ -1,17 +1,20 @@
 # Issue #33 Continuation: TypeScript Test Failures Handoff
 
 ## Mission
-Continue fixing TypeScript type errors to reduce test failures. Previous sessions reduced source errors from 1597→1191 (-25%). Target: Get all 18,197 tests passing.
+Continue fixing TypeScript type errors to reduce test failures. Previous sessions reduced source errors from 1597→1177 (-26%). Target: Get all 18,197 tests passing.
 
 ## Current State
 
 ```
-Test Files  57 failed | 758 passed | 2 skipped (817)
-Tests       388 failed | 17679 passed | 182 skipped (18249)
-Errors      1191 source errors
+Test Files  57 failed | 759 passed | 2 skipped (818)
+Tests       388 failed | 17732 passed | 182 skipped (18302)
+Errors      1177 source errors
 ```
 
-**Latest commit**: `bc880aaa8` on `main`
+**Latest commits on `main`**:
+- `e96e9aba9` - Add JSDoc type annotations for implicit any params
+- `ea33e6f19` - Update issue-33 handoff with session progress
+- `bc880aaa8` - Add JSDoc type casts for branded types
 
 ## What Was Already Fixed
 
@@ -44,6 +47,8 @@ Errors      1191 source errors
 | **EIP712 verifyTypedData** | `verifyTypedData.js` | JSDoc cast for array access in loop |
 | **Abi.test.js undefined** | `Abi.test.js` | `/** @type {*} */ (item)` instead of `item!` |
 | **PublicKey toHex test** | `toHex.test.js` | Added `asPublicKey` helper for branded casts |
+| **jsonrpc implicit any** | 5 files in `src/jsonrpc/` | Added JSDoc params for returned functions |
+| **createMemoryHost params** | `createMemoryHost.js` | JSDoc types for transient storage |
 
 ## Remaining Error Patterns (Priority Order)
 
@@ -85,7 +90,7 @@ import type { Item } from './ItemType.js';
 const items: Item[] = [...];
 ```
 
-### 3. MEDIUM: Implicit `any` parameters (~40 errors)
+### 3. MEDIUM: Implicit `any` parameters (~30 remaining errors)
 ```
 Parameter 'value' implicitly has an 'any' type.
 ```
@@ -98,6 +103,9 @@ const fn = (a, b) => { ... }
 // After
 /** @param {string} a @param {number} b */
 const fn = (a, b) => { ... }
+
+// Or for arrow functions:
+const fn = /** @param {string} a */ (a) => { ... }
 ```
 
 ### 4. MEDIUM: Secp256k1SignatureType mismatch (~11 errors)
