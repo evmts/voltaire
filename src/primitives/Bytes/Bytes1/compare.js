@@ -11,7 +11,9 @@
  * ```
  */
 export function compare(a, b) {
-	if (a[0] < b[0]) return -1;
-	if (a[0] > b[0]) return 1;
+	const aVal = /** @type {number} */ (a[0]);
+	const bVal = /** @type {number} */ (b[0]);
+	if (aVal < bVal) return -1;
+	if (aVal > bVal) return 1;
 	return 0;
 }

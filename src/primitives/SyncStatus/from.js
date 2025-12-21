@@ -20,17 +20,17 @@ export function from(value) {
 	}
 
 	if (typeof value === "object" && value !== null) {
-		return {
-			startingBlock: BigInt(value.startingBlock),
-			currentBlock: BigInt(value.currentBlock),
-			highestBlock: BigInt(value.highestBlock),
+		return /** @type {import('./SyncStatusType.js').SyncProgress} */ ({
+			startingBlock: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.startingBlock)),
+			currentBlock: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.currentBlock)),
+			highestBlock: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.highestBlock)),
 			pulledStates:
 				value.pulledStates !== undefined
-					? BigInt(value.pulledStates)
+					? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.pulledStates))
 					: undefined,
 			knownStates:
-				value.knownStates !== undefined ? BigInt(value.knownStates) : undefined,
-		};
+				value.knownStates !== undefined ? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.knownStates)) : undefined,
+		});
 	}
 
 	throw new Error("Invalid SyncStatus input");

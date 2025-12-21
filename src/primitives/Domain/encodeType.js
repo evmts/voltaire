@@ -1,10 +1,15 @@
 /**
+ * @typedef {{ name: string; type: string }} EIP712Field
+ * @typedef {Record<string, EIP712Field[]>} EIP712Types
+ */
+
+/**
  * Encode EIP-712 type definition
  *
  * Example: "Mail(Person from,Person to,string contents)Person(string name,address wallet)"
  *
  * @param {string} primaryType - Primary type name
- * @param {object} types - Type definitions
+ * @param {EIP712Types} types - Type definitions
  * @returns {string} Encoded type string
  */
 export function encodeType(primaryType, types) {
@@ -25,7 +30,7 @@ export function encodeType(primaryType, types) {
 
 		result += typeName;
 		result += "(";
-		result += fields.map((f) => `${f.type} ${f.name}`).join(",");
+		result += fields.map((/** @type {EIP712Field} */ f) => `${f.type} ${f.name}`).join(",");
 		result += ")";
 	}
 
@@ -36,7 +41,7 @@ export function encodeType(primaryType, types) {
  * Find all type dependencies recursively
  *
  * @param {string} typeName - Type name
- * @param {object} types - Type definitions
+ * @param {EIP712Types} types - Type definitions
  * @param {Set<string>} [seen] - Already seen types
  * @returns {string[]} Array of type names
  */

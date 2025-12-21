@@ -1,9 +1,9 @@
-import { INT16_MAX, INT16_MIN } from "./Int16Type.ts";
+import { INT16_MAX, INT16_MIN } from "./Int16Type.js";
 
 /**
  * Create a BrandedInt16 from a number, bigint, hex string, or another BrandedInt16
- * @param {number | bigint | string | import("./Int16Type.ts").BrandedInt16} value
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @param {number | bigint | string | import("./Int16Type.js").BrandedInt16} value
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function from(value) {
 	if (typeof value === "number") {
@@ -22,7 +22,7 @@ export function from(value) {
 /**
  * Create a BrandedInt16 from a number
  * @param {number} value
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function fromNumber(value) {
 	if (!Number.isInteger(value)) {
@@ -33,13 +33,13 @@ export function fromNumber(value) {
 			`Int16: value ${value} out of range [${INT16_MIN}, ${INT16_MAX}]`,
 		);
 	}
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (value);
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (value);
 }
 
 /**
  * Create a BrandedInt16 from a bigint
  * @param {bigint} value
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function fromBigint(value) {
 	if (value < BigInt(INT16_MIN) || value > BigInt(INT16_MAX)) {
@@ -47,13 +47,13 @@ export function fromBigint(value) {
 			`Int16: value ${value} out of range [${INT16_MIN}, ${INT16_MAX}]`,
 		);
 	}
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (Number(value));
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (Number(value));
 }
 
 /**
  * Create a BrandedInt16 from a hex string (two's complement)
  * @param {string} hex - "0xFFFF" for -1, "0x8000" for -32768, "0x7FFF" for 32767
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function fromHex(hex) {
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -63,20 +63,20 @@ export function fromHex(hex) {
 	const unsigned = Number.parseInt(cleaned, 16);
 	// Two's complement conversion: if bit 15 is set, it's negative
 	const signed = unsigned >= 32768 ? unsigned - 65536 : unsigned;
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (signed);
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (signed);
 }
 
 /**
  * Create a BrandedInt16 from bytes (two's complement, big-endian)
  * @param {Uint8Array} bytes - 2 bytes
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== 2) {
 		throw new Error(`Int16: expected 2 bytes, got ${bytes.length}`);
 	}
-	const unsigned = (bytes[0] << 8) | bytes[1];
+	const unsigned = (/** @type {number} */ (bytes[0]) << 8) | /** @type {number} */ (bytes[1]);
 	// Two's complement conversion
 	const signed = unsigned >= 32768 ? unsigned - 65536 : unsigned;
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (signed);
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (signed);
 }

@@ -19,12 +19,12 @@ export function parse(version) {
 
 	// Split on '+' to separate version from metadata (commit)
 	const parts = versionStr.split("+");
-	const versionPart = parts[0];
+	const versionPart = /** @type {string} */ (parts[0]);
 	const metadataPart = parts[1];
 
 	// Split on '-' to handle prereleases (e.g., "0.8.20-alpha.1")
 	const versionAndPrerelease = versionPart.split("-");
-	const semverPart = versionAndPrerelease[0];
+	const semverPart = /** @type {string} */ (versionAndPrerelease[0]);
 	const prerelease = versionAndPrerelease[1];
 
 	// Parse semver (major.minor.patch)
@@ -34,8 +34,8 @@ export function parse(version) {
 		throw new Error(`Invalid semver format: ${versionStr}`);
 	}
 
-	const major = Number.parseInt(semverParts[0], 10);
-	const minor = Number.parseInt(semverParts[1], 10);
+	const major = Number.parseInt(/** @type {string} */ (semverParts[0]), 10);
+	const minor = Number.parseInt(/** @type {string} */ (semverParts[1]), 10);
 	const patch = semverParts[2] ? Number.parseInt(semverParts[2], 10) : 0;
 
 	if (Number.isNaN(major) || Number.isNaN(minor) || Number.isNaN(patch)) {

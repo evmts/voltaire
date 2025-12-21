@@ -3,13 +3,13 @@
  */
 
 /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */
-export const ETH_66 = "eth/66";
+export const ETH_66 = /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */ ("eth/66");
 
 /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */
-export const ETH_67 = "eth/67";
+export const ETH_67 = /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */ ("eth/67");
 
 /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */
-export const ETH_68 = "eth/68";
+export const ETH_68 = /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */ ("eth/68");
 
 /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */
-export const SNAP_1 = "snap/1";
+export const SNAP_1 = /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */ ("snap/1");

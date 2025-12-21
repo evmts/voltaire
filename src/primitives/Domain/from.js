@@ -40,35 +40,35 @@ export function from(domain) {
 		);
 	}
 
-	/** @type {import('./DomainType.js').DomainType} */
-	const result = {};
+	/** @type {Partial<import('./DomainType.js').DomainType>} */
+	let result = {};
 
 	if (domain.name !== undefined) {
-		result.name = domain.name;
+		result = { ...result, name: domain.name };
 	}
 
 	if (domain.version !== undefined) {
-		result.version = domain.version;
+		result = { ...result, version: domain.version };
 	}
 
 	if (domain.chainId !== undefined) {
-		result.chainId =
+		result = { ...result, chainId:
 			typeof domain.chainId === "number"
 				? ChainId.from(domain.chainId)
-				: domain.chainId;
+				: domain.chainId };
 	}
 
 	if (domain.verifyingContract !== undefined) {
-		result.verifyingContract =
+		result = { ...result, verifyingContract:
 			typeof domain.verifyingContract === "string"
 				? BrandedAddress.from(domain.verifyingContract)
-				: domain.verifyingContract;
+				: domain.verifyingContract };
 	}
 
 	if (domain.salt !== undefined) {
-		result.salt =
-			typeof domain.salt === "string" ? Hash.from(domain.salt) : domain.salt;
+		result = { ...result, salt:
+			typeof domain.salt === "string" ? Hash.from(domain.salt) : domain.salt };
 	}
 
-	return result;
+	return /** @type {import('./DomainType.js').DomainType} */ (result);
 }

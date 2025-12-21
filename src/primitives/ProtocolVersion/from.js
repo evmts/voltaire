@@ -54,5 +54,5 @@ export function from(value) {
 		);
 	}
 
-	return value;
+	return /** @type {import('./ProtocolVersionType.js').ProtocolVersionType} */ (value);
 }

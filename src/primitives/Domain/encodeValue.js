@@ -3,11 +3,16 @@ import * as Hex from "../Hex/index.js";
 import { encodeType } from "./encodeType.js";
 
 /**
+ * @typedef {{ name: string; type: string }} EIP712Field
+ * @typedef {Record<string, EIP712Field[]>} EIP712Types
+ */
+
+/**
  * Encode EIP-712 value according to type
  *
  * @param {string} type - Field type
  * @param {any} value - Field value
- * @param {object} types - Type definitions
+ * @param {EIP712Types} types - Type definitions
  * @param {object} crypto - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} crypto.keccak256 - Keccak256 hash function
  * @returns {Uint8Array} Encoded value (32 bytes)
@@ -39,10 +44,10 @@ export function encodeValue(type, value, types, crypto) {
 	}
 
 	// Handle custom struct types
-	if (types[type]) {
+	if (type in types) {
 		// Struct encoding: keccak256(encodeData(type, value, types))
 		// Inline the encodeData logic to avoid circular dependency
-		const typeFields = types[type];
+		const typeFields = /** @type {EIP712Field[]} */ (types[type]);
 		if (!typeFields) {
 			throw new Error(`Type ${type} not found in types`);
 		}
@@ -103,7 +108,7 @@ function encodeAtomicValue(type, value) {
 	// Bytes1-32: right-pad to 32 bytes
 	const bytesMatch = type.match(/^bytes(\d+)$/);
 	if (bytesMatch) {
-		const size = Number.parseInt(bytesMatch[1], 10);
+		const size = Number.parseInt(/** @type {string} */ (bytesMatch[1]), 10);
 		if (size < 1 || size > 32) {
 			throw new Error(`Invalid bytes size: ${size}`);
 		}
@@ -115,7 +120,7 @@ function encodeAtomicValue(type, value) {
 	// Uint8-256: left-pad to 32 bytes
 	const uintMatch = type.match(/^uint(\d+)$/);
 	if (uintMatch) {
-		const bits = Number.parseInt(uintMatch[1], 10);
+		const bits = Number.parseInt(/** @type {string} */ (uintMatch[1]), 10);
 		if (bits < 8 || bits > 256 || bits % 8 !== 0) {
 			throw new Error(`Invalid uint size: ${bits}`);
 		}
@@ -130,7 +135,7 @@ function encodeAtomicValue(type, value) {
 	// Int8-256: left-pad to 32 bytes (two's complement)
 	const intMatch = type.match(/^int(\d+)$/);
 	if (intMatch) {
-		const bits = Number.parseInt(intMatch[1], 10);
+		const bits = Number.parseInt(/** @type {string} */ (intMatch[1]), 10);
 		if (bits < 8 || bits > 256 || bits % 8 !== 0) {
 			throw new Error(`Invalid int size: ${bits}`);
 		}

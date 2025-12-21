@@ -1,7 +1,7 @@
 /**
  * Unwrap response result or throw error
  *
- * @param {object} response - Response to unwrap
+ * @param {import('./JsonRpcResponseType.js').JsonRpcResponseType} response - Response to unwrap
  * @returns {unknown} Result value if success
  * @throws {Error} If response is error
  *
@@ -22,10 +22,13 @@ export function unwrap(response) {
 		return response.result;
 	}
 
-	const err = new Error(response.error.message);
-	err.code = response.error.code;
-	if (response.error.data !== undefined) {
-		err.data = response.error.data;
+	/** @type {*} */
+	const typedResponse = response;
+	/** @type {*} */
+	const err = new Error(typedResponse.error.message);
+	err.code = typedResponse.error.code;
+	if (typedResponse.error.data !== undefined) {
+		err.data = typedResponse.error.data;
 	}
 	throw err;
 }

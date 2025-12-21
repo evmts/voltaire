@@ -41,7 +41,7 @@ export function fromReturnData(returnData) {
 	const selector = Hex.fromBytes(returnData.slice(0, 4));
 
 	// Error(string)
-	if (selector === ERROR_SELECTOR) {
+	if (/** @type {string} */ (selector) === ERROR_SELECTOR) {
 		try {
 			// Decode string parameter
 			// Data layout: selector (4 bytes) + offset (32 bytes) + length (32 bytes) + string data
@@ -52,7 +52,7 @@ export function fromReturnData(returnData) {
 			// Read string length from bytes 36-68 (big-endian, MSB first)
 			let length = 0;
 			for (let i = 0; i < 32; i++) {
-				length = (length << 8) | returnData[36 + i];
+				length = (length << 8) | /** @type {number} */ (returnData[36 + i]);
 			}
 
 			// Extract string bytes
@@ -69,7 +69,7 @@ export function fromReturnData(returnData) {
 	}
 
 	// Panic(uint256)
-	if (selector === PANIC_SELECTOR) {
+	if (/** @type {string} */ (selector) === PANIC_SELECTOR) {
 		try {
 			// Data layout: selector (4 bytes) + code (32 bytes)
 			if (returnData.length < 36) {
@@ -79,7 +79,7 @@ export function fromReturnData(returnData) {
 			// Read panic code from bytes 4-36 (big-endian, MSB first)
 			let code = 0;
 			for (let i = 0; i < 32; i++) {
-				code = (code << 8) | returnData[4 + i];
+				code = (code << 8) | /** @type {number} */ (returnData[4 + i]);
 			}
 
 			return {

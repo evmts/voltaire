@@ -26,5 +26,5 @@ export function from(value) {
 			},
 		);
 	}
-	return value;
+	return /** @type {import('./NetworkIdType.js').NetworkIdType} */ (value);
 }

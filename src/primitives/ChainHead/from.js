@@ -25,10 +25,11 @@ export function from(value) {
 	}
 
 	// Handle hash as string or bytes
-	let hash = value.hash;
-	if (typeof hash === "string") {
+	/** @type {import('../BlockHash/BlockHashType.js').BlockHashType} */
+	let hash;
+	if (typeof value.hash === "string") {
 		// Convert hex string to bytes
-		const hex = hash.startsWith("0x") ? hash.slice(2) : hash;
+		const hex = value.hash.startsWith("0x") ? value.hash.slice(2) : value.hash;
 		if (hex.length !== 64) {
 			throw new Error(`Invalid block hash length: ${hex.length}`);
 		}
@@ -36,18 +37,20 @@ export function from(value) {
 		for (let i = 0; i < 32; i++) {
 			bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
 		}
-		hash = bytes;
+		hash = /** @type {import('../BlockHash/BlockHashType.js').BlockHashType} */ (bytes);
+	} else {
+		hash = value.hash;
 	}
 
-	return {
-		number: BigInt(value.number),
+	return /** @type {import('./ChainHeadType.js').ChainHeadType} */ ({
+		number: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.number)),
 		hash: hash,
-		timestamp: BigInt(value.timestamp),
+		timestamp: /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.timestamp)),
 		difficulty:
-			value.difficulty !== undefined ? BigInt(value.difficulty) : undefined,
+			value.difficulty !== undefined ? /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.difficulty)) : undefined,
 		totalDifficulty:
 			value.totalDifficulty !== undefined
-				? BigInt(value.totalDifficulty)
+				? /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.totalDifficulty))
 				: undefined,
-	};
+	});
 }

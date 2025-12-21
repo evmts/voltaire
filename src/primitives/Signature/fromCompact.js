@@ -53,16 +53,17 @@ export function fromCompact(bytes, algorithmOrV) {
 
 	// ECDSA algorithms (secp256k1, p256)
 	if (bytes.length === ECDSA_SIZE) {
-		const r = bytes.slice(0, COMPONENT_SIZE);
+		const r = /** @type {import('../Hash/HashType.js').HashType} */ (bytes.slice(0, COMPONENT_SIZE));
 		const sBytes = bytes.slice(COMPONENT_SIZE, ECDSA_SIZE);
 
 		// EIP-2098: Extract yParity from bit 255 of s
 		const yParity =
-			explicitV !== undefined ? explicitV : (sBytes[0] & 0x80) >> 7;
+			explicitV !== undefined ? explicitV : (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
 
 		// Clear bit 255 from s
-		const s = new Uint8Array(sBytes);
-		s[0] &= 0x7f;
+		const s = /** @type {import('../Hash/HashType.js').HashType} */ (new Uint8Array(sBytes));
+		/** @type {number} */ (s[0]);
+		s[0] = /** @type {number} */ (s[0]) & 0x7f;
 
 		if (algorithm === "secp256k1") {
 			return fromSecp256k1(r, s, yParity);
@@ -73,9 +74,9 @@ export function fromCompact(bytes, algorithmOrV) {
 	}
 
 	if (bytes.length === ECDSA_WITH_V_SIZE && algorithm === "secp256k1") {
-		const r = bytes.slice(0, COMPONENT_SIZE);
-		const s = bytes.slice(COMPONENT_SIZE, ECDSA_SIZE);
-		const v = bytes[64];
+		const r = /** @type {import('../Hash/HashType.js').HashType} */ (bytes.slice(0, COMPONENT_SIZE));
+		const s = /** @type {import('../Hash/HashType.js').HashType} */ (bytes.slice(COMPONENT_SIZE, ECDSA_SIZE));
+		const v = /** @type {number} */ (bytes[64]);
 		return fromSecp256k1(r, s, v);
 	}
 

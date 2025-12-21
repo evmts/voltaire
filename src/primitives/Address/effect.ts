@@ -397,8 +397,8 @@ export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
 			// Apply checksum
 			let result = "0x";
 			for (let i = 0; i < hex.length; i++) {
-				const char = hex[i];
-				const hashNibble = Number.parseInt(hashHex[i], 16);
+				const char = hex[i] as string;
+				const hashNibble = Number.parseInt(hashHex[i] as string, 16);
 				if (hashNibble >= 8) {
 					result += char.toUpperCase();
 				} else {
@@ -671,7 +671,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	 * Validate a string has valid EIP-55 checksum (uses crypto)
 	 * @returns Effect that uses Keccak256Service
 	 */
-	static isValid(str: string): Effect.Effect<boolean, never, Keccak256Service> {
+	static isValid(str: string): Effect.Effect<boolean, CryptoOperationError, Keccak256Service> {
 		return Effect.gen(function* () {
 			if (!str.startsWith("0x") || str.length !== 42) {
 				return false;
@@ -702,9 +702,9 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 
 			// Check each character
 			for (let i = 0; i < hex.length; i++) {
-				const char = hex[i];
-				const actualChar = str[i + 2]; // skip 0x
-				const hashNibble = Number.parseInt(hashHex[i], 16);
+				const char = hex[i] as string;
+				const actualChar = str[i + 2] as string; // skip 0x
+				const hashNibble = Number.parseInt(hashHex[i] as string, 16);
 
 				if (hashNibble >= 8) {
 					if (actualChar !== char.toUpperCase()) return false;
