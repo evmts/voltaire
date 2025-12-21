@@ -38,74 +38,74 @@ pub const SiweMessage = struct {
     resources: ?[]const []const u8,
 
     pub fn format(self: *const SiweMessage, allocator: Allocator) ![]u8 {
-        var result = std.array_list.AlignedManaged(u8, null).init(allocator);
-        defer result.deinit();
+        var result = std.ArrayList(u8){};
+        errdefer result.deinit(allocator);
 
         // Header
-        try result.appendSlice(self.domain);
-        try result.appendSlice(" wants you to sign in with your Ethereum account:\n");
+        try result.appendSlice(allocator, self.domain);
+        try result.appendSlice(allocator, " wants you to sign in with your Ethereum account:\n");
 
         // Address
         const addr_hex = try hex.toHex(allocator, &self.address);
         defer allocator.free(addr_hex);
-        try result.appendSlice(addr_hex);
-        try result.appendSlice("\n\n");
+        try result.appendSlice(allocator, addr_hex);
+        try result.appendSlice(allocator, "\n\n");
 
         // Statement (optional)
         if (self.statement) |stmt| {
-            try result.appendSlice(stmt);
-            try result.appendSlice("\n\n");
+            try result.appendSlice(allocator, stmt);
+            try result.appendSlice(allocator, "\n\n");
         }
 
         // URI
-        try result.appendSlice("URI: ");
-        try result.appendSlice(self.uri);
-        try result.appendSlice("\n");
+        try result.appendSlice(allocator, "URI: ");
+        try result.appendSlice(allocator, self.uri);
+        try result.appendSlice(allocator, "\n");
 
         // Version
-        try result.appendSlice("Version: ");
-        try result.appendSlice(self.version);
-        try result.appendSlice("\n");
+        try result.appendSlice(allocator, "Version: ");
+        try result.appendSlice(allocator, self.version);
+        try result.appendSlice(allocator, "\n");
 
         // Chain ID
-        try result.appendSlice("Chain ID: ");
-        try result.writer().print("{d}", .{self.chain_id});
-        try result.appendSlice("\n");
+        try result.appendSlice(allocator, "Chain ID: ");
+        try result.writer(allocator).print("{d}", .{self.chain_id});
+        try result.appendSlice(allocator, "\n");
 
         // Nonce
-        try result.appendSlice("Nonce: ");
-        try result.appendSlice(self.nonce);
-        try result.appendSlice("\n");
+        try result.appendSlice(allocator, "Nonce: ");
+        try result.appendSlice(allocator, self.nonce);
+        try result.appendSlice(allocator, "\n");
 
         // Issued At
-        try result.appendSlice("Issued At: ");
-        try result.appendSlice(self.issued_at);
+        try result.appendSlice(allocator, "Issued At: ");
+        try result.appendSlice(allocator, self.issued_at);
 
         // Optional fields
         if (self.expiration_time) |exp| {
-            try result.appendSlice("\nExpiration Time: ");
-            try result.appendSlice(exp);
+            try result.appendSlice(allocator, "\nExpiration Time: ");
+            try result.appendSlice(allocator, exp);
         }
 
         if (self.not_before) |nb| {
-            try result.appendSlice("\nNot Before: ");
-            try result.appendSlice(nb);
+            try result.appendSlice(allocator, "\nNot Before: ");
+            try result.appendSlice(allocator, nb);
         }
 
         if (self.request_id) |rid| {
-            try result.appendSlice("\nRequest ID: ");
-            try result.appendSlice(rid);
+            try result.appendSlice(allocator, "\nRequest ID: ");
+            try result.appendSlice(allocator, rid);
         }
 
         if (self.resources) |res| {
-            try result.appendSlice("\nResources:");
+            try result.appendSlice(allocator, "\nResources:");
             for (res) |resource| {
-                try result.appendSlice("\n- ");
-                try result.appendSlice(resource);
+                try result.appendSlice(allocator, "\n- ");
+                try result.appendSlice(allocator, resource);
             }
         }
 
-        return result.to_owned_slice();
+        return result.toOwnedSlice(allocator);
     }
 
     pub fn validate(self: *const SiweMessage) !void {
