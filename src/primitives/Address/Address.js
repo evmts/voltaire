@@ -309,7 +309,7 @@ Address.calculateCreate2Address = (address, salt, initCode) => {
 	const result = BrandedAddress.calculateCreate2Address(
 		address,
 		/** @type {*} */ (salt),
-		initCode,
+		/** @type {*} */ (initCode),
 	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
@@ -417,7 +417,7 @@ Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(
 		/** @type {import('./AddressType.js').AddressType} */ (this),
 		/** @type {*} */ (salt),
-		initCode,
+		/** @type {*} */ (initCode),
 	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;

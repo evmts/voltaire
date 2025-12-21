@@ -24,7 +24,7 @@ export function handler_0x56_JUMP(frame) {
 	const destPc = Number(dest);
 
 	// Validate jump destination
-	if (!isValidJumpDest(frame.bytecode, destPc)) {
+	if (!isValidJumpDest(/** @type {*} */ (frame.bytecode), destPc)) {
 		return { type: "InvalidJump" };
 	}
 

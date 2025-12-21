@@ -34,7 +34,7 @@ export function verify(
 	hash: import("../Hash/BrandedHash.js").BrandedHash,
 	signature: import("../Signature/SignatureType.js").SignatureType,
 ): boolean {
-	return _verify(from(publicKey), hash, signature);
+	return _verify(from(publicKey), hash, signature as import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType);
 }
 
 // Export internal functions (tree-shakeable)

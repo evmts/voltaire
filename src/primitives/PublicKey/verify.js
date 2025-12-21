@@ -2,7 +2,7 @@
  * Factory: Verify signature against public key
  * @param {Object} deps - Crypto dependencies
  * @param {(signature: import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType, hash: import('../Hash/BrandedHash.js').BrandedHash, publicKey: import('../../crypto/Secp256k1/Secp256k1PublicKeyType.js').Secp256k1PublicKeyType) => boolean} deps.secp256k1Verify - Secp256k1 signature verification function (expects 64-byte public key)
- * @returns {(publicKey: Uint8Array, hash: Uint8Array, signature: import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType) => boolean} Function that verifies ECDSA signature
+ * @returns {(publicKey: import('./PublicKeyType.js').PublicKeyType, hash: import('../Hash/BrandedHash.js').BrandedHash, signature: import('../../crypto/Secp256k1/SignatureType.js').Secp256k1SignatureType) => boolean} Function that verifies ECDSA signature
  */
 export function Verify({ secp256k1Verify }) {
 	/**
@@ -23,6 +23,6 @@ export function Verify({ secp256k1Verify }) {
 	 * ```
 	 */
 	return function verify(publicKey, hash, signature) {
-		return secp256k1Verify(signature, hash, publicKey);
+		return secp256k1Verify(signature, hash, /** @type {*} */ (publicKey));
 	};
 }

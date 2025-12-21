@@ -23,15 +23,15 @@ import { type Any, Type } from "./types.js";
 export function hash(this: Any): HashType {
 	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.hash.call(this as any);
+			return Legacy.hash.call(this as any) as HashType;
 		case Type.EIP2930:
-			return EIP2930.hash(this as any);
+			return EIP2930.hash(this as any) as HashType;
 		case Type.EIP1559:
-			return EIP1559.hash(this as any);
+			return EIP1559.hash(this as any) as HashType;
 		case Type.EIP4844:
-			return EIP4844.hash(this as any);
+			return EIP4844.hash(this as any) as HashType;
 		case Type.EIP7702:
-			return EIP7702.hash(this as any);
+			return EIP7702.hash(this as any) as HashType;
 		default:
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${(this as any).type}`,

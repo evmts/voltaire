@@ -48,7 +48,7 @@ export function from(value) {
 	if (bigintValue > MAX) {
 		throw new InvalidMultiTokenIdError(
 			`MultiTokenId value exceeds maximum: ${bigintValue}`,
-			{ value: bigintValue, max: MAX },
+			{ value: bigintValue, context: { max: MAX } },
 		);
 	}
 

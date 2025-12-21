@@ -74,7 +74,7 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 		// 4. Compute shared secret: ECDH(ephemeralPrivKey, viewingPubKey)
 		const sharedSecret = Secp256k1.ecdh(
 			/** @type {*} */ (ephemeralPrivateKey),
-			viewingPubKeyUncompressed,
+			/** @type {*} */ (viewingPubKeyUncompressed),
 		);
 
 		// 5. Hash shared secret

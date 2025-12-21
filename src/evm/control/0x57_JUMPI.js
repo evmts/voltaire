@@ -30,7 +30,7 @@ export function handler_0x57_JUMPI(frame) {
 		const destPc = Number(dest);
 
 		// Validate jump destination
-		if (!isValidJumpDest(frame.bytecode, destPc)) {
+		if (!isValidJumpDest(/** @type {*} */ (frame.bytecode), destPc)) {
 			return { type: "InvalidJump" };
 		}
 

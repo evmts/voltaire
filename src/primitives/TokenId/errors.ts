@@ -35,7 +35,7 @@ export class InvalidTokenIdError extends ValidationError {
 		super(message, {
 			code: options?.code || "INVALID_TOKEN_ID",
 			value: options?.value,
-			expected: options?.expected,
+			expected: options?.expected ?? "valid TokenId",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/token-id",
 			cause: options?.cause,

@@ -35,7 +35,7 @@ export class InvalidMultiTokenIdError extends ValidationError {
 		super(message, {
 			code: options?.code || "INVALID_MULTI_TOKEN_ID",
 			value: options?.value,
-			expected: options?.expected,
+			expected: options?.expected ?? "valid MultiTokenId",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/multi-token-id",
 			cause: options?.cause,

@@ -4,7 +4,7 @@ import { InvalidFormatError } from "../errors/ValidationError.js";
  * Create ChainId from number
  *
  * @param {number} value - Chain ID number
- * @returns Branded chain ID
+ * @returns {import('./ChainIdType.js').ChainIdType} Branded chain ID
  * @throws {InvalidFormatError} If value is not a non-negative integer
  *
  * @example
@@ -25,5 +25,5 @@ export function from(value) {
 			},
 		);
 	}
-	return value;
+	return /** @type {import('./ChainIdType.js').ChainIdType} */ (value);
 }

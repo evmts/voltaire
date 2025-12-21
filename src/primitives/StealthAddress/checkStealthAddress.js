@@ -89,7 +89,7 @@ export function checkStealthAddress(
 		// 2. Compute shared secret: ECDH(viewingPrivKey, ephemeralPubKey)
 		const sharedSecret = Secp256k1.ecdh(
 			/** @type {*} */ (viewingPrivateKey),
-			ephemeralPubKeyUncompressed,
+			/** @type {*} */ (ephemeralPubKeyUncompressed),
 		);
 
 		// 3. Hash shared secret
