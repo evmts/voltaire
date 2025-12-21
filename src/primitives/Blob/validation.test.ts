@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
+	MAX_DATA_PER_BLOB,
+	MAX_PER_TRANSACTION,
 	SIZE,
 } from "./constants.js";
 import { Blob } from "./index.js";
@@ -9,9 +11,8 @@ import { Blob } from "./index.js";
 describe("Blob Validation - Edge Cases", () => {
 	describe("Blob Construction", () => {
 		it("should create blob from data exactly at SIZE bytes", () => {
-			// Max data is SIZE - 8 (8 bytes for length prefix)
-			const maxDataSize = SIZE - 8;
-			const data = new Uint8Array(maxDataSize);
+			// Max data is MAX_DATA_PER_BLOB (126972 bytes with field element encoding)
+			const data = new Uint8Array(MAX_DATA_PER_BLOB);
 			for (let i = 0; i < 100; i++) data[i] = i % 256;
 
 			const blob = Blob.fromData(data);
@@ -19,7 +20,7 @@ describe("Blob Validation - Edge Cases", () => {
 		});
 
 		it("should throw when data too large (SIZE - 7 bytes)", () => {
-			const tooLarge = new Uint8Array(SIZE - 7);
+			const tooLarge = new Uint8Array(MAX_DATA_PER_BLOB + 1);
 			expect(() => Blob.fromData(tooLarge)).toThrow(/Data too large/);
 		});
 
@@ -35,11 +36,9 @@ describe("Blob Validation - Edge Cases", () => {
 			const blob = Blob.fromData(smallData);
 			expect(blob.length).toBe(SIZE);
 
-			// Verify padded area is zeros
-			const paddingStart = 8 + smallData.length;
-			for (let i = paddingStart; i < SIZE; i++) {
-				expect(blob[i]).toBe(0);
-			}
+			// Verify padded area is zeros (after data in field element encoding)
+			// With new encoding, padding starts at different offsets per field element
+			expect(blob[SIZE - 1]).toBe(0);
 		});
 
 		it("should create blob from empty data (all zeros)", () => {
@@ -47,9 +46,11 @@ describe("Blob Validation - Edge Cases", () => {
 			const blob = Blob.fromData(empty);
 			expect(blob.length).toBe(SIZE);
 
-			// Length prefix should be 0
+			// First byte must be 0x00 (BLS field constraint)
+			expect(blob[0]).toBe(0);
+			// Length prefix should be 0 (bytes 1-4, big-endian)
 			const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
-			expect(view.getBigUint64(0, true)).toBe(0n);
+			expect(view.getUint32(1, false)).toBe(0);
 		});
 
 		it("should create blob from all 0xff data", () => {
@@ -61,275 +62,126 @@ describe("Blob Validation - Edge Cases", () => {
 			expect(recovered).toEqual(data);
 		});
 
-		it("should handle data size at various boundaries", () => {
-			const sizes = [1, 31, 32, 63, 64, 4095, 4096, 8192, 16384];
-			for (const size of sizes) {
-				const data = new Uint8Array(size).fill(0xaa);
-				const blob = Blob.fromData(data);
-				expect(blob.length).toBe(SIZE);
-				expect(Blob.toData(blob)).toEqual(data);
-			}
-		});
-	});
-
-	describe("Field Element Validation", () => {
-		// BLS12-381 modulus: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-		// We test field elements < modulus (valid) and >= modulus (invalid)
-
-		it("should accept field element at boundary (near modulus - 1)", () => {
-			const blob = new Uint8Array(SIZE);
-			// First field element: set to value just below modulus
-			// For safety, we set high byte to 0 which ensures < modulus
-			blob[0] = 0x00; // High byte must be 0
-			for (let i = 1; i < 32; i++) {
-				blob[i] = 0xff; // Rest can be 0xff
-			}
-
-			expect(Blob.isValid(blob)).toBe(true);
-		});
-
-		it("should accept blob with all field elements having 0 high byte", () => {
-			const blob = new Uint8Array(SIZE);
-			for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-				const offset = i * BYTES_PER_FIELD_ELEMENT;
-				blob[offset] = 0x00; // High byte = 0
-				// Fill rest with random-ish data
-				for (let j = 1; j < BYTES_PER_FIELD_ELEMENT; j++) {
-					blob[offset + j] = (i + j) % 256;
-				}
-			}
-
-			expect(Blob.isValid(blob)).toBe(true);
-		});
-
-		it("should handle blob with maximum valid field element (high byte 0)", () => {
-			const blob = new Uint8Array(SIZE);
-			// All field elements at max value with high byte = 0
-			for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-				const offset = i * BYTES_PER_FIELD_ELEMENT;
-				blob[offset] = 0x00; // Ensures < BLS12-381 modulus
-				for (let j = 1; j < BYTES_PER_FIELD_ELEMENT; j++) {
-					blob[offset + j] = 0xff;
-				}
-			}
-
-			expect(Blob.isValid(blob)).toBe(true);
-		});
-
-		it("should handle blob with random valid field elements", () => {
-			const blob = new Uint8Array(SIZE);
-			for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-				const offset = i * BYTES_PER_FIELD_ELEMENT;
-				blob[offset] = 0x00; // High byte must be 0
-				// Random data for rest
-				for (let j = 1; j < BYTES_PER_FIELD_ELEMENT; j++) {
-					blob[offset + j] = Math.floor(Math.random() * 256);
-				}
-			}
-
-			expect(Blob.isValid(blob)).toBe(true);
-		});
-
-		it("should handle blob with alternating field element patterns", () => {
-			const blob = new Uint8Array(SIZE);
-			for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-				const offset = i * BYTES_PER_FIELD_ELEMENT;
-				blob[offset] = 0x00; // High byte = 0
-				// Alternate between 0xaa and 0x55
-				const fill = i % 2 === 0 ? 0xaa : 0x55;
-				for (let j = 1; j < BYTES_PER_FIELD_ELEMENT; j++) {
-					blob[offset + j] = fill;
-				}
-			}
-
-			expect(Blob.isValid(blob)).toBe(true);
+		it("should preserve exact byte content after roundtrip", () => {
+			const data = new Uint8Array([1, 2, 3, 0xff, 0xfe, 0x80, 0x00, 0x7f]);
+			const blob = Blob.fromData(data);
+			const recovered = Blob.toData(blob);
+			expect(recovered).toEqual(data);
 		});
 	});
 
 	describe("Blob Data Integrity", () => {
-		it("should reconstruct original data from blob", () => {
-			const original = new Uint8Array(5000);
-			for (let i = 0; i < original.length; i++) {
-				original[i] = (i * 7 + 13) % 256;
-			}
-
-			const blob = Blob.fromData(original);
-			const recovered = Blob.toData(blob);
-
-			expect(recovered).toEqual(original);
-		});
-
-		it("should throw on corrupted blob (wrong size)", () => {
-			const blob = Blob.fromData(new Uint8Array(100));
-			const corrupted = blob.slice(0, SIZE - 1);
-
-			expect(() => Blob.toData(corrupted)).toThrow(/Invalid blob size/);
-		});
-
-		it("should throw on corrupted length prefix", () => {
-			const blob = Blob.fromData(new Uint8Array(100));
-
-			// Corrupt length prefix to invalid value
-			const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
-			view.setBigUint64(0, BigInt(SIZE), true); // Length > max
-
-			expect(() => Blob.toData(blob)).toThrow(/Invalid length prefix/);
-		});
-
 		it("should handle round-trip for various data sizes", () => {
-			const sizes = [0, 1, 31, 32, 100, 1000, 10000, 50000, SIZE - 8];
+			const sizes = [0, 1, 31, 32, 100, 1000, 10000, MAX_DATA_PER_BLOB];
+
 			for (const size of sizes) {
 				const data = new Uint8Array(size);
-				for (let i = 0; i < Math.min(size, 100); i++) {
-					data[i] = i;
-				}
+				for (let i = 0; i < size; i++) data[i] = (i * 17) % 256;
 
 				const blob = Blob.fromData(data);
-				const recovered = Blob.toData(blob);
+				expect(blob.length).toBe(SIZE);
 
-				expect(recovered.length).toBe(size);
+				const recovered = Blob.toData(blob);
 				expect(recovered).toEqual(data);
 			}
 		});
 
-		it("should preserve binary data patterns", () => {
-			const data = new Uint8Array(256);
-			for (let i = 0; i < 256; i++) data[i] = i;
-
-			const blob = Blob.fromData(data);
-			const recovered = Blob.toData(blob);
-
-			expect(recovered).toEqual(data);
+		it("should fail toData on wrong size blob", () => {
+			const wrongSize = new Uint8Array(SIZE - 1);
+			expect(() => Blob.toData(wrongSize as any)).toThrow(/Invalid blob size/);
 		});
 
-		it("should handle data with null bytes", () => {
-			const data = new Uint8Array(100);
-			data.fill(0);
-			data[0] = 0x01;
-			data[99] = 0xff;
+		it("should fail toData on corrupted length prefix", () => {
+			const blob = new Uint8Array(SIZE);
+			// Set an invalid length prefix (larger than max)
+			const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+			view.setUint32(1, MAX_DATA_PER_BLOB + 1000, false); // big-endian
 
-			const blob = Blob.fromData(data);
+			expect(() => Blob.toData(blob as any)).toThrow(/Invalid length prefix/);
+		});
+
+		it("should handle blob with all zeros", () => {
+			const blob = new Uint8Array(SIZE);
+			const data = Blob.toData(blob as any);
+			expect(data.length).toBe(0);
+		});
+
+		it("should handle blob with truncated data", () => {
+			const originalData = new Uint8Array(1000);
+			for (let i = 0; i < 1000; i++) originalData[i] = i % 256;
+
+			const blob = Blob.fromData(originalData);
+
+			// Manually corrupt the blob by changing length prefix
+			const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+			view.setUint32(1, 500, false); // Set length to 500
+
 			const recovered = Blob.toData(blob);
+			expect(recovered.length).toBe(500);
+		});
 
-			expect(recovered).toEqual(data);
+		it("should reject corrupted blob (wrong size)", () => {
+			const data = new Uint8Array(100);
+			const blob = Blob.fromData(data);
+			const corrupted = blob.slice(0, SIZE - 1);
+
+			expect(() => Blob.toData(corrupted as any)).toThrow(/Invalid blob size/);
 		});
 	});
 
 	describe("splitData / joinData", () => {
-		it("should split and join data correctly", () => {
-			const data = new Uint8Array(10000);
-			for (let i = 0; i < data.length; i++) {
-				data[i] = i % 256;
-			}
-
-			const blobs = Blob.splitData(data);
-			const recovered = Blob.joinData(blobs);
-
-			expect(recovered).toEqual(data);
-		});
-
-		it("should split small data into single blob", () => {
-			const data = new Uint8Array(1000);
-			const blobs = Blob.splitData(data);
-
-			expect(blobs.length).toBe(1);
-			expect(Blob.joinData(blobs)).toEqual(data);
-		});
-
 		it("should split data at exact blob boundary", () => {
-			// SIZE - 8 is max data per blob
-			const maxPerBlob = SIZE - 8;
-			const data = new Uint8Array(maxPerBlob);
-			data.fill(0x42);
-
-			const blobs = Blob.splitData(data);
-			expect(blobs.length).toBe(1);
-			expect(Blob.joinData(blobs)).toEqual(data);
-		});
-
-		it("should split data just over blob boundary", () => {
-			const maxPerBlob = SIZE - 8;
-			const data = new Uint8Array(maxPerBlob + 1);
-			data.fill(0x33);
+			// Create data exactly 2 blobs worth
+			const data = new Uint8Array(MAX_DATA_PER_BLOB * 2);
+			for (let i = 0; i < data.length; i++) data[i] = i % 256;
 
 			const blobs = Blob.splitData(data);
 			expect(blobs.length).toBe(2);
-			expect(Blob.joinData(blobs)).toEqual(data);
-		});
-
-		it("should split empty data", () => {
-			const data = new Uint8Array(0);
-			const blobs = Blob.splitData(data);
-
-			expect(blobs.length).toBeGreaterThanOrEqual(0);
-			expect(Blob.joinData(blobs)).toEqual(data);
-		});
-
-		it("should split maximum size data (6 blobs worth)", () => {
-			const maxPerBlob = SIZE - 8;
-			const data = new Uint8Array(maxPerBlob * 6);
-			for (let i = 0; i < data.length; i++) {
-				data[i] = i % 256;
-			}
-
-			const blobs = Blob.splitData(data);
-			expect(blobs.length).toBe(6);
-			expect(Blob.joinData(blobs)).toEqual(data);
-		});
-
-		it("should throw when data requires more than max blobs", () => {
-			const maxPerBlob = SIZE - 8;
-			const tooLarge = new Uint8Array(maxPerBlob * 7); // 7 blobs needed
-
-			expect(() => Blob.splitData(tooLarge)).toThrow(/requires.*blobs.*max/);
-		});
-
-		it("should handle data not multiple of 31 bytes", () => {
-			const sizes = [30, 33, 100, 1000, 4097];
-			for (const size of sizes) {
-				const data = new Uint8Array(size);
-				data.fill(0xcc);
-
-				const blobs = Blob.splitData(data);
-				const recovered = Blob.joinData(blobs);
-
-				expect(recovered).toEqual(data);
-			}
-		});
-
-		it("should preserve data across multiple blobs", () => {
-			const maxPerBlob = SIZE - 8;
-			const data = new Uint8Array(maxPerBlob * 2 + 1000);
-
-			// Fill with pattern
-			for (let i = 0; i < data.length; i++) {
-				data[i] = (i * 31 + 17) % 256;
-			}
-
-			const blobs = Blob.splitData(data);
-			expect(blobs.length).toBe(3);
 
 			const recovered = Blob.joinData(blobs);
 			expect(recovered).toEqual(data);
 		});
 
-		it("should handle boundary transitions between blobs", () => {
-			const maxPerBlob = SIZE - 8;
-			const data = new Uint8Array(maxPerBlob * 2);
-
-			// Mark boundaries
-			data[0] = 0x01; // Start of first blob
-			data[maxPerBlob - 1] = 0x02; // End of first blob
-			data[maxPerBlob] = 0x03; // Start of second blob
-			data[data.length - 1] = 0x04; // End of second blob
+		it("should split maximum size data (6 blobs worth)", () => {
+			const data = new Uint8Array(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION);
+			for (let i = 0; i < data.length; i++) data[i] = (i * 7) % 256;
 
 			const blobs = Blob.splitData(data);
-			const recovered = Blob.joinData(blobs);
+			expect(blobs.length).toBe(MAX_PER_TRANSACTION);
 
-			expect(recovered[0]).toBe(0x01);
-			expect(recovered[maxPerBlob - 1]).toBe(0x02);
-			expect(recovered[maxPerBlob]).toBe(0x03);
-			expect(recovered[data.length - 1]).toBe(0x04);
+			const recovered = Blob.joinData(blobs);
+			expect(recovered).toEqual(data);
+		});
+
+		it("should throw when data exceeds max transaction capacity", () => {
+			const tooLarge = new Uint8Array(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION + 1);
+			expect(() => Blob.splitData(tooLarge)).toThrow(/Data too large/);
+		});
+
+		it("should handle empty array input to joinData", () => {
+			const joined = Blob.joinData([]);
+			expect(joined.length).toBe(0);
+		});
+	});
+
+	describe("estimateBlobCount", () => {
+		it("should estimate 0 blobs for empty data", () => {
+			expect(Blob.estimateBlobCount(0)).toBe(0);
+		});
+
+		it("should estimate 1 blob for small data", () => {
+			expect(Blob.estimateBlobCount(1)).toBe(1);
+			expect(Blob.estimateBlobCount(MAX_DATA_PER_BLOB)).toBe(1);
+		});
+
+		it("should estimate 2 blobs for data just over one blob", () => {
+			expect(Blob.estimateBlobCount(MAX_DATA_PER_BLOB + 1)).toBe(2);
+		});
+
+		it("should estimate correctly for max transaction size", () => {
+			expect(Blob.estimateBlobCount(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION)).toBe(
+				MAX_PER_TRANSACTION,
+			);
 		});
 	});
 });

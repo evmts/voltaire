@@ -46,3 +46,10 @@ export const GAS_PER_BLOB = 131072;
  * @since 0.0.0
  */
 export const TARGET_GAS_PER_BLOCK = 393216;
+
+/**
+ * Maximum data bytes per blob (field elements * 31 bytes - 4 byte length prefix)
+ * @since 0.0.0
+ */
+export const MAX_DATA_PER_BLOB =
+	FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
