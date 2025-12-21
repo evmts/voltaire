@@ -3,73 +3,55 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Chain } from "./Chain.js";
 import { isL2 } from "./isL2.js";
+import type { Chain } from "./ChainType.js";
+
+/** Helper to create a minimal chain object for testing */
+const createChain = (chainId: number): Chain =>
+	({ chainId }) as unknown as Chain;
 
 describe("Chain.isL2", () => {
 	it("returns false for Ethereum mainnet", () => {
-		const chain = Chain.fromId(1);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(false);
+		expect(isL2(createChain(1))).toBe(false);
 	});
 
 	it("returns true for Optimism", () => {
-		const chain = Chain.fromId(10);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(10))).toBe(true);
 	});
 
 	it("returns true for Arbitrum One", () => {
-		const chain = Chain.fromId(42161);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(42161))).toBe(true);
 	});
 
 	it("returns true for Base", () => {
-		const chain = Chain.fromId(8453);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(8453))).toBe(true);
 	});
 
 	it("returns false for Polygon", () => {
-		const chain = Chain.fromId(137);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(false);
+		expect(isL2(createChain(137))).toBe(false);
 	});
 
 	it("returns false for BSC", () => {
-		const chain = Chain.fromId(56);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(false);
+		expect(isL2(createChain(56))).toBe(false);
 	});
 
 	it("returns false for Avalanche", () => {
-		const chain = Chain.fromId(43114);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(false);
+		expect(isL2(createChain(43114))).toBe(false);
 	});
 
 	it("returns false for Sepolia", () => {
-		const chain = Chain.fromId(11155111);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(false);
+		expect(isL2(createChain(11155111))).toBe(false);
 	});
 
 	it("returns true for Optimism Sepolia", () => {
-		const chain = Chain.fromId(11155420);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(11155420))).toBe(true);
 	});
 
 	it("returns true for Arbitrum Sepolia", () => {
-		const chain = Chain.fromId(421614);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(421614))).toBe(true);
 	});
 
 	it("returns true for Base Sepolia", () => {
-		const chain = Chain.fromId(84532);
-		if (!chain) throw new Error("Chain not found");
-		expect(isL2(chain)).toBe(true);
+		expect(isL2(createChain(84532))).toBe(true);
 	});
 });

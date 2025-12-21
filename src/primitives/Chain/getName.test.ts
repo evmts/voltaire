@@ -3,69 +3,56 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Chain } from "./Chain.js";
 import { getName } from "./getName.js";
+import type { Chain } from "./ChainType.js";
+
+/** Helper to create a minimal chain object for testing */
+const createChain = (chainId: number, name: string): Chain =>
+	({ chainId, name }) as unknown as Chain;
 
 describe("Chain.getName", () => {
 	it("returns name for mainnet", () => {
-		const chain = Chain.fromId(1);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Ethereum Mainnet");
+		const chain = createChain(1, "Ethereum Mainnet");
+		expect(getName(chain)).toBe("Ethereum Mainnet");
 	});
 
 	it("returns name for Sepolia", () => {
-		const chain = Chain.fromId(11155111);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Sepolia");
+		const chain = createChain(11155111, "Sepolia");
+		expect(getName(chain)).toBe("Sepolia");
 	});
 
 	it("returns name for Optimism", () => {
-		const chain = Chain.fromId(10);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("OP Mainnet");
+		const chain = createChain(10, "OP Mainnet");
+		expect(getName(chain)).toBe("OP Mainnet");
 	});
 
 	it("returns name for Arbitrum", () => {
-		const chain = Chain.fromId(42161);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Arbitrum One");
+		const chain = createChain(42161, "Arbitrum One");
+		expect(getName(chain)).toBe("Arbitrum One");
 	});
 
 	it("returns name for Polygon", () => {
-		const chain = Chain.fromId(137);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Polygon Mainnet");
+		const chain = createChain(137, "Polygon Mainnet");
+		expect(getName(chain)).toBe("Polygon Mainnet");
 	});
 
 	it("returns name for Base", () => {
-		const chain = Chain.fromId(8453);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Base");
+		const chain = createChain(8453, "Base");
+		expect(getName(chain)).toBe("Base");
 	});
 
 	it("returns name for Avalanche", () => {
-		const chain = Chain.fromId(43114);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("Avalanche C-Chain");
+		const chain = createChain(43114, "Avalanche C-Chain");
+		expect(getName(chain)).toBe("Avalanche C-Chain");
 	});
 
 	it("returns name for BSC", () => {
-		const chain = Chain.fromId(56);
-		if (!chain) throw new Error("Chain not found");
-		const name = getName(chain);
-		expect(name).toBe("BNB Smart Chain Mainnet");
+		const chain = createChain(56, "BNB Smart Chain Mainnet");
+		expect(getName(chain)).toBe("BNB Smart Chain Mainnet");
 	});
 
 	it("returns correct name from chain object", () => {
-		const chain = Chain.fromId(1);
-		if (!chain) throw new Error("Chain not found");
+		const chain = createChain(1, "Ethereum Mainnet");
 		expect(chain.name).toBe(getName(chain));
 	});
 });
