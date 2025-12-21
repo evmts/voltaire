@@ -1,8 +1,8 @@
 /**
  * Create JsonRpcResponse from response object
  *
- * @param {object} response - Response object with id and either result or error
- * @returns {object} JSON-RPC response object
+ * @param {{ id?: string | number | null; result?: unknown; error?: { code: number; message: string; data?: unknown } }} response - Response object with id and either result or error
+ * @returns {import('./JsonRpcResponseType.js').JsonRpcResponseType} JSON-RPC response object
  * @throws {TypeError} If required fields are missing or invalid
  *
  * @example

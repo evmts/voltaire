@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/authorization
  * @since 0.0.0
- * @param {import("./AuthorizationType.js").AuthorizationType | {chainId: bigint, address: import("../Address/AddressType.js").BrandedAddress, nonce: bigint}} auth - Authorization to format
+ * @param {import("./AuthorizationType.js").AuthorizationType | {chainId: bigint, address: import("../Address/AddressType.js").AddressType, nonce: bigint}} auth - Authorization to format
  * @returns {string} Human-readable string
  * @throws {never}
  * @example
@@ -15,16 +15,18 @@
  * ```
  */
 export function format(auth) {
+	/** @type {*} */
+	const typedAuth = auth;
 	if ("r" in auth && "s" in auth) {
 		return `Authorization(chain=${auth.chainId}, to=${formatAddress(
 			auth.address,
-		)}, nonce=${auth.nonce}, r=0x${auth.r.toString(16)}, s=0x${auth.s.toString(
+		)}, nonce=${typedAuth.nonce}, r=0x${typedAuth.r.toString(16)}, s=0x${typedAuth.s.toString(
 			16,
-		)}, v=${auth.yParity})`;
+		)}, v=${typedAuth.yParity})`;
 	}
 	return `Authorization(chain=${auth.chainId}, to=${formatAddress(
 		auth.address,
-	)}, nonce=${auth.nonce})`;
+	)}, nonce=${typedAuth.nonce})`;
 }
 
 /**

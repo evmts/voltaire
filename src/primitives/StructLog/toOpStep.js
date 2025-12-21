@@ -13,6 +13,7 @@
 export function toOpStep(log) {
 	// Parse opcode name to opcode number
 	// This is a simplified mapping - real implementation would need full opcode table
+	/** @type {Record<string, number>} */
 	const opcodeMap = {
 		STOP: 0x00,
 		ADD: 0x01,
@@ -52,15 +53,18 @@ export function toOpStep(log) {
 	}
 
 	// Parse storage if present
+	/** @type {Record<string, bigint> | undefined} */
 	let storage;
 	if (log.storage) {
-		storage = {};
+		/** @type {Record<string, bigint>} */
+		const storageObj = {};
 		for (const [key, value] of Object.entries(log.storage)) {
-			storage[key] = BigInt(value);
+			storageObj[key] = BigInt(value);
 		}
+		storage = storageObj;
 	}
 
-	return {
+	return /** @type {import('../OpStep/OpStepType.js').OpStepType} */ ({
 		pc: log.pc,
 		op,
 		gas: log.gas,
@@ -70,5 +74,5 @@ export function toOpStep(log) {
 		...(memory !== undefined && { memory }),
 		...(storage !== undefined && { storage }),
 		...(log.error !== undefined && { error: log.error }),
-	};
+	});
 }
