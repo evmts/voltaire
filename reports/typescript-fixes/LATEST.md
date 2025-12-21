@@ -1,19 +1,19 @@
 # TypeScript Error Fixing Progress
 
-**Last Updated:** 2025-12-21T01:48:40.190Z
+**Last Updated:** 2025-12-21T02:03:40.277Z
 
 ## Summary
-- **Initial Errors:** 355
-- **Current Errors:** 355
-- **Total Fixed:** 0 (0.0%)
+- **Initial Errors:** 337
+- **Current Errors:** 293
+- **Total Fixed:** 44 (13.1%)
 - **Cycles Completed:** 1
 
 ## Recent Cycles
 
-### Cycle 1 (2025-12-21T01:48:32.622Z)
-- Errors: 355 → 355 (-0)
-- Status: error
-- Files: 5 src/primitives/Address/effect-layers.ts,    4 src/primitives/Blob/BlobConstructor.ts,    3 src/primitives/Domain/index.ts,    3 src/primitives/ChainHead/from.js,    3 src/primitives/BinaryTree/insert.js...
+### Cycle 1 (2025-12-21T01:58:49.931Z)
+- Errors: 337 → 293 (-44)
+- Status: success
+- Files: 3 src/primitives/Domain/index.ts,    3 src/primitives/ChainHead/from.js,    3 src/primitives/BinaryTree/insert.js,    3 src/native-loader/index.ts,    2 src/primitives/Uint128/toPower.js...
 
 
 ## Handoff Prompt
@@ -28,8 +28,8 @@
   </metadata>
 
   <progress_summary>
-    <initial_errors>355</initial_errors>
-    <current_errors>355</current_errors>
+    <initial_errors>337</initial_errors>
+    <current_errors>337</current_errors>
     <total_reduction>0.0%</total_reduction>
     <cycles_completed>0</cycles_completed>
   </progress_summary>
