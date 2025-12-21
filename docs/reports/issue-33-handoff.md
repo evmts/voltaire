@@ -1,21 +1,21 @@
 # Issue #33 Continuation: TypeScript Test Failures Handoff
 
 ## Mission
-Continue fixing TypeScript type errors to reduce test failures. Progress: 1597→1177→832 (-48% total). Target: Get all 18,197 tests passing.
+Continue fixing TypeScript type errors to reduce test failures. Progress: 1597→1177→832→617 (-61% total). Target: Get all 18,197 tests passing.
 
 ## Current State
 
 ```
-Test Files  57 failed | 759 passed | 2 skipped (818)
-Tests       388 failed | 17732 passed | 182 skipped (18302)
-Errors      832 source errors
+Test Files  ~57 failed | ~759 passed (818 total)
+Tests       ~388 failed | ~17732 passed | ~182 skipped (18302)
+Errors      617 source errors
 ```
 
 **Latest commits on `main`**:
-- Session 3: JSDoc type casts, branded types, ABI fixes, FFI usize
-- `e96e9aba9` - Add JSDoc type annotations for implicit any params
-- `ea33e6f19` - Update issue-33 handoff with session progress
-- `bc880aaa8` - Add JSDoc type casts for branded types
+- Session 4: Hash/index.ts imports, ABI test fixes, Denomination casts, Frame type
+- `f32bb888c` - Fix Hex import patterns and remaining type errors
+- `8edf06fd8` - Continue TypeScript error fixes - Uncle, Frame, SSTORE
+- `48689908b` - Fix TypeScript errors in test files and modules
 
 ## What Was Already Fixed
 
@@ -51,13 +51,20 @@ Errors      832 source errors
 | **PublicKey.verify signature** | `verify.js` | Updated JSDoc to match actual Secp256k1 verify signature |
 | **FFI usize type** | `native-loader/types.ts` | Replace `FFIType.usize` with `FFIType.u64` |
 | **Array<T> generic type** | jsonrpc BatchRequest/Response | Change `@param {Array}` to `@param {Array<*>}` |
+| **Hash/index.ts imports** | `Hash/index.ts` | Import directly from implementation files (26 errors) |
+| **ABI getItem.test.js** | `Abi/getItem.test.js` | JSDoc casts for possibly undefined items (36 errors) |
+| **formatWithArgs.test.js** | `Abi/formatWithArgs.test.js` | item() helper for ABI item types (31 errors) |
+| **Hex/toBytes.test.js** | `Hex/toBytes.test.js` | hex() helper for HexType casting (32 errors) |
+| **BlockHeader/Uncle params** | `BlockHeader/from.js`, `Uncle/from.js` | Add proper JSDoc typedef for params (40 errors) |
+| **Denomination conversions** | `Wei.js`, `Gwei.js`, `Ether.js` | Cast through unknown for branded types (30 errors) |
+| **Frame type extensions** | `Frame/FrameType.ts` | Add storageOriginalValues, gasRefunds properties (13 errors) |
+| **Hex import patterns** | 6 files | Change `import * as Hex` to `import { Hex }` (8 errors) |
 
 ## Remaining Error Patterns (Priority Order)
 
-### 1. HIGH: Object/Item possibly undefined (~50 errors)
+### 1. HIGH: Object possibly undefined (~26 errors)
 ```
 Object is possibly 'undefined'. (26)
-'item' is possibly 'undefined'. (25)
 ```
 
 **Fix pattern**:
