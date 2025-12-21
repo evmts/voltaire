@@ -19,6 +19,6 @@ import { WEI_PER_GWEI } from "./wei-constants.js";
  * ```
  */
 export function fromGwei(gwei: BrandedGwei): BrandedWei {
-	const wei = Uint.times(gwei as unknown as Uint.Uint256Type, Uint.from(WEI_PER_GWEI));
+	const wei = Uint.times(gwei as unknown as Uint.Type, Uint.from(WEI_PER_GWEI));
 	return wei as unknown as BrandedWei;
 }

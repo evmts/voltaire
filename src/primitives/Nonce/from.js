@@ -14,5 +14,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function from(value) {
-	return /** @type {import('./NonceType.js').NonceType} */ (Uint.from(value));
+	return /** @type {import('./NonceType.js').NonceType} */ (/** @type {unknown} */ (Uint.from(value)));
 }

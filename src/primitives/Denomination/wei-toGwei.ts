@@ -19,6 +19,6 @@ import { WEI_PER_GWEI } from "./gwei-constants.js";
  * ```
  */
 export function toGwei(wei: BrandedWei): BrandedGwei {
-	const gwei = Uint.dividedBy(wei as unknown as Uint.Uint256Type, Uint.from(WEI_PER_GWEI));
+	const gwei = Uint.dividedBy(wei as unknown as Uint.Type, Uint.from(WEI_PER_GWEI));
 	return gwei as unknown as BrandedGwei;
 }

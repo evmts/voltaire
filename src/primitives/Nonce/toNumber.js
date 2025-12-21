@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Convert Nonce to number
  *
- * @param this - Nonce
- * @returns Number
+ * @this {import('./NonceType.js').NonceType}
+ * @returns {number} Number
  * @throws If nonce exceeds safe integer range
  *
  * @example
@@ -13,5 +13,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function toNumber() {
-	return Uint.toNumber(this);
+	return Uint.toNumber(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
 }

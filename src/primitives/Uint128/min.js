@@ -20,9 +20,9 @@ export function min(values) {
 		throw new Error("Cannot find minimum of empty array");
 	}
 
-	let result = values[0];
+	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (values[0]);
 	for (let i = 1; i < values.length; i++) {
-		result = minimum(result, values[i]);
+		result = minimum(result, /** @type {import('./Uint128Type.js').Uint128Type} */ (values[i]));
 	}
 	return result;
 }

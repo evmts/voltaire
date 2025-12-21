@@ -104,6 +104,7 @@ export function from(value) {
 	}
 
 	// Parse protocols
+	/** @type {Record<string, unknown>} */
 	const protocols = {};
 
 	// Parse eth protocol if present

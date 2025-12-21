@@ -18,7 +18,7 @@ import { plus } from "./plus.js";
 export function sum(values) {
 	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 	for (let i = 0; i < values.length; i++) {
-		result = plus(result, values[i]);
+		result = plus(result, /** @type {import('./Uint128Type.js').Uint128Type} */ (values[i]));
 	}
 	return /** @type {import('./Uint128Type.js').Uint128Type} */ (result);
 }

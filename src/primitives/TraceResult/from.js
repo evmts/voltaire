@@ -20,11 +20,11 @@
  * ```
  */
 export function from(data) {
-	return {
+	return /** @type {import('./TraceResultType.js').TraceResultType} */ ({
 		gas: data.gas,
 		failed: data.failed,
 		returnValue: data.returnValue,
 		...(data.structLogs !== undefined && { structLogs: data.structLogs }),
 		...(data.callTrace !== undefined && { callTrace: data.callTrace }),
-	};
+	});
 }

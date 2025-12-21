@@ -35,5 +35,5 @@ export function from(value) {
 		});
 	}
 
-	return value;
+	return /** @type {import('./PeerIdType.js').PeerIdType} */ (value);
 }

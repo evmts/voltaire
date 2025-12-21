@@ -4,16 +4,13 @@ import { InvalidSignatureLengthError } from "./errors.js";
 /**
  * Create Signature from P-256 ECDSA signature
  *
- * @param {import('../Hash/index.js').HashType} r - r component (32 bytes, HashType)
- * @param {import('../Hash/index.js').HashType} s - s component (32 bytes, HashType)
+ * @param {Uint8Array} r - r component (32 bytes)
+ * @param {Uint8Array} s - s component (32 bytes)
  * @returns {import('./SignatureType.js').SignatureType} Signature
  *
  * @example
  * ```typescript
- * import * as Hash from '../Hash/index.js';
- * const r = Hash.from(rBytes);
- * const s = Hash.from(sBytes);
- * const sig = Signature.fromP256(r, s);
+ * const sig = Signature.fromP256(rBytes, sBytes);
  * ```
  */
 export function fromP256(r, s) {

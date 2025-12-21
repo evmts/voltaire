@@ -10,11 +10,11 @@
  * const config = disableAll();
  * ```
  */
-export function disableAll(config = {}) {
-	return {
+export function disableAll(config = /** @type {import('./TraceConfigType.js').TraceConfigType} */ ({})) {
+	return /** @type {import('./TraceConfigType.js').TraceConfigType} */ ({
 		...config,
 		disableStorage: true,
 		disableStack: true,
 		disableMemory: true,
-	};
+	});
 }

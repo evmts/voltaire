@@ -18,7 +18,7 @@
  * ```
  */
 export function from(config = {}) {
-	return {
+	return /** @type {import('./TraceConfigType.js').TraceConfigType} */ ({
 		...config,
-	};
+	});
 }

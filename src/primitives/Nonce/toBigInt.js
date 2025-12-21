@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Convert Nonce to bigint
  *
- * @param this - Nonce
- * @returns BigInt
+ * @this {import('./NonceType.js').NonceType}
+ * @returns {bigint} BigInt
  *
  * @example
  * ```typescript
@@ -12,5 +12,5 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function toBigInt() {
-	return Uint.toBigInt(this);
+	return Uint.toBigInt(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
 }

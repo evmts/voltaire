@@ -20,9 +20,9 @@ export function product(values) {
 		return /** @type {import('./Uint128Type.js').Uint128Type} */ (1n);
 	}
 
-	let result = values[0];
+	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (values[0]);
 	for (let i = 1; i < values.length; i++) {
-		result = times(result, values[i]);
+		result = times(result, /** @type {import('./Uint128Type.js').Uint128Type} */ (values[i]));
 	}
 	return /** @type {import('./Uint128Type.js').Uint128Type} */ (result);
 }

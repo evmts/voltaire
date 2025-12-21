@@ -58,7 +58,7 @@ export function decodeBasic(bytes, type) {
 	switch (type) {
 		case "uint8": {
 			if (bytes.length !== 1) throw new Error("Invalid length for uint8");
-			return bytes[0];
+			return /** @type {number} */ (bytes[0]);
 		}
 		case "uint16": {
 			if (bytes.length !== 2) throw new Error("Invalid length for uint16");
@@ -91,7 +91,7 @@ export function decodeBasic(bytes, type) {
 			if (bytes.length !== 32) throw new Error("Invalid length for uint256");
 			let result = 0n;
 			for (let i = 31; i >= 0; i--) {
-				result = (result << 8n) | BigInt(bytes[i]);
+				result = (result << 8n) | BigInt(/** @type {number} */ (bytes[i]));
 			}
 			return result;
 		}

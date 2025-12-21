@@ -4,17 +4,14 @@ import { InvalidSignatureLengthError } from "./errors.js";
 /**
  * Create Signature from secp256k1 ECDSA signature
  *
- * @param {import('../Hash/index.js').HashType} r - r component (32 bytes, HashType)
- * @param {import('../Hash/index.js').HashType} s - s component (32 bytes, HashType)
+ * @param {Uint8Array} r - r component (32 bytes)
+ * @param {Uint8Array} s - s component (32 bytes)
  * @param {number} [v] - Optional recovery ID (27 or 28 for Ethereum)
  * @returns {import('./SignatureType.js').SignatureType} Signature
  *
  * @example
  * ```typescript
- * import * as Hash from '../Hash/index.js';
- * const r = Hash.from(rBytes);
- * const s = Hash.from(sBytes);
- * const sig = Signature.fromSecp256k1(r, s, 27);
+ * const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
  * ```
  */
 export function fromSecp256k1(r, s, v) {

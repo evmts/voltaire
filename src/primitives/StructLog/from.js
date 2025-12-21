@@ -27,7 +27,7 @@
  * ```
  */
 export function from(data) {
-	return {
+	return /** @type {import('./StructLogType.js').StructLogType} */ ({
 		pc: data.pc,
 		op: data.op,
 		gas: data.gas,
@@ -38,5 +38,5 @@ export function from(data) {
 		...(data.storage !== undefined && { storage: data.storage }),
 		...(data.refund !== undefined && { refund: data.refund }),
 		...(data.error !== undefined && { error: data.error }),
-	};
+	});
 }

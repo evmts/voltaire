@@ -3,8 +3,8 @@ import * as Uint from "../Uint/index.js";
 /**
  * Increment nonce by 1
  *
- * @param this - Nonce
- * @returns New nonce incremented by 1
+ * @this {import('./NonceType.js').NonceType}
+ * @returns {import('./NonceType.js').NonceType} New nonce incremented by 1
  *
  * @example
  * ```typescript
@@ -12,6 +12,6 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function increment() {
-	const current = Uint.toBigInt(this);
+	const current = Uint.toBigInt(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
 	return Uint.from(current + 1n);
 }

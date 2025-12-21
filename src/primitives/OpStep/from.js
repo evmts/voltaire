@@ -19,7 +19,7 @@
  * ```
  */
 export function from(data) {
-	return {
+	return /** @type {import('./OpStepType.js').OpStepType} */ ({
 		pc: data.pc,
 		op: data.op,
 		gas: data.gas,
@@ -29,5 +29,5 @@ export function from(data) {
 		...(data.memory !== undefined && { memory: data.memory }),
 		...(data.storage !== undefined && { storage: data.storage }),
 		...(data.error !== undefined && { error: data.error }),
-	};
+	});
 }
