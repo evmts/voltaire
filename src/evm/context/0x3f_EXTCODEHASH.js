@@ -61,7 +61,7 @@ export function extcodehash(frame, host) {
 		// Convert hash bytes to u256 (big-endian)
 		let hashU256 = 0n;
 		for (let i = 0; i < hash.length; i++) {
-			hashU256 = (hashU256 << 8n) | BigInt(hash[i]);
+			hashU256 = (hashU256 << 8n) | BigInt(/** @type {number} */ (hash[i]));
 		}
 		const pushErr = pushStack(frame, hashU256);
 		if (pushErr) return pushErr;

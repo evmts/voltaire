@@ -16,7 +16,7 @@ export function handler_0x86_DUP7(frame) {
 		return { type: "StackUnderflow" };
 	}
 
-	const value = frame.stack[frame.stack.length - 7];
+	const value = /** @type {bigint} */ (frame.stack[frame.stack.length - 7]);
 	const pushErr = pushStack(frame, value);
 	if (pushErr) return pushErr;
 

@@ -121,7 +121,7 @@ export function mcopy(frame) {
 		tmp[i] = readMemory(frame, srcU32 + i);
 	}
 	for (let i = 0; i < lenU32; i++) {
-		writeMemory(frame, destU32 + i, tmp[i]);
+		writeMemory(frame, destU32 + i, /** @type {number} */ (tmp[i]));
 	}
 
 	// Increment program counter

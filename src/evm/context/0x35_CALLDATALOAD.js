@@ -47,7 +47,7 @@ export function calldataload(frame) {
 			const addResult = addU32(off, i);
 			if (addResult.error) return addResult.error;
 			const idx = addResult.value;
-			const byte = idx < frame.calldata.length ? frame.calldata[idx] : 0;
+			const byte = idx < frame.calldata.length ? /** @type {number} */ (frame.calldata[idx]) : 0;
 			result = (result << 8n) | BigInt(byte);
 		}
 		const pushErr = pushStack(frame, result);

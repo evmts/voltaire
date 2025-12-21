@@ -166,7 +166,7 @@ function popStack(frame) {
 	if (frame.stack.length === 0) {
 		return { value: null, error: { type: "StackUnderflow" } };
 	}
-	const value = frame.stack.pop();
+	const value = /** @type {bigint} */ (frame.stack.pop());
 	return { value, error: null };
 }
 

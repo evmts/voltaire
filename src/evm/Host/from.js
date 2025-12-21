@@ -10,6 +10,8 @@
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint, bigint): void} impl.setStorage - Set storage
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType): bigint} impl.getNonce - Get nonce
  * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint): void} impl.setNonce - Set nonce
+ * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint): bigint} impl.getTransientStorage - Get transient storage
+ * @param {function(import("../../primitives/Address/AddressType.js").AddressType, bigint, bigint): void} impl.setTransientStorage - Set transient storage
  * @returns {import("./HostType.js").BrandedHost} Host instance
  */
 export function from(impl) {

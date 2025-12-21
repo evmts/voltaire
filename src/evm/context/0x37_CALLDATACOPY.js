@@ -74,7 +74,7 @@ export function calldatacopy(frame) {
 		const srcAddResult = addU32(srcOff, i);
 		if (srcAddResult.error) return srcAddResult.error;
 		const srcIdx = srcAddResult.value;
-		const byte = srcIdx < frame.calldata.length ? frame.calldata[srcIdx] : 0;
+		const byte = srcIdx < frame.calldata.length ? /** @type {number} */ (frame.calldata[srcIdx]) : 0;
 
 		const destAddResult = addU32(destOff, i);
 		if (destAddResult.error) return destAddResult.error;

@@ -9,6 +9,6 @@ export function peekStack(frame, index) {
 	if (index >= frame.stack.length) {
 		return { value: null, error: { type: "StackUnderflow" } };
 	}
-	const value = frame.stack[frame.stack.length - 1 - index];
+	const value = /** @type {bigint} */ (frame.stack[frame.stack.length - 1 - index]);
 	return { value, error: null };
 }

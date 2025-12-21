@@ -16,7 +16,7 @@ export function handler_0x8C_DUP13(frame) {
 		return { type: "StackUnderflow" };
 	}
 
-	const value = frame.stack[frame.stack.length - 13];
+	const value = /** @type {bigint} */ (frame.stack[frame.stack.length - 13]);
 	const pushErr = pushStack(frame, value);
 	if (pushErr) return pushErr;
 

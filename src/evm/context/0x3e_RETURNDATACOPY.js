@@ -97,7 +97,7 @@ export function returndatacopy(frame) {
 	// Copy return data to memory
 	for (let i = 0; i < len; i++) {
 		const srcIdx = srcOff + i;
-		const byte = frame.returnData[srcIdx];
+		const byte = /** @type {number} */ (frame.returnData[srcIdx]);
 
 		const destAddResult = addU32(destOff, i);
 		if (destAddResult.error) return destAddResult.error;
