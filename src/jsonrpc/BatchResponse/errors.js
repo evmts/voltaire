@@ -1,8 +1,8 @@
 /**
  * Get all error responses from batch
  *
- * @param {Array<*>} batch - Batch response
- * @returns {Array} Array of error responses
+ * @param {import('./BatchResponseType.js').BatchResponseType} batch - Batch response
+ * @returns {Array<*>} Array of error responses
  *
  * @example
  * ```typescript

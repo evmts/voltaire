@@ -1,8 +1,8 @@
 /**
  * Create JsonRpcRequest from request object or components
  *
- * @param {object} request - Request object with id, method, and optional params
- * @returns {object} JSON-RPC request object
+ * @param {{ id?: string | number | null; method: string; params?: unknown[] }} request - Request object with id, method, and optional params
+ * @returns {import('./JsonRpcRequestType.js').JsonRpcRequestType} JSON-RPC request object
  * @throws {TypeError} If required fields are missing or invalid
  *
  * @example
@@ -45,6 +45,7 @@ export function from(request) {
 		throw new TypeError("Request method must be a string");
 	}
 
+	/** @type {*} */
 	const result = {
 		jsonrpc: "2.0",
 		id: id === undefined ? null : id,

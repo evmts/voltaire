@@ -1,8 +1,8 @@
 /**
  * Get all success responses from batch
  *
- * @param {Array<*>} batch - Batch response
- * @returns {Array} Array of success responses
+ * @param {import('./BatchResponseType.js').BatchResponseType} batch - Batch response
+ * @returns {Array<*>} Array of success responses
  *
  * @example
  * ```typescript

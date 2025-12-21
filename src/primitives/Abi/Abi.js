@@ -75,7 +75,7 @@ Abi.Item = ItemNs;
 Object.setPrototypeOf(Abi.prototype, Array.prototype);
 
 // Instance methods for ABI operations
-/** @param {string} name @param {string} [type] */
+/** @param {string} name @param {"function" | "event" | "constructor" | "error" | "fallback" | "receive"} [type] */
 Abi.prototype.getItem = function (name, type) {
 	return getItem(/** @type {*} */ (this), name, type);
 };
@@ -109,7 +109,7 @@ Abi.prototype.decodeData = function (data) {
 	return decodeData.call(/** @type {*} */ (this), data);
 };
 
-/** @param {unknown[]} logs */
+/** @param {readonly { data: string | Uint8Array; topics: readonly (string | Uint8Array)[] }[]} logs */
 Abi.prototype.parseLogs = function (logs) {
 	return parseLogs.call(/** @type {*} */ (this), logs);
 };
@@ -143,8 +143,8 @@ Abi.prototype.getReceive = function () {
 };
 
 Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
-	depth,
-	options,
+	/** @type {number} */ depth,
+	/** @type {*} */ options,
 ) {
 	return `Abi(${/** @type {*} */ (this).length} items)`;
 };

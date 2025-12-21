@@ -1,8 +1,8 @@
 /**
  * Find response by id in batch
  *
- * @param {Array} batch - Batch response
- * @returns {function} Function that takes an id and returns matching response or undefined
+ * @param {import('./BatchResponseType.js').BatchResponseType} batch - Batch response
+ * @returns {(id: string | number | null) => import('../JsonRpcResponse/JsonRpcResponseType.js').JsonRpcResponseType | undefined} Function that takes an id and returns matching response or undefined
  *
  * @example
  * ```typescript

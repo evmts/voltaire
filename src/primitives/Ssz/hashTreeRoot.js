@@ -1,7 +1,7 @@
 /**
  * @description Computes the hash tree root of data for Merkle proofs
  * @param {Uint8Array} data - Data to merkleize
- * @returns {Uint8Array} 32-byte hash tree root
+ * @returns {Promise<Uint8Array>} 32-byte hash tree root
  */
 export async function hashTreeRoot(data) {
 	const CHUNK_SIZE = 32;
@@ -30,17 +30,19 @@ export async function hashTreeRoot(data) {
 	}
 
 	// Build Merkle tree bottom-up
+	/** @type {Uint8Array[]} */
 	let layer = chunks;
 	while (layer.length > 1) {
+		/** @type {Uint8Array[]} */
 		const nextLayer = [];
 		for (let i = 0; i < layer.length; i += 2) {
-			const hash = await hashPair(layer[i], layer[i + 1]);
+			const hash = await hashPair(/** @type {Uint8Array} */ (layer[i]), /** @type {Uint8Array} */ (layer[i + 1]));
 			nextLayer.push(hash);
 		}
 		layer = nextLayer;
 	}
 
-	return layer[0];
+	return /** @type {Uint8Array} */ (layer[0]);
 }
 
 /**

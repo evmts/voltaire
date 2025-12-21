@@ -123,7 +123,7 @@ describe("AccountState.createEmpty", () => {
 			const { from: nonceFrom } = await import("../Nonce/from.js");
 
 			expect(() => {
-				state.nonce = nonceFrom(5n);
+				/** @type {*} */ (state).nonce = nonceFrom(5n);
 			}).toThrow();
 		});
 
@@ -132,7 +132,7 @@ describe("AccountState.createEmpty", () => {
 			const { from: weiFrom } = await import("../Denomination/Wei.js");
 
 			expect(() => {
-				state.balance = weiFrom(100n);
+				/** @type {*} */ (state).balance = weiFrom(100n);
 			}).toThrow();
 		});
 
@@ -140,7 +140,7 @@ describe("AccountState.createEmpty", () => {
 			const state = createEmpty();
 
 			expect(() => {
-				state.storageRoot = StateRoot.from(
+				/** @type {*} */ (state).storageRoot = StateRoot.from(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 			}).toThrow();
@@ -150,7 +150,7 @@ describe("AccountState.createEmpty", () => {
 			const state = createEmpty();
 
 			expect(() => {
-				state.codeHash = Hash(
+				/** @type {*} */ (state).codeHash = Hash(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 			}).toThrow();

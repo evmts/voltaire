@@ -1,8 +1,8 @@
 /**
  * Create BatchResponse from array of responses
  *
- * @param {Array} responses - Array of JSON-RPC response objects
- * @returns {Array} Batch response (readonly array)
+ * @param {Array<*>} responses - Array of JSON-RPC response objects
+ * @returns {import('./BatchResponseType.js').BatchResponseType} Batch response (readonly array)
  * @throws {TypeError} If not an array
  *
  * @example

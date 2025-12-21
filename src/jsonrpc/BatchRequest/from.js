@@ -2,7 +2,7 @@
  * Create BatchRequest from array of requests
  *
  * @param {Array<*>} requests - Array of JSON-RPC request objects
- * @returns {Array} Batch request (readonly array)
+ * @returns {import('./BatchRequestType.js').BatchRequestType} Batch request (readonly array)
  * @throws {TypeError} If not an array or empty
  *
  * @example
