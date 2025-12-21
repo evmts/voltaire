@@ -63,7 +63,7 @@ export interface FrameParams {
  * ```
  */
 export function Frame(params: FrameParams = {}): BrandedFrame {
-	return _from(params);
+	return _from(params as Parameters<typeof _from>[0]);
 }
 
 // Attach methods to Frame function

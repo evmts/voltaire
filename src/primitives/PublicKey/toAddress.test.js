@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Address from "../Address/index.js";
+import { toChecksummed } from "../Address/internal-index.js";
 import { from as privateKeyFrom } from "../PrivateKey/from.js";
 import { fromPrivateKey } from "./fromPrivateKey.js";
 import { toAddress } from "./toAddress.js";
@@ -190,7 +191,7 @@ describe("PublicKey.toAddress", () => {
 			const pubkey = fromPrivateKey(pk);
 			const address = toAddress.call(pubkey);
 
-			const checksummed = Address.toChecksummed(address);
+			const checksummed = toChecksummed(address);
 			expect(checksummed).toBeDefined();
 			expect(checksummed.startsWith("0x")).toBe(true);
 		});

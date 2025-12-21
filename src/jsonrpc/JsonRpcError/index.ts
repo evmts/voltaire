@@ -28,7 +28,7 @@ export { from };
 
 // Export public wrapper functions
 export function toString(error: JsonRpcErrorType): string {
-	return _toString(from(error));
+	return _toString(from(error as { code: number; message: string }));
 }
 
 // Export internal functions (tree-shakeable)

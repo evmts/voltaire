@@ -19,7 +19,7 @@ export function isNotification(request: JsonRpcRequestType): boolean {
 export function withParams<TParams>(
 	request: JsonRpcRequestType,
 ): (params: TParams) => JsonRpcRequestType<TParams> {
-	return _withParams(from(request)) as (
+	return _withParams(from(request as Parameters<typeof from>[0])) as (
 		params: TParams,
 	) => JsonRpcRequestType<TParams>;
 }

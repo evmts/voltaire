@@ -35,6 +35,7 @@ export function sload(frame, host) {
 	}
 
 	const storageKey = getStorageMapKey(frame.address, key);
+	/** @type {bigint} */
 	let gasCost = ColdSload;
 
 	// If already accessed in this transaction, it's warm

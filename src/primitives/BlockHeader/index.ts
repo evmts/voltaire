@@ -30,7 +30,7 @@ export function from(params: {
 	excessBlobGas?: bigint | number | string;
 	parentBeaconBlockRoot?: import("../Hash/HashType.js").HashType | string;
 }) {
-	return _from(params);
+	return _from(params as Parameters<typeof _from>[0]);
 }
 
 // Namespace export

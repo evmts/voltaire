@@ -25,7 +25,7 @@ export function from(params: {
 	mixHash: import("../Hash/HashType.js").HashType | string;
 	nonce: Uint8Array;
 }) {
-	return _from(params);
+	return _from(params as Parameters<typeof _from>[0]);
 }
 
 // Namespace export

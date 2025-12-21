@@ -60,9 +60,9 @@ const verifyBatch: (
 const ToCommitment: (deps: {
 	blobToKzgCommitment: (blob: Uint8Array) => Uint8Array;
 }) => (blob: BrandedBlob) => CommitmentType = _ToCommitment;
-const ToProof: (deps: {
+const ToProof = _ToProof as (deps: {
 	computeBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array) => Uint8Array;
-}) => (blob: BrandedBlob, commitment: CommitmentType) => ProofType = _ToProof;
+}) => (blob: BrandedBlob, commitment: CommitmentType) => ProofType;
 const ToVersionedHash: (deps: {
 	sha256: (data: Uint8Array) => Uint8Array;
 }) => (commitment: CommitmentType) => VersionedHashType = _ToVersionedHash;

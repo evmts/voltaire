@@ -44,7 +44,7 @@ export interface HostImpl {
  * ```
  */
 export function Host(impl: HostImpl): BrandedHost {
-	return _from(impl);
+	return _from(impl as Parameters<typeof _from>[0]);
 }
 
 // Attach methods to Host function
