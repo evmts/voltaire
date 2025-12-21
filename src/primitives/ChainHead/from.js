@@ -45,12 +45,12 @@ export function from(value) {
 	return /** @type {import('./ChainHeadType.js').ChainHeadType} */ ({
 		number: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.number)),
 		hash: hash,
-		timestamp: /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.timestamp)),
+		timestamp: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.timestamp)),
 		difficulty:
-			value.difficulty !== undefined ? /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.difficulty)) : undefined,
+			value.difficulty !== undefined ? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.difficulty)) : undefined,
 		totalDifficulty:
 			value.totalDifficulty !== undefined
-				? /** @type {import('../Uint256/Uint256Type.js').Uint256Type} */ (BigInt(value.totalDifficulty))
+				? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.totalDifficulty))
 				: undefined,
 	});
 }

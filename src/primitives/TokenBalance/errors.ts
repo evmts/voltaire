@@ -35,7 +35,7 @@ export class InvalidTokenBalanceError extends ValidationError {
 		super(message, {
 			code: options?.code || "INVALID_TOKEN_BALANCE",
 			value: options?.value,
-			expected: options?.expected,
+			expected: options?.expected ?? "valid token balance",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/token-balance",
 			cause: options?.cause,
@@ -59,7 +59,7 @@ export class TokenBalanceOverflowError extends ValidationError {
 		super(message, {
 			code: options?.code || "TOKEN_BALANCE_OVERFLOW",
 			value: options?.value,
-			expected: options?.expected,
+			expected: options?.expected ?? "value within uint256 range",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/token-balance",
 			cause: options?.cause,

@@ -1,6 +1,10 @@
 import * as BytesType from "../Bytes.index.js";
 import { InvalidBytesLengthError } from "../errors.js";
 
+/**
+ * @param {import('../BytesType.js').BytesLike} value
+ * @returns {import('./Bytes8Type.js').Bytes8Type}
+ */
 export function from(value) {
 	const bytes = BytesType.from(value);
 	if (bytes.length !== 8) {

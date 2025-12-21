@@ -60,7 +60,7 @@ export function toData(blob) {
 				}
 			}
 
-			data[dataPosition] = byte;
+			data[dataPosition] = /** @type {number} */ (byte);
 			dataPosition++;
 		}
 	}

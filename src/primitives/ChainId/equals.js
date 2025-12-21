@@ -1,9 +1,9 @@
 /**
  * Check if two chain IDs are equal
  *
- * @param this - Chain ID
- * @param other - Other chain ID
- * @returns True if equal
+ * @this {import('./ChainIdType.js').ChainIdType}
+ * @param {import('./ChainIdType.js').ChainIdType} other - Other chain ID
+ * @returns {boolean} True if equal
  *
  * @example
  * ```typescript

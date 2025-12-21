@@ -87,7 +87,7 @@ export function validate(typedData) {
  * Validate all type dependencies exist
  *
  * @param {string} typeName - Type name
- * @param {object} types - Type definitions
+ * @param {Record<string, Array<{name: string, type: string}>>} types - Type definitions
  * @param {Set<string>} seen - Already validated types
  */
 function validateTypeDependencies(typeName, types, seen) {
@@ -134,7 +134,7 @@ function validateTypeDependencies(typeName, types, seen) {
 		if (atomicTypes.includes(baseType)) continue;
 
 		// Check if it's a custom type that exists
-		if (!types[baseType]) {
+		if (!/** @type {Record<string, unknown>} */ (types)[baseType]) {
 			throw new InvalidTypedDataError(
 				`type '${baseType}' referenced in '${typeName}.${field.name}' not found`,
 				{ value: types },

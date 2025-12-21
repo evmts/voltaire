@@ -1,6 +1,5 @@
 import { Hash } from "../Hash/index.js";
 import * as StateRoot from "../StateRoot/index.js";
-// @ts-nocheck
 import { equals as uintEquals } from "../Uint/equals.js";
 
 /**
@@ -22,8 +21,8 @@ import { equals as uintEquals } from "../Uint/equals.js";
  */
 export function equals(a, b) {
 	return (
-		uintEquals(a.nonce, b.nonce) &&
-		uintEquals(a.balance, b.balance) &&
+		uintEquals(/** @type {bigint} */ (a.nonce), /** @type {bigint} */ (b.nonce)) &&
+		uintEquals(/** @type {bigint} */ (a.balance), /** @type {bigint} */ (b.balance)) &&
 		StateRoot.equals(a.storageRoot, b.storageRoot) &&
 		Hash.equals(a.codeHash, b.codeHash)
 	);
