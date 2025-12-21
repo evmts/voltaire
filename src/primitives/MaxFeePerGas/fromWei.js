@@ -10,5 +10,5 @@
  * ```
  */
 export function fromWei(wei) {
-	return wei;
+	return /** @type {import("./MaxFeePerGasType.js").MaxFeePerGasType} */ (wei);
 }

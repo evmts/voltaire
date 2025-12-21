@@ -33,5 +33,7 @@ export function getSigningHash(auth) {
 	data[0] = MAGIC;
 	data.set(rlpEncoded, 1);
 
-	return Keccak256.hash(data);
+	return /** @type {import('../../Hash/index.js').HashType} */ (
+		/** @type {unknown} */ (Keccak256.hash(data))
+	);
 }

@@ -7,7 +7,7 @@ import { encodeAccessList, encodeBigintCompact } from "../utils.js";
  * Factory: Get signing hash for EIP-4844 transaction.
  *
  * @param {Object} deps - Crypto dependencies
- * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
+ * @param {(data: Uint8Array) => import('../../Hash/index.js').HashType} deps.keccak256 - Keccak256 hash function
  * @param {(data: any[]) => Uint8Array} deps.rlpEncode - RLP encode function
  * @returns {(tx: import('./TransactionEIP4844Type.js').TransactionEIP4844Type) => import('../../Hash/index.js').HashType} Function that computes signing hash
  *
