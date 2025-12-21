@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as Rlp from "../index.js";
+import * as Rlp from "./index.js";
 
 describe("RLP Utility Functions", () => {
 	describe("encodeArray", () => {

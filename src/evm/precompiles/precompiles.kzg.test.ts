@@ -6,6 +6,7 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 } from "../../crypto/KZG/constants.js";
 import * as Kzg from "../../crypto/KZG/index.js";
+import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { pointEvaluation } from "./precompiles.js";
 
 describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
@@ -27,6 +28,34 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 		return z;
 	};
 
+	// Helper: create versioned hash from commitment (keccak256 with 0x01 prefix)
+	const createVersionedHash = (commitment: Uint8Array): Uint8Array => {
+		const prefixed = new Uint8Array(49);
+		prefixed[0] = 0x01;
+		prefixed.set(commitment, 1);
+		const hash = new Uint8Array(Keccak256.hash(prefixed));
+		hash[0] = 0x01; // Set version byte
+		return hash;
+	};
+
+	// Helper: build 192-byte EIP-4844 input
+	// Layout: versioned_hash(32) + z(32) + y(32) + commitment(48) + proof(48) = 192
+	const buildInput = (
+		commitment: Uint8Array,
+		z: Uint8Array,
+		y: Uint8Array,
+		proof: Uint8Array,
+	): Uint8Array => {
+		const input = new Uint8Array(192);
+		const versionedHash = createVersionedHash(commitment);
+		input.set(versionedHash, 0); // 0-32
+		input.set(z, 32); // 32-64
+		input.set(y, 64); // 64-96
+		input.set(commitment, 96); // 96-144
+		input.set(proof, 144); // 144-192
+		return input;
+	};
+
 	// Helper: BLS modulus constant (used in output verification)
 	const BLS_MODULUS = Uint8Array.from([
 		0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48, 0x33, 0x39, 0xd8, 0x08,
@@ -46,18 +75,13 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.gasUsed).toBe(50000n);
 		});
 
 		it("should fail with out of gas when gasLimit < 50000", () => {
-			const input = new Uint8Array(160);
+			const input = new Uint8Array(192);
 			const result = pointEvaluation(input, 49999n);
 
 			expect(result.success).toBe(false);
@@ -75,53 +99,23 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	});
 
 	describe("Input Validation", () => {
-		it("should accept exactly 160 bytes input", () => {
+		it("should accept exactly 192 bytes input", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
 
-		it("should accept exactly 192 bytes input (with trailing zeros)", () => {
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
-			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.KZG.Proof(blob, z);
-
-			const input = new Uint8Array(192);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-			// Bytes 160-192 are zero by default
-
-			const result = pointEvaluation(input, 50000n);
-			expect(result.success).toBe(true);
-		});
-
-		it("should reject input less than 160 bytes", () => {
-			const input = new Uint8Array(159);
+		it("should reject input less than 192 bytes", () => {
+			const input = new Uint8Array(191);
 			const result = pointEvaluation(input, 50000n);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
-		});
-
-		it("should reject input between 160 and 192 bytes", () => {
-			const input = new Uint8Array(180);
-			const result = pointEvaluation(input, 50000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expect(result.error).toContain("Invalid input length");
 		});
 
 		it("should reject input greater than 192 bytes", () => {
@@ -129,7 +123,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const result = pointEvaluation(input, 50000n);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expect(result.error).toContain("Invalid input length");
 		});
 
 		it("should reject empty input", () => {
@@ -137,7 +131,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const result = pointEvaluation(input, 50000n);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expect(result.error).toContain("Invalid input length");
 		});
 	});
 
@@ -148,12 +142,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x55);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(64);
@@ -166,12 +155,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x00);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
@@ -182,12 +166,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = new Uint8Array(32); // All zeros
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
@@ -201,12 +180,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 				const z = createValidFieldElement(point);
 				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-				const input = new Uint8Array(160);
-				input.set(commitment, 0);
-				input.set(z, 48);
-				input.set(y, 80);
-				input.set(proof, 112);
-
+				const input = buildInput(commitment, z, y, proof);
 				const result = pointEvaluation(input, 50000n);
 				expect(result.success).toBe(true);
 			}
@@ -220,12 +194,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(64);
@@ -237,12 +206,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 
@@ -257,12 +221,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 
@@ -283,12 +242,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 				corruptedProof[0] ^= 1;
 			}
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(corruptedProof, 112);
-
+			const input = buildInput(commitment, z, y, corruptedProof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(64);
@@ -298,62 +252,41 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	});
 
 	describe("Input Field Parsing", () => {
-		it("should parse versioned hash (first 32 bytes of commitment)", () => {
+		it("should parse versioned hash (first 32 bytes)", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			// Test with commitment having specific pattern
-			const patternedCommitment = new Uint8Array(commitment);
-			patternedCommitment[0] = 0xaa;
-			patternedCommitment[31] = 0xbb;
-
-			const input = new Uint8Array(160);
-			input.set(patternedCommitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
-			// Should fail because commitment was modified
+			const input = buildInput(commitment, z, y, proof);
+			// Should succeed with valid versioned hash
 			const result = pointEvaluation(input, 50000n);
-			// Result depends on whether modified commitment is still valid
 			expect(result.gasUsed).toBe(50000n);
 		});
 
-		it("should parse z value (bytes 48-80)", () => {
+		it("should parse z value (bytes 32-64)", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0xff);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
 
-		it("should parse y value (bytes 80-112)", () => {
+		it("should parse y value (bytes 64-96)", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
 
-		it("should parse commitment (bytes 0-48)", () => {
+		it("should parse commitment (bytes 96-144)", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
@@ -361,17 +294,12 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
 
-		it("should parse proof (bytes 112-160)", () => {
+		it("should parse proof (bytes 144-192)", () => {
 			const blob = Kzg.generateRandomBlob();
 			const commitment = Kzg.KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
@@ -379,12 +307,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 			expect(proof.length).toBe(BYTES_PER_PROOF);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
@@ -400,12 +323,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const invalidCommitment = new Uint8Array(48);
 			invalidCommitment.fill(0xff); // All 0xff is not a valid point
 
-			const input = new Uint8Array(160);
-			input.set(invalidCommitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(invalidCommitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			// Should fail or return false verification
 			expect(result.gasUsed).toBe(50000n);
@@ -418,12 +336,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 			const zeroCommitment = new Uint8Array(48); // All zeros
 
-			const input = new Uint8Array(160);
-			input.set(zeroCommitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(zeroCommitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			// Point at infinity might be valid or invalid depending on implementation
 			expect(result.gasUsed).toBe(50000n);
@@ -437,12 +350,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = Kzg.KZG.Proof(blob1, z);
 
-			const input = new Uint8Array(160);
-			input.set(wrongCommitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(wrongCommitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			// Verification should fail - output should be zeros
@@ -461,12 +369,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const corruptedProof = new Uint8Array(proof);
 			corruptedProof[10] ^= 0xff;
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(corruptedProof, 112);
-
+			const input = buildInput(commitment, z, y, corruptedProof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			// Verification should fail
@@ -481,12 +384,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 
 			const zeroProof = new Uint8Array(48);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(zeroProof, 112);
-
+			const input = buildInput(commitment, z, y, zeroProof);
 			const result = pointEvaluation(input, 50000n);
 			// Verification should fail
 			expect(result.gasUsed).toBe(50000n);
@@ -501,12 +399,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const onesProof = new Uint8Array(48);
 			onesProof.fill(0xff);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(onesProof, 112);
-
+			const input = buildInput(commitment, z, y, onesProof);
 			const result = pointEvaluation(input, 50000n);
 			// Verification should fail
 			expect(result.gasUsed).toBe(50000n);
@@ -521,12 +414,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			// Generate proof for z2, but use z1 in verification
 			const { proof, y } = Kzg.KZG.Proof(blob, z2);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z1, 48); // Different z
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z1, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			// Verification should fail
@@ -543,12 +431,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const wrongY = new Uint8Array(y);
 			wrongY[31] ^= 0x01;
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(wrongY, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, wrongY, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			// Verification should fail
@@ -572,12 +455,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x01);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 		});
@@ -588,35 +466,10 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x42);
 
 			// Use commitment bytes as proof (invalid but tests parsing)
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(z, 80); // Use z as y (invalid)
-			input.set(commitment, 112); // Use commitment as proof (invalid)
-
+			const input = buildInput(commitment, z, z, commitment);
 			const result = pointEvaluation(input, 50000n);
 			// Should handle gracefully
 			expect(result.gasUsed).toBe(50000n);
-		});
-
-		it("should handle 192-byte input with non-zero trailing bytes", () => {
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
-			const z = createValidFieldElement(0x42);
-			const { proof, y } = Kzg.KZG.Proof(blob, z);
-
-			const input = new Uint8Array(192);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-			// Set trailing bytes to non-zero
-			input[160] = 0xff;
-			input[191] = 0xff;
-
-			const result = pointEvaluation(input, 50000n);
-			// Implementation accepts 192 bytes, trailing data ignored
-			expect(result.success).toBe(true);
 		});
 	});
 
@@ -637,13 +490,14 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			expect(BYTES_PER_FIELD_ELEMENT).toBe(32);
 		});
 
-		it("should verify input structure: 48+32+32+48 = 160", () => {
+		it("should verify input structure: 32+32+32+48+48 = 192", () => {
 			const totalSize =
-				BYTES_PER_COMMITMENT + // commitment
+				32 + // versioned_hash
 				BYTES_PER_FIELD_ELEMENT + // z
 				BYTES_PER_FIELD_ELEMENT + // y
+				BYTES_PER_COMMITMENT + // commitment
 				BYTES_PER_PROOF; // proof
-			expect(totalSize).toBe(160);
+			expect(totalSize).toBe(192);
 		});
 	});
 
@@ -664,12 +518,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 			const z = createValidFieldElement(0x12);
 			const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			const input = new Uint8Array(160);
-			input.set(commitment, 0);
-			input.set(z, 48);
-			input.set(y, 80);
-			input.set(proof, 112);
-
+			const input = buildInput(commitment, z, y, proof);
 			const result = pointEvaluation(input, 50000n);
 			expect(result.success).toBe(true);
 			expect(result.output.slice(0, 32)).toEqual(FIELD_ELEMENTS_BYTES);
@@ -685,12 +534,7 @@ describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 				const z = createValidFieldElement(i * 0x11);
 				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-				const input = new Uint8Array(160);
-				input.set(commitment, 0);
-				input.set(z, 48);
-				input.set(y, 80);
-				input.set(proof, 112);
-
+				const input = buildInput(commitment, z, y, proof);
 				const result = pointEvaluation(input, 50000n);
 				expect(result.success).toBe(true);
 				expect(result.output.slice(0, 32)).toEqual(FIELD_ELEMENTS_BYTES);

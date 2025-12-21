@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Rlp from "../index.js";
+import * as Rlp from "./index.js";
 
 describe("RLP Ethereum Test Vectors", () => {
 	describe("Official Ethereum test vectors", () => {
