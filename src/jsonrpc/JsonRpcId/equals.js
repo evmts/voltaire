@@ -2,7 +2,7 @@
  * Compare two JsonRpcId values for equality
  *
  * @param {string | number | null} id - First ID
- * @returns {boolean} True if IDs are equal
+ * @returns {(other: string | number | null) => boolean} Function comparing with another ID
  *
  * @example
  * ```typescript
