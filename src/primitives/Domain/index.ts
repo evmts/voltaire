@@ -47,7 +47,7 @@ export function toHash(
 export function encodeData(
 	primaryType: string,
 	data: any,
-	types: Record<string, Array<{ name: string; type: string }>>,
+	types: Record<string, readonly { readonly name: string; readonly type: string }[]>,
 	crypto: {
 		keccak256: (data: Uint8Array) => Uint8Array;
 	},
@@ -55,14 +55,14 @@ export function encodeData(
 	return encodeDataImpl(primaryType, data, types, crypto);
 }
 
-export function encodeType(primaryType: string, types: Record<string, Array<{ name: string; type: string }>>): string {
+export function encodeType(primaryType: string, types: Record<string, readonly { readonly name: string; readonly type: string }[]>): string {
 	return encodeTypeImpl(primaryType, types);
 }
 
 export function encodeValue(
 	type: string,
 	value: any,
-	types: Record<string, Array<{ name: string; type: string }>>,
+	types: Record<string, readonly { readonly name: string; readonly type: string }[]>,
 	crypto: {
 		keccak256: (data: Uint8Array) => Uint8Array;
 	},
@@ -72,7 +72,7 @@ export function encodeValue(
 
 export function hashType(
 	primaryType: string,
-	types: object,
+	types: Record<string, readonly { readonly name: string; readonly type: string }[]>,
 	crypto: {
 		keccak256: (data: Uint8Array) => Uint8Array;
 	},

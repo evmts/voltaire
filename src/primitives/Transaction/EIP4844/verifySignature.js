@@ -13,8 +13,8 @@ import { GetSigningHash } from "./getSigningHash.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: import('../../Rlp/encode.js').Encodable) => Uint8Array} deps.rlpEncode - RLP encode function
- * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array) => Uint8Array} deps.secp256k1RecoverPublicKey - secp256k1 public key recovery
- * @param {(sig: {r: Uint8Array, s: Uint8Array, v: number}, hash: Uint8Array, publicKey: Uint8Array) => boolean} deps.secp256k1Verify - secp256k1 signature verification
+ * @param {*} deps.secp256k1RecoverPublicKey - secp256k1 public key recovery
+ * @param {*} deps.secp256k1Verify - secp256k1 signature verification
  * @returns {(tx: import('./TransactionEIP4844Type.js').TransactionEIP4844Type) => boolean} Function that verifies signature
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation

@@ -20,7 +20,7 @@ import { getSigningHash } from "./getSigningHash.js";
  * ```
  */
 export function getSender(tx) {
-	const signingHash = getSigningHash(tx);
+	const signingHash = /** @type {import('../../Hash/index.js').HashType} */ (getSigningHash(tx));
 	const v = 27 + tx.yParity;
 	return recoverAddress({ r: tx.r, s: tx.s, v }, signingHash);
 }

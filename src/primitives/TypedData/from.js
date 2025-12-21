@@ -71,10 +71,10 @@ export function from(typedData) {
 	// Normalize domain using Domain.from
 	const normalizedDomain = Domain.from(typedData.domain);
 
-	return {
+	return /** @type {import('./TypedDataType.js').TypedDataType} */ ({
 		types: typedData.types,
 		primaryType: typedData.primaryType,
 		domain: normalizedDomain,
 		message: typedData.message,
-	};
+	});
 }

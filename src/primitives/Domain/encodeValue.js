@@ -3,8 +3,8 @@ import * as Hex from "../Hex/index.js";
 import { encodeType } from "./encodeType.js";
 
 /**
- * @typedef {{ name: string; type: string }} EIP712Field
- * @typedef {Record<string, EIP712Field[]>} EIP712Types
+ * @typedef {{ readonly name: string; readonly type: string }} EIP712Field
+ * @typedef {Record<string, readonly EIP712Field[]>} EIP712Types
  */
 
 /**
