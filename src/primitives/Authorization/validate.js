@@ -47,9 +47,9 @@ export function validate(auth) {
 		throw new InvalidYParityError(auth.yParity);
 	}
 
-	// Convert r and s to bigint for comparison
-	const rBigInt = bytesToBigInt(auth.r);
-	const sBigInt = bytesToBigInt(auth.s);
+	// Convert r and s to bigint for comparison (handle both bigint and Uint8Array)
+	const rBigInt = typeof auth.r === "bigint" ? auth.r : bytesToBigInt(auth.r);
+	const sBigInt = typeof auth.s === "bigint" ? auth.s : bytesToBigInt(auth.s);
 
 	// r and s must be non-zero
 	if (rBigInt === 0n) {

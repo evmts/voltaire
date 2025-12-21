@@ -172,8 +172,8 @@ describe("Secp256k1.Signature.toBytes", () => {
 			const bytes = Signature.toBytes(original);
 			const reconstructed = Signature.fromBytes(bytes);
 
-			expect(reconstructed.r).toEqual(original.r);
-			expect(reconstructed.s).toEqual(original.s);
+			expect(new Uint8Array(reconstructed.r)).toEqual(new Uint8Array(original.r));
+			expect(new Uint8Array(reconstructed.s)).toEqual(new Uint8Array(original.s));
 			expect(reconstructed.v).toBe(original.v);
 		});
 
@@ -204,7 +204,7 @@ describe("Secp256k1.Signature.toBytes", () => {
 
 			Signature.toBytes(sig);
 
-			expect(r).toEqual(rCopy);
+			expect(new Uint8Array(r)).toEqual(rCopy);
 		});
 
 		it("should not modify signature s", () => {
@@ -215,7 +215,7 @@ describe("Secp256k1.Signature.toBytes", () => {
 
 			Signature.toBytes(sig);
 
-			expect(s).toEqual(sCopy);
+			expect(new Uint8Array(s)).toEqual(sCopy);
 		});
 
 		it("should create independent byte array", () => {

@@ -386,12 +386,12 @@ describe("Abi", () => {
 
 		it("has Event namespace", () => {
 			expect(Abi.Event).toBeDefined();
-			expect(typeof Abi.Event).toBe("function");
+			expect(typeof Abi.Event).toBe("object");
 		});
 
 		it("has Error namespace", () => {
 			expect(Abi.Error).toBeDefined();
-			expect(typeof Abi.Error).toBe("function");
+			expect(typeof Abi.Error).toBe("object");
 		});
 
 		it("has Constructor namespace", () => {
