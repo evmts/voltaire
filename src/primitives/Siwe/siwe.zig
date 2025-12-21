@@ -46,7 +46,7 @@ pub const SiweMessage = struct {
         try result.appendSlice(allocator, " wants you to sign in with your Ethereum account:\n");
 
         // Address
-        const addr_hex = try hex.toHex(allocator, &self.address);
+        const addr_hex = try hex.toHex(allocator, &self.address.bytes);
         defer allocator.free(addr_hex);
         try result.appendSlice(allocator, addr_hex);
         try result.appendSlice(allocator, "\n\n");
