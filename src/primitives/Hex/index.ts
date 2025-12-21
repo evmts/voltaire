@@ -1,5 +1,5 @@
 // Export factory function and all methods
-// Hex.js uses @ts-nocheck so we import default
+// @ts-expect-error - Hex.js uses @ts-nocheck but has default export
 import HexDefault from "./Hex.js";
 export const Hex = HexDefault;
 export * from "./Hex.js";
