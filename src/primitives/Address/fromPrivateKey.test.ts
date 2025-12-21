@@ -4,10 +4,10 @@ import { derivePublicKey } from "../../crypto/Secp256k1/derivePublicKey.js";
 import { PrivateKey } from "../PrivateKey/index.js";
 import { InvalidLengthError } from "../errors/index.js";
 import { Address } from "../index.js";
-import * as AddressNamespace from "./index.js";
+import { FromPrivateKey, InvalidValueError } from "./internal-index.js";
 
 // Create factory instance with crypto dependencies
-const fromPrivateKey = AddressNamespace.FromPrivateKey({
+const fromPrivateKey = FromPrivateKey({
 	keccak256: hash,
 	derivePublicKey,
 });
@@ -97,7 +97,7 @@ describe("fromPrivateKey", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			expect(() => fromPrivateKey(privateKey)).toThrow(
-				AddressNamespace.InvalidValueError,
+				InvalidValueError,
 			);
 		});
 
@@ -106,7 +106,7 @@ describe("fromPrivateKey", () => {
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(0xff);
 			expect(() => fromPrivateKey(privateKey)).toThrow(
-				AddressNamespace.InvalidValueError,
+				InvalidValueError,
 			);
 		});
 	});

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { encode as rlpEncode } from "../../Rlp/encode.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
@@ -300,8 +300,8 @@ describe("Authorization.sign - determinism", () => {
 	it("produces consistent signatures for same inputs", () => {
 		const result1 = sign(unsigned, privateKey);
 		const result2 = sign(unsigned, privateKey);
-		expect(result1.r).toBe(result2.r);
-		expect(result1.s).toBe(result2.s);
+		expect(result1.r).toStrictEqual(result2.r);
+		expect(result1.s).toStrictEqual(result2.s);
 		expect(result1.yParity).toBe(result2.yParity);
 	});
 
@@ -349,12 +349,16 @@ describe("Authorization.sign - signature format", () => {
 
 	it("returns non-zero r", () => {
 		const result = sign(unsigned, privateKey);
-		expect(result.r).toBeGreaterThan(0n);
+		expect(result.r).toBeInstanceOf(Uint8Array);
+		expect(result.r.length).toBe(32);
+		expect(result.r.some((b) => b !== 0)).toBe(true);
 	});
 
 	it("returns non-zero s", () => {
 		const result = sign(unsigned, privateKey);
-		expect(result.s).toBeGreaterThan(0n);
+		expect(result.s).toBeInstanceOf(Uint8Array);
+		expect(result.s.length).toBe(32);
+		expect(result.s.some((b) => b !== 0)).toBe(true);
 	});
 
 	it("preserves original unsigned fields", () => {

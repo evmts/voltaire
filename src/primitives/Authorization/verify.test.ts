@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { encode as rlpEncode } from "../../Rlp/encode.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
