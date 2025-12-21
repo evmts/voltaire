@@ -1,4 +1,8 @@
-import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
+import {
+	MAX_PER_TRANSACTION,
+	FIELD_ELEMENTS_PER_BLOB,
+	BYTES_PER_FIELD_ELEMENT,
+} from "./constants.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
 import { fromData } from "./fromData.js";
 
@@ -8,7 +12,7 @@ import { fromData } from "./fromData.js";
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
  * @param {Uint8Array} data - Data to split
- * @returns {import('../BrandedBlob.js').BrandedBlob[]} Array of blobs containing the data
+ * @returns {import('./BlobType.js').BlobType[]} Array of blobs containing the data
  * @throws {Error} If data requires more blobs than maximum per transaction
  * @example
  * ```javascript
@@ -18,7 +22,9 @@ import { fromData } from "./fromData.js";
  * ```
  */
 export function splitData(data) {
-	const maxDataPerBlob = SIZE - 8; // 8 bytes for length prefix
+	// Max data per blob: 31 bytes per field element - 4 bytes for length prefix
+	const maxDataPerBlob =
+		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 	const blobCount = estimateBlobCount(data.length);
 
 	if (blobCount > MAX_PER_TRANSACTION) {

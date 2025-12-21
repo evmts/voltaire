@@ -24,7 +24,9 @@ export function estimateBlobCount(dataSize) {
 	if (dataSize === 0) {
 		return 0;
 	}
-	// Each field element reserves 1 byte for high bit (must be 0x00)
-	const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
+	// Each field element reserves 1 byte for BLS field constraint (must be 0x00)
+	// Plus 4 bytes for length prefix in first field element
+	const maxDataPerBlob =
+		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 	return Math.ceil(dataSize / maxDataPerBlob);
 }

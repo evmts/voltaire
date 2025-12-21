@@ -1,14 +1,21 @@
-import { SIZE } from "./constants.js";
+import {
+	SIZE,
+	FIELD_ELEMENTS_PER_BLOB,
+	BYTES_PER_FIELD_ELEMENT,
+} from "./constants.js";
 
 /**
- * Extract data from blob using length-prefix decoding.
- * Format: 8-byte little-endian length prefix + data + zero padding
+ * Extract data from blob using EIP-4844 field element decoding.
+ * Format: Each 32-byte field element has byte[0] = 0x00 (BLS field constraint)
+ * The first 4 bytes of data space (field 0, bytes 1-4) contain the length prefix.
+ * Data bytes follow in bytes 5-31 of field 0, then bytes 1-31 of subsequent fields.
  *
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
+ * @see https://eips.ethereum.org/EIPS/eip-4844 for EIP-4844 specification
  * @since 0.0.0
- * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @param {import('./BlobType.js').BlobType} blob - Blob data
  * @returns {Uint8Array} Original data
- * @throws {Error} If blob size is invalid or length prefix is corrupted
+ * @throws {Error} If blob size is invalid or format is corrupted
  * @example
  * ```javascript
  * import * as Blob from './primitives/Blob/index.js';
@@ -21,17 +28,41 @@ export function toData(blob) {
 		throw new Error(`Invalid blob size: ${blob.length} (expected ${SIZE})`);
 	}
 
-	// Read 8-byte little-endian length prefix
+	// Read 4-byte big-endian length prefix from positions 1-4
 	const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
-	const length = view.getBigUint64(0, true);
+	const dataLength = view.getUint32(1, false); // big-endian
 
-	const maxDataSize = SIZE - 8;
-	if (length > BigInt(maxDataSize)) {
+	// Max data bytes: 31 bytes per field element - 4 bytes for length prefix
+	const maxDataSize =
+		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+
+	if (dataLength > maxDataSize) {
 		throw new Error(
-			`Invalid length prefix: ${length} (max ${maxDataSize})`,
+			`Invalid length prefix: ${dataLength} (max ${maxDataSize})`,
 		);
 	}
 
-	const dataLength = Number(length);
-	return blob.slice(8, 8 + dataLength);
+	// Extract data
+	const data = new Uint8Array(dataLength);
+	let dataOffset = 0;
+	let blobOffset = 5; // Start after length prefix (0 + 1-4)
+
+	while (dataOffset < dataLength) {
+		const fieldIndex = Math.floor(blobOffset / BYTES_PER_FIELD_ELEMENT);
+		const fieldStart = fieldIndex * BYTES_PER_FIELD_ELEMENT;
+		const posInField = blobOffset - fieldStart;
+
+		// Skip position 0 of each field element (always 0x00)
+		if (posInField === 0) {
+			blobOffset = fieldStart + 1;
+			continue;
+		}
+
+		// Copy data byte
+		data[dataOffset] = blob[blobOffset];
+		dataOffset++;
+		blobOffset++;
+	}
+
+	return data;
 }
