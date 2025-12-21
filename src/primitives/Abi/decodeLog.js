@@ -66,7 +66,7 @@ export function decodeLog(abi, log) {
 	}
 
 	// Find event by selector (topic0 for non-anonymous events)
-	const item = abi.find((item) => {
+	const item = /** @type {import('./AbiType.js').Item[]} */ (abi).find((/** @type {import('./AbiType.js').Item} */ item) => {
 		if (item.type !== "event") return false;
 		const evt = /** @type {import('./event/index.js').Event} */ (item);
 		if (evt.anonymous) return false; // Skip anonymous events for now

@@ -30,7 +30,7 @@ import * as Function from "./function/index.js";
  * ```
  */
 export function encodeFunction(abi, functionName, args) {
-	const item = abi.find((item) => {
+	const item = /** @type {import('./AbiType.js').Item[]} */ (abi).find((/** @type {import('./AbiType.js').Item} */ item) => {
 		if (item.type !== "function") return false;
 		const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
 		return fn.name === functionName;

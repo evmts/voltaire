@@ -26,7 +26,7 @@ import * as Constructor from "./constructor/index.js";
  * ```
  */
 export function encodeConstructor(abi, args) {
-	const item = abi.find((item) => item.type === "constructor");
+	const item = /** @type {import('./AbiType.js').Item[]} */ (abi).find((/** @type {import('./AbiType.js').Item} */ item) => item.type === "constructor");
 
 	if (!item || item.type !== "constructor") {
 		throw new AbiItemNotFoundError("Constructor not found in ABI", {

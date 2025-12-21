@@ -4,7 +4,7 @@ import type { decodeParams } from "./decodeParams.js";
 import type { decodeResult } from "./decodeResult.js";
 import type { encodeParams } from "./encodeParams.js";
 import type { encodeResult } from "./encodeResult.js";
-import type { getSelector } from "./getSelector.js";
+import type { GetSelector } from "./getSelector.js";
 import type { getSignature } from "./getSignature.js";
 import type { StateMutability } from "./statemutability.js";
 
@@ -22,7 +22,7 @@ export interface FunctionConstructor {
 	): FunctionType<TName, TStateMutability, TInputs, TOutputs>;
 
 	// Static methods
-	getSelector: typeof getSelector;
+	getSelector: ReturnType<typeof GetSelector>;
 	getSignature: typeof getSignature;
 	encodeParams: typeof encodeParams;
 	decodeParams: typeof decodeParams;
