@@ -182,7 +182,7 @@ pub fn verifySiweMessage(
     const message_hash = try hash_mod.eip191HashMessage(formatted, allocator);
 
     // Recover signer using secp256k1
-    const pubkey_bytes = secp256k1.recoverPubkey(&message_hash.bytes, &signature.r, &signature.s, signature.v) catch {
+    const pubkey_bytes = secp256k1.recoverPubkey(&message_hash, &signature.r, &signature.s, signature.v) catch {
         return false;
     };
 
