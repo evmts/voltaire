@@ -9,7 +9,7 @@ import { getNativeErrorMessage } from "./types.js";
 /**
  * Native module interface (loaded via require/dlopen)
  */
-interface NativeModule {
+export interface NativeModule {
 	// Address operations
 	primitives_address_from_hex(hex: string, output: Uint8Array): number;
 	primitives_address_to_hex(address: Uint8Array, output: Uint8Array): number;

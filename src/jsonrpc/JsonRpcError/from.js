@@ -1,10 +1,10 @@
 /**
  * Create JsonRpcError from error object or components
  *
- * @param {object | number} codeOrError - Error code or full error object
+ * @param {{ code: number; message: string; data?: unknown } | number} codeOrError - Error code or full error object
  * @param {string} [message] - Error message (required if first arg is code)
  * @param {unknown} [data] - Optional additional error data
- * @returns {object} JSON-RPC error object
+ * @returns {{ code: number; message: string; data?: unknown }} JSON-RPC error object
  * @throws {TypeError} If parameters are invalid
  *
  * @example

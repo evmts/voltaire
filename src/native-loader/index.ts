@@ -11,6 +11,7 @@ export {
 } from "./platform.js";
 export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
 export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
+export type { NativeModule } from "./node-api.js";
 
 /**
  * Runtime environment detection
