@@ -1,17 +1,12 @@
-import {
-	BYTES_PER_FIELD_ELEMENT,
-	FIELD_ELEMENTS_PER_BLOB,
-	SIZE,
-} from "./constants.js";
+import { SIZE } from "./constants.js";
 
 /**
- * Create blob from arbitrary data using field element encoding
- * Each field element: 0x00 (high byte) + 31 data bytes
- * Last element with data < 31 bytes gets 0x80 terminator
+ * Create blob from arbitrary data using length-prefix encoding.
+ * Format: 8-byte little-endian length prefix + data + zero padding
  *
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
- * @param {Uint8Array} data - Data to encode (max ~126KB = 4096 * 31 bytes)
+ * @param {Uint8Array} data - Data to encode (max SIZE - 8 bytes)
  * @returns {import('../BrandedBlob.js').BrandedBlob} Blob containing encoded data
  * @throws {Error} If data exceeds maximum size
  * @example
@@ -22,42 +17,24 @@ import {
  * ```
  */
 export function fromData(data) {
-	const maxDataPerBlob =
-		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1);
+	const maxDataSize = SIZE - 8; // 8 bytes for length prefix
 
-	if (data.length > maxDataPerBlob) {
+	if (data.length > maxDataSize) {
 		throw new Error(
-			`Data too large: ${data.length} bytes (max ${maxDataPerBlob})`,
+			`Data too large: ${data.length} bytes (max ${maxDataSize})`,
 		);
 	}
 
 	const blob = new Uint8Array(SIZE);
-	let position = 0;
-	let fieldElementIndex = 0;
 
-	// Encode data into field elements (31 bytes per element)
-	while (
-		position < data.length &&
-		fieldElementIndex < FIELD_ELEMENTS_PER_BLOB
-	) {
-		const offset = fieldElementIndex * BYTES_PER_FIELD_ELEMENT;
+	// Write 8-byte little-endian length prefix
+	const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+	view.setBigUint64(0, BigInt(data.length), true);
 
-		// High byte must be 0x00
-		blob[offset] = 0x00;
+	// Copy data after length prefix
+	blob.set(data, 8);
 
-		// Copy up to 31 bytes of data
-		const bytesToCopy = Math.min(31, data.length - position);
-		blob.set(data.subarray(position, position + bytesToCopy), offset + 1);
-
-		// If this is the last segment and < 31 bytes, add terminator
-		if (bytesToCopy < 31) {
-			blob[offset + 1 + bytesToCopy] = 0x80;
-			break;
-		}
-
-		position += bytesToCopy;
-		fieldElementIndex++;
-	}
+	// Rest is already zero-padded from Uint8Array construction
 
 	return /** @type {import('../BrandedBlob.js').BrandedBlob} */ (blob);
 }
