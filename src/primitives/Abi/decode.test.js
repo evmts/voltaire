@@ -73,6 +73,7 @@ describe("decode", () => {
 
 	describe("empty return values", () => {
 		it("decodes function with no outputs", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -82,7 +83,7 @@ describe("decode", () => {
 					outputs: [],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const returnData = Function.encodeResult(func, []);
 			const decoded = decode.call(abi, "doSomething", returnData);
 			expect(decoded).toEqual([]);
@@ -103,6 +104,7 @@ describe("decode", () => {
 		});
 
 		it("throws when item is not a function", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "event",
@@ -136,6 +138,7 @@ describe("decode", () => {
 
 	describe("complex types", () => {
 		it("decodes array return value", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -145,13 +148,14 @@ describe("decode", () => {
 					outputs: [{ type: "uint256[]" }],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const returnData = Function.encodeResult(func, [[1n, 2n, 3n]]);
 			const decoded = decode.call(abi, "getArray", returnData);
 			expect(decoded).toEqual([[1n, 2n, 3n]]);
 		});
 
 		it("decodes address return value", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -161,7 +165,7 @@ describe("decode", () => {
 					outputs: [{ type: "address" }],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const addr = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
 			const returnData = Function.encodeResult(func, [addr]);
 			const decoded = decode.call(abi, "getAddress", returnData);
@@ -169,6 +173,7 @@ describe("decode", () => {
 		});
 
 		it("decodes bytes return value", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -178,7 +183,7 @@ describe("decode", () => {
 					outputs: [{ type: "bytes" }],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
 			const returnData = Function.encodeResult(func, [bytes]);
 			const decoded = decode.call(abi, "getBytes", returnData);
@@ -188,6 +193,7 @@ describe("decode", () => {
 
 	describe("this binding", () => {
 		it("uses this context as abi", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -197,7 +203,7 @@ describe("decode", () => {
 					outputs: [{ type: "bool" }],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const returnData = Function.encodeResult(func, [true]);
 			const decoded = decode.call(abi, "test", returnData);
 			expect(decoded).toEqual([true]);
@@ -206,6 +212,7 @@ describe("decode", () => {
 
 	describe("overloaded functions", () => {
 		it("decodes first matching function name", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
 			const abi = [
 				{
 					type: "function",
@@ -222,7 +229,7 @@ describe("decode", () => {
 					outputs: [{ type: "bool" }],
 				},
 			];
-			const func = abi[0];
+			const func = /** @type {*} */ (abi[0]);
 			const returnData = Function.encodeResult(func, [true]);
 			const decoded = decode.call(abi, "process", returnData);
 			expect(decoded).toEqual([true]);
