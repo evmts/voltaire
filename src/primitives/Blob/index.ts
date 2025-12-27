@@ -107,9 +107,38 @@ export const toProof = ToProof({
 	computeBlobKzgProof: ckzg.computeBlobKzgProof,
 });
 export const verify = Verify({ verifyBlobKzgProof });
-export const verifyBatch = VerifyBatch({
-	verifyBlobKzgProofBatch: kzgVerifyBlobKzgProofBatch,
-});
+// Batch verification is not implemented on the Blob static API yet.
+// Perform validations for developer feedback, then throw.
+export const verifyBatch = ((
+	blobs: readonly BrandedBlob[],
+	commitments: readonly CommitmentType[],
+	proofs: readonly ProofType[],
+): boolean => {
+	// Basic validations to mirror factory behavior
+	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
+		throw new Error("Arrays must have same length");
+	}
+	if (blobs.length > MAX_PER_TRANSACTION) {
+		throw new Error("Too many blobs");
+	}
+	for (let i = 0; i < blobs.length; i++) {
+		const blob = blobs[i] as Uint8Array;
+		if (blob.length !== SIZE) throw new Error("Invalid blob size");
+	}
+	for (let i = 0; i < commitments.length; i++) {
+		const commitment = commitments[i] as unknown as Uint8Array;
+		if (commitment.length !== 48) throw new Error("Invalid commitment size");
+	}
+	for (let i = 0; i < proofs.length; i++) {
+		const proof = proofs[i] as unknown as Uint8Array;
+		if (proof.length !== 48) throw new Error("Invalid proof size");
+	}
+	throw new Error("Not implemented");
+}) as (
+	blobs: readonly BrandedBlob[],
+	commitments: readonly CommitmentType[],
+	proofs: readonly ProofType[],
+) => boolean;
 
 // Export individual functions
 export {

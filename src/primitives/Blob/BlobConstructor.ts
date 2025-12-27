@@ -17,7 +17,7 @@ import type { toData } from "./toData.js";
 import type { ToProof } from "./toProof.js";
 import type { ToVersionedHash } from "./toVersionedHash.js";
 import type { Verify } from "./verify.js";
-import type { verifyBatch } from "./verifyBatch.js";
+import type { VerifyBatch } from "./verifyBatch.js";
 
 type BlobPrototype = BrandedBlob & {
 	toData: typeof toData;
@@ -37,7 +37,7 @@ export interface BlobConstructor {
 	toProof: ReturnType<typeof ToProof>;
 	toVersionedHash: ReturnType<typeof ToVersionedHash>;
 	verify: ReturnType<typeof Verify>;
-	verifyBatch: typeof verifyBatch;
+	verifyBatch: ReturnType<typeof VerifyBatch>;
 	isValidVersion: typeof isValidVersion;
 	calculateGas: typeof calculateGas;
 	estimateBlobCount: typeof estimateBlobCount;
