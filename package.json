@@ -401,6 +401,26 @@
         "default": "./dist/primitives/EventLog/effect.cjs"
       }
     },
+    "./AccessList/effect": {
+      "import": {
+        "types": "./types/primitives/AccessList/effect.d.ts",
+        "default": "./dist/primitives/AccessList/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/AccessList/effect.d.ts",
+        "default": "./dist/primitives/AccessList/effect.cjs"
+      }
+    },
+    "./Transaction/Authorization/effect": {
+      "import": {
+        "types": "./types/primitives/Transaction/Authorization/effect.d.ts",
+        "default": "./dist/primitives/Transaction/Authorization/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Transaction/Authorization/effect.d.ts",
+        "default": "./dist/primitives/Transaction/Authorization/effect.cjs"
+      }
+    },
 		"./Bip39": {
 			"import": {
 				"types": "./types/crypto/Bip39/index.d.ts",
