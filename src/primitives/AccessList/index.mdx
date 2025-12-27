@@ -62,6 +62,16 @@ export type Item = {
 - [toBytes](/primitives/accesslist/conversions#toBytes) - Convert to RLP bytes for transaction encoding
 
 ## Usage Example
+### Effect Schema
+
+```ts
+import { AccessListSchema } from '@tevm/voltaire/AccessList/effect'
+
+const addr = new Uint8Array(20)
+const slot = new Uint8Array(32)
+const list = AccessListSchema.create().withAddress(addr).withStorageKey(addr, slot)
+list.hasSavings()
+```
 
 ```typescript
 import { AccessList, Address, Hash } from 'tevm';
