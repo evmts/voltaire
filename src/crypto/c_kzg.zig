@@ -144,7 +144,7 @@ test "c_kzg error handling - file not found" {
 test "c_kzg error handling - operations without trusted setup" {
     const testing = std.testing;
 
-    // Ensure trusted setup is not loaded
+    // Ensure trusted setup is not loaded (intentionally ignore error if already freed)
     _ = freeTrustedSetup() catch {};
 
     var blob = getRandomBlob(42);
