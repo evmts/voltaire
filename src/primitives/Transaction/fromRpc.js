@@ -28,7 +28,7 @@ function hexToBigInt(hex) {
 /**
  * Convert hex string to address bytes (20 bytes)
  * @param {string | null | undefined} hex
- * @returns {Uint8Array | null}
+ * @returns {import('../Address/AddressType.js').AddressType | null}
  */
 function hexToAddress(hex) {
 	if (!hex) return null;
@@ -36,26 +36,63 @@ function hexToAddress(hex) {
 	if (bytes.length !== 20) {
 		throw new Error(`Invalid address length: ${bytes.length}, expected 20`);
 	}
-	return bytes;
+	return /** @type {import('../Address/AddressType.js').AddressType} */ (bytes);
+}
+
+/**
+ * Convert hex string to address bytes (20 bytes), throws if null
+ * @param {string} hex
+ * @returns {import('../Address/AddressType.js').AddressType}
+ */
+function hexToAddressRequired(hex) {
+	const bytes = fromHex(hex);
+	if (bytes.length !== 20) {
+		throw new Error(`Invalid address length: ${bytes.length}, expected 20`);
+	}
+	return /** @type {import('../Address/AddressType.js').AddressType} */ (bytes);
 }
 
 /**
  * Convert hex string to 32-byte hash
  * @param {string} hex
- * @returns {Uint8Array}
+ * @returns {import('../Bytes32/Bytes32Type.js').Bytes32Type}
  */
 function hexToHash(hex) {
 	const bytes = fromHex(hex);
 	if (bytes.length !== 32) {
 		throw new Error(`Invalid hash length: ${bytes.length}, expected 32`);
 	}
-	return bytes;
+	return /** @type {import('../Bytes32/Bytes32Type.js').Bytes32Type} */ (bytes);
 }
+
+/**
+ * @typedef {Object} RpcTransaction
+ * @property {string} [type]
+ * @property {string} [nonce]
+ * @property {string} [gasLimit]
+ * @property {string} [gas]
+ * @property {string | null} [to]
+ * @property {string} [value]
+ * @property {string} [data]
+ * @property {string} [input]
+ * @property {string} [r]
+ * @property {string} [s]
+ * @property {string} [v]
+ * @property {string} [yParity]
+ * @property {string} [chainId]
+ * @property {string} [gasPrice]
+ * @property {string} [maxPriorityFeePerGas]
+ * @property {string} [maxFeePerGas]
+ * @property {string} [maxFeePerBlobGas]
+ * @property {Array<{address: string, storageKeys?: string[]}>} [accessList]
+ * @property {string[]} [blobVersionedHashes]
+ * @property {Array<{chainId: string, address: string, nonce: string, yParity: string, r: string, s: string}>} [authorizationList]
+ */
 
 /**
  * Parse transaction from JSON-RPC format
  *
- * @param {object} rpc - JSON-RPC formatted transaction
+ * @param {RpcTransaction} rpc - JSON-RPC formatted transaction
  * @returns {import('./types.js').Any} Parsed transaction
  *
  * @example
@@ -111,10 +148,14 @@ export function fromRpc(rpc) {
 				chainId: hexToBigInt(rpc.chainId),
 				gasPrice: hexToBigInt(rpc.gasPrice),
 				accessList: (rpc.accessList || []).map((item) => ({
-					address: hexToAddress(item.address),
-					storageKeys: (item.storageKeys || []).map((key) => hexToHash(key)),
+					address: hexToAddressRequired(item.address),
+					storageKeys: (item.storageKeys || []).map((key) =>
+						/** @type {import('../Hash/HashType.js').HashType} */ (
+							/** @type {unknown} */ (hexToHash(key))
+						),
+					),
 				})),
-				yParity: Number(hexToBigInt(rpc.yParity || rpc.v)),
+				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
 			};
 
 		case Type.EIP1559:
@@ -125,28 +166,43 @@ export function fromRpc(rpc) {
 				maxPriorityFeePerGas: hexToBigInt(rpc.maxPriorityFeePerGas),
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
-					address: hexToAddress(item.address),
-					storageKeys: (item.storageKeys || []).map((key) => hexToHash(key)),
+					address: hexToAddressRequired(item.address),
+					storageKeys: (item.storageKeys || []).map((key) =>
+						/** @type {import('../Hash/HashType.js').HashType} */ (
+							/** @type {unknown} */ (hexToHash(key))
+						),
+					),
 				})),
-				yParity: Number(hexToBigInt(rpc.yParity || rpc.v)),
+				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
 			};
 
 		case Type.EIP4844:
 			return {
 				...base,
+				// EIP-4844 requires a recipient address; cast base.to for typing
+				to: /** @type {import('../Address/AddressType.js').AddressType} */ (
+					/** @type {unknown} */ (base.to)
+				),
 				type: Type.EIP4844,
 				chainId: hexToBigInt(rpc.chainId),
 				maxPriorityFeePerGas: hexToBigInt(rpc.maxPriorityFeePerGas),
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
-					address: hexToAddress(item.address),
-					storageKeys: (item.storageKeys || []).map((key) => hexToHash(key)),
+					address: hexToAddressRequired(item.address),
+					storageKeys: (item.storageKeys || []).map((key) =>
+						/** @type {import('../Hash/HashType.js').HashType} */ (
+							/** @type {unknown} */ (hexToHash(key))
+						),
+					),
 				})),
 				maxFeePerBlobGas: hexToBigInt(rpc.maxFeePerBlobGas),
-				blobVersionedHashes: (rpc.blobVersionedHashes || []).map((h) =>
-					hexToHash(h),
+				blobVersionedHashes: (rpc.blobVersionedHashes || []).map(
+					(h) =>
+						/** @type {import('../Hash/HashType.js').HashType} */ (
+							/** @type {unknown} */ (hexToHash(h))
+						),
 				),
-				yParity: Number(hexToBigInt(rpc.yParity || rpc.v)),
+				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
 			};
 
 		case Type.EIP7702:
@@ -157,18 +213,22 @@ export function fromRpc(rpc) {
 				maxPriorityFeePerGas: hexToBigInt(rpc.maxPriorityFeePerGas),
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
-					address: hexToAddress(item.address),
-					storageKeys: (item.storageKeys || []).map((key) => hexToHash(key)),
+					address: hexToAddressRequired(item.address),
+					storageKeys: (item.storageKeys || []).map((key) =>
+						/** @type {import('../Hash/HashType.js').HashType} */ (
+							/** @type {unknown} */ (hexToHash(key))
+						),
+					),
 				})),
 				authorizationList: (rpc.authorizationList || []).map((auth) => ({
 					chainId: hexToBigInt(auth.chainId),
-					address: hexToAddress(auth.address),
+					address: hexToAddressRequired(auth.address),
 					nonce: hexToBigInt(auth.nonce),
 					yParity: Number(hexToBigInt(auth.yParity)),
 					r: fromHex(auth.r),
 					s: fromHex(auth.s),
 				})),
-				yParity: Number(hexToBigInt(rpc.yParity || rpc.v)),
+				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
 			};
 
 		default:

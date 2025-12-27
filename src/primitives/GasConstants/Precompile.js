@@ -385,8 +385,11 @@ const MSM_DISCOUNT_TABLE = [
  */
 function getMsmDiscount(k) {
 	if (k === 0) return 0;
-	if (k >= MSM_DISCOUNT_TABLE.length) return MSM_DISCOUNT_TABLE[MSM_DISCOUNT_TABLE.length - 1];
-	return MSM_DISCOUNT_TABLE[k];
+	if (k >= MSM_DISCOUNT_TABLE.length)
+		return /** @type {number} */ (
+			MSM_DISCOUNT_TABLE[MSM_DISCOUNT_TABLE.length - 1]
+		);
+	return /** @type {number} */ (MSM_DISCOUNT_TABLE[k]);
 }
 
 /**

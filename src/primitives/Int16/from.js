@@ -76,7 +76,7 @@ export function fromBytes(bytes) {
 		throw new Error(`Int16: expected 2 bytes, got ${bytes.length}`);
 	}
 	const unsigned =
-		/** @type {number} */ ((bytes[0]) << 8) | /** @type {number} */ (bytes[1]);
+		(/** @type {number} */ (bytes[0]) << 8) | /** @type {number} */ (bytes[1]);
 	// Two's complement conversion
 	const signed = unsigned >= 32768 ? unsigned - 65536 : unsigned;
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (signed);

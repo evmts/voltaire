@@ -62,7 +62,7 @@ export function fromCompact(bytes, algorithmOrV) {
 		const yParity =
 			explicitV !== undefined
 				? explicitV
-				: /** @type {number} */ ((sBytes[0]) & 0x80) >> 7;
+				: (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
 
 		// Clear bit 255 from s
 		const s = /** @type {import('../Hash/HashType.js').HashType} */ (

@@ -127,7 +127,9 @@ export function toRpc(tx) {
 				yParity: bigintToHex(BigInt(tx.yParity)),
 			};
 
-		default:
-			throw new Error(`Unknown transaction type: ${tx.type}`);
+		default: {
+			const _exhaustive = /** @type {never} */ (tx);
+			throw new Error(`Unknown transaction type: ${/** @type {any} */ (_exhaustive).type}`);
+		}
 	}
 }
