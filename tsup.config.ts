@@ -30,6 +30,7 @@ export default createTsUpOptions({
 		"src/primitives/Bytecode/effect.ts",
 		"src/primitives/Base64/effect.ts",
 		"src/primitives/Ens/effect.ts",
+		"src/primitives/EventLog/effect.ts",
 		"src/primitives/Opcode/index.ts",
 		"src/primitives/Rlp/index.ts",
 		"src/primitives/Signature/index.ts",

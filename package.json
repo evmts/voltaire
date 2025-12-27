@@ -391,6 +391,16 @@
         "default": "./dist/primitives/Ens/effect.cjs"
       }
     },
+    "./EventLog/effect": {
+      "import": {
+        "types": "./types/primitives/EventLog/effect.d.ts",
+        "default": "./dist/primitives/EventLog/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/EventLog/effect.d.ts",
+        "default": "./dist/primitives/EventLog/effect.cjs"
+      }
+    },
 		"./Bip39": {
 			"import": {
 				"types": "./types/crypto/Bip39/index.d.ts",
