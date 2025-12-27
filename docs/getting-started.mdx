@@ -40,6 +40,19 @@ New to Ethereum? Check out our [Guides](/guides) for example-based educational c
     yarn add tevm
     ```
   </Tab>
+  <Tab title="Zig">
+    Zig requires building native dependencies first. See [Multiplatform Installation](/getting-started/multiplatform#installation-by-language) for complete instructions.
+
+    ```bash
+    # Clone and build (requires Rust/Cargo)
+    git clone https://github.com/evmts/voltaire.git
+    cd voltaire && zig build
+    ```
+
+    <Warning>
+    `zig fetch` alone will not work - native Rust crypto libraries must be built via Cargo first.
+    </Warning>
+  </Tab>
 </Tabs>
 
 ## Imports

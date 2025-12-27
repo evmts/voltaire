@@ -5,6 +5,95 @@ description: Works everywhere - TypeScript, Zig, and any language with C-FFI
 
 Works everywhere. TypeScript, Zig, any language with C-FFI.
 
+## Installation by Language
+
+<Tabs>
+<Tab title="TypeScript/JavaScript">
+
+```bash
+npm install tevm
+# or: bun add tevm / pnpm add tevm / yarn add tevm
+```
+
+</Tab>
+
+<Tab title="Zig">
+
+<Warning>
+**Important:** Voltaire requires native C/Rust libraries that must be built before use. `zig fetch` alone will not work because the Rust crypto wrappers (`libcrypto_wrappers.a`) are built at compile time via Cargo.
+</Warning>
+
+**Option 1: Git Submodule (Recommended)**
+
+Add as a git submodule in your project:
+
+```bash
+git submodule add https://github.com/evmts/voltaire.git lib/voltaire
+cd lib/voltaire
+zig build  # Builds Rust/C dependencies via Cargo
+```
+
+Then in your `build.zig`:
+
+```zig
+const voltaire = b.dependency("voltaire", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+// Add modules to your executable/library
+exe.root_module.addImport("primitives", voltaire.module("primitives"));
+exe.root_module.addImport("crypto", voltaire.module("crypto"));
+
+// Link required native libraries
+exe.linkLibrary(voltaire.artifact("blst"));
+exe.linkLibrary(voltaire.artifact("c_kzg"));
+```
+
+And in your `build.zig.zon`:
+
+```zig
+.dependencies = .{
+    .voltaire = .{ .path = "lib/voltaire" },
+},
+```
+
+**Option 2: Build from Source**
+
+Clone and build once, then reference by path:
+
+```bash
+git clone https://github.com/evmts/voltaire.git
+cd voltaire
+zig build  # Requires Cargo/Rust installed
+```
+
+**Prerequisites for Zig builds:**
+- [Zig 0.15.1+](https://ziglang.org/download/)
+- [Rust/Cargo](https://rustup.rs/) - Required for native crypto wrappers
+
+</Tab>
+
+<Tab title="C-FFI">
+
+Build the C library:
+
+```bash
+git clone https://github.com/evmts/voltaire.git
+cd voltaire
+zig build -Dwith-c-api=true
+```
+
+This produces:
+- `zig-out/lib/libprimitives_c.a` (static library)
+- `zig-out/lib/libprimitives_c.dylib` (dynamic library, macOS)
+- `zig-out/include/primitives.h` (C header)
+
+Link against the library and include the header in your project.
+
+</Tab>
+</Tabs>
+
 <CardGroup cols={2}>
   <Card title="First Class Support" icon="star">
     TypeScript, Zig, and C - fully supported with complete APIs and documentation
