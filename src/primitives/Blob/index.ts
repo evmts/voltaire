@@ -33,7 +33,7 @@ import { isValidVersion as _isValidVersion } from "./isValidVersion.js";
 import { joinData as _joinData } from "./joinData.js";
 import { splitData as _splitData } from "./splitData.js";
 import { toData as _toData } from "./toData.js";
-import { verifyBatch as _verifyBatch } from "./verifyBatch.js";
+import { VerifyBatch as _VerifyBatch } from "./verifyBatch.js";
 
 // Import factories with proper type annotations
 import { ToCommitment as _ToCommitment } from "./toCommitment.js";
@@ -51,11 +51,6 @@ const isValidVersion: (hash: VersionedHashType) => boolean = _isValidVersion;
 const joinData: (blobs: readonly BrandedBlob[]) => Uint8Array = _joinData;
 const splitData: (data: Uint8Array) => BrandedBlob[] = _splitData;
 const toData: (blob: BrandedBlob) => Uint8Array = _toData;
-const verifyBatch: (
-	blobs: readonly BrandedBlob[],
-	commitments: readonly CommitmentType[],
-	proofs: readonly ProofType[],
-) => boolean = _verifyBatch;
 
 const ToCommitment: (deps: {
 	blobToKzgCommitment: (blob: Uint8Array) => Uint8Array;
@@ -78,6 +73,18 @@ const Verify: (deps: {
 	proof: ProofType,
 ) => boolean = _Verify;
 
+const VerifyBatch: (deps: {
+	verifyBlobKzgProofBatch: (
+		blobs: Uint8Array[],
+		commitments: Uint8Array[],
+		proofs: Uint8Array[],
+	) => boolean;
+}) => (
+	blobs: readonly BrandedBlob[],
+	commitments: readonly CommitmentType[],
+	proofs: readonly ProofType[],
+) => boolean = _VerifyBatch;
+
 // Import crypto dependencies
 import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 
@@ -85,6 +92,7 @@ import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 import {
 	blobToKzgCommitment,
 	verifyBlobKzgProof,
+	verifyBlobKzgProofBatch as kzgVerifyBlobKzgProofBatch,
 } from "../../crypto/KZG/index.js";
 
 // Import c-kzg directly for computeBlobKzgProof (not yet wrapped in KZG module)
@@ -99,6 +107,9 @@ export const toProof = ToProof({
 	computeBlobKzgProof: ckzg.computeBlobKzgProof,
 });
 export const verify = Verify({ verifyBlobKzgProof });
+export const verifyBatch = VerifyBatch({
+	verifyBlobKzgProofBatch: kzgVerifyBlobKzgProofBatch,
+});
 
 // Export individual functions
 export {
@@ -106,7 +117,6 @@ export {
 	fromData,
 	isValid,
 	toData,
-	verifyBatch,
 	isValidVersion,
 	calculateGas,
 	estimateBlobCount,
@@ -171,7 +181,7 @@ const BrandedBlobNamespace = {
 };
 
 // Re-export factory functions for tree-shaking
-export { ToVersionedHash, ToCommitment, ToProof, Verify };
+export { ToVersionedHash, ToCommitment, ToProof, Verify, VerifyBatch };
 
 /**
  * Creates a Blob instance from various input types.

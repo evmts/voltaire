@@ -22,7 +22,7 @@ import { isValidVersion } from "./isValidVersion.js";
 import { joinData } from "./joinData.js";
 import { splitData } from "./splitData.js";
 import { toData } from "./toData.js";
-import { verifyBatch } from "./verifyBatch.js";
+import { VerifyBatch } from "./verifyBatch.js";
 
 import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 import { ToCommitment } from "./toCommitment.js";
@@ -41,6 +41,9 @@ const stubComputeBlobKzgProof = () => {
 const stubVerifyBlobKzgProof = () => {
 	throw new Error("Not implemented: requires c-kzg-4844 library");
 };
+const stubVerifyBlobKzgProofBatch = () => {
+	throw new Error("Not implemented: requires c-kzg-4844 library");
+};
 
 // Instantiate functions from factories
 const toVersionedHash = ToVersionedHash({ sha256 });
@@ -49,6 +52,9 @@ const toCommitment = ToCommitment({
 });
 const toProof = ToProof({ computeBlobKzgProof: stubComputeBlobKzgProof });
 const verify = Verify({ verifyBlobKzgProof: stubVerifyBlobKzgProof });
+const verifyBatch = VerifyBatch({
+	verifyBlobKzgProofBatch: stubVerifyBlobKzgProofBatch,
+});
 
 // ============================================================================
 // Type Guard Tests
@@ -328,12 +334,13 @@ describe("verify", () => {
 });
 
 describe("verifyBatch", () => {
-	it("throws not implemented error", () => {
+	it("throws error from injected KZG function", () => {
 		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
+		// With stub that throws "Not implemented", the error is wrapped
 		expect(() => verifyBatch([blob], [commitment], [proof])).toThrow(
-			"Not implemented",
+			"Failed to verify KZG proofs batch",
 		);
 	});
 
@@ -377,8 +384,9 @@ describe("verifyBatch", () => {
 			.fill(null)
 			.map(() => new Uint8Array(48) as Proof);
 
+		// With stub that throws "Not implemented", the error is wrapped
 		expect(() => verifyBatch(blobs, commitments, proofs)).toThrow(
-			"Not implemented",
+			"Failed to verify KZG proofs batch",
 		);
 	});
 });

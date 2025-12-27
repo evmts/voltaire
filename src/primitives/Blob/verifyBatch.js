@@ -1,30 +1,98 @@
-import { MAX_PER_TRANSACTION } from "./constants.js";
+import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
+import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
 
 /**
- * Verify multiple blob proofs in batch
+ * Factory: Verify multiple blob KZG proofs in batch
+ *
+ * @param {Object} deps - Crypto dependencies
+ * @param {(blobs: Uint8Array[], commitments: Uint8Array[], proofs: Uint8Array[]) => boolean} deps.verifyBlobKzgProofBatch - KZG batch verification function from c-kzg-4844
+ * @returns {(blobs: readonly import('./BlobType.js').BrandedBlob[], commitments: readonly import('./BlobType.js').Commitment[], proofs: readonly import('./BlobType.js').Proof[]) => boolean} Function that verifies batch of blob KZG proofs
  *
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
- * @param {readonly import('../BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs
- * @param {readonly import('../BrandedBlob.js').Commitment[]} commitments - Array of commitments
- * @param {readonly import('../BrandedBlob.js').Proof[]} proofs - Array of proofs
- * @returns {boolean} true if all proofs are valid
- * @throws {Error} If arrays have different lengths, too many blobs, or c-kzg-4844 library not available
+ * @throws {InvalidLengthError} If arrays have different lengths or too many blobs
+ * @throws {PrimitiveError} If batch verification fails
  * @example
  * ```javascript
- * import * as Blob from './primitives/Blob/index.js';
- * const isValid = Blob.verifyBatch(blobs, commitments, proofs);
+ * import { VerifyBatch } from './primitives/Blob/index.js';
+ * import { verifyBlobKzgProofBatch } from 'c-kzg';
+ *
+ * const verifyBatch = VerifyBatch({ verifyBlobKzgProofBatch });
+ * const isValid = verifyBatch(blobs, commitments, proofs);
  * ```
  */
-export function verifyBatch(blobs, commitments, proofs) {
-	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
-		throw new Error("Arrays must have same length");
-	}
-	if (blobs.length > MAX_PER_TRANSACTION) {
-		throw new Error(
-			`Too many blobs: ${blobs.length} (max ${MAX_PER_TRANSACTION})`,
-		);
-	}
-	// Batch verification requires c-kzg-4844 bindings; not available in this build
-	throw new Error("Not implemented: requires c-kzg-4844 library");
+export function VerifyBatch({ verifyBlobKzgProofBatch }) {
+	return function verifyBatch(blobs, commitments, proofs) {
+		if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
+			throw new InvalidLengthError("Arrays must have same length", {
+				value: `blobs: ${blobs.length}, commitments: ${commitments.length}, proofs: ${proofs.length}`,
+				expected: "same length",
+				code: "BLOB_BATCH_LENGTH_MISMATCH",
+				docsPath: "/primitives/blob/verify-batch#error-handling",
+			});
+		}
+		if (blobs.length > MAX_PER_TRANSACTION) {
+			throw new InvalidLengthError(
+				`Too many blobs: ${blobs.length} (max ${MAX_PER_TRANSACTION})`,
+				{
+					value: blobs.length,
+					expected: `<= ${MAX_PER_TRANSACTION}`,
+					code: "BLOB_BATCH_TOO_MANY",
+					docsPath: "/primitives/blob/verify-batch#error-handling",
+				},
+			);
+		}
+		// Validate blob sizes
+		for (let i = 0; i < blobs.length; i++) {
+			if (blobs[i].length !== SIZE) {
+				throw new InvalidLengthError(`Invalid blob size at index ${i}: ${blobs[i].length}`, {
+					value: blobs[i].length,
+					expected: `${SIZE} bytes`,
+					code: "BLOB_INVALID_SIZE",
+					docsPath: "/primitives/blob/verify-batch#error-handling",
+				});
+			}
+		}
+		// Validate commitment sizes
+		for (let i = 0; i < commitments.length; i++) {
+			if (commitments[i].length !== 48) {
+				throw new InvalidLengthError(
+					`Invalid commitment size at index ${i}: ${commitments[i].length}`,
+					{
+						value: commitments[i].length,
+						expected: "48 bytes",
+						code: "BLOB_INVALID_COMMITMENT_SIZE",
+						docsPath: "/primitives/blob/verify-batch#error-handling",
+					},
+				);
+			}
+		}
+		// Validate proof sizes
+		for (let i = 0; i < proofs.length; i++) {
+			if (proofs[i].length !== 48) {
+				throw new InvalidLengthError(`Invalid proof size at index ${i}: ${proofs[i].length}`, {
+					value: proofs[i].length,
+					expected: "48 bytes",
+					code: "BLOB_INVALID_PROOF_SIZE",
+					docsPath: "/primitives/blob/verify-batch#error-handling",
+				});
+			}
+		}
+		try {
+			return verifyBlobKzgProofBatch(
+				/** @type {Uint8Array[]} */ ([...blobs]),
+				/** @type {Uint8Array[]} */ ([...commitments]),
+				/** @type {Uint8Array[]} */ ([...proofs]),
+			);
+		} catch (error) {
+			throw new PrimitiveError(
+				`Failed to verify KZG proofs batch: ${error instanceof Error ? error.message : String(error)}`,
+				{
+					code: "BLOB_KZG_BATCH_VERIFICATION_FAILED",
+					docsPath: "/primitives/blob/verify-batch#error-handling",
+					cause: error instanceof Error ? error : undefined,
+				},
+			);
+		}
+	};
 }
