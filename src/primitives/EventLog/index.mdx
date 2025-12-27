@@ -129,6 +129,20 @@ Constructor parameters.
 
 ## Usage Patterns
 
+### Effect Schema
+
+```ts
+import { EventLogSchema } from '@tevm/voltaire/EventLog/effect'
+
+// Construct from typed data
+const addr = new Uint8Array(20)
+const topic0 = new Uint8Array(32)
+const log = EventLogSchema.from({ address: addr, topics: [topic0], data: new Uint8Array(0) })
+
+// Filter logs
+const filtered = EventLogSchema.filter([log], { address: addr })
+```
+
 ### ERC-20 Transfer Event Filtering
 
 ```typescript
