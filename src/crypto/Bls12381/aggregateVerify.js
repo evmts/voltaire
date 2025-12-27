@@ -124,14 +124,13 @@ export function batchVerify(aggregatedSignature, messages, publicKeys) {
 	try {
 		// Deserialize signature
 		const sig = bls.Signature.fromBytes(aggregatedSignature);
-		// Hash messages to curve points
-		const msgPoints = messages.map((msg) => bls.hash(msg));
-		// Deserialize public keys
-		const pkPoints = publicKeys.map((pk) =>
-			bls12_381.G2.Point.fromBytes(pk),
-		);
+		// Build items array for verifyBatch
+		const items = messages.map((msg, i) => ({
+			message: bls.hash(msg),
+			publicKey: bls12_381.G2.Point.fromBytes(publicKeys[i]),
+		}));
 		// noble provides verifyBatch for this use case
-		return bls.verifyBatch(sig, msgPoints, pkPoints);
+		return bls.verifyBatch(sig, items);
 	} catch (error) {
 		return false;
 	}

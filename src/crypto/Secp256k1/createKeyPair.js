@@ -14,6 +14,10 @@ import { randomPrivateKey } from "./randomPrivateKey.js";
  */
 export function createKeyPair() {
 	const privateKey = randomPrivateKey();
-	const publicKey = derivePublicKey(privateKey);
+	const publicKey = derivePublicKey(
+		/** @type {import('../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType} */ (
+			privateKey
+		),
+	);
 	return { privateKey, publicKey };
 }

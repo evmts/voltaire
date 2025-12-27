@@ -17,7 +17,8 @@ export function handler_0x41_COINBASE(frame) {
 	if (frame.coinbase) {
 		const addr = frame.coinbase;
 		for (let i = 0; i < 20; i++) {
-			coinbaseU256 = (coinbaseU256 << 8n) | BigInt(addr[i]);
+			coinbaseU256 =
+				(coinbaseU256 << 8n) | BigInt(/** @type {number} */ (addr[i]));
 		}
 	}
 
