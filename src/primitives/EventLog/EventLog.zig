@@ -580,16 +580,16 @@ pub fn matchesFilter(log: EventLog, filter: LogFilter) bool {
 
 // Filter logs by filter criteria
 pub fn filterLogs(allocator: Allocator, logs: []const EventLog, filter: LogFilter) ![]EventLog {
-    var result = std.ArrayList(EventLog).init(allocator);
-    errdefer result.deinit();
+    var result = std.ArrayList(EventLog){};
+    errdefer result.deinit(allocator);
 
     for (logs) |log| {
         if (matchesFilter(log, filter)) {
-            try result.append(log);
+            try result.append(allocator, log);
         }
     }
 
-    return result.toOwnedSlice();
+    return result.toOwnedSlice(allocator);
 }
 
 // Sort logs by block number then log index

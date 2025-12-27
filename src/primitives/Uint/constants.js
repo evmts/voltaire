@@ -24,14 +24,14 @@ export const SIZE = 32;
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @type {import('./BrandedUint.ts').BrandedUint}
+ * @type {import('./BrandedUint.js').BrandedUint}
  * @example
  * ```javascript
  * import { MAX } from './primitives/Uint/index.js';
  * console.log(MAX); // 115792089237316195423570985008687907853269984665640564039457584007913129639935n
  * ```
  */
-export const MAX = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+export const MAX = /** @type {import('./BrandedUint.js').BrandedUint} */ (
 	(1n << 256n) - 1n
 );
 
@@ -40,39 +40,39 @@ export const MAX = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @type {import('./BrandedUint.ts').BrandedUint}
+ * @type {import('./BrandedUint.js').BrandedUint}
  * @example
  * ```javascript
  * import { MIN } from './primitives/Uint/index.js';
  * console.log(MIN); // 0n
  * ```
  */
-export const MIN = /** @type {import('./BrandedUint.ts').BrandedUint} */ (0n);
+export const MIN = /** @type {import('./BrandedUint.js').BrandedUint} */ (0n);
 
 /**
  * Zero value
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @type {import('./BrandedUint.ts').BrandedUint}
+ * @type {import('./BrandedUint.js').BrandedUint}
  * @example
  * ```javascript
  * import { ZERO } from './primitives/Uint/index.js';
  * console.log(ZERO); // 0n
  * ```
  */
-export const ZERO = /** @type {import('./BrandedUint.ts').BrandedUint} */ (0n);
+export const ZERO = /** @type {import('./BrandedUint.js').BrandedUint} */ (0n);
 
 /**
  * One value
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
- * @type {import('./BrandedUint.ts').BrandedUint}
+ * @type {import('./BrandedUint.js').BrandedUint}
  * @example
  * ```javascript
  * import { ONE } from './primitives/Uint/index.js';
  * console.log(ONE); // 1n
  * ```
  */
-export const ONE = /** @type {import('./BrandedUint.ts').BrandedUint} */ (1n);
+export const ONE = /** @type {import('./BrandedUint.js').BrandedUint} */ (1n);

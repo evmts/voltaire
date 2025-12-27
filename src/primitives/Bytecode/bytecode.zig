@@ -127,8 +127,8 @@ pub const Bytecode = struct {
     /// Detect fusion patterns in bytecode
     /// Caller owns returned slice, must free with allocator
     pub fn detectFusions(self: *const Bytecode, allocator: std.mem.Allocator) ![]FusionPattern {
-        var fusions = std.ArrayList(FusionPattern).init(allocator);
-        errdefer fusions.deinit();
+        var fusions = std.ArrayList(FusionPattern){};
+        errdefer fusions.deinit(allocator);
 
         var pc: u32 = 0;
         while (pc < self.code.len) {
@@ -141,7 +141,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + JUMP (0x56)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x56) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_jump,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -152,7 +152,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + JUMPI (0x57)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x57) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_jumpi,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -163,7 +163,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + ADD (0x01)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x01) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_add,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -174,7 +174,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + MUL (0x02)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x02) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_mul,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -185,7 +185,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + SUB (0x03)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x03) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_sub,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -196,7 +196,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + DIV (0x04)
                 if (next_pc < self.code.len and self.code[next_pc] == 0x04) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_div,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -207,7 +207,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + DUP (0x80-0x8f)
                 if (next_pc < self.code.len and self.code[next_pc] >= 0x80 and self.code[next_pc] <= 0x8f) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_dup,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -218,7 +218,7 @@ pub const Bytecode = struct {
 
                 // Check for PUSH + SWAP (0x90-0x9f)
                 if (next_pc < self.code.len and self.code[next_pc] >= 0x90 and self.code[next_pc] <= 0x9f) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .push_swap,
                         .pc = pc,
                         .length = 1 + push_size + 1,
@@ -235,7 +235,7 @@ pub const Bytecode = struct {
             // Check for DUP (0x80-0x8f) + SWAP (0x90-0x9f)
             if (opcode >= 0x80 and opcode <= 0x8f) {
                 if (pc + 1 < self.code.len and self.code[pc + 1] >= 0x90 and self.code[pc + 1] <= 0x9f) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .dup_swap,
                         .pc = pc,
                         .length = 2,
@@ -248,7 +248,7 @@ pub const Bytecode = struct {
             // Check for SWAP (0x90-0x9f) + POP (0x50)
             if (opcode >= 0x90 and opcode <= 0x9f) {
                 if (pc + 1 < self.code.len and self.code[pc + 1] == 0x50) {
-                    try fusions.append(FusionPattern{
+                    try fusions.append(allocator, FusionPattern{
                         .fusion_type = .swap_pop,
                         .pc = pc,
                         .length = 2,
@@ -261,7 +261,7 @@ pub const Bytecode = struct {
             pc += 1;
         }
 
-        return fusions.toOwnedSlice();
+        return fusions.toOwnedSlice(allocator);
     }
 
     /// Calculate next program counter after instruction at current_pc
