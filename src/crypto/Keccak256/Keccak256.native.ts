@@ -70,7 +70,9 @@ export async function hashString(str: string): Promise<Keccak256HashType> {
  * @returns 32-byte hash
  * @throws Error if native operation fails
  */
-export async function from(input: string | Uint8Array): Promise<Keccak256HashType> {
+export async function from(
+	input: string | Uint8Array,
+): Promise<Keccak256HashType> {
 	if (typeof input === "string") {
 		// Check if hex string
 		if (input.startsWith("0x")) {

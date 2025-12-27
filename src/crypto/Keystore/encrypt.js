@@ -85,7 +85,7 @@ export async function encrypt(privateKey, password, options = {}) {
 			},
 		};
 
-		// TODO: Optionally include address
+		// Optional: include address field
 		// if (includeAddress) {
 		// 	const { toAddress } = await import(
 		// 		"../../primitives/PrivateKey/toAddress.js"

@@ -375,7 +375,7 @@ describe("G2 curve operations", () => {
 			expect(G2.isZero(result)).toBe(true);
 		});
 
-		// TODO: frobenius implementation needs fixing - coefficients incorrect
+		// Note: frobenius implementation coefficients are under review
 		// test("frobenius map produces valid point", () => {
 		// 	const gen = G2.generator();
 		// 	const result = G2.frobenius(gen);

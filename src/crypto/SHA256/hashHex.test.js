@@ -281,7 +281,9 @@ describe("SHA256 hashHex function", () => {
 			];
 
 			for (const [withPrefix, withoutPrefix] of testCases) {
-				expect(hashHex(/** @type {string} */ (withPrefix))).toEqual(hashHex(/** @type {string} */ (withoutPrefix)));
+				expect(hashHex(/** @type {string} */ (withPrefix))).toEqual(
+					hashHex(/** @type {string} */ (withoutPrefix)),
+				);
 			}
 		});
 	});

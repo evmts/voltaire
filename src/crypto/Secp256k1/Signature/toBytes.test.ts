@@ -172,8 +172,12 @@ describe("Secp256k1.Signature.toBytes", () => {
 			const bytes = Signature.toBytes(original);
 			const reconstructed = Signature.fromBytes(bytes);
 
-			expect(new Uint8Array(reconstructed.r)).toEqual(new Uint8Array(original.r));
-			expect(new Uint8Array(reconstructed.s)).toEqual(new Uint8Array(original.s));
+			expect(new Uint8Array(reconstructed.r)).toEqual(
+				new Uint8Array(original.r),
+			);
+			expect(new Uint8Array(reconstructed.s)).toEqual(
+				new Uint8Array(original.s),
+			);
 			expect(reconstructed.v).toBe(original.v);
 		});
 

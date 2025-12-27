@@ -152,8 +152,12 @@ describe("Secp256k1.Signature.toCompact", () => {
 			const compact = Signature.toCompact(original);
 			const reconstructed = Signature.fromCompact(compact, 27);
 
-			expect(new Uint8Array(reconstructed.r)).toEqual(new Uint8Array(original.r));
-			expect(new Uint8Array(reconstructed.s)).toEqual(new Uint8Array(original.s));
+			expect(new Uint8Array(reconstructed.r)).toEqual(
+				new Uint8Array(original.r),
+			);
+			expect(new Uint8Array(reconstructed.s)).toEqual(
+				new Uint8Array(original.s),
+			);
 		});
 
 		it("should lose v information in compact format", () => {

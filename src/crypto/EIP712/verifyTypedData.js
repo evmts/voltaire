@@ -32,7 +32,9 @@ export function VerifyTypedData({ recoverAddress }) {
 			let result = 0;
 			for (let i = 0; i < recoveredAddress.length; i++) {
 				// Safe: i is within bounds for both arrays (length equality checked above)
-				result |= /** @type {number} */ (recoveredAddress[i]) ^ /** @type {number} */ (address[i]);
+				result |=
+					/** @type {number} */ (recoveredAddress[i]) ^
+					/** @type {number} */ (address[i]);
 			}
 			return result === 0;
 		} catch {

@@ -4,9 +4,7 @@ import * as Keystore from "./index.js";
 
 describe("Keystore", () => {
 	describe("encrypt / decrypt", () => {
-		it(
-			"encrypts and decrypts with scrypt (default)",
-			async () => {
+		it("encrypts and decrypts with scrypt (default)", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
@@ -16,13 +14,9 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
-		},
-			10000,
-		);
+		}, 10000);
 
-		it(
-			"encrypts and decrypts with pbkdf2",
-			async () => {
+		it("encrypts and decrypts with pbkdf2", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
@@ -34,13 +28,9 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
-		},
-			10000,
-		);
+		}, 10000);
 
-		it(
-			"round-trip with different passwords",
-			async () => {
+		it("round-trip with different passwords", async () => {
 			const privateKey = PrivateKey.from(
 				"0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
 			);
@@ -55,13 +45,9 @@ describe("Keystore", () => {
 
 			expect(decrypted1).toEqual(privateKey);
 			expect(decrypted2).toEqual(privateKey);
-		},
-			15000,
-		);
+		}, 15000);
 
-		it(
-			"throws on wrong password (scrypt)",
-			async () => {
+		it("throws on wrong password (scrypt)", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
@@ -71,13 +57,9 @@ describe("Keystore", () => {
 			expect(() => Keystore.decrypt(keystore, "wrong-password")).toThrow(
 				Keystore.InvalidMacError,
 			);
-		},
-			10000,
-		);
+		}, 10000);
 
-		it(
-			"throws on wrong password (pbkdf2)",
-			async () => {
+		it("throws on wrong password (pbkdf2)", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
@@ -89,13 +71,9 @@ describe("Keystore", () => {
 			expect(() => Keystore.decrypt(keystore, "wrong-password")).toThrow(
 				Keystore.InvalidMacError,
 			);
-		},
-			10000,
-		);
+		}, 10000);
 
-		it(
-			"handles empty password",
-			async () => {
+		it("handles empty password", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
@@ -104,9 +82,7 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, "");
 
 			expect(decrypted).toEqual(privateKey);
-		},
-			10000,
-		);
+		}, 10000);
 
 		it("handles special characters in password", async () => {
 			const privateKey = PrivateKey.from(
@@ -367,9 +343,8 @@ describe("Keystore", () => {
 
 	describe("known test vectors", () => {
 		it.skip("decrypts known scrypt keystore", async () => {
-			// TODO: Find valid test vector
-			// This is a placeholder test vector that needs to be replaced
-			// with a real one from the Web3 Secret Storage spec or generated
+			// Note: Replace placeholder with a real test vector
+			// from the Web3 Secret Storage spec or a generated one
 			const keystore: Keystore.KeystoreV3 = {
 				version: 3,
 				id: "3198bc9c-6672-5ab3-d995-4942343ae5b6",

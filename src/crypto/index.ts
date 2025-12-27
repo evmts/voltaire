@@ -38,6 +38,7 @@ export type {
 } from "./Blake2/Blake2HashType.js";
 export { Ed25519 } from "./Ed25519/index.js";
 export { AesGcm } from "./AesGcm/AesGcm.js";
+export { ChaCha20Poly1305 } from "./ChaCha20Poly1305/ChaCha20Poly1305.js";
 export { Bip39 } from "./Bip39/index.js";
 export * as HDWallet from "./HDWallet/index.js";
 export * as Keystore from "./Keystore/index.js";
