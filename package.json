@@ -41,6 +41,26 @@
 				"default": "./dist/index.cjs"
 			}
 		},
+		"./native": {
+			"import": {
+				"types": "./types/native/index.d.ts",
+				"default": "./dist/native/index.js"
+			},
+			"require": {
+				"types": "./types/native/index.d.ts",
+				"default": "./dist/native/index.cjs"
+			}
+		},
+		"./wasm": {
+			"import": {
+				"types": "./types/wasm/index.d.ts",
+				"default": "./dist/wasm/index.js"
+			},
+			"require": {
+				"types": "./types/wasm/index.d.ts",
+				"default": "./dist/wasm/index.cjs"
+			}
+		},
 		"./Abi": {
 			"import": {
 				"types": "./types/primitives/Abi/index.d.ts",
