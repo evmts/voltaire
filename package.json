@@ -29,7 +29,7 @@
 	"bin": {
 		"tevm": "./bin/repl.js"
 	},
-	"exports": {
+  "exports": {
 		"./package.json": "./package.json",
 		".": {
 			"import": {
@@ -311,16 +311,86 @@
 				"default": "./dist/primitives/Transaction/index.cjs"
 			}
 		},
-		"./Uint": {
-			"import": {
-				"types": "./types/primitives/Uint/index.d.ts",
-				"default": "./dist/primitives/Uint/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Uint/index.d.ts",
-				"default": "./dist/primitives/Uint/index.cjs"
-			}
-		},
+    "./Uint": {
+      "import": {
+        "types": "./types/primitives/Uint/index.d.ts",
+        "default": "./dist/primitives/Uint/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Uint/index.d.ts",
+        "default": "./dist/primitives/Uint/index.cjs"
+      }
+    },
+    "./Hash/effect": {
+      "import": {
+        "types": "./types/primitives/Hash/effect.d.ts",
+        "default": "./dist/primitives/Hash/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Hash/effect.d.ts",
+        "default": "./dist/primitives/Hash/effect.cjs"
+      }
+    },
+    "./Hex/effect": {
+      "import": {
+        "types": "./types/primitives/Hex/effect.d.ts",
+        "default": "./dist/primitives/Hex/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Hex/effect.d.ts",
+        "default": "./dist/primitives/Hex/effect.cjs"
+      }
+    },
+    "./Uint/effect": {
+      "import": {
+        "types": "./types/primitives/Uint/effect.d.ts",
+        "default": "./dist/primitives/Uint/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Uint/effect.d.ts",
+        "default": "./dist/primitives/Uint/effect.cjs"
+      }
+    },
+    "./Signature/effect": {
+      "import": {
+        "types": "./types/primitives/Signature/effect.d.ts",
+        "default": "./dist/primitives/Signature/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Signature/effect.d.ts",
+        "default": "./dist/primitives/Signature/effect.cjs"
+      }
+    },
+    "./Bytecode/effect": {
+      "import": {
+        "types": "./types/primitives/Bytecode/effect.d.ts",
+        "default": "./dist/primitives/Bytecode/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Bytecode/effect.d.ts",
+        "default": "./dist/primitives/Bytecode/effect.cjs"
+      }
+    },
+    "./Base64/effect": {
+      "import": {
+        "types": "./types/primitives/Base64/effect.d.ts",
+        "default": "./dist/primitives/Base64/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Base64/effect.d.ts",
+        "default": "./dist/primitives/Base64/effect.cjs"
+      }
+    },
+    "./Ens/effect": {
+      "import": {
+        "types": "./types/primitives/Ens/effect.d.ts",
+        "default": "./dist/primitives/Ens/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Ens/effect.d.ts",
+        "default": "./dist/primitives/Ens/effect.cjs"
+      }
+    },
 		"./Bip39": {
 			"import": {
 				"types": "./types/crypto/Bip39/index.d.ts",
