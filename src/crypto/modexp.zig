@@ -47,6 +47,8 @@
 //! - [EIP-198](https://eips.ethereum.org/EIPS/eip-198) - ModExp precompile
 
 const std = @import("std");
+const constant_time = @import("constant_time.zig");
+
 /// Error set for modular exponentiation operations
 pub const ModExpError = error{
     DivisionByZero,
@@ -189,12 +191,9 @@ pub fn unauditedModexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Check if a byte array represents zero
-/// WARNING: May be vulnerable to timing attacks
+/// SECURITY: Uses constant-time comparison to prevent timing attacks
 pub fn unaudited_isZero(bytes: []const u8) bool {
-    for (bytes) |byte| {
-        if (byte != 0) return false;
-    }
-    return true;
+    return constant_time.constantTimeIsZeroBytes(bytes);
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️

@@ -62,6 +62,7 @@
 const std = @import("std");
 const crypto = std.crypto;
 const primitives = @import("primitives");
+const constant_time = @import("constant_time.zig");
 // Direct use: primitives.Address.Address
 
 /// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
@@ -103,6 +104,7 @@ pub const AffinePoint = struct {
         return Self{ .x = SECP256K1_GX, .y = SECP256K1_GY, .infinity = false };
     }
 
+    /// SECURITY: Uses constant-time comparison for curve point verification
     pub fn isOnCurve(self: Self) bool {
         if (self.infinity) return true;
 
@@ -111,7 +113,8 @@ pub const AffinePoint = struct {
         const x3 = unauditedMulmod(unauditedMulmod(self.x, self.x, SECP256K1_P), self.x, SECP256K1_P);
         const right = unauditedAddmod(x3, SECP256K1_B, SECP256K1_P);
 
-        return y2 == right;
+        // Use constant-time comparison to prevent timing attacks
+        return constant_time.constantTimeEqU256(y2, right) == 1;
     }
 
     pub fn negate(self: Self) Self {
@@ -141,11 +144,17 @@ pub const AffinePoint = struct {
         return Self{ .x = x3, .y = y3, .infinity = false };
     }
 
+    /// SECURITY: Uses constant-time comparisons for point coordinates
     pub fn add(self: Self, other: Self) Self {
         if (self.infinity) return other;
         if (other.infinity) return self;
-        if (self.x == other.x) {
-            if (self.y == other.y) return self.double();
+
+        // Use constant-time comparison for point coordinates
+        const x_eq = constant_time.constantTimeEqU256(self.x, other.x) == 1;
+        const y_eq = constant_time.constantTimeEqU256(self.y, other.y) == 1;
+
+        if (x_eq) {
+            if (y_eq) return self.double();
             return Self.zero();
         }
 
@@ -166,8 +175,11 @@ pub const AffinePoint = struct {
         return Self{ .x = x3, .y = y3, .infinity = false };
     }
 
+    /// SECURITY: Uses constant-time zero check for scalar
     pub fn scalarMul(self: Self, scalar: u256) Self {
-        if (scalar == 0 or self.infinity) return Self.zero();
+        // Use constant-time zero check for scalar
+        const scalar_is_zero = constant_time.constantTimeIsZeroU256(scalar) == 1;
+        if (scalar_is_zero or self.infinity) return Self.zero();
 
         var result = Self.zero();
         var addend = self;
@@ -188,16 +200,26 @@ pub const AffinePoint = struct {
 /// Validates ECDSA signature parameters for Ethereum
 /// WARNING: This is a custom crypto implementation that has not been security audited.
 /// Do not use in production without proper security review.
+///
+/// SECURITY: Uses constant-time comparisons to prevent timing attacks.
+/// All comparisons on signature components (r, s) execute in constant time
+/// regardless of input values.
 pub fn unauditedValidateSignature(r: u256, s: u256) bool {
     // r and s must be in [1, n-1]
-    if (r == 0 or r >= SECP256K1_N) return false;
-    if (s == 0 or s >= SECP256K1_N) return false;
+    // Using constant-time comparisons to prevent timing attacks
+    const r_is_zero = constant_time.constantTimeIsZeroU256(r);
+    const r_gte_n = constant_time.constantTimeGteU256(r, SECP256K1_N);
+    const s_is_zero = constant_time.constantTimeIsZeroU256(s);
+    const s_gte_n = constant_time.constantTimeGteU256(s, SECP256K1_N);
 
     // Ethereum enforces s <= n/2 to prevent malleability
     const half_n = SECP256K1_N >> 1;
-    if (s > half_n) return false;
+    const s_gt_half_n = constant_time.constantTimeLtU256(half_n, s);
 
-    return true;
+    // Combine all checks using bitwise OR (constant-time)
+    const invalid = r_is_zero | r_gte_n | s_is_zero | s_gte_n | s_gt_half_n;
+
+    return invalid == 0;
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
@@ -242,8 +264,9 @@ pub fn recoverPubkey(
     // Calculate y = y²^((p+1)/4) mod p (works because p ≡ 3 mod 4)
     const y = unauditedPowmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
 
-    // Verify y is correct
-    if (unauditedMulmod(y, y, SECP256K1_P) != y2) return error.InvalidSignature;
+    // Verify y is correct using constant-time comparison
+    const y_squared = unauditedMulmod(y, y, SECP256K1_P);
+    if (constant_time.constantTimeEqU256(y_squared, y2) != 1) return error.InvalidSignature;
 
     // Choose correct y based on recoveryId
     const y_is_odd = (y & 1) == 1;
@@ -311,8 +334,9 @@ pub fn unauditedRecoverAddress(
     // Calculate y = y²^((p+1)/4) mod p (works because p ≡ 3 mod 4)
     const y = unauditedPowmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
 
-    // Verify y is correct
-    if (unauditedMulmod(y, y, SECP256K1_P) != y2) return error.InvalidSignature;
+    // Verify y is correct using constant-time comparison
+    const y_squared_check = unauditedMulmod(y, y, SECP256K1_P);
+    if (constant_time.constantTimeEqU256(y_squared_check, y2) != 1) return error.InvalidSignature;
 
     // Choose correct y based on recoveryId
     const y_is_odd = (y & 1) == 1;
@@ -363,6 +387,7 @@ pub fn unauditedRecoverAddress(
 }
 
 /// Verify signature with public key (used internally for validation)
+/// SECURITY: Uses constant-time comparison for final r value check
 fn verifySignature(
     hash: [32]u8,
     r: u256,
@@ -387,8 +412,9 @@ fn verifySignature(
 
     if (R_prime.infinity) return false;
 
-    // Check r' ≡ r mod n
-    return (R_prime.x % SECP256K1_N) == r;
+    // Check r' ≡ r mod n using constant-time comparison
+    const r_prime = R_prime.x % SECP256K1_N;
+    return constant_time.constantTimeEqU256(r_prime, r) == 1;
 }
 
 // Field arithmetic helpers
@@ -516,17 +542,19 @@ pub fn unauditedInvmod(a: u256, m: u256) ?u256 {
 /// Compute modular square root using Tonelli-Shanks algorithm
 /// For secp256k1 prime p, p ≡ 3 (mod 4), so we can use simplified formula: sqrt(a) = a^((p+1)/4) mod p
 /// WARNING: Not constant time, potential timing attack vulnerabilities
+/// SECURITY: Uses constant-time comparisons for square root verification
 pub fn unauditedSqrt(a: u256, p: u256) ?u256 {
-    if (a == 0) return 0;
+    // Use constant-time zero check
+    if (constant_time.constantTimeIsZeroU256(a) == 1) return 0;
 
     // For secp256k1 prime: p = 2^256 - 2^32 - 977
     // p ≡ 3 (mod 4), so we can use: y = a^((p+1)/4) mod p
     const exp = (p + 1) / 4;
     const y = unauditedPowmod(a, exp, p);
 
-    // Verify that y^2 ≡ a (mod p)
+    // Verify that y^2 ≡ a (mod p) using constant-time comparison
     const y_squared = unauditedMulmod(y, y, p);
-    if (y_squared != a) return null;
+    if (constant_time.constantTimeEqU256(y_squared, a) != 1) return null;
 
     return y;
 }
