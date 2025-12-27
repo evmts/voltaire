@@ -32,6 +32,8 @@ pub const p256 = @import("p256.zig");
 pub const ed25519 = @import("ed25519.zig");
 pub const x25519 = @import("x25519.zig");
 pub const aes_gcm = @import("aes_gcm.zig");
+pub const chacha20_poly1305 = @import("chacha20_poly1305.zig");
+pub const keystore = @import("keystore.zig");
 const modexp_module = @import("modexp.zig");
 pub const ModExp = modexp_module.ModExp;
 
@@ -132,3 +134,6 @@ else
 
 // Export BLS12-381 from crypto.zig
 pub const bls12_381 = Crypto.bls12_381;
+
+// Export Keccak256 from std.crypto for primitives modules
+pub const Keccak256 = @import("std").crypto.hash.sha3.Keccak256;

@@ -1,6 +1,6 @@
 import { FP_MOD } from "../constants.js";
-import { pow } from "./pow.js";
 import { mul } from "./mul.js";
+import { pow } from "./pow.js";
 
 /**
  * For BLS12-381, p = 3 mod 4, so sqrt can be computed as a^((p+1)/4)

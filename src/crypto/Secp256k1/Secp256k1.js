@@ -14,11 +14,13 @@ import {
 	PUBLIC_KEY_SIZE,
 	SIGNATURE_COMPONENT_SIZE,
 } from "./constants.js";
+import { createKeyPair } from "./createKeyPair.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { ecdh } from "./ecdh.js";
 import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import { isValidPublicKey } from "./isValidPublicKey.js";
 import { isValidSignature } from "./isValidSignature.js";
+import { randomPrivateKey } from "./randomPrivateKey.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
 import { recoverPublicKeyFromHash } from "./recoverPublicKeyFromHash.js";
 import { scalarMultiply } from "./scalarMultiply.js";
@@ -39,6 +41,8 @@ export {
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
+	randomPrivateKey,
+	createKeyPair,
 	ecdh,
 	ecdh as getSharedSecret, // Alias for API compatibility
 	addPoints,
@@ -97,6 +101,8 @@ export const Secp256k1 = {
 	isValidSignature,
 	isValidPublicKey,
 	isValidPrivateKey,
+	randomPrivateKey,
+	createKeyPair,
 	ecdh,
 	getSharedSecret: ecdh, // Alias for API compatibility
 	addPoints,

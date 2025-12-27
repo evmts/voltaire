@@ -28,10 +28,7 @@ export function double_(point) {
 
 	// s = 2*((X1+YY)^2-XX-YYYY)
 	const xPlusYY = Fp2.add(x, yy);
-	const s = Fp2.mulScalar(
-		Fp2.sub(Fp2.sub(Fp2.square(xPlusYY), xx), yyyy),
-		2n,
-	);
+	const s = Fp2.mulScalar(Fp2.sub(Fp2.sub(Fp2.square(xPlusYY), xx), yyyy), 2n);
 
 	// m = 3*XX (a=0 for BLS12-381 G2)
 	const m = Fp2.mulScalar(xx, 3n);

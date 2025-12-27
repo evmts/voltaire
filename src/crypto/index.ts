@@ -21,6 +21,10 @@ export { Secp256k1 } from "./Secp256k1/index.js";
 export { EIP712 } from "./EIP712/index.js";
 export { KZG } from "./KZG/index.js";
 export { BN254 } from "./bn254/BN254.js";
+export { Bls12381 } from "./Bls12381/Bls12381.js";
+export type { G1PointType as Bls12381G1PointType } from "./Bls12381/G1PointType.js";
+export type { G2PointType as Bls12381G2PointType } from "./Bls12381/G2PointType.js";
+export type { Fp2Type as Bls12381Fp2Type } from "./Bls12381/Fp2Type.js";
 export { Ripemd160 } from "./Ripemd160/index.js";
 export type {
 	Ripemd160Hash,

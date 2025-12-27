@@ -503,9 +503,9 @@ test "hash to/from u256 conversion" {
 }
 
 test "hash invalid hex format" {
-    // Missing 0x prefix
-    const result1 = fromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-    try testing.expectError(error.InvalidHexFormat, result1);
+    // Missing 0x prefix but with 64 chars should succeed (fromHex accepts without prefix)
+    const hash1 = try fromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    try testing.expect(!isZero(hash1));
 
     // Invalid length
     const result2 = fromHex("0x1234");

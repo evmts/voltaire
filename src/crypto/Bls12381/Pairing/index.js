@@ -119,7 +119,11 @@ export function verifyAggregateSignature(
 	aggregatedPublicKey,
 	messagePoint,
 ) {
-	return verifySignature(aggregatedSignature, aggregatedPublicKey, messagePoint);
+	return verifySignature(
+		aggregatedSignature,
+		aggregatedPublicKey,
+		messagePoint,
+	);
 }
 
 /**
