@@ -58,3 +58,6 @@ export * as Log from "./log/index.js";
 
 // System opcodes (0xf0-0xf2, 0xf4-0xf5, 0xfa, 0xff)
 export * as System from "./system/index.js";
+
+// Precompiles (0x01-0x0a + BLS12-381)
+export * as Precompiles from "./precompiles/precompiles.js";
