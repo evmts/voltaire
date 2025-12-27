@@ -42,24 +42,25 @@ export function toRpc(signature) {
 
 	// Calculate yParity from v
 	let yParity;
-	if (v === 27 || v === 28) {
-		yParity = v - 27;
-	} else if (v >= 35) {
+	const vv = /** @type {number} */ (v ?? 0);
+	if (vv === 27 || vv === 28) {
+		yParity = vv - 27;
+	} else if (vv >= 35) {
 		// EIP-155: v = chainId * 2 + 35 + yParity
-		yParity = (v - 35) % 2;
+		yParity = (vv - 35) % 2;
 	} else {
-		yParity = v;
+		yParity = vv;
 	}
 
-	const result = {
+	const result = /** @type {{ r: string, s: string, yParity: string, v?: string }} */ ({
 		r: rHex,
 		s: sHex,
 		yParity: `0x${yParity.toString(16)}`,
-	};
+	});
 
 	// Include v if it was set
 	if (v !== undefined) {
-		result.v = `0x${v.toString(16)}`;
+		result.v = `0x${(/** @type {number} */ (v)).toString(16)}`;
 	}
 
 	return result;
