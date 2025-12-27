@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Hash from "../../Hash/index.ts";
+import * as Hash from "../../Hash/index.js";
 import {
 	Hex,
 	fromBytes as hexFromBytes,

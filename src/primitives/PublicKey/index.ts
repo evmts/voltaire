@@ -40,9 +40,7 @@ export function verify(
 	return _verify(
 		from(publicKey),
 		hash,
-		signature as unknown as import(
-			"../../crypto/Secp256k1/SignatureType.js",
-		).Secp256k1SignatureType,
+		signature as unknown as import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType,
 	);
 }
 

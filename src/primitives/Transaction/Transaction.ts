@@ -87,6 +87,8 @@ export { getBlobCount as getBlobCount_internal } from "./getBlobCount.js";
 export { getBlobVersionedHashes as getBlobVersionedHashes_internal } from "./getBlobVersionedHashes.js";
 export { getAuthorizationCount as getAuthorizationCount_internal } from "./getAuthorizationCount.js";
 export { getAuthorizations as getAuthorizations_internal } from "./getAuthorizations.js";
+export { toRpc } from "./toRpc.js";
+export { fromRpc } from "./fromRpc.js";
 
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";

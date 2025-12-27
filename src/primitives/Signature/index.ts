@@ -17,7 +17,9 @@ import { fromDER } from "./fromDER.js";
 import { fromEd25519 } from "./fromEd25519.js";
 import { fromHex } from "./fromHex.js";
 import { fromP256 } from "./fromP256.js";
+import { fromRpc } from "./fromRpc.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
+import { fromTuple } from "./fromTuple.js";
 import { getAlgorithm } from "./getAlgorithm.js";
 import { getR } from "./getR.js";
 import { getS } from "./getS.js";
@@ -29,6 +31,8 @@ import { toBytes } from "./toBytes.js";
 import { toCompact } from "./toCompact.js";
 import { toDER } from "./toDER.js";
 import { toHex } from "./toHex.js";
+import { toRpc } from "./toRpc.js";
+import { toTuple } from "./toTuple.js";
 import { verify } from "./verify.js";
 
 // Export individual functions
@@ -41,10 +45,14 @@ export {
 	fromCompact,
 	fromDER,
 	fromHex,
+	fromRpc,
+	fromTuple,
 	toBytes,
 	toCompact,
 	toDER,
 	toHex,
+	toRpc,
+	toTuple,
 	getAlgorithm,
 	getR,
 	getS,
@@ -66,10 +74,14 @@ const Signature = {
 	fromCompact,
 	fromDER,
 	fromHex,
+	fromRpc,
+	fromTuple,
 	toBytes,
 	toCompact,
 	toDER,
 	toHex,
+	toRpc,
+	toTuple,
 	getAlgorithm,
 	getR,
 	getS,
