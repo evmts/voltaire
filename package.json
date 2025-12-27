@@ -1,316 +1,316 @@
 {
-	"name": "@tevm/voltaire",
-	"version": "0.1.0",
-	"private": false,
-	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
-	"keywords": [
-		"ethereum",
-		"primitives",
-		"crypto",
-		"zig",
-		"bun",
-		"ffi",
-		"abi",
-		"keccak",
-		"eip191"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/evmts/voltaire.git"
-	},
-	"license": "MIT",
-	"contributors": [
-		"Fucory (x.com/fucory)",
-		"polarzero (github.com/0xpolarzero)",
-		"Vlad (x.com/Vladfdp)"
-	],
-	"sideEffects": false,
-	"type": "module",
-	"bin": {
-		"tevm": "./bin/repl.js"
-	},
+  "name": "@tevm/voltaire",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
+  "keywords": [
+    "ethereum",
+    "primitives",
+    "crypto",
+    "zig",
+    "bun",
+    "ffi",
+    "abi",
+    "keccak",
+    "eip191"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evmts/voltaire.git"
+  },
+  "license": "MIT",
+  "contributors": [
+    "Fucory (x.com/fucory)",
+    "polarzero (github.com/0xpolarzero)",
+    "Vlad (x.com/Vladfdp)"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "bin": {
+    "tevm": "./bin/repl.js"
+  },
   "exports": {
-		"./package.json": "./package.json",
-		".": {
-			"import": {
-				"types": "./types/index.d.ts",
-				"default": "./dist/index.js"
-			},
-			"require": {
-				"types": "./dist/index.d.cts",
-				"default": "./dist/index.cjs"
-			}
-		},
-		"./native": {
-			"import": {
-				"types": "./types/native/index.d.ts",
-				"default": "./dist/native/index.js"
-			},
-			"require": {
-				"types": "./types/native/index.d.ts",
-				"default": "./dist/native/index.cjs"
-			}
-		},
-		"./wasm": {
-			"import": {
-				"types": "./types/wasm/index.d.ts",
-				"default": "./dist/wasm/index.js"
-			},
-			"require": {
-				"types": "./types/wasm/index.d.ts",
-				"default": "./dist/wasm/index.cjs"
-			}
-		},
-		"./Abi": {
-			"import": {
-				"types": "./types/primitives/Abi/index.d.ts",
-				"default": "./dist/primitives/Abi/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Abi/index.d.ts",
-				"default": "./dist/primitives/Abi/index.cjs"
-			}
-		},
-		"./AccessList": {
-			"import": {
-				"types": "./types/primitives/AccessList/index.d.ts",
-				"default": "./dist/primitives/AccessList/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/AccessList/index.d.ts",
-				"default": "./dist/primitives/AccessList/index.cjs"
-			}
-		},
-		"./Address": {
-			"import": {
-				"types": "./types/primitives/Address/index.d.ts",
-				"default": "./dist/primitives/Address/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Address/index.d.ts",
-				"default": "./dist/primitives/Address/index.cjs"
-			}
-		},
-		"./Authorization": {
-			"import": {
-				"types": "./types/primitives/Authorization/index.d.ts",
-				"default": "./dist/primitives/Authorization/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Authorization/index.d.ts",
-				"default": "./dist/primitives/Authorization/index.cjs"
-			}
-		},
-		"./Base64": {
-			"import": {
-				"types": "./types/primitives/Base64/index.d.ts",
-				"default": "./dist/primitives/Base64/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Base64/index.d.ts",
-				"default": "./dist/primitives/Base64/index.cjs"
-			}
-		},
-		"./BinaryTree": {
-			"import": {
-				"types": "./types/primitives/BinaryTree/index.d.ts",
-				"default": "./dist/primitives/BinaryTree/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/BinaryTree/index.d.ts",
-				"default": "./dist/primitives/BinaryTree/index.cjs"
-			}
-		},
-		"./Blob": {
-			"import": {
-				"types": "./types/primitives/Blob/index.d.ts",
-				"default": "./dist/primitives/Blob/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Blob/index.d.ts",
-				"default": "./dist/primitives/Blob/index.cjs"
-			}
-		},
-		"./BloomFilter": {
-			"import": {
-				"types": "./types/primitives/BloomFilter/index.d.ts",
-				"default": "./dist/primitives/BloomFilter/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/BloomFilter/index.d.ts",
-				"default": "./dist/primitives/BloomFilter/index.cjs"
-			}
-		},
-		"./Bytecode": {
-			"import": {
-				"types": "./types/primitives/Bytecode/index.d.ts",
-				"default": "./dist/primitives/Bytecode/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Bytecode/index.d.ts",
-				"default": "./dist/primitives/Bytecode/index.cjs"
-			}
-		},
-		"./Chain": {
-			"import": {
-				"types": "./types/primitives/Chain/index.d.ts",
-				"default": "./dist/primitives/Chain/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Chain/index.d.ts",
-				"default": "./dist/primitives/Chain/index.cjs"
-			}
-		},
-		"./Denomination": {
-			"import": {
-				"types": "./types/primitives/Denomination/index.d.ts",
-				"default": "./dist/primitives/Denomination/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Denomination/index.d.ts",
-				"default": "./dist/primitives/Denomination/index.cjs"
-			}
-		},
-		"./Ens": {
-			"import": {
-				"types": "./types/primitives/Ens/index.d.ts",
-				"default": "./dist/primitives/Ens/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Ens/index.d.ts",
-				"default": "./dist/primitives/Ens/index.cjs"
-			}
-		},
-		"./EventLog": {
-			"import": {
-				"types": "./types/primitives/EventLog/index.d.ts",
-				"default": "./dist/primitives/EventLog/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/EventLog/index.d.ts",
-				"default": "./dist/primitives/EventLog/index.cjs"
-			}
-		},
-		"./errors": {
-			"import": {
-				"types": "./types/primitives/errors/index.d.ts",
-				"default": "./dist/primitives/errors/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/errors/index.d.ts",
-				"default": "./dist/primitives/errors/index.cjs"
-			}
-		},
-		"./FeeMarket": {
-			"import": {
-				"types": "./types/primitives/FeeMarket/index.d.ts",
-				"default": "./dist/primitives/FeeMarket/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/FeeMarket/index.d.ts",
-				"default": "./dist/primitives/FeeMarket/index.cjs"
-			}
-		},
-		"./GasConstants": {
-			"import": {
-				"types": "./types/primitives/GasConstants/index.d.ts",
-				"default": "./dist/primitives/GasConstants/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/GasConstants/index.d.ts",
-				"default": "./dist/primitives/GasConstants/index.cjs"
-			}
-		},
-		"./Hardfork": {
-			"import": {
-				"types": "./types/primitives/Hardfork/index.d.ts",
-				"default": "./dist/primitives/Hardfork/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Hardfork/index.d.ts",
-				"default": "./dist/primitives/Hardfork/index.cjs"
-			}
-		},
-		"./Hash": {
-			"import": {
-				"types": "./types/primitives/Hash/index.d.ts",
-				"default": "./dist/primitives/Hash/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Hash/index.d.ts",
-				"default": "./dist/primitives/Hash/index.cjs"
-			}
-		},
-		"./Hex": {
-			"import": {
-				"types": "./types/primitives/Hex/index.d.ts",
-				"default": "./dist/primitives/Hex/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Hex/index.d.ts",
-				"default": "./dist/primitives/Hex/index.cjs"
-			}
-		},
-		"./Opcode": {
-			"import": {
-				"types": "./types/primitives/Opcode/index.d.ts",
-				"default": "./dist/primitives/Opcode/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Opcode/index.d.ts",
-				"default": "./dist/primitives/Opcode/index.cjs"
-			}
-		},
-		"./Rlp": {
-			"import": {
-				"types": "./types/primitives/Rlp/index.d.ts",
-				"default": "./dist/primitives/Rlp/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Rlp/index.d.ts",
-				"default": "./dist/primitives/Rlp/index.cjs"
-			}
-		},
-		"./Signature": {
-			"import": {
-				"types": "./types/primitives/Signature/index.d.ts",
-				"default": "./dist/primitives/Signature/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Signature/index.d.ts",
-				"default": "./dist/primitives/Signature/index.cjs"
-			}
-		},
-		"./Siwe": {
-			"import": {
-				"types": "./types/primitives/Siwe/index.d.ts",
-				"default": "./dist/primitives/Siwe/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Siwe/index.d.ts",
-				"default": "./dist/primitives/Siwe/index.cjs"
-			}
-		},
-		"./State": {
-			"import": {
-				"types": "./types/primitives/State/index.d.ts",
-				"default": "./dist/primitives/State/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/State/index.d.ts",
-				"default": "./dist/primitives/State/index.cjs"
-			}
-		},
-		"./Transaction": {
-			"import": {
-				"types": "./types/primitives/Transaction/index.d.ts",
-				"default": "./dist/primitives/Transaction/index.js"
-			},
-			"require": {
-				"types": "./types/primitives/Transaction/index.d.ts",
-				"default": "./dist/primitives/Transaction/index.cjs"
-			}
-		},
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./types/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./native": {
+      "import": {
+        "types": "./types/native/index.d.ts",
+        "default": "./dist/native/index.js"
+      },
+      "require": {
+        "types": "./types/native/index.d.ts",
+        "default": "./dist/native/index.cjs"
+      }
+    },
+    "./wasm": {
+      "import": {
+        "types": "./types/wasm/index.d.ts",
+        "default": "./dist/wasm/index.js"
+      },
+      "require": {
+        "types": "./types/wasm/index.d.ts",
+        "default": "./dist/wasm/index.cjs"
+      }
+    },
+    "./Abi": {
+      "import": {
+        "types": "./types/primitives/Abi/index.d.ts",
+        "default": "./dist/primitives/Abi/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Abi/index.d.ts",
+        "default": "./dist/primitives/Abi/index.cjs"
+      }
+    },
+    "./AccessList": {
+      "import": {
+        "types": "./types/primitives/AccessList/index.d.ts",
+        "default": "./dist/primitives/AccessList/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/AccessList/index.d.ts",
+        "default": "./dist/primitives/AccessList/index.cjs"
+      }
+    },
+    "./Address": {
+      "import": {
+        "types": "./types/primitives/Address/index.d.ts",
+        "default": "./dist/primitives/Address/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Address/index.d.ts",
+        "default": "./dist/primitives/Address/index.cjs"
+      }
+    },
+    "./Authorization": {
+      "import": {
+        "types": "./types/primitives/Authorization/index.d.ts",
+        "default": "./dist/primitives/Authorization/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Authorization/index.d.ts",
+        "default": "./dist/primitives/Authorization/index.cjs"
+      }
+    },
+    "./Base64": {
+      "import": {
+        "types": "./types/primitives/Base64/index.d.ts",
+        "default": "./dist/primitives/Base64/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Base64/index.d.ts",
+        "default": "./dist/primitives/Base64/index.cjs"
+      }
+    },
+    "./BinaryTree": {
+      "import": {
+        "types": "./types/primitives/BinaryTree/index.d.ts",
+        "default": "./dist/primitives/BinaryTree/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/BinaryTree/index.d.ts",
+        "default": "./dist/primitives/BinaryTree/index.cjs"
+      }
+    },
+    "./Blob": {
+      "import": {
+        "types": "./types/primitives/Blob/index.d.ts",
+        "default": "./dist/primitives/Blob/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Blob/index.d.ts",
+        "default": "./dist/primitives/Blob/index.cjs"
+      }
+    },
+    "./BloomFilter": {
+      "import": {
+        "types": "./types/primitives/BloomFilter/index.d.ts",
+        "default": "./dist/primitives/BloomFilter/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/BloomFilter/index.d.ts",
+        "default": "./dist/primitives/BloomFilter/index.cjs"
+      }
+    },
+    "./Bytecode": {
+      "import": {
+        "types": "./types/primitives/Bytecode/index.d.ts",
+        "default": "./dist/primitives/Bytecode/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Bytecode/index.d.ts",
+        "default": "./dist/primitives/Bytecode/index.cjs"
+      }
+    },
+    "./Chain": {
+      "import": {
+        "types": "./types/primitives/Chain/index.d.ts",
+        "default": "./dist/primitives/Chain/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Chain/index.d.ts",
+        "default": "./dist/primitives/Chain/index.cjs"
+      }
+    },
+    "./Denomination": {
+      "import": {
+        "types": "./types/primitives/Denomination/index.d.ts",
+        "default": "./dist/primitives/Denomination/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Denomination/index.d.ts",
+        "default": "./dist/primitives/Denomination/index.cjs"
+      }
+    },
+    "./Ens": {
+      "import": {
+        "types": "./types/primitives/Ens/index.d.ts",
+        "default": "./dist/primitives/Ens/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Ens/index.d.ts",
+        "default": "./dist/primitives/Ens/index.cjs"
+      }
+    },
+    "./EventLog": {
+      "import": {
+        "types": "./types/primitives/EventLog/index.d.ts",
+        "default": "./dist/primitives/EventLog/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/EventLog/index.d.ts",
+        "default": "./dist/primitives/EventLog/index.cjs"
+      }
+    },
+    "./errors": {
+      "import": {
+        "types": "./types/primitives/errors/index.d.ts",
+        "default": "./dist/primitives/errors/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/errors/index.d.ts",
+        "default": "./dist/primitives/errors/index.cjs"
+      }
+    },
+    "./FeeMarket": {
+      "import": {
+        "types": "./types/primitives/FeeMarket/index.d.ts",
+        "default": "./dist/primitives/FeeMarket/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/FeeMarket/index.d.ts",
+        "default": "./dist/primitives/FeeMarket/index.cjs"
+      }
+    },
+    "./GasConstants": {
+      "import": {
+        "types": "./types/primitives/GasConstants/index.d.ts",
+        "default": "./dist/primitives/GasConstants/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/GasConstants/index.d.ts",
+        "default": "./dist/primitives/GasConstants/index.cjs"
+      }
+    },
+    "./Hardfork": {
+      "import": {
+        "types": "./types/primitives/Hardfork/index.d.ts",
+        "default": "./dist/primitives/Hardfork/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Hardfork/index.d.ts",
+        "default": "./dist/primitives/Hardfork/index.cjs"
+      }
+    },
+    "./Hash": {
+      "import": {
+        "types": "./types/primitives/Hash/index.d.ts",
+        "default": "./dist/primitives/Hash/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Hash/index.d.ts",
+        "default": "./dist/primitives/Hash/index.cjs"
+      }
+    },
+    "./Hex": {
+      "import": {
+        "types": "./types/primitives/Hex/index.d.ts",
+        "default": "./dist/primitives/Hex/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Hex/index.d.ts",
+        "default": "./dist/primitives/Hex/index.cjs"
+      }
+    },
+    "./Opcode": {
+      "import": {
+        "types": "./types/primitives/Opcode/index.d.ts",
+        "default": "./dist/primitives/Opcode/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Opcode/index.d.ts",
+        "default": "./dist/primitives/Opcode/index.cjs"
+      }
+    },
+    "./Rlp": {
+      "import": {
+        "types": "./types/primitives/Rlp/index.d.ts",
+        "default": "./dist/primitives/Rlp/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Rlp/index.d.ts",
+        "default": "./dist/primitives/Rlp/index.cjs"
+      }
+    },
+    "./Signature": {
+      "import": {
+        "types": "./types/primitives/Signature/index.d.ts",
+        "default": "./dist/primitives/Signature/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Signature/index.d.ts",
+        "default": "./dist/primitives/Signature/index.cjs"
+      }
+    },
+    "./Siwe": {
+      "import": {
+        "types": "./types/primitives/Siwe/index.d.ts",
+        "default": "./dist/primitives/Siwe/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Siwe/index.d.ts",
+        "default": "./dist/primitives/Siwe/index.cjs"
+      }
+    },
+    "./State": {
+      "import": {
+        "types": "./types/primitives/State/index.d.ts",
+        "default": "./dist/primitives/State/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/State/index.d.ts",
+        "default": "./dist/primitives/State/index.cjs"
+      }
+    },
+    "./Transaction": {
+      "import": {
+        "types": "./types/primitives/Transaction/index.d.ts",
+        "default": "./dist/primitives/Transaction/index.js"
+      },
+      "require": {
+        "types": "./types/primitives/Transaction/index.d.ts",
+        "default": "./dist/primitives/Transaction/index.cjs"
+      }
+    },
     "./Uint": {
       "import": {
         "types": "./types/primitives/Uint/index.d.ts",
@@ -431,262 +431,296 @@
         "default": "./dist/primitives/Transaction/Authorization/effect.cjs"
       }
     },
-		"./Bip39": {
-			"import": {
-				"types": "./types/crypto/Bip39/index.d.ts",
-				"default": "./dist/crypto/Bip39/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Bip39/index.d.ts",
-				"default": "./dist/crypto/Bip39/index.cjs"
-			}
-		},
-		"./Blake2": {
-			"import": {
-				"types": "./types/crypto/Blake2/index.d.ts",
-				"default": "./dist/crypto/Blake2/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Blake2/index.d.ts",
-				"default": "./dist/crypto/Blake2/index.cjs"
-			}
-		},
-		"./ChaCha20Poly1305": {
-			"import": {
-				"types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
-				"default": "./dist/crypto/ChaCha20Poly1305/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
-				"default": "./dist/crypto/ChaCha20Poly1305/index.cjs"
-			}
-		},
-		"./Ed25519": {
-			"import": {
-				"types": "./types/crypto/Ed25519/index.d.ts",
-				"default": "./dist/crypto/Ed25519/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Ed25519/index.d.ts",
-				"default": "./dist/crypto/Ed25519/index.cjs"
-			}
-		},
-		"./EIP712": {
-			"import": {
-				"types": "./types/crypto/EIP712/index.d.ts",
-				"default": "./dist/crypto/EIP712/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/EIP712/index.d.ts",
-				"default": "./dist/crypto/EIP712/index.cjs"
-			}
-		},
-		"./HDWallet": {
-			"import": {
-				"types": "./types/crypto/HDWallet/index.d.ts",
-				"default": "./dist/crypto/HDWallet/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/HDWallet/index.d.ts",
-				"default": "./dist/crypto/HDWallet/index.cjs"
-			}
-		},
-		"./Keccak256": {
-			"import": {
-				"types": "./types/crypto/Keccak256/index.d.ts",
-				"default": "./dist/crypto/Keccak256/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Keccak256/index.d.ts",
-				"default": "./dist/crypto/Keccak256/index.cjs"
-			}
-		},
-		"./Keccak256/native": {
-			"import": {
-				"types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
-				"default": "./dist/crypto/Keccak256/Keccak256.native.js"
-			},
-			"require": {
-				"types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
-				"default": "./dist/crypto/Keccak256/Keccak256.native.cjs"
-			}
-		},
-		"./Keccak256/wasm": {
-			"import": {
-				"types": "./types/crypto/Keccak256/index.d.ts",
-				"default": "./dist/crypto/Keccak256/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Keccak256/index.d.ts",
-				"default": "./dist/crypto/Keccak256/index.cjs"
-			}
-		},
-		"./KZG": {
-			"import": {
-				"types": "./types/crypto/KZG/index.d.ts",
-				"default": "./dist/crypto/KZG/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/KZG/index.d.ts",
-				"default": "./dist/crypto/KZG/index.cjs"
-			}
-		},
-		"./P256": {
-			"import": {
-				"types": "./types/crypto/P256/index.d.ts",
-				"default": "./dist/crypto/P256/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/P256/index.d.ts",
-				"default": "./dist/crypto/P256/index.cjs"
-			}
-		},
-		"./Ripemd160": {
-			"import": {
-				"types": "./types/crypto/Ripemd160/index.d.ts",
-				"default": "./dist/crypto/Ripemd160/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Ripemd160/index.d.ts",
-				"default": "./dist/crypto/Ripemd160/index.cjs"
-			}
-		},
-		"./Secp256k1": {
-			"import": {
-				"types": "./types/crypto/Secp256k1/index.d.ts",
-				"default": "./dist/crypto/Secp256k1/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/Secp256k1/index.d.ts",
-				"default": "./dist/crypto/Secp256k1/index.cjs"
-			}
-		},
-		"./SHA256": {
-			"import": {
-				"types": "./types/crypto/SHA256/index.d.ts",
-				"default": "./dist/crypto/SHA256/index.js"
-			},
-			"require": {
-				"types": "./types/crypto/SHA256/index.d.ts",
-				"default": "./dist/crypto/SHA256/index.cjs"
-			}
-		},
-		"./jsonrpc": {
-			"import": {
-				"types": "./types/jsonrpc/index.d.ts",
-				"default": "./dist/jsonrpc/index.js"
-			},
-			"require": {
-				"types": "./types/jsonrpc/index.d.ts",
-				"default": "./dist/jsonrpc/index.cjs"
-			}
-		}
-	},
-	"main": "dist/index.cjs",
-	"module": "dist/index.js",
-	"types": "types/index.d.ts",
-	"files": ["dist", "types", "bin"],
-	"scripts": {
-		"all": "bun i && bun run build && bun lint && bun format && bun test:run",
-		"bench": "bun run scripts/run-benchmarks.ts",
-		"bench:size": "size-limit",
-		"build": "bun run build:zig && bun run build:dist && bun run build:types",
-		"build:zig": "zig build",
-		"build:wasm": "zig build build-ts-wasm && zig build build-ts-wasm-fast",
-		"build:dist": "tsup",
-		"build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
-		"clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
-		"generate:jsonrpc": "zig build generate-jsonrpc",
-		"clean:jsonrpc": "zig build clean-jsonrpc",
-		"docs:dev": "cd docs && mint dev",
-		"mint:dev": "cd docs && mint dev",
-		"mint:install": "npm install -g mintlify@latest",
-		"format": "biome format . --write",
-		"format:check": "biome format .",
-		"lint": "biome check . --write --unsafe",
-		"lint:check": "biome check . --verbose",
-		"lint:deps": "bunx depcheck",
-		"lint:package": "bunx publint --strict && bunx attw --pack",
-		"package:up": "bun up --latest",
-		"size": "bun run scripts/measure-bundle-sizes.ts",
-		"test": "vitest --watch",
-		"test:coverage": "vitest --coverage --run",
-		"test:run": "vitest run",
-		"test:native": "DYLD_LIBRARY_PATH=zig-out/lib vitest run src/typescript/native",
-		"test:wasm": "vitest run src/wasm",
-		"test:mcp": "vitest run src/mcp-evals",
-		"test:examples": "bun run test-examples.ts",
-		"test:examples:zig": "zig run examples/test-examples.zig",
-		"typecheck": "tsc --noEmit",
-		"examples:generate": "bun run scripts/generate-example-docs.ts",
-		"examples:test": "bun run scripts/validate-examples.ts",
-		"examples:ci": "bun run examples:test && bun run examples:generate"
-	},
-	"devDependencies": {
-		"@anthropic-ai/claude-agent-sdk": "^0.1.76",
-		"@biomejs/biome": "^1.9.4",
-		"@ethereumjs/rlp": "^10.0.0",
-		"@ethersproject/rlp": "^5.8.0",
-		"@noble/curves": "^2.0.1",
-		"@noble/hashes": "^2.0.1",
-		"@noble/secp256k1": "^3.0.0",
-		"@size-limit/file": "^11.2.0",
-		"@size-limit/preset-small-lib": "^11.2.0",
-		"@size-limit/webpack": "^11.2.0",
-		"@tevm/tsconfig": "^1.0.0-next.142",
-		"@tevm/tsupconfig": "^1.0.0-next.148",
-		"@types/bun": "latest",
-		"@types/node": "^22.10.2",
-		"@vitest/coverage-v8": "^4.0.3",
-		"abitype": "^1.1.1",
-		"astro": "^5.15.3",
-		"astro-live-code": "^0.0.6",
-		"astro-mcp": "^0.4.2",
-		"bindings": "^1.5.0",
-		"effect": "^3.12.6",
-		"ethers": "^6.13.4",
-		"glob": "^11.0.0",
-		"mintlify": "^4.2.188",
-		"mitata": "^1.0.34",
-		"ox": "^0.9.14",
-		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"size-limit": "^11.2.0",
-		"tsup": "^8.5.0",
-		"typescript": "^5.7.2",
-		"viem": "^2.21.54",
-		"vitest": "4.0.3"
-	},
-	"peerDependencies": {
-		"abitype": "^1.1.1"
-	},
-	"peerDependenciesMeta": {
-		"abitype": {
-			"optional": true
-		}
-	},
-	"optionalDependencies": {
-		"@tevm/voltaire-darwin-arm64": "0.1.0",
-		"@tevm/voltaire-darwin-x64": "0.1.0",
-		"@tevm/voltaire-linux-arm64": "0.1.0",
-		"@tevm/voltaire-linux-x64": "0.1.0",
-		"@tevm/voltaire-win32-x64": "0.1.0",
-		"effect": "^3.12.6",
-		"ffi-napi": "^4.0.3",
-		"ref-napi": "^3.0.3"
-	},
-	"dependencies": {
-		"@adraffy/ens-normalize": "^1.11.1",
-		"@codesandbox/sandpack-react": "^2.20.0",
-		"@ledgerhq/hw-app-eth": "^6.38.4",
-		"@ledgerhq/hw-transport-webusb": "^6.29.4",
-		"@noble/ciphers": "^2.1.1",
-		"@scure/bip32": "^2.0.1",
-		"@scure/bip39": "^2.0.1",
-		"@shazow/whatsabi": "^0.23.0",
-		"@tevm/chains": "^0.0.1",
-		"@trezor/connect-web": "^9.4.3",
-		"c-kzg": "^4.1.0",
-		"modern-monaco": "./modern-monaco"
-	}
+    "./Bip39": {
+      "import": {
+        "types": "./types/crypto/Bip39/index.d.ts",
+        "default": "./dist/crypto/Bip39/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Bip39/index.d.ts",
+        "default": "./dist/crypto/Bip39/index.cjs"
+      }
+    },
+    "./Blake2": {
+      "import": {
+        "types": "./types/crypto/Blake2/index.d.ts",
+        "default": "./dist/crypto/Blake2/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Blake2/index.d.ts",
+        "default": "./dist/crypto/Blake2/index.cjs"
+      }
+    },
+    "./ChaCha20Poly1305": {
+      "import": {
+        "types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
+        "default": "./dist/crypto/ChaCha20Poly1305/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
+        "default": "./dist/crypto/ChaCha20Poly1305/index.cjs"
+      }
+    },
+    "./Ed25519": {
+      "import": {
+        "types": "./types/crypto/Ed25519/index.d.ts",
+        "default": "./dist/crypto/Ed25519/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Ed25519/index.d.ts",
+        "default": "./dist/crypto/Ed25519/index.cjs"
+      }
+    },
+    "./EIP712": {
+      "import": {
+        "types": "./types/crypto/EIP712/index.d.ts",
+        "default": "./dist/crypto/EIP712/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/EIP712/index.d.ts",
+        "default": "./dist/crypto/EIP712/index.cjs"
+      }
+    },
+    "./HDWallet": {
+      "import": {
+        "types": "./types/crypto/HDWallet/index.d.ts",
+        "default": "./dist/crypto/HDWallet/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/HDWallet/index.d.ts",
+        "default": "./dist/crypto/HDWallet/index.cjs"
+      }
+    },
+    "./Keccak256": {
+      "import": {
+        "types": "./types/crypto/Keccak256/index.d.ts",
+        "default": "./dist/crypto/Keccak256/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Keccak256/index.d.ts",
+        "default": "./dist/crypto/Keccak256/index.cjs"
+      }
+    },
+    "./Keccak256/native": {
+      "import": {
+        "types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
+        "default": "./dist/crypto/Keccak256/Keccak256.native.js"
+      },
+      "require": {
+        "types": "./types/crypto/Keccak256/Keccak256.native.d.ts",
+        "default": "./dist/crypto/Keccak256/Keccak256.native.cjs"
+      }
+    },
+    "./Keccak256/wasm": {
+      "import": {
+        "types": "./types/crypto/Keccak256/index.d.ts",
+        "default": "./dist/crypto/Keccak256/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Keccak256/index.d.ts",
+        "default": "./dist/crypto/Keccak256/index.cjs"
+      }
+    },
+    "./KZG": {
+      "import": {
+        "types": "./types/crypto/KZG/index.d.ts",
+        "default": "./dist/crypto/KZG/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/KZG/index.d.ts",
+        "default": "./dist/crypto/KZG/index.cjs"
+      }
+    },
+    "./P256": {
+      "import": {
+        "types": "./types/crypto/P256/index.d.ts",
+        "default": "./dist/crypto/P256/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/P256/index.d.ts",
+        "default": "./dist/crypto/P256/index.cjs"
+      }
+    },
+    "./Ripemd160": {
+      "import": {
+        "types": "./types/crypto/Ripemd160/index.d.ts",
+        "default": "./dist/crypto/Ripemd160/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Ripemd160/index.d.ts",
+        "default": "./dist/crypto/Ripemd160/index.cjs"
+      }
+    },
+    "./Secp256k1": {
+      "import": {
+        "types": "./types/crypto/Secp256k1/index.d.ts",
+        "default": "./dist/crypto/Secp256k1/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/Secp256k1/index.d.ts",
+        "default": "./dist/crypto/Secp256k1/index.cjs"
+      }
+    },
+    "./SHA256": {
+      "import": {
+        "types": "./types/crypto/SHA256/index.d.ts",
+        "default": "./dist/crypto/SHA256/index.js"
+      },
+      "require": {
+        "types": "./types/crypto/SHA256/index.d.ts",
+        "default": "./dist/crypto/SHA256/index.cjs"
+      }
+    },
+    "./jsonrpc": {
+      "import": {
+        "types": "./types/jsonrpc/index.d.ts",
+        "default": "./dist/jsonrpc/index.js"
+      },
+      "require": {
+        "types": "./types/jsonrpc/index.d.ts",
+        "default": "./dist/jsonrpc/index.cjs"
+      }
+    },
+    "./Rlp/effect": {
+      "import": {
+        "types": "./types/primitives/Rlp/effect.d.ts",
+        "default": "./dist/primitives/Rlp/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Rlp/effect.d.ts",
+        "default": "./dist/primitives/Rlp/effect.cjs"
+      }
+    },
+    "./Blob/effect": {
+      "import": {
+        "types": "./types/primitives/Blob/effect.d.ts",
+        "default": "./dist/primitives/Blob/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Blob/effect.d.ts",
+        "default": "./dist/primitives/Blob/effect.cjs"
+      }
+    },
+    "./State/effect": {
+      "import": {
+        "types": "./types/primitives/State/effect.d.ts",
+        "default": "./dist/primitives/State/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/State/effect.d.ts",
+        "default": "./dist/primitives/State/effect.cjs"
+      }
+    }
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "types/index.d.ts",
+  "files": [
+    "dist",
+    "types",
+    "bin"
+  ],
+  "scripts": {
+    "all": "bun i && bun run build && bun lint && bun format && bun test:run",
+    "bench": "bun run scripts/run-benchmarks.ts",
+    "bench:size": "size-limit",
+    "build": "bun run build:zig && bun run build:dist && bun run build:types",
+    "build:zig": "zig build",
+    "build:wasm": "zig build build-ts-wasm && zig build build-ts-wasm-fast",
+    "build:dist": "tsup",
+    "build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
+    "clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
+    "generate:jsonrpc": "zig build generate-jsonrpc",
+    "clean:jsonrpc": "zig build clean-jsonrpc",
+    "docs:dev": "cd docs && mint dev",
+    "mint:dev": "cd docs && mint dev",
+    "mint:install": "npm install -g mintlify@latest",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "lint": "biome check . --write --unsafe",
+    "lint:check": "biome check . --verbose",
+    "lint:deps": "bunx depcheck",
+    "lint:package": "bunx publint --strict && bunx attw --pack",
+    "package:up": "bun up --latest",
+    "size": "bun run scripts/measure-bundle-sizes.ts",
+    "test": "vitest --watch",
+    "test:coverage": "vitest --coverage --run",
+    "test:run": "vitest run",
+    "test:native": "DYLD_LIBRARY_PATH=zig-out/lib vitest run src/typescript/native",
+    "test:wasm": "vitest run src/wasm",
+    "test:mcp": "vitest run src/mcp-evals",
+    "test:examples": "bun run test-examples.ts",
+    "test:examples:zig": "zig run examples/test-examples.zig",
+    "typecheck": "tsc --noEmit",
+    "examples:generate": "bun run scripts/generate-example-docs.ts",
+    "examples:test": "bun run scripts/validate-examples.ts",
+    "examples:ci": "bun run examples:test && bun run examples:generate"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.76",
+    "@biomejs/biome": "^1.9.4",
+    "@ethereumjs/rlp": "^10.0.0",
+    "@ethersproject/rlp": "^5.8.0",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
+    "@noble/secp256k1": "^3.0.0",
+    "@size-limit/file": "^11.2.0",
+    "@size-limit/preset-small-lib": "^11.2.0",
+    "@size-limit/webpack": "^11.2.0",
+    "@tevm/tsconfig": "^1.0.0-next.142",
+    "@tevm/tsupconfig": "^1.0.0-next.148",
+    "@types/bun": "latest",
+    "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^4.0.3",
+    "abitype": "^1.1.1",
+    "astro": "^5.15.3",
+    "astro-live-code": "^0.0.6",
+    "astro-mcp": "^0.4.2",
+    "bindings": "^1.5.0",
+    "effect": "^3.12.6",
+    "ethers": "^6.13.4",
+    "glob": "^11.0.0",
+    "mintlify": "^4.2.188",
+    "mitata": "^1.0.34",
+    "ox": "^0.9.14",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "size-limit": "^11.2.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.54",
+    "vitest": "4.0.3"
+  },
+  "peerDependencies": {
+    "abitype": "^1.1.1"
+  },
+  "peerDependenciesMeta": {
+    "abitype": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "@tevm/voltaire-darwin-arm64": "0.1.0",
+    "@tevm/voltaire-darwin-x64": "0.1.0",
+    "@tevm/voltaire-linux-arm64": "0.1.0",
+    "@tevm/voltaire-linux-x64": "0.1.0",
+    "@tevm/voltaire-win32-x64": "0.1.0",
+    "effect": "^3.12.6",
+    "ffi-napi": "^4.0.3",
+    "ref-napi": "^3.0.3"
+  },
+  "dependencies": {
+    "@adraffy/ens-normalize": "^1.11.1",
+    "@codesandbox/sandpack-react": "^2.20.0",
+    "@ledgerhq/hw-app-eth": "^6.38.4",
+    "@ledgerhq/hw-transport-webusb": "^6.29.4",
+    "@noble/ciphers": "^2.1.1",
+    "@scure/bip32": "^2.0.1",
+    "@scure/bip39": "^2.0.1",
+    "@shazow/whatsabi": "^0.23.0",
+    "@tevm/chains": "^0.0.1",
+    "@trezor/connect-web": "^9.4.3",
+    "c-kzg": "^4.1.0",
+    "modern-monaco": "./modern-monaco"
+  }
 }
