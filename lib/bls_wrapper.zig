@@ -1,9 +1,9 @@
 const std = @import("std");
 const build_options = @import("build_options");
 
-// Simple stub implementations for BLS12-381 operations
-// These are placeholder implementations that return errors
-// TODO: Implement proper BLS12-381 operations using blst library
+// Simple placeholder implementations for BLS12-381 operations
+// These return errors and are not wired to blst yet.
+// Future work: implement proper BLS12-381 operations using the blst library
 
 export fn bls12_381_g1_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int {
     _ = input;

@@ -1219,7 +1219,7 @@ fn addCryptoWasmBuilds(
     // Build each crypto module as individual WASM executable (reactor pattern)
     inline for (crypto_modules) |module| {
         // For now, only build simple hash modules that don't need complex dependencies
-        // TODO: Refactor _c.zig files to be standalone WASM modules
+        // Future work: refactor _c.zig files to be standalone WASM modules
         if (!module.needs_crypto) {
             const wasm_exe = b.addExecutable(.{
                 .name = module.name,

@@ -321,6 +321,16 @@
 				"default": "./dist/crypto/Blake2/index.cjs"
 			}
 		},
+		"./ChaCha20Poly1305": {
+			"import": {
+				"types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
+				"default": "./dist/crypto/ChaCha20Poly1305/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/ChaCha20Poly1305/index.d.ts",
+				"default": "./dist/crypto/ChaCha20Poly1305/index.cjs"
+			}
+		},
 		"./Ed25519": {
 			"import": {
 				"types": "./types/crypto/Ed25519/index.d.ts",
@@ -445,7 +455,7 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": ["dist", "src", "!src/**/*.spec.ts", "!src/**/*.test.ts", "types"],
+	"files": ["dist", "types", "bin"],
 	"scripts": {
 		"all": "bun i && bun run build && bun lint && bun format && bun test:run",
 		"bench": "bun run scripts/run-benchmarks.ts",
@@ -526,20 +536,21 @@
 		}
 	},
 	"optionalDependencies": {
-		"effect": "^3.12.6",
-		"ffi-napi": "^4.0.3",
-		"ref-napi": "^3.0.3",
 		"@tevm/voltaire-darwin-arm64": "0.1.0",
 		"@tevm/voltaire-darwin-x64": "0.1.0",
 		"@tevm/voltaire-linux-arm64": "0.1.0",
 		"@tevm/voltaire-linux-x64": "0.1.0",
-		"@tevm/voltaire-win32-x64": "0.1.0"
+		"@tevm/voltaire-win32-x64": "0.1.0",
+		"effect": "^3.12.6",
+		"ffi-napi": "^4.0.3",
+		"ref-napi": "^3.0.3"
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",
 		"@codesandbox/sandpack-react": "^2.20.0",
 		"@ledgerhq/hw-app-eth": "^6.38.4",
 		"@ledgerhq/hw-transport-webusb": "^6.29.4",
+		"@noble/ciphers": "^2.1.1",
 		"@scure/bip32": "^2.0.1",
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.23.0",
