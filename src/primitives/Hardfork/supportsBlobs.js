@@ -3,7 +3,7 @@ import { hasEIP4844 } from "./hasEIP4844.js";
 /**
  * Check if hardfork has EIP-4844 (convenience form)
  *
- * @this {import('./HardforkType.ts').HardforkType}
+ * @this {import('./HardforkType.js').HardforkType}
  * @returns {boolean} true if blob transactions are available
  *
  * @example

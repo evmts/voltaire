@@ -3,8 +3,8 @@ import { HARDFORK_ORDER } from "./constants.js";
 /**
  * Check if current hardfork is at least the specified version
  *
- * @param {import('./HardforkType.ts').HardforkType} current - Current hardfork
- * @param {import('./HardforkType.ts').HardforkType} target - Target hardfork to compare against
+ * @param {import('./HardforkType.js').HardforkType} current - Current hardfork
+ * @param {import('./HardforkType.js').HardforkType} target - Target hardfork to compare against
  * @returns {boolean} true if current >= target
  *
  * @example

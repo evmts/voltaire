@@ -4,9 +4,9 @@ import { HARDFORK_ORDER } from "./constants.js";
 /**
  * Get range of hardforks between two versions (inclusive)
  *
- * @param {import('./HardforkType.ts').HardforkType} start - Start hardfork
- * @param {import('./HardforkType.ts').HardforkType} end - End hardfork
- * @returns {import('./HardforkType.ts').HardforkType[]} Array of hardfork IDs in range
+ * @param {import('./HardforkType.js').HardforkType} start - Start hardfork
+ * @param {import('./HardforkType.js').HardforkType} end - End hardfork
+ * @returns {import('./HardforkType.js').HardforkType[]} Array of hardfork IDs in range
  * @throws {InvalidFormatError} If start or end hardfork is invalid
  *
  * @example

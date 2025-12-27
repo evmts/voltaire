@@ -4,8 +4,8 @@ import { compare } from "./compare.js";
 /**
  * Get maximum hardfork from array
  *
- * @param {import('./HardforkType.ts').HardforkType[]} forks - Array of hardforks
- * @returns {import('./HardforkType.ts').HardforkType} Maximum (newest) hardfork
+ * @param {import('./HardforkType.js').HardforkType[]} forks - Array of hardforks
+ * @returns {import('./HardforkType.js').HardforkType} Maximum (newest) hardfork
  * @throws {ValidationError} If array is empty
  *
  * @example

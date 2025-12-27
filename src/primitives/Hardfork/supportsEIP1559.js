@@ -3,7 +3,7 @@ import { hasEIP1559 } from "./hasEIP1559.js";
 /**
  * Check if hardfork has EIP-1559 (convenience form)
  *
- * @this {import('./HardforkType.ts').HardforkType}
+ * @this {import('./HardforkType.js').HardforkType}
  * @returns {boolean} true if EIP-1559 is active
  *
  * @example

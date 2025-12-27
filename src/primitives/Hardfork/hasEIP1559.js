@@ -4,7 +4,7 @@ import { isAtLeast } from "./isAtLeast.js";
 /**
  * Check if hardfork has EIP-1559 (base fee mechanism)
  *
- * @param {import('./HardforkType.ts').HardforkType} fork - Hardfork to check
+ * @param {import('./HardforkType.js').HardforkType} fork - Hardfork to check
  * @returns {boolean} true if EIP-1559 is active
  *
  * @example

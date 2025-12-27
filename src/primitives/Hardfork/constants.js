@@ -5,7 +5,7 @@
  * gas costs, or adds new features. Hardforks build upon previous ones
  * while adding improvements.
  *
- * @typedef {import('./HardforkType.ts').HardforkType} HardforkType
+ * @typedef {import('./HardforkType.js').HardforkType} HardforkType
  */
 
 /** @type {HardforkType} Original Ethereum launch (July 2015). Base EVM with fundamental opcodes. */

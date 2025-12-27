@@ -3,7 +3,7 @@ import { hasEIP3855 } from "./hasEIP3855.js";
 /**
  * Check if hardfork has EIP-3855 (convenience form)
  *
- * @this {import('./HardforkType.ts').HardforkType}
+ * @this {import('./HardforkType.js').HardforkType}
  * @returns {boolean} true if PUSH0 is available
  *
  * @example

@@ -1,7 +1,7 @@
 /**
  * Convert hardfork to string name
  *
- * @param {import('./HardforkType.ts').HardforkType} fork - Hardfork
+ * @param {import('./HardforkType.js').HardforkType} fork - Hardfork
  * @returns {string} Lowercase hardfork name
  *
  * @example

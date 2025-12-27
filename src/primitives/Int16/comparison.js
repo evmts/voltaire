@@ -1,7 +1,7 @@
 /**
  * Check if two BrandedInt16 values are equal
- * @param {import("./Int16Type.ts").BrandedInt16} a
- * @param {import("./Int16Type.ts").BrandedInt16} b
+ * @param {import("./Int16Type.js").BrandedInt16} a
+ * @param {import("./Int16Type.js").BrandedInt16} b
  * @returns {boolean}
  */
 export function equals(a, b) {
@@ -10,8 +10,8 @@ export function equals(a, b) {
 
 /**
  * Check if a < b
- * @param {import("./Int16Type.ts").BrandedInt16} a
- * @param {import("./Int16Type.ts").BrandedInt16} b
+ * @param {import("./Int16Type.js").BrandedInt16} a
+ * @param {import("./Int16Type.js").BrandedInt16} b
  * @returns {boolean}
  */
 export function lessThan(a, b) {
@@ -20,8 +20,8 @@ export function lessThan(a, b) {
 
 /**
  * Check if a > b
- * @param {import("./Int16Type.ts").BrandedInt16} a
- * @param {import("./Int16Type.ts").BrandedInt16} b
+ * @param {import("./Int16Type.js").BrandedInt16} a
+ * @param {import("./Int16Type.js").BrandedInt16} b
  * @returns {boolean}
  */
 export function greaterThan(a, b) {
@@ -30,7 +30,7 @@ export function greaterThan(a, b) {
 
 /**
  * Check if value is zero
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {boolean}
  */
 export function isZero(value) {
@@ -39,7 +39,7 @@ export function isZero(value) {
 
 /**
  * Check if value is negative
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {boolean}
  */
 export function isNegative(value) {
@@ -48,7 +48,7 @@ export function isNegative(value) {
 
 /**
  * Check if value is positive (> 0)
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {boolean}
  */
 export function isPositive(value) {
@@ -57,27 +57,27 @@ export function isPositive(value) {
 
 /**
  * Get minimum of two values
- * @param {import("./Int16Type.ts").BrandedInt16} a
- * @param {import("./Int16Type.ts").BrandedInt16} b
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @param {import("./Int16Type.js").BrandedInt16} a
+ * @param {import("./Int16Type.js").BrandedInt16} b
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function minimum(a, b) {
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (Math.min(a, b));
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (Math.min(a, b));
 }
 
 /**
  * Get maximum of two values
- * @param {import("./Int16Type.ts").BrandedInt16} a
- * @param {import("./Int16Type.ts").BrandedInt16} b
- * @returns {import("./Int16Type.ts").BrandedInt16}
+ * @param {import("./Int16Type.js").BrandedInt16} a
+ * @param {import("./Int16Type.js").BrandedInt16} b
+ * @returns {import("./Int16Type.js").BrandedInt16}
  */
 export function maximum(a, b) {
-	return /** @type {import("./Int16Type.ts").BrandedInt16} */ (Math.max(a, b));
+	return /** @type {import("./Int16Type.js").BrandedInt16} */ (Math.max(a, b));
 }
 
 /**
  * Get sign of value (-1, 0, or 1)
- * @param {import("./Int16Type.ts").BrandedInt16} value
+ * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {-1 | 0 | 1}
  */
 export function sign(value) {

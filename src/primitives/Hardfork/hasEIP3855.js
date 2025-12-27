@@ -4,7 +4,7 @@ import { isAtLeast } from "./isAtLeast.js";
 /**
  * Check if hardfork has EIP-3855 (PUSH0 opcode)
  *
- * @param {import('./HardforkType.ts').HardforkType} fork - Hardfork to check
+ * @param {import('./HardforkType.js').HardforkType} fork - Hardfork to check
  * @returns {boolean} true if PUSH0 is available
  *
  * @example

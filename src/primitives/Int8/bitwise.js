@@ -1,8 +1,8 @@
 /**
  * Bitwise AND
- * @param {import("./Int8Type.ts").BrandedInt8} a
- * @param {import("./Int8Type.ts").BrandedInt8} b
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @param {import("./Int8Type.js").BrandedInt8} a
+ * @param {import("./Int8Type.js").BrandedInt8} b
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function and(a, b) {
 	// Convert to unsigned for bitwise ops
@@ -11,54 +11,54 @@ export function and(a, b) {
 	const result = ua & ub;
 	// Convert back to signed
 	const signed = result >= 128 ? result - 256 : result;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (signed);
 }
 
 /**
  * Bitwise OR
- * @param {import("./Int8Type.ts").BrandedInt8} a
- * @param {import("./Int8Type.ts").BrandedInt8} b
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @param {import("./Int8Type.js").BrandedInt8} a
+ * @param {import("./Int8Type.js").BrandedInt8} b
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function or(a, b) {
 	const ua = a < 0 ? a + 256 : a;
 	const ub = b < 0 ? b + 256 : b;
 	const result = ua | ub;
 	const signed = result >= 128 ? result - 256 : result;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (signed);
 }
 
 /**
  * Bitwise XOR
- * @param {import("./Int8Type.ts").BrandedInt8} a
- * @param {import("./Int8Type.ts").BrandedInt8} b
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @param {import("./Int8Type.js").BrandedInt8} a
+ * @param {import("./Int8Type.js").BrandedInt8} b
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function xor(a, b) {
 	const ua = a < 0 ? a + 256 : a;
 	const ub = b < 0 ? b + 256 : b;
 	const result = ua ^ ub;
 	const signed = result >= 128 ? result - 256 : result;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (signed);
 }
 
 /**
  * Bitwise NOT
- * @param {import("./Int8Type.ts").BrandedInt8} value
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @param {import("./Int8Type.js").BrandedInt8} value
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function not(value) {
 	const unsigned = value < 0 ? value + 256 : value;
 	const result = ~unsigned & 0xff;
 	const signed = result >= 128 ? result - 256 : result;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (signed);
 }
 
 /**
  * Left shift
- * @param {import("./Int8Type.ts").BrandedInt8} value
+ * @param {import("./Int8Type.js").BrandedInt8} value
  * @param {number} shift
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function shiftLeft(value, shift) {
 	if (shift < 0 || shift >= 8) {
@@ -67,14 +67,14 @@ export function shiftLeft(value, shift) {
 	const unsigned = value < 0 ? value + 256 : value;
 	const result = (unsigned << shift) & 0xff;
 	const signed = result >= 128 ? result - 256 : result;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (signed);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (signed);
 }
 
 /**
  * Arithmetic right shift (preserves sign bit)
- * @param {import("./Int8Type.ts").BrandedInt8} value
+ * @param {import("./Int8Type.js").BrandedInt8} value
  * @param {number} shift
- * @returns {import("./Int8Type.ts").BrandedInt8}
+ * @returns {import("./Int8Type.js").BrandedInt8}
  */
 export function shiftRight(value, shift) {
 	if (shift < 0 || shift >= 8) {
@@ -82,5 +82,5 @@ export function shiftRight(value, shift) {
 	}
 	// JavaScript >> operator performs arithmetic shift on signed values
 	const result = value >> shift;
-	return /** @type {import("./Int8Type.ts").BrandedInt8} */ (result);
+	return /** @type {import("./Int8Type.js").BrandedInt8} */ (result);
 }

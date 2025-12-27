@@ -3,8 +3,8 @@ import { HARDFORK_ORDER } from "./constants.js";
 /**
  * Compare two hardforks
  *
- * @param {import('./HardforkType.ts').HardforkType} a - First hardfork
- * @param {import('./HardforkType.ts').HardforkType} b - Second hardfork
+ * @param {import('./HardforkType.js').HardforkType} a - First hardfork
+ * @param {import('./HardforkType.js').HardforkType} b - Second hardfork
  * @returns {number} negative if a < b, zero if a == b, positive if a > b
  *
  * @example

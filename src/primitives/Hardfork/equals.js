@@ -1,8 +1,8 @@
 /**
  * Check if two hardforks are equal
  *
- * @param {import('./HardforkType.ts').HardforkType} a - First hardfork
- * @param {import('./HardforkType.ts').HardforkType} b - Second hardfork
+ * @param {import('./HardforkType.js').HardforkType} a - First hardfork
+ * @param {import('./HardforkType.js').HardforkType} b - Second hardfork
  * @returns {boolean} true if a == b
  *
  * @example

@@ -4,8 +4,8 @@ import { compare } from "./compare.js";
 /**
  * Get minimum hardfork from array
  *
- * @param {import('./HardforkType.ts').HardforkType[]} forks - Array of hardforks
- * @returns {import('./HardforkType.ts').HardforkType} Minimum (oldest) hardfork
+ * @param {import('./HardforkType.js').HardforkType[]} forks - Array of hardforks
+ * @returns {import('./HardforkType.js').HardforkType} Minimum (oldest) hardfork
  * @throws {ValidationError} If array is empty
  *
  * @example

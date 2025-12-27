@@ -7,7 +7,7 @@ import { NAME_TO_HARDFORK } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/hardfork for Hardfork documentation
  * @since 0.0.0
  * @param {string} name - Hardfork name (e.g., "Cancun", ">=Berlin")
- * @returns {import('./HardforkType.ts').HardforkType | undefined} Hardfork or undefined if invalid
+ * @returns {import('./HardforkType.js').HardforkType | undefined} Hardfork or undefined if invalid
  * @throws {never}
  * @example
  * ```javascript
@@ -28,7 +28,7 @@ export function fromString(name) {
 
 	// Case-insensitive comparison
 	const lower = cleanName.toLowerCase();
-	return /** @type {import('./HardforkType.ts').HardforkType | undefined} */ (
+	return /** @type {import('./HardforkType.js').HardforkType | undefined} */ (
 		NAME_TO_HARDFORK[/** @type {keyof typeof NAME_TO_HARDFORK} */ (lower)]
 	);
 }

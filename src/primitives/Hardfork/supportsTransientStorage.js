@@ -3,7 +3,7 @@ import { hasEIP1153 } from "./hasEIP1153.js";
 /**
  * Check if hardfork has EIP-1153 (convenience form)
  *
- * @this {import('./HardforkType.ts').HardforkType}
+ * @this {import('./HardforkType.js').HardforkType}
  * @returns {boolean} true if TLOAD/TSTORE are available
  *
  * @example

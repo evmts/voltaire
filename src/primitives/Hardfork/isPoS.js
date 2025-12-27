@@ -3,7 +3,7 @@ import { isPostMerge } from "./isPostMerge.js";
 /**
  * Check if hardfork is post-merge (convenience form)
  *
- * @param {import('./HardforkType.ts').HardforkType} fork - Hardfork to check
+ * @param {import('./HardforkType.js').HardforkType} fork - Hardfork to check
  * @returns {boolean} true if post-merge
  *
  * @example

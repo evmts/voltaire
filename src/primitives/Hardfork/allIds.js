@@ -3,7 +3,7 @@ import { HARDFORK_ORDER } from "./constants.js";
 /**
  * Get all hardfork IDs (alias for allNames)
  *
- * @returns {import('./HardforkType.ts').HardforkType[]} Array of all hardfork IDs
+ * @returns {import('./HardforkType.js').HardforkType[]} Array of all hardfork IDs
  *
  * @example
  * ```typescript

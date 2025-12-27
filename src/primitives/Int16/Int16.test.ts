@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as Int16 from "./index.ts";
+import * as Int16 from "./index.js";
 
 describe("Int16", () => {
 	describe("constructors", () => {
