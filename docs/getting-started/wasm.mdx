@@ -1,60 +1,151 @@
 ---
-title: High-Performance Implementations
-description: Optimized implementations balancing performance and bundle size
+title: Runtime Implementations
+description: Choose between TypeScript, WASM, and Native FFI based on your environment
 ---
 
-High-performance implementations that minimize bundle size while maximizing performance.
+Voltaire provides three implementation tiers for performance-critical operations. Choose based on your runtime environment and performance needs.
 
-Tevm provides WASM implementations built in Zig for computationally expensive operations, along with pure TypeScript implementations where WASM overhead doesn't justify the complexity.
+## Three Tiers
 
-## Implementation Options
-
-Tevm usually provides at least two implementation options for most APIs:
-
-1. **Default** - What we think is the best trade-off between performance, bundle size, and other considerations
-2. **TypeScript** - Pure TypeScript implementation with no WASM dependency
-3. **WASM** - WASM-accelerated implementation for better performance
-
-Based on our benchmarks and bundle size analysis, we pick the default for each API. For example, Keccak256 uses WASM by default because it's both faster and smaller than pure JavaScript alternatives.
-
-```typescript
-import { Keccak256 } from 'tevm/crypto';           // Default (WASM for Keccak256)
-import { Keccak256 } from 'tevm/crypto/Keccak256'; // Explicit default
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';   // TypeScript
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm'; // WASM
-```
-
-The APIs are identical across implementations - you can swap them without changing your code.
+| Tier | Import | Runtime | Use Case |
+|------|--------|---------|----------|
+| **TypeScript** | `@tevm/voltaire` | Any JS runtime | Default, universal compatibility |
+| **WASM** | `@tevm/voltaire/wasm` | Browser, Node, Bun, Deno | High performance, portable |
+| **Native** | `@tevm/voltaire/native` | Node.js, Bun only | Maximum performance via FFI |
 
 <Note>
-By default, Tevm chooses what we believe to be the best trade-off between performance, bundle size, and other concerns like debuggability.
+All three tiers expose identical APIs. Swap implementations without changing your code.
 </Note>
 
-### Benchmarks
+## TypeScript (Default)
 
-Performance and bundle size comparison across implementations:
+Pure TypeScript with zero dependencies. Works everywhere JavaScript runs.
 
-| Operation | TypeScript Perf | WASM Perf | Assembly Perf | TypeScript Bundle | WASM Bundle | Assembly Bundle | Default |
-|-----------|----------------|-----------|---------------|-------------------|-------------|-----------------|---------|
-| **Cryptography** |
-| keccak256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| secp256k1 recover | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 sign | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 verify | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| BLS12-381 aggregate | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| sha256 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| ripemd160 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| **Encoding** |
-| RLP encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| RLP decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| ABI encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| ABI decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| **EVM** |
-| Opcode execution | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| Bytecode analysis | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | WASM |
-| **Primitives** |
-| Address checksum | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| Hex encode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
-| Hex decode | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | TypeScript |
+```typescript
+import { Keccak256, Address, Hex } from '@tevm/voltaire'
+
+const hash = Keccak256.hash(Hex.fromString('hello'))
+const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+```
+
+Best for:
+- Universal browser/server compatibility
+- Debugging and development
+- Bundle size sensitive applications
+- Environments without WASM support
+
+## WASM
+
+WebAssembly bindings to Zig implementations. Portable high-performance.
+
+```typescript
+import * as wasm from '@tevm/voltaire/wasm'
+
+// Crypto operations
+const hash = wasm.keccak256(data)
+const recovered = wasm.secp256k1RecoverAddress(hash, signature)
+
+// Primitives
+const bytes = wasm.hexToBytes('0xdeadbeef')
+const hex = wasm.bytesToHex(bytes)
+
+// Full namespaces
+wasm.Secp256k1Wasm.sign(message, privateKey)
+wasm.Blake2Wasm.hash(data)
+wasm.Sha256Wasm.hash(data)
+```
+
+Available WASM modules:
+- **Crypto**: Keccak256, Secp256k1, SHA256, RIPEMD160, Blake2, Ed25519, X25519, P256
+- **Primitives**: Hex, RLP, U256, Blob, AccessList, Transaction, Bytecode
+
+Best for:
+- Browser applications needing crypto performance
+- Serverless/edge functions (Cloudflare Workers, Vercel Edge)
+- Cross-platform consistency
+
+## Native FFI
+
+Direct bindings to Zig via Bun FFI or Node-API. Maximum performance.
+
+```typescript
+import * as native from '@tevm/voltaire/native'
+
+// Check runtime
+native.isBun()   // true in Bun
+native.isNode()  // true in Node.js
+
+// Keccak256 (async - lazy loads native lib)
+const hash = await native.Keccak256.hash(data)
+const selector = await native.Keccak256.selector('transfer(address,uint256)')
+
+// Sync after initial load
+const hash2 = native.Keccak256.hashSync(data)
+```
+
+<Warning>
+Native FFI requires the compiled `.dylib` (macOS), `.so` (Linux), or `.dll` (Windows) to be available. Run `zig build build-ts-native` to compile.
+</Warning>
+
+Best for:
+- Server-side applications with heavy crypto workloads
+- CLI tools
+- Maximum throughput requirements
+
+## Per-Module Imports
+
+For fine-grained control, import specific implementations:
+
+```typescript
+// Keccak256 variants
+import * as Keccak256 from '@tevm/voltaire/Keccak256'           // Default (TS)
+import * as Keccak256 from '@tevm/voltaire/Keccak256/native'    // Native FFI
+import * as Keccak256 from '@tevm/voltaire/Keccak256/wasm'      // WASM
+```
+
+## Performance Considerations
+
+<Warning>
+Performance is nuanced. WASM/Native aren't always faster than TypeScript.
+</Warning>
+
+**Bridging overhead**: Crossing the JS↔WASM or JS↔FFI boundary has constant overhead (~1-10μs). For cheap operations (simple math, short string manipulation), this overhead can exceed the operation itself.
+
+**When WASM/Native wins**:
+- Cryptographic operations (keccak256, secp256k1, BLS) - 5-15x faster
+- Large data encoding/decoding (RLP, ABI with big payloads)
+- Batch operations that amortize bridging cost
+
+**When TypeScript wins**:
+- Simple operations (hex encoding small values, address validation)
+- Single-item operations with low computational cost
+- When avoiding async overhead matters (native FFI is async on first load)
+
+**Bundle size**: For cryptography specifically, WASM is often *smaller* than equivalent pure-JS implementations. A full JS secp256k1 library can be 50-100KB, while WASM crypto modules are typically 20-40KB.
+
+| Operation | TypeScript | WASM | Native | Default |
+|-----------|------------|------|--------|---------|
+| keccak256 | 1x | ~5x | ~10x | TypeScript |
+| secp256k1 sign | 1x | ~8x | ~15x | TypeScript |
+| secp256k1 recover | 1x | ~8x | ~15x | TypeScript |
+| RLP encode | 1x | ~1.2x | ~1.5x | TypeScript |
+| Hex encode | 1x | ~1.1x | ~1.2x | TypeScript |
+
+<Tip>
+Benchmark your actual workload. Default implementations are chosen for common use cases, but your specific access patterns may differ.
+</Tip>
+
+## Build Commands
+
+```bash
+# Build WASM (for browser/portable use)
+zig build build-ts-wasm       # ReleaseSmall (optimized for size)
+zig build build-ts-wasm-fast  # ReleaseFast (optimized for speed)
+
+# Build Native FFI (for Node/Bun)
+zig build build-ts-native     # Produces .dylib/.so/.dll
+
+# Run tests for each tier
+bun run test:wasm             # WASM tests
+bun run test:native           # Native FFI tests
+```
