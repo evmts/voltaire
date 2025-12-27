@@ -34,7 +34,9 @@ export class LedgerWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		// @ts-expect-error - Optional dependency for hardware wallet support
-		const { default: TransportWebUSB } = await import("@ledgerhq/hw-transport-webusb");
+		const { default: TransportWebUSB } = await import(
+			"@ledgerhq/hw-transport-webusb"
+		);
 		// @ts-expect-error - Optional dependency for hardware wallet support
 		const { default: Eth } = await import("@ledgerhq/hw-app-eth");
 
@@ -87,7 +89,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		// Serialize transaction for Ledger
 		const serialized = Transaction.serialize(tx);
@@ -116,7 +118,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		const result = await this.eth.signEIP712HashedMessage(
 			path,
@@ -137,7 +139,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		const hexMessage = Buffer.from(message).toString("hex");
 		const result = await this.eth.signPersonalMessage(path, hexMessage);

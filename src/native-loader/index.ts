@@ -76,4 +76,3 @@ export function allocateStringOutput(size: number): {
 	const ptr = new Uint8Array(8); // size_t* for output length
 	return { buffer, ptr };
 }
-

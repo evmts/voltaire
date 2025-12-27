@@ -20,6 +20,3 @@ export * as evm from "./evm/index.js";
 
 // Precompiles (0x01-0x0a + BLS)
 export * as precompiles from "./evm/precompiles/precompiles.js";
-
-// ExEx (Execution Extensions - chain indexer pattern)
-export * as exex from "./exex/index.js";

@@ -5,13 +5,20 @@
  * This is a working example showing type safety at compile time.
  */
 
-import type { TypedProvider, VoltaireRpcSchema, EIP1193EventMap } from "../index.js";
+import type {
+	TypedProvider,
+	VoltaireRpcSchema,
+	EIP1193EventMap,
+} from "../index.js";
 import { ProviderRpcError, EIP1193ErrorCode } from "../index.js";
 
 /**
  * Example 1: Creating a mock typed provider
  */
-export function createMockProvider(): TypedProvider<VoltaireRpcSchema, EIP1193EventMap> {
+export function createMockProvider(): TypedProvider<
+	VoltaireRpcSchema,
+	EIP1193EventMap
+> {
 	const listeners = new Map<string, Set<(...args: any[]) => void>>();
 
 	const provider: TypedProvider<VoltaireRpcSchema, EIP1193EventMap> = {

@@ -15,7 +15,9 @@ export { from };
 export function add(
 	batch: BatchRequestType,
 ): (request: JsonRpcRequestType) => BatchRequestType {
-	return _add(batch as unknown[]) as (request: JsonRpcRequestType) => BatchRequestType;
+	return _add(batch as unknown[]) as (
+		request: JsonRpcRequestType,
+	) => BatchRequestType;
 }
 
 export function size(batch: BatchRequestType): number {

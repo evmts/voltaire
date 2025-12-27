@@ -11,7 +11,9 @@
  * ```
  */
 export function add(batch) {
-	return /** @param {{method: string, [key: string]: unknown}} request */ (request) => {
+	return /** @param {{method: string, [key: string]: unknown}} request */ (
+		request,
+	) => {
 		if (!request || typeof request !== "object") {
 			throw new TypeError("Request must be an object");
 		}

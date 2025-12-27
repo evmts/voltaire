@@ -35,7 +35,8 @@ import type { ProviderRpcError } from "./ProviderRpcError.js";
  * };
  * ```
  */
-export interface EIP1193EventMap extends Record<string, (...args: any[]) => void> {
+export interface EIP1193EventMap
+	extends Record<string, (...args: any[]) => void> {
 	/**
 	 * Emitted when Provider connects to a chain
 	 *

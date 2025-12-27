@@ -119,13 +119,14 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Signature/index.js"
 		);
 		const { Hex } = await import("../../primitives/Hex/index.js");
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		// Convert Transaction to Trezor format
 		const trezorTx: any = {
 			to: tx.to ? Hex.toString(tx.to) : undefined,
 			value: tx.value ? Hex.toString(tx.value) : "0x0",
-			gasPrice: "gasPrice" in tx && tx.gasPrice ? Hex.toString(tx.gasPrice) : undefined,
+			gasPrice:
+				"gasPrice" in tx && tx.gasPrice ? Hex.toString(tx.gasPrice) : undefined,
 			gasLimit: tx.gasLimit ? Hex.toString(tx.gasLimit) : undefined,
 			nonce: tx.nonce ? Hex.toString(tx.nonce) : undefined,
 			data: tx.data ? Hex.toString(tx.data) : undefined,
@@ -166,7 +167,7 @@ export class TrezorWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignTypedData({
 			path,
@@ -192,7 +193,7 @@ export class TrezorWallet implements HardwareWallet {
 		const { default: Signature } = await import(
 			"../../primitives/Signature/index.js"
 		);
-		const { default: Hash } = await import("../../primitives/Hash/index.js");
+		const Hash = await import("../../primitives/Hash/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignMessage({
 			path,

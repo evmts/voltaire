@@ -62,7 +62,7 @@ import {
 	toDataWasm as blobToDataFn,
 	isValidWasm as blobIsValidFn,
 	calculateGasWasm as blobCalculateGasFn,
-	estimateCountWasm as blobEstimateCountFn,
+    estimateBlobCountWasm as blobEstimateCountFn,
 	calculateGasPriceWasm as blobCalculateGasPriceFn,
 	calculateExcessGasWasm as blobCalculateExcessGasFn,
 } from "../primitives/Blob/Blob.wasm.js";
