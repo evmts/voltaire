@@ -15,15 +15,10 @@ export function handler_0x44_DIFFICULTY(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// Note: Add hardfork check and access appropriate field when available
-	// if (frame.evm.hardfork.isAtLeast(.MERGE)) {
-	//     value = frame.evm.block_context.block_prevrandao;
-	// } else {
-	//     value = frame.evm.block_context.block_difficulty;
-	// }
-
-	// Fallback: Use frame-provided values or 0 (post-merge default)
-	const value = frame.blockDifficulty ?? frame.blockPrevrandao ?? 0n;
+	// Pre-Merge: returns block difficulty
+	// Post-Merge: returns prevrandao value (EIP-4399)
+	// Use prevrandao if available (post-merge), else difficulty (pre-merge)
+	const value = frame.blockPrevrandao ?? frame.blockDifficulty ?? 0n;
 
 	const pushErr = pushStack(frame, value);
 	if (pushErr) return pushErr;

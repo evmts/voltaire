@@ -13,21 +13,18 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x49_BLOBHASH(frame) {
-	// Note: Add hardfork validation when Hardfork module is available
-	// if (frame.evm.hardfork.isBefore(.CANCUN)) return { type: "InvalidOpcode" };
-
 	const gasErr = consumeGas(frame, FastestStep);
 	if (gasErr) return gasErr;
 
 	const { value: index, error: popErr } = popStack(frame);
 	if (popErr) return popErr;
 
-	// Note: Access via EVM blob hashes when available
-	// const blobHashes = frame.evm.blob_versioned_hashes;
-
-	// Return the blob hash at the given index, or 0 if out of bounds
-	// Fallback: Always return 0 for now
-	const hashValue = 0n;
+	// Return the blob versioned hash at the given index, or 0 if out of bounds
+	let hashValue = 0n;
+	const blobHashes = frame.blobVersionedHashes;
+	if (blobHashes && index < BigInt(blobHashes.length)) {
+		hashValue = blobHashes[Number(index)] ?? 0n;
+	}
 
 	const pushErr = pushStack(frame, hashValue);
 	if (pushErr) return pushErr;

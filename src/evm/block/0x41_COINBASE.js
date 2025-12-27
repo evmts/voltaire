@@ -12,11 +12,14 @@ export function handler_0x41_COINBASE(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// Note: Access via block context when available
-	// const coinbase_u256 = Address.toU256(frame.evm.block_context.block_coinbase);
-
-	// Fallback: Return zero address for now
-	const coinbaseU256 = 0n;
+	// Convert coinbase address to U256 (20-byte address as big-endian number)
+	let coinbaseU256 = 0n;
+	if (frame.coinbase) {
+		const addr = frame.coinbase;
+		for (let i = 0; i < 20; i++) {
+			coinbaseU256 = (coinbaseU256 << 8n) | BigInt(addr[i]);
+		}
+	}
 
 	const pushErr = pushStack(frame, coinbaseU256);
 	if (pushErr) return pushErr;

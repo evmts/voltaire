@@ -9,16 +9,10 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x46_CHAINID(frame) {
-	// Note: Add hardfork validation when Hardfork module is available
-	// if (frame.evm.hardfork.isBefore(.ISTANBUL)) return { type: "InvalidOpcode" };
-
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// Note: Access via block context when available
-	// const chainId = frame.evm.block_context.chain_id;
-
-	// Fallback: Use frame property or default (1 = Ethereum mainnet)
+	// Use chain ID from block context (defaults to 1 = mainnet)
 	const chainId = frame.chainId ?? 1n;
 
 	const pushErr = pushStack(frame, chainId);

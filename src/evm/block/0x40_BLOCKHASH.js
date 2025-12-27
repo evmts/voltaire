@@ -21,16 +21,22 @@ export function handler_0x40_BLOCKHASH(frame) {
 	const { value: blockNumber, error: popErr } = popStack(frame);
 	if (popErr) return popErr;
 
-	// Note: Access via Host interface when available
-	// const currentBlock = frame.evm.block_context.block_number;
-	// const blockHashes = frame.evm.block_context.block_hashes;
-
-	// Fallback: Always return 0 for now
 	// Per Python reference:
 	// Return 0 if:
 	// 1. Requested block >= current block
 	// 2. Requested block is more than 256 blocks old
-	const hashValue = 0n;
+	let hashValue = 0n;
+
+	const currentBlock = frame.blockNumber ?? 0n;
+	const blockHashes = frame.blockHashes;
+
+	if (
+		blockHashes &&
+		blockNumber < currentBlock &&
+		blockNumber >= currentBlock - 256n
+	) {
+		hashValue = blockHashes.get(blockNumber) ?? 0n;
+	}
 
 	const pushErr = pushStack(frame, hashValue);
 	if (pushErr) return pushErr;

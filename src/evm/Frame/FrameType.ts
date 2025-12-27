@@ -61,6 +61,10 @@ export type BrandedFrame = {
 	blockBaseFee?: bigint;
 	chainId?: bigint;
 	blobBaseFee?: bigint;
+	coinbase?: Address;
+	blockHashes?: Map<bigint, bigint>; // block number -> block hash (256 most recent)
+	blobVersionedHashes?: bigint[]; // blob versioned hashes from tx
+	selfBalance?: bigint; // balance of currently executing account
 
 	// Logs (emitted by LOG0-LOG4 opcodes)
 	logs?: Array<{
