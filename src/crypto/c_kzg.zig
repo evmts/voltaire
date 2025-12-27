@@ -98,6 +98,16 @@ pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) KZGError!struct { p
 /// Re-export the verifyKZGProof function from ckzg
 pub const verifyKZGProof = ckzg.verifyKZGProof;
 
+/// Compute blob KZG proof (for use with verifyBlobKzgProof)
+pub fn computeBlobKzgProof(blob: *const Blob, commitment_bytes: *const Bytes48) KZGError!KZGProof {
+    return try ckzg.computeBlobKZGProof(blob, commitment_bytes);
+}
+
+/// Verify blob KZG proof (optimized for blob verification)
+pub fn verifyBlobKzgProof(blob: *const Blob, commitment_bytes: *const Bytes48, proof_bytes: *const Bytes48) KZGError!bool {
+    return try ckzg.verifyBlobKZGProof(blob, commitment_bytes, proof_bytes);
+}
+
 // Test helper to generate a valid random blob
 fn getRandomBlob(seed: u64) Blob {
     var blob: Blob = undefined;
