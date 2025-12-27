@@ -28,12 +28,14 @@
 // Core cryptographic modules
 pub const Crypto = @import("crypto.zig");
 pub const secp256k1 = @import("secp256k1.zig");
+pub const constant_time = @import("constant_time.zig");
 pub const p256 = @import("p256.zig");
 pub const ed25519 = @import("ed25519.zig");
 pub const x25519 = @import("x25519.zig");
 pub const aes_gcm = @import("aes_gcm.zig");
 pub const chacha20_poly1305 = @import("chacha20_poly1305.zig");
 pub const keystore = @import("keystore.zig");
+pub const signers = @import("signers.zig");
 const modexp_module = @import("modexp.zig");
 pub const ModExp = modexp_module.ModExp;
 
@@ -132,8 +134,13 @@ else
         }
     };
 
-// Export BLS12-381 from crypto.zig
-pub const bls12_381 = Crypto.bls12_381;
+// BLS12-381 elliptic curve - full signature support
+pub const bls12_381 = @import("bls12_381.zig");
+// Also export the low-level FFI bindings from crypto.zig for backwards compatibility
+pub const bls12_381_ffi = Crypto.bls12_381;
+
+// BIP-39 mnemonic implementation
+pub const bip39 = @import("bip39.zig");
 
 // Export Keccak256 from std.crypto for primitives modules
 pub const Keccak256 = @import("std").crypto.hash.sha3.Keccak256;
