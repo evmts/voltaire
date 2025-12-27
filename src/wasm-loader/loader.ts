@@ -166,7 +166,20 @@ export async function loadWasm(
 		random_get: (buf: number, len: number): number => {
 			if (!wasmMemory) return -1;
 			const view = new Uint8Array(wasmMemory.buffer, buf, len);
-			for (let i = 0; i < view.length; i++) view[i] = 0;
+			// Use crypto.getRandomValues for secure random bytes
+			if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+				globalThis.crypto.getRandomValues(view);
+			} else {
+				// Fallback for Node.js without global crypto
+				try {
+					// Dynamic import to avoid bundler issues
+					const nodeCrypto = require("node:crypto");
+					nodeCrypto.randomFillSync(view);
+				} catch {
+					// Last resort: throw error rather than return predictable zeros
+					throw new Error("No secure random source available for WASI random_get");
+				}
+			}
 			return 0;
 		},
 		// process
@@ -605,7 +618,7 @@ export function addressValidateChecksum(hex: string): boolean {
  */
 export function calculateCreateAddress(
 	sender: Uint8Array,
-	nonce: number,
+	nonce: number | bigint,
 ): BrandedAddress {
 	const savedOffset = memoryOffset;
 	try {
@@ -1257,7 +1270,6 @@ export function bytecodeScan(
 		}
 
 		// Read instructions from output buffer
-		const memory = new Uint8Array(wasmMemory.buffer);
 		const instructions: Instruction[] = [];
 
 		for (let i = 0; i < count; i++) {

@@ -98,7 +98,7 @@ export function addressValidateChecksum(hex: string): boolean;
  */
 export function calculateCreateAddress(
 	sender: Uint8Array,
-	nonce: number,
+	nonce: number | bigint,
 ): BrandedAddress;
 
 /**

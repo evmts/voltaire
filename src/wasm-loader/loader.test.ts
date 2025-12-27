@@ -13,6 +13,7 @@ import {
 	calculateCreateAddress,
 	compressPublicKey,
 	eip191HashMessage,
+	generatePrivateKey,
 	getExports,
 	hashEquals,
 	hashFromHex,
@@ -513,6 +514,42 @@ describe("WASM Loader Infrastructure", () => {
 			expect(compressed).toHaveLength(33);
 			// First byte should be 0x02 or 0x03
 			expect(compressed[0] === 0x02 || compressed[0] === 0x03).toBe(true);
+		});
+
+		it("generatePrivateKey generates cryptographically random key", () => {
+			const key1 = generatePrivateKey();
+			const key2 = generatePrivateKey();
+
+			expect(key1).toHaveLength(32);
+			expect(key2).toHaveLength(32);
+
+			// Keys should not be identical (probabilistically impossible)
+			expect(key1).not.toEqual(key2);
+
+			// Keys should not be all zeros (critical security check)
+			expect(key1.some((b) => b !== 0)).toBe(true);
+			expect(key2.some((b) => b !== 0)).toBe(true);
+
+			// Public key derivation should work
+			const pubKey1 = secp256k1PubkeyFromPrivate(key1);
+			expect(pubKey1).toHaveLength(64);
+		});
+
+		it("generatePrivateKey produces high-entropy output", () => {
+			// Generate multiple keys and check entropy
+			const keys = Array.from({ length: 10 }, () => generatePrivateKey());
+
+			// Each key should be unique
+			const hexKeys = keys.map((k) => bytesToHex(k));
+			const uniqueKeys = new Set(hexKeys);
+			expect(uniqueKeys.size).toBe(10);
+
+			// Check that byte distribution is reasonable (not all same value)
+			for (const key of keys) {
+				const uniqueBytes = new Set(key);
+				// A 32-byte random key should have multiple unique byte values
+				expect(uniqueBytes.size).toBeGreaterThan(5);
+			}
 		});
 	});
 

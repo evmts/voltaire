@@ -25,6 +25,7 @@ export * as Hash from "./Hash/index.js";
 export * as HashType from "./Hash/HashType.js";
 export * as Hex from "./Hex/index.js";
 export * as BrandedHex from "./Hex/index.js";
+export * as Bytes32 from "./Bytes32/index.js";
 
 // Numeric types - Unsigned integers
 export * as Uint from "./Uint/index.js";
