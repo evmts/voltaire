@@ -3,12 +3,24 @@ title: Uint.from
 description: Universal constructor for creating Uint256 from bigint, number, or string
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
 
 <Tabs>
+<Tab title="Effect Schema">
 
+```ts
+import { UintSchema } from '@tevm/voltaire/Uint/effect'
+
+// Universal constructor
+const u1 = UintSchema.from(123n)
+const u2 = UintSchema.from('0xff')
+const u3 = UintSchema.from(42)
+
+u1.toHex() // '0x7b'
+u2.toBigInt() // 255n
+u3.toNumber() // 42
+```
+
+</Tab>
 </Tabs>
 
 ## Input Types

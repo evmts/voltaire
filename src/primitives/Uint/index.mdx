@@ -3,9 +3,6 @@ title: Overview
 description: 256-bit unsigned integer with overflow handling
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
 
 <Tip>
 New to unsigned integers? Start with [Fundamentals](/primitives/uint256/fundamentals) for guided examples and concepts.
@@ -22,6 +19,24 @@ export type BrandedUint256 = bigint & {
 ```
 
 ## Quick Reference
+
+### Effect Schema
+
+```typescript
+import { UintSchema } from '@tevm/voltaire/Uint/effect'
+import * as Effect from 'effect/Effect'
+
+// Schema-validated construction
+const u = new UintSchema({ value: 123n })
+
+// Effect composition
+const program = Effect.gen(function* () {
+  const x = yield* Effect.sync(() => UintSchema.from(123n))
+  return x.toHex()
+})
+
+await Effect.runPromise(program)
+```
 
 ## API Methods
 

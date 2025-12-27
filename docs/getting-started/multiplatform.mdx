@@ -171,51 +171,16 @@ int main() {
 <Tab title="Swift">
 
 ```swift
-import Foundation
-import Tevm
+import Voltaire
 
-// Idiomatic Swift wrapper using C-FFI
-class Address {
-    private let ptr: OpaquePointer
+// Idiomatic Swift wrappers over C-FFI
+let address = try Address(hex: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+print(address.checksumHex)
+print(address.hex)
+print(address.isZero)
 
-    init(_ hex: String) throws {
-        guard let ptr = tevm_address_from_hex(hex) else {
-            throw TevmError.invalidAddress
-        }
-        self.ptr = ptr
-    }
-
-    deinit {
-        tevm_address_free(ptr)
-    }
-
-    func toChecksummed() -> String {
-        let result = tevm_address_to_checksummed(ptr)
-        defer { tevm_string_free(result) }
-        return String(cString: result!)
-    }
-
-    func toHex() -> String {
-        let result = tevm_address_to_hex(ptr)
-        defer { tevm_string_free(result) }
-        return String(cString: result!)
-    }
-
-    func isZero() -> Bool {
-        return tevm_address_is_zero(ptr)
-    }
-
-    func equals(_ other: Address) -> Bool {
-        return tevm_address_equals(ptr, other.ptr)
-    }
-}
-
-// Usage matches TypeScript API
-let address = try Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-address.toChecksummed()
-address.toHex()
-address.isZero()
-address.equals(otherAddress)
+let other = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+print(address == other)
 ```
 
 </Tab>

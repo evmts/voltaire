@@ -3,12 +3,18 @@ title: Uint.toHex
 description: Convert Uint256 to hex string with 0x prefix
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
 
 <Tabs>
+<Tab title="Effect Schema">
 
+```ts
+import { UintSchema } from '@tevm/voltaire/Uint/effect'
+
+const u = UintSchema.from(255n)
+u.toHex(false) // '0xff'
+```
+
+</Tab>
 </Tabs>
 
 ## Output Format
