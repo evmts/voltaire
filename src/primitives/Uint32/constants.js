@@ -24,14 +24,14 @@ export const SIZE = 4;
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @type {import('./Uint32Type.ts').Uint32Type}
+ * @type {import('./Uint32Type.js').Uint32Type}
  * @example
  * ```javascript
  * import { MAX } from './primitives/Uint32/index.js';
  * console.log(MAX); // 4294967295
  * ```
  */
-export const MAX = /** @type {import('./Uint32Type.ts').Uint32Type} */ (
+export const MAX = /** @type {import('./Uint32Type.js').Uint32Type} */ (
 	4294967295
 );
 
@@ -40,39 +40,39 @@ export const MAX = /** @type {import('./Uint32Type.ts').Uint32Type} */ (
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @type {import('./Uint32Type.ts').Uint32Type}
+ * @type {import('./Uint32Type.js').Uint32Type}
  * @example
  * ```javascript
  * import { MIN } from './primitives/Uint32/index.js';
  * console.log(MIN); // 0
  * ```
  */
-export const MIN = /** @type {import('./Uint32Type.ts').Uint32Type} */ (0);
+export const MIN = /** @type {import('./Uint32Type.js').Uint32Type} */ (0);
 
 /**
  * Zero value
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @type {import('./Uint32Type.ts').Uint32Type}
+ * @type {import('./Uint32Type.js').Uint32Type}
  * @example
  * ```javascript
  * import { ZERO } from './primitives/Uint32/index.js';
  * console.log(ZERO); // 0
  * ```
  */
-export const ZERO = /** @type {import('./Uint32Type.ts').Uint32Type} */ (0);
+export const ZERO = /** @type {import('./Uint32Type.js').Uint32Type} */ (0);
 
 /**
  * One value
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
- * @type {import('./Uint32Type.ts').Uint32Type}
+ * @type {import('./Uint32Type.js').Uint32Type}
  * @example
  * ```javascript
  * import { ONE } from './primitives/Uint32/index.js';
  * console.log(ONE); // 1
  * ```
  */
-export const ONE = /** @type {import('./Uint32Type.ts').Uint32Type} */ (1);
+export const ONE = /** @type {import('./Uint32Type.js').Uint32Type} */ (1);

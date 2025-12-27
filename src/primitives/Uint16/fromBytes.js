@@ -18,7 +18,11 @@ export function fromBytes(bytes) {
 		throw new Error(`Uint16 requires exactly 2 bytes, got ${bytes.length}`);
 	}
 
-	const value =
-		/** @type {number} */ ((bytes[0]) << 8) | /** @type {number} */ (bytes[1]);
+	const b0 = bytes[0];
+	const b1 = bytes[1];
+	if (b0 === undefined || b1 === undefined) {
+		throw new Error("Invalid byte array");
+	}
+	const value = /** @type {number} */ ((b0 << 8) | b1);
 	return /** @type {import('./Uint16Type.js').Uint16Type} */ (value);
 }
