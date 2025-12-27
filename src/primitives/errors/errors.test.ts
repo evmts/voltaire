@@ -3,6 +3,8 @@ import {
 	CryptoError,
 	DecodingError,
 	EncodingError,
+	IntegerOverflowError,
+	IntegerUnderflowError,
 	InvalidChecksumError,
 	InvalidFormatError,
 	InvalidLengthError,
@@ -11,6 +13,7 @@ import {
 	InvalidRangeError,
 	InvalidSignatureError,
 	InvalidSignerError,
+	InvalidSizeError,
 	InvalidTransactionTypeError,
 	PrimitiveError,
 	SerializationError,
@@ -274,6 +277,77 @@ describe("Error hierarchy", () => {
 	});
 });
 
+describe("IntegerOverflowError", () => {
+	it("creates overflow error with max and type", () => {
+		const err = new IntegerOverflowError("Value exceeds uint8 maximum", {
+			value: 256,
+			max: 255,
+			type: "uint8",
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(IntegerOverflowError);
+		expect(err.name).toBe("IntegerOverflowError");
+		expect(err.code).toBe("INTEGER_OVERFLOW");
+		expect(err.max).toBe(255);
+		expect(err.integerType).toBe("uint8");
+		expect(err.expected).toBe("value <= 255");
+	});
+
+	it("includes bigint values", () => {
+		const max = 2n ** 256n - 1n;
+		const err = new IntegerOverflowError("Uint256 overflow", {
+			value: max + 1n,
+			max,
+			type: "uint256",
+		});
+		expect(err.max).toBe(max);
+	});
+});
+
+describe("IntegerUnderflowError", () => {
+	it("creates underflow error with min and type", () => {
+		const err = new IntegerUnderflowError("Unsigned cannot be negative", {
+			value: -1n,
+			min: 0n,
+			type: "uint256",
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(IntegerUnderflowError);
+		expect(err.name).toBe("IntegerUnderflowError");
+		expect(err.code).toBe("INTEGER_UNDERFLOW");
+		expect(err.min).toBe(0n);
+		expect(err.integerType).toBe("uint256");
+		expect(err.expected).toBe("value >= 0");
+	});
+
+	it("works for signed integers", () => {
+		const err = new IntegerUnderflowError("Int8 underflow", {
+			value: -129,
+			min: -128,
+			type: "int8",
+		});
+		expect(err.min).toBe(-128);
+		expect(err.integerType).toBe("int8");
+	});
+});
+
+describe("InvalidSizeError", () => {
+	it("creates size error with actual and expected sizes", () => {
+		const err = new InvalidSizeError("Address must be 20 bytes", {
+			value: "0x1234",
+			actualSize: 2,
+			expectedSize: 20,
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(InvalidSizeError);
+		expect(err.name).toBe("InvalidSizeError");
+		expect(err.code).toBe("INVALID_SIZE");
+		expect(err.actualSize).toBe(2);
+		expect(err.expectedSize).toBe(20);
+		expect(err.expected).toBe("20 bytes");
+	});
+});
+
 describe("Usage examples", () => {
 	it("demonstrates typical usage pattern", () => {
 		const throwAddressError = () => {
@@ -302,6 +376,12 @@ describe("Usage examples", () => {
 
 	it("allows programmatic error handling", () => {
 		const handleError = (err: Error) => {
+			if (err instanceof IntegerOverflowError) {
+				return "OVERFLOW";
+			}
+			if (err instanceof IntegerUnderflowError) {
+				return "UNDERFLOW";
+			}
 			if (err instanceof InvalidFormatError) {
 				return "FORMAT";
 			}
@@ -314,6 +394,16 @@ describe("Usage examples", () => {
 			return "UNKNOWN";
 		};
 
+		expect(
+			handleError(
+				new IntegerOverflowError("test", { value: 256, max: 255, type: "uint8" }),
+			),
+		).toBe("OVERFLOW");
+		expect(
+			handleError(
+				new IntegerUnderflowError("test", { value: -1, min: 0, type: "uint8" }),
+			),
+		).toBe("UNDERFLOW");
 		expect(
 			handleError(new InvalidFormatError("test", { value: 1, expected: "2" })),
 		).toBe("FORMAT");

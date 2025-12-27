@@ -3,10 +3,6 @@ title: Address
 description: 20-byte Ethereum address with EIP-55 checksumming
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
 # Address
 
 Ethereum addresses are 20-byte identifiers for accounts (both externally-owned and contracts). They're derived from public keys (EOAs) or calculated deterministically during contract deployment.
@@ -144,6 +140,7 @@ See [Fundamentals](/primitives/address/fundamentals) for detailed explanations o
 
 - [`isValid(value)`](./is-valid) - Check if value can be converted to address
 - [`isValidChecksum(hex)`](./is-valid-checksum) - Verify EIP-55 checksum (case-sensitive)
+- [`assert(value, options?)`](./assert) - Assert value is valid address, with optional strict checksum validation
 
 ### Comparisons
 

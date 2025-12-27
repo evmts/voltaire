@@ -169,6 +169,13 @@ const isValid = Transaction.verifySignature(tx)
 | [`isSigned(tx)`](/primitives/transaction/signing) | Check if signed |
 | [`assertSigned(tx)`](/primitives/transaction/signing) | Assert signed (throws) |
 
+### RPC Conversion
+
+| Method | Description |
+|--------|-------------|
+| [`toRpc(tx)`](/primitives/transaction/serialization) | Convert to JSON-RPC format |
+| [`fromRpc(rpc)`](/primitives/transaction/serialization) | Parse from JSON-RPC format |
+
 ### Utilities
 
 | Method | Description |
@@ -298,6 +305,8 @@ Source: [types.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Transa
 - [serialize](serialize) - RLP encode transaction to bytes
 - [deserialize](deserialize) - RLP decode transaction from bytes
 - [detectType](detectType) - Detect transaction type from serialized bytes
+- [toRpc](toRpc) - Convert transaction to JSON-RPC format
+- [fromRpc](fromRpc) - Parse transaction from JSON-RPC format
 
 ### Hashing
 

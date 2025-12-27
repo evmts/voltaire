@@ -13,6 +13,13 @@ export {
 	InvalidChecksumError,
 } from "./ValidationError.js";
 
+// Overflow/underflow errors
+export {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidSizeError,
+} from "./OverflowError.js";
+
 // Serialization errors
 export {
 	SerializationError,

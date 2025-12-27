@@ -20,6 +20,8 @@ Comprehensive comparison of signature encoding formats: compact, DER, and RSV.
 | **DER** | Variable (~70-72 bytes) | ASN.1 encoded | Bitcoin, X.509, legacy systems |
 | **RSV Object** | N/A (object) | { r, s, v } | API structures, JSON |
 | **EIP-2098** | 64 bytes | r ‖ (s + yParity) | Compact with recovery (see [EIP-2098](./eip-2098.mdx)) |
+| **RPC** | N/A (object) | { r, s, yParity, v } hex | JSON-RPC responses |
+| **Tuple** | N/A (array) | [yParity, r, s] | Transaction envelope serialization |
 
 ## Compact Format
 
@@ -421,6 +423,84 @@ function validateDER(der: Uint8Array): boolean {
   }
 }
 ```
+
+## RPC Format
+
+### Structure
+
+```typescript
+interface RpcSignature {
+  r: `0x${string}`;     // 32 bytes as hex
+  s: `0x${string}`;     // 32 bytes as hex
+  yParity: `0x0` | `0x1`;  // Recovery ID (0 or 1)
+  v?: `0x${string}`;    // Optional legacy v (27, 28, or EIP-155)
+}
+```
+
+### Usage
+
+```typescript
+import * as Signature from 'tevm/primitives/Signature';
+
+// Convert to RPC format
+const sig = Signature.fromSecp256k1(r, s, 27);
+const rpc = Signature.toRpc(sig);
+console.log(rpc.r);       // "0x1234..."
+console.log(rpc.s);       // "0x5678..."
+console.log(rpc.yParity); // "0x0"
+console.log(rpc.v);       // "0x1b"
+
+// Parse from RPC format
+const parsed = Signature.fromRpc(rpc);
+console.log(parsed.v); // 27
+```
+
+### Advantages
+- ✅ JSON-serializable (all hex strings)
+- ✅ Standard JSON-RPC format
+- ✅ Includes both yParity and v for compatibility
+
+### Use Cases
+- JSON-RPC responses (eth_getTransactionByHash)
+- REST API payloads
+- WebSocket message bodies
+
+## Tuple Format
+
+### Structure
+
+```typescript
+type SignatureTuple = [yParity: 0 | 1, r: Uint8Array, s: Uint8Array];
+```
+
+### Usage
+
+```typescript
+import * as Signature from 'tevm/primitives/Signature';
+
+// Convert to tuple format
+const sig = Signature.fromSecp256k1(r, s, 27);
+const [yParity, rBytes, sBytes] = Signature.toTuple(sig);
+console.log(yParity); // 0
+
+// Create from tuple
+const restored = Signature.fromTuple([0, r, s]);
+console.log(restored.v); // 27
+
+// With chainId for EIP-155
+const eip155Sig = Signature.fromTuple([1, r, s], 1);
+console.log(eip155Sig.v); // 38 (chainId*2 + 35 + yParity)
+```
+
+### Advantages
+- ✅ Minimal representation
+- ✅ Matches RLP encoding for typed transactions
+- ✅ Easy destructuring
+
+### Use Cases
+- EIP-2718 typed transaction envelopes
+- RLP serialization
+- Compact storage
 
 ## Interoperability
 

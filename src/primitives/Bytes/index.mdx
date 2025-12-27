@@ -256,13 +256,27 @@ All Bytes&lt;N&gt; types share common methods:
 - `from(value)` - Universal constructor
 - `fromHex(hex)` - From hex string
 - `fromBytes(bytes)` - From Uint8Array
-- `fromNumber(n)` - From number (padded)
+- `fromNumber(n)` - From number (big-endian)
+- `fromBigInt(n)` - From bigint (big-endian)
+- `random(length)` - Generate cryptographically random bytes
 - `zero()` - Create zero-filled bytes
 
 ### Conversions
 - `toHex(bytes)` - To hex string
 - `toBytes(bytes)` - To Uint8Array
 - `toString(bytes)` - To UTF-8 string
+- `toNumber(bytes)` - To number (big-endian)
+- `toBigInt(bytes)` - To bigint (big-endian)
+
+### Validation
+- `isBytes(value)` - Type guard to check if value is Uint8Array
+- `assert(value)` - Assert value is bytes (throws if not)
+
+### Padding & Trimming
+- `padLeft(bytes, length)` - Left-pad with zeros
+- `padRight(bytes, length)` - Right-pad with zeros
+- `trimLeft(bytes)` - Remove leading zeros
+- `trimRight(bytes)` - Remove trailing zeros
 
 ### Comparisons
 - `equals(a, b)` - Check equality

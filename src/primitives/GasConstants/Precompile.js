@@ -260,3 +260,167 @@ export function getEcMulCost(hardfork) {
 export function ecPairingCost() {
 	return calculateEcPairingCost(this.pairCount, this.hardfork);
 }
+
+/**
+ * BLAKE2F (address 0x09) - Cost per round
+ * @type {1n}
+ */
+export const Blake2fPerRound = 1n;
+
+/**
+ * Calculate BLAKE2F precompile cost
+ *
+ * @param {bigint} rounds - Number of compression rounds
+ * @returns {bigint} Gas cost
+ */
+export function calculateBlake2fCost(rounds) {
+	return rounds * Blake2fPerRound;
+}
+
+/**
+ * Convenience alias for BLAKE2F cost calculation
+ * @param {bigint} rounds - Number of compression rounds
+ * @returns {bigint} Gas cost
+ */
+export const blake2f = calculateBlake2fCost;
+
+/**
+ * POINT_EVALUATION (address 0x0a) - Fixed cost (EIP-4844)
+ * @type {50000n}
+ */
+export const PointEvaluation = 50000n;
+
+/**
+ * Calculate POINT_EVALUATION precompile cost
+ *
+ * @returns {bigint} Gas cost (fixed at 50000)
+ */
+export function calculatePointEvaluationCost() {
+	return PointEvaluation;
+}
+
+// ============================================
+// BLS12-381 Precompiles (EIP-2537) - Prague
+// ============================================
+
+/**
+ * BLS12_G1ADD (address 0x0b) - Fixed cost
+ * @type {500n}
+ */
+export const Bls12G1Add = 500n;
+
+/**
+ * BLS12_G1MUL (address 0x0c) - Fixed cost
+ * @type {12000n}
+ */
+export const Bls12G1Mul = 12000n;
+
+/**
+ * BLS12_G1MSM (address 0x0d) - Base cost per point
+ * @type {12000n}
+ */
+export const Bls12G1MsmBase = 12000n;
+
+/**
+ * BLS12_G2ADD (address 0x0e) - Fixed cost
+ * @type {800n}
+ */
+export const Bls12G2Add = 800n;
+
+/**
+ * BLS12_G2MUL (address 0x0f) - Fixed cost
+ * @type {45000n}
+ */
+export const Bls12G2Mul = 45000n;
+
+/**
+ * BLS12_G2MSM (address 0x10) - Base cost per point
+ * @type {45000n}
+ */
+export const Bls12G2MsmBase = 45000n;
+
+/**
+ * BLS12_PAIRING (address 0x11) - Base cost
+ * @type {65000n}
+ */
+export const Bls12PairingBase = 65000n;
+
+/**
+ * BLS12_PAIRING - Per-pair cost
+ * @type {43000n}
+ */
+export const Bls12PairingPerPair = 43000n;
+
+/**
+ * BLS12_MAP_FP_TO_G1 (address 0x12) - Fixed cost
+ * @type {5500n}
+ */
+export const Bls12MapFpToG1 = 5500n;
+
+/**
+ * BLS12_MAP_FP2_TO_G2 (address 0x13) - Fixed cost
+ * @type {75000n}
+ */
+export const Bls12MapFp2ToG2 = 75000n;
+
+/**
+ * MSM discount multipliers (EIP-2537)
+ * Index k maps to multiplier for k points
+ */
+const MSM_DISCOUNT_TABLE = [
+	0, 1000, 949, 848, 797, 764, 750, 738, 728, 719, 712, 705, 698, 692, 687, 682, 677, 673, 669,
+	665, 661, 658, 654, 651, 648, 645, 642, 640, 637, 635, 632, 630, 627, 625, 623, 621, 619, 617,
+	615, 613, 611, 609, 608, 606, 604, 603, 601, 599, 598, 596, 595, 593, 592, 591, 589, 588, 586,
+	585, 584, 582, 581, 580, 579, 577, 576, 575, 574, 573, 572, 570, 569, 568, 567, 566, 565, 564,
+	563, 562, 561, 560, 559, 558, 557, 556, 555, 554, 553, 552, 551, 550, 549, 548, 547, 547, 546,
+	545, 544, 543, 542, 542, 541, 540, 539, 538, 538, 537, 536, 535, 535, 534, 533, 532, 532, 531,
+	530, 530, 529, 528, 528, 527, 526, 526, 525, 524, 524, 523, 522, 522,
+];
+
+/**
+ * Get MSM discount multiplier for k points
+ *
+ * @param {number} k - Number of point-scalar pairs
+ * @returns {number} Discount multiplier (divide by 1000)
+ */
+function getMsmDiscount(k) {
+	if (k === 0) return 0;
+	if (k >= MSM_DISCOUNT_TABLE.length) return MSM_DISCOUNT_TABLE[MSM_DISCOUNT_TABLE.length - 1];
+	return MSM_DISCOUNT_TABLE[k];
+}
+
+/**
+ * Calculate BLS12_G1MSM precompile cost
+ *
+ * @param {bigint} pairCount - Number of point-scalar pairs
+ * @returns {bigint} Gas cost
+ */
+export function calculateBls12G1MsmCost(pairCount) {
+	const k = Number(pairCount);
+	if (k === 0) return 0n;
+	const discount = BigInt(getMsmDiscount(k));
+	return (Bls12G1MsmBase * pairCount * discount) / 1000n;
+}
+
+/**
+ * Calculate BLS12_G2MSM precompile cost
+ *
+ * @param {bigint} pairCount - Number of point-scalar pairs
+ * @returns {bigint} Gas cost
+ */
+export function calculateBls12G2MsmCost(pairCount) {
+	const k = Number(pairCount);
+	if (k === 0) return 0n;
+	const discount = BigInt(getMsmDiscount(k));
+	return (Bls12G2MsmBase * pairCount * discount) / 1000n;
+}
+
+/**
+ * Calculate BLS12_PAIRING precompile cost
+ *
+ * @param {bigint} pairCount - Number of G1-G2 pairs
+ * @returns {bigint} Gas cost
+ */
+export function calculateBls12PairingCost(pairCount) {
+	return Bls12PairingBase + pairCount * Bls12PairingPerPair;
+}
