@@ -425,13 +425,12 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const commitment = KZG.Commitment(blob);
 			const proof = KZG.computeBlobKzgProof(blob, commitment);
 
-			// Corrupt the proof
-			const corruptedProof = new Uint8Array(proof);
-			if (corruptedProof[0] !== undefined) {
-				corruptedProof[0] ^= 1;
-			}
+			// Use a different blob's proof (guaranteed different)
+			const otherBlob = KZG.generateRandomBlob();
+			const otherCommitment = KZG.Commitment(otherBlob);
+			const wrongProof = KZG.computeBlobKzgProof(otherBlob, otherCommitment);
 
-			const isValid = KZG.verifyBlobKzgProof(blob, commitment, corruptedProof);
+			const isValid = KZG.verifyBlobKzgProof(blob, commitment, wrongProof);
 			expect(isValid).toBe(false);
 		});
 

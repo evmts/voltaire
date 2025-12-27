@@ -1,0 +1,89 @@
+import { describe, it, expect } from "vitest";
+import * as Schema from "effect/Schema";
+import * as Effect from "effect/Effect";
+import { HexSchema, HexBrand, HexFromUnknown, HexFromBytes } from "./effect.js";
+import * as HexImpl from "./index.js";
+
+describe("Hex Effect Schema", () => {
+  describe("HexSchema class", () => {
+    it("creates HexSchema from string", () => {
+      const hex = HexSchema.from("0x1234");
+      expect(hex.toString()).toBe("0x1234");
+    });
+
+    it("creates HexSchema from bytes", () => {
+      const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+      const hex = HexSchema.fromBytes(bytes);
+      expect(hex.toString()).toBe("0xdeadbeef");
+    });
+
+    it("rejects invalid format in constructor", () => {
+      expect(() => new HexSchema({ value: "1234" as any })).toThrow();
+    });
+
+    it("converts to bytes and string", () => {
+      const hex = HexSchema.from("0x00");
+      expect(hex.toBytes()).toBeInstanceOf(Uint8Array);
+      expect(hex.toString()).toBe("0x00");
+    });
+  });
+
+  describe("Effect Branded Types", () => {
+    it("creates HexBrand with validation", () => {
+      const brand = HexBrand("0xabc");
+      expect(brand).toBe("0xabc");
+    });
+
+    it("rejects invalid HexBrand", () => {
+      expect(() => HexBrand("abc" as any)).toThrow();
+    });
+
+    it("creates HexSchema from HexBrand", () => {
+      const brand = HexBrand("0x00");
+      const schema = HexSchema.fromBranded(brand);
+      expect(schema.branded).toBe(brand);
+    });
+  });
+
+  describe("Schema transforms", () => {
+    it("decodes from unknown (string)", () => {
+      const decode = Schema.decodeUnknownSync(HexFromUnknown);
+      const hex = decode("0x0a");
+      expect(hex).toBeInstanceOf(HexSchema);
+      expect(hex.toString()).toBe("0x0a");
+    });
+
+    it("decodes from bytes via HexFromBytes", () => {
+      const decode = Schema.decodeUnknownSync(HexFromBytes);
+      const hex = decode(new Uint8Array([0, 1]));
+      expect(hex.toString()).toBe("0x0001");
+    });
+
+    it("encodes back to string", () => {
+      const encode = Schema.encodeSync(HexFromUnknown);
+      const out = encode(HexSchema.from("0x1234"));
+      expect(out).toBe("0x1234");
+    });
+  });
+
+  describe("Effect integration", () => {
+    it("works with Effect.gen", async () => {
+      const program = Effect.gen(function* () {
+        const h = yield* Effect.sync(() => HexSchema.from("0xabc"));
+        return h.toString();
+      });
+      const res = await Effect.runPromise(program);
+      expect(res).toBe("0xabc");
+    });
+
+    it("handles validation errors", async () => {
+      const program = Effect.try({
+        try: () => new HexSchema({ value: "abc" as any }),
+        catch: (e) => new Error(`Failed: ${String(e)}`),
+      });
+      const result = await Effect.runPromise(Effect.either(program));
+      expect(result._tag).toBe("Left");
+    });
+  });
+});
+

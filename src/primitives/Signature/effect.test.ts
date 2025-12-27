@@ -1,0 +1,42 @@
+import { describe, it, expect } from "vitest";
+import * as Schema from "effect/Schema";
+import * as Effect from "effect/Effect";
+import { SignatureSchema, SignatureBrand, SignatureFromUnknown } from "./effect.js";
+
+describe("Signature Effect Schema", () => {
+  const make64 = (fill = 0): Uint8Array => new Uint8Array(64).fill(fill);
+
+  it("creates SignatureSchema from bytes (compact 64-byte)", () => {
+    const s = SignatureSchema.fromBytes(make64(1));
+    expect(s.toBytes()).toBeInstanceOf(Uint8Array);
+    expect(typeof s.toHex()).toBe("string");
+  });
+
+  it("creates from universal input", () => {
+    const s1 = SignatureSchema.fromBytes(make64(2));
+    const s2 = SignatureSchema.from(s1.toBytes());
+    expect(s1.equals(s2)).toBe(true);
+  });
+
+  it("brand validation works", () => {
+    const s = SignatureSchema.fromBytes(make64(3));
+    const brand = SignatureBrand(s.signature as any);
+    const s2 = SignatureSchema.fromBranded(brand);
+    expect(s2.branded).toBe(brand);
+  });
+
+  it("schema transform decodes unknown", () => {
+    const decode = Schema.decodeUnknownSync(SignatureFromUnknown);
+    const s = decode(make64(4));
+    expect(s).toBeInstanceOf(SignatureSchema);
+  });
+
+  it("works with Effect.gen", async () => {
+    const program = Effect.gen(function* () {
+      const s = yield* Effect.sync(() => SignatureSchema.fromBytes(make64(5)));
+      return s.toHex().length > 0;
+    });
+    const res = await Effect.runPromise(program);
+    expect(res).toBe(true);
+  });
+});
