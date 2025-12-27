@@ -1,0 +1,421 @@
+import { describe, expect, it } from "vitest";
+import {
+	assertInRange,
+	assertInRangeBigInt,
+} from "./assertInRange.js";
+import {
+	assertUint8,
+	assertUint16,
+	assertUint32,
+	assertUint64,
+	assertUint128,
+	assertUint256,
+} from "./assertUint.js";
+import {
+	assertInt8,
+	assertInt16,
+	assertInt32,
+	assertInt64,
+	assertInt128,
+	assertInt256,
+} from "./assertInt.js";
+import {
+	assertSize,
+	assertMaxSize,
+	assertMinSize,
+} from "./assertSize.js";
+import {
+	assertPositive,
+	assertNonNegative,
+	assertNonZero,
+} from "./assertCommon.js";
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidSizeError,
+	InvalidRangeError,
+} from "../errors/index.js";
+
+describe("assertInRange", () => {
+	it("passes for values within range", () => {
+		expect(() => assertInRange(50, 0, 100, "test")).not.toThrow();
+		expect(() => assertInRange(0, 0, 100, "test")).not.toThrow();
+		expect(() => assertInRange(100, 0, 100, "test")).not.toThrow();
+	});
+
+	it("throws IntegerUnderflowError for values below min", () => {
+		expect(() => assertInRange(-1, 0, 100, "test")).toThrow(
+			IntegerUnderflowError,
+		);
+		try {
+			assertInRange(-5, 0, 100, "myValue");
+		} catch (e) {
+			expect(e).toBeInstanceOf(IntegerUnderflowError);
+			if (e instanceof IntegerUnderflowError) {
+				expect(e.min).toBe(0);
+				expect(e.integerType).toBe("myValue");
+				expect(e.code).toBe("INTEGER_UNDERFLOW");
+			}
+		}
+	});
+
+	it("throws IntegerOverflowError for values above max", () => {
+		expect(() => assertInRange(101, 0, 100, "test")).toThrow(
+			IntegerOverflowError,
+		);
+		try {
+			assertInRange(256, 0, 255, "uint8");
+		} catch (e) {
+			expect(e).toBeInstanceOf(IntegerOverflowError);
+			if (e instanceof IntegerOverflowError) {
+				expect(e.max).toBe(255);
+				expect(e.integerType).toBe("uint8");
+				expect(e.code).toBe("INTEGER_OVERFLOW");
+			}
+		}
+	});
+});
+
+describe("assertInRangeBigInt", () => {
+	it("passes for values within range", () => {
+		expect(() =>
+			assertInRangeBigInt(50n, 0n, 100n, "test"),
+		).not.toThrow();
+		expect(() =>
+			assertInRangeBigInt(0n, 0n, 2n ** 256n - 1n, "uint256"),
+		).not.toThrow();
+	});
+
+	it("throws for values out of range", () => {
+		expect(() => assertInRangeBigInt(-1n, 0n, 100n, "test")).toThrow(
+			IntegerUnderflowError,
+		);
+		expect(() => assertInRangeBigInt(101n, 0n, 100n, "test")).toThrow(
+			IntegerOverflowError,
+		);
+	});
+});
+
+describe("assertUint8", () => {
+	it("passes for valid uint8 values", () => {
+		expect(() => assertUint8(0)).not.toThrow();
+		expect(() => assertUint8(127)).not.toThrow();
+		expect(() => assertUint8(255)).not.toThrow();
+	});
+
+	it("throws for negative values", () => {
+		expect(() => assertUint8(-1)).toThrow(IntegerUnderflowError);
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertUint8(256)).toThrow(IntegerOverflowError);
+		expect(() => assertUint8(1000)).toThrow(IntegerOverflowError);
+	});
+
+	it("uses custom name in error message", () => {
+		try {
+			assertUint8(256, "gasPrice");
+		} catch (e) {
+			expect(e).toBeInstanceOf(IntegerOverflowError);
+			if (e instanceof IntegerOverflowError) {
+				expect(e.integerType).toBe("gasPrice");
+			}
+		}
+	});
+});
+
+describe("assertUint16", () => {
+	it("passes for valid uint16 values", () => {
+		expect(() => assertUint16(0)).not.toThrow();
+		expect(() => assertUint16(65535)).not.toThrow();
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertUint16(65536)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertUint32", () => {
+	it("passes for valid uint32 values", () => {
+		expect(() => assertUint32(0)).not.toThrow();
+		expect(() => assertUint32(4294967295)).not.toThrow();
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertUint32(4294967296)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertUint64", () => {
+	it("passes for valid uint64 values", () => {
+		expect(() => assertUint64(0n)).not.toThrow();
+		expect(() => assertUint64(18446744073709551615n)).not.toThrow();
+	});
+
+	it("throws for negative", () => {
+		expect(() => assertUint64(-1n)).toThrow(IntegerUnderflowError);
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertUint64(18446744073709551616n)).toThrow(
+			IntegerOverflowError,
+		);
+	});
+});
+
+describe("assertUint128", () => {
+	it("passes for valid uint128 values", () => {
+		expect(() => assertUint128(0n)).not.toThrow();
+		expect(() =>
+			assertUint128(340282366920938463463374607431768211455n),
+		).not.toThrow();
+	});
+
+	it("throws for overflow", () => {
+		expect(() =>
+			assertUint128(340282366920938463463374607431768211456n),
+		).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertUint256", () => {
+	const MAX_UINT256 =
+		115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+
+	it("passes for valid uint256 values", () => {
+		expect(() => assertUint256(0n)).not.toThrow();
+		expect(() => assertUint256(MAX_UINT256)).not.toThrow();
+	});
+
+	it("throws for negative", () => {
+		expect(() => assertUint256(-1n)).toThrow(IntegerUnderflowError);
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertUint256(MAX_UINT256 + 1n)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertInt8", () => {
+	it("passes for valid int8 values", () => {
+		expect(() => assertInt8(-128)).not.toThrow();
+		expect(() => assertInt8(0)).not.toThrow();
+		expect(() => assertInt8(127)).not.toThrow();
+	});
+
+	it("throws for underflow", () => {
+		expect(() => assertInt8(-129)).toThrow(IntegerUnderflowError);
+	});
+
+	it("throws for overflow", () => {
+		expect(() => assertInt8(128)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertInt16", () => {
+	it("passes for valid int16 values", () => {
+		expect(() => assertInt16(-32768)).not.toThrow();
+		expect(() => assertInt16(32767)).not.toThrow();
+	});
+
+	it("throws for out of range", () => {
+		expect(() => assertInt16(-32769)).toThrow(IntegerUnderflowError);
+		expect(() => assertInt16(32768)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertInt32", () => {
+	it("passes for valid int32 values", () => {
+		expect(() => assertInt32(-2147483648)).not.toThrow();
+		expect(() => assertInt32(2147483647)).not.toThrow();
+	});
+
+	it("throws for out of range", () => {
+		expect(() => assertInt32(-2147483649)).toThrow(IntegerUnderflowError);
+		expect(() => assertInt32(2147483648)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertInt64", () => {
+	it("passes for valid int64 values", () => {
+		expect(() => assertInt64(-9223372036854775808n)).not.toThrow();
+		expect(() => assertInt64(9223372036854775807n)).not.toThrow();
+	});
+
+	it("throws for out of range", () => {
+		expect(() => assertInt64(-9223372036854775809n)).toThrow(
+			IntegerUnderflowError,
+		);
+		expect(() => assertInt64(9223372036854775808n)).toThrow(
+			IntegerOverflowError,
+		);
+	});
+});
+
+describe("assertInt128", () => {
+	const MIN = -170141183460469231731687303715884105728n;
+	const MAX = 170141183460469231731687303715884105727n;
+
+	it("passes for valid int128 values", () => {
+		expect(() => assertInt128(MIN)).not.toThrow();
+		expect(() => assertInt128(MAX)).not.toThrow();
+		expect(() => assertInt128(0n)).not.toThrow();
+	});
+
+	it("throws for out of range", () => {
+		expect(() => assertInt128(MIN - 1n)).toThrow(IntegerUnderflowError);
+		expect(() => assertInt128(MAX + 1n)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertInt256", () => {
+	const MIN =
+		-57896044618658097711785492504343953926634992332820282019728792003956564819968n;
+	const MAX =
+		57896044618658097711785492504343953926634992332820282019728792003956564819967n;
+
+	it("passes for valid int256 values", () => {
+		expect(() => assertInt256(MIN)).not.toThrow();
+		expect(() => assertInt256(MAX)).not.toThrow();
+		expect(() => assertInt256(0n)).not.toThrow();
+	});
+
+	it("throws for out of range", () => {
+		expect(() => assertInt256(MIN - 1n)).toThrow(IntegerUnderflowError);
+		expect(() => assertInt256(MAX + 1n)).toThrow(IntegerOverflowError);
+	});
+});
+
+describe("assertSize", () => {
+	it("passes for correct byte array size", () => {
+		expect(() => assertSize(new Uint8Array(20), 20, "address")).not.toThrow();
+		expect(() => assertSize(new Uint8Array(32), 32, "hash")).not.toThrow();
+	});
+
+	it("passes for correct hex string size", () => {
+		expect(() => assertSize("0x1234", 2, "hex")).not.toThrow();
+		expect(() =>
+			assertSize("0x" + "00".repeat(20), 20, "address"),
+		).not.toThrow();
+	});
+
+	it("throws InvalidSizeError for wrong size", () => {
+		expect(() => assertSize(new Uint8Array(10), 20, "address")).toThrow(
+			InvalidSizeError,
+		);
+		try {
+			assertSize(new Uint8Array(10), 20, "address");
+		} catch (e) {
+			expect(e).toBeInstanceOf(InvalidSizeError);
+			if (e instanceof InvalidSizeError) {
+				expect(e.actualSize).toBe(10);
+				expect(e.expectedSize).toBe(20);
+				expect(e.code).toBe("INVALID_SIZE");
+			}
+		}
+	});
+});
+
+describe("assertMaxSize", () => {
+	it("passes for data within max size", () => {
+		expect(() =>
+			assertMaxSize(new Uint8Array(100), 1000, "data"),
+		).not.toThrow();
+		expect(() => assertMaxSize(new Uint8Array(1000), 1000, "data")).not.toThrow();
+	});
+
+	it("throws for data exceeding max size", () => {
+		expect(() => assertMaxSize(new Uint8Array(1001), 1000, "data")).toThrow(
+			InvalidSizeError,
+		);
+	});
+});
+
+describe("assertMinSize", () => {
+	it("passes for data meeting min size", () => {
+		expect(() => assertMinSize(new Uint8Array(64), 64, "sig")).not.toThrow();
+		expect(() => assertMinSize(new Uint8Array(100), 64, "sig")).not.toThrow();
+	});
+
+	it("throws for data below min size", () => {
+		expect(() => assertMinSize(new Uint8Array(63), 64, "sig")).toThrow(
+			InvalidSizeError,
+		);
+	});
+});
+
+describe("assertPositive", () => {
+	it("passes for positive values", () => {
+		expect(() => assertPositive(1, "gasLimit")).not.toThrow();
+		expect(() => assertPositive(100, "value")).not.toThrow();
+		expect(() => assertPositive(1n, "amount")).not.toThrow();
+	});
+
+	it("throws for zero", () => {
+		expect(() => assertPositive(0, "gasLimit")).toThrow(InvalidRangeError);
+		expect(() => assertPositive(0n, "amount")).toThrow(InvalidRangeError);
+	});
+
+	it("throws for negative", () => {
+		expect(() => assertPositive(-1, "value")).toThrow(InvalidRangeError);
+		expect(() => assertPositive(-1n, "amount")).toThrow(InvalidRangeError);
+	});
+});
+
+describe("assertNonNegative", () => {
+	it("passes for non-negative values", () => {
+		expect(() => assertNonNegative(0, "nonce")).not.toThrow();
+		expect(() => assertNonNegative(100, "nonce")).not.toThrow();
+		expect(() => assertNonNegative(0n, "balance")).not.toThrow();
+	});
+
+	it("throws for negative values", () => {
+		expect(() => assertNonNegative(-1, "nonce")).toThrow(InvalidRangeError);
+		expect(() => assertNonNegative(-1n, "balance")).toThrow(InvalidRangeError);
+	});
+});
+
+describe("assertNonZero", () => {
+	it("passes for non-zero values", () => {
+		expect(() => assertNonZero(1, "chainId")).not.toThrow();
+		expect(() => assertNonZero(-1, "divisor")).not.toThrow();
+		expect(() => assertNonZero(1n, "chainId")).not.toThrow();
+	});
+
+	it("throws for zero", () => {
+		expect(() => assertNonZero(0, "chainId")).toThrow(InvalidRangeError);
+		expect(() => assertNonZero(0n, "divisor")).toThrow(InvalidRangeError);
+	});
+});
+
+describe("Error types hierarchy", () => {
+	it("IntegerOverflowError extends InvalidRangeError", () => {
+		const err = new IntegerOverflowError("test", {
+			value: 256,
+			max: 255,
+			type: "uint8",
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(Error);
+	});
+
+	it("IntegerUnderflowError extends InvalidRangeError", () => {
+		const err = new IntegerUnderflowError("test", {
+			value: -1,
+			min: 0,
+			type: "uint8",
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(Error);
+	});
+
+	it("InvalidSizeError extends InvalidRangeError", () => {
+		const err = new InvalidSizeError("test", {
+			value: "0x1234",
+			actualSize: 2,
+			expectedSize: 20,
+		});
+		expect(err).toBeInstanceOf(InvalidRangeError);
+		expect(err).toBeInstanceOf(Error);
+	});
+});
