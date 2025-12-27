@@ -39,7 +39,10 @@ describe("decodeData", () => {
 		it("decodes transfer calldata", () => {
 			const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
 			const amount = 1000n;
-			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[0]), [to, amount]);
+			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[0]), [
+				to,
+				amount,
+			]);
 
 			const result = decodeData.call(testAbi, calldata);
 			expect(result.functionName).toBe("transfer");
@@ -48,7 +51,9 @@ describe("decodeData", () => {
 
 		it("decodes balanceOf calldata", () => {
 			const account = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
-			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[1]), [account]);
+			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[1]), [
+				account,
+			]);
 
 			const result = decodeData.call(testAbi, calldata);
 			expect(result.functionName).toBe("balanceOf");
@@ -58,7 +63,10 @@ describe("decodeData", () => {
 		it("decodes approve calldata", () => {
 			const spender = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
 			const amount = 999n;
-			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[2]), [spender, amount]);
+			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[2]), [
+				spender,
+				amount,
+			]);
 
 			const result = decodeData.call(testAbi, calldata);
 			expect(result.functionName).toBe("approve");
@@ -100,14 +108,14 @@ describe("decodeData", () => {
 		});
 
 		it("distinguishes between different selectors", () => {
-			const transferCalldata = Function.encodeParams(/** @type {*} */ (testAbi[0]), [
-				"0x0000000000000000000000000000000000000000",
-				100n,
-			]);
-			const approveCalldata = Function.encodeParams(/** @type {*} */ (testAbi[2]), [
-				"0x0000000000000000000000000000000000000000",
-				100n,
-			]);
+			const transferCalldata = Function.encodeParams(
+				/** @type {*} */ (testAbi[0]),
+				["0x0000000000000000000000000000000000000000", 100n],
+			);
+			const approveCalldata = Function.encodeParams(
+				/** @type {*} */ (testAbi[2]),
+				["0x0000000000000000000000000000000000000000", 100n],
+			);
 
 			expect(transferCalldata.slice(0, 4)).not.toEqual(
 				approveCalldata.slice(0, 4),
@@ -181,7 +189,10 @@ describe("decodeData", () => {
 				"0x0000000000000000000000000000000000000002",
 			];
 			const amounts = [100n, 200n];
-			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [recipients, amounts]);
+			const calldata = Function.encodeParams(/** @type {*} */ (abi[0]), [
+				recipients,
+				amounts,
+			]);
 
 			const result = decodeData.call(abi, calldata);
 			expect(result.functionName).toBe("batchTransfer");
@@ -242,7 +253,9 @@ describe("decodeData", () => {
 
 		it("decodes zero address", () => {
 			const zeroAddr = "0x0000000000000000000000000000000000000000";
-			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[1]), [zeroAddr]);
+			const calldata = Function.encodeParams(/** @type {*} */ (testAbi[1]), [
+				zeroAddr,
+			]);
 
 			const result = decodeData.call(testAbi, calldata);
 			expect(result.args[0]).toBe(zeroAddr);
@@ -315,15 +328,18 @@ describe("decodeData", () => {
 				},
 			];
 
-			const transferFromCalldata = Function.encodeParams(/** @type {*} */ (abi[0]), [
-				"0x0000000000000000000000000000000000000001",
-				"0x0000000000000000000000000000000000000002",
-				100n,
-			]);
-			const transferCalldata = Function.encodeParams(/** @type {*} */ (abi[1]), [
-				"0x0000000000000000000000000000000000000001",
-				100n,
-			]);
+			const transferFromCalldata = Function.encodeParams(
+				/** @type {*} */ (abi[0]),
+				[
+					"0x0000000000000000000000000000000000000001",
+					"0x0000000000000000000000000000000000000002",
+					100n,
+				],
+			);
+			const transferCalldata = Function.encodeParams(
+				/** @type {*} */ (abi[1]),
+				["0x0000000000000000000000000000000000000001", 100n],
+			);
 
 			const result1 = decodeData.call(abi, transferFromCalldata);
 			expect(result1.functionName).toBe("transferFrom");

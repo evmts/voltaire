@@ -103,7 +103,9 @@ describe("Hex.toBytes", () => {
 
 		it("converts keccak256 hash", () => {
 			const bytes = toBytes(
-				hex("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"),
+				hex(
+					"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+				),
 			);
 			expect(bytes).toEqual(
 				new Uint8Array([

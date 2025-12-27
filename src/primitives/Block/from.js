@@ -30,7 +30,8 @@ export function from({ header, body, hash, size, totalDifficulty }) {
 		body,
 		hash: blockHashFrom(hash),
 		size: uint256From(size),
-		totalDifficulty: totalDifficulty !== undefined ? uint256From(totalDifficulty) : undefined,
+		totalDifficulty:
+			totalDifficulty !== undefined ? uint256From(totalDifficulty) : undefined,
 	};
 
 	return block;

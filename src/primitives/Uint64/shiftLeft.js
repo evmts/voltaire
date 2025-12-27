@@ -18,5 +18,7 @@ import { MAX } from "./constants.js";
  */
 export function shiftLeft(uint, bits) {
 	const shiftAmount = typeof bits === "bigint" ? bits : BigInt(bits);
-	return /** @type {import('./Uint64Type.js').Uint64Type} */ ((uint << shiftAmount) & MAX);
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (
+		(uint << shiftAmount) & MAX
+	);
 }

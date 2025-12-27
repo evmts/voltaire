@@ -15,5 +15,7 @@ import * as Address from "../Address/internal-index.js";
  */
 export function from(value) {
 	const addr = Address.from(value);
-	return /** @type {import('./EntryPointType.js').EntryPointType} */ (/** @type {unknown} */ (addr));
+	return /** @type {import('./EntryPointType.js').EntryPointType} */ (
+		/** @type {unknown} */ (addr)
+	);
 }

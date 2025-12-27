@@ -60,23 +60,26 @@ describe("fromNumber", () => {
 		expect(fromNumber(65536)).toBe("0x10000");
 	});
 
-	it("handles negative numbers (uses default toString)", () => {
-		const hex = fromNumber(-1);
-		expect(hex.startsWith("0x")).toBe(true);
+	it("throws on negative numbers", () => {
+		expect(() => fromNumber(-1)).toThrow(/must be non-negative/);
+		expect(() => fromNumber(-100)).toThrow(/must be non-negative/);
 	});
 
-	it("handles non-integer (uses default toString)", () => {
-		const hex = fromNumber(1.5);
-		expect(hex.startsWith("0x")).toBe(true);
+	it("throws on non-integer", () => {
+		expect(() => fromNumber(1.5)).toThrow(/must be an integer/);
+		expect(() => fromNumber(0.1)).toThrow(/must be an integer/);
 	});
 
-	it("handles NaN", () => {
-		const hex = fromNumber(Number.NaN);
-		expect(hex).toBe("0xNaN");
+	it("throws on NaN", () => {
+		expect(() => fromNumber(Number.NaN)).toThrow(/must be an integer/);
 	});
 
-	it("handles Infinity", () => {
-		expect(fromNumber(Number.POSITIVE_INFINITY)).toBe("0xInfinity");
-		expect(fromNumber(Number.NEGATIVE_INFINITY)).toBe("0x-Infinity");
+	it("throws on Infinity", () => {
+		expect(() => fromNumber(Number.POSITIVE_INFINITY)).toThrow(
+			/exceeds MAX_SAFE_INTEGER/,
+		);
+		expect(() => fromNumber(Number.NEGATIVE_INFINITY)).toThrow(
+			/must be non-negative/,
+		);
 	});
 });

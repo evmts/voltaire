@@ -4,7 +4,11 @@
 
 import { describe, expect, it } from "vitest";
 import * as Hash from "../../Hash/index.ts";
-import { Hex, fromBytes as hexFromBytes, toBytes as hexToBytes } from "../../Hex/index.js";
+import {
+	Hex,
+	fromBytes as hexFromBytes,
+	toBytes as hexToBytes,
+} from "../../Hex/index.js";
 import { encodeParameters } from "../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
 import { decodeLog } from "./decodeLog.js";

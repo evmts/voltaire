@@ -21,5 +21,7 @@ export function fromHex(hex) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (/** @type {unknown} */ (bytes));
+	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (
+		/** @type {unknown} */ (bytes)
+	);
 }

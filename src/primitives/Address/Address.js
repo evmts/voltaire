@@ -365,7 +365,9 @@ Address.prototype.toBytes = BrandedAddress.toBytes.call.bind(
 );
 Address.prototype.clone = function () {
 	const result = BrandedAddress.clone(
-		/** @type {import('./AddressType.js').AddressType} */ (/** @type {unknown} */ (this)),
+		/** @type {import('./AddressType.js').AddressType} */ (
+			/** @type {unknown} */ (this)
+		),
 	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;

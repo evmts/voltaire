@@ -16,5 +16,7 @@
  */
 export function shiftRight(uint, bits) {
 	const shiftAmount = typeof bits === "bigint" ? bits : BigInt(bits);
-	return /** @type {import('./Uint64Type.js').Uint64Type} */ (uint >> shiftAmount);
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ (
+		uint >> shiftAmount
+	);
 }

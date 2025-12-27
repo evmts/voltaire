@@ -13,5 +13,7 @@ export function from(value) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./Bytes4Type.js').Bytes4Type} */ (/** @type {unknown} */ (bytes));
+	return /** @type {import('./Bytes4Type.js').Bytes4Type} */ (
+		/** @type {unknown} */ (bytes)
+	);
 }

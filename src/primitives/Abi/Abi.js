@@ -81,17 +81,21 @@ Abi.prototype.getItem = function (name, type) {
 };
 
 Abi.prototype.format = function () {
-	return /** @type {*} */ (this).map(/** @param {*} item */ (item) => format(item));
+	return /** @type {*} */ (this).map(
+		/** @param {*} item */ (item) => format(item),
+	);
 };
 
 /** @param {Record<string, unknown[]>} args */
 Abi.prototype.formatWithArgs = function (args) {
-	return /** @type {*} */ (this).map(/** @param {*} item */ (item) => {
-		if ("name" in item && item.name in args) {
-			return formatWithArgs(item, /** @type {*} */ (args[item.name]));
-		}
-		return format(item);
-	});
+	return /** @type {*} */ (this).map(
+		/** @param {*} item */ (item) => {
+			if ("name" in item && item.name in args) {
+				return formatWithArgs(item, /** @type {*} */ (args[item.name]));
+			}
+			return format(item);
+		},
+	);
 };
 
 /** @param {string} functionName @param {unknown[]} args */
@@ -131,15 +135,21 @@ Abi.prototype.getError = function (name) {
 };
 
 Abi.prototype.getConstructor = function () {
-	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "constructor");
+	return /** @type {*} */ (this).find(
+		/** @param {*} item */ (item) => item.type === "constructor",
+	);
 };
 
 Abi.prototype.getFallback = function () {
-	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "fallback");
+	return /** @type {*} */ (this).find(
+		/** @param {*} item */ (item) => item.type === "fallback",
+	);
 };
 
 Abi.prototype.getReceive = function () {
-	return /** @type {*} */ (this).find(/** @param {*} item */ (item) => item.type === "receive");
+	return /** @type {*} */ (this).find(
+		/** @param {*} item */ (item) => item.type === "receive",
+	);
 };
 
 Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
@@ -150,5 +160,9 @@ Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 };
 
 Abi.prototype.toString = function () {
-	return `Abi([${/** @type {*} */ (this).map(/** @param {*} item */ (item) => item.name || item.type).join(", ")}])`;
+	return `Abi([${
+		/** @type {*} */ (this)
+			.map(/** @param {*} item */ (item) => item.name || item.type)
+			.join(", ")
+	}])`;
 };

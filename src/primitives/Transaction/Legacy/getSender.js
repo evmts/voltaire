@@ -35,5 +35,8 @@ export function getSender() {
 		v = Number(this.v);
 	}
 
-	return recoverAddress({ r: this.r, s: this.s, v }, /** @type {import('../../Hash/index.js').HashType} */ (signingHash));
+	return recoverAddress(
+		{ r: this.r, s: this.s, v },
+		/** @type {import('../../Hash/index.js').HashType} */ (signingHash),
+	);
 }

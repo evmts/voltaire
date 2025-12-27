@@ -300,7 +300,10 @@ describe("encode", () => {
 			const amount = 1000n;
 			const encoded = encode.call(testAbi, "transfer", [to, amount]);
 
-			const decoded = Function.decodeParams(/** @type {*} */ (testAbi[0]), encoded);
+			const decoded = Function.decodeParams(
+				/** @type {*} */ (testAbi[0]),
+				encoded,
+			);
 			expect(decoded).toEqual([to, amount]);
 		});
 
@@ -309,7 +312,10 @@ describe("encode", () => {
 			const amount = 999n;
 			const encoded = encode.call(testAbi, "approve", [spender, amount]);
 
-			const decoded = Function.decodeParams(/** @type {*} */ (testAbi[2]), encoded);
+			const decoded = Function.decodeParams(
+				/** @type {*} */ (testAbi[2]),
+				encoded,
+			);
 			expect(decoded).toEqual([spender, amount]);
 		});
 	});

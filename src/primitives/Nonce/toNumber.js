@@ -13,5 +13,9 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function toNumber() {
-	return Uint.toNumber(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
+	return Uint.toNumber(
+		/** @type {import('../Uint/index.js').Type} */ (
+			/** @type {unknown} */ (this)
+		),
+	);
 }

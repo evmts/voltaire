@@ -19,6 +19,9 @@ import { WEI_PER_ETHER } from "./ether-constants.js";
  * ```
  */
 export function toEther(wei: BrandedWei): BrandedEther {
-	const ether = Uint.dividedBy(wei as unknown as Uint.Type, Uint.from(WEI_PER_ETHER));
+	const ether = Uint.dividedBy(
+		wei as unknown as Uint.Type,
+		Uint.from(WEI_PER_ETHER),
+	);
 	return ether as unknown as BrandedEther;
 }

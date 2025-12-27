@@ -24,9 +24,13 @@ export function shiftRight(value, shift) {
 
 	if (shiftAmount >= BigInt(BITS)) {
 		// Return all 1s for negative, 0 for positive
-		return /** @type {import('./Int128Type.js').BrandedInt128} */ (value < 0n ? -1n : 0n);
+		return /** @type {import('./Int128Type.js').BrandedInt128} */ (
+			value < 0n ? -1n : 0n
+		);
 	}
 
 	// BigInt >> preserves sign (arithmetic shift)
-	return /** @type {import('./Int128Type.js').BrandedInt128} */ (value >> shiftAmount);
+	return /** @type {import('./Int128Type.js').BrandedInt128} */ (
+		value >> shiftAmount
+	);
 }

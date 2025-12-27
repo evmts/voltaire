@@ -578,6 +578,73 @@ describe("Signature", () => {
 			const normalized = Signature.normalize(sig);
 			expect(normalized.v).toBe(37);
 		});
+
+		it("should flip EIP-155 v correctly during normalization", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// High s value (non-canonical but valid): n/2 + 2
+			const s = new Uint8Array([
+				0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+				0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa2,
+			]);
+			// EIP-155 v for chainId=1, yParity=0: v = 1*2 + 35 + 0 = 37
+			const sig = Signature.fromSecp256k1(r, s, 37);
+			expect(Signature.isCanonical(sig)).toBe(false);
+			const normalized = Signature.normalize(sig);
+			expect(Signature.isCanonical(normalized)).toBe(true);
+			// After normalization, yParity flips: 37 (yParity=0) -> 38 (yParity=1)
+			expect(normalized.v).toBe(38);
+		});
+
+		it("should flip EIP-155 v for even v values", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// High s value (non-canonical but valid)
+			const s = new Uint8Array([
+				0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+				0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa2,
+			]);
+			// v=38 means yParity=1
+			const sig = Signature.fromSecp256k1(r, s, 38);
+			const normalized = Signature.normalize(sig);
+			// After normalization, yParity flips: 38 (yParity=1) -> 37 (yParity=0)
+			expect(normalized.v).toBe(37);
+		});
+
+		it("should flip EIP-155 v for large chain IDs", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// High s value (non-canonical but valid)
+			const s = new Uint8Array([
+				0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+				0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa2,
+			]);
+			// chainId=137 (Polygon): v = 137*2 + 35 + 0 = 309
+			const sig = Signature.fromSecp256k1(r, s, 309);
+			const normalized = Signature.normalize(sig);
+			// 309 is odd -> 310 (yParity flips)
+			expect(normalized.v).toBe(310);
+		});
+
+		it("should flip legacy v correctly during normalization", () => {
+			const r = new Uint8Array(32).fill(0);
+			r[31] = 1;
+			// High s value (non-canonical but valid)
+			const s = new Uint8Array([
+				0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+				0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa2,
+			]);
+			const sig27 = Signature.fromSecp256k1(r, s, 27);
+			const sig28 = Signature.fromSecp256k1(r, s, 28);
+			const norm27 = Signature.normalize(sig27);
+			const norm28 = Signature.normalize(sig28);
+			expect(norm27.v).toBe(28);
+			expect(norm28.v).toBe(27);
+		});
 	});
 
 	describe("algorithm-specific behavior", () => {

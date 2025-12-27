@@ -21,5 +21,7 @@ export function shiftLeft(uint, bits) {
 	if (shift >= 128n) {
 		return /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
 	}
-	return /** @type {import('./Uint128Type.js').Uint128Type} */ ((uint << shift) & MAX);
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (
+		(uint << shift) & MAX
+	);
 }

@@ -52,22 +52,31 @@ export function from(domain) {
 	}
 
 	if (domain.chainId !== undefined) {
-		result = { ...result, chainId:
-			typeof domain.chainId === "number"
-				? /** @type {*} */ (ChainId.from(domain.chainId))
-				: domain.chainId };
+		result = {
+			...result,
+			chainId:
+				typeof domain.chainId === "number"
+					? /** @type {*} */ (ChainId.from(domain.chainId))
+					: domain.chainId,
+		};
 	}
 
 	if (domain.verifyingContract !== undefined) {
-		result = { ...result, verifyingContract:
-			typeof domain.verifyingContract === "string"
-				? BrandedAddress.from(domain.verifyingContract)
-				: domain.verifyingContract };
+		result = {
+			...result,
+			verifyingContract:
+				typeof domain.verifyingContract === "string"
+					? BrandedAddress.from(domain.verifyingContract)
+					: domain.verifyingContract,
+		};
 	}
 
 	if (domain.salt !== undefined) {
-		result = { ...result, salt:
-			typeof domain.salt === "string" ? Hash.from(domain.salt) : domain.salt };
+		result = {
+			...result,
+			salt:
+				typeof domain.salt === "string" ? Hash.from(domain.salt) : domain.salt,
+		};
 	}
 
 	return /** @type {import('./DomainType.js').DomainType} */ (result);

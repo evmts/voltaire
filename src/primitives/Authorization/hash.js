@@ -45,6 +45,8 @@ export function Hash({ keccak256, rlpEncode }) {
 		data.set(rlpEncoded, 1);
 
 		// keccak256 hash
-		return /** @type {import("../Hash/HashType.js").HashType} */ (keccak256(data));
+		return /** @type {import("../Hash/HashType.js").HashType} */ (
+			keccak256(data)
+		);
 	};
 }

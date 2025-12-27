@@ -425,7 +425,9 @@ describe("Abi", () => {
 			const abi = Abi(items);
 			expect(abi.length).toBe(2);
 			expect(/** @type {*} */ (abi[0]).name).toBe("a");
-			expect(abi.filter((i) => /** @type {*} */ (i).name === "b").length).toBe(1);
+			expect(abi.filter((i) => /** @type {*} */ (i).name === "b").length).toBe(
+				1,
+			);
 		});
 
 		it("supports iteration", () => {

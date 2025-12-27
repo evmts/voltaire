@@ -164,8 +164,7 @@ describe("fromData", () => {
 
 	it("encodes max size data", () => {
 		// Max data = 4096 field elements * 31 bytes per element = 126976 bytes
-		const maxSize =
-			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const data = new Uint8Array(maxSize);
 		const blob = fromData(data);
 
@@ -174,8 +173,7 @@ describe("fromData", () => {
 
 	it("throws on oversized data", () => {
 		// Oversized = more than max data per blob (minus 4 bytes for length prefix)
-		const maxSize =
-			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const oversized = new Uint8Array(maxSize + 1);
 		expect(() => fromData(oversized)).toThrow("Data too large");
 	});
@@ -228,8 +226,7 @@ describe("toData", () => {
 
 	it("decodes max size data", () => {
 		// Max data = 4096 field elements * 31 bytes - 4 length prefix = 126972 bytes
-		const maxSize =
-			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxSize = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const original = new Uint8Array(maxSize).fill(0xab);
 		const blob = fromData(original);
 		const decoded = toData(blob);

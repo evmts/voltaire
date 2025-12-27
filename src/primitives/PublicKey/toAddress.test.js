@@ -179,9 +179,9 @@ describe("PublicKey.toAddress", () => {
 			);
 			const addressFromPrivkey = privkeyToAddress.call(pk);
 
-			expect(addressFromPubkey.every((b, i) => b === addressFromPrivkey[i])).toBe(
-				true,
-			);
+			expect(
+				addressFromPubkey.every((b, i) => b === addressFromPrivkey[i]),
+			).toBe(true);
 		});
 
 		it("can be checksummed", () => {

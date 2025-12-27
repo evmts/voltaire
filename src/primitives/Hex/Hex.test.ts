@@ -176,9 +176,9 @@ describe("Hex", () => {
 			expect(pad(hex, 2)).toBe("0x1234");
 		});
 
-		it("does not pad if larger than target size", () => {
+		it("throws if hex exceeds target size", () => {
 			const hex = "0x1234abcd" as HexType;
-			expect(pad(hex, 2)).toBe("0x1234abcd");
+			expect(() => pad(hex, 2)).toThrow(/exceeds padding size/);
 		});
 	});
 
@@ -228,9 +228,23 @@ describe("Hex", () => {
 			});
 		});
 
-		it("throws on unsafe integer", () => {
+		it("throws on unsafe integer in toNumber", () => {
 			const hex = "0xffffffffffffffff" as HexType;
 			expect(() => toNumber(hex)).toThrow(InvalidRangeError);
+		});
+
+		it("throws on negative number in fromNumber", () => {
+			expect(() => fromNumber(-1)).toThrow(/must be non-negative/);
+		});
+
+		it("throws on unsafe integer in fromNumber", () => {
+			expect(() => fromNumber(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+				/exceeds MAX_SAFE_INTEGER/,
+			);
+		});
+
+		it("throws on non-integer in fromNumber", () => {
+			expect(() => fromNumber(1.5)).toThrow(/must be an integer/);
 		});
 	});
 
@@ -288,15 +302,29 @@ describe("Hex", () => {
 			expect(toBoolean(hex)).toBe(false);
 		});
 
-		it("converts non-zero values to true", () => {
-			expect(toBoolean("0xff" as HexType)).toBe(true);
-			expect(toBoolean("0x1234" as HexType)).toBe(true);
+		it("converts padded 0x01 to true", () => {
 			expect(toBoolean("0x000001" as HexType)).toBe(true);
+			expect(toBoolean("0x0000000000000001" as HexType)).toBe(true);
 		});
 
 		it("converts all-zero values to false", () => {
 			expect(toBoolean("0x0000" as HexType)).toBe(false);
 			expect(toBoolean("0x00000000" as HexType)).toBe(false);
+		});
+
+		it("throws for non-boolean values (strict mode)", () => {
+			expect(() => toBoolean("0xff" as HexType)).toThrow(
+				/Invalid boolean hex value/,
+			);
+			expect(() => toBoolean("0x02" as HexType)).toThrow(
+				/Invalid boolean hex value/,
+			);
+			expect(() => toBoolean("0x1234" as HexType)).toThrow(
+				/Invalid boolean hex value/,
+			);
+			expect(() => toBoolean("0x0a" as HexType)).toThrow(
+				/Invalid boolean hex value/,
+			);
 		});
 
 		it("round-trip boolean conversions", () => {

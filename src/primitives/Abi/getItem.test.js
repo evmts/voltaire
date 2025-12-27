@@ -64,7 +64,9 @@ describe("getItem", () => {
 		});
 
 		it("finds error by name and type", () => {
-			const item = /** @type {*} */ (getItem(testAbi, "InsufficientBalance", "error"));
+			const item = /** @type {*} */ (
+				getItem(testAbi, "InsufficientBalance", "error")
+			);
 			expect(item).toBeDefined();
 			expect(item.type).toBe("error");
 			expect(item.name).toBe("InsufficientBalance");
@@ -183,7 +185,9 @@ describe("getItem", () => {
 		});
 
 		it("finds error", () => {
-			const item = /** @type {*} */ (getItem(testAbi, "InsufficientBalance", "error"));
+			const item = /** @type {*} */ (
+				getItem(testAbi, "InsufficientBalance", "error")
+			);
 			expect(item.type).toBe("error");
 		});
 
@@ -305,7 +309,9 @@ describe("getItem", () => {
 				},
 			];
 
-			const item = /** @type {*} */ (getItem(abi, "InsufficientBalance", "error"));
+			const item = /** @type {*} */ (
+				getItem(abi, "InsufficientBalance", "error")
+			);
 			expect(item).toBeDefined();
 			expect(item.name).toBe("InsufficientBalance");
 			expect(item.inputs.length).toBe(2);

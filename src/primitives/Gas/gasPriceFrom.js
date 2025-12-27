@@ -14,7 +14,7 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function gasPriceFrom(value) {
-	return /** @type {import('./GasPriceType.js').GasPriceType} */ (/** @type {unknown} */ (
-		Uint.from(value)
-	));
+	return /** @type {import('./GasPriceType.js').GasPriceType} */ (
+		/** @type {unknown} */ (Uint.from(value))
+	);
 }

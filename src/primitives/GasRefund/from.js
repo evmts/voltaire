@@ -28,5 +28,7 @@ export function from(value) {
 		);
 	}
 
-	return /** @type {import('./GasRefundType.js').GasRefundType} */ (bigintValue);
+	return /** @type {import('./GasRefundType.js').GasRefundType} */ (
+		bigintValue
+	);
 }

@@ -21,7 +21,9 @@ export function isErc3448(bytecode) {
 	// Read metadata length from last 32 bytes (big-endian uint256)
 	let metadataLength = 0;
 	for (let i = 0; i < 32; i++) {
-		metadataLength = (metadataLength << 8) | /** @type {*} */ (bytecode[bytecode.length - 32 + i]);
+		metadataLength =
+			(metadataLength << 8) |
+			/** @type {*} */ (bytecode[bytecode.length - 32 + i]);
 	}
 
 	// Validate total length matches expected size

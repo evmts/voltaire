@@ -40,7 +40,10 @@ export function from(value) {
  * @returns {Wei}
  */
 export function fromGwei(gwei) {
-	const wei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)), Uint.from(WEI_PER_GWEI));
+	const wei = Uint.times(
+		/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)),
+		Uint.from(WEI_PER_GWEI),
+	);
 	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
 }
 
@@ -51,7 +54,10 @@ export function fromGwei(gwei) {
  * @returns {Wei}
  */
 export function fromEther(ether) {
-	const wei = Uint.times(/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)), Uint.from(WEI_PER_ETHER));
+	const wei = Uint.times(
+		/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)),
+		Uint.from(WEI_PER_ETHER),
+	);
 	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
 }
 
@@ -62,7 +68,10 @@ export function fromEther(ether) {
  * @returns {Gwei}
  */
 export function toGwei(wei) {
-	const gwei = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)), Uint.from(WEI_PER_GWEI));
+	const gwei = Uint.dividedBy(
+		/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)),
+		Uint.from(WEI_PER_GWEI),
+	);
 	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
 }
 
@@ -73,7 +82,10 @@ export function toGwei(wei) {
  * @returns {Ether}
  */
 export function toEther(wei) {
-	const ether = Uint.dividedBy(/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)), Uint.from(WEI_PER_ETHER));
+	const ether = Uint.dividedBy(
+		/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)),
+		Uint.from(WEI_PER_ETHER),
+	);
 	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
 }
 

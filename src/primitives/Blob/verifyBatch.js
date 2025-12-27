@@ -15,11 +15,6 @@ import { MAX_PER_TRANSACTION } from "./constants.js";
  * import * as Blob from './primitives/Blob/index.js';
  * const isValid = Blob.verifyBatch(blobs, commitments, proofs);
  * ```
- *
- * TODO: Implement using c-kzg-4844 library
- * - Validate arrays have same length
- * - Call verifyBlobKzgProofBatch(blobs, commitments, proofs)
- * - Return boolean result
  */
 export function verifyBatch(blobs, commitments, proofs) {
 	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
@@ -30,6 +25,6 @@ export function verifyBatch(blobs, commitments, proofs) {
 			`Too many blobs: ${blobs.length} (max ${MAX_PER_TRANSACTION})`,
 		);
 	}
-	// TODO: return verifyBlobKzgProofBatch(blobs, commitments, proofs);
+	// Batch verification requires c-kzg-4844 bindings; not available in this build
 	throw new Error("Not implemented: requires c-kzg-4844 library");
 }

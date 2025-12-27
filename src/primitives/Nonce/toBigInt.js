@@ -12,5 +12,9 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function toBigInt() {
-	return Uint.toBigInt(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
+	return Uint.toBigInt(
+		/** @type {import('../Uint/index.js').Type} */ (
+			/** @type {unknown} */ (this)
+		),
+	);
 }

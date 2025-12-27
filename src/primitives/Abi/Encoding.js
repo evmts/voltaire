@@ -273,7 +273,10 @@ function decodeValue(type, data, offset, components) {
 	if (type === "tuple" && components) {
 		const isDynamic = isDynamicType(type, components);
 		if (isDynamic) {
-			const dataOffset = safeToNumber(decodeUint256(data, offset), "Tuple data offset");
+			const dataOffset = safeToNumber(
+				decodeUint256(data, offset),
+				"Tuple data offset",
+			);
 			const value = decodeParameters(
 				/** @type {any} */ (components),
 				data.slice(dataOffset),
@@ -295,8 +298,14 @@ function decodeValue(type, data, offset, components) {
 
 	if (type.endsWith("[]")) {
 		const elementType = /** @type {Parameter["type"]} */ (type.slice(0, -2));
-		const dataOffset = safeToNumber(decodeUint256(data, offset), "Dynamic array data offset");
-		const length = safeToNumber(decodeUint256(data, dataOffset), "Dynamic array length");
+		const dataOffset = safeToNumber(
+			decodeUint256(data, offset),
+			"Dynamic array data offset",
+		);
+		const length = safeToNumber(
+			decodeUint256(data, dataOffset),
+			"Dynamic array length",
+		);
 
 		const elementParams = Array(length).fill({
 			type: elementType,
@@ -319,7 +328,10 @@ function decodeValue(type, data, offset, components) {
 			components,
 		});
 		if (isDynamicType(elementType, components)) {
-			const dataOffset = safeToNumber(decodeUint256(data, offset), "Fixed array data offset");
+			const dataOffset = safeToNumber(
+				decodeUint256(data, offset),
+				"Fixed array data offset",
+			);
 			const value = decodeParameters(
 				/** @type {any} */ (elementParams),
 				data.slice(dataOffset),
@@ -396,8 +408,14 @@ function decodeValue(type, data, offset, components) {
 	}
 
 	if (type === "bytes") {
-		const dataOffset = safeToNumber(decodeUint256(data, offset), "Bytes data offset");
-		const length = safeToNumber(decodeUint256(data, dataOffset), "Bytes length");
+		const dataOffset = safeToNumber(
+			decodeUint256(data, offset),
+			"Bytes data offset",
+		);
+		const length = safeToNumber(
+			decodeUint256(data, dataOffset),
+			"Bytes length",
+		);
 		if (dataOffset + 32 + length > data.length) {
 			throw new AbiDecodingError("Data too small for bytes");
 		}
@@ -406,8 +424,14 @@ function decodeValue(type, data, offset, components) {
 	}
 
 	if (type === "string") {
-		const dataOffset = safeToNumber(decodeUint256(data, offset), "String data offset");
-		const length = safeToNumber(decodeUint256(data, dataOffset), "String length");
+		const dataOffset = safeToNumber(
+			decodeUint256(data, offset),
+			"String data offset",
+		);
+		const length = safeToNumber(
+			decodeUint256(data, dataOffset),
+			"String length",
+		);
 		if (dataOffset + 32 + length > data.length) {
 			throw new AbiDecodingError("Data too small for string");
 		}

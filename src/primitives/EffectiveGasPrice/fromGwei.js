@@ -11,5 +11,7 @@
  */
 export function fromGwei(gwei) {
 	const gweiValue = typeof gwei === "number" ? BigInt(gwei) : gwei;
-	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (gweiValue * 1000000000n);
+	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (
+		gweiValue * 1000000000n
+	);
 }

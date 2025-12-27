@@ -37,7 +37,13 @@ export function verify(
 	hash: import("../Hash/BrandedHash.js").BrandedHash,
 	signature: import("../Signature/SignatureType.js").SignatureType,
 ): boolean {
-	return _verify(from(publicKey), hash, signature as unknown as import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType);
+	return _verify(
+		from(publicKey),
+		hash,
+		signature as unknown as import(
+			"../../crypto/Secp256k1/SignatureType.js",
+		).Secp256k1SignatureType,
+	);
 }
 
 /**
@@ -61,7 +67,10 @@ export function verify(
  * ```
  */
 export function compress(publicKey: string | Uint8Array): Uint8Array {
-	const pk = typeof publicKey === "string" ? from(publicKey) : publicKey;
+	const pk =
+		typeof publicKey === "string"
+			? from(publicKey)
+			: (publicKey as unknown as import("./PublicKeyType.js").PublicKeyType);
 	return _compress(pk);
 }
 

@@ -30,7 +30,9 @@ export function encodeType(primaryType, types) {
 
 		result += typeName;
 		result += "(";
-		result += fields.map((/** @type {EIP712Field} */ f) => `${f.type} ${f.name}`).join(",");
+		result += fields
+			.map((/** @type {EIP712Field} */ f) => `${f.type} ${f.name}`)
+			.join(",");
 		result += ")";
 	}
 

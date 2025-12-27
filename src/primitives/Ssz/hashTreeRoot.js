@@ -36,7 +36,10 @@ export async function hashTreeRoot(data) {
 		/** @type {Uint8Array[]} */
 		const nextLayer = [];
 		for (let i = 0; i < layer.length; i += 2) {
-			const hash = await hashPair(/** @type {Uint8Array} */ (layer[i]), /** @type {Uint8Array} */ (layer[i + 1]));
+			const hash = await hashPair(
+				/** @type {Uint8Array} */ (layer[i]),
+				/** @type {Uint8Array} */ (layer[i + 1]),
+			);
 			nextLayer.push(hash);
 		}
 		layer = nextLayer;

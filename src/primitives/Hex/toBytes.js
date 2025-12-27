@@ -60,7 +60,8 @@ export function toBytes(hex) {
 	for (let i = 0; i < hexDigits.length; i += 2) {
 		const high = hexCharToValue(hexDigits[i]);
 		const low = hexCharToValue(hexDigits[i + 1]);
-		bytes[i / 2] = /** @type {number} */ (high) * 16 + /** @type {number} */ (low);
+		bytes[i / 2] =
+			/** @type {number} */ (high) * 16 + /** @type {number} */ (low);
 	}
 	return bytes;
 }

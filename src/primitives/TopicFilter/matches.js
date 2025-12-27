@@ -30,7 +30,9 @@ export function matches(filter, logTopics) {
 			return false;
 		}
 
-		const logTopic = /** @type {import('../Hash/HashType.js').HashType} */ (logTopics[i]);
+		const logTopic = /** @type {import('../Hash/HashType.js').HashType} */ (
+			logTopics[i]
+		);
 
 		if (Array.isArray(filterEntry)) {
 			// OR logic - match if any hash in array matches
@@ -39,7 +41,10 @@ export function matches(filter, logTopics) {
 				if (logTopic.length === hash.length) {
 					let equal = true;
 					for (let j = 0; j < hash.length; j++) {
-						if (/** @type {number} */ (logTopic[j]) !== /** @type {number} */ (hash[j])) {
+						if (
+							/** @type {number} */ (logTopic[j]) !==
+							/** @type {number} */ (hash[j])
+						) {
 							equal = false;
 							break;
 						}
@@ -59,7 +64,10 @@ export function matches(filter, logTopics) {
 				return false;
 			}
 			for (let j = 0; j < filterEntry.length; j++) {
-				if (/** @type {number} */ (logTopic[j]) !== /** @type {number} */ (filterEntry[j])) {
+				if (
+					/** @type {number} */ (logTopic[j]) !==
+					/** @type {number} */ (filterEntry[j])
+				) {
 					return false;
 				}
 			}

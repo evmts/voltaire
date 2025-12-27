@@ -21,11 +21,20 @@ export {
 };
 
 // Wrapper exports with proper types
-export const keccak256: (data: Uint8Array) => HashType = _Keccak256Factory({ keccak256: keccak256Impl });
-export const keccak256Hex: (hex: string) => HashType = _Keccak256HexFactory({ keccak256: keccak256Impl });
-export const keccak256String: (str: string) => HashType = _Keccak256StringFactory({ keccak256: keccak256Impl });
-export const merkleRoot: (leaves: HashType[]) => HashType = _MerkleRootFactory({ keccak256: keccak256Impl });
-export const concat: (...hashes: HashType[]) => HashType = _ConcatFactory({ keccak256: keccak256Impl });
+export const keccak256: (data: Uint8Array) => HashType = _Keccak256Factory({
+	keccak256: keccak256Impl,
+});
+export const keccak256Hex: (hex: string) => HashType = _Keccak256HexFactory({
+	keccak256: keccak256Impl,
+});
+export const keccak256String: (str: string) => HashType =
+	_Keccak256StringFactory({ keccak256: keccak256Impl });
+export const merkleRoot: (leaves: HashType[]) => HashType = _MerkleRootFactory({
+	keccak256: keccak256Impl,
+});
+export const concat: (...hashes: HashType[]) => HashType = _ConcatFactory({
+	keccak256: keccak256Impl,
+});
 
 // Non-crypto exports - direct from implementation files
 export { from } from "./from.js";

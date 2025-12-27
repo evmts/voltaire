@@ -12,11 +12,24 @@ describe("toBoolean", () => {
 		expect(toBoolean("0x00" as HexType)).toBe(false);
 	});
 
-	it("converts non-zero values to true", () => {
-		expect(toBoolean("0xff" as HexType)).toBe(true);
-		expect(toBoolean("0x1234" as HexType)).toBe(true);
+	it("converts padded 0x01 to true", () => {
 		expect(toBoolean("0x000001" as HexType)).toBe(true);
-		expect(toBoolean("0xdeadbeef" as HexType)).toBe(true);
+		expect(toBoolean("0x0000000000000001" as HexType)).toBe(true);
+	});
+
+	it("throws for non-boolean values", () => {
+		expect(() => toBoolean("0xff" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
+		expect(() => toBoolean("0x1234" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
+		expect(() => toBoolean("0xdeadbeef" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
+		expect(() => toBoolean("0x02" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
 	});
 
 	it("converts all-zero values to false", () => {
@@ -34,19 +47,30 @@ describe("toBoolean", () => {
 		expect(toBoolean(fromBoolean(false))).toBe(false);
 	});
 
-	it("handles uppercase hex", () => {
-		expect(toBoolean("0xFF" as HexType)).toBe(true);
+	it("handles uppercase hex for valid values", () => {
+		expect(() => toBoolean("0xFF" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
 		expect(toBoolean("0x00" as HexType)).toBe(false);
+		expect(toBoolean("0x01" as HexType)).toBe(true);
 	});
 
-	it("handles mixed case", () => {
-		expect(toBoolean("0xFf" as HexType)).toBe(true);
-		expect(toBoolean("0x0A" as HexType)).toBe(true);
+	it("throws for non-boolean values regardless of case", () => {
+		expect(() => toBoolean("0xFf" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
+		expect(() => toBoolean("0x0A" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
 	});
 
-	it("treats any non-zero byte as true", () => {
+	it("only accepts 0 or 1 as valid boolean (with padding)", () => {
 		expect(toBoolean("0x0001" as HexType)).toBe(true);
-		expect(toBoolean("0x0100" as HexType)).toBe(true);
-		expect(toBoolean("0x000100" as HexType)).toBe(true);
+		expect(() => toBoolean("0x0100" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
+		expect(() => toBoolean("0x000100" as HexType)).toThrow(
+			/Invalid boolean hex value/,
+		);
 	});
 });

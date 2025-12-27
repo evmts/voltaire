@@ -147,41 +147,49 @@ describe("AccountState.from", () => {
 	describe("error cases", () => {
 		it("throws on missing nonce", () => {
 			expect(() =>
-				from(/** @type {*} */ ({
-					balance: weiFrom(0n),
-					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
-					codeHash: Hash(EMPTY_CODE_HASH),
-				})),
+				from(
+					/** @type {*} */ ({
+						balance: weiFrom(0n),
+						storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
+						codeHash: Hash(EMPTY_CODE_HASH),
+					}),
+				),
 			).toThrow("nonce is required");
 		});
 
 		it("throws on missing balance", () => {
 			expect(() =>
-				from(/** @type {*} */ ({
-					nonce: nonceFrom(0n),
-					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
-					codeHash: Hash(EMPTY_CODE_HASH),
-				})),
+				from(
+					/** @type {*} */ ({
+						nonce: nonceFrom(0n),
+						storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
+						codeHash: Hash(EMPTY_CODE_HASH),
+					}),
+				),
 			).toThrow("balance is required");
 		});
 
 		it("throws on missing storageRoot", () => {
 			expect(() =>
-				from(/** @type {*} */ ({
-					nonce: nonceFrom(0n),
-					balance: weiFrom(0n),
-					codeHash: Hash(EMPTY_CODE_HASH),
-				})),
+				from(
+					/** @type {*} */ ({
+						nonce: nonceFrom(0n),
+						balance: weiFrom(0n),
+						codeHash: Hash(EMPTY_CODE_HASH),
+					}),
+				),
 			).toThrow("storageRoot is required");
 		});
 
 		it("throws on missing codeHash", () => {
 			expect(() =>
-				from(/** @type {*} */ ({
-					nonce: nonceFrom(0n),
-					balance: weiFrom(0n),
-					storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
-				})),
+				from(
+					/** @type {*} */ ({
+						nonce: nonceFrom(0n),
+						balance: weiFrom(0n),
+						storageRoot: StateRoot.from(EMPTY_TRIE_HASH),
+					}),
+				),
 			).toThrow("codeHash is required");
 		});
 

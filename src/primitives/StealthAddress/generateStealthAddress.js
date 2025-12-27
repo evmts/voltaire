@@ -61,8 +61,9 @@ export function generateStealthAddress(metaAddress, ephemeralPrivateKey) {
 		const { spendingPubKey, viewingPubKey } = parseMetaAddress(metaAddress);
 
 		// 2. Derive ephemeral public key
-		const ephemeralPublicKeyUncompressed =
-			Secp256k1.derivePublicKey(/** @type {*} */ (ephemeralPrivateKey));
+		const ephemeralPublicKeyUncompressed = Secp256k1.derivePublicKey(
+			/** @type {*} */ (ephemeralPrivateKey),
+		);
 		const ephemeralPublicKey =
 			/** @type {import('./StealthAddressType.js').EphemeralPublicKey} */ (
 				compressPublicKey(ephemeralPublicKeyUncompressed)

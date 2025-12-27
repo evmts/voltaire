@@ -26,7 +26,9 @@ describe("random", () => {
 			}
 			for (let i = 0; i < hashes.length; i++) {
 				for (let j = i + 1; j < hashes.length; j++) {
-					expect(equals(/** @type {*} */ (hashes[i]), /** @type {*} */ (hashes[j]))).toBe(false);
+					expect(
+						equals(/** @type {*} */ (hashes[i]), /** @type {*} */ (hashes[j])),
+					).toBe(false);
 				}
 			}
 		});

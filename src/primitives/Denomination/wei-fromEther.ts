@@ -19,6 +19,9 @@ import { WEI_PER_ETHER } from "./wei-constants.js";
  * ```
  */
 export function fromEther(ether: BrandedEther): BrandedWei {
-	const wei = Uint.times(ether as unknown as Uint.Type, Uint.from(WEI_PER_ETHER));
+	const wei = Uint.times(
+		ether as unknown as Uint.Type,
+		Uint.from(WEI_PER_ETHER),
+	);
 	return wei as unknown as BrandedWei;
 }

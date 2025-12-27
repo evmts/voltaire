@@ -135,7 +135,9 @@ export function parse(url) {
 		}
 	}
 
-	return /** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */ (result);
+	return /** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */ (
+		result
+	);
 }
 
 /**

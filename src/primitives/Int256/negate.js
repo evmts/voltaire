@@ -21,10 +21,14 @@ export function negate(value) {
 
 	// Handle wrapping for MIN
 	if (negated > MAX) {
-		return /** @type {import('./Int256Type.js').BrandedInt256} */ (negated - MODULO);
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (
+			negated - MODULO
+		);
 	}
 	if (negated < MIN) {
-		return /** @type {import('./Int256Type.js').BrandedInt256} */ (negated + MODULO);
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (
+			negated + MODULO
+		);
 	}
 
 	return /** @type {import('./Int256Type.js').BrandedInt256} */ (negated);

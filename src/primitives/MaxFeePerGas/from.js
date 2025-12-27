@@ -69,5 +69,7 @@ export function from(value) {
 		);
 	}
 
-	return /** @type {import("./MaxFeePerGasType.js").MaxFeePerGasType} */ (result);
+	return /** @type {import("./MaxFeePerGasType.js").MaxFeePerGasType} */ (
+		result
+	);
 }

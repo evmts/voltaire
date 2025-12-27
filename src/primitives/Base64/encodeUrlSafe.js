@@ -17,5 +17,7 @@ import * as OxBase64 from "ox/Base64";
  * ```
  */
 export function encodeUrlSafe(data) {
-	return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (OxBase64.fromBytes(data, { url: true }).replace(/=/g, ""));
+	return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (
+		OxBase64.fromBytes(data, { url: true }).replace(/=/g, "")
+	);
 }

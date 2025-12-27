@@ -14,5 +14,7 @@ import * as Address from "../Address/internal-index.js";
  */
 export function from(value) {
 	const addr = Address.from(value);
-	return /** @type {import('./PaymasterType.js').PaymasterType} */ (/** @type {unknown} */ (addr));
+	return /** @type {import('./PaymasterType.js').PaymasterType} */ (
+		/** @type {unknown} */ (addr)
+	);
 }

@@ -154,7 +154,9 @@ describe("Blob Validation - Edge Cases", () => {
 		});
 
 		it("should throw when data exceeds max transaction capacity", () => {
-			const tooLarge = new Uint8Array(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION + 1);
+			const tooLarge = new Uint8Array(
+				MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION + 1,
+			);
 			expect(() => Blob.splitData(tooLarge)).toThrow(/Data too large/);
 		});
 
@@ -179,9 +181,9 @@ describe("Blob Validation - Edge Cases", () => {
 		});
 
 		it("should estimate correctly for max transaction size", () => {
-			expect(Blob.estimateBlobCount(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION)).toBe(
-				MAX_PER_TRANSACTION,
-			);
+			expect(
+				Blob.estimateBlobCount(MAX_DATA_PER_BLOB * MAX_PER_TRANSACTION),
+			).toBe(MAX_PER_TRANSACTION);
 		});
 	});
 });

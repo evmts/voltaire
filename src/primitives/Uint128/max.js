@@ -20,9 +20,14 @@ export function max(values) {
 		throw new Error("Cannot find maximum of empty array");
 	}
 
-	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (values[0]);
+	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (
+		values[0]
+	);
 	for (let i = 1; i < values.length; i++) {
-		result = maximum(result, /** @type {import('./Uint128Type.js').Uint128Type} */ (values[i]));
+		result = maximum(
+			result,
+			/** @type {import('./Uint128Type.js').Uint128Type} */ (values[i]),
+		);
 	}
 	return result;
 }

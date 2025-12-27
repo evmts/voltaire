@@ -98,10 +98,18 @@ export function from({
 		extraData,
 		mixHash: hashFrom(mixHash),
 		nonce,
-		...(baseFeePerGas !== undefined && { baseFeePerGas: uint256From(baseFeePerGas) }),
-		...(withdrawalsRoot !== undefined && { withdrawalsRoot: hashFrom(withdrawalsRoot) }),
+		...(baseFeePerGas !== undefined && {
+			baseFeePerGas: uint256From(baseFeePerGas),
+		}),
+		...(withdrawalsRoot !== undefined && {
+			withdrawalsRoot: hashFrom(withdrawalsRoot),
+		}),
 		...(blobGasUsed !== undefined && { blobGasUsed: uint256From(blobGasUsed) }),
-		...(excessBlobGas !== undefined && { excessBlobGas: uint256From(excessBlobGas) }),
-		...(parentBeaconBlockRoot !== undefined && { parentBeaconBlockRoot: hashFrom(parentBeaconBlockRoot) }),
+		...(excessBlobGas !== undefined && {
+			excessBlobGas: uint256From(excessBlobGas),
+		}),
+		...(parentBeaconBlockRoot !== undefined && {
+			parentBeaconBlockRoot: hashFrom(parentBeaconBlockRoot),
+		}),
 	});
 }

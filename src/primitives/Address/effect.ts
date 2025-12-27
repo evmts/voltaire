@@ -671,7 +671,9 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	 * Validate a string has valid EIP-55 checksum (uses crypto)
 	 * @returns Effect that uses Keccak256Service
 	 */
-	static isValid(str: string): Effect.Effect<boolean, CryptoOperationError, Keccak256Service> {
+	static isValid(
+		str: string,
+	): Effect.Effect<boolean, CryptoOperationError, Keccak256Service> {
 		return Effect.gen(function* () {
 			if (!str.startsWith("0x") || str.length !== 42) {
 				return false;

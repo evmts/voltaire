@@ -12,6 +12,12 @@ import * as Uint from "../Uint/index.js";
  * ```
  */
 export function increment() {
-	const current = Uint.toBigInt(/** @type {import('../Uint/index.js').Type} */ (/** @type {unknown} */ (this)));
-	return /** @type {import('./NonceType.js').NonceType} */ (/** @type {unknown} */ (Uint.from(current + 1n)));
+	const current = Uint.toBigInt(
+		/** @type {import('../Uint/index.js').Type} */ (
+			/** @type {unknown} */ (this)
+		),
+	);
+	return /** @type {import('./NonceType.js').NonceType} */ (
+		/** @type {unknown} */ (Uint.from(current + 1n))
+	);
 }

@@ -29,7 +29,10 @@ export function decodeWrappedError(data) {
 	}
 
 	// Verify selector
-	const selector = /** @type {import('../../../Selector/SelectorType.js').SelectorType} */ (data.slice(0, 4));
+	const selector =
+		/** @type {import('../../../Selector/SelectorType.js').SelectorType} */ (
+			data.slice(0, 4)
+		);
 	if (!Selector.equals(selector, WRAPPED_ERROR_SELECTOR)) {
 		throw new Error(
 			`Invalid WrappedError selector: expected ${Selector.toHex(WRAPPED_ERROR_SELECTOR)}, got ${Selector.toHex(selector)}`,

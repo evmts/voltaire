@@ -10,5 +10,7 @@
  * ```
  */
 export function fromWei(wei) {
-	return /** @type {import("./MaxPriorityFeePerGasType.js").MaxPriorityFeePerGasType} */ (wei);
+	return /** @type {import("./MaxPriorityFeePerGasType.js").MaxPriorityFeePerGasType} */ (
+		wei
+	);
 }

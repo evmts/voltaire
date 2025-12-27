@@ -13,5 +13,7 @@ export function from(value) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./Bytes6Type.js').Bytes6Type} */ (/** @type {unknown} */ (bytes));
+	return /** @type {import('./Bytes6Type.js').Bytes6Type} */ (
+		/** @type {unknown} */ (bytes)
+	);
 }

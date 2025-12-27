@@ -13,7 +13,11 @@ import * as Address from "../Address/internal-index.js";
  * ```
  */
 export function equals(a, b) {
-	const addrA = /** @type {import('../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ (a));
-	const addrB = /** @type {import('../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ (b));
+	const addrA = /** @type {import('../Address/AddressType.js').AddressType} */ (
+		/** @type {unknown} */ (a)
+	);
+	const addrB = /** @type {import('../Address/AddressType.js').AddressType} */ (
+		/** @type {unknown} */ (b)
+	);
 	return Address.equals(addrA, addrB);
 }

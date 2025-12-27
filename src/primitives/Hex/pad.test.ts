@@ -14,10 +14,10 @@ describe("pad", () => {
 		expect(pad(hex, 2)).toBe("0x1234");
 	});
 
-	it("does not pad if larger than target size", () => {
+	it("throws if larger than target size", () => {
 		const hex = "0x1234abcd" as HexType;
-		expect(pad(hex, 2)).toBe("0x1234abcd");
-		expect(pad(hex, 1)).toBe("0x1234abcd");
+		expect(() => pad(hex, 2)).toThrow(/exceeds padding size/);
+		expect(() => pad(hex, 1)).toThrow(/exceeds padding size/);
 	});
 
 	it("pads empty hex", () => {
@@ -33,9 +33,14 @@ describe("pad", () => {
 		expect(pad(hex, 8)).toBe("0x00000000000000ff");
 	});
 
-	it("pads to zero size", () => {
+	it("throws when padding to zero size with non-empty hex", () => {
 		const hex = "0x1234" as HexType;
-		expect(pad(hex, 0)).toBe("0x1234");
+		expect(() => pad(hex, 0)).toThrow(/exceeds padding size/);
+	});
+
+	it("pads empty hex to zero size", () => {
+		const hex = "0x" as HexType;
+		expect(pad(hex, 0)).toBe("0x");
 	});
 
 	it("pads to address size (20 bytes)", () => {

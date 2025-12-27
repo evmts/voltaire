@@ -13,5 +13,7 @@ export function fromHex(hex) {
 			actual: bytes.length,
 		});
 	}
-	return /** @type {import('./Bytes8Type.js').Bytes8Type} */ (/** @type {unknown} */ (bytes));
+	return /** @type {import('./Bytes8Type.js').Bytes8Type} */ (
+		/** @type {unknown} */ (bytes)
+	);
 }

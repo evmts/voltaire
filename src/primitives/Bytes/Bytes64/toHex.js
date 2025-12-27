@@ -14,7 +14,9 @@
 export function toHex(bytes) {
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		result += /** @type {number} */ (bytes[i]).toString(16).padStart(2, "0");
+		result += /** @type {number} */ (bytes[i])
+			.toString(16)
+			.padStart(2, "0");
 	}
 	return result;
 }

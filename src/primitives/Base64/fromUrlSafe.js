@@ -21,7 +21,9 @@ import { isValidUrlSafe } from "./isValidUrlSafe.js";
 export function fromUrlSafe(value) {
 	// Already branded Base64Url
 	if (typeof value === "string" && isValidUrlSafe(value)) {
-		return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (value);
+		return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (
+			value
+		);
 	}
 
 	// Convert bytes to Base64Url
@@ -34,7 +36,9 @@ export function fromUrlSafe(value) {
 		if (!isValidUrlSafe(value)) {
 			throw new TypeError(`Invalid Base64Url string: ${value}`);
 		}
-		return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (value);
+		return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (
+			value
+		);
 	}
 
 	throw new TypeError(

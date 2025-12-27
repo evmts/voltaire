@@ -29,7 +29,9 @@ describe("TransactionEIP1559", () => {
 			expect(tx.maxPriorityFeePerGas).toBe(1000000000n);
 			expect(tx.maxFeePerGas).toBe(20000000000n);
 			expect(tx.gasLimit).toBe(21000n);
-			expect(tx.to).toStrictEqual(Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"));
+			expect(tx.to).toStrictEqual(
+				Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			);
 			expect(tx.value).toBe(1000000000000000000n);
 			expect(tx.data).toBeInstanceOf(Uint8Array);
 			expect(tx.accessList).toEqual([]);

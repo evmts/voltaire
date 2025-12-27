@@ -16,14 +16,14 @@ import { hasMetadata } from "./hasMetadata.js";
  */
 export function stripMetadata(code) {
 	if (!hasMetadata(code)) {
-		return /** @type {import('../RuntimeCode/RuntimeCodeType.js').RuntimeCodeType} */ (/** @type {unknown} */ (
-			code
-		));
+		return /** @type {import('../RuntimeCode/RuntimeCodeType.js').RuntimeCodeType} */ (
+			/** @type {unknown} */ (code)
+		);
 	}
 
 	// Last 2 bytes: 0x00 + metadata_length
 	const metadataLength = (code[code.length - 1] ?? 0) + 2;
-	return /** @type {import('../RuntimeCode/RuntimeCodeType.js').RuntimeCodeType} */ (/** @type {unknown} */ (
-		code.slice(0, -metadataLength)
-	));
+	return /** @type {import('../RuntimeCode/RuntimeCodeType.js').RuntimeCodeType} */ (
+		/** @type {unknown} */ (code.slice(0, -metadataLength))
+	);
 }

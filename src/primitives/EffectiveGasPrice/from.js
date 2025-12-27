@@ -69,5 +69,7 @@ export function from(value) {
 		);
 	}
 
-	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (result);
+	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (
+		result
+	);
 }

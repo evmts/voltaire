@@ -121,7 +121,8 @@ describe("fromHex", () => {
 		it("error includes actual length", () => {
 			try {
 				fromHex("0x1234");
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("got 4");
 			}
 		});
@@ -129,7 +130,8 @@ describe("fromHex", () => {
 		it("error includes expected length", () => {
 			try {
 				fromHex("0x1234");
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("64 characters");
 			}
 		});

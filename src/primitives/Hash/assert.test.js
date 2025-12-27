@@ -76,7 +76,8 @@ describe("assert", () => {
 		it("includes default error message", () => {
 			try {
 				assert(new Uint8Array(20));
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("Value is not a Hash");
 			}
 		});
@@ -84,7 +85,8 @@ describe("assert", () => {
 		it("accepts custom error message", () => {
 			try {
 				assert(new Uint8Array(20), "Custom error message");
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("Custom error message");
 			}
 		});
@@ -92,7 +94,8 @@ describe("assert", () => {
 		it("provides helpful error context", () => {
 			try {
 				assert("not a hash");
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toBeTruthy();
 			}
 		});
@@ -100,7 +103,8 @@ describe("assert", () => {
 		it("error has code", () => {
 			try {
 				assert(new Uint8Array(20));
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.code).toBe("HASH_INVALID_TYPE");
 			}
 		});
@@ -108,7 +112,8 @@ describe("assert", () => {
 		it("error includes expected value", () => {
 			try {
 				assert(new Uint8Array(20));
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.expected).toBe("32-byte Uint8Array");
 			}
 		});

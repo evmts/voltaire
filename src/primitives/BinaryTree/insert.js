@@ -36,13 +36,21 @@ function insertNode(node, stem, idx, v, depth) {
 		case "empty": {
 			const values = new Array(256).fill(null);
 			values[idx] = v;
-			return /** @type {import('./BinaryTreeType.js').StemNode} */ ({ type: "stem", stem, values });
+			return /** @type {import('./BinaryTreeType.js').StemNode} */ ({
+				type: "stem",
+				stem,
+				values,
+			});
 		}
 		case "stem": {
 			if (arraysEqual(node.stem, stem)) {
 				const values = [...node.values];
 				values[idx] = v;
-				return /** @type {import('./BinaryTreeType.js').StemNode} */ ({ type: "stem", stem, values });
+				return /** @type {import('./BinaryTreeType.js').StemNode} */ ({
+					type: "stem",
+					stem,
+					values,
+				});
 			}
 			return splitStems(node, stem, idx, v, depth);
 		}
@@ -75,7 +83,11 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 	if (depth >= 248) {
 		const values = [...existing.values];
 		values[newIdx] = newVal;
-		return /** @type {import('./BinaryTreeType.js').StemNode} */ ({ type: "stem", stem: existing.stem, values });
+		return /** @type {import('./BinaryTreeType.js').StemNode} */ ({
+			type: "stem",
+			stem: existing.stem,
+			values,
+		});
 	}
 
 	const existingBit = getStemBit(existing.stem, depth);
@@ -83,12 +95,22 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 
 	if (existingBit === newBit) {
 		const child = splitStems(existing, newStem, newIdx, newVal, depth + 1);
-		const childHash = hashNode(/** @type {import('./BinaryTreeType.js').Node} */ (child));
+		const childHash = hashNode(
+			/** @type {import('./BinaryTreeType.js').Node} */ (child),
+		);
 
 		if (existingBit === 0) {
-			return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({ type: "internal", left: childHash, right: new Uint8Array(32) });
+			return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
+				type: "internal",
+				left: childHash,
+				right: new Uint8Array(32),
+			});
 		}
-		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({ type: "internal", left: new Uint8Array(32), right: childHash });
+		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
+			type: "internal",
+			left: new Uint8Array(32),
+			right: childHash,
+		});
 	}
 
 	const newValues = new Array(256).fill(null);
@@ -104,9 +126,17 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 	const newHash = hashNode(newStemNode);
 
 	if (existingBit === 0) {
-		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({ type: "internal", left: existingHash, right: newHash });
+		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
+			type: "internal",
+			left: existingHash,
+			right: newHash,
+		});
 	}
-	return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({ type: "internal", left: newHash, right: existingHash });
+	return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
+		type: "internal",
+		left: newHash,
+		right: existingHash,
+	});
 }
 
 /** @param {Uint8Array} a @param {Uint8Array} b */

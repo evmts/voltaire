@@ -58,9 +58,20 @@ export function normalize(signature) {
 
 	// Return new signature with normalized s
 	if (signature.algorithm === "secp256k1") {
-		// Flip v if present (27 <-> 28)
-		const v =
-			signature.v !== undefined ? (signature.v === 27 ? 28 : 27) : undefined;
+		// Flip v if present
+		// For legacy (v = 27 or 28): flip between 27 and 28
+		// For EIP-155 (v >= 35): v = chainId * 2 + 35 + yParity, flip parity with ±1
+		// yParity is encoded in the least significant bit relative to the base (chainId * 2 + 35)
+		// Since base is always odd, flipping yParity means: odd v -> even v (+1), even v -> odd v (-1)
+		let v = signature.v;
+		if (v !== undefined) {
+			if (v === 27 || v === 28) {
+				v = v === 27 ? 28 : 27;
+			} else if (v >= 35) {
+				// EIP-155: flip parity - odd becomes even (+1), even becomes odd (-1)
+				v = v % 2 === 0 ? v - 1 : v + 1;
+			}
+		}
 		return fromSecp256k1(Hash.from(r), Hash.from(sNormalized), v);
 	}
 

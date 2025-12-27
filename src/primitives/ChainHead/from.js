@@ -37,20 +37,34 @@ export function from(value) {
 		for (let i = 0; i < 32; i++) {
 			bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
 		}
-		hash = /** @type {import('../BlockHash/BlockHashType.js').BlockHashType} */ (bytes);
+		hash =
+			/** @type {import('../BlockHash/BlockHashType.js').BlockHashType} */ (
+				bytes
+			);
 	} else {
 		hash = value.hash;
 	}
 
 	return /** @type {import('./ChainHeadType.js').ChainHeadType} */ ({
-		number: /** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (BigInt(value.number)),
+		number:
+			/** @type {import('../BlockNumber/BlockNumberType.js').BlockNumberType} */ (
+				BigInt(value.number)
+			),
 		hash: hash,
-		timestamp: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.timestamp)),
+		timestamp: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+			BigInt(value.timestamp)
+		),
 		difficulty:
-			value.difficulty !== undefined ? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.difficulty)) : undefined,
+			value.difficulty !== undefined
+				? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+						BigInt(value.difficulty)
+					)
+				: undefined,
 		totalDifficulty:
 			value.totalDifficulty !== undefined
-				? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (BigInt(value.totalDifficulty))
+				? /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+						BigInt(value.totalDifficulty)
+					)
 				: undefined,
 	});
 }

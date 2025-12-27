@@ -10,5 +10,7 @@
  * ```
  */
 export function fromWei(wei) {
-	return /** @type {import("./BaseFeePerGasType.js").BaseFeePerGasType} */ (wei);
+	return /** @type {import("./BaseFeePerGasType.js").BaseFeePerGasType} */ (
+		wei
+	);
 }

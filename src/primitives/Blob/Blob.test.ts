@@ -136,9 +136,7 @@ describe("blob.toData() - Instance Method", () => {
 describe("blob.toCommitment() - Instance Method", () => {
 	it("throws KZG error when trusted setup not loaded", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
-		expect(() => blob.toCommitment()).toThrow(
-			/KZG/i,
-		);
+		expect(() => blob.toCommitment()).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {
@@ -152,9 +150,7 @@ describe("blob.toProof() - Instance Method", () => {
 	it("throws KZG error when trusted setup not loaded", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
-		expect(() => (blob as any).toProof(commitment)).toThrow(
-			/KZG/i,
-		);
+		expect(() => (blob as any).toProof(commitment)).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {
@@ -172,9 +168,7 @@ describe("blob.verify() - Instance Method", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
-		expect(() => (blob as any).verify(commitment, proof)).toThrow(
-			/KZG/i,
-		);
+		expect(() => (blob as any).verify(commitment, proof)).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {
@@ -255,20 +249,23 @@ describe("Blob.splitData() - Static Method", () => {
 	});
 
 	it("splits at correct boundaries", () => {
-		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxDataPerBlob =
+			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const data = new Uint8Array(maxDataPerBlob * 2 + 100);
 		const blobs = Blob.splitData(data);
 		expect(blobs.length).toBe(3);
 	});
 
 	it("throws when exceeding max blobs per transaction", () => {
-		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxDataPerBlob =
+			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const tooMuch = new Uint8Array(maxDataPerBlob * (MAX_PER_TRANSACTION + 1));
 		expect(() => Blob.splitData(tooMuch)).toThrow("Data too large");
 	});
 
 	it("handles exactly max transaction capacity", () => {
-		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxDataPerBlob =
+			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		const data = new Uint8Array(maxDataPerBlob * MAX_PER_TRANSACTION);
 		const blobs = Blob.splitData(data);
 		expect(blobs.length).toBe(MAX_PER_TRANSACTION);
@@ -307,7 +304,11 @@ describe("Blob.joinData() - Static Method", () => {
 	});
 
 	it("roundtrip with max transaction capacity", () => {
-		const maxPerTransaction = MAX_PER_TRANSACTION * FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxPerTransaction =
+			MAX_PER_TRANSACTION *
+				FIELD_ELEMENTS_PER_BLOB *
+				(BYTES_PER_FIELD_ELEMENT - 1) -
+			4;
 		const data = new Uint8Array(maxPerTransaction - 100);
 		for (let i = 0; i < data.length; i++) {
 			data[i] = (i * 7) % 256;
@@ -329,7 +330,8 @@ describe("Blob.estimateBlobCount() - Static Method", () => {
 	});
 
 	it("estimates multiple blobs for large data", () => {
-		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxDataPerBlob =
+			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		expect(Blob.estimateBlobCount(maxDataPerBlob + 1)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2 + 1)).toBe(3);
@@ -344,7 +346,8 @@ describe("Blob.estimateBlobCount() - Static Method", () => {
 	});
 
 	it("estimates correctly at exact boundaries", () => {
-		const maxDataPerBlob = FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
+		const maxDataPerBlob =
+			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 		expect(Blob.estimateBlobCount(maxDataPerBlob)).toBe(1);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * MAX_PER_TRANSACTION)).toBe(
 			MAX_PER_TRANSACTION,
@@ -399,9 +402,7 @@ describe("Blob.toProof() - Static Method", () => {
 	it("throws KZG error when trusted setup not loaded", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
-		expect(() => Blob.toProof(blob, commitment)).toThrow(
-			/KZG/i,
-		);
+		expect(() => Blob.toProof(blob, commitment)).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {
@@ -457,9 +458,7 @@ describe("Blob.verify() - Static Method", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
-		expect(() => Blob.verify(blob, commitment, proof)).toThrow(
-			/KZG/i,
-		);
+		expect(() => Blob.verify(blob, commitment, proof)).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {

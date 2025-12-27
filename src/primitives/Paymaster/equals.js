@@ -14,7 +14,11 @@ import * as Address from "../Address/internal-index.js";
  */
 export function equals(a, b) {
 	return Address.equals(
-		/** @type {import('../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ (a)),
-		/** @type {import('../Address/AddressType.js').AddressType} */ (/** @type {unknown} */ (b)),
+		/** @type {import('../Address/AddressType.js').AddressType} */ (
+			/** @type {unknown} */ (a)
+		),
+		/** @type {import('../Address/AddressType.js').AddressType} */ (
+			/** @type {unknown} */ (b)
+		),
 	);
 }

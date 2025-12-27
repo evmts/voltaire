@@ -69,5 +69,7 @@ export function from(value) {
 		);
 	}
 
-	return /** @type {import("./BaseFeePerGasType.js").BaseFeePerGasType} */ (result);
+	return /** @type {import("./BaseFeePerGasType.js").BaseFeePerGasType} */ (
+		result
+	);
 }

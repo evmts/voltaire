@@ -28,5 +28,7 @@ export function from(value) {
 		);
 	}
 
-	return /** @type {import('./GasEstimateType.js').GasEstimateType} */ (bigintValue);
+	return /** @type {import('./GasEstimateType.js').GasEstimateType} */ (
+		bigintValue
+	);
 }

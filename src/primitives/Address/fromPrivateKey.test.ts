@@ -96,18 +96,14 @@ describe("fromPrivateKey", () => {
 		it("throws on zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => fromPrivateKey(privateKey)).toThrow(
-				InvalidValueError,
-			);
+			expect(() => fromPrivateKey(privateKey)).toThrow(InvalidValueError);
 		});
 
 		it("throws on private key >= secp256k1 order", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			privateKey.fill(0xff);
-			expect(() => fromPrivateKey(privateKey)).toThrow(
-				InvalidValueError,
-			);
+			expect(() => fromPrivateKey(privateKey)).toThrow(InvalidValueError);
 		});
 	});
 

@@ -10,5 +10,7 @@
  * ```
  */
 export function fromWei(wei) {
-	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (wei);
+	return /** @type {import("./EffectiveGasPriceType.js").EffectiveGasPriceType} */ (
+		wei
+	);
 }

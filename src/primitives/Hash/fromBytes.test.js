@@ -86,7 +86,8 @@ describe("fromBytes", () => {
 		it("error includes actual length", () => {
 			try {
 				fromBytes(new Uint8Array(20));
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("got 20");
 			}
 		});
@@ -94,7 +95,8 @@ describe("fromBytes", () => {
 		it("error includes expected length", () => {
 			try {
 				fromBytes(new Uint8Array(20));
-			} catch (e) { const error = /** @type {*} */ (e);
+			} catch (e) {
+				const error = /** @type {*} */ (e);
 				expect(error.message).toContain("32 bytes");
 			}
 		});

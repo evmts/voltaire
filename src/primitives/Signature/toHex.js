@@ -25,7 +25,8 @@ export function toHex(signature, includeV = true) {
 
 	// Always include r + s (64 bytes)
 	for (let i = 0; i < 64; i++) {
-		result += signature[i].toString(16).padStart(2, "0");
+		const b = signature[i] ?? 0;
+		result += b.toString(16).padStart(2, "0");
 	}
 
 	// Include v for secp256k1 if present and requested

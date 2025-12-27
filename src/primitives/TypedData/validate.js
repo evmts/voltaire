@@ -134,7 +134,7 @@ function validateTypeDependencies(typeName, types, seen) {
 		if (atomicTypes.includes(baseType)) continue;
 
 		// Check if it's a custom type that exists
-		if (!/** @type {Record<string, unknown>} */ (types)[baseType]) {
+		if (!(/** @type {Record<string, unknown>} */ (types)[baseType])) {
 			throw new InvalidTypedDataError(
 				`type '${baseType}' referenced in '${typeName}.${field.name}' not found`,
 				{ value: types },

@@ -35,9 +35,13 @@ export function shiftRight(value, shift) {
 
 	if (shiftAmount >= BigInt(BITS)) {
 		// EVM SAR: return all 1s for negative, 0 for positive
-		return /** @type {import('./Int256Type.js').BrandedInt256} */ (value < 0n ? -1n : 0n);
+		return /** @type {import('./Int256Type.js').BrandedInt256} */ (
+			value < 0n ? -1n : 0n
+		);
 	}
 
 	// BigInt >> preserves sign (arithmetic shift, matches EVM SAR)
-	return /** @type {import('./Int256Type.js').BrandedInt256} */ (value >> shiftAmount);
+	return /** @type {import('./Int256Type.js').BrandedInt256} */ (
+		value >> shiftAmount
+	);
 }
