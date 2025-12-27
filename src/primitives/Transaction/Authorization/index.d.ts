@@ -1,2 +1,2 @@
 export * from "./Authorization.js";
-export type * from "./BrandedAuthorization.js";
+// Types are available via Authorization.js JSDoc typedefs; avoid duplicate re-exports to fix DTS bundling.
