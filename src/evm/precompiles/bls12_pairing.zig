@@ -55,34 +55,25 @@ test "bls12_pairing - out of gas" {
 test "bls12_pairing - exact gas for zero pairs" {
     // Empty input (0 pairs) - should succeed with pairing result of 1
     const input = [_]u8{};
-    const result = execute(std.testing.allocator, &input, BASE_GAS);
+    const result = try execute(std.testing.allocator, &input, BASE_GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPairing due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(BASE_GAS, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-        // Empty input should return success (1)
-        try std.testing.expectEqual(@as(u8, 1), res.output[31]);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    try std.testing.expectEqual(BASE_GAS, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    // Empty input should return success (1)
+    try std.testing.expectEqual(@as(u8, 1), result.output[31]);
 }
 
 test "bls12_pairing - single pair exact gas" {
     // Single pair: G1 point (128 bytes) + G2 point (256 bytes) = 384 bytes
+    // All zeros represents points at infinity
     const input = [_]u8{0} ** 384;
     const expected_gas = BASE_GAS + PER_PAIR_GAS;
-    const result = execute(std.testing.allocator, &input, expected_gas);
+    const result = try execute(std.testing.allocator, &input, expected_gas);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPairing due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(expected_gas, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    try std.testing.expectEqual(expected_gas, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 }
 
 test "bls12_pairing - single pair insufficient gas" {
@@ -96,32 +87,22 @@ test "bls12_pairing - two pairs exact gas" {
     // Two pairs: 2 * 384 = 768 bytes
     const input = [_]u8{0} ** 768;
     const expected_gas = BASE_GAS + 2 * PER_PAIR_GAS;
-    const result = execute(std.testing.allocator, &input, expected_gas);
+    const result = try execute(std.testing.allocator, &input, expected_gas);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPairing due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(expected_gas, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    try std.testing.expectEqual(expected_gas, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 }
 
 test "bls12_pairing - three pairs" {
     // Three pairs: 3 * 384 = 1152 bytes
     const input = [_]u8{0} ** 1152;
     const expected_gas = BASE_GAS + 3 * PER_PAIR_GAS;
-    const result = execute(std.testing.allocator, &input, expected_gas);
+    const result = try execute(std.testing.allocator, &input, expected_gas);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPairing due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(expected_gas, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    try std.testing.expectEqual(expected_gas, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 }
 
 test "bls12_pairing - invalid input length not multiple of 384" {
@@ -169,22 +150,18 @@ test "bls12_pairing - gas cost calculation" {
 test "bls12_pairing - output format" {
     // Output should be 32 bytes with result in last byte
     const input = [_]u8{};
-    const result = execute(std.testing.allocator, &input, BASE_GAS);
+    const result = try execute(std.testing.allocator, &input, BASE_GAS);
+    defer std.testing.allocator.free(result.output);
 
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 
-        // First 31 bytes should be zero
-        for (res.output[0..31]) |byte| {
-            try std.testing.expectEqual(@as(u8, 0), byte);
-        }
-
-        // Last byte should be 0 or 1
-        try std.testing.expect(res.output[31] == 0 or res.output[31] == 1);
-    } else |_| {
-        // Stub implementation - test will pass once implemented
+    // First 31 bytes should be zero
+    for (result.output[0..31]) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
     }
+
+    // Last byte should be 0 or 1
+    try std.testing.expect(result.output[31] == 0 or result.output[31] == 1);
 }
 
 test "bls12_pairing - large number of pairs gas calculation" {
@@ -193,15 +170,11 @@ test "bls12_pairing - large number of pairs gas calculation" {
     const input = [_]u8{0} ** (384 * k);
     const expected_gas = BASE_GAS + k * PER_PAIR_GAS;
 
-    const result = execute(std.testing.allocator, &input, expected_gas);
+    const result = try execute(std.testing.allocator, &input, expected_gas);
+    defer std.testing.allocator.free(result.output);
 
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(expected_gas, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    try std.testing.expectEqual(expected_gas, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 }
 
 test "bls12_pairing - bilinearity property structure" {
@@ -215,13 +188,10 @@ test "bls12_pairing - bilinearity property structure" {
     // G1 point P at pair1[0..128]
     // G2 point Q at pair1[128..384]
 
-    const result1 = execute(std.testing.allocator, &pair1, BASE_GAS + PER_PAIR_GAS);
-    if (result1) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 32), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPairing, err);
-    }
+    const result1 = try execute(std.testing.allocator, &pair1, BASE_GAS + PER_PAIR_GAS);
+    defer std.testing.allocator.free(result1.output);
+
+    try std.testing.expectEqual(@as(usize, 32), result1.output.len);
 }
 
 test "bls12_pairing - output size consistency" {
@@ -236,12 +206,9 @@ test "bls12_pairing - output size consistency" {
         const k = size / 384;
         const gas = BASE_GAS + k * PER_PAIR_GAS;
 
-        const result = execute(std.testing.allocator, input, gas);
-        if (result) |res| {
-            defer std.testing.allocator.free(res.output);
-            try std.testing.expectEqual(@as(usize, 32), res.output.len);
-        } else |_| {
-            // Stub implementation
-        }
+        const result = try execute(std.testing.allocator, input, gas);
+        defer std.testing.allocator.free(result.output);
+
+        try std.testing.expectEqual(@as(usize, 32), result.output.len);
     }
 }

@@ -43,31 +43,20 @@ test "map fp2 to g2 - out of gas" {
 
 test "map fp2 to g2 - exact gas" {
     const input = [_]u8{0} ** 128;
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    // Once BLS12-381 is implemented, this should succeed
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(GAS, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(GAS, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
 }
 
 test "map fp2 to g2 - excess gas" {
     const input = [_]u8{0} ** 128;
-    const result = execute(std.testing.allocator, &input, GAS + 1000);
+    const result = try execute(std.testing.allocator, &input, GAS + 1000);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(GAS, res.gas_used);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(GAS, result.gas_used);
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
 }
 
 test "map fp2 to g2 - invalid input length too short" {
@@ -91,16 +80,11 @@ test "map fp2 to g2 - invalid input length zero" {
 test "map fp2 to g2 - zero fp2 element" {
     // Zero Fp2 element (c0=0, c1=0) should map to a valid G2 point
     const input = [_]u8{0} ** 128;
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - maximum field element c0" {
@@ -121,16 +105,11 @@ test "map fp2 to g2 - maximum field element c0" {
     @memcpy(input[16..64], &p_minus_1_bytes);
     // c1 remains 0
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - maximum field element c1" {
@@ -150,16 +129,11 @@ test "map fp2 to g2 - maximum field element c1" {
     };
     @memcpy(input[80..128], &p_minus_1_bytes);
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - both components maximum" {
@@ -178,16 +152,11 @@ test "map fp2 to g2 - both components maximum" {
     @memcpy(input[16..64], &p_minus_1_bytes);
     @memcpy(input[80..128], &p_minus_1_bytes);
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - test vector 1" {
@@ -197,16 +166,11 @@ test "map fp2 to g2 - test vector 1" {
     input[63] = 1; // c0 = 1
     // c1 = 0
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - test vector 2" {
@@ -216,16 +180,11 @@ test "map fp2 to g2 - test vector 2" {
     // c0 = 0
     input[127] = 1; // c1 = 1
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - test vector 3" {
@@ -243,16 +202,11 @@ test "map fp2 to g2 - test vector 3" {
     input[126] = 0xde;
     input[127] = 0xf0; // c1
 
-    const result = execute(std.testing.allocator, &input, GAS);
+    const result = try execute(std.testing.allocator, &input, GAS);
+    defer std.testing.allocator.free(result.output);
 
-    // Currently returns error.InvalidPoint due to stub implementation
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-        try std.testing.expectEqual(GAS, res.gas_used);
-    } else |err| {
-        try std.testing.expectEqual(error.InvalidPoint, err);
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
+    try std.testing.expectEqual(GAS, result.gas_used);
 }
 
 test "map fp2 to g2 - gas cost validation" {
@@ -263,12 +217,8 @@ test "map fp2 to g2 - gas cost validation" {
 test "map fp2 to g2 - output size validation" {
     // Output should be 256 bytes (uncompressed G2 point: 2x128 bytes for (x,y) in Fp2)
     const input = [_]u8{0} ** 128;
-    const result = execute(std.testing.allocator, &input, 100000);
+    const result = try execute(std.testing.allocator, &input, 100000);
+    defer std.testing.allocator.free(result.output);
 
-    if (result) |res| {
-        defer std.testing.allocator.free(res.output);
-        try std.testing.expectEqual(@as(usize, 256), res.output.len);
-    } else |_| {
-        // Stub implementation - test will pass once implemented
-    }
+    try std.testing.expectEqual(@as(usize, 256), result.output.len);
 }
