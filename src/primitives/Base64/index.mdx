@@ -36,6 +36,19 @@ JavaScript builtins available on all `Uint8Array` instances:
 
 </Tabs>
 
+### Effect Schema
+
+```ts
+import { Base64Schema, Base64UrlSchema } from '@tevm/voltaire/Base64/effect'
+
+const bytes = new TextEncoder().encode('Hello')
+const b64 = Base64Schema.from(bytes)
+b64.toString() // 'SGVsbG8='
+
+const b64url = Base64UrlSchema.from(bytes)
+b64url.toString() // 'SGVsbG8'
+```
+
 ## API Methods
 
 ### Encoding

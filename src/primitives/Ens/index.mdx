@@ -54,6 +54,16 @@ const plain = toString(branded);
 </Tab>
 </Tabs>
 
+### Effect Schema
+
+```ts
+import { EnsSchema } from '@tevm/voltaire/Ens/effect'
+
+const ens = EnsSchema.from('vitalik.eth')
+ens.namehash() // Uint8Array(32)
+ens.normalize().toString() // 'vitalik.eth'
+```
+
 ## Core Functions
 
 ### normalize(name)

@@ -40,6 +40,15 @@ JavaScript builtins available on all `Uint8Array` instances:
 
 </Tabs>
 
+### Effect Schema
+
+```ts
+import { BytecodeSchema } from '@tevm/voltaire/Bytecode/effect'
+
+const code = BytecodeSchema.fromHex('0x6001')
+code.toHex() // '0x6001'
+```
+
 ## API Methods
 
 ### Constructors

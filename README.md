@@ -307,17 +307,22 @@ All implementations optimized for production use:
 
 ---
 
-## Language Support Wishlist
+## Language Support
 
-Voltaire currently supports TypeScript/JavaScript and Zig. We are looking for help adding idiomatic, type-safe wrappers for additional languages:
+- TypeScript/JavaScript (Node.js, Bun, browser)
+- Zig (native library + examples)
+- Swift (iOS/macOS) — see `swift/` and docs under `docs/swift/`
+
+### Language Support Wishlist
+
+We welcome help adding idiomatic, type-safe wrappers for additional languages:
 
 - **[Go](https://go.dev/)** - Native Go bindings via cgo
 - **[Python](https://www.python.org/)** - Python bindings via ctypes/cffi
 - **[Rust](https://www.rust-lang.org/)** - Rust bindings via FFI
-- **[Swift](https://swift.org/)** - Swift bindings for iOS/macOS development
 - **[Kotlin](https://kotlinlang.org/)** - Kotlin bindings for Android/JVM development
 
-**Note:** These languages can already use Voltaire today via the C-FFI interface (see `src/c_api.zig` and generated `src/primitives.h` header), but we aim to provide ergonomic, type-safe, idiomatic wrappers for each language.
+Note: All languages can use Voltaire via the C-FFI interface (see `src/c_api.zig` and `src/primitives.h`), but our goal is to provide ergonomic, idiomatic wrappers.
 
 ---
 

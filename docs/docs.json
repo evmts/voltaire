@@ -26,15 +26,36 @@
 							"getting-started/powerful-features"
 						]
 					},
-					{
-						"group": "Getting Started",
-						"icon": "rocket",
-						"pages": [
-							"getting-started",
-							"comparisons",
-							"model-context-protocol"
-						]
-					},
+      {
+        "group": "Getting Started",
+        "icon": "rocket",
+        "pages": [
+          "getting-started",
+          "comparisons",
+          "model-context-protocol"
+        ]
+      },
+      {
+        "group": "Swift",
+        "icon": "mobile-screen",
+        "pages": [
+          "swift/index",
+          "swift/getting-started",
+          {
+            "group": "Primitives",
+            "pages": [
+              "swift/primitives/address",
+              "swift/primitives/hash",
+              "swift/primitives/hex",
+              "swift/primitives/bytes32",
+              "swift/primitives/u256",
+              "swift/primitives/private-key",
+              "swift/primitives/public-key",
+              "swift/primitives/signature"
+            ]
+          }
+        ]
+      },
 					{
 						"group": "Core Concepts",
 						"icon": "book",

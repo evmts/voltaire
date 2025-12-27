@@ -92,6 +92,17 @@ const s = Signature.getS(sig);  // 32 bytes
 const v = Signature.getV(sig);  // 27 or 28
 ```
 
+### Effect Schema
+
+```ts
+import { SignatureSchema } from '@tevm/voltaire/Signature/effect'
+
+// From compact bytes (64)
+const bytes = new Uint8Array(64)
+const sig = SignatureSchema.fromBytes(bytes)
+sig.toHex()
+```
+
 ## Security Considerations
 
 ### Signature Malleability
