@@ -3,6 +3,7 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
+import { compress as blake2fCompress } from "../../crypto/Blake2/index.js";
 import * as Kzg from "../../crypto/KZG/index.js";
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { Ripemd160 } from "../../crypto/Ripemd160/index.js";
@@ -669,7 +670,16 @@ export function bn254Pairing(
 
 /**
  * BLAKE2F precompile (0x09)
- * Blake2 compression function
+ * Blake2 F compression function per EIP-152
+ *
+ * Input format (213 bytes):
+ * - rounds (4 bytes, big-endian) - number of compression rounds
+ * - h (64 bytes) - state vector
+ * - m (128 bytes) - message block
+ * - t (16 bytes) - offset counters
+ * - f (1 byte) - final block flag (must be 0 or 1)
+ *
+ * @see https://eips.ethereum.org/EIPS/eip-152
  */
 export function blake2f(
 	_input: Uint8Array,
@@ -683,8 +693,23 @@ export function blake2f(
 			error: "Invalid input length",
 		};
 	}
-	const rounds = new DataView(_input.buffer).getUint32(0, false);
+
+	// Validate final flag per EIP-152 - must be 0 or 1
+	const finalFlag = _input[212];
+	if (finalFlag !== 0 && finalFlag !== 1) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid final flag",
+		};
+	}
+
+	// Parse rounds (big-endian)
+	const rounds =
+		(_input[0] << 24) | (_input[1] << 16) | (_input[2] << 8) | _input[3];
 	const gas = BigInt(rounds);
+
 	if (gasLimit < gas) {
 		return {
 			success: false,
@@ -693,7 +718,18 @@ export function blake2f(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(64), gasUsed: gas };
+
+	try {
+		const output = blake2fCompress(_input);
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
