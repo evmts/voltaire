@@ -7,44 +7,37 @@ description: "Raw bytes returned from contract calls"
 
 Branded `Uint8Array` representing raw, uninterpreted return data from contract execution.
 
-## Type
+## Type (Zig)
 
 ```zig
-type ReturnDataType = Uint8Array & { readonly [brand]: "ReturnData" };
+// Return data is []const u8. Use Hex to convert hex ⇄ bytes.
 ```
 
 ## Construction
 
 ```zig
-import * as ReturnData from 'voltaire/primitives/ReturnData';
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
 
 // From hex string
-const data = ReturnData.fromHex("0x00000001");
-
-// From bytes
-const bytes = new Uint8Array([0, 0, 0, 1]);
-const data = ReturnData.from(bytes);
+const data = try Hex.hexToBytes(allocator, "0x00000001");
+defer allocator.free(data);
 ```
 
 ## Methods
 
-- `from(value)` - Universal constructor (hex or bytes)
-- `fromHex(hex)` - From hex string
-- `fromBytes(bytes)` - From Uint8Array
-- `toHex(data)` - Convert to hex string
-- `toBytes(data)` - Convert to Uint8Array
-- `equals(a, b)` - Compare equality
-- `isEmpty(data)` - Check if empty
+- Use Hex.hexToBytes/bytesToHex for conversion
+- Compare slices with std.mem.eql
+- Check emptiness via `data.len == 0`
 
 ## Example
 
 ```zig
-import * as ReturnData from 'voltaire/primitives/ReturnData';
-
-// Parse contract return data
-const returnData = ReturnData.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
-
-if (!ReturnData.isEmpty(returnData)) {
-  console.log("Data:", ReturnData.toHex(returnData));
-}
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+const return_data = try Hex.hexToBytes(allocator, "0x...hex...");
+defer allocator.free(return_data);
+// Convert to hex
+const hex = try Hex.bytesToHex(allocator, return_data);
+defer allocator.free(hex);
 ```

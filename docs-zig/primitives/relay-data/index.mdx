@@ -11,42 +11,23 @@ MEV relay connection information for Proposer-Builder Separation (PBS).
 
 RelayData represents MEV relay connection information used in PBS. Relays act as trusted intermediaries between block builders and validators, ensuring builders cannot see validator signatures before block delivery.
 
-## Type Definition
+## Type Definition (Zig)
 
 ```zig
-type RelayDataType = {
-  /** MEV relay endpoint URL */
-  readonly relayUrl: string;
-
-  /** Relay's BLS public key (48 bytes) */
-  readonly relayPubkey: Uint8Array;
-
-  /** Builder's BLS public key (48 bytes, optional) */
-  readonly builderPubkey?: Uint8Array;
-
-  /** Current consensus layer slot */
-  readonly slot: SlotType;
-
-  /** Parent block hash (32 bytes) */
-  readonly parentHash: HashType;
-
-  /** Validator fee recipient address (20 bytes) */
-  readonly proposerFeeRecipient: AddressType;
-};
+// Represent relay URL as string; use [48]u8 for BLS pubkeys; slot as u64, parentHash as Hash.
 ```
 
 ## Well-Known Relays
 
 ```zig
-import { MEV_RELAYS } from './primitives/RelayData/index.js';
-
-MEV_RELAYS.FLASHBOTS          // "https://relay.flashbots.net"
-MEV_RELAYS.BLOXROUTE_MAX_PROFIT  // "https://bloxroute.max-profit.bloxroute.com"
-MEV_RELAYS.BLOXROUTE_REGULATED   // "https://bloxroute.regulated.bloxroute.com"
-MEV_RELAYS.EDEN               // "https://relay.edennetwork.io"
-MEV_RELAYS.MANIFOLD           // "https://mainnet-relay.securerpc.com"
-MEV_RELAYS.ULTRASOUND         // "https://relay.ultrasound.money"
-MEV_RELAYS.AGNOSTIC           // "https://agnostic-relay.net"
+// Common relays:
+// - https://relay.flashbots.net
+// - https://bloxroute.max-profit.bloxroute.com
+// - https://bloxroute.regulated.bloxroute.com
+// - https://relay.edennetwork.io
+// - https://mainnet-relay.securerpc.com
+// - https://relay.ultrasound.money
+// - https://agnostic-relay.net
 ```
 
 ## Usage
@@ -54,23 +35,14 @@ MEV_RELAYS.AGNOSTIC           // "https://agnostic-relay.net"
 ### Create RelayData
 
 ```zig
-import * as RelayData from './primitives/RelayData/index.js';
-import { MEV_RELAYS } from './primitives/RelayData/index.js';
-
-const relay = RelayData.from({
-  relayUrl: MEV_RELAYS.FLASHBOTS,
-  relayPubkey: new Uint8Array(48), // relay's BLS pubkey
-  slot: 12345n,
-  parentHash: new Uint8Array(32),
-  proposerFeeRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-});
+// Model as a Zig struct in your application; no built-in helpers are required here.
 ```
 
 ### Get API Endpoint
 
 ```zig
-const url = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
-// "https://relay.flashbots.net/eth/v1/builder/header"
+// Endpoint examples:
+// https://relay.flashbots.net/eth/v1/builder/header
 ```
 
 ## API Reference
@@ -107,11 +79,8 @@ Common relay API methods:
 ### Example: Request Block Header
 
 ```zig
-const endpoint = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
-const params = `${relay.slot}/${relay.parentHash}/${relay.proposerFeeRecipient}`;
-
-const response = await fetch(`${endpoint}/${params}`);
-const bid = await response.json();
+// GET {relay}/eth/v1/builder/header/{slot}/{parent_hash}/{proposer_fee_recipient}
+// Use std.http.Client in Zig to request if implementing client-side.
 ```
 
 ## PBS Flow
@@ -146,12 +115,7 @@ Consider when selecting relays:
 - **Geographic**: Latency affects bid competitiveness
 
 ```zig
-// Use multiple relays for redundancy
-const relays = [
-  RelayData.from({ relayUrl: MEV_RELAYS.FLASHBOTS, ... }),
-  RelayData.from({ relayUrl: MEV_RELAYS.ULTRASOUND, ... }),
-  RelayData.from({ relayUrl: MEV_RELAYS.AGNOSTIC, ... }),
-];
+// Use multiple relay endpoints for redundancy
 ```
 
 ## See Also

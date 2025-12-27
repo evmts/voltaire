@@ -8,53 +8,14 @@ description: "Ethereum block header with metadata and Merkle roots"
 BlockHeader contains all metadata for a block including Merkle roots, gas limits, timestamps, and consensus-related fields. The block hash is computed from RLP(header).
 
 ```zig
-import * as BlockHeader from '@voltaire/primitives/BlockHeader'
-
-const header = BlockHeader.from({
-  parentHash: "0x...",
-  ommersHash: "0x...",
-  beneficiary: "0x...",
-  stateRoot: "0x...",
-  transactionsRoot: "0x...",
-  receiptsRoot: "0x...",
-  logsBloom: new Uint8Array(256),
-  difficulty: 0n,
-  number: 18000000n,
-  gasLimit: 30000000n,
-  gasUsed: 15000000n,
-  timestamp: 1700000000n,
-  extraData: new Uint8Array(0),
-  mixHash: "0x...",
-  nonce: new Uint8Array(8),
-  baseFeePerGas: 30000000000n,
-})
+// Obtain block header via JSON-RPC; map fields from hex to Zig types.
+// {"method":"eth_getBlockByNumber","params":["latest",false]}
 ```
 
 ## Type Definition
 
 ```zig
-type BlockHeaderType = {
-  readonly parentHash: BlockHashType
-  readonly ommersHash: HashType
-  readonly beneficiary: AddressType
-  readonly stateRoot: HashType
-  readonly transactionsRoot: HashType
-  readonly receiptsRoot: HashType
-  readonly logsBloom: Uint8Array         // 256 bytes
-  readonly difficulty: Uint256Type
-  readonly number: BlockNumberType
-  readonly gasLimit: Uint256Type
-  readonly gasUsed: Uint256Type
-  readonly timestamp: Uint256Type
-  readonly extraData: Uint8Array         // max 32 bytes
-  readonly mixHash: HashType
-  readonly nonce: Uint8Array             // 8 bytes
-  readonly baseFeePerGas?: Uint256Type   // EIP-1559 (London)
-  readonly withdrawalsRoot?: HashType    // Shanghai
-  readonly blobGasUsed?: Uint256Type     // EIP-4844 (Cancun)
-  readonly excessBlobGas?: Uint256Type   // EIP-4844 (Cancun)
-  readonly parentBeaconBlockRoot?: HashType // EIP-4788 (Cancun)
-}
+// Core fields: parentHash, stateRoot, transactionsRoot, receiptsRoot, logsBloom, gasLimit, gasUsed, timestamp, baseFeePerGas, withdrawalsRoot, blobGasUsed, excessBlobGas, parentBeaconBlockRoot
 ```
 
 ## Creating BlockHeader
@@ -64,35 +25,7 @@ type BlockHeaderType = {
 Universal constructor with all header fields.
 
 ```zig
-const header = BlockHeader.from({
-  // Required fields (all blocks)
-  parentHash: "0x1234...",
-  ommersHash: "0x1dcc...", // Usually empty hash post-merge
-  beneficiary: "0xfee...",  // Fee recipient
-  stateRoot: "0xabcd...",
-  transactionsRoot: "0xef01...",
-  receiptsRoot: "0x2345...",
-  logsBloom: new Uint8Array(256),
-  difficulty: 0n,          // 0 post-merge
-  number: 18500000n,
-  gasLimit: 30000000n,
-  gasUsed: 12345678n,
-  timestamp: 1700000000n,
-  extraData: new Uint8Array(0),
-  mixHash: "0x0000...",    // 0 post-merge
-  nonce: new Uint8Array(8), // 0 post-merge
-
-  // EIP-1559 (London fork)
-  baseFeePerGas: 30000000000n,
-
-  // Shanghai fork
-  withdrawalsRoot: "0x5678...",
-
-  // EIP-4844 (Cancun fork)
-  blobGasUsed: 262144n,
-  excessBlobGas: 0n,
-  parentBeaconBlockRoot: "0x9abc...",
-})
+// Map fields per fork as needed: London (baseFeePerGas), Shanghai (withdrawalsRoot), Cancun (blobGasUsed, excessBlobGas, parentBeaconBlockRoot).
 ```
 
 ## Header Fields by Fork
@@ -142,12 +75,7 @@ const header = BlockHeader.from({
 After The Merge, several fields are deprecated but still present:
 
 ```zig
-const postMergeHeader = BlockHeader.from({
-  // ...other fields
-  difficulty: 0n,               // Always 0
-  mixHash: "0x" + "00".repeat(32), // RANDAO reveal
-  nonce: new Uint8Array(8),     // Always 0
-})
+// Post-merge: difficulty = 0, nonce = 0; mixHash holds RANDAO reveal
 ```
 
 ## See Also
