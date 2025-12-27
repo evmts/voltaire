@@ -1,0 +1,41 @@
+---
+title: Errors (Swift)
+description: VoltaireError and error handling
+---
+
+# Errors
+
+Swift wrappers throw `VoltaireError` when C calls return non-zero error codes.
+
+## VoltaireError
+
+```swift
+public enum VoltaireError: Error, Equatable {
+    case invalidHex
+    case invalidLength
+    case invalidChecksum
+    case outOfMemory
+    case invalidInput
+    case invalidSignature
+    case invalidSelector
+    case unsupportedType
+    case maxLengthExceeded
+    case invalidAccessList
+    case invalidAuthorization
+    case unknown(Int32)
+}
+```
+
+## Handling Errors
+
+```swift
+do {
+  let v = try U256(hex: "0xz")
+} catch let e as VoltaireError {
+  switch e {
+  case .invalidHex: print("Bad hex")
+  default: print("Other error: \(e)")
+  }
+}
+```
+
