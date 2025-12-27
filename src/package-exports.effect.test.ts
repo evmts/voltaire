@@ -14,6 +14,8 @@ describe('package exports include Effect modules', () => {
       './Base64/effect',
       './Ens/effect',
       './EventLog/effect',
+      './AccessList/effect',
+      './Transaction/Authorization/effect',
     ]
     for (const key of required) {
       expect(exports).toContain(key)
