@@ -59,10 +59,10 @@ export function assert(value, options = {}) {
 
 			let expectedChecksum = "0x";
 			for (let i = 0; i < 40; i++) {
-				const char = lowerHex[i];
+				const char = /** @type {string} */ (lowerHex[i]);
 				if (/[a-f]/.test(char)) {
 					// Use 4th bit of hash nibble to determine case
-					const hashNibble = Number.parseInt(hashHex[i], 16);
+					const hashNibble = Number.parseInt(/** @type {string} */ (hashHex[i]), 16);
 					expectedChecksum += hashNibble >= 8 ? char.toUpperCase() : char;
 				} else {
 					expectedChecksum += char;
