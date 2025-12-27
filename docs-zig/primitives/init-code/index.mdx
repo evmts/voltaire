@@ -3,16 +3,10 @@ title: Overview
 description: Contract creation bytecode (constructor + runtime)
 ---
 
-## Type Definition
-
-[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing contract creation bytecode deployed during contract creation transactions.
+## Type Definition (Zig)
 
 ```zig
-import type { brand } from 'tevm/brand';
-
-export type InitCodeType = Uint8Array & {
-  readonly [brand]: "InitCode";
-};
+// Represent init code as []const u8; use primitives.Hex to convert hex ⇄ bytes.
 ```
 
 Init code contains:
@@ -26,25 +20,19 @@ Init code contains:
 <Tab title="Create">
 
 ```zig
-import * as InitCode from 'tevm/InitCode';
-
-// From hex string
-const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
-
-// From Uint8Array
-const init = InitCode.from(new Uint8Array([0x60, 0x80, ...]));
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+const init_bytes = try Hex.hexToBytes(allocator, "0x6080604052...");
+defer allocator.free(init_bytes);
 ```
 
 </Tab>
 <Tab title="Extract">
 
 ```zig
-// Extract runtime code at known offset
-const runtime = InitCode.extractRuntime(init, constructorLength);
-
-// Estimate gas cost
-const gas = InitCode.estimateGas(init);
-console.log(`Creation gas: ${gas}`);
+// Extract runtime code at known offset: slice init code after constructor
+const runtime_bytes = init_bytes[constructor_len..];
+// Estimate creation gas: data cost + CREATE cost (documented in EIPs)
 ```
 
 </Tab>
@@ -69,58 +57,27 @@ console.log(`Creation gas: ${gas}`);
 
 ## Usage Patterns
 
-### Deploying Contract
+### Deploying Contract (JSON-RPC)
 
 ```zig
-import * as InitCode from 'tevm/InitCode';
-
-// Get init code from compilation output
-const init = InitCode.from(compiledOutput.bytecode);
-
-// Estimate gas
-const estimatedGas = InitCode.estimateGas(init);
-console.log(`Estimated gas: ${estimatedGas}`);
-
-// Deploy
-const tx = await signer.sendTransaction({
-  data: InitCode.toHex(init),
-  gasLimit: estimatedGas + 50000n, // Add buffer
-});
+// Build a raw transaction with init code as data (hex)
+// {"method":"eth_sendRawTransaction","params":["0xSIGNED_TX"]}
 ```
 
 ### Analyzing Creation Bytecode
 
 ```zig
-import * as InitCode from 'tevm/InitCode';
-import * as Bytecode from 'tevm/Bytecode';
-
-const init = InitCode.from(creationBytecode);
-
-// Analyze constructor
-const analysis = Bytecode.analyze(init);
-console.log(`Constructor instructions: ${analysis.instructions.length}`);
-
-// Find constructor length (usually ends with RETURN or STOP)
-// then extract runtime code
-const runtime = InitCode.extractRuntime(init, constructorLength);
+const primitives = @import("primitives");
+var bc = try primitives.Bytecode.init(std.testing.allocator, init_bytes);
+defer bc.deinit();
+// Iterate through instructions until constructor RETURN; then slice to runtime.
 ```
 
 ### Gas Estimation
 
 ```zig
-import * as InitCode from 'tevm/InitCode';
-
-const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
-
-// Base gas cost (data + creation)
-const gas = InitCode.estimateGas(init);
-
-// Gas breakdown:
-// - 21000: Base transaction cost
-// - 32000: CREATE operation
-// - 16 per non-zero byte
-// - 4 per zero byte
-console.log(`Total creation gas: ${gas}`);
+// Gas breakdown (reference):
+// - 21000 base tx, 32000 CREATE, 16 per non-zero byte, 4 per zero byte
 ```
 
 ## Related

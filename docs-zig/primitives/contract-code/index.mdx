@@ -3,16 +3,10 @@ title: Overview
 description: Deployed contract bytecode with metadata
 ---
 
-## Type Definition
-
-[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing full deployed contract bytecode including Solidity compiler metadata.
+## Type Definition (Zig)
 
 ```zig
-import type { brand } from 'tevm/brand';
-
-export type ContractCodeType = Uint8Array & {
-  readonly [brand]: "ContractCode";
-};
+const ContractCode = @import("primitives").ContractCode;
 ```
 
 ## Quick Reference
@@ -21,13 +15,12 @@ export type ContractCodeType = Uint8Array & {
 <Tab title="Create">
 
 ```zig
-import * as ContractCode from 'tevm/ContractCode';
-
-// From hex string
-const code = ContractCode.from("0x6001600155a26469706673...");
-
-// From Uint8Array
-const code = ContractCode.from(new Uint8Array([0x60, 0x01, ...]));
+const primitives = @import("primitives");
+const Hex = primitives.Hex;
+const allocator = std.testing.allocator;
+const bytes = try Hex.hexToBytes(allocator, "0x6001600155...");
+defer allocator.free(bytes);
+const code = primitives.ContractCode.from(bytes);
 ```
 
 </Tab>
@@ -35,13 +28,8 @@ const code = ContractCode.from(new Uint8Array([0x60, 0x01, ...]));
 
 ```zig
 // To hex
-const hex = ContractCode.toHex(code);
-
-// Strip metadata
-const runtime = ContractCode.stripMetadata(code);
-
-// Extract runtime code
-const runtime = ContractCode.extractRuntime(code);
+const hex = try code.toHex(std.testing.allocator);
+defer std.testing.allocator.free(hex);
 ```
 
 </Tab>
@@ -70,42 +58,14 @@ const runtime = ContractCode.extractRuntime(code);
 ### Verifying Contract Code
 
 ```zig
-import * as ContractCode from 'tevm/ContractCode';
-
-// Get deployed code from blockchain
-const deployed = ContractCode.from(await provider.getCode(address));
-
-// Check for metadata
-if (ContractCode.hasMetadata(deployed)) {
-  console.log("Contract includes Solidity metadata");
-}
-
-// Extract runtime code for comparison
-const runtime = ContractCode.stripMetadata(deployed);
-const expected = ContractCode.from(compiledRuntimeCode);
-
-if (ContractCode.equals(runtime, expected)) {
-  console.log("Contract verified");
-}
+// Fetch code with eth_getCode and convert hex -> bytes; compare to expected runtime
+// {"method":"eth_getCode","params":["0xCONTRACT","latest"]}
 ```
 
 ### Analyzing Contract Structure
 
 ```zig
-import * as ContractCode from 'tevm/ContractCode';
-import * as Metadata from 'tevm/Metadata';
-
-const code = ContractCode.from(deployedBytecode);
-
-// Extract metadata
-const meta = Metadata.fromBytecode(code);
-if (meta) {
-  console.log(`Compiler: Solidity ${meta.solc}`);
-  console.log(`IPFS: ${meta.ipfs}`);
-}
-
-// Get clean runtime code
-const runtime = ContractCode.extractRuntime(code);
+// Solidity metadata lives at the end of bytecode (0xa165... marker); strip per toolchain.
 ```
 
 ## Related

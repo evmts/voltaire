@@ -153,15 +153,9 @@ const returnData = MemoryDump.slice(dump, returnDataOffset, returnDataSize);
 
 ## API Reference
 
-### Constructors
-
-- `MemoryDump.from(bytes)` - Create from Uint8Array
-- `MemoryDump.from({ data, length })` - Create from object
-
-### Methods
-
-- `MemoryDump.readWord(dump, offset)` - Read 32-byte word
-- `MemoryDump.slice(dump, start, end?)` - Extract memory range
+- Represent memory as `[]const u8`
+- Read 32-byte words via slices: `dump[offset..offset+32]`
+- Extract ranges via slicing: `dump[start..end]`
 
 ## See Also
 

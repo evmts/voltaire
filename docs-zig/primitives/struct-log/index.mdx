@@ -11,21 +11,11 @@ Geth-style structured log entry representing a single opcode execution with huma
 
 StructLog is the JSON-RPC format used by Geth's `debug_traceTransaction`. It uses hex strings for all values (stack, memory, storage) instead of typed values.
 
-## Type Definition
+## JSON Format (from RPC)
 
 ```zig
-type StructLogType = {
-  readonly pc: number;                    // Program counter
-  readonly op: string;                    // Opcode name (e.g., "PUSH1", "ADD")
-  readonly gas: Uint256Type;              // Remaining gas
-  readonly gasCost: Uint256Type;          // Gas cost
-  readonly depth: number;                 // Call depth
-  readonly stack: readonly string[];      // Stack as hex strings (top to bottom)
-  readonly memory?: readonly string[];    // Memory as 32-byte hex chunks
-  readonly storage?: Record<string, string>; // Storage changes (hex key -> hex value)
-  readonly refund?: Uint256Type;          // Gas refund counter
-  readonly error?: string;                // Error message
-};
+// Geth debug_traceTransaction returns StructLog entries with string fields
+// Example payload shown in the section below.
 ```
 
 ## Usage
@@ -33,69 +23,17 @@ type StructLogType = {
 ### Creating StructLogs
 
 ```zig
-import * as StructLog from '@tevm/primitives/StructLog';
-
-// Basic StructLog
-const log = StructLog.from({
-  pc: 0,
-  op: "PUSH1",
-  gas: 1000000n,
-  gasCost: 3n,
-  depth: 0,
-  stack: ["0x60"],
-});
-
-// StructLog with memory
-const mstoreLog = StructLog.from({
-  pc: 10,
-  op: "MSTORE",
-  gas: 999900n,
-  gasCost: 6n,
-  depth: 0,
-  stack: ["0x40", "0x60"],
-  memory: [
-    "0000000000000000000000000000000000000000000000000000000000000000",
-    "0000000000000000000000000000000000000000000000000000000000006040"
-  ],
-});
-
-// StructLog with storage
-const sstoreLog = StructLog.from({
-  pc: 20,
-  op: "SSTORE",
-  gas: 980000n,
-  gasCost: 20000n,
-  depth: 0,
-  stack: ["0x01", "0x64"],
-  storage: {
-    "0x0000000000000000000000000000000000000000000000000000000000000001":
-    "0x0000000000000000000000000000000000000000000000000000000000000064"
-  },
-});
-
-// StructLog with refund
-const refundLog = StructLog.from({
-  pc: 30,
-  op: "SSTORE",
-  gas: 960000n,
-  gasCost: 5000n,
-  depth: 0,
-  stack: ["0x02", "0x00"],
-  refund: 15000n, // Clearing storage slot
-});
+// See debug_traceTransaction example below for the JSON shape.
+// Convert fields to typed data in your application as needed.
 ```
 
 ### Converting to OpStep
 
 ```zig
-import * as StructLog from '@tevm/primitives/StructLog';
-
-// Convert to typed OpStep
-const log = /* ... from RPC ... */;
-const step = StructLog.toOpStep(log);
-
-// Now have typed stack/memory/storage
-console.log(step.stack); // bigint[] instead of string[]
+// Convert StructLog JSON to typed values (example idea):
+// - Parse hex stack items to u256
+// - Decode memory chunks to []u8
+// - Map opcode string to primitives.Opcode
 ```
 
 ## RPC Response Format
@@ -144,29 +82,9 @@ console.log(step.stack); // bigint[] instead of string[]
 ### Parsing RPC Response
 
 ```zig
-import * as StructLog from '@tevm/primitives/StructLog';
-import * as TraceResult from '@tevm/primitives/TraceResult';
-
-// Parse RPC response
-const response = await rpc.debug_traceTransaction(txHash, config);
-
-const result = TraceResult.from({
-  gas: BigInt(response.gas),
-  failed: response.failed,
-  returnValue: hexToBytes(response.returnValue),
-  structLogs: response.structLogs.map(log => StructLog.from({
-    pc: log.pc,
-    op: log.op,
-    gas: BigInt(log.gas),
-    gasCost: BigInt(log.gasCost),
-    depth: log.depth,
-    stack: log.stack,
-    memory: log.memory,
-    storage: log.storage,
-    refund: log.refund ? BigInt(log.refund) : undefined,
-    error: log.error,
-  })),
-});
+// Build the JSON request payload in Zig and parse with std.json:
+// {"method":"debug_traceTransaction","params":["0xTX_HASH",{"tracer":"callTracer"}]}
+// Then map fields to typed values as needed.
 ```
 
 ## Memory Format
@@ -216,48 +134,25 @@ const log = StructLog.from({
 ### Finding Reverts
 
 ```zig
-function findRevert(logs: StructLogType[]): StructLogType | undefined {
-  return logs.find(log => log.op === "REVERT" || log.error);
-}
+// Scan StructLogs for a REVERT entry or error field.
 ```
 
 ### Analyzing Gas Usage
 
 ```zig
-function analyzeGasByOpcode(logs: StructLogType[]): Map<string, bigint> {
-  const gasUsage = new Map<string, bigint>();
-
-  for (const log of logs) {
-    const current = gasUsage.get(log.op) ?? 0n;
-    gasUsage.set(log.op, current + log.gasCost);
-  }
-
-  return gasUsage;
-}
+// Aggregate gasCost by opcode name from StructLogs.
 ```
 
 ### Extracting Storage Changes
 
 ```zig
-function extractStorageChanges(logs: StructLogType[]): Record<string, string> {
-  const changes: Record<string, string> = {};
-
-  for (const log of logs) {
-    if (log.storage) {
-      Object.assign(changes, log.storage);
-    }
-  }
-
-  return changes;
-}
+// Extract storage changes by merging storage maps from each log entry.
 ```
 
 ### Stack Depth Analysis
 
 ```zig
-function findMaxStackDepth(logs: StructLogType[]): number {
-  return Math.max(...logs.map(log => log.stack.length));
-}
+// Compute max stack depth by scanning the stack arrays in each log.
 ```
 
 ## Comparison with OpStep

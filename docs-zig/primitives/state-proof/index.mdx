@@ -11,31 +11,11 @@ EIP-1186 account proof for trustless Ethereum state verification.
 
 StateProof represents an EIP-1186 account proof with optional storage proofs. It enables light clients and trustless systems to verify account data without executing transactions or trusting external providers.
 
-## Type Definition
+## JSON Shape (from RPC)
 
 ```zig
-type StateProofType = {
-  /** The address of the account being proven */
-  readonly address: AddressType;
-
-  /** RLP-encoded Merkle Patricia Trie nodes (root to leaf) */
-  readonly accountProof: readonly Uint8Array[];
-
-  /** Account balance in Wei */
-  readonly balance: WeiType;
-
-  /** Keccak256 hash of account bytecode */
-  readonly codeHash: HashType;
-
-  /** Transaction count (EOA) or creation count (contract) */
-  readonly nonce: NonceType;
-
-  /** Root hash of account's storage trie */
-  readonly storageHash: StateRootType;
-
-  /** Array of storage slot proofs */
-  readonly storageProof: readonly StorageProofType[];
-};
+// eth_getProof returns: address, accountProof (RLP nodes as hex), balance,
+// codeHash, nonce, storageHash, storageProof[]
 ```
 
 ## Usage
@@ -43,23 +23,14 @@ type StateProofType = {
 ### Create StateProof
 
 ```zig
-import * as StateProof from './primitives/StateProof/index.js';
-
-const proof = StateProof.from({
-  address: "0x1234...",
-  accountProof: [/* RLP-encoded trie nodes */],
-  balance: 1000000000000000000n,
-  codeHash: "0x...",
-  nonce: 5n,
-  storageHash: "0x...",
-  storageProof: [],
-});
+// Build JSON payload in Zig and parse with std.json
+// {"method":"eth_getProof","params":["0xADDRESS",["0xSLOT1","0xSLOT2"],"latest"]}
 ```
 
 ### Compare Proofs
 
 ```zig
-const isEqual = StateProof.equals(proof1, proof2);
+// Compare proof fields as needed (addresses, balances, roots, etc.).
 ```
 
 ## API Reference
@@ -81,13 +52,7 @@ const isEqual = StateProof.equals(proof1, proof2);
 Use `eth_getProof` JSON-RPC method:
 
 ```zig
-const proof = await provider.send("eth_getProof", [
-  "0x1234...",           // address
-  ["0x0", "0x1"],        // storage slots to prove
-  "latest"              // block number
-]);
-
-const stateProof = StateProof.from(proof);
+// {"method":"eth_getProof","params":["0x1234...",["0x0","0x1"],"latest"]}
 ```
 
 ## Proof Structure
@@ -117,23 +82,11 @@ Account Node
 4. **Verify storage proofs** against account's storage root
 
 ```zig
-import * as StateRoot from './primitives/StateRoot/index.js';
-
-function verifyAccountProof(
-  proof: StateProofType,
-  stateRoot: StateRootType
-): boolean {
-  // Verify Merkle proof from state root to account
-  // RLP decode and walk the trie path
-  // Compare computed root with expected stateRoot
-
-  // Then verify each storage proof against storageHash
-  for (const sp of proof.storageProof) {
-    // Verify storage slot proof against proof.storageHash
-  }
-
-  return true;
-}
+// Verify account proof steps (outline):
+// 1) RLP-decode accountProof nodes
+// 2) Reconstruct Merkle Patricia path to account leaf
+// 3) Hash and compare with trusted stateRoot
+// 4) Verify each storageProof against storageHash
 ```
 
 ## Use Cases
@@ -141,38 +94,19 @@ function verifyAccountProof(
 ### Light Client Verification
 
 ```zig
-// Light client receives block header (trusted)
-const stateRoot = blockHeader.stateRoot;
-
-// Query account state with proof
-const proof = await getProofFromFullNode(address);
-
-// Verify locally without trusting full node
-const isValid = verifyAccountProof(proof, stateRoot);
+// Obtain trusted stateRoot from a block header; verify proofs locally
 ```
 
 ### Cross-Chain Proofs
 
 ```zig
-// Prove account state on L1 for L2 verification
-const l1Proof = await l1Provider.send("eth_getProof", [address, [], "latest"]);
-
-// Submit proof to L2 contract
-await l2Contract.verifyL1State(l1Proof.accountProof, l1StateRoot);
+// Prove L1 account state for L2 verification: use eth_getProof on L1
 ```
 
 ### Trustless Balance Verification
 
 ```zig
-const proof = await provider.send("eth_getProof", [
-  tokenHolder,
-  [],
-  blockNumber
-]);
-
-// Verify balance without trusting provider
-assert(verifyAccountProof(proof, trustedStateRoot));
-console.log(`Verified balance: ${proof.balance}`);
+// Trustless balance verification: check proof against trusted stateRoot
 ```
 
 ## Specification

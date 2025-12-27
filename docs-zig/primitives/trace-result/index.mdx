@@ -11,16 +11,11 @@ Complete execution trace result returned by `debug_traceTransaction` and `debug_
 
 TraceResult is the top-level response from Geth's debug tracing methods. It provides execution outcome (gas used, success/failure, return data) plus optional detailed trace data.
 
-## Type Definition
+## JSON Shape (from RPC)
 
 ```zig
-type TraceResultType = {
-  readonly gas: Uint256Type;                  // Total gas used
-  readonly failed: boolean;                   // Whether execution failed
-  readonly returnValue: Uint8Array;           // Return data or revert data
-  readonly structLogs?: readonly StructLogType[]; // Opcode trace (default tracer)
-  readonly callTrace?: CallTraceType;         // Call tree (callTracer)
-};
+// debug_traceTransaction returns fields like: gas, failed, returnValue, structLogs
+// debug_traceCall (with callTracer) returns callTrace
 ```
 
 ## Usage
@@ -28,50 +23,13 @@ type TraceResultType = {
 ### Creating TraceResults
 
 ```zig
-import * as TraceResult from '@tevm/primitives/TraceResult';
-
-// Successful execution with structLogs
-const successResult = TraceResult.from({
-  gas: 50000n,
-  failed: false,
-  returnValue: new Uint8Array([0x00, 0x00, 0x00, 0x01]),
-  structLogs: [/* ... opcode logs ... */],
-});
-
-// Failed execution
-const failedResult = TraceResult.from({
-  gas: 100000n,
-  failed: true,
-  returnValue: new Uint8Array(), // Revert data
-});
-
-// With call trace (callTracer)
-const callTraceResult = TraceResult.from({
-  gas: 75000n,
-  failed: false,
-  returnValue: new Uint8Array([0x01]),
-  callTrace: /* ... CallTrace ... */,
-});
+// See RPC examples for fields; convert hex strings to bytes/ints as needed.
 ```
 
 ### Accessing Trace Data
 
 ```zig
-import * as TraceResult from '@tevm/primitives/TraceResult';
-
-// Get structured logs (default tracer)
-const logs = TraceResult.getStructLogs(result);
-if (logs.length > 0) {
-  console.log(`${logs.length} opcode executions`);
-}
-
-// Get call trace (callTracer)
-const trace = TraceResult.getCallTrace(result);
-if (trace) {
-  console.log(`Root call: ${trace.type}`);
-  const allCalls = CallTrace.flatten(trace);
-  console.log(`Total calls: ${allCalls.length}`);
-}
+// Access structLogs or callTrace depending on tracer config.
 ```
 
 ## RPC Usage
@@ -79,58 +37,15 @@ if (trace) {
 ### debug_traceTransaction
 
 ```zig
-import * as TraceConfig from '@tevm/primitives/TraceConfig';
-import * as TraceResult from '@tevm/primitives/TraceResult';
-
 // Default tracer (opcode logs)
-const config = TraceConfig.from({
-  disableStorage: true,
-  disableMemory: true,
-});
-
-const response = await rpc.debug_traceTransaction(txHash, config);
-const result = TraceResult.from({
-  gas: BigInt(response.gas),
-  failed: response.failed,
-  returnValue: hexToBytes(response.returnValue),
-  structLogs: response.structLogs?.map(log => StructLog.from(log)),
-});
-
-// Check execution status
-if (result.failed) {
-  console.error("Transaction failed");
-  // Analyze structLogs to find failure point
-  const logs = TraceResult.getStructLogs(result);
-  const revert = logs.find(log => log.op === "REVERT");
-  if (revert) {
-    console.error(`Reverted at PC ${revert.pc}`);
-  }
-}
+// {"method":"debug_traceTransaction","params":["0xTX_HASH",{"disableStorage":true,"disableMemory":true}]}
 ```
 
 ### debug_traceCall
 
 ```zig
-// Trace a call without mining
-const config = TraceConfig.withTracer({}, "callTracer");
-
-const response = await rpc.debug_traceCall(
-  {
-    from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-    to: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    data: "0xa9059cbb...", // transfer(address,uint256)
-    value: "0x0",
-  },
-  "latest",
-  config
-);
-
-const result = TraceResult.from({
-  gas: BigInt(response.gas),
-  failed: response.failed,
-  returnValue: hexToBytes(response.returnValue),
-  callTrace: response as CallTraceType,
-});
+// Trace a call without mining (callTracer)
+// {"method":"debug_traceCall","params":[{"from":"0x...","to":"0x...","data":"0x..."},"latest",{"tracer":"callTracer"}]}
 ```
 
 ## Common Patterns
@@ -138,66 +53,13 @@ const result = TraceResult.from({
 ### Analyzing Failed Transactions
 
 ```zig
-function analyzeFailed(result: TraceResultType): {
-  revertLocation?: number;
-  revertReason?: string;
-  gasUsed: bigint;
-} {
-  if (!result.failed) {
-    return { gasUsed: result.gas };
-  }
-
-  // Try to find revert in opcode trace
-  const logs = TraceResult.getStructLogs(result);
-  const revert = logs.find(log => log.op === "REVERT" || log.error);
-
-  // Try to find revert in call trace
-  const trace = TraceResult.getCallTrace(result);
-  const failedCall = trace && CallTrace.flatten(trace).find(CallTrace.hasError);
-
-  return {
-    revertLocation: revert?.pc,
-    revertReason: failedCall?.revertReason,
-    gasUsed: result.gas,
-  };
-}
+// Analyze failures: scan structLogs for REVERT, or callTrace for error/revertReason.
 ```
 
 ### Gas Profiling
 
 ```zig
-function profileGas(result: TraceResultType): {
-  total: bigint;
-  byOpcode?: Map<string, bigint>;
-  byCall?: Map<string, bigint>;
-} {
-  const analysis = { total: result.gas } as any;
-
-  // Opcode-level profiling
-  const logs = TraceResult.getStructLogs(result);
-  if (logs.length > 0) {
-    const byOpcode = new Map<string, bigint>();
-    for (const log of logs) {
-      const current = byOpcode.get(log.op) ?? 0n;
-      byOpcode.set(log.op, current + log.gasCost);
-    }
-    analysis.byOpcode = byOpcode;
-  }
-
-  // Call-level profiling
-  const trace = TraceResult.getCallTrace(result);
-  if (trace) {
-    const byCall = new Map<string, bigint>();
-    for (const call of CallTrace.flatten(trace)) {
-      const key = `${call.type} ${call.to ? Address.toHex(call.to) : "CREATE"}`;
-      const current = byCall.get(key) ?? 0n;
-      byCall.set(key, current + call.gasUsed);
-    }
-    analysis.byCall = byCall;
-  }
-
-  return analysis;
-}
+// Gas profiling ideas: sum gasCost across structLogs, or gasUsed per call in callTrace.
 ```
 
 ### Finding Expensive Operations
