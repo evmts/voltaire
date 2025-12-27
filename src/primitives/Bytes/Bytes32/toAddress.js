@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
- * @param {import('./Bytes32Type.ts').Bytes32Type} bytes - Bytes32 to extract from
- * @returns {import('../../Address/index.ts').AddressType} Address
+ * @param {import('./Bytes32Type.js').Bytes32Type} bytes - Bytes32 to extract from
+ * @returns {import('../../Address/index.js').AddressType} Address
  * @example
  * ```javascript
  * import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
@@ -12,7 +12,7 @@
  * ```
  */
 export function toAddress(bytes) {
-	return /** @type {import('../../Address/index.ts').AddressType} */ (
+	return /** @type {import('../../Address/index.js').AddressType} */ (
 		bytes.slice(-20)
 	);
 }

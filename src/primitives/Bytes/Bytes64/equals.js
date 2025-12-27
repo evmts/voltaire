@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
- * @param {import('./Bytes64Type.ts').Bytes64Type} a - First value
- * @param {import('./Bytes64Type.ts').Bytes64Type} b - Second value
+ * @param {import('./Bytes64Type.js').Bytes64Type} a - First value
+ * @param {import('./Bytes64Type.js').Bytes64Type} b - Second value
  * @returns {boolean} True if equal
  * @example
  * ```javascript

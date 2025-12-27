@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./Bytes16Type.ts').Bytes16Type} bytes - Value to clone
- * @returns {import('./Bytes16Type.ts').Bytes16Type} Cloned value
+ * @param {import('./Bytes16Type.js').Bytes16Type} bytes - Value to clone
+ * @returns {import('./Bytes16Type.js').Bytes16Type} Cloned value
  * @example
  * ```javascript
  * import * as Bytes16 from './primitives/Bytes/Bytes16/index.js';
@@ -12,7 +12,7 @@
  * ```
  */
 export function clone(bytes) {
-	return /** @type {import('./Bytes16Type.ts').Bytes16Type} */ (
+	return /** @type {import('./Bytes16Type.js').Bytes16Type} */ (
 		new Uint8Array(bytes)
 	);
 }

@@ -8,8 +8,8 @@ import { ZERO } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./../BrandedHash.ts').BrandedHash[]} hashes - Array of hashes (leaf nodes)
- * @returns {import('./../BrandedHash.ts').BrandedHash} Merkle root hash
+ * @param {import('./../BrandedHash.js').BrandedHash[]} hashes - Array of hashes (leaf nodes)
+ * @returns {import('./../BrandedHash.js').BrandedHash} Merkle root hash
  * @throws {never}
  * @example
  * ```javascript
@@ -58,7 +58,7 @@ export function merkleRoot(hashes) {
 				combined.set(left, 0);
 				combined.set(right, left.length);
 				nextLevel.push(
-					/** @type {import('./../BrandedHash.ts').BrandedHash} */ (
+					/** @type {import('./../BrandedHash.js').BrandedHash} */ (
 						keccak256(combined)
 					),
 				);

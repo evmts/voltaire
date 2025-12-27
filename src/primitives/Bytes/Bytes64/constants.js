@@ -5,12 +5,12 @@ export const SIZE = 64;
 
 /**
  * Zero Bytes64 constant (64 zero bytes)
- * @type {import('./Bytes64Type.ts').Bytes64Type}
+ * @type {import('./Bytes64Type.js').Bytes64Type}
  */
-export const ZERO = /** @type {import('./Bytes64Type.ts').Bytes64Type} */ (
+export const ZERO = /** @type {import('./Bytes64Type.js').Bytes64Type} */ (
 	new Uint8Array(SIZE)
 );
 
 /**
- * @typedef {import('./Bytes64Type.ts').Bytes64Type} Bytes64Type
+ * @typedef {import('./Bytes64Type.js').Bytes64Type} Bytes64Type
  */

@@ -5,7 +5,7 @@ import { SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
- * @param {import('./Bytes64Type.ts').Bytes64Type} _bytes - Bytes64 value
+ * @param {import('./Bytes64Type.js').Bytes64Type} _bytes - Bytes64 value
  * @returns {64} Size in bytes
  * @example
  * ```javascript

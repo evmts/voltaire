@@ -318,3 +318,207 @@ test "zero - empty" {
 
     try std.testing.expectEqual(0, bytes.len);
 }
+
+/// Convert number to bytes (big-endian)
+pub fn fromNumber(value: u64) []const u8 {
+    if (value == 0) return &[_]u8{0};
+
+    // Count bytes needed
+    var v = value;
+    var byte_count: usize = 0;
+    while (v > 0) : (v >>= 8) {
+        byte_count += 1;
+    }
+
+    // Use static buffer for small values
+    const Static = struct {
+        var buf: [8]u8 = undefined;
+    };
+
+    v = value;
+    var i: usize = byte_count;
+    while (i > 0) {
+        i -= 1;
+        Static.buf[i] = @truncate(v & 0xff);
+        v >>= 8;
+    }
+
+    return Static.buf[0..byte_count];
+}
+
+test "fromNumber - basic" {
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, fromNumber(0));
+    try std.testing.expectEqualSlices(u8, &[_]u8{1}, fromNumber(1));
+    try std.testing.expectEqualSlices(u8, &[_]u8{0xff}, fromNumber(255));
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 0 }, fromNumber(256));
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34 }, fromNumber(0x1234));
+}
+
+/// Convert bytes to number (big-endian)
+pub fn toNumber(bytes: []const u8) u64 {
+    var result: u64 = 0;
+    for (bytes) |b| {
+        result = (result << 8) | b;
+    }
+    return result;
+}
+
+test "toNumber - basic" {
+    try std.testing.expectEqual(@as(u64, 0), toNumber(&[_]u8{}));
+    try std.testing.expectEqual(@as(u64, 0), toNumber(&[_]u8{0}));
+    try std.testing.expectEqual(@as(u64, 1), toNumber(&[_]u8{1}));
+    try std.testing.expectEqual(@as(u64, 255), toNumber(&[_]u8{0xff}));
+    try std.testing.expectEqual(@as(u64, 256), toNumber(&[_]u8{ 1, 0 }));
+    try std.testing.expectEqual(@as(u64, 0x1234), toNumber(&[_]u8{ 0x12, 0x34 }));
+}
+
+/// Convert u256 to bytes (big-endian, allocates)
+pub fn fromBigInt(allocator: std.mem.Allocator, value: u256) ![]u8 {
+    if (value == 0) {
+        const result = try allocator.alloc(u8, 1);
+        result[0] = 0;
+        return result;
+    }
+
+    // Count bytes needed
+    var v = value;
+    var byte_count: usize = 0;
+    while (v > 0) : (v >>= 8) {
+        byte_count += 1;
+    }
+
+    const result = try allocator.alloc(u8, byte_count);
+    v = value;
+    var i: usize = byte_count;
+    while (i > 0) {
+        i -= 1;
+        result[i] = @truncate(v & 0xff);
+        v >>= 8;
+    }
+
+    return result;
+}
+
+test "fromBigInt - basic" {
+    const allocator = std.testing.allocator;
+
+    const b0 = try fromBigInt(allocator, 0);
+    defer allocator.free(b0);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, b0);
+
+    const b255 = try fromBigInt(allocator, 255);
+    defer allocator.free(b255);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0xff}, b255);
+
+    const b256 = try fromBigInt(allocator, 256);
+    defer allocator.free(b256);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 0 }, b256);
+}
+
+/// Convert bytes to u256 (big-endian)
+pub fn toBigInt(bytes: []const u8) u256 {
+    var result: u256 = 0;
+    for (bytes) |b| {
+        result = (result << 8) | b;
+    }
+    return result;
+}
+
+test "toBigInt - basic" {
+    try std.testing.expectEqual(@as(u256, 0), toBigInt(&[_]u8{}));
+    try std.testing.expectEqual(@as(u256, 0), toBigInt(&[_]u8{0}));
+    try std.testing.expectEqual(@as(u256, 255), toBigInt(&[_]u8{0xff}));
+    try std.testing.expectEqual(@as(u256, 256), toBigInt(&[_]u8{ 1, 0 }));
+}
+
+/// Generate random bytes (allocates)
+pub fn random(allocator: std.mem.Allocator, len: usize) ![]u8 {
+    const result = try allocator.alloc(u8, len);
+    std.crypto.random.bytes(result);
+    return result;
+}
+
+test "random - basic" {
+    const allocator = std.testing.allocator;
+    const r = try random(allocator, 32);
+    defer allocator.free(r);
+
+    try std.testing.expectEqual(32, r.len);
+}
+
+/// Pad bytes on the left with zeros (allocates)
+pub fn padLeft(allocator: std.mem.Allocator, bytes: []const u8, target_len: usize) ![]u8 {
+    if (bytes.len > target_len) return error.BytesExceedTargetLength;
+    if (bytes.len == target_len) {
+        return try clone(allocator, bytes);
+    }
+
+    const result = try allocator.alloc(u8, target_len);
+    @memset(result[0 .. target_len - bytes.len], 0);
+    @memcpy(result[target_len - bytes.len ..], bytes);
+    return result;
+}
+
+test "padLeft - basic" {
+    const allocator = std.testing.allocator;
+
+    const padded = try padLeft(allocator, &[_]u8{ 0x12, 0x34 }, 4);
+    defer allocator.free(padded);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0, 0, 0x12, 0x34 }, padded);
+}
+
+test "padLeft - exceeds" {
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(error.BytesExceedTargetLength, padLeft(allocator, &[_]u8{ 1, 2, 3, 4 }, 2));
+}
+
+/// Pad bytes on the right with zeros (allocates)
+pub fn padRight(allocator: std.mem.Allocator, bytes: []const u8, target_len: usize) ![]u8 {
+    if (bytes.len > target_len) return error.BytesExceedTargetLength;
+    if (bytes.len == target_len) {
+        return try clone(allocator, bytes);
+    }
+
+    const result = try allocator.alloc(u8, target_len);
+    @memcpy(result[0..bytes.len], bytes);
+    @memset(result[bytes.len..], 0);
+    return result;
+}
+
+test "padRight - basic" {
+    const allocator = std.testing.allocator;
+
+    const padded = try padRight(allocator, &[_]u8{ 0x12, 0x34 }, 4);
+    defer allocator.free(padded);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34, 0, 0 }, padded);
+}
+
+/// Trim leading zeros (no allocation, returns slice)
+pub fn trimLeft(bytes: []const u8) []const u8 {
+    var start: usize = 0;
+    while (start < bytes.len and bytes[start] == 0) {
+        start += 1;
+    }
+    return bytes[start..];
+}
+
+test "trimLeft - basic" {
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34 }, trimLeft(&[_]u8{ 0, 0, 0x12, 0x34 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimLeft(&[_]u8{ 0, 0, 0 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0, 0x34 }, trimLeft(&[_]u8{ 0, 0x12, 0, 0x34 }));
+}
+
+/// Trim trailing zeros (no allocation, returns slice)
+pub fn trimRight(bytes: []const u8) []const u8 {
+    var end: usize = bytes.len;
+    while (end > 0 and bytes[end - 1] == 0) {
+        end -= 1;
+    }
+    return bytes[0..end];
+}
+
+test "trimRight - basic" {
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34 }, trimRight(&[_]u8{ 0x12, 0x34, 0, 0 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimRight(&[_]u8{ 0, 0, 0 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0, 0x34 }, trimRight(&[_]u8{ 0x12, 0, 0x34, 0 }));
+}

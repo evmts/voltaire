@@ -6,7 +6,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
  * @param {bigint} value - Bigint to convert
- * @returns {import('./Bytes32Type.ts').Bytes32Type} Bytes32 (big-endian)
+ * @returns {import('./Bytes32Type.js').Bytes32Type} Bytes32 (big-endian)
  * @example
  * ```javascript
  * import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
@@ -20,5 +20,5 @@ export function fromBigint(value) {
 		bytes[i] = Number(n & 0xffn);
 		n >>= 8n;
 	}
-	return /** @type {import('./Bytes32Type.ts').Bytes32Type} */ (bytes);
+	return /** @type {import('./Bytes32Type.js').Bytes32Type} */ (bytes);
 }

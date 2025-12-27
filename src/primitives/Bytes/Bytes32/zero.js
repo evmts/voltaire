@@ -5,7 +5,7 @@ import { SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
- * @returns {import('./Bytes32Type.ts').Bytes32Type} Zero-filled Bytes32
+ * @returns {import('./Bytes32Type.js').Bytes32Type} Zero-filled Bytes32
  * @example
  * ```javascript
  * import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
@@ -13,7 +13,7 @@ import { SIZE } from "./constants.js";
  * ```
  */
 export function zero() {
-	return /** @type {import('./Bytes32Type.ts').Bytes32Type} */ (
+	return /** @type {import('./Bytes32Type.js').Bytes32Type} */ (
 		new Uint8Array(SIZE)
 	);
 }

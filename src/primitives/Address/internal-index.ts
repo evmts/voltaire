@@ -84,6 +84,7 @@ export { Lowercase };
 import * as Uppercase from "./UppercaseAddress.js";
 export { Uppercase };
 
+import { assert, Assert } from "./assert.js";
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";
@@ -109,6 +110,14 @@ import { toShortHex } from "./toShortHex.js";
 import { toU256 } from "./toU256.js";
 import { toUppercase } from "./toUppercase.js";
 import { zero } from "./zero.js";
+
+// Wrapper for assert with auto-injected keccak256
+const assertWithKeccak = (
+	value: string | Uint8Array,
+	options?: { strict?: boolean },
+) => assert(value, { ...options, keccak256 });
+
+export { Assert };
 
 // Export individual functions (toChecksummed, isValidChecksum, calculateCreateAddress, calculateCreate2Address, fromPublicKey, fromPrivateKey already exported as const above)
 export {
@@ -137,6 +146,7 @@ export {
 	sortAddresses,
 	deduplicateAddresses,
 	SIZE,
+	assertWithKeccak as assert,
 };
 
 // Namespace export
@@ -181,4 +191,6 @@ export const BrandedAddress = {
 	Checksummed,
 	Lowercase,
 	Uppercase,
+	assert: assertWithKeccak,
+	Assert,
 };

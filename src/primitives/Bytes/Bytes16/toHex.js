@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./Bytes16Type.ts').Bytes16Type} bytes - Bytes16 to convert
+ * @param {import('./Bytes16Type.js').Bytes16Type} bytes - Bytes16 to convert
  * @returns {string} Hex string with 0x prefix
  * @example
  * ```javascript

@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
- * @param {import('./Bytes32Type.ts').Bytes32Type} bytes - Bytes32 to convert
+ * @param {import('./Bytes32Type.js').Bytes32Type} bytes - Bytes32 to convert
  * @returns {bigint} Bigint value
  * @example
  * ```javascript

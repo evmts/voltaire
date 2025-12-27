@@ -3,8 +3,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./Bytes16Type.ts').Bytes16Type} a - First value
- * @param {import('./Bytes16Type.ts').Bytes16Type} b - Second value
+ * @param {import('./Bytes16Type.js').Bytes16Type} a - First value
+ * @param {import('./Bytes16Type.js').Bytes16Type} b - Second value
  * @returns {boolean} True if equal
  * @example
  * ```javascript

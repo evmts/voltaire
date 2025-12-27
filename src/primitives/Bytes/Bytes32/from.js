@@ -9,7 +9,7 @@ import { fromNumber } from "./fromNumber.js";
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
  * @param {string | Uint8Array | number | bigint} value - Value to convert
- * @returns {import('./Bytes32Type.ts').Bytes32Type} Bytes32
+ * @returns {import('./Bytes32Type.js').Bytes32Type} Bytes32
  * @throws {Error} If input is invalid or wrong length
  * @example
  * ```javascript

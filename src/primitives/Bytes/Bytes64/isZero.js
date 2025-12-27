@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
  * @since 0.0.0
- * @param {import('./Bytes64Type.ts').Bytes64Type} bytes - Value to check
+ * @param {import('./Bytes64Type.js').Bytes64Type} bytes - Value to check
  * @returns {boolean} True if all zeros
  * @example
  * ```javascript

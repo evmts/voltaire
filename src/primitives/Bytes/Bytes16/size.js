@@ -5,7 +5,7 @@ import { SIZE } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
  * @since 0.0.0
- * @param {import('./Bytes16Type.ts').Bytes16Type} _bytes - Bytes16 value
+ * @param {import('./Bytes16Type.js').Bytes16Type} _bytes - Bytes16 value
  * @returns {16} Size in bytes
  * @example
  * ```javascript

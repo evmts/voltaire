@@ -1,0 +1,33 @@
+import { describe, expect, it } from "vitest";
+import { toBigInt } from "./toBigInt.js";
+import { fromBigInt } from "./fromBigInt.js";
+
+describe("Bytes.toBigInt", () => {
+	it("converts empty bytes to zero", () => {
+		expect(toBigInt(new Uint8Array([]))).toBe(0n);
+	});
+
+	it("converts single byte", () => {
+		expect(toBigInt(new Uint8Array([0]))).toBe(0n);
+		expect(toBigInt(new Uint8Array([1]))).toBe(1n);
+		expect(toBigInt(new Uint8Array([255]))).toBe(255n);
+	});
+
+	it("converts multi-byte values", () => {
+		expect(toBigInt(new Uint8Array([1, 0]))).toBe(256n);
+		expect(toBigInt(new Uint8Array([0x12, 0x34]))).toBe(0x1234n);
+	});
+
+	it("handles large values", () => {
+		const bytes = new Uint8Array(32).fill(0xff);
+		const expected = 2n ** 256n - 1n;
+		expect(toBigInt(bytes)).toBe(expected);
+	});
+
+	it("round-trips with fromBigInt", () => {
+		const values = [0n, 1n, 255n, 256n, 2n ** 128n, 2n ** 256n - 1n];
+		for (const val of values) {
+			expect(toBigInt(fromBigInt(val))).toBe(val);
+		}
+	});
+});

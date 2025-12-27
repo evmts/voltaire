@@ -303,6 +303,8 @@ Address.calculateCreate2Address = (
 };
 
 Address.SIZE = BrandedAddress.SIZE;
+Address.assert = BrandedAddress.assert;
+Address.Assert = BrandedAddress.Assert;
 
 // Set up Address.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(Address.prototype, Uint8Array.prototype);

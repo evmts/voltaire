@@ -7,7 +7,7 @@ import { SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {Uint8Array} bytes - 32-byte array
- * @returns {import('./../BrandedHash.ts').BrandedHash} Hash bytes
+ * @returns {import('./../BrandedHash.js').BrandedHash} Hash bytes
  * @throws {InvalidLengthError} If bytes is not 32 bytes
  * @example
  * ```javascript
@@ -31,5 +31,5 @@ export function fromBytes(bytes) {
 	// Create copy to avoid mutation issues
 	const copy = new Uint8Array(SIZE);
 	copy.set(bytes, 0);
-	return /** @type {import('./../BrandedHash.ts').BrandedHash} */ (copy);
+	return /** @type {import('./../BrandedHash.js').BrandedHash} */ (copy);
 }

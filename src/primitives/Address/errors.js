@@ -150,3 +150,63 @@ export class NotImplementedError extends PrimitiveError {
 		this.name = "NotImplementedError";
 	}
 }
+
+/**
+ * Error thrown when address is invalid
+ *
+ * @throws {InvalidAddressError}
+ */
+export class InvalidAddressError extends ValidationError {
+	/**
+	 * @param {string} [message] - Error message
+	 * @param {object} [options] - Error options
+	 * @param {string} [options.code] - Error code
+	 * @param {unknown} [options.value] - Invalid value
+	 * @param {string} [options.expected] - Expected format
+	 * @param {Record<string, unknown>} [options.context] - Additional context
+	 * @param {string} [options.docsPath] - Documentation path
+	 * @param {Error} [options.cause] - Root cause error
+	 */
+	constructor(message, options) {
+		super(message || "Invalid address", {
+			code: options?.code || "INVALID_ADDRESS",
+			value: options?.value,
+			expected: options?.expected || "Valid Ethereum address",
+			context: options?.context,
+			docsPath:
+				options?.docsPath || "/primitives/address/fundamentals#error-handling",
+			cause: options?.cause,
+		});
+		this.name = "InvalidAddressError";
+	}
+}
+
+/**
+ * Error thrown when address checksum is invalid
+ *
+ * @throws {InvalidChecksumError}
+ */
+export class InvalidChecksumError extends ValidationError {
+	/**
+	 * @param {string} [message] - Error message
+	 * @param {object} [options] - Error options
+	 * @param {string} [options.code] - Error code
+	 * @param {unknown} [options.value] - Invalid value
+	 * @param {string} [options.expected] - Expected checksum
+	 * @param {Record<string, unknown>} [options.context] - Additional context
+	 * @param {string} [options.docsPath] - Documentation path
+	 * @param {Error} [options.cause] - Root cause error
+	 */
+	constructor(message, options) {
+		super(message || "Invalid checksum", {
+			code: options?.code || "INVALID_CHECKSUM",
+			value: options?.value,
+			expected: options?.expected || "Valid EIP-55 checksum",
+			context: options?.context,
+			docsPath:
+				options?.docsPath || "/primitives/address/fundamentals#error-handling",
+			cause: options?.cause,
+		});
+		this.name = "InvalidChecksumError";
+	}
+}

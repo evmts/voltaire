@@ -5,7 +5,7 @@ import { toHex } from "./toHex.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
- * @param {import('./../BrandedHash.ts').BrandedHash} hash - Hash to format
+ * @param {import('./../BrandedHash.js').BrandedHash} hash - Hash to format
  * @returns {string} Formatted hash string like "0x1234...cdef"
  * @throws {never}
  * @example
