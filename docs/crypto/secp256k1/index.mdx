@@ -130,6 +130,37 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 
 ### Key Management
 
+#### `randomPrivateKey()`
+
+Generate a cryptographically secure random private key.
+
+**Returns**: `Uint8Array` - 32-byte random private key (guaranteed valid: > 0 and < curve order)
+
+**Throws**:
+- `Secp256k1Error` - If CSPRNG fails or generates invalid key after retries
+
+```typescript
+const privateKey = Secp256k1.randomPrivateKey();
+console.log(privateKey.length); // 32
+console.log(Secp256k1.isValidPrivateKey(privateKey)); // true
+```
+
+#### `createKeyPair()`
+
+Generate a new random key pair (private key + public key).
+
+**Returns**: `{ privateKey: Uint8Array, publicKey: Uint8Array }` - 32-byte private key and 64-byte public key
+
+```typescript
+const { privateKey, publicKey } = Secp256k1.createKeyPair();
+console.log(privateKey.length); // 32
+console.log(publicKey.length); // 64
+
+// Public key matches derivation
+const derived = Secp256k1.derivePublicKey(privateKey);
+console.log(derived.every((b, i) => b === publicKey[i])); // true
+```
+
 #### `derivePublicKey(privateKey)`
 
 Derive the public key from a private key using elliptic curve point multiplication (private_key * G).
