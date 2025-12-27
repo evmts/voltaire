@@ -2,19 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { EventLogSchema } from './effect.js'
 
 describe('EventLog Effect Schema', () => {
-  it('creates from RPC log', () => {
-    const rpc = {
-      address: '0x' + '00'.repeat(20),
-      topics: ['0x' + '00'.repeat(64)],
-      data: '0x',
-      blockNumber: '0x1',
-      transactionHash: '0x' + '00'.repeat(32),
-      transactionIndex: '0x0',
-      blockHash: '0x' + '00'.repeat(32),
-      logIndex: '0x0',
-      removed: false,
-    }
-    const log = EventLogSchema.fromRpc(rpc)
+  it('creates from typed params', () => {
+    const addr = new Uint8Array(20)
+    const topic0 = new Uint8Array(32)
+    topic0[31] = 1
+    const log = EventLogSchema.from({ address: addr, topics: [topic0], data: new Uint8Array(0) })
     expect(log.address).toBeInstanceOf(Uint8Array)
     expect(log.address.length).toBe(20)
     expect(log.topics.length).toBe(1)
@@ -23,12 +15,11 @@ describe('EventLog Effect Schema', () => {
   })
 
   it('filters logs by address', () => {
-    const addrA = '0x' + 'aa'.repeat(20)
-    const addrB = '0x' + 'bb'.repeat(20)
-    const mk = (addr: string) => EventLogSchema.fromRpc({ address: addr, topics: ['0x' + '00'.repeat(64)], data: '0x' })
+    const addrA = new Uint8Array(20)
+    const addrB = new Uint8Array(20); addrB[0] = 0xff
+    const mk = (addr: Uint8Array) => EventLogSchema.from({ address: addr, topics: [new Uint8Array(32)], data: new Uint8Array(0) })
     const logs = [mk(addrA), mk(addrB), mk(addrA)]
     const filtered = EventLogSchema.filter(logs, { address: logs[0]!.address })
     expect(filtered.length).toBe(2)
   })
 })
-

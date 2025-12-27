@@ -74,8 +74,6 @@ export class EventLogSchema extends Schema.Class<EventLogSchema>("EventLog")({
   static filter(logs: readonly EventLogSchema[], filter: any): EventLogSchema[] {
     const branded = logs.map((l) => l.eventLog)
     const out = _filterLogs(branded, filter)
-    // map back by identity when possible
-    const set = new Set(out)
-    return logs.filter((l) => set.has(l.eventLog))
+    return out.map((b) => EventLogSchema.fromBranded(b as EventLogBrand))
   }
 }
