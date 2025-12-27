@@ -145,6 +145,17 @@ const isValid = Transaction.verifySignature(tx)
 </Tab>
 </Tabs>
 
+### Effect Schema
+
+```ts
+import { TransactionSchema } from '@tevm/voltaire/Transaction/effect'
+
+// From RPC (legacy)
+const tx = TransactionSchema.fromRpc({ type: '0x0', nonce: '0x0', gas: '0x5208', to: '0x' + '11'.repeat(20), value: '0x0', data: '0x' })
+const hash = tx.hash()
+const serialized = tx.serialize()
+```
+
 ## Quick Reference
 
 ### Core Operations
