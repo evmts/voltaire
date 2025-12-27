@@ -25,8 +25,7 @@ export class StorageKeySchema extends Schema.Class<StorageKeySchema>('StorageKey
     const k = _from(value as any)
     return new StorageKeySchema({ address: (k as any).address, slot: (k as any).slot }) as any
   }
-  toString(): string { return _toString(this.key) }
+  override toString(): string { return _toString(this.key) }
   equals(other: StorageKeySchema | StorageKeyType): boolean { const rhs = other instanceof StorageKeySchema ? other.key : other; return _equals(this.key, rhs) }
   hashCode(): number { return _hashCode(this.key) }
 }
-
