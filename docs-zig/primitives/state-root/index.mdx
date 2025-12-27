@@ -11,17 +11,11 @@ description: 32-byte Merkle Patricia Trie root hash of global Ethereum state
 
 StateRoot represents the root hash of the Ethereum state trie. It uniquely identifies the entire global state at a given block - all account balances, nonces, contract code, and storage. Every block header includes a state root.
 
-## Type Definition
+## Type Definition (Zig)
 
 ```zig
-type StateRootType = Uint8Array & {
-  readonly __tag: "StateRoot";
-  readonly length: 32;
-};
-
-type StateRootLike = StateRootType | string | Uint8Array;
-
-const SIZE = 32;
+const primitives = @import("primitives");
+const Hash = primitives.Hash.Hash; // 32-byte [32]u8
 ```
 
 ## Usage
@@ -29,44 +23,35 @@ const SIZE = 32;
 ### Create StateRoot
 
 ```zig
-import * as StateRoot from './primitives/StateRoot/index.js';
-
-// From hex string
-const root = StateRoot.fromHex("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
-
-// From Uint8Array
-const bytes = new Uint8Array(32);
-const root2 = StateRoot.from(bytes);
+const root = try primitives.Hash.fromHex(
+    "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+);
 ```
 
 ### Convert to Hex
 
 ```zig
-const hex = StateRoot.toHex(root);
-// "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+const hex = primitives.Hash.toHex(root);
 ```
 
 ### Compare State Roots
 
 ```zig
-const isEqual = StateRoot.equals(root1, root2);
+const is_equal = primitives.Hash.equal(root1, root2);
 ```
 
 ## API Reference
 
 ### Constructors
 
-| Function | Description |
-|----------|-------------|
-| `from(bytes)` | Create from Uint8Array |
-| `fromHex(hex)` | Create from hex string |
+- `Hash.fromHex(hex) !Hash` – Create from hex string
 
 ### Methods
 
 | Function | Description |
 |----------|-------------|
-| `toHex(root)` | Convert to hex string |
-| `equals(a, b)` | Check equality |
+- `Hash.toHex(root)` – Convert to hex string
+- `Hash.equal(a, b)` – Equality check
 
 ### Constants
 
@@ -99,13 +84,7 @@ Merkle Patricia Trie
 Every block header contains a state root:
 
 ```zig
-type BlockHeader = {
-  parentHash: Hash;
-  stateRoot: StateRoot;    // <-- This represents all state
-  transactionsRoot: Hash;
-  receiptsRoot: Hash;
-  // ...
-};
+// Block header fields include stateRoot (Hash)
 ```
 
 ## Empty State Root
@@ -113,9 +92,9 @@ type BlockHeader = {
 The empty state root (no accounts) has a known value:
 
 ```zig
-// Empty trie root = keccak256(RLP(null))
-const EMPTY_STATE_ROOT = StateRoot.fromHex(
-  "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+// Empty trie root = keccak256(RLP([]))
+const EMPTY_STATE_ROOT = try primitives.Hash.fromHex(
+    "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 );
 ```
 
@@ -124,40 +103,20 @@ const EMPTY_STATE_ROOT = StateRoot.fromHex(
 ### Verify State Against Header
 
 ```zig
-// Get block header (from trusted source)
-const header = await provider.getBlock("latest");
-
-// Get state proof
-const proof = await provider.send("eth_getProof", [address, [], "latest"]);
-
-// Verify proof against header's state root
-const isValid = verifyStateProof(proof, header.stateRoot);
+// {"method":"eth_getBlockByNumber","params":["latest",false]} returns stateRoot
+// {"method":"eth_getProof","params":["0xADDRESS",[],"latest"]}
 ```
 
 ### Track State Changes
 
 ```zig
-// Compare state roots between blocks
-const block1 = await provider.getBlock(1000000);
-const block2 = await provider.getBlock(1000001);
-
-const stateChanged = !StateRoot.equals(
-  StateRoot.fromHex(block1.stateRoot),
-  StateRoot.fromHex(block2.stateRoot)
-);
+// Compare state roots between two blocks by hex equality
 ```
 
 ### Light Client Sync
 
 ```zig
-// Light client stores only block headers
-const headers = [header1, header2, ...];
-
-// To verify any state claim, check proof against stateRoot
-function verifyBalance(address: string, balance: bigint, proof: StateProof): boolean {
-  const header = findHeader(proof.blockNumber);
-  return verifyProof(proof, header.stateRoot);
-}
+// Light client verifies proofs against stateRoot from trusted headers.
 ```
 
 ## Specification

@@ -7,20 +7,11 @@ description: Event log filter parameters for eth_getLogs and eth_newFilter
 
 `LogFilter` specifies query parameters for filtering Ethereum event logs. Used with `eth_getLogs` (one-time query) and `eth_newFilter` (continuous polling). Supports filtering by block range, contract address, and event topics.
 
-## Type Definition
+## Type Definition (Zig)
 
 ```zig
-type BlockTag = "earliest" | "latest" | "pending";
-
-type LogFilterType = {
-  readonly fromBlock?: BlockNumberType | BlockTag;
-  readonly toBlock?: BlockNumberType | BlockTag;
-  readonly address?: AddressType | readonly AddressType[];
-  readonly topics?: TopicFilterType;
-  readonly blockhash?: HashType;
-} & {
-  readonly [brand]: "LogFilter";
-};
+// Build JSON filter objects with std.json Stringify
+// Fields: fromBlock/toBlock (hex or tags), address (string or array), topics (array), blockhash (optional)
 ```
 
 ## Creating LogFilter
@@ -28,31 +19,7 @@ type LogFilterType = {
 ### from
 
 ```zig
-import * as LogFilter from './primitives/LogFilter/index.js';
-import { Address } from './primitives/Address/index.js';
-import * as BlockNumber from './primitives/BlockNumber/index.js';
-import * as TopicFilter from './primitives/TopicFilter/index.js';
-
-// Filter by address and block range
-const filter = LogFilter.from({
-  fromBlock: BlockNumber.from(1000000),
-  toBlock: "latest",
-  address: Address.from("0x...")
-});
-
-// Filter by specific block hash
-const filter2 = LogFilter.from({
-  blockhash: Hash.from("0x..."),
-  address: Address.from("0x...")
-});
-
-// Filter with topics
-const topics = TopicFilter.from([eventSig, null, recipientHash]);
-const filter3 = LogFilter.from({
-  fromBlock: "latest",
-  address: Address.from("0x..."),
-  topics
-});
+// Examples as JSON payloads shown below for methods
 ```
 
 **Parameters:**
@@ -74,7 +41,7 @@ const filter3 = LogFilter.from({
 ### matches
 
 ```zig
-const isMatch = LogFilter.matches(filter, log);
+// Use primitives.EventLog utilities to test topics locally if needed.
 ```
 
 Tests if a log entry matches the filter criteria. Checks:
@@ -96,41 +63,16 @@ Returns `true` if filter has no criteria (would match all logs).
 ### Block Tags
 
 ```zig
-// Latest mined block
-const filter = LogFilter.from({
-  fromBlock: "latest",
-  toBlock: "latest"
-});
-
-// All historical blocks
-const filter2 = LogFilter.from({
-  fromBlock: "earliest",
-  toBlock: "latest"
-});
-
-// Pending transactions (mempool)
-const filter3 = LogFilter.from({
-  fromBlock: "pending",
-  toBlock: "pending"
-});
+// {"fromBlock":"latest","toBlock":"latest"}
+// {"fromBlock":"earliest","toBlock":"latest"}
+// {"fromBlock":"pending","toBlock":"pending"}
 ```
 
 ### Block Numbers
 
 ```zig
-import * as BlockNumber from './primitives/BlockNumber/index.js';
-
-// Specific range
-const filter = LogFilter.from({
-  fromBlock: BlockNumber.from(18000000),
-  toBlock: BlockNumber.from(18001000)
-});
-
-// From specific block to latest
-const filter2 = LogFilter.from({
-  fromBlock: BlockNumber.from(18000000),
-  toBlock: "latest"
-});
+// {"fromBlock":"0x112a880","toBlock":"0x112ab58"}
+// {"fromBlock":"0x112a880","toBlock":"latest"}
 ```
 
 ### Block Hash (Alternative)
@@ -138,10 +80,7 @@ const filter2 = LogFilter.from({
 Query logs from a specific block by hash (useful after reorgs):
 
 ```zig
-const filter = LogFilter.from({
-  blockhash: blockHash,
-  address: contractAddr
-});
+// {"blockhash":"0xBLOCK_HASH","address":"0x..."}
 ```
 
 **Important:** `blockhash` is mutually exclusive with `fromBlock`/`toBlock`.
@@ -151,21 +90,13 @@ const filter = LogFilter.from({
 ### Single Address
 
 ```zig
-const filter = LogFilter.from({
-  address: Address.from("0x...")
-});
+// {"address":"0x..."}
 ```
 
 ### Multiple Addresses (OR logic)
 
 ```zig
-const filter = LogFilter.from({
-  address: [
-    Address.from("0x..."),
-    Address.from("0x..."),
-    Address.from("0x...")
-  ]
-});
+// {"address":["0x...","0x...","0x..."]}
 ```
 
 Matches logs from ANY of the specified addresses.
@@ -175,26 +106,10 @@ Matches logs from ANY of the specified addresses.
 See [TopicFilter](/primitives/topic-filter) for detailed topic matching rules.
 
 ```zig
-import * as TopicFilter from './primitives/TopicFilter/index.js';
-import { EventSignature } from './primitives/EventSignature/index.js';
-
-// Specific event
-const transferSig = EventSignature.fromSignature(
-  "Transfer(address,address,uint256)"
-);
-const topics = TopicFilter.from([transferSig]);
-
-// Event with specific parameter
-const recipientHash = Address.from("0x...").toBytes32();
-const topics2 = TopicFilter.from([transferSig, null, recipientHash]);
-
-// Multiple events (OR)
-const topics3 = TopicFilter.from([[transferSig, approvalSig]]);
-
-const filter = LogFilter.from({
-  address: contractAddr,
-  topics: topics2
-});
+// Topic0 (event signature):
+// {"topics":["0xddf252ad..."]}
+// With recipient topic at index 2:
+// {"topics":["0xddf252ad...",null,"0x0000...RECIPIENT"]}
 ```
 
 ## Usage with JSON-RPC
@@ -202,35 +117,16 @@ const filter = LogFilter.from({
 ### eth_getLogs (one-time query)
 
 ```zig
-const filter = LogFilter.from({
-  fromBlock: BlockNumber.from(18000000),
-  toBlock: BlockNumber.from(18001000),
-  address: Address.from("0x..."),
-  topics: TopicFilter.from([eventSig])
-});
-
-const logs = await rpc.eth_getLogs(filter);
-console.log(`Found ${logs.length} logs`);
+// {"method":"eth_getLogs","params":[{"fromBlock":"0x...","toBlock":"0x...","address":"0x...","topics":["0xTOPIC0"]}]}
 ```
 
 ### eth_newFilter (continuous polling)
 
 ```zig
-// Install filter
-const filter = LogFilter.from({
-  fromBlock: "latest",
-  address: Address.from("0x..."),
-  topics: TopicFilter.from([eventSig])
-});
-
-const filterIdStr = await rpc.eth_newFilter(filter);
-const filterId = FilterId.from(filterIdStr);
-
-// Poll for changes
-setInterval(async () => {
-  const logs = await rpc.eth_getFilterChanges(filterId);
-  console.log(`New logs: ${logs.length}`);
-}, 15000);
+// Install/poll/remove
+// {"method":"eth_newFilter","params":[{...filter...}]}
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
 ```
 
 ## Node Resource Limits

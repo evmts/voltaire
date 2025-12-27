@@ -7,13 +7,11 @@ description: Gas refunds after transaction execution
 
 `GasRefund` represents gas refunded after transaction execution. Post-London (EIP-3529), refunds are capped at `gasUsed / 5`.
 
-## Type Definition
+## Type Definition (Zig)
 
 ```zig
-type GasRefundType = bigint & { readonly [brand]: "GasRefund" };
+// Gas refunds are integers (u256). Post-London cap: refund <= gasUsed / 5.
 ```
-
-Branded bigint representing gas refund (always non-negative).
 
 ## Gas Refund Mechanics
 
@@ -38,80 +36,41 @@ Refunds significantly reduced:
 
 ## API
 
-### Constructors
-
-#### `from(value)`
-
-Create GasRefund from number, bigint, or string.
+### Cap Function
 
 ```zig
-import { GasRefund } from '@tevm/primitives';
-
-// SSTORE clear refund
-const refund = GasRefund.from(15000n);
-
-// No refund
-const noRefund = GasRefund.from(0n);
-
-// From number
-const ref2 = GasRefund.from(15000);
+fn cappedRefund(refund: u256, gas_used: u256) u256 {
+    const cap = gas_used / 5;
+    return if (refund < cap) refund else cap;
+}
 ```
-
-**Throws**: `InvalidFormatError` if value is negative.
 
 ### Conversions
 
-#### `toNumber(refund)`
-
-Convert to number.
+#### Hex
 
 ```zig
-const refund = GasRefund.from(15000n);
-GasRefund.toNumber(refund); // 15000
-```
-
-#### `toBigInt(refund)`
-
-Convert to bigint (identity operation).
-
-```zig
-const refund = GasRefund.from(15000n);
-GasRefund.toBigInt(refund); // 15000n
-```
-
-#### `toHex(refund)`
-
-Convert to hex string.
-
-```zig
-const refund = GasRefund.from(15000n);
-GasRefund.toHex(refund); // "0x3a98"
+// Convert refund to hex
+const Hex = @import("primitives").Hex;
+const hex = Hex.bytesToHexFixed(32, std.mem.toBytes(refund));
 ```
 
 ### Comparisons
 
-#### `equals(ref1, ref2)`
-
-Check equality.
+#### Equality
 
 ```zig
-GasRefund.equals(15000n, 15000n); // true
-GasRefund.equals(15000n, 20000n); // false
+const eq = (refund1 == refund2);
 ```
 
 ### Utilities
 
-#### `cappedRefund(refund, gasUsed)`
-
-Apply EIP-3529 refund cap.
+#### Apply Cap
 
 ```zig
-const refund = GasRefund.from(15000n); // SSTORE clear
-const gasUsed = 50000n;
-
-// Cap = 50000 / 5 = 10000
-const capped = GasRefund.cappedRefund(refund, gasUsed);
-// 10000n (reduced from 15000n)
+const refund: u256 = 15000; // SSTORE clear
+const gas_used: u256 = 50000;
+const capped = cappedRefund(refund, gas_used); // 10000
 ```
 
 Post-London enforcement: `min(refund, gasUsed / 5)`
@@ -121,68 +80,32 @@ Post-London enforcement: `min(refund, gasUsed / 5)`
 ### Calculate Effective Gas Cost
 
 ```zig
-import { GasUsed, GasRefund } from '@tevm/primitives';
-
-const gasUsed = GasUsed.from(60000n);
-const gasPrice = 20_000_000_000n; // 20 gwei
-
-// Transaction clears 2 storage slots
-const totalRefund = GasRefund.from(30000n); // 2 × 15000
-
-// Apply EIP-3529 cap
-const capped = GasRefund.cappedRefund(totalRefund, GasUsed.toBigInt(gasUsed));
-// 12000n (60000 / 5)
-
-// Calculate net cost
-const grossCost = GasUsed.calculateCost(gasUsed, gasPrice);
-const refundValue = GasRefund.toBigInt(capped) * gasPrice;
-const netCost = grossCost - refundValue;
-
-console.log(`Gross cost: ${grossCost} Wei`);
-console.log(`Refund: ${refundValue} Wei`);
-console.log(`Net cost: ${netCost} Wei`);
+const gas_used: u256 = 60000;
+const gas_price: u256 = 20_000_000_000; // 20 gwei
+const total_refund: u256 = 30000; // 2 × 15000
+const capped = cappedRefund(total_refund, gas_used); // 12000
+const gross_cost = gas_used * gas_price;
+const refund_value = capped * gas_price;
+const net_cost = gross_cost - refund_value;
 ```
 
 ### Compare Pre/Post London
 
 ```zig
-import { GasRefund } from '@tevm/primitives';
-
-const sstoreClear = GasRefund.from(15000n);
-const gasUsed = 50000n;
-
-// Pre-London: Full refund
-const preLondon = GasRefund.toBigInt(sstoreClear);
-console.log(`Pre-London refund: ${preLondon}`); // 15000
-
-// Post-London: Capped refund
-const postLondon = GasRefund.cappedRefund(sstoreClear, gasUsed);
-console.log(`Post-London refund: ${postLondon}`); // 10000
-
-const reduction = preLondon - GasRefund.toBigInt(postLondon);
-console.log(`Reduction: ${reduction} gas (${(reduction / preLondon * 100).toFixed(0)}%)`);
+const pre_london: u256 = 15000;
+const gas_used: u256 = 50000;
+const post_london = cappedRefund(pre_london, gas_used); // 10000
+const reduction = pre_london - post_london; // 5000
 ```
 
 ### Multiple Storage Clears
 
 ```zig
-import { GasRefund } from '@tevm/primitives';
-
-// Transaction clears 5 storage slots
-const slotsCleared = 5;
-const refundPerSlot = 15000n;
-const totalRefund = GasRefund.from(BigInt(slotsCleared) * refundPerSlot);
-// 75000n total potential refund
-
-const gasUsed = 100000n;
-
-// Apply cap
-const capped = GasRefund.cappedRefund(totalRefund, gasUsed);
-// 20000n (100000 / 5)
-
-console.log(`Potential refund: ${GasRefund.toBigInt(totalRefund)}`); // 75000
-console.log(`Capped refund: ${capped}`); // 20000
-console.log(`Refund lost: ${75000n - capped}`); // 55000
+// Transaction clears 5 slots
+const total_refund: u256 = 5 * 15000;
+const gas_used: u256 = 100000;
+const capped = cappedRefund(total_refund, gas_used); // 20000
+// Refund lost: total_refund - capped
 ```
 
 ## Refund Sources
