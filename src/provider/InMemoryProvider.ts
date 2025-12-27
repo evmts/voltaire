@@ -961,14 +961,16 @@ export class InMemoryProvider implements Provider {
 				const index = Number(p[1]);
 				const block = this.blocksByHash.get(hash);
 				if (!block || index >= block.transactions.length) return null;
-				return this.transactions.get(block.transactions[index]) ?? null;
+				const txHash = block.transactions[index];
+				return txHash ? this.transactions.get(txHash) ?? null : null;
 			}
 
 			case "eth_getTransactionByBlockNumberAndIndex": {
 				const block = this.resolveBlock(p[0] as string);
 				const index = Number(p[1]);
 				if (!block || index >= block.transactions.length) return null;
-				return this.transactions.get(block.transactions[index]) ?? null;
+				const txHash = block.transactions[index];
+				return txHash ? this.transactions.get(txHash) ?? null : null;
 			}
 
 			case "eth_getUncleCountByBlockHash":
