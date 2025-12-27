@@ -26,6 +26,7 @@ export default createTsUpOptions({
 		"src/primitives/Hash/effect.ts",
 		"src/primitives/Hex/effect.ts",
 		"src/primitives/Uint/effect.ts",
+		"src/primitives/Transaction/effect.ts",
 		"src/primitives/Signature/effect.ts",
 		"src/primitives/Bytecode/effect.ts",
 		"src/primitives/Base64/effect.ts",

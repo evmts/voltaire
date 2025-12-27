@@ -391,6 +391,16 @@
         "default": "./dist/primitives/Ens/effect.cjs"
       }
     },
+    "./Transaction/effect": {
+      "import": {
+        "types": "./types/primitives/Transaction/effect.d.ts",
+        "default": "./dist/primitives/Transaction/effect.js"
+      },
+      "require": {
+        "types": "./types/primitives/Transaction/effect.d.ts",
+        "default": "./dist/primitives/Transaction/effect.cjs"
+      }
+    },
     "./EventLog/effect": {
       "import": {
         "types": "./types/primitives/EventLog/effect.d.ts",
