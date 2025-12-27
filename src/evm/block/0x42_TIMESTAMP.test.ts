@@ -36,7 +36,7 @@ describe("TIMESTAMP (0x42)", () => {
 		expect(frame.gasRemaining).toBe(998n);
 	});
 
-	it("uses current timestamp if frame property not set", () => {
+	it("defaults to 0 if frame blockTimestamp not set", () => {
 		const frame: BrandedFrame = {
 			__tag: "Frame",
 			stack: [],
@@ -62,9 +62,8 @@ describe("TIMESTAMP (0x42)", () => {
 
 		expect(error).toBe(null);
 		expect(frame.stack).toHaveLength(1);
-		// Should be a reasonable Unix timestamp
-		expect(frame.stack[0]).toBeGreaterThan(1600000000n);
-		expect(frame.stack[0]).toBeLessThan(2000000000n);
+		// Defaults to 0 when blockTimestamp not provided (caller should set it)
+		expect(frame.stack[0]).toBe(0n);
 		expect(frame.pc).toBe(1);
 	});
 

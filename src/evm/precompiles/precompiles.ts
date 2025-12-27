@@ -705,9 +705,13 @@ export function blake2f(
 		};
 	}
 
-	// Parse rounds (big-endian)
+	// Parse rounds (big-endian) - use >>> 0 to force unsigned 32-bit interpretation
 	const rounds =
-		(_input[0] << 24) | (_input[1] << 16) | (_input[2] << 8) | _input[3];
+		(((_input[0] ?? 0) << 24) |
+			((_input[1] ?? 0) << 16) |
+			((_input[2] ?? 0) << 8) |
+			(_input[3] ?? 0)) >>>
+		0;
 	const gas = BigInt(rounds);
 
 	if (gasLimit < gas) {

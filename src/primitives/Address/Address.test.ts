@@ -873,7 +873,7 @@ describe("Address", () => {
 
 		it("throws on invalid hex string", () => {
 			expect(() => Address("0x742d35cc")).toThrow(
-				AddressNamespace.InvalidAddressError,
+				AddressNamespace.InvalidHexFormatError,
 			);
 		});
 
