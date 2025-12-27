@@ -40,9 +40,8 @@ export function tstore(frame, host) {
 	if (valueResult.error) return valueResult.error;
 	const value = valueResult.value;
 
-	// Pending host integration: store to transient storage
-	// Currently a no-op. Real implementation should call:
-	// host.setTransientStorage(frame.address, key, value)
+	// Store to transient storage (EIP-1153)
+	host.setTransientStorage(frame.address, key, value);
 
 	frame.pc += 1;
 	return null;

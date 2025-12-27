@@ -30,10 +30,8 @@ export function tload(frame, host) {
 	if (keyResult.error) return keyResult.error;
 	const key = keyResult.value;
 
-	// Pending host integration: load from transient storage
-	// Currently returns 0 (empty). Real implementation should call:
-	// host.getTransientStorage(frame.address, key)
-	const value = 0n;
+	// Load from transient storage (EIP-1153)
+	const value = host.getTransientStorage(frame.address, key);
 
 	// Push value onto stack
 	const pushError = Frame.pushStack(frame, value);
