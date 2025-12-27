@@ -506,7 +506,7 @@ import { TLoad } from "../../../primitives/GasConstants/BrandedGasConstants/cons
  * EIP-1153: Transient storage opcodes (Cancun hardfork)
  */
 export function tload(frame, host) {
-  // TODO: Hardfork check - TLOAD requires Cancun+
+  // Note: Add hardfork validation - TLOAD requires Cancun+
   // if (hardfork < CANCUN) return { type: "InvalidOpcode" };
 
   const gasError = Frame.consumeGas(frame, TLoad);

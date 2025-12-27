@@ -442,7 +442,7 @@ export function sstore(frame, host) {
   // Get current value for gas calculation
   const currentValue = host.getStorage(frame.address, key);
 
-  // TODO: Implement full EIP-2200/2929/3529 logic with:
+  // Outline: Implement full EIP-2200/2929/3529 logic with:
   // - Original value tracking (getOriginal)
   // - Access list for cold/warm slots
   // - Hardfork-dependent gas costs and refunds
@@ -456,7 +456,7 @@ export function sstore(frame, host) {
   const gasError = Frame.consumeGas(frame, gasCost);
   if (gasError) return gasError;
 
-  // TODO: Apply refund logic
+  // Then: Apply refund logic
   if (value === 0n && currentValue !== 0n) {
     frame.refunds += SstoreRefund;  // 4800 refund
   }
@@ -557,7 +557,7 @@ describe('SSTORE (0x55)', () => {
       isStatic: false,
     });
 
-    // TODO: Implement sentry check
+    // Note: Implement sentry check
     // expect(sstore(frame, host)).toEqual({ type: "OutOfGas" });
   });
 

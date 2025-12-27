@@ -199,6 +199,14 @@
 								]
 							},
 							{
+								"group": "AccountState",
+								"icon": {
+									"name": "user",
+									"style": "solid"
+								},
+								"pages": ["primitives/account-state/index"]
+							},
+							{
 								"group": "AccessList",
 								"icon": {
 									"name": "list-check",
@@ -286,6 +294,18 @@
 								]
 							},
 							{
+								"group": "Block",
+								"icon": {
+									"name": "cube",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/block/index",
+									"primitives/block-header/index",
+									"primitives/block-body/index"
+								]
+							},
+							{
 								"group": "BloomFilter",
 								"icon": {
 									"name": "filter",
@@ -340,6 +360,14 @@
 									"primitives/bytecode/stripMetadata",
 									"primitives/bytecode/synthetic-opcodes"
 								]
+							},
+							{
+								"group": "Bytes32",
+								"icon": {
+									"name": "cube",
+									"style": "light"
+								},
+								"pages": ["primitives/bytes32/index"]
 							},
 							{
 								"group": "CallData",
@@ -403,6 +431,14 @@
 									"primitives/chain/metadata",
 									"primitives/chain/network-comparison"
 								]
+							},
+							{
+								"group": "ChainId",
+								"icon": {
+									"name": "hashtag",
+									"style": "solid"
+								},
+								"pages": ["primitives/chain-id/index"]
 							},
 							{
 								"group": "Denomination",
@@ -476,6 +512,22 @@
 									"primitives/feemarket/usage-patterns",
 									"primitives/feemarket/wasm"
 								]
+							},
+							{
+								"group": "ForkId",
+								"icon": {
+									"name": "code-fork",
+									"style": "solid"
+								},
+								"pages": ["primitives/fork-id/index"]
+							},
+							{
+								"group": "Gas",
+								"icon": {
+									"name": "gas-pump",
+									"style": "solid"
+								},
+								"pages": ["primitives/gas/index"]
 							},
 							{
 								"group": "GasConstants",
@@ -671,7 +723,8 @@
 								"pages": [
 									"primitives/storage/index",
 									"primitives/storage/calculate-erc7201",
-									"primitives/storage/calculate-erc8042"
+									"primitives/storage/calculate-erc8042",
+									"primitives/storage-value/index"
 								]
 							},
 							{
@@ -715,8 +768,11 @@
 									"style": "solid"
 								},
 								"pages": [
+									"primitives/uint/index",
 									"primitives/uint8/index",
 									"primitives/uint16/index",
+									"primitives/uint32/index",
+									"primitives/uint64/index",
 									"primitives/uint128/index",
 									"primitives/uint256/index"
 								]
@@ -730,6 +786,8 @@
 								"pages": [
 									"primitives/int8/index",
 									"primitives/int16/index",
+									"primitives/int32/index",
+									"primitives/int64/index",
 									"primitives/int128/index",
 									"primitives/int256/index"
 								]
@@ -747,6 +805,78 @@
 									"primitives/bytes/bytes32",
 									"primitives/bytes/bytes64"
 								]
+							},
+							{
+								"group": "License",
+								"icon": {
+									"name": "file-contract",
+									"style": "solid"
+								},
+								"pages": ["primitives/license/index"]
+							},
+							{
+								"group": "Nonce",
+								"icon": {
+									"name": "list-ol",
+									"style": "solid"
+								},
+								"pages": ["primitives/nonce/index"]
+							},
+							{
+								"group": "Networking",
+								"icon": {
+									"name": "network-wired",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/network-id/index",
+									"primitives/node-info/index",
+									"primitives/peer-id/index",
+									"primitives/peer-info/index"
+								]
+							},
+							{
+								"group": "Keys & Signing",
+								"icon": {
+									"name": "key",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/private-key/index",
+									"primitives/public-key/index"
+								]
+							},
+							{
+								"group": "Proofs",
+								"icon": {
+									"name": "certificate",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/proof/index",
+									"primitives/state-proof/index",
+									"primitives/storage-proof/index",
+									"primitives/state-root/index"
+								]
+							},
+							{
+								"group": "Network",
+								"icon": {
+									"name": "network-wired",
+									"style": "solid"
+								},
+								"pages": [
+									"primitives/protocol-version/index",
+									"primitives/relay-data/index"
+								]
+							},
+							{
+								"group": "Legacy",
+								"icon": {
+									"name": "clock-rotate-left",
+									"style": "solid"
+								},
+								"pages": ["primitives/uncle/index"]
 							}
 						]
 					},
@@ -981,6 +1111,19 @@
 											"crypto/hdwallet/child-derivation",
 											"crypto/hdwallet/derivation-paths"
 										]
+									},
+									{
+										"group": "Keystore (Web3 Secret Storage)",
+										"icon": {
+											"name": "lock",
+											"style": "solid"
+										},
+										"pages": [
+											"crypto/keystore/index",
+											"crypto/keystore/encryption",
+											"crypto/keystore/decryption",
+											"crypto/keystore/security"
+										]
 									}
 								]
 							},
@@ -1030,6 +1173,14 @@
 										"pages": ["crypto/p256/index"]
 									}
 								]
+							},
+							{
+								"group": "Signers",
+								"icon": {
+									"name": "pen-to-square",
+									"style": "solid"
+								},
+								"pages": ["crypto/signers/index"]
 							}
 						]
 					},
@@ -1424,10 +1575,7 @@
 							},
 							{
 								"group": "Contributing",
-								"pages": [
-									"dev/adding-primitives",
-									"dev/adding-crypto"
-								]
+								"pages": ["dev/adding-primitives", "dev/adding-crypto"]
 							}
 						]
 					}

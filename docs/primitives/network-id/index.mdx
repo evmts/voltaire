@@ -1,0 +1,223 @@
+---
+title: NetworkId
+description: Ethereum network identifiers for peer-to-peer discovery
+---
+
+# NetworkId
+
+Type-safe Ethereum network identifiers for peer-to-peer network discovery.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `number` type representing Ethereum network IDs. Network IDs are used for peer-to-peer network identification and discovery, distinct from Chain IDs which are used for transaction replay protection.
+
+<Warning>
+**NetworkId vs ChainId**: These are different concepts!
+- **NetworkId**: Used for P2P network discovery (devp2p protocol)
+- **ChainId**: Used for transaction replay protection (EIP-155)
+
+For most public networks they happen to be the same value, but they serve different purposes.
+</Warning>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+
+// Create network ID
+const mainnet = NetworkId.from(1)
+const sepolia = NetworkId.from(11155111)
+
+// Convert to number
+NetworkId.toNumber(mainnet)  // 1
+NetworkId.toNumber(sepolia)  // 11155111
+
+// Compare network IDs
+NetworkId.equals(mainnet, mainnet)  // true
+NetworkId.equals(mainnet, sepolia)  // false
+```
+</Tab>
+<Tab title="Network Constants">
+```typescript
+import { MAINNET, SEPOLIA, HOLESKY, GOERLI } from 'tevm/NetworkId'
+
+// Pre-defined network IDs
+MAINNET   // 1
+SEPOLIA   // 11155111
+HOLESKY   // 17000
+GOERLI    // 5 (deprecated)
+```
+</Tab>
+<Tab title="RPC Usage">
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+
+// Get network ID from node
+async function getNetworkId(rpcUrl: string) {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'net_version',
+      params: [],
+      id: 1
+    })
+  })
+  const { result } = await response.json()
+  return NetworkId.from(parseInt(result))
+}
+
+const networkId = await getNetworkId('https://eth.llamarpc.com')
+console.log(NetworkId.toNumber(networkId))  // 1
+```
+</Tab>
+</Tabs>
+
+## Network Constants
+
+| Constant | Value | Network |
+|----------|-------|---------|
+| `MAINNET` | 1 | Ethereum Mainnet |
+| `SEPOLIA` | 11155111 | Sepolia Testnet |
+| `HOLESKY` | 17000 | Holesky Testnet |
+| `GOERLI` | 5 | Goerli Testnet (deprecated) |
+
+## API Reference
+
+### Constructors
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+
+// From number
+const networkId = NetworkId.from(1)
+
+// From pre-defined constant
+import { MAINNET, SEPOLIA } from 'tevm/NetworkId'
+```
+
+### Methods
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+
+const networkId = NetworkId.from(1)
+
+// Convert to number
+NetworkId.toNumber(networkId)  // 1
+
+// Equality check
+NetworkId.equals(networkId, NetworkId.from(1))  // true
+```
+
+## NetworkId vs ChainId
+
+Understanding the difference:
+
+| Aspect | NetworkId | ChainId |
+|--------|-----------|---------|
+| Purpose | P2P network discovery | Transaction replay protection |
+| Protocol | devp2p | EIP-155 |
+| RPC Method | `net_version` | `eth_chainId` |
+| Used In | Peer handshake | Transaction signing |
+
+For most public networks, NetworkId and ChainId have the same value:
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+import * as Chain from 'tevm/Chain'
+
+// Mainnet: both are 1
+const networkId = NetworkId.from(1)
+const chainId = Chain.from(1)
+
+// Sepolia: both are 11155111
+const sepoliaNetworkId = NetworkId.from(11155111)
+const sepoliaChainId = Chain.from(11155111)
+```
+
+However, private networks or some L2s may use different values for each.
+
+## Use Cases
+
+### Network Detection
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+import { MAINNET, SEPOLIA, HOLESKY } from 'tevm/NetworkId'
+
+function getNetworkName(networkId: number): string {
+  const id = NetworkId.from(networkId)
+
+  if (NetworkId.equals(id, MAINNET)) return 'Ethereum Mainnet'
+  if (NetworkId.equals(id, SEPOLIA)) return 'Sepolia Testnet'
+  if (NetworkId.equals(id, HOLESKY)) return 'Holesky Testnet'
+
+  return `Unknown Network (${NetworkId.toNumber(id)})`
+}
+```
+
+### Multi-Network Support
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+import { MAINNET, SEPOLIA } from 'tevm/NetworkId'
+
+const RPC_URLS: Record<number, string> = {
+  1: 'https://eth.llamarpc.com',
+  11155111: 'https://rpc.sepolia.org'
+}
+
+function getRpcUrl(networkId: number): string {
+  const url = RPC_URLS[networkId]
+  if (!url) {
+    throw new Error(`Unsupported network: ${networkId}`)
+  }
+  return url
+}
+```
+
+### Node Connection Validation
+
+```typescript
+import * as NetworkId from 'tevm/NetworkId'
+
+async function validateNetwork(
+  rpcUrl: string,
+  expectedNetworkId: number
+): Promise<boolean> {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'net_version',
+      params: [],
+      id: 1
+    })
+  })
+  const { result } = await response.json()
+  const actualNetworkId = NetworkId.from(parseInt(result))
+  const expected = NetworkId.from(expectedNetworkId)
+
+  return NetworkId.equals(actualNetworkId, expected)
+}
+
+// Ensure connected to mainnet
+const isMainnet = await validateNetwork('https://eth.llamarpc.com', 1)
+```
+
+## Related
+
+- [Chain](/primitives/chain) - Chain configuration with ChainId
+- [PeerId](/primitives/peer-id) - Peer identifiers for P2P
+- [NodeInfo](/primitives/node-info) - Node information structure
+
+## References
+
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Chain ID for replay protection
+- [devp2p Protocol](https://github.com/ethereum/devp2p) - Ethereum P2P networking
+- [JSON-RPC net_version](https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version) - RPC method

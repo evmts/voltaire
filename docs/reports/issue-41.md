@@ -2,7 +2,7 @@
 title: "Issue #41: BLS12-381 Precompiles Have Stub Implementations"
 date: 2025-12-26
 issue: https://github.com/evmts/voltaire/issues/41
-commit: TBD
+commit: 81c0ecb3c1a1ebd4fd9f262c968760503f532467
 ---
 
 # Issue #41: BLS12-381 Precompiles Have Stub Implementations

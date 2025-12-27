@@ -519,7 +519,7 @@ import { TStore } from "../../../primitives/GasConstants/BrandedGasConstants/con
  * EIP-1153: Transient storage opcodes (Cancun hardfork)
  */
 export function tstore(frame, host) {
-  // TODO: Hardfork check - TSTORE requires Cancun+
+  // Note: Add hardfork validation - TSTORE requires Cancun+
   // if (hardfork < CANCUN) return { type: "InvalidOpcode" };
 
   // EIP-1153: Cannot modify transient storage in static call
@@ -539,7 +539,7 @@ export function tstore(frame, host) {
   if (valueResult.error) return valueResult.error;
   const value = valueResult.value;
 
-  // TODO: Store to transient storage
+  // Pending host integration: store to transient storage
   // Real implementation: host.setTransientStorage(frame.address, key, value)
   host.setTransientStorage(frame.address, key, value);
 

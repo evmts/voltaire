@@ -1,0 +1,203 @@
+---
+title: PublicKey
+description: 64-byte uncompressed secp256k1 public key for address derivation and signature verification
+---
+
+# PublicKey
+
+64-byte uncompressed secp256k1 public key for cryptographic operations.
+
+## Overview
+
+PublicKey represents an uncompressed secp256k1 public key (64 bytes, x and y coordinates). It's derived from a private key and used for Ethereum address derivation and signature verification.
+
+## Type Definition
+
+```typescript
+type PublicKeyType = Uint8Array & {
+  readonly __tag: "PublicKey";
+  readonly length: 64;
+};
+```
+
+## Usage
+
+### Create from Hex
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+// 64-byte uncompressed public key (no 0x04 prefix)
+const pk = PublicKey.from("0x04a1b2c3..."); // hex string
+```
+
+### Derive from Private Key
+
+```typescript
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+
+const privateKey = PrivateKey.from("0xac0974...");
+const publicKey = PublicKey.fromPrivateKey(privateKey);
+```
+
+### Convert to Address
+
+```typescript
+const address = PublicKey.toAddress(publicKey);
+// 20-byte Ethereum address
+```
+
+### Verify Signature
+
+```typescript
+import * as Hash from './primitives/Hash/index.js';
+import * as Signature from './primitives/Signature/index.js';
+
+const message = new TextEncoder().encode("Hello");
+const hash = Hash.keccak256(message);
+
+const isValid = PublicKey.verify(publicKey, hash, signature);
+```
+
+### Compress Public Key
+
+```typescript
+// Compress 64-byte to 33-byte format
+const compressed = PublicKey.compress(publicKey);
+console.log(compressed.length); // 33
+console.log(compressed[0]);     // 0x02 or 0x03
+```
+
+### Decompress Public Key
+
+```typescript
+// Expand 33-byte compressed back to 64-byte
+const uncompressed = PublicKey.decompress(compressed);
+console.log(uncompressed.length); // 64
+```
+
+### Check Compression
+
+```typescript
+const isComp = PublicKey.isCompressed(bytes);
+// true for 33-byte with 0x02/0x03 prefix
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(hex)` | Create from hex string |
+| `fromPrivateKey(pk)` | Derive from private key |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `toHex(pk)` | Convert to hex string |
+| `toAddress(pk)` | Derive Ethereum address |
+| `verify(pk, hash, sig)` | Verify ECDSA signature |
+| `compress(pk)` | Compress to 33 bytes |
+| `decompress(compressed)` | Expand to 64 bytes |
+| `isCompressed(bytes)` | Check if compressed format |
+
+## Key Formats
+
+### Uncompressed (64 bytes)
+Used internally by this library. Contains raw x and y coordinates:
+```
+[x: 32 bytes][y: 32 bytes]
+```
+
+### Uncompressed with Prefix (65 bytes)
+Standard SEC1 uncompressed format:
+```
+[0x04][x: 32 bytes][y: 32 bytes]
+```
+
+### Compressed (33 bytes)
+SEC1 compressed format for storage/transmission:
+```
+[prefix: 1 byte][x: 32 bytes]
+```
+- Prefix `0x02` if y is even
+- Prefix `0x03` if y is odd
+
+## Compression Algorithm
+
+```typescript
+// Compress: extract x, encode y parity in prefix
+function compress(publicKey: PublicKeyType): Uint8Array {
+  const result = new Uint8Array(33);
+
+  // Parse y coordinate for parity
+  let y = 0n;
+  for (let i = 32; i < 64; i++) {
+    y = (y << 8n) | BigInt(publicKey[i]);
+  }
+
+  // Set prefix based on y parity
+  result[0] = y & 1n ? 0x03 : 0x02;
+
+  // Copy x coordinate
+  result.set(publicKey.slice(0, 32), 1);
+
+  return result;
+}
+```
+
+### Decompression
+
+Decompression solves the curve equation `y^2 = x^3 + 7` mod p and chooses y based on the prefix parity.
+
+## Address Derivation
+
+Ethereum addresses are derived from public keys:
+
+```
+PublicKey (64 bytes)
+    |
+    v
+keccak256(publicKey)
+    |
+    v
+last 20 bytes = Address
+```
+
+```typescript
+const address = PublicKey.toAddress(publicKey);
+```
+
+## Dependency Injection
+
+For tree-shaking, use the factory pattern:
+
+```typescript
+import { Verify } from './primitives/PublicKey/verify.js';
+import { verify as secp256k1Verify } from './crypto/Secp256k1/verify.js';
+
+const verify = Verify({ secp256k1Verify });
+const isValid = verify(publicKey, hash, signature);
+```
+
+## Test Vectors
+
+```typescript
+// Hardhat/Anvil default account #0
+const privateKey = PrivateKey.from(
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+);
+
+const publicKey = PublicKey.fromPrivateKey(privateKey);
+const address = PublicKey.toAddress(publicKey);
+// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```
+
+## See Also
+
+- [PrivateKey](/primitives/private-key) - Private key primitive
+- [Address](/primitives/address) - Ethereum address
+- [Signature](/primitives/signature) - ECDSA signatures
+- [Secp256k1](/crypto/secp256k1) - Elliptic curve operations

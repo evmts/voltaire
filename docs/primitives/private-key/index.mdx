@@ -1,0 +1,178 @@
+---
+title: PrivateKey
+description: 32-byte secp256k1 private key for signing Ethereum transactions and messages
+---
+
+# PrivateKey
+
+32-byte secp256k1 private key for cryptographic signing operations.
+
+## Overview
+
+PrivateKey represents a 32-byte secp256k1 private key used for signing Ethereum transactions, messages, and deriving public keys and addresses. The branded type prevents accidental exposure or misuse of sensitive key material.
+
+## Type Definition
+
+```typescript
+type PrivateKeyType = Uint8Array & {
+  readonly __tag: "PrivateKey";
+  readonly length: 32;
+};
+```
+
+## Usage
+
+### Create PrivateKey
+
+```typescript
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+
+// From hex string
+const pk = PrivateKey.from("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
+
+// From Uint8Array
+const bytes = new Uint8Array(32);
+const pk2 = PrivateKey.fromBytes(bytes);
+```
+
+### Derive Public Key
+
+```typescript
+const publicKey = PrivateKey.toPublicKey(pk);
+console.log(publicKey.length); // 64 (uncompressed)
+```
+
+### Derive Address
+
+```typescript
+const address = PrivateKey.toAddress(pk);
+// Returns 20-byte Ethereum address
+```
+
+### Sign Message Hash
+
+```typescript
+import * as Hash from './primitives/Hash/index.js';
+
+const message = new TextEncoder().encode("Hello, Ethereum!");
+const hash = Hash.keccak256(message);
+
+const signature = PrivateKey.sign(pk, hash);
+// Returns { r, s, v } ECDSA signature
+```
+
+### Convert to Hex
+
+```typescript
+const hex = PrivateKey.toHex(pk);
+// "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(hex)` | Create from hex string |
+| `fromBytes(bytes)` | Create from Uint8Array |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `toHex(pk)` | Convert to 0x-prefixed hex string |
+| `toPublicKey(pk)` | Derive uncompressed 64-byte public key |
+| `toAddress(pk)` | Derive 20-byte Ethereum address |
+| `sign(pk, hash)` | Create ECDSA signature |
+
+### Internal Methods
+
+For advanced tree-shaking:
+
+```typescript
+// Direct method calls without wrappers
+const publicKey = PrivateKey._toPublicKey.call(pk);
+const address = PrivateKey._toAddress.call(pk);
+```
+
+## Key Derivation
+
+PrivateKey supports the standard Ethereum key derivation:
+
+```
+PrivateKey (32 bytes)
+    |
+    v
+secp256k1.getPublicKey()
+    |
+    v
+PublicKey (64 bytes, uncompressed)
+    |
+    v
+keccak256(publicKey)
+    |
+    v
+last 20 bytes
+    |
+    v
+Address (20 bytes)
+```
+
+## Dependency Injection
+
+For tree-shaking, use the factory pattern:
+
+```typescript
+import { Sign } from './primitives/PrivateKey/sign.js';
+import { sign as secp256k1Sign } from './crypto/Secp256k1/sign.js';
+
+const sign = Sign({ secp256k1Sign });
+const sig = sign(pk, hash);
+```
+
+## Security
+
+<Warning>
+Private keys are sensitive cryptographic secrets. Never expose them in logs, URLs, or client-side code.
+</Warning>
+
+### Best Practices
+
+1. **Never log private keys** - Use secure logging that redacts keys
+2. **Store encrypted** - Use keystore files or hardware wallets
+3. **Clear from memory** - Zero out key material after use
+4. **Use HD derivation** - Derive keys from mnemonic seeds
+
+### Example: Secure Key Handling
+
+```typescript
+// Generate random key
+const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+const pk = PrivateKey.fromBytes(randomBytes);
+
+// Use the key
+const signature = PrivateKey.sign(pk, hash);
+
+// Clear key from memory when done
+randomBytes.fill(0);
+```
+
+## Test Vectors
+
+```typescript
+// Hardhat/Anvil default account #0
+const pk = PrivateKey.from(
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+);
+
+const address = PrivateKey.toAddress(pk);
+// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```
+
+## See Also
+
+- [PublicKey](/primitives/public-key) - Public key primitive
+- [Address](/primitives/address) - Ethereum address
+- [Signature](/primitives/signature) - ECDSA signatures
+- [Secp256k1](/crypto/secp256k1) - Elliptic curve operations

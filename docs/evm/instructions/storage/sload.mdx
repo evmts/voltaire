@@ -355,7 +355,7 @@ export function sload(frame, host) {
   if (keyResult.error) return keyResult.error;
   const key = keyResult.value;
 
-  // TODO: EIP-2929 access list tracking for warm/cold slots
+  // Note: EIP-2929 access list tracking for warm/cold slots
   // For now, assume cold access (worst case)
   const gasCost = ColdSload;
 

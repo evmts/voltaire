@@ -1,0 +1,207 @@
+---
+title: "Uncle"
+description: "Uncle (Ommer) block header representation for pre-merge Ethereum"
+---
+
+# Uncle
+
+A structured type representing an uncle (ommer) block header. Uncle blocks are valid blocks that were mined but not included in the main chain. They were relevant in Ethereum's proof-of-work era.
+
+<Note>
+Uncle blocks are a legacy concept from Ethereum's proof-of-work era. Since The Merge (September 2022), Ethereum uses proof-of-stake and no longer produces uncle blocks.
+</Note>
+
+## Overview
+
+`UncleType` represents a complete block header with all fields required by the Ethereum protocol:
+- Block identification (parent hash, number)
+- State roots (state, transactions, receipts)
+- Mining data (difficulty, nonce, mixHash)
+- Resource tracking (gas limit, gas used)
+- Metadata (timestamp, extra data, logs bloom)
+
+## Type Definition
+
+```typescript
+export type UncleType = {
+  readonly parentHash: BlockHashType;
+  readonly ommersHash: HashType;
+  readonly beneficiary: AddressType;
+  readonly stateRoot: HashType;
+  readonly transactionsRoot: HashType;
+  readonly receiptsRoot: HashType;
+  readonly logsBloom: Uint8Array;     // 256 bytes
+  readonly difficulty: Uint256Type;
+  readonly number: BlockNumberType;
+  readonly gasLimit: Uint256Type;
+  readonly gasUsed: Uint256Type;
+  readonly timestamp: Uint256Type;
+  readonly extraData: Uint8Array;
+  readonly mixHash: HashType;
+  readonly nonce: Uint8Array;         // 8 bytes
+};
+```
+
+## Construction
+
+### from
+
+Create an uncle block from its component fields:
+
+```typescript
+import * as Uncle from '@voltaire/primitives/Uncle';
+
+const uncle = Uncle.from({
+  parentHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  ommersHash: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+  beneficiary: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  stateRoot: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  logsBloom: new Uint8Array(256),
+  difficulty: 0n,
+  number: 12345678n,
+  gasLimit: 30000000n,
+  gasUsed: 21000n,
+  timestamp: 1234567890n,
+  extraData: new Uint8Array(0),
+  mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  nonce: new Uint8Array(8)
+});
+```
+
+## Field Reference
+
+### Block Identification
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parentHash` | `BlockHashType` | Hash of the parent block |
+| `ommersHash` | `HashType` | Hash of the uncles list (keccak256 of RLP-encoded uncles) |
+| `number` | `BlockNumberType` | Block number |
+
+### State Roots
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `stateRoot` | `HashType` | Root hash of the state trie |
+| `transactionsRoot` | `HashType` | Root hash of the transactions trie |
+| `receiptsRoot` | `HashType` | Root hash of the receipts trie |
+
+### Mining Data
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `beneficiary` | `AddressType` | Address receiving block rewards (miner/coinbase) |
+| `difficulty` | `Uint256Type` | Block difficulty (0 post-merge) |
+| `mixHash` | `HashType` | PoW mix hash |
+| `nonce` | `Uint8Array` | 8-byte PoW nonce |
+
+### Resource Tracking
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `gasLimit` | `Uint256Type` | Maximum gas allowed in block |
+| `gasUsed` | `Uint256Type` | Total gas used by transactions |
+
+### Metadata
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | `Uint256Type` | Unix timestamp |
+| `extraData` | `Uint8Array` | Arbitrary miner data (max 32 bytes) |
+| `logsBloom` | `Uint8Array` | 256-byte bloom filter for logs |
+
+## Uncle Block Economics
+
+In proof-of-work Ethereum, uncle blocks served multiple purposes:
+
+### Reward Structure
+
+- **Uncle reward**: Miner receives (8 - depth) / 8 of block reward
+- **Nephew reward**: Main block miner receives 1/32 of block reward per uncle
+- **Maximum depth**: Uncles must be within 6 blocks of the including block
+- **Maximum uncles**: 2 uncles per block
+
+```typescript
+// Calculate uncle reward (historical, pre-merge)
+function calculateUncleReward(
+  mainBlockNumber: bigint,
+  uncleBlockNumber: bigint,
+  baseReward: bigint
+): bigint {
+  const depth = mainBlockNumber - uncleBlockNumber;
+  if (depth < 1n || depth > 6n) {
+    throw new Error('Uncle depth out of range');
+  }
+  return (baseReward * (8n - depth)) / 8n;
+}
+
+// Example: Uncle at depth 2 with 2 ETH base reward
+const reward = calculateUncleReward(1000n, 999n, 2000000000000000000n);
+// (2 ETH * 7) / 8 = 1.75 ETH
+```
+
+## Historical Context
+
+Uncle blocks helped secure proof-of-work Ethereum by:
+
+1. **Reducing centralization**: Miners with network latency disadvantages still received rewards
+2. **Increasing security**: More total hashpower contributed to chain security
+3. **Incentivizing propagation**: Miners were incentivized to propagate blocks quickly
+
+## Related Types
+
+- [BlockHash](/primitives/block-hash/index) - Block hash type
+- [BlockNumber](/primitives/block-number/index) - Block number type
+- [Address](/primitives/address/index) - Ethereum address type
+- [Hash](/primitives/hash) - Generic 32-byte hash type
+- [Uint256](/primitives/uint256/index) - 256-bit unsigned integer
+
+## Use Cases
+
+- Historical blockchain analysis
+- Archive node implementations
+- Block reward calculations
+- Chain reorganization analysis
+- Ethereum protocol research
+
+## Example: Analyze Uncle Rate
+
+```typescript
+import * as Uncle from '@voltaire/primitives/Uncle';
+
+interface BlockWithUncles {
+  number: bigint;
+  uncles: Uncle.UncleType[];
+}
+
+function analyzeUncleRate(blocks: BlockWithUncles[]): {
+  totalBlocks: number;
+  blocksWithUncles: number;
+  totalUncles: number;
+  avgUncleDepth: number;
+} {
+  let blocksWithUncles = 0;
+  let totalUncles = 0;
+  let totalDepth = 0n;
+
+  for (const block of blocks) {
+    if (block.uncles.length > 0) {
+      blocksWithUncles++;
+      totalUncles += block.uncles.length;
+
+      for (const uncle of block.uncles) {
+        totalDepth += block.number - uncle.number;
+      }
+    }
+  }
+
+  return {
+    totalBlocks: blocks.length,
+    blocksWithUncles,
+    totalUncles,
+    avgUncleDepth: totalUncles > 0 ? Number(totalDepth) / totalUncles : 0
+  };
+}
+```

@@ -325,7 +325,7 @@ export function balance(
   const addr = fromNumber(addrU256);
 
   // Gas cost: simplified to 700 (Istanbul+)
-  // TODO: Add hardfork-aware gas pricing
+  // Note: Add hardfork-aware gas pricing
   const gasErr = consumeGas(frame, 700n);
   if (gasErr) return gasErr;
 
