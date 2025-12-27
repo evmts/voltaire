@@ -35,17 +35,17 @@ export class EventLogSchema extends Schema.Class<EventLogSchema>("EventLog")({
 }) {
   get eventLog(): EventLogType {
     const { address, topics, data, blockNumber, transactionHash, transactionIndex, blockHash, logIndex, removed } = this
-    return _create({ address, topics, data, blockNumber, transactionHash, transactionIndex, blockHash, logIndex, removed: removed ?? false })
+    return _create({ address, topics, data, blockNumber, transactionHash, transactionIndex, blockHash, logIndex, removed: removed ?? false } as any) as EventLogType
   }
 
   get branded(): EventLogBrand { return this.eventLog as EventLogBrand }
 
   static fromBranded(log: EventLogBrand): EventLogSchema {
-    const addr = typeof (log as any).address === 'string' ? hexToBytes((log as any).address) : log.address
-    const topics = (log.topics as any[]).map((t) => typeof t === 'string' ? hexToBytes(t) : t)
-    const data = typeof (log as any).data === 'string' ? hexToBytes((log as any).data) : log.data
-    const txHash = typeof (log as any).transactionHash === 'string' ? hexToBytes((log as any).transactionHash) : log.transactionHash
-    const blockHash = typeof (log as any).blockHash === 'string' ? hexToBytes((log as any).blockHash) : log.blockHash
+    const addr = typeof (log as any).address === 'string' ? hexToBytes((log as any).address as any) : (log as any).address
+    const topics = (log.topics as any[]).map((t) => typeof t === 'string' ? hexToBytes(t as any) : t)
+    const data = typeof (log as any).data === 'string' ? hexToBytes((log as any).data as any) : (log as any).data
+    const txHash = typeof (log as any).transactionHash === 'string' ? hexToBytes((log as any).transactionHash as any) : (log as any).transactionHash
+    const blockHash = typeof (log as any).blockHash === 'string' ? hexToBytes((log as any).blockHash as any) : (log as any).blockHash
     return new EventLogSchema({
       address: addr as Uint8Array,
       topics: topics as Uint8Array[],

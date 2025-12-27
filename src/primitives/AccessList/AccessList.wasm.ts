@@ -6,14 +6,14 @@
 import * as loader from "../../wasm-loader/loader.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/Hash.js";
-import type * as AccessList from "./AccessList.js";
+import type { BrandedAccessList as AccessListType } from "./AccessListType.js";
 
 /**
  * Calculate total gas cost for access list
  * @param accessList - Access list to calculate cost for
  * @returns Gas cost as bigint
  */
-export function gasCostWasm(accessList: AccessList.Type): bigint {
+export function gasCostWasm(accessList: AccessListType): bigint {
 	return loader.accessListGasCost(accessList as any);
 }
 
@@ -22,7 +22,7 @@ export function gasCostWasm(accessList: AccessList.Type): bigint {
  * @param accessList - Access list to calculate savings for
  * @returns Gas savings as bigint
  */
-export function gasSavingsWasm(accessList: AccessList.Type): bigint {
+export function gasSavingsWasm(accessList: AccessListType): bigint {
 	return loader.accessListGasSavings(accessList as any);
 }
 
@@ -33,7 +33,7 @@ export function gasSavingsWasm(accessList: AccessList.Type): bigint {
  * @returns True if address is in list
  */
 export function includesAddressWasm(
-	accessList: AccessList.Type,
+	accessList: AccessListType,
 	address: BrandedAddress,
 ): boolean {
 	return loader.accessListIncludesAddress(accessList as any, address);
@@ -47,7 +47,7 @@ export function includesAddressWasm(
  * @returns True if storage key is in list for address
  */
 export function includesStorageKeyWasm(
-	accessList: AccessList.Type,
+	accessList: AccessListType,
 	address: BrandedAddress,
 	storageKey: HashType,
 ): boolean {
