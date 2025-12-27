@@ -18,7 +18,7 @@ export function toBigInt(bytes) {
 
 	let result = 0n;
 	for (let i = 0; i < bytes.length; i++) {
-		result = result * 256n + BigInt(bytes[i]);
+		result = result * 256n + BigInt(/** @type {number} */ (bytes[i]));
 	}
 
 	return result;

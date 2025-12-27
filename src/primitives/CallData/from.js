@@ -27,7 +27,10 @@ import { InvalidValueError } from "./errors.js";
  */
 export function from(value) {
 	// If already CallData, return as-is (idempotent)
-	if (value instanceof Uint8Array && value[brand] === "CallData") {
+	if (
+		value instanceof Uint8Array &&
+		/** @type {any} */ (value)[brand] === "CallData"
+	) {
 		return /** @type {import('./CallDataType.js').CallDataType} */ (value);
 	}
 

@@ -24,7 +24,7 @@ export function toNumber(bytes) {
 			`Bytes too large to convert to number safely. Use Bytes.toBigInt() instead.`,
 		);
 	}
-	if (bytes.length === 7 && bytes[0] > 0x1f) {
+	if (bytes.length === 7 && /** @type {number} */ (bytes[0]) > 0x1f) {
 		throw new Error(
 			`Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.`,
 		);
@@ -32,7 +32,7 @@ export function toNumber(bytes) {
 
 	let result = 0;
 	for (let i = 0; i < bytes.length; i++) {
-		result = result * 256 + bytes[i];
+		result = result * 256 + /** @type {number} */ (bytes[i]);
 	}
 
 	if (result > Number.MAX_SAFE_INTEGER) {

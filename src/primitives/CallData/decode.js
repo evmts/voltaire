@@ -71,6 +71,7 @@ export function decode(calldata, abi) {
 	// Decode parameters
 	const paramsData = calldata.subarray(SELECTOR_SIZE);
 
+	/** @type {unknown[]} */
 	let parameters = [];
 	if (inputs.length > 0 && paramsData.length > 0) {
 		// Convert inputs to parameter objects

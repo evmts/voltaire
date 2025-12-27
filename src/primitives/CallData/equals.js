@@ -23,7 +23,9 @@ export function equals(a, b) {
 	// Constant-time comparison: always checks all bytes
 	let result = 0;
 	for (let i = 0; i < a.length; i++) {
-		result |= a[i] ^ b[i];
+		const ai = /** @type {number} */ (a[i]);
+		const bi = /** @type {number} */ (b[i]);
+		result |= ai ^ bi;
 	}
 
 	return result === 0;

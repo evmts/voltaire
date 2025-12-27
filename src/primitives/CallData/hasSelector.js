@@ -43,7 +43,9 @@ export function hasSelector(calldata, selector) {
 	// Constant-time comparison to prevent timing attacks
 	let result = 0;
 	for (let i = 0; i < SELECTOR_SIZE; i++) {
-		result |= actual[i] ^ expected[i];
+		const ai = /** @type {number} */ (actual[i]);
+		const ei = /** @type {number} */ (expected[i]);
+		result |= ai ^ ei;
 	}
 
 	return result === 0;
