@@ -17,73 +17,82 @@ import { join } from "path";
 
 // Configuration
 const CONFIG = {
-  maxCycles: parseInt(process.argv.find(a => a.startsWith("--max-cycles="))?.split("=")[1] ?? "10"),
-  maxBudgetPerCycle: parseFloat(process.argv.find(a => a.startsWith("--max-budget="))?.split("=")[1] ?? "2.0"),
-  reportsDir: "reports/typescript-fixes",
-  targetErrors: 0,
-  maxTurnsPerCycle: 50,
+	maxCycles: parseInt(
+		process.argv.find((a) => a.startsWith("--max-cycles="))?.split("=")[1] ??
+			"10",
+	),
+	maxBudgetPerCycle: parseFloat(
+		process.argv.find((a) => a.startsWith("--max-budget="))?.split("=")[1] ??
+			"2.0",
+	),
+	reportsDir: "reports/typescript-fixes",
+	targetErrors: 0,
+	maxTurnsPerCycle: 50,
 };
 
 // Types
 interface CycleReport {
-  cycle: number;
-  startTime: string;
-  endTime: string;
-  errorsBefore: number;
-  errorsAfter: number;
-  errorsFixed: number;
-  percentReduction: number;
-  filesFixed: string[];
-  commits: string[];
-  status: "success" | "error" | "partial";
-  notes: string;
+	cycle: number;
+	startTime: string;
+	endTime: string;
+	errorsBefore: number;
+	errorsAfter: number;
+	errorsFixed: number;
+	percentReduction: number;
+	filesFixed: string[];
+	commits: string[];
+	status: "success" | "error" | "partial";
+	notes: string;
 }
 
 interface SessionState {
-  totalCycles: number;
-  initialErrors: number;
-  currentErrors: number;
-  totalErrorsFixed: number;
-  totalPercentReduction: number;
-  reports: CycleReport[];
-  lastHandoff: string;
+	totalCycles: number;
+	initialErrors: number;
+	currentErrors: number;
+	totalErrorsFixed: number;
+	totalPercentReduction: number;
+	reports: CycleReport[];
+	lastHandoff: string;
 }
 
 // Utility functions
 async function getErrorCount(): Promise<number> {
-  try {
-    const result = await $`bun run tsc --noEmit 2>&1 | grep -c "error TS"`.quiet();
-    return parseInt(result.stdout.toString().trim()) || 0;
-  } catch {
-    // grep returns exit code 1 if no matches, which throws
-    return 0;
-  }
+	try {
+		const result =
+			await $`bun run tsc --noEmit 2>&1 | grep -c "error TS"`.quiet();
+		return parseInt(result.stdout.toString().trim()) || 0;
+	} catch {
+		// grep returns exit code 1 if no matches, which throws
+		return 0;
+	}
 }
 
 async function getTopErrorFiles(limit = 20): Promise<string[]> {
-  try {
-    const result = await $`bun run tsc --noEmit 2>&1 | grep -E "\\.js\\([0-9]+,[0-9]+\\)|\\.ts\\([0-9]+,[0-9]+\\)" | sed 's/([0-9]*,[0-9]*).*//' | sort | uniq -c | sort -rn | head -${limit}`.quiet();
-    return result.stdout.toString().trim().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
+	try {
+		const result =
+			await $`bun run tsc --noEmit 2>&1 | grep -E "\\.js\\([0-9]+,[0-9]+\\)|\\.ts\\([0-9]+,[0-9]+\\)" | sed 's/([0-9]*,[0-9]*).*//' | sort | uniq -c | sort -rn | head -${limit}`.quiet();
+		return result.stdout.toString().trim().split("\n").filter(Boolean);
+	} catch {
+		return [];
+	}
 }
 
 async function getRecentCommits(limit = 5): Promise<string[]> {
-  try {
-    const result = await $`git log --oneline -${limit}`.quiet();
-    return result.stdout.toString().trim().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
+	try {
+		const result = await $`git log --oneline -${limit}`.quiet();
+		return result.stdout.toString().trim().split("\n").filter(Boolean);
+	} catch {
+		return [];
+	}
 }
 
 function generateHandoffPrompt(state: SessionState): string {
-  const topFiles = state.reports.length > 0
-    ? "See error distribution below"
-    : "Run error count first";
+	const topFiles =
+		state.reports.length > 0
+			? "See error distribution below"
+			: "Run error count first";
 
-  return `<handoff>
+	return `<handoff>
   <metadata>
     <issue>GitHub Issue #33 - Fix TypeScript Errors</issue>
     <repository>voltaire</repository>
@@ -172,92 +181,99 @@ function generateHandoffPrompt(state: SessionState): string {
 Continue fixing TypeScript errors. Start by checking the current error count and top error files, then systematically fix them using the proven patterns. Commit progress regularly.`;
 }
 
-async function runClaudeCodeCycle(prompt: string, cycleNum: number): Promise<{ success: boolean; output: string }> {
-  console.log("\n🤖 Starting Claude Code cycle...\n");
+async function runClaudeCodeCycle(
+	prompt: string,
+	cycleNum: number,
+): Promise<{ success: boolean; output: string }> {
+	console.log("\n🤖 Starting Claude Code cycle...\n");
 
-  // Write prompt to temp file to avoid shell escaping issues
-  const promptFile = `/tmp/claude-prompt-${cycleNum}.txt`;
-  writeFileSync(promptFile, prompt);
+	// Write prompt to temp file to avoid shell escaping issues
+	const promptFile = `/tmp/claude-prompt-${cycleNum}.txt`;
+	writeFileSync(promptFile, prompt);
 
-  try {
-    // Run claude with the prompt
-    // --print: non-interactive mode
-    // --dangerously-skip-permissions: for automation (use in trusted env only!)
-    // --permission-mode acceptEdits: auto-accept file edits
-    // --output-format text: get readable output
-    // --max-budget-usd: limit cost per cycle
-    const proc = Bun.spawn(
-      ["sh", "-c", `cat "${promptFile}" | claude --print --dangerously-skip-permissions --permission-mode acceptEdits --output-format text --max-budget-usd ${CONFIG.maxBudgetPerCycle}`],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    );
+	try {
+		// Run claude with the prompt
+		// --print: non-interactive mode
+		// --dangerously-skip-permissions: for automation (use in trusted env only!)
+		// --permission-mode acceptEdits: auto-accept file edits
+		// --output-format text: get readable output
+		// --max-budget-usd: limit cost per cycle
+		const proc = Bun.spawn(
+			[
+				"sh",
+				"-c",
+				`cat "${promptFile}" | claude --print --dangerously-skip-permissions --permission-mode acceptEdits --output-format text --max-budget-usd ${CONFIG.maxBudgetPerCycle}`,
+			],
+			{
+				cwd: process.cwd(),
+				stdout: "pipe",
+				stderr: "pipe",
+			},
+		);
 
-    // Set up a timeout
-    const timeoutMs = 900000; // 15 minutes
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        proc.kill();
-        reject(new Error(`Timeout after ${timeoutMs}ms`));
-      }, timeoutMs);
-    });
+		// Set up a timeout
+		const timeoutMs = 900000; // 15 minutes
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			setTimeout(() => {
+				proc.kill();
+				reject(new Error(`Timeout after ${timeoutMs}ms`));
+			}, timeoutMs);
+		});
 
-    // Wait for completion or timeout
-    const exitCode = await Promise.race([proc.exited, timeoutPromise]);
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
+		// Wait for completion or timeout
+		const exitCode = await Promise.race([proc.exited, timeoutPromise]);
+		const stdout = await new Response(proc.stdout).text();
+		const stderr = await new Response(proc.stderr).text();
 
-    if (exitCode !== 0) {
-      console.error("Claude stderr:", stderr);
-    }
+		if (exitCode !== 0) {
+			console.error("Claude stderr:", stderr);
+		}
 
-    return {
-      success: exitCode === 0,
-      output: stdout || stderr,
-    };
-  } catch (error) {
-    console.error("Claude Code cycle error:", error);
-    return {
-      success: false,
-      output: error instanceof Error ? error.message : String(error),
-    };
-  }
+		return {
+			success: exitCode === 0,
+			output: stdout || stderr,
+		};
+	} catch (error) {
+		console.error("Claude Code cycle error:", error);
+		return {
+			success: false,
+			output: error instanceof Error ? error.message : String(error),
+		};
+	}
 }
 
 async function commitProgress(message: string): Promise<string | null> {
-  try {
-    // Check if there are changes to commit
-    const status = await $`git status --porcelain`.quiet();
-    if (!status.stdout.toString().trim()) {
-      return null; // No changes
-    }
+	try {
+		// Check if there are changes to commit
+		const status = await $`git status --porcelain`.quiet();
+		if (!status.stdout.toString().trim()) {
+			return null; // No changes
+		}
 
-    await $`git add -A`.quiet();
-    const result = await $`git commit -m "${message}"`.quiet();
-    const hash = await $`git rev-parse --short HEAD`.quiet();
-    return hash.stdout.toString().trim();
-  } catch {
-    return null;
-  }
+		await $`git add -A`.quiet();
+		const result = await $`git commit -m "${message}"`.quiet();
+		const hash = await $`git rev-parse --short HEAD`.quiet();
+		return hash.stdout.toString().trim();
+	} catch {
+		return null;
+	}
 }
 
 function saveReport(state: SessionState): void {
-  const reportsDir = join(process.cwd(), CONFIG.reportsDir);
-  if (!existsSync(reportsDir)) {
-    mkdirSync(reportsDir, { recursive: true });
-  }
+	const reportsDir = join(process.cwd(), CONFIG.reportsDir);
+	if (!existsSync(reportsDir)) {
+		mkdirSync(reportsDir, { recursive: true });
+	}
 
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const reportPath = join(reportsDir, `session-${timestamp}.json`);
-  const summaryPath = join(reportsDir, "LATEST.md");
+	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const reportPath = join(reportsDir, `session-${timestamp}.json`);
+	const summaryPath = join(reportsDir, "LATEST.md");
 
-  // Save JSON report
-  writeFileSync(reportPath, JSON.stringify(state, null, 2));
+	// Save JSON report
+	writeFileSync(reportPath, JSON.stringify(state, null, 2));
 
-  // Save markdown summary
-  const summary = `# TypeScript Error Fixing Progress
+	// Save markdown summary
+	const summary = `# TypeScript Error Fixing Progress
 
 **Last Updated:** ${new Date().toISOString()}
 
@@ -268,12 +284,17 @@ function saveReport(state: SessionState): void {
 - **Cycles Completed:** ${state.totalCycles}
 
 ## Recent Cycles
-${state.reports.slice(-5).map(r => `
+${state.reports
+	.slice(-5)
+	.map(
+		(r) => `
 ### Cycle ${r.cycle} (${r.startTime})
 - Errors: ${r.errorsBefore} → ${r.errorsAfter} (-${r.errorsFixed})
 - Status: ${r.status}
 - Files: ${r.filesFixed.slice(0, 5).join(", ")}${r.filesFixed.length > 5 ? "..." : ""}
-`).join("\n")}
+`,
+	)
+	.join("\n")}
 
 ## Handoff Prompt
 \`\`\`
@@ -281,115 +302,128 @@ ${state.lastHandoff}
 \`\`\`
 `;
 
-  writeFileSync(summaryPath, summary);
-  console.log(`📝 Report saved to ${reportPath}`);
+	writeFileSync(summaryPath, summary);
+	console.log(`📝 Report saved to ${reportPath}`);
 }
 
 async function main() {
-  console.log("🚀 Starting Automated TypeScript Error Fixing Loop");
-  console.log(`   Max cycles: ${CONFIG.maxCycles}`);
-  console.log(`   Target: ${CONFIG.targetErrors} errors\n`);
+	console.log("🚀 Starting Automated TypeScript Error Fixing Loop");
+	console.log(`   Max cycles: ${CONFIG.maxCycles}`);
+	console.log(`   Target: ${CONFIG.targetErrors} errors\n`);
 
-  // Initialize state
-  const initialErrors = await getErrorCount();
-  console.log(`📊 Initial error count: ${initialErrors}`);
+	// Initialize state
+	const initialErrors = await getErrorCount();
+	console.log(`📊 Initial error count: ${initialErrors}`);
 
-  if (initialErrors === 0) {
-    console.log("✅ No TypeScript errors! Nothing to fix.");
-    return;
-  }
+	if (initialErrors === 0) {
+		console.log("✅ No TypeScript errors! Nothing to fix.");
+		return;
+	}
 
-  const state: SessionState = {
-    totalCycles: 0,
-    initialErrors,
-    currentErrors: initialErrors,
-    totalErrorsFixed: 0,
-    totalPercentReduction: 0,
-    reports: [],
-    lastHandoff: "",
-  };
+	const state: SessionState = {
+		totalCycles: 0,
+		initialErrors,
+		currentErrors: initialErrors,
+		totalErrorsFixed: 0,
+		totalPercentReduction: 0,
+		reports: [],
+		lastHandoff: "",
+	};
 
-  // Main loop
-  for (let cycle = 1; cycle <= CONFIG.maxCycles; cycle++) {
-    console.log(`\n${"=".repeat(60)}`);
-    console.log(`🔄 CYCLE ${cycle}/${CONFIG.maxCycles}`);
-    console.log(`${"=".repeat(60)}\n`);
+	// Main loop
+	for (let cycle = 1; cycle <= CONFIG.maxCycles; cycle++) {
+		console.log(`\n${"=".repeat(60)}`);
+		console.log(`🔄 CYCLE ${cycle}/${CONFIG.maxCycles}`);
+		console.log(`${"=".repeat(60)}\n`);
 
-    const cycleStart = new Date();
-    const errorsBefore = await getErrorCount();
+		const cycleStart = new Date();
+		const errorsBefore = await getErrorCount();
 
-    // Generate handoff prompt
-    const prompt = generateHandoffPrompt(state);
-    state.lastHandoff = prompt;
+		// Generate handoff prompt
+		const prompt = generateHandoffPrompt(state);
+		state.lastHandoff = prompt;
 
-    // Run Claude Code
-    const result = await runClaudeCodeCycle(prompt, cycle);
+		// Run Claude Code
+		const result = await runClaudeCodeCycle(prompt, cycle);
 
-    // Get results
-    const errorsAfter = await getErrorCount();
-    const topFiles = await getTopErrorFiles(10);
-    const commits = await getRecentCommits(3);
+		// Get results
+		const errorsAfter = await getErrorCount();
+		const topFiles = await getTopErrorFiles(10);
+		const commits = await getRecentCommits(3);
 
-    // Create cycle report
-    const report: CycleReport = {
-      cycle,
-      startTime: cycleStart.toISOString(),
-      endTime: new Date().toISOString(),
-      errorsBefore,
-      errorsAfter,
-      errorsFixed: errorsBefore - errorsAfter,
-      percentReduction: ((errorsBefore - errorsAfter) / errorsBefore) * 100,
-      filesFixed: topFiles.slice(0, 10),
-      commits,
-      status: result.success ? (errorsAfter < errorsBefore ? "success" : "partial") : "error",
-      notes: result.success ? "" : result.output.slice(0, 500),
-    };
+		// Create cycle report
+		const report: CycleReport = {
+			cycle,
+			startTime: cycleStart.toISOString(),
+			endTime: new Date().toISOString(),
+			errorsBefore,
+			errorsAfter,
+			errorsFixed: errorsBefore - errorsAfter,
+			percentReduction: ((errorsBefore - errorsAfter) / errorsBefore) * 100,
+			filesFixed: topFiles.slice(0, 10),
+			commits,
+			status: result.success
+				? errorsAfter < errorsBefore
+					? "success"
+					: "partial"
+				: "error",
+			notes: result.success ? "" : result.output.slice(0, 500),
+		};
 
-    state.reports.push(report);
-    state.currentErrors = errorsAfter;
-    state.totalCycles = cycle;
-    state.totalErrorsFixed = state.initialErrors - errorsAfter;
-    state.totalPercentReduction = ((state.initialErrors - errorsAfter) / state.initialErrors) * 100;
+		state.reports.push(report);
+		state.currentErrors = errorsAfter;
+		state.totalCycles = cycle;
+		state.totalErrorsFixed = state.initialErrors - errorsAfter;
+		state.totalPercentReduction =
+			((state.initialErrors - errorsAfter) / state.initialErrors) * 100;
 
-    // Log cycle results
-    console.log(`\n📈 Cycle ${cycle} Results:`);
-    console.log(`   Errors: ${errorsBefore} → ${errorsAfter} (-${report.errorsFixed})`);
-    console.log(`   Status: ${report.status}`);
-    console.log(`   Total Progress: ${state.totalPercentReduction.toFixed(1)}% reduced`);
+		// Log cycle results
+		console.log(`\n📈 Cycle ${cycle} Results:`);
+		console.log(
+			`   Errors: ${errorsBefore} → ${errorsAfter} (-${report.errorsFixed})`,
+		);
+		console.log(`   Status: ${report.status}`);
+		console.log(
+			`   Total Progress: ${state.totalPercentReduction.toFixed(1)}% reduced`,
+		);
 
-    // Save report
-    saveReport(state);
+		// Save report
+		saveReport(state);
 
-    // Commit progress report
-    await commitProgress(`📊 chore: TypeScript error fix report (cycle ${cycle}, ${errorsAfter} errors remaining)`);
+		// Commit progress report
+		await commitProgress(
+			`📊 chore: TypeScript error fix report (cycle ${cycle}, ${errorsAfter} errors remaining)`,
+		);
 
-    // Check if we're done
-    if (errorsAfter === 0) {
-      console.log("\n🎉 All TypeScript errors fixed!");
-      break;
-    }
+		// Check if we're done
+		if (errorsAfter === 0) {
+			console.log("\n🎉 All TypeScript errors fixed!");
+			break;
+		}
 
-    // Check if we're making progress
-    if (report.errorsFixed <= 0 && cycle > 1) {
-      console.log("\n⚠️ No progress made this cycle. Consider manual intervention.");
-      // Continue anyway - might just need a different approach
-    }
+		// Check if we're making progress
+		if (report.errorsFixed <= 0 && cycle > 1) {
+			console.log(
+				"\n⚠️ No progress made this cycle. Consider manual intervention.",
+			);
+			// Continue anyway - might just need a different approach
+		}
 
-    // Small delay between cycles
-    console.log("\n⏳ Waiting 5 seconds before next cycle...");
-    await new Promise(resolve => setTimeout(resolve, 5000));
-  }
+		// Small delay between cycles
+		console.log("\n⏳ Waiting 5 seconds before next cycle...");
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+	}
 
-  // Final summary
-  console.log(`\n${"=".repeat(60)}`);
-  console.log("📋 FINAL SUMMARY");
-  console.log(`${"=".repeat(60)}`);
-  console.log(`   Initial Errors: ${state.initialErrors}`);
-  console.log(`   Final Errors: ${state.currentErrors}`);
-  console.log(`   Total Fixed: ${state.totalErrorsFixed}`);
-  console.log(`   Reduction: ${state.totalPercentReduction.toFixed(1)}%`);
-  console.log(`   Cycles: ${state.totalCycles}`);
-  console.log(`\n   Reports saved to: ${CONFIG.reportsDir}/`);
+	// Final summary
+	console.log(`\n${"=".repeat(60)}`);
+	console.log("📋 FINAL SUMMARY");
+	console.log(`${"=".repeat(60)}`);
+	console.log(`   Initial Errors: ${state.initialErrors}`);
+	console.log(`   Final Errors: ${state.currentErrors}`);
+	console.log(`   Total Fixed: ${state.totalErrorsFixed}`);
+	console.log(`   Reduction: ${state.totalPercentReduction.toFixed(1)}%`);
+	console.log(`   Cycles: ${state.totalCycles}`);
+	console.log(`\n   Reports saved to: ${CONFIG.reportsDir}/`);
 }
 
 // Run

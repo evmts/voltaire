@@ -5,38 +5,38 @@
 import type { TaskConfig, SessionState } from "../index.ts";
 
 async function runCommand(cmd: string): Promise<string> {
-  const proc = Bun.spawn(["sh", "-c", cmd], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  await proc.exited;
-  return new Response(proc.stdout).text();
+	const proc = Bun.spawn(["sh", "-c", cmd], {
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	await proc.exited;
+	return new Response(proc.stdout).text();
 }
 
 const config: TaskConfig = {
-  id: "fix-typescript-errors",
-  name: "Fix TypeScript Errors",
-  reportsDir: "reports/typescript-fixes",
-  maxBudgetPerCycle: 2.0,
-  targetValue: 0,
+	id: "fix-typescript-errors",
+	name: "Fix TypeScript Errors",
+	reportsDir: "reports/typescript-fixes",
+	maxBudgetPerCycle: 2.0,
+	targetValue: 0,
 
-  async checkState() {
-    try {
-      const result = await runCommand(
-        'bun run tsc --noEmit 2>&1 | grep -c "error TS" || echo "0"'
-      );
-      const count = parseInt(result.trim()) || 0;
-      return {
-        value: count,
-        status: count === 0 ? "No errors" : `${count} errors`,
-      };
-    } catch {
-      return { value: 0, status: "Check failed" };
-    }
-  },
+	async checkState() {
+		try {
+			const result = await runCommand(
+				'bun run tsc --noEmit 2>&1 | grep -c "error TS" || echo "0"',
+			);
+			const count = parseInt(result.trim()) || 0;
+			return {
+				value: count,
+				status: count === 0 ? "No errors" : `${count} errors`,
+			};
+		} catch {
+			return { value: 0, status: "Check failed" };
+		}
+	},
 
-  generatePrompt(state: SessionState) {
-    return `<handoff>
+	generatePrompt(state: SessionState) {
+		return `<handoff>
   <metadata>
     <task>Fix TypeScript Errors</task>
     <repository>voltaire</repository>
@@ -79,7 +79,7 @@ const config: TaskConfig = {
 </handoff>
 
 Fix TypeScript errors. Start by checking current count and top error files, then fix systematically. Commit progress regularly.`;
-  },
+	},
 };
 
 export default config;

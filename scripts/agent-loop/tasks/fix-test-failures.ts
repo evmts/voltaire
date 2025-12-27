@@ -8,64 +8,65 @@
 import type { TaskConfig, SessionState } from "../index.ts";
 
 async function runCommand(cmd: string): Promise<string> {
-  const proc = Bun.spawn(["sh", "-c", cmd], {
-    stdout: "pipe",
-    stderr: "pipe",
-    cwd: process.cwd(),
-  });
-  await proc.exited;
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  return stdout + stderr;
+	const proc = Bun.spawn(["sh", "-c", cmd], {
+		stdout: "pipe",
+		stderr: "pipe",
+		cwd: process.cwd(),
+	});
+	await proc.exited;
+	const stdout = await new Response(proc.stdout).text();
+	const stderr = await new Response(proc.stderr).text();
+	return stdout + stderr;
 }
 
 const config: TaskConfig = {
-  id: "fix-test-failures",
-  name: "Fix Test Failures",
-  reportsDir: "reports/test-fixes",
-  maxBudgetPerCycle: 3.0, // Tests need more budget (running tests is expensive)
-  targetValue: 0,
+	id: "fix-test-failures",
+	name: "Fix Test Failures",
+	reportsDir: "reports/test-fixes",
+	maxBudgetPerCycle: 3.0, // Tests need more budget (running tests is expensive)
+	targetValue: 0,
 
-  async checkState() {
-    try {
-      // Run tests and extract failure count (no timeout on macOS)
-      // Strip ANSI codes for reliable parsing
-      const result = await runCommand(
-        'bun run test:run 2>&1 | tail -30 | sed "s/\\x1b\\[[0-9;]*m//g" || true'
-      );
+	async checkState() {
+		try {
+			// Run tests and extract failure count (no timeout on macOS)
+			// Strip ANSI codes for reliable parsing
+			const result = await runCommand(
+				'bun run test:run 2>&1 | tail -30 | sed "s/\\x1b\\[[0-9;]*m//g" || true',
+			);
 
-      // Parse vitest output: "Tests  X failed | Y passed"
-      // Handle various spacing from stripped ANSI
-      const failMatch = result.match(/Tests\s+(\d+)\s+failed/);
-      const failCount = failMatch ? parseInt(failMatch[1]) : 0;
+			// Parse vitest output: "Tests  X failed | Y passed"
+			// Handle various spacing from stripped ANSI
+			const failMatch = result.match(/Tests\s+(\d+)\s+failed/);
+			const failCount = failMatch ? parseInt(failMatch[1]) : 0;
 
-      // Also check for file-level failures
-      const fileFailMatch = result.match(/Test Files\s+(\d+)\s+failed/);
-      const fileFailCount = fileFailMatch ? parseInt(fileFailMatch[1]) : 0;
+			// Also check for file-level failures
+			const fileFailMatch = result.match(/Test Files\s+(\d+)\s+failed/);
+			const fileFailCount = fileFailMatch ? parseInt(fileFailMatch[1]) : 0;
 
-      // Get details
-      const details: string[] = [];
-      if (fileFailCount > 0) details.push(`${fileFailCount} test files failed`);
-      if (failCount > 0) details.push(`${failCount} individual tests failed`);
+			// Get details
+			const details: string[] = [];
+			if (fileFailCount > 0) details.push(`${fileFailCount} test files failed`);
+			if (failCount > 0) details.push(`${failCount} individual tests failed`);
 
-      return {
-        value: failCount || fileFailCount,
-        status: failCount === 0 && fileFailCount === 0
-          ? "All tests passing"
-          : `${failCount} test failures in ${fileFailCount} files`,
-        details,
-      };
-    } catch (e) {
-      return {
-        value: 999,
-        status: "Failed to run tests",
-        details: [String(e)],
-      };
-    }
-  },
+			return {
+				value: failCount || fileFailCount,
+				status:
+					failCount === 0 && fileFailCount === 0
+						? "All tests passing"
+						: `${failCount} test failures in ${fileFailCount} files`,
+				details,
+			};
+		} catch (e) {
+			return {
+				value: 999,
+				status: "Failed to run tests",
+				details: [String(e)],
+			};
+		}
+	},
 
-  generatePrompt(state: SessionState) {
-    return `<handoff>
+	generatePrompt(state: SessionState) {
+		return `<handoff>
   <metadata>
     <task>Fix Test Failures (Issue #33)</task>
     <repository>voltaire</repository>
@@ -155,7 +156,7 @@ const config: TaskConfig = {
 </handoff>
 
 Fix test failures systematically. Start by running tests to see current state, identify patterns in failures, then fix root causes. Commit progress after each significant fix.`;
-  },
+	},
 };
 
 export default config;
