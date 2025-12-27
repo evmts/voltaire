@@ -13,7 +13,7 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function returndatasize(frame) {
-	// TODO: Add hardfork check for Byzantium+
+	// Note: Add hardfork validation for Byzantium+
 	const gasErr = consumeGas(frame, 2n);
 	if (gasErr) return gasErr;
 

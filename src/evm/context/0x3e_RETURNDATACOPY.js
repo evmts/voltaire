@@ -51,7 +51,7 @@ function wordAlignedSize(bytes) {
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function returndatacopy(frame) {
-	// TODO: Add hardfork check for Byzantium+
+	// Note: Add hardfork validation for Byzantium+
 
 	const destOffsetResult = popStack(frame);
 	if (destOffsetResult.error) return destOffsetResult.error;

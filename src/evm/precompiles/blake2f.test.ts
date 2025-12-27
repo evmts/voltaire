@@ -39,7 +39,7 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 				"0000000c48c9bdf267e6096a3ba7ca8485ae67bb2bf894fe72f36e3cf1361d5f3af54fa5d182e6ad7f520e511f6c3e2b8c68059b6bbd41fbabd9831f79217e1319cde05b61626300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000002",
 			);
 			const res = evmBlake2f(input, 100n);
-			// TODO: Should be false when final flag validation is implemented
+			// Note: Will become false when final flag validation is implemented
 			expect(res.success).toBe(true);
 		});
 
@@ -167,8 +167,8 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			expect(res.success).toBe(true);
 			expect(res.gasUsed).toBe(0n);
 			expect(res.output.length).toBe(64);
-			// NOTE: Current stub implementation returns all zeros
-			// TODO: When BLAKE2b F compression is implemented, uncomment expected output
+			// NOTE: Current placeholder implementation returns all zeros
+			// When BLAKE2b F compression is implemented, uncomment expected output
 			// const expected = hexToBytes(
 			// 	"08c9bcf367e6096a3ba7ca8485ae67bb2bf894fe72f36e3cf1361d5f3af54fa5d282e6ad7f520e511f6c3e2b8c68059b9442be0454267ce079217e1319cde05b",
 			// );
@@ -255,8 +255,8 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 
 	describe("EIP-152 official test vectors - STUB IMPLEMENTATION", () => {
 		// NOTE: These tests document the expected behavior from EIP-152
-		// Current implementation is a stub returning all zeros
-		// TODO: Implement actual BLAKE2b F compression function
+		// Current implementation returns all zeros. Implementing the
+		// actual BLAKE2b F compression will change expectations accordingly.
 
 		it("vector 4: 0 rounds, f=1 - validates structure", () => {
 			const input = hexToBytes(

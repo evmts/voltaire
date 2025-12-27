@@ -74,7 +74,10 @@ export function codecopy(frame) {
 		const srcAddResult = addU32(srcOff, i);
 		if (srcAddResult.error) return srcAddResult.error;
 		const srcIdx = srcAddResult.value;
-		const byte = srcIdx < frame.bytecode.length ? /** @type {number} */ (frame.bytecode[srcIdx]) : 0;
+		const byte =
+			srcIdx < frame.bytecode.length
+				? /** @type {number} */ (frame.bytecode[srcIdx])
+				: 0;
 
 		const destAddResult = addU32(destOff, i);
 		if (destAddResult.error) return destAddResult.error;

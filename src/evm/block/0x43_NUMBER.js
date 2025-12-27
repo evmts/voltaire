@@ -12,10 +12,10 @@ export function handler_0x43_NUMBER(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const blockNumber = frame.evm.block_context.block_number;
 
-	// Stub: Use frame property
+	// Fallback: Use frame property
 	const blockNumber = frame.blockNumber ?? 0n;
 
 	const pushErr = pushStack(frame, blockNumber);

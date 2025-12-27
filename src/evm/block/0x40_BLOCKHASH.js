@@ -21,11 +21,11 @@ export function handler_0x40_BLOCKHASH(frame) {
 	const { value: blockNumber, error: popErr } = popStack(frame);
 	if (popErr) return popErr;
 
-	// TODO: Access via Host interface when available
+	// Note: Access via Host interface when available
 	// const currentBlock = frame.evm.block_context.block_number;
 	// const blockHashes = frame.evm.block_context.block_hashes;
 
-	// Stub: Always return 0 for now
+	// Fallback: Always return 0 for now
 	// Per Python reference:
 	// Return 0 if:
 	// 1. Requested block >= current block

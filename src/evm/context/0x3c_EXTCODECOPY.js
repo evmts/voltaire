@@ -102,7 +102,8 @@ export function extcodecopy(frame, host) {
 		const dstIdx = destAddResult.value;
 
 		const srcIdx = off + i;
-		const byte = srcIdx < code.length ? /** @type {number} */ (code[srcIdx]) : 0;
+		const byte =
+			srcIdx < code.length ? /** @type {number} */ (code[srcIdx]) : 0;
 		writeMemory(frame, dstIdx, byte);
 	}
 

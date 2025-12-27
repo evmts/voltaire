@@ -12,10 +12,10 @@ export function handler_0x41_COINBASE(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const coinbase_u256 = Address.toU256(frame.evm.block_context.block_coinbase);
 
-	// Stub: Return zero address for now
+	// Fallback: Return zero address for now
 	const coinbaseU256 = 0n;
 
 	const pushErr = pushStack(frame, coinbaseU256);

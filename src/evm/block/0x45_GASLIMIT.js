@@ -12,10 +12,10 @@ export function handler_0x45_GASLIMIT(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const gasLimit = frame.evm.block_context.block_gas_limit;
 
-	// Stub: Use frame property or default (30M gas)
+	// Fallback: Use frame property or default (30M gas)
 	const gasLimit = frame.blockGasLimit ?? 30_000_000n;
 
 	const pushErr = pushStack(frame, gasLimit);

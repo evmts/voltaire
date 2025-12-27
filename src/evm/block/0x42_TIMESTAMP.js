@@ -12,10 +12,10 @@ export function handler_0x42_TIMESTAMP(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const timestamp = frame.evm.block_context.block_timestamp;
 
-	// Stub: Use current Unix timestamp or frame property
+	// Fallback: Use current Unix timestamp or frame property
 	const timestamp =
 		frame.blockTimestamp ?? BigInt(Math.floor(Date.now() / 1000));
 

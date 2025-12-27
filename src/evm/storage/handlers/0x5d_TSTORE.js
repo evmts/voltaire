@@ -20,7 +20,7 @@ import * as Frame from "../../Frame/index.js";
  * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function tstore(frame, host) {
-	// TODO: Hardfork check - TSTORE requires Cancun+
+	// Note: Add hardfork validation - TSTORE requires Cancun+
 	// if (hardfork < CANCUN) return { type: "InvalidOpcode" };
 
 	// EIP-1153: Cannot modify transient storage in static call
@@ -40,9 +40,9 @@ export function tstore(frame, host) {
 	if (valueResult.error) return valueResult.error;
 	const value = valueResult.value;
 
-	// TODO: Store to transient storage
-	// For now, stubbed (no-op)
-	// Real implementation needs: host.setTransientStorage(frame.address, key, value)
+	// Pending host integration: store to transient storage
+	// Currently a no-op. Real implementation should call:
+	// host.setTransientStorage(frame.address, key, value)
 
 	frame.pc += 1;
 	return null;

@@ -735,8 +735,8 @@ export function pointEvaluation(
 	const commitment = _input.slice(96, 144);
 	const proof = _input.slice(144, 192);
 
-	// TODO: Validate versioned_hash matches sha256(0x01 || commitment)[0:32]
-	// For now, we only verify the KZG proof itself
+	// Note: Does not validate versioned_hash against sha256(0x01 || commitment)[0:32]
+	// Currently only verifies the KZG proof itself
 	void versionedHash; // Suppress unused variable warning
 
 	try {

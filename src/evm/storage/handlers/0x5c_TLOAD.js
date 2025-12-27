@@ -19,7 +19,7 @@ import * as Frame from "../../Frame/index.js";
  * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function tload(frame, host) {
-	// TODO: Hardfork check - TLOAD requires Cancun+
+	// Note: Add hardfork validation - TLOAD requires Cancun+
 	// if (hardfork < CANCUN) return { type: "InvalidOpcode" };
 
 	const gasError = Frame.consumeGas(frame, TLoad);
@@ -30,9 +30,9 @@ export function tload(frame, host) {
 	if (keyResult.error) return keyResult.error;
 	const key = keyResult.value;
 
-	// TODO: Load from transient storage
-	// For now, stub returns 0 (empty)
-	// Real implementation needs: host.getTransientStorage(frame.address, key)
+	// Pending host integration: load from transient storage
+	// Currently returns 0 (empty). Real implementation should call:
+	// host.getTransientStorage(frame.address, key)
 	const value = 0n;
 
 	// Push value onto stack

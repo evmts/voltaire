@@ -92,7 +92,8 @@ export function sha3(frame) {
 	// Convert hash bytes to bigint (big-endian)
 	let hashValue = 0n;
 	for (let i = 0; i < 32; i++) {
-		hashValue = (hashValue << 8n) | BigInt(/** @type {number} */ (hashBytes[i]));
+		hashValue =
+			(hashValue << 8n) | BigInt(/** @type {number} */ (hashBytes[i]));
 	}
 
 	// Push hash result onto stack

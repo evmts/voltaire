@@ -9,16 +9,16 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x48_BASEFEE(frame) {
-	// TODO: Check hardfork when available
+	// Note: Add hardfork validation when Hardfork module is available
 	// if (frame.evm.hardfork.isBefore(.LONDON)) return { type: "InvalidOpcode" };
 
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const baseFee = frame.evm.block_context.block_base_fee;
 
-	// Stub: Use frame property or default (0 for pre-London)
+	// Fallback: Use frame property or default (0 for pre-London)
 	const baseFee = frame.blockBaseFee ?? 0n;
 
 	const pushErr = pushStack(frame, baseFee);

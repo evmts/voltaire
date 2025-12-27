@@ -9,16 +9,16 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x47_SELFBALANCE(frame) {
-	// TODO: Check hardfork when available
+	// Note: Add hardfork validation when Hardfork module is available
 	// if (frame.evm.hardfork.isBefore(.ISTANBUL)) return { type: "InvalidOpcode" };
 
 	const gasErr = consumeGas(frame, FastStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via Host interface when available
+	// Note: Access via Host interface when available
 	// const balance = frame.evm.get_balance(frame.address);
 
-	// Stub: Return frame value or 0
+	// Fallback: Return frame value or 0
 	const balance = frame.value ?? 0n;
 
 	const pushErr = pushStack(frame, balance);

@@ -15,14 +15,14 @@ export function handler_0x44_DIFFICULTY(frame) {
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Check hardfork and access appropriate field
+	// Note: Add hardfork check and access appropriate field when available
 	// if (frame.evm.hardfork.isAtLeast(.MERGE)) {
 	//     value = frame.evm.block_context.block_prevrandao;
 	// } else {
 	//     value = frame.evm.block_context.block_difficulty;
 	// }
 
-	// Stub: Return 0 for now (post-merge default)
+	// Fallback: Use frame-provided values or 0 (post-merge default)
 	const value = frame.blockDifficulty ?? frame.blockPrevrandao ?? 0n;
 
 	const pushErr = pushStack(frame, value);

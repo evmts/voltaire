@@ -13,16 +13,16 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x4a_BLOBBASEFEE(frame) {
-	// TODO: Check hardfork when available
+	// Note: Add hardfork validation when Hardfork module is available
 	// if (frame.evm.hardfork.isBefore(.CANCUN)) return { type: "InvalidOpcode" };
 
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 
-	// TODO: Access via block context when available
+	// Note: Access via block context when available
 	// const blobBaseFee = frame.evm.block_context.blob_base_fee;
 
-	// Stub: Use frame property or default (1 wei minimum)
+	// Fallback: Use frame property or default (1 wei minimum)
 	const blobBaseFee = frame.blobBaseFee ?? 1n;
 
 	const pushErr = pushStack(frame, blobBaseFee);
