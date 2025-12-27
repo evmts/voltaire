@@ -1,0 +1,20 @@
+---
+title: Hex (Swift)
+description: Encode and decode hex strings
+---
+
+# Hex
+
+Simple hex encoding/decoding utilities.
+
+## Quick Start
+
+```swift
+import Voltaire
+
+let bytes: [UInt8] = [0xde, 0xad, 0xbe, 0xef]
+let hex = Hex.encode(bytes) // "0xdeadbeef"
+let roundtrip = try Hex.decode(hex)
+XCTAssertEqual(roundtrip, bytes)
+```
+

@@ -1,0 +1,67 @@
+---
+title: Getting Started (Swift)
+description: Install and use the Voltaire Swift package
+---
+
+# Getting Started (Swift)
+
+Use Voltaire's Swift wrappers to access Ethereum primitives from iOS and macOS.
+
+## Prerequisites
+
+- macOS 12+ / iOS 15+
+- Swift 5.9+
+- Zig 0.15+ (builds the native library)
+
+## Build
+
+From the repository root:
+
+```bash
+zig build build-ts-native
+cd swift
+swift build
+swift test
+```
+
+## Add to Your App
+
+Use the `swift` directory as a SwiftPM package in Xcode or add as a local dependency.
+
+```swift
+// Package.swift (example)
+dependencies: [
+  .package(path: "../voltaire/swift")
+],
+targets: [
+  .target(name: "YourApp", dependencies: [
+    .product(name: "Voltaire", package: "swift")
+  ])
+]
+```
+
+## Usage
+
+```swift
+import Voltaire
+
+// Address
+let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+print(addr.checksumHex)
+
+// Keccak-256
+let h = Keccak256.hash("hello world")
+print(h.hex)
+
+// U256
+let v = try U256(hex: "0x01")
+print(v.hex) // 0x00..01
+
+// Signature parsing and normalization
+let r = [UInt8](repeating: 0, count: 31) + [0x01]
+let s = [UInt8](repeating: 0, count: 31) + [0x02]
+let sig = try Signature(compact: r + s)
+print(sig.isCanonical)
+let compact = sig.normalized().serialize(includeV: false)
+```
+
