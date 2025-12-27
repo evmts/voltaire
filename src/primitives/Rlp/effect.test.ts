@@ -8,6 +8,6 @@ describe('Rlp Effect Schema', () => {
     const enc = r.encode()
     expect(enc).toBeInstanceOf(Uint8Array)
     const dec = RlpSchema.decode(enc)
-    expect(dec.encode()).toStrictEqual(enc)
+    expect(dec.toRaw()).toStrictEqual(r.toRaw())
   })
 })

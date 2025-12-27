@@ -24,8 +24,14 @@ export class RlpSchema extends Schema.Class<RlpSchema>('Rlp')({
     return new RlpSchema({ value: r })
   }
 
-  encode(): Uint8Array { return RlpImpl.encode(this.rlp) }
-  static decode(bytes: Uint8Array): RlpSchema { return new RlpSchema({ value: RlpImpl.decode(bytes) }) }
+  encode(): Uint8Array {
+    const v:any = this.rlp as any
+    if (RlpImpl.isData(v)) return RlpImpl.encode(v)
+    if (v instanceof Uint8Array) return RlpImpl.encodeBytes(v)
+    if (Array.isArray(v)) return RlpImpl.encodeList(v as any)
+    return RlpImpl.encode(v as any)
+  }
+  static decode(bytes: Uint8Array): RlpSchema { const d = RlpImpl.decode(bytes) as any; return new RlpSchema({ value: d.data }) }
   equals(other: RlpSchema | BrandedRlp): boolean {
     const rhs = other instanceof RlpSchema ? other.rlp : other
     return RlpImpl.equals(this.rlp, rhs)
