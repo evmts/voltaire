@@ -48,3 +48,4 @@ export * as HDWallet from "./HDWallet/index.js";
 export * as Keystore from "./Keystore/index.js";
 export { P256 } from "./P256/index.js";
 export { X25519 } from "./X25519/X25519.js";
+export { ModExp } from "./ModExp/index.js";

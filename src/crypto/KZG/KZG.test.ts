@@ -337,15 +337,74 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		});
 	});
 
+	describe("Compute Blob KZG Proof", () => {
+		it("should compute blob proof given commitment", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+			const proof = KZG.computeBlobKzgProof(blob, commitment);
+
+			expect(proof).toBeInstanceOf(Uint8Array);
+			expect(proof.length).toBe(BYTES_PER_PROOF);
+		});
+
+		it("should be deterministic - same blob produces same proof", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+
+			const proof1 = KZG.computeBlobKzgProof(blob, commitment);
+			const proof2 = KZG.computeBlobKzgProof(blob, commitment);
+
+			expect(proof1).toEqual(proof2);
+		});
+
+		it("should work with BlobProof constructor alias", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+
+			const proof1 = KZG.computeBlobKzgProof(blob, commitment);
+			const proof2 = KZG.BlobProof(blob, commitment);
+
+			expect(proof1).toEqual(proof2);
+		});
+
+		it("should reject invalid commitment size", () => {
+			const blob = KZG.generateRandomBlob();
+			const wrongCommitment = new Uint8Array(32);
+
+			expect(() => KZG.computeBlobKzgProof(blob, wrongCommitment)).toThrow(
+				KzgError,
+			);
+		});
+
+		it("should reject non-Uint8Array commitment", () => {
+			const blob = KZG.generateRandomBlob();
+
+			expect(() => KZG.computeBlobKzgProof(blob, null as any)).toThrow(
+				KzgError,
+			);
+			expect(() => KZG.computeBlobKzgProof(blob, "invalid" as any)).toThrow(
+				KzgError,
+			);
+		});
+
+		it("should reject invalid blob size", () => {
+			const wrongBlob = new Uint8Array(1000);
+			const commitment = new Uint8Array(48);
+
+			expect(() => KZG.computeBlobKzgProof(wrongBlob, commitment)).toThrow(
+				KzgInvalidBlobError,
+			);
+		});
+	});
+
 	describe("Verify Blob KZG Proof", () => {
 		it("should verify valid blob proof", () => {
 			const blob = KZG.generateRandomBlob();
 			const commitment = KZG.Commitment(blob);
+			const proof = KZG.computeBlobKzgProof(blob, commitment);
 
-			// Note: verifyBlobKzgProof uses a specialized proof format
-			// These tests would require proper blob proof generation
-			// For now, we test basic structure validation
-			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
+			const isValid = KZG.verifyBlobKzgProof(blob, commitment, proof);
+			expect(isValid).toBe(true);
 		});
 
 		it("should reject blob with wrong commitment", () => {
@@ -354,9 +413,26 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 
 			const commitment1 = KZG.Commitment(blob1);
 			const wrongCommitment = KZG.Commitment(blob2);
+			const proof = KZG.computeBlobKzgProof(blob1, commitment1);
 
-			// Verify commitments are different
-			expect(commitment1).not.toEqual(wrongCommitment);
+			// Verify with wrong commitment should fail
+			const isValid = KZG.verifyBlobKzgProof(blob1, wrongCommitment, proof);
+			expect(isValid).toBe(false);
+		});
+
+		it("should reject corrupted proof", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+			const proof = KZG.computeBlobKzgProof(blob, commitment);
+
+			// Corrupt the proof
+			const corruptedProof = new Uint8Array(proof);
+			if (corruptedProof[0] !== undefined) {
+				corruptedProof[0] ^= 1;
+			}
+
+			const isValid = KZG.verifyBlobKzgProof(blob, commitment, corruptedProof);
+			expect(isValid).toBe(false);
 		});
 
 		it("should reject invalid blob size", () => {

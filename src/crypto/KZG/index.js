@@ -36,6 +36,7 @@ export * from "./KzgProofType.js";
 export {
 	BlobToKzgCommitment,
 	ComputeKzgProof,
+	ComputeBlobKzgProof,
 	VerifyKzgProof,
 	VerifyBlobKzgProof,
 	VerifyBlobKzgProofBatch,
@@ -51,6 +52,7 @@ export {
 	generateRandomBlob,
 	blobToKzgCommitment,
 	computeKzgProof,
+	computeBlobKzgProof,
 	verifyKzgProof,
 	verifyBlobKzgProof,
 	verifyBlobKzgProofBatch,

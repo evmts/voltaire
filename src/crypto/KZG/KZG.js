@@ -5,6 +5,7 @@ export * from "./constants.js";
 // Export factory functions
 export { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
 export { ComputeKzgProof } from "./computeKzgProof.js";
+export { ComputeBlobKzgProof } from "./computeBlobKzgProof.js";
 export { VerifyKzgProof } from "./verifyKzgProof.js";
 export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
 export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
@@ -30,6 +31,7 @@ export {
 import * as ckzg from "c-kzg";
 import { BlobToKzgCommitment as BlobToKzgCommitmentFactory } from "./blobToKzgCommitment.js";
 import { ComputeKzgProof as ComputeKzgProofFactory } from "./computeKzgProof.js";
+import { ComputeBlobKzgProof as ComputeBlobKzgProofFactory } from "./computeBlobKzgProof.js";
 import { VerifyBlobKzgProof as VerifyBlobKzgProofFactory } from "./verifyBlobKzgProof.js";
 import { VerifyBlobKzgProofBatch as VerifyBlobKzgProofBatchFactory } from "./verifyBlobKzgProofBatch.js";
 import { VerifyKzgProof as VerifyKzgProofFactory } from "./verifyKzgProof.js";
@@ -50,6 +52,15 @@ export const blobToKzgCommitment = BlobToKzgCommitmentFactory({
  */
 export const computeKzgProof = ComputeKzgProofFactory({
 	computeKzgProof: ckzg.computeKzgProof,
+});
+
+/**
+ * Compute blob KZG proof (with auto-injected c-kzg)
+ *
+ * For tree-shakeable version without auto-injected c-kzg, use `ComputeBlobKzgProof({ computeBlobKzgProof })` factory
+ */
+export const computeBlobKzgProof = ComputeBlobKzgProofFactory({
+	computeBlobKzgProof: ckzg.computeBlobKzgProof,
 });
 
 /**
@@ -114,9 +125,13 @@ KZG.generateRandomBlob = generateRandomBlob;
 KZG.Commitment = blobToKzgCommitment;
 KZG.Proof = computeKzgProof;
 
+// Constructor pattern aliases
+KZG.BlobProof = computeBlobKzgProof;
+
 // Legacy method names (deprecated)
 KZG.blobToKzgCommitment = blobToKzgCommitment;
 KZG.computeKzgProof = computeKzgProof;
+KZG.computeBlobKzgProof = computeBlobKzgProof;
 KZG.verifyKzgProof = verifyKzgProof;
 KZG.verifyBlobKzgProof = verifyBlobKzgProof;
 KZG.verifyBlobKzgProofBatch = verifyBlobKzgProofBatch;

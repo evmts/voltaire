@@ -5,13 +5,26 @@
  * Complete implementation of BLS12-381 pairing-friendly curve used in
  * Ethereum consensus layer (Beacon Chain) for BLS signatures.
  *
- * Includes G1, G2 point operations and pairing operations.
+ * Includes G1, G2 point operations, pairing operations, and high-level
+ * BLS signature functions (sign, verify, aggregate).
  *
  * @see https://voltaire.tevm.sh/crypto/bls12-381 for BLS12-381 documentation
  * @since 0.0.0
  * @example
  * ```javascript
  * import { Bls12381 } from './crypto/Bls12381/Bls12381.js';
+ *
+ * // BLS Signatures
+ * const privateKey = Bls12381.randomPrivateKey();
+ * const publicKey = Bls12381.derivePublicKey(privateKey);
+ * const message = new TextEncoder().encode('Hello, Ethereum!');
+ * const signature = Bls12381.sign(message, privateKey);
+ * const isValid = Bls12381.verify(signature, message, publicKey);
+ *
+ * // Signature Aggregation
+ * const sig1 = Bls12381.sign(message, pk1);
+ * const sig2 = Bls12381.sign(message, pk2);
+ * const aggSig = Bls12381.aggregate([sig1, sig2]);
  *
  * // G1 operations
  * const p1 = Bls12381.G1.generator();
@@ -41,12 +54,70 @@ import * as G1 from "./G1/index.js";
 import * as G2 from "./G2/index.js";
 import * as Pairing from "./Pairing/index.js";
 
+// High-level BLS signature operations
+import { sign, signPoint } from "./sign.js";
+import { verify, verifyPoint } from "./verify.js";
+import { aggregate, aggregatePublicKeys } from "./aggregate.js";
+import {
+	aggregateVerify,
+	batchVerify,
+	fastAggregateVerify,
+} from "./aggregateVerify.js";
+import { derivePublicKey, derivePublicKeyPoint } from "./derivePublicKey.js";
+import { randomPrivateKey, isValidPrivateKey } from "./randomPrivateKey.js";
+
 export { Fp, Fp2, Fr, G1, G2, Pairing };
+
+// Export high-level functions
+export {
+	sign,
+	signPoint,
+	verify,
+	verifyPoint,
+	aggregate,
+	aggregatePublicKeys,
+	aggregateVerify,
+	batchVerify,
+	fastAggregateVerify,
+	derivePublicKey,
+	derivePublicKeyPoint,
+	randomPrivateKey,
+	isValidPrivateKey,
+};
 
 /**
  * Bls12381 main export
+ *
+ * @example
+ * ```javascript
+ * import { Bls12381 } from './crypto/Bls12381/index.js';
+ *
+ * // Generate keypair
+ * const privateKey = Bls12381.randomPrivateKey();
+ * const publicKey = Bls12381.derivePublicKey(privateKey);
+ *
+ * // Sign and verify
+ * const message = new TextEncoder().encode('Hello');
+ * const signature = Bls12381.sign(message, privateKey);
+ * const isValid = Bls12381.verify(signature, message, publicKey);
+ * ```
  */
 export const Bls12381 = {
+	// High-level signature operations
+	sign,
+	signPoint,
+	verify,
+	verifyPoint,
+	aggregate,
+	aggregatePublicKeys,
+	aggregateVerify,
+	batchVerify,
+	fastAggregateVerify,
+	derivePublicKey,
+	derivePublicKeyPoint,
+	randomPrivateKey,
+	isValidPrivateKey,
+	// Low-level curve operations
 	Fp,
 	Fp2,
 	Fr,
