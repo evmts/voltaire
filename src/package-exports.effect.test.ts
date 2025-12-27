@@ -13,10 +13,10 @@ describe('package exports include Effect modules', () => {
       './Bytecode/effect',
       './Base64/effect',
       './Ens/effect',
+      './EventLog/effect',
     ]
     for (const key of required) {
       expect(exports).toContain(key)
     }
   })
 })
-
