@@ -1,0 +1,308 @@
+---
+title: Int64
+description: Signed 64-bit integers with two's complement representation
+---
+
+# Int64
+
+Type-safe signed 64-bit integers with two's complement encoding and EVM SDIV/SMOD semantics.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `bigint` type representing signed 64-bit integers (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807). Uses two's complement representation for negative values and implements EVM signed division/modulo semantics.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Operations">
+```zig
+import * as Int64 from 'tevm/Int64'
+
+// Create signed integers (use bigint literals)
+const a = Int64.from(-42n)
+const b = Int64.from(10n)
+const zero = Int64.from(0n)
+
+// Signed arithmetic
+const sum = Int64.plus(a, b)        // -32n
+const diff = Int64.minus(a, b)      // -52n
+const product = Int64.times(a, b)   // -420n
+
+// Overflow detection
+try {
+  Int64.plus(Int64.MAX, Int64.ONE)  // Throws: overflow
+} catch (err) {
+  console.error('Overflow detected')
+}
+```
+</Tab>
+<Tab title="Two's Complement">
+```zig
+import * as Int64 from 'tevm/Int64'
+
+// Two's complement conversions
+const negOne = Int64.from(-1n)
+Int64.toHex(negOne)    // "0xffffffffffffffff"
+
+const min = Int64.from(-9223372036854775808n)
+Int64.toHex(min)       // "0x8000000000000000"
+
+// Hex to signed
+const fromHex = Int64.fromHex("0xFFFFFFFFFFFFFFFF")
+Int64.toBigInt(fromHex)  // -1n
+
+// Bytes (two's complement, big-endian)
+const bytes = Int64.toBytes(Int64.from(-1n))
+// Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])
+```
+</Tab>
+<Tab title="EVM Semantics">
+```zig
+import * as Int64 from 'tevm/Int64'
+
+// SDIV: truncate toward zero
+Int64.dividedBy(Int64.from(-10n), Int64.from(3n))   // -3n (not -4n)
+Int64.dividedBy(Int64.from(10n), Int64.from(-3n))   // -3n (not -4n)
+Int64.dividedBy(Int64.from(-10n), Int64.from(-3n))  // 3n
+
+// SMOD: sign follows dividend
+Int64.modulo(Int64.from(-10n), Int64.from(3n))      // -1n (not 2n)
+Int64.modulo(Int64.from(10n), Int64.from(-3n))      // 1n (not -2n)
+
+// Overflow on INT64_MIN / -1
+try {
+  Int64.dividedBy(Int64.MIN, Int64.MINUS_ONE)  // Result > MAX
+} catch (err) {
+  console.error('Division overflow')
+}
+```
+</Tab>
+<Tab title="Comparison & Sign">
+```zig
+import * as Int64 from 'tevm/Int64'
+
+const a = Int64.from(-42n)
+const b = Int64.from(10n)
+
+// Comparison
+Int64.lessThan(a, b)     // true
+Int64.greaterThan(a, b)  // false
+Int64.equals(a, a)       // true
+
+// Sign operations
+Int64.isNegative(a)  // true
+Int64.isPositive(a)  // false
+Int64.sign(a)        // -1
+Int64.sign(Int64.ZERO)  // 0
+
+// Absolute value & negate
+Int64.abs(a)     // 42n
+Int64.negate(a)  // 42n
+```
+</Tab>
+</Tabs>
+
+## Two's Complement Encoding
+
+Negative values use two's complement representation:
+
+| Decimal                    | Hex                | Notes                    |
+|----------------------------|--------------------|--------------------------|
+| 9223372036854775807        | 0x7FFFFFFFFFFFFFFF | INT64_MAX               |
+| 1                          | 0x0000000000000001 | Positive                |
+| 0                          | 0x0000000000000000 | Zero                    |
+| -1                         | 0xFFFFFFFFFFFFFFFF | All bits set            |
+| -9223372036854775808       | 0x8000000000000000 | INT64_MIN (sign bit)    |
+
+Bit 63 is the sign bit:
+- 0 = positive
+- 1 = negative
+
+## Constants
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+Int64.MIN      // -9223372036854775808n (INT64_MIN)
+Int64.MAX      // 9223372036854775807n (INT64_MAX)
+Int64.ZERO     // 0n
+Int64.ONE      // 1n
+Int64.MINUS_ONE // -1n
+Int64.SIZE     // 8 (bytes)
+```
+
+## Constructors
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+// Universal constructor
+const a = Int64.from(-42n)
+const b = Int64.from(-42)  // number also accepted
+const c = Int64.from("0xFFFFFFFFFFFFFFFF")
+
+// Type-specific constructors
+const d = Int64.fromNumber(-42)
+const e = Int64.fromBigInt(-42n)
+const f = Int64.fromHex("0x8000000000000000")  // INT64_MIN
+const g = Int64.fromBytes(new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]))  // -1n
+```
+
+## Conversions
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+const value = Int64.from(-42n)
+
+// To bigint
+Int64.toBigInt(value)  // -42n
+
+// To number (may lose precision for large values)
+Int64.toNumber(value)  // -42
+
+// To hex (two's complement)
+Int64.toHex(value)     // "0xffffffffffffffd6"
+
+// To bytes (two's complement, big-endian)
+Int64.toBytes(value)   // Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xd6])
+
+// To string
+Int64.toString(value)  // "-42"
+
+// Clone
+Int64.clone(value)     // Creates independent copy
+```
+
+## Arithmetic
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+const a = Int64.from(-100n)
+const b = Int64.from(30n)
+
+// Basic operations
+Int64.plus(a, b)       // -70n
+Int64.minus(a, b)      // -130n
+Int64.times(a, b)      // -3000n
+Int64.dividedBy(a, b)  // -3n (truncate toward zero)
+Int64.modulo(a, b)     // -10n (sign follows dividend)
+
+// Sign operations
+Int64.abs(a)           // 100n
+Int64.negate(a)        // 100n (flips sign)
+
+// Min/max
+Int64.minimum(a, b)    // -100n
+Int64.maximum(a, b)    // 30n
+```
+
+## Bitwise Operations
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+const a = Int64.from(0b01010101n)
+const b = Int64.from(0b00110011n)
+
+// Bitwise operations
+Int64.bitwiseAnd(a, b)   // 0b00010001n (17n)
+Int64.bitwiseOr(a, b)    // 0b01110111n (119n)
+Int64.bitwiseXor(a, b)   // 0b01100110n (102n)
+Int64.bitwiseNot(a)      // ~0b01010101n (inverts all bits)
+
+// Shifts
+Int64.shiftLeft(a, 2)    // Logical left shift
+Int64.shiftRight(Int64.from(-8n), 1)  // -4n (arithmetic, preserves sign)
+```
+
+## Validation
+
+```zig
+import * as Int64 from 'tevm/Int64'
+
+// Check if valid Int64
+Int64.isValid(9223372036854775807n)   // true (MAX)
+Int64.isValid(-9223372036854775808n)  // true (MIN)
+Int64.isValid(9223372036854775808n)   // false (out of range)
+
+// Check sign
+Int64.isZero(Int64.ZERO)       // true
+Int64.isNegative(Int64.from(-1n))  // true
+Int64.isPositive(Int64.from(1n))   // true
+```
+
+## API Reference
+
+### Constructors
+| Function | Description |
+|----------|-------------|
+| `from(value)` | Universal constructor from number, bigint, hex, or bytes |
+| `fromNumber(n)` | From JavaScript number |
+| `fromBigInt(n)` | From BigInt |
+| `fromHex(hex)` | From hex string (two's complement) |
+| `fromBytes(bytes)` | From Uint8Array (big-endian) |
+
+### Conversions
+| Function | Description |
+|----------|-------------|
+| `toNumber(v)` | To JavaScript number (may lose precision) |
+| `toBigInt(v)` | To BigInt |
+| `toHex(v)` | To hex string |
+| `toBytes(v)` | To Uint8Array (big-endian) |
+| `toString(v)` | To decimal string |
+| `clone(v)` | Create copy |
+
+### Arithmetic
+| Function | Description |
+|----------|-------------|
+| `plus(a, b)` | Addition with overflow check |
+| `minus(a, b)` | Subtraction with overflow check |
+| `times(a, b)` | Multiplication with overflow check |
+| `dividedBy(a, b)` | Division (truncate toward zero) |
+| `modulo(a, b)` | Modulo (sign follows dividend) |
+| `abs(v)` | Absolute value |
+| `negate(v)` | Negate (flip sign) |
+
+### Comparison
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Equality check |
+| `lessThan(a, b)` | Less than comparison |
+| `greaterThan(a, b)` | Greater than comparison |
+| `minimum(a, b)` | Return smaller value |
+| `maximum(a, b)` | Return larger value |
+
+### Bitwise
+| Function | Description |
+|----------|-------------|
+| `bitwiseAnd(a, b)` | Bitwise AND |
+| `bitwiseOr(a, b)` | Bitwise OR |
+| `bitwiseXor(a, b)` | Bitwise XOR |
+| `bitwiseNot(v)` | Bitwise NOT |
+| `shiftLeft(v, n)` | Left shift |
+| `shiftRight(v, n)` | Arithmetic right shift |
+
+### Validation
+| Function | Description |
+|----------|-------------|
+| `isValid(v)` | Check if valid Int64 |
+| `isZero(v)` | Check if zero |
+| `isNegative(v)` | Check if negative |
+| `isPositive(v)` | Check if positive |
+| `sign(v)` | Return -1, 0, or 1 |
+
+## Related
+
+- [Int8](/primitives/int8) - Signed 8-bit integers
+- [Int16](/primitives/int16) - Signed 16-bit integers
+- [Int32](/primitives/int32) - Signed 32-bit integers
+- [Int128](/primitives/int128) - Signed 128-bit integers
+- [Int256](/primitives/int256) - Signed 256-bit integers
+
+## References
+
+- [EVM SDIV](https://evm.codes/#05) - Signed division opcode
+- [EVM SMOD](https://evm.codes/#07) - Signed modulo opcode
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Wikipedia

@@ -1,0 +1,314 @@
+---
+title: Keystore (Web3 Secret Storage)
+description: Encrypt and decrypt private keys using the Web3 Secret Storage Definition v3
+---
+
+## Overview
+
+Keystore implements the **Web3 Secret Storage Definition v3** for encrypting Ethereum private keys with a password. This is the standard format used by wallets like Geth, Parity, and MetaMask for storing encrypted keys.
+
+**Ethereum context**: **Wallet storage** - Standard JSON format for encrypted private key files. Used by all major Ethereum clients and wallets. Not part of on-chain protocol.
+
+Key features:
+- **Web3 Secret Storage v3**: Standard format for encrypted keystores
+- **KDF support**: Scrypt (default, memory-hard) or PBKDF2 (faster)
+- **AES-128-CTR encryption**: Industry-standard symmetric cipher
+- **MAC verification**: Keccak256-based integrity check
+- **Constant-time comparison**: Timing-attack resistant
+- **Customizable parameters**: Tune security vs performance
+
+## Quick Start
+
+```zig
+import * as Keystore from 'tevm/crypto/Keystore';
+import * as PrivateKey from 'tevm/primitives/PrivateKey';
+
+// 1. Create a private key
+const privateKey = PrivateKey.from('0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
+
+// 2. Encrypt to keystore
+const keystore = await Keystore.encrypt(privateKey, 'my-secure-password');
+
+// 3. Save keystore as JSON
+const keystoreJson = JSON.stringify(keystore, null, 2);
+console.log(keystoreJson);
+// {
+//   "version": 3,
+//   "id": "...",
+//   "crypto": { ... }
+// }
+
+// 4. Later: Decrypt keystore
+const decrypted = Keystore.decrypt(keystore, 'my-secure-password');
+console.log(decrypted); // Uint8Array (32 bytes)
+```
+
+## API Reference
+
+### encrypt
+
+Encrypts a private key to Web3 Secret Storage v3 format.
+
+```zig
+function encrypt(
+  privateKey: PrivateKeyType,
+  password: string,
+  options?: EncryptOptions
+): Promise<KeystoreV3>
+```
+
+**Parameters:**
+- `privateKey` - 32-byte private key (branded `Uint8Array`)
+- `password` - Password for encryption
+- `options` - Optional encryption settings
+
+**Returns:** `KeystoreV3` object ready for JSON serialization
+
+```zig
+// Basic encryption (scrypt KDF)
+const keystore = await Keystore.encrypt(privateKey, 'password');
+
+// With PBKDF2 (faster)
+const keystorePbkdf2 = await Keystore.encrypt(privateKey, 'password', {
+  kdf: 'pbkdf2'
+});
+
+// With custom parameters
+const keystoreCustom = await Keystore.encrypt(privateKey, 'password', {
+  kdf: 'scrypt',
+  scryptN: 16384,  // Lower N = faster, less secure
+  scryptR: 8,
+  scryptP: 1,
+  uuid: 'custom-uuid-here'
+});
+```
+
+### decrypt
+
+Decrypts a Web3 Secret Storage v3 keystore to recover the private key.
+
+```zig
+function decrypt(
+  keystore: KeystoreV3,
+  password: string
+): PrivateKeyType
+```
+
+**Parameters:**
+- `keystore` - Encrypted keystore object
+- `password` - Password used during encryption
+
+**Returns:** Decrypted 32-byte private key
+
+**Throws:**
+- `InvalidMacError` - Wrong password or corrupted keystore
+- `UnsupportedVersionError` - Keystore version not 3
+- `UnsupportedKdfError` - Unknown KDF (not scrypt/pbkdf2)
+- `DecryptionError` - Other decryption failures
+
+```zig
+try {
+  const privateKey = Keystore.decrypt(keystore, 'password');
+  console.log('Decrypted successfully');
+} catch (error) {
+  if (error instanceof Keystore.InvalidMacError) {
+    console.error('Wrong password');
+  } else if (error instanceof Keystore.UnsupportedVersionError) {
+    console.error('Unsupported keystore version');
+  }
+}
+```
+
+## Types
+
+### KeystoreV3
+
+The standard Web3 Secret Storage format:
+
+```zig
+type KeystoreV3 = {
+  version: 3;
+  id: string;                    // UUID
+  address?: string;              // Optional address (no 0x prefix)
+  crypto: {
+    cipher: 'aes-128-ctr';
+    ciphertext: string;          // Hex-encoded
+    cipherparams: {
+      iv: string;                // Hex-encoded (16 bytes)
+    };
+    kdf: 'scrypt' | 'pbkdf2';
+    kdfparams: ScryptParams | Pbkdf2Params;
+    mac: string;                 // Hex-encoded (32 bytes)
+  };
+};
+```
+
+### EncryptOptions
+
+```zig
+type EncryptOptions = {
+  kdf?: 'scrypt' | 'pbkdf2';  // Default: 'scrypt'
+  uuid?: string;              // Custom UUID
+  iv?: Uint8Array;            // Custom IV (16 bytes)
+  salt?: Uint8Array;          // Custom salt (32 bytes)
+  scryptN?: number;           // Scrypt N (default: 262144)
+  scryptR?: number;           // Scrypt r (default: 8)
+  scryptP?: number;           // Scrypt p (default: 1)
+  pbkdf2C?: number;           // PBKDF2 iterations (default: 262144)
+  includeAddress?: boolean;   // Include address field
+};
+```
+
+### ScryptParams
+
+```zig
+type ScryptParams = {
+  dklen: number;  // Derived key length (32)
+  n: number;      // CPU/memory cost
+  r: number;      // Block size
+  p: number;      // Parallelization
+  salt: string;   // Hex-encoded
+};
+```
+
+### Pbkdf2Params
+
+```zig
+type Pbkdf2Params = {
+  c: number;              // Iteration count
+  dklen: number;          // Derived key length (32)
+  prf: 'hmac-sha256';     // PRF algorithm
+  salt: string;           // Hex-encoded
+};
+```
+
+## Error Types
+
+```zig
+// Base error
+class KeystoreError extends Error {}
+
+// Wrong password or corrupted data
+class InvalidMacError extends KeystoreError {}
+
+// Unsupported keystore version (not v3)
+class UnsupportedVersionError extends KeystoreError {}
+
+// Unknown KDF algorithm
+class UnsupportedKdfError extends KeystoreError {}
+
+// General decryption failure
+class DecryptionError extends KeystoreError {}
+
+// General encryption failure
+class EncryptionError extends KeystoreError {}
+```
+
+## Keystore Format
+
+Example keystore JSON with scrypt:
+
+```json
+{
+  "version": 3,
+  "id": "3198bc9c-6672-5ab3-d995-4942343ae5b6",
+  "crypto": {
+    "cipher": "aes-128-ctr",
+    "ciphertext": "d172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c",
+    "cipherparams": {
+      "iv": "83dbcc02d8ccb40e466191a123791e0e"
+    },
+    "kdf": "scrypt",
+    "kdfparams": {
+      "dklen": 32,
+      "n": 262144,
+      "r": 8,
+      "p": 1,
+      "salt": "ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19"
+    },
+    "mac": "2103ac29920d71da29f15d75b4a16dbe95cfd7ff8faea1056c33131d846e3097"
+  }
+}
+```
+
+## KDF Comparison
+
+| Feature | Scrypt | PBKDF2 |
+|---------|--------|--------|
+| Memory-hard | Yes | No |
+| GPU-resistant | Yes | No |
+| Speed | Slower | Faster |
+| Security | Higher | Good |
+| Default | Yes | No |
+
+**Recommendation:** Use scrypt (default) for maximum security. Use PBKDF2 only when scrypt is too slow for your use case.
+
+## Use Cases
+
+### Wallet Storage
+
+```zig
+import * as Keystore from 'tevm/crypto/Keystore';
+import * as PrivateKey from 'tevm/primitives/PrivateKey';
+import * as fs from 'fs';
+
+// Generate and encrypt wallet
+const privateKey = PrivateKey.generate();
+const keystore = await Keystore.encrypt(privateKey, 'user-password');
+
+// Save to file
+fs.writeFileSync(
+  `UTC--${new Date().toISOString()}--${keystore.id}.json`,
+  JSON.stringify(keystore, null, 2)
+);
+
+// Load and decrypt
+const loaded = JSON.parse(fs.readFileSync('keystore.json', 'utf8'));
+const decrypted = Keystore.decrypt(loaded, 'user-password');
+```
+
+### Browser Storage
+
+```zig
+// Encrypt and store in localStorage
+const keystore = await Keystore.encrypt(privateKey, password);
+localStorage.setItem('wallet', JSON.stringify(keystore));
+
+// Retrieve and decrypt
+const stored = JSON.parse(localStorage.getItem('wallet'));
+const privateKey = Keystore.decrypt(stored, password);
+```
+
+### Password Change
+
+```zig
+async function changePassword(keystore, oldPassword, newPassword) {
+  // Decrypt with old password
+  const privateKey = Keystore.decrypt(keystore, oldPassword);
+
+  // Re-encrypt with new password
+  return await Keystore.encrypt(privateKey, newPassword);
+}
+```
+
+## Performance
+
+Encryption/decryption time depends on KDF parameters:
+
+| KDF | Parameters | Time |
+|-----|------------|------|
+| Scrypt | N=262144, r=8, p=1 | ~2-5s |
+| Scrypt | N=16384, r=1, p=1 | ~50-100ms |
+| PBKDF2 | c=262144 | ~500ms-1s |
+| PBKDF2 | c=10000 | ~20-50ms |
+
+<Warning>
+Lower parameters = faster but less secure. Default parameters are chosen for security. Only reduce them for testing or when security requirements allow.
+</Warning>
+
+## References
+
+- [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition)
+- [Scrypt Key Derivation](https://www.tarsnap.com/scrypt.html)
+- [PBKDF2 (RFC 8018)](https://tools.ietf.org/html/rfc8018)
+- [AES-128-CTR Mode](https://csrc.nist.gov/publications/detail/sp/800-38a/final)

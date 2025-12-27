@@ -1,0 +1,167 @@
+---
+title: Keccak256 Implementations
+description: Comparison and selection guide for Keccak256 implementation options
+---
+
+
+# Keccak256 Implementation Guide
+
+Tevm provides two Keccak256 implementations optimized for different deployment scenarios. All share the same data-first API, enabling transparent algorithm swapping.
+
+## Implementation Comparison
+
+| Implementation | Bundle Size | Init Required | Platform Support |
+|---------------|------------|---------------|-----------------|
+| **WASM (Default)** | Smaller than pure JS | Yes (async) | All modern browsers/runtimes |
+| **Pure TypeScript** | ~25KB (@noble) | No | Universal |
+
+## When to Use Each Implementation
+
+### WASM (Default)
+
+**Use when:**
+- Default choice for most applications
+- Better performance than pure JavaScript
+- Smaller bundle size than pure JavaScript alternatives
+
+**Characteristics:**
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+const hash = Keccak256.hash(data);
+// WASM implementation
+```
+
+- **Pros:** Better performance, smaller bundle
+- **Cons:** Async init required
+- **Bundle:** Smaller than @noble/hashes
+
+### Pure TypeScript
+
+**Use when:**
+- Need to avoid WASM dependency
+- Debugging or development scenarios
+- Specific compatibility requirements
+
+**Characteristics:**
+```zig
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+
+// No initialization needed
+const hash = Keccak256Ts.hash(data);
+```
+
+- **Pros:** Zero setup, runs everywhere, synchronous, no WASM
+- **Cons:** Larger bundle than WASM
+- **Bundle:** ~25KB (minified @noble/hashes)
+
+## Platform Compatibility
+
+### Browsers
+- ✅ WASM (Default)
+- ✅ Pure TypeScript
+
+### Node.js / Bun / Deno
+- ✅ WASM (Default)
+- ✅ Pure TypeScript
+
+### Edge Runtimes (Cloudflare, Vercel)
+- ✅ WASM (Default)
+- ✅ Pure TypeScript
+
+## Initialization Requirements
+
+### Synchronous (No Init)
+Pure TypeScript implementation is ready immediately:
+
+```zig
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+
+// Use immediately
+const hash = Keccak256Ts.hash(data);
+```
+
+### Asynchronous (Init Required)
+WASM variant requires async initialization:
+
+```zig
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+
+// Initialize once at startup
+await Keccak256Wasm.init();
+
+// Check if ready
+if (Keccak256Wasm.isReady()) {
+  const hash = Keccak256Wasm.hash(data);
+}
+```
+
+**Important:** WASM init is idempotent - calling `init()` multiple times is safe.
+
+## Bundle Size
+
+### WASM (Default)
+Smaller than pure JavaScript alternatives:
+- Zig stdlib Keccak-256 implementation
+- Part of main WASM bundle
+- Smaller than @noble/hashes when considering full implementation
+
+### Pure TypeScript
+Includes @noble/hashes dependencies:
+- Full @noble/hashes/sha3 module (~25KB)
+- Tree-shakeable (only Keccak-256 if unused)
+
+## Selection Decision Tree
+
+```
+Need Keccak256?
+├─ Need to avoid WASM dependency?
+│  ├─ Yes → Pure TypeScript
+│  └─ No → WASM (Default)
+└─ Async init acceptable?
+   ├─ Yes → WASM (better performance, smaller bundle)
+   └─ No → Pure TypeScript
+```
+
+## Migration Examples
+
+### From Pure TypeScript to WASM
+
+```zig
+// Before
+import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+const hash = Keccak256Ts.hash(data);
+
+// After (minimal change)
+import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+await Keccak256Wasm.init(); // Add at startup
+const hash = Keccak256Wasm.hash(data); // Same API
+```
+
+### Conditional Selection
+
+```zig
+// Select implementation based on requirements
+const Keccak256Impl = await (async () => {
+  if (typeof WebAssembly !== 'undefined') {
+    // WASM available - use default
+    const { Keccak256Wasm } = await import('tevm/crypto/keccak256.wasm');
+    await Keccak256Wasm.init();
+    return { Keccak256: Keccak256Wasm };
+  }
+
+  // Fallback to pure TypeScript
+  const { Keccak256Ts } = await import('tevm/crypto/keccak256.ts');
+  return { Keccak256: Keccak256Ts };
+})();
+
+// Use selected implementation
+const hash = Keccak256Impl.Keccak256.hash(data);
+```
+
+## Related
+
+- [Keccak256 API Reference](/crypto/keccak256) - Main documentation
+- [Cryptography Overview](/crypto) - All crypto functions
+- [WASM Guide](/concepts/wasm) - WASM deployment details
+- [Performance Benchmarks](/benchmarks) - Detailed benchmark results

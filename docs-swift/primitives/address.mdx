@@ -1,0 +1,26 @@
+---
+title: Address (Swift)
+description: 20-byte Ethereum address with EIP-55 checksumming
+---
+
+# Address
+
+Swift wrapper for 20-byte Ethereum addresses.
+
+## Quick Start
+
+```swift
+import Voltaire
+
+let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+print(addr.hex)        // lowercase 0x + 40 hex chars
+print(addr.checksumHex) // EIP-55
+print(addr.isZero)     // false
+
+let bytes = addr.bytes // [UInt8] (20)
+let addr2 = try Address(bytes: bytes)
+XCTAssertEqual(addr, addr2)
+
+XCTAssertTrue(Address.isValidChecksum(addr.checksumHex))
+```
+

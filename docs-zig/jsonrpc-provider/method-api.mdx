@@ -1,0 +1,367 @@
+---
+title: Method API
+description: Request builders for type-safe JSON-RPC calls with branded primitives
+---
+
+# Method API
+
+Request builders create type-safe JSON-RPC requests with branded primitive parameters.
+
+<Warning>
+This section is TypeScript-oriented. Zig does not include an EIP-1193 provider; construct JSON-RPC payloads with `std.json` and send with `std.http.Client`, using `primitives.AbiEncoding` to build calldata.
+</Warning>
+
+## Request Builders
+
+Request builders return `RequestArguments` objects compatible with EIP-1193 providers:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+// Build requests
+const blockRequest = Rpc.Eth.BlockNumberRequest();
+const balanceRequest = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const callRequest = Rpc.Eth.CallRequest(params, 'latest');
+
+// Send through provider (throws on error)
+try {
+  const blockNumber = await provider.request(blockRequest);
+  const balance = await provider.request(balanceRequest);
+  const callResult = await provider.request(callRequest);
+} catch (error) {
+  console.error('RPC error:', error.code, error.message);
+}
+```
+
+### Request Pattern
+
+All request builders follow this signature:
+
+```zig
+Rpc.Eth.MethodNameRequest(params) → RequestArguments
+```
+
+- **`Rpc.Eth.MethodName`** - Request builder (e.g., `CallRequest`, `GetBalanceRequest`)
+- **`params`** - Branded primitive types (Address, Hash, Hex, etc.)
+- **Returns** - `{method: string, params?: unknown[]}` object
+
+## Branded Primitive Parameters
+
+All parameters use Tevm's branded primitive types for compile-time safety:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
+import * as Hex from 'tevm/Hex';
+
+// Construct branded types
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const blockHash = Hash('0x...');
+const data = Hex('0x70a08231...');
+
+// Build requests - type-checked at compile time
+const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
+const blockReq = Rpc.Eth.GetBlockByHashRequest(blockHash, true);
+
+// Send requests (throws on error)
+try {
+  const balance = await provider.request(balanceReq);
+  const block = await provider.request(blockReq);
+} catch (error) {
+  console.error('Request failed:', error);
+}
+```
+
+### Type Safety Benefits
+
+TypeScript catches errors at compile time:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+// ❌ Compile error: string not assignable to Address
+const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
+
+// ✅ Correct: use branded Address
+const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
+
+// ❌ Compile error: can't mix Hash and Address
+const mixedReq = Rpc.Eth.GetBlockByHashRequest(address, true);
+
+// ✅ Correct: use proper type
+const hashReq = Rpc.Eth.GetBlockByHashRequest(hash, true);
+```
+
+## Error Handling
+
+### Throwing Errors
+
+Requests throw errors on failure:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+
+try {
+  const result = await provider.request(Rpc.Eth.CallRequest(params));
+  console.log('Call result:', result);
+} catch (error) {
+  console.error('RPC error:', error.code, error.message);
+  if (error.data) {
+    console.error('Error data:', error.data);
+  }
+}
+```
+
+### Type Inference
+
+Return types are automatically inferred:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+
+// TypeScript knows blockNumber is string (Quantity)
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+
+// TypeScript knows balance is string (Quantity)
+const balance = await provider.request(
+  Rpc.Eth.GetBalanceRequest(address, 'latest')
+);
+
+// TypeScript knows callResult is string (Hex)
+const callResult = await provider.request(Rpc.Eth.CallRequest(params));
+```
+
+## BlockTag Parameter
+
+Many requests accept `BlockTag` to specify block context:
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+type BlockTag =
+  | 'latest'      // Most recent block
+  | 'earliest'    // Genesis block
+  | 'pending'     // Pending block
+  | 'safe'        // Safe head block
+  | 'finalized'   // Finalized block
+  | string;       // Specific block number (hex)
+
+const address = Address('0x...');
+
+// Usage with different block tags
+try {
+  const latest = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+  const finalized = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'finalized'));
+  const historical = await provider.request(Rpc.Eth.GetBalanceRequest(address, '0x112A880'));
+} catch (error) {
+  console.error('Failed to get balance:', error);
+}
+```
+
+## Method Categories
+
+### Read Operations
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+const address = Address('0x...');
+
+try {
+  // Get block number
+  const blockNum = await provider.request(Rpc.Eth.BlockNumberRequest());
+
+  // Get balance
+  const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+
+  // Get transaction count (nonce)
+  const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
+
+  // Get contract code
+  const code = await provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'));
+
+  // Get storage slot
+  const storage = await provider.request(Rpc.Eth.GetStorageAtRequest(address, slot, 'latest'));
+} catch (error) {
+  console.error('Read operation failed:', error);
+}
+```
+
+### Contract Calls
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hex from 'tevm/Hex';
+
+try {
+  // Execute read-only contract call
+  const result = await provider.request(
+    Rpc.Eth.CallRequest({
+      to: Address('0x...'),
+      data: Hex('0x70a08231...')  // Function selector + encoded params
+    }, 'latest')
+  );
+
+  // Estimate gas for transaction
+  const gasEstimate = await provider.request(
+    Rpc.Eth.EstimateGasRequest({
+      from: Address('0x...'),
+      to: Address('0x...'),
+      value: '0xDE0B6B3A7640000',  // 1 ETH in wei
+      data: Hex('0x...')
+    })
+  );
+} catch (error) {
+  console.error('Contract call failed:', error);
+}
+```
+
+### Transaction Operations
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Hash from 'tevm/Hash';
+import * as Hex from 'tevm/Hex';
+
+try {
+  // Submit signed transaction
+  const txHash = await provider.request(
+    Rpc.Eth.SendRawTransactionRequest(Hex('0x...'))
+  );
+
+  // Get transaction by hash
+  const tx = await provider.request(
+    Rpc.Eth.GetTransactionByHashRequest(Hash('0x...'))
+  );
+
+  // Get transaction receipt
+  const receipt = await provider.request(
+    Rpc.Eth.GetTransactionReceiptRequest(Hash('0x...'))
+  );
+} catch (error) {
+  console.error('Transaction operation failed:', error);
+}
+```
+
+### Block Operations
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+
+try {
+  // Get block by number
+  const block = await provider.request(
+    Rpc.Eth.GetBlockByNumberRequest('latest', true)
+  );
+
+  // Get block by hash
+  const blockByHash = await provider.request(
+    Rpc.Eth.GetBlockByHashRequest(blockHash, false)
+  );
+
+  // Get uncle count
+  const uncleCount = await provider.request(
+    Rpc.Eth.GetUncleCountByBlockNumberRequest('latest')
+  );
+} catch (error) {
+  console.error('Block operation failed:', error);
+}
+```
+
+### Log Queries
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+import * as Hash from 'tevm/Hash';
+
+try {
+  // Query logs
+  const logs = await provider.request(
+    Rpc.Eth.GetLogsRequest({
+      fromBlock: 'earliest',
+      toBlock: 'latest',
+      address: Address('0x...'),
+      topics: [Hash('0x...')]
+    })
+  );
+} catch (error) {
+  console.error('Log query failed:', error);
+}
+```
+
+## Error Codes
+
+Common JSON-RPC error codes:
+
+| Code | Message | Description |
+|------|---------|-------------|
+| `-32700` | Parse error | Invalid JSON |
+| `-32600` | Invalid request | Missing required fields |
+| `-32601` | Method not found | Method doesn't exist |
+| `-32602` | Invalid params | Wrong parameter types |
+| `-32603` | Internal error | Server-side error |
+| `3` | Execution reverted | Contract execution failed |
+
+See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patterns.
+
+## Best Practices
+
+1. **Use try/catch** for error handling
+2. **Use branded types** for all parameters
+3. **Reuse type instances** - don't reconstruct on every call
+4. **Batch independent requests** with Promise.all
+
+```zig
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+const address = Address('0x...');
+
+// ✅ Good: batch independent requests
+try {
+  const [block, balance, nonce] = await Promise.all([
+    provider.request(Rpc.Eth.BlockNumberRequest()),
+    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'))
+  ]);
+} catch (error) {
+  console.error('Batch request failed:', error);
+}
+
+// ❌ Bad: sequential requests (slower)
+const block = await provider.request(Rpc.Eth.BlockNumberRequest());
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
+```
+
+## Method Reference
+
+<CardGroup cols={3}>
+  <Card title="eth Methods" icon="ethereum" href="/jsonrpc-provider/eth-methods">
+    40 standard Ethereum methods for blocks, transactions, state, and logs.
+  </Card>
+
+  <Card title="debug Methods" icon="bug" href="/jsonrpc-provider/debug-methods">
+    5 debugging methods for transaction tracing and analysis.
+  </Card>
+
+  <Card title="engine Methods" icon="gears" href="/jsonrpc-provider/engine-methods">
+    20 consensus layer methods for Engine API integration.
+  </Card>
+</CardGroup>
+
+## Related
+
+- [Getting Started](/jsonrpc-provider/getting-started) - Installation and first requests
+- [Events](/jsonrpc-provider/events) - Event handling with EventEmitter
+- [Error Handling](/jsonrpc-provider/error-handling) - Error codes and patterns
+- [eth Methods](/jsonrpc-provider/eth-methods) - Complete method reference

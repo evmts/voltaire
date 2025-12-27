@@ -1,0 +1,22 @@
+---
+title: Bytes32 (Swift)
+description: Fixed 32-byte value wrapper
+---
+
+# Bytes32
+
+Fixed-size 32 byte values. Useful for salts, commitments, etc.
+
+## Quick Start
+
+```swift
+import Voltaire
+
+let b = try Bytes32(hex: "0x" + String(repeating: "00", count: 32))
+print(b.hex)
+XCTAssertEqual(b.bytes.count, 32)
+
+let b2 = try Bytes32(bytes: b.bytes)
+XCTAssertEqual(b, b2)
+```
+

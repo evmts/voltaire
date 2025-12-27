@@ -1,0 +1,200 @@
+---
+title: FunctionSignature
+description: Extended function selector with metadata
+---
+
+# FunctionSignature
+
+A **FunctionSignature** represents a complete Ethereum function signature with metadata, including the 4-byte selector, function name, and parameter types.
+
+## Type Definition
+
+```zig
+const primitives = @import("primitives");
+const FunctionSignature = primitives.FunctionSignature.FunctionSignature;
+```
+
+## Creating Function Signatures
+
+### From Signature String
+
+```zig
+const primitives = @import("primitives");
+const sig = try primitives.FunctionSignature.fromSignature(
+    "transfer(address,uint256)",
+);
+const name = sig.name();              // "transfer"
+const first = sig.getInput(0).?;      // "address"
+const selector_hex = sig.toHex();     // "0xa9059cbb"
+```
+
+### From Selector
+
+```zig
+// Given only a selector, full signature metadata is unknown.
+const primitives = @import("primitives");
+const sel = try primitives.Selector.fromHex("0xa9059cbb");
+const hex = primitives.Selector.toHex(sel); // "0xa9059cbb"
+```
+
+## Operations
+
+### Parse Signature
+
+Extract function name and parameter types:
+
+```zig
+const primitives = @import("primitives");
+const sig = try primitives.FunctionSignature.fromSignature(
+    "swap(uint256,uint256,address,bytes)",
+);
+const name = sig.name();             // "swap"
+const input0 = sig.getInput(0).?;    // "uint256"
+const input1 = sig.getInput(1).?;    // "uint256"
+```
+
+### Compare Signatures
+
+Comparison is based on selector equality:
+
+```zig
+const primitives = @import("primitives");
+const s1 = try primitives.FunctionSignature.fromSignature("transfer(address,uint256)");
+const s2 = try primitives.FunctionSignature.fromSignature("transfer(address,uint256)");
+const equal = std.mem.eql(u8, &s1.selector, &s2.selector); // true
+```
+
+### Convert to Hex
+
+```zig
+const selector_hex = sig.toHex(); // "0xa9059cbb"
+```
+
+## Complex Type Support
+
+### Tuples
+
+```zig
+const primitives = @import("primitives");
+const sig = try primitives.FunctionSignature.fromSignature(
+    "execute((address,uint256,bytes)[])",
+);
+const name = sig.name();
+const input0 = sig.getInput(0).?; // "(address,uint256,bytes)[]"
+```
+
+### Arrays
+
+```zig
+const primitives = @import("primitives");
+const sig = try primitives.FunctionSignature.fromSignature(
+    "batchTransfer(address[],uint256[])",
+);
+const input0 = sig.getInput(0).?; // "address[]"
+```
+
+### Nested Structures
+
+```zig
+const primitives = @import("primitives");
+const sig = try primitives.FunctionSignature.fromSignature(
+    "complexCall((address,(uint256,bytes)[])[])",
+);
+const input0 = sig.getInput(0).?; // "(address,(uint256,bytes)[])[]"
+```
+
+## Common Function Signatures
+
+### ERC-20
+
+```zig
+const primitives = @import("primitives");
+const transfer = try primitives.FunctionSignature.fromSignature("transfer(address,uint256)");
+const approve = try primitives.FunctionSignature.fromSignature("approve(address,uint256)");
+const balanceOf = try primitives.FunctionSignature.fromSignature("balanceOf(address)");
+```
+
+### ERC-721
+
+```zig
+const primitives = @import("primitives");
+const transferFrom = try primitives.FunctionSignature.fromSignature(
+    "transferFrom(address,address,uint256)",
+);
+const safeTransferFrom = try primitives.FunctionSignature.fromSignature(
+    "safeTransferFrom(address,address,uint256)",
+);
+```
+
+### Uniswap V2
+
+```zig
+const primitives = @import("primitives");
+const swap = try primitives.FunctionSignature.fromSignature(
+    "swap(uint256,uint256,address,bytes)",
+);
+const selector_hex = swap.toHex(); // "0x022c0d9f"
+```
+
+## Use Cases
+
+### ABI Encoding
+
+Use with ABI encoding to construct function calls:
+
+```zig
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+const func = try primitives.FunctionSignature.fromSignature("transfer(address,uint256)");
+const to = try primitives.Address.fromHex("0x...recipient...");
+const args = [_]Abi.AbiValue{ Abi.addressValue(to), Abi.uint256Value(1) };
+const calldata = try Abi.FunctionDefinition{
+    .name = func.name(),
+    .inputs = &[_]Abi.AbiType{ .address, .uint256 },
+    .outputs = &[_]Abi.AbiType{},
+    .state_mutability = .nonpayable,
+}.encode_params(std.testing.allocator, &args);
+```
+
+### Function Routing
+
+Build function dispatch tables:
+
+```zig
+// Build a small dispatch mapping by selector hex
+const std = @import("std");
+var map = std.StringHashMap(void).init(std.testing.allocator);
+defer map.deinit();
+const t = try primitives.FunctionSignature.fromSignature("transfer(address,uint256)");
+_ = try map.put(&t.toHex(), {});
+```
+
+### Contract Introspection
+
+Identify functions from transaction data:
+
+```zig
+const primitives = @import("primitives");
+// Extract first 4 bytes from calldata
+const sel = [_]u8{ tx_data[0], tx_data[1], tx_data[2], tx_data[3] };
+const selector_hex = primitives.Selector.toHex(sel);
+```
+
+## API Reference
+
+### Constructors
+
+- `fromSignature(signature: []const u8) !FunctionSignature` - Parse and compute selector
+
+### Operations
+
+- `name(self) []const u8` - Function name
+- `getInput(self, i) ?[]const u8` - Parameter type by index
+- `toHex(self) [10]u8` - Selector as hex
+
+## See Also
+
+- [Selector](/primitives/selector) - 4-byte function selector
+- [EventSignature](/primitives/event-signature) - 32-byte event topic
+- [ErrorSignature](/primitives/error-signature) - 4-byte error selector
+- [ABI](/primitives/abi) - ABI encoding and decoding

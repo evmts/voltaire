@@ -1,0 +1,418 @@
+---
+title: Core Hashing Methods
+description: Primary Keccak256 hashing methods for bytes, strings, and hex data
+---
+
+
+# Core Hashing Methods
+
+Basic Keccak256 hashing operations that return `Keccak256Hash` type (branded 32-byte `Uint8Array`).
+
+## hash(data)
+
+Hash raw bytes with Keccak-256.
+
+**Signature:**
+```zig
+function hash(data: Uint8Array): Keccak256Hash
+```
+
+**Parameters:**
+- `data` (`Uint8Array`) - Input bytes to hash
+
+**Returns:** `Keccak256Hash` (32-byte hash)
+
+**Throws:** Never throws for valid input
+
+<Tabs>
+<Tab title="Basic Usage">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Hex } from 'tevm/primitives/Hex';
+
+const data = Hex.toBytes('0x0102030405');
+const hash = Keccak256.hash(data);
+
+console.log(hash.length); // 32
+console.log(Hex.fromBytes(hash)); // 0x...
+```
+</Tab>
+
+<Tab title="Transaction Data">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Rlp } from 'tevm/primitives/Rlp';
+
+// Hash RLP-encoded transaction
+const transaction = Rlp.encode([
+  nonce,
+  gasPrice,
+  gasLimit,
+  to,
+  value,
+  data
+]);
+
+const txHash = Keccak256.hash(transaction);
+// Transaction hash for lookup
+```
+</Tab>
+
+<Tab title="Multiple Chunks">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash concatenated chunks
+const chunks = [header, body, footer];
+const combined = new Uint8Array(
+  chunks.reduce((acc, c) => acc + c.length, 0)
+);
+
+let offset = 0;
+for (const chunk of chunks) {
+  combined.set(chunk, offset);
+  offset += chunk.length;
+}
+
+const hash = Keccak256.hash(combined);
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Constant-time implementation for security
+- Processes arbitrary-length input (0 to 2^64-1 bytes)
+- Output always exactly 32 bytes
+- Deterministic - same input always produces same output
+
+---
+
+## hashString(str)
+
+Hash UTF-8 encoded string with Keccak-256.
+
+**Signature:**
+```zig
+function hashString(str: string): Keccak256Hash
+```
+
+**Parameters:**
+- `str` (`string`) - String to hash (UTF-8 encoded before hashing)
+
+**Returns:** `Keccak256Hash` (32-byte hash)
+
+**Throws:** Never throws for valid input
+
+<Tabs>
+<Tab title="Basic Usage">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+const hash = Keccak256.hashString('hello');
+// Equivalent to: Keccak256.hash(new TextEncoder().encode('hello'))
+
+console.log(hash.length); // 32
+```
+</Tab>
+
+<Tab title="Function Signatures">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash function signature (without taking selector)
+const signature = 'transfer(address,uint256)';
+const fullHash = Keccak256.hashString(signature);
+
+// First 4 bytes would be function selector
+const selector = fullHash.slice(0, 4);
+```
+</Tab>
+
+<Tab title="Event Signatures">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash event signature for topic0
+const eventSig = 'Transfer(address,address,uint256)';
+const topic0 = Keccak256.hashString(eventSig);
+
+// Full 32-byte hash used in logs
+console.log(topic0); // Topic for filtering Transfer events
+```
+</Tab>
+
+<Tab title="Unicode Handling">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// UTF-8 encoding handles Unicode correctly
+const emoji = Keccak256.hashString('Hello 👋 World');
+const chinese = Keccak256.hashString('你好世界');
+const arabic = Keccak256.hashString('مرحبا بالعالم');
+
+// All produce deterministic 32-byte hashes
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Uses `TextEncoder` for UTF-8 conversion
+- Handles all Unicode code points correctly
+- No normalization applied - different encodings produce different hashes
+- Empty string produces: `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`
+
+<Warning>
+Different string representations hash differently:
+- `"hello"` ≠ `" hello"` ≠ `"hello "` (whitespace matters)
+- `"Transfer(address,uint256)"` ≠ `"Transfer(address, uint256)"` (spaces matter)
+- Normalize function/event signatures before hashing
+</Warning>
+
+---
+
+## hashHex(hex)
+
+Hash hex-encoded string with Keccak-256.
+
+**Signature:**
+```zig
+function hashHex(hex: string): Keccak256Hash
+```
+
+**Parameters:**
+- `hex` (`string`) - Hex string to hash (with or without "0x" prefix)
+
+**Returns:** `Keccak256Hash` (32-byte hash)
+
+**Throws:** Never throws for valid hex string
+
+<Tabs>
+<Tab title="Basic Usage">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// With 0x prefix
+const hash1 = Keccak256.hashHex('0x1234abcd');
+
+// Without 0x prefix
+const hash2 = Keccak256.hashHex('1234abcd');
+
+// Both produce same result
+console.log(hash1.length); // 32
+```
+</Tab>
+
+<Tab title="Hashing Addresses">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash address for various purposes
+const address = '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e';
+const addressHash = Keccak256.hashHex(address);
+
+// Used in Merkle proofs, state trees, etc.
+```
+</Tab>
+
+<Tab title="Hashing Calldata">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash transaction calldata
+const calldata = '0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e0000000000000000000000000000000000000000000000000de0b6b3a7640000';
+
+const calldataHash = Keccak256.hashHex(calldata);
+// Reference for calldata verification
+```
+</Tab>
+
+<Tab title="Public Key Hashing">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash uncompressed public key (65 bytes, starts with 04)
+const publicKey = '0x04' +
+  'c7a8e33b7b8e67e4d7c8e33b7b8e67e4d7c8e33b7b8e67e4d7c8e33b7b8e67e4' +
+  'd7c8e33b7b8e67e4d7c8e33b7b8e67e4d7c8e33b7b8e67e4d7c8e33b7b8e67e4';
+
+const pubKeyHash = Keccak256.hashHex(publicKey);
+// Last 20 bytes = Ethereum address
+const address = pubKeyHash.slice(12);
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Hex string decoded to bytes before hashing
+- Accepts both uppercase and lowercase hex
+- "0x" prefix optional and stripped automatically
+- Odd-length hex padded with leading zero: `"abc"` → `"0abc"`
+
+---
+
+## hashMultiple(chunks)
+
+Hash multiple byte chunks in sequence.
+
+**Signature:**
+```zig
+function hashMultiple(chunks: readonly Uint8Array[]): Keccak256Hash
+```
+
+**Parameters:**
+- `chunks` (`readonly Uint8Array[]`) - Array of byte chunks to hash
+
+**Returns:** `Keccak256Hash` (32-byte hash)
+
+**Throws:** Never throws for valid input
+
+<Tabs>
+<Tab title="Basic Usage">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Hex } from 'tevm/primitives/Hex';
+
+const chunk1 = Hex.toBytes('0x010203');
+const chunk2 = Hex.toBytes('0x040506');
+const chunk3 = Hex.toBytes('0x070809');
+
+const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
+// Same as: Keccak256.hash(Hex.toBytes('0x010203040506070809'))
+```
+</Tab>
+
+<Tab title="Efficient Concatenation">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// More efficient than manual concatenation
+const parts = [header, body, footer];
+
+// Instead of:
+// const combined = new Uint8Array(totalLength);
+// ... copy parts into combined ...
+// const hash = Keccak256.hash(combined);
+
+// Use hashMultiple:
+const hash = Keccak256.hashMultiple(parts);
+// Avoids intermediate allocation
+```
+</Tab>
+
+<Tab title="Streaming Data">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash data arriving in chunks
+const chunks: Uint8Array[] = [];
+
+// Accumulate chunks
+chunks.push(chunk1);
+chunks.push(chunk2);
+chunks.push(chunk3);
+
+// Hash all at once
+const hash = Keccak256.hashMultiple(chunks);
+```
+</Tab>
+
+<Tab title="Merkle Tree Nodes">
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+
+// Hash concatenated sibling hashes
+function merkleParent(left: Uint8Array, right: Uint8Array): Uint8Array {
+  return Keccak256.hashMultiple([left, right]);
+}
+
+// Build Merkle tree
+const leaf1 = Keccak256.hash(data1);
+const leaf2 = Keccak256.hash(data2);
+const parent = merkleParent(leaf1, leaf2);
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Equivalent to hashing concatenation of all chunks
+- More efficient than manual concatenation for large data
+- Preserves order - `[A, B]` ≠ `[B, A]`
+- Empty chunks array produces empty input hash
+
+---
+
+## Return Type: Keccak256Hash
+
+All hash methods return `Keccak256Hash`, a branded `Uint8Array` type:
+
+```zig
+type Keccak256Hash = Uint8Array & { readonly __tag: "Keccak256Hash" }
+```
+
+**Properties:**
+- Always exactly 32 bytes (256 bits)
+- Behaves like `Uint8Array` at runtime
+- Type-safe at compile time
+- Zero runtime overhead
+
+**Usage:**
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Hex } from 'tevm/primitives/Hex';
+
+const hash: Keccak256Hash = Keccak256.hash(data);
+
+// Use as Uint8Array
+hash[0];          // First byte
+hash.length;      // Always 32
+hash.slice(0, 4); // First 4 bytes
+
+// Convert to hex
+const hexHash = Hex.fromBytes(hash);
+
+// Convert to bigint
+const hashNum = BigInt('0x' + Hex.fromBytes(hash).slice(2));
+```
+
+## Test Vectors
+
+Verify implementation correctness:
+
+```zig
+import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Hex } from 'tevm/primitives/Hex';
+
+// Empty string
+const empty = Keccak256.hashString("");
+console.assert(
+  Hex.fromBytes(empty) ===
+  '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'
+);
+
+// "abc"
+const abc = Keccak256.hashString("abc");
+console.assert(
+  Hex.fromBytes(abc) ===
+  '0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45'
+);
+
+// "hello"
+const hello = Keccak256.hashString("hello");
+console.assert(
+  Hex.fromBytes(hello) ===
+  '0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8'
+);
+
+// Function signature
+const selector = Keccak256.hashString("transfer(address,uint256)");
+console.assert(
+  Hex.fromBytes(selector.slice(0, 4)) === '0xa9059cbb'
+);
+```
+
+## Related
+
+- [Ethereum Methods](/crypto/keccak256/ethereum-methods) - Selector, topic, contract address methods
+- [Usage Patterns](/crypto/keccak256/usage-patterns) - Common patterns and best practices
+- [Implementations](/crypto/keccak256/implementations) - Implementation comparison and selection
+- [Keccak256Hash](/crypto/keccak256) - 32-byte hash type

@@ -1,0 +1,167 @@
+---
+title: FilterId
+description: Opaque filter identifier for Ethereum JSON-RPC filter operations
+---
+
+## Overview
+
+`FilterId` is a branded string type representing an opaque filter identifier returned by JSON-RPC filter creation methods (`eth_newFilter`, `eth_newBlockFilter`, `eth_newPendingTransactionFilter`). Filter IDs are used to poll for updates and uninstall filters.
+
+## Type Definition
+
+```zig
+type FilterIdType = string & {
+  readonly [brand]: "FilterId";
+};
+```
+
+## Creating FilterId
+
+### from
+
+```zig
+import * as FilterId from './primitives/FilterId/index.js';
+
+const id = FilterId.from("0x1");
+```
+
+Creates a `FilterId` from a string value. The string is typically a hex-encoded number returned by the node.
+
+**Parameters:**
+- `value`: `string` - Filter ID string
+
+**Returns:** `FilterIdType`
+
+**Throws:** `InvalidFilterIdError` if value is not a string or is empty
+
+## Operations
+
+### toString
+
+```zig
+const str = FilterId.toString(id); // "0x1"
+```
+
+Converts a `FilterId` back to its string representation.
+
+### equals
+
+```zig
+const equal = FilterId.equals(id1, id2);
+```
+
+Compares two `FilterId` instances for equality.
+
+## JSON-RPC Filter Lifecycle
+
+Filters follow a request-response lifecycle on Ethereum nodes:
+
+### 1. Create Filter
+
+```zig
+// eth_newFilter (log filter)
+const filterId = await rpc.eth_newFilter({
+  fromBlock: "latest",
+  address: "0x...",
+  topics: [eventSig]
+});
+
+// eth_newBlockFilter (block hashes)
+const blockFilterId = await rpc.eth_newBlockFilter();
+
+// eth_newPendingTransactionFilter (pending tx hashes)
+const txFilterId = await rpc.eth_newPendingTransactionFilter();
+```
+
+### 2. Poll for Changes
+
+```zig
+// Returns new logs/blocks/txs since last poll
+const changes = await rpc.eth_getFilterChanges(filterId);
+```
+
+### 3. Get All Logs (log filters only)
+
+```zig
+// Returns all logs matching filter
+const logs = await rpc.eth_getFilterLogs(filterId);
+```
+
+### 4. Uninstall Filter
+
+```zig
+// Remove filter from node
+const success = await rpc.eth_uninstallFilter(filterId);
+```
+
+## Filter Expiration
+
+Filters automatically expire after a period of inactivity (typically 5 minutes). Nodes may:
+- Return empty arrays for expired filters
+- Return errors for invalid filter IDs
+- Silently drop old filters during node restarts
+
+**Best practices:**
+- Poll filters regularly to prevent expiration
+- Handle `filter not found` errors gracefully
+- Recreate filters after node restarts
+
+## Example: Complete Filter Workflow
+
+```zig
+import * as FilterId from './primitives/FilterId/index.js';
+import * as LogFilter from './primitives/LogFilter/index.js';
+import * as Address from './primitives/Address/index.js';
+
+// Create log filter
+const filter = LogFilter.from({
+  fromBlock: "latest",
+  address: Address.from("0x..."),
+  topics: [eventSignature]
+});
+
+// Install filter on node
+const filterIdStr = await rpc.eth_newFilter(filter);
+const filterId = FilterId.from(filterIdStr);
+
+// Poll every 15 seconds
+const interval = setInterval(async () => {
+  try {
+    const logs = await rpc.eth_getFilterChanges(filterId);
+    console.log(`Got ${logs.length} new logs`);
+  } catch (error) {
+    // Filter expired - recreate
+    if (error.message.includes('filter not found')) {
+      clearInterval(interval);
+      // Recreate filter...
+    }
+  }
+}, 15000);
+
+// Cleanup
+process.on('SIGINT', async () => {
+  await rpc.eth_uninstallFilter(filterId);
+  clearInterval(interval);
+});
+```
+
+## Related Types
+
+- [LogFilter](/primitives/log-filter) - Log/event filter parameters
+- [BlockFilter](/primitives/block-filter) - Block hash filter
+- [PendingTransactionFilter](/primitives/pending-transaction-filter) - Pending transaction filter
+- [TopicFilter](/primitives/topic-filter) - Event topic matching
+
+## JSON-RPC Methods
+
+- `eth_newFilter` - Create log filter, returns FilterId
+- `eth_newBlockFilter` - Create block filter, returns FilterId
+- `eth_newPendingTransactionFilter` - Create pending tx filter, returns FilterId
+- `eth_getFilterChanges` - Poll for new results since last call
+- `eth_getFilterLogs` - Get all logs for log filter
+- `eth_uninstallFilter` - Remove filter from node
+
+## See Also
+
+- [Ethereum JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/)
+- [EIP-234: Add `blockHash` to JSON-RPC filter options](https://eips.ethereum.org/EIPS/eip-234)

@@ -1,0 +1,85 @@
+---
+title: "DecodedData"
+description: "Generic decoded structure from ABI-encoded data"
+---
+
+# DecodedData
+
+Generic structure representing decoded values with their corresponding ABI types. Provides type-safe access to decoded contract data.
+
+## Type
+
+```zig
+type DecodedDataType<T = unknown> = {
+  readonly values: T;
+  readonly types: readonly string[];
+};
+```
+
+## Construction
+
+```zig
+import * as DecodedData from 'voltaire/primitives/DecodedData';
+
+// Single value
+const data = DecodedData.from(42n, ["uint256"]);
+
+// Multiple values
+const data = DecodedData.from(
+  [100n, "0x1234", true],
+  ["uint256", "address", "bool"]
+);
+
+// Structured data
+const data = DecodedData.from(
+  { amount: 100n, recipient: "0x..." },
+  ["uint256", "address"]
+);
+```
+
+## Type Safety
+
+```zig
+interface TransferData {
+  recipient: string;
+  amount: bigint;
+}
+
+const data = DecodedData.from<TransferData>(
+  { recipient: "0x...", amount: 100n },
+  ["address", "uint256"]
+);
+
+// Type-safe access
+const recipient: string = data.values.recipient;
+const amount: bigint = data.values.amount;
+```
+
+## Example
+
+```zig
+import * as DecodedData from 'voltaire/primitives/DecodedData';
+
+// Function return values
+const returnValues = DecodedData.from(
+  [1000n, "0x742d35...", true],
+  ["uint256", "address", "bool"]
+);
+
+console.log("Balance:", returnValues.values[0]);
+console.log("Owner:", returnValues.values[1]);
+console.log("Active:", returnValues.values[2]);
+console.log("Types:", returnValues.types);
+
+// Tuple data
+interface UserInfo {
+  name: string;
+  balance: bigint;
+  active: boolean;
+}
+
+const userInfo = DecodedData.from<UserInfo>(
+  { name: "Alice", balance: 1000n, active: true },
+  ["string", "uint256", "bool"]
+);
+```

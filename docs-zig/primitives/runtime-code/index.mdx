@@ -1,0 +1,137 @@
+---
+title: Overview
+description: Pure runtime bytecode without constructor or metadata
+---
+
+## Type Definition
+
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing pure runtime bytecode without constructor logic or compiler metadata.
+
+```zig
+import type { brand } from 'tevm/brand';
+
+export type RuntimeCodeType = Uint8Array & {
+  readonly [brand]: "RuntimeCode";
+};
+```
+
+Runtime code is the actual bytecode executed when calling a contract after deployment. It excludes:
+- Constructor logic
+- Solidity compiler metadata
+- Creation-time initialization
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```zig
+import * as RuntimeCode from 'tevm/RuntimeCode';
+
+// From hex string
+const code = RuntimeCode.from("0x6001600155");
+
+// From Uint8Array
+const code = RuntimeCode.from(new Uint8Array([0x60, 0x01, 0x60, 0x01, 0x55]));
+```
+
+</Tab>
+<Tab title="Compare">
+
+```zig
+// Compare runtime codes
+if (RuntimeCode.equals(code1, code2)) {
+  console.log("Runtime codes match");
+}
+
+// Convert to hex
+const hex = RuntimeCode.toHex(code);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Utilities
+
+- [`toHex(code)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Contract Verification
+
+```zig
+import * as RuntimeCode from 'tevm/RuntimeCode';
+import * as ContractCode from 'tevm/ContractCode';
+
+// Get deployed code and strip metadata
+const deployed = ContractCode.from(await provider.getCode(address));
+const deployedRuntime = ContractCode.stripMetadata(deployed);
+
+// Compare with compiled runtime code
+const expectedRuntime = RuntimeCode.from(compiledRuntimeCode);
+
+if (RuntimeCode.equals(deployedRuntime, expectedRuntime)) {
+  console.log("Contract verified: runtime code matches");
+} else {
+  console.log("Verification failed: runtime code differs");
+}
+```
+
+### Bytecode Analysis
+
+```zig
+import * as RuntimeCode from 'tevm/RuntimeCode';
+import * as Bytecode from 'tevm/Bytecode';
+
+const runtime = RuntimeCode.from(runtimeBytecode);
+
+// Analyze runtime code
+const analysis = Bytecode.analyze(runtime);
+console.log(`Instructions: ${analysis.instructions.length}`);
+console.log(`Valid: ${analysis.valid}`);
+console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
+
+// Pretty print
+const disassembly = Bytecode.prettyPrint(runtime, {
+  showGas: true,
+  showStack: true,
+});
+console.log(disassembly);
+```
+
+### Comparing Contract Versions
+
+```zig
+import * as RuntimeCode from 'tevm/RuntimeCode';
+
+// Compare different versions of a contract
+const v1 = RuntimeCode.from(contractV1RuntimeCode);
+const v2 = RuntimeCode.from(contractV2RuntimeCode);
+
+if (!RuntimeCode.equals(v1, v2)) {
+  console.log("Runtime code changed between versions");
+  console.log(`v1 hex: ${RuntimeCode.toHex(v1)}`);
+  console.log(`v2 hex: ${RuntimeCode.toHex(v2)}`);
+}
+```
+
+## Related
+
+- [ContractCode](/primitives/contract-code) - Full deployed bytecode
+- [InitCode](/primitives/init-code) - Creation bytecode
+- [Bytecode](/primitives/bytecode) - Bytecode analysis tools
+- [Metadata](/primitives/metadata) - Compiler metadata
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - EVM execution model
+- [EVM Opcodes](https://www.evm.codes/) - Instruction reference
+- [Solidity Internals](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html) - Contract structure

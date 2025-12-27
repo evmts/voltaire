@@ -1,0 +1,132 @@
+---
+title: "BlockBody"
+description: "Ethereum block body with transactions and withdrawals"
+---
+
+## Overview
+
+BlockBody contains the executable content of a block: transactions, uncle/ommer blocks, and (post-Shanghai) withdrawals.
+
+```zig
+import * as BlockBody from '@voltaire/primitives/BlockBody'
+
+const body = BlockBody.from({
+  transactions: [tx1, tx2, tx3],
+  ommers: [],
+  withdrawals: [w1, w2],
+})
+```
+
+## Type Definition
+
+```zig
+type BlockBodyType = {
+  readonly transactions: readonly Transaction[]
+  readonly ommers: readonly UncleType[]
+  readonly withdrawals?: readonly WithdrawalType[]
+}
+```
+
+**Fields:**
+- `transactions` - Ordered list of transactions in the block
+- `ommers` - Uncle/ommer block headers (deprecated post-merge)
+- `withdrawals` - Beacon chain withdrawals (post-Shanghai)
+
+## Creating BlockBody
+
+### from
+
+Universal constructor from components.
+
+```zig
+import * as BlockBody from '@voltaire/primitives/BlockBody'
+
+// Basic block with just transactions
+const body = BlockBody.from({
+  transactions: [legacyTx, eip1559Tx, eip4844Tx],
+  ommers: [],
+})
+
+// Post-Shanghai block with withdrawals
+const shanghaiBody = BlockBody.from({
+  transactions: [tx1, tx2],
+  ommers: [],
+  withdrawals: [
+    { index: 0n, validatorIndex: 123n, address: "0x...", amount: 1000000000n },
+    { index: 1n, validatorIndex: 456n, address: "0x...", amount: 2000000000n },
+  ],
+})
+```
+
+## Transaction Types
+
+BlockBody supports all transaction types:
+
+| Type | Description | Introduced |
+|------|-------------|------------|
+| Legacy | Original transaction format | Genesis |
+| EIP-2930 | Access list transactions | Berlin |
+| EIP-1559 | Fee market transactions | London |
+| EIP-4844 | Blob transactions | Cancun |
+| EIP-7702 | Account abstraction | Prague |
+
+```zig
+const body = BlockBody.from({
+  transactions: [
+    legacyTx,      // Type 0
+    eip2930Tx,     // Type 1
+    eip1559Tx,     // Type 2
+    eip4844Tx,     // Type 3
+  ],
+  ommers: [],
+})
+```
+
+## Ommers (Uncle Blocks)
+
+<Warning>
+Ommers are deprecated post-merge. Always use empty array for new blocks.
+</Warning>
+
+```zig
+// Pre-merge block with ommers
+const premergebody = BlockBody.from({
+  transactions: [],
+  ommers: [uncleHeader1, uncleHeader2],
+})
+
+// Post-merge block (no ommers)
+const postmergeBody = BlockBody.from({
+  transactions: [],
+  ommers: [],
+})
+```
+
+## Withdrawals (Post-Shanghai)
+
+Withdrawals represent ETH being withdrawn from the beacon chain to execution layer.
+
+```zig
+const withdrawal = {
+  index: 12345n,           // Global withdrawal index
+  validatorIndex: 100n,    // Validator being withdrawn from
+  address: "0xabc...",     // Recipient address
+  amount: 32000000000n,    // Amount in Gwei (not Wei!)
+}
+
+const body = BlockBody.from({
+  transactions: [],
+  ommers: [],
+  withdrawals: [withdrawal],
+})
+```
+
+<Note>
+Withdrawal amounts are in Gwei (10^9 Wei), not Wei!
+</Note>
+
+## See Also
+
+- [Block](/primitives/block) - Complete block type
+- [BlockHeader](/primitives/block-header) - Block header
+- [Transaction](/primitives/transaction) - Transaction types

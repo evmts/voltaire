@@ -1,0 +1,86 @@
+---
+title: DomainSeparator
+description: EIP-712 domain separator hash for signature verification
+---
+
+# DomainSeparator
+
+EIP-712 domain separator - a 32-byte keccak256 hash used for domain-specific signature verification.
+
+## Overview
+
+DomainSeparator is a branded `Hash` type representing the keccak256 hash of an EIP-712 domain separator. It ensures signatures are valid only within a specific domain context, preventing replay attacks across different contracts or chains.
+
+## Type Definition
+
+```zig
+type DomainSeparatorType = Uint8Array & {
+  readonly [brand]: "DomainSeparator";
+  readonly length: 32;
+};
+```
+
+## Usage
+
+### Create from Hex
+
+```zig
+import * as DomainSeparator from './primitives/DomainSeparator/index.js';
+
+const sep = DomainSeparator.fromHex(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+);
+```
+
+### Create from Bytes
+
+```zig
+const bytes = new Uint8Array(32);
+const sep = DomainSeparator.fromBytes(bytes);
+```
+
+### Convert to Hex
+
+```zig
+const hex = DomainSeparator.toHex(sep);
+console.log(hex); // '0x1234...'
+```
+
+### Compare Separators
+
+```zig
+const sep1 = DomainSeparator.fromHex('0x1234...');
+const sep2 = DomainSeparator.fromHex('0x5678...');
+const equal = DomainSeparator.equals(sep1, sep2); // false
+```
+
+## Computing Domain Separators
+
+Use `Domain.toHash()` to compute domain separators:
+
+```zig
+import * as Domain from './primitives/Domain/index.js';
+import { keccak256 } from './crypto/keccak256/index.js';
+
+const domain = Domain.from({
+  name: 'MyDApp',
+  version: '1',
+  chainId: 1,
+  verifyingContract: '0x123...',
+});
+
+const domainSep = Domain.toHash(domain, { keccak256 });
+```
+
+## Specification
+
+- **EIP-712**: https://eips.ethereum.org/EIPS/eip-712
+- **Size**: 32 bytes
+- **Format**: keccak256 hash of encoded domain separator
+- **Purpose**: Domain separation for signatures
+
+## See Also
+
+- [Domain](/primitives/domain) - Domain separator structure
+- [TypedData](/primitives/typed-data) - Complete EIP-712 typed data
+- [Hash](/primitives/hash) - Hash primitive

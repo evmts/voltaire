@@ -1,0 +1,191 @@
+---
+title: ERC-6093 Standard Token Errors
+description: Custom errors for ERC-20, ERC-721, and ERC-1155 tokens
+icon: triangle-exclamation
+---
+
+Standardized error definitions for token contracts implementing ERC-20, ERC-721, and ERC-1155.
+
+<Tip title="ERC Reference">
+Implements [ERC-6093](https://eips.ethereum.org/EIPS/eip-6093) custom errors for common token operations.
+</Tip>
+
+## Overview
+
+ERC-6093 defines standard custom errors for token contracts, replacing generic `require` messages with structured errors containing relevant context. Benefits:
+- Gas efficiency (custom errors cheaper than strings)
+- Type-safe error handling
+- Standardized error names across implementations
+- Rich context for debugging
+
+## ERC-20 Errors
+
+```zig
+import {
+  ERC20InsufficientBalance,
+  ERC20InvalidSender,
+  ERC20InvalidReceiver,
+  ERC20InsufficientAllowance,
+  ERC20InvalidApprover,
+  ERC20InvalidSpender
+} from '@tevm/voltaire/Abi/error/standards';
+```
+
+### ERC20InsufficientBalance
+
+```solidity
+error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed)
+```
+
+Thrown when transfer amount exceeds sender's balance.
+
+**Example:**
+
+```zig
+import { ERC20InsufficientBalance } from '@tevm/voltaire/Abi/error/standards';
+import { encodeParams } from '@tevm/voltaire/Abi/error';
+
+const error = encodeParams(ERC20InsufficientBalance, {
+  sender: '0x1234...',
+  balance: 100n,
+  needed: 150n
+});
+```
+
+### ERC20InsufficientAllowance
+
+```solidity
+error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed)
+```
+
+Thrown when `transferFrom` amount exceeds allowance.
+
+### ERC20InvalidSender / Receiver / Approver / Spender
+
+```solidity
+error ERC20InvalidSender(address sender)
+error ERC20InvalidReceiver(address receiver)
+error ERC20InvalidApprover(address approver)
+error ERC20InvalidSpender(address spender)
+```
+
+Thrown for zero address or other invalid addresses.
+
+## ERC-721 Errors
+
+```zig
+import {
+  ERC721InvalidOwner,
+  ERC721NonexistentToken,
+  ERC721IncorrectOwner,
+  ERC721InvalidSender,
+  ERC721InvalidReceiver,
+  ERC721InsufficientApproval,
+  ERC721InvalidApprover,
+  ERC721InvalidOperator
+} from '@tevm/voltaire/Abi/error/standards';
+```
+
+### ERC721NonexistentToken
+
+```solidity
+error ERC721NonexistentToken(uint256 tokenId)
+```
+
+Token doesn't exist.
+
+### ERC721IncorrectOwner
+
+```solidity
+error ERC721IncorrectOwner(address sender, uint256 tokenId, address owner)
+```
+
+Sender is not token owner.
+
+### ERC721InsufficientApproval
+
+```solidity
+error ERC721InsufficientApproval(address operator, uint256 tokenId)
+```
+
+Operator not approved for token.
+
+## ERC-1155 Errors
+
+```zig
+import {
+  ERC1155InsufficientBalance,
+  ERC1155InvalidSender,
+  ERC1155InvalidReceiver,
+  ERC1155MissingApprovalForAll,
+  ERC1155InvalidApprover,
+  ERC1155InvalidOperator,
+  ERC1155InvalidArrayLength
+} from '@tevm/voltaire/Abi/error/standards';
+```
+
+### ERC1155InsufficientBalance
+
+```solidity
+error ERC1155InsufficientBalance(address sender, uint256 balance, uint256 needed, uint256 tokenId)
+```
+
+Insufficient balance for token ID.
+
+### ERC1155InvalidArrayLength
+
+```solidity
+error ERC1155InvalidArrayLength(uint256 idsLength, uint256 valuesLength)
+```
+
+Mismatch between ids and values array lengths in batch operations.
+
+### ERC1155MissingApprovalForAll
+
+```solidity
+error ERC1155MissingApprovalForAll(address operator, address owner)
+```
+
+Operator not approved for all tokens.
+
+## Usage Patterns
+
+### Decoding Errors
+
+```zig
+import { decodeParams } from '@tevm/voltaire/Abi/error';
+import { ERC20InsufficientBalance } from '@tevm/voltaire/Abi/error/standards';
+
+try {
+  await token.transfer(recipient, amount);
+} catch (err) {
+  if (err.data) {
+    const decoded = decodeParams(ERC20InsufficientBalance, err.data);
+    console.log(`Insufficient balance: has ${decoded.balance}, needs ${decoded.needed}`);
+  }
+}
+```
+
+### Encoding for Testing
+
+```zig
+import { encodeParams, getSelector } from '@tevm/voltaire/Abi/error';
+import { ERC721NonexistentToken } from '@tevm/voltaire/Abi/error/standards';
+
+// Encode error for mock contract
+const errorData = Buffer.concat([
+  getSelector(ERC721NonexistentToken),
+  encodeParams(ERC721NonexistentToken, { tokenId: 999n })
+]);
+
+// Use in test revert expectation
+await expect(contract.ownerOf(999)).rejects.toThrow(errorData);
+```
+
+## Specification
+
+**Defined in:** [src/primitives/Abi/error/standards/](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/standards/)
+
+**See also:**
+- [ERC-6093 Specification](https://eips.ethereum.org/EIPS/eip-6093)
+- [Error Encoding/Decoding](/primitives/abi/error)

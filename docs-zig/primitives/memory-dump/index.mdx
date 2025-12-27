@@ -1,0 +1,170 @@
+---
+title: MemoryDump
+description: EVM memory state snapshot for execution analysis
+icon: memory
+---
+
+# MemoryDump
+
+EVM memory state snapshot captured during transaction execution. Memory is byte-addressable and organized in 32-byte words.
+
+## Overview
+
+MemoryDump represents the complete memory state at a point in EVM execution. EVM memory grows dynamically during execution and is organized in 32-byte word boundaries for stack operations.
+
+## Type Definition
+
+```zig
+type MemoryDumpType = {
+  readonly data: Uint8Array;  // Complete memory contents
+  readonly length: number;    // Memory size in bytes
+};
+```
+
+## Usage
+
+### Creating Memory Dumps
+
+```zig
+import { MemoryDump } from 'voltaire/primitives';
+
+// From raw bytes
+const dump = MemoryDump.from(new Uint8Array(64));
+
+// From object
+const dump2 = MemoryDump.from({
+  data: memoryBytes,
+  length: 128
+});
+```
+
+### Reading Memory Words
+
+EVM operations read memory in 32-byte chunks:
+
+```zig
+// Read first 32-byte word
+const word = MemoryDump.readWord(dump, 0);
+
+// Read second word
+const word2 = MemoryDump.readWord(dump, 32);
+
+// Read word at specific offset
+const word3 = MemoryDump.readWord(dump, 64);
+```
+
+### Slicing Memory
+
+Extract memory ranges for analysis:
+
+```zig
+// First 64 bytes
+const slice = MemoryDump.slice(dump, 0, 64);
+
+// From offset to end
+const tail = MemoryDump.slice(dump, 64);
+
+// Specific range
+const range = MemoryDump.slice(dump, 32, 96);
+```
+
+## EVM Memory Model
+
+### Word-Aligned Operations
+
+EVM stack operations work with 32-byte words:
+
+- `MLOAD`: Load 32-byte word from memory
+- `MSTORE`: Store 32-byte word to memory
+- `MSTORE8`: Store single byte to memory
+
+### Memory Expansion
+
+Memory expands dynamically during execution with quadratic gas costs:
+
+```zig
+// Memory grows as needed
+const initialSize = dump.length;  // 64 bytes
+
+// After MSTORE at offset 96
+const expandedSize = 128;  // Rounded up to 32-byte boundary
+```
+
+### Gas Costs
+
+Memory expansion incurs quadratic costs:
+
+```
+cost = (memory_size_word^2 / 512) + (3 * memory_size_word)
+```
+
+## Debug Tracing
+
+MemoryDump used with debug_traceTransaction for execution analysis:
+
+```zig
+// Trace with memory capture
+const trace = await rpc.debug_traceTransaction(txHash, {
+  tracer: 'callTracer',
+  tracerConfig: {
+    withLog: true,
+    withMemory: true
+  }
+});
+
+// Analyze memory at each step
+for (const step of trace.structLogs) {
+  if (step.memory) {
+    const dump = MemoryDump.from(step.memory);
+    const word = MemoryDump.readWord(dump, 0);
+    console.log('Memory word 0:', word);
+  }
+}
+```
+
+## Common Patterns
+
+### ABI Encoding Analysis
+
+Memory contains ABI-encoded data during calls:
+
+```zig
+// Function selector (first 4 bytes of word 0)
+const word0 = MemoryDump.readWord(dump, 0);
+const selector = word0.slice(0, 4);
+
+// First parameter (word 1)
+const param1 = MemoryDump.readWord(dump, 32);
+
+// Second parameter (word 2)
+const param2 = MemoryDump.readWord(dump, 64);
+```
+
+### Return Data
+
+Return data stored in memory:
+
+```zig
+// Extract return data from memory
+const returnDataOffset = 0;
+const returnDataSize = 32;
+const returnData = MemoryDump.slice(dump, returnDataOffset, returnDataSize);
+```
+
+## API Reference
+
+### Constructors
+
+- `MemoryDump.from(bytes)` - Create from Uint8Array
+- `MemoryDump.from({ data, length })` - Create from object
+
+### Methods
+
+- `MemoryDump.readWord(dump, offset)` - Read 32-byte word
+- `MemoryDump.slice(dump, start, end?)` - Extract memory range
+
+## See Also
+
+- [StateDiff](/primitives/state-diff) - State changes during execution
+- [StorageDiff](/primitives/storage-diff) - Storage slot changes
+- [Hex](/primitives/hex) - Hex encoding for memory display

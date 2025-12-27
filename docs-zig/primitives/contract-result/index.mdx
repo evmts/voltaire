@@ -1,0 +1,70 @@
+---
+title: "ContractResult"
+description: "Result type for contract calls (success or failure)"
+---
+
+# ContractResult
+
+Union type representing the outcome of a contract call: success with return data or failure with revert reason.
+
+## Type
+
+```zig
+type ContractResultType =
+  | { success: true; data: ReturnDataType }
+  | { success: false; revertReason: RevertReasonType };
+```
+
+## Construction
+
+```zig
+import * as ContractResult from 'voltaire/primitives/ContractResult';
+import * as ReturnData from 'voltaire/primitives/ReturnData';
+import * as RevertReason from 'voltaire/primitives/RevertReason';
+
+// Success result
+const success = ContractResult.success(ReturnData.fromHex("0x..."));
+
+// Failure result
+const failure = ContractResult.failure(revertReason);
+
+// From flag and data
+const result = ContractResult.from(true, "0x...");
+```
+
+## Methods
+
+- `success(data)` - Create successful result
+- `failure(reason)` - Create failed result
+- `from(isSuccess, data)` - Create from success flag
+- `isSuccess(result)` - Type guard for success
+- `isFailure(result)` - Type guard for failure
+- `unwrap(result)` - Get data or throw ContractRevertError
+- `unwrapOr(result, default)` - Get data or default
+
+## Example
+
+```zig
+import * as ContractResult from 'voltaire/primitives/ContractResult';
+
+const result = ContractResult.from(success, returnData);
+
+if (ContractResult.isSuccess(result)) {
+  console.log("Success:", result.data);
+} else {
+  console.log("Revert:", result.revertReason);
+}
+
+// Unwrap with error handling
+try {
+  const data = ContractResult.unwrap(result);
+  console.log("Data:", data);
+} catch (error) {
+  if (error instanceof ContractResult.ContractRevertError) {
+    console.log("Revert reason:", error.revertReason);
+  }
+}
+
+// Unwrap with default
+const data = ContractResult.unwrapOr(result, ReturnData.fromHex("0x"));
+```

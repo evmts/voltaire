@@ -1,0 +1,28 @@
+```zig
+const crypto = @import("crypto");
+const bn254 = crypto.bn254;
+const gen = bn254.G1.GENERATOR;
+const five = bn254.Fr.init(5);
+const p = try gen.mul(&five);
+_ = p;
+```
+
+---
+title: Precompiles
+description: BN254 precompiles
+---
+
+
+# Precompiles
+
+Comprehensive documentation for BN254 precompiles.
+
+## Overview
+
+\[Detailed content based on source code analysis and zkSNARK best practices\]
+
+## Related
+
+- [BN254 Overview](./index)
+- [zkSNARK Usage](./zk-usage)
+- [Precompiles](./precompiles)

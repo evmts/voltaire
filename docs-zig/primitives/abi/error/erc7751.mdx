@@ -1,0 +1,198 @@
+---
+title: ERC-7751 Wrapped Errors
+description: Wrapping revert reasons with additional context
+icon: box-open
+---
+
+Error wrapping standard for adding context to reverted external calls.
+
+<Tip title="ERC Reference">
+Implements [ERC-7751](https://eips.ethereum.org/EIPS/eip-7751) wrapping of errors with call context.
+</Tip>
+
+## Overview
+
+ERC-7751 defines a standard error for wrapping revert reasons from external calls with additional context about the call that failed. Useful for:
+- Debugging complex multi-contract interactions
+- Preserving original error while adding call context
+- Standardized error wrapping across protocols
+
+## WrappedError Format
+
+```solidity
+error WrappedError(
+  address target,      // Contract that reverted
+  bytes4 selector,     // Function selector called
+  bytes reason,        // Original revert reason
+  bytes details        // Additional context
+)
+```
+
+## API
+
+```zig
+import {
+  encodeWrappedError,
+  decodeWrappedError,
+  WRAPPED_ERROR_SELECTOR
+} from '@tevm/voltaire/Abi/error/wrapped';
+```
+
+### encodeWrappedError
+
+**`encodeWrappedError(params: WrappedErrorParams): Uint8Array`**
+
+Encodes a wrapped error with context.
+
+**Parameters:**
+```zig
+{
+  target: AddressType;        // Contract address
+  selector: SelectorType;     // Function selector
+  reason: Uint8Array;         // Original error data
+  details?: Uint8Array;       // Optional additional context
+}
+```
+
+**Example:**
+
+```zig
+import { encodeWrappedError } from '@tevm/voltaire/Abi/error/wrapped';
+import { Address } from '@tevm/voltaire/Address';
+import { Selector } from '@tevm/voltaire/Selector';
+
+// Wrap an external call error
+try {
+  await externalContract.someFunction();
+} catch (err) {
+  const wrapped = encodeWrappedError({
+    target: Address.from(externalContract.address),
+    selector: Selector.fromSignature('someFunction()'),
+    reason: err.data,
+    details: new TextEncoder().encode('Called from MyContract.execute()')
+  });
+
+  // Revert with wrapped error
+  throw new Error('0x' + Buffer.from(wrapped).toString('hex'));
+}
+```
+
+### decodeWrappedError
+
+**`decodeWrappedError(data: Uint8Array): WrappedErrorData`**
+
+Decodes a wrapped error to extract context.
+
+**Returns:**
+```zig
+{
+  target: AddressType;
+  selector: SelectorType;
+  reason: Uint8Array;
+  details: Uint8Array;
+}
+```
+
+**Example:**
+
+```zig
+import { decodeWrappedError } from '@tevm/voltaire/Abi/error/wrapped';
+import { Address } from '@tevm/voltaire/Address';
+
+try {
+  await contract.method();
+} catch (err) {
+  if (err.data?.startsWith('0x91a3a3b5')) { // WrappedError selector
+    const wrapped = decodeWrappedError(Buffer.from(err.data.slice(2), 'hex'));
+
+    console.log('Failed call to:', Address.toHex(wrapped.target));
+    console.log('Function:', '0x' + Buffer.from(wrapped.selector).toString('hex'));
+    console.log('Original reason:', wrapped.reason);
+    console.log('Details:', new TextDecoder().decode(wrapped.details));
+  }
+}
+```
+
+## Usage Patterns
+
+### Contract Error Handler
+
+```zig
+import { encodeWrappedError } from '@tevm/voltaire/Abi/error/wrapped';
+import { Address } from '@tevm/voltaire/Address';
+import { Selector } from '@tevm/voltaire/Selector';
+
+async function safeExternalCall(
+  target: string,
+  functionSig: string,
+  ...args: any[]
+) {
+  try {
+    const selector = Selector.fromSignature(functionSig);
+    const contract = getContract(target);
+    return await contract[functionSig.split('(')[0]](...args);
+  } catch (err) {
+    // Wrap with context
+    const wrapped = encodeWrappedError({
+      target: Address.from(target),
+      selector: Selector.fromSignature(functionSig),
+      reason: err.data ? Buffer.from(err.data.slice(2), 'hex') : new Uint8Array(0),
+      details: new TextEncoder().encode(
+        `Called via SafeExecutor at block ${await getBlockNumber()}`
+      )
+    });
+
+    throw new Error('0x' + Buffer.from(wrapped).toString('hex'));
+  }
+}
+```
+
+### Error Tracer
+
+```zig
+import { decodeWrappedError, WRAPPED_ERROR_SELECTOR } from '@tevm/voltaire/Abi/error/wrapped';
+import { Address } from '@tevm/voltaire/Address';
+
+function traceWrappedError(errorData: string, depth = 0) {
+  if (!errorData.startsWith('0x91a3a3b5')) {
+    console.log('  '.repeat(depth) + 'Original error:', errorData);
+    return;
+  }
+
+  const wrapped = decodeWrappedError(Buffer.from(errorData.slice(2), 'hex'));
+
+  console.log('  '.repeat(depth) + 'Call to:', Address.toHex(wrapped.target));
+  console.log('  '.repeat(depth) + 'Function:', '0x' + Buffer.from(wrapped.selector).toString('hex'));
+  console.log('  '.repeat(depth) + 'Details:', new TextDecoder().decode(wrapped.details));
+
+  // Recurse if reason is also wrapped
+  const reasonHex = '0x' + Buffer.from(wrapped.reason).toString('hex');
+  traceWrappedError(reasonHex, depth + 1);
+}
+
+// Usage
+try {
+  await complexMultiContractCall();
+} catch (err) {
+  traceWrappedError(err.data);
+  // Output shows full call chain with context
+}
+```
+
+## Constants
+
+### WRAPPED_ERROR_SELECTOR
+
+```zig
+const WRAPPED_ERROR_SELECTOR = '0x91a3a3b5'
+```
+
+4-byte selector for `WrappedError(address,bytes4,bytes,bytes)`.
+
+## Specification
+
+**Defined in:** [src/primitives/Abi/error/wrapped/](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/wrapped/)
+
+**See also:**
+- [ERC-7751 Specification](https://eips.ethereum.org/EIPS/eip-7751)
+- [Error Encoding](/primitives/abi/error)

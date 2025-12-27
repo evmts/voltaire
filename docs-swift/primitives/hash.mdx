@@ -1,0 +1,25 @@
+---
+title: Hash (Swift)
+description: 32-byte Keccak-256 hash wrapper
+---
+
+# Hash
+
+32-byte Keccak-256 hash values.
+
+## Quick Start
+
+```swift
+import Voltaire
+
+let h1 = Keccak256.hash("hello world")
+print(h1.hex)
+
+let h2 = try Hash(hex: h1.hex)
+XCTAssertEqual(h1, h2)
+
+let bytes = h1.bytes // [UInt8] (32)
+let h3 = try Hash(bytes: bytes)
+XCTAssertEqual(h1, h3)
+```
+

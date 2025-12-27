@@ -1,0 +1,269 @@
+---
+title: Address.toBytes
+description: Convert address to Uint8Array
+---
+
+
+<Tabs>
+
+<Tab title="C">
+
+## `primitives_address_to_bytes(PrimitivesAddress address, uint8_t* out_bytes): void`
+
+Convert address to byte array in C. Copies 20 bytes to provided buffer.
+
+**Parameters:**
+- `address: PrimitivesAddress` - Address to convert
+- `out_bytes: uint8_t*` - Buffer for output bytes (must be at least 20 bytes)
+
+**Returns:** `void` - Bytes written to `out_bytes`
+
+**Example:**
+
+```c
+#include "primitives.h"
+#include <stdio.h>
+
+PrimitivesAddress addr;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr);
+
+// Copy to byte buffer
+uint8_t bytes[20];
+primitives_address_to_bytes(addr, bytes);
+
+// Access bytes
+printf("First byte: 0x%02x\n", bytes[0]);   // 0x74
+printf("Last byte: 0x%02x\n", bytes[19]);   // 0x3e
+
+// Direct access (PrimitivesAddress is array)
+printf("Direct: 0x%02x\n", addr.bytes[0]);  // 0x74
+```
+
+**Memory:**
+- No allocation - copies to provided buffer
+- Caller must ensure buffer is at least 20 bytes
+- Safe to use stack-allocated buffer
+
+**Direct Access:**
+
+Since `PrimitivesAddress` is a struct containing a 20-byte array, you can access bytes directly:
+
+```c
+PrimitivesAddress addr;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", &addr);
+
+// Direct access (recommended)
+for (int i = 0; i < 20; i++) {
+    printf("%02x", addr.bytes[i]);
+}
+```
+
+**Defined in:** [primitives.h:146](https://github.com/evmts/tevm/blob/main/src/primitives.h#L146)
+
+</Tab>
+</Tabs>
+
+## Memory Behavior
+
+**TypeScript/JavaScript:**
+- Returns a copy of the underlying bytes
+- Safe to modify returned array without affecting original
+- No aliasing between address and returned bytes
+
+```zig
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const bytes = addr.toBytes()
+
+// Modifying bytes doesn't affect address
+bytes[0] = 0xFF
+console.log(addr.toHex()) // Still "0x742d35cc..."
+```
+
+**Zig:**
+- Direct access to fixed-size array
+- Copying requires explicit `@memcpy`
+- Stack-allocated by default
+
+## Use Cases
+
+### Binary Protocols
+
+Serialize addresses for binary protocols:
+
+```zig
+import { Address } from 'tevm'
+
+function serializeTransaction(from: Address, to: Address, value: bigint) {
+  const buffer = new Uint8Array(20 + 20 + 8)
+
+  // Copy address bytes
+  buffer.set(from.toBytes(), 0)
+  buffer.set(to.toBytes(), 20)
+
+  // Add value (8 bytes)
+  const view = new DataView(buffer.buffer)
+  view.setBigUint64(40, value)
+
+  return buffer
+}
+```
+
+### Hash Computation
+
+Include address in hash calculations:
+
+```zig
+import { Address } from 'tevm'
+import { keccak256 } from 'tevm/crypto'
+
+function hashAddressPair(addr1: Address, addr2: Address) {
+  const bytes = new Uint8Array(40)
+  bytes.set(addr1.toBytes(), 0)
+  bytes.set(addr2.toBytes(), 20)
+
+  return keccak256(bytes)
+}
+```
+
+### Database Storage
+
+Store addresses as binary blobs:
+
+```zig
+import { Address } from 'tevm'
+
+async function saveAddress(db: Database, addr: Address) {
+  const bytes = addr.toBytes()
+  await db.execute(
+    'INSERT INTO addresses (address_bytes) VALUES (?)',
+    [Buffer(bytes)]
+  )
+}
+
+async function loadAddress(db: Database, id: number): Promise<Address> {
+  const row = await db.query('SELECT address_bytes FROM addresses WHERE id = ?', [id])
+  const bytes = new Uint8Array(row.address_bytes)
+  return Address(bytes)
+}
+```
+
+### Network Transmission
+
+Send addresses over WebSocket or other binary protocols:
+
+```zig
+import { Address } from 'tevm'
+
+function sendAddress(ws: WebSocket, addr: Address) {
+  const bytes = addr.toBytes()
+  ws.send(bytes)
+}
+
+ws.onmessage = (event) => {
+  const bytes = new Uint8Array(event.data)
+  const addr = Address(bytes)
+  console.log('Received:', addr.toHex())
+}
+```
+
+### ABI Encoding
+
+Convert to bytes for ABI encoding:
+
+```zig
+import { Address } from 'tevm'
+
+function encodeAddress(addr: Address): Uint8Array {
+  // ABI encodes addresses as 32 bytes (left-padded)
+  const encoded = Bytes32()
+  encoded.set(addr.toBytes(), 12) // Last 20 bytes
+  return encoded
+}
+```
+
+## Direct Access
+
+Since `AddressType` is a Uint8Array, you can access bytes directly:
+
+```zig
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// AddressType is a Uint8Array
+console.log(addr[0])        // 0x74 (116)
+console.log(addr[19])       // 0x3e (62)
+console.log(addr.length)    // 20
+
+// Iterate over bytes
+for (const byte of addr) {
+  console.log(byte.toString(16).padStart(2, '0'))
+}
+
+// Use array methods
+const doubled = Array(addr).map(b => b * 2)
+```
+
+**When to use `toBytes()`:**
+- Need a mutable copy
+- Want to emphasize byte conversion
+- Passing to APIs expecting Uint8Array (not branded type)
+
+**When to access directly:**
+- Reading bytes without modification
+- Iterating over bytes
+- Using array methods
+
+## Performance
+
+**Memory:** Creates new Uint8Array (20 byte allocation)
+
+**Time complexity:** O(n) where n = 20 (constant time)
+
+**Copy overhead:** Minimal for 20 bytes
+
+For performance-critical code, access bytes directly instead:
+
+```zig
+import { Address } from 'tevm'
+
+// Less efficient (allocates new array)
+const bytes = addr.toBytes()
+hash.update(bytes)
+
+// More efficient (no allocation)
+hash.update(addr) // addr is already Uint8Array
+```
+
+## Comparison with Other Conversions
+
+```zig
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Bytes (20 bytes)
+const bytes = addr.toBytes()
+console.log(bytes.length) // 20
+
+// Hex string (42 chars including 0x)
+const hex = addr.toHex()
+console.log(hex.length) // 42
+
+// Bigint (numeric representation)
+const n = addr.toU256()
+console.log(typeof n) // "bigint"
+
+// ABI encoded (32 bytes, left-padded)
+const abiEncoded = addr.toAbiEncoded()
+console.log(abiEncoded.length) // 32
+```
+
+## See Also
+
+- [fromBytes](/primitives/address/from-bytes) - Create from Uint8Array
+- [toHex](/primitives/address/to-hex) - Convert to hex string
+- [toAbiEncoded](/primitives/address/conversions#toabiencoded) - Convert to 32-byte ABI encoding
+- [AddressType](/primitives/address/branded-address) - Type-safe Uint8Array wrapper

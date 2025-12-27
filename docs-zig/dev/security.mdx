@@ -1,0 +1,378 @@
+---
+title: Security
+description: Security practices for cryptographic code and sensitive data handling
+---
+
+# Security
+
+Voltaire handles cryptographic operations and sensitive data. This guide covers security requirements.
+
+## Threat Model
+
+### What We Protect Against
+
+- **Timing attacks**: Side-channel leaks via execution time
+- **Memory disclosure**: Sensitive data remaining in memory
+- **Input validation failures**: Malformed data causing crashes or miscomputation
+- **Type confusion**: Wrong types passed to crypto functions
+
+### What We Don't Protect Against
+
+- Compromised runtime (Zig, Node, browser)
+- Hardware attacks (Spectre, Rowhammer)
+- Malicious dependencies (supply chain)
+
+## Constant-Time Operations
+
+<Warning>
+All cryptographic comparisons and key operations must be constant-time.
+</Warning>
+
+### Comparison
+
+```zig
+// ✅ Constant time - always iterates entire array
+pub fn secureEquals(a: []const u8, b: []const u8) bool {
+    if (a.len != b.len) return false;
+
+    var result: u8 = 0;
+    for (a, b) |x, y| {
+        result |= x ^ y;
+    }
+    return result == 0;
+}
+
+// ❌ Timing leak - early return reveals mismatch position
+pub fn insecureEquals(a: []const u8, b: []const u8) bool {
+    if (a.len != b.len) return false;
+    for (a, b) |x, y| {
+        if (x != y) return false;
+    }
+    return true;
+}
+```
+
+### Selection
+
+```zig
+// ✅ Constant time selection
+pub fn select(condition: bool, a: u8, b: u8) u8 {
+    const mask = @as(u8, 0) -% @intFromBool(condition);
+    return (a & mask) | (b & ~mask);
+}
+
+// ❌ Branch-based selection
+pub fn insecureSelect(condition: bool, a: u8, b: u8) u8 {
+    if (condition) return a else return b;
+}
+```
+
+### TypeScript
+
+```zig
+// ✅ Constant time in JS
+export function secureEquals(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  return result === 0;
+}
+```
+
+## Memory Handling
+
+### Clearing Sensitive Data
+
+```zig
+const std = @import("std");
+
+pub fn signMessage(private_key: [32]u8, message: []const u8) ![64]u8 {
+    // Copy key to stack
+    var key = private_key;
+
+    // Ensure key is zeroed on any exit
+    defer std.crypto.utils.secureZero(u8, &key);
+
+    // ... signing logic ...
+
+    return signature;
+}
+```
+
+### Avoid Copying Secrets
+
+```zig
+// ✅ Pass by pointer, don't copy
+pub fn derivePublicKey(private_key: *const [32]u8) [33]u8 {
+    // Use directly without copying
+    return computePublicKey(private_key.*);
+}
+
+// ❌ Unnecessary copy
+pub fn derivePublicKeyBad(private_key: [32]u8) [33]u8 {
+    // private_key is copied to stack
+    return computePublicKey(private_key);
+}
+```
+
+### TypeScript Memory Limits
+
+JavaScript doesn't guarantee memory clearing:
+
+```zig
+// Best effort clearing
+export function clearKey(key: Uint8Array): void {
+  crypto.getRandomValues(key);  // Overwrite with random
+  key.fill(0);                  // Then zero
+}
+
+// Usage
+const privateKey = generatePrivateKey();
+try {
+  const signature = sign(privateKey, message);
+  return signature;
+} finally {
+  clearKey(privateKey);
+}
+```
+
+## Input Validation
+
+### Validate Before Processing
+
+```zig
+pub fn verifySignature(
+    signature: []const u8,
+    message: []const u8,
+    public_key: []const u8,
+) !bool {
+    // Length checks first
+    if (signature.len != 64) return error.InvalidSignatureLength;
+    if (public_key.len != 33 and public_key.len != 65) {
+        return error.InvalidPublicKeyLength;
+    }
+
+    // Range checks
+    const r = signature[0..32];
+    const s = signature[32..64];
+    if (!isValidScalar(r)) return error.InvalidR;
+    if (!isValidScalar(s)) return error.InvalidS;
+
+    // Point validation
+    const point = try decodePoint(public_key);
+    if (!point.isOnCurve()) return error.InvalidPublicKey;
+
+    // Now safe to verify
+    return internalVerify(signature, message, point);
+}
+```
+
+### Reject Invalid Early
+
+```zig
+pub fn fromHex(hex: []const u8) !Address {
+    // Reject immediately if wrong length
+    if (hex.len != 42) return error.InvalidLength;
+    if (hex[0] != '0' or hex[1] != 'x') return error.MissingPrefix;
+
+    // Validate characters before parsing
+    for (hex[2..]) |c| {
+        switch (c) {
+            '0'...'9', 'a'...'f', 'A'...'F' => {},
+            else => return error.InvalidCharacter,
+        }
+    }
+
+    // Now safe to parse
+    return parseValidatedHex(hex);
+}
+```
+
+## Error Handling
+
+### Don't Leak Information in Errors
+
+```zig
+// ✅ Generic error, no secret info
+pub fn decrypt(key: [32]u8, ciphertext: []const u8) ![]u8 {
+    // ...
+    if (!verifyMac(ciphertext)) {
+        return error.DecryptionFailed;  // Generic
+    }
+    // ...
+}
+
+// ❌ Leaks information
+pub fn decryptBad(key: [32]u8, ciphertext: []const u8) ![]u8 {
+    if (!verifyMac(ciphertext)) {
+        return error.MacVerificationFailed;  // Reveals MAC failed specifically
+    }
+    if (!checkPadding(plaintext)) {
+        return error.PaddingInvalid;  // Padding oracle attack!
+    }
+}
+```
+
+### Avoid Panics in Crypto Code
+
+```zig
+// ✅ Return error
+pub fn parsePrivateKey(bytes: []const u8) !PrivateKey {
+    if (bytes.len != 32) return error.InvalidLength;
+    if (isZero(bytes)) return error.ZeroKey;
+    return PrivateKey{ .bytes = bytes[0..32].* };
+}
+
+// ❌ Panic exposes internal state
+pub fn parsePrivateKeyBad(bytes: []const u8) PrivateKey {
+    if (bytes.len != 32) @panic("invalid key length");  // Bad
+    return PrivateKey{ .bytes = bytes[0..32].* };
+}
+```
+
+## Test Vectors
+
+### Use Official Vectors
+
+```zig
+test "secp256k1 sign - official vectors" {
+    // From https://www.secg.org/sec2-v2.pdf
+    const vectors = .{
+        .{
+            .private_key = "0x0000000000000000000000000000000000000000000000000000000000000001",
+            .message = "0x...",
+            .expected_sig = "0x...",
+        },
+        // ... more vectors
+    };
+
+    for (vectors) |v| {
+        const key = try PrivateKey.fromHex(v.private_key);
+        const msg = try hexToBytes(v.message);
+        const sig = try sign(key, msg);
+        try testing.expectEqualSlices(u8, v.expected_sig, &sig);
+    }
+}
+```
+
+### Edge Cases
+
+```zig
+test "signature validation edge cases" {
+    // Zero signature
+    const zero_sig = [_]u8{0} ** 64;
+    try testing.expectError(error.InvalidSignature, verify(zero_sig, msg, pubkey));
+
+    // Max value signature
+    const max_sig = [_]u8{0xff} ** 64;
+    try testing.expectError(error.InvalidSignature, verify(max_sig, msg, pubkey));
+
+    // s > n/2 (malleable signature)
+    const malleable_sig = createMalleableSig();
+    try testing.expectError(error.InvalidSignature, verify(malleable_sig, msg, pubkey));
+}
+```
+
+### Malformed Inputs
+
+```zig
+test "rejects malformed public keys" {
+    const cases = .{
+        &[_]u8{},                          // Empty
+        &[_]u8{0x04} ++ [_]u8{0} ** 63,   // Wrong length
+        &[_]u8{0x05} ++ [_]u8{0} ** 64,   // Invalid prefix
+        &[_]u8{0x04} ++ [_]u8{0xff} ** 64, // Point not on curve
+    };
+
+    for (cases) |case| {
+        try testing.expectError(error.InvalidPublicKey, parsePublicKey(case));
+    }
+}
+```
+
+## Cross-Validation
+
+### Against Reference Implementations
+
+```zig
+import { secp256k1 } from "@noble/curves/secp256k1";
+import * as Secp256k1 from "./index.js";
+
+describe("cross-validation", () => {
+  it("matches noble for signatures", () => {
+    const privateKey = new Uint8Array(32);
+    crypto.getRandomValues(privateKey);
+
+    const message = new TextEncoder().encode("test");
+    const hash = keccak256(message);
+
+    const ourSig = Secp256k1.sign(privateKey, hash);
+    const nobleSig = secp256k1.sign(hash, privateKey);
+
+    expect(ourSig.r).toEqual(nobleSig.r);
+    expect(ourSig.s).toEqual(nobleSig.s);
+  });
+});
+```
+
+### Fuzz Testing
+
+```zig
+describe("fuzz", () => {
+  it("never crashes on random input", () => {
+    for (let i = 0; i < 100000; i++) {
+      const len = Math.floor(Math.random() * 1000);
+      const data = crypto.getRandomValues(new Uint8Array(len));
+
+      try {
+        Signature.fromBytes(data);
+      } catch (e) {
+        // Expected to throw for invalid input
+        // But should never crash
+      }
+    }
+  });
+});
+```
+
+## Security Checklist
+
+Before merging crypto code:
+
+### Implementation
+- [ ] All comparisons constant-time
+- [ ] All secret operations constant-time
+- [ ] No early returns in secret-dependent code
+- [ ] Secrets cleared after use
+
+### Validation
+- [ ] All inputs validated before use
+- [ ] Length checks before access
+- [ ] Range checks for scalars/points
+- [ ] Point-on-curve validation
+
+### Testing
+- [ ] Official test vectors
+- [ ] Edge case tests (zero, max, invalid)
+- [ ] Malformed input tests
+- [ ] Cross-validation against reference
+- [ ] Fuzz testing
+
+### Error Handling
+- [ ] No secret info in error messages
+- [ ] No panics, only error returns
+- [ ] Consistent error types
+
+## Reporting Vulnerabilities
+
+Found a security issue? Contact security@tevm.sh with:
+
+1. Description of vulnerability
+2. Steps to reproduce
+3. Potential impact
+4. Suggested fix (if any)
+
+We aim to respond within 48 hours.

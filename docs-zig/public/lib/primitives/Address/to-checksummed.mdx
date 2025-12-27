@@ -1,0 +1,269 @@
+---
+title: Address.toChecksummed
+description: Convert address to EIP-55 checksummed hex string
+---
+
+
+<Tabs>
+
+<Tab title="TypeScript - Factory">
+
+## `Address.ToChecksummed({ keccak256 })`
+
+Factory function that creates an address-to-checksum converter with explicit crypto dependency.
+
+**Parameters:**
+- `deps: { keccak256: (data: Uint8Array) => Uint8Array }` - Crypto dependencies
+
+**Returns:** `(address: AddressType) => Checksummed`
+
+**Bundle size benefit:** Crypto dependencies explicit - only bundled if you import them.
+
+**Example:**
+
+```zig
+import { ToChecksummed } from 'tevm/Address/AddressType'
+import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+import { Address } from 'tevm'
+
+// Create factory with explicit crypto dependency
+const toChecksummed = ToChecksummed({ keccak256 })
+
+// Convert address to checksummed string
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = toChecksummed(addr)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+</Tab>
+
+<Tab title="C">
+
+## `int primitives_address_to_checksum_hex(const PrimitivesAddress* address, uint8_t* buf)`
+
+Convert address to EIP-55 checksummed hex string.
+
+**Parameters:**
+- `address: const PrimitivesAddress*` - Address to convert
+- `buf: uint8_t*` - Buffer for result (must be at least 42 bytes)
+
+**Returns:** `int` - `PRIMITIVES_SUCCESS` (0) on success, error code on failure
+
+**Example:**
+
+```c
+#include <tevm/primitives.h>
+#include <stdio.h>
+
+PrimitivesAddress addr;
+// Initialize address from hex...
+
+uint8_t checksummed[42];
+int result = primitives_address_to_checksum_hex(&addr, checksummed);
+if (result == PRIMITIVES_SUCCESS) {
+    printf("%.*s\n", 42, checksummed);
+    // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+}
+```
+
+**Defined in:** [primitives.h:115](https://github.com/evmts/tevm/blob/main/src/primitives.h#L115)
+
+</Tab>
+</Tabs>
+
+## EIP-55 Checksum Algorithm
+
+The checksum encodes integrity verification in the case of hexadecimal characters:
+
+1. Convert address to lowercase hex (without `0x` prefix)
+2. Compute keccak256 hash of lowercase hex string
+3. For each hex character:
+   - If character is a letter (a-f):
+     - If corresponding hash nibble >= 8: uppercase
+     - Otherwise: lowercase
+   - If character is a digit (0-9): unchanged
+
+**Pseudocode:**
+```
+lowercase = address.toHex().slice(2)  // Remove 0x
+hash = keccak256(lowercase)
+result = "0x"
+for i in 0..39:
+  char = lowercase[i]
+  if char is letter:
+    if hash[i/2] nibble >= 8:
+      result += char.toUpperCase()
+    else:
+      result += char.toLowerCase()
+  else:
+    result += char
+```
+
+## Example Walkthrough
+
+```zig
+import { Address } from 'tevm'
+
+// Input address (lowercase)
+const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+
+// Checksummed output
+console.log(addr.toChecksummed())
+// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+//     ^  ^     ^  ^ ^^     ^  ^             ^
+
+// Letters capitalized based on keccak256 hash
+```
+
+## Use Cases
+
+### User Display
+
+Display addresses with integrity verification:
+
+```zig
+import { Address } from 'tevm'
+
+function displayAddress(address: Address) {
+  const checksummed = address.toChecksummed()
+  return (
+    <div>
+      <span className="address">{checksummed}</span>
+      <button onClick={() => copyToClipboard(checksummed)}>Copy</button>
+    </div>
+  )
+}
+```
+
+### Validation
+
+Users can manually verify addresses by comparing checksums:
+
+```zig
+import { Address } from 'tevm'
+
+const expected = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+const addr = Address(expected)
+
+// Verify checksum matches
+if (addr.toChecksummed() === expected) {
+  console.log("Checksum valid - address not corrupted")
+} else {
+  console.error("Checksum invalid - possible typo or corruption")
+}
+```
+
+### QR Codes
+
+Use checksummed addresses in QR codes for better error detection:
+
+```zig
+import { Address } from 'tevm'
+import QRCode from 'qrcode'
+
+async function generateAddressQR(address: Address) {
+  const checksummed = address.toChecksummed()
+  const qr = await QRCode.toDataURL(checksummed)
+  return qr
+}
+```
+
+### Wallet Integrations
+
+Wallets expect checksummed addresses:
+
+```zig
+import { Address } from 'tevm'
+
+async function requestPayment(recipient: Address, amount: bigint) {
+  const checksummed = recipient.toChecksummed()
+
+  // Use in wallet connect or web3 provider
+  await ethereum.request({
+    method: 'eth_sendTransaction',
+    params: [{
+      to: checksummed,
+      value: `0x${amount.toString(16)}`
+    }]
+  })
+}
+```
+
+## Cryptographic Dependencies
+
+<Tip>
+With the factory pattern, keccak256 is only bundled if you explicitly import it. Crypto dependencies are now explicit and tree-shakeable.
+</Tip>
+
+**Uses keccak256 internally** - Import keccak256 hash function and pass to factory.
+
+For minimal bundle size without crypto, use `toHex()` instead if checksums aren't required.
+
+## Performance
+
+**Time complexity:** O(n) where n = 20 bytes (constant time)
+
+**Overhead:** One keccak256 hash computation
+
+For repeated conversions, consider caching:
+
+```zig
+import { Address } from 'tevm'
+
+class CachedAddress {
+  private _checksumCache?: string
+
+  constructor(private address: Address) {}
+
+  toChecksummed(): string {
+    if (!this._checksumCache) {
+      this._checksumCache = this.address.toChecksummed()
+    }
+    return this._checksumCache
+  }
+}
+```
+
+## Validation
+
+Validate checksum before using an address:
+
+```zig
+import { Address } from 'tevm'
+
+function parseChecksummedAddress(input: string): Address {
+  if (!Address.isValidChecksum(input)) {
+    throw new Error('Invalid address checksum')
+  }
+
+  return Address(input)
+}
+```
+
+## Comparison with Other Formats
+
+```zig
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+
+// Lowercase (toHex)
+console.log(addr.toHex())
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Checksummed (toChecksummed)
+console.log(addr.toChecksummed())
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Both represent the same address
+console.log(Address(addr.toHex()).equals(Address(addr.toChecksummed())))
+// true
+```
+
+## See Also
+
+- [toHex](/primitives/address/to-hex) - Convert to lowercase hex
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [fromHex](/primitives/address/from-hex) - Parse from hex string
+- [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55)
+- [Keccak256](/crypto/keccak256) - Keccak256 hash function

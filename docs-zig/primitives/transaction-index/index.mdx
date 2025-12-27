@@ -1,0 +1,90 @@
+---
+title: "TransactionIndex"
+description: "Transaction position in block (0-based)"
+---
+
+## Overview
+
+TransactionIndex is a branded `number` type representing a transaction's position within a block. Indices start at 0 for the first transaction in a block.
+
+```zig
+import * as TransactionIndex from '@tevm/primitives/TransactionIndex'
+
+const index = TransactionIndex.from(5)
+```
+
+## Type Definition
+
+```zig
+type TransactionIndexType = number & {
+  readonly [brand]: "TransactionIndex";
+}
+```
+
+## Creating TransactionIndexes
+
+### from
+
+Create from number or bigint.
+
+```zig
+// From number
+const idx1 = TransactionIndex.from(5)
+
+// From bigint
+const idx2 = TransactionIndex.from(5n)
+
+// First transaction in block
+const first = TransactionIndex.from(0)
+```
+
+**Validation**: Must be non-negative integer.
+
+## Converting TransactionIndexes
+
+### toNumber
+
+Convert to number (zero-cost).
+
+```zig
+const num = TransactionIndex.toNumber(index)
+// 5
+```
+
+## Comparing TransactionIndexes
+
+### equals
+
+Check equality.
+
+```zig
+const a = TransactionIndex.from(5)
+const b = TransactionIndex.from(5)
+
+if (TransactionIndex.equals(a, b)) {
+  console.log('Indexes are equal')
+}
+```
+
+## Usage in Receipts
+
+TransactionIndex appears in transaction receipts to indicate position within a block:
+
+```zig
+import * as Receipt from '@tevm/primitives/Receipt'
+
+const receipt = Receipt.from({
+  transactionIndex: TransactionIndex.from(3),
+  // ... other fields
+})
+```
+
+## Errors
+
+**InvalidTransactionIndexError**: Invalid value (negative, non-integer, wrong type).
+
+## See Also
+
+- [Receipt](/primitives/receipt) - Transaction receipts
+- [LogIndex](/primitives/log-index) - Log position
+- [TransactionHash](/primitives/transaction-hash) - Transaction identifier

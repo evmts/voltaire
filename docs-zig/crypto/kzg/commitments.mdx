@@ -1,0 +1,99 @@
+---
+title: Commitments
+description: Creating KZG commitments from blobs for EIP-4844
+---
+
+
+# KZG Commitments
+
+Convert 128 KB blobs into succinct 48-byte commitments using polynomial commitments.
+
+## Overview
+
+KZG commitments represent a blob as a polynomial commitment on the BLS12-381 curve. The commitment is binding (cannot change blob after commitment) and enables efficient verification.
+
+## API
+
+<Tabs>
+<Tab title="Standard API">
+
+```zig
+import { Kzg, Blob } from 'tevm';
+
+// Load trusted setup (required once)
+Kzg.loadTrustedSetup();
+
+// Create blob
+const blob = Blob(131072); // 131,072 bytes
+// ... fill with data
+
+// Generate commitment
+const commitment = Kzg.Commitment(blob);
+// Returns: Uint8Array (48 bytes)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```zig
+import { Kzg, Blob } from 'tevm';
+import * as ckzg from 'c-kzg';
+
+// Load trusted setup
+Kzg.loadTrustedSetup();
+
+// Create factory with c-kzg dependency injection
+const Commitment = Kzg.CommitmentFactory({
+  blobToKzgCommitment: ckzg.blobToKzgCommitment
+});
+
+// Use factory
+const blob = Blob(131072);
+const commitment = Commitment(blob);
+// Returns: Uint8Array (48 bytes)
+```
+
+**Benefits**: Tree-shakeable, testable with mock c-kzg implementations
+
+</Tab>
+</Tabs>
+
+## Blob Format
+
+**Size**: 131,072 bytes (128 KB exactly)
+**Structure**: 4,096 field elements × 32 bytes
+**Constraint**: Each field element must have top byte = 0 (< BLS12-381 modulus)
+
+```zig
+// Valid blob
+const blob = Blob(131072);
+for (let i = 0; i < 4096; i++) {
+  blob[i * 32] = 0; // Top byte must be 0
+  // ... fill remaining 31 bytes
+}
+```
+
+## Error Handling
+
+```zig
+try {
+  const commitment = Kzg.Commitment(blob);
+} catch (error) {
+  if (error instanceof KzgNotInitializedError) {
+    // Trusted setup not loaded
+    Kzg.loadTrustedSetup();
+  } else if (error instanceof KzgInvalidBlobError) {
+    // Invalid blob format
+    console.error('Blob validation failed:', error.message);
+  } else if (error instanceof KzgError) {
+    // Commitment computation failed
+    console.error('KZG error:', error.message);
+  }
+}
+```
+
+## Related
+
+- [KZG Overview](./index)
+- [Proofs](./proofs)
+- [EIP-4844](./eip-4844)

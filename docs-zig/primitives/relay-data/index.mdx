@@ -1,0 +1,162 @@
+---
+title: RelayData
+description: MEV relay connection information for Proposer-Builder Separation (PBS)
+---
+
+# RelayData
+
+MEV relay connection information for Proposer-Builder Separation (PBS).
+
+## Overview
+
+RelayData represents MEV relay connection information used in PBS. Relays act as trusted intermediaries between block builders and validators, ensuring builders cannot see validator signatures before block delivery.
+
+## Type Definition
+
+```zig
+type RelayDataType = {
+  /** MEV relay endpoint URL */
+  readonly relayUrl: string;
+
+  /** Relay's BLS public key (48 bytes) */
+  readonly relayPubkey: Uint8Array;
+
+  /** Builder's BLS public key (48 bytes, optional) */
+  readonly builderPubkey?: Uint8Array;
+
+  /** Current consensus layer slot */
+  readonly slot: SlotType;
+
+  /** Parent block hash (32 bytes) */
+  readonly parentHash: HashType;
+
+  /** Validator fee recipient address (20 bytes) */
+  readonly proposerFeeRecipient: AddressType;
+};
+```
+
+## Well-Known Relays
+
+```zig
+import { MEV_RELAYS } from './primitives/RelayData/index.js';
+
+MEV_RELAYS.FLASHBOTS          // "https://relay.flashbots.net"
+MEV_RELAYS.BLOXROUTE_MAX_PROFIT  // "https://bloxroute.max-profit.bloxroute.com"
+MEV_RELAYS.BLOXROUTE_REGULATED   // "https://bloxroute.regulated.bloxroute.com"
+MEV_RELAYS.EDEN               // "https://relay.edennetwork.io"
+MEV_RELAYS.MANIFOLD           // "https://mainnet-relay.securerpc.com"
+MEV_RELAYS.ULTRASOUND         // "https://relay.ultrasound.money"
+MEV_RELAYS.AGNOSTIC           // "https://agnostic-relay.net"
+```
+
+## Usage
+
+### Create RelayData
+
+```zig
+import * as RelayData from './primitives/RelayData/index.js';
+import { MEV_RELAYS } from './primitives/RelayData/index.js';
+
+const relay = RelayData.from({
+  relayUrl: MEV_RELAYS.FLASHBOTS,
+  relayPubkey: new Uint8Array(48), // relay's BLS pubkey
+  slot: 12345n,
+  parentHash: new Uint8Array(32),
+  proposerFeeRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+});
+```
+
+### Get API Endpoint
+
+```zig
+const url = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
+// "https://relay.flashbots.net/eth/v1/builder/header"
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(data)` | Create from RelayDataLike object |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `getEndpoint(relay, method)` | Construct full API endpoint URL |
+
+### Constants
+
+| Constant | Description |
+|----------|-------------|
+| `MEV_RELAYS` | Well-known relay endpoints |
+
+## MEV-Boost API Endpoints
+
+Common relay API methods:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/eth/v1/builder/header` | Request block header bid |
+| `/eth/v1/builder/blinded_blocks` | Submit blinded block |
+| `/eth/v1/builder/status` | Check relay status |
+| `/relay/v1/data/bidtraces` | Query bid traces |
+
+### Example: Request Block Header
+
+```zig
+const endpoint = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
+const params = `${relay.slot}/${relay.parentHash}/${relay.proposerFeeRecipient}`;
+
+const response = await fetch(`${endpoint}/${params}`);
+const bid = await response.json();
+```
+
+## PBS Flow
+
+```
+Builder                    Relay                      Proposer
+   |                         |                            |
+   |--[submit block bid]---->|                            |
+   |                         |--[header+bid]------------->|
+   |                         |                            |
+   |                         |<--[signed header]----------|
+   |                         |                            |
+   |<--[request payload]-----|                            |
+   |--[block payload]------->|                            |
+   |                         |--[full block]------------->|
+```
+
+1. **Builder** submits block bid to relay
+2. **Relay** forwards best header to proposer
+3. **Proposer** signs header (commits to block)
+4. **Relay** releases block to builder
+5. **Builder** sends full payload
+6. **Relay** forwards to proposer for broadcast
+
+## Relay Selection
+
+Consider when selecting relays:
+
+- **Censorship**: Some relays filter transactions (OFAC compliance)
+- **Reputation**: Relay uptime and reliability
+- **Diversity**: Using multiple relays reduces centralization risk
+- **Geographic**: Latency affects bid competitiveness
+
+```zig
+// Use multiple relays for redundancy
+const relays = [
+  RelayData.from({ relayUrl: MEV_RELAYS.FLASHBOTS, ... }),
+  RelayData.from({ relayUrl: MEV_RELAYS.ULTRASOUND, ... }),
+  RelayData.from({ relayUrl: MEV_RELAYS.AGNOSTIC, ... }),
+];
+```
+
+## See Also
+
+- [Slot](/primitives/slot) - Consensus layer slot
+- [Hash](/primitives/hash) - Hash primitive
+- [Address](/primitives/address) - Ethereum address
+- [BLS12-381](/crypto/bls12-381) - BLS signatures

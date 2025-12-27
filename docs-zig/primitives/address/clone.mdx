@@ -1,0 +1,298 @@
+---
+title: Address.clone
+description: Create deep copy of address
+---
+
+
+<Tip>
+View the complete executable example at [`playground/src/examples/primitives/address/clone.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/primitives/address/clone.ts).
+</Tip>
+
+<Tabs>
+
+<Tab title="C">
+
+## Value type (copy by assignment)
+
+In C, `PrimitivesAddress` is a struct with a fixed-size byte array. Assignment creates a copy automatically.
+
+**Example:**
+
+```c
+#include "tevm.h"
+#include <string.h>
+
+int main() {
+    // Create original address
+    PrimitivesAddress addr1;
+    int result = primitives_address_from_hex(
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+        42,
+        &addr1
+    );
+
+    if (result != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
+
+    // Assignment copies value
+    PrimitivesAddress addr2 = addr1;
+
+    // Independent copies - modify addr2
+    addr2.bytes[0] = 0xFF;
+    addr2.bytes[19] = 0xAA;
+
+    // addr1 unchanged
+    printf("addr1[0]: 0x%02x\n", addr1.bytes[0]);   // 0x74
+    printf("addr1[19]: 0x%02x\n", addr1.bytes[19]); // 0x3e
+    printf("addr2[0]: 0x%02x\n", addr2.bytes[0]);   // 0xff
+    printf("addr2[19]: 0x%02x\n", addr2.bytes[19]); // 0xaa
+
+    return 0;
+}
+```
+
+**Manual copy with memcpy:**
+
+```c
+#include "tevm.h"
+#include <string.h>
+
+PrimitivesAddress addr1;
+primitives_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", 42, &addr1);
+
+// Explicit copy using memcpy
+PrimitivesAddress addr2;
+memcpy(&addr2, &addr1, sizeof(PrimitivesAddress));
+
+// Or copy just the bytes
+memcpy(addr2.bytes, addr1.bytes, 20);
+```
+
+**Note:** No explicit clone function needed in C - assignment or `memcpy` creates independent copies.
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/tevm/blob/main/src/primitives.h)
+
+</Tab>
+</Tabs>
+
+## Memory Behavior
+
+**Deep copy:** Creates new Uint8Array with copied bytes.
+
+**Independent:** Modifications to clone don't affect original:
+
+```zig
+import { Address } from 'tevm'
+
+const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const clone = original.clone()
+
+// Modify clone
+clone[0] = 0xFF
+clone[19] = 0xAA
+
+// Original unchanged
+console.log(original[0])  // 0x74
+console.log(original[19]) // 0x3e
+console.log(clone[0])     // 0xFF
+console.log(clone[19])    // 0xAA
+```
+
+## Use Cases
+
+### Defensive Copying
+
+Protect against external mutation:
+
+```zig
+import { Address } from 'tevm'
+
+class Account {
+  private _address: Address
+
+  constructor(address: Address) {
+    // Clone to prevent external modification
+    this._address = address.clone()
+  }
+
+  getAddress(): Address {
+    // Return clone to prevent caller modification
+    return this._address.clone()
+  }
+}
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const account = new Account(addr)
+
+// External modification doesn't affect account
+addr[0] = 0xFF
+console.log(account.getAddress().equals(addr)) // false
+```
+
+### Immutable Updates
+
+Create modified copies:
+
+```zig
+import { Address } from 'tevm'
+
+function incrementAddress(addr: Address): Address {
+  const clone = addr.clone()
+  const value = clone.toU256() + 1n
+  return Address(value)
+}
+
+const addr = Address(100n)
+const next = incrementAddress(addr)
+
+console.log(addr.toU256())  // 100n
+console.log(next.toU256())  // 101n
+```
+
+### Array Modifications
+
+Clone before modifying array elements:
+
+```zig
+import { Address } from 'tevm'
+
+const addresses = [
+  Address(1n),
+  Address(2n),
+  Address(3n),
+]
+
+// Modify copy, not original
+function processAddresses(addrs: Address[]): Address[] {
+  return addrs.map(addr => {
+    const clone = addr.clone()
+    // Modify clone...
+    return clone
+  })
+}
+```
+
+### Snapshot State
+
+Save address state at point in time:
+
+```zig
+import { Address } from 'tevm'
+
+class Wallet {
+  private history: Address[] = []
+
+  constructor(private current: Address) {
+    this.snapshot()
+  }
+
+  snapshot() {
+    // Save clone of current state
+    this.history.push(this.current.clone())
+  }
+
+  update(newAddress: Address) {
+    this.current = newAddress.clone()
+    this.snapshot()
+  }
+
+  revert(index: number) {
+    if (index < this.history.length) {
+      this.current = this.history[index].clone()
+    }
+  }
+}
+```
+
+## When to Clone
+
+**Clone when:**
+- Storing address in mutable structure
+- Returning address from getter
+- Passing address to untrusted code
+- Creating snapshots
+
+**Don't clone when:**
+- Address is immediately consumed
+- Working with immutable patterns
+- Performance is critical and mutation controlled
+
+## Alternative: Avoid Mutation
+
+Instead of cloning, use immutable patterns:
+
+```zig
+import { Address } from 'tevm'
+
+// Instead of mutating
+function badUpdate(addr: Address) {
+  addr[0] = 0xFF // Mutation!
+  return addr
+}
+
+// Return new address
+function goodUpdate(addr: Address): Address {
+  const bytes = new Uint8Array(addr)
+  bytes[0] = 0xFF
+  return Address(bytes)
+}
+```
+
+## Performance
+
+**Memory:** Allocates new 20-byte array.
+
+**Time complexity:** O(n) where n = 20 (constant time for addresses).
+
+**Overhead:** Minimal - just 20 bytes.
+
+**When performance matters:**
+- Avoid cloning in tight loops
+- Reuse addresses when possible
+- Use direct byte access
+
+```zig
+import { Address } from 'tevm'
+
+// Less efficient (clones every iteration)
+for (let i = 0; i < 1000000; i++) {
+  const clone = addr.clone()
+  process(clone)
+}
+
+// More efficient (no cloning)
+for (let i = 0; i < 1000000; i++) {
+  process(addr) // Reuse original
+}
+```
+
+## Comparison with Other Operations
+
+```zig
+import { Address } from 'tevm'
+
+const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Clone (new object, same value)
+const clone = original.clone()
+console.log(original === clone)        // false
+console.log(original.equals(clone))    // true
+
+// Assignment (same object)
+const reference = original
+console.log(original === reference)    // true
+console.log(original.equals(reference)) // true
+
+// Conversion (new object, same value)
+const fromHex = Address(original.toHex())
+console.log(original === fromHex)      // false
+console.log(original.equals(fromHex))  // true
+```
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [fromBytes](/primitives/address/from-bytes) - Create from bytes
+- [equals](/primitives/address/equals) - Compare addresses
+- [toBytes](/primitives/address/to-bytes) - Convert to bytes

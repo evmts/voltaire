@@ -1,0 +1,49 @@
+---
+title: "EncodedData"
+description: "ABI-encoded hex data"
+---
+
+# EncodedData
+
+Branded hex string representing ABI-encoded data. Used for function calls, constructor arguments, and custom error data.
+
+## Type
+
+```zig
+type EncodedDataType = `0x${string}` & { readonly [brand]: "EncodedData" };
+```
+
+## Construction
+
+```zig
+import * as EncodedData from 'voltaire/primitives/EncodedData';
+
+// From hex string
+const data = EncodedData.from("0x00000001");
+
+// From bytes
+const bytes = new Uint8Array([0, 0, 0, 1]);
+const data = EncodedData.fromBytes(bytes);
+```
+
+## Methods
+
+- `from(value)` - Universal constructor (hex or bytes)
+- `fromBytes(bytes)` - From Uint8Array
+- `toBytes(data)` - Convert to Uint8Array
+- `equals(a, b)` - Compare equality (case-insensitive)
+
+## Example
+
+```zig
+import * as EncodedData from 'voltaire/primitives/EncodedData';
+
+// Function call data
+const calldata = EncodedData.from("0xa9059cbb000000000000000000000000...");
+
+// Convert to bytes for execution
+const bytes = EncodedData.toBytes(calldata);
+
+// Compare encoded data
+const equal = EncodedData.equals(data1, data2);
+```

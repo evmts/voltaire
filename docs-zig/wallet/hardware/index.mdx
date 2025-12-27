@@ -1,0 +1,338 @@
+---
+title: "Hardware Wallets"
+description: "Secure transaction signing with Ledger and Trezor hardware devices"
+---
+
+# Hardware Wallets
+
+Voltaire provides type-safe interfaces for integrating hardware wallets into Ethereum applications. Hardware wallets keep private keys secure on physical devices, requiring user confirmation for all signing operations.
+
+## Supported Devices
+
+- **Ledger** - Nano S, Nano S Plus, Nano X, Stax
+- **Trezor** - Trezor One, Trezor Model T
+
+## Quick Start
+
+### Ledger
+
+```zig
+import { createLedger } from '@tevm/voltaire/wallet/hardware';
+
+const ledger = createLedger();
+
+// Connect via WebUSB
+await ledger.connect();
+
+// Get first address (m/44'/60'/0'/0/0)
+const address = await ledger.getAddress("m/44'/60'/0'/0/0");
+
+// Sign transaction
+const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", tx);
+
+// Disconnect
+await ledger.disconnect();
+```
+
+### Trezor
+
+```zig
+import { createTrezor } from '@tevm/voltaire/wallet/hardware';
+
+const trezor = createTrezor({
+  manifest: {
+    email: 'developer@example.com',
+    appUrl: 'https://example.com'
+  }
+});
+
+// Connect
+await trezor.connect();
+
+// Get first address
+const address = await trezor.getAddress("m/44'/60'/0'/0/0");
+
+// Sign transaction
+const signature = await trezor.signTransaction("m/44'/60'/0'/0/0", tx);
+
+// Disconnect
+await trezor.disconnect();
+```
+
+## Interface
+
+All hardware wallets implement the `HardwareWallet` interface:
+
+```zig
+interface HardwareWallet {
+  // Connection
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  isConnected(): boolean;
+
+  // Address derivation (BIP-32/44)
+  getAddress(path: string): Promise<AddressType>;
+  getAddresses(basePath: string, count: number): Promise<AddressType[]>;
+
+  // Signing
+  signTransaction(path: string, tx: TransactionType): Promise<SignatureType>;
+  signTypedData(path: string, typedData: EIP712TypedData): Promise<SignatureType>;
+  signMessage(path: string, message: Uint8Array): Promise<SignatureType>;
+
+  // Device info
+  getDeviceInfo(): Promise<DeviceInfo>;
+}
+```
+
+## Derivation Paths
+
+Hardware wallets use BIP-32/44 derivation paths:
+
+```zig
+// Standard Ethereum derivation path
+// m / purpose' / coin_type' / account' / change / address_index
+const path = "m/44'/60'/0'/0/0";
+
+// Common patterns:
+const firstAddress = "m/44'/60'/0'/0/0";    // First address, first account
+const secondAddress = "m/44'/60'/0'/0/1";   // Second address, first account
+const ledgerLive = "m/44'/60'/0'/0/0";      // Ledger Live default
+const metamask = "m/44'/60'/0'/0/0";        // MetaMask default
+
+// Get multiple addresses
+const addresses = await wallet.getAddresses("m/44'/60'/0'/0", 10);
+// Returns addresses at indices 0-9
+```
+
+**BIP-44 Components:**
+- `purpose`: Always `44'` (BIP-44)
+- `coin_type`: `60'` for Ethereum
+- `account`: Account index (usually `0'`)
+- `change`: `0` for external chain, `1` for internal (change)
+- `address_index`: Address index
+
+## Connection
+
+### Ledger
+
+Ledger uses WebUSB for browser-based connections:
+
+```zig
+import { LedgerWallet } from '@tevm/voltaire/wallet/hardware';
+
+const ledger = new LedgerWallet();
+
+try {
+  await ledger.connect();
+  console.log('Connected:', ledger.isConnected());
+} catch (error) {
+  console.error('Connection failed:', error);
+}
+```
+
+**Requirements:**
+- Ledger device connected via USB
+- Ethereum app opened on device
+- WebUSB support in browser (Chrome, Edge, Opera)
+- User grants USB device permissions
+
+### Trezor
+
+Trezor uses Trezor Connect (requires manifest):
+
+```zig
+import { TrezorWallet } from '@tevm/voltaire/wallet/hardware';
+
+const trezor = new TrezorWallet({
+  manifest: {
+    email: 'support@yourapp.com',
+    appUrl: 'https://yourapp.com'
+  }
+});
+
+await trezor.connect();
+```
+
+**Requirements:**
+- Trezor device connected via USB
+- Trezor Bridge installed (or WebUSB enabled)
+- Valid app manifest
+
+## Signing Operations
+
+### Transaction Signing
+
+```zig
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+const tx = {
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  value: 1000000000000000000n, // 1 ETH
+  gas: 21000n,
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  nonce: 0n,
+  chainId: 1
+};
+
+// Sign with hardware wallet
+const signature = await wallet.signTransaction("m/44'/60'/0'/0/0", tx);
+
+// Combine into signed transaction
+const signedTx = Transaction.sign(tx, signature);
+const serialized = Transaction.serialize(signedTx);
+```
+
+**Supported Transaction Types:**
+- Legacy (type 0)
+- EIP-2930 (type 1) - Access lists
+- EIP-1559 (type 2) - Fee market
+- EIP-4844 (type 3) - Blobs
+
+### Personal Message Signing
+
+```zig
+// Sign personal message (EIP-191)
+const message = new TextEncoder().encode('Hello from hardware wallet!');
+const signature = await wallet.signMessage("m/44'/60'/0'/0/0", message);
+
+// Verify signature
+import * as Signature from '@tevm/voltaire/Signature';
+const address = await wallet.getAddress("m/44'/60'/0'/0/0");
+const isValid = Signature.verify(signature, message, address);
+```
+
+### Typed Data Signing (EIP-712)
+
+```zig
+// Define typed data
+const typedData = {
+  types: {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    Mail: [
+      { name: 'from', type: 'Person' },
+      { name: 'to', type: 'Person' },
+      { name: 'contents', type: 'string' }
+    ],
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ]
+  },
+  primaryType: 'Mail',
+  domain: {
+    name: 'MyDApp',
+    version: '1',
+    chainId: 1,
+    verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC'
+  },
+  message: {
+    from: { name: 'Alice', wallet: '0xaaa...' },
+    to: { name: 'Bob', wallet: '0xbbb...' },
+    contents: 'Hello Bob!'
+  }
+};
+
+// Sign with hardware wallet
+const signature = await wallet.signTypedData("m/44'/60'/0'/0/0", typedData);
+```
+
+## Device Information
+
+```zig
+const info = await wallet.getDeviceInfo();
+
+console.log(info.manufacturer); // "Ledger" or "Trezor"
+console.log(info.model);        // "Nano X", "T", etc.
+console.log(info.version);      // Firmware version
+```
+
+## Error Handling
+
+```zig
+try {
+  await wallet.connect();
+  const signature = await wallet.signTransaction(path, tx);
+} catch (error) {
+  if (error.message.includes('not connected')) {
+    console.error('Device not connected');
+  } else if (error.message.includes('rejected')) {
+    console.error('User rejected on device');
+  } else if (error.message.includes('locked')) {
+    console.error('Device is locked');
+  } else {
+    console.error('Hardware wallet error:', error);
+  }
+}
+```
+
+**Common Errors:**
+- Device not connected
+- User rejected on device screen
+- Device locked (PIN required)
+- App not opened on device
+- USB permissions denied
+- Firmware version incompatible
+
+## Multi-Account Management
+
+```zig
+// Get addresses for first 5 accounts
+const accounts = await wallet.getAddresses("m/44'/60'/0'/0", 5);
+
+// Display to user for selection
+accounts.forEach((address, i) => {
+  console.log(`Account ${i}: ${address}`);
+});
+
+// User selects account 2
+const selectedPath = "m/44'/60'/0'/0/2";
+const signature = await wallet.signTransaction(selectedPath, tx);
+```
+
+## Best Practices
+
+1. **Always verify addresses on device screen**
+   ```zig
+   // User should confirm address matches device display
+   const address = await wallet.getAddress(path);
+   console.log('Verify this address on device:', address);
+   ```
+
+2. **Handle disconnections gracefully**
+   ```zig
+   if (!wallet.isConnected()) {
+     await wallet.connect();
+   }
+   ```
+
+3. **Clear error messages**
+   ```zig
+   try {
+     await wallet.signTransaction(path, tx);
+   } catch (error) {
+     // Show user-friendly error message
+     alert('Please confirm transaction on your hardware wallet');
+   }
+   ```
+
+4. **Request minimal permissions**
+   - Only derive addresses when needed
+   - Don't enumerate all accounts unnecessarily
+
+5. **Test with both devices**
+   - Ledger and Trezor have different behaviors
+   - Test edge cases on actual hardware
+
+## See Also
+
+- [Ledger Implementation](./ledger)
+- [Trezor Implementation](./trezor)
+- [BIP-32 HD Wallets](/HDWallet)
+- [Transaction Signing](/Transaction)
+- [EIP-712 Typed Data](/EIP712)

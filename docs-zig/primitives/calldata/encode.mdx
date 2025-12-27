@@ -1,0 +1,329 @@
+---
+title: encode
+description: Encode function call into CallData
+---
+
+Encodes a function signature and parameters into transaction calldata using ABI encoding.
+
+## Signature
+
+<Tabs>
+<Tab title="Property-Based (Recommended)">
+
+```zig
+// Via ABI instance
+const abi = Abi([...]);
+abi.functionName.encode(...params): CallDataType
+```
+
+</Tab>
+<Tab title="Manual">
+
+```zig
+CallData.encode(signature: string, params: unknown[]): CallDataType
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **signature** - Function signature (e.g., `"transfer(address,uint256)"`)
+- **params** - Array of parameter values matching signature types
+
+## Returns
+
+`CallDataType` - Encoded calldata with selector and ABI-encoded parameters
+
+## Examples
+
+<Tabs>
+<Tab title="ERC20 Transfer">
+
+```zig
+import { Abi, Address, TokenBalance } from 'tevm';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+const calldata = abi.transfer.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18)
+);
+
+console.log(CallData.toHex(calldata));
+// "0xa9059cbb"  // transfer selector
+// + "00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"  // address
+// + "0000000000000000000000000000000000000000000000000de0b6b3a7640000"  // uint256
+```
+
+</Tab>
+<Tab title="Swap with Struct">
+
+```zig
+const abi = Abi([{
+  name: "swap",
+  type: "function",
+  inputs: [{
+    name: "params",
+    type: "tuple",
+    components: [
+      { name: "tokenIn", type: "address" },
+      { name: "tokenOut", type: "address" },
+      { name: "amountIn", type: "uint256" },
+      { name: "minAmountOut", type: "uint256" }
+    ]
+  }]
+}]);
+
+const calldata = abi.swap.encode({
+  tokenIn: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  tokenOut: Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+  amountIn: TokenBalance.fromUnits("1000", 6),
+  minAmountOut: TokenBalance.fromUnits("0.3", 18)
+});
+```
+
+</Tab>
+<Tab title="Batch Transfer">
+
+```zig
+const abi = Abi([{
+  name: "batchTransfer",
+  type: "function",
+  inputs: [
+    { name: "recipients", type: "address[]" },
+    { name: "amounts", type: "uint256[]" }
+  ]
+}]);
+
+const recipients = [
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  Address("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"),
+];
+
+const amounts = [
+  TokenBalance.fromUnits("1", 18),
+  TokenBalance.fromUnits("2", 18),
+];
+
+const calldata = abi.batchTransfer.encode(recipients, amounts);
+```
+
+</Tab>
+<Tab title="Manual Encoding">
+
+```zig
+import { CallData } from 'tevm';
+
+// Without ABI instance (not recommended)
+const calldata = CallData.encode(
+  "transfer(address,uint256)",
+  [
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "1000000000000000000"
+  ]
+);
+```
+
+</Tab>
+</Tabs>
+
+## Function Signatures
+
+Signatures must use canonical form:
+
+<Tabs>
+<Tab title="Valid">
+
+```zig
+// Correct format
+"transfer(address,uint256)"          // ✅ No spaces
+"balanceOf(address)"                 // ✅ Single param
+"swap((address,address,uint256))"   // ✅ Tuple notation
+"multicall(bytes[])"                 // ✅ Dynamic array
+```
+
+</Tab>
+<Tab title="Invalid">
+
+```zig
+// Wrong format
+"transfer(address, uint256)"         // ❌ Space after comma
+"transfer(address to, uint256 amt)"  // ❌ Parameter names
+"balanceOf(uint)"                    // ❌ Use uint256, not uint
+"transfer( address,uint256 )"        // ❌ Extra spaces
+```
+
+</Tab>
+</Tabs>
+
+## Type Conversion
+
+Parameters automatically convert to ABI types:
+
+```zig
+import { Abi } from 'tevm';
+
+const abi = Abi([{
+  name: "setValue",
+  type: "function",
+  inputs: [
+    { name: "addr", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "flag", type: "bool" }
+  ]
+}]);
+
+// Accepts various input types
+const calldata = abi.setValue.encode(
+  "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // String → Address
+  1000000000000000000n,                        // bigint → Uint256
+  true                                          // boolean → bool
+);
+```
+
+## Use in Transactions
+
+<Tabs>
+<Tab title="Complete Flow">
+
+```zig
+import {
+  Transaction, Abi, Address, TokenBalance,
+  Nonce, GasLimit, Wei, Gwei, ChainId
+} from 'tevm';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+// Encode function call
+const calldata = abi.transfer.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18)
+);
+
+// Create transaction
+const tx = Transaction({
+  type: Transaction.Type.EIP1559,
+  to: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+  data: calldata,
+  value: Wei(0),
+  chainId: ChainId(1),
+  nonce: Nonce(0),
+  maxFeePerGas: Gwei(30),
+  maxPriorityFeePerGas: Gwei(2),
+  gasLimit: GasLimit(100000),
+});
+```
+
+</Tab>
+<Tab title="Estimate Gas">
+
+```zig
+import { estimateGas } from 'tevm';
+
+const calldata = abi.transfer.encode(recipient, amount);
+
+const gasEstimate = await estimateGas({
+  to: tokenAddress,
+  data: calldata,
+  from: senderAddress,
+});
+
+console.log("Estimated gas:", gasEstimate);
+```
+
+</Tab>
+</Tabs>
+
+## Validation
+
+Validates parameters match signature:
+
+```zig
+import { Abi } from 'tevm';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+// Wrong number of parameters
+try {
+  abi.transfer.encode(Address("0x...")); // Missing amount
+} catch (error) {
+  console.error("Parameter count mismatch");
+}
+
+// Wrong type
+try {
+  abi.transfer.encode(
+    "not an address",  // Invalid address format
+    TokenBalance.fromUnits("1", 18)
+  );
+} catch (error) {
+  console.error("Invalid address");
+}
+```
+
+## Performance
+
+Encoding is optimized in WASM:
+
+```zig
+// Benchmark: 1M iterations
+console.time("encode");
+for (let i = 0; i < 1_000_000; i++) {
+  abi.transfer.encode(recipient, amount);
+}
+console.timeEnd("encode");
+
+// Pure JS: ~850ms
+// WASM (ReleaseSmall): ~320ms (2.6x faster)
+// WASM (ReleaseFast): ~180ms (4.7x faster)
+```
+
+## Selector Computation
+
+Encoding automatically computes function selector:
+
+```zig
+import { Keccak256 } from 'tevm';
+
+// Manual selector computation
+const signature = "transfer(address,uint256)";
+const hash = Keccak256.hashString(signature);
+const selector = hash.slice(0, 4);
+
+console.log(selector);
+// [0xa9, 0x05, 0x9c, 0xbb]
+
+// Encoding includes this automatically
+const calldata = abi.transfer.encode(recipient, amount);
+console.log(CallData.getSelector(calldata));
+// [0xa9, 0x05, 0x9c, 0xbb] (same)
+```
+
+## Related
+
+- [decode](/primitives/calldata/decode) - Decode calldata back to parameters
+- [Abi](/primitives/abi) - ABI encoding and decoding
+- [Transaction](/primitives/transaction) - Building transactions
+- [Encoding](/primitives/calldata/encoding) - ABI encoding mechanics
