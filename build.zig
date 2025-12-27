@@ -1,5 +1,5 @@
 const std = @import("std");
-const lib_build = @import("lib/build.zig");
+const lib_build = @import("lib/c_libs.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
