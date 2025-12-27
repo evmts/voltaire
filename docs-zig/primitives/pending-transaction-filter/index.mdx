@@ -10,12 +10,8 @@ description: Pending transaction hash filter for monitoring mempool activity
 ## Type Definition
 
 ```zig
-type PendingTransactionFilterType = {
-  readonly filterId: FilterIdType;
-  readonly type: "pendingTransaction";
-} & {
-  readonly [brand]: "PendingTransactionFilter";
-};
+// Use primitives.FilterId.FilterId for filter identifiers returned by the node
+const FilterId = @import("primitives").FilterId.FilterId;
 ```
 
 ## Creating PendingTransactionFilter
@@ -23,15 +19,8 @@ type PendingTransactionFilterType = {
 ### from
 
 ```zig
-import * as PendingTransactionFilter from './primitives/PendingTransactionFilter/index.js';
-import * as FilterId from './primitives/FilterId/index.js';
-
-// Create filter on node
-const filterIdStr = await rpc.eth_newPendingTransactionFilter();
-const filterId = FilterId.from(filterIdStr);
-
-// Wrap in PendingTransactionFilter type
-const filter = PendingTransactionFilter.from(filterId);
+// {"method":"eth_newPendingTransactionFilter","params":[]}
+// → returns filter id (hex string)
 ```
 
 **Parameters:**
@@ -44,150 +33,43 @@ const filter = PendingTransactionFilter.from(filterId);
 ### Create Filter
 
 ```zig
-// Returns filter ID
-const filterIdStr = await rpc.eth_newPendingTransactionFilter();
-const filterId = FilterId.from(filterIdStr);
-const filter = PendingTransactionFilter.from(filterId);
+// {"method":"eth_newPendingTransactionFilter","params":[]}
 ```
 
 ### Poll for Changes
 
 ```zig
-// Returns array of new pending transaction hashes since last poll
-const txHashes = await rpc.eth_getFilterChanges(filter.filterId);
-
-for (const hash of txHashes) {
-  console.log(`New pending tx: ${hash}`);
-}
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
 ```
 
 ### Uninstall Filter
 
 ```zig
-const success = await rpc.eth_uninstallFilter(filter.filterId);
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
 ```
 
 ## Example: Mempool Monitor
 
 ```zig
-import * as PendingTransactionFilter from './primitives/PendingTransactionFilter/index.js';
-import * as FilterId from './primitives/FilterId/index.js';
-import { Hash } from './primitives/Hash/index.js';
-
-// Install pending transaction filter
-const filterIdStr = await rpc.eth_newPendingTransactionFilter();
-const filterId = FilterId.from(filterIdStr);
-const filter = PendingTransactionFilter.from(filterId);
-
-console.log(`Pending tx filter installed: ${filterId.toString()}`);
-
-// Poll every 5 seconds
-const interval = setInterval(async () => {
-  try {
-    const hashes = await rpc.eth_getFilterChanges(filter.filterId);
-
-    if (hashes.length > 0) {
-      console.log(`New pending txs: ${hashes.length}`);
-
-      // Fetch transaction details
-      for (const hashStr of hashes) {
-        const hash = Hash.from(hashStr);
-        const tx = await rpc.eth_getTransactionByHash(hash);
-
-        console.log(`From: ${tx.from}, To: ${tx.to}, Value: ${tx.value}`);
-      }
-    }
-  } catch (error) {
-    console.error('Filter error:', error);
-    clearInterval(interval);
-  }
-}, 5000);
-
-// Cleanup on exit
-process.on('SIGINT', async () => {
-  await rpc.eth_uninstallFilter(filter.filterId);
-  clearInterval(interval);
-  process.exit();
-});
+// 1) Install: {"method":"eth_newPendingTransactionFilter","params":[]}
+// 2) Poll:    {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
+// 3) Details: {"method":"eth_getTransactionByHash","params":["0xTX_HASH"]}
+// 4) Remove:  {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
 ```
 
 ## Example: High-Value Transaction Alert
 
 ```zig
-import * as PendingTransactionFilter from './primitives/PendingTransactionFilter/index.js';
-import * as FilterId from './primitives/FilterId/index.js';
-import { Denomination } from './primitives/Denomination/index.js';
-
-const filterId = FilterId.from(await rpc.eth_newPendingTransactionFilter());
-const filter = PendingTransactionFilter.from(filterId);
-
-// Alert threshold: 100 ETH
-const threshold = Denomination.parseEther("100");
-
-setInterval(async () => {
-  const hashes = await rpc.eth_getFilterChanges(filter.filterId);
-
-  for (const hash of hashes) {
-    const tx = await rpc.eth_getTransactionByHash(hash);
-
-    if (tx.value >= threshold) {
-      console.log(`HIGH VALUE TX: ${tx.value} wei`);
-      console.log(`From: ${tx.from} -> To: ${tx.to}`);
-      console.log(`Hash: ${hash}`);
-
-      // Send alert (email, webhook, etc.)
-      await sendAlert(tx);
-    }
-  }
-}, 5000);
+// Alert threshold example (pseudocode):
+// - Parse tx.value hex → u256
+// - Compare against 100 ether (1e20 wei)
 ```
 
 ## Example: DEX Frontrun Detector
 
 ```zig
-import * as PendingTransactionFilter from './primitives/PendingTransactionFilter/index.js';
-import * as FilterId from './primitives/FilterId/index.js';
-
-const filterId = FilterId.from(await rpc.eth_newPendingTransactionFilter());
-const filter = PendingTransactionFilter.from(filterId);
-
-// Track pending swaps
-const pendingSwaps = new Map(); // methodId -> txs
-
-// Uniswap swapExactTokensForTokens selector
-const swapSelector = "0x38ed1739";
-
-setInterval(async () => {
-  const hashes = await rpc.eth_getFilterChanges(filter.filterId);
-
-  for (const hash of hashes) {
-    const tx = await rpc.eth_getTransactionByHash(hash);
-
-    // Check if swap transaction
-    if (tx.input.startsWith(swapSelector)) {
-      const gasPrice = tx.maxFeePerGas || tx.gasPrice;
-
-      // Check for frontrunning (same method, higher gas)
-      const existing = pendingSwaps.get(swapSelector) || [];
-      const frontruns = existing.filter(ptx => ptx.gasPrice < gasPrice);
-
-      if (frontruns.length > 0) {
-        console.log(`POTENTIAL FRONTRUN DETECTED`);
-        console.log(`Original: ${frontruns[0].hash}`);
-        console.log(`Frontrun: ${hash}`);
-      }
-
-      pendingSwaps.set(swapSelector, [...existing, { hash, gasPrice }]);
-    }
-  }
-
-  // Clean up old txs (keep last 100)
-  for (const [key, txs] of pendingSwaps) {
-    if (txs.length > 100) {
-      pendingSwaps.set(key, txs.slice(-100));
-    }
-  }
-}, 5000);
+// Heuristic: detect higher-fee transactions with same selector (0x38ed1739)
+// by comparing `maxFeePerGas` or `gasPrice` fields from eth_getTransactionByHash.
 ```
 
 ## Comparison with eth_subscribe

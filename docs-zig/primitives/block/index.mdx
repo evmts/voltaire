@@ -8,27 +8,16 @@ description: "Complete Ethereum block representation"
 Block represents a complete Ethereum block with header, body, hash, and metadata. Used for block validation, storage, and propagation.
 
 ```zig
-import * as Block from '@voltaire/primitives/Block'
-
-const block = Block.from({
-  header: blockHeader,
-  body: blockBody,
-  hash: "0x1234567890abcdef...",
-  size: 1024n,
-  totalDifficulty: 12345678n, // Optional, pre-merge only
-})
+// Fetch blocks via JSON-RPC and map fields to primitives types as needed.
+// {"method":"eth_getBlockByNumber","params":["latest",true]}
 ```
 
 ## Type Definition
 
 ```zig
-type BlockType = {
-  readonly header: BlockHeaderType
-  readonly body: BlockBodyType
-  readonly hash: BlockHashType
-  readonly size: Uint256Type
-  readonly totalDifficulty?: Uint256Type
-}
+// Use primitives types directly:
+// - primitives.BlockHeader, primitives.BlockBody
+// - primitives.BlockHash, primitives.BlockNumber, primitives.Hash
 ```
 
 **Fields:**
@@ -45,27 +34,8 @@ type BlockType = {
 Universal constructor from block components.
 
 ```zig
-import * as Block from '@voltaire/primitives/Block'
-import * as BlockHeader from '@voltaire/primitives/BlockHeader'
-import * as BlockBody from '@voltaire/primitives/BlockBody'
-
-const header = BlockHeader.from({
-  parentHash: "0x...",
-  // ... other header fields
-})
-
-const body = BlockBody.from({
-  transactions: [tx1, tx2],
-  ommers: [],
-  withdrawals: [w1, w2],
-})
-
-const block = Block.from({
-  header,
-  body,
-  hash: "0xabc123...",
-  size: 2048n,
-})
+// Build block representations from JSON results; primitives include types for
+// header/body fields (e.g., Address, Hash, Transaction) if needed downstream.
 ```
 
 ## Block Components
@@ -85,22 +55,8 @@ After The Merge (September 2022):
 - Beacon chain handles consensus
 
 ```zig
-// Pre-merge block
-const premerge = Block.from({
-  header,
-  body,
-  hash: "0x...",
-  size: 1024n,
-  totalDifficulty: 58750003716598352816469n,
-})
-
-// Post-merge block (no totalDifficulty)
-const postmerge = Block.from({
-  header,
-  body,
-  hash: "0x...",
-  size: 1024n,
-})
+// Pre-merge vs Post-merge: totalDifficulty exists only pre-merge.
+// Inspect the JSON field if you need to distinguish historical blocks.
 ```
 
 ## See Also

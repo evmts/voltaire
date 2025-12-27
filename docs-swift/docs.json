@@ -39,9 +39,16 @@
               {
                 "group": "Crypto",
                 "pages": [
+                  "crypto/keccak256",
                   "primitives/private-key",
                   "primitives/public-key",
                   "primitives/signature"
+                ]
+              },
+              {
+                "group": "Support",
+                "pages": [
+                  "support/errors"
                 ]
               }
             ]
@@ -51,4 +58,3 @@
     ]
   }
 }
-

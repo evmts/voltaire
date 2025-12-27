@@ -10,40 +10,43 @@ Branded hex string representing ABI-encoded data. Used for function calls, const
 ## Type
 
 ```zig
-type EncodedDataType = `0x${string}` & { readonly [brand]: "EncodedData" };
+const primitives = @import("primitives");
+// EncodedData is represented as hex (0x-prefixed) when serialized.
+// Use primitives.Hex for hex/bytes conversion and AbiEncoding for calldata.
 ```
 
 ## Construction
 
 ```zig
-import * as EncodedData from 'voltaire/primitives/EncodedData';
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+const data = try Hex.hexToBytes(allocator, "0x00000001");
+defer allocator.free(data);
 
-// From hex string
-const data = EncodedData.from("0x00000001");
-
-// From bytes
-const bytes = new Uint8Array([0, 0, 0, 1]);
-const data = EncodedData.fromBytes(bytes);
+// From bytes to hex
+const hex = try Hex.bytesToHex(allocator, data);
+defer allocator.free(hex);
 ```
 
 ## Methods
 
-- `from(value)` - Universal constructor (hex or bytes)
-- `fromBytes(bytes)` - From Uint8Array
-- `toBytes(data)` - Convert to Uint8Array
-- `equals(a, b)` - Compare equality (case-insensitive)
+- `Hex.hexToBytes(allocator, hex)` - Hex → bytes
+- `Hex.bytesToHex(allocator, bytes)` - Bytes → hex
+- Prefer fixed-size helpers when possible: `Hex.hexToBytesFixed`, `Hex.bytesToHexFixed`
 
 ## Example
 
 ```zig
-import * as EncodedData from 'voltaire/primitives/EncodedData';
-
-// Function call data
-const calldata = EncodedData.from("0xa9059cbb000000000000000000000000...");
-
-// Convert to bytes for execution
-const bytes = EncodedData.toBytes(calldata);
-
-// Compare encoded data
-const equal = EncodedData.equals(data1, data2);
+const Abi = @import("primitives").AbiEncoding;
+const primitives = @import("primitives");
+const func = Abi.FunctionDefinition{
+    .name = "transfer",
+    .inputs = &[_]Abi.AbiType{ .address, .uint256 },
+    .outputs = &[_]Abi.AbiType{},
+    .state_mutability = .nonpayable,
+};
+const to = try primitives.Address.fromHex("0x0000000000000000000000000000000000000000");
+const args = [_]Abi.AbiValue{ Abi.addressValue(to), Abi.uint256Value(1) };
+const calldata = try func.encode_params(std.testing.allocator, &args);
+defer std.testing.allocator.free(calldata);
 ```

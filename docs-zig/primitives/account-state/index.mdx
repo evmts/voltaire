@@ -8,25 +8,23 @@ description: "Ethereum account state representation per Yellow Paper"
 AccountState represents the four fields of an Ethereum account as defined in the Yellow Paper (section 4.1). Every account has a nonce, balance, storage root, and code hash.
 
 ```zig
-import * as AccountState from '@voltaire/primitives/AccountState'
-
-const state = AccountState.from({
-  nonce: Nonce.from(5n),
-  balance: Wei.from(1000000000000000000n), // 1 ETH
-  storageRoot: StateRoot.from("0x56e81f171bcc55a6ff8345e692c0f86e5b47e5b60e2d8c5ab6c7c9fa0e32d3c5"),
-  codeHash: Hash.from("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"),
-})
+const primitives = @import("primitives");
+const state = .{
+    .nonce = 5, // u64
+    .balance = 1_000_000_000_000_000_000, // 1 ether in wei
+    .storage_root = try primitives.Hash.fromHex(
+        "0x56e81f171bcc55a6ff8345e692c0f86e5b47e5b60e2d8c5ab6c7c9fa0e32d3c5",
+    ),
+    .code_hash = try primitives.Hash.fromHex(
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+    ),
+};
 ```
 
 ## Type Definition
 
 ```zig
-type AccountStateType = {
-  readonly nonce: NonceType
-  readonly balance: WeiType
-  readonly storageRoot: StateRootType
-  readonly codeHash: HashType
-}
+// Use primitives types: Nonce (u64), Hash (B256) and balances in wei (u256).
 ```
 
 **Fields:**
@@ -42,18 +40,13 @@ type AccountStateType = {
 Universal constructor from object with required fields.
 
 ```zig
-import * as AccountState from '@voltaire/primitives/AccountState'
-import * as Nonce from '@voltaire/primitives/Nonce'
-import * as Wei from '@voltaire/primitives/Denomination/Wei'
-import * as StateRoot from '@voltaire/primitives/StateRoot'
-import * as Hash from '@voltaire/primitives/Hash'
-
-const state = AccountState.from({
-  nonce: Nonce.from(0n),
-  balance: Wei.from(0n),
-  storageRoot: StateRoot.from(AccountState.EMPTY_TRIE_HASH),
-  codeHash: Hash.from(AccountState.EMPTY_CODE_HASH),
-})
+const primitives = @import("primitives");
+const state = .{
+    .nonce = 0,
+    .balance = 0,
+    .storage_root = primitives.State.EMPTY_TRIE_ROOT,
+    .code_hash = primitives.State.EMPTY_CODE_HASH,
+};
 ```
 
 ### createEmpty
@@ -61,8 +54,11 @@ const state = AccountState.from({
 Creates an empty EOA (Externally Owned Account) with zero balance and nonce.
 
 ```zig
-const emptyAccount = AccountState.createEmpty()
-// { nonce: 0n, balance: 0n, storageRoot: EMPTY_TRIE_HASH, codeHash: EMPTY_CODE_HASH }
+const primitives = @import("primitives");
+const empty_nonce: u64 = 0;
+const empty_balance: u256 = 0;
+const storage_root = primitives.State.EMPTY_TRIE_ROOT;
+const code_hash = primitives.State.EMPTY_CODE_HASH;
 ```
 
 ## Account Type Detection
@@ -72,9 +68,8 @@ const emptyAccount = AccountState.createEmpty()
 Checks if account is an Externally Owned Account (has no bytecode).
 
 ```zig
-if (AccountState.isEOA(state)) {
-  console.log('This is a regular wallet account')
-}
+// EOA if code_hash == EMPTY_CODE_HASH
+const is_eoa = std.mem.eql(u8, &state.code_hash, &primitives.State.EMPTY_CODE_HASH);
 ```
 
 ### isContract
@@ -82,9 +77,8 @@ if (AccountState.isEOA(state)) {
 Checks if account is a contract (has bytecode).
 
 ```zig
-if (AccountState.isContract(state)) {
-  console.log('This is a smart contract')
-}
+// Contract if code_hash != EMPTY_CODE_HASH
+const is_contract = !std.mem.eql(u8, &state.code_hash, &primitives.State.EMPTY_CODE_HASH);
 ```
 
 ## Comparing AccountStates
@@ -94,12 +88,11 @@ if (AccountState.isContract(state)) {
 Compares all four fields for equality.
 
 ```zig
-const a = AccountState.createEmpty()
-const b = AccountState.createEmpty()
-
-if (AccountState.equals(a, b)) {
-  console.log('Account states are identical')
-}
+const a = state;
+const b = state;
+const equal = std.mem.eql(u8, &a.code_hash, &b.code_hash) and
+              std.mem.eql(u8, &a.storage_root, &b.storage_root) and
+              a.nonce == b.nonce and a.balance == b.balance;
 ```
 
 ## Constants

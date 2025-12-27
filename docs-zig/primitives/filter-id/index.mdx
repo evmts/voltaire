@@ -10,19 +10,19 @@ description: Opaque filter identifier for Ethereum JSON-RPC filter operations
 ## Type Definition
 
 ```zig
-type FilterIdType = string & {
-  readonly [brand]: "FilterId";
-};
+const primitives = @import("primitives");
+// FilterId is a sized byte-array wrapper with len tracking
+const FilterId = primitives.FilterId.FilterId;
 ```
 
 ## Creating FilterId
 
-### from
+### From Hex / Bytes
 
 ```zig
-import * as FilterId from './primitives/FilterId/index.js';
-
-const id = FilterId.from("0x1");
+const primitives = @import("primitives");
+const id1 = try primitives.FilterId.fromHex("0x1");
+const id2 = try primitives.FilterId.fromBytes(&[_]u8{ 0x01 });
 ```
 
 Creates a `FilterId` from a string value. The string is typically a hex-encoded number returned by the node.
@@ -36,10 +36,11 @@ Creates a `FilterId` from a string value. The string is typically a hex-encoded 
 
 ## Operations
 
-### toString
+### Serialize for JSON
 
 ```zig
-const str = FilterId.toString(id); // "0x1"
+// Build JSON payloads with std.json using the hex string form when needed.
+// Example payloads are shown below for each method.
 ```
 
 Converts a `FilterId` back to its string representation.
@@ -47,7 +48,7 @@ Converts a `FilterId` back to its string representation.
 ### equals
 
 ```zig
-const equal = FilterId.equals(id1, id2);
+const eq = std.mem.eql(u8, id1.data[0..id1.len], id2.data[0..id2.len]);
 ```
 
 Compares two `FilterId` instances for equality.
@@ -59,39 +60,27 @@ Filters follow a request-response lifecycle on Ethereum nodes:
 ### 1. Create Filter
 
 ```zig
-// eth_newFilter (log filter)
-const filterId = await rpc.eth_newFilter({
-  fromBlock: "latest",
-  address: "0x...",
-  topics: [eventSig]
-});
-
-// eth_newBlockFilter (block hashes)
-const blockFilterId = await rpc.eth_newBlockFilter();
-
-// eth_newPendingTransactionFilter (pending tx hashes)
-const txFilterId = await rpc.eth_newPendingTransactionFilter();
+// {"method":"eth_newFilter","params":[{"fromBlock":"latest","address":"0x...","topics":["0x...topic0..."]}]}
+// {"method":"eth_newBlockFilter","params":[]}
+// {"method":"eth_newPendingTransactionFilter","params":[]}
 ```
 
 ### 2. Poll for Changes
 
 ```zig
-// Returns new logs/blocks/txs since last poll
-const changes = await rpc.eth_getFilterChanges(filterId);
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
 ```
 
 ### 3. Get All Logs (log filters only)
 
 ```zig
-// Returns all logs matching filter
-const logs = await rpc.eth_getFilterLogs(filterId);
+// {"method":"eth_getFilterLogs","params":["0xFILTER_ID"]}
 ```
 
 ### 4. Uninstall Filter
 
 ```zig
-// Remove filter from node
-const success = await rpc.eth_uninstallFilter(filterId);
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
 ```
 
 ## Filter Expiration
@@ -109,40 +98,17 @@ Filters automatically expire after a period of inactivity (typically 5 minutes).
 ## Example: Complete Filter Workflow
 
 ```zig
-import * as FilterId from './primitives/FilterId/index.js';
-import * as LogFilter from './primitives/LogFilter/index.js';
-import * as Address from './primitives/Address/index.js';
+// 1) Create filter
+// {"method":"eth_newFilter","params":[{"fromBlock":"latest","address":"0x...","topics":["0x...topic0..."]}]}
 
-// Create log filter
-const filter = LogFilter.from({
-  fromBlock: "latest",
-  address: Address.from("0x..."),
-  topics: [eventSignature]
-});
+// 2) Poll changes
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
 
-// Install filter on node
-const filterIdStr = await rpc.eth_newFilter(filter);
-const filterId = FilterId.from(filterIdStr);
+// 3) Read all (log filters)
+// {"method":"eth_getFilterLogs","params":["0xFILTER_ID"]}
 
-// Poll every 15 seconds
-const interval = setInterval(async () => {
-  try {
-    const logs = await rpc.eth_getFilterChanges(filterId);
-    console.log(`Got ${logs.length} new logs`);
-  } catch (error) {
-    // Filter expired - recreate
-    if (error.message.includes('filter not found')) {
-      clearInterval(interval);
-      // Recreate filter...
-    }
-  }
-}, 15000);
-
-// Cleanup
-process.on('SIGINT', async () => {
-  await rpc.eth_uninstallFilter(filterId);
-  clearInterval(interval);
-});
+// 4) Uninstall
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
 ```
 
 ## Related Types

@@ -3,16 +3,11 @@ title: Overview
 description: Pure runtime bytecode without constructor or metadata
 ---
 
-## Type Definition
-
-[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing pure runtime bytecode without constructor logic or compiler metadata.
+## Type Definition (Zig)
 
 ```zig
-import type { brand } from 'tevm/brand';
-
-export type RuntimeCodeType = Uint8Array & {
-  readonly [brand]: "RuntimeCode";
-};
+// Use primitives.ContractCode for deployed runtime bytecode
+const ContractCode = @import("primitives").ContractCode;
 ```
 
 Runtime code is the actual bytecode executed when calling a contract after deployment. It excludes:
@@ -26,26 +21,25 @@ Runtime code is the actual bytecode executed when calling a contract after deplo
 <Tab title="Create">
 
 ```zig
-import * as RuntimeCode from 'tevm/RuntimeCode';
+const primitives = @import("primitives");
+const Hex = primitives.Hex;
+const allocator = std.testing.allocator;
 
 // From hex string
-const code = RuntimeCode.from("0x6001600155");
-
-// From Uint8Array
-const code = RuntimeCode.from(new Uint8Array([0x60, 0x01, 0x60, 0x01, 0x55]));
+const bytes = try Hex.hexToBytes(allocator, "0x6001600155");
+defer allocator.free(bytes);
+const code = primitives.ContractCode.from(bytes);
 ```
 
 </Tab>
 <Tab title="Compare">
 
 ```zig
-// Compare runtime codes
-if (RuntimeCode.equals(code1, code2)) {
-  console.log("Runtime codes match");
-}
-
 // Convert to hex
-const hex = RuntimeCode.toHex(code);
+const hex = try code.toHex(std.testing.allocator);
+defer std.testing.allocator.free(hex);
+// Compare byte slices directly
+const same = std.mem.eql(u8, code1.bytes, code2.bytes);
 ```
 
 </Tab>
@@ -68,59 +62,32 @@ const hex = RuntimeCode.toHex(code);
 ### Contract Verification
 
 ```zig
-import * as RuntimeCode from 'tevm/RuntimeCode';
-import * as ContractCode from 'tevm/ContractCode';
-
-// Get deployed code and strip metadata
-const deployed = ContractCode.from(await provider.getCode(address));
-const deployedRuntime = ContractCode.stripMetadata(deployed);
-
-// Compare with compiled runtime code
-const expectedRuntime = RuntimeCode.from(compiledRuntimeCode);
-
-if (RuntimeCode.equals(deployedRuntime, expectedRuntime)) {
-  console.log("Contract verified: runtime code matches");
-} else {
-  console.log("Verification failed: runtime code differs");
-}
+// Build JSON payloads in Zig and compare code bytes against expected runtime
+// {"method":"eth_getCode","params":["0xCONTRACT","latest"]}
+// Strip constructor metadata according to your compiler toolchain before comparison.
 ```
 
 ### Bytecode Analysis
 
 ```zig
-import * as RuntimeCode from 'tevm/RuntimeCode';
-import * as Bytecode from 'tevm/Bytecode';
-
-const runtime = RuntimeCode.from(runtimeBytecode);
-
-// Analyze runtime code
-const analysis = Bytecode.analyze(runtime);
-console.log(`Instructions: ${analysis.instructions.length}`);
-console.log(`Valid: ${analysis.valid}`);
-console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
-
-// Pretty print
-const disassembly = Bytecode.prettyPrint(runtime, {
-  showGas: true,
-  showStack: true,
-});
-console.log(disassembly);
+const primitives = @import("primitives");
+var bc = try primitives.Bytecode.init(std.testing.allocator, runtime_bytes);
+defer bc.deinit();
+// Iterate instructions
+var scan = bc.scan(0, @intCast(bc.len()));
+while (scan.next()) |inst| {
+    _ = inst; // inst.opcode, inst.push_value
+}
+// Static gas analysis
+const gas = bc.analyzeGasTotal();
+_ = gas;
 ```
 
 ### Comparing Contract Versions
 
 ```zig
-import * as RuntimeCode from 'tevm/RuntimeCode';
-
-// Compare different versions of a contract
-const v1 = RuntimeCode.from(contractV1RuntimeCode);
-const v2 = RuntimeCode.from(contractV2RuntimeCode);
-
-if (!RuntimeCode.equals(v1, v2)) {
-  console.log("Runtime code changed between versions");
-  console.log(`v1 hex: ${RuntimeCode.toHex(v1)}`);
-  console.log(`v2 hex: ${RuntimeCode.toHex(v2)}`);
-}
+// Compare two runtime bytecode buffers (v1 vs v2)
+const changed = !std.mem.eql(u8, v1_bytes, v2_bytes);
 ```
 
 ## Related

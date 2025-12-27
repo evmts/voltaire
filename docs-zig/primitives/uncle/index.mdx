@@ -20,26 +20,11 @@ Uncle blocks are a legacy concept from Ethereum's proof-of-work era. Since The M
 - Resource tracking (gas limit, gas used)
 - Metadata (timestamp, extra data, logs bloom)
 
-## Type Definition
+## Zig Type
 
 ```zig
-export type UncleType = {
-  readonly parentHash: BlockHashType;
-  readonly ommersHash: HashType;
-  readonly beneficiary: AddressType;
-  readonly stateRoot: HashType;
-  readonly transactionsRoot: HashType;
-  readonly receiptsRoot: HashType;
-  readonly logsBloom: Uint8Array;     // 256 bytes
-  readonly difficulty: Uint256Type;
-  readonly number: BlockNumberType;
-  readonly gasLimit: Uint256Type;
-  readonly gasUsed: Uint256Type;
-  readonly timestamp: Uint256Type;
-  readonly extraData: Uint8Array;
-  readonly mixHash: HashType;
-  readonly nonce: Uint8Array;         // 8 bytes
-};
+const primitives = @import("primitives");
+const Uncle = primitives.Uncle.Uncle; // Zig struct with header fields
 ```
 
 ## Construction
@@ -49,25 +34,27 @@ export type UncleType = {
 Create an uncle block from its component fields:
 
 ```zig
-import * as Uncle from '@voltaire/primitives/Uncle';
+const primitives = @import("primitives");
+const Uncle = primitives.Uncle.Uncle;
+const Address = primitives.Address;
+const Hash = primitives.Hash;
 
-const uncle = Uncle.from({
-  parentHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-  ommersHash: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-  beneficiary: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-  stateRoot: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-  transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-  receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-  logsBloom: new Uint8Array(256),
-  difficulty: 0n,
-  number: 12345678n,
-  gasLimit: 30000000n,
-  gasUsed: 21000n,
-  timestamp: 1234567890n,
-  extraData: new Uint8Array(0),
-  mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-  nonce: new Uint8Array(8)
-});
+const empty_bloom: [256]u8 = [_]u8{0} ** 256;
+const zero8: [8]u8 = [_]u8{0} ** 8;
+
+const uncle = Uncle.fromFields(
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Address.fromHex("0x0000000000000000000000000000000000000000"),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    empty_bloom,
+    0, 0, 0, 0, 0,
+    &[_]u8{},
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    zero8,
+);
 ```
 
 ## Field Reference
@@ -124,22 +111,8 @@ In proof-of-work Ethereum, uncle blocks served multiple purposes:
 - **Maximum uncles**: 2 uncles per block
 
 ```zig
-// Calculate uncle reward (historical, pre-merge)
-function calculateUncleReward(
-  mainBlockNumber: bigint,
-  uncleBlockNumber: bigint,
-  baseReward: bigint
-): bigint {
-  const depth = mainBlockNumber - uncleBlockNumber;
-  if (depth < 1n || depth > 6n) {
-    throw new Error('Uncle depth out of range');
-  }
-  return (baseReward * (8n - depth)) / 8n;
-}
-
-// Example: Uncle at depth 2 with 2 ETH base reward
-const reward = calculateUncleReward(1000n, 999n, 2000000000000000000n);
-// (2 ETH * 7) / 8 = 1.75 ETH
+// Historical (pre-merge) uncle reward formula:
+// reward = base_reward * (8 - depth) / 8, with 1 <= depth <= 6
 ```
 
 ## Historical Context
@@ -169,39 +142,6 @@ Uncle blocks helped secure proof-of-work Ethereum by:
 ## Example: Analyze Uncle Rate
 
 ```zig
-import * as Uncle from '@voltaire/primitives/Uncle';
-
-interface BlockWithUncles {
-  number: bigint;
-  uncles: Uncle.UncleType[];
-}
-
-function analyzeUncleRate(blocks: BlockWithUncles[]): {
-  totalBlocks: number;
-  blocksWithUncles: number;
-  totalUncles: number;
-  avgUncleDepth: number;
-} {
-  let blocksWithUncles = 0;
-  let totalUncles = 0;
-  let totalDepth = 0n;
-
-  for (const block of blocks) {
-    if (block.uncles.length > 0) {
-      blocksWithUncles++;
-      totalUncles += block.uncles.length;
-
-      for (const uncle of block.uncles) {
-        totalDepth += block.number - uncle.number;
-      }
-    }
-  }
-
-  return {
-    totalBlocks: blocks.length,
-    blocksWithUncles,
-    totalUncles,
-    avgUncleDepth: totalUncles > 0 ? Number(totalDepth) / totalUncles : 0
-  };
-}
+// Analyze uncle rate: iterate blocks, count uncles, compute average depth.
+// Use JSON-RPC to fetch blocks with uncles (pre-merge history only).
 ```
