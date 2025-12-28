@@ -1,0 +1,29 @@
+---
+title: Troubleshooting (Swift)
+description: Common build and runtime issues
+---
+
+# Troubleshooting
+
+## dyld: Library not loaded: libprimitives_ts_native.dylib
+
+- Cause: The native Zig library isn’t on the runtime search path.
+- Fix (macOS):
+  - Build once: `zig build build-ts-native`
+  - Copy the `.dylib` into the app bundle’s `Frameworks` folder (see Xcode Integration), or add `../zig-out/native` to Runpath Search Paths while developing.
+
+## Undefined symbols for architecture … (linker)
+
+- Cause: The native library wasn’t built before Swift compiled/linked.
+- Fix: Run `zig build build-ts-native` from the repo root, then rebuild your Swift target.
+
+## Invalid hex / invalid length (runtime)
+
+- Cause: Input failed validation in the underlying primitives.
+- Fix: Ensure hex strings are `0x`-prefixed and the expected length (e.g., Address: 20 bytes, Hash/Bytes32: 32 bytes, U256: 32 bytes big-endian). See type docs and `VoltaireError` cases.
+
+## iOS device/simulator build errors
+
+- Cause: Linking a macOS-only build of the Zig library into iOS targets.
+- Fix: Build the Zig library for the appropriate Apple platform/arch (device or simulator). Cross-compilation scripts will be documented; for now, file an issue if you need help.
+

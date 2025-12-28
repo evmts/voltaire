@@ -21,6 +21,9 @@ let sig = try Signature(compact: r + s)
 let normalized = sig.normalized()
 let compact64 = normalized.serialize(includeV: false)
 
+// Validate r/s are within curve order
+XCTAssertTrue(normalized.isValid)
+
 // Recover public key / address from message hash
 let msg = Keccak256.hash("hello")
 if normalized.v == 0 || normalized.v == 27 || normalized.v == 28 {
@@ -29,4 +32,3 @@ if normalized.v == 0 || normalized.v == 27 || normalized.v == 28 {
   print(pub.uncompressed.count, addr.hex)
 }
 ```
-

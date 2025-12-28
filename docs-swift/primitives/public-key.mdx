@@ -22,5 +22,7 @@ XCTAssertTrue(comp[0] == 0x02 || comp[0] == 0x03)
 // Ethereum address from public key
 let addr = try pub.address()
 print(addr.hex)
-```
 
+ // Uncompressed (x||y) access
+ XCTAssertEqual(pub.uncompressed.count, 64)
+```

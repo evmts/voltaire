@@ -21,5 +21,8 @@ XCTAssertEqual(h1, h2)
 let bytes = h1.bytes // [UInt8] (32)
 let h3 = try Hash(bytes: bytes)
 XCTAssertEqual(h1, h3)
-```
 
+ // Zero constant
+ let zero = Hash.zero
+ XCTAssertEqual(zero.hex, "0x0000000000000000000000000000000000000000000000000000000000000000")
+```
