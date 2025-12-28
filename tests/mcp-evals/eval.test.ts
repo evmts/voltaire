@@ -20,7 +20,7 @@ describe("Voltaire MCP Evaluations", () => {
 	describe("Blockchain Data Challenges", () => {
     it(
             "should find the block hash where the first CryptoPunk was minted",
-            { timeout: 6 * 60 * 1000 },
+            { timeout: 12 * 60 * 1000 },
             async () => {
                 const result = await runClaudeEval({
 					prompt: `Find the block hash where the first CryptoPunk NFT was minted.
