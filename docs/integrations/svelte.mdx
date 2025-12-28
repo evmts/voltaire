@@ -258,7 +258,7 @@ Use Svelte actions for form submissions:
 ```svelte
 <script lang="ts">
   import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-  import * as Address from 'tevm/primitives/Address'
+  import * as Address from '@tevm/voltaire/primitives/Address'
 
   let to = ''
   let amount = ''
@@ -321,8 +321,8 @@ With Svelte 5 runes:
 
 ```svelte
 <script lang="ts">
-  import * as Address from 'tevm/primitives/Address'
-  import * as Uint from 'tevm/primitives/Uint'
+  import * as Address from '@tevm/voltaire/primitives/Address'
+  import * as Uint from '@tevm/voltaire/primitives/Uint'
   import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
   const provider = createJsonRpcProvider('https://eth.llamarpc.com')

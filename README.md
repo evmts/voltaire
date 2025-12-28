@@ -30,7 +30,7 @@
 **Modern Ethereum library built for TypeScript, Zig, and AI-assisted development.**
 
 ```typescript
-import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256 } from 'tevm';
+import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256 } from '@tevm/voltaire';
 
 // Type-safe addresses - casing bugs eliminated
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
@@ -94,7 +94,7 @@ Data-first design. Import only what you need:
 
 ```typescript
 // Import specific functions - excludes unused code from bundle
-import { fromHex, toChecksummed } from 'tevm/Address';
+import { fromHex, toChecksummed } from '@tevm/voltaire/Address';
 ```
 
 ---
@@ -102,7 +102,7 @@ import { fromHex, toChecksummed } from 'tevm/Address';
 ## Get Started
 
 ```bash
-npm install tevm
+npm install @tevm/voltaire
 ```
 
 **[Documentation](https://voltaire.tevm.sh/)** | **[Playground](https://voltaire.tevm.sh/playground)** | **[API Reference](https://voltaire.tevm.sh/getting-started)**
@@ -179,7 +179,7 @@ Low-level tree-shakable EVM utilities and all 19 precompiled contracts (0x01-0x1
 
 | Language | Status | Installation |
 | -------- | ------ | ------------ |
-| TypeScript/JavaScript | Full support | `npm install tevm` |
+| TypeScript/JavaScript | Full support | `npm install @tevm/voltaire` |
 | Zig | Full support | [Build from source](https://voltaire.tevm.sh/getting-started/multiplatform#installation-by-language) |
 | Swift | C-FFI bindings | See `swift/` directory |
 | Go, Python, Rust, Kotlin | Planned | [Contribute →](https://github.com/evmts/voltaire/issues) |

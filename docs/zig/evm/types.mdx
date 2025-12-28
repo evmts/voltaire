@@ -71,7 +71,7 @@ pub fn inspect(allocator: std.mem.Allocator, hex_code: []const u8) !void {
 Instructions are returned by bytecode analysis:
 
 ```zig
-import { Bytecode } from "tevm";
+import { Bytecode } from "@tevm/voltaire";
 
 const code = Bytecode.from("0x6001600201");
 const analysis = code.analyze();
@@ -91,7 +91,7 @@ const analysis = code.analyze();
 EVM execution frame with stack, memory, and execution state.
 
 ```zig
-import type { BrandedFrame, Address } from "tevm";
+import type { BrandedFrame, Address } from "@tevm/voltaire";
 
 type BrandedFrame = {
   readonly __tag: "Frame";
@@ -145,7 +145,7 @@ Frame represents the complete execution state at any point in EVM execution.
 Interface for external state access (accounts, storage, code).
 
 ```zig
-import type { BrandedHost, Address } from "tevm";
+import type { BrandedHost, Address } from "@tevm/voltaire";
 
 type BrandedHost = {
   readonly __tag: "Host";
@@ -179,7 +179,7 @@ Host provides pluggable state backend - implement for custom chains or test envi
 Function signature for opcode implementations.
 
 ```zig
-import type { InstructionHandler, BrandedFrame, BrandedHost, EvmError } from "tevm/evm";
+import type { InstructionHandler, BrandedFrame, BrandedHost, EvmError } from "@tevm/voltaire/evm";
 
 type InstructionHandler = (
   frame: BrandedFrame,
@@ -223,7 +223,7 @@ All 166 EVM opcodes follow this pattern. See [Instructions](/evm/instructions).
 Parameters for cross-contract calls (CALL, STATICCALL, DELEGATECALL).
 
 ```zig
-import type { CallParams, CallType, Address } from "tevm";
+import type { CallParams, CallType, Address } from "@tevm/voltaire";
 
 type CallType = "CALL" | "STATICCALL" | "DELEGATECALL" | "CALLCODE";
 
@@ -260,7 +260,7 @@ const params: CallParams = {
 Result of call operation.
 
 ```zig
-import type { CallResult, Address } from "tevm";
+import type { CallResult, Address } from "@tevm/voltaire";
 
 type CallResult = {
   success: boolean;       // False if reverted
@@ -304,7 +304,7 @@ const revertResult: CallResult = {
 Parameters for contract deployment (CREATE, CREATE2).
 
 ```zig
-import type { CreateParams, Address } from "tevm";
+import type { CreateParams, Address } from "@tevm/voltaire";
 
 type CreateParams = {
   caller: Address;
@@ -335,7 +335,7 @@ const params: CreateParams = {
 Result of contract creation.
 
 ```zig
-import type { CreateResult, Address } from "tevm";
+import type { CreateResult, Address } from "@tevm/voltaire";
 
 type CreateResult = {
   success: boolean;
@@ -408,7 +408,7 @@ if (result.type !== "Success") {
 Opcode metadata (gas cost, stack effect).
 
 ```zig
-import { Opcode } from "tevm";
+import { Opcode } from "@tevm/voltaire";
 
 type Info = {
   gasCost: number;      // Base gas cost (may be dynamic)
@@ -432,7 +432,7 @@ const info = Opcode.info(Opcode.ADD);
 ### Prevents Type Confusion
 
 ```zig
-import { Opcode, Address, Bytecode } from "tevm";
+import { Opcode, Address, Bytecode } from "@tevm/voltaire";
 
 // ❌ Cannot pass wrong type
 const opcode: Opcode = 0x01;              // Type error!
@@ -459,7 +459,7 @@ executeOpcode(Opcode.PUSH1);  // Correct
 TypeScript provides full IntelliSense:
 
 ```zig
-import { Opcode } from "tevm";
+import { Opcode } from "@tevm/voltaire";
 
 const op = Opcode.
 //              ^ Shows all opcode names with documentation
@@ -482,7 +482,7 @@ const op = 0x01;  // No wrapper, just the number
 ### Execution Flow
 
 ```zig
-import type { BrandedFrame, BrandedHost, InstructionHandler } from "tevm/evm";
+import type { BrandedFrame, BrandedHost, InstructionHandler } from "@tevm/voltaire/evm";
 
 // 1. Initialize frame
 const frame: BrandedFrame = {

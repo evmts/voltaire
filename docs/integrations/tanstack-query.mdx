@@ -184,8 +184,8 @@ Update cache optimistically when sending transactions:
 
 ```tsx
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import * as Uint from 'tevm/primitives/Uint'
+import * as Address from '@tevm/voltaire/primitives/Address'
+import * as Uint from '@tevm/voltaire/primitives/Uint'
 
 function useSendTransaction() {
   const queryClient = useQueryClient()
@@ -248,9 +248,9 @@ Create a reusable hooks library:
 ```tsx
 // hooks/useEthereum.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import * as Uint from 'tevm/primitives/Uint'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import * as Address from '@tevm/voltaire/primitives/Address'
+import * as Uint from '@tevm/voltaire/primitives/Uint'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL!)
 
