@@ -433,7 +433,7 @@ bun run test:mcp -t "CryptoPunk"
 - Verify secp256k1 signatures using Voltaire primitives
 - Query NFT ownership at specific blocks
 
-See [src/mcp-evals/README.md](./src/mcp-evals/README.md) for detailed documentation.
+See [tests/mcp-evals/README.md](./tests/mcp-evals/README.md) for detailed documentation.
 
 ## Areas Looking for Contributors
 

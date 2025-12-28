@@ -35,13 +35,13 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ```bash
 # Run all MCP evals
-bun test src/mcp-evals/eval.test.ts
+bun run test:mcp
 
 # Run specific test
-bun test src/mcp-evals/eval.test.ts -t "CryptoPunk"
+bun run test:mcp -t "CryptoPunk"
 
 # With verbose output
-bun test src/mcp-evals/eval.test.ts --reporter=verbose
+bun run test:mcp --reporter=verbose
 ```
 
 ## How It Works
@@ -72,10 +72,10 @@ Each test:
 ## Architecture
 
 ```
-src/mcp-evals/
+tests/mcp-evals/
 ├── eval.test.ts              # Main test suite
 ├── utils/
-│   └── runClaudeEval.ts     # Claude SDK wrapper
+│   └── runClaudeEval.js     # Claude SDK wrapper
 ├── fixtures/
 │   └── expected-answers.ts   # Ground truth answers
 ├── challenges/               # (Future) Individual challenge modules
