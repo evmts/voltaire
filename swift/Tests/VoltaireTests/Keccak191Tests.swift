@@ -1,0 +1,34 @@
+import XCTest
+@testable import Voltaire
+
+final class Keccak191Tests: XCTestCase {
+    private func eip191Manual(_ message: [UInt8]) -> Hash {
+        let prefix = "\u{0019}Ethereum Signed Message:\n" + String(message.count)
+        var buf = [UInt8]()
+        buf.append(contentsOf: Array(prefix.utf8))
+        buf.append(contentsOf: message)
+        return Keccak256.hash(buf)
+    }
+
+    func testEip191HashingEqualityAndDifferenceFromRaw() {
+        let msg = "hello world"
+        let raw = Keccak256.hash(msg)
+        let e1 = Keccak256.hashEthereumMessage(msg)
+        let e2 = Keccak256.hashEthereumMessage([UInt8](msg.utf8))
+        let e3 = Keccak256.hashEthereumMessage(Data(msg.utf8))
+        let manual = eip191Manual([UInt8](msg.utf8))
+
+        XCTAssertEqual(e1, e2)
+        XCTAssertEqual(e2, e3)
+        XCTAssertEqual(e3, manual)
+        XCTAssertNotEqual(e1, raw)
+    }
+
+    func testEip191EmptyMessage() {
+        let empty: [UInt8] = []
+        let e = Keccak256.hashEthereumMessage(empty)
+        let manual = eip191Manual(empty)
+        XCTAssertEqual(e, manual)
+    }
+}
+

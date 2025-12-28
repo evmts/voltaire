@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// Hex encoding/decoding utilities
 public enum Hex {
@@ -19,7 +19,8 @@ public enum Hex {
     public static func encode(_ bytes: [UInt8]) -> String {
         var buf = [CChar](repeating: 0, count: bytes.count * 2 + 3)
         bytes.withUnsafeBufferPointer { ptr in
-            _ = primitives_bytes_to_hex(ptr.baseAddress, ptr.count, &buf, buf.count)
+            let rc = primitives_bytes_to_hex(ptr.baseAddress, ptr.count, &buf, buf.count)
+            assert(rc >= 0, "primitives_bytes_to_hex failed: \(rc)")
         }
         return String(cString: buf)
     }

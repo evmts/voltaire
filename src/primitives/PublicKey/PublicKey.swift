@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// Secp256k1 uncompressed public key (x || y, 64 bytes)
 public struct PublicKey: Sendable, Equatable, CustomStringConvertible {
@@ -35,4 +35,3 @@ public struct PublicKey: Sendable, Equatable, CustomStringConvertible {
 
     public static func == (lhs: PublicKey, rhs: PublicKey) -> Bool { lhs.bytes_ == rhs.bytes_ }
 }
-

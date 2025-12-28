@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// 256-bit unsigned integer (big-endian)
 public struct U256: Equatable, Hashable, CustomStringConvertible, Sendable {
@@ -41,7 +41,8 @@ public struct U256: Equatable, Hashable, CustomStringConvertible, Sendable {
     public var hex: String {
         var v = raw
         var buf = [CChar](repeating: 0, count: 67)
-        _ = primitives_u256_to_hex(&v, &buf, buf.count)
+        let rc = primitives_u256_to_hex(&v, &buf, buf.count)
+        assert(rc >= 0, "primitives_u256_to_hex failed: \(rc)")
         return String(cString: buf)
     }
 
@@ -60,4 +61,3 @@ public struct U256: Equatable, Hashable, CustomStringConvertible, Sendable {
         withUnsafeBytes(of: raw.bytes) { hasher.combine(bytes: $0) }
     }
 }
-

@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// Errors thrown by Voltaire operations
 public enum VoltaireError: Error, Equatable {

@@ -97,6 +97,22 @@ int primitives_hash_from_hex(const char* hex, PrimitivesHash* out_hash);
 bool primitives_hash_equals(const PrimitivesHash* a, const PrimitivesHash* b);
 
 // ============================================================================
+// Address Derivation (CREATE/CREATE2)
+// ============================================================================
+
+/** Calculate CREATE contract address from sender and nonce */
+int primitives_calculate_create_address(const PrimitivesAddress* sender,
+                                        uint64_t nonce,
+                                        PrimitivesAddress* out_address);
+
+/** Calculate CREATE2 contract address from sender, salt, and init code */
+int primitives_calculate_create2_address(const PrimitivesAddress* sender,
+                                         const uint8_t* salt32,
+                                         const uint8_t* init_code,
+                                         size_t init_code_len,
+                                         PrimitivesAddress* out_address);
+
+// ============================================================================
 // Hex Utilities API
 // ============================================================================
 
@@ -165,32 +181,7 @@ int primitives_compress_public_key(const uint8_t* uncompressed,
 
 /** Generate a random valid private key (32 bytes) */
 int primitives_generate_private_key(uint8_t* out_private_key);
-int primitives_signature_parse(const uint8_t* sig_data, size_t sig_len, uint8_t* out_r, uint8_t* out_s, uint8_t* out_v);
-
-/** Serialize signature to compact format (64 or 65 bytes) */
-int primitives_signature_serialize(const uint8_t* r, const uint8_t* s, uint8_t v, bool include_v, uint8_t* out_buf);
-
-// ============================================================================
-// secp256k1 Primitives
-// ============================================================================
-
-/** Recover uncompressed public key (64 bytes) from signature */
-int primitives_secp256k1_recover_pubkey(const uint8_t* message_hash, const uint8_t* r, const uint8_t* s, uint8_t v, uint8_t* out_pubkey);
-
-/** Recover address from signature */
-int primitives_secp256k1_recover_address(const uint8_t* message_hash, const uint8_t* r, const uint8_t* s, uint8_t v, PrimitivesAddress* out_address);
-
-/** Derive uncompressed public key from private key */
-int primitives_secp256k1_pubkey_from_private(const uint8_t* private_key, uint8_t* out_pubkey);
-
-/** Validate signature component ranges */
-bool primitives_secp256k1_validate_signature(const uint8_t* r, const uint8_t* s);
-
-/** Generate random 32-byte private key */
-int primitives_generate_private_key(uint8_t* out_private_key);
-
-/** Compress uncompressed (64-byte) public key to 33-byte compressed format */
-int primitives_compress_public_key(const uint8_t* uncompressed, uint8_t* out_compressed);
+/* (deduplicated declarations removed) */
 
 // ============================================================================
 // Message Hashing (EIP-191)

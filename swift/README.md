@@ -62,6 +62,12 @@ let s = [UInt8](repeating: 0, count: 31) + [0x02]
 let sig = try Signature(compact: r + s)       // v defaults to 0
 let normalized = sig.normalized()             // low-s normalization
 let compact = normalized.serialize(includeV: false)
+
+// Recover public key and address from a message hash
+let msg = Keccak256.hash("hello")
+let pub = try normalized.recoverPublicKey(messageHash: msg)
+let address = try normalized.recoverAddress(messageHash: msg)
+print(pub.uncompressed.count, address.hex)
 ```
 
 ## Available Types

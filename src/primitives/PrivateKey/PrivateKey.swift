@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// Secp256k1 private key (32 bytes)
 public struct PrivateKey: Sendable, Equatable, CustomStringConvertible {
@@ -38,4 +38,3 @@ public struct PrivateKey: Sendable, Equatable, CustomStringConvertible {
     // Equatable
     public static func == (lhs: PrivateKey, rhs: PrivateKey) -> Bool { lhs.bytes_ == rhs.bytes_ }
 }
-

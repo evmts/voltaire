@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// ECDSA secp256k1 signature (r, s, v)
 public struct Signature: Sendable, Equatable, CustomStringConvertible {
@@ -67,6 +67,17 @@ public struct Signature: Sendable, Equatable, CustomStringConvertible {
         }
     }
 
+    /// Validate signature component ranges (r and s within curve order)
+    public var isValid: Bool {
+        let rBytes = self.r
+        let sBytes = self.s
+        return rBytes.withUnsafeBufferPointer { rPtr in
+            sBytes.withUnsafeBufferPointer { sPtr in
+                primitives_secp256k1_validate_signature(rPtr.baseAddress, sPtr.baseAddress)
+            }
+        }
+    }
+
     /// Return a normalized copy (low-s). If already canonical, returns self.
     public func normalized() -> Signature {
         var copy = raw
@@ -89,7 +100,8 @@ public struct Signature: Sendable, Equatable, CustomStringConvertible {
             withUnsafePointer(to: raw.s) { sPtr in
                 rPtr.withMemoryRebound(to: UInt8.self, capacity: 32) { rBytes in
                     sPtr.withMemoryRebound(to: UInt8.self, capacity: 32) { sBytes in
-                        _ = primitives_signature_serialize(rBytes, sBytes, raw.v, includeV, &out)
+                        let rc = primitives_signature_serialize(rBytes, sBytes, raw.v, includeV, &out)
+                        assert(rc >= 0, "primitives_signature_serialize failed: \(rc)")
                     }
                 }
             }

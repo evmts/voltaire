@@ -51,4 +51,15 @@ final class Keccak256Tests: XCTestCase {
             "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
         )
     }
+
+    func testEIP191PersonalMessage() {
+        // Build expected using explicit prefix + Keccak256.hash
+        let msg = "hello world"
+        let msgBytes = [UInt8](msg.utf8)
+        let prefix = "\u{19}Ethereum Signed Message:\n" + String(msgBytes.count)
+        let expected = Keccak256.hash([UInt8]((prefix.utf8)) + msgBytes)
+
+        let eip191 = Keccak256.hashEthereumMessage(msg)
+        XCTAssertEqual(eip191, expected)
+    }
 }

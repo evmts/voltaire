@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// Fixed-size 32-byte value (generic, not necessarily a hash)
 public struct Bytes32: Equatable, Hashable, CustomStringConvertible, Sendable {
@@ -39,7 +39,8 @@ public struct Bytes32: Equatable, Hashable, CustomStringConvertible, Sendable {
     public var hex: String {
         var v = raw
         var buf = [CChar](repeating: 0, count: 67)
-        _ = primitives_hash_to_hex(&v, &buf)
+        let rc = primitives_hash_to_hex(&v, &buf)
+        assert(rc >= 0, "primitives_hash_to_hex failed: \(rc)")
         return String(cString: buf)
     }
 
@@ -60,4 +61,3 @@ public struct Bytes32: Equatable, Hashable, CustomStringConvertible, Sendable {
         withUnsafeBytes(of: raw.bytes) { hasher.combine(bytes: $0) }
     }
 }
-

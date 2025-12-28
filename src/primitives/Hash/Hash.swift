@@ -1,5 +1,5 @@
 import Foundation
-import CVoltaire
+@_implementationOnly import CVoltaire
 
 /// 32-byte hash value (Keccak-256, etc.)
 public struct Hash: Equatable, Hashable, CustomStringConvertible, Sendable {
@@ -47,7 +47,8 @@ public struct Hash: Equatable, Hashable, CustomStringConvertible, Sendable {
     public var hex: String {
         var hash = raw
         var buf = [CChar](repeating: 0, count: 67)
-        primitives_hash_to_hex(&hash, &buf)
+        let rc = primitives_hash_to_hex(&hash, &buf)
+        assert(rc >= 0, "primitives_hash_to_hex failed: \(rc)")
         return String(cString: buf)
     }
 

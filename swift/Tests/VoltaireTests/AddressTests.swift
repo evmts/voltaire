@@ -65,4 +65,15 @@ final class AddressTests: XCTestCase {
         XCTAssertTrue(Address.isValidChecksum("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"))
         XCTAssertFalse(Address.isValidChecksum("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"))
     }
+
+    func testChecksummedInitializer() throws {
+        let good = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+        let a = try Address(checksummedHex: good)
+        XCTAssertEqual(a.checksumHex, good)
+
+        let bad = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045" // not checksummed
+        XCTAssertThrowsError(try Address(checksummedHex: bad)) { error in
+            XCTAssertEqual(error as? VoltaireError, .invalidChecksum)
+        }
+    }
 }
