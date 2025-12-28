@@ -20,7 +20,7 @@ LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
 Never make time or work estimates of how long work will take it is not useful context
 
-**WIP Status**: Library not yet released. No such thing as breaking changes - refactor/rename freely.
+**Status**: Alpha release. Expect frequent refactors/renames. Coordinate changes that affect published exports.
 
 ### Workflow
 
@@ -52,6 +52,9 @@ zig build                     # Full build (Zig + TS typecheck + C libs)
 zig build test                # All Zig tests (primitives + crypto + precompiles)
 zig build -Dtest-filter=[p]   # Filter tests
 zig build -Doptimize=ReleaseFast # Release build
+
+# Combined Zig + TS build
+zig build build-with-ts       # Build Zig + TypeScript distribution
 
 # Multi-target
 zig build build-ts-native     # Native FFI (.dylib/.so) - ReleaseFast

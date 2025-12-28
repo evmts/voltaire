@@ -129,6 +129,27 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
 
+    // Extra primitives boundary tests (separate test runner that imports primitives)
+    const primitives_extra_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives/tests_runner.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    primitives_extra_mod.addImport("primitives", primitives_mod);
+    const primitives_extra_tests = b.addTest(.{
+        .name = "primitives-extra-tests",
+        .root_module = primitives_extra_mod,
+    });
+    primitives_extra_tests.linkLibrary(c_kzg_lib);
+    primitives_extra_tests.linkLibrary(blst_lib);
+    primitives_extra_tests.addObjectFile(rust_crypto_lib_path);
+    primitives_extra_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    primitives_extra_tests.step.dependOn(cargo_build_step);
+    primitives_extra_tests.linkLibC();
+
+    const run_primitives_extra_tests = b.addRunArtifact(primitives_extra_tests);
+    test_step.dependOn(&run_primitives_extra_tests.step);
+
     // TypeScript build steps (typecheck + build)
     const bun_typecheck = b.addSystemCommand(&[_][]const u8{ "bun", "run", "typecheck" });
     bun_typecheck.setName("bun-typecheck");

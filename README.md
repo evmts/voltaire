@@ -298,6 +298,12 @@ All implementations optimized for production use:
 
 📚 **[Benchmarks](./BENCHMARKING.md)**
 
+### Runtime Support
+
+- **Bun**: Native FFI + WASM are supported. Highest performance via Zig native bindings.
+- **Node.js**: Use the regular TypeScript API or WASM. Native FFI via Node-API is not shipped yet.
+- **Browser/Edge runtimes**: WASM only.
+
 ---
 
 ## Alternatives

@@ -57,8 +57,8 @@ If your contribution is large, please open a discussion to chat about the change
 
 ## Before You Start
 
-1. **Read CLAUDE.md** - Contains critical development guidelines
-2. **Understand the architecture** - Read src/README.md
+1. **Read `CLAUDE.md`** - Critical development guidelines
+2. **Understand the architecture** - Read `README.md` and see `docs/`
 3. **Check existing issues** - Your change may already be discussed
 4. **Run tests** - Ensure everything works before making changes
 
@@ -101,13 +101,13 @@ zig build test
 # Run specific test filter
 zig build -Dtest-filter=address
 
-# Run all TypeScript tests
+# Run all TypeScript tests (from repo root)
 bun run test
 
 # Run TypeScript tests with coverage
 bun run test:coverage
 
-# Run all tests (Zig + TypeScript + Go)
+# Optional umbrella step (if configured)
 zig build test-all
 
 # Quick validation
@@ -357,9 +357,7 @@ zig build example-transaction
 ### Documentation
 
 ```bash
-bun run docs:dev             # Astro dev (localhost:4321)
-bun run docs:build           # Build docs site
-bun run docs:preview         # Preview built docs
+bun run docs:dev             # Mintlify dev (localhost:3000)
 ```
 
 ### Cleaning
